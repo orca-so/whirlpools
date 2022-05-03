@@ -1,0 +1,11 @@
+{
+  "name": "orca-whirlpools",
+  "private": true,
+  "workspaces": [
+    "sdk",
+    "scripts"
+  ],
+  "scripts": {
+    "idl": "anchor build -i $INIT_CWD/sdk/src/artifacts -t $INIT_CWD/sdk/src/artifacts"
+  }
+}

@@ -7,6 +7,7 @@ import { TickSpacing, ZERO_BN, sleep } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
 import { MathUtil } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("update_fees_and_rewards", () => {
   const provider = anchor.Provider.local();
@@ -48,36 +49,38 @@ describe("update_fees_and_rewards", () => {
 
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
-    await WhirlpoolIx.swapIx(ctx, {
-      amount: new u64(100_000),
-      otherAmountThreshold: ZERO_BN,
-      sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
-      amountSpecifiedIsInput: true,
-      aToB: true,
-      whirlpool: whirlpoolPda.publicKey,
-      tokenAuthority: ctx.wallet.publicKey,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-      tickArray0: tickArrayPda.publicKey,
-      tickArray1: tickArrayPda.publicKey,
-      tickArray2: tickArrayPda.publicKey,
-      oracle: oraclePda.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        amount: new u64(100_000),
+        otherAmountThreshold: ZERO_BN,
+        sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+        amountSpecifiedIsInput: true,
+        aToB: true,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        tickArray0: tickArrayPda.publicKey,
+        tickArray1: tickArrayPda.publicKey,
+        tickArray2: tickArrayPda.publicKey,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
 
     await sleep(1_000);
 
-    await WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      position: positions[0].publicKey,
-      tickArrayLower: tickArrayPda.publicKey,
-      tickArrayUpper: tickArrayPda.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        position: positions[0].publicKey,
+        tickArrayLower: tickArrayPda.publicKey,
+        tickArrayUpper: tickArrayPda.publicKey,
+      })
+    ).buildAndExecute();
     const positionAfter = (await fetcher.getPosition(positions[0].publicKey, true)) as PositionData;
     assert.ok(positionAfter.feeOwedA.gt(positionBefore.feeOwedA));
     assert.ok(positionAfter.feeOwedB.eq(ZERO_BN));
@@ -110,14 +113,15 @@ describe("update_fees_and_rewards", () => {
     const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 22528);
 
     await assert.rejects(
-      WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        position: positions[0].publicKey,
-        tickArrayLower: tickArrayPda.publicKey,
-        tickArrayUpper: tickArrayPda.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          position: positions[0].publicKey,
+          tickArrayLower: tickArrayPda.publicKey,
+          tickArrayUpper: tickArrayPda.publicKey,
+        })
+      ).buildAndExecute(),
       /0x177c/ // LiquidityZero
     );
   });
@@ -139,14 +143,15 @@ describe("update_fees_and_rewards", () => {
     const { positions: otherPositions } = other.getInfos();
 
     await assert.rejects(
-      WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        position: otherPositions[0].publicKey,
-        tickArrayLower: tickArrayPda.publicKey,
-        tickArrayUpper: tickArrayPda.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          position: otherPositions[0].publicKey,
+          tickArrayLower: tickArrayPda.publicKey,
+          tickArrayUpper: tickArrayPda.publicKey,
+        })
+      ).buildAndExecute(),
       /0xbbf/ // AccountOwnedByWrongProgram
     );
   });
@@ -169,14 +174,15 @@ describe("update_fees_and_rewards", () => {
     const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 0);
 
     await assert.rejects(
-      WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        position: positions[0].publicKey,
-        tickArrayLower: tickArrayPda.publicKey,
-        tickArrayUpper: tickArrayPda.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          position: positions[0].publicKey,
+          tickArrayLower: tickArrayPda.publicKey,
+          tickArrayUpper: tickArrayPda.publicKey,
+        })
+      ).buildAndExecute(),
       /0xbbf/ // AccountOwnedByWrongProgram
     );
   });
@@ -207,14 +213,15 @@ describe("update_fees_and_rewards", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        position: positions[0].publicKey,
-        tickArrayLower: tickArrayPda.publicKey,
-        tickArrayUpper: tickArrayPda.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          position: positions[0].publicKey,
+          tickArrayLower: tickArrayPda.publicKey,
+          tickArrayUpper: tickArrayPda.publicKey,
+        })
+      ).buildAndExecute(),
       /0xbbf/ // AccountOwnedByWrongProgram
     );
   });

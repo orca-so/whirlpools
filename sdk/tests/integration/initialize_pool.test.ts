@@ -22,6 +22,7 @@ import {
 } from "../utils";
 import { initTestPool, buildTestPoolParams } from "../utils/init-utils";
 import { MathUtil } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("initialize_pool", () => {
   const provider = anchor.Provider.local();
@@ -161,7 +162,7 @@ describe("initialize_pool", () => {
     };
 
     await assert.rejects(
-      WhirlpoolIx.initializePoolIx(ctx, modifiedPoolInitInfo).toTx().buildAndExecute(),
+      toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, modifiedPoolInitInfo)).buildAndExecute(),
       /failed to complete|seeds|unauthorized/
     );
   });
@@ -176,7 +177,7 @@ describe("initialize_pool", () => {
     };
 
     await assert.rejects(
-      WhirlpoolIx.initializePoolIx(ctx, modifiedPoolInitInfo).toTx().buildAndExecute(),
+      toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, modifiedPoolInitInfo)).buildAndExecute(),
       /failed to complete|seeds|unauthorized/
     );
   });
@@ -201,7 +202,7 @@ describe("initialize_pool", () => {
     };
 
     await assert.rejects(
-      WhirlpoolIx.initializePoolIx(ctx, modifiedPoolInitInfo).toTx().buildAndExecute(),
+      toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, modifiedPoolInitInfo)).buildAndExecute(),
       /custom program error: 0x1788/ // InvalidTokenMintOrder
     );
   });
@@ -225,7 +226,7 @@ describe("initialize_pool", () => {
     };
 
     await assert.rejects(
-      WhirlpoolIx.initializePoolIx(ctx, modifiedPoolInitInfo).toTx().buildAndExecute(),
+      toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, modifiedPoolInitInfo)).buildAndExecute(),
       /custom program error: 0x1788/ // InvalidTokenMintOrder
     );
   });
@@ -240,7 +241,7 @@ describe("initialize_pool", () => {
     };
 
     await assert.rejects(
-      WhirlpoolIx.initializePoolIx(ctx, modifiedPoolInitInfo).toTx().buildAndExecute(),
+      toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, modifiedPoolInitInfo)).buildAndExecute(),
       /custom program error: 0x177b/ // SqrtPriceOutOfBounds
     );
   });
@@ -254,7 +255,7 @@ describe("initialize_pool", () => {
     };
 
     await assert.rejects(
-      WhirlpoolIx.initializePoolIx(ctx, modifiedPoolInitInfo).toTx().buildAndExecute(),
+      toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, modifiedPoolInitInfo)).buildAndExecute(),
       /custom program error: 0x177b/ // SqrtPriceOutOfBounds
     );
   });

@@ -7,6 +7,7 @@ import {
   generateDefaultConfigParams,
   generateDefaultInitFeeTierParams,
 } from "../utils/test-builders";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("initialize_fee_tier", () => {
   const provider = anchor.Provider.local();
@@ -17,7 +18,7 @@ describe("initialize_fee_tier", () => {
 
   it("successfully init a FeeRate stable account", async () => {
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     const testTickSpacing = TickSpacing.Stable;
     const { params } = await initFeeTier(
@@ -42,7 +43,7 @@ describe("initialize_fee_tier", () => {
 
   it("successfully init a FeeRate standard account", async () => {
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     const testTickSpacing = TickSpacing.Standard;
     const { params } = await initFeeTier(
@@ -61,7 +62,7 @@ describe("initialize_fee_tier", () => {
 
   it("successfully init a FeeRate with another funder wallet", async () => {
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
     const funderKeypair = anchor.web3.Keypair.generate();
     await systemTransferTx(provider, funderKeypair.publicKey, ONE_SOL).buildAndExecute();
 
@@ -77,7 +78,7 @@ describe("initialize_fee_tier", () => {
 
   it("fails when default fee rate exceeds max", async () => {
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     await assert.rejects(
       initFeeTier(
@@ -93,42 +94,45 @@ describe("initialize_fee_tier", () => {
 
   it("fails when fee authority is not a signer", async () => {
     const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     await assert.rejects(
-      WhirlpoolIx.initializeFeeTierIx(
+      toTx(
         ctx,
-        generateDefaultInitFeeTierParams(
-          ctx,
-          configInitInfo.whirlpoolsConfigKeypair.publicKey,
-          configInitInfo.feeAuthority,
-          TickSpacing.Stable,
-          3000
+        WhirlpoolIx.initializeFeeTierIx(
+          ctx.program,
+          generateDefaultInitFeeTierParams(
+            ctx,
+            configInitInfo.whirlpoolsConfigKeypair.publicKey,
+            configInitInfo.feeAuthority,
+            TickSpacing.Stable,
+            3000
+          )
         )
-      )
-        .toTx()
-        .buildAndExecute(),
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
 
   it("fails when invalid fee authority provided", async () => {
     const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
     const fakeFeeAuthorityKeypair = anchor.web3.Keypair.generate();
 
     await assert.rejects(
-      WhirlpoolIx.initializeFeeTierIx(
+      toTx(
         ctx,
-        generateDefaultInitFeeTierParams(
-          ctx,
-          configInitInfo.whirlpoolsConfigKeypair.publicKey,
-          fakeFeeAuthorityKeypair.publicKey,
-          TickSpacing.Stable,
-          3000
+        WhirlpoolIx.initializeFeeTierIx(
+          ctx.program,
+          generateDefaultInitFeeTierParams(
+            ctx,
+            configInitInfo.whirlpoolsConfigKeypair.publicKey,
+            fakeFeeAuthorityKeypair.publicKey,
+            TickSpacing.Stable,
+            3000
+          )
         )
       )
-        .toTx()
         .addSigner(fakeFeeAuthorityKeypair)
         .buildAndExecute(),
       /0x7dc/ // ConstraintAddress

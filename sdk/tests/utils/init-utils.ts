@@ -31,6 +31,7 @@ import {
 import { u64 } from "@solana/spl-token";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
 import { MathUtil, PDA } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
 const defaultInitSqrtPrice = MathUtil.toX64_BN(new u64(5));
 
@@ -49,7 +50,7 @@ export async function buildTestPoolParams(
   funder?: PublicKey
 ) {
   const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-  await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+  await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
   const { params: feeTierParams } = await initFeeTier(
     ctx,
@@ -94,7 +95,7 @@ export async function initTestPool(
     funder?.publicKey
   );
 
-  const tx = WhirlpoolIx.initializePoolIx(ctx, poolInitInfo).toTx();
+  const tx = toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, poolInitInfo));
   if (funder) {
     tx.addSigner(funder);
   }
@@ -125,7 +126,9 @@ export async function initFeeTier(
     funder?.publicKey
   );
 
-  const tx = WhirlpoolIx.initializeFeeTierIx(ctx, params).toTx().addSigner(feeAuthorityKeypair);
+  const tx = toTx(ctx, WhirlpoolIx.initializeFeeTierIx(ctx.program, params)).addSigner(
+    feeAuthorityKeypair
+  );
   if (funder) {
     tx.addSigner(funder);
   }
@@ -156,7 +159,9 @@ export async function initializeReward(
     rewardIndex,
   };
 
-  const tx = WhirlpoolIx.initializeRewardIx(ctx, params).toTx().addSigner(rewardAuthorityKeypair);
+  const tx = toTx(ctx, WhirlpoolIx.initializeRewardIx(ctx.program, params)).addSigner(
+    rewardAuthorityKeypair
+  );
   if (funder) {
     tx.addSigner(funder);
   }
@@ -180,14 +185,16 @@ export async function initRewardAndSetEmissions(
     params: { rewardMint, rewardVaultKeypair },
   } = await initializeReward(ctx, rewardAuthorityKeypair, whirlpool, rewardIndex, funder);
   await mintToByAuthority(ctx.provider, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
-  await WhirlpoolIx.setRewardEmissionsIx(ctx, {
-    rewardAuthority: rewardAuthorityKeypair.publicKey,
-    whirlpool,
-    rewardIndex,
-    rewardVaultKey: rewardVaultKeypair.publicKey,
-    emissionsPerSecondX64,
-  })
-    .toTx()
+  await toTx(
+    ctx,
+    WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
+      rewardAuthority: rewardAuthorityKeypair.publicKey,
+      whirlpool,
+      rewardIndex,
+      rewardVaultKey: rewardVaultKeypair.publicKey,
+      emissionsPerSecondX64,
+    })
+  )
     .addSigner(rewardAuthorityKeypair)
     .buildAndExecute();
   return { rewardMint, rewardVaultKeypair };
@@ -249,8 +256,8 @@ async function openPositionWithOptMetadata(
     funder?.publicKey || ctx.provider.wallet.publicKey
   );
   let tx = withMetadata
-    ? WhirlpoolIx.openPositionWithMetadataIx(ctx, params).toTx()
-    : WhirlpoolIx.openPositionIx(ctx, params).toTx();
+    ? toTx(ctx, WhirlpoolIx.openPositionWithMetadataIx(ctx.program, params))
+    : toTx(ctx, WhirlpoolIx.openPositionIx(ctx.program, params));
   tx.addSigner(mint);
   if (funder) {
     tx.addSigner(funder);
@@ -271,7 +278,7 @@ export async function initTickArray(
     startTickIndex,
     funder?.publicKey
   );
-  const tx = WhirlpoolIx.initTickArrayIx(ctx, params).toTx();
+  const tx = toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, params));
   if (funder) {
     tx.addSigner(funder);
   }
@@ -381,36 +388,38 @@ export async function withdrawPositions(
         upperStartTick
       );
 
-      await WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount: position.liquidity,
-        tokenMinA: tokenA,
-        tokenMinB: tokenB,
-        whirlpool: info.initParams.whirlpool,
-        positionAuthority: ctx.provider.wallet.publicKey,
-        position: info.initParams.positionPda.publicKey,
-        positionTokenAccount: info.initParams.positionTokenAccount,
-        tokenOwnerAccountA,
-        tokenOwnerAccountB,
-        tokenVaultA: pool.tokenVaultA,
-        tokenVaultB: pool.tokenVaultB,
-        tickArrayLower: tickArrayLower.publicKey,
-        tickArrayUpper: tickArrayUpper.publicKey,
-      })
-        .toTx()
-        .buildAndExecute();
+      await toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount: position.liquidity,
+          tokenMinA: tokenA,
+          tokenMinB: tokenB,
+          whirlpool: info.initParams.whirlpool,
+          positionAuthority: ctx.provider.wallet.publicKey,
+          position: info.initParams.positionPda.publicKey,
+          positionTokenAccount: info.initParams.positionTokenAccount,
+          tokenOwnerAccountA,
+          tokenOwnerAccountB,
+          tokenVaultA: pool.tokenVaultA,
+          tokenVaultB: pool.tokenVaultB,
+          tickArrayLower: tickArrayLower.publicKey,
+          tickArrayUpper: tickArrayUpper.publicKey,
+        })
+      ).buildAndExecute();
 
-      await WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: info.initParams.whirlpool,
-        positionAuthority: ctx.provider.wallet.publicKey,
-        position: info.initParams.positionPda.publicKey,
-        positionTokenAccount: info.initParams.positionTokenAccount,
-        tokenOwnerAccountA,
-        tokenOwnerAccountB,
-        tokenVaultA: pool.tokenVaultA,
-        tokenVaultB: pool.tokenVaultB,
-      })
-        .toTx()
-        .buildAndExecute();
+      await toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: info.initParams.whirlpool,
+          positionAuthority: ctx.provider.wallet.publicKey,
+          position: info.initParams.positionPda.publicKey,
+          positionTokenAccount: info.initParams.positionTokenAccount,
+          tokenOwnerAccountA,
+          tokenOwnerAccountB,
+          tokenVaultA: pool.tokenVaultA,
+          tokenVaultB: pool.tokenVaultB,
+        })
+      ).buildAndExecute();
     })
   );
 }
@@ -468,23 +477,24 @@ export async function fundPositions(
           PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
           true
         );
-        await WhirlpoolIx.increaseLiquidityIx(ctx, {
-          liquidityAmount: param.liquidityAmount,
-          tokenMaxA: tokenA,
-          tokenMaxB: tokenB,
-          whirlpool: whirlpool,
-          positionAuthority: ctx.provider.wallet.publicKey,
-          position: positionInfo.positionPda.publicKey,
-          positionTokenAccount: positionInfo.positionTokenAccount,
-          tokenOwnerAccountA: tokenAccountA,
-          tokenOwnerAccountB: tokenAccountB,
-          tokenVaultA: tokenVaultAKeypair.publicKey,
-          tokenVaultB: tokenVaultBKeypair.publicKey,
-          tickArrayLower,
-          tickArrayUpper,
-        })
-          .toTx()
-          .buildAndExecute();
+        await toTx(
+          ctx,
+          WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+            liquidityAmount: param.liquidityAmount,
+            tokenMaxA: tokenA,
+            tokenMaxB: tokenB,
+            whirlpool: whirlpool,
+            positionAuthority: ctx.provider.wallet.publicKey,
+            position: positionInfo.positionPda.publicKey,
+            positionTokenAccount: positionInfo.positionTokenAccount,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: tokenVaultAKeypair.publicKey,
+            tokenVaultB: tokenVaultBKeypair.publicKey,
+            tickArrayLower,
+            tickArrayUpper,
+          })
+        ).buildAndExecute();
       }
       return {
         initParams: positionInfo,

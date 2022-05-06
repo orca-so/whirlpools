@@ -25,6 +25,7 @@ import {
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
 import { MathUtil } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("collect_fees", () => {
   const provider = anchor.Provider.local();
@@ -67,55 +68,58 @@ describe("collect_fees", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
     // Accrue fees in token A
-    await WhirlpoolIx.swapIx(ctx, {
-      amount: new u64(200_000),
-      otherAmountThreshold: ZERO_BN,
-      sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
-      amountSpecifiedIsInput: true,
-      aToB: true,
-      whirlpool: whirlpoolPda.publicKey,
-      tokenAuthority: ctx.wallet.publicKey,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-      tickArray0: tickArrayPda.publicKey,
-      tickArray1: tickArrayPda.publicKey,
-      tickArray2: tickArrayPda.publicKey,
-      oracle: oraclePda.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        amount: new u64(200_000),
+        otherAmountThreshold: ZERO_BN,
+        sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
+        amountSpecifiedIsInput: true,
+        aToB: true,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        tickArray0: tickArrayPda.publicKey,
+        tickArray1: tickArrayPda.publicKey,
+        tickArray2: tickArrayPda.publicKey,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
 
     // Accrue fees in token B
-    await WhirlpoolIx.swapIx(ctx, {
-      amount: new u64(200_000),
-      otherAmountThreshold: ZERO_BN,
-      sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
-      amountSpecifiedIsInput: true,
-      aToB: false,
-      whirlpool: whirlpoolPda.publicKey,
-      tokenAuthority: ctx.wallet.publicKey,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-      tickArray0: tickArrayPda.publicKey,
-      tickArray1: tickArrayPda.publicKey,
-      tickArray2: tickArrayPda.publicKey,
-      oracle: oraclePda.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        amount: new u64(200_000),
+        otherAmountThreshold: ZERO_BN,
+        sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
+        amountSpecifiedIsInput: true,
+        aToB: false,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        tickArray0: tickArrayPda.publicKey,
+        tickArray1: tickArrayPda.publicKey,
+        tickArray2: tickArrayPda.publicKey,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
 
-    await WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      position: positions[0].publicKey,
-      tickArrayLower: tickArrayPda.publicKey,
-      tickArrayUpper: tickArrayPda.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        position: positions[0].publicKey,
+        tickArrayLower: tickArrayPda.publicKey,
+        tickArrayUpper: tickArrayPda.publicKey,
+      })
+    ).buildAndExecute();
 
     const positionBeforeCollect = (await fetcher.getPosition(
       positions[0].publicKey,
@@ -140,18 +144,19 @@ describe("collect_fees", () => {
     });
 
     // Perform collect fees tx
-    await WhirlpoolIx.collectFeesIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: provider.wallet.publicKey,
-      position: positions[0].publicKey,
-      positionTokenAccount: positions[0].tokenAccount,
-      tokenOwnerAccountA: feeAccountA,
-      tokenOwnerAccountB: feeAccountB,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.collectFeesIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: provider.wallet.publicKey,
+        position: positions[0].publicKey,
+        positionTokenAccount: positions[0].tokenAccount,
+        tokenOwnerAccountA: feeAccountA,
+        tokenOwnerAccountB: feeAccountB,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+      })
+    ).buildAndExecute();
     const positionAfter = (await fetcher.getPosition(positions[0].publicKey, true)) as PositionData;
     const feeBalanceA = await getTokenBalance(provider, feeAccountA);
     const feeBalanceB = await getTokenBalance(provider, feeAccountB);
@@ -162,14 +167,15 @@ describe("collect_fees", () => {
     assert.ok(positionAfter.feeOwedB.eq(ZERO_BN));
 
     // Assert out of range position values
-    await WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      position: positions[1].publicKey,
-      tickArrayLower: positions[1].tickArrayLower,
-      tickArrayUpper: positions[1].tickArrayUpper,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        position: positions[1].publicKey,
+        tickArrayLower: positions[1].tickArrayLower,
+        tickArrayUpper: positions[1].tickArrayUpper,
+      })
+    ).buildAndExecute();
     const outOfRangePosition = await fetcher.getPosition(positions[1].publicKey, true);
     assert.ok(outOfRangePosition?.feeOwedA.eq(ZERO_BN));
     assert.ok(outOfRangePosition?.feeOwedB.eq(ZERO_BN));
@@ -194,17 +200,19 @@ describe("collect_fees", () => {
     const delegate = anchor.web3.Keypair.generate();
     await approveToken(provider, position.tokenAccount, delegate.publicKey, 1);
 
-    await WhirlpoolIx.collectFeesIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: delegate.publicKey,
-      position: position.publicKey,
-      positionTokenAccount: position.tokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.collectFeesIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: delegate.publicKey,
+        position: position.publicKey,
+        positionTokenAccount: position.tokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+      })
+    )
       .addSigner(delegate)
       .buildAndExecute();
   });
@@ -228,18 +236,19 @@ describe("collect_fees", () => {
     const delegate = anchor.web3.Keypair.generate();
     await approveToken(provider, position.tokenAccount, delegate.publicKey, 1);
 
-    await WhirlpoolIx.collectFeesIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: provider.wallet.publicKey,
-      position: position.publicKey,
-      positionTokenAccount: position.tokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.collectFeesIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: provider.wallet.publicKey,
+        position: position.publicKey,
+        positionTokenAccount: position.tokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+      })
+    ).buildAndExecute();
   });
 
   it("successfully collect fees with transferred position token", async () => {
@@ -267,17 +276,19 @@ describe("collect_fees", () => {
 
     await transfer(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
 
-    await WhirlpoolIx.collectFeesIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: newOwner.publicKey,
-      position: position.publicKey,
-      positionTokenAccount: newOwnerPositionTokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.collectFeesIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: newOwner.publicKey,
+        position: position.publicKey,
+        positionTokenAccount: newOwnerPositionTokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+      })
+    )
       .addSigner(newOwner)
       .buildAndExecute();
   });
@@ -303,18 +314,19 @@ describe("collect_fees", () => {
     } = await initTestPool(ctx, tickSpacing);
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda2.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda2.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7d1/ // ConstraintHasOne
     );
   });
@@ -342,36 +354,38 @@ describe("collect_fees", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positionTokenAccount2,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positionTokenAccount2,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
 
     await transfer(provider, positions[0].tokenAccount, positionTokenAccount2, 1);
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -395,17 +409,19 @@ describe("collect_fees", () => {
     const delegate = anchor.web3.Keypair.generate();
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        })
+      )
         .addSigner(delegate)
         .buildAndExecute(),
       /0x1783/ // MissingOrInvalidDelegate
@@ -432,17 +448,19 @@ describe("collect_fees", () => {
     await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 2);
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        })
+      )
         .addSigner(delegate)
         .buildAndExecute(),
       /0x1784/ // InvalidPositionTokenAmount
@@ -469,18 +487,19 @@ describe("collect_fees", () => {
     await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 1);
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
@@ -508,18 +527,19 @@ describe("collect_fees", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: fakePositionTokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: fakePositionTokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -550,34 +570,36 @@ describe("collect_fees", () => {
     const fakeVaultB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: fakeVaultA,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: fakeVaultA,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7dc/ // ConstraintAddress
     );
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: fakeVaultB,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: fakeVaultB,
+        })
+      ).buildAndExecute(),
       /0x7dc/ // ConstraintAddress
     );
   });
@@ -616,34 +638,36 @@ describe("collect_fees", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        tokenOwnerAccountA: invalidOwnerAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenOwnerAccountA: invalidOwnerAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
 
     await assert.rejects(
-      WhirlpoolIx.collectFeesIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: invalidOwnerAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: invalidOwnerAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });

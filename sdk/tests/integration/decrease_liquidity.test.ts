@@ -24,6 +24,7 @@ import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, openPosition, initTickArray } from "../utils/init-utils";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../src/quotes/public/decrease-liquidity-quote";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("decrease_liquidity", () => {
   const provider = anchor.Provider.local();
@@ -54,21 +55,22 @@ describe("decrease_liquidity", () => {
       tickUpperIndex: tickUpper,
     });
 
-    await WhirlpoolIx.decreaseLiquidityIx(ctx, {
-      ...removalQuote,
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: provider.wallet.publicKey,
-      position: positions[0].publicKey,
-      positionTokenAccount: positions[0].tokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-      tickArrayLower: positions[0].tickArrayLower,
-      tickArrayUpper: positions[0].tickArrayUpper,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+        ...removalQuote,
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: provider.wallet.publicKey,
+        position: positions[0].publicKey,
+        positionTokenAccount: positions[0].tokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        tickArrayLower: positions[0].tickArrayLower,
+        tickArrayUpper: positions[0].tickArrayUpper,
+      })
+    ).buildAndExecute();
 
     const remainingLiquidity = liquidityAmount.sub(removalQuote.liquidityAmount);
     const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
@@ -109,21 +111,22 @@ describe("decrease_liquidity", () => {
       tickUpperIndex: tickUpper,
     });
 
-    await WhirlpoolIx.decreaseLiquidityIx(ctx, {
-      ...removalQuote,
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: provider.wallet.publicKey,
-      position: position.publicKey,
-      positionTokenAccount: position.tokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-      tickArrayLower: position.tickArrayLower,
-      tickArrayUpper: position.tickArrayUpper,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+        ...removalQuote,
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: provider.wallet.publicKey,
+        position: position.publicKey,
+        positionTokenAccount: position.tokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        tickArrayLower: position.tickArrayLower,
+        tickArrayUpper: position.tickArrayUpper,
+      })
+    ).buildAndExecute();
 
     const remainingLiquidity = liquidityAmount.sub(removalQuote.liquidityAmount);
     const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
@@ -165,22 +168,24 @@ describe("decrease_liquidity", () => {
 
     const removeAmount = new u64(1_000_000);
 
-    await WhirlpoolIx.decreaseLiquidityIx(ctx, {
-      liquidityAmount: removeAmount,
-      tokenMinA: new u64(0),
-      tokenMinB: new u64(0),
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: delegate.publicKey,
-      position: position.publicKey,
-      positionTokenAccount: position.tokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-      tickArrayLower: position.tickArrayLower,
-      tickArrayUpper: position.tickArrayUpper,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+        liquidityAmount: removeAmount,
+        tokenMinA: new u64(0),
+        tokenMinB: new u64(0),
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: delegate.publicKey,
+        position: position.publicKey,
+        positionTokenAccount: position.tokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        tickArrayLower: position.tickArrayLower,
+        tickArrayUpper: position.tickArrayUpper,
+      })
+    )
       .addSigner(delegate)
       .buildAndExecute();
   });
@@ -204,23 +209,24 @@ describe("decrease_liquidity", () => {
 
     const removeAmount = new u64(1_000_000);
 
-    await WhirlpoolIx.decreaseLiquidityIx(ctx, {
-      liquidityAmount: removeAmount,
-      tokenMinA: new u64(0),
-      tokenMinB: new u64(0),
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: provider.wallet.publicKey,
-      position: position.publicKey,
-      positionTokenAccount: position.tokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-      tickArrayLower: position.tickArrayLower,
-      tickArrayUpper: position.tickArrayUpper,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+        liquidityAmount: removeAmount,
+        tokenMinA: new u64(0),
+        tokenMinB: new u64(0),
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: provider.wallet.publicKey,
+        position: position.publicKey,
+        positionTokenAccount: position.tokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        tickArrayLower: position.tickArrayLower,
+        tickArrayUpper: position.tickArrayUpper,
+      })
+    ).buildAndExecute();
   });
 
   it("successfully decrease liquidity with transferred position token", async () => {
@@ -243,22 +249,24 @@ describe("decrease_liquidity", () => {
     );
     await transfer(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
 
-    await WhirlpoolIx.decreaseLiquidityIx(ctx, {
-      liquidityAmount: removeAmount,
-      tokenMinA: new u64(0),
-      tokenMinB: new u64(0),
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: newOwner.publicKey,
-      position: position.publicKey,
-      positionTokenAccount: newOwnerPositionTokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-      tickArrayLower: position.tickArrayLower,
-      tickArrayUpper: position.tickArrayUpper,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+        liquidityAmount: removeAmount,
+        tokenMinA: new u64(0),
+        tokenMinB: new u64(0),
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: newOwner.publicKey,
+        position: position.publicKey,
+        positionTokenAccount: newOwnerPositionTokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        tickArrayLower: position.tickArrayLower,
+        tickArrayUpper: position.tickArrayUpper,
+      })
+    )
       .addSigner(newOwner)
       .buildAndExecute();
   });
@@ -275,23 +283,24 @@ describe("decrease_liquidity", () => {
     const position = positions[0];
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount: new u64(0),
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount: new u64(0),
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x177c/ // LiquidityZero
     );
   });
@@ -307,23 +316,24 @@ describe("decrease_liquidity", () => {
     const position = positions[0];
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount: new u64(1_000),
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount: new u64(1_000),
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x177f/ // LiquidityUnderflow
     );
   });
@@ -340,23 +350,24 @@ describe("decrease_liquidity", () => {
     const position = positions[0];
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(1_000_000),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(1_000_000),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x1782/ // TokenMinSubceeded
     );
   });
@@ -372,23 +383,24 @@ describe("decrease_liquidity", () => {
     const { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair } = poolInitInfo;
     const position = positions[0];
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(1_000_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(1_000_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x1782/ // TokenMinSubceeded
     );
   });
@@ -412,23 +424,24 @@ describe("decrease_liquidity", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: newPositionTokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: newPositionTokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
 
@@ -436,23 +449,24 @@ describe("decrease_liquidity", () => {
     await transfer(provider, position.tokenAccount, newPositionTokenAccount, 1);
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -471,23 +485,24 @@ describe("decrease_liquidity", () => {
     const invalidPositionTokenAccount = await createAndMintToTokenAccount(provider, tokenMintA, 1);
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: invalidPositionTokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: invalidPositionTokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // A raw constraint was violated
     );
   });
@@ -509,23 +524,24 @@ describe("decrease_liquidity", () => {
     } = await openPosition(ctx, poolInitInfo2.whirlpoolPda.publicKey, 7168, 8960);
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionPda.publicKey,
-        positionTokenAccount: positionTokenAccountAddress,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: tickArray,
-        tickArrayUpper: tickArray,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionPda.publicKey,
+          positionTokenAccount: positionTokenAccountAddress,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: tickArray,
+          tickArrayUpper: tickArray,
+        })
+      ).buildAndExecute(),
       /0x7d1/ // A has_one constraint was violated
     );
   });
@@ -545,44 +561,46 @@ describe("decrease_liquidity", () => {
     const fakeVaultB = await createAndMintToTokenAccount(provider, tokenMintB, 1_000);
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: fakeVaultA,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: fakeVaultA,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: fakeVaultB,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: fakeVaultB,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -601,44 +619,46 @@ describe("decrease_liquidity", () => {
     const position = positions[0];
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: invalidTokenAccount,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: invalidTokenAccount,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: invalidTokenAccount,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: invalidTokenAccount,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -659,22 +679,24 @@ describe("decrease_liquidity", () => {
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      )
         .addSigner(delegate)
         .buildAndExecute(),
       /0x1783/ // MissingOrInvalidDelegate
@@ -698,22 +720,24 @@ describe("decrease_liquidity", () => {
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      )
         .addSigner(delegate)
         .buildAndExecute(),
       /0x1784/ // InvalidPositionTokenAmount
@@ -737,23 +761,24 @@ describe("decrease_liquidity", () => {
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(167_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: position.tickArrayLower,
-        tickArrayUpper: position.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(167_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: position.tickArrayLower,
+          tickArrayUpper: position.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
@@ -778,23 +803,24 @@ describe("decrease_liquidity", () => {
     } = await initTickArray(ctx, whirlpoolPda.publicKey, 22528);
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: tickArrayLowerPda.publicKey,
-        tickArrayUpper: tickArrayUpperPda.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: tickArrayLowerPda.publicKey,
+          tickArrayUpper: tickArrayUpperPda.publicKey,
+        })
+      ).buildAndExecute(),
       /0x1779/ // TicKNotFound
     );
   });
@@ -821,23 +847,24 @@ describe("decrease_liquidity", () => {
     } = await initTickArray(ctx, poolInitInfo2.whirlpoolPda.publicKey, 0);
 
     await assert.rejects(
-      WhirlpoolIx.decreaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMinA: new u64(0),
-        tokenMinB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionTokenAccount: position.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: tickArrayLowerPda.publicKey,
-        tickArrayUpper: tickArrayUpperPda.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMinA: new u64(0),
+          tokenMinB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionTokenAccount: position.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: tickArrayLowerPda.publicKey,
+          tickArrayUpper: tickArrayUpperPda.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7d1/ // A has one constraint was violated
     );
   });

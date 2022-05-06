@@ -1,8 +1,9 @@
 import { SystemProgram, PublicKey } from "@solana/web3.js";
-import { WhirlpoolContext } from "../context";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 import { PDA } from "@orca-so/common-sdk";
-import { transformTx } from "../utils/instructions-util";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+
+import { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to initialize a FeeTier account.
@@ -36,13 +37,13 @@ export type InitFeeTierParams = {
  * @returns - Instruction to perform the action.
  */
 export function initializeFeeTierIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: InitFeeTierParams
-): TransformableInstruction {
+): Instruction {
   const { feeTierPda, whirlpoolsConfig, tickSpacing, feeAuthority, defaultFeeRate, funder } =
     params;
 
-  const ix = context.program.instruction.initializeFeeTier(tickSpacing, defaultFeeRate, {
+  const ix = program.instruction.initializeFeeTier(tickSpacing, defaultFeeRate, {
     accounts: {
       config: whirlpoolsConfig,
       feeTier: feeTierPda.publicKey,
@@ -52,9 +53,9 @@ export function initializeFeeTierIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

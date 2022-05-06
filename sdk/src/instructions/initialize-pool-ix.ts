@@ -1,11 +1,11 @@
-import { WhirlpoolContext } from "../context";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 import { SystemProgram, SYSVAR_RENT_PUBKEY, PublicKey, Keypair } from "@solana/web3.js";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Instruction } from "@orca-so/common-sdk";
 import { WhirlpoolBumpsData } from "../types/public/anchor-types";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { BN } from "@project-serum/anchor";
 import { PDA } from "@orca-so/common-sdk";
-import { transformTx } from "../utils/instructions-util";
 
 /**
  * Parameters to initialize a Whirlpool account.
@@ -47,12 +47,7 @@ export type InitPoolParams = {
  * @param params - InitPoolParams object
  * @returns - Instruction to perform the action.
  */
-export function initializePoolIx(
-  context: WhirlpoolContext,
-  params: InitPoolParams
-): TransformableInstruction {
-  const program = context.program;
-
+export function initializePoolIx(program: Program<Whirlpool>, params: InitPoolParams): Instruction {
   const {
     initSqrtPrice,
     tokenMintA,
@@ -86,9 +81,9 @@ export function initializePoolIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [tokenVaultAKeypair, tokenVaultBKeypair],
-  });
+  };
 }

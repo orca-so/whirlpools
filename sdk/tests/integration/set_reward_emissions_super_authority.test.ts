@@ -2,6 +2,7 @@ import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
 import { WhirlpoolContext, AccountFetcher, WhirlpoolsConfigData, WhirlpoolIx } from "../../src";
 import { generateDefaultConfigParams } from "../utils/test-builders";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_reward_emissions_super_authority", () => {
   const provider = anchor.Provider.local();
@@ -16,15 +17,17 @@ describe("set_reward_emissions_super_authority", () => {
       configKeypairs: { rewardEmissionsSuperAuthorityKeypair },
     } = generateDefaultConfigParams(ctx);
 
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
     const newAuthorityKeypair = anchor.web3.Keypair.generate();
 
-    await WhirlpoolIx.setRewardEmissionsSuperAuthorityIx(ctx, {
-      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-      rewardEmissionsSuperAuthority: rewardEmissionsSuperAuthorityKeypair.publicKey,
-      newRewardEmissionsSuperAuthority: newAuthorityKeypair.publicKey,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.setRewardEmissionsSuperAuthorityIx(ctx.program, {
+        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+        rewardEmissionsSuperAuthority: rewardEmissionsSuperAuthorityKeypair.publicKey,
+        newRewardEmissionsSuperAuthority: newAuthorityKeypair.publicKey,
+      })
+    )
       .addSigner(rewardEmissionsSuperAuthorityKeypair)
       .buildAndExecute();
 
@@ -39,7 +42,7 @@ describe("set_reward_emissions_super_authority", () => {
       configInitInfo,
       configKeypairs: { rewardEmissionsSuperAuthorityKeypair },
     } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     await assert.rejects(
       ctx.program.rpc.setRewardEmissionsSuperAuthority({
@@ -55,16 +58,17 @@ describe("set_reward_emissions_super_authority", () => {
 
   it("fails if incorrect reward_emissions_super_authority is passed in", async () => {
     const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     await assert.rejects(
-      WhirlpoolIx.setRewardEmissionsSuperAuthorityIx(ctx, {
-        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-        rewardEmissionsSuperAuthority: provider.wallet.publicKey,
-        newRewardEmissionsSuperAuthority: provider.wallet.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardEmissionsSuperAuthorityIx(ctx.program, {
+          whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+          rewardEmissionsSuperAuthority: provider.wallet.publicKey,
+          newRewardEmissionsSuperAuthority: provider.wallet.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7dc/ // An address constraint was violated
     );
   });

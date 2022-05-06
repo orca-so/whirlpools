@@ -11,6 +11,7 @@ import {
 import { TickSpacing } from "../utils";
 import { initTestPool } from "../utils/init-utils";
 import { createInOrderMints } from "../utils/test-builders";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_default_protocol_fee_rate", () => {
   const provider = anchor.Provider.local();
@@ -34,12 +35,14 @@ describe("set_default_protocol_fee_rate", () => {
     let whirlpool_0 = (await fetcher.getPool(whirlpoolKey)) as WhirlpoolData;
     assert.equal(whirlpool_0.protocolFeeRate, configInitInfo.defaultProtocolFeeRate);
 
-    await WhirlpoolIx.setDefaultProtocolFeeRateIx(ctx, {
-      whirlpoolsConfig: whirlpoolsConfigKey,
-      feeAuthority: feeAuthorityKeypair.publicKey,
-      defaultProtocolFeeRate: newDefaultProtocolFeeRate,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.setDefaultProtocolFeeRateIx(ctx.program, {
+        whirlpoolsConfig: whirlpoolsConfigKey,
+        feeAuthority: feeAuthorityKeypair.publicKey,
+        defaultProtocolFeeRate: newDefaultProtocolFeeRate,
+      })
+    )
       .addSigner(feeAuthorityKeypair)
       .buildAndExecute();
 
@@ -67,7 +70,7 @@ describe("set_default_protocol_fee_rate", () => {
       tokenVaultBKeypair,
       tickSpacing: TickSpacing.Stable,
     };
-    await WhirlpoolIx.initializePoolIx(ctx, newPoolInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, newPoolInitInfo)).buildAndExecute();
 
     const whirlpool_1 = (await fetcher.getPool(whirlpoolPda.publicKey)) as WhirlpoolData;
     assert.equal(whirlpool_1.protocolFeeRate, newDefaultProtocolFeeRate);
@@ -80,12 +83,14 @@ describe("set_default_protocol_fee_rate", () => {
 
     const newDefaultProtocolFeeRate = 20_000;
     await assert.rejects(
-      WhirlpoolIx.setDefaultProtocolFeeRateIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKey,
-        feeAuthority: feeAuthorityKeypair.publicKey,
-        defaultProtocolFeeRate: newDefaultProtocolFeeRate,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.setDefaultProtocolFeeRateIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKey,
+          feeAuthority: feeAuthorityKeypair.publicKey,
+          defaultProtocolFeeRate: newDefaultProtocolFeeRate,
+        })
+      )
         .addSigner(feeAuthorityKeypair)
         .buildAndExecute(),
       /0x178d/ // ProtocolFeeRateMaxExceeded

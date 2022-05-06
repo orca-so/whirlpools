@@ -27,6 +27,7 @@ import {
 import { initTestPool, openPosition } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
 import { PDA } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("open_position", () => {
   const provider = anchor.Provider.local();
@@ -134,11 +135,13 @@ describe("open_position", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.openPositionIx(ctx, {
-        ...defaultParams,
-        positionTokenAccount: positionTokenAccountAddress,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.openPositionIx(ctx.program, {
+          ...defaultParams,
+          positionTokenAccount: positionTokenAccountAddress,
+        })
+      )
         .addSigner(defaultMint)
         .buildAndExecute(),
       /An account required by the instruction is missing/
@@ -208,17 +211,19 @@ describe("open_position", () => {
     await provider.send(tx, [positionMintKeypair], { commitment: "confirmed" });
 
     await assert.rejects(
-      WhirlpoolIx.openPositionIx(ctx, {
-        funder: provider.wallet.publicKey,
-        owner: provider.wallet.publicKey,
-        positionPda,
-        positionMintAddress: positionMintKeypair.publicKey,
-        positionTokenAccount: positionTokenAccountAddress,
-        whirlpool: whirlpoolPda.publicKey,
-        tickLowerIndex: 0,
-        tickUpperIndex: 128,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.openPositionIx(ctx.program, {
+          funder: provider.wallet.publicKey,
+          owner: provider.wallet.publicKey,
+          positionPda,
+          positionMintAddress: positionMintKeypair.publicKey,
+          positionTokenAccount: positionTokenAccountAddress,
+          whirlpool: whirlpoolPda.publicKey,
+          tickLowerIndex: 0,
+          tickUpperIndex: 128,
+        })
+      )
         .addSigner(positionMintKeypair)
         .buildAndExecute(),
       /0x0/

@@ -1,8 +1,8 @@
-import { WhirlpoolContext } from "../context";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Instruction } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { transformTx } from "../utils/instructions-util";
 
 /**
  * Parameters to collect rewards from a reward index in a position.
@@ -36,9 +36,9 @@ export type CollectRewardParams = {
  * @returns - Instruction to perform the action.
  */
 export function collectRewardIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: CollectRewardParams
-): TransformableInstruction {
+): Instruction {
   const {
     whirlpool,
     positionAuthority,
@@ -49,7 +49,7 @@ export function collectRewardIx(
     rewardIndex,
   } = params;
 
-  const ix = context.program.instruction.collectReward(rewardIndex, {
+  const ix = program.instruction.collectReward(rewardIndex, {
     accounts: {
       whirlpool,
       positionAuthority,
@@ -61,9 +61,9 @@ export function collectRewardIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

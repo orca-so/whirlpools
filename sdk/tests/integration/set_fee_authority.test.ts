@@ -2,6 +2,7 @@ import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
 import { WhirlpoolContext, AccountFetcher, WhirlpoolsConfigData, WhirlpoolIx } from "../../src";
 import { generateDefaultConfigParams } from "../utils/test-builders";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_fee_authority", () => {
   const provider = anchor.Provider.local();
@@ -15,14 +16,16 @@ describe("set_fee_authority", () => {
       configInitInfo,
       configKeypairs: { feeAuthorityKeypair },
     } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
     const newAuthorityKeypair = anchor.web3.Keypair.generate();
-    await WhirlpoolIx.setFeeAuthorityIx(ctx, {
-      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-      feeAuthority: feeAuthorityKeypair.publicKey,
-      newFeeAuthority: newAuthorityKeypair.publicKey,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.setFeeAuthorityIx(ctx.program, {
+        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+        feeAuthority: feeAuthorityKeypair.publicKey,
+        newFeeAuthority: newAuthorityKeypair.publicKey,
+      })
+    )
       .addSigner(feeAuthorityKeypair)
       .buildAndExecute();
     const config = (await fetcher.getConfig(
@@ -36,32 +39,34 @@ describe("set_fee_authority", () => {
       configInitInfo,
       configKeypairs: { feeAuthorityKeypair },
     } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     await assert.rejects(
-      WhirlpoolIx.setFeeAuthorityIx(ctx, {
-        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-        feeAuthority: feeAuthorityKeypair.publicKey,
-        newFeeAuthority: provider.wallet.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.setFeeAuthorityIx(ctx.program, {
+          whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+          feeAuthority: feeAuthorityKeypair.publicKey,
+          newFeeAuthority: provider.wallet.publicKey,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
 
   it("fails if invalid fee_authority provided", async () => {
     const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     await assert.rejects(
-      WhirlpoolIx.setFeeAuthorityIx(ctx, {
-        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-        feeAuthority: provider.wallet.publicKey,
-        newFeeAuthority: provider.wallet.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.setFeeAuthorityIx(ctx.program, {
+          whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+          feeAuthority: provider.wallet.publicKey,
+          newFeeAuthority: provider.wallet.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7dc/ // An address constraint was violated
     );
   });

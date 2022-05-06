@@ -1,9 +1,9 @@
 import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
-import { WhirlpoolContext } from "../context";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
+import { Instruction } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { BN } from "@project-serum/anchor";
-import { transformTx } from "../utils/instructions-util";
 
 /**
  * Parameters to remove liquidity from a position.
@@ -59,9 +59,9 @@ export type DecreaseLiquidityInput = {
  * @returns - Instruction to perform the action.
  */
 export function decreaseLiquidityIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: DecreaseLiquidityParams
-): TransformableInstruction {
+): Instruction {
   const {
     liquidityAmount,
     tokenMinA,
@@ -78,7 +78,7 @@ export function decreaseLiquidityIx(
     tickArrayUpper,
   } = params;
 
-  const ix = context.program.instruction.decreaseLiquidity(liquidityAmount, tokenMinA, tokenMinB, {
+  const ix = program.instruction.decreaseLiquidity(liquidityAmount, tokenMinA, tokenMinB, {
     accounts: {
       whirlpool,
       tokenProgram: TOKEN_PROGRAM_ID,
@@ -94,9 +94,9 @@ export function decreaseLiquidityIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

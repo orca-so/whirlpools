@@ -9,6 +9,7 @@ import {
 } from "../../src";
 import { systemTransferTx, ONE_SOL } from "../utils";
 import { generateDefaultConfigParams } from "../utils/test-builders";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("initialize_config", () => {
   const provider = anchor.Provider.local();
@@ -21,7 +22,7 @@ describe("initialize_config", () => {
 
   it("successfully init a WhirlpoolsConfig account", async () => {
     const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     const configAccount = (await fetcher.getConfig(
       configInitInfo.whirlpoolsConfigKeypair.publicKey
@@ -50,7 +51,10 @@ describe("initialize_config", () => {
       whirlpoolsConfigKeypair: initializedConfigInfo.whirlpoolsConfigKeypair,
     };
     await assert.rejects(
-      WhirlpoolIx.initializeConfigIx(ctx, infoWithDupeConfigKey).toTx().buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.initializeConfigIx(ctx.program, infoWithDupeConfigKey)
+      ).buildAndExecute(),
       /0x0/
     );
   });
@@ -59,8 +63,7 @@ describe("initialize_config", () => {
     const funderKeypair = anchor.web3.Keypair.generate();
     await systemTransferTx(provider, funderKeypair.publicKey, ONE_SOL).buildAndExecute();
     const { configInitInfo } = generateDefaultConfigParams(ctx, funderKeypair.publicKey);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo)
-      .toTx()
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo))
       .addSigner(funderKeypair)
       .buildAndExecute();
   });

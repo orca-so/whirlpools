@@ -1,8 +1,8 @@
-import { WhirlpoolContext } from "../context";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
+import { Instruction } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { BN } from "@project-serum/anchor";
-import { transformTx } from "../utils/instructions-util";
 
 /**
  * Parameters to set rewards emissions for a reward in a Whirlpool
@@ -37,9 +37,9 @@ export type SetRewardEmissionsParams = {
  * @returns - Instruction to perform the action.
  */
 export function setRewardEmissionsIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: SetRewardEmissionsParams
-): TransformableInstruction {
+): Instruction {
   const {
     rewardAuthority,
     whirlpool,
@@ -48,7 +48,7 @@ export function setRewardEmissionsIx(
     emissionsPerSecondX64,
   } = params;
 
-  const ix = context.program.instruction.setRewardEmissions(rewardIndex, emissionsPerSecondX64, {
+  const ix = program.instruction.setRewardEmissions(rewardIndex, emissionsPerSecondX64, {
     accounts: {
       rewardAuthority,
       whirlpool,
@@ -56,9 +56,9 @@ export function setRewardEmissionsIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

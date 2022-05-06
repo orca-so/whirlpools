@@ -9,6 +9,7 @@ import {
   TickArrayData,
   WhirlpoolIx,
 } from "../../src";
+import { toTx } from "../../src/utils/instructions-util";
 import { TickSpacing, systemTransferTx, ONE_SOL } from "../utils";
 import { initTestPool, initTickArray } from "../utils/init-utils";
 import { generateDefaultInitTickArrayParams } from "../utils/test-builders";
@@ -32,7 +33,7 @@ describe("initialize_tick_array", () => {
       startTick
     );
 
-    await WhirlpoolIx.initTickArrayIx(ctx, tickArrayInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, tickArrayInitInfo)).buildAndExecute();
     assertTickArrayInitialized(ctx, tickArrayInitInfo, poolInitInfo, startTick);
   });
 
@@ -48,7 +49,7 @@ describe("initialize_tick_array", () => {
       startTick
     );
 
-    await WhirlpoolIx.initTickArrayIx(ctx, tickArrayInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, tickArrayInitInfo)).buildAndExecute();
     assertTickArrayInitialized(ctx, tickArrayInitInfo, poolInitInfo, startTick);
   });
 
@@ -75,7 +76,7 @@ describe("initialize_tick_array", () => {
     );
 
     try {
-      await WhirlpoolIx.initTickArrayIx(ctx, params).toTx().buildAndExecute();
+      await toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, params)).buildAndExecute();
       assert.fail(
         "should fail if start-tick is not a multiple of tick spacing and num ticks in array"
       );

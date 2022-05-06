@@ -1,9 +1,10 @@
 import * as anchor from "@project-serum/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { SystemProgram, Keypair, PublicKey } from "@solana/web3.js";
-import { WhirlpoolContext } from "../context";
-import { transformTx } from "../utils/instructions-util";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
+
+import { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to initialize a rewards for a Whirlpool
@@ -39,13 +40,13 @@ export type InitializeRewardParams = {
  * @returns - Instruction to perform the action.
  */
 export function initializeRewardIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: InitializeRewardParams
-): TransformableInstruction {
+): Instruction {
   const { rewardAuthority, funder, whirlpool, rewardMint, rewardVaultKeypair, rewardIndex } =
     params;
 
-  const ix = context.program.instruction.initializeReward(rewardIndex, {
+  const ix = program.instruction.initializeReward(rewardIndex, {
     accounts: {
       rewardAuthority,
       funder,
@@ -58,9 +59,9 @@ export function initializeRewardIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [rewardVaultKeypair],
-  });
+  };
 }

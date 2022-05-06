@@ -2,6 +2,7 @@ import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
 import { WhirlpoolContext, AccountFetcher, WhirlpoolsConfigData, WhirlpoolIx } from "../../src";
 import { generateDefaultConfigParams } from "../utils/test-builders";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_collect_protocol_fee_authority", () => {
   const provider = anchor.Provider.local();
@@ -15,14 +16,16 @@ describe("set_collect_protocol_fee_authority", () => {
       configInitInfo,
       configKeypairs: { collectProtocolFeesAuthorityKeypair },
     } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
     const newAuthorityKeypair = anchor.web3.Keypair.generate();
-    await WhirlpoolIx.setCollectProtocolFeesAuthorityIx(ctx, {
-      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-      collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
-      newCollectProtocolFeesAuthority: newAuthorityKeypair.publicKey,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.setCollectProtocolFeesAuthorityIx(ctx.program, {
+        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+        collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+        newCollectProtocolFeesAuthority: newAuthorityKeypair.publicKey,
+      })
+    )
       .addSigner(collectProtocolFeesAuthorityKeypair)
       .buildAndExecute();
     const config = (await fetcher.getConfig(
@@ -36,32 +39,34 @@ describe("set_collect_protocol_fee_authority", () => {
       configInitInfo,
       configKeypairs: { collectProtocolFeesAuthorityKeypair },
     } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     await assert.rejects(
-      WhirlpoolIx.setCollectProtocolFeesAuthorityIx(ctx, {
-        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-        collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
-        newCollectProtocolFeesAuthority: provider.wallet.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.setCollectProtocolFeesAuthorityIx(ctx.program, {
+          whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          newCollectProtocolFeesAuthority: provider.wallet.publicKey,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
 
   it("fails if invalid collect_protocol_fee_authority provided", async () => {
     const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
     await assert.rejects(
-      WhirlpoolIx.setCollectProtocolFeesAuthorityIx(ctx, {
-        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-        collectProtocolFeesAuthority: provider.wallet.publicKey,
-        newCollectProtocolFeesAuthority: provider.wallet.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.setCollectProtocolFeesAuthorityIx(ctx.program, {
+          whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+          collectProtocolFeesAuthority: provider.wallet.publicKey,
+          newCollectProtocolFeesAuthority: provider.wallet.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7dc/ // An address constraint was violated
     );
   });

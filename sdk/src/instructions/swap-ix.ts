@@ -1,9 +1,9 @@
 import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
-import { WhirlpoolContext } from "../context";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
+import { Instruction } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { BN } from "@project-serum/anchor";
-import { transformTx } from "../utils/instructions-util";
 
 /**
  * Parameters and accounts to swap on a Whirlpool
@@ -80,7 +80,7 @@ export type SwapInput = {
  * @param params - SwapParams object
  * @returns - Instruction to perform the action.
  */
-export function swapIx(context: WhirlpoolContext, params: SwapParams): TransformableInstruction {
+export function swapIx(program: Program<Whirlpool>, params: SwapParams): Instruction {
   const {
     amount,
     otherAmountThreshold,
@@ -99,7 +99,7 @@ export function swapIx(context: WhirlpoolContext, params: SwapParams): Transform
     oracle,
   } = params;
 
-  const ix = context.program.instruction.swap(
+  const ix = program.instruction.swap(
     amount,
     otherAmountThreshold,
     sqrtPriceLimit,
@@ -122,9 +122,9 @@ export function swapIx(context: WhirlpoolContext, params: SwapParams): Transform
     }
   );
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

@@ -28,6 +28,7 @@ import {
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
 import { MathUtil } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("collect_reward", () => {
   const provider = anchor.Provider.local();
@@ -72,14 +73,15 @@ describe("collect_reward", () => {
       rewards,
     } = fixture.getInfos();
     await sleep(500);
-    await WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      position: positions[0].publicKey,
-      tickArrayLower: positions[0].tickArrayLower,
-      tickArrayUpper: positions[0].tickArrayUpper,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        position: positions[0].publicKey,
+        tickArrayLower: positions[0].tickArrayLower,
+        tickArrayUpper: positions[0].tickArrayUpper,
+      })
+    ).buildAndExecute();
 
     // Generate collect reward expectation
     const pool = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
@@ -114,17 +116,18 @@ describe("collect_reward", () => {
         provider.wallet.publicKey
       );
 
-      await WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        rewardOwnerAccount: rewardOwnerAccount,
-        rewardVault: rewards[i].rewardVaultKeypair.publicKey,
-        rewardIndex: i,
-      })
-        .toTx()
-        .buildAndExecute();
+      await toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          rewardOwnerAccount: rewardOwnerAccount,
+          rewardVault: rewards[i].rewardVaultKeypair.publicKey,
+          rewardIndex: i,
+        })
+      ).buildAndExecute();
 
       const collectedBalance = parseInt(await getTokenBalance(provider, rewardOwnerAccount));
       assert.ok(collectedBalance === expectation[i]?.toNumber());
@@ -164,28 +167,31 @@ describe("collect_reward", () => {
       provider.wallet.publicKey
     );
 
-    await WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      position: positions[0].publicKey,
-      tickArrayLower: positions[0].tickArrayLower,
-      tickArrayUpper: positions[0].tickArrayUpper,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        position: positions[0].publicKey,
+        tickArrayLower: positions[0].tickArrayLower,
+        tickArrayUpper: positions[0].tickArrayUpper,
+      })
+    ).buildAndExecute();
 
     const delegate = anchor.web3.Keypair.generate();
     await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 1);
 
-    await WhirlpoolIx.collectRewardIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: delegate.publicKey,
-      position: positions[0].publicKey,
-      positionTokenAccount: positions[0].tokenAccount,
-      rewardOwnerAccount,
-      rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-      rewardIndex: 0,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.collectRewardIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: delegate.publicKey,
+        position: positions[0].publicKey,
+        positionTokenAccount: positions[0].tokenAccount,
+        rewardOwnerAccount,
+        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+        rewardIndex: 0,
+      })
+    )
       .addSigner(delegate)
       .buildAndExecute();
   });
@@ -224,25 +230,28 @@ describe("collect_reward", () => {
     );
     await transfer(provider, positions[0].tokenAccount, delegatePositionAccount, 1);
 
-    await WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      position: positions[0].publicKey,
-      tickArrayLower: positions[0].tickArrayLower,
-      tickArrayUpper: positions[0].tickArrayUpper,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        position: positions[0].publicKey,
+        tickArrayLower: positions[0].tickArrayLower,
+        tickArrayUpper: positions[0].tickArrayUpper,
+      })
+    ).buildAndExecute();
 
-    await WhirlpoolIx.collectRewardIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: delegate.publicKey,
-      position: positions[0].publicKey,
-      positionTokenAccount: delegatePositionAccount,
-      rewardOwnerAccount,
-      rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-      rewardIndex: 0,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.collectRewardIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: delegate.publicKey,
+        position: positions[0].publicKey,
+        positionTokenAccount: delegatePositionAccount,
+        rewardOwnerAccount,
+        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+        rewardIndex: 0,
+      })
+    )
       .addSigner(delegate)
       .buildAndExecute();
   });
@@ -273,29 +282,31 @@ describe("collect_reward", () => {
       provider.wallet.publicKey
     );
 
-    await WhirlpoolIx.updateFeesAndRewardsIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      position: positions[0].publicKey,
-      tickArrayLower: positions[0].tickArrayLower,
-      tickArrayUpper: positions[0].tickArrayUpper,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        position: positions[0].publicKey,
+        tickArrayLower: positions[0].tickArrayLower,
+        tickArrayUpper: positions[0].tickArrayUpper,
+      })
+    ).buildAndExecute();
 
     const delegate = anchor.web3.Keypair.generate();
     await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 1);
 
-    await WhirlpoolIx.collectRewardIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: provider.wallet.publicKey,
-      position: positions[0].publicKey,
-      positionTokenAccount: positions[0].tokenAccount,
-      rewardOwnerAccount,
-      rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-      rewardIndex: 0,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.collectRewardIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: provider.wallet.publicKey,
+        position: positions[0].publicKey,
+        positionTokenAccount: positions[0].tokenAccount,
+        rewardOwnerAccount,
+        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+        rewardIndex: 0,
+      })
+    ).buildAndExecute();
   });
 
   it("fails when reward index references an uninitialized reward", async () => {
@@ -318,17 +329,18 @@ describe("collect_reward", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        rewardOwnerAccount,
-        rewardVault: anchor.web3.PublicKey.default,
-        rewardIndex: 0,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          rewardOwnerAccount,
+          rewardVault: anchor.web3.PublicKey.default,
+          rewardIndex: 0,
+        })
+      ).buildAndExecute(),
       /0xbbf/ // AccountNotInitialized
     );
   });
@@ -355,17 +367,18 @@ describe("collect_reward", () => {
       provider.wallet.publicKey
     );
     await assert.rejects(
-      WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        rewardOwnerAccount,
-        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-        rewardIndex: 0,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          rewardOwnerAccount,
+          rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+          rewardIndex: 0,
+        })
+      ).buildAndExecute(),
       /0x7d1/ // ConstraintHasOne
     );
   });
@@ -399,17 +412,18 @@ describe("collect_reward", () => {
     );
     await transfer(provider, positions[0].tokenAccount, otherPositionAcount, 1);
     await assert.rejects(
-      WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        rewardOwnerAccount,
-        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-        rewardIndex: 0,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          rewardOwnerAccount,
+          rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+          rewardIndex: 0,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -439,17 +453,18 @@ describe("collect_reward", () => {
 
     const fakePositionTokenAccount = await createAndMintToTokenAccount(provider, tokenMintA, 1);
     await assert.rejects(
-      WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: fakePositionTokenAccount,
-        rewardOwnerAccount,
-        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-        rewardIndex: 0,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: fakePositionTokenAccount,
+          rewardOwnerAccount,
+          rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+          rewardIndex: 0,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -477,16 +492,18 @@ describe("collect_reward", () => {
     );
     const delegate = anchor.web3.Keypair.generate();
     await assert.rejects(
-      WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        rewardOwnerAccount,
-        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-        rewardIndex: 0,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          rewardOwnerAccount,
+          rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+          rewardIndex: 0,
+        })
+      )
         .addSigner(delegate)
         .buildAndExecute(),
       /0x1783/ // MissingOrInvalidDelegate
@@ -517,16 +534,18 @@ describe("collect_reward", () => {
     const delegate = anchor.web3.Keypair.generate();
     await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 2);
     await assert.rejects(
-      WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        rewardOwnerAccount,
-        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-        rewardIndex: 0,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          rewardOwnerAccount,
+          rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+          rewardIndex: 0,
+        })
+      )
         .addSigner(delegate)
         .buildAndExecute(),
       /0x1784/ // InvalidPositionTokenAmount
@@ -557,17 +576,18 @@ describe("collect_reward", () => {
     const delegate = anchor.web3.Keypair.generate();
     await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 1);
     await assert.rejects(
-      WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        rewardOwnerAccount,
-        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-        rewardIndex: 0,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          rewardOwnerAccount,
+          rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+          rewardIndex: 0,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
@@ -594,17 +614,18 @@ describe("collect_reward", () => {
       provider.wallet.publicKey
     );
     await assert.rejects(
-      WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        rewardOwnerAccount,
-        rewardVault: rewardOwnerAccount,
-        rewardIndex: 0,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          rewardOwnerAccount,
+          rewardVault: rewardOwnerAccount,
+          rewardIndex: 0,
+        })
+      ).buildAndExecute(),
       /0x7dc/ // ConstraintAddress
     );
   });
@@ -631,17 +652,18 @@ describe("collect_reward", () => {
       provider.wallet.publicKey
     );
     await assert.rejects(
-      WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        rewardOwnerAccount,
-        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-        rewardIndex: 0,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          rewardOwnerAccount,
+          rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+          rewardIndex: 0,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -668,17 +690,18 @@ describe("collect_reward", () => {
       provider.wallet.publicKey
     );
     await assert.rejects(
-      WhirlpoolIx.collectRewardIx(ctx, {
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positions[0].publicKey,
-        positionTokenAccount: positions[0].tokenAccount,
-        rewardOwnerAccount,
-        rewardVault: rewards[0].rewardVaultKeypair.publicKey,
-        rewardIndex: 4,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectRewardIx(ctx.program, {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          rewardOwnerAccount,
+          rewardVault: rewards[0].rewardVaultKeypair.publicKey,
+          rewardIndex: 4,
+        })
+      ).buildAndExecute(),
       /Program failed to complete/ // index out of bounds
     );
   });

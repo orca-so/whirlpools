@@ -1,7 +1,8 @@
-import { WhirlpoolContext } from "../context";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
+import { Instruction } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { transformTx } from "../utils/instructions-util";
+
 import { PDAUtil } from "../utils/public";
 
 /**
@@ -33,14 +34,14 @@ export type SetDefaultFeeRateParams = {
  * @returns - Instruction to perform the action.
  */
 export function setDefaultFeeRateIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: SetDefaultFeeRateParams
-): TransformableInstruction {
+): Instruction {
   const { whirlpoolsConfig, feeAuthority, tickSpacing, defaultFeeRate } = params;
 
-  const feeTierPda = PDAUtil.getFeeTier(context.program.programId, whirlpoolsConfig, tickSpacing);
+  const feeTierPda = PDAUtil.getFeeTier(program.programId, whirlpoolsConfig, tickSpacing);
 
-  const ix = context.program.instruction.setDefaultFeeRate(defaultFeeRate, {
+  const ix = program.instruction.setDefaultFeeRate(defaultFeeRate, {
     accounts: {
       whirlpoolsConfig,
       feeTier: feeTierPda.publicKey,
@@ -48,9 +49,9 @@ export function setDefaultFeeRateIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

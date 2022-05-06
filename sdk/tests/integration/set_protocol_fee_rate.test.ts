@@ -4,6 +4,7 @@ import { WhirlpoolContext, AccountFetcher, WhirlpoolData, WhirlpoolIx } from "..
 import { TickSpacing } from "../utils";
 import { initTestPool } from "../utils/init-utils";
 import { generateDefaultConfigParams } from "../utils/test-builders";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_protocol_fee_rate", () => {
   const provider = anchor.Provider.local();
@@ -51,13 +52,15 @@ describe("set_protocol_fee_rate", () => {
 
     const newProtocolFeeRate = 3_000;
     await assert.rejects(
-      WhirlpoolIx.setProtocolFeeRateIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKey,
-        whirlpool: whirlpoolKey,
-        feeAuthority: feeAuthorityKeypair.publicKey,
-        protocolFeeRate: newProtocolFeeRate,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.setProtocolFeeRateIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKey,
+          whirlpool: whirlpoolKey,
+          feeAuthority: feeAuthorityKeypair.publicKey,
+          protocolFeeRate: newProtocolFeeRate,
+        })
+      )
         .addSigner(configKeypairs.feeAuthorityKeypair)
         .buildAndExecute(),
       /0x178d/ // ProtocolFeeRateMaxExceeded
@@ -75,14 +78,15 @@ describe("set_protocol_fee_rate", () => {
 
     const newProtocolFeeRate = 1000;
     await assert.rejects(
-      WhirlpoolIx.setProtocolFeeRateIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKey,
-        whirlpool: whirlpoolKey,
-        feeAuthority: feeAuthorityKeypair.publicKey,
-        protocolFeeRate: newProtocolFeeRate,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.setProtocolFeeRateIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKey,
+          whirlpool: whirlpoolKey,
+          feeAuthority: feeAuthorityKeypair.publicKey,
+          protocolFeeRate: newProtocolFeeRate,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
@@ -93,7 +97,10 @@ describe("set_protocol_fee_rate", () => {
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
     const { configInitInfo: otherConfigInitInfo } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, otherConfigInitInfo).toTx().buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, otherConfigInitInfo)
+    ).buildAndExecute();
 
     const newProtocolFeeRate = 1000;
     await assert.rejects(

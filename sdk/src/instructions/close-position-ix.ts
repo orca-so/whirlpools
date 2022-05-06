@@ -1,8 +1,8 @@
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { WhirlpoolContext } from "../context";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Instruction } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { transformTx } from "../utils/instructions-util";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to close a position in a Whirlpool.
@@ -31,9 +31,9 @@ export type ClosePositionParams = {
  * @returns - Instruction to perform the action.
  */
 export function closePositionIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: ClosePositionParams
-): TransformableInstruction {
+): Instruction {
   const {
     positionAuthority,
     receiver: receiver,
@@ -42,7 +42,7 @@ export function closePositionIx(
     positionTokenAccount,
   } = params;
 
-  const ix = context.program.instruction.closePosition({
+  const ix = program.instruction.closePosition({
     accounts: {
       positionAuthority,
       receiver,
@@ -53,9 +53,9 @@ export function closePositionIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

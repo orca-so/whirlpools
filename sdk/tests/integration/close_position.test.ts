@@ -13,6 +13,7 @@ import {
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { WhirlpoolIx } from "../../src";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("close_position", () => {
   const provider = anchor.Provider.local();
@@ -26,15 +27,16 @@ describe("close_position", () => {
     const { params } = await openPosition(ctx, poolInitInfo.whirlpoolPda.publicKey, 0, 128);
     const receiverKeypair = anchor.web3.Keypair.generate();
 
-    await WhirlpoolIx.closePositionIx(ctx, {
-      positionAuthority: provider.wallet.publicKey,
-      receiver: receiverKeypair.publicKey,
-      position: params.positionPda.publicKey,
-      positionMint: params.positionMintAddress,
-      positionTokenAccount: params.positionTokenAccount,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.closePositionIx(ctx.program, {
+        positionAuthority: provider.wallet.publicKey,
+        receiver: receiverKeypair.publicKey,
+        position: params.positionPda.publicKey,
+        positionMint: params.positionMintAddress,
+        positionTokenAccount: params.positionTokenAccount,
+      })
+    ).buildAndExecute();
 
     const supplyResponse = await provider.connection.getTokenSupply(params.positionMintAddress);
     assert.equal(supplyResponse.value.uiAmount, 0);
@@ -70,14 +72,16 @@ describe("close_position", () => {
       owner
     );
 
-    await WhirlpoolIx.closePositionIx(ctx, {
-      positionAuthority: delegate.publicKey,
-      receiver: owner.publicKey,
-      position: params.positionPda.publicKey,
-      positionMint: params.positionMintAddress,
-      positionTokenAccount: params.positionTokenAccount,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.closePositionIx(ctx.program, {
+        positionAuthority: delegate.publicKey,
+        receiver: owner.publicKey,
+        position: params.positionPda.publicKey,
+        positionMint: params.positionMintAddress,
+        positionTokenAccount: params.positionTokenAccount,
+      })
+    )
       .addSigner(delegate)
       .buildAndExecute();
   });
@@ -98,14 +102,16 @@ describe("close_position", () => {
 
     await approveToken(ctx.provider, params.positionTokenAccount, delegate.publicKey, 1, owner);
 
-    await WhirlpoolIx.closePositionIx(ctx, {
-      positionAuthority: owner.publicKey,
-      receiver: owner.publicKey,
-      position: params.positionPda.publicKey,
-      positionMint: params.positionMintAddress,
-      positionTokenAccount: params.positionTokenAccount,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.closePositionIx(ctx.program, {
+        positionAuthority: owner.publicKey,
+        receiver: owner.publicKey,
+        position: params.positionPda.publicKey,
+        positionMint: params.positionMintAddress,
+        positionTokenAccount: params.positionTokenAccount,
+      })
+    )
       .addSigner(owner)
       .buildAndExecute();
   });
@@ -126,14 +132,16 @@ describe("close_position", () => {
 
     await transfer(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
 
-    await WhirlpoolIx.closePositionIx(ctx, {
-      positionAuthority: newOwner.publicKey,
-      receiver: newOwner.publicKey,
-      position: position.publicKey,
-      positionMint: position.mintKeypair.publicKey,
-      positionTokenAccount: newOwnerPositionTokenAccount,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.closePositionIx(ctx.program, {
+        positionAuthority: newOwner.publicKey,
+        receiver: newOwner.publicKey,
+        position: position.publicKey,
+        positionMint: position.mintKeypair.publicKey,
+        positionTokenAccount: newOwnerPositionTokenAccount,
+      })
+    )
       .addSigner(newOwner)
       .buildAndExecute();
   });
@@ -144,15 +152,16 @@ describe("close_position", () => {
     const receiverKeypair = anchor.web3.Keypair.generate();
 
     await assert.rejects(
-      WhirlpoolIx.closePositionIx(ctx, {
-        positionAuthority: provider.wallet.publicKey,
-        receiver: receiverKeypair.publicKey,
-        position: positionInfo.positionPda.publicKey,
-        positionMint: positionInfo.positionMintAddress,
-        positionTokenAccount: positionInfo.positionTokenAccount,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.closePositionIx(ctx.program, {
+          positionAuthority: provider.wallet.publicKey,
+          receiver: receiverKeypair.publicKey,
+          position: positionInfo.positionPda.publicKey,
+          positionMint: positionInfo.positionMintAddress,
+          positionTokenAccount: positionInfo.positionTokenAccount,
+        })
+      ).buildAndExecute(),
       /0x1775/ // ClosePositionNotEmpty
     );
   });
@@ -171,15 +180,16 @@ describe("close_position", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.closePositionIx(ctx, {
-        positionAuthority: owner.publicKey,
-        receiver: owner.publicKey,
-        position: params.positionPda.publicKey,
-        positionMint: params.positionMintAddress,
-        positionTokenAccount: params.positionTokenAccount,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.closePositionIx(ctx.program, {
+          positionAuthority: owner.publicKey,
+          receiver: owner.publicKey,
+          position: params.positionPda.publicKey,
+          positionMint: params.positionMintAddress,
+          positionTokenAccount: params.positionTokenAccount,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
@@ -208,15 +218,16 @@ describe("close_position", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.closePositionIx(ctx, {
-        positionAuthority: delegate.publicKey,
-        receiver: owner.publicKey,
-        position: params.positionPda.publicKey,
-        positionMint: params.positionMintAddress,
-        positionTokenAccount: params.positionTokenAccount,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.closePositionIx(ctx.program, {
+          positionAuthority: delegate.publicKey,
+          receiver: owner.publicKey,
+          position: params.positionPda.publicKey,
+          positionMint: params.positionMintAddress,
+          positionTokenAccount: params.positionTokenAccount,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
@@ -236,14 +247,16 @@ describe("close_position", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.closePositionIx(ctx, {
-        positionAuthority: fakeOwner.publicKey,
-        receiver: owner.publicKey,
-        position: params.positionPda.publicKey,
-        positionMint: params.positionMintAddress,
-        positionTokenAccount: params.positionTokenAccount,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.closePositionIx(ctx.program, {
+          positionAuthority: fakeOwner.publicKey,
+          receiver: owner.publicKey,
+          position: params.positionPda.publicKey,
+          positionMint: params.positionMintAddress,
+          positionTokenAccount: params.positionTokenAccount,
+        })
+      )
         .addSigner(fakeOwner)
         .buildAndExecute(),
       /0x1783/ // MissingOrInvalidDelegate
@@ -264,15 +277,16 @@ describe("close_position", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.closePositionIx(ctx, {
-        positionAuthority: provider.wallet.publicKey,
-        receiver: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionMint: position.mintKeypair.publicKey,
-        positionTokenAccount: fakePositionTokenAccount,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.closePositionIx(ctx.program, {
+          positionAuthority: provider.wallet.publicKey,
+          receiver: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionMint: position.mintKeypair.publicKey,
+          positionTokenAccount: fakePositionTokenAccount,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -301,14 +315,16 @@ describe("close_position", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.closePositionIx(ctx, {
-        positionAuthority: delegate.publicKey,
-        receiver: owner.publicKey,
-        position: params.positionPda.publicKey,
-        positionMint: params.positionMintAddress,
-        positionTokenAccount: params.positionTokenAccount,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.closePositionIx(ctx.program, {
+          positionAuthority: delegate.publicKey,
+          receiver: owner.publicKey,
+          position: params.positionPda.publicKey,
+          positionMint: params.positionMintAddress,
+          positionTokenAccount: params.positionTokenAccount,
+        })
+      )
         .addSigner(delegate)
         .buildAndExecute(),
       /0x1784/ // InvalidPositionTokenAmount
@@ -340,14 +356,16 @@ describe("close_position", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.closePositionIx(ctx, {
-        positionAuthority: fakeDelegate.publicKey,
-        receiver: owner.publicKey,
-        position: params.positionPda.publicKey,
-        positionMint: params.positionMintAddress,
-        positionTokenAccount: params.positionTokenAccount,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.closePositionIx(ctx.program, {
+          positionAuthority: fakeDelegate.publicKey,
+          receiver: owner.publicKey,
+          position: params.positionPda.publicKey,
+          positionMint: params.positionMintAddress,
+          positionTokenAccount: params.positionTokenAccount,
+        })
+      )
         .addSigner(fakeDelegate)
         .buildAndExecute(),
       /0x1783/ // MissingOrInvalidDelegate
@@ -368,15 +386,16 @@ describe("close_position", () => {
     const fakePositionTokenAccount = await createAndMintToTokenAccount(provider, tokenMintA, 1);
 
     await assert.rejects(
-      WhirlpoolIx.closePositionIx(ctx, {
-        positionAuthority: provider.wallet.publicKey,
-        receiver: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionMint: position.mintKeypair.publicKey,
-        positionTokenAccount: fakePositionTokenAccount,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.closePositionIx(ctx.program, {
+          positionAuthority: provider.wallet.publicKey,
+          receiver: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionMint: position.mintKeypair.publicKey,
+          positionTokenAccount: fakePositionTokenAccount,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -393,15 +412,16 @@ describe("close_position", () => {
     const position = positions[0];
 
     await assert.rejects(
-      WhirlpoolIx.closePositionIx(ctx, {
-        positionAuthority: provider.wallet.publicKey,
-        receiver: provider.wallet.publicKey,
-        position: position.publicKey,
-        positionMint: tokenMintA,
-        positionTokenAccount: position.tokenAccount,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.closePositionIx(ctx.program, {
+          positionAuthority: provider.wallet.publicKey,
+          receiver: provider.wallet.publicKey,
+          position: position.publicKey,
+          positionMint: tokenMintA,
+          positionTokenAccount: position.tokenAccount,
+        })
+      ).buildAndExecute(),
       /0x7dc/ // ConstraintAddress
     );
   });

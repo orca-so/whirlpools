@@ -29,7 +29,7 @@ import {
 } from "../utils";
 import { initTestPool, openPositionWithMetadata } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
-import { openPositionAccounts } from "../../src/utils/instructions-util";
+import { openPositionAccounts, toTx } from "../../src/utils/instructions-util";
 import { PDA, TransactionBuilder } from "@orca-so/common-sdk";
 
 describe("open_position_with_metadata", () => {
@@ -155,11 +155,13 @@ describe("open_position_with_metadata", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.openPositionWithMetadataIx(ctx, {
-        ...defaultParams,
-        positionTokenAccount: positionTokenAccountAddress,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.openPositionWithMetadataIx(ctx.program, {
+          ...defaultParams,
+          positionTokenAccount: positionTokenAccountAddress,
+        })
+      )
         .addSigner(defaultMint)
         .buildAndExecute(),
       /An account required by the instruction is missing/
@@ -230,17 +232,19 @@ describe("open_position_with_metadata", () => {
     await provider.send(tx, [positionMintKeypair], { commitment: "confirmed" });
 
     await assert.rejects(
-      WhirlpoolIx.openPositionWithMetadataIx(ctx, {
-        ...defaultParams,
-        positionPda,
-        metadataPda,
-        positionMintAddress: positionMintKeypair.publicKey,
-        positionTokenAccount: positionTokenAccountAddress,
-        whirlpool: whirlpoolPda.publicKey,
-        tickLowerIndex,
-        tickUpperIndex,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.openPositionWithMetadataIx(ctx.program, {
+          ...defaultParams,
+          positionPda,
+          metadataPda,
+          positionMintAddress: positionMintKeypair.publicKey,
+          positionTokenAccount: positionTokenAccountAddress,
+          whirlpool: whirlpoolPda.publicKey,
+          tickLowerIndex,
+          tickUpperIndex,
+        })
+      )
         .addSigner(positionMintKeypair)
         .buildAndExecute(),
       /0x0/
@@ -294,8 +298,7 @@ describe("open_position_with_metadata", () => {
       };
 
       await assert.rejects(
-        WhirlpoolIx.openPositionWithMetadataIx(ctx, invalidParams)
-          .toTx()
+        toTx(ctx, WhirlpoolIx.openPositionWithMetadataIx(ctx.program, invalidParams))
           .addSigner(defaultMint)
           .buildAndExecute(),
         // Invalid Metadata Key

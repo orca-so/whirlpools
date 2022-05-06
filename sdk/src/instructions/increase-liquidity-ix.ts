@@ -1,8 +1,9 @@
-import { WhirlpoolContext } from "../context";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { transformTx } from "../utils/instructions-util";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+
+import { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to increase liquidity for a position.
@@ -66,9 +67,9 @@ export type IncreaseLiquidityInput = {
  * @returns - Instruction to perform the action.
  */
 export function increaseLiquidityIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: IncreaseLiquidityParams
-): TransformableInstruction {
+): Instruction {
   const {
     liquidityAmount,
     tokenMaxA,
@@ -85,7 +86,7 @@ export function increaseLiquidityIx(
     tickArrayUpper,
   } = params;
 
-  const ix = context.program.instruction.increaseLiquidity(liquidityAmount, tokenMaxA, tokenMaxB, {
+  const ix = program.instruction.increaseLiquidity(liquidityAmount, tokenMaxA, tokenMaxB, {
     accounts: {
       whirlpool,
       tokenProgram: TOKEN_PROGRAM_ID,
@@ -101,9 +102,9 @@ export function increaseLiquidityIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

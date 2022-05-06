@@ -12,6 +12,7 @@ import { Position } from "../whirlpool-client";
 import { PublicKey, Signer } from "@solana/web3.js";
 import { AccountFetcher } from "../network/public";
 import { PDAUtil, TickUtil } from "../utils/public";
+import { toTx } from "../utils/instructions-util";
 
 export class PositionImpl implements Position {
   private data: PositionData;
@@ -50,27 +51,30 @@ export class PositionImpl implements Position {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
 
-    return increaseLiquidityIx(this.ctx, {
-      ...liquidityInput,
-      whirlpool: this.data.whirlpool,
-      position: this.address,
-      positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
-      tokenOwnerAccountA: await deriveATA(sourceWalletKey, whirlpool.tokenMintA),
-      tokenOwnerAccountB: await deriveATA(sourceWalletKey, whirlpool.tokenMintB),
-      tokenVaultA: whirlpool.tokenVaultA,
-      tokenVaultB: whirlpool.tokenVaultB,
-      tickArrayLower: PDAUtil.getTickArray(
-        this.ctx.program.programId,
-        this.data.whirlpool,
-        TickUtil.getStartTickIndex(this.data.tickLowerIndex, whirlpool.tickSpacing)
-      ).publicKey,
-      tickArrayUpper: PDAUtil.getTickArray(
-        this.ctx.program.programId,
-        this.data.whirlpool,
-        TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
-      ).publicKey,
-      positionAuthority: positionWalletKey,
-    }).toTx();
+    return toTx(
+      this.ctx,
+      increaseLiquidityIx(this.ctx.program, {
+        ...liquidityInput,
+        whirlpool: this.data.whirlpool,
+        position: this.address,
+        positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
+        tokenOwnerAccountA: await deriveATA(sourceWalletKey, whirlpool.tokenMintA),
+        tokenOwnerAccountB: await deriveATA(sourceWalletKey, whirlpool.tokenMintB),
+        tokenVaultA: whirlpool.tokenVaultA,
+        tokenVaultB: whirlpool.tokenVaultB,
+        tickArrayLower: PDAUtil.getTickArray(
+          this.ctx.program.programId,
+          this.data.whirlpool,
+          TickUtil.getStartTickIndex(this.data.tickLowerIndex, whirlpool.tickSpacing)
+        ).publicKey,
+        tickArrayUpper: PDAUtil.getTickArray(
+          this.ctx.program.programId,
+          this.data.whirlpool,
+          TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
+        ).publicKey,
+        positionAuthority: positionWalletKey,
+      })
+    );
   }
 
   async decreaseLiquidity(
@@ -90,27 +94,30 @@ export class PositionImpl implements Position {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
 
-    return decreaseLiquidityIx(this.ctx, {
-      ...liquidityInput,
-      whirlpool: this.data.whirlpool,
-      position: this.address,
-      positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
-      tokenOwnerAccountA: await deriveATA(sourceWalletKey, whirlpool.tokenMintA),
-      tokenOwnerAccountB: await deriveATA(sourceWalletKey, whirlpool.tokenMintB),
-      tokenVaultA: whirlpool.tokenVaultA,
-      tokenVaultB: whirlpool.tokenVaultB,
-      tickArrayLower: PDAUtil.getTickArray(
-        this.ctx.program.programId,
-        this.data.whirlpool,
-        TickUtil.getStartTickIndex(this.data.tickLowerIndex, whirlpool.tickSpacing)
-      ).publicKey,
-      tickArrayUpper: PDAUtil.getTickArray(
-        this.ctx.program.programId,
-        this.data.whirlpool,
-        TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
-      ).publicKey,
-      positionAuthority: positionWalletKey,
-    }).toTx();
+    return toTx(
+      this.ctx,
+      decreaseLiquidityIx(this.ctx.program, {
+        ...liquidityInput,
+        whirlpool: this.data.whirlpool,
+        position: this.address,
+        positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
+        tokenOwnerAccountA: await deriveATA(sourceWalletKey, whirlpool.tokenMintA),
+        tokenOwnerAccountB: await deriveATA(sourceWalletKey, whirlpool.tokenMintB),
+        tokenVaultA: whirlpool.tokenVaultA,
+        tokenVaultB: whirlpool.tokenVaultB,
+        tickArrayLower: PDAUtil.getTickArray(
+          this.ctx.program.programId,
+          this.data.whirlpool,
+          TickUtil.getStartTickIndex(this.data.tickLowerIndex, whirlpool.tickSpacing)
+        ).publicKey,
+        tickArrayUpper: PDAUtil.getTickArray(
+          this.ctx.program.programId,
+          this.data.whirlpool,
+          TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
+        ).publicKey,
+        positionAuthority: positionWalletKey,
+      })
+    );
   }
 
   private async refresh() {

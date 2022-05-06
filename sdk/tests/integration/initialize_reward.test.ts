@@ -3,6 +3,7 @@ import * as anchor from "@project-serum/anchor";
 import { WhirlpoolContext, AccountFetcher, WhirlpoolData, WhirlpoolIx } from "../../src";
 import { TickSpacing, systemTransferTx, ONE_SOL, createMint } from "../utils";
 import { initTestPool, initializeReward } from "../utils/init-utils";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("initialize_reward", () => {
   const provider = anchor.Provider.local();
@@ -103,16 +104,17 @@ describe("initialize_reward", () => {
     const { poolInitInfo, configKeypairs } = await initTestPool(ctx, TickSpacing.Standard);
 
     await assert.rejects(
-      WhirlpoolIx.initializeRewardIx(ctx, {
-        rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
-        funder: provider.wallet.publicKey,
-        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-        rewardMint: await createMint(provider),
-        rewardVaultKeypair: anchor.web3.Keypair.generate(),
-        rewardIndex: 0,
-      })
-        .toTx()
-        .buildAndExecute()
+      toTx(
+        ctx,
+        WhirlpoolIx.initializeRewardIx(ctx.program, {
+          rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+          funder: provider.wallet.publicKey,
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          rewardMint: await createMint(provider),
+          rewardVaultKeypair: anchor.web3.Keypair.generate(),
+          rewardIndex: 0,
+        })
+      ).buildAndExecute()
     );
   });
 });

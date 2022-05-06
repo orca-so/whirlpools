@@ -5,6 +5,7 @@ import { initTestPool, openPosition } from "../../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 import { TickSpacing } from "../../utils";
 import { AccountFetcher, WhirlpoolIx } from "../../../src";
+import { toTx } from "../../../src/utils/instructions-util";
 
 describe("position management tests", () => {
   const provider = anchor.Provider.local();
@@ -28,15 +29,17 @@ describe("position management tests", () => {
       ctx.wallet.publicKey
     );
 
-    await WhirlpoolIx.closePositionIx(ctx, {
-      positionAuthority: provider.wallet.publicKey,
-      receiver: receiverKeypair.publicKey,
-      position: params.positionPda.publicKey,
-      positionMint: params.positionMintAddress,
-      positionTokenAccount: params.positionTokenAccount,
-    })
-      .toTx()
-      .addInstruction(WhirlpoolIx.openPositionIx(ctx, newParams))
+    await toTx(
+      ctx,
+      WhirlpoolIx.closePositionIx(ctx.program, {
+        positionAuthority: provider.wallet.publicKey,
+        receiver: receiverKeypair.publicKey,
+        position: params.positionPda.publicKey,
+        positionMint: params.positionMintAddress,
+        positionTokenAccount: params.positionTokenAccount,
+      })
+    )
+      .addInstruction(WhirlpoolIx.openPositionIx(ctx.program, newParams))
       .addSigner(mint)
       .buildAndExecute();
 

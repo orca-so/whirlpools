@@ -1,5 +1,6 @@
 import { PDA } from "@orca-so/common-sdk";
-import { WhirlpoolContext } from "./context";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
 
 /**
@@ -12,12 +13,12 @@ export class WhirlpoolIx {
    * Initializes a WhirlpoolsConfig account that hosts info & authorities
    * required to govern a set of Whirlpools.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - InitConfigParams object
    * @returns - Instruction to perform the action.
    */
-  public static initializeConfigIx(context: WhirlpoolContext, params: ix.InitConfigParams) {
-    return ix.initializeConfigIx(context, params);
+  public static initializeConfigIx(program: Program<Whirlpool>, params: ix.InitConfigParams) {
+    return ix.initializeConfigIx(program, params);
   }
 
   /**
@@ -26,12 +27,12 @@ export class WhirlpoolIx {
    *  Special Errors
    * `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - InitFeeTierParams object
    * @returns - Instruction to perform the action.
    */
-  public static initializeFeeTierIx(context: WhirlpoolContext, params: ix.InitFeeTierParams) {
-    return ix.initializeFeeTierIx(context, params);
+  public static initializeFeeTierIx(program: Program<Whirlpool>, params: ix.InitFeeTierParams) {
+    return ix.initializeFeeTierIx(program, params);
   }
 
   /**
@@ -41,12 +42,12 @@ export class WhirlpoolIx {
    * `InvalidTokenMintOrder` - The order of mints have to be ordered by
    * `SqrtPriceOutOfBounds` - provided initial_sqrt_price is not between 2^-64 to 2^64
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - InitPoolParams object
    * @returns - Instruction to perform the action.
    */
-  public static initializePoolIx(context: WhirlpoolContext, params: ix.InitPoolParams) {
-    return ix.initializePoolIx(context, params);
+  public static initializePoolIx(program: Program<Whirlpool>, params: ix.InitPoolParams) {
+    return ix.initializePoolIx(program, params);
   }
 
   /**
@@ -57,12 +58,12 @@ export class WhirlpoolIx {
    * - `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized index in this pool,
    *                          or exceeds NUM_REWARDS, or all reward slots for this pool has been initialized.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - InitializeRewardParams object
    * @returns - Instruction to perform the action.
    */
-  public static initializeRewardIx(context: WhirlpoolContext, params: ix.InitializeRewardParams) {
-    return ix.initializeRewardIx(context, params);
+  public static initializeRewardIx(program: Program<Whirlpool>, params: ix.InitializeRewardParams) {
+    return ix.initializeRewardIx(program, params);
   }
 
   /**
@@ -71,12 +72,12 @@ export class WhirlpoolIx {
    * #### Special Errors
    *  `InvalidStartTick` - if the provided start tick is out of bounds or is not a multiple of TICK_ARRAY_SIZE * tick spacing.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - InitTickArrayParams object
    * @returns - Instruction to perform the action.
    */
-  public static initTickArrayIx(context: WhirlpoolContext, params: ix.InitTickArrayParams) {
-    return ix.initTickArrayIx(context, params);
+  public static initTickArrayIx(program: Program<Whirlpool>, params: ix.InitTickArrayParams) {
+    return ix.initTickArrayIx(program, params);
   }
 
   /**
@@ -87,12 +88,12 @@ export class WhirlpoolIx {
    * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
    *
 
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - OpenPositionParams object
    * @returns - Instruction to perform the action.
    */
-  public static openPositionIx(context: WhirlpoolContext, params: ix.OpenPositionParams) {
-    return ix.openPositionIx(context, params);
+  public static openPositionIx(program: Program<Whirlpool>, params: ix.OpenPositionParams) {
+    return ix.openPositionIx(program, params);
   }
 
   /**
@@ -104,15 +105,15 @@ export class WhirlpoolIx {
    * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
    *
 
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - OpenPositionParams object and a derived PDA that hosts the position's metadata.
    * @returns - Instruction to perform the action.
    */
   public static openPositionWithMetadataIx(
-    context: WhirlpoolContext,
+    program: Program<Whirlpool>,
     params: ix.OpenPositionParams & { metadataPda: PDA }
   ) {
-    return ix.openPositionWithMetadataIx(context, params);
+    return ix.openPositionWithMetadataIx(program, params);
   }
 
   /**
@@ -123,12 +124,15 @@ export class WhirlpoolIx {
    * `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
    * `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - IncreaseLiquidityParams object
    * @returns - Instruction to perform the action.
    */
-  public static increaseLiquidityIx(context: WhirlpoolContext, params: ix.IncreaseLiquidityParams) {
-    return ix.increaseLiquidityIx(context, params);
+  public static increaseLiquidityIx(
+    program: Program<Whirlpool>,
+    params: ix.IncreaseLiquidityParams
+  ) {
+    return ix.increaseLiquidityIx(program, params);
   }
 
   /**
@@ -139,24 +143,27 @@ export class WhirlpoolIx {
    * - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
    * - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - DecreaseLiquidityParams object
    * @returns - Instruction to perform the action.
    */
-  public static decreaseLiquidityIx(context: WhirlpoolContext, params: ix.DecreaseLiquidityParams) {
-    return ix.decreaseLiquidityIx(context, params);
+  public static decreaseLiquidityIx(
+    program: Program<Whirlpool>,
+    params: ix.DecreaseLiquidityParams
+  ) {
+    return ix.decreaseLiquidityIx(program, params);
   }
 
   /**
    * Close a position in a Whirlpool. Burns the position token in the owner's wallet.
    *
 
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - ClosePositionParams object
    * @returns - Instruction to perform the action.
    */
-  public static closePositionIx(context: WhirlpoolContext, params: ix.ClosePositionParams) {
-    return ix.closePositionIx(context, params);
+  public static closePositionIx(program: Program<Whirlpool>, params: ix.ClosePositionParams) {
+    return ix.closePositionIx(program, params);
   }
 
   /**
@@ -173,12 +180,12 @@ export class WhirlpoolIx {
    * - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
    *
    * ### Parameters
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SwapParams object
    * @returns - Instruction to perform the action.
    */
-  public static swapIx(context: WhirlpoolContext, params: ix.SwapParams) {
-    return ix.swapIx(context, params);
+  public static swapIx(program: Program<Whirlpool>, params: ix.SwapParams) {
+    return ix.swapIx(program, params);
   }
 
   /**
@@ -188,41 +195,41 @@ export class WhirlpoolIx {
    * `TickNotFound` - Provided tick array account does not contain the tick for this position.
    * `LiquidityZero` - Position has zero liquidity and therefore already has the most updated fees and reward values.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - UpdateFeesAndRewardsParams object
    * @returns - Instruction to perform the action.
    */
   public static updateFeesAndRewardsIx(
-    context: WhirlpoolContext,
+    program: Program<Whirlpool>,
     params: ix.UpdateFeesAndRewardsParams
   ) {
-    return ix.updateFeesAndRewardsIx(context, params);
+    return ix.updateFeesAndRewardsIx(program, params);
   }
 
   /**
    * Collect fees accrued for this position.
    * Call updateFeesAndRewards before this to update the position to the newest accrued values.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - CollectFeesParams object
    * @returns - Instruction to perform the action.
    */
-  public static collectFeesIx(context: WhirlpoolContext, params: ix.CollectFeesParams) {
-    return ix.collectFeesIx(context, params);
+  public static collectFeesIx(program: Program<Whirlpool>, params: ix.CollectFeesParams) {
+    return ix.collectFeesIx(program, params);
   }
 
   /**
    * Collect protocol fees accrued in this Whirlpool.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - CollectProtocolFeesParams object
    * @returns - Instruction to perform the action.
    */
   public static collectProtocolFeesIx(
-    context: WhirlpoolContext,
+    program: Program<Whirlpool>,
     params: ix.CollectProtocolFeesParams
   ) {
-    return ix.collectProtocolFeesIx(context, params);
+    return ix.collectProtocolFeesIx(program, params);
   }
 
   /**
@@ -230,27 +237,27 @@ export class WhirlpoolIx {
    * Call updateFeesAndRewards before this to update the position to the newest accrued values.
    *
 
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - CollectRewardParams object
    * @returns - Instruction to perform the action.
    */
-  public static collectRewardIx(context: WhirlpoolContext, params: ix.CollectRewardParams) {
-    return ix.collectRewardIx(context, params);
+  public static collectRewardIx(program: Program<Whirlpool>, params: ix.CollectRewardParams) {
+    return ix.collectRewardIx(program, params);
   }
 
   /**
    * Sets the fee authority to collect protocol fees for a WhirlpoolsConfig.
    * Only the current collect protocol fee authority has permission to invoke this instruction.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SetCollectProtocolFeesAuthorityParams object
    * @returns - Instruction to perform the action.
    */
   public static setCollectProtocolFeesAuthorityIx(
-    context: WhirlpoolContext,
+    program: Program<Whirlpool>,
     params: ix.SetCollectProtocolFeesAuthorityParams
   ) {
-    return ix.setCollectProtocolFeesAuthorityIx(context, params);
+    return ix.setCollectProtocolFeesAuthorityIx(program, params);
   }
 
   /**
@@ -260,12 +267,15 @@ export class WhirlpoolIx {
    * #### Special Errors
    * - `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SetDefaultFeeRateParams object
    * @returns - Instruction to perform the action.
    */
-  public static setDefaultFeeRateIx(context: WhirlpoolContext, params: ix.SetDefaultFeeRateParams) {
-    return ix.setDefaultFeeRateIx(context, params);
+  public static setDefaultFeeRateIx(
+    program: Program<Whirlpool>,
+    params: ix.SetDefaultFeeRateParams
+  ) {
+    return ix.setDefaultFeeRateIx(program, params);
   }
 
   /**
@@ -275,15 +285,15 @@ export class WhirlpoolIx {
    * #### Special Errors
    * - `ProtocolFeeRateMaxExceeded` - If the provided default_protocol_fee_rate exceeds MAX_PROTOCOL_FEE_RATE.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SetDefaultFeeRateParams object
    * @returns - Instruction to perform the action.
    */
   public static setDefaultProtocolFeeRateIx(
-    context: WhirlpoolContext,
+    program: Program<Whirlpool>,
     params: ix.SetDefaultProtocolFeeRateParams
   ) {
-    return ix.setDefaultProtocolFeeRateIx(context, params);
+    return ix.setDefaultProtocolFeeRateIx(program, params);
   }
 
   /**
@@ -291,12 +301,12 @@ export class WhirlpoolIx {
    * The fee authority can set the fee & protocol fee rate for individual pools or set the default fee rate for newly minted pools.
    * Only the current fee authority has permission to invoke this instruction.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SetFeeAuthorityParams object
    * @returns - Instruction to perform the action.
    */
-  public static setFeeAuthorityIx(context: WhirlpoolContext, params: ix.SetFeeAuthorityParams) {
-    return ix.setFeeAuthorityIx(context, params);
+  public static setFeeAuthorityIx(program: Program<Whirlpool>, params: ix.SetFeeAuthorityParams) {
+    return ix.setFeeAuthorityIx(program, params);
   }
 
   /**
@@ -306,12 +316,12 @@ export class WhirlpoolIx {
    * #### Special Errors
    * - `FeeRateMaxExceeded` - If the provided fee_rate exceeds MAX_FEE_RATE.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SetFeeRateParams object
    * @returns - Instruction to perform the action.
    */
-  public static setFeeRateIx(context: WhirlpoolContext, params: ix.SetFeeRateParams) {
-    return ix.setFeeRateIx(context, params);
+  public static setFeeRateIx(program: Program<Whirlpool>, params: ix.SetFeeRateParams) {
+    return ix.setFeeRateIx(program, params);
   }
 
   /**
@@ -321,15 +331,15 @@ export class WhirlpoolIx {
    * #### Special Errors
    * - `ProtocolFeeRateMaxExceeded` - If the provided default_protocol_fee_rate exceeds MAX_PROTOCOL_FEE_RATE.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SetFeeRateParams object
    * @returns - Instruction to perform the action.
    */
   public static setProtocolFeeRateIx(
-    context: WhirlpoolContext,
+    program: Program<Whirlpool>,
     params: ix.SetProtocolFeeRateParams
   ) {
-    return ix.setProtocolFeeRateIx(context, params);
+    return ix.setProtocolFeeRateIx(program, params);
   }
 
   /**
@@ -340,15 +350,15 @@ export class WhirlpoolIx {
    * - `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized index in this pool,
    *                          or exceeds NUM_REWARDS.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SetRewardAuthorityParams object
    * @returns - Instruction to perform the action.
    */
   public static setRewardAuthorityBySuperAuthorityIx(
-    context: WhirlpoolContext,
+    program: Program<Whirlpool>,
     params: ix.SetRewardAuthorityBySuperAuthorityParams
   ) {
-    return ix.setRewardAuthorityBySuperAuthorityIx(context, params);
+    return ix.setRewardAuthorityBySuperAuthorityIx(program, params);
   }
 
   /**
@@ -359,15 +369,15 @@ export class WhirlpoolIx {
    * - `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized index in this pool,
    *                          or exceeds NUM_REWARDS.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SetRewardAuthorityParams object
    * @returns - Instruction to perform the action.
    */
   public static setRewardAuthorityIx(
-    context: WhirlpoolContext,
+    program: Program<Whirlpool>,
     params: ix.SetRewardAuthorityParams
   ) {
-    return ix.setRewardAuthorityIx(context, params);
+    return ix.setRewardAuthorityIx(program, params);
   }
 
   /**
@@ -379,15 +389,15 @@ export class WhirlpoolIx {
    * - `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized index in this pool,
    *                          or exceeds NUM_REWARDS.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SetRewardEmissionsParams object
    * @returns - Instruction to perform the action.
    */
   public static setRewardEmissionsIx(
-    context: WhirlpoolContext,
+    program: Program<Whirlpool>,
     params: ix.SetRewardEmissionsParams
   ) {
-    return ix.setRewardEmissionsIx(context, params);
+    return ix.setRewardEmissionsIx(program, params);
   }
 
   /**
@@ -395,14 +405,14 @@ export class WhirlpoolIx {
    * Only the current reward super authority has permission to invoke this instruction.
    * This instruction will not change the authority on any `WhirlpoolRewardInfo` whirlpool rewards.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - SetRewardEmissionsSuperAuthorityParams object
    * @returns - Instruction to perform the action.
    */
   public static setRewardEmissionsSuperAuthorityIx(
-    context: WhirlpoolContext,
+    program: Program<Whirlpool>,
     params: ix.SetRewardEmissionsSuperAuthorityParams
   ) {
-    return ix.setRewardEmissionsSuperAuthorityIx(context, params);
+    return ix.setRewardEmissionsSuperAuthorityIx(program, params);
   }
 }

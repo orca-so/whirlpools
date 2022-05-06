@@ -1,7 +1,7 @@
-import { WhirlpoolContext } from "../context";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
+import { Instruction } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { transformTx } from "../utils/instructions-util";
 
 /**
  * Parameters to set the default fee rate for a FeeTier.
@@ -30,21 +30,21 @@ export type SetDefaultProtocolFeeRateParams = {
  * @returns - Instruction to perform the action.
  */
 export function setDefaultProtocolFeeRateIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: SetDefaultProtocolFeeRateParams
-): TransformableInstruction {
+): Instruction {
   const { whirlpoolsConfig, feeAuthority, defaultProtocolFeeRate } = params;
 
-  const ix = context.program.instruction.setDefaultProtocolFeeRate(defaultProtocolFeeRate, {
+  const ix = program.instruction.setDefaultProtocolFeeRate(defaultProtocolFeeRate, {
     accounts: {
       whirlpoolsConfig,
       feeAuthority,
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

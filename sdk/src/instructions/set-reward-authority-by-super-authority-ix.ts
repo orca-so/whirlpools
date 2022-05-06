@@ -1,7 +1,7 @@
-import { WhirlpoolContext } from "../context";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
+import { Instruction } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { transformTx } from "../utils/instructions-util";
 
 /**
  * Parameters to update the reward authority at a particular rewardIndex on a Whirlpool.
@@ -35,9 +35,9 @@ export type SetRewardAuthorityBySuperAuthorityParams = {
  * @returns - Instruction to perform the action.
  */
 export function setRewardAuthorityBySuperAuthorityIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: SetRewardAuthorityBySuperAuthorityParams
-): TransformableInstruction {
+): Instruction {
   const {
     whirlpoolsConfig,
     whirlpool,
@@ -46,7 +46,7 @@ export function setRewardAuthorityBySuperAuthorityIx(
     rewardIndex,
   } = params;
 
-  const ix = context.program.instruction.setRewardAuthorityBySuperAuthority(rewardIndex, {
+  const ix = program.instruction.setRewardAuthorityBySuperAuthority(rewardIndex, {
     accounts: {
       whirlpoolsConfig,
       whirlpool,
@@ -55,9 +55,9 @@ export function setRewardAuthorityBySuperAuthorityIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

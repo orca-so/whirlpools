@@ -1,7 +1,7 @@
-import { WhirlpoolContext } from "../context";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
+import { Instruction } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { transformTx } from "../utils/instructions-util";
 
 /**
  * Parameters to set fee rate for a Whirlpool.
@@ -31,13 +31,10 @@ export type SetFeeRateParams = {
  * @param params - SetFeeRateParams object
  * @returns - Instruction to perform the action.
  */
-export function setFeeRateIx(
-  context: WhirlpoolContext,
-  params: SetFeeRateParams
-): TransformableInstruction {
+export function setFeeRateIx(program: Program<Whirlpool>, params: SetFeeRateParams): Instruction {
   const { whirlpoolsConfig, whirlpool, feeAuthority, feeRate } = params;
 
-  const ix = context.program.instruction.setFeeRate(feeRate, {
+  const ix = program.instruction.setFeeRate(feeRate, {
     accounts: {
       whirlpoolsConfig,
       whirlpool,
@@ -45,9 +42,9 @@ export function setFeeRateIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

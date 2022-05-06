@@ -11,6 +11,7 @@ import {
 import { TickSpacing } from "../utils";
 import { initTestPool } from "../utils/init-utils";
 import { createInOrderMints, generateDefaultConfigParams } from "../utils/test-builders";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_default_fee_rate", () => {
   const provider = anchor.Provider.local();
@@ -34,13 +35,15 @@ describe("set_default_fee_rate", () => {
     let whirlpool_0 = (await fetcher.getPool(whirlpoolKey)) as WhirlpoolData;
     assert.equal(whirlpool_0.feeRate, feeTierParams.defaultFeeRate);
 
-    await WhirlpoolIx.setDefaultFeeRateIx(ctx, {
-      whirlpoolsConfig: whirlpoolsConfigKey,
-      feeAuthority: feeAuthorityKeypair.publicKey,
-      tickSpacing: TickSpacing.Standard,
-      defaultFeeRate: newDefaultFeeRate,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.setDefaultFeeRateIx(ctx.program, {
+        whirlpoolsConfig: whirlpoolsConfigKey,
+        feeAuthority: feeAuthorityKeypair.publicKey,
+        tickSpacing: TickSpacing.Standard,
+        defaultFeeRate: newDefaultFeeRate,
+      })
+    )
       .addSigner(feeAuthorityKeypair)
       .buildAndExecute();
 
@@ -69,7 +72,7 @@ describe("set_default_fee_rate", () => {
       tokenVaultBKeypair,
       tickSpacing: TickSpacing.Stable,
     };
-    await WhirlpoolIx.initializePoolIx(ctx, newPoolInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, newPoolInitInfo)).buildAndExecute();
 
     const whirlpool_1 = (await fetcher.getPool(whirlpoolPda.publicKey)) as WhirlpoolData;
     assert.equal(whirlpool_1.feeRate, newDefaultFeeRate);
@@ -82,13 +85,15 @@ describe("set_default_fee_rate", () => {
 
     const newDefaultFeeRate = 20_000;
     await assert.rejects(
-      WhirlpoolIx.setDefaultFeeRateIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKey,
-        feeAuthority: feeAuthorityKeypair.publicKey,
-        tickSpacing: TickSpacing.Standard,
-        defaultFeeRate: newDefaultFeeRate,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.setDefaultFeeRateIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKey,
+          feeAuthority: feeAuthorityKeypair.publicKey,
+          tickSpacing: TickSpacing.Standard,
+          defaultFeeRate: newDefaultFeeRate,
+        })
+      )
         .addSigner(feeAuthorityKeypair)
         .buildAndExecute(),
       /0x178c/ // FeeRateMaxExceeded
@@ -97,17 +102,19 @@ describe("set_default_fee_rate", () => {
 
   it("fails when fee tier account has not been initialized", async () => {
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, configInitInfo).toTx().buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
     await assert.rejects(
-      WhirlpoolIx.setDefaultFeeRateIx(ctx, {
-        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-        feeAuthority: feeAuthorityKeypair.publicKey,
-        tickSpacing: TickSpacing.Standard,
-        defaultFeeRate: 500,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.setDefaultFeeRateIx(ctx.program, {
+          whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+          feeAuthority: feeAuthorityKeypair.publicKey,
+          tickSpacing: TickSpacing.Standard,
+          defaultFeeRate: 500,
+        })
+      )
         .addSigner(feeAuthorityKeypair)
         .buildAndExecute(),
       /0xbc4/ // AccountNotInitialized

@@ -1,6 +1,7 @@
 import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
 import { WhirlpoolContext, AccountFetcher, WhirlpoolData, WhirlpoolIx } from "../../src";
+import { toTx } from "../../src/utils/instructions-util";
 import { TickSpacing, mintToByAuthority, ZERO_BN, createAndMintToTokenAccount } from "../utils";
 import { initTestPool, initializeReward } from "../utils/init-utils";
 
@@ -32,14 +33,16 @@ describe("set_reward_emissions", () => {
 
     await mintToByAuthority(provider, rewardMint, rewardVaultKeypair.publicKey, 10000);
 
-    await WhirlpoolIx.setRewardEmissionsIx(ctx, {
-      rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
-      whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-      rewardIndex,
-      rewardVaultKey: rewardVaultKeypair.publicKey,
-      emissionsPerSecondX64,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
+        rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
+        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+        rewardIndex,
+        rewardVaultKey: rewardVaultKeypair.publicKey,
+        emissionsPerSecondX64,
+      })
+    )
       .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
       .buildAndExecute();
 
@@ -50,14 +53,16 @@ describe("set_reward_emissions", () => {
     assert.ok(whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(emissionsPerSecondX64));
 
     // Successfuly set emissions back to zero
-    await WhirlpoolIx.setRewardEmissionsIx(ctx, {
-      rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
-      whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-      rewardIndex,
-      rewardVaultKey: rewardVaultKeypair.publicKey,
-      emissionsPerSecondX64: ZERO_BN,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
+        rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
+        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+        rewardIndex,
+        rewardVaultKey: rewardVaultKeypair.publicKey,
+        emissionsPerSecondX64: ZERO_BN,
+      })
+    )
       .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
       .buildAndExecute();
 
@@ -83,14 +88,16 @@ describe("set_reward_emissions", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.setRewardEmissionsIx(ctx, {
-        rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
-        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-        rewardIndex,
-        rewardVaultKey: rewardVaultKeypair.publicKey,
-        emissionsPerSecondX64,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
+          rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          rewardIndex,
+          rewardVaultKey: rewardVaultKeypair.publicKey,
+          emissionsPerSecondX64,
+        })
+      )
         .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
         .buildAndExecute(),
       /0x178b/ // RewardVaultAmountInsufficient
@@ -116,14 +123,16 @@ describe("set_reward_emissions", () => {
     const fakeVault = await createAndMintToTokenAccount(provider, rewardMint, 10000);
 
     await assert.rejects(
-      WhirlpoolIx.setRewardEmissionsIx(ctx, {
-        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-        rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
-        rewardVaultKey: fakeVault,
-        rewardIndex,
-        emissionsPerSecondX64,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
+          rewardVaultKey: fakeVault,
+          rewardIndex,
+          emissionsPerSecondX64,
+        })
+      )
         .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
         .buildAndExecute(),
       /0x7dc/ // An address constraint was violated
@@ -139,14 +148,16 @@ describe("set_reward_emissions", () => {
     const rewardIndex = 0;
 
     await assert.rejects(
-      WhirlpoolIx.setRewardEmissionsIx(ctx, {
-        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-        rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
-        rewardVaultKey: anchor.web3.PublicKey.default,
-        rewardIndex: rewardIndex,
-        emissionsPerSecondX64,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
+          rewardVaultKey: anchor.web3.PublicKey.default,
+          rewardIndex: rewardIndex,
+          emissionsPerSecondX64,
+        })
+      )
         .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
         .buildAndExecute(),
       /0xbbf/ // AccountOwnedByWrongProgram
@@ -169,15 +180,16 @@ describe("set_reward_emissions", () => {
     );
 
     await assert.rejects(
-      WhirlpoolIx.setRewardEmissionsIx(ctx, {
-        rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
-        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-        rewardIndex,
-        rewardVaultKey: provider.wallet.publicKey, // TODO fix
-        emissionsPerSecondX64,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
+          rewardAuthority: configInitInfo.rewardEmissionsSuperAuthority,
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          rewardIndex,
+          rewardVaultKey: provider.wallet.publicKey, // TODO fix
+          emissionsPerSecondX64,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });

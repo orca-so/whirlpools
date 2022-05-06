@@ -7,6 +7,7 @@ import { TickSpacing, ZERO_BN, createTokenAccount, getTokenBalance } from "../ut
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
 import { MathUtil } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("collect_protocol_fees", () => {
   const provider = anchor.Provider.local();
@@ -40,13 +41,15 @@ describe("collect_protocol_fees", () => {
       positions,
     } = fixture.getInfos();
 
-    await WhirlpoolIx.setProtocolFeeRateIx(ctx, {
-      whirlpool: whirlpoolPda.publicKey,
-      whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
-      feeAuthority: feeAuthorityKeypair.publicKey,
-      protocolFeeRate: 2500,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.setProtocolFeeRateIx(ctx.program, {
+        whirlpool: whirlpoolPda.publicKey,
+        whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
+        feeAuthority: feeAuthorityKeypair.publicKey,
+        protocolFeeRate: 2500,
+      })
+    )
       .addSigner(feeAuthorityKeypair)
       .buildAndExecute();
 
@@ -59,46 +62,48 @@ describe("collect_protocol_fees", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
     // Accrue fees in token A
-    await WhirlpoolIx.swapIx(ctx, {
-      amount: new u64(200_000),
-      otherAmountThreshold: ZERO_BN,
-      sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
-      amountSpecifiedIsInput: true,
-      aToB: true,
-      whirlpool: whirlpoolPda.publicKey,
-      tokenAuthority: ctx.wallet.publicKey,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-      tickArray0: tickArrayPda,
-      tickArray1: tickArrayPda,
-      tickArray2: tickArrayPda,
-      oracle: oraclePda.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        amount: new u64(200_000),
+        otherAmountThreshold: ZERO_BN,
+        sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
+        amountSpecifiedIsInput: true,
+        aToB: true,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        tickArray0: tickArrayPda,
+        tickArray1: tickArrayPda,
+        tickArray2: tickArrayPda,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
 
     // Accrue fees in token B
-    await WhirlpoolIx.swapIx(ctx, {
-      amount: new u64(200_000),
-      otherAmountThreshold: ZERO_BN,
-      sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
-      amountSpecifiedIsInput: true,
-      aToB: false,
-      whirlpool: whirlpoolPda.publicKey,
-      tokenAuthority: ctx.wallet.publicKey,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-      tickArray0: tickArrayPda,
-      tickArray1: tickArrayPda,
-      tickArray2: tickArrayPda,
-      oracle: oraclePda.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        amount: new u64(200_000),
+        otherAmountThreshold: ZERO_BN,
+        sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
+        amountSpecifiedIsInput: true,
+        aToB: false,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        tickArray0: tickArrayPda,
+        tickArray1: tickArrayPda,
+        tickArray2: tickArrayPda,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
 
     const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
     assert.ok(poolAfter?.protocolFeeOwedA.eq(new u64(150)));
@@ -107,16 +112,18 @@ describe("collect_protocol_fees", () => {
     const destA = await createTokenAccount(provider, tokenMintA, provider.wallet.publicKey);
     const destB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);
 
-    await WhirlpoolIx.collectProtocolFeesIx(ctx, {
-      whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
-      whirlpool: whirlpoolPda.publicKey,
-      collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-      tokenOwnerAccountA: destA,
-      tokenOwnerAccountB: destB,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.collectProtocolFeesIx(ctx.program, {
+        whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
+        whirlpool: whirlpoolPda.publicKey,
+        collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        tokenOwnerAccountA: destA,
+        tokenOwnerAccountB: destB,
+      })
+    )
       .addSigner(collectProtocolFeesAuthorityKeypair)
       .buildAndExecute();
 
@@ -145,17 +152,18 @@ describe("collect_protocol_fees", () => {
     } = fixture.getInfos();
 
     await assert.rejects(
-      WhirlpoolIx.collectProtocolFeesIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
-        whirlpool: whirlpoolPda.publicKey,
-        collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.collectProtocolFeesIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
+          whirlpool: whirlpoolPda.publicKey,
+          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
@@ -177,16 +185,18 @@ describe("collect_protocol_fees", () => {
     } = fixture.getInfos();
 
     await assert.rejects(
-      WhirlpoolIx.collectProtocolFeesIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
-        whirlpool: whirlpoolPda.publicKey,
-        collectProtocolFeesAuthority: rewardEmissionsSuperAuthorityKeypair.publicKey,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.collectProtocolFeesIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
+          whirlpool: whirlpoolPda.publicKey,
+          collectProtocolFeesAuthority: rewardEmissionsSuperAuthorityKeypair.publicKey,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+        })
+      )
         .addSigner(rewardEmissionsSuperAuthorityKeypair)
         .buildAndExecute(),
       /0x7dc/ // ConstraintAddress
@@ -213,16 +223,18 @@ describe("collect_protocol_fees", () => {
     } = await initTestPool(ctx, tickSpacing);
 
     await assert.rejects(
-      WhirlpoolIx.collectProtocolFeesIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
-        whirlpool: whirlpoolPda2.publicKey,
-        collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.collectProtocolFeesIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
+          whirlpool: whirlpoolPda2.publicKey,
+          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+        })
+      )
         .addSigner(collectProtocolFeesAuthorityKeypair)
         .buildAndExecute(),
       /0x7d1/ // ConstraintHasOne
@@ -255,32 +267,36 @@ describe("collect_protocol_fees", () => {
     const fakeVaultB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);
 
     await assert.rejects(
-      WhirlpoolIx.collectProtocolFeesIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
-        whirlpool: whirlpoolPda.publicKey,
-        collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
-        tokenVaultA: fakeVaultA,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.collectProtocolFeesIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
+          whirlpool: whirlpoolPda.publicKey,
+          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          tokenVaultA: fakeVaultA,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+        })
+      )
         .addSigner(collectProtocolFeesAuthorityKeypair)
         .buildAndExecute(),
       /0x7dc/ // ConstraintAddress
     );
 
     await assert.rejects(
-      WhirlpoolIx.collectProtocolFeesIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
-        whirlpool: whirlpoolPda.publicKey,
-        collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: fakeVaultB,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.collectProtocolFeesIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
+          whirlpool: whirlpoolPda.publicKey,
+          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: fakeVaultB,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+        })
+      )
         .addSigner(collectProtocolFeesAuthorityKeypair)
         .buildAndExecute(),
       /0x7dc/ // ConstraintAddress
@@ -313,32 +329,36 @@ describe("collect_protocol_fees", () => {
     const invalidDestB = await createTokenAccount(provider, tokenMintA, provider.wallet.publicKey);
 
     await assert.rejects(
-      WhirlpoolIx.collectProtocolFeesIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKepair.publicKey,
-        whirlpool: whirlpoolPda.publicKey,
-        collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tokenOwnerAccountA: invalidDestA,
-        tokenOwnerAccountB: tokenAccountB,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.collectProtocolFeesIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKepair.publicKey,
+          whirlpool: whirlpoolPda.publicKey,
+          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tokenOwnerAccountA: invalidDestA,
+          tokenOwnerAccountB: tokenAccountB,
+        })
+      )
         .addSigner(collectProtocolFeesAuthorityKeypair)
         .buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
 
     await assert.rejects(
-      WhirlpoolIx.collectProtocolFeesIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKepair.publicKey,
-        whirlpool: whirlpoolPda.publicKey,
-        collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: invalidDestB,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.collectProtocolFeesIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKepair.publicKey,
+          whirlpool: whirlpoolPda.publicKey,
+          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: invalidDestB,
+        })
+      )
         .addSigner(collectProtocolFeesAuthorityKeypair)
         .buildAndExecute(),
       /0x7d3/ // ConstraintRaw

@@ -114,7 +114,7 @@ export class WhirlpoolImpl implements Whirlpool {
       );
 
       tx.addInstruction(
-        initTickArrayIx(this.ctx, {
+        initTickArrayIx(this.ctx.program, {
           startTick,
           tickArrayPda,
           whirlpool: this.address,
@@ -199,17 +199,20 @@ export class WhirlpoolImpl implements Whirlpool {
 
     const txBuilder = new TransactionBuilder(this.ctx.provider);
 
-    const positionIx = (withMetadata ? openPositionWithMetadataIx : openPositionIx)(this.ctx, {
-      funder,
-      owner: positionWallet,
-      positionPda,
-      metadataPda,
-      positionMintAddress: positionMintKeypair.publicKey,
-      positionTokenAccount: positionTokenAccountAddress,
-      whirlpool: this.address,
-      tickLowerIndex: tickLower,
-      tickUpperIndex: tickUpper,
-    });
+    const positionIx = (withMetadata ? openPositionWithMetadataIx : openPositionIx)(
+      this.ctx.program,
+      {
+        funder,
+        owner: positionWallet,
+        positionPda,
+        metadataPda,
+        positionMintAddress: positionMintKeypair.publicKey,
+        positionTokenAccount: positionTokenAccountAddress,
+        whirlpool: this.address,
+        tickLowerIndex: tickLower,
+        tickUpperIndex: tickUpper,
+      }
+    );
     txBuilder.addInstruction(positionIx).addSigner(positionMintKeypair);
 
     const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = await resolveOrCreateATA(
@@ -250,7 +253,7 @@ export class WhirlpoolImpl implements Whirlpool {
     invariant(!!tickArrayLower, "tickArray for the tickLower has not been initialized");
     invariant(!!tickArrayUpper, "tickArray for the tickUpper has not been initialized");
 
-    const liquidityIx = increaseLiquidityIx(this.ctx, {
+    const liquidityIx = increaseLiquidityIx(this.ctx.program, {
       liquidityAmount: liquidity,
       tokenMaxA,
       tokenMaxB,
@@ -344,7 +347,7 @@ export class WhirlpoolImpl implements Whirlpool {
         tickUpperIndex: position.tickUpperIndex,
       });
 
-      const liquidityIx = decreaseLiquidityIx(this.ctx, {
+      const liquidityIx = decreaseLiquidityIx(this.ctx.program, {
         liquidityAmount: decreaseLiqQuote.liquidityAmount,
         tokenMinA: decreaseLiqQuote.tokenMinA,
         tokenMinB: decreaseLiqQuote.tokenMinB,
@@ -363,7 +366,7 @@ export class WhirlpoolImpl implements Whirlpool {
     }
 
     /* Close position */
-    const positionIx = closePositionIx(this.ctx, {
+    const positionIx = closePositionIx(this.ctx.program, {
       positionAuthority: this.ctx.wallet.publicKey,
       receiver: this.ctx.wallet.publicKey,
       positionTokenAccount,
@@ -419,7 +422,7 @@ export class WhirlpoolImpl implements Whirlpool {
     const oraclePda = PDAUtil.getOracle(this.ctx.program.programId, this.address);
 
     txBuilder.addInstruction(
-      swapIx(this.ctx, {
+      swapIx(this.ctx.program, {
         amount: amountSpecifiedIsInput ? estimatedAmountIn : estimatedAmountOut,
         otherAmountThreshold,
         sqrtPriceLimit: targetSqrtPriceLimitX64,

@@ -1,12 +1,13 @@
-import { WhirlpoolContext } from "../context";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 import { PublicKey } from "@solana/web3.js";
-import { PDA, TransformableInstruction } from "@orca-so/common-sdk";
+import { PDA, Instruction } from "@orca-so/common-sdk";
 import { METADATA_PROGRAM_ADDRESS } from "..";
 import {
   OpenPositionBumpsData,
   OpenPositionWithMetadataBumpsData,
 } from "../types/public/anchor-types";
-import { transformTx, openPositionAccounts } from "../utils/instructions-util";
+import { openPositionAccounts } from "../utils/instructions-util";
 
 /**
  * Parameters to open a position in a Whirlpool.
@@ -45,25 +46,25 @@ export type OpenPositionParams = {
  * @returns - Instruction to perform the action.
  */
 export function openPositionIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: OpenPositionParams
-): TransformableInstruction {
+): Instruction {
   const { positionPda, tickLowerIndex, tickUpperIndex } = params;
 
   const bumps: OpenPositionBumpsData = {
     positionBump: positionPda.bump,
   };
 
-  const ix = context.program.instruction.openPosition(bumps, tickLowerIndex, tickUpperIndex, {
+  const ix = program.instruction.openPosition(bumps, tickLowerIndex, tickUpperIndex, {
     accounts: openPositionAccounts(params),
   });
 
   // TODO: Require Keypair and auto sign this ix
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }
 
 /**
@@ -80,9 +81,9 @@ export function openPositionIx(
  * @returns - Instruction to perform the action.
  */
 export function openPositionWithMetadataIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: OpenPositionParams & { metadataPda: PDA }
-): TransformableInstruction {
+): Instruction {
   const { positionPda, metadataPda, tickLowerIndex, tickUpperIndex } = params;
 
   const bumps: OpenPositionWithMetadataBumpsData = {
@@ -90,24 +91,19 @@ export function openPositionWithMetadataIx(
     metadataBump: metadataPda.bump,
   };
 
-  const ix = context.program.instruction.openPositionWithMetadata(
-    bumps,
-    tickLowerIndex,
-    tickUpperIndex,
-    {
-      accounts: {
-        ...openPositionAccounts(params),
-        positionMetadataAccount: metadataPda.publicKey,
-        metadataProgram: METADATA_PROGRAM_ADDRESS,
-        metadataUpdateAuth: new PublicKey("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr"),
-      },
-    }
-  );
+  const ix = program.instruction.openPositionWithMetadata(bumps, tickLowerIndex, tickUpperIndex, {
+    accounts: {
+      ...openPositionAccounts(params),
+      positionMetadataAccount: metadataPda.publicKey,
+      metadataProgram: METADATA_PROGRAM_ADDRESS,
+      metadataUpdateAuth: new PublicKey("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr"),
+    },
+  });
 
   // TODO: Require Keypair and auto sign this ix
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

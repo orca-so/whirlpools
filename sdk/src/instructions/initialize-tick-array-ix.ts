@@ -1,9 +1,9 @@
-import { WhirlpoolContext } from "../context";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
+import { Instruction } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { PDA } from "@orca-so/common-sdk";
-import { transformTx } from "../utils/instructions-util";
 
 /**
  * Parameters to initialize a TickArray account.
@@ -33,11 +33,9 @@ export type InitTickArrayParams = {
  * @returns - Instruction to perform the action.
  */
 export function initTickArrayIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: InitTickArrayParams
-): TransformableInstruction {
-  const program = context.program;
-
+): Instruction {
   const { whirlpool, funder, tickArrayPda } = params;
 
   const ix = program.instruction.initializeTickArray(params.startTick, {
@@ -49,9 +47,9 @@ export function initTickArrayIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

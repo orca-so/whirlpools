@@ -1,8 +1,9 @@
-import { WhirlpoolContext } from "../context";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { transformTx } from "../utils/instructions-util";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+
+import { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to collect fees from a position.
@@ -37,10 +38,7 @@ export type CollectFeesParams = {
  * @param params - CollectFeesParams object
  * @returns - Instruction to perform the action.
  */
-export function collectFeesIx(
-  context: WhirlpoolContext,
-  params: CollectFeesParams
-): TransformableInstruction {
+export function collectFeesIx(program: Program<Whirlpool>, params: CollectFeesParams): Instruction {
   const {
     whirlpool,
     positionAuthority,
@@ -52,7 +50,7 @@ export function collectFeesIx(
     tokenVaultB,
   } = params;
 
-  const ix = context.program.instruction.collectFees({
+  const ix = program.instruction.collectFees({
     accounts: {
       whirlpool,
       positionAuthority,
@@ -66,9 +64,9 @@ export function collectFeesIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

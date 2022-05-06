@@ -1,7 +1,8 @@
 import { SystemProgram, Keypair, PublicKey } from "@solana/web3.js";
-import { WhirlpoolContext } from "../context";
-import { transformTx } from "../utils/instructions-util";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
+
+import { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to initialize a WhirlpoolsConfig account.
@@ -33,9 +34,9 @@ export type InitConfigParams = {
  * @returns - Instruction to perform the action.
  */
 export function initializeConfigIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: InitConfigParams
-): TransformableInstruction {
+): Instruction {
   const {
     feeAuthority,
     collectProtocolFeesAuthority,
@@ -44,7 +45,7 @@ export function initializeConfigIx(
     funder,
   } = params;
 
-  const ix = context.program.instruction.initializeConfig(
+  const ix = program.instruction.initializeConfig(
     feeAuthority,
     collectProtocolFeesAuthority,
     rewardEmissionsSuperAuthority,
@@ -58,9 +59,9 @@ export function initializeConfigIx(
     }
   );
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [params.whirlpoolsConfigKeypair],
-  });
+  };
 }

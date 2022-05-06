@@ -33,6 +33,7 @@ import {
 } from "../utils/test-builders";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
 import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("increase_liquidity", () => {
   const provider = anchor.Provider.local();
@@ -63,23 +64,24 @@ describe("increase_liquidity", () => {
       tokenAmount
     );
 
-    await WhirlpoolIx.increaseLiquidityIx(ctx, {
-      liquidityAmount,
-      tokenMaxA: tokenAmount.tokenA,
-      tokenMaxB: tokenAmount.tokenB,
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: provider.wallet.publicKey,
-      position: positionInitInfo.publicKey,
-      positionTokenAccount: positionInitInfo.tokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-      tickArrayLower: positionInitInfo.tickArrayLower,
-      tickArrayUpper: positionInitInfo.tickArrayUpper,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+        liquidityAmount,
+        tokenMaxA: tokenAmount.tokenA,
+        tokenMaxB: tokenAmount.tokenB,
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: provider.wallet.publicKey,
+        position: positionInitInfo.publicKey,
+        positionTokenAccount: positionInitInfo.tokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        tickArrayLower: positionInitInfo.tickArrayLower,
+        tickArrayUpper: positionInitInfo.tickArrayUpper,
+      })
+    ).buildAndExecute();
 
     const position = (await fetcher.getPosition(positionInitInfo.publicKey, true)) as PositionData;
     assert.ok(position.liquidity.eq(liquidityAmount));
@@ -130,23 +132,24 @@ describe("increase_liquidity", () => {
       tokenAmount
     );
 
-    await WhirlpoolIx.increaseLiquidityIx(ctx, {
-      liquidityAmount,
-      tokenMaxA: tokenAmount.tokenA,
-      tokenMaxB: tokenAmount.tokenB,
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: provider.wallet.publicKey,
-      position: positionInitInfo.publicKey,
-      positionTokenAccount: positionInitInfo.tokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-      tickArrayLower: positionInitInfo.tickArrayLower,
-      tickArrayUpper: positionInitInfo.tickArrayUpper,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+        liquidityAmount,
+        tokenMaxA: tokenAmount.tokenA,
+        tokenMaxB: tokenAmount.tokenB,
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: provider.wallet.publicKey,
+        position: positionInitInfo.publicKey,
+        positionTokenAccount: positionInitInfo.tokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        tickArrayLower: positionInitInfo.tickArrayLower,
+        tickArrayUpper: positionInitInfo.tickArrayUpper,
+      })
+    ).buildAndExecute();
 
     assert.equal(
       await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
@@ -219,7 +222,7 @@ describe("increase_liquidity", () => {
       // TODO: create a ComputeBudgetInstruction to request more compute
       .addInstruction(
         WhirlpoolIx.initTickArrayIx(
-          ctx,
+          ctx.program,
           generateDefaultInitTickArrayParams(
             ctx,
             whirlpoolPda.publicKey,
@@ -228,19 +231,19 @@ describe("increase_liquidity", () => {
         )
       )
       // .addInstruction(
-      //   buildWhirlpoolIx.initTickArrayIx(ctx, generateDefaultInitTickArrayParams(
+      //   buildtoTx(ctx, WhirlpoolIx.initTickArrayIx(generateDefaultInitTickArrayParams(
       //     ctx,
       //     whirlpoolPda.publicKey,
       //     getStartTickIndex(pos[0].tickLowerIndex + TICK_ARRAY_SIZE * tickSpacing, tickSpacing),
       //   ))
       // )
-      .addInstruction(WhirlpoolIx.openPositionIx(ctx, params))
+      .addInstruction(WhirlpoolIx.openPositionIx(ctx.program, params))
       // .addInstruction(
-      //   buildWhirlpoolIx.openPositionWithMetadataIx(ctx, params)
+      //   buildWhirlpoolIx.openPositionWithMetadataIx(ctx.program, params)
       // )
       .addSigner(mint)
       .addInstruction(
-        WhirlpoolIx.increaseLiquidityIx(ctx, {
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
           tokenMaxA: tokenAmount.tokenA,
           tokenMaxB: tokenAmount.tokenB,
@@ -312,22 +315,24 @@ describe("increase_liquidity", () => {
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
-    await WhirlpoolIx.increaseLiquidityIx(ctx, {
-      liquidityAmount,
-      tokenMaxA: tokenAmount.tokenA,
-      tokenMaxB: tokenAmount.tokenB,
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: delegate.publicKey,
-      position: positionInitInfo.publicKey,
-      positionTokenAccount: positionInitInfo.tokenAccount,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-      tickArrayLower: positionInitInfo.tickArrayLower,
-      tickArrayUpper: positionInitInfo.tickArrayUpper,
-    })
-      .toTx()
+    await toTx(
+      ctx,
+      WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+        liquidityAmount,
+        tokenMaxA: tokenAmount.tokenA,
+        tokenMaxB: tokenAmount.tokenB,
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: delegate.publicKey,
+        position: positionInitInfo.publicKey,
+        positionTokenAccount: positionInitInfo.tokenAccount,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        tickArrayLower: positionInitInfo.tickArrayLower,
+        tickArrayUpper: positionInitInfo.tickArrayUpper,
+      })
+    )
       .addSigner(delegate)
       .buildAndExecute();
 
@@ -395,23 +400,24 @@ describe("increase_liquidity", () => {
       tokenAmount
     );
 
-    await WhirlpoolIx.increaseLiquidityIx(ctx, {
-      liquidityAmount: estLiquidityAmount,
-      tokenMaxA: tokenAmount.tokenA,
-      tokenMaxB: tokenAmount.tokenB,
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: provider.wallet.publicKey,
-      position: positionPda.publicKey,
-      positionTokenAccount: positionTokenAccountAddress,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-      tickArrayLower: tickArrayPda.publicKey,
-      tickArrayUpper: tickArrayPda.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+        liquidityAmount: estLiquidityAmount,
+        tokenMaxA: tokenAmount.tokenA,
+        tokenMaxB: tokenAmount.tokenB,
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: provider.wallet.publicKey,
+        position: positionPda.publicKey,
+        positionTokenAccount: positionTokenAccountAddress,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        tickArrayLower: tickArrayPda.publicKey,
+        tickArrayUpper: tickArrayPda.publicKey,
+      })
+    ).buildAndExecute();
 
     const position = (await fetcher.getPosition(positionPda.publicKey, true)) as PositionData;
     assert.ok(position.liquidity.eq(estLiquidityAmount));
@@ -454,23 +460,24 @@ describe("increase_liquidity", () => {
       tokenAmount
     );
 
-    await WhirlpoolIx.increaseLiquidityIx(ctx, {
-      liquidityAmount: estLiquidityAmount,
-      tokenMaxA: tokenAmount.tokenA,
-      tokenMaxB: tokenAmount.tokenB,
-      whirlpool: whirlpoolPda.publicKey,
-      positionAuthority: provider.wallet.publicKey,
-      position: positionPda.publicKey,
-      positionTokenAccount: positionTokenAccountAddress,
-      tokenOwnerAccountA: tokenAccountA,
-      tokenOwnerAccountB: tokenAccountB,
-      tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-      tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-      tickArrayLower: tickArrayPda.publicKey,
-      tickArrayUpper: tickArrayPda.publicKey,
-    })
-      .toTx()
-      .buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+        liquidityAmount: estLiquidityAmount,
+        tokenMaxA: tokenAmount.tokenA,
+        tokenMaxB: tokenAmount.tokenB,
+        whirlpool: whirlpoolPda.publicKey,
+        positionAuthority: provider.wallet.publicKey,
+        position: positionPda.publicKey,
+        positionTokenAccount: positionTokenAccountAddress,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        tickArrayLower: tickArrayPda.publicKey,
+        tickArrayUpper: tickArrayPda.publicKey,
+      })
+    ).buildAndExecute();
 
     const position = (await fetcher.getPosition(positionPda.publicKey, true)) as PositionData;
     assert.ok(position.liquidity.eq(estLiquidityAmount));
@@ -486,23 +493,24 @@ describe("increase_liquidity", () => {
     const positionInitInfo = positions[0];
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount: ZERO_BN,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(1_000_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount: ZERO_BN,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(1_000_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x177c/ // LiquidityZero
     );
   });
@@ -520,23 +528,24 @@ describe("increase_liquidity", () => {
     const liquidityAmount = new u64(6_500_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(999_999_999),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(999_999_999),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x1781/ // TokenMaxExceeded
     );
   });
@@ -553,23 +562,24 @@ describe("increase_liquidity", () => {
     const liquidityAmount = new u64(6_500_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(999_999_999),
-        tokenMaxB: new u64(0),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(999_999_999),
+          tokenMaxB: new u64(0),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x1781/ // TokenMaxExceeded
     );
   });
@@ -593,23 +603,24 @@ describe("increase_liquidity", () => {
     const liquidityAmount = new u64(6_500_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(1_000_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: newPositionTokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(1_000_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: newPositionTokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
 
@@ -617,23 +628,24 @@ describe("increase_liquidity", () => {
     await transfer(provider, positionInitInfo.tokenAccount, newPositionTokenAccount, 1);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(1_000_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(1_000_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -653,23 +665,24 @@ describe("increase_liquidity", () => {
     const liquidityAmount = new u64(6_500_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(1_000_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: invalidPositionTokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(1_000_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: invalidPositionTokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // A raw constraint was violated
     );
   });
@@ -701,23 +714,24 @@ describe("increase_liquidity", () => {
     const liquidityAmount = new u64(6_500_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(1_000_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionPda.publicKey,
-        positionTokenAccount: positionTokenAccountAddress,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: tickArrayPda.publicKey,
-        tickArrayUpper: tickArrayPda.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(1_000_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionPda.publicKey,
+          positionTokenAccount: positionTokenAccountAddress,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: tickArrayPda.publicKey,
+          tickArrayUpper: tickArrayPda.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7d1/ // A has_one constraint was violated
     );
   });
@@ -736,44 +750,46 @@ describe("increase_liquidity", () => {
     const fakeVaultB = await createAndMintToTokenAccount(provider, tokenMintB, 1_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(1_000_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: fakeVaultA,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(1_000_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: fakeVaultA,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(1_000_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: fakeVaultB,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(1_000_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: fakeVaultB,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -792,44 +808,46 @@ describe("increase_liquidity", () => {
     const invalidTokenAccount = await createAndMintToTokenAccount(provider, invalidMint, 1_000_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(1_000_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: invalidTokenAccount,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(1_000_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: invalidTokenAccount,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(1_000_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: invalidTokenAccount,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(1_000_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: invalidTokenAccount,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
   });
@@ -851,22 +869,24 @@ describe("increase_liquidity", () => {
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(167_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(167_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      )
         .addSigner(delegate)
         .buildAndExecute(),
       /0x1783/ // MissingOrInvalidDelegate
@@ -891,22 +911,24 @@ describe("increase_liquidity", () => {
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(167_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(167_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      )
         .addSigner(delegate)
         .buildAndExecute(),
       /0x1784/ // InvalidPositionTokenAmount
@@ -931,23 +953,24 @@ describe("increase_liquidity", () => {
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(167_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(167_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
@@ -968,22 +991,24 @@ describe("increase_liquidity", () => {
     await approveToken(provider, positionInitInfo.tokenAccount, delegate.publicKey, 1);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(167_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: delegate.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: positionInitInfo.tickArrayLower,
-        tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(167_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: delegate.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: positionInitInfo.tickArrayLower,
+          tickArrayUpper: positionInitInfo.tickArrayUpper,
+        })
+      )
         .addSigner(delegate)
         .buildAndExecute(),
       /0x4/ // owner does not match
@@ -1010,23 +1035,24 @@ describe("increase_liquidity", () => {
     const liquidityAmount = new u64(1_250_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(167_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: tickArrayLowerPda.publicKey,
-        tickArrayUpper: tickArrayUpperPda.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(167_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: tickArrayLowerPda.publicKey,
+          tickArrayUpper: tickArrayUpperPda.publicKey,
+        })
+      ).buildAndExecute(),
       /0x1779/ // TicKNotFound
     );
   });
@@ -1053,23 +1079,24 @@ describe("increase_liquidity", () => {
     const liquidityAmount = new u64(1_250_000);
 
     await assert.rejects(
-      WhirlpoolIx.increaseLiquidityIx(ctx, {
-        liquidityAmount,
-        tokenMaxA: new u64(0),
-        tokenMaxB: new u64(167_000),
-        whirlpool: whirlpoolPda.publicKey,
-        positionAuthority: provider.wallet.publicKey,
-        position: positionInitInfo.publicKey,
-        positionTokenAccount: positionInitInfo.tokenAccount,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        tickArrayLower: tickArrayLowerPda.publicKey,
-        tickArrayUpper: tickArrayUpperPda.publicKey,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount,
+          tokenMaxA: new u64(0),
+          tokenMaxB: new u64(167_000),
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positionInitInfo.publicKey,
+          positionTokenAccount: positionInitInfo.tokenAccount,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArrayLower: tickArrayLowerPda.publicKey,
+          tickArrayUpper: tickArrayUpperPda.publicKey,
+        })
+      ).buildAndExecute(),
       /0x7d1/ // A has one constraint was violated
     );
   });

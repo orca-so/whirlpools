@@ -4,6 +4,7 @@ import { WhirlpoolContext, AccountFetcher, WhirlpoolData, WhirlpoolIx } from "..
 import { TickSpacing } from "../utils";
 import { initTestPool } from "../utils/init-utils";
 import { generateDefaultConfigParams } from "../utils/test-builders";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_fee_rate", () => {
   const provider = anchor.Provider.local();
@@ -51,13 +52,15 @@ describe("set_fee_rate", () => {
 
     const newFeeRate = 20_000;
     await assert.rejects(
-      WhirlpoolIx.setFeeRateIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKey,
-        whirlpool: whirlpoolKey,
-        feeAuthority: feeAuthorityKeypair.publicKey,
-        feeRate: newFeeRate,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.setFeeRateIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKey,
+          whirlpool: whirlpoolKey,
+          feeAuthority: feeAuthorityKeypair.publicKey,
+          feeRate: newFeeRate,
+        })
+      )
         .addSigner(configKeypairs.feeAuthorityKeypair)
         .buildAndExecute(),
       /0x178c/ // FeeRateMaxExceeded
@@ -75,14 +78,15 @@ describe("set_fee_rate", () => {
 
     const newFeeRate = 1000;
     await assert.rejects(
-      WhirlpoolIx.setFeeRateIx(ctx, {
-        whirlpoolsConfig: whirlpoolsConfigKey,
-        whirlpool: whirlpoolKey,
-        feeAuthority: feeAuthorityKeypair.publicKey,
-        feeRate: newFeeRate,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.setFeeRateIx(ctx.program, {
+          whirlpoolsConfig: whirlpoolsConfigKey,
+          whirlpool: whirlpoolKey,
+          feeAuthority: feeAuthorityKeypair.publicKey,
+          feeRate: newFeeRate,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });
@@ -96,7 +100,10 @@ describe("set_fee_rate", () => {
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
     const { configInitInfo: otherConfigInitInfo } = generateDefaultConfigParams(ctx);
-    await WhirlpoolIx.initializeConfigIx(ctx, otherConfigInitInfo).toTx().buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, otherConfigInitInfo)
+    ).buildAndExecute();
 
     const newFeeRate = 1000;
     await assert.rejects(

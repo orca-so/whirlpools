@@ -10,6 +10,7 @@ import {
 import { TickSpacing } from "../utils";
 import { initTestPool } from "../utils/init-utils";
 import { TransactionBuilder } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_reward_authority", () => {
   const provider = anchor.Provider.local();
@@ -25,7 +26,7 @@ describe("set_reward_authority", () => {
     const txBuilder = new TransactionBuilder(provider);
     for (let i = 0; i < NUM_REWARDS; i++) {
       txBuilder.addInstruction(
-        WhirlpoolIx.setRewardAuthorityIx(ctx, {
+        WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
           whirlpool: poolInitInfo.whirlpoolPda.publicKey,
           rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
           newRewardAuthority: newKeypairs[i].publicKey,
@@ -49,13 +50,15 @@ describe("set_reward_authority", () => {
     const fakeAuthority = anchor.web3.Keypair.generate();
     const newAuthority = anchor.web3.Keypair.generate();
     await assert.rejects(
-      WhirlpoolIx.setRewardAuthorityIx(ctx, {
-        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-        rewardAuthority: fakeAuthority.publicKey,
-        newRewardAuthority: newAuthority.publicKey,
-        rewardIndex: 0,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          rewardAuthority: fakeAuthority.publicKey,
+          newRewardAuthority: newAuthority.publicKey,
+          rewardIndex: 0,
+        })
+      )
         .addSigner(fakeAuthority)
         .buildAndExecute(),
       /0x7dc/ // An address constraint was violated
@@ -67,22 +70,27 @@ describe("set_reward_authority", () => {
 
     const newAuthority = anchor.web3.Keypair.generate();
     assert.throws(() => {
-      WhirlpoolIx.setRewardAuthorityIx(ctx, {
-        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-        rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
-        newRewardAuthority: newAuthority.publicKey,
-        rewardIndex: -1,
-      });
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+          newRewardAuthority: newAuthority.publicKey,
+          rewardIndex: -1,
+        })
+      ).buildAndExecute();
     }, /out of range/);
 
     await assert.rejects(
-      WhirlpoolIx.setRewardAuthorityIx(ctx, {
-        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-        rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
-        newRewardAuthority: newAuthority.publicKey,
-        rewardIndex: 255,
-      })
-        .toTx()
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+          newRewardAuthority: newAuthority.publicKey,
+          rewardIndex: 255,
+        })
+      )
         .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
         .buildAndExecute()
       //   /failed to send transaction/
@@ -94,14 +102,15 @@ describe("set_reward_authority", () => {
 
     const newAuthority = anchor.web3.Keypair.generate();
     await assert.rejects(
-      WhirlpoolIx.setRewardAuthorityIx(ctx, {
-        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-        rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
-        newRewardAuthority: newAuthority.publicKey,
-        rewardIndex: 0,
-      })
-        .toTx()
-        .buildAndExecute(),
+      toTx(
+        ctx,
+        WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+          newRewardAuthority: newAuthority.publicKey,
+          rewardIndex: 0,
+        })
+      ).buildAndExecute(),
       /Signature verification failed/
     );
   });

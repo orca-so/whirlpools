@@ -1,7 +1,8 @@
-import { WhirlpoolContext } from "../context";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 import { PublicKey } from "@solana/web3.js";
-import { transformTx } from "../utils/instructions-util";
-import { TransformableInstruction } from "@orca-so/common-sdk";
+
+import { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to update fees and reward values for a position.
@@ -32,12 +33,12 @@ export type UpdateFeesAndRewardsParams = {
  * @returns - Instruction to perform the action.
  */
 export function updateFeesAndRewardsIx(
-  context: WhirlpoolContext,
+  program: Program<Whirlpool>,
   params: UpdateFeesAndRewardsParams
-): TransformableInstruction {
+): Instruction {
   const { whirlpool, position, tickArrayLower, tickArrayUpper } = params;
 
-  const ix = context.program.instruction.updateFeesAndRewards({
+  const ix = program.instruction.updateFeesAndRewards({
     accounts: {
       whirlpool,
       position,
@@ -46,9 +47,9 @@ export function updateFeesAndRewardsIx(
     },
   });
 
-  return transformTx(context, {
+  return {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  });
+  };
 }

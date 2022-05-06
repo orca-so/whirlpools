@@ -7,3 +7,4 @@ node_modules
 test-ledger/
 sdk/dist/
 sdk/node_modules
+.vscode/

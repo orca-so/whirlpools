@@ -4,6 +4,9 @@ import WhirlpoolIDL from "./artifacts/whirlpool.json";
 import { Whirlpool } from "./artifacts/whirlpool";
 import { Wallet } from "@project-serum/anchor/dist/cjs/provider";
 
+/**
+ * @category Core
+ */
 export class WhirlpoolContext {
   readonly connection: Connection;
   readonly wallet: Wallet;

@@ -1,12 +1,5 @@
-import { web3, utils, Provider } from "@project-serum/anchor";
-import { PDA } from "../../src/types/public/helper-types";
-import { TransactionBuilder } from "../../src/utils/transactions/transactions-builder";
-
-// Wrapper around findProgramAddress that returns a PDA object
-export function findProgramAddress(seeds: (Uint8Array | Buffer)[], programId: web3.PublicKey): PDA {
-  const [publicKey, bump] = utils.publicKey.findProgramAddressSync(seeds, programId);
-  return { publicKey, bump };
-}
+import { TransactionBuilder } from "@orca-so/common-sdk";
+import { web3, Provider } from "@project-serum/anchor";
 
 export function systemTransferTx(
   provider: Provider,

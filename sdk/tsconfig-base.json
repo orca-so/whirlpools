@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es6", 
+    "target": "es6",
     "module": "commonjs",
     "allowJs": false,
     "declaration": true,
@@ -11,5 +11,15 @@
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
-  }
+    "experimentalDecorators": true
+  },
+  "exclude": ["./dist/**/*"],
+  "references": [
+    {
+      "path": "./src/tsconfig.json"
+    },
+    {
+      "path": "./tests/tsconfig.json"
+    }
+  ]
 }

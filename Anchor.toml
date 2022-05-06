@@ -14,4 +14,4 @@ wallet = "~/.config/solana/id.json"
 # program = "../metaplex-program-library/token-metadata/target/deploy/mpl_token_metadata.so"
 
 [scripts]
-test = "ts-mocha -p sdk/tests/tsconfig.json -t 1000000 sdk/tests/**/*.ts"
+test = "ts-mocha -p sdk/tests/tsconfig.json -t 1000000 sdk/tests/**/*.test.ts"

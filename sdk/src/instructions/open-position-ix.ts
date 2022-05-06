@@ -1,19 +1,53 @@
 import { WhirlpoolContext } from "../context";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
-import { Instruction } from "../utils/transactions/transactions-builder";
-import { OpenPositionParams, PDA } from "..";
-import * as anchor from "@project-serum/anchor";
+import { PublicKey } from "@solana/web3.js";
+import { PDA, TransformableInstruction } from "@orca-so/common-sdk";
+import { METADATA_PROGRAM_ADDRESS } from "..";
 import {
   OpenPositionBumpsData,
   OpenPositionWithMetadataBumpsData,
 } from "../types/public/anchor-types";
-import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { METADATA_PROGRAM_ADDRESS } from "../utils/public";
+import { transformTx, openPositionAccounts } from "../utils/instructions-util";
 
-export function buildOpenPositionIx(
+/**
+ * Parameters to open a position in a Whirlpool.
+ *
+ * @category Instruction Types
+ * @param whirlpool - PublicKey for the whirlpool that the position will be opened for.
+ * @param ownerKey - PublicKey for the wallet that will host the minted position token.
+ * @param positionPda - PDA for the derived position address.
+ * @param positionMintAddress - PublicKey for the mint token for the Position token.
+ * @param positionTokenAccount - The associated token address for the position token in the owners wallet.
+ * @param tickLowerIndex - The tick specifying the lower end of the position range.
+ * @param tickUpperIndex - The tick specifying the upper end of the position range.
+ * @param funder - The account that would fund the creation of this account
+ */
+export type OpenPositionParams = {
+  whirlpool: PublicKey;
+  owner: PublicKey;
+  positionPda: PDA;
+  positionMintAddress: PublicKey;
+  positionTokenAccount: PublicKey;
+  tickLowerIndex: number;
+  tickUpperIndex: number;
+  funder: PublicKey;
+};
+
+/**
+ * Open a position in a Whirlpool. A unique token will be minted to represent the position in the users wallet.
+ * The position will start off with 0 liquidity.
+ *
+ * #### Special Errors
+ * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
+ *
+ * @category Instructions
+ * @param context - Context object containing services required to generate the instruction
+ * @param params - OpenPositionParams object
+ * @returns - Instruction to perform the action.
+ */
+export function openPositionIx(
   context: WhirlpoolContext,
   params: OpenPositionParams
-): Instruction {
+): TransformableInstruction {
   const { positionPda, tickLowerIndex, tickUpperIndex } = params;
 
   const bumps: OpenPositionBumpsData = {
@@ -24,17 +58,31 @@ export function buildOpenPositionIx(
     accounts: openPositionAccounts(params),
   });
 
-  return {
+  // TODO: Require Keypair and auto sign this ix
+  return transformTx(context, {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  };
+  });
 }
 
-export function buildOpenPositionWithMetadataIx(
+/**
+ * Open a position in a Whirlpool. A unique token will be minted to represent the position
+ * in the users wallet. Additional Metaplex metadata is appended to identify the token.
+ * The position will start off with 0 liquidity.
+ *
+ * #### Special Errors
+ * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
+ *
+ * @category Instructions
+ * @param context - Context object containing services required to generate the instruction
+ * @param params - OpenPositionParams object and a derived PDA that hosts the position's metadata.
+ * @returns - Instruction to perform the action.
+ */
+export function openPositionWithMetadataIx(
   context: WhirlpoolContext,
   params: OpenPositionParams & { metadataPda: PDA }
-): Instruction {
+): TransformableInstruction {
   const { positionPda, metadataPda, tickLowerIndex, tickUpperIndex } = params;
 
   const bumps: OpenPositionWithMetadataBumpsData = {
@@ -56,32 +104,10 @@ export function buildOpenPositionWithMetadataIx(
     }
   );
 
-  return {
+  // TODO: Require Keypair and auto sign this ix
+  return transformTx(context, {
     instructions: [ix],
     cleanupInstructions: [],
     signers: [],
-  };
-}
-
-export function openPositionAccounts(params: OpenPositionParams) {
-  const {
-    funder,
-    ownerKey,
-    positionPda,
-    positionMintAddress,
-    positionTokenAccountAddress,
-    whirlpoolKey,
-  } = params;
-  return {
-    funder: funder,
-    owner: ownerKey,
-    position: positionPda.publicKey,
-    positionMint: positionMintAddress,
-    positionTokenAccount: positionTokenAccountAddress,
-    whirlpool: whirlpoolKey,
-    tokenProgram: TOKEN_PROGRAM_ID,
-    systemProgram: SystemProgram.programId,
-    rent: anchor.web3.SYSVAR_RENT_PUBKEY,
-    associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
-  };
+  });
 }

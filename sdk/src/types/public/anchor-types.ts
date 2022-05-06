@@ -9,18 +9,32 @@ import { PublicKey } from "@solana/web3.js";
  * be hard-casted to fit the type.
  */
 
+/**
+ * Supported parasable account names from the Whirlpool contract.
+ * @category Parsables
+ */
 export enum AccountName {
   WhirlpoolsConfig = "WhirlpoolsConfig",
   Position = "Position",
   TickArray = "TickArray",
   Whirlpool = "Whirlpool",
+  FeeTier = "FeeTier",
 }
 
-export type TickSpacingData = {
-  stable?: {};
-  standard?: {};
+/**
+ * @category Solana Accounts
+ */
+export type WhirlpoolsConfigData = {
+  feeAuthority: PublicKey;
+  collectProtocolFeesAuthority: PublicKey;
+  rewardEmissionsSuperAuthority: PublicKey;
+  defaultFeeRate: number;
+  defaultProtocolFeeRate: number;
 };
 
+/**
+ * @category Solana Accounts
+ */
 export type WhirlpoolRewardInfoData = {
   mint: PublicKey;
   vault: PublicKey;
@@ -29,10 +43,16 @@ export type WhirlpoolRewardInfoData = {
   growthGlobalX64: BN;
 };
 
+/**
+ * @category Solana Accounts
+ */
 export type WhirlpoolBumpsData = {
   whirlpoolBump: number;
 };
 
+/**
+ * @category Solana Accounts
+ */
 export type WhirlpoolData = {
   whirlpoolsConfig: PublicKey;
   whirlpoolBump: number[];
@@ -54,12 +74,18 @@ export type WhirlpoolData = {
   tickSpacing: number;
 };
 
+/**
+ * @category Solana Accounts
+ */
 export type TickArrayData = {
   whirlpool: PublicKey;
   startTickIndex: number;
   ticks: TickData[];
 };
 
+/**
+ * @category Solana Accounts
+ */
 export type TickData = {
   initialized: boolean;
   liquidityNet: BN;
@@ -69,20 +95,32 @@ export type TickData = {
   rewardGrowthsOutside: BN[];
 };
 
+/**
+ * @category Solana Accounts
+ */
 export type PositionRewardInfoData = {
   growthInsideCheckpoint: BN;
   amountOwed: BN;
 };
 
+/**
+ * @category Solana Accounts
+ */
 export type OpenPositionBumpsData = {
   positionBump: number;
 };
 
+/**
+ * @category Solana Accounts
+ */
 export type OpenPositionWithMetadataBumpsData = {
   positionBump: number;
   metadataBump: number;
 };
 
+/**
+ * @category Solana Accounts
+ */
 export type PositionData = {
   whirlpool: PublicKey;
   positionMint: PublicKey;
@@ -96,6 +134,9 @@ export type PositionData = {
   rewardInfos: PositionRewardInfoData[];
 };
 
+/**
+ * @category Solana Accounts
+ */
 export type FeeTierData = {
   whirlpoolsConfig: PublicKey;
   tickSpacing: number;

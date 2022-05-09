@@ -13,6 +13,11 @@ import { PublicKey } from "@solana/web3.js";
 import { SwapQuote } from "./quotes/public";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
 
+/**
+ * Helper class to help interact with Whirlpool Accounts with a simpler interface.
+ *
+ * @category Core
+ */
 export interface WhirlpoolClient {
   /**
    * Get a Whirlpool object to interact with the Whirlpool account at the given address.
@@ -32,6 +37,7 @@ export interface WhirlpoolClient {
 /**
  * Construct a WhirlpoolClient instance to help interact with Whirlpools accounts with.
  *
+ * @category WhirlpoolClient
  * @param ctx - WhirlpoolContext object
  * @param fetcher - AccountFetcher instance to help fetch data with.
  * @returns a WhirlpoolClient instance to help with interacting with Whirlpools accounts.
@@ -42,6 +48,7 @@ export function buildWhirlpoolClient(ctx: WhirlpoolContext, fetcher: AccountFetc
 
 /**
  * Helper class to interact with a Whirlpool account and build complex transactions.
+ * @category WhirlpoolClient
  */
 export interface Whirlpool {
   /**
@@ -161,6 +168,7 @@ export interface Whirlpool {
 
 /**
  * Helper class to interact with a Position account and build complex transactions.
+ * @category WhirlpoolClient
  */
 export interface Position {
   /**

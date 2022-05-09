@@ -13,7 +13,7 @@ const PDA_FEE_TIER_SEED = "fee_tier";
 const PDA_ORACLE_SEED = "oracle";
 
 /**
- * @category Program Derived Addresses
+ * @category Whirlpool Utils
  */
 export class PDAUtil {
   /**

@@ -1,7 +1,7 @@
 # Whirlpools
 
 Whirpools is an open-source concentrated liquidity AMM contract on the Solana blockchain.
-This repository contains the Rust smart contract as well as the Typescript SDK (`@orca-so/whirlpool-sdk`) to interact with a deployed program.
+This repository contains the Rust smart contract as well as the Typescript SDK (`@orca-so/whirlpools-sdk`) to interact with a deployed program.
 
 The contract has been audited by Kudelski and Neodyme.
 
@@ -32,7 +32,6 @@ Instructions on how to interact with the Whirlpools contract is documented in th
 ## Tests
 
 - Run "cargo test --lib" to run Rust unit tests
-- Run "anchor test" to run integration tests
 
 ---
 
@@ -45,7 +44,7 @@ Use the SDK to interact with a deployed Whirlpools program via Typescript.
 In your package, run:
 
 ```
-yarn add `@orca-so/whirlpool-sdk`
+yarn add `@orca-so/whirlpools-sdk`
 ```
 
 ## Usage
@@ -78,4 +77,4 @@ Got ideas on how to improve the system? Open up an issue on github with the pref
 
 # License
 
-[MIT](https://choosealicense.com/licenses/mit/)
+[Apache 2.0](https://choosealicense.com/licenses/apache-2.0/)

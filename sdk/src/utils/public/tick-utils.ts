@@ -143,6 +143,10 @@ export class TickUtil {
   }
 }
 
+/**
+ * A collection of utility functions when interacting with a TickArray.
+ * @category Whirlpool Utils
+ */
 export class TickArrayUtil {
   /**
    * Get the tick from tickArray with a global tickIndex.

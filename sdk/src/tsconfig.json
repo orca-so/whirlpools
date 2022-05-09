@@ -6,6 +6,6 @@
   "include": ["./**/*", "./artifacts/**/*.json"],
   "typedocOptions": {
     "entryPoints": ["index.ts"],
-    "out": "../../target/typedocs"
+    "out": "../../docs"
   }
 }

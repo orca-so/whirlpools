@@ -1,229 +1,203 @@
-import { BN } from "@project-serum/anchor";
+import invariant from "tiny-invariant";
+import { Address, BN } from "@project-serum/anchor";
+import { PublicKey } from "@solana/web3.js";
+import {
+  MAX_TICK_INDEX,
+  MIN_TICK_INDEX,
+  TickArrayData,
+  TickData,
+  TICK_ARRAY_SIZE,
+} from "../../types/public";
+import { PDAUtil } from "./pda-utils";
 
-export const MAX_TICK_INDEX = 443636;
-export const MIN_TICK_INDEX = -443636;
-export const TICK_ARRAY_SIZE = 88;
-
-export const MAX_SQRT_PRICE = "79226673515401279992447579055";
-export const MIN_SQRT_PRICE = "4295048016";
-
-const BIT_PRECISION = 14;
-const LOG_B_2_X32 = "59543866431248";
-const LOG_B_P_ERR_MARGIN_LOWER_X64 = "184467440737095516";
-const LOG_B_P_ERR_MARGIN_UPPER_X64 = "15793534762490258745";
-
-export function tickIndexToSqrtPriceX64(tickIndex: number): BN {
-  if (tickIndex > MAX_TICK_INDEX || tickIndex < MIN_TICK_INDEX) {
-    throw new Error("Provided tick index does not fit within supported tick index range.");
-  }
-
-  if (tickIndex > 0) {
-    return new BN(tickIndexToSqrtPricePositive(tickIndex));
-  } else {
-    return new BN(tickIndexToSqrtPriceNegative(tickIndex));
-  }
+enum TickSearchDirection {
+  Left,
+  Right,
 }
 
-export function sqrtPriceX64ToTickIndex(sqrtPriceX64: BN): number {
-  if (sqrtPriceX64.gt(new BN(MAX_SQRT_PRICE)) || sqrtPriceX64.lt(new BN(MIN_SQRT_PRICE))) {
-    throw new Error("Provided sqrtPrice is not within the supported sqrtPrice range.");
+/**
+ * A collection of utility functions when interacting with Ticks.
+ * @category Whirlpool Utils
+ */
+export class TickUtil {
+  private constructor() {}
+
+  /**
+   * Get the startIndex of the tick array containing tickIndex.
+   *
+   * @param tickIndex
+   * @param tickSpacing
+   * @param offset can be used to get neighboring tick array startIndex.
+   * @returns
+   */
+  public static getStartTickIndex(tickIndex: number, tickSpacing: number, offset = 0): number {
+    const realIndex = Math.floor(tickIndex / tickSpacing / TICK_ARRAY_SIZE);
+    const startTickIndex = (realIndex + offset) * tickSpacing * TICK_ARRAY_SIZE;
+
+    const ticksInArray = TICK_ARRAY_SIZE * tickSpacing;
+    const minTickIndex = MIN_TICK_INDEX - ((MIN_TICK_INDEX % ticksInArray) + ticksInArray);
+    invariant(startTickIndex >= minTickIndex, "startTickIndex is too small");
+    invariant(startTickIndex <= MAX_TICK_INDEX, "startTickIndex is too large");
+    return startTickIndex;
   }
 
-  const msb = sqrtPriceX64.bitLength() - 1;
-  const adjustedMsb = new BN(msb - 64);
-  const log2pIntegerX32 = signedShiftLeft(adjustedMsb, 32, 128);
-
-  let bit = new BN("8000000000000000", "hex");
-  let precision = 0;
-  let log2pFractionX64 = new BN(0);
-
-  let r = msb >= 64 ? sqrtPriceX64.shrn(msb - 63) : sqrtPriceX64.shln(63 - msb);
-
-  while (bit.gt(new BN(0)) && precision < BIT_PRECISION) {
-    r = r.mul(r);
-    let rMoreThanTwo = r.shrn(127);
-    r = r.shrn(63 + rMoreThanTwo.toNumber());
-    log2pFractionX64 = log2pFractionX64.add(bit.mul(rMoreThanTwo));
-    bit = bit.shrn(1);
-    precision += 1;
+  /**
+   * Get the nearest (rounding down) valid tick index from the tickIndex.
+   * A valid tick index is a point on the tick spacing grid line.
+   */
+  public static getInitializableTickIndex(tickIndex: number, tickSpacing: number): number {
+    return tickIndex - (tickIndex % tickSpacing);
   }
 
-  const log2pFractionX32 = log2pFractionX64.shrn(32);
+  public static getNextInitializableTickIndex(tickIndex: number, tickSpacing: number) {
+    return TickUtil.getInitializableTickIndex(tickIndex, tickSpacing) + tickSpacing;
+  }
 
-  const log2pX32 = log2pIntegerX32.add(log2pFractionX32);
-  const logbpX64 = log2pX32.mul(new BN(LOG_B_2_X32));
+  public static getPrevInitializableTickIndex(tickIndex: number, tickSpacing: number) {
+    return TickUtil.getInitializableTickIndex(tickIndex, tickSpacing) - tickSpacing;
+  }
 
-  const tickLow = signedShiftRight(
-    logbpX64.sub(new BN(LOG_B_P_ERR_MARGIN_LOWER_X64)),
-    64,
-    128
-  ).toNumber();
-  const tickHigh = signedShiftRight(
-    logbpX64.add(new BN(LOG_B_P_ERR_MARGIN_UPPER_X64)),
-    64,
-    128
-  ).toNumber();
+  /**
+   * Get the previous initialized tick index within the same tick array.
+   *
+   * @param account
+   * @param currentTickIndex
+   * @param tickSpacing
+   * @returns
+   */
+  public static findPreviousInitializedTickIndex(
+    account: TickArrayData,
+    currentTickIndex: number,
+    tickSpacing: number
+  ): number | null {
+    return TickUtil.findInitializedTick(
+      account,
+      currentTickIndex,
+      tickSpacing,
+      TickSearchDirection.Left
+    );
+  }
 
-  if (tickLow == tickHigh) {
-    return tickLow;
-  } else {
-    const derivedTickHighSqrtPriceX64 = tickIndexToSqrtPriceX64(tickHigh);
-    if (derivedTickHighSqrtPriceX64.lte(sqrtPriceX64)) {
-      return tickHigh;
-    } else {
-      return tickLow;
+  /**
+   * Get the next initialized tick index within the same tick array.
+   * @param account
+   * @param currentTickIndex
+   * @param tickSpacing
+   * @returns
+   */
+  public static findNextInitializedTickIndex(
+    account: TickArrayData,
+    currentTickIndex: number,
+    tickSpacing: number
+  ): number | null {
+    return TickUtil.findInitializedTick(
+      account,
+      currentTickIndex,
+      tickSpacing,
+      TickSearchDirection.Right
+    );
+  }
+
+  private static findInitializedTick(
+    account: TickArrayData,
+    currentTickIndex: number,
+    tickSpacing: number,
+    searchDirection: TickSearchDirection
+  ): number | null {
+    const currentTickArrayIndex = tickIndexToInnerIndex(
+      account.startTickIndex,
+      currentTickIndex,
+      tickSpacing
+    );
+
+    const increment = searchDirection === TickSearchDirection.Right ? 1 : -1;
+
+    let stepInitializedTickArrayIndex =
+      searchDirection === TickSearchDirection.Right
+        ? currentTickArrayIndex + increment
+        : currentTickArrayIndex;
+    while (
+      stepInitializedTickArrayIndex >= 0 &&
+      stepInitializedTickArrayIndex < account.ticks.length
+    ) {
+      if (account.ticks[stepInitializedTickArrayIndex]?.initialized) {
+        return innerIndexToTickIndex(
+          account.startTickIndex,
+          stepInitializedTickArrayIndex,
+          tickSpacing
+        );
+      }
+
+      stepInitializedTickArrayIndex += increment;
     }
+
+    return null;
+  }
+
+  public static checkTickInBounds(tick: number) {
+    return tick <= MAX_TICK_INDEX && tick >= MIN_TICK_INDEX;
+  }
+
+  public static isTickInitializable(tick: number, tickSpacing: number) {
+    return tick % tickSpacing === 0;
   }
 }
 
-export function getStartTickIndex(tickIndex: number, tickSpacing: number): number {
-  const ticksInArray = tickSpacing * TICK_ARRAY_SIZE;
-  return Math.floor(tickIndex / ticksInArray) * ticksInArray;
+export class TickArrayUtil {
+  /**
+   * Get the tick from tickArray with a global tickIndex.
+   */
+  public static getTickFromArray(
+    tickArray: TickArrayData,
+    tickIndex: number,
+    tickSpacing: number
+  ): TickData {
+    const realIndex = tickIndexToInnerIndex(tickArray.startTickIndex, tickIndex, tickSpacing);
+    const tick = tickArray.ticks[realIndex];
+    invariant(
+      !!tick,
+      `tick realIndex out of range - start - ${tickArray.startTickIndex} index - ${tickIndex}, realIndex - ${realIndex}`
+    );
+    return tick;
+  }
+
+  /**
+   *
+   * @param tickLowerIndex
+   * @param tickUpperIndex
+   * @param tickSpacing
+   * @param whirlpool
+   * @param programId
+   * @returns
+   */
+  public static getAdjacentTickArrays(
+    tickLowerIndex: number,
+    tickUpperIndex: number,
+    tickSpacing: number,
+    whirlpool: PublicKey,
+    programId: PublicKey
+  ): [PublicKey, PublicKey] {
+    return [
+      PDAUtil.getTickArrayFromTickIndex(tickLowerIndex, tickSpacing, whirlpool, programId)
+        .publicKey,
+      PDAUtil.getTickArrayFromTickIndex(tickUpperIndex, tickSpacing, whirlpool, programId)
+        .publicKey,
+    ];
+  }
 }
 
-function tickIndexToSqrtPricePositive(tick: number) {
-  let ratio: BN;
-
-  if ((tick & 1) != 0) {
-    ratio = new BN("79232123823359799118286999567");
-  } else {
-    ratio = new BN("79228162514264337593543950336");
-  }
-
-  if ((tick & 2) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("79236085330515764027303304731")), 96, 256);
-  }
-  if ((tick & 4) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("79244008939048815603706035061")), 96, 256);
-  }
-  if ((tick & 8) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("79259858533276714757314932305")), 96, 256);
-  }
-  if ((tick & 16) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("79291567232598584799939703904")), 96, 256);
-  }
-  if ((tick & 32) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("79355022692464371645785046466")), 96, 256);
-  }
-  if ((tick & 64) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("79482085999252804386437311141")), 96, 256);
-  }
-  if ((tick & 128) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("79736823300114093921829183326")), 96, 256);
-  }
-  if ((tick & 256) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("80248749790819932309965073892")), 96, 256);
-  }
-  if ((tick & 512) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("81282483887344747381513967011")), 96, 256);
-  }
-  if ((tick & 1024) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("83390072131320151908154831281")), 96, 256);
-  }
-  if ((tick & 2048) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("87770609709833776024991924138")), 96, 256);
-  }
-  if ((tick & 4096) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("97234110755111693312479820773")), 96, 256);
-  }
-  if ((tick & 8192) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("119332217159966728226237229890")), 96, 256);
-  }
-  if ((tick & 16384) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("179736315981702064433883588727")), 96, 256);
-  }
-  if ((tick & 32768) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("407748233172238350107850275304")), 96, 256);
-  }
-  if ((tick & 65536) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("2098478828474011932436660412517")), 96, 256);
-  }
-  if ((tick & 131072) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("55581415166113811149459800483533")), 96, 256);
-  }
-  if ((tick & 262144) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("38992368544603139932233054999993551")), 96, 256);
-  }
-
-  return signedShiftRight(ratio, 32, 256);
+function tickIndexToInnerIndex(
+  startTickIndex: number,
+  tickIndex: number,
+  tickSpacing: number
+): number {
+  return Math.floor((tickIndex - startTickIndex) / tickSpacing);
 }
 
-function tickIndexToSqrtPriceNegative(tickIndex: number) {
-  let tick = Math.abs(tickIndex);
-  let ratio: BN;
-
-  if ((tick & 1) != 0) {
-    ratio = new BN("18445821805675392311");
-  } else {
-    ratio = new BN("18446744073709551616");
-  }
-
-  if ((tick & 2) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("18444899583751176498")), 64, 256);
-  }
-  if ((tick & 4) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("18443055278223354162")), 64, 256);
-  }
-  if ((tick & 8) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("18439367220385604838")), 64, 256);
-  }
-  if ((tick & 16) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("18431993317065449817")), 64, 256);
-  }
-  if ((tick & 32) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("18417254355718160513")), 64, 256);
-  }
-  if ((tick & 64) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("18387811781193591352")), 64, 256);
-  }
-  if ((tick & 128) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("18329067761203520168")), 64, 256);
-  }
-  if ((tick & 256) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("18212142134806087854")), 64, 256);
-  }
-  if ((tick & 512) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("17980523815641551639")), 64, 256);
-  }
-  if ((tick & 1024) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("17526086738831147013")), 64, 256);
-  }
-  if ((tick & 2048) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("16651378430235024244")), 64, 256);
-  }
-  if ((tick & 4096) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("15030750278693429944")), 64, 256);
-  }
-  if ((tick & 8192) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("12247334978882834399")), 64, 256);
-  }
-  if ((tick & 16384) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("8131365268884726200")), 64, 256);
-  }
-  if ((tick & 32768) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("3584323654723342297")), 64, 256);
-  }
-  if ((tick & 65536) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("696457651847595233")), 64, 256);
-  }
-  if ((tick & 131072) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("26294789957452057")), 64, 256);
-  }
-  if ((tick & 262144) != 0) {
-    ratio = signedShiftRight(ratio.mul(new BN("37481735321082")), 64, 256);
-  }
-
-  return ratio;
-}
-
-function signedShiftLeft(n0: BN, shiftBy: number, bitWidth: number) {
-  let twosN0 = n0.toTwos(bitWidth).shln(shiftBy);
-  twosN0.imaskn(bitWidth + 1);
-  return twosN0.fromTwos(bitWidth);
-}
-
-function signedShiftRight(n0: BN, shiftBy: number, bitWidth: number) {
-  let twoN0 = n0.toTwos(bitWidth).shrn(shiftBy);
-  twoN0.imaskn(bitWidth - shiftBy + 1);
-  return twoN0.fromTwos(bitWidth - shiftBy);
+function innerIndexToTickIndex(
+  startTickIndex: number,
+  tickArrayIndex: number,
+  tickSpacing: number
+): number {
+  return startTickIndex + tickArrayIndex * tickSpacing;
 }

@@ -6,6 +6,7 @@ This repository contains the Rust smart contract as well as the Typescript SDK (
 The contract has been audited by Kudelski and Neodyme.
 
 ## Requirements
+
 - Anchor 0.20.1
 - Solana 1.9.3
 - Rust 1.59.0
@@ -18,12 +19,14 @@ Set up a valid Solana keypair at the path specified in the `wallet` in `Anchor.t
 
 `$NODE_PATH` must be set to the `node_modules` directory of your global installs.
 For example, using Node 16.10.0 installed through `nvm`, the $NODE_PATH is the following:
+
 ```
 $ echo $NODE_PATH
 /Users/<home_dir>/.nvm/versions/node/v16.10.0/lib/node_modules
 ```
 
 ## Usage
+
 Instructions on how to interact with the Whirlpools contract is documented in the Orca Developer Portal.
 
 ## Tests
@@ -33,7 +36,6 @@ Instructions on how to interact with the Whirlpools contract is documented in th
 
 ---
 
-
 # Whirlpool SDK
 
 Use the SDK to interact with a deployed Whirlpools program via Typescript.
@@ -41,14 +43,25 @@ Use the SDK to interact with a deployed Whirlpools program via Typescript.
 ## Installation
 
 In your package, run:
+
 ```
 yarn add `@orca-so/whirlpool-sdk`
 ```
 
 ## Usage
+
 Read instructions on how to use the SDK on the Orca Developer Portal.
 
+## Run Typescript tests via local validator
+
+In the whirlpools/sdk folder, run:
+
+```
+anchor test
+```
+
 ## Generate TypeDoc
+
 In the `sdk` folder, run `yarn run docs`
 
 ---

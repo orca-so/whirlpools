@@ -1,6 +1,6 @@
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { u64 } from "@solana/spl-token";
-import { getStartTickIndex, InitPoolParams, WhirlpoolClient } from "../../src";
+import { InitConfigParams, InitPoolParams, TickUtil, WhirlpoolContext } from "../../src";
 import {
   FundedPositionInfo,
   FundedPositionParams,
@@ -30,9 +30,9 @@ interface InitializedRewardInfo {
 }
 
 export class WhirlpoolTestFixture {
-  private client: WhirlpoolClient;
-  private poolInitInfo = defaultPoolInitInfo;
-  private configInitInfo = defaultConfigInitInfo;
+  private ctx: WhirlpoolContext;
+  private poolInitInfo: InitPoolParams = defaultPoolInitInfo;
+  private configInitInfo: InitConfigParams = defaultConfigInitInfo;
   private configKeypairs = defaultConfigKeypairs;
   private positions: FundedPositionInfo[] = [];
   private rewards: InitializedRewardInfo[] = [];
@@ -40,15 +40,15 @@ export class WhirlpoolTestFixture {
   private tokenAccountB = PublicKey.default;
   private initialized = false;
 
-  constructor(client: WhirlpoolClient) {
-    this.client = client;
+  constructor(ctx: WhirlpoolContext) {
+    this.ctx = ctx;
   }
 
   async init(params: InitFixtureParams): Promise<WhirlpoolTestFixture> {
     const { tickSpacing, initialSqrtPrice, positions, rewards } = params;
 
     const { poolInitInfo, configInitInfo, configKeypairs, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(this.client, tickSpacing, initialSqrtPrice);
+      await initTestPoolWithTokens(this.ctx, tickSpacing, initialSqrtPrice);
 
     this.poolInitInfo = poolInitInfo;
     this.configInitInfo = configInitInfo;
@@ -57,10 +57,10 @@ export class WhirlpoolTestFixture {
     this.tokenAccountB = tokenAccountB;
 
     if (positions) {
-      await initTickArrays(this.client, poolInitInfo, positions);
+      await initTickArrays(this.ctx, poolInitInfo, positions);
 
       this.positions = await fundPositions(
-        this.client,
+        this.ctx,
         poolInitInfo,
         tokenAccountA,
         tokenAccountB,
@@ -74,7 +74,7 @@ export class WhirlpoolTestFixture {
         // Iterate because we enforce sequential initialization on the smart contract
         initRewards.push(
           await initRewardAndSetEmissions(
-            this.client,
+            this.ctx,
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
             i,
@@ -106,37 +106,38 @@ export class WhirlpoolTestFixture {
 }
 
 async function initTickArrays(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   poolInitInfo: InitPoolParams,
   positions: FundedPositionParams[]
 ) {
   const startTickSet = new Set<number>();
   positions.forEach((p) => {
-    startTickSet.add(getStartTickIndex(p.tickLowerIndex, poolInitInfo.tickSpacing));
-    startTickSet.add(getStartTickIndex(p.tickUpperIndex, poolInitInfo.tickSpacing));
+    startTickSet.add(TickUtil.getStartTickIndex(p.tickLowerIndex, poolInitInfo.tickSpacing));
+    startTickSet.add(TickUtil.getStartTickIndex(p.tickUpperIndex, poolInitInfo.tickSpacing));
   });
 
   return Promise.all(
     Array.from(startTickSet).map((startTick) =>
-      initTickArray(client, poolInitInfo.whirlpoolPda.publicKey, startTick)
+      initTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick)
     )
   );
 }
 
-const defaultPoolInitInfo = {
+const defaultPoolInitInfo: InitPoolParams = {
   initSqrtPrice: ZERO_BN,
-  whirlpoolConfigKey: PublicKey.default,
+  whirlpoolsConfig: PublicKey.default,
   tokenMintA: PublicKey.default,
   tokenMintB: PublicKey.default,
   whirlpoolPda: { publicKey: PublicKey.default, bump: 0 },
   tokenVaultAKeypair: Keypair.generate(),
   tokenVaultBKeypair: Keypair.generate(),
   tickSpacing: TickSpacing.Standard,
+  feeTierKey: PublicKey.default,
   funder: PublicKey.default,
 };
 
 const defaultConfigInitInfo = {
-  whirlpoolConfigKeypair: Keypair.generate(),
+  whirlpoolsConfigKeypair: Keypair.generate(),
   feeAuthority: PublicKey.default,
   collectProtocolFeesAuthority: PublicKey.default,
   rewardEmissionsSuperAuthority: PublicKey.default,

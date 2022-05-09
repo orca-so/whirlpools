@@ -5,7 +5,7 @@
 ],
  "references": [
   {
-     "path": "./sdk"
+     "path": "./sdk/src"
   },
   {
      "path": "./scripts"

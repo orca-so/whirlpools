@@ -5,14 +5,14 @@ import {
   InitPoolParams,
   InitializeRewardParams,
   TICK_ARRAY_SIZE,
-  tickIndexToSqrtPriceX64,
-  getTokenAmountsFromLiquidity,
-  toX64_BN,
-  getTickArrayPda,
-  getStartTickIndex,
+  WhirlpoolContext,
+  AccountFetcher,
   InitConfigParams,
+  TickUtil,
+  PriceMath,
+  WhirlpoolIx,
+  PDAUtil,
 } from "../../src";
-import { WhirlpoolClient } from "../../src/client";
 import {
   generateDefaultConfigParams,
   generateDefaultInitFeeTierParams,
@@ -29,37 +29,39 @@ import {
   ZERO_BN,
 } from ".";
 import { u64 } from "@solana/spl-token";
-import { PDA } from "../../src/types/public/helper-types";
+import { PoolUtil } from "../../src/utils/public/pool-utils";
+import { MathUtil, PDA } from "@orca-so/common-sdk";
+import { toTx } from "../../src/utils/instructions-util";
 
-const defaultInitSqrtPrice = toX64_BN(new u64(5));
+const defaultInitSqrtPrice = MathUtil.toX64_BN(new u64(5));
 
 /**
- * Initialize a brand new WhirlpoolConfig account and construct a set of InitPoolParams
+ * Initialize a brand new WhirlpoolsConfig account and construct a set of InitPoolParams
  * that can be used to initialize a pool with.
  * @param client - an instance of whirlpool client containing the program & provider
  * @param initSqrtPrice - the initial sqrt-price for this newly generated pool
  * @returns An object containing the params used to init the config account & the param that can be used to init the pool account.
  */
 export async function buildTestPoolParams(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   tickSpacing: number,
   defaultFeeRate = 3000,
   initSqrtPrice = defaultInitSqrtPrice,
   funder?: PublicKey
 ) {
-  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(client.context);
-  await client.initConfigTx(configInitInfo).buildAndExecute();
+  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+  await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
 
   const { params: feeTierParams } = await initFeeTier(
-    client,
+    ctx,
     configInitInfo,
     configKeypairs.feeAuthorityKeypair,
     tickSpacing,
     defaultFeeRate
   );
   const poolInitInfo = await generateDefaultInitPoolParams(
-    client.context,
-    configInitInfo.whirlpoolConfigKeypair.publicKey,
+    ctx,
+    configInitInfo.whirlpoolsConfigKeypair.publicKey,
     feeTierParams.feeTierPda.publicKey,
     tickSpacing,
     initSqrtPrice,
@@ -74,26 +76,26 @@ export async function buildTestPoolParams(
 }
 
 /**
- * Initialize a brand new set of WhirlpoolConfig & Whirlpool account
+ * Initialize a brand new set of WhirlpoolsConfig & Whirlpool account
  * @param client - an instance of whirlpool client containing the program & provider
  * @param initSqrtPrice - the initial sqrt-price for this newly generated pool
  * @returns An object containing the params used to initialize both accounts.
  */
 export async function initTestPool(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   tickSpacing: number,
   initSqrtPrice = defaultInitSqrtPrice,
   funder?: Keypair
 ) {
   const { configInitInfo, poolInitInfo, configKeypairs, feeTierParams } = await buildTestPoolParams(
-    client,
+    ctx,
     tickSpacing,
     3000,
     initSqrtPrice,
     funder?.publicKey
   );
 
-  const tx = client.initPoolTx(poolInitInfo);
+  const tx = toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, poolInitInfo));
   if (funder) {
     tx.addSigner(funder);
   }
@@ -108,7 +110,7 @@ export async function initTestPool(
 }
 
 export async function initFeeTier(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   configInitInfo: InitConfigParams,
   feeAuthorityKeypair: Keypair,
   tickSpacing: number,
@@ -116,15 +118,17 @@ export async function initFeeTier(
   funder?: Keypair
 ) {
   const params = generateDefaultInitFeeTierParams(
-    client.context,
-    configInitInfo.whirlpoolConfigKeypair.publicKey,
+    ctx,
+    configInitInfo.whirlpoolsConfigKeypair.publicKey,
     configInitInfo.feeAuthority,
     tickSpacing,
     defaultFeeRate,
     funder?.publicKey
   );
 
-  const tx = client.initFeeTierTx(params).addSigner(feeAuthorityKeypair);
+  const tx = toTx(ctx, WhirlpoolIx.initializeFeeTierIx(ctx.program, params)).addSigner(
+    feeAuthorityKeypair
+  );
   if (funder) {
     tx.addSigner(funder);
   }
@@ -136,26 +140,28 @@ export async function initFeeTier(
 }
 
 export async function initializeReward(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   rewardAuthorityKeypair: anchor.web3.Keypair,
   whirlpool: PublicKey,
   rewardIndex: number,
   funder?: Keypair
 ): Promise<{ txId: string; params: InitializeRewardParams }> {
-  const provider = client.context.provider;
+  const provider = ctx.provider;
   const rewardMint = await createMint(provider);
   const rewardVaultKeypair = anchor.web3.Keypair.generate();
 
   const params = {
     rewardAuthority: rewardAuthorityKeypair.publicKey,
-    funder: funder?.publicKey || client.context.wallet.publicKey,
+    funder: funder?.publicKey || ctx.wallet.publicKey,
     whirlpool,
     rewardMint,
     rewardVaultKeypair,
     rewardIndex,
   };
 
-  const tx = client.initializeRewardTx(params).addSigner(rewardAuthorityKeypair);
+  const tx = toTx(ctx, WhirlpoolIx.initializeRewardIx(ctx.program, params)).addSigner(
+    rewardAuthorityKeypair
+  );
   if (funder) {
     tx.addSigner(funder);
   }
@@ -167,7 +173,7 @@ export async function initializeReward(
 }
 
 export async function initRewardAndSetEmissions(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   rewardAuthorityKeypair: anchor.web3.Keypair,
   whirlpool: PublicKey,
   rewardIndex: number,
@@ -177,36 +183,33 @@ export async function initRewardAndSetEmissions(
 ) {
   const {
     params: { rewardMint, rewardVaultKeypair },
-  } = await initializeReward(client, rewardAuthorityKeypair, whirlpool, rewardIndex, funder);
-  await mintToByAuthority(
-    client.context.provider,
-    rewardMint,
-    rewardVaultKeypair.publicKey,
-    vaultAmount
-  );
-  await client
-    .setRewardEmissionsTx({
+  } = await initializeReward(ctx, rewardAuthorityKeypair, whirlpool, rewardIndex, funder);
+  await mintToByAuthority(ctx.provider, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
+  await toTx(
+    ctx,
+    WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
       rewardAuthority: rewardAuthorityKeypair.publicKey,
       whirlpool,
       rewardIndex,
-      rewardVault: rewardVaultKeypair.publicKey,
+      rewardVaultKey: rewardVaultKeypair.publicKey,
       emissionsPerSecondX64,
     })
+  )
     .addSigner(rewardAuthorityKeypair)
     .buildAndExecute();
   return { rewardMint, rewardVaultKeypair };
 }
 
 export async function openPosition(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   whirlpool: PublicKey,
   tickLowerIndex: number,
   tickUpperIndex: number,
-  owner: PublicKey = client.context.provider.wallet.publicKey,
+  owner: PublicKey = ctx.provider.wallet.publicKey,
   funder?: Keypair
 ) {
   return openPositionWithOptMetadata(
-    client,
+    ctx,
     whirlpool,
     tickLowerIndex,
     tickUpperIndex,
@@ -217,15 +220,15 @@ export async function openPosition(
 }
 
 export async function openPositionWithMetadata(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   whirlpool: PublicKey,
   tickLowerIndex: number,
   tickUpperIndex: number,
-  owner: PublicKey = client.context.provider.wallet.publicKey,
+  owner: PublicKey = ctx.provider.wallet.publicKey,
   funder?: Keypair
 ) {
   return openPositionWithOptMetadata(
-    client,
+    ctx,
     whirlpool,
     tickLowerIndex,
     tickUpperIndex,
@@ -236,23 +239,25 @@ export async function openPositionWithMetadata(
 }
 
 async function openPositionWithOptMetadata(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   whirlpool: PublicKey,
   tickLowerIndex: number,
   tickUpperIndex: number,
   withMetadata: boolean = false,
-  owner: PublicKey = client.context.provider.wallet.publicKey,
+  owner: PublicKey = ctx.provider.wallet.publicKey,
   funder?: Keypair
 ) {
   const { params, mint } = await generateDefaultOpenPositionParams(
-    client.context,
+    ctx,
     whirlpool,
     tickLowerIndex,
     tickUpperIndex,
     owner,
-    funder?.publicKey || client.context.provider.wallet.publicKey
+    funder?.publicKey || ctx.provider.wallet.publicKey
   );
-  let tx = withMetadata ? client.openPositionWithMetadataTx(params) : client.openPositionTx(params);
+  let tx = withMetadata
+    ? toTx(ctx, WhirlpoolIx.openPositionWithMetadataIx(ctx.program, params))
+    : toTx(ctx, WhirlpoolIx.openPositionIx(ctx.program, params));
   tx.addSigner(mint);
   if (funder) {
     tx.addSigner(funder);
@@ -262,18 +267,18 @@ async function openPositionWithOptMetadata(
 }
 
 export async function initTickArray(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   whirlpool: PublicKey,
   startTickIndex: number,
   funder?: Keypair
 ): Promise<{ txId: string; params: InitTickArrayParams }> {
   const params = generateDefaultInitTickArrayParams(
-    client.context,
+    ctx,
     whirlpool,
     startTickIndex,
     funder?.publicKey
   );
-  const tx = client.initTickArrayTx(params);
+  const tx = toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, params));
   if (funder) {
     tx.addSigner(funder);
   }
@@ -281,14 +286,14 @@ export async function initTickArray(
 }
 
 export async function initTestPoolWithTokens(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   tickSpacing: number,
   initSqrtPrice = defaultInitSqrtPrice
 ) {
-  const provider = client.context.provider;
+  const provider = ctx.provider;
 
   const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPool(
-    client,
+    ctx,
     tickSpacing,
     initSqrtPrice
   );
@@ -307,7 +312,7 @@ export async function initTestPoolWithTokens(
 }
 
 export async function initTickArrayRange(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   whirlpool: PublicKey,
   startTickIndex: number,
   arrayCount: number,
@@ -320,7 +325,7 @@ export async function initTickArrayRange(
 
   for (let i = 0; i < arrayCount; i++) {
     const { params } = await initTickArray(
-      client,
+      ctx,
       whirlpool,
       startTickIndex + direction * ticksInArray * i
     );
@@ -337,20 +342,29 @@ export type FundedPositionParams = {
 };
 
 export async function withdrawPositions(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   positionInfos: FundedPositionInfo[],
   tokenOwnerAccountA: PublicKey,
   tokenOwnerAccountB: PublicKey
 ) {
+  const fetcher = new AccountFetcher(ctx.connection);
   await Promise.all(
     positionInfos.map(async (info) => {
-      const pool = await client.getPool(info.initParams.whirlpoolKey);
-      const position = await client.getPosition(info.initParams.positionPda.publicKey);
+      const pool = await fetcher.getPool(info.initParams.whirlpool);
+      const position = await fetcher.getPosition(info.initParams.positionPda.publicKey);
 
-      const priceLower = tickIndexToSqrtPriceX64(position.tickLowerIndex);
-      const priceUpper = tickIndexToSqrtPriceX64(position.tickUpperIndex);
+      if (!pool) {
+        throw new Error(`Failed to fetch pool - ${info.initParams.whirlpool}`);
+      }
 
-      const { tokenA, tokenB } = getTokenAmountsFromLiquidity(
+      if (!position) {
+        throw new Error(`Failed to fetch position - ${info.initParams.whirlpool}`);
+      }
+
+      const priceLower = PriceMath.tickIndexToSqrtPriceX64(position.tickLowerIndex);
+      const priceUpper = PriceMath.tickIndexToSqrtPriceX64(position.tickUpperIndex);
+
+      const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
         position.liquidity,
         pool.sqrtPrice,
         priceLower,
@@ -361,28 +375,29 @@ export async function withdrawPositions(
       const numTicksInTickArray = pool.tickSpacing * TICK_ARRAY_SIZE;
       const lowerStartTick =
         position.tickLowerIndex - (position.tickLowerIndex % numTicksInTickArray);
-      const tickArrayLower = getTickArrayPda(
-        client.context.program.programId,
-        info.initParams.whirlpoolKey,
+      const tickArrayLower = PDAUtil.getTickArray(
+        ctx.program.programId,
+        info.initParams.whirlpool,
         lowerStartTick
       );
       const upperStartTick =
         position.tickUpperIndex - (position.tickUpperIndex % numTicksInTickArray);
-      const tickArrayUpper = getTickArrayPda(
-        client.context.program.programId,
-        info.initParams.whirlpoolKey,
+      const tickArrayUpper = PDAUtil.getTickArray(
+        ctx.program.programId,
+        info.initParams.whirlpool,
         upperStartTick
       );
 
-      await client
-        .decreaseLiquidityTx({
+      await toTx(
+        ctx,
+        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
           liquidityAmount: position.liquidity,
           tokenMinA: tokenA,
           tokenMinB: tokenB,
-          whirlpool: info.initParams.whirlpoolKey,
-          positionAuthority: client.context.provider.wallet.publicKey,
+          whirlpool: info.initParams.whirlpool,
+          positionAuthority: ctx.provider.wallet.publicKey,
           position: info.initParams.positionPda.publicKey,
-          positionTokenAccount: info.initParams.positionTokenAccountAddress,
+          positionTokenAccount: info.initParams.positionTokenAccount,
           tokenOwnerAccountA,
           tokenOwnerAccountB,
           tokenVaultA: pool.tokenVaultA,
@@ -390,20 +405,21 @@ export async function withdrawPositions(
           tickArrayLower: tickArrayLower.publicKey,
           tickArrayUpper: tickArrayUpper.publicKey,
         })
-        .buildAndExecute();
+      ).buildAndExecute();
 
-      await client
-        .collectFeesTx({
-          whirlpool: info.initParams.whirlpoolKey,
-          positionAuthority: client.context.provider.wallet.publicKey,
+      await toTx(
+        ctx,
+        WhirlpoolIx.collectFeesIx(ctx.program, {
+          whirlpool: info.initParams.whirlpool,
+          positionAuthority: ctx.provider.wallet.publicKey,
           position: info.initParams.positionPda.publicKey,
-          positionTokenAccount: info.initParams.positionTokenAccountAddress,
+          positionTokenAccount: info.initParams.positionTokenAccount,
           tokenOwnerAccountA,
           tokenOwnerAccountB,
           tokenVaultA: pool.tokenVaultA,
           tokenVaultB: pool.tokenVaultB,
         })
-        .buildAndExecute();
+      ).buildAndExecute();
     })
   );
 }
@@ -418,7 +434,7 @@ export interface FundedPositionInfo {
 }
 
 export async function fundPositions(
-  client: WhirlpoolClient,
+  ctx: WhirlpoolContext,
   poolInitInfo: InitPoolParams,
   tokenAccountA: PublicKey,
   tokenAccountB: PublicKey,
@@ -435,41 +451,42 @@ export async function fundPositions(
   return await Promise.all(
     fundParams.map(async (param): Promise<FundedPositionInfo> => {
       const { params: positionInfo, mint } = await openPosition(
-        client,
+        ctx,
         whirlpool,
         param.tickLowerIndex,
         param.tickUpperIndex
       );
 
-      const tickArrayLower = getTickArrayPda(
-        client.context.program.programId,
+      const tickArrayLower = PDAUtil.getTickArray(
+        ctx.program.programId,
         whirlpool,
-        getStartTickIndex(param.tickLowerIndex, tickSpacing)
+        TickUtil.getStartTickIndex(param.tickLowerIndex, tickSpacing)
       ).publicKey;
 
-      const tickArrayUpper = getTickArrayPda(
-        client.context.program.programId,
+      const tickArrayUpper = PDAUtil.getTickArray(
+        ctx.program.programId,
         whirlpool,
-        getStartTickIndex(param.tickUpperIndex, tickSpacing)
+        TickUtil.getStartTickIndex(param.tickUpperIndex, tickSpacing)
       ).publicKey;
 
       if (param.liquidityAmount.gt(ZERO_BN)) {
-        const { tokenA, tokenB } = getTokenAmountsFromLiquidity(
+        const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
           param.liquidityAmount,
           initSqrtPrice,
-          tickIndexToSqrtPriceX64(param.tickLowerIndex),
-          tickIndexToSqrtPriceX64(param.tickUpperIndex),
+          PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
+          PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
           true
         );
-        await client
-          .increaseLiquidityTx({
+        await toTx(
+          ctx,
+          WhirlpoolIx.increaseLiquidityIx(ctx.program, {
             liquidityAmount: param.liquidityAmount,
             tokenMaxA: tokenA,
             tokenMaxB: tokenB,
             whirlpool: whirlpool,
-            positionAuthority: client.context.provider.wallet.publicKey,
+            positionAuthority: ctx.provider.wallet.publicKey,
             position: positionInfo.positionPda.publicKey,
-            positionTokenAccount: positionInfo.positionTokenAccountAddress,
+            positionTokenAccount: positionInfo.positionTokenAccount,
             tokenOwnerAccountA: tokenAccountA,
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -477,12 +494,12 @@ export async function fundPositions(
             tickArrayLower,
             tickArrayUpper,
           })
-          .buildAndExecute();
+        ).buildAndExecute();
       }
       return {
         initParams: positionInfo,
         publicKey: positionInfo.positionPda.publicKey,
-        tokenAccount: positionInfo.positionTokenAccountAddress,
+        tokenAccount: positionInfo.positionTokenAccount,
         mintKeypair: mint,
         tickArrayLower,
         tickArrayUpper,
@@ -491,7 +508,7 @@ export async function fundPositions(
   );
 }
 
-export async function initTestPoolWithLiquidity(client: WhirlpoolClient) {
+export async function initTestPoolWithLiquidity(ctx: WhirlpoolContext) {
   const {
     poolInitInfo,
     configInitInfo,
@@ -499,10 +516,10 @@ export async function initTestPoolWithLiquidity(client: WhirlpoolClient) {
     whirlpoolPda,
     tokenAccountA,
     tokenAccountB,
-  } = await initTestPoolWithTokens(client, TickSpacing.Standard);
+  } = await initTestPoolWithTokens(ctx, TickSpacing.Standard);
 
   const tickArrays = await initTickArrayRange(
-    client,
+    ctx,
     whirlpoolPda.publicKey,
     22528, // to 33792
     3,
@@ -519,7 +536,7 @@ export async function initTestPoolWithLiquidity(client: WhirlpoolClient) {
   ];
 
   const positionInfos = await fundPositions(
-    client,
+    ctx,
     poolInitInfo,
     tokenAccountA,
     tokenAccountB,

@@ -1,15 +1,48 @@
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { ClosePositionParams } from "..";
-import { WhirlpoolContext } from "../context";
-import { Instruction } from "../utils/transactions/transactions-builder";
+import { Instruction } from "@orca-so/common-sdk";
+import { PublicKey } from "@solana/web3.js";
+import { Program } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 
-export function buildClosePositionIx(
-  context: WhirlpoolContext,
+/**
+ * Parameters to close a position in a Whirlpool.
+ *
+ * @category Instruction Types
+ * @param receiver - PublicKey for the wallet that will receive the rented lamports.
+ * @param position - PublicKey for the position.
+ * @param positionMint - PublicKey for the mint token for the Position token.
+ * @param positionTokenAccount - The associated token address for the position token in the owners wallet.
+ * @param positionAuthority - Authority that owns the position token.
+ */
+export type ClosePositionParams = {
+  receiver: PublicKey;
+  position: PublicKey;
+  positionMint: PublicKey;
+  positionTokenAccount: PublicKey;
+  positionAuthority: PublicKey;
+};
+
+/**
+ * Close a position in a Whirlpool. Burns the position token in the owner's wallet.
+ *
+ * @category Instructions
+ * @param context - Context object containing services required to generate the instruction
+ * @param params - ClosePositionParams object
+ * @returns - Instruction to perform the action.
+ */
+export function closePositionIx(
+  program: Program<Whirlpool>,
   params: ClosePositionParams
 ): Instruction {
-  const { positionAuthority, receiver, position, positionMint, positionTokenAccount } = params;
+  const {
+    positionAuthority,
+    receiver: receiver,
+    position: position,
+    positionMint: positionMint,
+    positionTokenAccount,
+  } = params;
 
-  const ix = context.program.instruction.closePosition({
+  const ix = program.instruction.closePosition({
     accounts: {
       positionAuthority,
       receiver,

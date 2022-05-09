@@ -3,7 +3,7 @@ import { Program, web3, Coder, BN } from "@project-serum/anchor";
 import { AccountLayout } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 import { Whirlpool } from "../../src/artifacts/whirlpool";
-import { TickData } from "../../src/types/anchor-types";
+import { TickData } from "../../src/types/public";
 
 // Helper for token vault assertion checks.
 export async function asyncAssertTokenVault(

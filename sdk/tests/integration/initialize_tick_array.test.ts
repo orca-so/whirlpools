@@ -8,8 +8,8 @@ import {
   InitPoolParams,
   TickArrayData,
   WhirlpoolIx,
+  toTx,
 } from "../../src";
-import { toTx } from "../../src/utils/instructions-util";
 import { TickSpacing, systemTransferTx, ONE_SOL } from "../utils";
 import { initTestPool, initTickArray } from "../utils/init-utils";
 import { generateDefaultInitTickArrayParams } from "../utils/test-builders";

@@ -9,6 +9,7 @@ import {
   TickArrayData,
   PositionData,
   WhirlpoolIx,
+  toTx,
 } from "../../src";
 import {
   TickSpacing,
@@ -24,7 +25,6 @@ import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, openPosition, initTickArray } from "../utils/init-utils";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../src/quotes/public/decrease-liquidity-quote";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("decrease_liquidity", () => {
   const provider = anchor.Provider.local();

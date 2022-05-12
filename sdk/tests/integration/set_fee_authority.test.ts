@@ -1,8 +1,13 @@
 import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
-import { WhirlpoolContext, AccountFetcher, WhirlpoolsConfigData, WhirlpoolIx } from "../../src";
+import {
+  WhirlpoolContext,
+  AccountFetcher,
+  WhirlpoolsConfigData,
+  WhirlpoolIx,
+  toTx,
+} from "../../src";
 import { generateDefaultConfigParams } from "../utils/test-builders";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_fee_authority", () => {
   const provider = anchor.Provider.local();

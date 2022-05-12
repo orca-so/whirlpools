@@ -1,9 +1,8 @@
 import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
-import { WhirlpoolContext, AccountFetcher, WhirlpoolData, WhirlpoolIx } from "../../src";
+import { WhirlpoolContext, AccountFetcher, WhirlpoolData, WhirlpoolIx, toTx } from "../../src";
 import { TickSpacing, systemTransferTx, ONE_SOL, createMint } from "../utils";
 import { initTestPool, initializeReward } from "../utils/init-utils";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("initialize_reward", () => {
   const provider = anchor.Provider.local();

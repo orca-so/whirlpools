@@ -6,11 +6,11 @@ import {
   NUM_REWARDS,
   WhirlpoolData,
   WhirlpoolIx,
+  toTx,
 } from "../../src";
 import { TickSpacing } from "../utils";
 import { initTestPool } from "../utils/init-utils";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_reward_authority", () => {
   const provider = anchor.Provider.local();

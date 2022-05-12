@@ -1,13 +1,19 @@
 import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
-import { WhirlpoolContext, AccountFetcher, FeeTierData, WhirlpoolIx, PDAUtil } from "../../src";
+import {
+  WhirlpoolContext,
+  AccountFetcher,
+  FeeTierData,
+  WhirlpoolIx,
+  PDAUtil,
+  toTx,
+} from "../../src";
 import { TickSpacing, systemTransferTx, ONE_SOL } from "../utils";
 import { initFeeTier } from "../utils/init-utils";
 import {
   generateDefaultConfigParams,
   generateDefaultInitFeeTierParams,
 } from "../utils/test-builders";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("initialize_fee_tier", () => {
   const provider = anchor.Provider.local();

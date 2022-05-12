@@ -12,8 +12,7 @@ import {
   ZERO_BN,
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
-import { WhirlpoolIx } from "../../src";
-import { toTx } from "../../src/utils/instructions-util";
+import { toTx, WhirlpoolIx } from "../../src";
 
 describe("close_position", () => {
   const provider = anchor.Provider.local();

@@ -2,12 +2,6 @@ import { TOKEN_PROGRAM_ID, ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token
 import { OpenPositionParams } from "../instructions";
 import * as anchor from "@project-serum/anchor";
 import { SystemProgram } from "@solana/web3.js";
-import { WhirlpoolContext } from "../context";
-import { Instruction, TransactionBuilder } from "@orca-so/common-sdk";
-
-export function toTx(ctx: WhirlpoolContext, ix: Instruction): TransactionBuilder {
-  return new TransactionBuilder(ctx.provider).addInstruction(ix);
-}
 
 export function openPositionAccounts(params: OpenPositionParams) {
   const {

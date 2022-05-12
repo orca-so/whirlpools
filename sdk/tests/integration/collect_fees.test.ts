@@ -8,7 +8,7 @@ import {
   PositionData,
   collectFeesQuote,
   TickArrayData,
-  TickUtil,
+  toTx,
   WhirlpoolData,
   WhirlpoolIx,
   PDAUtil,
@@ -25,7 +25,6 @@ import {
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
 import { MathUtil } from "@orca-so/common-sdk";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("collect_fees", () => {
   const provider = anchor.Provider.local();

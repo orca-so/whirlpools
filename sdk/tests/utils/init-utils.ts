@@ -12,6 +12,7 @@ import {
   PriceMath,
   WhirlpoolIx,
   PDAUtil,
+  toTx,
 } from "../../src";
 import {
   generateDefaultConfigParams,
@@ -31,7 +32,6 @@ import {
 import { u64 } from "@solana/spl-token";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
 import { MathUtil, PDA } from "@orca-so/common-sdk";
-import { toTx } from "../../src/utils/instructions-util";
 
 const defaultInitSqrtPrice = MathUtil.toX64_BN(new u64(5));
 

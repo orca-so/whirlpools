@@ -17,6 +17,7 @@ import {
   METADATA_PROGRAM_ADDRESS,
   WhirlpoolIx,
   PDAUtil,
+  toTx,
 } from "../../src";
 import {
   TickSpacing,
@@ -29,7 +30,7 @@ import {
 } from "../utils";
 import { initTestPool, openPositionWithMetadata } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
-import { openPositionAccounts, toTx } from "../../src/utils/instructions-util";
+import { openPositionAccounts } from "../../src/utils/instructions-util";
 import { PDA, TransactionBuilder } from "@orca-so/common-sdk";
 
 describe("open_position_with_metadata", () => {

@@ -2,12 +2,18 @@ import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
 import { u64 } from "@solana/spl-token";
 import Decimal from "decimal.js";
-import { WhirlpoolContext, AccountFetcher, PositionData, WhirlpoolIx, PDAUtil } from "../../src";
+import {
+  WhirlpoolContext,
+  AccountFetcher,
+  PositionData,
+  WhirlpoolIx,
+  PDAUtil,
+  toTx,
+} from "../../src";
 import { TickSpacing, ZERO_BN, sleep } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
 import { MathUtil } from "@orca-so/common-sdk";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("update_fees_and_rewards", () => {
   const provider = anchor.Provider.local();

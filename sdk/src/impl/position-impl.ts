@@ -9,10 +9,9 @@ import {
 } from "../instructions";
 import { PositionData } from "../types/public";
 import { Position } from "../whirlpool-client";
-import { PublicKey, Signer } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { AccountFetcher } from "../network/public";
-import { PDAUtil, TickUtil } from "../utils/public";
-import { toTx } from "../utils/instructions-util";
+import { PDAUtil, TickUtil, toTx } from "../utils/public";
 
 export class PositionImpl implements Position {
   private data: PositionData;

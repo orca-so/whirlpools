@@ -7,11 +7,11 @@ import {
   InitPoolParams,
   WhirlpoolIx,
   PDAUtil,
+  toTx,
 } from "../../src";
 import { TickSpacing } from "../utils";
 import { initTestPool } from "../utils/init-utils";
 import { createInOrderMints } from "../utils/test-builders";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("set_default_protocol_fee_rate", () => {
   const provider = anchor.Provider.local();

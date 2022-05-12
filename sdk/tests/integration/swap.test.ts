@@ -16,6 +16,7 @@ import {
   PriceMath,
   WhirlpoolIx,
   PDAUtil,
+  toTx,
 } from "../../src";
 import { TickSpacing, ZERO_BN, getTokenBalance, MAX_U64 } from "../utils";
 import {
@@ -28,7 +29,6 @@ import {
   withdrawPositions,
 } from "../utils/init-utils";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("swap", () => {
   const provider = anchor.Provider.local();

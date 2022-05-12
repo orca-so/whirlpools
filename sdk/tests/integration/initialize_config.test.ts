@@ -6,10 +6,10 @@ import {
   WhirlpoolsConfigData,
   WhirlpoolIx,
   InitConfigParams,
+  toTx,
 } from "../../src";
 import { systemTransferTx, ONE_SOL } from "../utils";
 import { generateDefaultConfigParams } from "../utils/test-builders";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("initialize_config", () => {
   const provider = anchor.Provider.local();

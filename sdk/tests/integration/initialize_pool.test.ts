@@ -11,6 +11,7 @@ import {
   PriceMath,
   WhirlpoolIx,
   PDAUtil,
+  toTx,
 } from "../../src";
 import {
   TickSpacing,
@@ -22,7 +23,6 @@ import {
 } from "../utils";
 import { initTestPool, buildTestPoolParams } from "../utils/init-utils";
 import { MathUtil } from "@orca-so/common-sdk";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("initialize_pool", () => {
   const provider = anchor.Provider.local();

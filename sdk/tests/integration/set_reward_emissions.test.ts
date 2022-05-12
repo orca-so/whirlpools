@@ -1,7 +1,6 @@
 import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
-import { WhirlpoolContext, AccountFetcher, WhirlpoolData, WhirlpoolIx } from "../../src";
-import { toTx } from "../../src/utils/instructions-util";
+import { WhirlpoolContext, AccountFetcher, WhirlpoolData, WhirlpoolIx, toTx } from "../../src";
 import { TickSpacing, mintToByAuthority, ZERO_BN, createAndMintToTokenAccount } from "../utils";
 import { initTestPool, initializeReward } from "../utils/init-utils";
 

@@ -12,6 +12,7 @@ import {
   PriceMath,
   WhirlpoolIx,
   PDAUtil,
+  toTx,
 } from "../../src";
 import {
   TickSpacing,
@@ -33,7 +34,6 @@ import {
 } from "../utils/test-builders";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
 import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("increase_liquidity", () => {
   const provider = anchor.Provider.local();

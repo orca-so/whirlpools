@@ -14,6 +14,7 @@ import {
   MIN_TICK_INDEX,
   WhirlpoolIx,
   PDAUtil,
+  toTx,
 } from "../../src";
 import {
   TickSpacing,
@@ -27,7 +28,6 @@ import {
 import { initTestPool, openPosition } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
 import { PDA } from "@orca-so/common-sdk";
-import { toTx } from "../../src/utils/instructions-util";
 
 describe("open_position", () => {
   const provider = anchor.Provider.local();

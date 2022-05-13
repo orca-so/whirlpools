@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-sdk",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Provides functions to generate instructions needed for Orca's Whirlpool contracts",
   "license": "Apache 2.0",
   "main": "dist/index.js",
@@ -15,16 +15,16 @@
   },
   "devDependencies": {
     "@types/decimal.js": "^7.4.0",
-    "@types/mocha": "^9.0.0",
     "@types/jest": "^26.0.24",
+    "@types/mocha": "^9.0.0",
     "@typescript-eslint/eslint-plugin": "^4.26.0",
     "@typescript-eslint/parser": "^4.26.0",
     "chai": "^4.3.4",
     "eslint-config-prettier": "^8.3.0",
-    "mocha": "^9.0.3",
     "jest": "^27.0.6",
-    "ts-jest": "^27.0.3",
+    "mocha": "^9.0.3",
     "prettier": "^2.3.2",
+    "ts-jest": "^27.0.3",
     "typescript": "^4.5.5"
   },
   "scripts": {

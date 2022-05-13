@@ -2,7 +2,7 @@
   "name": "@orca-so/whirlpools-sdk",
   "version": "0.1.2",
   "description": "Provides functions to generate instructions needed for Orca's Whirlpool contracts",
-  "license": "Apache 2.0",
+  "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "dependencies": {

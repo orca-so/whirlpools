@@ -51,7 +51,7 @@ yarn add "decimal.js"
 
 ## Usage
 
-Read instructions on how to use the SDK on the Orca Developer Portal.
+Read instructions on how to use the SDK on the [Orca Developer Portal](https://orca-so.gitbook.io/orca-developer-portal/orca/welcome).
 
 ## Run Typescript tests via local validator
 

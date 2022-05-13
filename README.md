@@ -27,7 +27,7 @@ $ echo $NODE_PATH
 
 ## Usage
 
-Instructions on how to interact with the Whirlpools contract is documented in the Orca Developer Portal.
+Instructions on how to interact with the Whirlpools contract is documented in the [Orca Developer Portal](https://orca-so.gitbook.io/orca-developer-portal/orca/welcome).
 
 ## Tests
 

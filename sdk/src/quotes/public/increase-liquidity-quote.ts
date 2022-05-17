@@ -129,6 +129,8 @@ function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
     return {
       tokenMaxA: ZERO,
       tokenMaxB: ZERO,
+      tokenEstA: ZERO,
+      tokenEstB: ZERO,
       liquidityAmount: ZERO,
     };
   }
@@ -143,16 +145,14 @@ function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
     false
   );
 
-  const maxTokenA = adjustForSlippage(
-    getTokenAFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceUpperX64, true),
-    slippageTolerance,
-    true
-  );
-  const maxTokenB = ZERO;
+  const tokenEstA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceUpperX64, true);
+  const tokenMaxA = adjustForSlippage(tokenEstA, slippageTolerance, true);
 
   return {
-    tokenMaxA: maxTokenA,
-    tokenMaxB: maxTokenB,
+    tokenMaxA,
+    tokenMaxB: ZERO,
+    tokenEstA,
+    tokenEstB: ZERO,
     liquidityAmount,
   };
 }
@@ -172,30 +172,32 @@ function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiqui
   const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
   const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
 
-  let [tokenAmountA, tokenAmountB] = tokenMintA.equals(inputTokenMint)
+  let [tokenEstA, tokenEstB] = tokenMintA.equals(inputTokenMint)
     ? [inputTokenAmount, undefined]
     : [undefined, inputTokenAmount];
 
   let liquidityAmount: BN;
 
-  if (tokenAmountA) {
-    liquidityAmount = getLiquidityFromTokenA(tokenAmountA, sqrtPriceX64, sqrtPriceUpperX64, false);
-    tokenAmountA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceX64, sqrtPriceUpperX64, true);
-    tokenAmountB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceX64, true);
-  } else if (tokenAmountB) {
-    liquidityAmount = getLiquidityFromTokenB(tokenAmountB, sqrtPriceLowerX64, sqrtPriceX64, false);
-    tokenAmountA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceX64, sqrtPriceUpperX64, true);
-    tokenAmountB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceX64, true);
+  if (tokenEstA) {
+    liquidityAmount = getLiquidityFromTokenA(tokenEstA, sqrtPriceX64, sqrtPriceUpperX64, false);
+    tokenEstA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceX64, sqrtPriceUpperX64, true);
+    tokenEstB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceX64, true);
+  } else if (tokenEstB) {
+    liquidityAmount = getLiquidityFromTokenB(tokenEstB, sqrtPriceLowerX64, sqrtPriceX64, false);
+    tokenEstA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceX64, sqrtPriceUpperX64, true);
+    tokenEstB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceX64, true);
   } else {
     throw new Error("invariant violation");
   }
 
-  const maxTokenA = adjustForSlippage(tokenAmountA, slippageTolerance, true);
-  const maxTokenB = adjustForSlippage(tokenAmountB, slippageTolerance, true);
+  const tokenMaxA = adjustForSlippage(tokenEstA, slippageTolerance, true);
+  const tokenMaxB = adjustForSlippage(tokenEstB, slippageTolerance, true);
 
   return {
-    tokenMaxA: maxTokenA,
-    tokenMaxB: maxTokenB,
+    tokenMaxA,
+    tokenMaxB,
+    tokenEstA: tokenEstA!,
+    tokenEstB: tokenEstB!,
     liquidityAmount,
   };
 }
@@ -214,6 +216,8 @@ function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
     return {
       tokenMaxA: ZERO,
       tokenMaxB: ZERO,
+      tokenEstA: ZERO,
+      tokenEstB: ZERO,
       liquidityAmount: ZERO,
     };
   }
@@ -227,16 +231,14 @@ function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
     false
   );
 
-  const maxTokenA = ZERO;
-  const maxTokenB = adjustForSlippage(
-    getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceUpperX64, true),
-    slippageTolerance,
-    true
-  );
+  const tokenEstB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceUpperX64, true)
+  const tokenMaxB = adjustForSlippage(tokenEstB, slippageTolerance, true);
 
   return {
-    tokenMaxA: maxTokenA,
-    tokenMaxB: maxTokenB,
+    tokenMaxA: ZERO,
+    tokenMaxB,
+    tokenEstA: ZERO,
+    tokenEstB,
     liquidityAmount,
   };
 }

@@ -1,5 +1,4 @@
-import { Percentage } from "@orca-so/common-sdk";
-import { ZERO } from "@orca-so/sdk";
+import { Percentage, ZERO } from "@orca-so/common-sdk";
 import { BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import invariant from "tiny-invariant";

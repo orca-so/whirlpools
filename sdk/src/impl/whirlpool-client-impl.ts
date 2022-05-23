@@ -42,7 +42,7 @@ async function getTokenInfos(fetcher: AccountFetcher, data: WhirlpoolData): Prom
     throw new Error(`Unable to fetch MintInfo for mint - ${mintA}`);
   }
   const mintB = data.tokenMintB;
-  const infoB = await fetcher.getMintInfo(mintA);
+  const infoB = await fetcher.getMintInfo(mintB);
   if (!infoB) {
     throw new Error(`Unable to fetch MintInfo for mint - ${mintB}`);
   }

@@ -4,8 +4,7 @@ import { WhirlpoolContext } from "../../../src/context";
 import { initTestPool, openPosition } from "../../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 import { TickSpacing } from "../../utils";
-import { AccountFetcher, WhirlpoolIx } from "../../../src";
-import { toTx } from "../../../src/utils/instructions-util";
+import { AccountFetcher, toTx, WhirlpoolIx } from "../../../src";
 
 describe("position management tests", () => {
   const provider = anchor.Provider.local();

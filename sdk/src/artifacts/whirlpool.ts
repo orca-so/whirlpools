@@ -1667,6 +1667,21 @@ export type Whirlpool = {
       "code": 6037,
       "name": "AmountInAboveMaximum",
       "msg": "Amount in above maximum threshold"
+    },
+    {
+      "code": 6038,
+      "name": "TickArraySequenceInvalidIndex",
+      "msg": "Invalid index for tick array sequence"
+    },
+    {
+      "code": 6039,
+      "name": "AmountCalcOverflow",
+      "msg": "Amount calculated overflows"
+    },
+    {
+      "code": 6040,
+      "name": "AmountRemainingOverflow",
+      "msg": "Amount remaining overflows"
     }
   ]
 };
@@ -3340,6 +3355,21 @@ export const IDL: Whirlpool = {
       "code": 6037,
       "name": "AmountInAboveMaximum",
       "msg": "Amount in above maximum threshold"
+    },
+    {
+      "code": 6038,
+      "name": "TickArraySequenceInvalidIndex",
+      "msg": "Invalid index for tick array sequence"
+    },
+    {
+      "code": 6039,
+      "name": "AmountCalcOverflow",
+      "msg": "Amount calculated overflows"
+    },
+    {
+      "code": 6040,
+      "name": "AmountRemainingOverflow",
+      "msg": "Amount remaining overflows"
     }
   ]
 };

@@ -42,6 +42,8 @@ export type DecreaseLiquidityParams = {
 export type DecreaseLiquidityInput = {
   tokenMinA: BN;
   tokenMinB: BN;
+  tokenEstA: BN;
+  tokenEstB: BN;
   liquidityAmount: BN;
 };
 

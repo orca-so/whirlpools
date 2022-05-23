@@ -106,15 +106,14 @@ function quotePositionBelowRange(param: DecreaseLiquidityQuoteParam): DecreaseLi
   const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
   const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
 
-  const minTokenA = adjustForSlippage(
-    getTokenAFromLiquidity(liquidity, sqrtPriceLowerX64, sqrtPriceUpperX64, false),
-    slippageTolerance,
-    false
-  );
+  const tokenEstA = getTokenAFromLiquidity(liquidity, sqrtPriceLowerX64, sqrtPriceUpperX64, false);
+  const tokenMinA = adjustForSlippage(tokenEstA, slippageTolerance, false);
 
   return {
-    tokenMinA: minTokenA,
+    tokenMinA,
     tokenMinB: ZERO,
+    tokenEstA,
+    tokenEstB: ZERO,
     liquidityAmount: liquidity,
   };
 }
@@ -126,20 +125,16 @@ function quotePositionInRange(param: DecreaseLiquidityQuoteParam): DecreaseLiqui
   const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
   const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
 
-  const minTokenA = adjustForSlippage(
-    getTokenAFromLiquidity(liquidity, sqrtPriceX64, sqrtPriceUpperX64, false),
-    slippageTolerance,
-    false
-  );
-  const minTokenB = adjustForSlippage(
-    getTokenBFromLiquidity(liquidity, sqrtPriceLowerX64, sqrtPriceX64, false),
-    slippageTolerance,
-    false
-  );
+  const tokenEstA = getTokenAFromLiquidity(liquidity, sqrtPriceX64, sqrtPriceUpperX64, false);
+  const tokenMinA = adjustForSlippage(tokenEstA, slippageTolerance, false);
+  const tokenEstB = getTokenBFromLiquidity(liquidity, sqrtPriceLowerX64, sqrtPriceX64, false);
+  const tokenMinB = adjustForSlippage(tokenEstB, slippageTolerance, false);
 
   return {
-    tokenMinA: minTokenA,
-    tokenMinB: minTokenB,
+    tokenMinA,
+    tokenMinB,
+    tokenEstA,
+    tokenEstB,
     liquidityAmount: liquidity,
   };
 }
@@ -150,15 +145,14 @@ function quotePositionAboveRange(param: DecreaseLiquidityQuoteParam): DecreaseLi
   const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
   const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
 
-  const minTokenB = adjustForSlippage(
-    getTokenBFromLiquidity(liquidity, sqrtPriceLowerX64, sqrtPriceUpperX64, false),
-    slippageTolerance,
-    false
-  );
+  const tokenEstB = getTokenBFromLiquidity(liquidity, sqrtPriceLowerX64, sqrtPriceUpperX64, false);
+  const tokenMinB = adjustForSlippage(tokenEstB, slippageTolerance, false);
 
   return {
     tokenMinA: ZERO,
-    tokenMinB: minTokenB,
+    tokenMinB,
+    tokenEstA: ZERO,
+    tokenEstB,
     liquidityAmount: liquidity,
   };
 }

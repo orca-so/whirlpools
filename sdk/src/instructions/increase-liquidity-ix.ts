@@ -50,6 +50,8 @@ export type IncreaseLiquidityParams = {
 export type IncreaseLiquidityInput = {
   tokenMaxA: u64;
   tokenMaxB: u64;
+  tokenEstA: u64;
+  tokenEstB: u64;
   liquidityAmount: u64;
 };
 

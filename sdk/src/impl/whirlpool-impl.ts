@@ -168,7 +168,13 @@ export class WhirlpoolImpl implements Whirlpool {
     invariant(TickUtil.checkTickInBounds(tickLower), "tickLower is out of bounds.");
     invariant(TickUtil.checkTickInBounds(tickUpper), "tickUpper is out of bounds.");
 
-    const { liquidityAmount: liquidity, tokenMaxA, tokenMaxB, tokenEstA, tokenEstB } = liquidityInput;
+    const {
+      liquidityAmount: liquidity,
+      tokenMaxA,
+      tokenMaxB,
+      tokenEstA,
+      tokenEstB,
+    } = liquidityInput;
 
     invariant(liquidity.gt(new u64(0)), "liquidity must be greater than zero");
 
@@ -215,17 +221,17 @@ export class WhirlpoolImpl implements Whirlpool {
     );
     txBuilder.addInstruction(positionIx).addSigner(positionMintKeypair);
 
-    const[ataA, ataB] = await resolveOrCreateATAs(
+    const [ataA, ataB] = await resolveOrCreateATAs(
       this.ctx.connection,
       sourceWallet,
       [
         { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: tokenMaxA },
         { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: tokenMaxB },
       ],
-      () => this.fetcher.getAccountRentExempt(),
-    )
-    const { address: tokenOwnerAccountA, ... tokenOwnerAccountAIx } = ataA;
-    const { address: tokenOwnerAccountB, ... tokenOwnerAccountBIx } = ataB;
+      () => this.fetcher.getAccountRentExempt()
+    );
+    const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
+    const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB;
 
     txBuilder.addInstruction(tokenOwnerAccountAIx);
     txBuilder.addInstruction(tokenOwnerAccountBIx);
@@ -315,11 +321,11 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.connection,
       destinationWallet,
       [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
-      () => this.fetcher.getAccountRentExempt(),
+      () => this.fetcher.getAccountRentExempt()
     );
 
-    const { address: tokenOwnerAccountA, ... createTokenOwnerAccountAIx } = ataA;
-    const { address: tokenOwnerAccountB, ... createTokenOwnerAccountBIx } = ataB;
+    const { address: tokenOwnerAccountA, ...createTokenOwnerAccountAIx } = ataA;
+    const { address: tokenOwnerAccountB, ...createTokenOwnerAccountBIx } = ataB;
 
     txBuilder.addInstruction(createTokenOwnerAccountAIx).addInstruction(createTokenOwnerAccountBIx);
     resolvedAssociatedTokenAddresses[whirlpool.tokenMintA.toBase58()] = tokenOwnerAccountA;
@@ -389,19 +395,19 @@ export class WhirlpoolImpl implements Whirlpool {
     } = quote;
     const whirlpool = this.data;
     const txBuilder = new TransactionBuilder(this.ctx.provider);
-    
+
     const [ataA, ataB] = await resolveOrCreateATAs(
       this.ctx.connection,
       wallet,
       [
-        { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: aToB ? estimatedAmountIn: ZERO },
-        { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: !aToB ? estimatedAmountIn: ZERO },
+        { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: aToB ? estimatedAmountIn : ZERO },
+        { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: !aToB ? estimatedAmountIn : ZERO },
       ],
-      () => this.fetcher.getAccountRentExempt(),
+      () => this.fetcher.getAccountRentExempt()
     );
 
-    const { address: tokenOwnerAccountA, ... tokenOwnerAccountAIx } = ataA;
-    const { address: tokenOwnerAccountB, ... tokenOwnerAccountBIx } = ataB;
+    const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
+    const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB;
 
     txBuilder.addInstruction(tokenOwnerAccountAIx);
     txBuilder.addInstruction(tokenOwnerAccountBIx);

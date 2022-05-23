@@ -145,7 +145,12 @@ function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
     false
   );
 
-  const tokenEstA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceUpperX64, true);
+  const tokenEstA = getTokenAFromLiquidity(
+    liquidityAmount,
+    sqrtPriceLowerX64,
+    sqrtPriceUpperX64,
+    true
+  );
   const tokenMaxA = adjustForSlippage(tokenEstA, slippageTolerance, true);
 
   return {
@@ -231,7 +236,12 @@ function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
     false
   );
 
-  const tokenEstB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceUpperX64, true)
+  const tokenEstB = getTokenBFromLiquidity(
+    liquidityAmount,
+    sqrtPriceLowerX64,
+    sqrtPriceUpperX64,
+    true
+  );
   const tokenMaxB = adjustForSlippage(tokenEstB, slippageTolerance, true);
 
   return {

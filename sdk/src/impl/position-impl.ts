@@ -1,4 +1,9 @@
-import { AddressUtil, deriveATA, TransactionBuilder } from "@orca-so/common-sdk";
+import {
+  AddressUtil,
+  deriveATA,
+  resolveOrCreateATAs,
+  TransactionBuilder,
+} from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import { WhirlpoolContext } from "../context";
 import {
@@ -50,30 +55,44 @@ export class PositionImpl implements Position {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
 
-    return toTx(
-      this.ctx,
-      increaseLiquidityIx(this.ctx.program, {
-        ...liquidityInput,
-        whirlpool: this.data.whirlpool,
-        position: this.address,
-        positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
-        tokenOwnerAccountA: await deriveATA(sourceWalletKey, whirlpool.tokenMintA),
-        tokenOwnerAccountB: await deriveATA(sourceWalletKey, whirlpool.tokenMintB),
-        tokenVaultA: whirlpool.tokenVaultA,
-        tokenVaultB: whirlpool.tokenVaultB,
-        tickArrayLower: PDAUtil.getTickArray(
-          this.ctx.program.programId,
-          this.data.whirlpool,
-          TickUtil.getStartTickIndex(this.data.tickLowerIndex, whirlpool.tickSpacing)
-        ).publicKey,
-        tickArrayUpper: PDAUtil.getTickArray(
-          this.ctx.program.programId,
-          this.data.whirlpool,
-          TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
-        ).publicKey,
-        positionAuthority: positionWalletKey,
-      })
+    const txBuilder = new TransactionBuilder(this.ctx.provider);
+    const [ataA, ataB] = await resolveOrCreateATAs(
+      this.ctx.connection,
+      sourceWalletKey,
+      [
+        { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: liquidityInput.tokenMaxA },
+        { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: liquidityInput.tokenMaxB },
+      ],
+      () => this.fetcher.getAccountRentExempt()
     );
+    const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA!;
+    const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB!;
+    txBuilder.addInstruction(tokenOwnerAccountAIx);
+    txBuilder.addInstruction(tokenOwnerAccountBIx);
+
+    const increaseIx = increaseLiquidityIx(this.ctx.program, {
+      ...liquidityInput,
+      whirlpool: this.data.whirlpool,
+      position: this.address,
+      positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
+      tokenOwnerAccountA,
+      tokenOwnerAccountB,
+      tokenVaultA: whirlpool.tokenVaultA,
+      tokenVaultB: whirlpool.tokenVaultB,
+      tickArrayLower: PDAUtil.getTickArray(
+        this.ctx.program.programId,
+        this.data.whirlpool,
+        TickUtil.getStartTickIndex(this.data.tickLowerIndex, whirlpool.tickSpacing)
+      ).publicKey,
+      tickArrayUpper: PDAUtil.getTickArray(
+        this.ctx.program.programId,
+        this.data.whirlpool,
+        TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
+      ).publicKey,
+      positionAuthority: positionWalletKey,
+    });
+    txBuilder.addInstruction(increaseIx);
+    return txBuilder;
   }
 
   async decreaseLiquidity(
@@ -93,30 +112,41 @@ export class PositionImpl implements Position {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
 
-    return toTx(
-      this.ctx,
-      decreaseLiquidityIx(this.ctx.program, {
-        ...liquidityInput,
-        whirlpool: this.data.whirlpool,
-        position: this.address,
-        positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
-        tokenOwnerAccountA: await deriveATA(sourceWalletKey, whirlpool.tokenMintA),
-        tokenOwnerAccountB: await deriveATA(sourceWalletKey, whirlpool.tokenMintB),
-        tokenVaultA: whirlpool.tokenVaultA,
-        tokenVaultB: whirlpool.tokenVaultB,
-        tickArrayLower: PDAUtil.getTickArray(
-          this.ctx.program.programId,
-          this.data.whirlpool,
-          TickUtil.getStartTickIndex(this.data.tickLowerIndex, whirlpool.tickSpacing)
-        ).publicKey,
-        tickArrayUpper: PDAUtil.getTickArray(
-          this.ctx.program.programId,
-          this.data.whirlpool,
-          TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
-        ).publicKey,
-        positionAuthority: positionWalletKey,
-      })
+    const txBuilder = new TransactionBuilder(this.ctx.provider);
+    const [ataA, ataB] = await resolveOrCreateATAs(
+      this.ctx.connection,
+      sourceWalletKey,
+      [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
+      () => this.fetcher.getAccountRentExempt()
     );
+    const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA!;
+    const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB!;
+    txBuilder.addInstruction(tokenOwnerAccountAIx);
+    txBuilder.addInstruction(tokenOwnerAccountBIx);
+
+    const decreaseIx = decreaseLiquidityIx(this.ctx.program, {
+      ...liquidityInput,
+      whirlpool: this.data.whirlpool,
+      position: this.address,
+      positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
+      tokenOwnerAccountA,
+      tokenOwnerAccountB,
+      tokenVaultA: whirlpool.tokenVaultA,
+      tokenVaultB: whirlpool.tokenVaultB,
+      tickArrayLower: PDAUtil.getTickArray(
+        this.ctx.program.programId,
+        this.data.whirlpool,
+        TickUtil.getStartTickIndex(this.data.tickLowerIndex, whirlpool.tickSpacing)
+      ).publicKey,
+      tickArrayUpper: PDAUtil.getTickArray(
+        this.ctx.program.programId,
+        this.data.whirlpool,
+        TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
+      ).publicKey,
+      positionAuthority: positionWalletKey,
+    });
+    txBuilder.addInstruction(decreaseIx);
+    return txBuilder;
   }
 
   private async refresh() {

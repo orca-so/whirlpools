@@ -10,12 +10,12 @@ import { WhirlpoolImpl } from "./whirlpool-impl";
 export class WhirlpoolClientImpl implements WhirlpoolClient {
   constructor(readonly ctx: WhirlpoolContext, readonly fetcher: AccountFetcher) {}
 
-  public async getPool(poolAddress: Address): Promise<Whirlpool> {
-    const account = await this.fetcher.getPool(poolAddress, true);
+  public async getPool(poolAddress: Address, refresh = false): Promise<Whirlpool> {
+    const account = await this.fetcher.getPool(poolAddress, refresh);
     if (!account) {
       throw new Error(`Unable to fetch Whirlpool at address at ${poolAddress}`);
     }
-    const tokenInfos = await getTokenInfos(this.fetcher, account);
+    const tokenInfos = await getTokenInfos(this.fetcher, account, false);
     return new WhirlpoolImpl(
       this.ctx,
       this.fetcher,
@@ -26,8 +26,8 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     );
   }
 
-  public async getPosition(positionAddress: Address): Promise<Position> {
-    const account = await this.fetcher.getPosition(positionAddress, true);
+  public async getPosition(positionAddress: Address, refresh = false): Promise<Position> {
+    const account = await this.fetcher.getPosition(positionAddress, refresh);
     if (!account) {
       throw new Error(`Unable to fetch Position at address at ${positionAddress}`);
     }
@@ -35,14 +35,18 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
   }
 }
 
-async function getTokenInfos(fetcher: AccountFetcher, data: WhirlpoolData): Promise<TokenInfo[]> {
+async function getTokenInfos(
+  fetcher: AccountFetcher,
+  data: WhirlpoolData,
+  refresh: boolean
+): Promise<TokenInfo[]> {
   const mintA = data.tokenMintA;
-  const infoA = await fetcher.getMintInfo(mintA);
+  const infoA = await fetcher.getMintInfo(mintA, refresh);
   if (!infoA) {
     throw new Error(`Unable to fetch MintInfo for mint - ${mintA}`);
   }
   const mintB = data.tokenMintB;
-  const infoB = await fetcher.getMintInfo(mintB);
+  const infoB = await fetcher.getMintInfo(mintB, refresh);
   if (!infoB) {
     throw new Error(`Unable to fetch MintInfo for mint - ${mintB}`);
   }

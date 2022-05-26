@@ -24,14 +24,14 @@ export interface WhirlpoolClient {
    * @param poolAddress the address of the Whirlpool account
    * @return a Whirlpool object to interact with
    */
-  getPool: (poolAddress: Address) => Promise<Whirlpool>;
+  getPool: (poolAddress: Address, refresh?: boolean) => Promise<Whirlpool>;
 
   /**
    * Get a Position object to interact with the Position account at the given address.
    * @param positionAddress the address of the Position account
    * @return a Position object to interact with
    */
-  getPosition: (positionAddress: Address) => Promise<Position>;
+  getPosition: (positionAddress: Address, refresh?: boolean) => Promise<Position>;
 }
 
 /**

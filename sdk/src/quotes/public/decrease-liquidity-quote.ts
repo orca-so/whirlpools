@@ -31,6 +31,8 @@ export type DecreaseLiquidityQuoteParam = {
   slippageTolerance: Percentage;
 };
 
+export type DecreaseLiquidityQuote = DecreaseLiquidityInput & { tokenEstA: BN; tokenEstB: BN };
+
 /**
  * Get an estimated quote on the minimum tokens receivable based on the desired withdraw liquidity value.
  *
@@ -39,7 +41,7 @@ export type DecreaseLiquidityQuoteParam = {
  * @param slippageTolerance - The maximum slippage allowed when calculating the minimum tokens received.
  * @param position - A Position helper class to help interact with the Position account.
  * @param whirlpool - A Whirlpool helper class to help interact with the Whirlpool account.
- * @returns An DecreaseLiquidityInput object detailing the tokenMin & liquidity values to use when calling decrease-liquidity-ix.
+ * @returns An DecreaseLiquidityQuote object detailing the tokenMin & liquidity values to use when calling decrease-liquidity-ix.
  */
 export async function decreaseLiquidityQuoteByLiquidity(
   liquidity: u64,
@@ -74,7 +76,7 @@ export async function decreaseLiquidityQuoteByLiquidity(
  */
 export function decreaseLiquidityQuoteByLiquidityWithParams(
   param: DecreaseLiquidityQuoteParam
-): DecreaseLiquidityInput {
+): DecreaseLiquidityQuote {
   invariant(TickUtil.checkTickInBounds(param.tickLowerIndex), "tickLowerIndex is out of bounds.");
   invariant(TickUtil.checkTickInBounds(param.tickUpperIndex), "tickUpperIndex is out of bounds.");
   invariant(
@@ -100,7 +102,7 @@ export function decreaseLiquidityQuoteByLiquidityWithParams(
   }
 }
 
-function quotePositionBelowRange(param: DecreaseLiquidityQuoteParam): DecreaseLiquidityInput {
+function quotePositionBelowRange(param: DecreaseLiquidityQuoteParam): DecreaseLiquidityQuote {
   const { tickLowerIndex, tickUpperIndex, liquidity, slippageTolerance } = param;
 
   const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
@@ -118,7 +120,7 @@ function quotePositionBelowRange(param: DecreaseLiquidityQuoteParam): DecreaseLi
   };
 }
 
-function quotePositionInRange(param: DecreaseLiquidityQuoteParam): DecreaseLiquidityInput {
+function quotePositionInRange(param: DecreaseLiquidityQuoteParam): DecreaseLiquidityQuote {
   const { sqrtPrice, tickLowerIndex, tickUpperIndex, liquidity, slippageTolerance } = param;
 
   const sqrtPriceX64 = sqrtPrice;
@@ -139,7 +141,7 @@ function quotePositionInRange(param: DecreaseLiquidityQuoteParam): DecreaseLiqui
   };
 }
 
-function quotePositionAboveRange(param: DecreaseLiquidityQuoteParam): DecreaseLiquidityInput {
+function quotePositionAboveRange(param: DecreaseLiquidityQuoteParam): DecreaseLiquidityQuote {
   const { tickLowerIndex, tickUpperIndex, liquidity, slippageTolerance: slippageTolerance } = param;
 
   const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);

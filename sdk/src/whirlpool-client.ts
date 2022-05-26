@@ -20,6 +20,12 @@ import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
  */
 export interface WhirlpoolClient {
   /**
+   * Get an AccountFetcher to fetch Whirlpool accounts
+   * @return an AccountFetcher instance
+   */
+  getFetcher: () => AccountFetcher;
+
+  /**
    * Get a Whirlpool object to interact with the Whirlpool account at the given address.
    * @param poolAddress the address of the Whirlpool account
    * @return a Whirlpool object to interact with

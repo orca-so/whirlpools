@@ -10,13 +10,15 @@ import {
   MAX_SQRT_PRICE,
   MIN_SQRT_PRICE,
   TickArrayData,
-  swapQuoteByInputToken,
   WhirlpoolData,
   PoolUtil,
   PriceMath,
   WhirlpoolIx,
   PDAUtil,
   toTx,
+  swapQuoteWithParams,
+  swapQuoteByInputToken,
+  buildWhirlpoolClient,
 } from "../../src";
 import { TickSpacing, ZERO_BN, getTokenBalance, MAX_U64 } from "../utils";
 import {
@@ -36,6 +38,7 @@ describe("swap", () => {
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = new AccountFetcher(ctx.connection);
+  const client = buildWhirlpoolClient(ctx, fetcher);
 
   it("fail on token vault mint a does not match whirlpool token a", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
@@ -520,7 +523,7 @@ describe("swap", () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
       await initTestPoolWithTokens(ctx, TickSpacing.Standard);
     const aToB = false;
-    const tickArrays = await initTickArrayRange(
+    await initTickArrayRange(
       ctx,
       whirlpoolPda.publicKey,
       22528, // to 33792
@@ -549,26 +552,17 @@ describe("swap", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
     const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-    const whirlpoolData = (await fetcher.getPool(whirlpoolKey, true)) as WhirlpoolData;
-    const tickArrayAddresses = PoolUtil.getTickArrayPublicKeysForSwap(
-      whirlpoolData.tickCurrentIndex,
-      whirlpoolData.tickSpacing,
-      aToB,
-      ctx.program.programId,
-      whirlpoolPda.publicKey
+    const whirlpool = await client.getPool(whirlpoolKey, true);
+    const whirlpoolData = whirlpool.getData();
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new u64(100000),
+      true,
+      Percentage.fromFraction(1, 100),
+      fetcher,
+      ctx.program.programId
     );
-    const tickArraySequenceData = await fetcher.listTickArrays(tickArrayAddresses, true);
-
-    const quote = swapQuoteByInputToken({
-      whirlpoolAddress: whirlpoolKey,
-      swapTokenMint: whirlpoolData.tokenMintB,
-      whirlpoolData,
-      tokenAmount: new u64(100000),
-      amountSpecifiedIsInput: true,
-      slippageTolerance: Percentage.fromFraction(1, 100),
-      tickArrayAddresses: tickArrayAddresses,
-      tickArrays: tickArraySequenceData,
-    });
 
     await toTx(
       ctx,

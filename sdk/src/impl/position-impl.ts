@@ -29,6 +29,10 @@ export class PositionImpl implements Position {
     this.data = data;
   }
 
+  getAddress(): PublicKey {
+    return this.address;
+  }
+
   getData(): PositionData {
     return this.data;
   }

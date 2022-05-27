@@ -40,6 +40,10 @@ export class WhirlpoolImpl implements Whirlpool {
     this.data = data;
   }
 
+  getAddress(): PublicKey {
+    return this.address;
+  }
+
   getData(): WhirlpoolData {
     return this.data;
   }

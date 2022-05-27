@@ -20,6 +20,12 @@ import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
  */
 export interface WhirlpoolClient {
   /**
+   * Get an AccountFetcher to fetch Whirlpool accounts
+   * @return an AccountFetcher instance
+   */
+  getFetcher: () => AccountFetcher;
+
+  /**
    * Get a Whirlpool object to interact with the Whirlpool account at the given address.
    * @param poolAddress the address of the Whirlpool account
    * @return a Whirlpool object to interact with
@@ -42,7 +48,10 @@ export interface WhirlpoolClient {
  * @param fetcher - AccountFetcher instance to help fetch data with.
  * @returns a WhirlpoolClient instance to help with interacting with Whirlpools accounts.
  */
-export function buildWhirlpoolClient(ctx: WhirlpoolContext, fetcher: AccountFetcher) {
+export function buildWhirlpoolClient(
+  ctx: WhirlpoolContext,
+  fetcher: AccountFetcher
+): WhirlpoolClient {
   return new WhirlpoolClientImpl(ctx, fetcher);
 }
 
@@ -51,6 +60,12 @@ export function buildWhirlpoolClient(ctx: WhirlpoolContext, fetcher: AccountFetc
  * @category WhirlpoolClient
  */
 export interface Whirlpool {
+  /**
+   * Return the address for this Whirlpool instance.
+   * @return the PublicKey for this Whirlpool instance.
+   */
+  getAddress: () => PublicKey;
+
   /**
    * Return the most recently fetched Whirlpool account data.
    * @return most recently fetched WhirlpoolData for this address.
@@ -171,6 +186,12 @@ export interface Whirlpool {
  * @category WhirlpoolClient
  */
 export interface Position {
+  /**
+   * Return the address for this Whirlpool instance.
+   * @return the PublicKey for this Whirlpool instance.
+   */
+  getAddress: () => PublicKey;
+
   /**
    * Return the most recently fetched Position account data.
    * @return most recently fetched PositionData for this address.

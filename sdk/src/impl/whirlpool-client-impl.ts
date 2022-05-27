@@ -10,6 +10,10 @@ import { WhirlpoolImpl } from "./whirlpool-impl";
 export class WhirlpoolClientImpl implements WhirlpoolClient {
   constructor(readonly ctx: WhirlpoolContext, readonly fetcher: AccountFetcher) {}
 
+  public getFetcher(): AccountFetcher {
+    return this.fetcher;
+  }
+
   public async getPool(poolAddress: Address, refresh = false): Promise<Whirlpool> {
     const account = await this.fetcher.getPool(poolAddress, refresh);
     if (!account) {

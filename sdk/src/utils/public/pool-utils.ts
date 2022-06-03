@@ -209,6 +209,45 @@ export function toTokenAmount(a: number, b: number): TokenAmounts {
   };
 }
 
+/**
+ * Given an arbitrary pair of token mints, this function returns an ordering of the token mints
+ * in the format [base, quote]. USD based stable coins are prioritized as the quote currency
+ * followed by variants of SOL.
+ */
+export function toBaseQuoteOrder(
+  tokenMintAKey: PublicKey,
+  tokenMintBKey: PublicKey
+): [PublicKey, PublicKey] {
+  const pair: [PublicKey, PublicKey] = [tokenMintAKey, tokenMintBKey];
+  return pair.sort(sortByQuotePriority);
+}
+
+// These are the token mints that will be prioritized as the second token in the pair (quote).
+// The number that the mint maps to determines the priority that it will be used as the quote
+// currency.
+const QUOTE_TOKENS: { [mint: string]: number } = {
+  Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: 100, // USDT
+  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 90, // USDC
+  USDH1SM1ojwWUga67PGrgFWUHibbjqMvuMaDkRJTgkX: 80, // USDH
+  So11111111111111111111111111111111111111112: 70, // SOL
+  mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So: 60, // mSOL
+  "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj": 50, // stSOL
+};
+
+const DEFAULT_QUOTE_PRIORITY = 0;
+
+function getQuoteTokenPriority(mint: string): number {
+  const value = QUOTE_TOKENS[mint];
+  if (value) {
+    return value;
+  }
+  return DEFAULT_QUOTE_PRIORITY;
+}
+
+function sortByQuotePriority(mintLeft: PublicKey, mintRight: PublicKey): number {
+  return getQuoteTokenPriority(mintLeft.toString()) - getQuoteTokenPriority(mintRight.toString());
+}
+
 // Convert this function based on Delta A = Delta L * (1/sqrt(lower) - 1/sqrt(upper))
 function estLiquidityForTokenA(sqrtPrice1: BN, sqrtPrice2: BN, tokenAmount: u64) {
   const lowerSqrtPriceX64 = BN.min(sqrtPrice1, sqrtPrice2);

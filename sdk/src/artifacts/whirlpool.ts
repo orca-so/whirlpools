@@ -815,7 +815,7 @@ export type Whirlpool = {
           "type": "u128"
         },
         {
-          "name": "exactInput",
+          "name": "amountSpecifiedIsInput",
           "type": "bool"
         },
         {
@@ -2503,7 +2503,7 @@ export const IDL: Whirlpool = {
           "type": "u128"
         },
         {
-          "name": "exactInput",
+          "name": "amountSpecifiedIsInput",
           "type": "bool"
         },
         {

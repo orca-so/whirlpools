@@ -321,7 +321,7 @@ pub mod whirlpool {
         amount: u64,
         other_amount_threshold: u64,
         sqrt_price_limit: u128,
-        exact_input: bool,
+        amount_specified_is_input: bool,
         a_to_b: bool,
     ) -> ProgramResult {
         return instructions::swap::handler(
@@ -329,7 +329,7 @@ pub mod whirlpool {
             amount,
             other_amount_threshold,
             sqrt_price_limit,
-            exact_input,
+            amount_specified_is_input,
             a_to_b,
         );
     }

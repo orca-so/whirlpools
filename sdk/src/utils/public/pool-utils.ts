@@ -189,6 +189,24 @@ export class PoolUtil {
 
     return tickArrayAddresses;
   }
+
+  /**
+   * Given an arbitrary pair of token mints, this function returns an ordering of the token mints
+   * in the format [base, quote]. USD based stable coins are prioritized as the quote currency
+   * followed by variants of SOL.
+   *
+   * @category Whirlpool Utils
+   * @param tokenMintAKey - The mint of token A in the token pair.
+   * @param tokenMintBKey - The mint of token B in the token pair.
+   * @returns A two-element array with the tokens sorted in the order of [baseToken, quoteToken].
+   */
+  public static toBaseQuoteOrder(
+    tokenMintAKey: PublicKey,
+    tokenMintBKey: PublicKey
+  ): [PublicKey, PublicKey] {
+    const pair: [PublicKey, PublicKey] = [tokenMintAKey, tokenMintBKey];
+    return pair.sort(sortByQuotePriority);
+  }
 }
 
 /**
@@ -207,19 +225,6 @@ export function toTokenAmount(a: number, b: number): TokenAmounts {
     tokenA: new u64(a.toString()),
     tokenB: new u64(b.toString()),
   };
-}
-
-/**
- * Given an arbitrary pair of token mints, this function returns an ordering of the token mints
- * in the format [base, quote]. USD based stable coins are prioritized as the quote currency
- * followed by variants of SOL.
- */
-export function toBaseQuoteOrder(
-  tokenMintAKey: PublicKey,
-  tokenMintBKey: PublicKey
-): [PublicKey, PublicKey] {
-  const pair: [PublicKey, PublicKey] = [tokenMintAKey, tokenMintBKey];
-  return pair.sort(sortByQuotePriority);
 }
 
 // These are the token mints that will be prioritized as the second token in the pair (quote).

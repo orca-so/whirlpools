@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { toBaseQuoteOrder } from "../../src/utils/public/pool-utils";
+import { PoolUtil } from "../../src/utils/public/pool-utils";
 import * as assert from "assert";
 
 const MINTS: { [symbol: string]: PublicKey } = {
@@ -18,41 +18,41 @@ const MINTS: { [symbol: string]: PublicKey } = {
 describe("determine base quote token ordering", () => {
   it("USD stables", async () => {
     // USDC/FTM => FTM/USDC
-    let pair = toBaseQuoteOrder(MINTS.USDC, MINTS.FTM);
+    let pair = PoolUtil.toBaseQuoteOrder(MINTS.USDC, MINTS.FTM);
     assert.equal(MINTS.FTM, pair[0]);
     assert.equal(MINTS.USDC, pair[1]);
 
     // USDT/USDC => USDC/USDT
-    pair = toBaseQuoteOrder(MINTS.USDT, MINTS.USDC);
+    pair = PoolUtil.toBaseQuoteOrder(MINTS.USDT, MINTS.USDC);
     assert.equal(MINTS.USDC, pair[0]);
     assert.equal(MINTS.USDT, pair[1]);
 
     // USDH/stSOL => stSOL/USDH
-    pair = toBaseQuoteOrder(MINTS.USDH, MINTS.stSOL);
+    pair = PoolUtil.toBaseQuoteOrder(MINTS.USDH, MINTS.stSOL);
     assert.equal(MINTS.stSOL, pair[0]);
     assert.equal(MINTS.USDH, pair[1]);
   });
 
   it("SOL variants", async () => {
     // SOL/mSOL => mSOL/SOL
-    let pair = toBaseQuoteOrder(MINTS.SOL, MINTS.mSOL);
+    let pair = PoolUtil.toBaseQuoteOrder(MINTS.SOL, MINTS.mSOL);
     assert.equal(MINTS.mSOL, pair[0]);
     assert.equal(MINTS.SOL, pair[1]);
 
     // mSOL/BTC => BTC/mSOL
-    pair = toBaseQuoteOrder(MINTS.mSOL, MINTS.BTC);
+    pair = PoolUtil.toBaseQuoteOrder(MINTS.mSOL, MINTS.BTC);
     assert.equal(MINTS.BTC, pair[0]);
     assert.equal(MINTS.mSOL, pair[1]);
 
     // mSOL/whETH => whETH/mSOL
-    pair = toBaseQuoteOrder(MINTS.mSOL, MINTS.whETH);
+    pair = PoolUtil.toBaseQuoteOrder(MINTS.mSOL, MINTS.whETH);
     assert.equal(MINTS.whETH, pair[0]);
     assert.equal(MINTS.mSOL, pair[1]);
   });
 
   it("Order remains unchanged for exotic pairs", async () => {
     // FTM/ORCA => FTM/ORCA (unchanged)
-    const pair = toBaseQuoteOrder(MINTS.FTM, MINTS.ORCA);
+    const pair = PoolUtil.toBaseQuoteOrder(MINTS.FTM, MINTS.ORCA);
     assert.equal(MINTS.FTM, pair[0]);
     assert.equal(MINTS.ORCA, pair[1]);
   });

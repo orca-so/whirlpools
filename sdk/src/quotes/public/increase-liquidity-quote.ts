@@ -5,7 +5,6 @@ import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import invariant from "tiny-invariant";
 import { IncreaseLiquidityInput } from "../../instructions";
-import { TokenInfo, WhirlpoolData } from "../../types/public";
 import {
   PositionUtil,
   PositionStatus,
@@ -41,6 +40,8 @@ export type IncreaseLiquidityQuoteParam = {
   tickUpperIndex: number;
   slippageTolerance: Percentage;
 };
+
+export type IncreaseLiquidityQuote = IncreaseLiquidityInput & { tokenEstA: u64; tokenEstB: u64 };
 
 /**
  * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
@@ -87,7 +88,7 @@ export function increaseLiquidityQuoteByInputToken(
  */
 export function increaseLiquidityQuoteByInputTokenWithParams(
   param: IncreaseLiquidityQuoteParam
-): IncreaseLiquidityInput {
+): IncreaseLiquidityQuote {
   invariant(TickUtil.checkTickInBounds(param.tickLowerIndex), "tickLowerIndex is out of bounds.");
   invariant(TickUtil.checkTickInBounds(param.tickUpperIndex), "tickUpperIndex is out of bounds.");
   invariant(
@@ -115,7 +116,7 @@ export function increaseLiquidityQuoteByInputTokenWithParams(
 
 /*** Private ***/
 
-function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityInput {
+function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityQuote {
   const {
     tokenMintA,
     inputTokenMint,
@@ -162,7 +163,7 @@ function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
   };
 }
 
-function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityInput {
+function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityQuote {
   const {
     tokenMintA,
     sqrtPrice,
@@ -207,7 +208,7 @@ function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiqui
   };
 }
 
-function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityInput {
+function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityQuote {
   const {
     tokenMintB,
     inputTokenMint,

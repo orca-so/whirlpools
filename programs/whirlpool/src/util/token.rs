@@ -14,11 +14,11 @@ pub fn transfer_from_owner_to_vault<'info>(
 ) -> Result<(), ProgramError> {
     token::transfer(
         CpiContext::new(
-            token_program.to_account_info().clone(),
+            token_program.to_account_info(),
             Transfer {
-                from: token_owner_account.to_account_info().clone(),
-                to: token_vault.to_account_info().clone(),
-                authority: position_authority.to_account_info().clone(),
+                from: token_owner_account.to_account_info(),
+                to: token_vault.to_account_info(),
+                authority: position_authority.to_account_info(),
             },
         ),
         amount,
@@ -34,11 +34,11 @@ pub fn transfer_from_vault_to_owner<'info>(
 ) -> Result<(), ProgramError> {
     token::transfer(
         CpiContext::new_with_signer(
-            token_program.to_account_info().clone(),
+            token_program.to_account_info(),
             Transfer {
-                from: token_vault.to_account_info().clone(),
-                to: token_owner_account.to_account_info().clone(),
-                authority: whirlpool.to_account_info().clone(),
+                from: token_vault.to_account_info(),
+                to: token_owner_account.to_account_info(),
+                authority: whirlpool.to_account_info(),
             },
             &[&whirlpool.seeds()],
         ),
@@ -65,10 +65,10 @@ pub fn burn_and_close_user_position_token<'info>(
             position_mint.decimals,
         )?,
         &[
-            token_program.to_account_info().clone(),
-            position_token_account.to_account_info().clone(),
-            position_mint.to_account_info().clone(),
-            token_authority.to_account_info().clone(),
+            token_program.to_account_info(),
+            position_token_account.to_account_info(),
+            position_mint.to_account_info(),
+            token_authority.to_account_info(),
         ],
         &[],
     )?;
@@ -83,10 +83,10 @@ pub fn burn_and_close_user_position_token<'info>(
             &[],
         )?,
         &[
-            token_program.to_account_info().clone(),
-            position_token_account.to_account_info().clone(),
-            receiver.to_account_info().clone(),
-            token_authority.to_account_info().clone(),
+            token_program.to_account_info(),
+            position_token_account.to_account_info(),
+            receiver.to_account_info(),
+            token_authority.to_account_info(),
         ],
         &[],
     )
@@ -181,10 +181,10 @@ fn mint_position_token<'info>(
             1,
         )?,
         &[
-            position_mint.to_account_info().clone(),
-            position_token_account.to_account_info().clone(),
-            whirlpool.to_account_info().clone(),
-            token_program.to_account_info().clone(),
+            position_mint.to_account_info(),
+            position_token_account.to_account_info(),
+            whirlpool.to_account_info(),
+            token_program.to_account_info(),
         ],
         &[&whirlpool.seeds()],
     )
@@ -205,9 +205,9 @@ fn remove_position_token_mint_authority<'info>(
             &[whirlpool.to_account_info().key],
         )?,
         &[
-            position_mint.to_account_info().clone(),
-            whirlpool.to_account_info().clone(),
-            token_program.to_account_info().clone(),
+            position_mint.to_account_info(),
+            whirlpool.to_account_info(),
+            token_program.to_account_info(),
         ],
         &[&whirlpool.seeds()],
     )

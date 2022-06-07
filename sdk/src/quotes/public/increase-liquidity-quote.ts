@@ -1,5 +1,5 @@
-import { DecimalUtil, Percentage, ZERO } from "@orca-so/common-sdk";
-import { BN } from "@project-serum/anchor";
+import { AddressUtil, DecimalUtil, Percentage, ZERO } from "@orca-so/common-sdk";
+import { Address, BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -56,7 +56,7 @@ export type IncreaseLiquidityQuote = IncreaseLiquidityInput & { tokenEstA: u64; 
  * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
  */
 export function increaseLiquidityQuoteByInputToken(
-  inputTokenMint: PublicKey,
+  inputTokenMint: Address,
   inputTokenAmount: Decimal,
   tickLower: number,
   tickUpper: number,
@@ -67,10 +67,11 @@ export function increaseLiquidityQuoteByInputToken(
   const tokenAInfo = whirlpool.getTokenAInfo();
   const tokenBInfo = whirlpool.getTokenBInfo();
 
-  const inputTokenInfo = inputTokenMint.equals(tokenAInfo.mint) ? tokenAInfo : tokenBInfo;
+  const inputMint = AddressUtil.toPubKey(inputTokenMint);
+  const inputTokenInfo = inputMint.equals(tokenAInfo.mint) ? tokenAInfo : tokenBInfo;
 
   return increaseLiquidityQuoteByInputTokenWithParams({
-    inputTokenMint: inputTokenMint,
+    inputTokenMint: inputMint,
     inputTokenAmount: DecimalUtil.toU64(inputTokenAmount, inputTokenInfo.decimals),
     tickLowerIndex: TickUtil.getInitializableTickIndex(tickLower, data.tickSpacing),
     tickUpperIndex: TickUtil.getInitializableTickIndex(tickUpper, data.tickSpacing),

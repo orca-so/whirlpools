@@ -815,7 +815,7 @@
           "type": "u128"
         },
         {
-          "name": "exactInput",
+          "name": "amountSpecifiedIsInput",
           "type": "bool"
         },
         {

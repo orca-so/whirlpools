@@ -335,9 +335,6 @@ export class WhirlpoolImpl implements Whirlpool {
     // });
     // txBuilder.addInstruction(collectTx.compressIx(false));
 
-    // const tokenOwnerAccountA = await deriveATA(destinationWallet, whirlpool.tokenMintA);
-    // const tokenOwnerAccountB = await deriveATA(destinationWallet, whirlpool.tokenMintB);
-
     /* Remove all liquidity remaining in the position */
     if (position.liquidity.gt(new u64(0))) {
       const decreaseLiqQuote = decreaseLiquidityQuoteByLiquidityWithParams({
@@ -367,7 +364,7 @@ export class WhirlpoolImpl implements Whirlpool {
       txBuilder.addInstruction(liquidityIx);
     }
 
-    // /* Close position */
+    /* Close position */
     const positionIx = closePositionIx(this.ctx.program, {
       positionAuthority: positionWallet,
       receiver: destinationWallet,

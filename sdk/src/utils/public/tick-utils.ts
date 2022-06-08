@@ -188,6 +188,22 @@ export class TickArrayUtil {
         .publicKey,
     ];
   }
+
+  /**
+   * Evaluate a list of tick-array data and return the array of indices which the tick-arrays are not initialized.
+   * @param tickArrays - a list of TickArrayData or null objects from AccountFetcher.listTickArrays
+   * @returns an array of array-index for the input tickArrays that requires initialization.
+   */
+  public static getUninitializedArrays(tickArrays: (TickArrayData | null)[]): number[] {
+    return tickArrays
+      .map((value, index) => {
+        if (!value) {
+          return index;
+        }
+        return -1;
+      })
+      .filter((index) => index >= 0);
+  }
 }
 
 function tickIndexToInnerIndex(

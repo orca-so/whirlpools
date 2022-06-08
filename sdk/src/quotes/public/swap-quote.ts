@@ -53,7 +53,8 @@ export async function swapQuoteByInputToken(
   amountSpecifiedIsInput: boolean,
   slippageTolerance: Percentage,
   fetcher: AccountFetcher,
-  programId: Address
+  programId: Address,
+  refresh: boolean
 ): Promise<SwapQuote> {
   const whirlpoolData = whirlpool.getData();
   const swapMintKey = AddressUtil.toPubKey(swapTokenMint);
@@ -72,23 +73,16 @@ export async function swapQuoteByInputToken(
     AddressUtil.toPubKey(programId),
     whirlpool.getAddress()
   );
-  const tickArrays = await fetcher.listTickArrays(tickArrayAddresses, true);
+  const tickArrays = await fetcher.listTickArrays(tickArrayAddresses, refresh);
 
   // Check if all the tick arrays have been initialized.
-  let emptyArrayIndex = -1;
-  const arrayNeedInit = tickArrays.some((value, index) => {
-    if (!value) {
-      emptyArrayIndex = index;
-      return false;
-    }
-    return true;
-  });
-  if (!arrayNeedInit) {
-    throw new Error(
-      `TickArray index - ${emptyArrayIndex}, addr - ${tickArrayAddresses[
-        emptyArrayIndex
-      ].toBase58()} needs to be initialized.`
+  const uninitializedIndices = TickArrayUtil.getUninitializedArrays(tickArrays);
+  if (uninitializedIndices.length > 0) {
+    const uninitializedArrays = uninitializedIndices.reduce<string>(
+      (prev, unInitIndex) => prev + tickArrayAddresses[unInitIndex].toBase58() + " ",
+      ""
     );
+    throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
   }
 
   return swapQuoteWithParams({

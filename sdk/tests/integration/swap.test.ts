@@ -10,13 +10,10 @@ import {
   MAX_SQRT_PRICE,
   MIN_SQRT_PRICE,
   TickArrayData,
-  WhirlpoolData,
-  PoolUtil,
   PriceMath,
   WhirlpoolIx,
   PDAUtil,
   toTx,
-  swapQuoteWithParams,
   swapQuoteByInputToken,
   buildWhirlpoolClient,
 } from "../../src";
@@ -561,7 +558,8 @@ describe("swap", () => {
       true,
       Percentage.fromFraction(1, 100),
       fetcher,
-      ctx.program.programId
+      ctx.program.programId,
+      true
     );
 
     await toTx(

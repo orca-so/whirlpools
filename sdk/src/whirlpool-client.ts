@@ -206,18 +206,16 @@ export interface Position {
 
   /**
    * Deposit additional tokens into this postiion.
-   *
-   * If `sourceWallet`, `positionWallet` is provided, the wallet owners have to sign this transaction.
+   * The wallet must contain the position token and the necessary token A & B to complete the deposit.
+   * If `wallet` is provided, the wallet owners have to sign this transaction.
    *
    * @param liquidityInput - input that defines the desired liquidity amount and maximum tokens willing to be to deposited.
-   * @param sourceWallet - optional - the wallet to withdraw tokens to deposit into the position. If null, the WhirlpoolContext wallet is used.
-   * @param positionWallet - optional - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
+   * @param wallet - the wallet to withdraw tokens to deposit into the position. If null, the WhirlpoolContext wallet is used.
    * @return the transaction that will deposit the tokens into the position when executed.
    */
   increaseLiquidity: (
     liquidityInput: IncreaseLiquidityInput,
-    sourceWallet?: Address,
-    positionWallet?: Address
+    wallet?: Address
   ) => Promise<TransactionBuilder>;
 
   /**
@@ -226,14 +224,16 @@ export interface Position {
    * If `positionWallet` is provided, the wallet owners have to sign this transaction.
    *
    * @param liquidityInput - input that defines the desired liquidity amount and minimum tokens willing to be to withdrawn from the position.
-   * @param sourceWallet - optional - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
+   * @param destinationWallet - optional - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - optional - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
+   * @param resolveATA - optional - if true, add instructions to create ATA accounts for tokenA,B for the destinationWallet if necessary.
    * @return the transaction that will deposit the tokens into the position when executed.
    */
   decreaseLiquidity: (
     liquidityInput: DecreaseLiquidityInput,
-    sourceWallet?: Address,
-    positionWallet?: Address
+    destinationWallet?: Address,
+    positionWallet?: Address,
+    resolveATA?: boolean
   ) => Promise<TransactionBuilder>;
 
   // TODO: Implement Collect fees

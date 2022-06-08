@@ -45,7 +45,8 @@ export class PositionImpl implements Position {
   async increaseLiquidity(
     liquidityInput: IncreaseLiquidityInput,
     sourceWallet?: Address,
-    positionWallet?: Address
+    positionWallet?: Address,
+    payer?: PublicKey
   ) {
     const sourceWalletKey = sourceWallet
       ? AddressUtil.toPubKey(sourceWallet)
@@ -53,6 +54,7 @@ export class PositionImpl implements Position {
     const positionWalletKey = positionWallet
       ? AddressUtil.toPubKey(positionWallet)
       : this.ctx.wallet.publicKey;
+    const payerKey = payer ? payer : this.ctx.wallet.publicKey;
 
     const whirlpool = await this.fetcher.getPool(this.data.whirlpool, true);
     if (!whirlpool) {
@@ -60,25 +62,15 @@ export class PositionImpl implements Position {
     }
 
     const txBuilder = new TransactionBuilder(this.ctx.provider);
-    const [ataA, ataB] = await resolveOrCreateATAs(
-      this.ctx.connection,
-      sourceWalletKey,
-      [
-        { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: liquidityInput.tokenMaxA },
-        { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: liquidityInput.tokenMaxB },
-      ],
-      () => this.fetcher.getAccountRentExempt()
-    );
-    const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA!;
-    const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB!;
-    txBuilder.addInstruction(tokenOwnerAccountAIx);
-    txBuilder.addInstruction(tokenOwnerAccountBIx);
+    const tokenOwnerAccountA = await deriveATA(sourceWalletKey, whirlpool.tokenMintA);
+    const tokenOwnerAccountB = await deriveATA(sourceWalletKey, whirlpool.tokenMintB);
+    const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
 
     const increaseIx = increaseLiquidityIx(this.ctx.program, {
       ...liquidityInput,
       whirlpool: this.data.whirlpool,
       position: this.address,
-      positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
+      positionTokenAccount,
       tokenOwnerAccountA,
       tokenOwnerAccountB,
       tokenVaultA: whirlpool.tokenVaultA,
@@ -102,7 +94,9 @@ export class PositionImpl implements Position {
   async decreaseLiquidity(
     liquidityInput: DecreaseLiquidityInput,
     sourceWallet?: Address,
-    positionWallet?: Address
+    positionWallet?: Address,
+    resolveATA?: boolean,
+    payer?: PublicKey
   ) {
     const sourceWalletKey = sourceWallet
       ? AddressUtil.toPubKey(sourceWallet)
@@ -110,6 +104,7 @@ export class PositionImpl implements Position {
     const positionWalletKey = positionWallet
       ? AddressUtil.toPubKey(positionWallet)
       : this.ctx.wallet.publicKey;
+    const payerKey = payer ? payer : this.ctx.wallet.publicKey;
     const whirlpool = await this.fetcher.getPool(this.data.whirlpool, true);
 
     if (!whirlpool) {
@@ -117,16 +112,27 @@ export class PositionImpl implements Position {
     }
 
     const txBuilder = new TransactionBuilder(this.ctx.provider);
-    const [ataA, ataB] = await resolveOrCreateATAs(
-      this.ctx.connection,
-      sourceWalletKey,
-      [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
-      () => this.fetcher.getAccountRentExempt()
-    );
-    const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA!;
-    const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB!;
-    txBuilder.addInstruction(tokenOwnerAccountAIx);
-    txBuilder.addInstruction(tokenOwnerAccountBIx);
+    let tokenOwnerAccountA: PublicKey;
+    let tokenOwnerAccountB: PublicKey;
+
+    if (resolveATA) {
+      const [ataA, ataB] = await resolveOrCreateATAs(
+        this.ctx.connection,
+        sourceWalletKey,
+        [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
+        () => this.fetcher.getAccountRentExempt(),
+        payerKey
+      );
+      const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
+      const { address: ataAddrB, ...tokenOwnerAccountBIx } = ataB!;
+      tokenOwnerAccountA = ataAddrA;
+      tokenOwnerAccountB = ataAddrB;
+      txBuilder.addInstruction(tokenOwnerAccountAIx);
+      txBuilder.addInstruction(tokenOwnerAccountBIx);
+    } else {
+      tokenOwnerAccountA = await deriveATA(sourceWalletKey, whirlpool.tokenMintA);
+      tokenOwnerAccountB = await deriveATA(sourceWalletKey, whirlpool.tokenMintB);
+    }
 
     const decreaseIx = decreaseLiquidityIx(this.ctx.program, {
       ...liquidityInput,

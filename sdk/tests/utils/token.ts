@@ -60,7 +60,8 @@ export async function createTokenAccount(
 export async function createAssociatedTokenAccount(
   provider: Provider,
   mint: web3.PublicKey,
-  owner: web3.PublicKey
+  owner: web3.PublicKey,
+  payer: web3.PublicKey
 ) {
   const ataAddress = await deriveATA(owner, mint);
 
@@ -70,7 +71,7 @@ export async function createAssociatedTokenAccount(
     mint,
     ataAddress,
     owner,
-    owner
+    payer
   );
   const tx = new web3.Transaction();
   tx.add(instr);
@@ -147,12 +148,17 @@ export async function createAndMintToTokenAccount(
 export async function createAndMintToAssociatedTokenAccount(
   provider: Provider,
   mint: web3.PublicKey,
-  amount: number | BN
+  amount: number | BN,
+  destinationWallet?: web3.PublicKey,
+  payer?: web3.PublicKey
 ): Promise<web3.PublicKey> {
+  const destinationWalletKey = destinationWallet ? destinationWallet : provider.wallet.publicKey;
+  const payerKey = payer ? payer : provider.wallet.publicKey;
   const tokenAccount = await createAssociatedTokenAccount(
     provider,
     mint,
-    provider.wallet.publicKey
+    destinationWalletKey,
+    payerKey
   );
   await mintToByAuthority(provider, mint, tokenAccount, amount);
   return tokenAccount;

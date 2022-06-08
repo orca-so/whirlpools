@@ -178,17 +178,20 @@ export async function mintTokensToTestAccount(
   tokenAMint: PublicKey,
   tokenMintForA: number,
   tokenBMint: PublicKey,
-  tokenMintForB: number
+  tokenMintForB: number,
+  destinationWallet?: PublicKey
 ) {
   const userTokenAAccount = await createAndMintToAssociatedTokenAccount(
     provider,
     tokenAMint,
-    tokenMintForA
+    tokenMintForA,
+    destinationWallet
   );
   const userTokenBAccount = await createAndMintToAssociatedTokenAccount(
     provider,
     tokenBMint,
-    tokenMintForB
+    tokenMintForB,
+    destinationWallet
   );
 
   return [userTokenAAccount, userTokenBAccount];
@@ -200,8 +203,10 @@ export async function initPosition(
   lowerPrice: Decimal,
   upperPrice: Decimal,
   inputTokenMint: PublicKey,
-  inputTokenAmount: number
+  inputTokenAmount: number,
+  sourceWallet?: Keypair
 ) {
+  const sourceWalletKey = sourceWallet ? sourceWallet.publicKey : ctx.wallet.publicKey;
   const tokenADecimal = pool.getTokenAInfo().decimals;
   const tokenBDecimal = pool.getTokenBInfo().decimals;
   const tickSpacing = pool.getData().tickSpacing;
@@ -231,9 +236,14 @@ export async function initPosition(
     lowerTick,
     upperTick,
     quote,
-    ctx.wallet.publicKey,
+    sourceWalletKey,
+    sourceWalletKey,
     ctx.wallet.publicKey
   );
+
+  if (sourceWallet) {
+    tx.addSigner(sourceWallet);
+  }
 
   await tx.buildAndExecute();
 

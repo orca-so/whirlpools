@@ -1,11 +1,10 @@
-import { DecimalUtil, Percentage, ZERO } from "@orca-so/common-sdk";
-import { BN } from "@project-serum/anchor";
+import { AddressUtil, DecimalUtil, Percentage, ZERO } from "@orca-so/common-sdk";
+import { Address, BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import invariant from "tiny-invariant";
 import { IncreaseLiquidityInput } from "../../instructions";
-import { TokenInfo, WhirlpoolData } from "../../types/public";
 import {
   PositionUtil,
   PositionStatus,
@@ -42,6 +41,8 @@ export type IncreaseLiquidityQuoteParam = {
   slippageTolerance: Percentage;
 };
 
+export type IncreaseLiquidityQuote = IncreaseLiquidityInput & { tokenEstA: u64; tokenEstB: u64 };
+
 /**
  * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
  *
@@ -55,7 +56,7 @@ export type IncreaseLiquidityQuoteParam = {
  * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
  */
 export function increaseLiquidityQuoteByInputToken(
-  inputTokenMint: PublicKey,
+  inputTokenMint: Address,
   inputTokenAmount: Decimal,
   tickLower: number,
   tickUpper: number,
@@ -66,10 +67,11 @@ export function increaseLiquidityQuoteByInputToken(
   const tokenAInfo = whirlpool.getTokenAInfo();
   const tokenBInfo = whirlpool.getTokenBInfo();
 
-  const inputTokenInfo = inputTokenMint.equals(tokenAInfo.mint) ? tokenAInfo : tokenBInfo;
+  const inputMint = AddressUtil.toPubKey(inputTokenMint);
+  const inputTokenInfo = inputMint.equals(tokenAInfo.mint) ? tokenAInfo : tokenBInfo;
 
   return increaseLiquidityQuoteByInputTokenWithParams({
-    inputTokenMint: inputTokenMint,
+    inputTokenMint: inputMint,
     inputTokenAmount: DecimalUtil.toU64(inputTokenAmount, inputTokenInfo.decimals),
     tickLowerIndex: TickUtil.getInitializableTickIndex(tickLower, data.tickSpacing),
     tickUpperIndex: TickUtil.getInitializableTickIndex(tickUpper, data.tickSpacing),
@@ -87,7 +89,7 @@ export function increaseLiquidityQuoteByInputToken(
  */
 export function increaseLiquidityQuoteByInputTokenWithParams(
   param: IncreaseLiquidityQuoteParam
-): IncreaseLiquidityInput {
+): IncreaseLiquidityQuote {
   invariant(TickUtil.checkTickInBounds(param.tickLowerIndex), "tickLowerIndex is out of bounds.");
   invariant(TickUtil.checkTickInBounds(param.tickUpperIndex), "tickUpperIndex is out of bounds.");
   invariant(
@@ -115,7 +117,7 @@ export function increaseLiquidityQuoteByInputTokenWithParams(
 
 /*** Private ***/
 
-function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityInput {
+function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityQuote {
   const {
     tokenMintA,
     inputTokenMint,
@@ -162,7 +164,7 @@ function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
   };
 }
 
-function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityInput {
+function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityQuote {
   const {
     tokenMintA,
     sqrtPrice,
@@ -207,7 +209,7 @@ function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiqui
   };
 }
 
-function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityInput {
+function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityQuote {
   const {
     tokenMintB,
     inputTokenMint,

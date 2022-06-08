@@ -40,6 +40,10 @@ export class WhirlpoolImpl implements Whirlpool {
     this.data = data;
   }
 
+  getAddress(): PublicKey {
+    return this.address;
+  }
+
   getData(): WhirlpoolData {
     return this.data;
   }
@@ -168,13 +172,7 @@ export class WhirlpoolImpl implements Whirlpool {
     invariant(TickUtil.checkTickInBounds(tickLower), "tickLower is out of bounds.");
     invariant(TickUtil.checkTickInBounds(tickUpper), "tickUpper is out of bounds.");
 
-    const {
-      liquidityAmount: liquidity,
-      tokenMaxA,
-      tokenMaxB,
-      tokenEstA,
-      tokenEstB,
-    } = liquidityInput;
+    const { liquidityAmount: liquidity, tokenMaxA, tokenMaxB } = liquidityInput;
 
     invariant(liquidity.gt(new u64(0)), "liquidity must be greater than zero");
 
@@ -261,8 +259,6 @@ export class WhirlpoolImpl implements Whirlpool {
       liquidityAmount: liquidity,
       tokenMaxA,
       tokenMaxB,
-      tokenEstA,
-      tokenEstB,
       whirlpool: this.address,
       positionAuthority: positionWallet,
       position: positionPda.publicKey,
@@ -355,8 +351,6 @@ export class WhirlpoolImpl implements Whirlpool {
         liquidityAmount: decreaseLiqQuote.liquidityAmount,
         tokenMinA: decreaseLiqQuote.tokenMinA,
         tokenMinB: decreaseLiqQuote.tokenMinB,
-        tokenEstA: decreaseLiqQuote.tokenEstA,
-        tokenEstB: decreaseLiqQuote.tokenEstB,
         whirlpool: position.whirlpool,
         positionAuthority: positionWallet,
         position: positionAddress,

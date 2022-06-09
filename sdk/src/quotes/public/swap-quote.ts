@@ -22,15 +22,16 @@ import {
 } from "../../types/public";
 import { AddressUtil, MathUtil, Percentage, ZERO } from "@orca-so/common-sdk";
 import { PriceMath, TickArrayUtil, TickUtil } from "../../utils/public";
+import { Whirlpool } from "../../whirlpool-client";
+import { AccountFetcher } from "../../network/public";
 
 /**
  * @category Quotes
  */
 export type SwapQuoteParam = {
-  whirlpoolAddress: Address;
-  swapTokenMint: Address;
   whirlpoolData: WhirlpoolData;
   tokenAmount: u64;
+  aToB: boolean;
   amountSpecifiedIsInput: boolean;
   slippageTolerance: Percentage;
   tickArrayAddresses: PublicKey[];
@@ -44,6 +45,55 @@ export type SwapQuote = {
   estimatedAmountIn: u64;
   estimatedAmountOut: u64;
 } & SwapInput;
+
+export async function swapQuoteByInputToken(
+  whirlpool: Whirlpool,
+  swapTokenMint: Address,
+  tokenAmount: u64,
+  amountSpecifiedIsInput: boolean,
+  slippageTolerance: Percentage,
+  fetcher: AccountFetcher,
+  programId: Address,
+  refresh: boolean
+): Promise<SwapQuote> {
+  const whirlpoolData = whirlpool.getData();
+  const swapMintKey = AddressUtil.toPubKey(swapTokenMint);
+  invariant(
+    whirlpoolData.tokenMintA.equals(swapMintKey) || whirlpoolData.tokenMintB.equals(swapMintKey),
+    "swapTokenMint does not match any tokens on this pool"
+  );
+
+  const aToB =
+    swapMintKey.equals(whirlpoolData.tokenMintA) === amountSpecifiedIsInput ? true : false;
+
+  const tickArrayAddresses = PoolUtil.getTickArrayPublicKeysForSwap(
+    whirlpoolData.tickCurrentIndex,
+    whirlpoolData.tickSpacing,
+    aToB,
+    AddressUtil.toPubKey(programId),
+    whirlpool.getAddress()
+  );
+  const tickArrays = await fetcher.listTickArrays(tickArrayAddresses, refresh);
+
+  // Check if all the tick arrays have been initialized.
+  const uninitializedIndices = TickArrayUtil.getUninitializedArrays(tickArrays);
+  if (uninitializedIndices.length > 0) {
+    const uninitializedArrays = uninitializedIndices
+      .map((index) => tickArrayAddresses[index].toBase58())
+      .join(", ");
+    throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
+  }
+
+  return swapQuoteWithParams({
+    whirlpoolData,
+    tokenAmount,
+    aToB,
+    amountSpecifiedIsInput,
+    slippageTolerance,
+    tickArrayAddresses,
+    tickArrays,
+  });
+}
 
 /**
  * TODO: Bug - The quote swap loop will ignore the first initialized tick of the next array on array traversal
@@ -59,10 +109,9 @@ export type SwapQuote = {
  * @param param a SwapQuoteParam object detailing parameters of the swap
  * @return a SwapQuote on the estimated amountIn & amountOut of the swap and a SwapInput to use on the swap instruction.
  */
-export function swapQuoteByInputToken(param: SwapQuoteParam): SwapQuote {
+export function swapQuoteWithParams(param: SwapQuoteParam): SwapQuote {
   const {
-    whirlpoolAddress,
-    swapTokenMint,
+    aToB,
     tokenAmount,
     whirlpoolData,
     amountSpecifiedIsInput,
@@ -71,15 +120,11 @@ export function swapQuoteByInputToken(param: SwapQuoteParam): SwapQuote {
     tickArrayAddresses,
   } = param;
 
-  const swapDirection =
-    AddressUtil.toPubKey(swapTokenMint).equals(whirlpoolData.tokenMintA) === amountSpecifiedIsInput
-      ? SwapDirection.AtoB
-      : SwapDirection.BtoA;
+  const swapDirection = aToB ? SwapDirection.AtoB : SwapDirection.BtoA;
   const amountSpecified = amountSpecifiedIsInput ? AmountSpecified.Input : AmountSpecified.Output;
 
   const { amountIn, amountOut, sqrtPriceLimitX64, tickArraysCrossed } = simulateSwap(
     {
-      whirlpoolAddress,
       whirlpoolData,
       amountSpecified,
       swapDirection,
@@ -124,7 +169,6 @@ export function swapQuoteByInputToken(param: SwapQuoteParam): SwapQuote {
 }
 
 type SwapSimulationBaseInput = {
-  whirlpoolAddress: Address;
   whirlpoolData: WhirlpoolData;
   amountSpecified: AmountSpecified;
   swapDirection: SwapDirection;

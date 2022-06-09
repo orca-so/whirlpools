@@ -109,13 +109,12 @@ export interface Whirlpool {
    *
    * User has to ensure the TickArray for tickLower and tickUpper has been initialized prior to calling this function.
    *
-   * If `funder` is provided, the funder wallet has to sign this transaction.
+   * If `wallet` or `funder` is provided, those wallets have to sign this transaction.
    *
    * @param tickLower - the tick index for the lower bound of this position
    * @param tickUpper - the tick index for the upper bound of this position
    * @param liquidityInput - an InputLiquidityInput type to define the desired liquidity amount to deposit
-   * @param sourceWallet - optional - the wallet to withdraw tokens to deposit into the position. If null, the WhirlpoolContext wallet is used.
-   * @param positionWallet - optional - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
+   * @param wallet - optional - the wallet to withdraw tokens to deposit into the position and house the position token. If null, the WhirlpoolContext wallet is used.
    * @param funder - optional - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
    * @return `positionMint` - the position to be created. `tx` - The transaction containing the instructions to perform the operation on chain.
    */
@@ -123,8 +122,7 @@ export interface Whirlpool {
     tickLower: number,
     tickUpper: number,
     liquidityInput: IncreaseLiquidityInput,
-    sourceWallet?: Address,
-    positionWallet?: Address,
+    wallet?: Address,
     funder?: Address
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
@@ -133,13 +131,12 @@ export interface Whirlpool {
    *
    * User has to ensure the TickArray for tickLower and tickUpper has been initialized prior to calling this function.
    *
-   * If `sourceWallet`, `positionWallet` or `funder` is provided, the wallet owners have to sign this transaction.
+   * If `wallet` or `funder` is provided, the wallet owners have to sign this transaction.
    *
    * @param tickLower - the tick index for the lower bound of this position
    * @param tickUpper - the tick index for the upper bound of this position
    * @param liquidityInput - input that defines the desired liquidity amount and maximum tokens willing to be to deposited.
-   * @param sourceWallet - optional - the wallet to withdraw tokens to deposit into the position. If null, the WhirlpoolContext wallet is used.
-   * @param positionWallet - optional - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
+   * @param wallet - optional - the wallet to withdraw tokens to deposit into the position and house the position token. If null, the WhirlpoolContext wallet is used.
    * @param funder - optional - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
    * @return `positionMint` - the position to be created. `tx` - The transaction containing the instructions to perform the operation on chain.
    */
@@ -147,8 +144,7 @@ export interface Whirlpool {
     tickLower: number,
     tickUpper: number,
     liquidityInput: IncreaseLiquidityInput,
-    sourceWallet?: Address,
-    positionWallet?: Address,
+    wallet?: Address,
     funder?: Address
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
@@ -157,18 +153,20 @@ export interface Whirlpool {
    *
    * Users have to collect all fees and rewards from this position prior to closing the account.
    *
-   * If `positionWallet` is provided, the wallet owner has to sign this transaction.
+   * If `positionWallet`, `payer` is provided, the wallet owner has to sign this transaction.
    *
    * @param positionAddress - The address of the position account.
    * @param slippageTolerance - The amount of slippage the caller is willing to accept when withdrawing liquidity.
-   * @param destinationWallet - optional - The wallet that the tokens withdrawn will be sent to. If null, the WhirlpoolContext wallet is used.
+   * @param destinationWallet - optional - The wallet that the tokens withdrawn and rent lamports will be sent to. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - optional - The wallet that houses the position token that corresponds to this position address. If null, the WhirlpoolContext wallet is used.
+   * @param payer - optional - the wallet that will fund the cost needed to initialize the token ATA accounts. If null, the WhirlpoolContext wallet is used.
    */
   closePosition: (
     positionAddress: Address,
     slippageTolerance: Percentage,
     destinationWallet?: Address,
-    positionWallet?: Address
+    positionWallet?: Address,
+    payer?: Address
   ) => Promise<TransactionBuilder>;
 
   /**
@@ -206,18 +204,16 @@ export interface Position {
 
   /**
    * Deposit additional tokens into this postiion.
-   *
-   * If `sourceWallet`, `positionWallet` is provided, the wallet owners have to sign this transaction.
+   * The wallet must contain the position token and the necessary token A & B to complete the deposit.
+   * If `wallet` is provided, the wallet owners have to sign this transaction.
    *
    * @param liquidityInput - input that defines the desired liquidity amount and maximum tokens willing to be to deposited.
-   * @param sourceWallet - optional - the wallet to withdraw tokens to deposit into the position. If null, the WhirlpoolContext wallet is used.
-   * @param positionWallet - optional - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
+   * @param wallet - the wallet to withdraw tokens to deposit into the position. If null, the WhirlpoolContext wallet is used.
    * @return the transaction that will deposit the tokens into the position when executed.
    */
   increaseLiquidity: (
     liquidityInput: IncreaseLiquidityInput,
-    sourceWallet?: Address,
-    positionWallet?: Address
+    wallet?: Address
   ) => Promise<TransactionBuilder>;
 
   /**
@@ -226,14 +222,18 @@ export interface Position {
    * If `positionWallet` is provided, the wallet owners have to sign this transaction.
    *
    * @param liquidityInput - input that defines the desired liquidity amount and minimum tokens willing to be to withdrawn from the position.
-   * @param sourceWallet - optional - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
+   * @param destinationWallet - optional - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - optional - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
+   * @param resolveATA - optional - if true, add instructions to create associated token accounts for tokenA,B for the destinationWallet if necessary.
+   * @param ataPayer - optional - wallet that will fund the creation of the new associated token accounts
    * @return the transaction that will deposit the tokens into the position when executed.
    */
   decreaseLiquidity: (
     liquidityInput: DecreaseLiquidityInput,
-    sourceWallet?: Address,
-    positionWallet?: Address
+    destinationWallet?: Address,
+    positionWallet?: Address,
+    resolveATA?: boolean,
+    ataPayer?: Address
   ) => Promise<TransactionBuilder>;
 
   // TODO: Implement Collect fees

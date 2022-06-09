@@ -65,8 +65,7 @@ export class WhirlpoolImpl implements Whirlpool {
     tickLower: number,
     tickUpper: number,
     liquidityInput: IncreaseLiquidityInput,
-    sourceWallet?: Address,
-    positionWallet?: Address,
+    wallet?: Address,
     funder?: Address
   ) {
     await this.refresh();
@@ -74,8 +73,7 @@ export class WhirlpoolImpl implements Whirlpool {
       tickLower,
       tickUpper,
       liquidityInput,
-      !!sourceWallet ? AddressUtil.toPubKey(sourceWallet) : this.ctx.wallet.publicKey,
-      !!positionWallet ? AddressUtil.toPubKey(positionWallet) : this.ctx.wallet.publicKey,
+      !!wallet ? AddressUtil.toPubKey(wallet) : this.ctx.wallet.publicKey,
       !!funder ? AddressUtil.toPubKey(funder) : this.ctx.wallet.publicKey
     );
   }
@@ -94,7 +92,6 @@ export class WhirlpoolImpl implements Whirlpool {
       tickUpper,
       liquidityInput,
       !!sourceWallet ? AddressUtil.toPubKey(sourceWallet) : this.ctx.wallet.publicKey,
-      !!positionWallet ? AddressUtil.toPubKey(positionWallet) : this.ctx.wallet.publicKey,
       !!funder ? AddressUtil.toPubKey(funder) : this.ctx.wallet.publicKey,
       true
     );
@@ -133,7 +130,8 @@ export class WhirlpoolImpl implements Whirlpool {
     positionAddress: Address,
     slippageTolerance: Percentage,
     destinationWallet?: Address,
-    positionWallet?: Address
+    positionWallet?: Address,
+    payer?: Address
   ) {
     await this.refresh();
     const positionWalletKey = positionWallet
@@ -142,11 +140,13 @@ export class WhirlpoolImpl implements Whirlpool {
     const destinationWalletKey = destinationWallet
       ? AddressUtil.toPubKey(destinationWallet)
       : this.ctx.wallet.publicKey;
+    const payerKey = payer ? AddressUtil.toPubKey(payer) : this.ctx.wallet.publicKey;
     return this.getClosePositionIx(
       AddressUtil.toPubKey(positionAddress),
       slippageTolerance,
       destinationWalletKey,
-      positionWalletKey
+      positionWalletKey,
+      payerKey
     );
   }
 
@@ -164,8 +164,7 @@ export class WhirlpoolImpl implements Whirlpool {
     tickLower: number,
     tickUpper: number,
     liquidityInput: IncreaseLiquidityInput,
-    sourceWallet: PublicKey,
-    positionWallet: PublicKey,
+    wallet: PublicKey,
     funder: PublicKey,
     withMetadata: boolean = false
   ): Promise<{ positionMint: PublicKey; tx: TransactionBuilder }> {
@@ -196,10 +195,7 @@ export class WhirlpoolImpl implements Whirlpool {
       positionMintKeypair.publicKey
     );
     const metadataPda = PDAUtil.getPositionMetadata(positionMintKeypair.publicKey);
-    const positionTokenAccountAddress = await deriveATA(
-      positionWallet,
-      positionMintKeypair.publicKey
-    );
+    const positionTokenAccountAddress = await deriveATA(wallet, positionMintKeypair.publicKey);
 
     const txBuilder = new TransactionBuilder(this.ctx.provider);
 
@@ -207,7 +203,7 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.program,
       {
         funder,
-        owner: positionWallet,
+        owner: wallet,
         positionPda,
         metadataPda,
         positionMintAddress: positionMintKeypair.publicKey,
@@ -221,12 +217,13 @@ export class WhirlpoolImpl implements Whirlpool {
 
     const [ataA, ataB] = await resolveOrCreateATAs(
       this.ctx.connection,
-      sourceWallet,
+      wallet,
       [
         { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: tokenMaxA },
         { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: tokenMaxB },
       ],
-      () => this.fetcher.getAccountRentExempt()
+      () => this.fetcher.getAccountRentExempt(),
+      funder
     );
     const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
     const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB;
@@ -260,7 +257,7 @@ export class WhirlpoolImpl implements Whirlpool {
       tokenMaxA,
       tokenMaxB,
       whirlpool: this.address,
-      positionAuthority: positionWallet,
+      positionAuthority: wallet,
       position: positionPda.publicKey,
       positionTokenAccount: positionTokenAccountAddress,
       tokenOwnerAccountA,
@@ -282,7 +279,8 @@ export class WhirlpoolImpl implements Whirlpool {
     positionAddress: PublicKey,
     slippageTolerance: Percentage,
     destinationWallet: PublicKey,
-    positionWallet: PublicKey
+    positionWallet: PublicKey,
+    payerKey: PublicKey
   ): Promise<TransactionBuilder> {
     const position = await this.fetcher.getPosition(positionAddress, true);
     if (!position) {
@@ -317,7 +315,8 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.connection,
       destinationWallet,
       [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
-      () => this.fetcher.getAccountRentExempt()
+      () => this.fetcher.getAccountRentExempt(),
+      payerKey
     );
 
     const { address: tokenOwnerAccountA, ...createTokenOwnerAccountAIx } = ataA;
@@ -367,8 +366,8 @@ export class WhirlpoolImpl implements Whirlpool {
 
     /* Close position */
     const positionIx = closePositionIx(this.ctx.program, {
-      positionAuthority: this.ctx.wallet.publicKey,
-      receiver: this.ctx.wallet.publicKey,
+      positionAuthority: positionWallet,
+      receiver: destinationWallet,
       positionTokenAccount,
       position: positionAddress,
       positionMint: position.positionMint,

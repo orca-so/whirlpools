@@ -45,8 +45,7 @@ export class PositionImpl implements Position {
   async increaseLiquidity(
     liquidityInput: IncreaseLiquidityInput,
     sourceWallet?: Address,
-    positionWallet?: Address,
-    payer?: PublicKey
+    positionWallet?: Address
   ) {
     const sourceWalletKey = sourceWallet
       ? AddressUtil.toPubKey(sourceWallet)
@@ -54,7 +53,6 @@ export class PositionImpl implements Position {
     const positionWalletKey = positionWallet
       ? AddressUtil.toPubKey(positionWallet)
       : this.ctx.wallet.publicKey;
-    const payerKey = payer ? payer : this.ctx.wallet.publicKey;
 
     const whirlpool = await this.fetcher.getPool(this.data.whirlpool, true);
     if (!whirlpool) {
@@ -96,7 +94,7 @@ export class PositionImpl implements Position {
     sourceWallet?: Address,
     positionWallet?: Address,
     resolveATA?: boolean,
-    payer?: PublicKey
+    ataPayer?: Address
   ) {
     const sourceWalletKey = sourceWallet
       ? AddressUtil.toPubKey(sourceWallet)
@@ -104,7 +102,7 @@ export class PositionImpl implements Position {
     const positionWalletKey = positionWallet
       ? AddressUtil.toPubKey(positionWallet)
       : this.ctx.wallet.publicKey;
-    const payerKey = payer ? payer : this.ctx.wallet.publicKey;
+    const ataPayerKey = ataPayer ? AddressUtil.toPubKey(ataPayer) : this.ctx.wallet.publicKey;
     const whirlpool = await this.fetcher.getPool(this.data.whirlpool, true);
 
     if (!whirlpool) {
@@ -121,7 +119,7 @@ export class PositionImpl implements Position {
         sourceWalletKey,
         [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
         () => this.fetcher.getAccountRentExempt(),
-        payerKey
+        ataPayerKey
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
       const { address: ataAddrB, ...tokenOwnerAccountBIx } = ataB!;

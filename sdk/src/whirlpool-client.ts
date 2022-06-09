@@ -224,14 +224,16 @@ export interface Position {
    * @param liquidityInput - input that defines the desired liquidity amount and minimum tokens willing to be to withdrawn from the position.
    * @param destinationWallet - optional - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - optional - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
-   * @param resolveATA - optional - if true, add instructions to create ATA accounts for tokenA,B for the destinationWallet if necessary.
+   * @param resolveATA - optional - if true, add instructions to create associated token accounts for tokenA,B for the destinationWallet if necessary.
+   * @param ataPayer - optional - wallet that will fund the creation of the new associated token accounts
    * @return the transaction that will deposit the tokens into the position when executed.
    */
   decreaseLiquidity: (
     liquidityInput: DecreaseLiquidityInput,
     destinationWallet?: Address,
     positionWallet?: Address,
-    resolveATA?: boolean
+    resolveATA?: boolean,
+    ataPayer?: Address
   ) => Promise<TransactionBuilder>;
 
   // TODO: Implement Collect fees

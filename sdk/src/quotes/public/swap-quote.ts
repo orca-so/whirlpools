@@ -78,10 +78,9 @@ export async function swapQuoteByInputToken(
   // Check if all the tick arrays have been initialized.
   const uninitializedIndices = TickArrayUtil.getUninitializedArrays(tickArrays);
   if (uninitializedIndices.length > 0) {
-    const uninitializedArrays = uninitializedIndices.reduce<string>(
-      (prev, unInitIndex) => prev + tickArrayAddresses[unInitIndex].toBase58() + " ",
-      ""
-    );
+    const uninitializedArrays = uninitializedIndices
+      .map((index) => tickArrayAddresses[index].toBase58())
+      .join(", ");
     throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
   }
 

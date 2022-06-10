@@ -1,12 +1,17 @@
 import { AddressUtil, MathUtil, Percentage } from "@orca-so/common-sdk";
 import { Address, BN } from "@project-serum/anchor";
-import { u64 } from "@solana/spl-token";
+import { Token, u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { MAX_TICK_ARRAY_CROSSINGS, WhirlpoolRewardInfoData } from "../../types/public";
+import {
+  MAX_TICK_ARRAY_CROSSINGS,
+  WhirlpoolData,
+  WhirlpoolRewardInfoData,
+} from "../../types/public";
 import { PDAUtil } from "./pda-utils";
 import { PriceMath } from "./price-math";
 import { TickUtil } from "./tick-utils";
+import { SwapDirection, TokenType } from "./types";
 
 /**
  * @category Whirlpool Utils
@@ -18,6 +23,38 @@ export class PoolUtil {
     return (
       !PublicKey.default.equals(rewardInfo.mint) && !PublicKey.default.equals(rewardInfo.vault)
     );
+  }
+
+  /**
+   * Return the corresponding token type (TokenA/B) for this mint key for a Whirlpool.
+   *
+   * @param pool The Whirlpool to evaluate the mint against
+   * @param mint The token mint PublicKey
+   * @returns The match result in the form of TokenType enum. undefined if the token mint is not part of the trade pair of the pool.
+   */
+  public static getTokenType(pool: WhirlpoolData, mint: PublicKey) {
+    if (pool.tokenMintA.equals(mint)) {
+      return TokenType.TokenA;
+    } else if (pool.tokenMintB.equals(mint)) {
+      return TokenType.TokenB;
+    }
+    return undefined;
+  }
+
+  /**
+   * Given the intended token mint to swap, return the swap direction of a swap for a Whirlpool
+   * @param pool The Whirlpool to evaluate the mint against
+   * @param inputTokenMint The token mint PublicKey the user intends to swap
+   * @returns The direction of the swap given the inputTokenMint. undefined if the token mint is not part of the trade pair of the pool.
+   */
+  public static getSwapDirection(pool: WhirlpoolData, inputTokenMint: PublicKey) {
+    const tokenType = PoolUtil.getTokenType(pool, inputTokenMint);
+    if (tokenType === TokenType.TokenA) {
+      return SwapDirection.AtoB;
+    } else if (tokenType === TokenType.TokenB) {
+      return SwapDirection.BtoA;
+    }
+    return undefined;
   }
 
   public static getFeeRate(feeRate: number): Percentage {

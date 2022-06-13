@@ -58,8 +58,10 @@ export async function swapQuoteByInputToken(
 ): Promise<SwapQuote> {
   const whirlpoolData = whirlpool.getData();
   const swapMintKey = AddressUtil.toPubKey(swapTokenMint);
-  const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
-  invariant(!!swapTokenType, "swapTokenMint does not match any tokens on this pool");
+  invariant(
+    whirlpoolData.tokenMintA.equals(swapMintKey) || whirlpoolData.tokenMintB.equals(swapMintKey),
+    "swapTokenMint does not match any tokens on this pool"
+  );
 
   const aToB =
     swapMintKey.equals(whirlpoolData.tokenMintA) === amountSpecifiedIsInput ? true : false;

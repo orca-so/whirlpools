@@ -7,7 +7,7 @@ import {
   getLowerSqrtPriceFromTokenB,
 } from "./swap-utils";
 
-export enum SwapDirection {
+export enum OldSwapDirection {
   AtoB = "Swap A to B",
   BtoA = "Swap B to A",
 }
@@ -144,9 +144,9 @@ export function getAmountFixedDelta(
   targetSqrtPriceX64: BN,
   liquidity: BN,
   amountSpecified: AmountSpecified,
-  swapDirection: SwapDirection
+  swapDirection: OldSwapDirection
 ) {
-  if ((amountSpecified == AmountSpecified.Input) == (swapDirection == SwapDirection.AtoB)) {
+  if ((amountSpecified == AmountSpecified.Input) == (swapDirection == OldSwapDirection.AtoB)) {
     return getTokenAFromLiquidity(
       liquidity,
       currentSqrtPriceX64,
@@ -168,9 +168,9 @@ export function getAmountUnfixedDelta(
   targetSqrtPriceX64: BN,
   liquidity: BN,
   amountSpecified: AmountSpecified,
-  swapDirection: SwapDirection
+  swapDirection: OldSwapDirection
 ) {
-  if ((amountSpecified == AmountSpecified.Input) == (swapDirection == SwapDirection.AtoB)) {
+  if ((amountSpecified == AmountSpecified.Input) == (swapDirection == OldSwapDirection.AtoB)) {
     return getTokenBFromLiquidity(
       liquidity,
       currentSqrtPriceX64,
@@ -192,13 +192,16 @@ export function getNextSqrtPrice(
   liquidity: BN,
   amount: BN,
   amountSpecified: AmountSpecified,
-  swapDirection: SwapDirection
+  swapDirection: OldSwapDirection
 ) {
-  if (amountSpecified === AmountSpecified.Input && swapDirection === SwapDirection.AtoB) {
+  if (amountSpecified === AmountSpecified.Input && swapDirection === OldSwapDirection.AtoB) {
     return getLowerSqrtPriceFromTokenA(amount, liquidity, sqrtPriceX64);
-  } else if (amountSpecified === AmountSpecified.Output && swapDirection === SwapDirection.BtoA) {
+  } else if (
+    amountSpecified === AmountSpecified.Output &&
+    swapDirection === OldSwapDirection.BtoA
+  ) {
     return getUpperSqrtPriceFromTokenA(amount, liquidity, sqrtPriceX64);
-  } else if (amountSpecified === AmountSpecified.Input && swapDirection === SwapDirection.BtoA) {
+  } else if (amountSpecified === AmountSpecified.Input && swapDirection === OldSwapDirection.BtoA) {
     return getUpperSqrtPriceFromTokenB(amount, liquidity, sqrtPriceX64);
   } else {
     return getLowerSqrtPriceFromTokenB(amount, liquidity, sqrtPriceX64);

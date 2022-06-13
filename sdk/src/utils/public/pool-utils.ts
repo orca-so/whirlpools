@@ -32,7 +32,7 @@ export class PoolUtil {
    * @param mint The token mint PublicKey
    * @returns The match result in the form of TokenType enum. undefined if the token mint is not part of the trade pair of the pool.
    */
-  public static getTokenType(pool: WhirlpoolData, mint: PublicKey) {
+  public static getTokenType(pool: WhirlpoolData, mint: PublicKey): TokenType | undefined {
     if (pool.tokenMintA.equals(mint)) {
       return TokenType.TokenA;
     } else if (pool.tokenMintB.equals(mint)) {
@@ -52,7 +52,7 @@ export class PoolUtil {
     pool: WhirlpoolData,
     swapTokenMint: PublicKey,
     swapTokenIsInput: boolean
-  ) {
+  ): SwapDirection | undefined {
     const tokenType = PoolUtil.getTokenType(pool, swapTokenMint);
     if (!tokenType) {
       return undefined;

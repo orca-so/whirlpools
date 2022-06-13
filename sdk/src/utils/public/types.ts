@@ -1,9 +1,9 @@
 export enum SwapDirection {
-  AtoB,
-  BtoA,
+  AtoB = "aToB",
+  BtoA = "bToA",
 }
 
 export enum TokenType {
-  TokenA,
+  TokenA = 1,
   TokenB,
 }

@@ -44,17 +44,23 @@ export class PoolUtil {
   /**
    * Given the intended token mint to swap, return the swap direction of a swap for a Whirlpool
    * @param pool The Whirlpool to evaluate the mint against
-   * @param inputTokenMint The token mint PublicKey the user intends to swap
-   * @returns The direction of the swap given the inputTokenMint. undefined if the token mint is not part of the trade pair of the pool.
+   * @param swapTokenMint The token mint PublicKey the user bases their swap against
+   * @param swapTokenIsInput Whether the swap token is the input token. (similar to amountSpecifiedIsInput from swap Ix)
+   * @returns The direction of the swap given the swapTokenMint. undefined if the token mint is not part of the trade pair of the pool.
    */
-  public static getSwapDirection(pool: WhirlpoolData, inputTokenMint: PublicKey) {
-    const tokenType = PoolUtil.getTokenType(pool, inputTokenMint);
-    if (tokenType === TokenType.TokenA) {
-      return SwapDirection.AtoB;
-    } else if (tokenType === TokenType.TokenB) {
-      return SwapDirection.BtoA;
+  public static getSwapDirection(
+    pool: WhirlpoolData,
+    swapTokenMint: PublicKey,
+    swapTokenIsInput: boolean
+  ) {
+    const tokenType = PoolUtil.getTokenType(pool, swapTokenMint);
+    if (!tokenType) {
+      return undefined;
     }
-    return undefined;
+
+    return (tokenType === TokenType.TokenA) === swapTokenIsInput
+      ? SwapDirection.AtoB
+      : SwapDirection.BtoA;
   }
 
   public static getFeeRate(feeRate: number): Percentage {

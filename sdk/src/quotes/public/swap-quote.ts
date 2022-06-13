@@ -4,7 +4,7 @@ import { u64 } from "@solana/spl-token";
 import invariant from "tiny-invariant";
 import { PoolUtil } from "../../utils/public/pool-utils";
 import {
-  OldSwapDirection,
+  SwapDirection,
   AmountSpecified,
   adjustAmountForSlippage,
   getAmountFixedDelta,
@@ -21,7 +21,7 @@ import {
   TICK_ARRAY_SIZE,
 } from "../../types/public";
 import { AddressUtil, MathUtil, Percentage, ZERO } from "@orca-so/common-sdk";
-import { PriceMath, SwapDirection, TickArrayUtil, TickUtil } from "../../utils/public";
+import { PriceMath, TickArrayUtil, TickUtil } from "../../utils/public";
 import { Whirlpool } from "../../whirlpool-client";
 import { AccountFetcher } from "../../network/public";
 
@@ -62,8 +62,7 @@ export async function swapQuoteByInputToken(
   invariant(!!swapTokenType, "swapTokenMint does not match any tokens on this pool");
 
   const aToB =
-    PoolUtil.getSwapDirection(whirlpoolData, swapMintKey, amountSpecifiedIsInput)! ===
-    SwapDirection.AtoB;
+    swapMintKey.equals(whirlpoolData.tokenMintA) === amountSpecifiedIsInput ? true : false;
 
   const tickArrayAddresses = PoolUtil.getTickArrayPublicKeysForSwap(
     whirlpoolData.tickCurrentIndex,
@@ -119,7 +118,7 @@ export function swapQuoteWithParams(param: SwapQuoteParam): SwapQuote {
     tickArrayAddresses,
   } = param;
 
-  const swapDirection = aToB ? OldSwapDirection.AtoB : OldSwapDirection.BtoA;
+  const swapDirection = aToB ? SwapDirection.AtoB : SwapDirection.BtoA;
   const amountSpecified = amountSpecifiedIsInput ? AmountSpecified.Input : AmountSpecified.Output;
 
   const { amountIn, amountOut, sqrtPriceLimitX64, tickArraysCrossed } = simulateSwap(
@@ -159,7 +158,7 @@ export function swapQuoteWithParams(param: SwapQuoteParam): SwapQuote {
     sqrtPriceLimit: sqrtPriceLimitX64,
     estimatedAmountIn: amountIn,
     estimatedAmountOut: amountOut,
-    aToB: swapDirection === OldSwapDirection.AtoB,
+    aToB: swapDirection === SwapDirection.AtoB,
     amountSpecifiedIsInput,
     tickArray0: traversedTickArrays[0],
     tickArray1: traversedTickArrays[1],
@@ -170,7 +169,7 @@ export function swapQuoteWithParams(param: SwapQuoteParam): SwapQuote {
 type SwapSimulationBaseInput = {
   whirlpoolData: WhirlpoolData;
   amountSpecified: AmountSpecified;
-  swapDirection: OldSwapDirection;
+  swapDirection: SwapDirection;
   tickArrays: (TickArrayData | null)[];
 };
 
@@ -255,7 +254,7 @@ function simulateSwap(
         swapDirection
       );
 
-      currentTickIndex = swapDirection == OldSwapDirection.AtoB ? nextTickIndex - 1 : nextTickIndex;
+      currentTickIndex = swapDirection == SwapDirection.AtoB ? nextTickIndex - 1 : nextTickIndex;
     }
 
     currentSqrtPriceX64 = nextSqrtPriceX64;
@@ -273,7 +272,7 @@ function simulateSwap(
   );
 
   if (!sqrtPriceLimitX64) {
-    if (swapDirection === OldSwapDirection.AtoB) {
+    if (swapDirection === SwapDirection.AtoB) {
       sqrtPriceLimitX64 = new BN(MIN_SQRT_PRICE);
     } else {
       sqrtPriceLimitX64 = new BN(MAX_SQRT_PRICE);
@@ -379,12 +378,8 @@ function calculateFeesFromAmount(amount: u64, feeRate: Percentage): BN {
   );
 }
 
-function calculateNewLiquidity(
-  liquidity: BN,
-  nextLiquidityNet: BN,
-  swapDirection: OldSwapDirection
-) {
-  if (swapDirection == OldSwapDirection.AtoB) {
+function calculateNewLiquidity(liquidity: BN, nextLiquidityNet: BN, swapDirection: SwapDirection) {
+  if (swapDirection == SwapDirection.AtoB) {
     nextLiquidityNet = nextLiquidityNet.neg();
   }
 
@@ -450,7 +445,7 @@ function getNextInitializedTickIndex(
     const currentTickArray = fetchTickArray(baseInput, currentTickIndex);
 
     let temp;
-    if (swapDirection == OldSwapDirection.AtoB) {
+    if (swapDirection == SwapDirection.AtoB) {
       temp = TickUtil.findPreviousInitializedTickIndex(
         currentTickArray,
         currentTickIndex,
@@ -463,14 +458,14 @@ function getNextInitializedTickIndex(
     if (temp) {
       nextInitializedTickIndex = temp;
     } else if (tickArraysCrossed === MAX_TICK_ARRAY_CROSSINGS) {
-      if (swapDirection === OldSwapDirection.AtoB) {
+      if (swapDirection === SwapDirection.AtoB) {
         nextInitializedTickIndex = currentTickArray.startTickIndex;
       } else {
         nextInitializedTickIndex = currentTickArray.startTickIndex + TICK_ARRAY_SIZE * tickSpacing;
       }
       tickArraysCrossed++;
     } else {
-      if (swapDirection === OldSwapDirection.AtoB) {
+      if (swapDirection === SwapDirection.AtoB) {
         currentTickIndex = currentTickArray.startTickIndex - 1;
       } else {
         currentTickIndex = currentTickArray.startTickIndex + TICK_ARRAY_SIZE * tickSpacing - 1;

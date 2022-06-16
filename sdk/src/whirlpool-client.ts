@@ -90,19 +90,21 @@ export interface Whirlpool {
    */
   getTokenBInfo: () => TokenInfo;
 
-  // TODO: add functionality to check whether tick arrays exists
   /**
-   * Initialize a set of tick-arrays to support the provided ticks.
-   *
-   * This function does not ensure the provided tick index are within range and not initialized.
+   * Initialize a set of tick-arrays that encompasses the provided ticks.
    *
    * If `funder` is provided, the funder wallet has to sign this transaction.
    *
-   * @param ticks - A group of ticks that define the desired tick-arrays to initialize
+   * @param ticks - A group of ticks that define the desired tick-arrays to initialize. If the tick's array has been initialied, it will be ignored.
    * @param funder - optional - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
-   * @return a transaction that will initialize the defined tick-arrays if executed.
+   * @param refresh - optional - whether this operation will fetch for the latest accounts if a cache version is available.
+   * @return a transaction that will initialize the defined tick-arrays if executed. Return null if all of the tick's arrays are initialized.
    */
-  initTickArrayForTicks: (ticks: number[], funder?: Address) => TransactionBuilder;
+  initTickArrayForTicks: (
+    ticks: number[],
+    funder?: Address,
+    refresh?: boolean
+  ) => Promise<TransactionBuilder | null>;
 
   /**
    * Open and fund a position on this Whirlpool.

@@ -9,6 +9,7 @@ import {
   TICK_ARRAY_SIZE,
 } from "../../types/public";
 import { PDAUtil } from "./pda-utils";
+import { AccountFetcher } from "../../network/public";
 
 enum TickSearchDirection {
   Left,
@@ -187,6 +188,32 @@ export class TickArrayUtil {
       PDAUtil.getTickArrayFromTickIndex(tickUpperIndex, tickSpacing, whirlpool, programId)
         .publicKey,
     ];
+  }
+
+  public static async getUninitializedArraysPDAs(
+    ticks: number[],
+    programId: PublicKey,
+    whirlpoolAddress: PublicKey,
+    tickSpacing: number,
+    fetcher: AccountFetcher,
+    refresh: boolean
+  ) {
+    const startTicks = ticks.map((tick) => TickUtil.getStartTickIndex(tick, tickSpacing));
+    const removeDupeTicks = [...new Set(startTicks)];
+    const tickArrayPDAs = removeDupeTicks.map((tick) =>
+      PDAUtil.getTickArray(programId, whirlpoolAddress, tick)
+    );
+    const fetchedArrays = await fetcher.listTickArrays(
+      tickArrayPDAs.map((pda) => pda.publicKey),
+      refresh
+    );
+    const uninitializedIndices = TickArrayUtil.getUninitializedArrays(fetchedArrays);
+    return uninitializedIndices.map((index) => {
+      return {
+        startIndex: removeDupeTicks[index],
+        pda: tickArrayPDAs[index],
+      };
+    });
   }
 
   /**

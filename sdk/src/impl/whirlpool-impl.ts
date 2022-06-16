@@ -24,7 +24,7 @@ import { PublicKey, Keypair } from "@solana/web3.js";
 import { u64 } from "@solana/spl-token";
 import { AccountFetcher } from "../network/public";
 import invariant from "tiny-invariant";
-import { PDAUtil, PriceMath, TickUtil } from "../utils/public";
+import { PDAUtil, PriceMath, TickArrayUtil, TickUtil } from "../utils/public";
 import { decreaseLiquidityQuoteByLiquidityWithParams, SwapQuote } from "../quotes/public";
 
 export class WhirlpoolImpl implements Whirlpool {
@@ -97,33 +97,32 @@ export class WhirlpoolImpl implements Whirlpool {
     );
   }
 
-  initTickArrayForTicks(ticks: number[], funder?: Address) {
-    const startTicks = ticks.map((tick) => TickUtil.getStartTickIndex(tick, this.data.tickSpacing));
-    const tx = new TransactionBuilder(this.ctx.provider);
-    const initializedArrayTicks: number[] = [];
+  async initTickArrayForTicks(ticks: number[], funder?: Address, refresh = true) {
+    const initTickArrayStartPdas = await TickArrayUtil.getUninitializedArraysPDAs(
+      ticks,
+      this.ctx.program.programId,
+      this.address,
+      this.data.tickSpacing,
+      this.fetcher,
+      refresh
+    );
 
-    startTicks.forEach((startTick) => {
-      if (initializedArrayTicks.includes(startTick)) {
-        return;
-      }
-      initializedArrayTicks.push(startTick);
+    if (!initTickArrayStartPdas.length) {
+      return null;
+    }
 
-      const tickArrayPda = PDAUtil.getTickArray(
-        this.ctx.program.programId,
-        this.address,
-        startTick
-      );
-
-      tx.addInstruction(
+    const txBuilder = new TransactionBuilder(this.ctx.provider);
+    initTickArrayStartPdas.forEach((initTickArrayInfo) => {
+      txBuilder.addInstruction(
         initTickArrayIx(this.ctx.program, {
-          startTick,
-          tickArrayPda,
+          startTick: initTickArrayInfo.startIndex,
+          tickArrayPda: initTickArrayInfo.pda,
           whirlpool: this.address,
-          funder: !!funder ? AddressUtil.toPubKey(funder) : this.ctx.wallet.publicKey,
+          funder: !!funder ? AddressUtil.toPubKey(funder) : this.ctx.provider.wallet.publicKey,
         })
       );
     });
-    return tx;
+    return txBuilder;
   }
 
   async closePosition(
@@ -243,14 +242,6 @@ export class WhirlpoolImpl implements Whirlpool {
       this.address,
       this.ctx.program.programId
     );
-
-    const [tickArrayLower, tickArrayUpper] = await this.fetcher.listTickArrays(
-      [tickArrayLowerPda.publicKey, tickArrayUpperPda.publicKey],
-      true
-    );
-
-    invariant(!!tickArrayLower, "tickArray for the tickLower has not been initialized");
-    invariant(!!tickArrayUpper, "tickArray for the tickUpper has not been initialized");
 
     const liquidityIx = increaseLiquidityIx(this.ctx.program, {
       liquidityAmount: liquidity,

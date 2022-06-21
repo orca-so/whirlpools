@@ -20,10 +20,15 @@ import {
   TickUtil,
 } from "../../../src";
 import Decimal from "decimal.js";
-import { deriveATA, Percentage } from "@orca-so/common-sdk";
+import {
+  deriveATA,
+  Percentage,
+  TransactionBuilder,
+  TransactionProcessor,
+} from "@orca-so/common-sdk";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
 
-describe("whirlpool-impl", () => {
+describe.only("whirlpool-impl", () => {
   const provider = anchor.Provider.local();
   anchor.setProvider(anchor.Provider.env());
   const program = anchor.workspace.Whirlpool;
@@ -85,22 +90,25 @@ describe("whirlpool-impl", () => {
     );
 
     // [Action] Initialize Tick Arrays
-    const initTickArrayTx = await pool.initTickArrayForTicks(
-      [tickLower, tickUpper],
-      funderKeypair.publicKey
-    );
-    await initTickArrayTx.addSigner(funderKeypair).buildAndExecute();
+    const initTickArrayTx = (
+      await pool.initTickArrayForTicks([tickLower, tickUpper], funderKeypair.publicKey)
+    )?.addSigner(funderKeypair);
+
+    assert.ok(!!initTickArrayTx);
 
     // [Action] Open Position (and increase L)
-    const { positionMint, tx } = await pool.openPosition(
+    const { positionMint, tx: openIx } = await pool.openPosition(
       tickLower,
       tickUpper,
       quote,
       ctx.wallet.publicKey,
       funderKeypair.publicKey
     );
+    openIx.addSigner(funderKeypair);
 
-    await tx.addSigner(funderKeypair).buildAndExecute();
+    // TODO: We should be using TransactionProcessor after we figure this out
+    // https://app.asana.com/0/1200519991815470/1202452931559633/f
+    await TransactionBuilder.sendAll(ctx.provider, [initTickArrayTx, openIx]);
 
     // Verify position exists and numbers fit input parameters
     const positionAddress = PDAUtil.getPosition(ctx.program.programId, positionMint).publicKey;
@@ -190,22 +198,25 @@ describe("whirlpool-impl", () => {
     );
 
     // [Action] Initialize Tick Arrays
-    const initTickArrayTx = await pool.initTickArrayForTicks(
-      [tickLower, tickUpper],
-      funderKeypair.publicKey
-    );
-    await initTickArrayTx.addSigner(funderKeypair).buildAndExecute();
+    const initTickArrayTx = (
+      await pool.initTickArrayForTicks([tickLower, tickUpper], funderKeypair.publicKey)
+    )?.addSigner(funderKeypair);
+
+    assert.ok(!!initTickArrayTx);
 
     // [Action] Open Position (and increase L)
-    const { positionMint, tx } = await pool.openPosition(
+    const { positionMint, tx: openIx } = await pool.openPosition(
       tickLower,
       tickUpper,
       quote,
       ctx.wallet.publicKey,
       funderKeypair.publicKey
     );
+    openIx.addSigner(funderKeypair);
 
-    await tx.addSigner(funderKeypair).buildAndExecute();
+    // TODO: We should be using TransactionProcessor after we figure this out
+    // https://app.asana.com/0/1200519991815470/1202452931559633/f
+    await TransactionBuilder.sendAll(ctx.provider, [initTickArrayTx, openIx]);
 
     // Verify position exists and numbers fit input parameters
     const positionAddress = PDAUtil.getPosition(ctx.program.programId, positionMint).publicKey;

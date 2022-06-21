@@ -565,10 +565,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@orca-so/common-sdk@^0.0.6":
-  version "0.0.6"
-  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.0.6.tgz#531075be74be2dbb8ef6c302af8685d476133df0"
-  integrity sha512-MSpOwmq7llLipJ4tYcT4L/7rzhqioWaYflox0lV3tlo7agv6EEm9UD8rkl0sbt5p3oe+zjnWOq/6JkCUc1GQhg==
+"@orca-so/common-sdk@^0.0.7":
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.0.7.tgz#16f77a68beded3eda227f22be0d8b1f85fe7ebf3"
+  integrity sha512-DF2wR39dHPKnOh8zBlVy/uWA58HQ6Vgi6fOOY1FJCgZTuR8/k65ALC3z632iCJh0GP3Upmcmjqn3OeBiEZr6tA==
   dependencies:
     "@project-serum/anchor" "0.20.1"
     "@solana/spl-token" "0.1.8"

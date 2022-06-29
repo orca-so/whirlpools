@@ -71,7 +71,10 @@ export class PositionImpl implements Position {
       const [ataA, ataB] = await resolveOrCreateATAs(
         this.ctx.connection,
         sourceWalletKey,
-        [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
+        [
+          { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: liquidityInput.tokenMaxA },
+          { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: liquidityInput.tokenMaxB },
+        ],
         () => this.fetcher.getAccountRentExempt(),
         ataPayerKey
       );

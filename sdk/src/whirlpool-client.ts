@@ -207,15 +207,21 @@ export interface Position {
   /**
    * Deposit additional tokens into this postiion.
    * The wallet must contain the position token and the necessary token A & B to complete the deposit.
-   * If `wallet` is provided, the wallet owners have to sign this transaction.
+   * If  `positionWallet` are `wallet` is provided, the wallet owners have to sign this transaction.
    *
    * @param liquidityInput - input that defines the desired liquidity amount and maximum tokens willing to be to deposited.
    * @param wallet - the wallet to withdraw tokens to deposit into the position. If null, the WhirlpoolContext wallet is used.
+   * @param positionWallet - optional - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
+   * @param resolveATA - optional - if true, add instructions to create associated token accounts for tokenA,B for the destinationWallet if necessary.
+   * @param ataPayer - optional - wallet that will fund the creation of the new associated token accounts
    * @return the transaction that will deposit the tokens into the position when executed.
    */
   increaseLiquidity: (
     liquidityInput: IncreaseLiquidityInput,
-    wallet?: Address
+    wallet?: Address,
+    positionWallet?: Address,
+    resolveATA?: boolean,
+    ataPayer?: Address
   ) => Promise<TransactionBuilder>;
 
   /**

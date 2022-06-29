@@ -237,7 +237,6 @@ export async function initPosition(
     upperTick,
     quote,
     sourceWalletKey,
-    sourceWalletKey,
     ctx.wallet.publicKey
   );
 

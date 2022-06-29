@@ -51,7 +51,7 @@ describe("position-impl", () => {
     );
 
     // [Action] Initialize Tick Arrays
-    const initTickArrayTx = await pool.initTickArrayForTicks([lowerTick, upperTick]);
+    const initTickArrayTx = (await pool.initTickArrayForTicks([lowerTick, upperTick]))!;
     await initTickArrayTx.buildAndExecute();
 
     // [Action] Create a position at price 89, 120 with 50 token A
@@ -108,7 +108,7 @@ describe("position-impl", () => {
     assert.equal(postWithdrawData.liquidity.toString(), expectedPostWithdrawLiquidity.toString());
   });
 
-  it("decrease liquidity on position with a different destination, position wallet", async () => {
+  it("increase & decrease liquidity on position with a different destination, position wallet", async () => {
     const { poolInitInfo } = await initTestPool(
       ctx,
       TickSpacing.Standard,
@@ -137,7 +137,7 @@ describe("position-impl", () => {
     );
 
     // [Action] Initialize Tick Arrays
-    const initTickArrayTx = await pool.initTickArrayForTicks([lowerTick, upperTick]);
+    const initTickArrayTx = (await pool.initTickArrayForTicks([lowerTick, upperTick]))!;
     await initTickArrayTx.buildAndExecute();
 
     // [Action] Create a position at price 89, 120 with 50 token A
@@ -194,6 +194,36 @@ describe("position-impl", () => {
     );
     await transfer(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
+    // Mint to this other wallet and increase more tokens
+    await mintTokensToTestAccount(
+      ctx.provider,
+      poolInitInfo.tokenMintA,
+      10_500_000_000,
+      poolInitInfo.tokenMintB,
+      10_500_000_000,
+      otherWallet.publicKey
+    );
+    const increaseQuoteFromOtherWallet = increaseLiquidityQuoteByInputToken(
+      poolInitInfo.tokenMintB,
+      new Decimal(80),
+      lowerTick,
+      upperTick,
+      Percentage.fromFraction(1, 100),
+      pool
+    );
+    await (
+      await position.increaseLiquidity(
+        increaseQuoteFromOtherWallet,
+        otherWallet.publicKey,
+        otherWallet.publicKey,
+        true
+      )
+    )
+      .addSigner(otherWallet)
+      .buildAndExecute();
+
+    const postSecondIncreaseData = await position.refreshData();
+
     // Withdraw liquidity into another wallet
     const destinationWallet = anchor.web3.Keypair.generate();
     await (
@@ -208,7 +238,7 @@ describe("position-impl", () => {
       .buildAndExecute();
 
     const postWithdrawData = await position.refreshData();
-    const expectedPostWithdrawLiquidity = postIncreaseData.liquidity.sub(
+    const expectedPostWithdrawLiquidity = postSecondIncreaseData.liquidity.sub(
       decrease_quote.liquidityAmount
     );
     assert.equal(postWithdrawData.liquidity.toString(), expectedPostWithdrawLiquidity.toString());

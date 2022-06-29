@@ -96,8 +96,8 @@ export interface Whirlpool {
    * If `funder` is provided, the funder wallet has to sign this transaction.
    *
    * @param ticks - A group of ticks that define the desired tick-arrays to initialize. If the tick's array has been initialized, it will be ignored.
-   * @param funder - optional - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
-   * @param refresh - optional - whether this operation will fetch for the latest accounts if a cache version is available.
+   * @param funder - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
+   * @param refresh - whether this operation will fetch for the latest accounts if a cache version is available.
    * @return a transaction that will initialize the defined tick-arrays if executed. Return null if all of the tick's arrays are initialized.
    */
   initTickArrayForTicks: (
@@ -116,8 +116,8 @@ export interface Whirlpool {
    * @param tickLower - the tick index for the lower bound of this position
    * @param tickUpper - the tick index for the upper bound of this position
    * @param liquidityInput - an InputLiquidityInput type to define the desired liquidity amount to deposit
-   * @param wallet - optional - the wallet to withdraw tokens to deposit into the position and house the position token. If null, the WhirlpoolContext wallet is used.
-   * @param funder - optional - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
+   * @param wallet - the wallet to withdraw tokens to deposit into the position and house the position token. If null, the WhirlpoolContext wallet is used.
+   * @param funder - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
    * @return `positionMint` - the position to be created. `tx` - The transaction containing the instructions to perform the operation on chain.
    */
   openPosition: (
@@ -138,8 +138,8 @@ export interface Whirlpool {
    * @param tickLower - the tick index for the lower bound of this position
    * @param tickUpper - the tick index for the upper bound of this position
    * @param liquidityInput - input that defines the desired liquidity amount and maximum tokens willing to be to deposited.
-   * @param wallet - optional - the wallet to withdraw tokens to deposit into the position and house the position token. If null, the WhirlpoolContext wallet is used.
-   * @param funder - optional - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
+   * @param wallet - the wallet to withdraw tokens to deposit into the position and house the position token. If null, the WhirlpoolContext wallet is used.
+   * @param funder - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
    * @return `positionMint` - the position to be created. `tx` - The transaction containing the instructions to perform the operation on chain.
    */
   openPositionWithMetadata: (
@@ -159,9 +159,9 @@ export interface Whirlpool {
    *
    * @param positionAddress - The address of the position account.
    * @param slippageTolerance - The amount of slippage the caller is willing to accept when withdrawing liquidity.
-   * @param destinationWallet - optional - The wallet that the tokens withdrawn and rent lamports will be sent to. If null, the WhirlpoolContext wallet is used.
-   * @param positionWallet - optional - The wallet that houses the position token that corresponds to this position address. If null, the WhirlpoolContext wallet is used.
-   * @param payer - optional - the wallet that will fund the cost needed to initialize the token ATA accounts. If null, the WhirlpoolContext wallet is used.
+   * @param destinationWallet - The wallet that the tokens withdrawn and rent lamports will be sent to. If null, the WhirlpoolContext wallet is used.
+   * @param positionWallet - The wallet that houses the position token that corresponds to this position address. If null, the WhirlpoolContext wallet is used.
+   * @param payer - the wallet that will fund the cost needed to initialize the token ATA accounts. If null, the WhirlpoolContext wallet is used.
    */
   closePosition: (
     positionAddress: Address,
@@ -210,10 +210,10 @@ export interface Position {
    * If  `positionWallet` and `wallet` is provided, the wallet owners have to sign this transaction.
    *
    * @param liquidityInput - input that defines the desired liquidity amount and maximum tokens willing to be to deposited.
-   * @param resolveATA - optional - if true, add instructions to create associated token accounts for tokenA,B for the destinationWallet if necessary. (RPC call required)
-   * @param wallet - the wallet to withdraw tokens to deposit into the position. If null, the WhirlpoolContext wallet is used.
-   * @param positionWallet - optional - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
-   * @param ataPayer - optional - wallet that will fund the creation of the new associated token accounts
+   * @param resolveATA - if true, add instructions to create associated token accounts for tokenA,B for the destinationWallet if necessary. (RPC call required)
+   * @param wallet - to withdraw tokens to deposit into the position. If null, the WhirlpoolContext wallet is used.
+   * @param positionWallet - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
+   * @param ataPayer - wallet that will fund the creation of the new associated token accounts
    * @return the transaction that will deposit the tokens into the position when executed.
    */
   increaseLiquidity: (
@@ -230,10 +230,10 @@ export interface Position {
    * If `positionWallet` is provided, the wallet owners have to sign this transaction.
    *
    * @param liquidityInput - input that defines the desired liquidity amount and minimum tokens willing to be to withdrawn from the position.
-   * @param resolveATA - optional - if true, add instructions to create associated token accounts for tokenA,B for the destinationWallet if necessary. (RPC call required)
-   * @param destinationWallet - optional - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
-   * @param positionWallet - optional - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
-   * @param ataPayer - optional - wallet that will fund the creation of the new associated token accounts
+   * @param resolveATA -  if true, add instructions to create associated token accounts for tokenA,B for the destinationWallet if necessary. (RPC call required)
+   * @param destinationWallet - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
+   * @param positionWallet - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
+   * @param ataPayer - wallet that will fund the creation of the new associated token accounts
    * @return the transaction that will deposit the tokens into the position when executed.
    */
   decreaseLiquidity: (

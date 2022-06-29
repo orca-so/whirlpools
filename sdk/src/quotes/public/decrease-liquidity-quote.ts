@@ -31,6 +31,10 @@ export type DecreaseLiquidityQuoteParam = {
   slippageTolerance: Percentage;
 };
 
+/**
+ * Return object from decrease liquidity quote functions.
+ * @category Quotes
+ */
 export type DecreaseLiquidityQuote = DecreaseLiquidityInput & { tokenEstA: BN; tokenEstB: BN };
 
 /**

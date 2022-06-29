@@ -28,7 +28,7 @@ import {
 } from "@orca-so/common-sdk";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
 
-describe.only("whirlpool-impl", () => {
+describe("whirlpool-impl", () => {
   const provider = anchor.Provider.local();
   anchor.setProvider(anchor.Provider.env());
   const program = anchor.workspace.Whirlpool;

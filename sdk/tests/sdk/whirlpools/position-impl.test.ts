@@ -79,7 +79,7 @@ describe("position-impl", () => {
     );
 
     await (
-      await position.increaseLiquidity(increase_quote, ctx.wallet.publicKey)
+      await position.increaseLiquidity(increase_quote, false, ctx.wallet.publicKey)
     ).buildAndExecute();
 
     const postIncreaseData = await position.refreshData();
@@ -97,9 +97,7 @@ describe("position-impl", () => {
       pool
     );
 
-    await (
-      await position.decreaseLiquidity(decrease_quote, ctx.wallet.publicKey, ctx.wallet.publicKey)
-    ).buildAndExecute();
+    await (await position.decreaseLiquidity(decrease_quote, false)).buildAndExecute();
 
     const postWithdrawData = await position.refreshData();
     const expectedPostWithdrawLiquidity = postIncreaseData.liquidity.sub(
@@ -164,9 +162,7 @@ describe("position-impl", () => {
       pool
     );
 
-    await (
-      await position.increaseLiquidity(increase_quote, ctx.wallet.publicKey)
-    ).buildAndExecute();
+    await (await position.increaseLiquidity(increase_quote, false)).buildAndExecute();
 
     const postIncreaseData = await position.refreshData();
     const expectedPostIncreaseLiquidity = preIncreaseData.liquidity.add(
@@ -214,9 +210,9 @@ describe("position-impl", () => {
     await (
       await position.increaseLiquidity(
         increaseQuoteFromOtherWallet,
+        true,
         otherWallet.publicKey,
-        otherWallet.publicKey,
-        true
+        otherWallet.publicKey
       )
     )
       .addSigner(otherWallet)
@@ -229,9 +225,9 @@ describe("position-impl", () => {
     await (
       await position.decreaseLiquidity(
         decrease_quote,
+        true,
         destinationWallet.publicKey,
-        otherWallet.publicKey,
-        true
+        otherWallet.publicKey
       )
     )
       .addSigner(otherWallet)

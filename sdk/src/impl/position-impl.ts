@@ -44,9 +44,9 @@ export class PositionImpl implements Position {
 
   async increaseLiquidity(
     liquidityInput: IncreaseLiquidityInput,
+    resolveATA = true,
     sourceWallet?: Address,
     positionWallet?: Address,
-    resolveATA?: boolean,
     ataPayer?: Address
   ) {
     const sourceWalletKey = sourceWallet
@@ -117,9 +117,9 @@ export class PositionImpl implements Position {
 
   async decreaseLiquidity(
     liquidityInput: DecreaseLiquidityInput,
+    resolveATA = true,
     sourceWallet?: Address,
     positionWallet?: Address,
-    resolveATA?: boolean,
     ataPayer?: Address
   ) {
     const sourceWalletKey = sourceWallet

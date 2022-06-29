@@ -20,12 +20,7 @@ import {
   TickUtil,
 } from "../../../src";
 import Decimal from "decimal.js";
-import {
-  deriveATA,
-  Percentage,
-  TransactionBuilder,
-  TransactionProcessor,
-} from "@orca-so/common-sdk";
+import { deriveATA, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
 
 describe("whirlpool-impl", () => {

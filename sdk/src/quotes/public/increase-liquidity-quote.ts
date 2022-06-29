@@ -41,6 +41,10 @@ export type IncreaseLiquidityQuoteParam = {
   slippageTolerance: Percentage;
 };
 
+/**
+ * Return object from increase liquidity quote functions.
+ * @category Quotes
+ */
 export type IncreaseLiquidityQuote = IncreaseLiquidityInput & { tokenEstA: u64; tokenEstB: u64 };
 
 /**

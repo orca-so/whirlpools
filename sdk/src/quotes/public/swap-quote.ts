@@ -46,6 +46,9 @@ export type SwapQuote = {
   estimatedAmountOut: u64;
 } & SwapInput;
 
+/**
+ * @category Quotes
+ */
 export async function swapQuoteByInputToken(
   whirlpool: Whirlpool,
   swapTokenMint: Address,

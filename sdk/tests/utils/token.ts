@@ -1,4 +1,4 @@
-import { deriveATA } from "@orca-so/common-sdk";
+import { deriveATA, resolveOrCreateATA, TransactionBuilder } from "@orca-so/common-sdk";
 import { BN, Provider, web3 } from "@project-serum/anchor";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -7,6 +7,7 @@ import {
   TOKEN_PROGRAM_ID,
   u64,
 } from "@solana/spl-token";
+import { AccountFetcher } from "../../src";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 
 export async function createMint(
@@ -48,13 +49,20 @@ export async function createMintInstructions(
 export async function createTokenAccount(
   provider: Provider,
   mint: web3.PublicKey,
-  owner: web3.PublicKey
+  owner: web3.PublicKey,
+  fetcher?: AccountFetcher
 ) {
-  const tokenAccount = web3.Keypair.generate();
-  const tx = new web3.Transaction();
-  tx.add(...(await createTokenAccountInstrs(provider, tokenAccount.publicKey, mint, owner)));
-  await provider.send(tx, [tokenAccount], { commitment: "confirmed" });
-  return tokenAccount.publicKey;
+  const fetch = fetcher ?? new AccountFetcher(provider.connection);
+  const { address, ...ix } = await resolveOrCreateATA(
+    provider.connection,
+    owner,
+    mint,
+    fetch.getAccountRentExempt
+  );
+  const txBuilder = new TransactionBuilder(provider);
+  txBuilder.addInstruction(ix);
+  await txBuilder.buildAndExecute();
+  return address;
 }
 
 export async function createAssociatedTokenAccount(
@@ -141,7 +149,7 @@ export async function createAndMintToTokenAccount(
   amount: number | BN
 ): Promise<web3.PublicKey> {
   const tokenAccount = await createTokenAccount(provider, mint, provider.wallet.publicKey);
-  await mintToByAuthority(provider, mint, tokenAccount, amount);
+  await mintToByAuthority(provider, mint, tokenAccount, new u64(amount.toString()));
   return tokenAccount;
 }
 

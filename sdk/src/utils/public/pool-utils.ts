@@ -3,6 +3,8 @@ import { Address, BN } from "@project-serum/anchor";
 import { Token, u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
+import { AccountFetcher } from "../../network/public";
+import { TickArray } from "../../quotes/public";
 import {
   MAX_TICK_ARRAY_CROSSINGS,
   WhirlpoolData,
@@ -224,13 +226,44 @@ export class PoolUtil {
     let offset = 0;
     let tickArrayAddresses: PublicKey[] = [];
     for (let i = 0; i <= MAX_TICK_ARRAY_CROSSINGS; i++) {
-      const startIndex = TickUtil.getStartTickIndex(tickCurrentIndex, tickSpacing, offset);
+      let startIndex: number;
+      try {
+        startIndex = TickUtil.getStartTickIndex(tickCurrentIndex, tickSpacing, offset);
+      } catch {
+        return tickArrayAddresses;
+      }
+
       const pda = PDAUtil.getTickArray(programId, whirlpoolAddress, startIndex);
       tickArrayAddresses.push(pda.publicKey);
       offset = aToB ? offset - 1 : offset + 1;
     }
 
     return tickArrayAddresses;
+  }
+
+  public static async getTickArraysForSwap(
+    tickCurrentIndex: number,
+    tickSpacing: number,
+    aToB: boolean,
+    programId: PublicKey,
+    whirlpoolAddress: PublicKey,
+    fetcher: AccountFetcher,
+    refresh: boolean
+  ): Promise<TickArray[]> {
+    const addresses = PoolUtil.getTickArrayPublicKeysForSwap(
+      tickCurrentIndex,
+      tickSpacing,
+      aToB,
+      programId,
+      whirlpoolAddress
+    );
+    const data = await fetcher.listTickArrays(addresses, refresh);
+    return addresses.map((addr, index) => {
+      return {
+        address: addr,
+        data: data[index],
+      };
+    });
   }
 
   /**
@@ -314,5 +347,5 @@ function estLiquidityForTokenB(sqrtPrice1: BN, sqrtPrice2: BN, tokenAmount: u64)
 
   const delta = upperSqrtPriceX64.sub(lowerSqrtPriceX64);
 
-  return MathUtil.toX64_BN(tokenAmount).div(delta);
+  return tokenAmount.shln(64).div(delta);
 }

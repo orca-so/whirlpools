@@ -1,7 +1,7 @@
 import { MathUtil } from "@orca-so/common-sdk";
 import { BN } from "@project-serum/anchor";
 import Decimal from "decimal.js";
-import { MAX_TICK_INDEX, MIN_TICK_INDEX, MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "../../types/public";
+import { MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "../../types/public";
 import { TickUtil } from "./tick-utils";
 
 const BIT_PRECISION = 14;
@@ -34,10 +34,6 @@ export class PriceMath {
    * @returns
    */
   public static tickIndexToSqrtPriceX64(tickIndex: number): BN {
-    if (tickIndex > MAX_TICK_INDEX || tickIndex < MIN_TICK_INDEX) {
-      throw new Error("Provided tick index does not fit within supported tick index range.");
-    }
-
     if (tickIndex > 0) {
       return new BN(tickIndexToSqrtPricePositive(tickIndex));
     } else {

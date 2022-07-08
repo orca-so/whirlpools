@@ -1,3 +1,4 @@
+import { BN } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 
 /**
@@ -62,3 +63,15 @@ export const METADATA_PROGRAM_ADDRESS = new PublicKey(
  * @category Constants
  */
 export const MAX_TICK_ARRAY_CROSSINGS = 2;
+
+/**
+ * The denominator which the protocol fee rate is divided on.
+ * @category Constants
+ */
+export const PROTOCOL_FEE_RATE_MUL_VALUE = new BN(10000);
+
+/**
+ * The denominator which the fee rate is divided on.
+ * @category Constants
+ */
+export const FEE_RATE_MUL_VALUE = new BN(1000000);

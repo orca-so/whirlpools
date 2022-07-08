@@ -17,6 +17,7 @@ import {
   decreaseLiquidityIx,
   closePositionIx,
   swapIx,
+  SwapInput,
 } from "../instructions";
 import { MAX_SQRT_PRICE, MIN_SQRT_PRICE, TokenInfo, WhirlpoolData } from "../types/public";
 import { Whirlpool } from "../whirlpool-client";
@@ -368,15 +369,8 @@ export class WhirlpoolImpl implements Whirlpool {
     return txBuilder;
   }
 
-  private async getSwapTx(quote: SwapQuote, wallet: PublicKey): Promise<TransactionBuilder> {
-    const {
-      sqrtPriceLimit,
-      otherAmountThreshold,
-      estimatedAmountIn,
-      estimatedAmountOut,
-      aToB,
-      amountSpecifiedIsInput,
-    } = quote;
+  private async getSwapTx(input: SwapInput, wallet: PublicKey): Promise<TransactionBuilder> {
+    const { sqrtPriceLimit, otherAmountThreshold, amount, aToB, amountSpecifiedIsInput } = input;
     const whirlpool = this.data;
     const txBuilder = new TransactionBuilder(this.ctx.provider);
 
@@ -384,8 +378,8 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.connection,
       wallet,
       [
-        { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: aToB ? estimatedAmountIn : ZERO },
-        { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: !aToB ? estimatedAmountIn : ZERO },
+        { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: aToB ? amount : ZERO },
+        { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: !aToB ? amount : ZERO },
       ],
       () => this.fetcher.getAccountRentExempt()
     );
@@ -411,7 +405,7 @@ export class WhirlpoolImpl implements Whirlpool {
 
     txBuilder.addInstruction(
       swapIx(this.ctx.program, {
-        amount: amountSpecifiedIsInput ? estimatedAmountIn : estimatedAmountOut,
+        amount,
         otherAmountThreshold,
         sqrtPriceLimit: targetSqrtPriceLimitX64,
         amountSpecifiedIsInput,

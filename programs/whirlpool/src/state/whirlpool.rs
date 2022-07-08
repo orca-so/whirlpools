@@ -80,7 +80,7 @@ impl Whirlpool {
         token_vault_a: Pubkey,
         token_mint_b: Pubkey,
         token_vault_b: Pubkey,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         if token_mint_a.ge(&token_mint_b) {
             return Err(ErrorCode::InvalidTokenMintOrder.into());
         }
@@ -145,11 +145,7 @@ impl Whirlpool {
     }
 
     /// Update the reward authority at the specified Whirlpool reward index.
-    pub fn update_reward_authority(
-        &mut self,
-        index: usize,
-        authority: Pubkey,
-    ) -> Result<(), ErrorCode> {
+    pub fn update_reward_authority(&mut self, index: usize, authority: Pubkey) -> Result<()> {
         if index >= NUM_REWARDS {
             return Err(ErrorCode::InvalidRewardIndex.into());
         }
@@ -164,7 +160,7 @@ impl Whirlpool {
         reward_infos: [WhirlpoolRewardInfo; NUM_REWARDS],
         timestamp: u64,
         emissions_per_second_x64: u128,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         if index >= NUM_REWARDS {
             return Err(ErrorCode::InvalidRewardIndex.into());
         }
@@ -174,12 +170,7 @@ impl Whirlpool {
         Ok(())
     }
 
-    pub fn initialize_reward(
-        &mut self,
-        index: usize,
-        mint: Pubkey,
-        vault: Pubkey,
-    ) -> Result<(), ErrorCode> {
+    pub fn initialize_reward(&mut self, index: usize, mint: Pubkey, vault: Pubkey) -> Result<()> {
         if index >= NUM_REWARDS {
             return Err(ErrorCode::InvalidRewardIndex.into());
         }
@@ -226,7 +217,7 @@ impl Whirlpool {
         }
     }
 
-    pub fn update_fee_rate(&mut self, fee_rate: u16) -> Result<(), ErrorCode> {
+    pub fn update_fee_rate(&mut self, fee_rate: u16) -> Result<()> {
         if fee_rate > MAX_FEE_RATE {
             return Err(ErrorCode::FeeRateMaxExceeded.into());
         }
@@ -235,7 +226,7 @@ impl Whirlpool {
         Ok(())
     }
 
-    pub fn update_protocol_fee_rate(&mut self, protocol_fee_rate: u16) -> Result<(), ErrorCode> {
+    pub fn update_protocol_fee_rate(&mut self, protocol_fee_rate: u16) -> Result<()> {
         if protocol_fee_rate > MAX_PROTOCOL_FEE_RATE {
             return Err(ErrorCode::ProtocolFeeRateMaxExceeded.into());
         }

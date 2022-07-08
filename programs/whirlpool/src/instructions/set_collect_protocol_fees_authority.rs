@@ -13,7 +13,7 @@ pub struct SetCollectProtocolFeesAuthority<'info> {
     pub new_collect_protocol_fees_authority: UncheckedAccount<'info>,
 }
 
-pub fn handler(ctx: Context<SetCollectProtocolFeesAuthority>) -> ProgramResult {
+pub fn handler(ctx: Context<SetCollectProtocolFeesAuthority>) -> Result<()> {
     Ok(ctx
         .accounts
         .whirlpools_config

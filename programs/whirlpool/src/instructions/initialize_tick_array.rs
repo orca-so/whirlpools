@@ -21,7 +21,7 @@ pub struct InitializeTickArray<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(ctx: Context<InitializeTickArray>, start_tick_index: i32) -> ProgramResult {
+pub fn handler(ctx: Context<InitializeTickArray>, start_tick_index: i32) -> Result<()> {
     let mut tick_array = ctx.accounts.tick_array.load_init()?;
     Ok(tick_array.initialize(&ctx.accounts.whirlpool, start_tick_index)?)
 }

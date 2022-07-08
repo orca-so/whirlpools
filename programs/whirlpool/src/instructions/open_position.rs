@@ -16,13 +16,12 @@ pub struct OpenPosition<'info> {
       payer = funder,
       space = Position::LEN,
       seeds = [b"position".as_ref(), position_mint.key().as_ref()],
-      bump = bumps.position_bump,
+      bump,
     )]
     pub position: Box<Account<'info, Position>>,
 
     #[account(init,
         payer = funder,
-        space = Mint::LEN,
         mint::authority = whirlpool,
         mint::decimals = 0,
     )]
@@ -52,7 +51,7 @@ pub fn handler(
     _bumps: OpenPositionBumps,
     tick_lower_index: i32,
     tick_upper_index: i32,
-) -> ProgramResult {
+) -> Result<()> {
     let whirlpool = &ctx.accounts.whirlpool;
     let position_mint = &ctx.accounts.position_mint;
     let position = &mut ctx.accounts.position;

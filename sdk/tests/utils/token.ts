@@ -1,4 +1,4 @@
-import { deriveATA, resolveOrCreateATA, TransactionBuilder } from "@orca-so/common-sdk";
+import { deriveATA } from "@orca-so/common-sdk";
 import { BN, Provider, web3 } from "@project-serum/anchor";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -7,7 +7,6 @@ import {
   TOKEN_PROGRAM_ID,
   u64,
 } from "@solana/spl-token";
-import { AccountFetcher } from "../../src";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 
 export async function createMint(

@@ -289,8 +289,8 @@ export async function initTickArray(
 export async function initTestPoolWithTokens(
   ctx: WhirlpoolContext,
   tickSpacing: number,
-  mintAmount = new BN("15000000000"),
-  initSqrtPrice = defaultInitSqrtPrice
+  initSqrtPrice = defaultInitSqrtPrice,
+  mintAmount = new BN("15000000000")
 ) {
   const provider = ctx.provider;
 

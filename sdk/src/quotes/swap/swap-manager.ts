@@ -14,7 +14,7 @@ export type SwapResult = {
   totalFeeAmount: BN;
 };
 
-export function simulateSwap(
+export function computeSwap(
   whirlpoolData: WhirlpoolData,
   tickSequence: TickArraySequence,
   tokenAmount: u64,
@@ -62,7 +62,7 @@ export function simulateSwap(
       amountCalculated = amountCalculated.add(swapComputation.amountOut);
     } else {
       amountRemaining = amountRemaining.sub(swapComputation.amountOut);
-      amountRemaining = amountRemaining.add(swapComputation.amountIn);
+      amountCalculated = amountCalculated.add(swapComputation.amountIn);
       amountCalculated = amountCalculated.add(swapComputation.feeAmount);
     }
 

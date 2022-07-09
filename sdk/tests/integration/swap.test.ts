@@ -555,10 +555,9 @@ describe("swap", () => {
       whirlpool,
       whirlpoolData.tokenMintB,
       new u64(100000),
-      true,
       Percentage.fromFraction(1, 100),
-      fetcher,
       ctx.program.programId,
+      fetcher,
       true
     );
 

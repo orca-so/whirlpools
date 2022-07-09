@@ -23,7 +23,7 @@ import {
 } from "./test-builders";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import {
-  createAndMintToTokenAccount,
+  createAndMintToAssociatedTokenAccount,
   createMint,
   mintToByAuthority,
   TickSpacing,
@@ -301,8 +301,16 @@ export async function initTestPoolWithTokens(
   );
 
   const { tokenMintA, tokenMintB, whirlpoolPda } = poolInitInfo;
-  const tokenAccountA = await createAndMintToTokenAccount(provider, tokenMintA, mintAmount);
-  const tokenAccountB = await createAndMintToTokenAccount(provider, tokenMintB, mintAmount);
+  const tokenAccountA = await createAndMintToAssociatedTokenAccount(
+    provider,
+    tokenMintA,
+    mintAmount
+  );
+  const tokenAccountB = await createAndMintToAssociatedTokenAccount(
+    provider,
+    tokenMintB,
+    mintAmount
+  );
   return {
     poolInitInfo,
     configInitInfo,

@@ -3,7 +3,7 @@ import { SwapQuoteParam, SwapQuote } from "../public";
 import { BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { TickArraySequence } from "./tick-array-sequence";
-import { simulateSwap } from "./swap-manager";
+import { computeSwap } from "./swap-manager";
 import { MAX_SQRT_PRICE, MAX_TICK_ARRAY_CROSSINGS, MIN_SQRT_PRICE } from "../../types/public";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
 
@@ -13,7 +13,7 @@ import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
  * @returns
  * @exceptions
  */
-export function swapQuoteWithParamsImpl(params: SwapQuoteParam): SwapQuote {
+export function simulateSwap(params: SwapQuoteParam): SwapQuote {
   const {
     aToB,
     whirlpoolData,
@@ -56,7 +56,7 @@ export function swapQuoteWithParamsImpl(params: SwapQuoteParam): SwapQuote {
     );
   }
 
-  const swapResults = simulateSwap(
+  const swapResults = computeSwap(
     whirlpoolData,
     tickSequence,
     tokenAmount,
@@ -78,7 +78,7 @@ export function swapQuoteWithParamsImpl(params: SwapQuoteParam): SwapQuote {
   } else {
     if (
       (aToB && otherAmountThreshold.lt(swapResults.amountA)) ||
-      (!aToB && otherAmountThreshold.lt(swapResults.amountA))
+      (!aToB && otherAmountThreshold.lt(swapResults.amountB))
     ) {
       throw new WhirlpoolsError(
         "Quoted amount for the other token is above the otherAmountThreshold.",

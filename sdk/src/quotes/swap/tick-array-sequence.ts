@@ -1,6 +1,11 @@
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
-import { MAX_TICK_INDEX, MIN_TICK_INDEX, TickData, TICK_ARRAY_SIZE } from "../../types/public";
-import { TickArray } from "../public";
+import {
+  MAX_TICK_INDEX,
+  MIN_TICK_INDEX,
+  TickArray,
+  TickData,
+  TICK_ARRAY_SIZE,
+} from "../../types/public";
 import { TickArrayIndex } from "./tick-array-index";
 import { PublicKey } from "@solana/web3.js";
 

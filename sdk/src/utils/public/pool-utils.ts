@@ -1,19 +1,11 @@
 import { AddressUtil, MathUtil, Percentage } from "@orca-so/common-sdk";
 import { Address, BN } from "@project-serum/anchor";
-import { Token, u64 } from "@solana/spl-token";
+import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { AccountFetcher } from "../../network/public";
-import { TickArray } from "../../quotes/public";
-import {
-  MAX_TICK_ARRAY_CROSSINGS,
-  WhirlpoolData,
-  WhirlpoolRewardInfoData,
-} from "../../types/public";
-import { PDAUtil } from "./pda-utils";
+import { WhirlpoolData, WhirlpoolRewardInfoData } from "../../types/public";
 import { PriceMath } from "./price-math";
-import { TickUtil } from "./tick-utils";
-import { SwapDirection, TokenType } from "./types";
+import { TokenType } from "./types";
 
 /**
  * @category Whirlpool Utils
@@ -41,28 +33,6 @@ export class PoolUtil {
       return TokenType.TokenB;
     }
     return undefined;
-  }
-
-  /**
-   * Given the intended token mint to swap, return the swap direction of a swap for a Whirlpool
-   * @param pool The Whirlpool to evaluate the mint against
-   * @param swapTokenMint The token mint PublicKey the user bases their swap against
-   * @param swapTokenIsInput Whether the swap token is the input token. (similar to amountSpecifiedIsInput from swap Ix)
-   * @returns The direction of the swap given the swapTokenMint. undefined if the token mint is not part of the trade pair of the pool.
-   */
-  public static getSwapDirection(
-    pool: WhirlpoolData,
-    swapTokenMint: PublicKey,
-    swapTokenIsInput: boolean
-  ): SwapDirection | undefined {
-    const tokenType = PoolUtil.getTokenType(pool, swapTokenMint);
-    if (!tokenType) {
-      return undefined;
-    }
-
-    return (tokenType === TokenType.TokenA) === swapTokenIsInput
-      ? SwapDirection.AtoB
-      : SwapDirection.BtoA;
   }
 
   public static getFeeRate(feeRate: number): Percentage {
@@ -199,71 +169,6 @@ export class PoolUtil {
       );
       return BN.min(estLiquidityAmountA, estLiquidityAmountB);
     }
-  }
-
-  /**
-   * Given the current tick-index, returns the dervied PDA and fetched data
-   * for the tick-arrays that this swap may traverse across.
-   *
-   * TODO: Handle the edge case where the first tick-array may be the previous array of
-   * expected start-index due to slippage.
-   *
-   * @category Whirlpool Utils
-   * @param tickCurrentIndex - The current tickIndex for the Whirlpool to swap on.
-   * @param tickSpacing - The tickSpacing for the Whirlpool.
-   * @param aToB - The direction of the trade.
-   * @param programId - The Whirlpool programId which the Whirlpool lives on.
-   * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
-   * @returns An array of PublicKey[] for the tickArray accounts that this swap may traverse across.
-   */
-  public static getTickArrayPublicKeysForSwap(
-    tickCurrentIndex: number,
-    tickSpacing: number,
-    aToB: boolean,
-    programId: PublicKey,
-    whirlpoolAddress: PublicKey
-  ) {
-    let offset = 0;
-    let tickArrayAddresses: PublicKey[] = [];
-    for (let i = 0; i <= MAX_TICK_ARRAY_CROSSINGS; i++) {
-      let startIndex: number;
-      try {
-        startIndex = TickUtil.getStartTickIndex(tickCurrentIndex, tickSpacing, offset);
-      } catch {
-        return tickArrayAddresses;
-      }
-
-      const pda = PDAUtil.getTickArray(programId, whirlpoolAddress, startIndex);
-      tickArrayAddresses.push(pda.publicKey);
-      offset = aToB ? offset - 1 : offset + 1;
-    }
-
-    return tickArrayAddresses;
-  }
-
-  public static async getTickArraysForSwap(
-    tickCurrentIndex: number,
-    tickSpacing: number,
-    aToB: boolean,
-    programId: PublicKey,
-    whirlpoolAddress: PublicKey,
-    fetcher: AccountFetcher,
-    refresh: boolean
-  ): Promise<TickArray[]> {
-    const addresses = PoolUtil.getTickArrayPublicKeysForSwap(
-      tickCurrentIndex,
-      tickSpacing,
-      aToB,
-      programId,
-      whirlpoolAddress
-    );
-    const data = await fetcher.listTickArrays(addresses, refresh);
-    return addresses.map((addr, index) => {
-      return {
-        address: addr,
-        data: data[index],
-      };
-    });
   }
 
   /**

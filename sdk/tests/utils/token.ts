@@ -49,20 +49,13 @@ export async function createMintInstructions(
 export async function createTokenAccount(
   provider: Provider,
   mint: web3.PublicKey,
-  owner: web3.PublicKey,
-  fetcher?: AccountFetcher
+  owner: web3.PublicKey
 ) {
-  const fetch = fetcher ?? new AccountFetcher(provider.connection);
-  const { address, ...ix } = await resolveOrCreateATA(
-    provider.connection,
-    owner,
-    mint,
-    fetch.getAccountRentExempt
-  );
-  const txBuilder = new TransactionBuilder(provider);
-  txBuilder.addInstruction(ix);
-  await txBuilder.buildAndExecute();
-  return address;
+  const tokenAccount = web3.Keypair.generate();
+  const tx = new web3.Transaction();
+  tx.add(...(await createTokenAccountInstrs(provider, tokenAccount.publicKey, mint, owner)));
+  await provider.send(tx, [tokenAccount], { commitment: "confirmed" });
+  return tokenAccount.publicKey;
 }
 
 export async function createAssociatedTokenAccount(
@@ -168,7 +161,7 @@ export async function createAndMintToAssociatedTokenAccount(
     destinationWalletKey,
     payerKey
   );
-  await mintToByAuthority(provider, mint, tokenAccount, amount);
+  await mintToByAuthority(provider, mint, tokenAccount, new u64(amount.toString()));
   return tokenAccount;
 }
 

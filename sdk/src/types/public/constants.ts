@@ -59,10 +59,10 @@ export const METADATA_PROGRAM_ADDRESS = new PublicKey(
 );
 
 /**
- * The maximum number of tick-array crossing that can occur in a swap.
+ * The maximum number of tick-arrays that can traversed across in a swap.
  * @category Constants
  */
-export const MAX_TICK_ARRAY_CROSSINGS = 2;
+export const MAX_SWAP_TICK_ARRAYS = 3;
 
 /**
  * The denominator which the protocol fee rate is divided on.

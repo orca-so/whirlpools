@@ -6,7 +6,7 @@ import {
   MIN_SQRT_PRICE,
   MAX_SQRT_PRICE,
   WhirlpoolData,
-  MAX_TICK_ARRAY_CROSSINGS,
+  MAX_SWAP_TICK_ARRAYS,
   TickArray,
 } from "../../types/public";
 import { PDAUtil } from "./pda-utils";
@@ -79,7 +79,7 @@ export class SwapUtils {
   ) {
     let offset = 0;
     let tickArrayAddresses: PublicKey[] = [];
-    for (let i = 0; i <= MAX_TICK_ARRAY_CROSSINGS; i++) {
+    for (let i = 0; i < MAX_SWAP_TICK_ARRAYS; i++) {
       let startIndex: number;
       try {
         startIndex = TickUtil.getStartTickIndex(tickCurrentIndex, tickSpacing, offset);

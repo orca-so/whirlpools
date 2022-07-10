@@ -4,7 +4,7 @@ import { BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { TickArraySequence } from "./tick-array-sequence";
 import { computeSwap } from "./swap-manager";
-import { MAX_SQRT_PRICE, MAX_TICK_ARRAY_CROSSINGS, MIN_SQRT_PRICE } from "../../types/public";
+import { MAX_SQRT_PRICE, MAX_SWAP_TICK_ARRAYS, MIN_SQRT_PRICE } from "../../types/public";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
 
 /**
@@ -94,15 +94,15 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     slippageTolerance
   );
 
-  const numOfTickCrossings = tickSequence.getNumOfTouchedArrays() - 1;
-  if (numOfTickCrossings > MAX_TICK_ARRAY_CROSSINGS) {
+  const numOfTickCrossings = tickSequence.getNumOfTouchedArrays();
+  if (numOfTickCrossings > MAX_SWAP_TICK_ARRAYS) {
     throw new WhirlpoolsError(
       `Input amount causes the quote to traverse more than the allowable amount of tick-arrays ${numOfTickCrossings}`,
       SwapErrorCode.TickArrayCrossingAboveMax
     );
   }
 
-  const touchedArrays = tickSequence.getTouchedArrays(MAX_TICK_ARRAY_CROSSINGS);
+  const touchedArrays = tickSequence.getTouchedArrays(MAX_SWAP_TICK_ARRAYS);
 
   return {
     estimatedAmountIn,

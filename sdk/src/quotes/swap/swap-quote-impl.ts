@@ -1,4 +1,4 @@
-import { Percentage, ZERO } from "@orca-so/common-sdk";
+import { ZERO } from "@orca-so/common-sdk";
 import { SwapQuoteParam, SwapQuote } from "../public";
 import { BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
@@ -22,7 +22,6 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     sqrtPriceLimit,
     otherAmountThreshold,
     amountSpecifiedIsInput,
-    slippageTolerance,
   } = params;
 
   if (sqrtPriceLimit.gt(new u64(MAX_SQRT_PRICE) || sqrtPriceLimit.lt(new u64(MIN_SQRT_PRICE)))) {
@@ -90,8 +89,7 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
   const { estimatedAmountIn, estimatedAmountOut } = remapAndAdjustTokens(
     swapResults.amountA,
     swapResults.amountB,
-    aToB,
-    slippageTolerance
+    aToB
   );
 
   const numOfTickCrossings = tickSequence.getNumOfTouchedArrays();
@@ -121,15 +119,7 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
   };
 }
 
-/**
- *  TODO: Handle the slippage.
- *  */
-function remapAndAdjustTokens(
-  amountA: BN,
-  amountB: BN,
-  aToB: boolean,
-  slippageTolerance: Percentage
-) {
+function remapAndAdjustTokens(amountA: BN, amountB: BN, aToB: boolean) {
   const estimatedAmountIn = aToB ? amountA : amountB;
   const estimatedAmountOut = aToB ? amountB : amountA;
   return {

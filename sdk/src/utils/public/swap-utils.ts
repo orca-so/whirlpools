@@ -1,4 +1,4 @@
-import { ZERO, U64_MAX } from "@orca-so/common-sdk";
+import { ZERO, U64_MAX, Percentage } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { AccountFetcher } from "../../network/public";
@@ -8,7 +8,9 @@ import {
   WhirlpoolData,
   MAX_SWAP_TICK_ARRAYS,
   TickArray,
+  SwapInput,
 } from "../../types/public";
+import { adjustForSlippage } from "../math/token-math";
 import { PDAUtil } from "./pda-utils";
 import { PoolUtil } from "./pool-utils";
 import { TickUtil } from "./tick-utils";
@@ -131,5 +133,35 @@ export class SwapUtils {
         data: data[index],
       };
     });
+  }
+
+  /**
+   * Calculate the SwapInput parameters `amount` & `otherAmountThreshold` based on the amountIn & amountOut estimates from a quote.
+   * @param amount - The amount of tokens the user wanted to swap from.
+   * @param estAmountIn - The estimated amount of input tokens expected in a `SwapQuote`
+   * @param estAmountOut - The estimated amount of output tokens expected from a `SwapQuote`
+   * @param slippageTolerance - The amount of slippage to adjust for.
+   * @param amountSpecifiedIsInput - Specifies the token the parameter `amount`represents in the swap quote. If true, the amount represents
+   *                                 the input token of the swap.
+   * @returns A Partial `SwapInput` object containing the slippage adjusted 'amount' & 'otherAmountThreshold' parameters.
+   */
+  public static calculateSwapAmountsFromQuote(
+    amount: BN,
+    estAmountIn: BN,
+    estAmountOut: BN,
+    slippageTolerance: Percentage,
+    amountSpecifiedIsInput: boolean
+  ): Pick<SwapInput, "amount" | "otherAmountThreshold"> {
+    if (amountSpecifiedIsInput) {
+      return {
+        amount,
+        otherAmountThreshold: adjustForSlippage(estAmountOut, slippageTolerance, false),
+      };
+    } else {
+      return {
+        amount,
+        otherAmountThreshold: adjustForSlippage(estAmountIn, slippageTolerance, true),
+      };
+    }
   }
 }

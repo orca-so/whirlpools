@@ -20,7 +20,6 @@ import { SwapUtils } from "../../utils/public/swap-utils";
  * @param aToB - The direction of the swap. True if swapping from A to B. False if swapping from B to A.
  * @param amountSpecifiedIsInput - Specifies the token the parameter `amount`represents. If true, the amount represents
  *                                 the input token of the swap.
- * @param slippageTolerance - The amount of slippage to account for in this quote
  * @param tickArrays - An sequential array of tick-array objects in the direction of the trade to swap on
  */
 export type SwapQuoteParam = {
@@ -30,7 +29,6 @@ export type SwapQuoteParam = {
   sqrtPriceLimit: u64;
   aToB: boolean;
   amountSpecifiedIsInput: boolean;
-  slippageTolerance: Percentage;
   tickArrays: TickArray[];
 };
 
@@ -62,7 +60,7 @@ export type SwapQuote = {
  * @param programId - PublicKey for the Whirlpool ProgramId
  * @param fetcher - AccountFetcher object to fetch solana accounts
  * @param refresh - If true, fetcher would default to fetching the latest accounts
- * @returns a SwapQuote object with estimates on token amounts, fee & end whirlpool states.
+ * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByInputToken(
   whirlpool: Whirlpool,
@@ -100,7 +98,7 @@ export async function swapQuoteByInputToken(
  * @param programId - PublicKey for the Whirlpool ProgramId
  * @param fetcher - AccountFetcher object to fetch solana accounts
  * @param refresh - If true, fetcher would default to fetching the latest accounts
- * @returns a SwapQuote object with estimates on token amounts, fee & end whirlpool states.
+ * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByOutputToken(
   whirlpool: Whirlpool,
@@ -127,10 +125,26 @@ export async function swapQuoteByOutputToken(
 /**
  * Perform a sync swap quote based on the basic swap instruction parameters.
  * @param params - SwapQuote parameters
- * @returns a SwapQuote object with estimates on token amounts, fee & end whirlpool states.
+ * @param slippageTolerance - The amount of slippage to account for when generating the final quote.
+ * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
-export function swapQuoteWithParams(params: SwapQuoteParam) {
-  return simulateSwap(params);
+export function swapQuoteWithParams(params: SwapQuoteParam, slippageTolerance: Percentage) {
+  checkIfAllTickArraysInitialized(params.tickArrays);
+
+  const quote = simulateSwap(params);
+
+  const slippageAdjustedQuote: SwapQuote = {
+    ...quote,
+    ...SwapUtils.calculateSwapAmountsFromQuote(
+      params.tokenAmount,
+      quote.estimatedAmountIn,
+      quote.estimatedAmountOut,
+      slippageTolerance,
+      params.amountSpecifiedIsInput
+    ),
+  };
+
+  return slippageAdjustedQuote;
 }
 
 async function swapQuoteByToken(
@@ -161,18 +175,18 @@ async function swapQuoteByToken(
     refresh
   );
 
-  checkIfAllTickArraysInitialized(tickArrays);
-
-  return simulateSwap({
-    whirlpoolData,
-    tokenAmount,
-    aToB,
-    amountSpecifiedIsInput,
-    sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-    otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
-    slippageTolerance,
-    tickArrays,
-  });
+  return swapQuoteWithParams(
+    {
+      whirlpoolData,
+      tokenAmount,
+      aToB,
+      amountSpecifiedIsInput,
+      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+      otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
+      tickArrays,
+    },
+    slippageTolerance
+  );
 }
 
 function checkIfAllTickArraysInitialized(tickArrays: TickArray[]) {

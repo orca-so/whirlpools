@@ -9,17 +9,9 @@ import {
   swapQuoteByInputToken,
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
-  SwapQuote,
-  WhirlpoolData,
-  SwapInput,
   swapQuoteByOutputToken,
 } from "../../../../src";
-import {
-  assertInputOutputQuoteEqual,
-  assertQuoteAndResults,
-  getTokenBalance,
-  TickSpacing,
-} from "../../../utils";
+import { assertInputOutputQuoteEqual, assertQuoteAndResults, TickSpacing } from "../../../utils";
 import { Percentage } from "@orca-so/common-sdk";
 import { u64 } from "@solana/spl-token";
 import { BN } from "bn.js";

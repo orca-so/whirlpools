@@ -147,16 +147,18 @@ describe("swap arrays test", async () => {
     );
     assert.throws(
       () =>
-        swapQuoteWithParams({
-          aToB,
-          amountSpecifiedIsInput: true,
-          slippageTolerance,
-          tokenAmount: new u64("10000"),
-          whirlpoolData,
-          tickArrays,
-          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-          otherAmountThreshold: ZERO,
-        }),
+        swapQuoteWithParams(
+          {
+            aToB,
+            amountSpecifiedIsInput: true,
+            tokenAmount: new u64("10000"),
+            whirlpoolData,
+            tickArrays,
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            otherAmountThreshold: ZERO,
+          },
+          slippageTolerance
+        ),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.TickArraySequenceInvalid
     );
   });
@@ -196,16 +198,18 @@ describe("swap arrays test", async () => {
     );
     assert.throws(
       () =>
-        swapQuoteWithParams({
-          aToB,
-          amountSpecifiedIsInput: true,
-          slippageTolerance,
-          tokenAmount: new u64("10000"),
-          whirlpoolData,
-          tickArrays,
-          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-          otherAmountThreshold: ZERO,
-        }),
+        swapQuoteWithParams(
+          {
+            aToB,
+            amountSpecifiedIsInput: true,
+            tokenAmount: new u64("10000"),
+            whirlpoolData,
+            tickArrays,
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            otherAmountThreshold: ZERO,
+          },
+          slippageTolerance
+        ),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.TickArraySequenceInvalid
     );
   });
@@ -244,16 +248,18 @@ describe("swap arrays test", async () => {
     );
     assert.throws(
       () =>
-        swapQuoteWithParams({
-          aToB,
-          amountSpecifiedIsInput: true,
-          slippageTolerance,
-          tokenAmount: new u64("10000"),
-          whirlpoolData,
-          tickArrays,
-          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-          otherAmountThreshold: ZERO,
-        }),
+        swapQuoteWithParams(
+          {
+            aToB,
+            amountSpecifiedIsInput: true,
+            tokenAmount: new u64("10000"),
+            whirlpoolData,
+            tickArrays,
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            otherAmountThreshold: ZERO,
+          },
+          slippageTolerance
+        ),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.TickArraySequenceInvalid
     );
   });
@@ -293,16 +299,18 @@ describe("swap arrays test", async () => {
 
     assert.throws(
       () =>
-        swapQuoteWithParams({
-          aToB,
-          amountSpecifiedIsInput: true,
-          slippageTolerance,
-          tokenAmount: new u64("10000"),
-          whirlpoolData,
-          tickArrays,
-          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-          otherAmountThreshold: ZERO,
-        }),
+        swapQuoteWithParams(
+          {
+            aToB,
+            amountSpecifiedIsInput: true,
+            tokenAmount: new u64("10000"),
+            whirlpoolData,
+            tickArrays,
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            otherAmountThreshold: ZERO,
+          },
+          slippageTolerance
+        ),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.TickArraySequenceInvalid
     );
   });
@@ -338,16 +346,18 @@ describe("swap arrays test", async () => {
     );
     assert.throws(
       () =>
-        swapQuoteWithParams({
-          aToB,
-          amountSpecifiedIsInput: true,
-          slippageTolerance,
-          tokenAmount: new u64("10000"),
-          whirlpoolData,
-          tickArrays,
-          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-          otherAmountThreshold: ZERO,
-        }),
+        swapQuoteWithParams(
+          {
+            aToB,
+            amountSpecifiedIsInput: true,
+            tokenAmount: new u64("10000"),
+            whirlpoolData,
+            tickArrays,
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            otherAmountThreshold: ZERO,
+          },
+          slippageTolerance
+        ),
       (err) => {
         const whirlErr = err as WhirlpoolsError;
         const errorCodeMatch = whirlErr.errorCode === SwapErrorCode.TickArraySequenceInvalid;
@@ -388,16 +398,18 @@ describe("swap arrays test", async () => {
     );
     assert.throws(
       () =>
-        swapQuoteWithParams({
-          aToB,
-          amountSpecifiedIsInput: true,
-          slippageTolerance,
-          tokenAmount: new u64("10000"),
-          whirlpoolData,
-          tickArrays,
-          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-          otherAmountThreshold: ZERO,
-        }),
+        swapQuoteWithParams(
+          {
+            aToB,
+            amountSpecifiedIsInput: true,
+            tokenAmount: new u64("10000"),
+            whirlpoolData,
+            tickArrays,
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            otherAmountThreshold: ZERO,
+          },
+          slippageTolerance
+        ),
       (err) => {
         const whirlErr = err as WhirlpoolsError;
         const errorCodeMatch = whirlErr.errorCode === SwapErrorCode.TickArraySequenceInvalid;
@@ -440,16 +452,18 @@ describe("swap arrays test", async () => {
       fetcher
     );
     const tradeAmount = new u64("33588");
-    const quote = swapQuoteWithParams({
-      aToB,
-      amountSpecifiedIsInput: true,
-      slippageTolerance,
-      tokenAmount: tradeAmount,
-      whirlpoolData,
-      tickArrays,
-      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-      otherAmountThreshold: ZERO,
-    });
+    const quote = swapQuoteWithParams(
+      {
+        aToB,
+        amountSpecifiedIsInput: true,
+        tokenAmount: tradeAmount,
+        whirlpoolData,
+        tickArrays,
+        sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+        otherAmountThreshold: ZERO,
+      },
+      slippageTolerance
+    );
 
     // Verify with an actual swap.
     assert.equal(quote.aToB, aToB);
@@ -458,11 +472,11 @@ describe("swap arrays test", async () => {
       quote.sqrtPriceLimit.toString(),
       SwapUtils.getDefaultSqrtPriceLimit(aToB).toString()
     );
-    assert.equal(quote.otherAmountThreshold, ZERO);
     assert.equal(
-      quote.estimatedAmountIn.toString(),
-      adjustForSlippage(tradeAmount, slippageTolerance, true).toString()
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
     );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
     assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
   });
 
@@ -496,16 +510,18 @@ describe("swap arrays test", async () => {
       fetcher
     );
     const tradeAmount = new u64("33588");
-    const quote = swapQuoteWithParams({
-      aToB,
-      amountSpecifiedIsInput: true,
-      slippageTolerance,
-      tokenAmount: tradeAmount,
-      whirlpoolData,
-      tickArrays,
-      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-      otherAmountThreshold: ZERO,
-    });
+    const quote = swapQuoteWithParams(
+      {
+        aToB,
+        amountSpecifiedIsInput: true,
+        tokenAmount: tradeAmount,
+        whirlpoolData,
+        tickArrays,
+        sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+        otherAmountThreshold: ZERO,
+      },
+      slippageTolerance
+    );
 
     // Verify with an actual swap.
     assert.equal(quote.aToB, aToB);
@@ -514,11 +530,11 @@ describe("swap arrays test", async () => {
       quote.sqrtPriceLimit.toString(),
       SwapUtils.getDefaultSqrtPriceLimit(aToB).toString()
     );
-    assert.equal(quote.otherAmountThreshold, ZERO);
     assert.equal(
-      quote.estimatedAmountIn.toString(),
-      adjustForSlippage(tradeAmount, slippageTolerance, true).toString()
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
     );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
     assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
   });
 });

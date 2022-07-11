@@ -2,7 +2,7 @@ import { Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { MathErrorCode, TokenErrorCode, WhirlpoolsError } from "../../errors/errors";
-import { MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "../../types/public";
+import { MAX_SQRT_PRICE, MIN_SQRT_PRICE, SwapInput } from "../../types/public";
 import { BitMath } from "./bit-math";
 
 export function getAmountDeltaA(
@@ -51,6 +51,18 @@ export function getNextSqrtPrice(
     return getNextSqrtPriceFromARoundUp(sqrtPrice, currLiquidity, amount, amountSpecifiedIsInput);
   } else {
     return getNextSqrtPriceFromBRoundDown(sqrtPrice, currLiquidity, amount, amountSpecifiedIsInput);
+  }
+}
+
+export function adjustForSlippage(
+  n: BN,
+  { numerator, denominator }: Percentage,
+  adjustUp: boolean
+): BN {
+  if (adjustUp) {
+    return n.mul(denominator.add(numerator)).div(denominator);
+  } else {
+    return n.mul(denominator).div(denominator.add(numerator));
   }
 }
 
@@ -127,12 +139,4 @@ function getNextSqrtPriceFromBRoundDown(
   }
 
   return sqrtPrice;
-}
-
-function adjustForSlippage(n: BN, { numerator, denominator }: Percentage, adjustUp: boolean): BN {
-  if (adjustUp) {
-    return n.mul(denominator.add(numerator)).div(denominator);
-  } else {
-    return n.mul(denominator).div(denominator.add(numerator));
-  }
 }

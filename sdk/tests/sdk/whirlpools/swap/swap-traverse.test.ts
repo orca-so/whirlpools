@@ -164,11 +164,9 @@ describe("swap traversal tests", async () => {
   });
 
   /**
-   * // TODO: 0x1787
-   * // setting tick to [1, 1] works. but [1,0] (on the first tick) will fail the contract
    * b|-----x2---------|a---------------|a,x1-------------b|
    */
-  it.skip("curr_index on the first initializable tick, a->b", async () => {
+  it("curr_index on the first initializable tick, a->b", async () => {
     const currIndex = arrayTickIndexToTickIndex({ arrayIndex: 1, offsetIndex: 0 }, tickSpacing);
     const aToB = true;
     const whirlpool = await setupSwapTest({
@@ -459,10 +457,9 @@ describe("swap traversal tests", async () => {
   });
 
   /**
-   * TODO: 0x1787
    * |-----------b--x2--|-------a-----b-----|x1,a-------------|
    */
-  it.skip("curr_index btw end of last offset and next array, with the next tick initialized, a->b", async () => {
+  it("curr_index btw end of last offset and next array, with the next tick initialized, a->b", async () => {
     const currIndex = 11264 + 30;
     const aToB = true;
     const whirlpool = await setupSwapTest({

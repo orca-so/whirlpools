@@ -73,36 +73,17 @@ export async function swapQuoteByInputToken(
   fetcher: AccountFetcher,
   refresh: boolean
 ): Promise<SwapQuote> {
-  const whirlpoolData = whirlpool.getData();
-  const swapMintKey = AddressUtil.toPubKey(inputTokenMint);
-  const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
-  invariant(!!swapTokenType, "swapTokenMint does not match any tokens on this pool");
-
-  const aToB = swapTokenType === TokenType.TokenA;
-  const amountSpecifiedIsInput = true;
-
-  const tickArrays = await SwapUtils.getTickArrays(
-    whirlpoolData.tickCurrentIndex,
-    whirlpoolData.tickSpacing,
-    aToB,
-    AddressUtil.toPubKey(programId),
-    whirlpool.getAddress(),
+  return swapQuoteByToken(
+    whirlpool,
+    inputTokenMint,
+    tokenAmount,
+    slippageTolerance,
+    TokenType.TokenA,
+    true,
+    programId,
     fetcher,
     refresh
   );
-
-  checkIfAllTickArraysInitialized(tickArrays);
-
-  return simulateSwap({
-    whirlpoolData,
-    tokenAmount,
-    aToB,
-    amountSpecifiedIsInput,
-    sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-    otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
-    slippageTolerance,
-    tickArrays,
-  });
 }
 
 /**
@@ -130,13 +111,45 @@ export async function swapQuoteByOutputToken(
   fetcher: AccountFetcher,
   refresh: boolean
 ): Promise<SwapQuote> {
+  return swapQuoteByToken(
+    whirlpool,
+    outputTokenMint,
+    tokenAmount,
+    slippageTolerance,
+    TokenType.TokenB,
+    false,
+    programId,
+    fetcher,
+    refresh
+  );
+}
+
+/**
+ * Perform a sync swap quote based on the basic swap instruction parameters.
+ * @param params - SwapQuote parameters
+ * @returns a SwapQuote object with estimates on token amounts, fee & end whirlpool states.
+ */
+export function swapQuoteWithParams(params: SwapQuoteParam) {
+  return simulateSwap(params);
+}
+
+async function swapQuoteByToken(
+  whirlpool: Whirlpool,
+  inputTokenMint: Address,
+  tokenAmount: u64,
+  slippageTolerance: Percentage,
+  amountSpecifiedTokenType: TokenType,
+  amountSpecifiedIsInput: boolean,
+  programId: Address,
+  fetcher: AccountFetcher,
+  refresh: boolean
+) {
   const whirlpoolData = whirlpool.getData();
-  const swapMintKey = AddressUtil.toPubKey(outputTokenMint);
+  const swapMintKey = AddressUtil.toPubKey(inputTokenMint);
   const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
   invariant(!!swapTokenType, "swapTokenMint does not match any tokens on this pool");
 
-  const aToB = swapTokenType === TokenType.TokenB;
-  const amountSpecifiedIsInput = false;
+  const aToB = swapTokenType === amountSpecifiedTokenType;
 
   const tickArrays = await SwapUtils.getTickArrays(
     whirlpoolData.tickCurrentIndex,
@@ -160,15 +173,6 @@ export async function swapQuoteByOutputToken(
     slippageTolerance,
     tickArrays,
   });
-}
-
-/**
- * Perform a sync swap quote based on the basic swap instruction parameters.
- * @param params - SwapQuote parameters
- * @returns a SwapQuote object with estimates on token amounts, fee & end whirlpool states.
- */
-export function swapQuoteWithParams(params: SwapQuoteParam) {
-  return simulateSwap(params);
 }
 
 function checkIfAllTickArraysInitialized(tickArrays: TickArray[]) {

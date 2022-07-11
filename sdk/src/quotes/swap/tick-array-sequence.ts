@@ -14,7 +14,7 @@ import { PublicKey } from "@solana/web3.js";
  * This is due to the initial requirement to lazy load tick-arrays. This requirement is no longer necessary.
  */
 export class TickArraySequence {
-  private touchedArrays: number[];
+  private touchedArrays: boolean[];
   private startArrayIndex: number;
 
   constructor(
@@ -26,7 +26,7 @@ export class TickArraySequence {
       throw new Error("TickArray index 0 must be initialized");
     }
 
-    this.touchedArrays = [...Array<number>(tickArrays.length).fill(0)];
+    this.touchedArrays = [...Array<boolean>(tickArrays.length).fill(false)];
     this.startArrayIndex = TickArrayIndex.fromTickIndex(
       tickArrays[0].data.startTickIndex,
       this.tickSpacing
@@ -42,7 +42,7 @@ export class TickArraySequence {
   }
 
   getNumOfTouchedArrays() {
-    return this.touchedArrays.filter((val) => val > 0).length;
+    return this.touchedArrays.filter((val) => !!val).length;
   }
 
   getTouchedArrays(minArraySize: number): PublicKey[] {
@@ -77,7 +77,7 @@ export class TickArraySequence {
     const localArrayIndex = this.getLocalArrayIndex(targetTaIndex.arrayIndex, this.aToB);
     const tickArray = this.tickArrays[localArrayIndex].data;
 
-    this.touchedArrays[localArrayIndex] = 1;
+    this.touchedArrays[localArrayIndex] = true;
 
     if (!tickArray) {
       throw new WhirlpoolsError(

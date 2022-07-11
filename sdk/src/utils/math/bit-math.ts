@@ -24,7 +24,7 @@ export class BitMath {
 
   static mulDivRoundUpIf(n0: BN, n1: BN, d: BN, roundUp: boolean, limit: number): BN {
     if (d.eq(ZERO)) {
-      throw new WhirlpoolsError("checkedMulDiv denominator is zero", MathErrorCode.DivideByZero);
+      throw new WhirlpoolsError("mulDiv denominator is zero", MathErrorCode.DivideByZero);
     }
 
     const p = this.mul(n0, n1, limit);
@@ -45,7 +45,7 @@ export class BitMath {
     const p = this.mul(n0, n1, limit);
     if (this.isOverLimit(p, limit)) {
       throw new WhirlpoolsError(
-        `MulDivShiftRight overflowed u${limit}.`,
+        `MulShiftRight overflowed u${limit}.`,
         MathErrorCode.MultiplicationShiftRightOverflow
       );
     }
@@ -53,7 +53,7 @@ export class BitMath {
     const shouldRound = roundUp && result.and(U64_MAX).gt(ZERO);
     if (shouldRound && result.eq(U64_MAX)) {
       throw new WhirlpoolsError(
-        `MulDivShiftRight overflowed u${limit}.`,
+        `MulShiftRight overflowed u${limit}.`,
         MathErrorCode.MultiplicationOverflow
       );
     }

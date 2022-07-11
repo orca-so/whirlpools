@@ -1,24 +1,24 @@
 export enum MathErrorCode {
-  MultiplicationOverflow,
-  MulDivOverflow,
-  MultiplicationShiftRightOverflow,
-  DivideByZero,
+  MultiplicationOverflow = `MultiplicationOverflow`,
+  MulDivOverflow = `MulDivOverflow`,
+  MultiplicationShiftRightOverflow = `MultiplicationShiftRightOverflow`,
+  DivideByZero = `DivideByZero`,
 }
 
 export enum TokenErrorCode {
-  TokenMaxExceeded,
-  TokenMinSubceeded,
+  TokenMaxExceeded = `TokenMaxExceeded`,
+  TokenMinSubceeded = `TokenMinSubceeded`,
 }
 
 export enum SwapErrorCode {
-  InvalidSqrtPriceLimitDirection,
-  SqrtPriceOutOfBounds,
-  ZeroTradableAmount,
-  AmountOutBelowMinimum,
-  AmountInAboveMaximum,
-  TickArrayCrossingAboveMax,
-  TickArrayIndexNotInitialized,
-  TickArraySequenceInvalid,
+  InvalidSqrtPriceLimitDirection = `InvalidSqrtPriceLimitDirection`,
+  SqrtPriceOutOfBounds = `SqrtPriceOutOfBounds`,
+  ZeroTradableAmount = `ZeroTradableAmount`,
+  AmountOutBelowMinimum = `AmountOutBelowMinimum`,
+  AmountInAboveMaximum = `AmountInAboveMaximum`,
+  TickArrayCrossingAboveMax = `TickArrayCrossingAboveMax`,
+  TickArrayIndexNotInitialized = `TickArrayIndexNotInitialized`,
+  TickArraySequenceInvalid = `TickArraySequenceInvalid`,
 }
 
 export type WhirlpoolsErrorCode = TokenErrorCode | SwapErrorCode | MathErrorCode;

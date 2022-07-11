@@ -1,7 +1,14 @@
 import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
 import { WhirlpoolContext } from "../../../src/context";
-import { initTestPool } from "../../utils/init-utils";
+import { u64 } from "@solana/spl-token";
+import {
+  initTestPool,
+  initTestPoolWithTokens,
+  initTickArrayRange,
+  FundedPositionParams,
+  fundPositions,
+} from "../../utils/init-utils";
 import {
   createAssociatedTokenAccount,
   getTokenBalance,
@@ -9,6 +16,7 @@ import {
   systemTransferTx,
   TickSpacing,
   transfer,
+  ZERO_BN,
 } from "../../utils";
 import {
   AccountFetcher,
@@ -18,6 +26,7 @@ import {
   PDAUtil,
   PriceMath,
   TickUtil,
+  swapQuoteByInputToken,
 } from "../../../src";
 import Decimal from "decimal.js";
 import { deriveATA, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
@@ -280,4 +289,78 @@ describe("whirlpool-impl", () => {
       expectationQuote.tokenMinB.toString()
     );
   });
+
+  it("swaps across three tick arrays", async () => {
+    const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokens(
+        ctx,
+        TickSpacing.Stable,
+        PriceMath.tickIndexToSqrtPriceX64(27500)
+      );
+
+    const aToB = false;
+    const tickArrays = await initTickArrayRange(
+      ctx,
+      whirlpoolPda.publicKey,
+      27456, // to 28160, 28864
+      5,
+      TickSpacing.Stable,
+      false
+    );
+
+    const fundParams: FundedPositionParams[] = [
+      {
+        liquidityAmount: new u64(100_000_000),
+        tickLowerIndex: 27456,
+        tickUpperIndex: 28928,
+      },
+    ];
+
+    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
+
+    assert.equal(
+      await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
+      "1742370"
+    );
+    assert.equal(
+      await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey),
+      "869058"
+    );
+
+    // Create and mint tokens in this wallet
+    const mintedTokenAmount = 7051000;
+    const [userTokenAAccount, userTokenBAccount] = await mintTokensToTestAccount(
+      ctx.provider,
+      poolInitInfo.tokenMintA,
+      mintedTokenAmount,
+      poolInitInfo.tokenMintB,
+      mintedTokenAmount
+    );
+    
+    const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey);
+    const quote = await swapQuoteByInputToken(
+      pool,
+      pool.getData().tokenMintB,
+      new u64(7051000),
+      true,
+      Percentage.fromFraction(1, 100),
+      fetcher,
+      ctx.program.programId,
+      true
+    );
+
+    await (
+      await pool.swap(quote)
+    ).buildAndExecute();
+
+    assert.equal(
+      await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
+      "1300756"
+    );
+    assert.equal(
+      await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey),
+      "7920058"
+    );
+  });
+
 });

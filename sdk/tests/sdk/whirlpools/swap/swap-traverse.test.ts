@@ -827,6 +827,167 @@ describe("swap traversal tests", async () => {
   });
 
   /**
+   * [1, 0, -1]
+   * e|---c--x2----a---d----b|f-----a--b----d----|f-----c---x1-------|e
+   */
+  it("3 arrays, on some uninitialized tick, traverse lots of ticks, a->b", async () => {
+    const currIndex =
+      arrayTickIndexToTickIndex({ arrayIndex: 1, offsetIndex: 25 }, tickSpacing) - 30;
+    const aToB = true;
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 0, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // e
+          { arrayIndex: -2, offsetIndex: 10 },
+          { arrayIndex: 2, offsetIndex: 23 },
+          tickSpacing,
+          new BN(250_000)
+        ),
+        buildPosition(
+          // c
+          { arrayIndex: -1, offsetIndex: 10 },
+          { arrayIndex: 1, offsetIndex: 15 },
+          tickSpacing,
+          new BN(100_000_000)
+        ),
+        buildPosition(
+          // a
+          { arrayIndex: -1, offsetIndex: 30 },
+          { arrayIndex: 0, offsetIndex: 20 },
+          tickSpacing,
+          new BN(100_000_000)
+        ),
+        buildPosition(
+          // d
+          { arrayIndex: -1, offsetIndex: 60 },
+          { arrayIndex: 0, offsetIndex: 60 },
+          tickSpacing,
+          new BN(50_000_000)
+        ),
+        buildPosition(
+          // f
+          { arrayIndex: 0, offsetIndex: 0 },
+          { arrayIndex: 1, offsetIndex: 0 },
+          tickSpacing,
+          new BN(25_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const beforeVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+    const inputTokenQuote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      new u64(102195000),
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+    const outputTokenQuote = await swapQuoteByOutputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      inputTokenQuote.estimatedAmountOut,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+    assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
+    await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
+
+    const newData = await whirlpool.refreshData();
+    const afterVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+    assertQuoteAndResults(aToB, inputTokenQuote, newData, beforeVaultAmounts, afterVaultAmounts);
+  });
+
+  /**
+   * e|---c--x1----a---d--b---|f-----a--b----d----|f------c---x2--------|e
+   */
+  it("3 arrays, on some uninitialized tick, traverse lots of ticks, b->a", async () => {
+    const currIndex =
+      arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 15 }, tickSpacing) - 30;
+    const aToB = false;
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 0, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // e
+          { arrayIndex: -2, offsetIndex: 10 },
+          { arrayIndex: 2, offsetIndex: 23 },
+          tickSpacing,
+          new BN(250_000)
+        ),
+        buildPosition(
+          // c
+          { arrayIndex: -1, offsetIndex: 10 },
+          { arrayIndex: 1, offsetIndex: 15 },
+          tickSpacing,
+          new BN(100_000_000)
+        ),
+        buildPosition(
+          // a
+          { arrayIndex: -1, offsetIndex: 30 },
+          { arrayIndex: 0, offsetIndex: 20 },
+          tickSpacing,
+          new BN(100_000_000)
+        ),
+        buildPosition(
+          // d
+          { arrayIndex: -1, offsetIndex: 60 },
+          { arrayIndex: 0, offsetIndex: 60 },
+          tickSpacing,
+          new BN(50_000_000)
+        ),
+        buildPosition(
+          // f
+          { arrayIndex: 0, offsetIndex: 0 },
+          { arrayIndex: 1, offsetIndex: 0 },
+          tickSpacing,
+          new BN(25_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const beforeVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+    const inputTokenQuote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new u64(99900000),
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+    const outputTokenQuote = await swapQuoteByOutputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      inputTokenQuote.estimatedAmountOut,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+    assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
+    await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
+
+    const newData = await whirlpool.refreshData();
+    const afterVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+    assertQuoteAndResults(aToB, inputTokenQuote, newData, beforeVaultAmounts, afterVaultAmounts);
+  });
+
+  /**
    * trade amount > liquidity
    * |----------x1----------|-----------------|-------------------|
    */

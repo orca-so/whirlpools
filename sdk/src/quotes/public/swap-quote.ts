@@ -124,6 +124,8 @@ export async function swapQuoteByOutputToken(
 
 /**
  * Perform a sync swap quote based on the basic swap instruction parameters.
+ *
+ * @category Quotes
  * @param params - SwapQuote parameters
  * @param slippageTolerance - The amount of slippage to account for when generating the final quote.
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.

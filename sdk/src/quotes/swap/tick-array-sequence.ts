@@ -58,6 +58,8 @@ export class TickArraySequence {
       return [];
     }
 
+    // The quote object should contain the specified amount of tick arrays to be plugged
+    // directly into the swap instruction.
     // If the result does not fit minArraySize, pad the rest with the last touched array
     const sizeDiff = minArraySize - result.length;
     if (sizeDiff > 0) {

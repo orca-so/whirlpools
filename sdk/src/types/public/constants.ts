@@ -68,10 +68,10 @@ export const MAX_SWAP_TICK_ARRAYS = 3;
  * The denominator which the protocol fee rate is divided on.
  * @category Constants
  */
-export const PROTOCOL_FEE_RATE_MUL_VALUE = new BN(10000);
+export const PROTOCOL_FEE_RATE_MUL_VALUE = new BN(10_000);
 
 /**
  * The denominator which the fee rate is divided on.
  * @category Constants
  */
-export const FEE_RATE_MUL_VALUE = new BN(1000000);
+export const FEE_RATE_MUL_VALUE = new BN(1_000_000);

@@ -1,9 +1,62 @@
 import * as assert from "assert";
-import { Program, web3, Coder, BN } from "@project-serum/anchor";
+import { Program, web3, BN } from "@project-serum/anchor";
 import { AccountLayout } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 import { Whirlpool } from "../../src/artifacts/whirlpool";
-import { TickData } from "../../src/types/public";
+import { TickData, WhirlpoolData } from "../../src/types/public";
+import { SwapQuote } from "../../src";
+import { VaultAmounts } from "./whirlpools-test-utils";
+import { ONE } from "@orca-so/common-sdk";
+
+export function assertInputOutputQuoteEqual(
+  inputTokenQuote: SwapQuote,
+  outputTokenQuote: SwapQuote
+) {
+  assert.equal(inputTokenQuote.aToB, outputTokenQuote.aToB, "aToB not equal");
+  // TODO: Sometimes input & output estimated In is off by 1. Same goes for sqrt-price
+  assert.ok(
+    inputTokenQuote.estimatedAmountIn.sub(outputTokenQuote.estimatedAmountIn).abs().lte(ONE),
+    `input estimated In ${inputTokenQuote.estimatedAmountIn} does not equal output estimated in ${outputTokenQuote.estimatedAmountIn}`
+  );
+  assert.ok(
+    inputTokenQuote.estimatedAmountOut.sub(outputTokenQuote.estimatedAmountOut).abs().lte(ONE),
+    `input estimated out ${inputTokenQuote.estimatedAmountOut} does not equal output estimated out ${outputTokenQuote.estimatedAmountOut}`
+  );
+  assert.equal(
+    inputTokenQuote.estimatedEndTickIndex,
+    outputTokenQuote.estimatedEndTickIndex,
+    "estimatedEndTickIndex not equal"
+  );
+  assert.equal(
+    inputTokenQuote.estimatedFeeAmount.toString(),
+    outputTokenQuote.estimatedFeeAmount.toString(),
+    "estimatedFeeAmount not equal"
+  );
+  assert.notEqual(
+    inputTokenQuote.amountSpecifiedIsInput,
+    outputTokenQuote.amountSpecifiedIsInput,
+    "amountSpecifiedIsInput equals"
+  );
+}
+
+export function assertQuoteAndResults(
+  aToB: boolean,
+  quote: SwapQuote,
+  endData: WhirlpoolData,
+  beforeVaultAmounts: VaultAmounts,
+  afterVaultAmounts: VaultAmounts
+) {
+  const tokenADelta = beforeVaultAmounts.tokenA.sub(afterVaultAmounts.tokenA);
+  const tokenBDelta = beforeVaultAmounts.tokenB.sub(afterVaultAmounts.tokenB);
+
+  assert.equal(
+    quote.estimatedAmountIn.toString(),
+    (aToB ? tokenADelta : tokenBDelta).neg().toString()
+  );
+  assert.equal(quote.estimatedAmountOut.toString(), (aToB ? tokenBDelta : tokenADelta).toString());
+  assert.equal(endData.tickCurrentIndex, quote.estimatedEndTickIndex);
+  assert.equal(quote.estimatedEndSqrtPrice.toString(), endData.sqrtPrice.toString());
+}
 
 // Helper for token vault assertion checks.
 export async function asyncAssertTokenVault(

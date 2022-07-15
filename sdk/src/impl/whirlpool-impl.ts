@@ -6,7 +6,7 @@ import {
   TransactionBuilder,
   ZERO,
 } from "@orca-so/common-sdk";
-import { Address, BN, translateAddress } from "@project-serum/anchor";
+import { Address, translateAddress } from "@project-serum/anchor";
 import { WhirlpoolContext } from "../context";
 import {
   IncreaseLiquidityInput,
@@ -17,8 +17,9 @@ import {
   decreaseLiquidityIx,
   closePositionIx,
   swapIx,
+  SwapInput,
 } from "../instructions";
-import { MAX_SQRT_PRICE, MIN_SQRT_PRICE, TokenInfo, WhirlpoolData } from "../types/public";
+import { TokenInfo, WhirlpoolData } from "../types/public";
 import { Whirlpool } from "../whirlpool-client";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { u64 } from "@solana/spl-token";
@@ -368,15 +369,8 @@ export class WhirlpoolImpl implements Whirlpool {
     return txBuilder;
   }
 
-  private async getSwapTx(quote: SwapQuote, wallet: PublicKey): Promise<TransactionBuilder> {
-    const {
-      sqrtPriceLimit,
-      otherAmountThreshold,
-      estimatedAmountIn,
-      estimatedAmountOut,
-      aToB,
-      amountSpecifiedIsInput,
-    } = quote;
+  private async getSwapTx(input: SwapInput, wallet: PublicKey): Promise<TransactionBuilder> {
+    const { amount, aToB } = input;
     const whirlpool = this.data;
     const txBuilder = new TransactionBuilder(this.ctx.provider);
 
@@ -384,8 +378,8 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.connection,
       wallet,
       [
-        { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: aToB ? estimatedAmountIn : ZERO },
-        { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: !aToB ? estimatedAmountIn : ZERO },
+        { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: aToB ? amount : ZERO },
+        { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: !aToB ? amount : ZERO },
       ],
       () => this.fetcher.getAccountRentExempt()
     );
@@ -396,104 +390,22 @@ export class WhirlpoolImpl implements Whirlpool {
     txBuilder.addInstruction(tokenOwnerAccountAIx);
     txBuilder.addInstruction(tokenOwnerAccountBIx);
 
-    const targetSqrtPriceLimitX64 = sqrtPriceLimit || this.getDefaultSqrtPriceLimit(aToB);
-
-    const tickArrayAddresses = await this.getTickArrayPublicKeysForSwap(
-      whirlpool.tickCurrentIndex,
-      targetSqrtPriceLimitX64,
-      whirlpool.tickSpacing,
-      this.address,
-      this.ctx.program.programId,
-      aToB
-    );
-
     const oraclePda = PDAUtil.getOracle(this.ctx.program.programId, this.address);
 
     txBuilder.addInstruction(
       swapIx(this.ctx.program, {
-        amount: amountSpecifiedIsInput ? estimatedAmountIn : estimatedAmountOut,
-        otherAmountThreshold,
-        sqrtPriceLimit: targetSqrtPriceLimitX64,
-        amountSpecifiedIsInput,
-        aToB,
+        ...input,
         whirlpool: this.address,
         tokenAuthority: wallet,
         tokenOwnerAccountA,
         tokenVaultA: whirlpool.tokenVaultA,
         tokenOwnerAccountB,
         tokenVaultB: whirlpool.tokenVaultB,
-        tickArray0: tickArrayAddresses[0],
-        tickArray1: tickArrayAddresses[1],
-        tickArray2: tickArrayAddresses[2],
         oracle: oraclePda.publicKey,
       })
     );
 
     return txBuilder;
-  }
-
-  private async getTickArrayPublicKeysForSwap(
-    tickCurrentIndex: number,
-    targetSqrtPriceX64: BN,
-    tickSpacing: number,
-    poolAddress: PublicKey,
-    programId: PublicKey,
-    aToB: boolean
-  ): Promise<[PublicKey, PublicKey, PublicKey]> {
-    // TODO: fix directionality
-    const nextInitializableTickIndex = (
-      aToB ? TickUtil.getPrevInitializableTickIndex : TickUtil.getNextInitializableTickIndex
-    )(tickCurrentIndex, tickSpacing);
-    const targetTickIndex = PriceMath.sqrtPriceX64ToTickIndex(targetSqrtPriceX64);
-
-    let currentStartTickIndex = TickUtil.getStartTickIndex(nextInitializableTickIndex, tickSpacing);
-    const targetStartTickIndex = TickUtil.getStartTickIndex(targetTickIndex, tickSpacing);
-
-    const offset = nextInitializableTickIndex < targetTickIndex ? 1 : -1;
-
-    let count = 1;
-    const tickArrayAddresses: [PublicKey, PublicKey, PublicKey] = [
-      PDAUtil.getTickArray(programId, poolAddress, currentStartTickIndex).publicKey,
-      PublicKey.default,
-      PublicKey.default,
-    ];
-
-    while (currentStartTickIndex !== targetStartTickIndex && count < 3) {
-      const nextStartTickIndex = TickUtil.getStartTickIndex(
-        nextInitializableTickIndex,
-        tickSpacing,
-        offset * count
-      );
-      const nextTickArrayAddress = PDAUtil.getTickArray(
-        programId,
-        poolAddress,
-        nextStartTickIndex
-      ).publicKey;
-
-      const nextTickArray = await this.fetcher.getTickArray(nextTickArrayAddress, false);
-      if (!nextTickArray) {
-        break;
-      }
-
-      tickArrayAddresses[count] = nextTickArrayAddress;
-      count++;
-      currentStartTickIndex = nextStartTickIndex;
-    }
-
-    while (count < 3) {
-      tickArrayAddresses[count] = PDAUtil.getTickArray(
-        programId,
-        poolAddress,
-        currentStartTickIndex
-      ).publicKey;
-      count++;
-    }
-
-    return tickArrayAddresses;
-  }
-
-  private getDefaultSqrtPriceLimit(aToB: boolean): BN {
-    return new BN(aToB ? MIN_SQRT_PRICE : MAX_SQRT_PRICE);
   }
 
   private async refresh() {

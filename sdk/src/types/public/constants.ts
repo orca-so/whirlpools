@@ -1,3 +1,4 @@
+import { BN } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 
 /**
@@ -58,7 +59,19 @@ export const METADATA_PROGRAM_ADDRESS = new PublicKey(
 );
 
 /**
- * The maximum number of tick-array crossing that can occur in a swap.
+ * The maximum number of tick-arrays that can traversed across in a swap.
  * @category Constants
  */
-export const MAX_TICK_ARRAY_CROSSINGS = 2;
+export const MAX_SWAP_TICK_ARRAYS = 3;
+
+/**
+ * The denominator which the protocol fee rate is divided on.
+ * @category Constants
+ */
+export const PROTOCOL_FEE_RATE_MUL_VALUE = new BN(10000);
+
+/**
+ * The denominator which the fee rate is divided on.
+ * @category Constants
+ */
+export const FEE_RATE_MUL_VALUE = new BN(1000000);

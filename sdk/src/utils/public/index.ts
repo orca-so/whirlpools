@@ -4,3 +4,4 @@ export * from "./tick-utils";
 export * from "./pool-utils";
 export * from "./ix-utils";
 export * from "./types";
+export * from "./swap-utils";

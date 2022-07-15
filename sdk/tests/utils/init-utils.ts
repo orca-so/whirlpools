@@ -23,7 +23,7 @@ import {
 } from "./test-builders";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import {
-  createAndMintToTokenAccount,
+  createAndMintToAssociatedTokenAccount,
   createMint,
   mintToByAuthority,
   TickSpacing,
@@ -32,6 +32,7 @@ import {
 import { u64 } from "@solana/spl-token";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
 import { MathUtil, PDA } from "@orca-so/common-sdk";
+import { BN } from "bn.js";
 
 const defaultInitSqrtPrice = MathUtil.toX64_BN(new u64(5));
 
@@ -288,7 +289,8 @@ export async function initTickArray(
 export async function initTestPoolWithTokens(
   ctx: WhirlpoolContext,
   tickSpacing: number,
-  initSqrtPrice = defaultInitSqrtPrice
+  initSqrtPrice = defaultInitSqrtPrice,
+  mintAmount = new BN("15000000000")
 ) {
   const provider = ctx.provider;
 
@@ -299,8 +301,16 @@ export async function initTestPoolWithTokens(
   );
 
   const { tokenMintA, tokenMintB, whirlpoolPda } = poolInitInfo;
-  const tokenAccountA = await createAndMintToTokenAccount(provider, tokenMintA, 15_000_000);
-  const tokenAccountB = await createAndMintToTokenAccount(provider, tokenMintB, 15_000_000);
+  const tokenAccountA = await createAndMintToAssociatedTokenAccount(
+    provider,
+    tokenMintA,
+    mintAmount
+  );
+  const tokenAccountB = await createAndMintToAssociatedTokenAccount(
+    provider,
+    tokenMintB,
+    mintAmount
+  );
   return {
     poolInitInfo,
     configInitInfo,

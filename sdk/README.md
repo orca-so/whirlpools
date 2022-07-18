@@ -101,10 +101,9 @@ const swapQuote = await swapQuoteByInputToken(
     pool,
     ORCA_MINT,
     new BN(100).mul(new BN(decDivider)),
-    true,
     Percentage.fromFraction(1,100),
-    fetcher,
     ORCA_WHIRLPOOL_PROGRAM_ID,
+    fetcher,
     false);
 console.log('ORCA in Amount estimate', (swapQuote.estimatedAmountIn as BN).toNumber() / decDivider);
 console.log('USDC out Amount estimate', (swapQuote.estimatedAmountOut as BN).toNumber() / decDivider);

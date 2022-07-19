@@ -8,21 +8,25 @@ import { PositionImpl } from "./position-impl";
 import { WhirlpoolImpl } from "./whirlpool-impl";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
-  constructor(readonly ctx: WhirlpoolContext, readonly fetcher: AccountFetcher) {}
+  constructor(readonly ctx: WhirlpoolContext) {}
+
+  public getContext(): WhirlpoolContext {
+    return this.ctx;
+  }
 
   public getFetcher(): AccountFetcher {
-    return this.fetcher;
+    return this.ctx.fetcher;
   }
 
   public async getPool(poolAddress: Address, refresh = false): Promise<Whirlpool> {
-    const account = await this.fetcher.getPool(poolAddress, refresh);
+    const account = await this.ctx.fetcher.getPool(poolAddress, refresh);
     if (!account) {
       throw new Error(`Unable to fetch Whirlpool at address at ${poolAddress}`);
     }
-    const tokenInfos = await getTokenInfos(this.fetcher, account, false);
+    const tokenInfos = await getTokenInfos(this.ctx.fetcher, account, false);
     return new WhirlpoolImpl(
       this.ctx,
-      this.fetcher,
+      this.ctx.fetcher,
       AddressUtil.toPubKey(poolAddress),
       tokenInfos[0],
       tokenInfos[1],
@@ -31,11 +35,16 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
   }
 
   public async getPosition(positionAddress: Address, refresh = false): Promise<Position> {
-    const account = await this.fetcher.getPosition(positionAddress, refresh);
+    const account = await this.ctx.fetcher.getPosition(positionAddress, refresh);
     if (!account) {
       throw new Error(`Unable to fetch Position at address at ${positionAddress}`);
     }
-    return new PositionImpl(this.ctx, this.fetcher, AddressUtil.toPubKey(positionAddress), account);
+    return new PositionImpl(
+      this.ctx,
+      this.ctx.fetcher,
+      AddressUtil.toPubKey(positionAddress),
+      account
+    );
   }
 }
 

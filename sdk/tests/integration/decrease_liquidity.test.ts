@@ -1,37 +1,26 @@
+import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
-import * as assert from "assert";
 import { u64 } from "@solana/spl-token";
+import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  WhirlpoolContext,
-  AccountFetcher,
-  WhirlpoolData,
-  TickArrayData,
-  PositionData,
-  WhirlpoolIx,
-  toTx,
+  PositionData, TickArrayData, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx
 } from "../../src";
+import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../src/quotes/public/decrease-liquidity-quote";
 import {
-  TickSpacing,
-  assertTick,
-  approveToken,
-  createTokenAccount,
-  transfer,
-  ZERO_BN,
-  createAndMintToTokenAccount,
-  createMint,
+  approveToken, assertTick, createAndMintToTokenAccount,
+  createMint, createTokenAccount, TickSpacing, transfer,
+  ZERO_BN
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
-import { initTestPool, openPosition, initTickArray } from "../utils/init-utils";
-import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../src/quotes/public/decrease-liquidity-quote";
-import { MathUtil, Percentage } from "@orca-so/common-sdk";
+import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
 
 describe("decrease_liquidity", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
 
   it("successfully decrease liquidity from position in one tick array", async () => {
     const liquidityAmount = new u64(1_250_000);

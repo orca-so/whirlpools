@@ -1,35 +1,34 @@
-import * as assert from "assert";
+import { MathUtil } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
+import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  WhirlpoolContext,
-  AccountFetcher,
-  WhirlpoolData,
   InitPoolParams,
   MAX_SQRT_PRICE,
   MIN_SQRT_PRICE,
-  PriceMath,
-  WhirlpoolIx,
   PDAUtil,
+  PriceMath,
   toTx,
+  WhirlpoolContext,
+  WhirlpoolData,
+  WhirlpoolIx,
 } from "../../src";
 import {
+  asyncAssertTokenVault,
+  createMint,
+  ONE_SOL,
+  systemTransferTx,
   TickSpacing,
   ZERO_BN,
-  asyncAssertTokenVault,
-  systemTransferTx,
-  ONE_SOL,
-  createMint,
 } from "../utils";
-import { initTestPool, buildTestPoolParams } from "../utils/init-utils";
-import { MathUtil } from "@orca-so/common-sdk";
+import { buildTestPoolParams, initTestPool } from "../utils/init-utils";
 
 describe("initialize_pool", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
 
   it("successfully init a Standard account", async () => {
     const price = MathUtil.toX64(new Decimal(5));

@@ -24,12 +24,12 @@ import { deriveATA, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
 
 describe("whirlpool-impl", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
-  const client = buildWhirlpoolClient(ctx, fetcher);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
+  const client = buildWhirlpoolClient(ctx);
 
   it("open and add liquidity to a position, then close", async () => {
     const funderKeypair = anchor.web3.Keypair.generate();

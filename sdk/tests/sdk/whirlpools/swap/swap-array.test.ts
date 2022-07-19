@@ -1,36 +1,35 @@
-import BN from "bn.js";
-import * as anchor from "@project-serum/anchor";
-import * as assert from "assert";
-import {
-  PriceMath,
-  AccountFetcher,
-  buildWhirlpoolClient,
-  WhirlpoolContext,
-  TICK_ARRAY_SIZE,
-  swapQuoteByInputToken,
-  PDAUtil,
-  SwapUtils,
-  swapQuoteWithParams,
-} from "../../../../src";
-import {
-  arrayTickIndexToTickIndex,
-  setupSwapTest,
-  buildPosition,
-} from "../../../utils/swap-test-utils";
 import { AddressUtil, Percentage, ZERO } from "@orca-so/common-sdk";
-import { TickSpacing } from "../../../utils";
+import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
+import * as assert from "assert";
+import BN from "bn.js";
+import {
+  buildWhirlpoolClient,
+  PDAUtil,
+  PriceMath,
+  swapQuoteByInputToken,
+  swapQuoteWithParams,
+  SwapUtils,
+  TICK_ARRAY_SIZE,
+  WhirlpoolContext,
+} from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
 import { adjustForSlippage } from "../../../../src/utils/position-util";
+import { TickSpacing } from "../../../utils";
+import {
+  arrayTickIndexToTickIndex,
+  buildPosition,
+  setupSwapTest,
+} from "../../../utils/swap-test-utils";
 import { getTickArrays } from "../../../utils/testDataTypes";
 
 describe("swap arrays test", async () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
-  const client = buildWhirlpoolClient(ctx, fetcher);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
+  const client = buildWhirlpoolClient(ctx);
   const tickSpacing = TickSpacing.SixtyFour;
   const slippageTolerance = Percentage.fromFraction(0, 100);
 

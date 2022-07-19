@@ -8,7 +8,7 @@ import {
   AccountName,
   FeeTierData,
 } from "../../types/public";
-import { AccountsCoder, Coder, Idl } from "@project-serum/anchor";
+import { BorshAccountsCoder, BorshCoder, Idl } from "@project-serum/anchor";
 import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
 import { TokenUtil } from "@orca-so/common-sdk";
 
@@ -194,17 +194,17 @@ function staticImplements<T>() {
   };
 }
 
-const WhirlpoolCoder = new Coder(WhirlpoolIDL as Idl);
+const WhirlpoolCoder = new BorshAccountsCoder(WhirlpoolIDL as Idl);
 
 function parseAnchorAccount(accountName: AccountName, data: Buffer) {
-  const discriminator = AccountsCoder.accountDiscriminator(accountName);
+  const discriminator = BorshAccountsCoder.accountDiscriminator(accountName);
   if (discriminator.compare(data.slice(0, 8))) {
     console.error("incorrect account name during parsing");
     return null;
   }
 
   try {
-    return WhirlpoolCoder.accounts.decode(accountName, data);
+    return WhirlpoolCoder.decode(accountName, data);
   } catch (_e) {
     console.error("unknown account name during parsing");
     return null;

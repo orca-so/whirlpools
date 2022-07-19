@@ -1,15 +1,15 @@
 import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
-import { WhirlpoolContext, AccountFetcher, WhirlpoolData, WhirlpoolIx, toTx } from "../../src";
-import { TickSpacing, mintToByAuthority, ZERO_BN, createAndMintToTokenAccount } from "../utils";
-import { initTestPool, initializeReward } from "../utils/init-utils";
+import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
+import { createAndMintToTokenAccount, mintToByAuthority, TickSpacing, ZERO_BN } from "../utils";
+import { initializeReward, initTestPool } from "../utils/init-utils";
 
 describe("set_reward_emissions", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
 
   const emissionsPerSecondX64 = new anchor.BN(10_000).shln(64).div(new anchor.BN(60 * 60 * 24));
 

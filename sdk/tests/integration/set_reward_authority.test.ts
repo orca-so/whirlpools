@@ -1,29 +1,22 @@
-import * as assert from "assert";
+import { TransactionBuilder } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
-import {
-  WhirlpoolContext,
-  AccountFetcher,
-  NUM_REWARDS,
-  WhirlpoolData,
-  WhirlpoolIx,
-  toTx,
-} from "../../src";
+import * as assert from "assert";
+import { NUM_REWARDS, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
 import { TickSpacing } from "../utils";
 import { initTestPool } from "../utils/init-utils";
-import { TransactionBuilder } from "@orca-so/common-sdk";
 
 describe("set_reward_authority", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
 
   it("successfully set_reward_authority at every reward index", async () => {
     const { configKeypairs, poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
 
     const newKeypairs = generateKeypairs(NUM_REWARDS);
-    const txBuilder = new TransactionBuilder(provider);
+    const txBuilder = new TransactionBuilder(provider.connection, provider.wallet);
     for (let i = 0; i < NUM_REWARDS; i++) {
       txBuilder.addInstruction(
         WhirlpoolIx.setRewardAuthorityIx(ctx.program, {

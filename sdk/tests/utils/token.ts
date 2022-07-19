@@ -1,5 +1,5 @@
 import { deriveATA } from "@orca-so/common-sdk";
-import { BN, Provider, web3 } from "@project-serum/anchor";
+import { BN, AnchorProvider, web3 } from "@project-serum/anchor";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   AuthorityType,
@@ -10,7 +10,7 @@ import {
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 
 export async function createMint(
-  provider: Provider,
+  provider: AnchorProvider,
   authority?: web3.PublicKey
 ): Promise<web3.PublicKey> {
   if (authority === undefined) {
@@ -22,13 +22,13 @@ export async function createMint(
   const tx = new web3.Transaction();
   tx.add(...instructions);
 
-  await provider.send(tx, [mint], { commitment: "confirmed" });
+  await provider.sendAndConfirm(tx, [mint], { commitment: "confirmed" });
 
   return mint.publicKey;
 }
 
 export async function createMintInstructions(
-  provider: Provider,
+  provider: AnchorProvider,
   authority: web3.PublicKey,
   mint: web3.PublicKey
 ) {
@@ -46,19 +46,19 @@ export async function createMintInstructions(
 }
 
 export async function createTokenAccount(
-  provider: Provider,
+  provider: AnchorProvider,
   mint: web3.PublicKey,
   owner: web3.PublicKey
 ) {
   const tokenAccount = web3.Keypair.generate();
   const tx = new web3.Transaction();
   tx.add(...(await createTokenAccountInstrs(provider, tokenAccount.publicKey, mint, owner)));
-  await provider.send(tx, [tokenAccount], { commitment: "confirmed" });
+  await provider.sendAndConfirm(tx, [tokenAccount], { commitment: "confirmed" });
   return tokenAccount.publicKey;
 }
 
 export async function createAssociatedTokenAccount(
-  provider: Provider,
+  provider: AnchorProvider,
   mint: web3.PublicKey,
   owner: web3.PublicKey,
   payer: web3.PublicKey
@@ -75,12 +75,12 @@ export async function createAssociatedTokenAccount(
   );
   const tx = new web3.Transaction();
   tx.add(instr);
-  await provider.send(tx, [], { commitment: "confirmed" });
+  await provider.sendAndConfirm(tx, [], { commitment: "confirmed" });
   return ataAddress;
 }
 
 async function createTokenAccountInstrs(
-  provider: Provider,
+  provider: AnchorProvider,
   newAccountPubkey: web3.PublicKey,
   mint: web3.PublicKey,
   owner: web3.PublicKey,
@@ -103,13 +103,13 @@ async function createTokenAccountInstrs(
 
 /**
  * Mints tokens to the specified destination token account.
- * @param provider An anchor Provider object used to send transactions
+ * @param provider An anchor AnchorProvider object used to send transactions
  * @param mint Mint address of the token
  * @param destination Destination token account to receive tokens
  * @param amount Number of tokens to mint
  */
 export async function mintToByAuthority(
-  provider: Provider,
+  provider: AnchorProvider,
   mint: web3.PublicKey,
   destination: web3.PublicKey,
   amount: number | BN
@@ -125,18 +125,18 @@ export async function mintToByAuthority(
       amount
     )
   );
-  return provider.send(tx, [], { commitment: "confirmed" });
+  return provider.sendAndConfirm(tx, [], { commitment: "confirmed" });
 }
 
 /**
  * Creates a token account for the mint and mints the specified amount of tokens into the token account.
  * The caller is assumed to be the mint authority.
- * @param provider An anchor Provider object used to send transactions
+ * @param provider An anchor AnchorProvider object used to send transactions
  * @param mint The mint address of the token
  * @param amount Number of tokens to mint to the newly created token account
  */
 export async function createAndMintToTokenAccount(
-  provider: Provider,
+  provider: AnchorProvider,
   mint: web3.PublicKey,
   amount: number | BN
 ): Promise<web3.PublicKey> {
@@ -146,7 +146,7 @@ export async function createAndMintToTokenAccount(
 }
 
 export async function createAndMintToAssociatedTokenAccount(
-  provider: Provider,
+  provider: AnchorProvider,
   mint: web3.PublicKey,
   amount: number | BN,
   destinationWallet?: web3.PublicKey,
@@ -164,12 +164,12 @@ export async function createAndMintToAssociatedTokenAccount(
   return tokenAccount;
 }
 
-export async function getTokenBalance(provider: Provider, vault: web3.PublicKey) {
+export async function getTokenBalance(provider: AnchorProvider, vault: web3.PublicKey) {
   return (await provider.connection.getTokenAccountBalance(vault, "confirmed")).value.amount;
 }
 
 export async function approveToken(
-  provider: Provider,
+  provider: AnchorProvider,
   tokenAccount: web3.PublicKey,
   delegate: web3.PublicKey,
   amount: number | u64,
@@ -186,11 +186,11 @@ export async function approveToken(
       amount
     )
   );
-  return provider.send(tx, [owner], { commitment: "confirmed" });
+  return provider.sendAndConfirm(tx, !!owner ? [owner] : [], { commitment: "confirmed" });
 }
 
 export async function setAuthority(
-  provider: Provider,
+  provider: AnchorProvider,
   tokenAccount: web3.PublicKey,
   newAuthority: web3.PublicKey,
   authorityType: AuthorityType,
@@ -208,11 +208,11 @@ export async function setAuthority(
     )
   );
 
-  return provider.send(tx, [authority], { commitment: "confirmed" });
+  return provider.sendAndConfirm(tx, [authority], { commitment: "confirmed" });
 }
 
 export async function transfer(
-  provider: Provider,
+  provider: AnchorProvider,
   source: web3.PublicKey,
   destination: web3.PublicKey,
   amount: number
@@ -228,5 +228,5 @@ export async function transfer(
       amount
     )
   );
-  return provider.send(tx, [], { commitment: "confirmed" });
+  return provider.sendAndConfirm(tx, [], { commitment: "confirmed" });
 }

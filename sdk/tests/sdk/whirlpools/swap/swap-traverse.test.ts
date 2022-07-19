@@ -1,35 +1,34 @@
+import { Percentage } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
+import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import {
-  WhirlpoolContext,
-  AccountFetcher,
   buildWhirlpoolClient,
-  PriceMath,
-  TICK_ARRAY_SIZE,
-  swapQuoteByInputToken,
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
+  PriceMath,
+  swapQuoteByInputToken,
   swapQuoteByOutputToken,
+  TICK_ARRAY_SIZE,
+  WhirlpoolContext,
 } from "../../../../src";
+import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
 import { assertInputOutputQuoteEqual, assertQuoteAndResults, TickSpacing } from "../../../utils";
-import { Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
-import { BN } from "bn.js";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
   setupSwapTest,
 } from "../../../utils/swap-test-utils";
-import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
 import { getVaultAmounts } from "../../../utils/whirlpools-test-utils";
 
 describe("swap traversal tests", async () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
-  const client = buildWhirlpoolClient(ctx, fetcher);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
+  const client = buildWhirlpoolClient(ctx);
   const tickSpacing = TickSpacing.SixtyFour;
   const slippageTolerance = Percentage.fromFraction(0, 100);
 

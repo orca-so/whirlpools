@@ -15,10 +15,10 @@ import { WhirlpoolTestFixture } from "../utils/fixture";
 import { toTx, WhirlpoolIx } from "../../src";
 
 describe("close_position", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
 
   it("successfully closes an open position", async () => {
     const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);

@@ -1,5 +1,5 @@
 import { MathUtil, PDA, Percentage } from "@orca-so/common-sdk";
-import { Provider } from "@project-serum/anchor";
+import { AnchorProvider } from "@project-serum/anchor";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -174,7 +174,7 @@ export async function generateDefaultOpenPositionParams(
 }
 
 export async function mintTokensToTestAccount(
-  provider: Provider,
+  provider: AnchorProvider,
   tokenAMint: PublicKey,
   tokenMintForA: number,
   tokenBMint: PublicKey,

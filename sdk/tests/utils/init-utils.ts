@@ -357,7 +357,7 @@ export async function withdrawPositions(
   tokenOwnerAccountA: PublicKey,
   tokenOwnerAccountB: PublicKey
 ) {
-  const fetcher = new AccountFetcher(ctx.connection);
+  const fetcher = ctx.fetcher;
   await Promise.all(
     positionInfos.map(async (info) => {
       const pool = await fetcher.getPool(info.initParams.whirlpool);

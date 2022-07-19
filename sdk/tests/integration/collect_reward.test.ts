@@ -1,40 +1,26 @@
-import * as assert from "assert";
+import { MathUtil } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
+import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  WhirlpoolContext,
-  AccountFetcher,
-  NUM_REWARDS,
-  collectRewardsQuote,
-  WhirlpoolData,
-  PositionData,
-  TickArrayData,
-  WhirlpoolIx,
-  TickArrayUtil,
-  toTx,
+  collectRewardsQuote, NUM_REWARDS, PositionData,
+  TickArrayData, TickArrayUtil,
+  toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx
 } from "../../src";
 import {
-  TickSpacing,
-  sleep,
-  createTokenAccount,
-  getTokenBalance,
-  ZERO_BN,
-  approveToken,
-  transfer,
-  createMint,
-  createAndMintToTokenAccount,
+  approveToken, createAndMintToTokenAccount, createMint, createTokenAccount,
+  getTokenBalance, sleep, TickSpacing, transfer, ZERO_BN
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
-import { MathUtil } from "@orca-so/common-sdk";
 
 describe("collect_reward", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
 
   it("successfully collect rewards", async () => {
     const vaultStartBalance = 1_000_000;

@@ -1,44 +1,42 @@
-import * as assert from "assert";
-import * as anchor from "@project-serum/anchor";
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
+import { PDA, TransactionBuilder } from "@orca-so/common-sdk";
+import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import * as assert from "assert";
 import {
-  WhirlpoolContext,
-  AccountFetcher,
-  OpenPositionParams,
   InitPoolParams,
-  PositionData,
   MAX_TICK_INDEX,
-  MIN_TICK_INDEX,
-  OpenPositionWithMetadataBumpsData,
   METADATA_PROGRAM_ADDRESS,
-  WhirlpoolIx,
+  MIN_TICK_INDEX,
+  OpenPositionParams,
+  OpenPositionWithMetadataBumpsData,
   PDAUtil,
+  PositionData,
   toTx,
+  WhirlpoolContext,
+  WhirlpoolIx,
 } from "../../src";
+import { openPositionAccounts } from "../../src/utils/instructions-util";
 import {
-  TickSpacing,
-  systemTransferTx,
-  ONE_SOL,
-  ZERO_BN,
-  mintToByAuthority,
   createMint,
   createMintInstructions,
+  mintToByAuthority,
+  ONE_SOL,
+  systemTransferTx,
+  TickSpacing,
+  ZERO_BN,
 } from "../utils";
 import { initTestPool, openPositionWithMetadata } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
-import { openPositionAccounts } from "../../src/utils/instructions-util";
-import { PDA, TransactionBuilder } from "@orca-so/common-sdk";
 
 describe("open_position_with_metadata", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
 
   let defaultParams: Required<OpenPositionParams & { metadataPda: PDA }>;
   let defaultMint: Keypair;
@@ -230,7 +228,7 @@ describe("open_position_with_metadata", () => {
       ))
     );
 
-    await provider.send(tx, [positionMintKeypair], { commitment: "confirmed" });
+    await provider.sendAndConfirm(tx, [positionMintKeypair], { commitment: "confirmed" });
 
     await assert.rejects(
       toTx(
@@ -310,7 +308,7 @@ describe("open_position_with_metadata", () => {
 
     it("fails with non-program metadata program", async () => {
       const notMetadataProgram = Keypair.generate();
-      const tx = new TransactionBuilder(ctx.provider).addInstruction(
+      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet).addInstruction(
         buildOpenWithAccountOverrides({
           metadataProgram: notMetadataProgram.publicKey,
         })
@@ -325,7 +323,7 @@ describe("open_position_with_metadata", () => {
     });
 
     it("fails with non-metadata program ", async () => {
-      const tx = new TransactionBuilder(ctx.provider).addInstruction(
+      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet).addInstruction(
         buildOpenWithAccountOverrides({
           metadataProgram: TOKEN_PROGRAM_ID,
         })
@@ -341,7 +339,7 @@ describe("open_position_with_metadata", () => {
 
     it("fails with non-valid update_authority program", async () => {
       const notUpdateAuth = Keypair.generate();
-      const tx = new TransactionBuilder(ctx.provider).addInstruction(
+      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet).addInstruction(
         buildOpenWithAccountOverrides({
           metadataUpdateAuth: notUpdateAuth.publicKey,
         })

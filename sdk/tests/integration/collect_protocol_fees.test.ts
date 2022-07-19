@@ -1,26 +1,19 @@
-import * as assert from "assert";
+import { MathUtil } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
+import * as assert from "assert";
 import Decimal from "decimal.js";
-import {
-  WhirlpoolContext,
-  AccountFetcher,
-  WhirlpoolData,
-  WhirlpoolIx,
-  PDAUtil,
-  toTx,
-} from "../../src";
-import { TickSpacing, ZERO_BN, createTokenAccount, getTokenBalance } from "../utils";
+import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
+import { createTokenAccount, getTokenBalance, TickSpacing, ZERO_BN } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
-import { MathUtil } from "@orca-so/common-sdk";
 
 describe("collect_protocol_fees", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
 
   it("successfully collects fees", async () => {
     // In same tick array - start index 22528

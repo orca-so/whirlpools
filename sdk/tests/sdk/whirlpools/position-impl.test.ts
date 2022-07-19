@@ -15,12 +15,12 @@ import { deriveATA, Percentage } from "@orca-so/common-sdk";
 import { initPosition, mintTokensToTestAccount } from "../../utils/test-builders";
 
 describe("position-impl", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
-  const client = buildWhirlpoolClient(ctx, fetcher);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
+  const client = buildWhirlpoolClient(ctx);
 
   it("increase and decrease liquidity on position", async () => {
     const { poolInitInfo } = await initTestPool(

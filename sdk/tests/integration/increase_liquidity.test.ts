@@ -1,46 +1,28 @@
-import * as assert from "assert";
+import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
+import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  WhirlpoolContext,
-  AccountFetcher,
-  WhirlpoolData,
-  PositionData,
-  TickArrayData,
-  TickUtil,
-  PriceMath,
-  WhirlpoolIx,
-  PDAUtil,
-  toTx,
+  PDAUtil, PositionData, PriceMath, TickArrayData,
+  TickUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx
 } from "../../src";
+import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
 import {
-  TickSpacing,
-  ZERO_BN,
-  getTokenBalance,
-  assertTick,
-  approveToken,
-  createAndMintToTokenAccount,
-  MAX_U64,
-  createTokenAccount,
-  transfer,
-  createMint,
+  approveToken, assertTick, createAndMintToTokenAccount, createMint, createTokenAccount, getTokenBalance, MAX_U64, TickSpacing, transfer, ZERO_BN
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
 import {
-  generateDefaultOpenPositionParams,
-  generateDefaultInitTickArrayParams,
+  generateDefaultInitTickArrayParams, generateDefaultOpenPositionParams
 } from "../utils/test-builders";
-import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
-import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
 
 describe("increase_liquidity", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const fetcher = ctx.fetcher;
 
   it("increase liquidity of a position spanning two tick arrays", async () => {
     const currTick = 0;
@@ -218,7 +200,7 @@ describe("increase_liquidity", () => {
       TickUtil.getStartTickIndex(tickUpperIndex, tickSpacing)
     ).publicKey;
 
-    await new TransactionBuilder(ctx.provider)
+    await new TransactionBuilder(ctx.provider.connection, ctx.provider.wallet)
       // TODO: create a ComputeBudgetInstruction to request more compute
       .addInstruction(
         WhirlpoolIx.initTickArrayIx(

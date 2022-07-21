@@ -14,7 +14,7 @@ describe("initialize_config", () => {
   const provider = anchor.AnchorProvider.local();
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
   let initializedConfigInfo: InitConfigParams;

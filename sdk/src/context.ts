@@ -1,8 +1,8 @@
-import { PublicKey, Connection, ConfirmOptions } from "@solana/web3.js";
-import { AnchorProvider, Program, Idl } from "@project-serum/anchor";
-import WhirlpoolIDL from "./artifacts/whirlpool.json";
-import { Whirlpool } from "./artifacts/whirlpool";
+import { AnchorProvider, Idl, Program } from "@project-serum/anchor";
 import { Wallet } from "@project-serum/anchor/dist/cjs/provider";
+import { ConfirmOptions, Connection, PublicKey } from "@solana/web3.js";
+import { Whirlpool } from "./artifacts/whirlpool";
+import WhirlpoolIDL from "./artifacts/whirlpool.json";
 import { AccountFetcher } from "./network/public";
 /**
  * @category Core
@@ -29,23 +29,21 @@ export class WhirlpoolContext {
 
   public static fromWorkspace(
     provider: AnchorProvider,
-    wallet: Wallet,
     program: Program,
     fetcher = new AccountFetcher(provider.connection),
     opts: ConfirmOptions = AnchorProvider.defaultOptions()
   ) {
-    return new WhirlpoolContext(provider, wallet, program, fetcher, opts);
+    return new WhirlpoolContext(provider, provider.wallet, program, fetcher, opts);
   }
 
   public static withProvider(
     provider: AnchorProvider,
-    wallet: Wallet,
     programId: PublicKey,
     fetcher = new AccountFetcher(provider.connection),
     opts: ConfirmOptions = AnchorProvider.defaultOptions()
   ): WhirlpoolContext {
     const program = new Program(WhirlpoolIDL as Idl, programId, provider);
-    return new WhirlpoolContext(provider, wallet, program, fetcher, opts);
+    return new WhirlpoolContext(provider, provider.wallet, program, fetcher, opts);
   }
 
   public constructor(

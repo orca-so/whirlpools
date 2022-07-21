@@ -4,13 +4,23 @@ import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  PositionData, TickArrayData, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx
+  PositionData,
+  TickArrayData,
+  toTx,
+  WhirlpoolContext,
+  WhirlpoolData,
+  WhirlpoolIx,
 } from "../../src";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../src/quotes/public/decrease-liquidity-quote";
 import {
-  approveToken, assertTick, createAndMintToTokenAccount,
-  createMint, createTokenAccount, TickSpacing, transfer,
-  ZERO_BN
+  approveToken,
+  assertTick,
+  createAndMintToTokenAccount,
+  createMint,
+  createTokenAccount,
+  TickSpacing,
+  transfer,
+  ZERO_BN,
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
@@ -19,7 +29,7 @@ describe("decrease_liquidity", () => {
   const provider = anchor.AnchorProvider.local();
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
   it("successfully decrease liquidity from position in one tick array", async () => {

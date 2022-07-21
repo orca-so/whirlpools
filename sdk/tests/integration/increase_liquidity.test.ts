@@ -4,24 +4,41 @@ import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  PDAUtil, PositionData, PriceMath, TickArrayData,
-  TickUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx
+  PDAUtil,
+  PositionData,
+  PriceMath,
+  TickArrayData,
+  TickUtil,
+  toTx,
+  WhirlpoolContext,
+  WhirlpoolData,
+  WhirlpoolIx,
 } from "../../src";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
 import {
-  approveToken, assertTick, createAndMintToTokenAccount, createMint, createTokenAccount, getTokenBalance, MAX_U64, TickSpacing, transfer, ZERO_BN
+  approveToken,
+  assertTick,
+  createAndMintToTokenAccount,
+  createMint,
+  createTokenAccount,
+  getTokenBalance,
+  MAX_U64,
+  TickSpacing,
+  transfer,
+  ZERO_BN,
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
 import {
-  generateDefaultInitTickArrayParams, generateDefaultOpenPositionParams
+  generateDefaultInitTickArrayParams,
+  generateDefaultOpenPositionParams,
 } from "../utils/test-builders";
 
 describe("increase_liquidity", () => {
   const provider = anchor.AnchorProvider.local();
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
   it("increase liquidity of a position spanning two tick arrays", async () => {

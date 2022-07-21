@@ -4,13 +4,26 @@ import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  collectRewardsQuote, NUM_REWARDS, PositionData,
-  TickArrayData, TickArrayUtil,
-  toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx
+  collectRewardsQuote,
+  NUM_REWARDS,
+  PositionData,
+  TickArrayData,
+  TickArrayUtil,
+  toTx,
+  WhirlpoolContext,
+  WhirlpoolData,
+  WhirlpoolIx,
 } from "../../src";
 import {
-  approveToken, createAndMintToTokenAccount, createMint, createTokenAccount,
-  getTokenBalance, sleep, TickSpacing, transfer, ZERO_BN
+  approveToken,
+  createAndMintToTokenAccount,
+  createMint,
+  createTokenAccount,
+  getTokenBalance,
+  sleep,
+  TickSpacing,
+  transfer,
+  ZERO_BN,
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
@@ -19,7 +32,7 @@ describe("collect_reward", () => {
   const provider = anchor.AnchorProvider.local();
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, provider.wallet, program);
+  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
   it("successfully collect rewards", async () => {

@@ -565,12 +565,12 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@orca-so/common-sdk@^0.0.7":
-  version "0.0.7"
-  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.0.7.tgz#16f77a68beded3eda227f22be0d8b1f85fe7ebf3"
-  integrity sha512-DF2wR39dHPKnOh8zBlVy/uWA58HQ6Vgi6fOOY1FJCgZTuR8/k65ALC3z632iCJh0GP3Upmcmjqn3OeBiEZr6tA==
+"@orca-so/common-sdk@~0.1.0":
+  version "0.1.0"
+  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.1.0.tgz#25050f18e95bab6a7ef9b10e2d3bd44699ce9836"
+  integrity sha512-WH6mjrrJyuUMq0DC41jWW6opEIq5Ip/UOf8h7z/gM9Zx+9156JwP/dm8N5GJTNnIG6GYFfhemyNNPj1y3U5LIw==
   dependencies:
-    "@project-serum/anchor" "0.20.1"
+    "@project-serum/anchor" "~0.25.0"
     "@solana/spl-token" "0.1.8"
     decimal.js "^10.3.1"
 
@@ -584,7 +584,7 @@
     "@solana/spl-token" "^0.1.8"
     decimal.js "^10.3.1"
 
-"@project-serum/anchor@0.20.1", "@project-serum/anchor@^0.20.1":
+"@project-serum/anchor@^0.20.1":
   version "0.20.1"
   resolved "https://registry.yarnpkg.com/@project-serum/anchor/-/anchor-0.20.1.tgz#0937807e807e8332aa708cfef4bcb6cbb88b4129"
   integrity sha512-2TuBmGUn9qeYz6sJINJlElrBuPsaUAtYyUsJ3XplEBf1pczrANAgs5ceJUFzdiqGEWLn+84ObSdBeChT/AXYFA==

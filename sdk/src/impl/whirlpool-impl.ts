@@ -112,7 +112,10 @@ export class WhirlpoolImpl implements Whirlpool {
       return null;
     }
 
-    const txBuilder = new TransactionBuilder(this.ctx.provider);
+    const txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet
+    );
     initTickArrayStartPdas.forEach((initTickArrayInfo) => {
       txBuilder.addInstruction(
         initTickArrayIx(this.ctx.program, {
@@ -197,7 +200,10 @@ export class WhirlpoolImpl implements Whirlpool {
     const metadataPda = PDAUtil.getPositionMetadata(positionMintKeypair.publicKey);
     const positionTokenAccountAddress = await deriveATA(wallet, positionMintKeypair.publicKey);
 
-    const txBuilder = new TransactionBuilder(this.ctx.provider);
+    const txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet
+    );
 
     const positionIx = (withMetadata ? openPositionWithMetadataIx : openPositionIx)(
       this.ctx.program,
@@ -300,7 +306,10 @@ export class WhirlpoolImpl implements Whirlpool {
 
     const positionTokenAccount = await deriveATA(positionWallet, position.positionMint);
 
-    const txBuilder = new TransactionBuilder(this.ctx.provider);
+    const txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet
+    );
 
     const resolvedAssociatedTokenAddresses: Record<string, PublicKey> = {};
     const [ataA, ataB] = await resolveOrCreateATAs(
@@ -372,7 +381,10 @@ export class WhirlpoolImpl implements Whirlpool {
   private async getSwapTx(input: SwapInput, wallet: PublicKey): Promise<TransactionBuilder> {
     const { amount, aToB } = input;
     const whirlpool = this.data;
-    const txBuilder = new TransactionBuilder(this.ctx.provider);
+    const txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet
+    );
 
     const [ataA, ataB] = await resolveOrCreateATAs(
       this.ctx.connection,

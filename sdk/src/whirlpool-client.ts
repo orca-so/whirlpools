@@ -1,17 +1,17 @@
 import { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
+import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "./context";
+import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
 import { AccountFetcher } from "./network/public";
+import { SwapQuote } from "./quotes/public";
 import {
-  WhirlpoolData,
-  PositionData,
-  IncreaseLiquidityInput,
   DecreaseLiquidityInput,
+  IncreaseLiquidityInput,
+  PositionData,
+  WhirlpoolData,
 } from "./types/public";
 import { TokenInfo } from "./types/public/client-types";
-import { PublicKey } from "@solana/web3.js";
-import { SwapQuote } from "./quotes/public";
-import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
 
 /**
  * Helper class to help interact with Whirlpool Accounts with a simpler interface.
@@ -19,6 +19,12 @@ import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
  * @category Core
  */
 export interface WhirlpoolClient {
+  /**
+   * Get this client's WhirlpoolContext object
+   * @return a WhirlpoolContext object
+   */
+  getContext: () => WhirlpoolContext;
+
   /**
    * Get an AccountFetcher to fetch Whirlpool accounts
    * @return an AccountFetcher instance
@@ -45,14 +51,10 @@ export interface WhirlpoolClient {
  *
  * @category WhirlpoolClient
  * @param ctx - WhirlpoolContext object
- * @param fetcher - AccountFetcher instance to help fetch data with.
  * @returns a WhirlpoolClient instance to help with interacting with Whirlpools accounts.
  */
-export function buildWhirlpoolClient(
-  ctx: WhirlpoolContext,
-  fetcher: AccountFetcher
-): WhirlpoolClient {
-  return new WhirlpoolClientImpl(ctx, fetcher);
+export function buildWhirlpoolClient(ctx: WhirlpoolContext): WhirlpoolClient {
+  return new WhirlpoolClientImpl(ctx);
 }
 
 /**

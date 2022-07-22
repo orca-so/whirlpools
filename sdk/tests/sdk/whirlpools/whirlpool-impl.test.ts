@@ -1,7 +1,16 @@
-import * as assert from "assert";
+import { deriveATA, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
+import * as assert from "assert";
+import Decimal from "decimal.js";
+import {
+  buildWhirlpoolClient,
+  decreaseLiquidityQuoteByLiquidity,
+  increaseLiquidityQuoteByInputToken,
+  PDAUtil,
+  PriceMath,
+  TickUtil,
+} from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
-import { initTestPool } from "../../utils/init-utils";
 import {
   createAssociatedTokenAccount,
   getTokenBalance,
@@ -10,26 +19,16 @@ import {
   TickSpacing,
   transfer,
 } from "../../utils";
-import {
-  AccountFetcher,
-  buildWhirlpoolClient,
-  decreaseLiquidityQuoteByLiquidity,
-  increaseLiquidityQuoteByInputToken,
-  PDAUtil,
-  PriceMath,
-  TickUtil,
-} from "../../../src";
-import Decimal from "decimal.js";
-import { deriveATA, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
+import { initTestPool } from "../../utils/init-utils";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
 
 describe("whirlpool-impl", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
-  const client = buildWhirlpoolClient(ctx, fetcher);
+  const fetcher = ctx.fetcher;
+  const client = buildWhirlpoolClient(ctx);
 
   it("open and add liquidity to a position, then close", async () => {
     const funderKeypair = anchor.web3.Keypair.generate();

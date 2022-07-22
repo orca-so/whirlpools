@@ -1,20 +1,14 @@
-import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
-import {
-  WhirlpoolContext,
-  AccountFetcher,
-  WhirlpoolsConfigData,
-  WhirlpoolIx,
-  toTx,
-} from "../../src";
+import * as assert from "assert";
+import { toTx, WhirlpoolContext, WhirlpoolIx, WhirlpoolsConfigData } from "../../src";
 import { generateDefaultConfigParams } from "../utils/test-builders";
 
 describe("set_reward_emissions_super_authority", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const fetcher = ctx.fetcher;
 
   it("successfully set_reward_emissions_super_authority with super authority keypair", async () => {
     const {

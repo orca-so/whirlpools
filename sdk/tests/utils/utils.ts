@@ -1,12 +1,12 @@
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { web3, Provider } from "@project-serum/anchor";
+import { web3, AnchorProvider } from "@project-serum/anchor";
 
 export function systemTransferTx(
-  provider: Provider,
+  provider: AnchorProvider,
   toPubkey: web3.PublicKey,
   lamports: number
 ): TransactionBuilder {
-  return new TransactionBuilder(provider).addInstruction({
+  return new TransactionBuilder(provider.connection, provider.wallet).addInstruction({
     instructions: [
       web3.SystemProgram.transfer({
         fromPubkey: provider.wallet.publicKey,

@@ -62,7 +62,10 @@ export class PositionImpl implements Position {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
 
-    const txBuilder = new TransactionBuilder(this.ctx.provider);
+    const txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet
+    );
 
     let tokenOwnerAccountA: PublicKey;
     let tokenOwnerAccountB: PublicKey;
@@ -135,7 +138,10 @@ export class PositionImpl implements Position {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
 
-    const txBuilder = new TransactionBuilder(this.ctx.provider);
+    const txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet
+    );
     let tokenOwnerAccountA: PublicKey;
     let tokenOwnerAccountB: PublicKey;
 

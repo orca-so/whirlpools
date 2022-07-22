@@ -1,7 +1,7 @@
-import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
+import * as assert from "assert";
+import { toTx, WhirlpoolIx } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
-import { initTestPool, initTestPoolWithLiquidity, openPosition } from "../utils/init-utils";
 import {
   approveToken,
   createAndMintToTokenAccount,
@@ -12,11 +12,11 @@ import {
   ZERO_BN,
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
-import { toTx, WhirlpoolIx } from "../../src";
+import { initTestPool, initTestPoolWithLiquidity, openPosition } from "../utils/init-utils";
 
 describe("close_position", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
 

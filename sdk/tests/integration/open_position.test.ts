@@ -1,40 +1,38 @@
-import * as assert from "assert";
+import { PDA } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import * as assert from "assert";
 import {
-  WhirlpoolContext,
-  AccountFetcher,
-  OpenPositionParams,
   InitPoolParams,
-  PositionData,
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
-  WhirlpoolIx,
+  OpenPositionParams,
   PDAUtil,
+  PositionData,
   toTx,
+  WhirlpoolContext,
+  WhirlpoolIx,
 } from "../../src";
 import {
-  TickSpacing,
-  systemTransferTx,
-  ONE_SOL,
-  ZERO_BN,
-  mintToByAuthority,
   createMint,
   createMintInstructions,
+  mintToByAuthority,
+  ONE_SOL,
+  systemTransferTx,
+  TickSpacing,
+  ZERO_BN,
 } from "../utils";
 import { initTestPool, openPosition } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
-import { PDA } from "@orca-so/common-sdk";
 
 describe("open_position", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const fetcher = ctx.fetcher;
 
   let defaultParams: OpenPositionParams;
   let defaultMint: Keypair;
@@ -208,7 +206,7 @@ describe("open_position", () => {
       ))
     );
 
-    await provider.send(tx, [positionMintKeypair], { commitment: "confirmed" });
+    await provider.sendAndConfirm(tx, [positionMintKeypair], { commitment: "confirmed" });
 
     await assert.rejects(
       toTx(

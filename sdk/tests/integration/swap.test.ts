@@ -1,41 +1,40 @@
+import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
-import * as assert from "assert";
 import { web3 } from "@project-serum/anchor";
-import Decimal from "decimal.js";
 import { u64 } from "@solana/spl-token";
+import * as assert from "assert";
+import Decimal from "decimal.js";
 import {
-  WhirlpoolContext,
-  AccountFetcher,
-  SwapParams,
+  buildWhirlpoolClient,
   MAX_SQRT_PRICE,
   MIN_SQRT_PRICE,
-  TickArrayData,
-  PriceMath,
-  WhirlpoolIx,
   PDAUtil,
-  toTx,
+  PriceMath,
+  SwapParams,
   swapQuoteByInputToken,
-  buildWhirlpoolClient,
+  TickArrayData,
+  toTx,
+  WhirlpoolContext,
+  WhirlpoolIx,
 } from "../../src";
-import { TickSpacing, ZERO_BN, getTokenBalance, MAX_U64 } from "../utils";
+import { getTokenBalance, MAX_U64, TickSpacing, ZERO_BN } from "../utils";
 import {
-  initTestPoolWithTokens,
-  initTickArrayRange,
-  initTestPool,
   FundedPositionParams,
   fundPositions,
+  initTestPool,
   initTestPoolWithLiquidity,
+  initTestPoolWithTokens,
+  initTickArrayRange,
   withdrawPositions,
 } from "../utils/init-utils";
-import { MathUtil, Percentage } from "@orca-so/common-sdk";
 
 describe("swap", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
-  const client = buildWhirlpoolClient(ctx, fetcher);
+  const fetcher = ctx.fetcher;
+  const client = buildWhirlpoolClient(ctx);
 
   it("fail on token vault mint a does not match whirlpool token a", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =

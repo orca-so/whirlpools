@@ -1,26 +1,25 @@
+import { deriveATA, Percentage } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
-import { WhirlpoolContext } from "../../../src/context";
-import { initTestPool } from "../../utils/init-utils";
-import { createAssociatedTokenAccount, TickSpacing, transfer } from "../../utils";
+import Decimal from "decimal.js";
 import {
-  AccountFetcher,
   buildWhirlpoolClient,
   decreaseLiquidityQuoteByLiquidity,
   increaseLiquidityQuoteByInputToken,
   PriceMath,
 } from "../../../src";
-import Decimal from "decimal.js";
-import { deriveATA, Percentage } from "@orca-so/common-sdk";
+import { WhirlpoolContext } from "../../../src/context";
+import { createAssociatedTokenAccount, TickSpacing, transfer } from "../../utils";
+import { initTestPool } from "../../utils/init-utils";
 import { initPosition, mintTokensToTestAccount } from "../../utils/test-builders";
 
 describe("position-impl", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
-  const client = buildWhirlpoolClient(ctx, fetcher);
+  const fetcher = ctx.fetcher;
+  const client = buildWhirlpoolClient(ctx);
 
   it("increase and decrease liquidity on position", async () => {
     const { poolInitInfo } = await initTestPool(

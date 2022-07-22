@@ -1,17 +1,17 @@
-import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
+import * as assert from "assert";
+import { toTx, WhirlpoolIx } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
+import { TickSpacing } from "../../utils";
 import { initTestPool, openPosition } from "../../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
-import { TickSpacing } from "../../utils";
-import { AccountFetcher, toTx, WhirlpoolIx } from "../../../src";
 
 describe("position management tests", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const fetcher = ctx.fetcher;
 
   it("successfully closes and opens a position in one transaction", async () => {
     const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);

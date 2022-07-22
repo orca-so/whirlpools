@@ -1,16 +1,16 @@
-import * as assert from "assert";
 import * as anchor from "@project-serum/anchor";
-import { WhirlpoolContext, AccountFetcher, WhirlpoolData, WhirlpoolIx, toTx } from "../../src";
+import * as assert from "assert";
+import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
 import { TickSpacing } from "../utils";
 import { initTestPool } from "../utils/init-utils";
 import { generateDefaultConfigParams } from "../utils/test-builders";
 
 describe("set_protocol_fee_rate", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const fetcher = ctx.fetcher;
 
   it("successfully sets_protocol_fee_rate", async () => {
     const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPool(

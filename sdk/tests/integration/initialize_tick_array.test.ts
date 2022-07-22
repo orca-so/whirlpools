@@ -1,25 +1,24 @@
 import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
 import {
-  WhirlpoolContext,
-  AccountFetcher,
-  TICK_ARRAY_SIZE,
-  InitTickArrayParams,
   InitPoolParams,
+  InitTickArrayParams,
   TickArrayData,
-  WhirlpoolIx,
+  TICK_ARRAY_SIZE,
   toTx,
+  WhirlpoolContext,
+  WhirlpoolIx,
 } from "../../src";
-import { TickSpacing, systemTransferTx, ONE_SOL } from "../utils";
+import { ONE_SOL, systemTransferTx, TickSpacing } from "../utils";
 import { initTestPool, initTickArray } from "../utils/init-utils";
 import { generateDefaultInitTickArrayParams } from "../utils/test-builders";
 
 describe("initialize_tick_array", () => {
-  const provider = anchor.Provider.local();
-  anchor.setProvider(anchor.Provider.env());
+  const provider = anchor.AnchorProvider.local();
+  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = new AccountFetcher(ctx.connection);
+  const fetcher = ctx.fetcher;
 
   it("successfully init a TickArray account", async () => {
     const tickSpacing = TickSpacing.Standard;

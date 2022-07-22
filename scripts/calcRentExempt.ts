@@ -27,10 +27,10 @@ async function run() {
   const connection = new anchor.web3.Connection(
     "https://api.mainnet-beta.solana.com"
   );
-  const provider = new anchor.Provider(
+  const provider = new anchor.AnchorProvider(
     connection,
     wallet,
-    anchor.Provider.defaultOptions()
+    anchor.AnchorProvider.defaultOptions()
   );
 
   const sizeInBytes = [

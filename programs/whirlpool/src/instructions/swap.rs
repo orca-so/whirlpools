@@ -52,15 +52,19 @@ pub fn handler(
     sqrt_price_limit: u128,
     amount_specified_is_input: bool,
     a_to_b: bool, // Zero for one
-) -> ProgramResult {
+) -> Result<()> {
     let whirlpool = &mut ctx.accounts.whirlpool;
     let clock = Clock::get()?;
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
+    let mut ta0 = ctx.accounts.tick_array_0.load_mut().unwrap();
+    let mut ta1 = ctx.accounts.tick_array_1.load_mut().ok();
+    let mut ta2 = ctx.accounts.tick_array_2.load_mut().ok();
+
     let mut swap_tick_sequence = SwapTickSequence::new(
-        ctx.accounts.tick_array_0.load_mut().unwrap(),
-        ctx.accounts.tick_array_1.load_mut().ok(),
-        ctx.accounts.tick_array_2.load_mut().ok(),
+        &mut *ta0,
+        ta1.as_mut().map(|r| &mut **r),
+        ta2.as_mut().map(|r| &mut **r),
     );
 
     let swap_update = swap(
@@ -123,7 +127,7 @@ fn perform_swap<'info>(
     amount_a: u64,
     amount_b: u64,
     a_to_b: bool,
-) -> ProgramResult {
+) -> Result<()> {
     // Transfer from user to pool
     let deposit_account_user;
     let deposit_account_pool;

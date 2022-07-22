@@ -48,7 +48,7 @@ pub fn handler(
     liquidity_amount: u128,
     token_max_a: u64,
     token_max_b: u64,
-) -> ProgramResult {
+) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,

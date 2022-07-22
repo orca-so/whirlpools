@@ -28,7 +28,7 @@ pub struct CollectProtocolFees<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<CollectProtocolFees>) -> ProgramResult {
+pub fn handler(ctx: Context<CollectProtocolFees>) -> Result<()> {
     let whirlpool = &ctx.accounts.whirlpool;
 
     transfer_from_vault_to_owner(

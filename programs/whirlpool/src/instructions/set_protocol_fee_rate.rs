@@ -13,7 +13,7 @@ pub struct SetProtocolFeeRate<'info> {
     pub fee_authority: Signer<'info>,
 }
 
-pub fn handler(ctx: Context<SetProtocolFeeRate>, protocol_fee_rate: u16) -> ProgramResult {
+pub fn handler(ctx: Context<SetProtocolFeeRate>, protocol_fee_rate: u16) -> Result<()> {
     Ok(ctx
         .accounts
         .whirlpool

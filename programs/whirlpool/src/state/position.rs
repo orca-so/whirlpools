@@ -61,7 +61,7 @@ impl Position {
         position_mint: Pubkey,
         tick_lower_index: i32,
         tick_upper_index: i32,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         if !Tick::check_is_usable_tick(tick_lower_index, whirlpool.tick_spacing)
             || !Tick::check_is_usable_tick(tick_upper_index, whirlpool.tick_spacing)
             || tick_lower_index >= tick_upper_index

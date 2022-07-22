@@ -31,7 +31,7 @@ impl WhirlpoolsConfig {
         collect_protocol_fees_authority: Pubkey,
         reward_emissions_super_authority: Pubkey,
         default_protocol_fee_rate: u16,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         self.fee_authority = fee_authority;
         self.collect_protocol_fees_authority = collect_protocol_fees_authority;
         self.reward_emissions_super_authority = reward_emissions_super_authority;
@@ -50,7 +50,7 @@ impl WhirlpoolsConfig {
     pub fn update_default_protocol_fee_rate(
         &mut self,
         default_protocol_fee_rate: u16,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         if default_protocol_fee_rate > MAX_PROTOCOL_FEE_RATE {
             return Err(ErrorCode::ProtocolFeeRateMaxExceeded.into());
         }

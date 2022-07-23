@@ -13,7 +13,7 @@ The contract has been audited by Kudelski and Neodyme.
 
 ## Setup
 
-Install Anchor using instructions found [here](https://project-serum.github.io/anchor/getting-started/installation.html#install-rust).
+Install Anchor using instructions found [here](https://book.anchor-lang.com/getting_started/installation.html#anchor).
 
 Set up a valid Solana keypair at the path specified in the `wallet` in `Anchor.toml` to do local testing with `anchor test` flows.
 

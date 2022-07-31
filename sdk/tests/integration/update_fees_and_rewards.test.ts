@@ -23,7 +23,7 @@ describe("update_fees_and_rewards", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(1_000_000) }],
+      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(1_000_000) }],
       rewards: [
         { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
       ],
@@ -137,7 +137,7 @@ describe("update_fees_and_rewards", () => {
 
     const other = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(1_000_000) }],
+      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(1_000_000) }],
     });
     const { positions: otherPositions } = other.getInfos();
 

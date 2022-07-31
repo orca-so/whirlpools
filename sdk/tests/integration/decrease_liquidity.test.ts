@@ -33,7 +33,7 @@ describe("decrease_liquidity", () => {
   const fetcher = ctx.fetcher;
 
   it("successfully decrease liquidity from position in one tick array", async () => {
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
     const tickLower = 7168,
       tickUpper = 8960;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
@@ -46,7 +46,7 @@ describe("decrease_liquidity", () => {
     const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
-      liquidity: new u64(1_000_000),
+      liquidity: new anchor.BN(1_000_000),
       sqrtPrice: poolBefore.sqrtPrice,
       slippageTolerance: Percentage.fromFraction(1, 100),
       tickCurrentIndex: poolBefore.tickCurrentIndex,
@@ -88,7 +88,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("successfully decrease liquidity from position in two tick arrays", async () => {
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
     const tickLower = -1280,
       tickUpper = 1280;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
@@ -102,7 +102,7 @@ describe("decrease_liquidity", () => {
     const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
-      liquidity: new u64(1_000_000),
+      liquidity: new anchor.BN(1_000_000),
       sqrtPrice: poolBefore.sqrtPrice,
       slippageTolerance: Percentage.fromFraction(1, 100),
       tickCurrentIndex: poolBefore.tickCurrentIndex,
@@ -149,7 +149,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("successfully decrease liquidity with approved delegate", async () => {
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(1)),
@@ -165,7 +165,7 @@ describe("decrease_liquidity", () => {
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
-    const removeAmount = new u64(1_000_000);
+    const removeAmount = new anchor.BN(1_000_000);
 
     await toTx(
       ctx,
@@ -190,7 +190,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("successfully decrease liquidity with owner even if there is approved delegate", async () => {
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(1.48)),
@@ -206,7 +206,7 @@ describe("decrease_liquidity", () => {
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
-    const removeAmount = new u64(1_000_000);
+    const removeAmount = new anchor.BN(1_000_000);
 
     await toTx(
       ctx,
@@ -229,7 +229,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("successfully decrease liquidity with transferred position token", async () => {
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(1.48)),
@@ -239,7 +239,7 @@ describe("decrease_liquidity", () => {
     const { whirlpoolPda } = poolInitInfo;
     const position = positions[0];
 
-    const removeAmount = new u64(1_000_000);
+    const removeAmount = new anchor.BN(1_000_000);
     const newOwner = anchor.web3.Keypair.generate();
     const newOwnerPositionTokenAccount = await createTokenAccount(
       provider,
@@ -271,7 +271,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when liquidity amount is zero", async () => {
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(1)),
@@ -285,7 +285,7 @@ describe("decrease_liquidity", () => {
       toTx(
         ctx,
         WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
-          liquidityAmount: new u64(0),
+          liquidityAmount: new anchor.BN(0),
           tokenMinA: new u64(0),
           tokenMinB: new u64(0),
           whirlpool: whirlpoolPda.publicKey,
@@ -318,7 +318,7 @@ describe("decrease_liquidity", () => {
       toTx(
         ctx,
         WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
-          liquidityAmount: new u64(1_000),
+          liquidityAmount: new anchor.BN(1_000),
           tokenMinA: new u64(0),
           tokenMinB: new u64(0),
           whirlpool: whirlpoolPda.publicKey,
@@ -338,7 +338,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when token min a subceeded", async () => {
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(0.005)),
@@ -372,7 +372,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when token min b subceeded", async () => {
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(5)),
@@ -405,7 +405,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when position account does not have exactly 1 token", async () => {
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(2.2)),
@@ -471,7 +471,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when position token account mint does not match position mint", async () => {
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(2.2)),
@@ -507,7 +507,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when position does not match whirlpool", async () => {
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(2.2)),
@@ -546,7 +546,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when token vaults do not match whirlpool vaults", async () => {
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(2.2)),
@@ -605,7 +605,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when owner token account mint does not match whirlpool token mint", async () => {
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(2.2)),
@@ -663,7 +663,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when position authority is not approved delegate for position token account", async () => {
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(2.2)),
@@ -703,7 +703,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when position authority is not authorized for exactly 1 token", async () => {
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(2.2)),
@@ -744,7 +744,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when position authority was not a signer", async () => {
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(2.2)),
@@ -783,7 +783,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when tick arrays do not match the position", async () => {
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(2.2)),
@@ -825,7 +825,7 @@ describe("decrease_liquidity", () => {
   });
 
   it("fails when the tick arrays are for a different whirlpool", async () => {
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(2.2)),

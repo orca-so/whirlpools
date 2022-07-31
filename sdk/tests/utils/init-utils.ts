@@ -539,7 +539,7 @@ export async function initTestPoolWithLiquidity(ctx: WhirlpoolContext) {
 
   const fundParams: FundedPositionParams[] = [
     {
-      liquidityAmount: new u64(100_000),
+      liquidityAmount: new anchor.BN(100_000),
       tickLowerIndex: 27904,
       tickUpperIndex: 33408,
     },

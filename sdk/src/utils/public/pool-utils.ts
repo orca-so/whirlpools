@@ -82,7 +82,7 @@ export class PoolUtil {
    * @returns
    */
   public static getTokenAmountsFromLiquidity(
-    liquidity: u64,
+    liquidity: BN,
     currentPrice: u64,
     lowerPrice: u64,
     upperPrice: u64,

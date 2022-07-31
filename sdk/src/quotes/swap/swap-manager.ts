@@ -18,7 +18,7 @@ export function computeSwap(
   whirlpoolData: WhirlpoolData,
   tickSequence: TickArraySequence,
   tokenAmount: u64,
-  sqrtPriceLimit: u64,
+  sqrtPriceLimit: BN,
   amountSpecifiedIsInput: boolean,
   aToB: boolean
 ): SwapResult {

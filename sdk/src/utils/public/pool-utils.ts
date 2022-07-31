@@ -75,31 +75,31 @@ export class PoolUtil {
   /**
    * @category Whirlpool Utils
    * @param liquidity
-   * @param currentPrice
-   * @param lowerPrice
-   * @param upperPrice
+   * @param currentSqrtPrice
+   * @param lowerSqrtPrice
+   * @param upperSqrtPrice
    * @param round_up
    * @returns
    */
   public static getTokenAmountsFromLiquidity(
     liquidity: BN,
-    currentPrice: u64,
-    lowerPrice: u64,
-    upperPrice: u64,
+    currentSqrtPrice: BN,
+    lowerSqrtPrice: BN,
+    upperSqrtPrice: BN,
     round_up: boolean
   ): TokenAmounts {
     const _liquidity = new Decimal(liquidity.toString());
-    const _currentPrice = new Decimal(currentPrice.toString());
-    const _lowerPrice = new Decimal(lowerPrice.toString());
-    const _upperPrice = new Decimal(upperPrice.toString());
+    const _currentPrice = new Decimal(currentSqrtPrice.toString());
+    const _lowerPrice = new Decimal(lowerSqrtPrice.toString());
+    const _upperPrice = new Decimal(upperSqrtPrice.toString());
     let tokenA, tokenB;
-    if (currentPrice.lt(lowerPrice)) {
+    if (currentSqrtPrice.lt(lowerSqrtPrice)) {
       // x = L * (pb - pa) / (pa * pb)
       tokenA = MathUtil.toX64_Decimal(_liquidity)
         .mul(_upperPrice.sub(_lowerPrice))
         .div(_lowerPrice.mul(_upperPrice));
       tokenB = new Decimal(0);
-    } else if (currentPrice.lt(upperPrice)) {
+    } else if (currentSqrtPrice.lt(upperSqrtPrice)) {
       // x = L * (pb - p) / (p * pb)
       // y = L * (p - pa)
       tokenA = MathUtil.toX64_Decimal(_liquidity)

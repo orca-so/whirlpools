@@ -713,7 +713,7 @@ describe("swap", () => {
     const params: SwapParams = {
       amount: new u64(10),
       otherAmountThreshold: ZERO_BN,
-      sqrtPriceLimit: new u64(MAX_SQRT_PRICE).add(new u64(1)),
+      sqrtPriceLimit: new anchor.BN(MAX_SQRT_PRICE).add(new anchor.BN(1)),
       amountSpecifiedIsInput: true,
       aToB: true,
       whirlpool: whirlpool,
@@ -747,7 +747,7 @@ describe("swap", () => {
     const params: SwapParams = {
       amount: new u64(10),
       otherAmountThreshold: ZERO_BN,
-      sqrtPriceLimit: new u64(MIN_SQRT_PRICE).sub(new u64(1)),
+      sqrtPriceLimit: new anchor.BN(MIN_SQRT_PRICE).sub(new anchor.BN(1)),
       amountSpecifiedIsInput: true,
       aToB: true,
       whirlpool: whirlpool,

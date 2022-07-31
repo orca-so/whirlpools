@@ -1,7 +1,6 @@
 import { ZERO } from "@orca-so/common-sdk";
 import { SwapQuoteParam, SwapQuote } from "../public";
 import { BN } from "@project-serum/anchor";
-import { u64 } from "@solana/spl-token";
 import { TickArraySequence } from "./tick-array-sequence";
 import { computeSwap } from "./swap-manager";
 import { MAX_SQRT_PRICE, MAX_SWAP_TICK_ARRAYS, MIN_SQRT_PRICE } from "../../types/public";
@@ -24,7 +23,7 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     amountSpecifiedIsInput,
   } = params;
 
-  if (sqrtPriceLimit.gt(new u64(MAX_SQRT_PRICE) || sqrtPriceLimit.lt(new u64(MIN_SQRT_PRICE)))) {
+  if (sqrtPriceLimit.gt(new BN(MAX_SQRT_PRICE) || sqrtPriceLimit.lt(new BN(MIN_SQRT_PRICE)))) {
     throw new WhirlpoolsError(
       "Provided SqrtPriceLimit is out of bounds.",
       SwapErrorCode.SqrtPriceOutOfBounds

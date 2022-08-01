@@ -1,4 +1,4 @@
-import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Program } from "@project-serum/anchor";
 import { Whirlpool } from "../artifacts/whirlpool";
 import { Instruction } from "@orca-so/common-sdk";

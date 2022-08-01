@@ -41,8 +41,8 @@ describe("collect_fees", () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
       positions: [
-        { tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(10_000_000) }, // In range position
-        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new u64(1_000_000) }, // Out of range position
+        { tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
+        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(1_000_000) }, // Out of range position
       ],
     });
     const {
@@ -184,7 +184,7 @@ describe("collect_fees", () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
       positions: [
-        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new u64(10_000_000) }, // In range position
+        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
       ],
     });
     const {
@@ -220,7 +220,7 @@ describe("collect_fees", () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
       positions: [
-        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new u64(10_000_000) }, // In range position
+        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
       ],
     });
     const {
@@ -254,7 +254,7 @@ describe("collect_fees", () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
       positions: [
-        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new u64(10_000_000) }, // In range position
+        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
       ],
     });
     const {
@@ -298,7 +298,7 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(10_000_000) }],
+      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
       poolInitInfo: { tokenVaultAKeypair, tokenVaultBKeypair },
@@ -336,7 +336,7 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(10_000_000) }],
+      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
       poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
@@ -395,7 +395,7 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(10_000_000) }],
+      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
       poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
@@ -433,7 +433,7 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(10_000_000) }],
+      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
       poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
@@ -472,7 +472,7 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(10_000_000) }],
+      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
       poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
@@ -509,7 +509,7 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(10_000_000) }],
+      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
       poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair, tokenMintA },
@@ -549,7 +549,7 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(10_000_000) }],
+      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
       poolInitInfo: {
@@ -609,7 +609,7 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new u64(10_000_000) }],
+      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
       poolInitInfo: {

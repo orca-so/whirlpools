@@ -1,4 +1,4 @@
-import { Program } from "@project-serum/anchor";
+import { Program, BN } from "@project-serum/anchor";
 import { Whirlpool } from "../artifacts/whirlpool";
 import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -50,7 +50,7 @@ export type IncreaseLiquidityParams = {
 export type IncreaseLiquidityInput = {
   tokenMaxA: u64;
   tokenMaxB: u64;
-  liquidityAmount: u64;
+  liquidityAmount: BN;
 };
 
 /**

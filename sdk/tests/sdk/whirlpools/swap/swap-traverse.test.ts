@@ -22,7 +22,7 @@ import {
 } from "../../../utils/swap-test-utils";
 import { getVaultAmounts } from "../../../utils/whirlpools-test-utils";
 
-describe("swap traversal tests", async () => {
+describe("swap traversal tests", () => {
   const provider = anchor.AnchorProvider.local();
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;

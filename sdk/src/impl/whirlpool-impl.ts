@@ -6,7 +6,7 @@ import {
   TransactionBuilder,
   ZERO,
 } from "@orca-so/common-sdk";
-import { Address, translateAddress } from "@project-serum/anchor";
+import { Address, translateAddress, BN } from "@project-serum/anchor";
 import { WhirlpoolContext } from "../context";
 import {
   IncreaseLiquidityInput,
@@ -22,7 +22,6 @@ import {
 import { TokenInfo, WhirlpoolData } from "../types/public";
 import { Whirlpool } from "../whirlpool-client";
 import { PublicKey, Keypair } from "@solana/web3.js";
-import { u64 } from "@solana/spl-token";
 import { AccountFetcher } from "../network/public";
 import invariant from "tiny-invariant";
 import { PDAUtil, PriceMath, TickArrayUtil, TickUtil } from "../utils/public";
@@ -176,7 +175,7 @@ export class WhirlpoolImpl implements Whirlpool {
 
     const { liquidityAmount: liquidity, tokenMaxA, tokenMaxB } = liquidityInput;
 
-    invariant(liquidity.gt(new u64(0)), "liquidity must be greater than zero");
+    invariant(liquidity.gt(new BN(0)), "liquidity must be greater than zero");
 
     const whirlpool = await this.fetcher.getPool(this.address, false);
     if (!whirlpool) {
@@ -337,7 +336,7 @@ export class WhirlpoolImpl implements Whirlpool {
     // txBuilder.addInstruction(collectTx.compressIx(false));
 
     /* Remove all liquidity remaining in the position */
-    if (position.liquidity.gt(new u64(0))) {
+    if (position.liquidity.gt(new BN(0))) {
       const decreaseLiqQuote = decreaseLiquidityQuoteByLiquidityWithParams({
         liquidity: position.liquidity,
         slippageTolerance,

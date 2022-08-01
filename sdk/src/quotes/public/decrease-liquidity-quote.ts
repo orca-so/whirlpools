@@ -1,6 +1,5 @@
 import { Percentage, ZERO } from "@orca-so/common-sdk";
 import { BN } from "@project-serum/anchor";
-import { u64 } from "@solana/spl-token";
 import invariant from "tiny-invariant";
 import { DecreaseLiquidityInput } from "../../instructions";
 import {
@@ -23,7 +22,7 @@ import { Position, Whirlpool } from "../../whirlpool-client";
  * @param slippageTolerance - The maximum slippage allowed when calculating the minimum tokens received.
  */
 export type DecreaseLiquidityQuoteParam = {
-  liquidity: u64;
+  liquidity: BN;
   tickCurrentIndex: number;
   sqrtPrice: BN;
   tickLowerIndex: number;
@@ -48,7 +47,7 @@ export type DecreaseLiquidityQuote = DecreaseLiquidityInput & { tokenEstA: BN; t
  * @returns An DecreaseLiquidityQuote object detailing the tokenMin & liquidity values to use when calling decrease-liquidity-ix.
  */
 export async function decreaseLiquidityQuoteByLiquidity(
-  liquidity: u64,
+  liquidity: BN,
   slippageTolerance: Percentage,
   position: Position,
   whirlpool: Whirlpool

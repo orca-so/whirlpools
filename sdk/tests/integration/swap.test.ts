@@ -530,7 +530,7 @@ describe("swap", () => {
 
     const fundParams: FundedPositionParams[] = [
       {
-        liquidityAmount: new u64(10_000_000),
+        liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 29440,
         tickUpperIndex: 33536,
       },
@@ -604,17 +604,17 @@ describe("swap", () => {
 
     const fundParams: FundedPositionParams[] = [
       {
-        liquidityAmount: new u64(100_000_000),
+        liquidityAmount: new anchor.BN(100_000_000),
         tickLowerIndex: 27456,
         tickUpperIndex: 27840,
       },
       {
-        liquidityAmount: new u64(100_000_000),
+        liquidityAmount: new anchor.BN(100_000_000),
         tickLowerIndex: 28864,
         tickUpperIndex: 28928,
       },
       {
-        liquidityAmount: new u64(100_000_000),
+        liquidityAmount: new anchor.BN(100_000_000),
         tickLowerIndex: 27712,
         tickUpperIndex: 28928,
       },
@@ -713,7 +713,7 @@ describe("swap", () => {
     const params: SwapParams = {
       amount: new u64(10),
       otherAmountThreshold: ZERO_BN,
-      sqrtPriceLimit: new u64(MAX_SQRT_PRICE).add(new u64(1)),
+      sqrtPriceLimit: new anchor.BN(MAX_SQRT_PRICE).add(new anchor.BN(1)),
       amountSpecifiedIsInput: true,
       aToB: true,
       whirlpool: whirlpool,
@@ -747,7 +747,7 @@ describe("swap", () => {
     const params: SwapParams = {
       amount: new u64(10),
       otherAmountThreshold: ZERO_BN,
-      sqrtPriceLimit: new u64(MIN_SQRT_PRICE).sub(new u64(1)),
+      sqrtPriceLimit: new anchor.BN(MIN_SQRT_PRICE).sub(new anchor.BN(1)),
       amountSpecifiedIsInput: true,
       aToB: true,
       whirlpool: whirlpool,
@@ -786,7 +786,7 @@ describe("swap", () => {
 
     const fundParams: FundedPositionParams[] = [
       {
-        liquidityAmount: new u64(100_000),
+        liquidityAmount: new anchor.BN(100_000),
         tickLowerIndex: 29440,
         tickUpperIndex: 33536,
       },
@@ -838,7 +838,7 @@ describe("swap", () => {
 
     const fundParams: FundedPositionParams[] = [
       {
-        liquidityAmount: new u64(100_000),
+        liquidityAmount: new anchor.BN(100_000),
         tickLowerIndex: 29440,
         tickUpperIndex: 33536,
       },
@@ -890,7 +890,7 @@ describe("swap", () => {
 
     const fundParams: FundedPositionParams[] = [
       {
-        liquidityAmount: new u64(100_000),
+        liquidityAmount: new anchor.BN(100_000),
         tickLowerIndex: 29440,
         tickUpperIndex: 33536,
       },
@@ -942,7 +942,7 @@ describe("swap", () => {
 
     const fundParams: FundedPositionParams[] = [
       {
-        liquidityAmount: new u64(100_000),
+        liquidityAmount: new anchor.BN(100_000),
         tickLowerIndex: 29440,
         tickUpperIndex: 33536,
       },
@@ -1011,42 +1011,42 @@ describe("swap", () => {
 
     const fundParams: FundedPositionParams[] = [
       {
-        liquidityAmount: new u64(10_000_000),
+        liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 27712,
         tickUpperIndex: 29360,
       },
       {
-        liquidityAmount: new u64(10_000_000),
+        liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 27736,
         tickUpperIndex: 29240,
       },
       {
-        liquidityAmount: new u64(10_000_000),
+        liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 27840,
         tickUpperIndex: 29120,
       },
       {
-        liquidityAmount: new u64(10_000_000),
+        liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 28288,
         tickUpperIndex: 29112,
       },
       {
-        liquidityAmount: new u64(10_000_000),
+        liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 28416,
         tickUpperIndex: 29112,
       },
       {
-        liquidityAmount: new u64(10_000_000),
+        liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 28288,
         tickUpperIndex: 28304,
       },
       {
-        liquidityAmount: new u64(10_000_000),
+        liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 28296,
         tickUpperIndex: 29112,
       },
       {
-        liquidityAmount: new u64(10_000_000),
+        liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 28576,
         tickUpperIndex: 28736,
       },

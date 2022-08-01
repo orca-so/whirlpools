@@ -1,4 +1,4 @@
-import { Address } from "@project-serum/anchor";
+import { Address, BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import invariant from "tiny-invariant";
 import { PoolUtil } from "../../utils/public/pool-utils";
@@ -26,7 +26,7 @@ export type SwapQuoteParam = {
   whirlpoolData: WhirlpoolData;
   tokenAmount: u64;
   otherAmountThreshold: u64;
-  sqrtPriceLimit: u64;
+  sqrtPriceLimit: BN;
   aToB: boolean;
   amountSpecifiedIsInput: boolean;
   tickArrays: TickArray[];
@@ -45,7 +45,7 @@ export type SwapQuote = {
   estimatedAmountIn: u64;
   estimatedAmountOut: u64;
   estimatedEndTickIndex: number;
-  estimatedEndSqrtPrice: u64;
+  estimatedEndSqrtPrice: BN;
   estimatedFeeAmount: u64;
 } & SwapInput;
 

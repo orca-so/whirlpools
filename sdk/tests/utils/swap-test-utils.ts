@@ -39,7 +39,7 @@ export async function setupSwapTest(setup: SwapTestPoolParams) {
 
   const whirlpool = await setup.client.getPool(whirlpoolPda.publicKey, true);
 
-  (await whirlpool.initTickArrayForTicks(setup.initArrayStartTicks))?.buildAndExecute();
+  await (await whirlpool.initTickArrayForTicks(setup.initArrayStartTicks))?.buildAndExecute();
 
   await fundPositions(setup.ctx, poolInitInfo, tokenAccountA, tokenAccountB, setup.fundedPositions);
   return whirlpool;

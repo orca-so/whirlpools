@@ -524,7 +524,7 @@ describe("increase_liquidity", () => {
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
 
     await assert.rejects(
       toTx(
@@ -558,7 +558,7 @@ describe("increase_liquidity", () => {
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
 
     await assert.rejects(
       toTx(
@@ -599,7 +599,7 @@ describe("increase_liquidity", () => {
       provider.wallet.publicKey
     );
 
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
 
     await assert.rejects(
       toTx(
@@ -661,7 +661,7 @@ describe("increase_liquidity", () => {
     // Create a position token account that contains 0 tokens
     const invalidPositionTokenAccount = await createAndMintToTokenAccount(provider, tokenMintA, 1);
 
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
 
     await assert.rejects(
       toTx(
@@ -710,7 +710,7 @@ describe("increase_liquidity", () => {
       params: { tickArrayPda },
     } = await initTickArray(ctx, poolInitInfo2.whirlpoolPda.publicKey, 0);
 
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
 
     await assert.rejects(
       toTx(
@@ -743,7 +743,7 @@ describe("increase_liquidity", () => {
     const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
     const { whirlpoolPda, tokenMintA, tokenMintB } = poolInitInfo;
     const positionInitInfo = positions[0];
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
 
     const fakeVaultA = await createAndMintToTokenAccount(provider, tokenMintA, 1_000);
     const fakeVaultB = await createAndMintToTokenAccount(provider, tokenMintB, 1_000);
@@ -801,7 +801,7 @@ describe("increase_liquidity", () => {
     const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
-    const liquidityAmount = new u64(6_500_000);
+    const liquidityAmount = new anchor.BN(6_500_000);
 
     const invalidMint = await createMint(provider);
     const invalidTokenAccount = await createAndMintToTokenAccount(provider, invalidMint, 1_000_000);
@@ -862,7 +862,7 @@ describe("increase_liquidity", () => {
 
     const delegate = anchor.web3.Keypair.generate();
 
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
 
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
@@ -903,7 +903,7 @@ describe("increase_liquidity", () => {
 
     const delegate = anchor.web3.Keypair.generate();
 
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
 
     await approveToken(provider, positionInitInfo.tokenAccount, delegate.publicKey, 0);
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
@@ -945,7 +945,7 @@ describe("increase_liquidity", () => {
 
     const delegate = anchor.web3.Keypair.generate();
 
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
 
     await approveToken(provider, positionInitInfo.tokenAccount, delegate.publicKey, 1);
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
@@ -985,7 +985,7 @@ describe("increase_liquidity", () => {
 
     const delegate = anchor.web3.Keypair.generate();
 
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
 
     await approveToken(provider, positionInitInfo.tokenAccount, delegate.publicKey, 1);
 
@@ -1031,7 +1031,7 @@ describe("increase_liquidity", () => {
       params: { tickArrayPda: tickArrayUpperPda },
     } = await initTickArray(ctx, whirlpoolPda.publicKey, 22528);
 
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
 
     await assert.rejects(
       toTx(
@@ -1075,7 +1075,7 @@ describe("increase_liquidity", () => {
       params: { tickArrayPda: tickArrayUpperPda },
     } = await initTickArray(ctx, poolInitInfo2.whirlpoolPda.publicKey, 0);
 
-    const liquidityAmount = new u64(1_250_000);
+    const liquidityAmount = new anchor.BN(1_250_000);
 
     await assert.rejects(
       toTx(

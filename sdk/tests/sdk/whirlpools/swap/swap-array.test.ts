@@ -23,7 +23,7 @@ import {
 } from "../../../utils/swap-test-utils";
 import { getTickArrays } from "../../../utils/testDataTypes";
 
-describe("swap arrays test", async () => {
+describe("swap arrays test", () => {
   const provider = anchor.AnchorProvider.local();
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;

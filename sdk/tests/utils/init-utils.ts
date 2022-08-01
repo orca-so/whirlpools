@@ -32,9 +32,8 @@ import {
 import { u64 } from "@solana/spl-token";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
 import { MathUtil, PDA } from "@orca-so/common-sdk";
-import { BN } from "bn.js";
 
-const defaultInitSqrtPrice = MathUtil.toX64_BN(new u64(5));
+const defaultInitSqrtPrice = MathUtil.toX64_BN(new anchor.BN(5));
 
 /**
  * Initialize a brand new WhirlpoolsConfig account and construct a set of InitPoolParams
@@ -290,7 +289,7 @@ export async function initTestPoolWithTokens(
   ctx: WhirlpoolContext,
   tickSpacing: number,
   initSqrtPrice = defaultInitSqrtPrice,
-  mintAmount = new BN("15000000000")
+  mintAmount = new anchor.BN("15000000000")
 ) {
   const provider = ctx.provider;
 
@@ -539,7 +538,7 @@ export async function initTestPoolWithLiquidity(ctx: WhirlpoolContext) {
 
   const fundParams: FundedPositionParams[] = [
     {
-      liquidityAmount: new u64(100_000),
+      liquidityAmount: new anchor.BN(100_000),
       tickLowerIndex: 27904,
       tickUpperIndex: 33408,
     },

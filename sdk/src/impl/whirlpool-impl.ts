@@ -19,7 +19,7 @@ import {
   swapIx,
   SwapInput,
 } from "../instructions";
-import { TokenInfo, WhirlpoolData } from "../types/public";
+import { TokenAccountInfo, TokenInfo, WhirlpoolData } from "../types/public";
 import { Whirlpool } from "../whirlpool-client";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { AccountFetcher } from "../network/public";
@@ -35,6 +35,8 @@ export class WhirlpoolImpl implements Whirlpool {
     readonly address: PublicKey,
     readonly tokenAInfo: TokenInfo,
     readonly tokenBInfo: TokenInfo,
+    readonly tokenVaultAInfo: TokenAccountInfo,
+    readonly tokenVaultBInfo: TokenAccountInfo,
     data: WhirlpoolData
   ) {
     this.data = data;
@@ -54,6 +56,14 @@ export class WhirlpoolImpl implements Whirlpool {
 
   getTokenBInfo(): TokenInfo {
     return this.tokenBInfo;
+  }
+
+  getTokenVaultAInfo(): TokenAccountInfo {
+    return this.tokenVaultAInfo;
+  }
+
+  getTokenVaultBInfo(): TokenAccountInfo {
+    return this.tokenVaultBInfo;
   }
 
   async refreshData() {

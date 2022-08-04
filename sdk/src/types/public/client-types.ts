@@ -1,5 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import { MintInfo } from "@solana/spl-token";
+import { AccountInfo, MintInfo } from "@solana/spl-token";
 import { TickArrayData } from "./anchor-types";
 
 /**
@@ -7,6 +7,8 @@ import { TickArrayData } from "./anchor-types";
  * @category WhirlpoolClient
  */
 export type TokenInfo = MintInfo & { mint: PublicKey };
+
+export type TokenAccountInfo = AccountInfo;
 
 /**
  * A wrapper class of a TickArray on a Whirlpool

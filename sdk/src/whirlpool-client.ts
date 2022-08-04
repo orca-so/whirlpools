@@ -11,7 +11,7 @@ import {
   PositionData,
   WhirlpoolData,
 } from "./types/public";
-import { TokenInfo } from "./types/public/client-types";
+import { TokenAccountInfo, TokenInfo } from "./types/public/client-types";
 
 /**
  * Helper class to help interact with Whirlpool Accounts with a simpler interface.
@@ -91,6 +91,18 @@ export interface Whirlpool {
    * @return TokenInfo for token B
    */
   getTokenBInfo: () => TokenInfo;
+
+  /**
+   * Get the TokenAccountInfo for token vault A of this pool.
+   * @return TokenAccountInfo for token vault A
+   */
+  getTokenVaultAInfo: () => TokenAccountInfo;
+
+  /**
+   * Get the TokenAccountInfo for token vault B of this pool.
+   * @return TokenAccountInfo for token vault B
+   */
+  getTokenVaultBInfo: () => TokenAccountInfo;
 
   /**
    * Initialize a set of tick-arrays that encompasses the provided ticks.

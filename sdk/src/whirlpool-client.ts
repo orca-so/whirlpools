@@ -11,7 +11,7 @@ import {
   PositionData,
   WhirlpoolData,
 } from "./types/public";
-import { TokenAccountInfo, TokenInfo } from "./types/public/client-types";
+import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
 
 /**
  * Helper class to help interact with Whirlpool Accounts with a simpler interface.
@@ -37,6 +37,13 @@ export interface WhirlpoolClient {
    * @return a Whirlpool object to interact with
    */
   getPool: (poolAddress: Address, refresh?: boolean) => Promise<Whirlpool>;
+
+  /**
+   * Get a list of Whirlpool objects matching the provided list of addresses.
+   * @param poolAddresses the addresses of the Whirlpool accounts
+   * @return a list of Whirlpool objects to interact with
+   */
+  getPools: (poolAddresses: Address[], refresh?: boolean) => Promise<Whirlpool[]>;
 
   /**
    * Get a Position object to interact with the Position account at the given address.
@@ -103,6 +110,14 @@ export interface Whirlpool {
    * @return TokenAccountInfo for token vault B
    */
   getTokenVaultBInfo: () => TokenAccountInfo;
+
+  /**
+   * Get a WhirlpoolRewardInfo for initialized rewards of this pool.
+   * A maximum of 3 reward vaults are supported.
+   * Uninitialized reward vaults are excluded.
+   * @return TokenAccountInfo for initialized reward vaults
+   */
+  getRewardInfos: () => WhirlpoolRewardInfo[];
 
   /**
    * Initialize a set of tick-arrays that encompasses the provided ticks.

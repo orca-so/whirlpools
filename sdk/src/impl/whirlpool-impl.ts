@@ -19,13 +19,14 @@ import {
   swapIx,
   SwapInput,
 } from "../instructions";
-import { TokenAccountInfo, TokenInfo, WhirlpoolData } from "../types/public";
+import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
 import { Whirlpool } from "../whirlpool-client";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { AccountFetcher } from "../network/public";
 import invariant from "tiny-invariant";
-import { PDAUtil, PriceMath, TickArrayUtil, TickUtil } from "../utils/public";
+import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { decreaseLiquidityQuoteByLiquidityWithParams, SwapQuote } from "../quotes/public";
+import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
 
 export class WhirlpoolImpl implements Whirlpool {
   private data: WhirlpoolData;
@@ -35,8 +36,9 @@ export class WhirlpoolImpl implements Whirlpool {
     readonly address: PublicKey,
     readonly tokenAInfo: TokenInfo,
     readonly tokenBInfo: TokenInfo,
-    readonly tokenVaultAInfo: TokenAccountInfo,
-    readonly tokenVaultBInfo: TokenAccountInfo,
+    private tokenVaultAInfo: TokenAccountInfo,
+    private tokenVaultBInfo: TokenAccountInfo,
+    private rewardInfos: WhirlpoolRewardInfo[],
     data: WhirlpoolData
   ) {
     this.data = data;
@@ -64,6 +66,10 @@ export class WhirlpoolImpl implements Whirlpool {
 
   getTokenVaultBInfo(): TokenAccountInfo {
     return this.tokenVaultBInfo;
+  }
+
+  getRewardInfos(): WhirlpoolRewardInfo[] {
+    return this.rewardInfos;
   }
 
   async refreshData() {
@@ -432,7 +438,16 @@ export class WhirlpoolImpl implements Whirlpool {
   private async refresh() {
     const account = await this.fetcher.getPool(this.address, true);
     if (!!account) {
+      const rewardInfos = await getRewardInfos(this.fetcher, account, true);
+      const [tokenVaultAInfo, tokenVaultBInfo] = await getTokenVaultAccountInfos(
+        this.fetcher,
+        account,
+        true
+      );
       this.data = account;
+      this.tokenVaultAInfo = tokenVaultAInfo;
+      this.tokenVaultBInfo = tokenVaultBInfo;
+      this.rewardInfos = rewardInfos;
     }
   }
 }

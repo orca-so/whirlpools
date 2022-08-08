@@ -57,6 +57,8 @@ async function getRewardInfo(
   return rewardInfo;
 }
 
+// Uninitialized pubkeys onchain default to this value.
+// If the mint equal to this value, then we assume the field was never initialized.
 const EMPTY_MINT = "11111111111111111111111111111111";
 export function isInitialized(rewardInfo: WhirlpoolRewardInfoData): boolean {
   return rewardInfo.vault.toBase58() !== EMPTY_MINT;

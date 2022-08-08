@@ -1,5 +1,5 @@
 import BN from "bn.js";
-import { AccountFetcher, TokenInfo } from "..";
+import { AccountFetcher, PoolUtil, TokenInfo } from "..";
 import {
   WhirlpoolData,
   WhirlpoolRewardInfo,
@@ -46,7 +46,7 @@ async function getRewardInfo(
   refresh: boolean
 ): Promise<WhirlpoolRewardInfo> {
   const rewardInfo = { ...data, initialized: false, vaultAmount: new BN(0) };
-  if (isInitialized(data)) {
+  if (PoolUtil.isRewardInitialized(data)) {
     const vaultInfo = await fetcher.getTokenInfo(data.vault, refresh);
     if (!vaultInfo) {
       throw new Error(`Unable to fetch TokenAccountInfo for vault - ${data.vault}`);
@@ -55,13 +55,6 @@ async function getRewardInfo(
     rewardInfo.vaultAmount = vaultInfo.amount;
   }
   return rewardInfo;
-}
-
-// Uninitialized pubkeys onchain default to this value.
-// If the mint equal to this value, then we assume the field was never initialized.
-const EMPTY_MINT = "11111111111111111111111111111111";
-export function isInitialized(rewardInfo: WhirlpoolRewardInfoData): boolean {
-  return rewardInfo.vault.toBase58() !== EMPTY_MINT;
 }
 
 export async function getTokenVaultAccountInfos(

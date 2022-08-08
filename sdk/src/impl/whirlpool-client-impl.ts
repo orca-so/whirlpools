@@ -1,17 +1,12 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
-import { BN } from "bn.js";
 import { WhirlpoolContext } from "../context";
 import { AccountFetcher } from "../network/public";
 import { WhirlpoolData } from "../types/public";
+import { PoolUtil } from "../utils/public";
 import { WhirlpoolClient, Whirlpool, Position } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
-import {
-  getRewardInfos,
-  getTokenMintInfos,
-  getTokenVaultAccountInfos,
-  isInitialized,
-} from "./util";
+import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./util";
 import { WhirlpoolImpl } from "./whirlpool-impl";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
@@ -61,7 +56,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       tokenAccounts.add(account.tokenVaultA.toBase58());
       tokenAccounts.add(account.tokenVaultB.toBase58());
       account.rewardInfos.forEach((rewardInfo) => {
-        if (isInitialized(rewardInfo)) {
+        if (PoolUtil.isRewardInitialized(rewardInfo)) {
           tokenAccounts.add(rewardInfo.vault.toBase58());
         }
       });

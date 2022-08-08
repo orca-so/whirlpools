@@ -112,9 +112,9 @@ export interface Whirlpool {
   getTokenVaultBInfo: () => TokenAccountInfo;
 
   /**
-   * Get a WhirlpoolRewardInfo for initialized rewards of this pool.
-   * A maximum of 3 reward vaults are supported.
-   * Uninitialized reward vaults are excluded.
+   * Get the WhirlpoolRewardInfos for this pool.
+   * An array of 3 reward vaults are always returned. However, not all of them may be initialized.
+   * Use the initialized field on WhirlpoolRewardInfo to determine whether the reward is active.
    * @return TokenAccountInfo for initialized reward vaults
    */
   getRewardInfos: () => WhirlpoolRewardInfo[];

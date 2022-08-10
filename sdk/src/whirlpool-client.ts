@@ -113,9 +113,7 @@ export interface Whirlpool {
 
   /**
    * Get the WhirlpoolRewardInfos for this pool.
-   * An array of 3 reward vaults are always returned. However, not all of them may be initialized.
-   * Use the initialized field on WhirlpoolRewardInfo to determine whether the reward is active.
-   * @return TokenAccountInfo for initialized reward vaults
+   * @return Array of 3 WhirlpoolRewardInfos. However, not all of them may be initialized. Use the initialized field on WhirlpoolRewardInfo to check if the reward is active.
    */
   getRewardInfos: () => WhirlpoolRewardInfo[];
 

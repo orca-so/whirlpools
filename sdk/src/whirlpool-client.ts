@@ -11,7 +11,7 @@ import {
   PositionData,
   WhirlpoolData,
 } from "./types/public";
-import { TokenInfo } from "./types/public/client-types";
+import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
 
 /**
  * Helper class to help interact with Whirlpool Accounts with a simpler interface.
@@ -37,6 +37,13 @@ export interface WhirlpoolClient {
    * @return a Whirlpool object to interact with
    */
   getPool: (poolAddress: Address, refresh?: boolean) => Promise<Whirlpool>;
+
+  /**
+   * Get a list of Whirlpool objects matching the provided list of addresses.
+   * @param poolAddresses the addresses of the Whirlpool accounts
+   * @return a list of Whirlpool objects to interact with
+   */
+  getPools: (poolAddresses: Address[], refresh?: boolean) => Promise<Whirlpool[]>;
 
   /**
    * Get a Position object to interact with the Position account at the given address.
@@ -91,6 +98,24 @@ export interface Whirlpool {
    * @return TokenInfo for token B
    */
   getTokenBInfo: () => TokenInfo;
+
+  /**
+   * Get the TokenAccountInfo for token vault A of this pool.
+   * @return TokenAccountInfo for token vault A
+   */
+  getTokenVaultAInfo: () => TokenAccountInfo;
+
+  /**
+   * Get the TokenAccountInfo for token vault B of this pool.
+   * @return TokenAccountInfo for token vault B
+   */
+  getTokenVaultBInfo: () => TokenAccountInfo;
+
+  /**
+   * Get the WhirlpoolRewardInfos for this pool.
+   * @return Array of 3 WhirlpoolRewardInfos. However, not all of them may be initialized. Use the initialized field on WhirlpoolRewardInfo to check if the reward is active.
+   */
+  getRewardInfos: () => WhirlpoolRewardInfo[];
 
   /**
    * Initialize a set of tick-arrays that encompasses the provided ticks.

@@ -130,7 +130,7 @@ function quotePositionInRange(param: DecreaseLiquidityQuoteParam): DecreaseLiqui
   const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
   const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
 
-  const tokenEstA = getTokenAFromLiquidity(liquidity, sqrtPriceX64, sqrtPriceUpperX64, false);
+  const tokenEstA = getTokenAFromLiquidity(liquidity, sqrtPriceUpperX64, sqrtPriceX64, false);
   const tokenMinA = adjustForSlippage(tokenEstA, slippageTolerance, false);
   const tokenEstB = getTokenBFromLiquidity(liquidity, sqrtPriceLowerX64, sqrtPriceX64, false);
   const tokenMinB = adjustForSlippage(tokenEstB, slippageTolerance, false);

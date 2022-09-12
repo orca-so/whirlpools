@@ -96,6 +96,7 @@ pub fn tick_index_from_sqrt_price(sqrt_price_x64: &u128) -> i32 {
 }
 
 fn mul_shift_96(n0: u128, n1: u128) -> u128 {
+    //#[soteria(ignore)]
     mul_u256(n0, n1).shift_right(96).try_into_u128().unwrap()
 }
 

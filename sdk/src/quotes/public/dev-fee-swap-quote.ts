@@ -7,7 +7,7 @@ import { Whirlpool } from "../../whirlpool-client";
 import { BaseSwapQuote, swapQuoteByInputToken } from "./swap-quote";
 
 /**
- * A collection of estimated values from quoting a swap with dev-fee collection.
+ * A collection of estimated values from quoting a swap that collects a developer-fee.
  * @category Quotes
  * @param estimatedAmountIn - Approximate number of input token swapped in the swap
  * @param estimatedAmountOut - Approximate number of output token swapped in the swap
@@ -18,13 +18,17 @@ import { BaseSwapQuote, swapQuoteByInputToken } from "./swap-quote";
  * @param devFeeAmount - Approximate feeAmount (developer fees) charged on this swap
  */
 export type DevFeeSwapQuote = BaseSwapQuote & {
+  // NOTE: DevFeeSwaps supports input-token based swaps only as it is difficult
+  // to collect an exact % amount of dev-fees for output-token based swaps due to slippage.
+  // If there are third party requests in the future for this functionality, we can launch it
+  // but with the caveat that the % collected is only an estimate.
   amountSpecifiedIsInput: true;
   estimatedSwapFeeAmount: u64;
   devFeeAmount: u64;
 };
 
 /**
- * Get an estimated swap quote using input token amount.
+ * Get an estimated swap quote using input token amount and collecting dev-fees.
  *
  * @category Quotes
  * @param whirlpool - Whirlpool to perform the swap on

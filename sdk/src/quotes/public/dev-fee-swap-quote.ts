@@ -53,6 +53,7 @@ export type DevFeeSwapQuote = BaseSwapQuote & {
  * @param programId - PublicKey for the Whirlpool ProgramId
  * @param fetcher - AccountFetcher object to fetch solana accounts
  * @param refresh - If true, fetcher would default to fetching the latest accounts
+ * @param devFeePercentage - The percentage amount to send to developer wallet prior to the swap. Percentage num/dem values has to match token decimal.
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByInputTokenWithDevFees(

@@ -1,12 +1,15 @@
-import * as assert from "assert";
-import { Program, web3, BN } from "@project-serum/anchor";
+import { deriveATA, ONE } from "@orca-so/common-sdk";
+import { BN, Program, web3 } from "@project-serum/anchor";
 import { AccountLayout } from "@solana/spl-token";
-import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
+import { PublicKey } from "@solana/web3.js";
+import * as assert from "assert";
+import { SwapQuote, WhirlpoolContext } from "../../src";
 import { Whirlpool } from "../../src/artifacts/whirlpool";
+import { DevFeeSwapQuote } from "../../src/quotes/public/dev-fee-swap-quote";
 import { TickData, WhirlpoolData } from "../../src/types/public";
-import { SwapQuote } from "../../src";
+import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
+import { getTokenBalance } from "./token";
 import { VaultAmounts } from "./whirlpools-test-utils";
-import { ONE } from "@orca-so/common-sdk";
 
 export function assertInputOutputQuoteEqual(
   inputTokenQuote: SwapQuote,
@@ -36,6 +39,63 @@ export function assertInputOutputQuoteEqual(
     inputTokenQuote.amountSpecifiedIsInput,
     outputTokenQuote.amountSpecifiedIsInput,
     "amountSpecifiedIsInput equals"
+  );
+}
+
+export function assertDevFeeQuotes(
+  inputQuote: SwapQuote,
+  postFeeInputQuote: SwapQuote,
+  devFeeQuote: DevFeeSwapQuote
+) {
+  assert.equal(inputQuote.aToB, devFeeQuote.aToB, "aToB not equal");
+  assert.ok(
+    devFeeQuote.estimatedAmountIn.eq(inputQuote.estimatedAmountIn),
+    `the devFeeQuote's estimatedAmountIn ${devFeeQuote.estimatedAmountIn} should equal the normal quote's estimatedAmountIn ${inputQuote.estimatedAmountIn}`
+  );
+  assert.ok(
+    devFeeQuote.estimatedAmountIn.eq(
+      postFeeInputQuote.estimatedAmountIn.add(devFeeQuote.devFeeAmount)
+    ),
+    `the devFeeQuote's estimatedAmountIn ${devFeeQuote.estimatedAmountIn} should equal the post-fee quote's estimatedAmountIn ${inputQuote.estimatedAmountIn} plus devFeeAmount ${devFeeQuote.devFeeAmount}`
+  );
+  assert.ok(
+    postFeeInputQuote.estimatedAmountOut.sub(devFeeQuote.estimatedAmountOut).abs().lte(ONE),
+    `post-fee input estimatedAmountOut ${inputQuote.estimatedAmountOut} does not equal devFee quote estimatedAmountOut - ${devFeeQuote.estimatedAmountOut}`
+  );
+  assert.equal(
+    postFeeInputQuote.estimatedEndTickIndex,
+    devFeeQuote.estimatedEndTickIndex,
+    "estimatedEndTickIndex not equal"
+  );
+  assert.equal(
+    devFeeQuote.estimatedFeeAmount.toString(),
+    devFeeQuote.estimatedSwapFeeAmount.add(devFeeQuote.devFeeAmount).toString(),
+    "devFeeQuote estimatedFeeAmount is not the sum of estimatedSwapFeeAmount and devFeeAmount"
+  );
+  assert.equal(
+    devFeeQuote.estimatedSwapFeeAmount.toString(),
+    postFeeInputQuote.estimatedFeeAmount.toString(),
+    "devFeeQuote's estimatedSwapFeeAmount should equal the quote's total swap fee (without dev fee)"
+  );
+  assert.equal(
+    postFeeInputQuote.amountSpecifiedIsInput,
+    devFeeQuote.amountSpecifiedIsInput,
+    "amountSpecifiedIsInput not equal"
+  );
+}
+
+export async function assertDevTokenAmount(
+  ctx: WhirlpoolContext,
+  expectationQuote: DevFeeSwapQuote,
+  swapToken: PublicKey,
+  devWallet: PublicKey
+) {
+  const tokenDevWalletAta = await deriveATA(devWallet, swapToken);
+  const afterDevWalletAmount = await getTokenBalance(ctx.provider, tokenDevWalletAta);
+  assert.equal(
+    expectationQuote.devFeeAmount,
+    afterDevWalletAmount,
+    "incorrect devFee amount sent to dev wallet."
   );
 }
 

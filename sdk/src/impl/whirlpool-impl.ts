@@ -190,21 +190,23 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.provider.wallet
     );
 
-    const inputToken =
-      quote.aToB === quote.amountSpecifiedIsInput ? this.getTokenAInfo() : this.getTokenBInfo();
+    if (!quote.devFeeAmount.eq(ZERO)) {
+      const inputToken =
+        quote.aToB === quote.amountSpecifiedIsInput ? this.getTokenAInfo() : this.getTokenBInfo();
 
-    txBuilder.addInstruction(
-      await TokenUtil.createSendTokensToWalletInstruction(
-        this.ctx.connection,
-        sourceWalletKey,
-        devFeeWallet,
-        inputToken.mint,
-        inputToken.decimals,
-        quote.devFeeAmount,
-        this.ctx.fetcher.getAccountRentExempt,
-        payerKey
-      )
-    );
+      txBuilder.addInstruction(
+        await TokenUtil.createSendTokensToWalletInstruction(
+          this.ctx.connection,
+          sourceWalletKey,
+          devFeeWallet,
+          inputToken.mint,
+          inputToken.decimals,
+          quote.devFeeAmount,
+          this.ctx.fetcher.getAccountRentExempt,
+          payerKey
+        )
+      );
+    }
 
     return this.getSwapTx(quote, sourceWalletKey, txBuilder);
   }
@@ -432,6 +434,7 @@ export class WhirlpoolImpl implements Whirlpool {
     wallet: PublicKey,
     initTxBuilder?: TransactionBuilder
   ): Promise<TransactionBuilder> {
+    invariant(input.amount.gt(ZERO), "swap amount must be more than zero.");
     const { amount, aToB } = input;
     const whirlpool = this.data;
     const txBuilder =

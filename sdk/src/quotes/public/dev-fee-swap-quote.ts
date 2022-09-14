@@ -3,11 +3,12 @@ import { Address } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import invariant from "tiny-invariant";
 import { AccountFetcher } from "../..";
+import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
 import { PoolUtil, SwapUtils, TokenType } from "../../utils/public";
 import { Whirlpool } from "../../whirlpool-client";
 import { simulateSwap } from "../swap/swap-quote-impl";
 import { checkIfAllTickArraysInitialized } from "../swap/swap-quote-utils";
-import { BaseSwapQuote, SwapQuoteParam } from "./swap-quote";
+import { BaseSwapQuote, SwapQuote, SwapQuoteParam } from "./swap-quote";
 
 /**
  * @category Quotes
@@ -111,6 +112,13 @@ export function devFeeSwapQuoteWithParams(
 ): DevFeeSwapQuote {
   checkIfAllTickArraysInitialized(params.tickArrays);
 
+  if (params.devFeePercentage.toDecimal().greaterThanOrEqualTo(1)) {
+    throw new WhirlpoolsError(
+      "Provided devFeePercentage must be less than 100%",
+      SwapErrorCode.InvalidDevFeePercentage
+    );
+  }
+
   const devFeeRate = params.devFeePercentage;
   const devFeeAmount = params.tokenAmount.mul(devFeeRate.numerator).div(devFeeRate.denominator);
   const finalTokenAmount = params.tokenAmount.sub(devFeeAmount);
@@ -120,19 +128,25 @@ export function devFeeSwapQuoteWithParams(
     tokenAmount: finalTokenAmount,
   });
 
-  const slippageAdjustedQuote: DevFeeSwapQuote = {
+  const slippageAdjustedQuote: SwapQuote = {
     ...quote,
     ...SwapUtils.calculateSwapAmountsFromQuote(
-      params.tokenAmount,
+      quote.amount,
       quote.estimatedAmountIn,
       quote.estimatedAmountOut,
       slippageTolerance,
-      params.amountSpecifiedIsInput
+      quote.amountSpecifiedIsInput
     ),
+  };
+
+  const devFeeAdjustedQuote: DevFeeSwapQuote = {
+    ...slippageAdjustedQuote,
+    estimatedAmountIn: quote.estimatedAmountIn.add(devFeeAmount),
     amountSpecifiedIsInput: true,
+    estimatedFeeAmount: quote.estimatedFeeAmount.add(devFeeAmount),
     estimatedSwapFeeAmount: quote.estimatedFeeAmount,
     devFeeAmount,
   };
 
-  return slippageAdjustedQuote;
+  return devFeeAdjustedQuote;
 }

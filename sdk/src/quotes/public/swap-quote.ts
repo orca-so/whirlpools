@@ -151,11 +151,11 @@ export function swapQuoteWithParams(
   const slippageAdjustedQuote: SwapQuote = {
     ...quote,
     ...SwapUtils.calculateSwapAmountsFromQuote(
-      params.tokenAmount,
+      quote.amount,
       quote.estimatedAmountIn,
       quote.estimatedAmountOut,
       slippageTolerance,
-      params.amountSpecifiedIsInput
+      quote.amountSpecifiedIsInput
     ),
   };
 

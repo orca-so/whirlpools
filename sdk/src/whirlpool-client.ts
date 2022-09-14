@@ -5,6 +5,7 @@ import { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
 import { AccountFetcher } from "./network/public";
 import { SwapQuote } from "./quotes/public";
+import { DevFeeSwapQuote } from "./quotes/public/dev-fee-swap-quote";
 import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
@@ -206,6 +207,22 @@ export interface Whirlpool {
    * @return a transaction that will perform the swap once executed.
    */
   swap: (quote: SwapQuote, wallet?: PublicKey) => Promise<TransactionBuilder>;
+
+  /**
+   * Collect a developer fee, then perform a swap between tokenA and tokenB on this pool.
+   *
+   * @param quote - A quote on the desired tokenIn and tokenOut for this swap. Use @link {swapQuote} to generate this object.
+   * @param devFeeWallet - The wallet that developer fees will be deposited into.
+   * @param wallet - The wallet that swap tokens will be withdrawn and deposit into. If null, the WhirlpoolContext wallet is used.
+   * @param payer - The wallet that will fund the cost needed to initialize the dev wallet token ATA accounts. If null, the WhirlpoolContext wallet is used.
+   * @return a transaction that will perform the swap once executed.
+   */
+  swapWithDevFees: (
+    quote: DevFeeSwapQuote,
+    devFeeWallet: PublicKey,
+    wallet?: PublicKey,
+    payer?: PublicKey
+  ) => Promise<TransactionBuilder>;
 }
 
 /**

@@ -3,29 +3,31 @@ import {
   deriveATA,
   Percentage,
   resolveOrCreateATAs,
+  TokenUtil,
   TransactionBuilder,
   ZERO,
 } from "@orca-so/common-sdk";
-import { Address, translateAddress, BN } from "@project-serum/anchor";
+import { Address, BN, translateAddress } from "@project-serum/anchor";
+import { Keypair, PublicKey } from "@solana/web3.js";
+import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
 import {
+  closePositionIx,
+  decreaseLiquidityIx,
   IncreaseLiquidityInput,
+  increaseLiquidityIx,
+  initTickArrayIx,
   openPositionIx,
   openPositionWithMetadataIx,
-  initTickArrayIx,
-  increaseLiquidityIx,
-  decreaseLiquidityIx,
-  closePositionIx,
-  swapIx,
   SwapInput,
+  swapIx,
 } from "../instructions";
-import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
-import { Whirlpool } from "../whirlpool-client";
-import { PublicKey, Keypair } from "@solana/web3.js";
 import { AccountFetcher } from "../network/public";
-import invariant from "tiny-invariant";
-import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { decreaseLiquidityQuoteByLiquidityWithParams, SwapQuote } from "../quotes/public";
+import { DevFeeSwapQuote } from "../quotes/public/dev-fee-swap-quote";
+import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
+import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
+import { Whirlpool } from "../whirlpool-client";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
 
 export class WhirlpoolImpl implements Whirlpool {
@@ -173,6 +175,38 @@ export class WhirlpoolImpl implements Whirlpool {
       ? AddressUtil.toPubKey(sourceWallet)
       : this.ctx.wallet.publicKey;
     return this.getSwapTx(quote, sourceWalletKey);
+  }
+
+  async swapWithDevFees(
+    quote: DevFeeSwapQuote,
+    devFeeWallet: PublicKey,
+    wallet?: PublicKey | undefined,
+    payer?: PublicKey | undefined
+  ): Promise<TransactionBuilder> {
+    const sourceWalletKey = wallet ? AddressUtil.toPubKey(wallet) : this.ctx.wallet.publicKey;
+    const payerKey = payer ? AddressUtil.toPubKey(payer) : this.ctx.wallet.publicKey;
+    const txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet
+    );
+
+    const inputToken =
+      quote.aToB === quote.amountSpecifiedIsInput ? this.getTokenAInfo() : this.getTokenBInfo();
+
+    txBuilder.addInstruction(
+      await TokenUtil.createSendTokensToWalletInstruction(
+        this.ctx.connection,
+        sourceWalletKey,
+        devFeeWallet,
+        inputToken.mint,
+        inputToken.decimals,
+        quote.devFeeAmount,
+        this.ctx.fetcher.getAccountRentExempt,
+        payerKey
+      )
+    );
+
+    return this.getSwapTx(quote, sourceWalletKey, txBuilder);
   }
 
   /**
@@ -393,13 +427,16 @@ export class WhirlpoolImpl implements Whirlpool {
     return txBuilder;
   }
 
-  private async getSwapTx(input: SwapInput, wallet: PublicKey): Promise<TransactionBuilder> {
+  private async getSwapTx(
+    input: SwapInput,
+    wallet: PublicKey,
+    initTxBuilder?: TransactionBuilder
+  ): Promise<TransactionBuilder> {
     const { amount, aToB } = input;
     const whirlpool = this.data;
-    const txBuilder = new TransactionBuilder(
-      this.ctx.provider.connection,
-      this.ctx.provider.wallet
-    );
+    const txBuilder =
+      initTxBuilder ??
+      new TransactionBuilder(this.ctx.provider.connection, this.ctx.provider.wallet);
 
     const [ataA, ataB] = await resolveOrCreateATAs(
       this.ctx.connection,

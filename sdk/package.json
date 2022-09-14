@@ -14,7 +14,7 @@
     "tiny-invariant": "^1.2.0"
   },
   "devDependencies": {
-    "@types/bn.js": "^5.1.0",
+    "@types/bn.js": "~5.1.0",
     "@types/decimal.js": "^7.4.0",
     "@types/jest": "^26.0.24",
     "@types/mocha": "^9.0.0",

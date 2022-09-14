@@ -5,8 +5,7 @@ import invariant from "tiny-invariant";
 import { SwapInput } from "../../instructions";
 import { AccountFetcher } from "../../network/public";
 import { TickArray, WhirlpoolData } from "../../types/public";
-import { TokenType } from "../../utils/public";
-import { PoolUtil } from "../../utils/public/pool-utils";
+import { PoolUtil, TokenType } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";
 import { Whirlpool } from "../../whirlpool-client";
 import { simulateSwap } from "../swap/swap-quote-impl";
@@ -81,17 +80,17 @@ export async function swapQuoteByInputToken(
   fetcher: AccountFetcher,
   refresh: boolean
 ): Promise<SwapQuote> {
-  return swapQuoteByToken(
+  const params = await swapQuoteByToken(
     whirlpool,
     inputTokenMint,
     tokenAmount,
-    slippageTolerance,
     TokenType.TokenA,
     true,
     programId,
     fetcher,
     refresh
   );
+  return swapQuoteWithParams(params, slippageTolerance);
 }
 
 /**
@@ -119,17 +118,17 @@ export async function swapQuoteByOutputToken(
   fetcher: AccountFetcher,
   refresh: boolean
 ): Promise<SwapQuote> {
-  return swapQuoteByToken(
+  const params = await swapQuoteByToken(
     whirlpool,
     outputTokenMint,
     tokenAmount,
-    slippageTolerance,
     TokenType.TokenB,
     false,
     programId,
     fetcher,
     refresh
   );
+  return swapQuoteWithParams(params, slippageTolerance);
 }
 
 /**
@@ -166,13 +165,12 @@ async function swapQuoteByToken(
   whirlpool: Whirlpool,
   inputTokenMint: Address,
   tokenAmount: u64,
-  slippageTolerance: Percentage,
   amountSpecifiedTokenType: TokenType,
   amountSpecifiedIsInput: boolean,
   programId: Address,
   fetcher: AccountFetcher,
   refresh: boolean
-) {
+): Promise<SwapQuoteParam> {
   const whirlpoolData = whirlpool.getData();
   const swapMintKey = AddressUtil.toPubKey(inputTokenMint);
   const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
@@ -190,16 +188,13 @@ async function swapQuoteByToken(
     refresh
   );
 
-  return swapQuoteWithParams(
-    {
-      whirlpoolData,
-      tokenAmount,
-      aToB,
-      amountSpecifiedIsInput,
-      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-      otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
-      tickArrays,
-    },
-    slippageTolerance
-  );
+  return {
+    whirlpoolData,
+    tokenAmount,
+    aToB,
+    amountSpecifiedIsInput,
+    sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+    otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
+    tickArrays,
+  };
 }

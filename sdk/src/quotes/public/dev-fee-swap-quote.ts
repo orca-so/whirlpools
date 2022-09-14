@@ -1,30 +1,10 @@
-import { AddressUtil, Percentage } from "@orca-so/common-sdk";
+import { Percentage } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
-import invariant from "tiny-invariant";
 import { AccountFetcher } from "../..";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
-import { PoolUtil, SwapUtils, TokenType } from "../../utils/public";
 import { Whirlpool } from "../../whirlpool-client";
-import { simulateSwap } from "../swap/swap-quote-impl";
-import { checkIfAllTickArraysInitialized } from "../swap/swap-quote-utils";
-import { BaseSwapQuote, SwapQuote, SwapQuoteParam } from "./swap-quote";
-
-/**
- * @category Quotes
- *
- * @param tokenAmount - The amount of input or output token to swap from (depending on amountSpecifiedIsInput).
- * @param otherAmountThreshold - The maximum/minimum of input/output token to swap into (depending on amountSpecifiedIsInput).
- * @param sqrtPriceLimit - The maximum/minimum price the swap will swap to.
- * @param aToB - The direction of the swap. True if swapping from A to B. False if swapping from B to A.
- * @param amountSpecifiedIsInput - 'true', dev-fee swaps only supports where tokenAmount specified is the input.
- * @param tickArrays - An sequential array of tick-array objects in the direction of the trade to swap on
- * @param devFeePercentage - The percentage of fees the developer will collect from this swap. Percentage value has to match the input token decimals.
- */
-export type DevFeeSwapQuoteParam = SwapQuoteParam & {
-  devFeePercentage: Percentage;
-  amountSpecifiedIsInput: true;
-};
+import { BaseSwapQuote, swapQuoteByInputToken } from "./swap-quote";
 
 /**
  * A collection of estimated values from quoting a swap with dev-fee collection.
@@ -38,9 +18,9 @@ export type DevFeeSwapQuoteParam = SwapQuoteParam & {
  * @param devFeeAmount - Approximate feeAmount (developer fees) charged on this swap
  */
 export type DevFeeSwapQuote = BaseSwapQuote & {
+  amountSpecifiedIsInput: true;
   estimatedSwapFeeAmount: u64;
   devFeeAmount: u64;
-  amountSpecifiedIsInput: true;
 };
 
 /**
@@ -67,84 +47,33 @@ export async function swapQuoteByInputTokenWithDevFees(
   devFeePercentage: Percentage,
   refresh: boolean
 ): Promise<DevFeeSwapQuote> {
-  const whirlpoolData = whirlpool.getData();
-  const swapMintKey = AddressUtil.toPubKey(inputTokenMint);
-  const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
-  invariant(!!swapTokenType, "swapTokenMint does not match any tokens on this pool");
-  const aToB = swapTokenType === TokenType.TokenA;
-
-  const tickArrays = await SwapUtils.getTickArrays(
-    whirlpoolData.tickCurrentIndex,
-    whirlpoolData.tickSpacing,
-    aToB,
-    AddressUtil.toPubKey(programId),
-    whirlpool.getAddress(),
-    fetcher,
-    refresh
-  );
-
-  return devFeeSwapQuoteWithParams(
-    {
-      whirlpoolData,
-      tokenAmount,
-      aToB,
-      amountSpecifiedIsInput: true,
-      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-      otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
-      tickArrays,
-      devFeePercentage,
-    },
-    slippageTolerance
-  );
-}
-
-/**
- * Perform a sync swap quote based on the basic swap instruction parameters.
- *
- * @category Quotes
- * @param params - SwapQuote parameters
- * @param slippageTolerance - The amount of slippage to account for when generating the final quote.
- * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
- */
-export function devFeeSwapQuoteWithParams(
-  params: DevFeeSwapQuoteParam,
-  slippageTolerance: Percentage
-): DevFeeSwapQuote {
-  checkIfAllTickArraysInitialized(params.tickArrays);
-
-  if (params.devFeePercentage.toDecimal().greaterThanOrEqualTo(1)) {
+  if (devFeePercentage.toDecimal().greaterThanOrEqualTo(1)) {
     throw new WhirlpoolsError(
       "Provided devFeePercentage must be less than 100%",
       SwapErrorCode.InvalidDevFeePercentage
     );
   }
 
-  const devFeeRate = params.devFeePercentage;
-  const devFeeAmount = params.tokenAmount.mul(devFeeRate.numerator).div(devFeeRate.denominator);
-  const finalTokenAmount = params.tokenAmount.sub(devFeeAmount);
+  const devFeeAmount = tokenAmount
+    .mul(devFeePercentage.numerator)
+    .div(devFeePercentage.denominator);
 
-  const quote = simulateSwap({
-    ...params,
-    tokenAmount: finalTokenAmount,
-  });
-
-  const slippageAdjustedQuote: SwapQuote = {
-    ...quote,
-    ...SwapUtils.calculateSwapAmountsFromQuote(
-      quote.amount,
-      quote.estimatedAmountIn,
-      quote.estimatedAmountOut,
-      slippageTolerance,
-      quote.amountSpecifiedIsInput
-    ),
-  };
+  const slippageAdjustedQuote = await swapQuoteByInputToken(
+    whirlpool,
+    inputTokenMint,
+    tokenAmount.sub(devFeeAmount),
+    slippageTolerance,
+    programId,
+    fetcher,
+    refresh
+  );
 
   const devFeeAdjustedQuote: DevFeeSwapQuote = {
     ...slippageAdjustedQuote,
-    estimatedAmountIn: quote.estimatedAmountIn.add(devFeeAmount),
     amountSpecifiedIsInput: true,
-    estimatedFeeAmount: quote.estimatedFeeAmount.add(devFeeAmount),
-    estimatedSwapFeeAmount: quote.estimatedFeeAmount,
+    estimatedAmountIn: slippageAdjustedQuote.estimatedAmountIn.add(devFeeAmount),
+    estimatedFeeAmount: slippageAdjustedQuote.estimatedFeeAmount.add(devFeeAmount),
+    estimatedSwapFeeAmount: slippageAdjustedQuote.estimatedFeeAmount,
     devFeeAmount,
   };
 

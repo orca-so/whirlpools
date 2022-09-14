@@ -4,7 +4,7 @@ import { u64 } from "@solana/spl-token";
 import { AccountFetcher } from "../..";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
 import { Whirlpool } from "../../whirlpool-client";
-import { BaseSwapQuote, swapQuoteByInputToken } from "./swap-quote";
+import { NormalSwapQuote, swapQuoteByInputToken } from "./swap-quote";
 
 /**
  * A collection of estimated values from quoting a swap that collects a developer-fee.
@@ -17,7 +17,7 @@ import { BaseSwapQuote, swapQuoteByInputToken } from "./swap-quote";
  * @param estimatedSwapFeeAmount - Approximate feeAmount (LP + protocol fees) charged on this swap
  * @param devFeeAmount - Approximate feeAmount (developer fees) charged on this swap
  */
-export type DevFeeSwapQuote = BaseSwapQuote & {
+export type DevFeeSwapQuote = NormalSwapQuote & {
   // NOTE: DevFeeSwaps supports input-token based swaps only as it is difficult
   // to collect an exact % amount of dev-fees for output-token based swaps due to slippage.
   // If there are third party requests in the future for this functionality, we can launch it
@@ -28,7 +28,7 @@ export type DevFeeSwapQuote = BaseSwapQuote & {
 };
 
 /**
- * Get an estimated swap quote using input token amount and collecting dev-fees.
+ * Get an estimated swap quote using input token amount while collecting dev fees.
  *
  * @category Quotes
  * @param whirlpool - Whirlpool to perform the swap on

@@ -209,7 +209,7 @@ export interface Whirlpool {
   swap: (quote: SwapQuote, wallet?: PublicKey) => Promise<TransactionBuilder>;
 
   /**
-   * Collect a developer fee, then perform a swap between tokenA and tokenB on this pool.
+   * Collect a developer fee and perform a swap between tokenA and tokenB on this pool.
    *
    * @param quote - A quote on the desired tokenIn and tokenOut for this swap. Use @link {swapQuote} to generate this object.
    * @param devFeeWallet - The wallet that developer fees will be deposited into.

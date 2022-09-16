@@ -393,12 +393,6 @@ describe("whirlpool-dev-fee-swap", () => {
               tickArray0: PublicKey.default,
               tickArray1: PublicKey.default,
               tickArray2: PublicKey.default,
-              estimatedAmountIn: ZERO,
-              estimatedAmountOut: ZERO,
-              estimatedFeeAmount: ZERO,
-              estimatedEndSqrtPrice: ZERO,
-              estimatedEndTickIndex: 5,
-              estimatedSwapFeeAmount: ZERO,
             },
             devWallet.publicKey
           )

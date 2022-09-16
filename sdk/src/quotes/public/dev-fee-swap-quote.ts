@@ -15,7 +15,7 @@ import { NormalSwapQuote, swapQuoteByInputToken } from "./swap-quote";
  * @param estimatedEndSqrtPrice - Approximate sqrtPrice the Whirlpool will land on after this swap
  * @param estimatedFeeAmount - Approximate feeAmount (all fees) charged on this swap
  * @param estimatedSwapFeeAmount - Approximate feeAmount (LP + protocol fees) charged on this swap
- * @param devFeeAmount - Approximate feeAmount (developer fees) charged on this swap
+ * @param devFeeAmount -  FeeAmount (developer fees) charged on this swap
  */
 export type DevFeeSwapQuote = NormalSwapQuote & {
   // NOTE: DevFeeSwaps supports input-token based swaps only as it is difficult

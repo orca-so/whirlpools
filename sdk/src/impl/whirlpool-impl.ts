@@ -15,6 +15,7 @@ import { SwapErrorCode, WhirlpoolsError } from "../errors/errors";
 import {
   closePositionIx,
   decreaseLiquidityIx,
+  DevFeeSwapInput,
   IncreaseLiquidityInput,
   increaseLiquidityIx,
   initTickArrayIx,
@@ -24,8 +25,7 @@ import {
   swapIx,
 } from "../instructions";
 import { AccountFetcher } from "../network/public";
-import { decreaseLiquidityQuoteByLiquidityWithParams, SwapQuote } from "../quotes/public";
-import { DevFeeSwapQuote } from "../quotes/public/dev-fee-swap-quote";
+import { decreaseLiquidityQuoteByLiquidityWithParams } from "../quotes/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
 import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { Whirlpool } from "../whirlpool-client";
@@ -171,7 +171,7 @@ export class WhirlpoolImpl implements Whirlpool {
     );
   }
 
-  async swap(quote: SwapQuote, sourceWallet?: Address) {
+  async swap(quote: SwapInput, sourceWallet?: Address) {
     const sourceWalletKey = sourceWallet
       ? AddressUtil.toPubKey(sourceWallet)
       : this.ctx.wallet.publicKey;
@@ -179,7 +179,7 @@ export class WhirlpoolImpl implements Whirlpool {
   }
 
   async swapWithDevFees(
-    quote: DevFeeSwapQuote,
+    quote: DevFeeSwapInput,
     devFeeWallet: PublicKey,
     wallet?: PublicKey | undefined,
     payer?: PublicKey | undefined

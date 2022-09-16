@@ -1,8 +1,8 @@
-import { Percentage } from "@orca-so/common-sdk";
+import { Percentage, ZERO } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
 import { Address } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import {
   buildWhirlpoolClient,
@@ -26,7 +26,7 @@ import {
 } from "../../../utils/swap-test-utils";
 import { getVaultAmounts } from "../../../utils/whirlpools-test-utils";
 
-describe.only("whirlpool-dev-fee-swap", () => {
+describe("whirlpool-dev-fee-swap", () => {
   const provider = anchor.AnchorProvider.local();
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
@@ -310,6 +310,7 @@ describe.only("whirlpool-dev-fee-swap", () => {
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
     );
   });
+
   it("swap with dev-fee of 200%", async () => {
     const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 22 }, tickSpacing);
     const devWallet = Keypair.generate();
@@ -348,6 +349,60 @@ describe.only("whirlpool-dev-fee-swap", () => {
           devFeePercentage,
           true
         ),
+      (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
+    );
+  });
+
+  it("swap with a manual quote with dev-fee of 200%", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 22 }, tickSpacing);
+    const devWallet = Keypair.generate();
+    const aToB = false;
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-5632, 0, 5632],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -1, offsetIndex: 10 },
+          { arrayIndex: 1, offsetIndex: 23 },
+          tickSpacing,
+          new anchor.BN(250_000_000)
+        ),
+      ],
+    });
+
+    const devFeePercentage = Percentage.fromFraction(200, 100); // 200%
+    const inputTokenAmount = new u64(119500000);
+    const whirlpoolData = await whirlpool.refreshData();
+    const swapToken = whirlpoolData.tokenMintB;
+
+    assert.rejects(
+      async () =>
+        (
+          await whirlpool.swapWithDevFees(
+            {
+              amount: new u64(10000),
+              devFeeAmount: new u64(30000),
+              amountSpecifiedIsInput: true,
+              aToB: true,
+              otherAmountThreshold: ZERO,
+              sqrtPriceLimit: ZERO,
+              tickArray0: PublicKey.default,
+              tickArray1: PublicKey.default,
+              tickArray2: PublicKey.default,
+              estimatedAmountIn: ZERO,
+              estimatedAmountOut: ZERO,
+              estimatedFeeAmount: ZERO,
+              estimatedEndSqrtPrice: ZERO,
+              estimatedEndTickIndex: 5,
+              estimatedSwapFeeAmount: ZERO,
+            },
+            devWallet.publicKey
+          )
+        ).buildAndExecute(),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
     );
   });

@@ -11,6 +11,7 @@ import { Address, BN, translateAddress } from "@project-serum/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
+import { SwapErrorCode, WhirlpoolsError } from "../errors/errors";
 import {
   closePositionIx,
   decreaseLiquidityIx,
@@ -189,6 +190,13 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.provider.connection,
       this.ctx.provider.wallet
     );
+
+    if (quote.devFeeAmount.gt(quote.amount)) {
+      throw new WhirlpoolsError(
+        "devFeeAmount cannot be more than 100% of the swap amount. ",
+        SwapErrorCode.InvalidDevFeePercentage
+      );
+    }
 
     if (!quote.devFeeAmount.eq(ZERO)) {
       const inputToken =

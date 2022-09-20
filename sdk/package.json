@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "dependencies": {
     "@metaplex-foundation/mpl-token-metadata": "1.2.5",
-    "@orca-so/common-sdk": "~0.1.0",
+    "@orca-so/common-sdk": "~0.1.1",
     "@project-serum/anchor": "~0.25.0",
     "@solana/spl-token": "^0.1.8",
     "decimal.js": "^10.3.1",

@@ -88,17 +88,19 @@ export async function assertDevTokenAmount(
   ctx: WhirlpoolContext,
   expectationQuote: DevFeeSwapQuote,
   swapToken: PublicKey,
-  devWallet: PublicKey
+  devWallet: PublicKey,
+  preDevWalletLamport = 0
 ) {
 
   if (swapToken.equals(NATIVE_MINT)) {
     const walletAmount = await ctx.provider.connection.getBalance(devWallet);
-    assert.equal(expectationQuote.devFeeAmount.toNumber(), walletAmount)
+    assert.equal(expectationQuote.devFeeAmount.toNumber() + preDevWalletLamport, walletAmount)
     return;
   }
 
   const tokenDevWalletAta = await deriveATA(devWallet, swapToken);
   const afterDevWalletAmount = await getTokenBalance(ctx.provider, tokenDevWalletAta);
+  console.log(`hello`)
   assert.equal(
     expectationQuote.devFeeAmount,
     afterDevWalletAmount,

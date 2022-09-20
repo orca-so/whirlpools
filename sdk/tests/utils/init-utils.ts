@@ -298,7 +298,8 @@ export async function initTestPoolWithTokens(
   const { tokenMintA, tokenMintB, whirlpoolPda } = poolInitInfo;
 
   // Airdrop SOL into provider's wallet for SOL native token testing.
-  await ctx.provider.connection.requestAirdrop(ctx.provider.wallet.publicKey, 100_000_000_000_000);
+  const connection = ctx.provider.connection;
+  await connection.requestAirdrop(ctx.provider.wallet.publicKey, 100_000_000_000_000)
 
   const tokenAccountA = await createAndMintToAssociatedTokenAccount(
     provider,

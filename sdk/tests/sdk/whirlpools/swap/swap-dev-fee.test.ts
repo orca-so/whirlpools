@@ -25,7 +25,7 @@ import {
 } from "../../../utils/swap-test-utils";
 import { getVaultAmounts } from "../../../utils/whirlpools-test-utils";
 
-describe.only("whirlpool-dev-fee-swap", () => {
+describe("whirlpool-dev-fee-swap", () => {
   const provider = anchor.AnchorProvider.local();
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;

@@ -100,7 +100,6 @@ export async function assertDevTokenAmount(
 
   const tokenDevWalletAta = await deriveATA(devWallet, swapToken);
   const afterDevWalletAmount = await getTokenBalance(ctx.provider, tokenDevWalletAta);
-  console.log(`hello`)
   assert.equal(
     expectationQuote.devFeeAmount,
     afterDevWalletAmount,

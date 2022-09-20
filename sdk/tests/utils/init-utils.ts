@@ -1,37 +1,26 @@
+import { MathUtil, PDA } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
-import {
-  InitTickArrayParams,
-  OpenPositionParams,
-  InitPoolParams,
-  InitializeRewardParams,
-  TICK_ARRAY_SIZE,
-  WhirlpoolContext,
-  AccountFetcher,
-  InitConfigParams,
-  TickUtil,
-  PriceMath,
-  WhirlpoolIx,
-  PDAUtil,
-  toTx,
-} from "../../src";
-import {
-  generateDefaultConfigParams,
-  generateDefaultInitFeeTierParams,
-  generateDefaultInitPoolParams,
-  generateDefaultInitTickArrayParams,
-  generateDefaultOpenPositionParams,
-} from "./test-builders";
-import { PublicKey, Keypair } from "@solana/web3.js";
+import { u64 } from "@solana/spl-token";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import {
   createAndMintToAssociatedTokenAccount,
   createMint,
   mintToByAuthority,
   TickSpacing,
-  ZERO_BN,
+  ZERO_BN
 } from ".";
-import { u64 } from "@solana/spl-token";
+import {
+  InitConfigParams, InitializeRewardParams, InitPoolParams, InitTickArrayParams,
+  OpenPositionParams, PDAUtil, PriceMath, TickUtil, TICK_ARRAY_SIZE, toTx, WhirlpoolClient, WhirlpoolContext, WhirlpoolIx
+} from "../../src";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
-import { MathUtil, PDA } from "@orca-so/common-sdk";
+import {
+  generateDefaultConfigParams,
+  generateDefaultInitFeeTierParams,
+  generateDefaultInitPoolParams,
+  generateDefaultInitTickArrayParams,
+  generateDefaultOpenPositionParams
+} from "./test-builders";
 
 const defaultInitSqrtPrice = MathUtil.toX64_BN(new anchor.BN(5));
 
@@ -47,7 +36,8 @@ export async function buildTestPoolParams(
   tickSpacing: number,
   defaultFeeRate = 3000,
   initSqrtPrice = defaultInitSqrtPrice,
-  funder?: PublicKey
+  funder?: PublicKey,
+  tokenAIsNative = false
 ) {
   const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
   await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
@@ -65,7 +55,8 @@ export async function buildTestPoolParams(
     feeTierParams.feeTierPda.publicKey,
     tickSpacing,
     initSqrtPrice,
-    funder
+    funder,
+    tokenAIsNative
   );
   return {
     configInitInfo,
@@ -85,14 +76,16 @@ export async function initTestPool(
   ctx: WhirlpoolContext,
   tickSpacing: number,
   initSqrtPrice = defaultInitSqrtPrice,
-  funder?: Keypair
+  funder?: Keypair,
+  tokenAIsNative = false
 ) {
   const { configInitInfo, poolInitInfo, configKeypairs, feeTierParams } = await buildTestPoolParams(
     ctx,
     tickSpacing,
     3000,
     initSqrtPrice,
-    funder?.publicKey
+    funder?.publicKey,
+    tokenAIsNative
   );
 
   const tx = toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, poolInitInfo));
@@ -289,27 +282,36 @@ export async function initTestPoolWithTokens(
   ctx: WhirlpoolContext,
   tickSpacing: number,
   initSqrtPrice = defaultInitSqrtPrice,
-  mintAmount = new anchor.BN("15000000000")
+  mintAmount = new anchor.BN("15000000000"),
+  tokenAIsNative = false
 ) {
   const provider = ctx.provider;
 
   const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPool(
     ctx,
     tickSpacing,
-    initSqrtPrice
+    initSqrtPrice,
+    undefined,
+    tokenAIsNative
   );
 
   const { tokenMintA, tokenMintB, whirlpoolPda } = poolInitInfo;
+
+  // Airdrop SOL into provider's wallet for SOL native token testing.
+  await ctx.provider.connection.requestAirdrop(ctx.provider.wallet.publicKey, 100_000_000_000_000);
+
   const tokenAccountA = await createAndMintToAssociatedTokenAccount(
     provider,
     tokenMintA,
     mintAmount
   );
+
   const tokenAccountB = await createAndMintToAssociatedTokenAccount(
     provider,
     tokenMintB,
     mintAmount
   );
+
   return {
     poolInitInfo,
     configInitInfo,
@@ -440,6 +442,31 @@ export interface FundedPositionInfo {
   mintKeypair: Keypair;
   tickArrayLower: PublicKey;
   tickArrayUpper: PublicKey;
+}
+
+export async function fundPositionsWithClient(
+  client: WhirlpoolClient,
+  whirlpoolKey: PublicKey,
+  fundParams: FundedPositionParams[]
+) {
+  const whirlpool = await client.getPool(whirlpoolKey, true);
+  const whirlpoolData = whirlpool.getData();
+  await Promise.all(fundParams.map(async (param, idx) => {
+    const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
+      param.liquidityAmount,
+      whirlpoolData.sqrtPrice,
+      PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
+      PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
+      true
+    );
+
+    const { tx } = await whirlpool.openPosition(param.tickLowerIndex, param.tickUpperIndex, {
+      liquidityAmount: param.liquidityAmount,
+      tokenMaxA: tokenA,
+      tokenMaxB: tokenB
+    });
+    await tx.buildAndExecute();
+  }));
 }
 
 export async function fundPositions(

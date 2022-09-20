@@ -1,10 +1,10 @@
-import * as anchor from "@project-serum/anchor";
-import { PublicKey } from "@solana/web3.js";
 import { Percentage } from "@orca-so/common-sdk";
+import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
 import { TickSpacing } from ".";
-import { WhirlpoolContext, WhirlpoolClient, Whirlpool, TICK_ARRAY_SIZE } from "../../src";
-import { FundedPositionParams, initTestPoolWithTokens, fundPositions } from "./init-utils";
+import { TICK_ARRAY_SIZE, Whirlpool, WhirlpoolClient, WhirlpoolContext } from "../../src";
+import { FundedPositionParams, fundPositionsWithClient, initTestPoolWithTokens } from "./init-utils";
 
 export interface SwapTestPoolParams {
   ctx: WhirlpoolContext;
@@ -29,19 +29,21 @@ export interface SwapTestSetup {
   tickArrayAddresses: PublicKey[];
 }
 
-export async function setupSwapTest(setup: SwapTestPoolParams) {
+export async function setupSwapTest(setup: SwapTestPoolParams, tokenAIsNative = false) {
   const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } = await initTestPoolWithTokens(
     setup.ctx,
     setup.tickSpacing,
     setup.initSqrtPrice,
-    setup.tokenMintAmount
+    setup.tokenMintAmount,
+    tokenAIsNative
   );
 
   const whirlpool = await setup.client.getPool(whirlpoolPda.publicKey, true);
 
   await (await whirlpool.initTickArrayForTicks(setup.initArrayStartTicks))?.buildAndExecute();
 
-  await fundPositions(setup.ctx, poolInitInfo, tokenAccountA, tokenAccountB, setup.fundedPositions);
+  await fundPositionsWithClient(setup.client, whirlpoolPda.publicKey, setup.fundedPositions)
+
   return whirlpool;
 }
 

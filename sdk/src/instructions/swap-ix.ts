@@ -76,7 +76,7 @@ export type SwapInput = {
  * @param devFeeAmount -  FeeAmount (developer fees) charged on this swap
  */
 export type DevFeeSwapInput = SwapInput & {
-  devFeeAmount: BN;
+  devFeeAmount: u64;
 };
 
 /**

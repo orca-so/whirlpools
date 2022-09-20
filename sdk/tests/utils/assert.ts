@@ -1,6 +1,6 @@
 import { deriveATA, ONE } from "@orca-so/common-sdk";
 import { BN, Program, web3 } from "@project-serum/anchor";
-import { AccountLayout } from "@solana/spl-token";
+import { AccountLayout, NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import { SwapQuote, WhirlpoolContext } from "../../src";
@@ -90,6 +90,13 @@ export async function assertDevTokenAmount(
   swapToken: PublicKey,
   devWallet: PublicKey
 ) {
+
+  if (swapToken.equals(NATIVE_MINT)) {
+    const walletAmount = await ctx.provider.connection.getBalance(devWallet);
+    assert.equal(expectationQuote.devFeeAmount.toNumber(), walletAmount)
+    return;
+  }
+
   const tokenDevWalletAta = await deriveATA(devWallet, swapToken);
   const afterDevWalletAmount = await getTokenBalance(ctx.provider, tokenDevWalletAta);
   assert.equal(

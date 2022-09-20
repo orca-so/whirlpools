@@ -11,6 +11,7 @@ export enum TokenErrorCode {
 }
 
 export enum SwapErrorCode {
+  InvalidDevFeePercentage = `InvalidDevFeePercentage`,
   InvalidSqrtPriceLimitDirection = `InvalidSqrtPriceLimitDirection`,
   SqrtPriceOutOfBounds = `SqrtPriceOutOfBounds`,
   ZeroTradableAmount = `ZeroTradableAmount`,

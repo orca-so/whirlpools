@@ -3,8 +3,8 @@ import { Address } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
+import { DevFeeSwapInput, SwapInput } from "./instructions";
 import { AccountFetcher } from "./network/public";
-import { SwapQuote } from "./quotes/public";
 import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
@@ -201,11 +201,27 @@ export interface Whirlpool {
   /**
    * Perform a swap between tokenA and tokenB on this pool.
    *
-   * @param quote - A quote on the desired tokenIn and tokenOut for this swap. Use @link {swapQuote} to generate this object.
+   * @param input - A quote on the desired tokenIn and tokenOut for this swap. Use @link {swapQuote} to generate this object.
    * @param wallet - The wallet that tokens will be withdrawn and deposit into. If null, the WhirlpoolContext wallet is used.
    * @return a transaction that will perform the swap once executed.
    */
-  swap: (quote: SwapQuote, wallet?: PublicKey) => Promise<TransactionBuilder>;
+  swap: (input: SwapInput, wallet?: PublicKey) => Promise<TransactionBuilder>;
+
+  /**
+   * Collect a developer fee and perform a swap between tokenA and tokenB on this pool.
+   *
+   * @param input - A quote on the desired tokenIn and tokenOut for this swap. Use @link {swapQuote} to generate this object.
+   * @param devFeeWallet - The wallet that developer fees will be deposited into.
+   * @param wallet - The wallet that swap tokens will be withdrawn and deposit into. If null, the WhirlpoolContext wallet is used.
+   * @param payer - The wallet that will fund the cost needed to initialize the dev wallet token ATA accounts. If null, the WhirlpoolContext wallet is used.
+   * @return a transaction that will perform the swap once executed.
+   */
+  swapWithDevFees: (
+    input: DevFeeSwapInput,
+    devFeeWallet: PublicKey,
+    wallet?: PublicKey,
+    payer?: PublicKey
+  ) => Promise<TransactionBuilder>;
 }
 
 /**

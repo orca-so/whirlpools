@@ -1,9 +1,8 @@
-import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
-import { Program } from "@project-serum/anchor";
-import { Whirlpool } from "../artifacts/whirlpool";
 import { Instruction } from "@orca-so/common-sdk";
+import { BN, Program } from "@project-serum/anchor";
+import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { BN } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters and accounts to swap on a Whirlpool
@@ -59,6 +58,25 @@ export type SwapInput = {
   tickArray0: PublicKey;
   tickArray1: PublicKey;
   tickArray2: PublicKey;
+};
+
+/**
+ * Parameters to swap on a Whirlpool with developer fees
+ *
+ * @category Instruction Types
+ * @param aToB - The direction of the swap. True if swapping from A to B. False if swapping from B to A.
+ * @param amountSpecifiedIsInput - Specifies the token the parameter `amount`represents. If true, the amount represents
+ *                                 the input token of the swap.
+ * @param amount - The amount of input or output token to swap from (depending on amountSpecifiedIsInput).
+ * @param otherAmountThreshold - The maximum/minimum of input/output token to swap into (depending on amountSpecifiedIsInput).
+ * @param sqrtPriceLimit - The maximum/minimum price the swap will swap to.
+ * @param tickArray0 - PublicKey of the tick-array where the Whirlpool's currentTickIndex resides in
+ * @param tickArray1 - The next tick-array in the swap direction. If the swap will not reach the next tick-aray, input the same array as tickArray0.
+ * @param tickArray2 - The next tick-array in the swap direction after tickArray2. If the swap will not reach the next tick-aray, input the same array as tickArray1.
+ * @param devFeeAmount -  FeeAmount (developer fees) charged on this swap
+ */
+export type DevFeeSwapInput = SwapInput & {
+  devFeeAmount: u64;
 };
 
 /**

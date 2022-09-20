@@ -1,15 +1,16 @@
+import { AddressUtil, Percentage } from "@orca-so/common-sdk";
 import { Address, BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import invariant from "tiny-invariant";
-import { PoolUtil } from "../../utils/public/pool-utils";
 import { SwapInput } from "../../instructions";
-import { WhirlpoolData, TickArray } from "../../types/public";
-import { AddressUtil, Percentage } from "@orca-so/common-sdk";
-import { TickArrayUtil, TokenType } from "../../utils/public";
-import { Whirlpool } from "../../whirlpool-client";
 import { AccountFetcher } from "../../network/public";
-import { simulateSwap } from "../swap/swap-quote-impl";
+import { TickArray, WhirlpoolData } from "../../types/public";
+import { PoolUtil, TokenType } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";
+import { Whirlpool } from "../../whirlpool-client";
+import { simulateSwap } from "../swap/swap-quote-impl";
+import { checkIfAllTickArraysInitialized } from "../swap/swap-quote-utils";
+import { DevFeeSwapQuote } from "./dev-fee-swap-quote";
 
 /**
  * @category Quotes
@@ -35,13 +36,21 @@ export type SwapQuoteParam = {
 /**
  * A collection of estimated values from quoting a swap.
  * @category Quotes
+ * @link {BaseSwapQuote}
+ * @link {DevFeeSwapQuote}
+ */
+export type SwapQuote = NormalSwapQuote | DevFeeSwapQuote;
+
+/**
+ * A collection of estimated values from quoting a swap.
+ * @category Quotes
  * @param estimatedAmountIn - Approximate number of input token swapped in the swap
  * @param estimatedAmountOut - Approximate number of output token swapped in the swap
  * @param estimatedEndTickIndex - Approximate tick-index the Whirlpool will land on after this swap
  * @param estimatedEndSqrtPrice - Approximate sqrtPrice the Whirlpool will land on after this swap
  * @param estimatedFeeAmount - Approximate feeAmount (all fees) charged on this swap
  */
-export type SwapQuote = {
+export type NormalSwapQuote = {
   estimatedAmountIn: u64;
   estimatedAmountOut: u64;
   estimatedEndTickIndex: number;
@@ -71,17 +80,17 @@ export async function swapQuoteByInputToken(
   fetcher: AccountFetcher,
   refresh: boolean
 ): Promise<SwapQuote> {
-  return swapQuoteByToken(
+  const params = await swapQuoteByToken(
     whirlpool,
     inputTokenMint,
     tokenAmount,
-    slippageTolerance,
     TokenType.TokenA,
     true,
     programId,
     fetcher,
     refresh
   );
+  return swapQuoteWithParams(params, slippageTolerance);
 }
 
 /**
@@ -109,17 +118,17 @@ export async function swapQuoteByOutputToken(
   fetcher: AccountFetcher,
   refresh: boolean
 ): Promise<SwapQuote> {
-  return swapQuoteByToken(
+  const params = await swapQuoteByToken(
     whirlpool,
     outputTokenMint,
     tokenAmount,
-    slippageTolerance,
     TokenType.TokenB,
     false,
     programId,
     fetcher,
     refresh
   );
+  return swapQuoteWithParams(params, slippageTolerance);
 }
 
 /**
@@ -130,7 +139,10 @@ export async function swapQuoteByOutputToken(
  * @param slippageTolerance - The amount of slippage to account for when generating the final quote.
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
-export function swapQuoteWithParams(params: SwapQuoteParam, slippageTolerance: Percentage) {
+export function swapQuoteWithParams(
+  params: SwapQuoteParam,
+  slippageTolerance: Percentage
+): SwapQuote {
   checkIfAllTickArraysInitialized(params.tickArrays);
 
   const quote = simulateSwap(params);
@@ -138,11 +150,11 @@ export function swapQuoteWithParams(params: SwapQuoteParam, slippageTolerance: P
   const slippageAdjustedQuote: SwapQuote = {
     ...quote,
     ...SwapUtils.calculateSwapAmountsFromQuote(
-      params.tokenAmount,
+      quote.amount,
       quote.estimatedAmountIn,
       quote.estimatedAmountOut,
       slippageTolerance,
-      params.amountSpecifiedIsInput
+      quote.amountSpecifiedIsInput
     ),
   };
 
@@ -153,13 +165,12 @@ async function swapQuoteByToken(
   whirlpool: Whirlpool,
   inputTokenMint: Address,
   tokenAmount: u64,
-  slippageTolerance: Percentage,
   amountSpecifiedTokenType: TokenType,
   amountSpecifiedIsInput: boolean,
   programId: Address,
   fetcher: AccountFetcher,
   refresh: boolean
-) {
+): Promise<SwapQuoteParam> {
   const whirlpoolData = whirlpool.getData();
   const swapMintKey = AddressUtil.toPubKey(inputTokenMint);
   const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
@@ -177,29 +188,13 @@ async function swapQuoteByToken(
     refresh
   );
 
-  return swapQuoteWithParams(
-    {
-      whirlpoolData,
-      tokenAmount,
-      aToB,
-      amountSpecifiedIsInput,
-      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-      otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
-      tickArrays,
-    },
-    slippageTolerance
-  );
-}
-
-function checkIfAllTickArraysInitialized(tickArrays: TickArray[]) {
-  // Check if all the tick arrays have been initialized.
-  const uninitializedIndices = TickArrayUtil.getUninitializedArrays(
-    tickArrays.map((array) => array.data)
-  );
-  if (uninitializedIndices.length > 0) {
-    const uninitializedArrays = uninitializedIndices
-      .map((index) => tickArrays[index].address.toBase58())
-      .join(", ");
-    throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
-  }
+  return {
+    whirlpoolData,
+    tokenAmount,
+    aToB,
+    amountSpecifiedIsInput,
+    sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+    otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
+    tickArrays,
+  };
 }

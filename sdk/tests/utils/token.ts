@@ -1,11 +1,14 @@
-import { deriveATA } from "@orca-so/common-sdk";
-import { BN, AnchorProvider, web3 } from "@project-serum/anchor";
+import { deriveATA, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import { createWSOLAccountInstructions } from "@orca-so/common-sdk/dist/helpers/token-instructions";
+import { AnchorProvider, BN, web3 } from "@project-serum/anchor";
 import {
+  AccountLayout,
   ASSOCIATED_TOKEN_PROGRAM_ID,
   AuthorityType,
+  NATIVE_MINT,
   Token,
   TOKEN_PROGRAM_ID,
-  u64,
+  u64
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 
@@ -154,6 +157,20 @@ export async function createAndMintToAssociatedTokenAccount(
 ): Promise<web3.PublicKey> {
   const destinationWalletKey = destinationWallet ? destinationWallet : provider.wallet.publicKey;
   const payerKey = payer ? payer : provider.wallet.publicKey;
+
+  // Workaround For SOL - just create a wSOL account to satisfy the rest of the test building pipeline.
+  // Tests who want to test with SOL will have to request their own airdrop.
+  if (mint.equals(NATIVE_MINT)) {
+    const rentExemption = await provider.connection.getMinimumBalanceForRentExemption(
+      AccountLayout.span
+    );
+    const txBuilder = new TransactionBuilder(provider.connection, provider.wallet);
+    const { address: tokenAccount, ...ix } = createWSOLAccountInstructions(destinationWalletKey, ZERO, rentExemption);
+    txBuilder.addInstruction(ix);
+    await txBuilder.buildAndExecute();
+    return tokenAccount;
+  }
+
   const tokenAccount = await createAssociatedTokenAccount(
     provider,
     mint,

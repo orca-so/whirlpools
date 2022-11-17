@@ -76,7 +76,7 @@ export interface WhirlpoolClient {
    * @param tickSpacing the space between two ticks in the tick array
    * @param initialTick the initial tick that the pool is set to (derived from initial price)
    * @param funder the account to debit SOL from to fund the creation of the account(s)
-   * @return `pubkey`: The public key of the newly created whirlpool account. `tx`: The transaction containing instructions for the on-chain operations.
+   * @return `poolKey`: The public key of the newly created whirlpool account. `tx`: The transaction containing instructions for the on-chain operations.
    */
   createPool: (
     whirlpoolsConfig: Address,
@@ -85,7 +85,7 @@ export interface WhirlpoolClient {
     tickSpacing: number,
     initialTick: number,
     funder: Address
-  ) => Promise<{ pubkey: PublicKey; tx: TransactionBuilder }>;
+  ) => Promise<{ poolKey: PublicKey; tx: TransactionBuilder }>;
 }
 
 /**

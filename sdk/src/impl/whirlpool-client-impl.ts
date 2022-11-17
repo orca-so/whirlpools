@@ -138,7 +138,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     initialTick: number,
     funder: Address,
     refresh = false
-  ): Promise<{ pubkey: PublicKey; tx: TransactionBuilder }> {
+  ): Promise<{ poolKey: PublicKey; tx: TransactionBuilder }> {
     invariant(TickUtil.checkTickInBounds(initialTick), "initialTick is out of bounds.");
     invariant(
       TickUtil.isTickInitializable(initialTick, tickSpacing),
@@ -208,7 +208,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     );
 
     return {
-      pubkey: whirlpoolPda.publicKey,
+      poolKey: whirlpoolPda.publicKey,
       tx: txBuilder,
     };
   }

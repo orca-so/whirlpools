@@ -42,7 +42,7 @@ describe("whirlpool-client-impl", () => {
       poolInitInfo.tickSpacing
     );
 
-    const { pubkey: actualPubkey, tx } = await client.createPool(
+    const { poolKey: actualPubkey, tx } = await client.createPool(
       poolInitInfo.whirlpoolsConfig,
       poolInitInfo.tokenMintA,
       poolInitInfo.tokenMintB,

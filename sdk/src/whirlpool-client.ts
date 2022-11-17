@@ -9,7 +9,7 @@ import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   PositionData,
-  WhirlpoolData
+  WhirlpoolData,
 } from "./types/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
 
@@ -302,5 +302,10 @@ export interface Position {
     ataPayer?: Address
   ) => Promise<TransactionBuilder>;
 
-  // TODO: Implement Collect fees
+  collectFees: (
+    resolveATA?: boolean,
+    destinationWallet?: Address,
+    positionWallet?: Address,
+    ataPayer?: Address
+  ) => Promise<TransactionBuilder>;
 }

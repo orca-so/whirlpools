@@ -11,6 +11,7 @@ import {
   DecreaseLiquidityInput,
   increaseLiquidityIx,
   decreaseLiquidityIx,
+  collectFeesIx,
 } from "../instructions";
 import { PositionData } from "../types/public";
 import { Position } from "../whirlpool-client";
@@ -186,6 +187,75 @@ export class PositionImpl implements Position {
       positionAuthority: positionWalletKey,
     });
     txBuilder.addInstruction(decreaseIx);
+    return txBuilder;
+  }
+
+  async collectFees(
+    resolveATA: boolean = true,
+    destinationWallet?: Address,
+    positionWallet?: Address,
+    ataPayer?: Address
+  ): Promise<TransactionBuilder> {
+    const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
+      destinationWallet ?? this.ctx.wallet.publicKey,
+      positionWallet ?? this.ctx.wallet.publicKey,
+      ataPayer ?? this.ctx.wallet.publicKey,
+    ]);
+
+    const whirlpool = await this.fetcher.getPool(this.data.whirlpool, true);
+    if (!whirlpool) {
+      throw new Error("Unable to fetch whirlpool for this position.");
+    }
+
+    // Question @meep: Can either fee_owed_a or fee_owed_b be 0 while the other is non-zero?
+    //                 If so, will the collect_fees IX fail since it just blindly calls a token transfer CPI?
+
+    // TODO(atamari): Resolve the following questions:
+    // 1. Question mentioned above
+    // 2. Question asked on discord re: stale on-chain values of fee_owed_a and fee_owed_b preventing valid fee collection
+
+    let tokenOwnerAccountA: PublicKey;
+    let tokenOwnerAccountB: PublicKey;
+
+    const txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet
+    );
+
+    if (resolveATA) {
+      const [ataA, ataB] = await resolveOrCreateATAs(
+        this.ctx.connection,
+        destinationWalletKey,
+        [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
+        () => this.fetcher.getAccountRentExempt(),
+        ataPayerKey
+      );
+      const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
+      const { address: ataAddrB, ...tokenOwnerAccountBIx } = ataB!;
+      tokenOwnerAccountA = ataAddrA;
+      tokenOwnerAccountB = ataAddrB;
+      txBuilder.addInstruction(tokenOwnerAccountAIx);
+      txBuilder.addInstruction(tokenOwnerAccountBIx);
+    } else {
+      tokenOwnerAccountA = await deriveATA(destinationWalletKey, whirlpool.tokenMintA);
+      tokenOwnerAccountB = await deriveATA(destinationWalletKey, whirlpool.tokenMintB);
+    }
+
+    const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
+
+    const ix = collectFeesIx(this.ctx.program, {
+      whirlpool: this.data.whirlpool,
+      position: this.address,
+      positionTokenAccount,
+      tokenOwnerAccountA,
+      tokenOwnerAccountB,
+      tokenVaultA: whirlpool.tokenVaultA,
+      tokenVaultB: whirlpool.tokenVaultB,
+      positionAuthority: positionWalletKey,
+    });
+
+    txBuilder.addInstruction(ix);
+
     return txBuilder;
   }
 

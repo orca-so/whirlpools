@@ -4,13 +4,13 @@ import { WhirlpoolContext } from "../context";
 import { AccountFetcher } from "../network/public";
 import { WhirlpoolData } from "../types/public";
 import { PoolUtil } from "../utils/public";
-import { WhirlpoolClient, Whirlpool, Position } from "../whirlpool-client";
+import { Position, Whirlpool, WhirlpoolClient } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./util";
 import { WhirlpoolImpl } from "./whirlpool-impl";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
-  constructor(readonly ctx: WhirlpoolContext) {}
+  constructor(readonly ctx: WhirlpoolContext) { }
 
   public getContext(): WhirlpoolContext {
     return this.ctx;
@@ -99,5 +99,24 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       AddressUtil.toPubKey(positionAddress),
       account
     );
+  }
+
+  public async getPositions(positionAddresses: Address[], refresh = false): Promise<Record<string, Position | null>> {
+    const accounts = await this.ctx.fetcher.listPositions(positionAddresses, refresh);
+    const results = accounts.map((positionAccount, index) => {
+      const address = positionAddresses[index];
+      if (!positionAccount) {
+        return [address, null];
+      }
+
+      return [address, new PositionImpl(
+        this.ctx,
+        this.ctx.fetcher,
+        AddressUtil.toPubKey(address),
+        positionAccount
+      )];
+    })
+
+    return Object.fromEntries(results);
   }
 }

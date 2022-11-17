@@ -9,7 +9,7 @@ import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   PositionData,
-  WhirlpoolData,
+  WhirlpoolData
 } from "./types/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
 
@@ -34,6 +34,7 @@ export interface WhirlpoolClient {
   /**
    * Get a Whirlpool object to interact with the Whirlpool account at the given address.
    * @param poolAddress the address of the Whirlpool account
+   * @param refresh true to always request newest data from chain with this request
    * @return a Whirlpool object to interact with
    */
   getPool: (poolAddress: Address, refresh?: boolean) => Promise<Whirlpool>;
@@ -41,6 +42,7 @@ export interface WhirlpoolClient {
   /**
    * Get a list of Whirlpool objects matching the provided list of addresses.
    * @param poolAddresses the addresses of the Whirlpool accounts
+   * @param refresh true to always request newest data from chain with this request
    * @return a list of Whirlpool objects to interact with
    */
   getPools: (poolAddresses: Address[], refresh?: boolean) => Promise<Whirlpool[]>;
@@ -48,9 +50,22 @@ export interface WhirlpoolClient {
   /**
    * Get a Position object to interact with the Position account at the given address.
    * @param positionAddress the address of the Position account
-   * @return a Position object to interact with
+   * @param refresh true to always request newest data from chain with this request
+   * @return a Position object to interact with.
+   * @throws error when address does not return a Position account.
    */
   getPosition: (positionAddress: Address, refresh?: boolean) => Promise<Position>;
+
+  /**
+   * Get a list of Position objects to interact with the Position account at the given addresses.
+   * @param positionAddress the addresses of the Position accounts
+   * @param refresh true to always request newest data from chain with this request
+   * @return a Record object between account address and Position. If an address is not a Position account, it will be null.
+   */
+  getPositions: (
+    positionAddresses: Address[],
+    refresh?: boolean
+  ) => Promise<Record<string, Position | null>>;
 }
 
 /**

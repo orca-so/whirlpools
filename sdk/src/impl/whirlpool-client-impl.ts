@@ -145,8 +145,13 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       `initial tick ${initialTick} is not an initializable tick for tick-spacing ${tickSpacing}`
     );
 
-    [tokenMintA, tokenMintB] = PoolUtil.orderMints(tokenMintA, tokenMintB).map(
-      (addr) => new PublicKey(addr)
+    const correctTokenOrder = PoolUtil.orderMints(tokenMintA, tokenMintB).map((addr) =>
+      addr.toString()
+    );
+
+    invariant(
+      correctTokenOrder[0] === tokenMintA,
+      "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)"
     );
 
     whirlpoolsConfig = AddressUtil.toPubKey(whirlpoolsConfig);

@@ -1,5 +1,6 @@
 import { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
+import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
@@ -9,7 +10,7 @@ import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   PositionData,
-  WhirlpoolData
+  WhirlpoolData,
 } from "./types/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
 
@@ -66,6 +67,26 @@ export interface WhirlpoolClient {
     positionAddresses: Address[],
     refresh?: boolean
   ) => Promise<Record<string, Position | null>>;
+
+  /**
+   * Create a Whirlpool account for a group of token A, token B and tick spacing
+   * @param whirlpoolConfig the address of the whirlpool config
+   * @param tokenMintA the address of the token A
+   * @param tokenMintB the address of the token B
+   * @param tickSpacing the space between two ticks in the tick array
+   * @param initialTick the initial tick that the pool is set to (derived from initial price)
+   * @param funder the account to debit SOL from to fund the creation of the account(s)
+   * @return `poolKey`: The public key of the newly created whirlpool account. `tx`: The transaction containing instructions for the on-chain operations.
+   * @throws error when the tokens are not in the canonical byte-based ordering. To resolve this, invert the token order and the initialTick (see `TickUtil.invertTick()`, `PriceMath.invertSqrtPriceX64()`, or `PriceMath.invertPrice()`).
+   */
+  createPool: (
+    whirlpoolsConfig: Address,
+    tokenMintA: Address,
+    tokenMintB: Address,
+    tickSpacing: number,
+    initialTick: number,
+    funder: Address
+  ) => Promise<{ poolKey: PublicKey; tx: TransactionBuilder }>;
 }
 
 /**

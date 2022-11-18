@@ -142,6 +142,18 @@ export class TickUtil {
   public static isTickInitializable(tick: number, tickSpacing: number) {
     return tick % tickSpacing === 0;
   }
+
+  /**
+   *
+   * Returns the tick for the inverse of the price that this tick represents.
+   * Eg: Consider tick i where Pb/Pa = 1.0001 ^ i
+   * inverse of this, i.e. Pa/Pb = 1 / (1.0001 ^ i) = 1.0001^-i
+   * @param tick The tick to invert
+   * @returns
+   */
+  public static invertTick(tick: number) {
+    return -tick;
+  }
 }
 
 /**

@@ -123,6 +123,30 @@ export class PriceMath {
       tickSpacing
     );
   }
+
+  /**
+   * Utility to invert the price Pb/Pa to Pa/Pb
+   * @param price Pb / Pa
+   * @param decimalsA Decimals of original token A (i.e. token A in the given Pb / Pa price)
+   * @param decimalsB Decimals of original token B (i.e. token B in the given Pb / Pa price)
+   * @returns inverted price, i.e. Pa / Pb
+   */
+  public static invertPrice(price: Decimal, decimalsA: number, decimalsB: number): Decimal {
+    const tick = PriceMath.priceToTickIndex(price, decimalsA, decimalsB);
+    const invTick = TickUtil.invertTick(tick);
+    return PriceMath.tickIndexToPrice(invTick, decimalsB, decimalsA);
+  }
+
+  /**
+   * Utility to invert the sqrtPriceX64 from X64 repr. of sqrt(Pb/Pa) to X64 repr. of sqrt(Pa/Pb)
+   * @param sqrtPriceX64 X64 representation of sqrt(Pb / Pa)
+   * @returns inverted sqrtPriceX64, i.e. X64 representation of sqrt(Pa / Pb)
+   */
+  public static invertSqrtPriceX64(sqrtPriceX64: BN): BN {
+    const tick = PriceMath.sqrtPriceX64ToTickIndex(sqrtPriceX64);
+    const invTick = TickUtil.invertTick(tick);
+    return PriceMath.tickIndexToSqrtPriceX64(invTick);
+  }
 }
 
 // Private Functions

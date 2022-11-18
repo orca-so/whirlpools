@@ -150,7 +150,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     );
 
     invariant(
-      correctTokenOrder[0] === tokenMintA,
+      correctTokenOrder[0] === tokenMintA.toString(),
       "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)"
     );
 
@@ -169,8 +169,8 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     const whirlpoolPda = PDAUtil.getWhirlpool(
       this.ctx.program.programId,
       whirlpoolsConfig,
-      tokenMintA,
-      tokenMintB,
+      new PublicKey(tokenMintA),
+      new PublicKey(tokenMintB),
       tickSpacing
     );
 

@@ -110,4 +110,25 @@ describe("whirlpool-client-impl", () => {
     assert.ok(tickArrayAccountAfter.ticks.length > 0);
     assert.ok(tickArrayAccountAfter.whirlpool.equals(expectedPda.publicKey));
   });
+
+  it("throws an error when token order is incorrect", async () => {
+    const initalTick = TickUtil.getInitializableTickIndex(
+      PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice),
+      poolInitInfo.tickSpacing
+    );
+
+    const invInitialTick = TickUtil.invertTick(initalTick);
+
+    await assert.rejects(
+      client.createPool(
+        poolInitInfo.whirlpoolsConfig,
+        poolInitInfo.tokenMintB,
+        poolInitInfo.tokenMintA,
+        poolInitInfo.tickSpacing,
+        invInitialTick,
+        funderKeypair.publicKey
+      ),
+      /Token order needs to be flipped to match the canonical ordering \(i.e. sorted on the byte repr. of the mint pubkeys\)/
+    );
+  });
 });

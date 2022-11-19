@@ -435,6 +435,18 @@ export class WhirlpoolImpl implements Whirlpool {
     initTxBuilder?: TransactionBuilder
   ): Promise<TransactionBuilder> {
     invariant(input.amount.gt(ZERO), "swap amount must be more than zero.");
+
+    // Check if all the tick arrays have been initialized.
+    const tickArrayAddresses = [input.tickArray0, input.tickArray1, input.tickArray2];
+    const tickArrays = await this.fetcher.listTickArrays(tickArrayAddresses, true);
+    const uninitializedIndices = TickArrayUtil.getUninitializedArrays(tickArrays);
+    if (uninitializedIndices.length > 0) {
+      const uninitializedArrays = uninitializedIndices
+        .map((index) => tickArrayAddresses[index].toBase58())
+        .join(", ");
+      throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
+    }
+
     const { amount, aToB } = input;
     const whirlpool = this.data;
     const txBuilder =

@@ -23,7 +23,7 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     amountSpecifiedIsInput,
   } = params;
 
-  if (sqrtPriceLimit.gt(new BN(MAX_SQRT_PRICE) || sqrtPriceLimit.lt(new BN(MIN_SQRT_PRICE)))) {
+  if (sqrtPriceLimit.gt(new BN(MAX_SQRT_PRICE)) || sqrtPriceLimit.lt(new BN(MIN_SQRT_PRICE))) {
     throw new WhirlpoolsError(
       "Provided SqrtPriceLimit is out of bounds.",
       SwapErrorCode.SqrtPriceOutOfBounds

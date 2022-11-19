@@ -3,22 +3,29 @@ import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
   TickArray,
+  TickArrayData,
   TickData,
   TICK_ARRAY_SIZE,
 } from "../../types/public";
 import { TickArrayIndex } from "./tick-array-index";
 import { PublicKey } from "@solana/web3.js";
 
+type InitializedTickArray = TickArray & {
+  // override
+  data: TickArrayData;
+};
+
 /**
  * NOTE: differs from contract method of having the swap manager keep track of array index.
  * This is due to the initial requirement to lazy load tick-arrays. This requirement is no longer necessary.
  */
 export class TickArraySequence {
+  private tickArrays: InitializedTickArray[];
   private touchedArrays: boolean[];
   private startArrayIndex: number;
 
   constructor(
-    readonly tickArrays: TickArray[],
+    tickArrays: TickArray[],
     readonly tickSpacing: number,
     readonly aToB: boolean
   ) {
@@ -26,9 +33,18 @@ export class TickArraySequence {
       throw new Error("TickArray index 0 must be initialized");
     }
 
-    this.touchedArrays = [...Array<boolean>(tickArrays.length).fill(false)];
+    // If an uninitialized TickArray appears, truncate all TickArrays after it (inclusive).
+    this.tickArrays = [];
+    for (let i=0; i < tickArrays.length && !!tickArrays[i] && !!tickArrays[i].data; i++) {
+      this.tickArrays.push({
+        address: tickArrays[i].address,
+        data: tickArrays[i].data!
+      });
+    }
+
+    this.touchedArrays = [...Array<boolean>(this.tickArrays.length).fill(false)];
     this.startArrayIndex = TickArrayIndex.fromTickIndex(
-      tickArrays[0].data.startTickIndex,
+      this.tickArrays[0].data.startTickIndex,
       this.tickSpacing
     ).arrayIndex;
   }

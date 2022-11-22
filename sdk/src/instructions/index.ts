@@ -2,6 +2,7 @@ export * from "./close-position-ix";
 export * from "./collect-fees-ix";
 export * from "./collect-protocol-fees-ix";
 export * from "./collect-reward-ix";
+export * from "./composites";
 export * from "./decrease-liquidity-ix";
 export * from "./increase-liquidity-ix";
 export * from "./initialize-config-ix";

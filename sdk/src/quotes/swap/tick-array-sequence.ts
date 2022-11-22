@@ -20,12 +20,12 @@ type InitializedTickArray = TickArray & {
  * This is due to the initial requirement to lazy load tick-arrays. This requirement is no longer necessary.
  */
 export class TickArraySequence {
-  private tickArrays: InitializedTickArray[];
+  private sequence: InitializedTickArray[];
   private touchedArrays: boolean[];
   private startArrayIndex: number;
 
   constructor(
-    tickArrays: TickArray[],
+    tickArrays: Readonly<TickArray[]>,
     readonly tickSpacing: number,
     readonly aToB: boolean
   ) {
@@ -34,23 +34,26 @@ export class TickArraySequence {
     }
 
     // If an uninitialized TickArray appears, truncate all TickArrays after it (inclusive).
-    this.tickArrays = [];
-    for (let i=0; i < tickArrays.length && !!tickArrays[i] && !!tickArrays[i].data; i++) {
-      this.tickArrays.push({
-        address: tickArrays[i].address,
-        data: tickArrays[i].data!
+    this.sequence = [];
+    for (const tickArray of tickArrays) {
+      if ( !tickArray || !tickArray.data ) {
+        break;
+      }
+      this.sequence.push({
+        address: tickArray.address,
+        data: tickArray.data
       });
     }
 
-    this.touchedArrays = [...Array<boolean>(this.tickArrays.length).fill(false)];
+    this.touchedArrays = [...Array<boolean>(this.sequence.length).fill(false)];
     this.startArrayIndex = TickArrayIndex.fromTickIndex(
-      this.tickArrays[0].data.startTickIndex,
+      this.sequence[0].data.startTickIndex,
       this.tickSpacing
     ).arrayIndex;
   }
 
   checkArrayContainsTickIndex(sequenceIndex: number, tickIndex: number) {
-    const tickArray = this.tickArrays[sequenceIndex]?.data;
+    const tickArray = this.sequence[sequenceIndex]?.data;
     if (!tickArray) {
       return false;
     }
@@ -64,7 +67,7 @@ export class TickArraySequence {
   getTouchedArrays(minArraySize: number): PublicKey[] {
     let result = this.touchedArrays.reduce<PublicKey[]>((prev, curr, index) => {
       if (curr) {
-        prev.push(this.tickArrays[index].address);
+        prev.push(this.sequence[index].address);
       }
       return prev;
     }, []);
@@ -93,7 +96,7 @@ export class TickArraySequence {
     }
 
     const localArrayIndex = this.getLocalArrayIndex(targetTaIndex.arrayIndex, this.aToB);
-    const tickArray = this.tickArrays[localArrayIndex].data;
+    const tickArray = this.sequence[localArrayIndex].data;
 
     this.touchedArrays[localArrayIndex] = true;
 
@@ -164,7 +167,7 @@ export class TickArraySequence {
   private isArrayIndexInBounds(index: TickArrayIndex, aToB: boolean) {
     // a+0...a+n-1 array index is ok
     const localArrayIndex = this.getLocalArrayIndex(index.arrayIndex, aToB);
-    const seqLength = this.tickArrays.length;
+    const seqLength = this.sequence.length;
     return localArrayIndex >= 0 && localArrayIndex < seqLength;
   }
 

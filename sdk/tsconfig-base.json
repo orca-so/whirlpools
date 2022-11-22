@@ -12,7 +12,7 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "experimentalDecorators": true,
-    "moduleResolution": "Node"
+    "moduleResolution": "node"
   },
   "exclude": ["./dist/**/*"],
   "references": [

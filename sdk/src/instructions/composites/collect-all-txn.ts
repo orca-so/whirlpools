@@ -53,6 +53,7 @@ type CollectAllParams = {
  * Build a set of transactions to collect fees and rewards for a set of Whirlpool Positions.
  *
  * @category Instructions
+ * @experimental
  * @param ctx - WhirlpoolContext object for the current environment.
  * @param params - CollectAllPositionAddressParams object
  * @param refresh - if true, will always fetch for the latest on-chain data.
@@ -77,6 +78,8 @@ export async function collectAllForPositionAddressesTxns(
 
 /**
  * Build a set of transactions to collect fees and rewards for a set of Whirlpool Positions.
+ *
+ * @experimental
  * @param ctx - WhirlpoolContext object for the current environment.
  * @param params - CollectAllPositionParams object
  * @returns A set of transaction-builders to resolve ATA for affliated tokens, collect fee & rewards for all positions.
@@ -120,7 +123,6 @@ export async function collectAllForPositionsTxns(
 
   while (posIndex < positions.length) {
     const position = positions[posIndex];
-    console.log(`Handle position - ${position.getAddress().toString()}`);
     let positionTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet);
     const { whirlpool: whirlpoolKey, positionMint } = position.getData();
     const whirlpool = whirlpools[whirlpoolKey.toBase58()];
@@ -136,17 +138,13 @@ export async function collectAllForPositionsTxns(
 
     // Add NATIVE_MINT token account creation to this transaction if position requires NATIVE_MINT handling.
     if (posHandlesNativeMint && !txBuilderHasNativeMint) {
-      console.log(`needs wSOL wrapping, adding to txn`);
       addNativeMintHandlingIx(
         positionTxBuilder,
         affliatedTokenAtaMap,
         receiverKey,
         accountExemption
       );
-    } else if (posHandlesNativeMint && txBuilderHasNativeMint) {
-      console.log(`needs wSOL wrapping, but txn already has it`);
     }
-
     // Build position instructions
     const collectIxForPosition = constructCollectPositionIx(
       ctx,
@@ -162,13 +160,7 @@ export async function collectAllForPositionsTxns(
     // Iterate to the next position if possible
     // Create a builder and reattempt if the current one is full.
     const incrementTxSize = await positionTxBuilder.txnSize();
-    console.log(
-      `pendingTxBuilderTxSize - ${pendingTxBuilderTxSize} incrementTxSize - ${incrementTxSize}, propsective size - ${
-        pendingTxBuilderTxSize + incrementTxSize
-      }`
-    );
     if (pendingTxBuilderTxSize + incrementTxSize < PACKET_DATA_SIZE) {
-      console.log(`adding to pending tx builder`);
       pendingTxBuilder.addInstruction(positionTxBuilder.compressIx(false));
       pendingTxBuilderTxSize = await pendingTxBuilder.txnSize();
       posIndex += 1;
@@ -180,14 +172,12 @@ export async function collectAllForPositionsTxns(
         );
       }
 
-      console.log(`creating new tx builder`);
       txBuilders.push(pendingTxBuilder);
       delete affliatedTokenAtaMap[NATIVE_MINT.toBase58()];
       pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.provider.wallet);
       pendingTxBuilderTxSize = 0;
       reattempt = true;
     }
-    console.log(``);
   }
 
   txBuilders.push(pendingTxBuilder);

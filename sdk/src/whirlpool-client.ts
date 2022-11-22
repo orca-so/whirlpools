@@ -9,7 +9,7 @@ import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   PositionData,
-  WhirlpoolData,
+  WhirlpoolData
 } from "./types/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
 
@@ -69,6 +69,7 @@ export interface WhirlpoolClient {
 
   /**
    * Collect all fees and rewards from a list of positions.
+   * @experimental
    * @param positionAddress the addresses of the Position accounts to collect fee & rewards from.
    * @param refresh true to always request newest data from chain with this request
    * @returns A set of transaction-builders to resolve ATA for affliated tokens, collect fee & rewards for all positions.

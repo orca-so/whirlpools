@@ -1,6 +1,7 @@
 import { BN, BorshAccountsCoder, Idl } from "@project-serum/anchor";
 import WhirlpoolIDL from "../../artifacts/whirlpool.json";
 import { PublicKey } from "@solana/web3.js";
+import { Whirlpool } from "../../artifacts/whirlpool";
 
 /**
  * This file contains the types that has the same structure as the types anchor functions returns.

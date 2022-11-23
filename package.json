@@ -5,6 +5,9 @@
     "sdk",
     "scripts"
   ],
+  "resolutions": {
+    "decimal.js": "^10.4.0"
+  },
   "scripts": {
     "idl": "anchor build -i $INIT_CWD/sdk/src/artifacts -t $INIT_CWD/sdk/src/artifacts"
   }

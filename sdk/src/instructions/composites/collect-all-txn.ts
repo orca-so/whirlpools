@@ -3,7 +3,6 @@ import { createWSOLAccountInstructions } from "@orca-so/common-sdk/dist/helpers/
 import { Address } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PACKET_DATA_SIZE, PublicKey } from "@solana/web3.js";
-import { updateFeesAndRewardsIx } from "..";
 import { WhirlpoolContext } from "../..";
 import { PositionImpl } from "../../impl/position-impl";
 import { WhirlpoolIx } from "../../ix";
@@ -11,8 +10,9 @@ import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
 import { getAssociatedTokenAddressSync } from "../../utils/spl-token-utils";
 import { convertListToMap } from "../../utils/txn-utils";
+import { getTokenMintsFromWhirlpools, resolveAtaForMints } from "../../utils/whirlpool-ata-utils";
 import { Position } from "../../whirlpool-client";
-import { resolveAtaForWhirlpoolsIxs } from "./resolve-atas-ix";
+import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
 
 /**
  * Parameters to collect all fees and rewards from a list of positions.
@@ -102,23 +102,20 @@ export async function collectAllForPositionsTxns(
   const whirlpoolDatas = await ctx.fetcher.listPools(whirlpoolAddrs, false);
   const whirlpools = convertListToMap(whirlpoolDatas, whirlpoolAddrs);
 
-  // TODO: Payer is not configurable here. Forced to use wallet
+  const accountExemption = await ctx.fetcher.getAccountRentExempt();
   const { ataTokenAddresses: affliatedTokenAtaMap, resolveAtaIxs } =
-    await resolveAtaForWhirlpoolsIxs(ctx, {
-      whirlpools: whirlpoolDatas,
+    await resolveAtaForMints(ctx, {
+      mints: getTokenMintsFromWhirlpools(whirlpoolDatas),
+      accountExemption,
       receiver: receiverKey,
       payer: payerKey,
     });
 
   const latestBlockhash = await ctx.connection.getLatestBlockhash("singleGossip");
-  const accountExemption = await ctx.fetcher.getAccountRentExempt();
   const txBuilders: TransactionBuilder[] = [];
 
-  let pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet).addInstructions(
-    resolveAtaIxs
-  );
+  let pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet).addInstructions(resolveAtaIxs);
   let pendingTxBuilderTxSize = await pendingTxBuilder.txnSize({ latestBlockhash });
-
   let posIndex = 0;
   let reattempt = false;
 

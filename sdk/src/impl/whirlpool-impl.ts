@@ -5,7 +5,7 @@ import {
   resolveOrCreateATAs,
   TokenUtil,
   TransactionBuilder,
-  ZERO,
+  ZERO
 } from "@orca-so/common-sdk";
 import { Address, BN, translateAddress } from "@project-serum/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
@@ -21,7 +21,7 @@ import {
   openPositionIx,
   openPositionWithMetadataIx,
   SwapInput,
-  swapIx,
+  swapIx
 } from "../instructions";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../quotes/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
@@ -436,7 +436,7 @@ export class WhirlpoolImpl implements Whirlpool {
 
     // Check if all the tick arrays have been initialized.
     const tickArrayAddresses = [input.tickArray0, input.tickArray1, input.tickArray2];
-    const tickArrays = await this.fetcher.listTickArrays(tickArrayAddresses, true);
+    const tickArrays = await this.ctx.fetcher.listTickArrays(tickArrayAddresses, true);
     const uninitializedIndices = TickArrayUtil.getUninitializedArrays(tickArrays);
     if (uninitializedIndices.length > 0) {
       const uninitializedArrays = uninitializedIndices

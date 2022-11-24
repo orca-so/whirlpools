@@ -7,11 +7,15 @@ import {
   buildWhirlpoolClient,
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
+  MAX_SQRT_PRICE,
+  MIN_SQRT_PRICE,
   PriceMath,
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
+  swapQuoteWithParams,
   TICK_ARRAY_SIZE,
   WhirlpoolContext,
+  SwapUtils,
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
 import { assertInputOutputQuoteEqual, assertQuoteAndResults, TickSpacing } from "../../../utils";
@@ -1164,5 +1168,109 @@ describe("swap traversal tests", () => {
     const newData = await whirlpool.refreshData();
     const afterVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
     assertQuoteAndResults(aToB, quote, newData, beforeVaultAmounts, afterVaultAmounts);
+  });
+
+  /**
+   * sqrtPriceLimit < MIN_SQRT_PRICE
+   * |--------------------|-----------------|---------x1----------|
+   */
+  it("3 arrays, sqrtPriceLimit is out of bounds (< MIN_SQRT_PRICE), a->b", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: 1, offsetIndex: 22 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 0, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 10 },
+          { arrayIndex: 2, offsetIndex: 23 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const aToB = true;
+    const tickArrays = await SwapUtils.getTickArrays(
+      currIndex,
+      tickSpacing,
+      aToB,
+      ctx.program.programId,
+      whirlpool.getAddress(),
+      fetcher,
+      true
+    );
+    assert.throws(
+      () =>
+        swapQuoteWithParams(
+          {
+            aToB,
+            amountSpecifiedIsInput: true,
+            tokenAmount: new u64("10000"),
+            whirlpoolData,
+            tickArrays,
+            sqrtPriceLimit: new BN(MIN_SQRT_PRICE).subn(1),
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          },
+          slippageTolerance
+        ),
+      (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.SqrtPriceOutOfBounds
+    );
+  });
+
+  /**
+   * sqrtPriceLimit > MAX_SQRT_PRICE
+   * |-----x1-------------|-----------------|---------------------|
+   */
+  it("3 arrays, sqrtPriceLimit is out of bounds (> MAX_SQRT_PRICE), b->a", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 22 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 0, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 10 },
+          { arrayIndex: 2, offsetIndex: 23 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const aToB = false;
+    const tickArrays = await SwapUtils.getTickArrays(
+      currIndex,
+      tickSpacing,
+      aToB,
+      ctx.program.programId,
+      whirlpool.getAddress(),
+      fetcher,
+      true
+    );
+    assert.throws(
+      () =>
+        swapQuoteWithParams(
+          {
+            aToB,
+            amountSpecifiedIsInput: true,
+            tokenAmount: new u64("10000"),
+            whirlpoolData,
+            tickArrays,
+            sqrtPriceLimit: new BN(MAX_SQRT_PRICE).addn(1),
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          },
+          slippageTolerance
+        ),
+      (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.SqrtPriceOutOfBounds
+    );
   });
 });

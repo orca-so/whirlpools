@@ -23,7 +23,10 @@ import { initTestPool } from "../../utils/init-utils";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
 
 describe("whirlpool-impl", () => {
-  const provider = anchor.AnchorProvider.local();
+  // The default commitment of AnchorProvider is "processed".
+  // But commitment of some Token operations is based on “confirmed”, and preflight simulation sometimes fail.
+  // So use "confirmed" consistently.
+  const provider = anchor.AnchorProvider.local(undefined, {commitment: "confirmed", preflightCommitment: "confirmed"});
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);

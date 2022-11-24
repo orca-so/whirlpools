@@ -110,13 +110,14 @@ export async function collectAllForPositionsTxns(
       payer: payerKey,
     });
 
+  const latestBlockhash = await ctx.connection.getLatestBlockhash("singleGossip");
   const accountExemption = await ctx.fetcher.getAccountRentExempt();
   const txBuilders: TransactionBuilder[] = [];
 
   let pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet).addInstructions(
     resolveAtaIxs
   );
-  let pendingTxBuilderTxSize = await pendingTxBuilder.txnSize();
+  let pendingTxBuilderTxSize = await pendingTxBuilder.txnSize({ latestBlockhash });
 
   let posIndex = 0;
   let reattempt = false;
@@ -159,10 +160,10 @@ export async function collectAllForPositionsTxns(
     // Attempt to push the new instructions into the pending builder
     // Iterate to the next position if possible
     // Create a builder and reattempt if the current one is full.
-    const incrementTxSize = await positionTxBuilder.txnSize();
+    const incrementTxSize = await positionTxBuilder.txnSize({ latestBlockhash });
     if (pendingTxBuilderTxSize + incrementTxSize < PACKET_DATA_SIZE) {
       pendingTxBuilder.addInstruction(positionTxBuilder.compressIx(false));
-      pendingTxBuilderTxSize = await pendingTxBuilder.txnSize();
+      pendingTxBuilderTxSize = pendingTxBuilderTxSize + incrementTxSize;
       posIndex += 1;
       reattempt = false;
     } else {

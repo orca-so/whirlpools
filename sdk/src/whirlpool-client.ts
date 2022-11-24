@@ -1,6 +1,5 @@
 import { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
-import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
@@ -10,7 +9,7 @@ import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   PositionData,
-  WhirlpoolData,
+  WhirlpoolData
 } from "./types/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
 
@@ -67,6 +66,19 @@ export interface WhirlpoolClient {
     positionAddresses: Address[],
     refresh?: boolean
   ) => Promise<Record<string, Position | null>>;
+
+  /**
+   * Collect all fees and rewards from a list of positions.
+   * @experimental
+   * @param positionAddress the addresses of the Position accounts to collect fee & rewards from.
+   * @param refresh true to always request newest data from chain with this request
+   * @returns A set of transaction-builders to resolve ATA for affliated tokens, collect fee & rewards for all positions.
+   *          The first transaction should always be processed as it contains all the resolve ATA instructions to receive tokens.
+   */
+  collectFeesAndRewardsForPositions: (
+    positionAddresses: Address[],
+    refresh?: boolean
+  ) => Promise<TransactionBuilder[]>;
 
   /**
    * Create a Whirlpool account for a group of token A, token B and tick spacing

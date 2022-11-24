@@ -4,11 +4,12 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
 import { initTickArrayIx } from "../instructions";
+import { collectAllForPositionAddressesTxns } from "../instructions/composites";
 import { WhirlpoolIx } from "../ix";
 import { AccountFetcher } from "../network/public";
 import { WhirlpoolData } from "../types/public";
-import { PDAUtil, PoolUtil, PriceMath, TickArrayUtil, TickUtil } from "../utils/public";
-import { WhirlpoolClient, Whirlpool, Position } from "../whirlpool-client";
+import { PDAUtil, PoolUtil, PriceMath, TickUtil } from "../utils/public";
+import { Position, Whirlpool, WhirlpoolClient } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./util";
 import { WhirlpoolImpl } from "./whirlpool-impl";
@@ -34,7 +35,6 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, refresh);
     return new WhirlpoolImpl(
       this.ctx,
-      this.ctx.fetcher,
       AddressUtil.toPubKey(poolAddress),
       tokenInfos[0],
       tokenInfos[1],
@@ -78,7 +78,6 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       whirlpools.push(
         new WhirlpoolImpl(
           this.ctx,
-          this.ctx.fetcher,
           AddressUtil.toPubKey(poolAddress),
           tokenInfos[0],
           tokenInfos[1],
@@ -97,12 +96,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     if (!account) {
       throw new Error(`Unable to fetch Position at address at ${positionAddress}`);
     }
-    return new PositionImpl(
-      this.ctx,
-      this.ctx.fetcher,
-      AddressUtil.toPubKey(positionAddress),
-      account
-    );
+    return new PositionImpl(this.ctx, AddressUtil.toPubKey(positionAddress), account);
   }
 
   public async getPositions(
@@ -116,15 +110,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
         return [address, null];
       }
 
-      return [
-        address,
-        new PositionImpl(
-          this.ctx,
-          this.ctx.fetcher,
-          AddressUtil.toPubKey(address),
-          positionAccount
-        ),
-      ];
+      return [address, new PositionImpl(this.ctx, AddressUtil.toPubKey(address), positionAccount)];
     });
 
     return Object.fromEntries(results);
@@ -216,5 +202,23 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       poolKey: whirlpoolPda.publicKey,
       tx: txBuilder,
     };
+  }
+
+  public async collectFeesAndRewardsForPositions(
+    positionAddresses: Address[],
+    refresh?: boolean | undefined
+  ): Promise<TransactionBuilder[]> {
+    const walletKey = this.ctx.wallet.publicKey;
+    return collectAllForPositionAddressesTxns(
+      this.ctx,
+      {
+        positions: positionAddresses,
+        receiver: walletKey,
+        positionAuthority: walletKey,
+        positionOwner: walletKey,
+        payer: walletKey,
+      },
+      refresh
+    );
   }
 }

@@ -1,14 +1,14 @@
 import Decimal from "decimal.js";
 
 export * from "./context";
-export * from "./types/public";
-export * from "./utils/public";
+export * from "./impl/position-impl";
+export * from "./ix";
 export * from "./network/public";
 export * from "./quotes/public";
-export * from "./ix";
-export * from "./whirlpool-client";
-
+export * from "./types/public";
 export * from "./types/public/anchor-types";
+export * from "./utils/public";
+export * from "./whirlpool-client";
 
 // Global rules for Decimals
 //  - 40 digits of precision for the largest number

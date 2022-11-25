@@ -1,6 +1,6 @@
-import invariant from "tiny-invariant";
-import { Address, BN } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
+import invariant from "tiny-invariant";
+import { AccountFetcher } from "../../network/public";
 import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
@@ -9,7 +9,6 @@ import {
   TICK_ARRAY_SIZE,
 } from "../../types/public";
 import { PDAUtil } from "./pda-utils";
-import { AccountFetcher } from "../../network/public";
 
 enum TickSearchDirection {
   Left,
@@ -22,6 +21,18 @@ enum TickSearchDirection {
  */
 export class TickUtil {
   private constructor() {}
+
+  /**
+   * Get the offset index to access a tick at a given tick-index in a tick-array
+   *
+   * @param tickIndex The tick index for the tick that this offset would access
+   * @param arrayStartIndex The starting tick for the array that this tick-index resides in
+   * @param tickSpacing The tickSpacing for the Whirlpool that this tickArray belongs to
+   * @returns The offset index that can access the desired tick at the given tick-array
+   */
+  public static getOffsetIndex(tickIndex: number, arrayStartIndex: number, tickSpacing: number) {
+    return Math.floor((tickIndex - arrayStartIndex) / tickSpacing);
+  }
 
   /**
    * Get the startIndex of the tick array containing tickIndex.

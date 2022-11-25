@@ -1,17 +1,15 @@
-import { AddressUtil, Instruction, TokenUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import { Instruction, TokenUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
 import { createWSOLAccountInstructions } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import { Address } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PACKET_DATA_SIZE, PublicKey } from "@solana/web3.js";
-import { WhirlpoolContext } from "../..";
-import { PositionImpl } from "../../impl/position-impl";
+import { PositionData, WhirlpoolContext } from "../..";
 import { WhirlpoolIx } from "../../ix";
 import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
 import { getAssociatedTokenAddressSync } from "../../utils/spl-token-utils";
 import { convertListToMap } from "../../utils/txn-utils";
 import { getTokenMintsFromWhirlpools, resolveAtaForMints } from "../../utils/whirlpool-ata-utils";
-import { Position } from "../../whirlpool-client";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
 
 /**
@@ -39,7 +37,7 @@ export type CollectAllPositionAddressParams = {
  * @param payer - The key that will pay for the initialization of ATA token accounts. Defaults to ctx.wallet key.
  */
 export type CollectAllPositionParams = {
-  positions: Position[];
+  positions: Record<string, PositionData>;
 } & CollectAllParams;
 
 type CollectAllParams = {
@@ -66,14 +64,18 @@ export async function collectAllForPositionAddressesTxns(
   refresh = false
 ): Promise<TransactionBuilder[]> {
   const { positions, ...rest } = params;
-  const posDatas = await ctx.fetcher.listPositions(positions, refresh);
-  const positionsObjs = posDatas.reduce<Position[]>((accu, curr, index) => {
-    if (curr) {
-      accu.push(new PositionImpl(ctx, AddressUtil.toPubKey(positions[index]), curr));
+  const posData = convertListToMap(
+    await ctx.fetcher.listPositions(positions, refresh),
+    positions.map((pos) => pos.toString())
+  );
+  const positionMap: Record<string, PositionData> = {};
+  Object.entries(posData).forEach(([addr, pos]) => {
+    if (pos) {
+      positionMap[addr] = pos;
     }
-    return accu;
-  }, []);
-  return collectAllForPositionsTxns(ctx, { positions: positionsObjs, ...rest });
+  });
+
+  return collectAllForPositionsTxns(ctx, { positions: positionMap, ...rest });
 }
 
 /**
@@ -93,36 +95,38 @@ export async function collectAllForPositionsTxns(
   const positionAuthorityKey = positionAuthority ?? ctx.wallet.publicKey;
   const positionOwnerKey = positionOwner ?? ctx.wallet.publicKey;
   const payerKey = payer ?? ctx.wallet.publicKey;
+  const positionList = Object.entries(positions);
 
-  if (positions.length === 0) {
+  if (positionList.length === 0) {
     return [];
   }
 
-  const whirlpoolAddrs = positions.map((pos) => pos.getData().whirlpool.toBase58());
+  const whirlpoolAddrs = positionList.map(([, pos]) => pos.whirlpool.toBase58());
   const whirlpoolDatas = await ctx.fetcher.listPools(whirlpoolAddrs, false);
   const whirlpools = convertListToMap(whirlpoolDatas, whirlpoolAddrs);
 
   const accountExemption = await ctx.fetcher.getAccountRentExempt();
-  const { ataTokenAddresses: affliatedTokenAtaMap, resolveAtaIxs } =
-    await resolveAtaForMints(ctx, {
-      mints: getTokenMintsFromWhirlpools(whirlpoolDatas),
-      accountExemption,
-      receiver: receiverKey,
-      payer: payerKey,
-    });
+  const { ataTokenAddresses: affliatedTokenAtaMap, resolveAtaIxs } = await resolveAtaForMints(ctx, {
+    mints: getTokenMintsFromWhirlpools(whirlpoolDatas),
+    accountExemption,
+    receiver: receiverKey,
+    payer: payerKey,
+  });
 
   const latestBlockhash = await ctx.connection.getLatestBlockhash("singleGossip");
   const txBuilders: TransactionBuilder[] = [];
 
-  let pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet).addInstructions(resolveAtaIxs);
+  let pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet).addInstructions(
+    resolveAtaIxs
+  );
   let pendingTxBuilderTxSize = await pendingTxBuilder.txnSize({ latestBlockhash });
   let posIndex = 0;
   let reattempt = false;
 
-  while (posIndex < positions.length) {
-    const position = positions[posIndex];
+  while (posIndex < positionList.length) {
+    const [positionAddr, position] = positionList[posIndex];
     let positionTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet);
-    const { whirlpool: whirlpoolKey, positionMint } = position.getData();
+    const { whirlpool: whirlpoolKey, positionMint } = position;
     const whirlpool = whirlpools[whirlpoolKey.toBase58()];
 
     if (!whirlpool) {
@@ -143,9 +147,11 @@ export async function collectAllForPositionsTxns(
         accountExemption
       );
     }
+
     // Build position instructions
     const collectIxForPosition = constructCollectPositionIx(
       ctx,
+      new PublicKey(positionAddr),
       position,
       whirlpools,
       positionOwnerKey,
@@ -166,7 +172,7 @@ export async function collectAllForPositionsTxns(
     } else {
       if (reattempt) {
         throw new Error(
-          `Unable to fit collection ix for ${position.getAddress().toBase58()} in a Transaction.`
+          `Unable to fit collection ix for ${position.positionMint.toBase58()} in a Transaction.`
         );
       }
 
@@ -203,7 +209,8 @@ function addNativeMintHandlingIx(
 // TODO: Once individual collect ix for positions is implemented, maybe migrate over if it can take custom ATA?
 const constructCollectPositionIx = (
   ctx: WhirlpoolContext,
-  position: Position,
+  positionKey: PublicKey,
+  position: PositionData,
   whirlpools: Record<string, WhirlpoolData | null>,
   positionOwner: PublicKey,
   positionAuthority: PublicKey,
@@ -217,8 +224,7 @@ const constructCollectPositionIx = (
     tickUpperIndex,
     positionMint,
     rewardInfos: positionRewardInfos,
-  } = position.getData();
-  const positionKey = AddressUtil.toPubKey(position.getAddress());
+  } = position;
   const whirlpool = whirlpools[whirlpoolKey.toBase58()];
 
   if (!whirlpool) {

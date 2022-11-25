@@ -9,6 +9,7 @@ import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   PositionData,
+  TickData,
   WhirlpoolData
 } from "./types/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
@@ -288,6 +289,24 @@ export interface Position {
    * @return most recently fetched PositionData for this address.
    */
   getData: () => PositionData;
+
+  /**
+   * Return the most recently fetched Whirlpool account data for this position.
+   * @return most recently fetched WhirlpoolData for this position.
+   */
+  getWhirlpoolData: () => WhirlpoolData;
+
+  /**
+   * Return the most recently fetched TickData account data for this position's lower tick.
+   * @return most recently fetched TickData for this position's lower tick.
+   */
+  getLowerTickData: () => TickData;
+
+  /**
+   * Return the most recently fetched TickData account data for this position's upper tick.
+   * @return most recently fetched TickData for this position's upper tick.
+   */
+  getUpperTickData: () => TickData;
 
   /**
    * Fetch and return the most recently fetched Position account data.

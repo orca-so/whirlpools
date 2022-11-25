@@ -6,7 +6,7 @@ import { convertListToMap } from "./txn-utils";
 
 /**
  * Fetch a list of affliated tokens from a list of whirlpools
- * 
+ *
  * SOL tokens does not use the ATA program and therefore not handled.
  * @param whirlpoolDatas An array of whirlpoolData (from fetcher.listPools)
  * @returns All the whirlpool, reward token mints in the given set of whirlpools
@@ -108,11 +108,12 @@ export async function resolveAtaForMints(
     { resolvedAtas: [], resolveAtaIxs: [] }
   );
 
-  const affliatedTokenAtaMap = convertListToMap(resolvedAtas, mints.map((mint) => mint.toBase58()));
+  const affliatedTokenAtaMap = convertListToMap(
+    resolvedAtas,
+    mints.map((mint) => mint.toBase58())
+  );
   return {
     ataTokenAddresses: affliatedTokenAtaMap,
     resolveAtaIxs,
   };
 }
-
-

@@ -15,6 +15,20 @@ import {
 import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
 
 /**
+ * Params for getting a filtered list of whirlpools.
+ */
+export type GetPoolsParams = {
+  /**
+   * Whirlpool program address.
+   */
+  programId: Address;
+  /**
+   * WhirlpoolsConfig account address.
+   */
+  configId: Address;
+};
+
+/**
  * Helper class to help interact with Whirlpool Accounts with a simpler interface.
  *
  * @category Core
@@ -47,6 +61,14 @@ export interface WhirlpoolClient {
    * @return a list of Whirlpool objects to interact with
    */
   getPools: (poolAddresses: Address[], refresh?: boolean) => Promise<Whirlpool[]>;
+
+  /**
+   * Get a list of Whirlpool objects matching the provided filter params.
+   * @param params the filter params to use
+   * @param refresh true to always request newest data from chain with this request
+   * @return a list of Whirlpool objects to interact with
+   */
+  getPoolsWithParams: (params: GetPoolsParams, refresh?: boolean) => Promise<Whirlpool[]>;
 
   /**
    * Get a Position object to interact with the Position account at the given address.

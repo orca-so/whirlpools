@@ -215,8 +215,6 @@ export class AccountFetcher {
       filters,
     });
 
-    // TODO(tmoc): Despite always retrieving newest data with GPA, considering adding refresh option and only updating cache for new accounts for consistent SDK behavior - thoughts?
-
     const parsedAccounts: WhirlpoolAccount[] = [];
     accounts.forEach(({ pubkey, account }) => {
       const parsedAccount = ParsableWhirlpool.parse(account.data);

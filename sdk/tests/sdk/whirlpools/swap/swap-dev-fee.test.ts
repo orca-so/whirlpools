@@ -428,53 +428,6 @@ describe("whirlpool-dev-fee-swap", () => {
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
     );
   });
-
-  it("swap with a manual quote with dev-fee of 200%", async () => {
-    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 22 }, tickSpacing);
-    const devWallet = Keypair.generate();
-    const whirlpool = await setupSwapTest({
-      ctx,
-      client,
-      tickSpacing,
-      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
-      initArrayStartTicks: [-5632, 0, 5632],
-      fundedPositions: [
-        buildPosition(
-          // a
-          { arrayIndex: -1, offsetIndex: 10 },
-          { arrayIndex: 1, offsetIndex: 23 },
-          tickSpacing,
-          new anchor.BN(250_000_000)
-        ),
-      ],
-    });
-
-    const devFeePercentage = Percentage.fromFraction(200, 100); // 200%
-    const inputTokenAmount = new u64(119500000);
-    const whirlpoolData = await whirlpool.refreshData();
-    const swapToken = whirlpoolData.tokenMintB;
-
-    assert.rejects(
-      async () =>
-        (
-          await whirlpool.swapWithDevFees(
-            {
-              amount: new u64(10000),
-              devFeeAmount: new u64(30000),
-              amountSpecifiedIsInput: true,
-              aToB: true,
-              otherAmountThreshold: ZERO,
-              sqrtPriceLimit: ZERO,
-              tickArray0: PublicKey.default,
-              tickArray1: PublicKey.default,
-              tickArray2: PublicKey.default,
-            },
-            devWallet.publicKey
-          )
-        ).buildAndExecute(),
-      (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
-    );
-  });
 });
 
 async function getQuotes(

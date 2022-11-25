@@ -5,7 +5,9 @@ import { DecreaseLiquidityInput } from "../../instructions";
 import {
   adjustForSlippage,
   getTokenAFromLiquidity,
-  getTokenBFromLiquidity, PositionStatus, PositionUtil
+  getTokenBFromLiquidity,
+  PositionStatus,
+  PositionUtil,
 } from "../../utils/position-util";
 import { PriceMath, TickUtil } from "../../utils/public";
 import { Position, Whirlpool } from "../../whirlpool-client";

@@ -5,27 +5,21 @@ import {
   TransactionBuilder,
 } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
+import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "../context";
 import {
-  IncreaseLiquidityInput,
   DecreaseLiquidityInput,
-  increaseLiquidityIx,
   decreaseLiquidityIx,
+  IncreaseLiquidityInput,
+  increaseLiquidityIx,
 } from "../instructions";
 import { PositionData } from "../types/public";
+import { PDAUtil, TickUtil } from "../utils/public";
 import { Position } from "../whirlpool-client";
-import { PublicKey } from "@solana/web3.js";
-import { AccountFetcher } from "../network/public";
-import { PDAUtil, TickUtil, toTx } from "../utils/public";
 
 export class PositionImpl implements Position {
   private data: PositionData;
-  constructor(
-    readonly ctx: WhirlpoolContext,
-    readonly fetcher: AccountFetcher,
-    readonly address: PublicKey,
-    data: PositionData
-  ) {
+  constructor(readonly ctx: WhirlpoolContext, readonly address: PublicKey, data: PositionData) {
     this.data = data;
   }
 
@@ -57,7 +51,7 @@ export class PositionImpl implements Position {
       : this.ctx.wallet.publicKey;
     const ataPayerKey = ataPayer ? AddressUtil.toPubKey(ataPayer) : this.ctx.wallet.publicKey;
 
-    const whirlpool = await this.fetcher.getPool(this.data.whirlpool, true);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
     if (!whirlpool) {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
@@ -78,7 +72,7 @@ export class PositionImpl implements Position {
           { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: liquidityInput.tokenMaxA },
           { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: liquidityInput.tokenMaxB },
         ],
-        () => this.fetcher.getAccountRentExempt(),
+        () => this.ctx.fetcher.getAccountRentExempt(),
         ataPayerKey
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
@@ -132,7 +126,7 @@ export class PositionImpl implements Position {
       ? AddressUtil.toPubKey(positionWallet)
       : this.ctx.wallet.publicKey;
     const ataPayerKey = ataPayer ? AddressUtil.toPubKey(ataPayer) : this.ctx.wallet.publicKey;
-    const whirlpool = await this.fetcher.getPool(this.data.whirlpool, true);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
 
     if (!whirlpool) {
       throw new Error("Unable to fetch whirlpool for this position.");
@@ -150,7 +144,7 @@ export class PositionImpl implements Position {
         this.ctx.connection,
         sourceWalletKey,
         [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
-        () => this.fetcher.getAccountRentExempt(),
+        () => this.ctx.fetcher.getAccountRentExempt(),
         ataPayerKey
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
@@ -190,7 +184,7 @@ export class PositionImpl implements Position {
   }
 
   private async refresh() {
-    const account = await this.fetcher.getPosition(this.address, true);
+    const account = await this.ctx.fetcher.getPosition(this.address, true);
     if (!!account) {
       this.data = account;
     }

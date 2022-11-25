@@ -1,5 +1,6 @@
 import { PDA } from "@orca-so/common-sdk";
 import { Program } from "@project-serum/anchor";
+import { WhirlpoolContext } from ".";
 import { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
 
@@ -414,5 +415,21 @@ export class WhirlpoolIx {
     params: ix.SetRewardEmissionsSuperAuthorityParams
   ) {
     return ix.setRewardEmissionsSuperAuthorityIx(program, params);
+  }
+
+  /**
+   * A set of transactions to collect all fees and rewards from a list of positions.
+   *
+   * @param ctx - WhirlpoolContext object for the current environment.
+   * @param params - CollectAllPositionAddressParams object.
+   * @param refresh - if true, will always fetch for the latest values on chain to compute.
+   * @returns
+   */
+  public static collectAllForPositionsTxns(
+    ctx: WhirlpoolContext,
+    params: ix.CollectAllPositionAddressParams,
+    refresh: boolean
+  ) {
+    return ix.collectAllForPositionAddressesTxns(ctx, params, refresh);
   }
 }

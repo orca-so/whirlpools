@@ -34,7 +34,57 @@ describe("swap arrays test", () => {
   const slippageTolerance = Percentage.fromFraction(0, 100);
 
   /**
-   * |-------------c2-----|xxxxxxxxxxxxxxxxx|------c1-----------|
+   * |--------------------|xxxxxxxxxxxxxxxxx|-c2---c1-----------|
+   */
+  it("3 sequential arrays, 2nd array not initialized, use tickArray0 only, a->b", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: 1, offsetIndex: 44 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 44 },
+          { arrayIndex: 2, offsetIndex: 44 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const tradeAmount = new u64(10000);
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      tradeAmount,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    // Verify with an actual swap.
+    // estimatedEndTickIndex is 8446 (arrayIndex: 1)
+    assert.equal(quote.aToB, true);
+    assert.equal(quote.amountSpecifiedIsInput, true);
+    assert.equal(
+      quote.sqrtPriceLimit.toString(),
+      SwapUtils.getDefaultSqrtPriceLimit(true).toString()
+    );
+    assert.equal(
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+    );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+    assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+  });
+
+  /**
+   * |--------------------|xxxxxxxxxxxxxc2xx|------c1-----------|
    */
   it("3 sequential arrays, 2nd array not initialized, a->b", async () => {
     const currIndex = arrayTickIndexToTickIndex({ arrayIndex: 1, offsetIndex: 44 }, tickSpacing);
@@ -55,14 +105,14 @@ describe("swap arrays test", () => {
       ],
     });
 
+    // estimatedEndTickIndex is 4091 (arrayIndex: 0 (not initialized))
     const whirlpoolData = await whirlpool.refreshData();
-    const missingTickArray = PDAUtil.getTickArray(ctx.program.programId, whirlpool.getAddress(), 0);
-    const expectedError = `[${missingTickArray.publicKey.toBase58()}] need to be initialized`;
+    const expectedError = "Swap input value traversed too many arrays.";
     await assert.rejects(
       swapQuoteByInputToken(
         whirlpool,
         whirlpoolData.tokenMintA,
-        new u64(10000),
+        new u64(40_000_000),
         slippageTolerance,
         ctx.program.programId,
         fetcher,
@@ -71,9 +121,59 @@ describe("swap arrays test", () => {
       (err: Error) => err.message.indexOf(expectedError) != -1
     );
   });
+  
+  /**
+   * |-------------c1--c2-|xxxxxxxxxxxxxxxxx|-------------------|
+   */
+  it("3 sequential arrays, 2nd array not initialized, use tickArray0 only, b->a", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 44 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 44 },
+          { arrayIndex: 2, offsetIndex: 44 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const tradeAmount = new u64(10000);
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      tradeAmount,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    // Verify with an actual swap.
+    // estimatedEndTickIndex is -2816 (arrayIndex: -1)
+    assert.equal(quote.aToB, false);
+    assert.equal(quote.amountSpecifiedIsInput, true);
+    assert.equal(
+      quote.sqrtPriceLimit.toString(),
+      SwapUtils.getDefaultSqrtPriceLimit(false).toString()
+    );
+    assert.equal(
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+    );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+    assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+  });
 
   /**
-   * |-------------c1-----|xxxxxxxxxxxxxxxxx|------c2-----------|
+   * |-------------c1-----|xxc2xxxxxxxxxxxxx|-------------------|
    */
   it("3 sequential arrays, 2nd array not initialized, b->a", async () => {
     const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 44 }, tickSpacing);
@@ -94,14 +194,14 @@ describe("swap arrays test", () => {
       ],
     });
 
+    // estimatedEndTickIndex is 556 (arrayIndex: 0 (not initialized))
     const whirlpoolData = await whirlpool.refreshData();
-    const missingTickArray = PDAUtil.getTickArray(ctx.program.programId, whirlpool.getAddress(), 0);
-    const expectedError = `[${missingTickArray.publicKey.toBase58()}] need to be initialized`;
+    const expectedError = "Swap input value traversed too many arrays.";
     await assert.rejects(
       swapQuoteByInputToken(
         whirlpool,
         whirlpoolData.tokenMintB,
-        new u64(10000),
+        new u64(40_000_000),
         slippageTolerance,
         ctx.program.programId,
         fetcher,
@@ -109,6 +209,106 @@ describe("swap arrays test", () => {
       ),
       (err: Error) => err.message.indexOf(expectedError) != -1
     );
+  });
+
+  /**
+   * |xxxxxxxxxxxxxxxxxxxx|xxxxxxxxxxxxxxxxx|-c2---c1-----------|
+   */
+  it("3 sequential arrays, 2nd array and 3rd array not initialized, use tickArray0 only, a->b", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: 1, offsetIndex: 44 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 44 },
+          { arrayIndex: 2, offsetIndex: 44 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const tradeAmount = new u64(10000);
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      tradeAmount,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    // Verify with an actual swap.
+    // estimatedEndTickIndex is 8446 (arrayIndex: 1)
+    assert.equal(quote.aToB, true);
+    assert.equal(quote.amountSpecifiedIsInput, true);
+    assert.equal(
+      quote.sqrtPriceLimit.toString(),
+      SwapUtils.getDefaultSqrtPriceLimit(true).toString()
+    );
+    assert.equal(
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+    );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+    assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+  });
+
+  /**
+   * |-------------c1--c2-|xxxxxxxxxxxxxxxxx|xxxxxxxxxxxxxxxxxxx|
+   */
+  it("3 sequential arrays, 2nd array and 3rd array not initialized, use tickArray0 only, b->a", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 44 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 44 },
+          { arrayIndex: 2, offsetIndex: 44 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const tradeAmount = new u64(10000);
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      tradeAmount,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    // Verify with an actual swap.
+    // estimatedEndTickIndex is -2816 (arrayIndex: -1)
+    assert.equal(quote.aToB, false);
+    assert.equal(quote.amountSpecifiedIsInput, true);
+    assert.equal(
+      quote.sqrtPriceLimit.toString(),
+      SwapUtils.getDefaultSqrtPriceLimit(false).toString()
+    );
+    assert.equal(
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+    );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+    assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
   });
 
   /**
@@ -535,5 +735,107 @@ describe("swap arrays test", () => {
     );
     assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
     assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+  });
+
+  /**
+   * |xxxxxxxxxxxxxxxxxxxx|xxxxxxxxxxxxxxxxx|-c2---c1-----------|
+   */
+  it("Whirlpool.swap with uninitialized TickArrays, a->b", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: 1, offsetIndex: 44 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 44 },
+          { arrayIndex: 2, offsetIndex: 44 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const tradeAmount = new u64(10000);
+    const aToB = true;
+    const tickArrays = SwapUtils.getTickArrayPublicKeys(
+      whirlpoolData.tickCurrentIndex,
+      whirlpoolData.tickSpacing,
+      aToB,
+      ctx.program.programId,
+      whirlpool.getAddress()
+    );
+
+    await assert.rejects(
+      whirlpool.swap({
+        amount: tradeAmount,
+        amountSpecifiedIsInput: true,
+        aToB,
+        otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+        sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+        tickArray0: tickArrays[0],
+        tickArray1: tickArrays[1],
+        tickArray2: tickArrays[2],
+      }),
+      (err: Error) => {
+        const uninitializedArrays = [tickArrays[1].toBase58(), tickArrays[2].toBase58()].join(", ");
+        return err.message.indexOf(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`) >= 0;
+      }
+    );
+  });
+
+  /**
+   * |-------------c1--c2-|xxxxxxxxxxxxxxxxx|xxxxxxxxxxxxxxxxxxx|
+   */
+  it("Whirlpool.swap with uninitialized TickArrays, b->a", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 44 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 44 },
+          { arrayIndex: 2, offsetIndex: 44 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const tradeAmount = new u64(10000);
+    const aToB = false;
+    const tickArrays = SwapUtils.getTickArrayPublicKeys(
+      whirlpoolData.tickCurrentIndex,
+      whirlpoolData.tickSpacing,
+      aToB,
+      ctx.program.programId,
+      whirlpool.getAddress()
+    );
+
+    await assert.rejects(
+      whirlpool.swap({
+        amount: tradeAmount,
+        amountSpecifiedIsInput: true,
+        aToB,
+        otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+        sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+        tickArray0: tickArrays[0],
+        tickArray1: tickArrays[1],
+        tickArray2: tickArrays[2],
+      }),
+      (err: Error) => {
+        const uninitializedArrays = [tickArrays[1].toBase58(), tickArrays[2].toBase58()].join(", ");
+        return err.message.indexOf(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`) >= 0;
+      }
+    );
   });
 });

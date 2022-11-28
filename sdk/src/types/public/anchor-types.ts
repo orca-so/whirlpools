@@ -22,12 +22,12 @@ export enum AccountName {
   FeeTier = "FeeTier",
 }
 
-const coder = new BorshAccountsCoder(IDL);
+export const WHIRLPOOL_CODER = new BorshAccountsCoder(IDL);
 
 /**
  * Size of the Whirlpool account in bytes.
  */
-export const WHIRLPOOL_ACCOUNT_SIZE = coder.size(IDL.accounts[4]);
+export const WHIRLPOOL_ACCOUNT_SIZE = WHIRLPOOL_CODER.size(IDL.accounts[4]);
 
 /**
  * @category Solana Accounts

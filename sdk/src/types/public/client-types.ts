@@ -1,6 +1,7 @@
 import { PublicKey } from "@solana/web3.js";
 import { AccountInfo, MintInfo, u64 } from "@solana/spl-token";
 import { TickArrayData, WhirlpoolRewardInfoData } from "./anchor-types";
+import { Address } from "@project-serum/anchor";
 
 /**
  * Extended MintInfo class to host token info.
@@ -22,4 +23,18 @@ export type WhirlpoolRewardInfo = WhirlpoolRewardInfoData & {
 export type TickArray = {
   address: PublicKey;
   data: TickArrayData | null;
+};
+
+/**
+ * Params for getting a filtered list of whirlpools.
+ */
+export type GetPoolsParams = {
+  /**
+   * Whirlpool program address.
+   */
+  programId: Address;
+  /**
+   * WhirlpoolsConfig account address.
+   */
+  configId: Address;
 };

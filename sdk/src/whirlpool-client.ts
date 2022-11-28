@@ -9,23 +9,14 @@ import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   PositionData,
-  WhirlpoolData
+  WhirlpoolData,
 } from "./types/public";
-import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
-
-/**
- * Params for getting a filtered list of whirlpools.
- */
-export type GetPoolsParams = {
-  /**
-   * Whirlpool program address.
-   */
-  programId: Address;
-  /**
-   * WhirlpoolsConfig account address.
-   */
-  configId: Address;
-};
+import {
+  GetPoolsParams,
+  TokenAccountInfo,
+  TokenInfo,
+  WhirlpoolRewardInfo,
+} from "./types/public/client-types";
 
 /**
  * Helper class to help interact with Whirlpool Accounts with a simpler interface.
@@ -62,12 +53,11 @@ export interface WhirlpoolClient {
   getPools: (poolAddresses: Address[], refresh?: boolean) => Promise<Whirlpool[]>;
 
   /**
-   * Get a list of Whirlpool objects matching the provided filter params.
+   * Get a list of Whirlpool objects using getProgramAccounts matching the provided filter params.
    * @param params the filter params to use
-   * @param refresh true to always request newest data from chain with this request
    * @return a list of Whirlpool objects to interact with
    */
-  getPoolsWithParams: (params: GetPoolsParams, refresh?: boolean) => Promise<Whirlpool[]>;
+  getPoolsWithParams: (params: GetPoolsParams) => Promise<Whirlpool[]>;
 
   /**
    * Get a Position object to interact with the Position account at the given address.

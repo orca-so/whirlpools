@@ -194,7 +194,8 @@ export class AccountFetcher {
   }
 
   /**
-   * Retrieve a list of cached whirlpool addresses and accounts filtered by the given params.
+   * Retrieve a list of cached whirlpool addresses and accounts filtered by the given params using
+   * getProgramAccounts.
    *
    * @param params whirlpool filter params
    * @returns tuple of whirlpool addresses and accounts

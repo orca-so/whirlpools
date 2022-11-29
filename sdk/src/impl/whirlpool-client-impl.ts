@@ -7,7 +7,7 @@ import { initTickArrayIx } from "../instructions";
 import { collectAllForPositionAddressesTxns } from "../instructions/composites";
 import { WhirlpoolIx } from "../ix";
 import { AccountFetcher } from "../network/public";
-import { GetPoolsParams, WhirlpoolData } from "../types/public";
+import { WhirlpoolData } from "../types/public";
 import { PDAUtil, PoolUtil, PriceMath, TickUtil } from "../utils/public";
 import { Position, Whirlpool, WhirlpoolClient } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
@@ -89,12 +89,6 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       );
     }
     return whirlpools;
-  }
-
-  public async getPoolsWithParams(params: GetPoolsParams): Promise<Whirlpool[]> {
-    const pools = await this.ctx.fetcher.listPoolsWithParams(params);
-    const addresses = pools.map((pool) => pool[0]);
-    return await this.getPools(addresses, false);
   }
 
   public async getPosition(positionAddress: Address, refresh = false): Promise<Position> {

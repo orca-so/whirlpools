@@ -24,17 +24,3 @@ export type TickArray = {
   address: PublicKey;
   data: TickArrayData | null;
 };
-
-/**
- * Params for getting a filtered list of whirlpools.
- */
-export type GetPoolsParams = {
-  /**
-   * Whirlpool program address.
-   */
-  programId: Address;
-  /**
-   * WhirlpoolsConfig account address.
-   */
-  configId: Address;
-};

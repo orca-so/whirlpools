@@ -11,13 +11,15 @@ import {
   ParsableWhirlpool,
   ParsableWhirlpoolsConfig,
 } from "./parsing";
-import { ACCOUNT_DISCRIMINATOR_SIZE, Address } from "@project-serum/anchor";
+import { Address } from "@project-serum/anchor";
 import {
   PositionData,
   TickArrayData,
   WhirlpoolsConfigData,
   WhirlpoolData,
   WHIRLPOOL_ACCOUNT_SIZE,
+  WHIRLPOOL_CODER,
+  AccountName,
 } from "../..";
 import { FeeTierData } from "../../types/public";
 import { AddressUtil } from "@orca-so/common-sdk";
@@ -204,10 +206,10 @@ export class AccountFetcher {
     const filters = [
       { dataSize: WHIRLPOOL_ACCOUNT_SIZE },
       {
-        memcmp: {
-          offset: ACCOUNT_DISCRIMINATOR_SIZE,
-          bytes: AddressUtil.toPubKey(configId).toBase58(),
-        },
+        memcmp: WHIRLPOOL_CODER.memcmp(
+          AccountName.Whirlpool,
+          AddressUtil.toPubKey(configId).toBuffer()
+        ),
       },
     ];
 

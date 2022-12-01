@@ -1,7 +1,6 @@
 import { PublicKey } from "@solana/web3.js";
 import { AccountInfo, MintInfo, u64 } from "@solana/spl-token";
 import { TickArrayData, WhirlpoolRewardInfoData } from "./anchor-types";
-import { Address } from "@project-serum/anchor";
 
 /**
  * Extended MintInfo class to host token info.

@@ -9,7 +9,7 @@ import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   PositionData,
-  WhirlpoolData,
+  WhirlpoolData
 } from "./types/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
 

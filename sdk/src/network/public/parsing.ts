@@ -8,7 +8,7 @@ import {
   AccountName,
   FeeTierData,
 } from "../../types/public";
-import { BorshAccountsCoder, BorshCoder, Idl } from "@project-serum/anchor";
+import { BorshAccountsCoder, Idl } from "@project-serum/anchor";
 import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
 import { TokenUtil } from "@orca-so/common-sdk";
 

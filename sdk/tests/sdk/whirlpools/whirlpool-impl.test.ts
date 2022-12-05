@@ -143,10 +143,7 @@ describe("whirlpool-impl", () => {
       Percentage.fromFraction(1, 100)
     );
 
-    if (ataTx.compressIx(false).instructions.length > 0) {
-      await ataTx.buildAndExecute();
-    }
-
+    await ataTx?.buildAndExecute();
     await closeTx.buildAndExecute();
 
     // Verify position is closed and owner wallet has the tokens back
@@ -281,7 +278,7 @@ describe("whirlpool-impl", () => {
       ctx.wallet.publicKey
     );
 
-    await ataTx.buildAndExecute();
+    await ataTx?.buildAndExecute();
     await closeTx.addSigner(otherWallet).buildAndExecute();
 
     // Verify position is closed and owner wallet has the tokens back
@@ -425,7 +422,7 @@ describe("whirlpool-impl", () => {
     const rewardAccount1 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[1].mint);
     const rewardAccount2 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[2].mint);
 
-    await ataTx.buildAndExecute();
+    await ataTx?.buildAndExecute();
     await closeTx.addSigner(otherWallet).buildAndExecute();
 
     const tickLowerArrayData = await ctx.fetcher.getTickArray(

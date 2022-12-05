@@ -245,7 +245,7 @@ export interface Whirlpool {
     destinationWallet?: Address,
     positionWallet?: Address,
     payer?: Address
-  ) => Promise<{ ataTx: TransactionBuilder; closeTx: TransactionBuilder }>;
+  ) => Promise<{ ataTx?: TransactionBuilder; closeTx: TransactionBuilder }>;
 
   /**
    * Perform a swap between tokenA and tokenB on this pool.

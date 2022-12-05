@@ -474,7 +474,7 @@ export class WhirlpoolImpl implements Whirlpool {
       txBuilder.addInstruction(liquidityIx);
     } else {
       if (shouldCollectFees || shouldCollectRewards) {
-        // We need to manually udpate the fees/rewards since there is not liquidity IX to do so
+        // We need to manually udpate the fees/rewards since there is no liquidity IX to do so
         txBuilder.addInstruction(
           updateFeesAndRewardsIx(this.ctx.program, {
             whirlpool: position.whirlpool,
@@ -488,7 +488,7 @@ export class WhirlpoolImpl implements Whirlpool {
 
     if (shouldCollectFees) {
       const collectFeexTx = await positionImpl.collectFees(
-        false, // false because we already create Token A and B ATAs as part of close position
+        false,
         false,
         destinationWallet,
         positionWallet,
@@ -498,7 +498,7 @@ export class WhirlpoolImpl implements Whirlpool {
       txBuilder.addInstruction(collectFeexTx.compressIx(false));
     }
 
-    if (rewardsToCollect.length > 0) {
+    if (shouldCollectRewards) {
       const collectRewardsTx = await positionImpl.collectRewards(
         false,
         false,

@@ -1,4 +1,5 @@
-import { BN } from "@project-serum/anchor";
+import { BN, BorshAccountsCoder } from "@project-serum/anchor";
+import { IDL } from "../../artifacts/whirlpool";
 import { PublicKey } from "@solana/web3.js";
 
 /**
@@ -20,6 +21,13 @@ export enum AccountName {
   Whirlpool = "Whirlpool",
   FeeTier = "FeeTier",
 }
+
+export const WHIRLPOOL_CODER = new BorshAccountsCoder(IDL);
+
+/**
+ * Size of the Whirlpool account in bytes.
+ */
+export const WHIRLPOOL_ACCOUNT_SIZE = WHIRLPOOL_CODER.size(IDL.accounts[4]);
 
 /**
  * @category Solana Accounts

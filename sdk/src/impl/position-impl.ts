@@ -2,27 +2,20 @@ import {
   AddressUtil,
   deriveATA,
   resolveOrCreateATAs,
-  TransactionBuilder,
+  TransactionBuilder
 } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
-import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
 import {
   DecreaseLiquidityInput,
   decreaseLiquidityIx,
   IncreaseLiquidityInput,
-  increaseLiquidityIx,
+  increaseLiquidityIx
 } from "../instructions";
-import {
-  PositionData,
-  TickArrayData,
-  TickData,
-  TICK_ARRAY_SIZE,
-  WhirlpoolData,
-} from "../types/public";
+import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
-import { PDAUtil, TickUtil } from "../utils/public";
+import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { Position } from "../whirlpool-client";
 
 export class PositionImpl implements Position {
@@ -57,29 +50,19 @@ export class PositionImpl implements Position {
   }
 
   getLowerTickData(): TickData {
-    const offsetIndex = TickUtil.getOffsetIndex(
+    return TickArrayUtil.getTickFromArray(
+      this.lowerTickArrayData,
       this.data.tickLowerIndex,
-      this.lowerTickArrayData.startTickIndex,
       this.whirlpoolData.tickSpacing
     );
-    invariant(
-      offsetIndex > 0 && offsetIndex < TICK_ARRAY_SIZE,
-      "getLowerTickData - tick index does not exist in provided tick-array"
-    );
-    return this.lowerTickArrayData.ticks[offsetIndex];
   }
 
   getUpperTickData(): TickData {
-    const offsetIndex = TickUtil.getOffsetIndex(
+    return TickArrayUtil.getTickFromArray(
+      this.upperTickArrayData,
       this.data.tickUpperIndex,
-      this.upperTickArrayData.startTickIndex,
       this.whirlpoolData.tickSpacing
     );
-    invariant(
-      offsetIndex > 0 && offsetIndex < TICK_ARRAY_SIZE,
-      "getUpperTickData - tick index does not exist in provided tick-array"
-    );
-    return this.upperTickArrayData.ticks[offsetIndex];
   }
 
   async refreshData() {
@@ -247,7 +230,8 @@ export class PositionImpl implements Position {
     const [lowerTickArray, upperTickArray] = await getTickArrayDataForPosition(
       this.ctx,
       this.data,
-      this.whirlpoolData
+      this.whirlpoolData,
+      true
     );
     if (lowerTickArray) {
       this.lowerTickArrayData = lowerTickArray;

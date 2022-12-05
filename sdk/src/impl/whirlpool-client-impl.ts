@@ -10,7 +10,6 @@ import { AccountFetcher } from "../network/public";
 import { WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, PriceMath, TickUtil } from "../utils/public";
-import { convertListToMap } from "../utils/txn-utils";
 import { Position, Whirlpool, WhirlpoolClient } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./util";
@@ -106,7 +105,8 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     const [lowerTickArray, upperTickArray] = await getTickArrayDataForPosition(
       this.ctx,
       account,
-      whirlAccount
+      whirlAccount,
+      refresh
     );
     if (!lowerTickArray || !upperTickArray) {
       throw new Error(`Unable to fetch TickArrays for Position at address at ${positionAddress}`);
@@ -130,13 +130,12 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     const whirlpoolAddr = positions
       .map((position) => position?.whirlpool.toBase58())
       .flatMap((x) => (!!x ? x : []));
-    const whirlpools = await this.ctx.fetcher.listPools(whirlpoolAddr, refresh);
-    const whirlpoolMap = convertListToMap(whirlpools, whirlpoolAddr);
+    await this.ctx.fetcher.listPools(whirlpoolAddr, refresh);
     const tickArrayAddresses: Set<PublicKey> = new Set();
     await Promise.all(
       positions.map(async (pos) => {
         if (pos) {
-          const pool = whirlpoolMap[pos.whirlpool.toBase58()];
+          const pool = await this.ctx.fetcher.getPool(pos.whirlpool, false);
           if (pool) {
             const lowerTickArrayPda = PDAUtil.getTickArrayFromTickIndex(
               pos.tickLowerIndex,

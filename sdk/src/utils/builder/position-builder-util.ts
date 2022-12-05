@@ -5,20 +5,21 @@ import { PDAUtil } from "../public";
 export async function getTickArrayDataForPosition(
   ctx: WhirlpoolContext,
   position: PositionData,
-  whirlpool: WhirlpoolData
+  whirlpool: WhirlpoolData,
+  refresh: boolean
 ) {
-  const lowerTickArrayPda = PDAUtil.getTickArrayFromTickIndex(
+  const lowerTickArrayKey = PDAUtil.getTickArrayFromTickIndex(
     position.tickLowerIndex,
     whirlpool.tickSpacing,
     position.whirlpool,
     ctx.program.programId
   ).publicKey;
-  const upperTickArrayPda = PDAUtil.getTickArrayFromTickIndex(
+  const upperTickArrayKey = PDAUtil.getTickArrayFromTickIndex(
     position.tickUpperIndex,
     whirlpool.tickSpacing,
     position.whirlpool,
     ctx.program.programId
   ).publicKey;
 
-  return await ctx.fetcher.listTickArrays([lowerTickArrayPda, upperTickArrayPda], true);
+  return await ctx.fetcher.listTickArrays([lowerTickArrayKey, upperTickArrayKey], refresh);
 }

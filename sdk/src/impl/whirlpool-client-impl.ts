@@ -16,7 +16,7 @@ import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./
 import { WhirlpoolImpl } from "./whirlpool-impl";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
-  constructor(readonly ctx: WhirlpoolContext) {}
+  constructor(readonly ctx: WhirlpoolContext) { }
 
   public getContext(): WhirlpoolContext {
     return this.ctx;
@@ -127,10 +127,10 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
   ): Promise<Record<string, Position | null>> {
     // TODO: Prefetch and use fetcher as a cache - Think of a cleaner way to prefetch
     const positions = await this.ctx.fetcher.listPositions(positionAddresses, refresh);
-    const whirlpoolAddr = positions
+    const whirlpoolAddrs = positions
       .map((position) => position?.whirlpool.toBase58())
       .flatMap((x) => (!!x ? x : []));
-    await this.ctx.fetcher.listPools(whirlpoolAddr, refresh);
+    await this.ctx.fetcher.listPools(whirlpoolAddrs, refresh);
     const tickArrayAddresses: Set<PublicKey> = new Set();
     await Promise.all(
       positions.map(async (pos) => {

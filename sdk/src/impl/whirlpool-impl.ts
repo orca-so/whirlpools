@@ -335,7 +335,7 @@ export class WhirlpoolImpl implements Whirlpool {
     destinationWallet: PublicKey,
     positionWallet: PublicKey,
     payerKey: PublicKey
-  ): Promise<{ ataTx: TransactionBuilder; closeTx: TransactionBuilder }> {
+  ): Promise<{ ataTx?: TransactionBuilder; closeTx: TransactionBuilder }> {
     const position = await this.ctx.fetcher.getPosition(positionAddress, true);
     if (!position) {
       throw new Error(`Position not found: ${positionAddress.toBase58()}`);

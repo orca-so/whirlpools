@@ -138,13 +138,11 @@ describe("whirlpool-impl", () => {
     assert.ok(positionData.whirlpool.equals(poolInitInfo.whirlpoolPda.publicKey));
 
     // [Action] Close Position
-    const { ataTx, closeTx } = await pool.closePosition(
-      positionAddress,
-      Percentage.fromFraction(1, 100)
-    );
+    const txs = await pool.closePosition(positionAddress, Percentage.fromFraction(1, 100));
 
-    await ataTx?.buildAndExecute();
-    await closeTx.buildAndExecute();
+    for (const tx of txs) {
+      await tx.buildAndExecute();
+    }
 
     // Verify position is closed and owner wallet has the tokens back
     const postClosePosition = await fetcher.getPosition(positionAddress, true);
@@ -270,13 +268,24 @@ describe("whirlpool-impl", () => {
 
     const destinationWallet = anchor.web3.Keypair.generate();
 
-    const { ataTx, closeTx } = await pool.closePosition(
+    const txs = await pool.closePosition(
       positionAddress,
       Percentage.fromFraction(1, 100),
       destinationWallet.publicKey,
       otherWallet.publicKey,
       ctx.wallet.publicKey
     );
+
+    let ataTx: TransactionBuilder | undefined;
+    let closeTx: TransactionBuilder;
+    if (txs.length === 1) {
+      closeTx = txs[0];
+    } else if (txs.length === 2) {
+      ataTx = txs[0];
+      closeTx = txs[1];
+    } else {
+      throw new Error(`Invalid length for txs ${txs}`);
+    }
 
     await ataTx?.buildAndExecute();
     await closeTx.addSigner(otherWallet).buildAndExecute();
@@ -401,7 +410,7 @@ describe("whirlpool-impl", () => {
     const position = await client.getPosition(positionWithFees.publicKey, true);
     const positionData = position.getData();
     const poolData = pool.getData();
-    const { ataTx, closeTx } = await pool.closePosition(
+    const txs = await pool.closePosition(
       positionWithFees.publicKey,
       new Percentage(new u64(10), new u64(100)),
       otherWallet.publicKey,
@@ -421,6 +430,17 @@ describe("whirlpool-impl", () => {
     const rewardAccount0 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[0].mint);
     const rewardAccount1 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[1].mint);
     const rewardAccount2 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[2].mint);
+
+    let ataTx: TransactionBuilder | undefined;
+    let closeTx: TransactionBuilder;
+    if (txs.length === 1) {
+      closeTx = txs[0];
+    } else if (txs.length === 2) {
+      ataTx = txs[0];
+      closeTx = txs[1];
+    } else {
+      throw new Error(`Invalid length for txs ${txs}`);
+    }
 
     await ataTx?.buildAndExecute();
     await closeTx.addSigner(otherWallet).buildAndExecute();

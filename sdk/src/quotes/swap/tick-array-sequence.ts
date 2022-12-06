@@ -36,12 +36,12 @@ export class TickArraySequence {
     // If an uninitialized TickArray appears, truncate all TickArrays after it (inclusive).
     this.sequence = [];
     for (const tickArray of tickArrays) {
-      if ( !tickArray || !tickArray.data ) {
+      if (!tickArray || !tickArray.data) {
         break;
       }
       this.sequence.push({
         address: tickArray.address,
-        data: tickArray.data
+        data: tickArray.data,
       });
     }
 

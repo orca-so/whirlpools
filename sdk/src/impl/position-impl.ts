@@ -2,7 +2,7 @@ import {
   AddressUtil,
   deriveATA,
   resolveOrCreateATAs,
-  TransactionBuilder,
+  TransactionBuilder
 } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
@@ -11,16 +11,30 @@ import {
   DecreaseLiquidityInput,
   decreaseLiquidityIx,
   IncreaseLiquidityInput,
-  increaseLiquidityIx,
+  increaseLiquidityIx
 } from "../instructions";
-import { PositionData } from "../types/public";
-import { PDAUtil, TickUtil } from "../utils/public";
+import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
+import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
+import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { Position } from "../whirlpool-client";
 
 export class PositionImpl implements Position {
   private data: PositionData;
-  constructor(readonly ctx: WhirlpoolContext, readonly address: PublicKey, data: PositionData) {
+  private whirlpoolData: WhirlpoolData;
+  private lowerTickArrayData: TickArrayData;
+  private upperTickArrayData: TickArrayData;
+  constructor(
+    readonly ctx: WhirlpoolContext,
+    readonly address: PublicKey,
+    data: PositionData,
+    whirlpoolData: WhirlpoolData,
+    lowerTickArrayData: TickArrayData,
+    upperTickArrayData: TickArrayData
+  ) {
     this.data = data;
+    this.whirlpoolData = whirlpoolData;
+    this.lowerTickArrayData = lowerTickArrayData;
+    this.upperTickArrayData = upperTickArrayData;
   }
 
   getAddress(): PublicKey {
@@ -29,6 +43,26 @@ export class PositionImpl implements Position {
 
   getData(): PositionData {
     return this.data;
+  }
+
+  getWhirlpoolData(): WhirlpoolData {
+    return this.whirlpoolData;
+  }
+
+  getLowerTickData(): TickData {
+    return TickArrayUtil.getTickFromArray(
+      this.lowerTickArrayData,
+      this.data.tickLowerIndex,
+      this.whirlpoolData.tickSpacing
+    );
+  }
+
+  getUpperTickData(): TickData {
+    return TickArrayUtil.getTickFromArray(
+      this.upperTickArrayData,
+      this.data.tickUpperIndex,
+      this.whirlpoolData.tickSpacing
+    );
   }
 
   async refreshData() {
@@ -184,9 +218,26 @@ export class PositionImpl implements Position {
   }
 
   private async refresh() {
-    const account = await this.ctx.fetcher.getPosition(this.address, true);
-    if (!!account) {
-      this.data = account;
+    const positionAccount = await this.ctx.fetcher.getPosition(this.address, true);
+    if (!!positionAccount) {
+      this.data = positionAccount;
+    }
+    const whirlpoolAccount = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
+    if (!!whirlpoolAccount) {
+      this.whirlpoolData = whirlpoolAccount;
+    }
+
+    const [lowerTickArray, upperTickArray] = await getTickArrayDataForPosition(
+      this.ctx,
+      this.data,
+      this.whirlpoolData,
+      true
+    );
+    if (lowerTickArray) {
+      this.lowerTickArrayData = lowerTickArray;
+    }
+    if (upperTickArray) {
+      this.upperTickArrayData = upperTickArray;
     }
   }
 }

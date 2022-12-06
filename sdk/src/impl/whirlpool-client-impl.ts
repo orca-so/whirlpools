@@ -8,6 +8,7 @@ import { collectAllForPositionAddressesTxns } from "../instructions/composites";
 import { WhirlpoolIx } from "../ix";
 import { AccountFetcher } from "../network/public";
 import { WhirlpoolData } from "../types/public";
+import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, PriceMath, TickUtil } from "../utils/public";
 import { Position, Whirlpool, WhirlpoolClient } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
@@ -15,7 +16,7 @@ import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./
 import { WhirlpoolImpl } from "./whirlpool-impl";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
-  constructor(readonly ctx: WhirlpoolContext) {}
+  constructor(readonly ctx: WhirlpoolContext) { }
 
   public getContext(): WhirlpoolContext {
     return this.ctx;
@@ -96,23 +97,77 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     if (!account) {
       throw new Error(`Unable to fetch Position at address at ${positionAddress}`);
     }
-    return new PositionImpl(this.ctx, AddressUtil.toPubKey(positionAddress), account);
+    const whirlAccount = await this.ctx.fetcher.getPool(account.whirlpool, refresh);
+    if (!whirlAccount) {
+      throw new Error(`Unable to fetch Whirlpool for Position at address at ${positionAddress}`);
+    }
+
+    const [lowerTickArray, upperTickArray] = await getTickArrayDataForPosition(
+      this.ctx,
+      account,
+      whirlAccount,
+      refresh
+    );
+    if (!lowerTickArray || !upperTickArray) {
+      throw new Error(`Unable to fetch TickArrays for Position at address at ${positionAddress}`);
+    }
+    return new PositionImpl(
+      this.ctx,
+      AddressUtil.toPubKey(positionAddress),
+      account,
+      whirlAccount,
+      lowerTickArray,
+      upperTickArray
+    );
   }
 
   public async getPositions(
     positionAddresses: Address[],
     refresh = false
   ): Promise<Record<string, Position | null>> {
-    const accounts = await this.ctx.fetcher.listPositions(positionAddresses, refresh);
-    const results = accounts.map((positionAccount, index) => {
-      const address = positionAddresses[index];
-      if (!positionAccount) {
-        return [address, null];
-      }
+    // TODO: Prefetch and use fetcher as a cache - Think of a cleaner way to prefetch
+    const positions = await this.ctx.fetcher.listPositions(positionAddresses, refresh);
+    const whirlpoolAddrs = positions
+      .map((position) => position?.whirlpool.toBase58())
+      .flatMap((x) => (!!x ? x : []));
+    await this.ctx.fetcher.listPools(whirlpoolAddrs, refresh);
+    const tickArrayAddresses: Set<PublicKey> = new Set();
+    await Promise.all(
+      positions.map(async (pos) => {
+        if (pos) {
+          const pool = await this.ctx.fetcher.getPool(pos.whirlpool, false);
+          if (pool) {
+            const lowerTickArrayPda = PDAUtil.getTickArrayFromTickIndex(
+              pos.tickLowerIndex,
+              pool.tickSpacing,
+              pos.whirlpool,
+              this.ctx.program.programId
+            ).publicKey;
+            const upperTickArrayPda = PDAUtil.getTickArrayFromTickIndex(
+              pos.tickUpperIndex,
+              pool.tickSpacing,
+              pos.whirlpool,
+              this.ctx.program.programId
+            ).publicKey;
+            tickArrayAddresses.add(lowerTickArrayPda);
+            tickArrayAddresses.add(upperTickArrayPda);
+          }
+        }
+      })
+    );
+    await this.ctx.fetcher.listTickArrays(Array.from(tickArrayAddresses), true);
 
-      return [address, new PositionImpl(this.ctx, AddressUtil.toPubKey(address), positionAccount)];
-    });
-
+    // Use getPosition and the prefetched values to generate the Positions
+    const results = await Promise.all(
+      positionAddresses.map(async (pos) => {
+        try {
+          const position = await this.getPosition(pos, false);
+          return [pos, position];
+        } catch {
+          return [pos, null];
+        }
+      })
+    );
     return Object.fromEntries(results);
   }
 

@@ -5,7 +5,7 @@ import {
   resolveOrCreateATAs,
   TokenUtil,
   TransactionBuilder,
-  ZERO
+  ZERO,
 } from "@orca-so/common-sdk";
 import { Address, BN, translateAddress } from "@project-serum/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
@@ -21,7 +21,7 @@ import {
   openPositionIx,
   openPositionWithMetadataIx,
   SwapInput,
-  swapIx
+  swapIx,
 } from "../instructions";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../quotes/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";

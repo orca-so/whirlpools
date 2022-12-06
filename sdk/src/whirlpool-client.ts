@@ -364,6 +364,7 @@ export interface Position {
    * @param destinationWallet - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
    * @param ataPayer - wallet that will fund the creation of the new associated token accounts
+   * @param refresh - set to true to bypass cached on-chain data
    * @return the transaction that will collect fees from the position
    */
   collectFees: (
@@ -371,7 +372,8 @@ export interface Position {
     updateFeesAndRewards?: boolean,
     destinationWallet?: Address,
     positionWallet?: Address,
-    ataPayer?: Address
+    ataPayer?: Address,
+    refresh?: boolean
   ) => Promise<TransactionBuilder>;
 
   /**
@@ -385,6 +387,7 @@ export interface Position {
    * @param positionWallet - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
    * @param ataPayer - wallet that will fund the creation of the new associated token accounts
    * @param rewardsToCollect - reward mints to collect (omitting this parameter means all rewards will be collected)
+   * @param refresh - set to true to bypass cached on-chain data
    * @return the transaction that will collect fees from the position
    */
   collectRewards: (
@@ -393,6 +396,7 @@ export interface Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    rewardsToCollect?: Address[]
+    rewardsToCollect?: Address[],
+    refresh?: boolean
   ) => Promise<TransactionBuilder>;
 }

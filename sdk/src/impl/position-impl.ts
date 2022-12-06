@@ -227,7 +227,8 @@ export class PositionImpl implements Position {
     updateFeesAndRewards: boolean = true,
     destinationWallet?: Address,
     positionWallet?: Address,
-    ataPayer?: Address
+    ataPayer?: Address,
+    refresh = false
   ): Promise<TransactionBuilder> {
     const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
       destinationWallet ?? this.ctx.wallet.publicKey,
@@ -235,7 +236,7 @@ export class PositionImpl implements Position {
       ataPayer ?? this.ctx.wallet.publicKey,
     ]);
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, refresh);
     if (!whirlpool) {
       throw new Error(
         `Unable to fetch whirlpool (${this.data.whirlpool}) for this position (${this.address}).`
@@ -288,7 +289,8 @@ export class PositionImpl implements Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    rewardsToCollect?: Address[]
+    rewardsToCollect?: Address[],
+    refresh = false
   ): Promise<TransactionBuilder> {
     const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
       destinationWallet ?? this.ctx.wallet.publicKey,
@@ -296,7 +298,7 @@ export class PositionImpl implements Position {
       ataPayer ?? this.ctx.wallet.publicKey,
     ]);
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
     if (!whirlpool) {
       throw new Error(
         `Unable to fetch whirlpool (${this.data.whirlpool}) for this position (${this.address}).`

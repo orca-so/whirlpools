@@ -530,7 +530,7 @@ export class WhirlpoolImpl implements Whirlpool {
     txBuilder.addInstruction(positionIx);
 
     return {
-      ataTx: ataTxBuilder.compressIx(false).instructions.length > 0 ? ataTxBuilder : undefined,
+      ataTx: ataTxBuilder.isEmpty() ? undefined : ataTxBuilder,
       closeTx: txBuilder,
     };
   }

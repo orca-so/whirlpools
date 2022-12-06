@@ -120,7 +120,7 @@ describe("whirlpool-impl", () => {
 
     // Verify position exists and numbers fit input parameters
     const positionAddress = PDAUtil.getPosition(ctx.program.programId, positionMint).publicKey;
-    const position = await client.getPosition(positionAddress);
+    const position = await client.getPosition(positionAddress, true);
     const positionData = position.getData();
 
     const tickLowerIndex = TickUtil.getInitializableTickIndex(
@@ -232,7 +232,7 @@ describe("whirlpool-impl", () => {
 
     // Verify position exists and numbers fit input parameters
     const positionAddress = PDAUtil.getPosition(ctx.program.programId, positionMint).publicKey;
-    const position = await client.getPosition(positionAddress);
+    const position = await client.getPosition(positionAddress, true);
     const positionData = position.getData();
 
     const tickLowerIndex = TickUtil.getInitializableTickIndex(

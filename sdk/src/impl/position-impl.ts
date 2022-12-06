@@ -223,8 +223,8 @@ export class PositionImpl implements Position {
   }
 
   async collectFees(
-    resolveATA: boolean = true,
     updateFeesAndRewards: boolean = true,
+    resolveATA: boolean = true,
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
@@ -284,13 +284,13 @@ export class PositionImpl implements Position {
   }
 
   async collectRewards(
-    resolveATA: boolean = true,
+    rewardsToCollect?: Address[],
     updateFeesAndRewards: boolean = true,
+    resolveATA: boolean = true,
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    rewardsToCollect?: Address[],
-    refresh = false
+    refresh = true
   ): Promise<TransactionBuilder> {
     const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
       destinationWallet ?? this.ctx.wallet.publicKey,
@@ -298,7 +298,7 @@ export class PositionImpl implements Position {
       ataPayer ?? this.ctx.wallet.publicKey,
     ]);
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, refresh);
     if (!whirlpool) {
       throw new Error(
         `Unable to fetch whirlpool (${this.data.whirlpool}) for this position (${this.address}).`

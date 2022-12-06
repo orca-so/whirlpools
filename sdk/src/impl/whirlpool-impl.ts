@@ -30,6 +30,7 @@ import {
   decreaseLiquidityQuoteByLiquidityWithParams,
 } from "../quotes/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
+import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { getTokenMintsFromWhirlpools, resolveAtaForMints } from "../utils/whirlpool-ata-utils";
 import { Whirlpool } from "../whirlpool-client";
@@ -355,6 +356,17 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.provider.wallet
     );
 
+    const affiliatedMints = getTokenMintsFromWhirlpools([whirlpool]);
+    const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
+    const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(this.ctx, {
+      mints: affiliatedMints,
+      accountExemption,
+      receiver: destinationWallet,
+      payer: payerKey,
+    });
+
+    ataTxBuilder.addInstructions(resolveAtaIxs);
+
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
       this.ctx.provider.wallet
@@ -374,21 +386,11 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.program.programId
     ).publicKey;
 
-    const affiliatedMints = getTokenMintsFromWhirlpools([whirlpool]);
-    const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
-    const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(this.ctx, {
-      mints: affiliatedMints,
-      accountExemption,
-      receiver: destinationWallet,
-      payer: payerKey,
-    });
-
-    ataTxBuilder.addInstructions(resolveAtaIxs);
-
-    const tickArrayLowerData = await this.ctx.fetcher.getTickArray(tickArrayLower, true);
-    const tickArrayUpperData = await this.ctx.fetcher.getTickArray(
-      tickArrayUpper,
-      !tickArrayUpper.equals(tickArrayLower)
+    const [tickArrayLowerData, tickArrayUpperData] = await getTickArrayDataForPosition(
+      this.ctx,
+      positionData,
+      whirlpool,
+      true
     );
 
     invariant(
@@ -410,17 +412,8 @@ export class WhirlpoolImpl implements Whirlpool {
       tickArrayUpperData
     );
 
-    const tickLower = TickArrayUtil.getTickFromArray(
-      tickArrayLowerData,
-      positionData.tickLowerIndex,
-      whirlpool.tickSpacing
-    );
-
-    const tickUpper = TickArrayUtil.getTickFromArray(
-      tickArrayUpperData,
-      positionData.tickUpperIndex,
-      whirlpool.tickSpacing
-    );
+    const tickLower = position.getLowerTickData();
+    const tickUpper = position.getUpperTickData();
 
     const feesQuote = collectFeesQuote({
       position: positionData,

@@ -401,6 +401,15 @@ export class WhirlpoolImpl implements Whirlpool {
       `Tick array ${tickArrayUpper} expected to be initialized for whirlpool ${this.address}`
     );
 
+    const position = new PositionImpl(
+      this.ctx,
+      positionAddress,
+      positionData,
+      whirlpool,
+      tickArrayLowerData,
+      tickArrayUpperData
+    );
+
     const tickLower = TickArrayUtil.getTickFromArray(
       tickArrayLowerData,
       positionData.tickLowerIndex,
@@ -438,15 +447,6 @@ export class WhirlpoolImpl implements Whirlpool {
       .map((info) => info.mint);
 
     const shouldCollectRewards = rewardsToCollect.length > 0;
-
-    const position = new PositionImpl(
-      this.ctx,
-      positionAddress,
-      positionData,
-      whirlpool,
-      tickArrayLowerData,
-      tickArrayUpperData
-    );
 
     if (positionData.liquidity.gtn(0)) {
       /* Remove all liquidity remaining in the position */

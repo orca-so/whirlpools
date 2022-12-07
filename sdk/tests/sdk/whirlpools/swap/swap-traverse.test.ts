@@ -1171,6 +1171,174 @@ describe("swap traversal tests", () => {
   });
 
   /**
+   *          -5632        0         5632      11264
+   * |-a--------|-------x1-|----------|----------|-x2-----a-|
+   *                            ta0        ta1        ta2
+   */
+  it("b->a, tickCurrentIndex = -tickSpacing, shifted", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 87 }, tickSpacing);
+    const aToB = false;
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 0, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 10 },
+          { arrayIndex: 2, offsetIndex: 80 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const beforeVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+    const inputTokenQuote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new u64(200000000),
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+    const ta2StartTickIndex = 11264
+    assert.ok(inputTokenQuote.estimatedEndTickIndex > ta2StartTickIndex); // traverse ta0, ta1, and ta2
+
+    const outputTokenQuote = await swapQuoteByOutputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      inputTokenQuote.estimatedAmountOut,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+    assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
+    await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
+
+    const newData = await whirlpool.refreshData();
+    const afterVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+    assertQuoteAndResults(aToB, inputTokenQuote, newData, beforeVaultAmounts, afterVaultAmounts);
+  });
+
+  /**
+   *          -5632        0         5632      11264
+   * |-a--------|--------x1|----------|----------|-x2-----a-|
+   *                            ta0        ta1        ta2
+   */
+  it("b->a, tickCurrentIndex = -1, shifted", async () => {
+    const currIndex = -1;
+    const aToB = false;
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 0, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 10 },
+          { arrayIndex: 2, offsetIndex: 80 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const beforeVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+    const inputTokenQuote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new u64(200000000),
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+    const ta2StartTickIndex = 11264
+    assert.ok(inputTokenQuote.estimatedEndTickIndex > ta2StartTickIndex); // traverse ta0, ta1, and ta2
+
+    const outputTokenQuote = await swapQuoteByOutputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      inputTokenQuote.estimatedAmountOut,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+    assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
+    await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
+
+    const newData = await whirlpool.refreshData();
+    const afterVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+    assertQuoteAndResults(aToB, inputTokenQuote, newData, beforeVaultAmounts, afterVaultAmounts);
+  });
+
+  /**
+   *          -5632        0         5632      11264
+   * |-a--------|XXXXXXXXx1|----------|----------|-x2-----a-|
+   *                            ta0        ta1        ta2
+   */
+  it("b->a, tickCurrentIndex = -1, tickCurrentIndex on uninitialized TickArray, shifted", async () => {
+    const currIndex = -1;
+    const aToB = false;
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, 0, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 10 },
+          { arrayIndex: 2, offsetIndex: 80 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const beforeVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+    const inputTokenQuote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new u64(200000000),
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+    const ta2StartTickIndex = 11264
+    assert.ok(inputTokenQuote.estimatedEndTickIndex > ta2StartTickIndex); // traverse ta0, ta1, and ta2
+
+    const outputTokenQuote = await swapQuoteByOutputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      inputTokenQuote.estimatedAmountOut,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+    assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
+    await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
+
+    const newData = await whirlpool.refreshData();
+    const afterVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+    assertQuoteAndResults(aToB, inputTokenQuote, newData, beforeVaultAmounts, afterVaultAmounts);
+  });
+
+  /**
    * sqrtPriceLimit < MIN_SQRT_PRICE
    * |--------------------|-----------------|---------x1----------|
    */

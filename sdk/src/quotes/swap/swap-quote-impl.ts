@@ -47,7 +47,7 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
   const tickSequence = new TickArraySequence(tickArrays, whirlpoolData.tickSpacing, aToB);
 
   // Ensure 1st search-index resides on the 1st array in the sequence to match smart contract expectation.
-  if (!tickSequence.checkArrayContainsTickIndex(0, whirlpoolData.tickCurrentIndex)) {
+  if (!tickSequence.isValidTickArray0(whirlpoolData.tickCurrentIndex)) {
     throw new WhirlpoolsError(
       "TickArray at index 0 does not contain the Whirlpool current tick index.",
       SwapErrorCode.TickArraySequenceInvalid

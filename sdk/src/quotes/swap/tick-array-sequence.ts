@@ -52,12 +52,10 @@ export class TickArraySequence {
     ).arrayIndex;
   }
 
-  checkArrayContainsTickIndex(sequenceIndex: number, tickIndex: number) {
-    const tickArray = this.sequence[sequenceIndex]?.data;
-    if (!tickArray) {
-      return false;
-    }
-    return this.checkIfIndexIsInTickArrayRange(tickArray.startTickIndex, tickIndex);
+  isValidTickArray0(tickCurrentIndex: number) {
+    const shift = this.aToB ? 0 : this.tickSpacing;
+    const tickArray = this.sequence[0].data;
+    return this.checkIfIndexIsInTickArrayRange(tickArray.startTickIndex, tickCurrentIndex + shift);
   }
 
   getNumOfTouchedArrays() {
@@ -173,6 +171,6 @@ export class TickArraySequence {
 
   private checkIfIndexIsInTickArrayRange(startTick: number, tickIndex: number) {
     const upperBound = startTick + this.tickSpacing * TICK_ARRAY_SIZE;
-    return !(tickIndex < startTick || tickIndex > upperBound);
+    return tickIndex >= startTick && tickIndex < upperBound;
   }
 }

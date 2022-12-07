@@ -22,11 +22,19 @@ import {
   openPositionWithMetadataIx,
   SwapInput,
   swapIx,
+  updateFeesAndRewardsIx,
 } from "../instructions";
-import { decreaseLiquidityQuoteByLiquidityWithParams } from "../quotes/public";
+import {
+  collectFeesQuote,
+  collectRewardsQuote,
+  decreaseLiquidityQuoteByLiquidityWithParams,
+} from "../quotes/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
+import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
+import { getTokenMintsFromWhirlpools, resolveAtaForMints } from "../utils/whirlpool-ata-utils";
 import { Whirlpool } from "../whirlpool-client";
+import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
 
 export class WhirlpoolImpl implements Whirlpool {
@@ -328,79 +336,130 @@ export class WhirlpoolImpl implements Whirlpool {
     destinationWallet: PublicKey,
     positionWallet: PublicKey,
     payerKey: PublicKey
-  ): Promise<TransactionBuilder> {
-    const position = await this.ctx.fetcher.getPosition(positionAddress, true);
-    if (!position) {
+  ): Promise<TransactionBuilder[]> {
+    const positionData = await this.ctx.fetcher.getPosition(positionAddress, true);
+    if (!positionData) {
       throw new Error(`Position not found: ${positionAddress.toBase58()}`);
     }
+
     const whirlpool = this.data;
 
     invariant(
-      position.whirlpool.equals(this.address),
+      positionData.whirlpool.equals(this.address),
       `Position ${positionAddress.toBase58()} is not a position for Whirlpool ${this.address.toBase58()}`
     );
 
-    const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(
-      position.tickLowerIndex,
-      whirlpool.tickSpacing,
-      position.whirlpool,
-      this.ctx.program.programId
-    ).publicKey;
-    const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(
-      position.tickUpperIndex,
-      whirlpool.tickSpacing,
-      position.whirlpool,
-      this.ctx.program.programId
-    ).publicKey;
+    const positionTokenAccount = await deriveATA(positionWallet, positionData.positionMint);
 
-    const positionTokenAccount = await deriveATA(positionWallet, position.positionMint);
+    const ataTxBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet
+    );
+
+    const affiliatedMints = getTokenMintsFromWhirlpools([whirlpool]);
+    const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
+    const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(this.ctx, {
+      mints: affiliatedMints,
+      accountExemption,
+      receiver: destinationWallet,
+      payer: payerKey,
+    });
+
+    ataTxBuilder.addInstructions(resolveAtaIxs);
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
       this.ctx.provider.wallet
     );
 
-    const resolvedAssociatedTokenAddresses: Record<string, PublicKey> = {};
-    const [ataA, ataB] = await resolveOrCreateATAs(
-      this.ctx.connection,
-      destinationWallet,
-      [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
-      () => this.ctx.fetcher.getAccountRentExempt(),
-      payerKey
+    const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(
+      positionData.tickLowerIndex,
+      whirlpool.tickSpacing,
+      positionData.whirlpool,
+      this.ctx.program.programId
+    ).publicKey;
+
+    const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(
+      positionData.tickUpperIndex,
+      whirlpool.tickSpacing,
+      positionData.whirlpool,
+      this.ctx.program.programId
+    ).publicKey;
+
+    const [tickArrayLowerData, tickArrayUpperData] = await getTickArrayDataForPosition(
+      this.ctx,
+      positionData,
+      whirlpool,
+      true
     );
 
-    const { address: tokenOwnerAccountA, ...createTokenOwnerAccountAIx } = ataA;
-    const { address: tokenOwnerAccountB, ...createTokenOwnerAccountBIx } = ataB;
+    invariant(
+      !!tickArrayLowerData,
+      `Tick array ${tickArrayLower} expected to be initialized for whirlpool ${this.address}`
+    );
 
-    txBuilder.addInstruction(createTokenOwnerAccountAIx).addInstruction(createTokenOwnerAccountBIx);
-    resolvedAssociatedTokenAddresses[whirlpool.tokenMintA.toBase58()] = tokenOwnerAccountA;
-    resolvedAssociatedTokenAddresses[whirlpool.tokenMintB.toBase58()] = tokenOwnerAccountB;
+    invariant(
+      !!tickArrayUpperData,
+      `Tick array ${tickArrayUpper} expected to be initialized for whirlpool ${this.address}`
+    );
 
-    // TODO: Collect all Fees and rewards for the position.
-    // TODO: Optimize - no need to call updateFee if we call decreaseLiquidity first.
-    // const collectTx = await buildCollectFeesAndRewardsTx(this.dal, {
-    //   provider,
-    //   positionAddress: positionAddress,
-    //   resolvedAssociatedTokenAddresses,
-    // });
-    // txBuilder.addInstruction(collectTx.compressIx(false));
+    const position = new PositionImpl(
+      this.ctx,
+      positionAddress,
+      positionData,
+      whirlpool,
+      tickArrayLowerData,
+      tickArrayUpperData
+    );
 
-    /* Remove all liquidity remaining in the position */
-    if (position.liquidity.gt(new BN(0))) {
+    const tickLower = position.getLowerTickData();
+    const tickUpper = position.getUpperTickData();
+
+    const feesQuote = collectFeesQuote({
+      position: positionData,
+      whirlpool,
+      tickLower,
+      tickUpper,
+    });
+
+    const rewardsQuote = collectRewardsQuote({
+      position: positionData,
+      whirlpool,
+      tickLower,
+      tickUpper,
+    });
+
+    const shouldCollectFees = feesQuote.feeOwedA.gtn(0) || feesQuote.feeOwedB.gtn(0);
+    invariant(
+      this.data.rewardInfos.length === rewardsQuote.length,
+      "Rewards quote does not match reward infos length"
+    );
+
+    const rewardsToCollect = this.data.rewardInfos
+      .filter((_, i) => (rewardsQuote[i] ?? ZERO).gtn(0))
+      .map((info) => info.mint);
+
+    const shouldCollectRewards = rewardsToCollect.length > 0;
+
+    if (positionData.liquidity.gtn(0)) {
+      /* Remove all liquidity remaining in the position */
+      const tokenOwnerAccountA = ataTokenAddresses[whirlpool.tokenMintA.toBase58()];
+      const tokenOwnerAccountB = ataTokenAddresses[whirlpool.tokenMintB.toBase58()];
+
       const decreaseLiqQuote = decreaseLiquidityQuoteByLiquidityWithParams({
-        liquidity: position.liquidity,
+        liquidity: positionData.liquidity,
         slippageTolerance,
         sqrtPrice: whirlpool.sqrtPrice,
         tickCurrentIndex: whirlpool.tickCurrentIndex,
-        tickLowerIndex: position.tickLowerIndex,
-        tickUpperIndex: position.tickUpperIndex,
+        tickLowerIndex: positionData.tickLowerIndex,
+        tickUpperIndex: positionData.tickUpperIndex,
       });
 
       const liquidityIx = decreaseLiquidityIx(this.ctx.program, {
         liquidityAmount: decreaseLiqQuote.liquidityAmount,
         tokenMinA: decreaseLiqQuote.tokenMinA,
         tokenMinB: decreaseLiqQuote.tokenMinB,
-        whirlpool: position.whirlpool,
+        whirlpool: positionData.whirlpool,
         positionAuthority: positionWallet,
         position: positionAddress,
         positionTokenAccount,
@@ -411,7 +470,45 @@ export class WhirlpoolImpl implements Whirlpool {
         tickArrayLower,
         tickArrayUpper,
       });
+
       txBuilder.addInstruction(liquidityIx);
+    } else {
+      if (shouldCollectFees || shouldCollectRewards) {
+        // We need to manually udpate the fees/rewards since there is no liquidity IX to do so
+        txBuilder.addInstruction(
+          updateFeesAndRewardsIx(this.ctx.program, {
+            whirlpool: positionData.whirlpool,
+            position: positionAddress,
+            tickArrayLower,
+            tickArrayUpper,
+          })
+        );
+      }
+    }
+
+    if (shouldCollectFees) {
+      const collectFeexTx = await position.collectFees(
+        false,
+        false,
+        destinationWallet,
+        positionWallet,
+        payerKey
+      );
+
+      txBuilder.addInstruction(collectFeexTx.compressIx(false));
+    }
+
+    if (shouldCollectRewards) {
+      const collectRewardsTx = await position.collectRewards(
+        rewardsToCollect,
+        false,
+        false,
+        destinationWallet,
+        positionWallet,
+        payerKey
+      );
+
+      txBuilder.addInstruction(collectRewardsTx.compressIx(false));
     }
 
     /* Close position */
@@ -420,11 +517,20 @@ export class WhirlpoolImpl implements Whirlpool {
       receiver: destinationWallet,
       positionTokenAccount,
       position: positionAddress,
-      positionMint: position.positionMint,
+      positionMint: positionData.positionMint,
     });
+
     txBuilder.addInstruction(positionIx);
 
-    return txBuilder;
+    const txBuilders: TransactionBuilder[] = [];
+
+    if (!ataTxBuilder.isEmpty()) {
+      txBuilders.push(ataTxBuilder);
+    }
+
+    txBuilders.push(txBuilder);
+
+    return txBuilders;
   }
 
   private async getSwapTx(

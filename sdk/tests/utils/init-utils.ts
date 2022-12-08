@@ -506,7 +506,7 @@ export async function fundPositions(
   } = poolInitInfo;
 
   return await Promise.all(
-    fundParams.map(async (param, i): Promise<FundedPositionInfo> => {
+    fundParams.map(async (param): Promise<FundedPositionInfo> => {
       const { params: positionInfo, mint } = await openPosition(
         ctx,
         whirlpool,

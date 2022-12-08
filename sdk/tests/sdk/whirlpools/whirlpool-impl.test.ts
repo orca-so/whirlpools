@@ -30,7 +30,7 @@ import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
 
-describe.only("whirlpool-impl", () => {
+describe("whirlpool-impl", () => {
   // The default commitment of AnchorProvider is "processed".
   // But commitment of some Token operations is based on “confirmed”, and preflight simulation sometimes fail.
   // So use "confirmed" consistently.

@@ -30,7 +30,7 @@ import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
 
-describe("whirlpool-impl", () => {
+describe.only("whirlpool-impl", () => {
   // The default commitment of AnchorProvider is "processed".
   // But commitment of some Token operations is based on “confirmed”, and preflight simulation sometimes fail.
   // So use "confirmed" consistently.
@@ -485,6 +485,201 @@ describe("whirlpool-impl", () => {
       await getTokenBalance(ctx.provider, dWalletTokenAAccount),
       expectationQuote.tokenMinA.add(feesQuote.feeOwedA).toString()
     );
+
+    assert.equal(
+      await getTokenBalance(ctx.provider, dWalletTokenBAccount),
+      expectationQuote.tokenMinB.add(feesQuote.feeOwedB).toString()
+    );
+
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount0), rewardsQuote[0]?.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount1), rewardsQuote[1]?.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount2), rewardsQuote[2]?.toString());
+  });
+
+  it("open and add liquidity to a position with SOL as token A, trade against it, transfer position to another wallet, then close the tokens to another wallet", async () => {
+    // In same tick array - start index 22528
+    const tickLowerIndex = 29440;
+    const tickUpperIndex = 33536;
+    const vaultStartBalance = 1_000_000;
+    const tickSpacing = TickSpacing.Standard;
+    const fixture = await new WhirlpoolTestFixture(ctx).init({
+      tickSpacing,
+      positions: [
+        { tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
+        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(1_000_000) }, // Out of range position
+      ],
+      rewards: [
+        {
+          emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+          vaultAmount: new u64(vaultStartBalance),
+        },
+        {
+          emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+          vaultAmount: new u64(vaultStartBalance),
+        },
+        {
+          emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+          vaultAmount: new u64(vaultStartBalance),
+        },
+      ],
+      tokenAIsNative: true,
+    });
+    const {
+      poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
+      tokenAccountA,
+      tokenAccountB,
+      positions,
+    } = fixture.getInfos();
+
+    const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 22528);
+    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+    // Accrue fees in token A
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        amount: new u64(200_000),
+        otherAmountThreshold: ZERO_BN,
+        sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
+        amountSpecifiedIsInput: true,
+        aToB: true,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        tickArray0: tickArrayPda.publicKey,
+        tickArray1: tickArrayPda.publicKey,
+        tickArray2: tickArrayPda.publicKey,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
+
+    // Accrue fees in token B
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        amount: new u64(200_000),
+        otherAmountThreshold: ZERO_BN,
+        sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
+        amountSpecifiedIsInput: true,
+        aToB: false,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        tickArray0: tickArrayPda.publicKey,
+        tickArray1: tickArrayPda.publicKey,
+        tickArray2: tickArrayPda.publicKey,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
+
+    const [positionWithFees] = positions;
+
+    // Transfer the position token to another wallet
+    const otherWallet = anchor.web3.Keypair.generate();
+    const walletPositionTokenAccount = await deriveATA(
+      ctx.wallet.publicKey,
+      positionWithFees.mintKeypair.publicKey
+    );
+
+    const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
+      ctx.provider,
+      positionWithFees.mintKeypair.publicKey,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+
+    await transfer(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+
+    const pool = await client.getPool(whirlpoolPda.publicKey, true);
+    const position = await client.getPosition(positionWithFees.publicKey, true);
+    const positionData = position.getData();
+    const poolData = pool.getData();
+    const txs = await pool.closePosition(
+      positionWithFees.publicKey,
+      new Percentage(new u64(10), new u64(100)),
+      otherWallet.publicKey,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+
+    const expectationQuote = decreaseLiquidityQuoteByLiquidity(
+      position.getData().liquidity,
+      Percentage.fromDecimal(new Decimal(0)),
+      position,
+      pool
+    );
+
+    const dWalletTokenBAccount = await deriveATA(otherWallet.publicKey, poolData.tokenMintB);
+    const rewardAccount0 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[0].mint);
+    const rewardAccount1 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[1].mint);
+    const rewardAccount2 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[2].mint);
+
+    let ataTx: TransactionBuilder | undefined;
+    let closeTx: TransactionBuilder;
+    if (txs.length === 1) {
+      closeTx = txs[0];
+    } else if (txs.length === 2) {
+      ataTx = txs[0];
+      closeTx = txs[1];
+    } else {
+      throw new Error(`Invalid length for txs ${txs}`);
+    }
+
+    const otherWalletBalanceBefore = await ctx.connection.getBalance(otherWallet.publicKey);
+
+    await ataTx?.buildAndExecute();
+    await closeTx.addSigner(otherWallet).buildAndExecute();
+
+    const otherWalletBalanceAfter = await ctx.connection.getBalance(otherWallet.publicKey);
+
+    const tickLowerArrayData = await ctx.fetcher.getTickArray(
+      positionWithFees.tickArrayLower,
+      true
+    );
+
+    const tickUpperArrayData = await ctx.fetcher.getTickArray(
+      positionWithFees.tickArrayUpper,
+      true
+    );
+
+    const tickLower = TickArrayUtil.getTickFromArray(
+      tickLowerArrayData!,
+      tickLowerIndex,
+      tickSpacing
+    );
+
+    const tickUpper = TickArrayUtil.getTickFromArray(
+      tickUpperArrayData!,
+      tickUpperIndex,
+      tickSpacing
+    );
+
+    const feesQuote = collectFeesQuote({
+      whirlpool: poolData,
+      position: positionData,
+      tickLower,
+      tickUpper,
+    });
+
+    const rewardsQuote = collectRewardsQuote({
+      whirlpool: await pool.refreshData(),
+      position: await position.refreshData(),
+      tickLower,
+      tickUpper,
+    });
+
+    const solReceived =
+      otherWalletBalanceAfter -
+      (otherWalletBalanceBefore + (await ctx.fetcher.getAccountRentExempt()));
+
+    // Quesstion TODO(meep): I wasn't able to get this to exact match, wasn't able to figure it out
+    assert.ok(solReceived >= expectationQuote.tokenMinA.add(feesQuote.feeOwedA).toNumber());
 
     assert.equal(
       await getTokenBalance(ctx.provider, dWalletTokenBAccount),

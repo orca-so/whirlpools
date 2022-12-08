@@ -8,7 +8,7 @@ import {
   NATIVE_MINT,
   Token,
   TOKEN_PROGRAM_ID,
-  u64
+  u64,
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 
@@ -165,8 +165,12 @@ export async function createAndMintToAssociatedTokenAccount(
       AccountLayout.span
     );
     const txBuilder = new TransactionBuilder(provider.connection, provider.wallet);
-    const { address: tokenAccount, ...ix } = createWSOLAccountInstructions(destinationWalletKey, ZERO, rentExemption);
-    txBuilder.addInstruction(ix);
+    const { address: tokenAccount, ...ix } = createWSOLAccountInstructions(
+      destinationWalletKey,
+      new u64(amount.toString()),
+      rentExemption
+    );
+    txBuilder.addInstruction({ ...ix, cleanupInstructions: [] });
     await txBuilder.buildAndExecute();
     return tokenAccount;
   }

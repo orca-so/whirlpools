@@ -4,6 +4,8 @@ import {
   resolveOrCreateATAs,
   TransactionBuilder,
   Instruction,
+  TokenUtil,
+  ZERO,
 } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
@@ -21,7 +23,10 @@ import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/p
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { Position } from "../whirlpool-client";
-import { resolveAtaForMints } from "../utils/whirlpool-ata-utils";
+import { getTokenMintsFromWhirlpools, resolveAtaForMints } from "../utils/whirlpool-ata-utils";
+import invariant from "tiny-invariant";
+import { NATIVE_MINT } from "@solana/spl-token";
+import { wrapSOL } from "../utils/spl-token-utils";
 
 export class PositionImpl implements Position {
   private data: PositionData;
@@ -224,7 +229,7 @@ export class PositionImpl implements Position {
 
   async collectFees(
     updateFeesAndRewards: boolean = true,
-    resolveATA: boolean = true,
+    ownerTokenAccountsRecord: Partial<Record<string, Address>> = {},
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
@@ -246,19 +251,57 @@ export class PositionImpl implements Position {
     let txBuilder = new TransactionBuilder(this.ctx.provider.connection, this.ctx.provider.wallet);
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
-    const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(this.ctx, {
-      mints: [whirlpool.tokenMintA, whirlpool.tokenMintB],
-      accountExemption,
-      receiver: destinationWalletKey,
-      payer: ataPayerKey,
-    });
+    const walletTokenAccountsByMint = { ...ownerTokenAccountsRecord };
 
-    const tokenOwnerAccountA = ataTokenAddresses[whirlpool.tokenMintA.toBase58()];
-    const tokenOwnerAccountB = ataTokenAddresses[whirlpool.tokenMintB.toBase58()];
+    const tokenAAndB = [whirlpool.tokenMintA, whirlpool.tokenMintB];
+    const tokenAorBIsSol = tokenAAndB.some((mint) => TokenUtil.isNativeMint(mint));
+    const solInWalletTokenAccounts = !!walletTokenAccountsByMint[NATIVE_MINT.toBase58()];
+    const mintsToResolveAtasFor = tokenAAndB.filter(
+      // 1. Filter out native mints since we don't use ATAs for them
+      // 2. Filter out mints for which we already have token accounts
+      (mint) => !TokenUtil.isNativeMint(mint) && !walletTokenAccountsByMint[mint.toBase58()]
+    );
 
-    if (resolveATA) {
+    if (mintsToResolveAtasFor.length > 0) {
+      const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(this.ctx, {
+        mints: mintsToResolveAtasFor,
+        accountExemption,
+        receiver: destinationWalletKey,
+        payer: ataPayerKey,
+      });
+
+      for (const mint of Object.keys(ataTokenAddresses)) {
+        walletTokenAccountsByMint[mint] = ataTokenAddresses[mint];
+      }
+
       txBuilder.addInstructions(resolveAtaIxs);
     }
+
+    let unwrapSolIx: Instruction | undefined;
+    if (tokenAorBIsSol && !solInWalletTokenAccounts) {
+      const { wSolAccount, wrapIx, unwrapIx } = wrapSOL(
+        destinationWalletKey,
+        ZERO,
+        accountExemption,
+        ataPayerKey,
+        destinationWalletKey
+      );
+
+      walletTokenAccountsByMint[NATIVE_MINT.toBase58()] = wSolAccount;
+      txBuilder.addInstruction(wrapIx);
+      unwrapSolIx = unwrapIx;
+    }
+
+    const tokenOwnerAccountA = walletTokenAccountsByMint[whirlpool.tokenMintA.toBase58()];
+    invariant(
+      !!tokenOwnerAccountA,
+      `No owner token account provided for wallet ${destinationWalletKey.toBase58()} for token A ${whirlpool.tokenMintA.toBase58()}`
+    );
+    const tokenOwnerAccountB = walletTokenAccountsByMint[whirlpool.tokenMintB.toBase58()];
+    invariant(
+      !!tokenOwnerAccountB,
+      `No owner token account provided for wallet ${destinationWalletKey.toBase58()} for token B ${whirlpool.tokenMintB.toBase58()}`
+    );
 
     const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
 
@@ -271,8 +314,8 @@ export class PositionImpl implements Position {
       whirlpool: this.data.whirlpool,
       position: this.address,
       positionTokenAccount,
-      tokenOwnerAccountA,
-      tokenOwnerAccountB,
+      tokenOwnerAccountA: AddressUtil.toPubKey(tokenOwnerAccountA),
+      tokenOwnerAccountB: AddressUtil.toPubKey(tokenOwnerAccountB),
       tokenVaultA: whirlpool.tokenVaultA,
       tokenVaultB: whirlpool.tokenVaultB,
       positionAuthority: positionWalletKey,
@@ -280,13 +323,17 @@ export class PositionImpl implements Position {
 
     txBuilder.addInstruction(ix);
 
+    if (unwrapSolIx) {
+      txBuilder.addInstruction(unwrapSolIx);
+    }
+
     return txBuilder;
   }
 
   async collectRewards(
     rewardsToCollect?: Address[],
     updateFeesAndRewards: boolean = true,
-    resolveATA: boolean = true,
+    ownerTokenAccountsRecord: Partial<Record<string, Address>> = {},
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
@@ -315,16 +362,56 @@ export class PositionImpl implements Position {
     );
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
-    const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(this.ctx, {
-      mints: initializedRewards.map((r) => r.mint),
-      accountExemption,
-      receiver: destinationWalletKey,
-      payer: ataPayerKey,
-    });
+    const affiliatedMints = getTokenMintsFromWhirlpools([whirlpool]);
+    const walletTokenAccountsByMint = { ...ownerTokenAccountsRecord };
 
-    if (resolveATA) {
+    const solInRewardMints = initializedRewards.some((info) => TokenUtil.isNativeMint(info.mint));
+    const solInWalletTokenAccounts = !!walletTokenAccountsByMint[NATIVE_MINT.toBase58()];
+    const mintsToResolveAtasFor = affiliatedMints.filter(
+      // Filter out mints for which we already have token accounts
+      (mint) => !walletTokenAccountsByMint[mint.toBase58()]
+    );
+
+    if (mintsToResolveAtasFor.length > 0) {
+      const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(this.ctx, {
+        mints: mintsToResolveAtasFor,
+        accountExemption,
+        receiver: destinationWalletKey,
+        payer: ataPayerKey,
+      });
+
+      for (const mint of Object.keys(ataTokenAddresses)) {
+        walletTokenAccountsByMint[mint] = ataTokenAddresses[mint];
+      }
+
       txBuilder.addInstructions(resolveAtaIxs);
     }
+
+    let unwrapSolIx: Instruction | undefined;
+    if (solInRewardMints && !solInWalletTokenAccounts) {
+      const { wSolAccount, wrapIx, unwrapIx } = wrapSOL(
+        destinationWalletKey,
+        ZERO,
+        accountExemption,
+        ataPayerKey,
+        destinationWalletKey
+      );
+
+      walletTokenAccountsByMint[NATIVE_MINT.toBase58()] = wSolAccount;
+      txBuilder.addInstruction(wrapIx);
+      unwrapSolIx = unwrapIx;
+    }
+
+    const tokenOwnerAccountA = walletTokenAccountsByMint[whirlpool.tokenMintA.toBase58()];
+    invariant(
+      !!tokenOwnerAccountA,
+      `No owner token account provided for wallet ${destinationWalletKey.toBase58()} for token A ${whirlpool.tokenMintA.toBase58()}`
+    );
+    const tokenOwnerAccountB = walletTokenAccountsByMint[whirlpool.tokenMintB.toBase58()];
+    invariant(
+      !!tokenOwnerAccountB,
+      `No owner token account provided for wallet ${destinationWalletKey.toBase58()} for token B ${whirlpool.tokenMintB.toBase58()}`
+    );
 
     const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
 
@@ -343,18 +430,28 @@ export class PositionImpl implements Position {
         return;
       }
 
+      const rewardOwnerAccount = walletTokenAccountsByMint[info.mint.toBase58()];
+      invariant(
+        !!rewardOwnerAccount,
+        `Reward mint (${info.mint.toBase58()}) does not have wallet account for wallet (${destinationWalletKey})`
+      );
+
       const ix = collectRewardIx(this.ctx.program, {
         whirlpool: this.data.whirlpool,
         position: this.address,
         positionTokenAccount,
         rewardIndex: index,
-        rewardOwnerAccount: ataTokenAddresses[info.mint.toBase58()],
+        rewardOwnerAccount: AddressUtil.toPubKey(rewardOwnerAccount),
         rewardVault: info.vault,
         positionAuthority: positionWalletKey,
       });
 
       txBuilder.addInstruction(ix);
     });
+
+    if (unwrapSolIx) {
+      txBuilder.addInstruction(unwrapSolIx);
+    }
 
     return txBuilder;
   }

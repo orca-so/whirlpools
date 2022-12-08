@@ -1,12 +1,4 @@
-import {
-  Instruction,
-  resolveOrCreateATAs,
-  TokenUtil,
-  TransactionBuilder,
-  ZERO,
-} from "@orca-so/common-sdk";
-import { createWSOLAccountInstructions } from "@orca-so/common-sdk/dist/helpers/token-instructions";
-import { NATIVE_MINT } from "@solana/spl-token";
+import { Instruction, resolveOrCreateATAs, TokenUtil } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "..";
 import { WhirlpoolData } from "../types/public";

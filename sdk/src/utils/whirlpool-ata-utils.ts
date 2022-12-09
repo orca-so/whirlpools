@@ -1,39 +1,63 @@
 import { Instruction, resolveOrCreateATAs, TokenUtil } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { WhirlpoolContext } from "..";
+import { PoolUtil, WhirlpoolContext } from "..";
 import { WhirlpoolData } from "../types/public";
 import { convertListToMap } from "./txn-utils";
+
+export enum TokenMintTypes {
+  ALL = "ALL",
+  POOL_ONLY = "POOL_ONLY",
+  REWARD_ONLY = "REWARDS_ONLY"
+}
 
 /**
  * Fetch a list of affliated tokens from a list of whirlpools
  *
  * SOL tokens does not use the ATA program and therefore not handled.
  * @param whirlpoolDatas An array of whirlpoolData (from fetcher.listPools)
+ * @param mintTypes The set of mints to collect from these whirlpools
  * @returns All the whirlpool, reward token mints in the given set of whirlpools
  */
-export function getTokenMintsFromWhirlpools(whirlpoolDatas: (WhirlpoolData | null)[]) {
-  return Array.from(
+export function getTokenMintsFromWhirlpools(whirlpoolDatas: (WhirlpoolData | null)[], mintTypes = TokenMintTypes.ALL) {
+  let hasNativeMint = false;
+  const mints = Array.from(
     whirlpoolDatas.reduce<Set<PublicKey>>((accu, whirlpoolData) => {
       if (whirlpoolData) {
-        const { tokenMintA, tokenMintB } = whirlpoolData;
-        if (!TokenUtil.isNativeMint(tokenMintA)) {
-          accu.add(tokenMintA);
-        }
-
-        if (!TokenUtil.isNativeMint(tokenMintB)) {
-          accu.add(tokenMintB);
-        }
-
-        const rewardInfos = whirlpoolData.rewardInfos;
-        rewardInfos.forEach((reward) => {
-          if (!reward.mint.equals(PublicKey.default)) {
-            accu.add(reward.mint);
+        if (mintTypes === TokenMintTypes.ALL || mintTypes === TokenMintTypes.POOL_ONLY) {
+          const { tokenMintA, tokenMintB } = whirlpoolData;
+          // TODO: Once we move to sync-native for wSOL wrapping, we can simplify and use wSOL ATA instead of a custom token account.
+          if (!TokenUtil.isNativeMint(tokenMintA)) {
+            accu.add(tokenMintA);
+          } else {
+            hasNativeMint = true
           }
-        });
+
+          if (!TokenUtil.isNativeMint(tokenMintB)) {
+            accu.add(tokenMintB);
+          } else {
+            hasNativeMint = true
+          }
+        }
+
+        if (mintTypes === TokenMintTypes.ALL || mintTypes === TokenMintTypes.REWARD_ONLY) {
+          const rewardInfos = whirlpoolData.rewardInfos;
+          rewardInfos.forEach((reward) => {
+            if (TokenUtil.isNativeMint(reward.mint)) {
+              hasNativeMint = true;
+            }
+            if (PoolUtil.isRewardInitialized(reward)) {
+              accu.add(reward.mint);
+            }
+          });
+        }
       }
       return accu;
     }, new Set<PublicKey>())
   );
+  return {
+    mintMap: mints,
+    hasNativeMint
+  }
 }
 
 /**

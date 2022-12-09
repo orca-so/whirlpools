@@ -14,7 +14,7 @@ import {
   TickArrayUtil,
   TickUtil,
   toTx,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import {
@@ -24,7 +24,7 @@ import {
   systemTransferTx,
   TickSpacing,
   transfer,
-  ZERO_BN,
+  ZERO_BN
 } from "../../utils";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
@@ -500,13 +500,13 @@ describe("whirlpool-impl", () => {
     // In same tick array - start index 22528
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
-    const vaultStartBalance = 1_000_000;
+    const vaultStartBalance = 1_000_000_000;
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
       positions: [
-        { tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
-        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(1_000_000) }, // Out of range position
+        { tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000_000) }, // In range position
+        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(1_000_000_000) }, // Out of range position
       ],
       rewards: [
         {
@@ -538,7 +538,7 @@ describe("whirlpool-impl", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new u64(200_000_00),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -560,7 +560,7 @@ describe("whirlpool-impl", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new u64(200_000_00),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -600,43 +600,13 @@ describe("whirlpool-impl", () => {
     const position = await client.getPosition(positionWithFees.publicKey, true);
     const positionData = position.getData();
     const poolData = pool.getData();
-    const txs = await pool.closePosition(
-      positionWithFees.publicKey,
-      new Percentage(new u64(10), new u64(100)),
-      otherWallet.publicKey,
-      otherWallet.publicKey,
-      ctx.wallet.publicKey
-    );
 
-    const expectationQuote = decreaseLiquidityQuoteByLiquidity(
+    const decreaseLiquidityQuote = decreaseLiquidityQuoteByLiquidity(
       position.getData().liquidity,
       Percentage.fromDecimal(new Decimal(0)),
       position,
       pool
     );
-
-    const dWalletTokenBAccount = await deriveATA(otherWallet.publicKey, poolData.tokenMintB);
-    const rewardAccount0 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[0].mint);
-    const rewardAccount1 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[1].mint);
-    const rewardAccount2 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[2].mint);
-
-    let ataTx: TransactionBuilder | undefined;
-    let closeTx: TransactionBuilder;
-    if (txs.length === 1) {
-      closeTx = txs[0];
-    } else if (txs.length === 2) {
-      ataTx = txs[0];
-      closeTx = txs[1];
-    } else {
-      throw new Error(`Invalid length for txs ${txs}`);
-    }
-
-    const otherWalletBalanceBefore = await ctx.connection.getBalance(otherWallet.publicKey);
-
-    await ataTx?.buildAndExecute();
-    await closeTx.addSigner(otherWallet).buildAndExecute();
-
-    const otherWalletBalanceAfter = await ctx.connection.getBalance(otherWallet.publicKey);
 
     const tickLowerArrayData = await ctx.fetcher.getTickArray(
       positionWithFees.tickArrayLower,
@@ -667,23 +637,71 @@ describe("whirlpool-impl", () => {
       tickUpper,
     });
 
+    const dWalletTokenBAccount = await deriveATA(otherWallet.publicKey, poolData.tokenMintB);
+    const rewardAccount0 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[0].mint);
+    const rewardAccount1 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[1].mint);
+    const rewardAccount2 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[2].mint);
+
+    const txs = await pool.closePosition(
+      positionWithFees.publicKey,
+      new Percentage(new u64(10), new u64(100)),
+      otherWallet.publicKey,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+
+    let ataTx: TransactionBuilder | undefined;
+    let closeTx: TransactionBuilder;
+    if (txs.length === 1) {
+      closeTx = txs[0];
+    } else if (txs.length === 2) {
+      ataTx = txs[0];
+      closeTx = txs[1];
+    } else {
+      throw new Error(`Invalid length for txs ${txs}`);
+    }
+
+    const otherWalletBalanceBefore = await ctx.connection.getBalance(otherWallet.publicKey);
+    const positionAccountBalance = await ctx.connection.getBalance(positionWithFees.publicKey);
+
+    await ataTx?.buildAndExecute();
+    await closeTx.addSigner(otherWallet).buildAndExecute();
+
+    const otherWalletBalanceAfter = await ctx.connection.getBalance(otherWallet.publicKey);
+
+    const minAccountExempt = await ctx.fetcher.getAccountRentExempt();
+    const solReceived = otherWalletBalanceAfter - otherWalletBalanceBefore;
+
+    // TODO: Why is the reward quote only correct when data is collected after the tx is ran?
     const rewardsQuote = collectRewardsQuote({
       whirlpool: await pool.refreshData(),
       position: await position.refreshData(),
       tickLower,
       tickUpper,
     });
-
-    const solReceived =
-      otherWalletBalanceAfter -
-      (otherWalletBalanceBefore + (await ctx.fetcher.getAccountRentExempt()));
-
-    // Quesstion TODO(meep): I wasn't able to get this to exact match, wasn't able to figure it out
-    assert.ok(solReceived >= expectationQuote.tokenMinA.add(feesQuote.feeOwedA).toNumber());
+    /**
+     * Expected tokenA (SOL) returns on other wallet
+     * 1. withdraw value from decrease_liq (decrease_quote, though not always accurate)
+     * 2. accrrued fees from trade (fee_quote)
+     * 3. Position PDA account rent return (balance from position address account)
+     * 4. wSOL rent-exemption close (getAccountExemption)
+     * 5. Position token account rent return (getAccountExemption)
+     *
+     * Other costs from payer, but not received by other wallet
+     * 1. close_position tx cost
+     * 2. ATA account initialization
+     */
+    const expectedtokenA = decreaseLiquidityQuote.tokenMinA
+      .add(feesQuote.feeOwedA)
+      .add(new u64(positionAccountBalance))
+      .add(new u64(minAccountExempt))
+      .add(new u64(minAccountExempt))
+      .toNumber();
+    assert.ok(solReceived === expectedtokenA);
 
     assert.equal(
       await getTokenBalance(ctx.provider, dWalletTokenBAccount),
-      expectationQuote.tokenMinB.add(feesQuote.feeOwedB).toString()
+      decreaseLiquidityQuote.tokenMinB.add(feesQuote.feeOwedB).toString()
     );
 
     assert.equal(await getTokenBalance(ctx.provider, rewardAccount0), rewardsQuote[0]?.toString());

@@ -79,12 +79,14 @@ export class SwapUtils {
     programId: PublicKey,
     whirlpoolAddress: PublicKey
   ) {
+    const shift = aToB ? 0 : tickSpacing;
+
     let offset = 0;
     let tickArrayAddresses: PublicKey[] = [];
     for (let i = 0; i < MAX_SWAP_TICK_ARRAYS; i++) {
       let startIndex: number;
       try {
-        startIndex = TickUtil.getStartTickIndex(tickCurrentIndex, tickSpacing, offset);
+        startIndex = TickUtil.getStartTickIndex(tickCurrentIndex + shift, tickSpacing, offset);
       } catch {
         return tickArrayAddresses;
       }

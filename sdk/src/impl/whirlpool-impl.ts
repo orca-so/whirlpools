@@ -1,12 +1,10 @@
 import {
   AddressUtil,
-  deriveATA,
-  Instruction,
-  Percentage,
+  deriveATA, Percentage,
   resolveOrCreateATAs,
   TokenUtil,
   TransactionBuilder,
-  ZERO,
+  ZERO
 } from "@orca-so/common-sdk";
 import { Address, BN, translateAddress } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
@@ -24,18 +22,18 @@ import {
   openPositionWithMetadataIx,
   SwapInput,
   swapIx,
-  updateFeesAndRewardsIx,
+  updateFeesAndRewardsIx
 } from "../instructions";
 import {
   collectFeesQuote,
   collectRewardsQuote,
-  decreaseLiquidityQuoteByLiquidityWithParams,
+  decreaseLiquidityQuoteByLiquidityWithParams
 } from "../quotes/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
-import { wrapSOL } from "../utils/spl-token-utils";
-import { getTokenMintsFromWhirlpools, resolveAtaForMints } from "../utils/whirlpool-ata-utils";
+import { createWSOLAccountInstructions } from "../utils/spl-token-utils";
+import { getTokenMintsFromWhirlpools, resolveAtaForMints, TokenMintTypes } from "../utils/whirlpool-ata-utils";
 import { Whirlpool } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
@@ -359,40 +357,7 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.provider.wallet
     );
 
-    const affiliatedMints = getTokenMintsFromWhirlpools([whirlpool]);
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
-    const { ataTokenAddresses: walletTokenAccountsByMint, resolveAtaIxs } =
-      await resolveAtaForMints(this.ctx, {
-        mints: affiliatedMints,
-        accountExemption,
-        receiver: destinationWallet,
-        payer: payerKey,
-      });
-
-    tokenAccountsTxBuilder.addInstructions(resolveAtaIxs);
-
-    const solInWhirlpoolMints = [
-      whirlpool.tokenMintA,
-      whirlpool.tokenMintB,
-      ...whirlpool.rewardInfos.map((info) => info.mint),
-    ].some((mint) => TokenUtil.isNativeMint(mint));
-
-    let createAndInitWsolAccountIx: Instruction | undefined;
-    let unwrapWsolIx: Instruction | undefined;
-
-    if (solInWhirlpoolMints) {
-      const { wSolAccount, wrapIx, unwrapIx } = wrapSOL(
-        destinationWallet,
-        ZERO,
-        accountExemption,
-        payerKey,
-        destinationWallet
-      );
-
-      walletTokenAccountsByMint[NATIVE_MINT.toBase58()] = wSolAccount;
-      createAndInitWsolAccountIx = wrapIx;
-      unwrapWsolIx = unwrapIx;
-    }
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -462,13 +427,46 @@ export class WhirlpoolImpl implements Whirlpool {
       "Rewards quote does not match reward infos length"
     );
 
+    const shouldDecreaseLiquidity = positionData.liquidity.gtn(0);
+
     const rewardsToCollect = this.data.rewardInfos
       .filter((_, i) => (rewardsQuote[i] ?? ZERO).gtn(0))
       .map((info) => info.mint);
 
     const shouldCollectRewards = rewardsToCollect.length > 0;
 
-    if (positionData.liquidity.gtn(0)) {
+    let mintType = TokenMintTypes.ALL;
+    if ((shouldDecreaseLiquidity || shouldCollectFees) && !shouldCollectRewards) {
+      mintType = TokenMintTypes.POOL_ONLY
+    } else if (!(shouldDecreaseLiquidity || shouldCollectFees) && shouldCollectRewards) {
+      mintType = TokenMintTypes.REWARD_ONLY
+    }
+
+    const affiliatedMints = getTokenMintsFromWhirlpools([whirlpool], mintType);
+    const { ataTokenAddresses: walletTokenAccountsByMint, resolveAtaIxs } =
+      await resolveAtaForMints(this.ctx, {
+        mints: affiliatedMints.mintMap,
+        accountExemption,
+        receiver: destinationWallet,
+        payer: payerKey,
+      });
+
+    tokenAccountsTxBuilder.addInstructions(resolveAtaIxs);
+
+    // Handle native mint
+    if (affiliatedMints.hasNativeMint) {
+      let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
+        destinationWallet,
+        ZERO,
+        accountExemption,
+        payerKey,
+        destinationWallet
+      );
+      walletTokenAccountsByMint[NATIVE_MINT.toBase58()] = wSOLAta;
+      txBuilder.addInstruction(resolveWSolIx);
+    }
+
+    if (shouldDecreaseLiquidity) {
       /* Remove all liquidity remaining in the position */
       const tokenOwnerAccountA = walletTokenAccountsByMint[whirlpool.tokenMintA.toBase58()];
       const tokenOwnerAccountB = walletTokenAccountsByMint[whirlpool.tokenMintB.toBase58()];
@@ -499,18 +497,16 @@ export class WhirlpoolImpl implements Whirlpool {
       });
 
       txBuilder.addInstruction(liquidityIx);
-    } else {
-      if (shouldCollectFees || shouldCollectRewards) {
-        // We need to manually udpate the fees/rewards since there is no liquidity IX to do so
-        txBuilder.addInstruction(
-          updateFeesAndRewardsIx(this.ctx.program, {
-            whirlpool: positionData.whirlpool,
-            position: positionAddress,
-            tickArrayLower,
-            tickArrayUpper,
-          })
-        );
-      }
+    } else if (shouldCollectFees || shouldCollectRewards) {
+      // We need to manually udpate the fees/rewards since there is no liquidity IX to do so
+      txBuilder.addInstruction(
+        updateFeesAndRewardsIx(this.ctx.program, {
+          whirlpool: positionData.whirlpool,
+          position: positionAddress,
+          tickArrayLower,
+          tickArrayUpper,
+        })
+      );
     }
 
     if (shouldCollectFees) {
@@ -550,15 +546,6 @@ export class WhirlpoolImpl implements Whirlpool {
 
     txBuilder.addInstruction(positionIx);
 
-    if (createAndInitWsolAccountIx) {
-      // Append the wSOL token account creation IXs to the end of the first TX
-      tokenAccountsTxBuilder.addInstruction(createAndInitWsolAccountIx);
-    }
-
-    if (unwrapWsolIx) {
-      // Append the wSOL unwrap IX (i.e. wSOL token account close IX) to the end of the second TX
-      txBuilder.addInstruction(unwrapWsolIx);
-    }
 
     const txBuilders: TransactionBuilder[] = [];
 

@@ -107,7 +107,7 @@ export async function collectAllForPositionsTxns(
 
   const accountExemption = await ctx.fetcher.getAccountRentExempt();
   const { ataTokenAddresses: affliatedTokenAtaMap, resolveAtaIxs } = await resolveAtaForMints(ctx, {
-    mints: getTokenMintsFromWhirlpools(whirlpoolDatas),
+    mints: getTokenMintsFromWhirlpools(whirlpoolDatas).mintMap,
     accountExemption,
     receiver: receiverKey,
     payer: payerKey,

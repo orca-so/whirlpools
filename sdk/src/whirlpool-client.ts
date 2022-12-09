@@ -10,7 +10,7 @@ import {
   IncreaseLiquidityInput,
   PositionData,
   TickData,
-  WhirlpoolData,
+  WhirlpoolData
 } from "./types/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
 
@@ -360,7 +360,7 @@ export interface Position {
    * If `positionWallet` is provided, the wallet owners have to sign this transaction.
    *
    * @param updateFeesAndRewards -  if true, add instructions to refresh the accumulated fees and rewards data (default to true unless you know that the collect fees quote and on-chain data match for the "feeOwedA" and "feeOwedB" fields in the Position account)
-   * @param ownerTokenAccountsRecord - A record that maps a given mint to the owner's token account for that mint (if an entry doesn't exist, it will be automatically resolved)
+   * @param ownerTokenAccountMap - A record that maps a given mint to the owner's token account for that mint (if an entry doesn't exist, it will be automatically resolved)
    * @param destinationWallet - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
    * @param ataPayer - wallet that will fund the creation of the new associated token accounts
@@ -369,7 +369,7 @@ export interface Position {
    */
   collectFees: (
     updateFeesAndRewards?: boolean,
-    ownerTokenAccountsRecord?: Partial<Record<string, Address>>,
+    ownerTokenAccountMap?: Partial<Record<string, Address>>,
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
@@ -383,7 +383,7 @@ export interface Position {
    *
    * @param rewardsToCollect - reward mints to collect (omitting this parameter means all rewards will be collected)
    * @param updateFeesAndRewards -  if true, add instructions to refresh the accumulated fees and rewards data (default to true unless you know that the collect fees quote and on-chain data match for the "feeOwedA" and "feeOwedB" fields in the Position account)
-   * @param ownerTokenAccountsRecord - A record that maps a given mint to the owner's token account for that mint (if an entry doesn't exist, it will be automatically resolved)
+   * @param ownerTokenAccountMap - A record that maps a given mint to the owner's token account for that mint (if an entry doesn't exist, it will be automatically resolved)
    * @param destinationWallet - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
    * @param ataPayer - wallet that will fund the creation of the new associated token accounts
@@ -393,7 +393,7 @@ export interface Position {
   collectRewards: (
     rewardsToCollect?: Address[],
     updateFeesAndRewards?: boolean,
-    ownerTokenAccountsRecord?: Partial<Record<string, Address>>,
+    ownerTokenAccountMap?: Partial<Record<string, Address>>,
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,

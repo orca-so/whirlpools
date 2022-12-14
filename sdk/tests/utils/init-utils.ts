@@ -310,7 +310,14 @@ export async function initTestPoolWithTokens(
 
   // Airdrop SOL into provider's wallet for SOL native token testing.
   const connection = ctx.provider.connection;
-  await connection.requestAirdrop(ctx.provider.wallet.publicKey, 100_000_000_000_000);
+  const airdropTx = await connection.requestAirdrop(
+    ctx.provider.wallet.publicKey,
+    100_000_000_000_000
+  );
+  await ctx.connection.confirmTransaction({
+    signature: airdropTx,
+    ...(await ctx.connection.getLatestBlockhash()),
+  });
 
   const tokenAccountA = await createAndMintToAssociatedTokenAccount(
     provider,

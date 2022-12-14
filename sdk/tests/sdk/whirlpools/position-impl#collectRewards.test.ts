@@ -5,18 +5,13 @@ import { u64 } from "@solana/spl-token";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
-  collectFeesQuote,
   collectRewardsQuote,
-  PDAUtil,
   TickArrayUtil,
-  TickUtil,
-  toTx,
   Whirlpool,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx,
 } from "../../../src";
-import { TickSpacing, ZERO_BN } from "../../utils";
+import { TickSpacing } from "../../utils";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 
 interface SharedTestContext {

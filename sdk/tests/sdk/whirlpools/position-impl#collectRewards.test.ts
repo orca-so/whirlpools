@@ -167,7 +167,6 @@ describe("PositionImpl#collectRewards()", () => {
 
       const r0Pubkey = await deriveATA(otherWallet.publicKey, rewards[0].rewardMint);
       const r0Account = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(r0Pubkey, true);
-      console.log(r0Account?.amount);
       assert.ok(quote[0] && r0Account && r0Account.amount.eq(quote[0]));
 
       const r1Pubkey = await deriveATA(otherWallet.publicKey, rewards[1].rewardMint);
@@ -253,7 +252,6 @@ describe("PositionImpl#collectRewards()", () => {
 
       const r0Pubkey = await deriveATA(otherWallet.publicKey, rewards[0].rewardMint);
       const r0Account = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(r0Pubkey, true);
-      console.log(r0Account?.amount);
       assert.ok(quote[0] && r0Account && r0Account.amount.eq(quote[0]));
 
       const r1Pubkey = await deriveATA(otherWallet.publicKey, rewards[1].rewardMint);

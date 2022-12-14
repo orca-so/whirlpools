@@ -1,6 +1,10 @@
 import {
   AddressUtil,
-  deriveATA, Instruction, resolveOrCreateATAs, TransactionBuilder, ZERO
+  deriveATA,
+  Instruction,
+  resolveOrCreateATAs,
+  TransactionBuilder,
+  ZERO,
 } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
@@ -14,13 +18,17 @@ import {
   decreaseLiquidityIx,
   IncreaseLiquidityInput,
   increaseLiquidityIx,
-  updateFeesAndRewardsIx
+  updateFeesAndRewardsIx,
 } from "../instructions";
 import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { createWSOLAccountInstructions } from "../utils/spl-token-utils";
-import { getTokenMintsFromWhirlpools, resolveAtaForMints, TokenMintTypes } from "../utils/whirlpool-ata-utils";
+import {
+  getTokenMintsFromWhirlpools,
+  resolveAtaForMints,
+  TokenMintTypes,
+} from "../utils/whirlpool-ata-utils";
 import { Position } from "../whirlpool-client";
 
 export class PositionImpl implements Position {
@@ -247,16 +255,19 @@ export class PositionImpl implements Position {
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
 
-    const ataMap = { ...ownerTokenAccountMap };
+    let ataMap = { ...ownerTokenAccountMap };
 
     if (!ownerTokenAccountMap) {
       const affliatedMints = getTokenMintsFromWhirlpools([whirlpool], TokenMintTypes.POOL_ONLY);
-      const { ataTokenAddresses: affliatedTokenAtaMap, resolveAtaIxs } = await resolveAtaForMints(this.ctx, {
-        mints: affliatedMints.mintMap,
-        accountExemption,
-        receiver: destinationWalletKey,
-        payer: ataPayerKey,
-      });
+      const { ataTokenAddresses: affliatedTokenAtaMap, resolveAtaIxs } = await resolveAtaForMints(
+        this.ctx,
+        {
+          mints: affliatedMints.mintMap,
+          accountExemption,
+          receiver: destinationWalletKey,
+          payer: ataPayerKey,
+        }
+      );
 
       txBuilder.addInstructions(resolveAtaIxs);
 
@@ -271,6 +282,8 @@ export class PositionImpl implements Position {
         affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
         txBuilder.addInstruction(resolveWSolIx);
       }
+
+      ataMap = { ...affliatedTokenAtaMap };
     }
 
     const tokenOwnerAccountA = ataMap[whirlpool.tokenMintA.toBase58()];
@@ -340,15 +353,18 @@ export class PositionImpl implements Position {
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
 
-    const ataMap = { ...ownerTokenAccountMap };
+    let ataMap = { ...ownerTokenAccountMap };
     if (!ownerTokenAccountMap) {
       const rewardMints = getTokenMintsFromWhirlpools([whirlpool], TokenMintTypes.REWARD_ONLY);
-      const { ataTokenAddresses: affliatedTokenAtaMap, resolveAtaIxs } = await resolveAtaForMints(this.ctx, {
-        mints: rewardMints.mintMap,
-        accountExemption,
-        receiver: destinationWalletKey,
-        payer: ataPayerKey,
-      });
+      const { ataTokenAddresses: affliatedTokenAtaMap, resolveAtaIxs } = await resolveAtaForMints(
+        this.ctx,
+        {
+          mints: rewardMints.mintMap,
+          accountExemption,
+          receiver: destinationWalletKey,
+          payer: ataPayerKey,
+        }
+      );
 
       if (rewardMints.hasNativeMint) {
         let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
@@ -361,6 +377,8 @@ export class PositionImpl implements Position {
       }
 
       txBuilder.addInstructions(resolveAtaIxs);
+
+      ataMap = { ...affliatedTokenAtaMap };
     }
 
     const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);

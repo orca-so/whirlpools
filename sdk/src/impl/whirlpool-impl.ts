@@ -1,10 +1,11 @@
 import {
   AddressUtil,
-  deriveATA, Percentage,
+  deriveATA,
+  Percentage,
   resolveOrCreateATAs,
   TokenUtil,
   TransactionBuilder,
-  ZERO
+  ZERO,
 } from "@orca-so/common-sdk";
 import { Address, BN, translateAddress } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
@@ -22,18 +23,22 @@ import {
   openPositionWithMetadataIx,
   SwapInput,
   swapIx,
-  updateFeesAndRewardsIx
+  updateFeesAndRewardsIx,
 } from "../instructions";
 import {
   collectFeesQuote,
   collectRewardsQuote,
-  decreaseLiquidityQuoteByLiquidityWithParams
+  decreaseLiquidityQuoteByLiquidityWithParams,
 } from "../quotes/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { createWSOLAccountInstructions } from "../utils/spl-token-utils";
-import { getTokenMintsFromWhirlpools, resolveAtaForMints, TokenMintTypes } from "../utils/whirlpool-ata-utils";
+import {
+  getTokenMintsFromWhirlpools,
+  resolveAtaForMints,
+  TokenMintTypes,
+} from "../utils/whirlpool-ata-utils";
 import { Whirlpool } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
@@ -437,9 +442,9 @@ export class WhirlpoolImpl implements Whirlpool {
 
     let mintType = TokenMintTypes.ALL;
     if ((shouldDecreaseLiquidity || shouldCollectFees) && !shouldCollectRewards) {
-      mintType = TokenMintTypes.POOL_ONLY
+      mintType = TokenMintTypes.POOL_ONLY;
     } else if (!(shouldDecreaseLiquidity || shouldCollectFees) && shouldCollectRewards) {
-      mintType = TokenMintTypes.REWARD_ONLY
+      mintType = TokenMintTypes.REWARD_ONLY;
     }
 
     const affiliatedMints = getTokenMintsFromWhirlpools([whirlpool], mintType);
@@ -497,16 +502,6 @@ export class WhirlpoolImpl implements Whirlpool {
       });
 
       txBuilder.addInstruction(liquidityIx);
-    } else if (shouldCollectFees || shouldCollectRewards) {
-      // We need to manually udpate the fees/rewards since there is no liquidity IX to do so
-      txBuilder.addInstruction(
-        updateFeesAndRewardsIx(this.ctx.program, {
-          whirlpool: positionData.whirlpool,
-          position: positionAddress,
-          tickArrayLower,
-          tickArrayUpper,
-        })
-      );
     }
 
     if (shouldCollectFees) {
@@ -545,7 +540,6 @@ export class WhirlpoolImpl implements Whirlpool {
     });
 
     txBuilder.addInstruction(positionIx);
-
 
     const txBuilders: TransactionBuilder[] = [];
 

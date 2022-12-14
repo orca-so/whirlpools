@@ -14,7 +14,7 @@ import {
   TickArrayUtil,
   TickUtil,
   toTx,
-  WhirlpoolIx
+  WhirlpoolIx,
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import {
@@ -24,7 +24,7 @@ import {
   systemTransferTx,
   TickSpacing,
   transfer,
-  ZERO_BN
+  ZERO_BN,
 } from "../../utils";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";

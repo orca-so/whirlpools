@@ -14,6 +14,7 @@ export function getAmountDeltaA(
   let [sqrtPriceLower, sqrtPriceUpper] = toIncreasingPriceOrder(currSqrtPrice, targetSqrtPrice);
   let sqrtPriceDiff = sqrtPriceUpper.sub(sqrtPriceLower);
 
+  console.log(currLiquidity.toString());
   let numerator = currLiquidity.mul(sqrtPriceDiff).shln(64);
   let denominator = sqrtPriceLower.mul(sqrtPriceUpper);
 

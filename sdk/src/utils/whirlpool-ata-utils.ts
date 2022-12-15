@@ -7,7 +7,7 @@ import { convertListToMap } from "./txn-utils";
 export enum TokenMintTypes {
   ALL = "ALL",
   POOL_ONLY = "POOL_ONLY",
-  REWARD_ONLY = "REWARDS_ONLY"
+  REWARD_ONLY = "REWARDS_ONLY",
 }
 
 /**
@@ -18,7 +18,10 @@ export enum TokenMintTypes {
  * @param mintTypes The set of mints to collect from these whirlpools
  * @returns All the whirlpool, reward token mints in the given set of whirlpools
  */
-export function getTokenMintsFromWhirlpools(whirlpoolDatas: (WhirlpoolData | null)[], mintTypes = TokenMintTypes.ALL) {
+export function getTokenMintsFromWhirlpools(
+  whirlpoolDatas: (WhirlpoolData | null)[],
+  mintTypes = TokenMintTypes.ALL
+) {
   let hasNativeMint = false;
   const mints = Array.from(
     whirlpoolDatas.reduce<Set<PublicKey>>((accu, whirlpoolData) => {
@@ -29,13 +32,13 @@ export function getTokenMintsFromWhirlpools(whirlpoolDatas: (WhirlpoolData | nul
           if (!TokenUtil.isNativeMint(tokenMintA)) {
             accu.add(tokenMintA);
           } else {
-            hasNativeMint = true
+            hasNativeMint = true;
           }
 
           if (!TokenUtil.isNativeMint(tokenMintB)) {
             accu.add(tokenMintB);
           } else {
-            hasNativeMint = true
+            hasNativeMint = true;
           }
         }
 
@@ -56,8 +59,8 @@ export function getTokenMintsFromWhirlpools(whirlpoolDatas: (WhirlpoolData | nul
   );
   return {
     mintMap: mints,
-    hasNativeMint
-  }
+    hasNativeMint,
+  };
 }
 
 /**

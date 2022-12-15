@@ -23,7 +23,6 @@ import {
   openPositionWithMetadataIx,
   SwapInput,
   swapIx,
-  updateFeesAndRewardsIx,
 } from "../instructions";
 import {
   collectFeesQuote,

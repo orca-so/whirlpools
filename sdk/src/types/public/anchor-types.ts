@@ -1,6 +1,6 @@
 import { BN, BorshAccountsCoder, Idl } from "@project-serum/anchor";
-import WhirlpoolIDL from "../../artifacts/whirlpool.json";
 import { PublicKey } from "@solana/web3.js";
+import WhirlpoolIDL from "../../artifacts/whirlpool.json";
 
 /**
  * This file contains the types that has the same structure as the types anchor functions returns.
@@ -23,10 +23,16 @@ export enum AccountName {
 }
 
 const IDL = WhirlpoolIDL as Idl;
+
+/**
+ * The Anchor coder for the Whirlpool program.
+ * @category Solana Accounts
+ */
 export const WHIRLPOOL_CODER = new BorshAccountsCoder(IDL);
 
 /**
  * Size of the Whirlpool account in bytes.
+ * @category Solana Accounts
  */
 export const WHIRLPOOL_ACCOUNT_SIZE = WHIRLPOOL_CODER.size(IDL.accounts![4]);
 

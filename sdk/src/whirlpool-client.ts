@@ -17,7 +17,7 @@ import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public
 /**
  * Helper class to help interact with Whirlpool Accounts with a simpler interface.
  *
- * @category Core
+ * @category WhirlpoolClient
  */
 export interface WhirlpoolClient {
   /**
@@ -250,7 +250,7 @@ export interface Whirlpool {
   /**
    * Perform a swap between tokenA and tokenB on this pool.
    *
-   * @param input - A quote on the desired tokenIn and tokenOut for this swap. Use @link {swapQuote} to generate this object.
+   * @param input - A quote on the desired tokenIn and tokenOut for this swap. Use {@link swapQuoteWithParams} or other swap quote functions to generate this object.
    * @param wallet - The wallet that tokens will be withdrawn and deposit into. If null, the WhirlpoolContext wallet is used.
    * @return a transaction that will perform the swap once executed.
    */
@@ -259,7 +259,7 @@ export interface Whirlpool {
   /**
    * Collect a developer fee and perform a swap between tokenA and tokenB on this pool.
    *
-   * @param input - A quote on the desired tokenIn and tokenOut for this swap. Use @link {swapQuote} to generate this object.
+   * @param input - A quote on the desired tokenIn and tokenOut for this swap. Use {@link swapQuoteByInputTokenWithDevFees} to generate this object.
    * @param devFeeWallet - The wallet that developer fees will be deposited into.
    * @param wallet - The wallet that swap tokens will be withdrawn and deposit into. If null, the WhirlpoolContext wallet is used.
    * @param payer - The wallet that will fund the cost needed to initialize the dev wallet token ATA accounts. If null, the WhirlpoolContext wallet is used.

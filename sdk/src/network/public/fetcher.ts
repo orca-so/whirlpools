@@ -1,6 +1,18 @@
+import { AddressUtil } from "@orca-so/common-sdk";
+import { Address } from "@project-serum/anchor";
+import { AccountInfo, AccountLayout, MintInfo } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
-import { AccountInfo, AccountLayout, MintInfo } from "@solana/spl-token";
+import {
+  AccountName,
+  PositionData,
+  TickArrayData,
+  WhirlpoolData,
+  WhirlpoolsConfigData,
+  WHIRLPOOL_ACCOUNT_SIZE,
+  WHIRLPOOL_CODER,
+} from "../..";
+import { FeeTierData } from "../../types/public";
 import {
   ParsableEntity,
   ParsableFeeTier,
@@ -11,18 +23,6 @@ import {
   ParsableWhirlpool,
   ParsableWhirlpoolsConfig,
 } from "./parsing";
-import { Address } from "@project-serum/anchor";
-import {
-  PositionData,
-  TickArrayData,
-  WhirlpoolsConfigData,
-  WhirlpoolData,
-  WHIRLPOOL_ACCOUNT_SIZE,
-  WHIRLPOOL_CODER,
-  AccountName,
-} from "../..";
-import { FeeTierData } from "../../types/public";
-import { AddressUtil } from "@orca-so/common-sdk";
 
 /**
  * Supported accounts
@@ -56,22 +56,24 @@ type GetMultipleAccountsResponse = {
 
 /**
  * Filter params for Whirlpools when invoking getProgramAccounts.
+ * @category Fetcher
  */
-type ListWhirlpoolParams = {
+export type ListWhirlpoolParams = {
   programId: Address;
   configId: Address;
 };
 
 /**
  * Tuple containing Whirlpool address and parsed account data.
+ * @category Fetcher
  */
-type WhirlpoolAccount = [Address, WhirlpoolData];
+export type WhirlpoolAccount = [Address, WhirlpoolData];
 
 /**
  * Data access layer to access Whirlpool related accounts
  * Includes internal cache that can be refreshed by the client.
  *
- * @category Core
+ * @category Fetcher
  */
 export class AccountFetcher {
   private readonly connection: Connection;

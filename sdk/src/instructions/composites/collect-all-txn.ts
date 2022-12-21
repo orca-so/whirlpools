@@ -40,7 +40,16 @@ export type CollectAllPositionParams = {
   positions: Record<string, PositionData>;
 } & CollectAllParams;
 
-type CollectAllParams = {
+/**
+ * Common parameters between {@link CollectAllPositionParams} & {@link CollectAllPositionAddressParams}
+ *
+ * @category Instruction Types
+ * @param receiver - The destination wallet that collected fees & reward will be sent to. Defaults to ctx.wallet key.
+ * @param positionOwner - The wallet key that contains the position token. Defaults to ctx.wallet key.
+ * @param positionAuthority - The authority key that can authorize operation on the position. Defaults to ctx.wallet key.
+ * @param payer - The key that will pay for the initialization of ATA token accounts. Defaults to ctx.wallet key.
+ */
+export type CollectAllParams = {
   receiver?: PublicKey;
   positionOwner?: PublicKey;
   positionAuthority?: PublicKey;

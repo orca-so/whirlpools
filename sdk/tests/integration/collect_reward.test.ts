@@ -4,15 +4,10 @@ import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
+  buildWhirlpoolClient,
   collectRewardsQuote,
-  NUM_REWARDS,
-  PositionData,
-  TickArrayData,
-  TickArrayUtil,
-  toTx,
-  WhirlpoolContext,
-  WhirlpoolData,
-  WhirlpoolIx,
+  NUM_REWARDS, toTx,
+  WhirlpoolContext, WhirlpoolIx
 } from "../../src";
 import {
   approveToken,
@@ -23,7 +18,7 @@ import {
   sleep,
   TickSpacing,
   transfer,
-  ZERO_BN,
+  ZERO_BN
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
@@ -34,6 +29,7 @@ describe("collect_reward", () => {
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
+  const client = buildWhirlpoolClient(ctx);
 
   it("successfully collect rewards", async () => {
     const vaultStartBalance = 1_000_000;
@@ -70,6 +66,7 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
     await sleep(500);
     await toTx(
       ctx,
@@ -82,28 +79,16 @@ describe("collect_reward", () => {
     ).buildAndExecute();
 
     // Generate collect reward expectation
-    const pool = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
-    const positionPreCollect = (await fetcher.getPosition(
-      positions[0].publicKey,
-      true
-    )) as PositionData;
-    const tickArrayLower = (await fetcher.getTickArray(
-      positions[0].tickArrayLower,
-      true
-    )) as TickArrayData;
+    const pool = await client.getPool(whirlpoolPda.publicKey, true);
+    const positionPreCollect = await client.getPosition(positions[0].publicKey, true);
 
-    const tickArrayUpper = (await fetcher.getTickArray(
-      positions[0].tickArrayUpper,
-      true
-    )) as TickArrayData;
-    const lowerTick = TickArrayUtil.getTickFromArray(tickArrayLower, lowerTickIndex, tickSpacing);
-    const upperTick = TickArrayUtil.getTickFromArray(tickArrayUpper, upperTickIndex, tickSpacing);
-
+    // Lock the collectRewards quote to the last time we called updateFeesAndRewards
     const expectation = collectRewardsQuote({
-      whirlpool: pool,
-      position: positionPreCollect,
-      tickLower: lowerTick,
-      tickUpper: upperTick,
+      whirlpool: pool.getData(),
+      position: positionPreCollect.getData(),
+      tickLower: positionPreCollect.getLowerTickData(),
+      tickUpper: positionPreCollect.getUpperTickData(),
+      timeStampInSeconds: pool.getData().rewardLastUpdatedTimestamp
     });
 
     // Perform collect rewards tx
@@ -128,7 +113,7 @@ describe("collect_reward", () => {
       ).buildAndExecute();
 
       const collectedBalance = parseInt(await getTokenBalance(provider, rewardOwnerAccount));
-      assert.ok(collectedBalance === expectation[i]?.toNumber());
+      assert.equal(collectedBalance, expectation[i]?.toNumber());
       const vaultBalance = parseInt(
         await getTokenBalance(provider, rewards[i].rewardVaultKeypair.publicKey)
       );

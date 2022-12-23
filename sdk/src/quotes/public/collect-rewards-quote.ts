@@ -2,6 +2,7 @@ import { MathUtil } from "@orca-so/common-sdk";
 import { BN } from "@project-serum/anchor";
 import invariant from "tiny-invariant";
 import { NUM_REWARDS, PositionData, TickData, WhirlpoolData } from "../../types/public";
+import { BitMath } from "../../utils/math/bit-math";
 import { PoolUtil } from "../../utils/public/pool-utils";
 
 /**
@@ -12,6 +13,7 @@ export type CollectRewardsQuoteParam = {
   position: PositionData;
   tickLower: TickData;
   tickUpper: TickData;
+  timeStampInSeconds?: BN;
 };
 
 /**
@@ -27,99 +29,84 @@ export type CollectRewardsQuote = [BN | undefined, BN | undefined, BN | undefine
  * @returns A quote object containing the rewards owed for each reward in the pool.
  */
 export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRewardsQuote {
-  const { whirlpool, position, tickLower, tickUpper } = param;
+  const { whirlpool, position, tickLower, tickUpper, timeStampInSeconds } = param;
 
-  const { tickCurrentIndex, rewardInfos: whirlpoolRewardsInfos } = whirlpool;
-  const { tickLowerIndex, tickUpperIndex, liquidity, rewardInfos } = position;
+  const {
+    tickCurrentIndex,
+    rewardInfos: whirlpoolRewardsInfos,
+    rewardLastUpdatedTimestamp,
+  } = whirlpool;
+  const { tickLowerIndex, tickUpperIndex, liquidity, rewardInfos: positionRewardInfos } = position;
 
-  // Calculate the reward growths inside the position
+  const currTimestampInSeconds = timeStampInSeconds ?? new BN(Date.now()).div(new BN(1000));
+  const timestampDelta = currTimestampInSeconds.sub(new BN(rewardLastUpdatedTimestamp));
+  const rewardOwed: CollectRewardsQuote = [undefined, undefined, undefined];
 
-  const range = [...Array(NUM_REWARDS).keys()];
-  const rewardGrowthsBelowX64: BN[] = range.map(() => new BN(0));
-  const rewardGrowthsAboveX64: BN[] = range.map(() => new BN(0));
-
-  for (const i of range) {
+  for (let i = 0; i < NUM_REWARDS; i++) {
+    // Calculate the reward growth on the outside of the position (growth_above, growth_below)
     const rewardInfo = whirlpoolRewardsInfos[i];
-    invariant(!!rewardInfo, "whirlpoolRewardsInfos cannot be undefined");
-
-    const growthGlobalX64 = rewardInfo.growthGlobalX64;
-    const lowerRewardGrowthsOutside = tickLower.rewardGrowthsOutside[i];
-    const upperRewardGrowthsOutside = tickUpper.rewardGrowthsOutside[i];
-    invariant(!!lowerRewardGrowthsOutside, "lowerRewardGrowthsOutside cannot be undefined");
-    invariant(!!upperRewardGrowthsOutside, "upperRewardGrowthsOutside cannot be undefined");
-
-    if (tickCurrentIndex < tickLowerIndex) {
-      rewardGrowthsBelowX64[i] = MathUtil.subUnderflowU128(
-        growthGlobalX64,
-        lowerRewardGrowthsOutside
-      );
-    } else {
-      rewardGrowthsBelowX64[i] = lowerRewardGrowthsOutside;
-    }
-
-    if (tickCurrentIndex < tickUpperIndex) {
-      rewardGrowthsAboveX64[i] = upperRewardGrowthsOutside;
-    } else {
-      rewardGrowthsAboveX64[i] = MathUtil.subUnderflowU128(
-        growthGlobalX64,
-        upperRewardGrowthsOutside
-      );
-    }
-  }
-
-  const rewardGrowthsInsideX64: [BN, boolean][] = range.map(() => [new BN(0), false]);
-
-  for (const i of range) {
-    const rewardInfo = whirlpoolRewardsInfos[i];
+    const positionRewardInfo = positionRewardInfos[i];
     invariant(!!rewardInfo, "whirlpoolRewardsInfos cannot be undefined");
 
     const isRewardInitialized = PoolUtil.isRewardInitialized(rewardInfo);
-
-    if (isRewardInitialized) {
-      const growthBelowX64 = rewardGrowthsBelowX64[i];
-      const growthAboveX64 = rewardGrowthsAboveX64[i];
-      invariant(!!growthBelowX64, "growthBelowX64 cannot be undefined");
-      invariant(!!growthAboveX64, "growthAboveX64 cannot be undefined");
-
-      const growthInsde = MathUtil.subUnderflowU128(
-        MathUtil.subUnderflowU128(rewardInfo.growthGlobalX64, growthBelowX64),
-        growthAboveX64
-      );
-      rewardGrowthsInsideX64[i] = [growthInsde, true];
+    if (!isRewardInitialized) {
+      continue;
     }
+
+    // Increment the global reward growth tracker based on time elasped since the last whirlpool update.
+    let adjustedRewardGrowthGlobalX64 = rewardInfo.growthGlobalX64;
+    if (!whirlpool.liquidity.isZero()) {
+      const rewardGrowthDelta = BitMath.mulDiv(
+        timestampDelta,
+        rewardInfo.emissionsPerSecondX64,
+        whirlpool.liquidity,
+        128
+      );
+      adjustedRewardGrowthGlobalX64 = rewardInfo.growthGlobalX64.add(rewardGrowthDelta);
+    }
+
+    // Calculate the reward growth outside of the position
+    const tickLowerRewardGrowthsOutsideX64 = tickLower.rewardGrowthsOutside[i];
+    const tickUpperRewardGrowthsOutsideX64 = tickUpper.rewardGrowthsOutside[i];
+
+    let rewardGrowthsBelowX64: BN = adjustedRewardGrowthGlobalX64;
+    if (tickLower.initialized) {
+      rewardGrowthsBelowX64 =
+        tickCurrentIndex < tickLowerIndex
+          ? MathUtil.subUnderflowU128(
+              adjustedRewardGrowthGlobalX64,
+              tickLowerRewardGrowthsOutsideX64
+            )
+          : tickLowerRewardGrowthsOutsideX64;
+    }
+
+    let rewardGrowthsAboveX64: BN = new BN(0);
+    if (tickUpper.initialized) {
+      rewardGrowthsAboveX64 =
+        tickCurrentIndex < tickUpperIndex
+          ? tickUpperRewardGrowthsOutsideX64
+          : MathUtil.subUnderflowU128(
+              adjustedRewardGrowthGlobalX64,
+              tickUpperRewardGrowthsOutsideX64
+            );
+    }
+
+    const rewardGrowthInsideX64 = MathUtil.subUnderflowU128(
+      MathUtil.subUnderflowU128(adjustedRewardGrowthGlobalX64, rewardGrowthsBelowX64),
+      rewardGrowthsAboveX64
+    );
+
+    // Knowing the growth of the reward checkpoint for the position, calculate and increment the amount owed for each reward.
+    const amountOwedX64 = positionRewardInfo.amountOwed.shln(64);
+    rewardOwed[i] = amountOwedX64
+      .add(
+        MathUtil.subUnderflowU128(
+          rewardGrowthInsideX64,
+          positionRewardInfo.growthInsideCheckpoint
+        ).mul(liquidity)
+      )
+      .shrn(64);
   }
 
-  // Calculate the updated rewards owed
-
-  const updatedRewardInfosX64: BN[] = range.map(() => new BN(0));
-
-  for (const i of range) {
-    const growthInsideX64 = rewardGrowthsInsideX64[i];
-    invariant(!!growthInsideX64, "growthInsideX64 cannot be undefined");
-
-    const [rewardGrowthInsideX64, isRewardInitialized] = growthInsideX64;
-
-    if (isRewardInitialized) {
-      const rewardInfo = rewardInfos[i];
-      invariant(!!rewardInfo, "rewardInfo cannot be undefined");
-
-      const amountOwedX64 = rewardInfo.amountOwed.shln(64);
-      const growthInsideCheckpointX64 = rewardInfo.growthInsideCheckpoint;
-      updatedRewardInfosX64[i] = amountOwedX64.add(
-        MathUtil.subUnderflowU128(rewardGrowthInsideX64, growthInsideCheckpointX64).mul(liquidity)
-      );
-    }
-  }
-
-  invariant(rewardGrowthsInsideX64.length >= 3, "rewards length is less than 3");
-
-  const rewardExistsA = rewardGrowthsInsideX64[0]?.[1];
-  const rewardExistsB = rewardGrowthsInsideX64[1]?.[1];
-  const rewardExistsC = rewardGrowthsInsideX64[2]?.[1];
-
-  const rewardOwedA = rewardExistsA ? updatedRewardInfosX64[0]?.shrn(64) : undefined;
-  const rewardOwedB = rewardExistsB ? updatedRewardInfosX64[1]?.shrn(64) : undefined;
-  const rewardOwedC = rewardExistsC ? updatedRewardInfosX64[2]?.shrn(64) : undefined;
-
-  return [rewardOwedA, rewardOwedB, rewardOwedC];
+  return rewardOwed;
 }

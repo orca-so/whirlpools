@@ -13,7 +13,7 @@ import {
   PositionData,
   toTx,
   WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import {
   createMint,
@@ -22,7 +22,7 @@ import {
   ONE_SOL,
   systemTransferTx,
   TickSpacing,
-  ZERO_BN,
+  ZERO_BN
 } from "../utils";
 import { initTestPool, openPosition } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
@@ -42,7 +42,7 @@ describe("open_position", () => {
   let whirlpoolPda: PDA;
   const funderKeypair = anchor.web3.Keypair.generate();
 
-  beforeAll(async () => {
+  before(async () => {
     poolInitInfo = (await initTestPool(ctx, TickSpacing.Standard)).poolInitInfo;
     whirlpoolPda = poolInitInfo.whirlpoolPda;
 

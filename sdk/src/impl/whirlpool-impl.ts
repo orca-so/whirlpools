@@ -485,9 +485,7 @@ export class WhirlpoolImpl implements Whirlpool {
       });
 
       const liquidityIx = decreaseLiquidityIx(this.ctx.program, {
-        liquidityAmount: decreaseLiqQuote.liquidityAmount,
-        tokenMinA: decreaseLiqQuote.tokenMinA,
-        tokenMinB: decreaseLiqQuote.tokenMinB,
+        ...decreaseLiqQuote,
         whirlpool: positionData.whirlpool,
         positionAuthority: positionWallet,
         position: positionAddress,

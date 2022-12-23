@@ -6,7 +6,13 @@ import { BitMath } from "../../utils/math/bit-math";
 import { PoolUtil } from "../../utils/public/pool-utils";
 
 /**
+ * Parameters needed to generate a quote on collectible rewards on a position.
  * @category Quotes
+ * @param whirlpool - the account data for the whirlpool this position belongs to
+ * @param position - the account data for the position
+ * @param tickLower - the TickData account for the lower bound of this position
+ * @param tickUpper - the TickData account for the upper bound of this position
+ * @param timeStampInSeconds - optional parameter to generate this quote to a unix time stamp.
  */
 export type CollectRewardsQuoteParam = {
   whirlpool: WhirlpoolData;
@@ -17,6 +23,7 @@ export type CollectRewardsQuoteParam = {
 };
 
 /**
+ * An array of reward amounts that is collectible on a position.
  * @category Quotes
  */
 export type CollectRewardsQuote = [BN | undefined, BN | undefined, BN | undefined];
@@ -74,9 +81,9 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
       rewardGrowthsBelowX64 =
         tickCurrentIndex < tickLowerIndex
           ? MathUtil.subUnderflowU128(
-              adjustedRewardGrowthGlobalX64,
-              tickLowerRewardGrowthsOutsideX64
-            )
+            adjustedRewardGrowthGlobalX64,
+            tickLowerRewardGrowthsOutsideX64
+          )
           : tickLowerRewardGrowthsOutsideX64;
     }
 
@@ -86,9 +93,9 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
         tickCurrentIndex < tickUpperIndex
           ? tickUpperRewardGrowthsOutsideX64
           : MathUtil.subUnderflowU128(
-              adjustedRewardGrowthGlobalX64,
-              tickUpperRewardGrowthsOutsideX64
-            );
+            adjustedRewardGrowthGlobalX64,
+            tickUpperRewardGrowthsOutsideX64
+          );
     }
 
     const rewardGrowthInsideX64 = MathUtil.subUnderflowU128(

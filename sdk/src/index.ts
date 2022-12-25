@@ -5,6 +5,7 @@ export * from "./impl/position-impl";
 export * from "./ix";
 export * from "./network/public";
 export * from "./quotes/public";
+export * from "./quotes/swap";
 export * from "./types/public";
 export * from "./types/public/anchor-types";
 export * from "./utils/public";

@@ -1,6 +1,6 @@
 import { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
 import { DevFeeSwapInput, SwapInput } from "./instructions";
@@ -271,6 +271,13 @@ export interface Whirlpool {
     wallet?: PublicKey,
     payer?: PublicKey
   ) => Promise<TransactionBuilder>;
+
+  getSwapIx(
+    input: SwapInput,
+    inputAccount: PublicKey,
+    outputAccount: PublicKey,
+    wallet: PublicKey
+  ): Promise<TransactionInstruction>;
 }
 
 /**

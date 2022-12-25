@@ -9,7 +9,7 @@ import {
 } from "@orca-so/common-sdk";
 import { Address, BN, translateAddress } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
 import {
@@ -607,6 +607,46 @@ export class WhirlpoolImpl implements Whirlpool {
     );
 
     return txBuilder;
+  }
+
+  async getSwapIx(
+    input: SwapInput,
+    inputAccount: PublicKey,
+    outputAccount: PublicKey,
+    wallet: PublicKey
+  ): Promise<TransactionInstruction> {
+    invariant(input.amount.gt(ZERO), "swap amount must be more than zero.");
+
+    // Check if all the tick arrays have been initialized.
+    const tickArrayAddresses = [input.tickArray0, input.tickArray1, input.tickArray2];
+    const tickArrays = await this.ctx.fetcher.listTickArrays(tickArrayAddresses, false);
+    const uninitializedIndices = TickArrayUtil.getUninitializedArrays(tickArrays);
+    if (uninitializedIndices.length > 0) {
+      const uninitializedArrays = uninitializedIndices
+        .map((index) => tickArrayAddresses[index].toBase58())
+        .join(", ");
+      throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
+    }
+
+    const { amount, aToB } = input;
+    const whirlpool = this.data;
+    const tokenOwnerAccountA = aToB ? inputAccount : outputAccount;
+    const tokenOwnerAccountB = aToB ? outputAccount : inputAccount;
+
+    const oraclePda = PDAUtil.getOracle(this.ctx.program.programId, this.address);
+
+    const ix = swapIx(this.ctx.program, {
+      ...input,
+      whirlpool: this.address,
+      tokenAuthority: wallet,
+      tokenOwnerAccountA,
+      tokenVaultA: whirlpool.tokenVaultA,
+      tokenOwnerAccountB,
+      tokenVaultB: whirlpool.tokenVaultB,
+      oracle: oraclePda.publicKey,
+    });
+
+    return ix.instructions[0];
   }
 
   private async refresh() {

@@ -299,7 +299,7 @@ export class PositionImpl implements Position {
 
     const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
 
-    if (updateFeesAndRewards) {
+    if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
       const updateIx = await this.updateFeesAndRewards();
       txBuilder.addInstruction(updateIx);
     }
@@ -382,7 +382,7 @@ export class PositionImpl implements Position {
     }
 
     const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
-    if (updateFeesAndRewards) {
+    if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
       const updateIx = await this.updateFeesAndRewards();
       txBuilder.addInstruction(updateIx);
     }

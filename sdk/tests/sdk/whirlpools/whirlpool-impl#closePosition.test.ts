@@ -1,19 +1,17 @@
 import { deriveATA, MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
-import * as assert from "assert";
 import { u64 } from "@solana/spl-token";
+import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
   collectFeesQuote,
   collectRewardsQuote,
-  PDAUtil,
-  TickArrayUtil,
-  toTx,
-  Whirlpool,
+  decreaseLiquidityQuoteByLiquidity,
+  NUM_REWARDS,
+  PDAUtil, Whirlpool,
   WhirlpoolClient,
-  WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolContext
 } from "../../../src";
 import { createAssociatedTokenAccount, TickSpacing, transfer, ZERO_BN } from "../../utils";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -52,162 +50,168 @@ describe("WhirlpoolImpl#closePosition()", () => {
     };
   });
 
-  async function accrueFees(fixture: WhirlpoolTestFixture) {
+  async function accrueFeesAndRewards(fixture: WhirlpoolTestFixture) {
     const ctx = testCtx.whirlpoolCtx;
-    const {
-      poolInitInfo,
-      positions: [positionInfo],
-      tokenAccountA,
-      tokenAccountB,
-    } = fixture.getInfos();
-
-    const { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair } = poolInitInfo;
-
+    const { poolInitInfo } = fixture.getInfos();
+    const { whirlpoolClient } = testCtx;
+    const { whirlpoolPda } = poolInitInfo;
     const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 22528);
-    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
-
-    const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
-    const position = await testCtx.whirlpoolClient.getPosition(positionInfo.publicKey);
 
     // Accrue fees in token A
-    await toTx(
-      ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
-        otherAmountThreshold: ZERO_BN,
-        sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
-        amountSpecifiedIsInput: true,
-        aToB: true,
-        whirlpool: whirlpoolPda.publicKey,
-        tokenAuthority: ctx.wallet.publicKey,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tickArray0: tickArrayPda.publicKey,
-        tickArray1: tickArrayPda.publicKey,
-        tickArray2: tickArrayPda.publicKey,
-        oracle: oraclePda.publicKey,
-      })
-    ).buildAndExecute();
+    const pool = await whirlpoolClient.getPool(whirlpoolPda.publicKey, true);
+    await (await pool.swap({
+      amount: new u64(200_000),
+      amountSpecifiedIsInput: true,
+      sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
+      otherAmountThreshold: ZERO_BN,
+      aToB: true,
+      tickArray0: tickArrayPda.publicKey,
+      tickArray1: tickArrayPda.publicKey,
+      tickArray2: tickArrayPda.publicKey,
+    })).buildAndExecute()
 
     // Accrue fees in token B
-    await toTx(
-      ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
-        otherAmountThreshold: ZERO_BN,
-        sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
-        amountSpecifiedIsInput: true,
-        aToB: false,
-        whirlpool: whirlpoolPda.publicKey,
-        tokenAuthority: ctx.wallet.publicKey,
-        tokenOwnerAccountA: tokenAccountA,
-        tokenVaultA: tokenVaultAKeypair.publicKey,
-        tokenOwnerAccountB: tokenAccountB,
-        tokenVaultB: tokenVaultBKeypair.publicKey,
-        tickArray0: tickArrayPda.publicKey,
-        tickArray1: tickArrayPda.publicKey,
-        tickArray2: tickArrayPda.publicKey,
-        oracle: oraclePda.publicKey,
-      })
-    ).buildAndExecute();
-
-    const poolData = await pool.refreshData();
-    const positionData = await position.refreshData();
-    const tickLowerData = position.getLowerTickData();
-    const tickUpperData = position.getLowerTickData();
-
-    const quote = collectFeesQuote({
-      whirlpool: poolData,
-      position: positionData,
-      tickLower: tickLowerData,
-      tickUpper: tickUpperData,
-    });
-
-    assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
-  }
-
-  async function accrueRewards(fixture: WhirlpoolTestFixture) {
-    const ctx = testCtx.whirlpoolCtx;
-
-    const {
-      positions: [positionInfo],
-      poolInitInfo,
-    } = fixture.getInfos();
-
-    const position = await testCtx.whirlpoolClient.getPosition(positionInfo.publicKey);
-    const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
-
-    const tickLowerArrayData = await ctx.fetcher.getTickArray(positionInfo.tickArrayLower, true);
-
-    const tickUpperArrayData = await ctx.fetcher.getTickArray(positionInfo.tickArrayUpper, true);
-
-    const tickLower = TickArrayUtil.getTickFromArray(
-      tickLowerArrayData!,
-      tickLowerIndex,
-      tickSpacing
-    );
-
-    const tickUpper = TickArrayUtil.getTickFromArray(
-      tickUpperArrayData!,
-      tickUpperIndex,
-      tickSpacing
-    );
-
-    const rewardsQuote = collectRewardsQuote({
-      whirlpool: await pool.refreshData(),
-      position: await position.refreshData(),
-      tickLower,
-      tickUpper,
-    });
-
-    assert.ok(
-      rewardsQuote.some((quote) => quote && quote.gtn(0)),
-      "Rewards haven't accrued"
-    );
+    await (await pool.swap({
+      amount: new u64(200_000),
+      otherAmountThreshold: ZERO_BN,
+      sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
+      amountSpecifiedIsInput: true,
+      aToB: false,
+      tickArray0: tickArrayPda.publicKey,
+      tickArray1: tickArrayPda.publicKey,
+      tickArray2: tickArrayPda.publicKey,
+    })).buildAndExecute()
   }
 
   async function removeLiquidity(fixture: WhirlpoolTestFixture) {
     const {
+      poolInitInfo,
       positions: [positionInfo],
     } = fixture.getInfos();
-    const position = await testCtx.whirlpoolClient.getPosition(positionInfo.publicKey);
+    const position = await testCtx.whirlpoolClient.getPosition(positionInfo.publicKey, true);
+    const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, true);
 
-    const tx = await position.decreaseLiquidity({
-      tokenMinA: new u64(0),
-      tokenMinB: new u64(0),
-      liquidityAmount,
-    });
+
+    const liquidityCollectedQuote = await decreaseLiquidityQuoteByLiquidity(
+      position.getData().liquidity,
+      Percentage.fromDecimal(new Decimal(0)),
+      position,
+      pool
+    );
+
+    const tx = await position.decreaseLiquidity(liquidityCollectedQuote);
 
     await tx.buildAndExecute();
   }
 
-  async function testClosePosition(fixture: WhirlpoolTestFixture) {
-    const { positions, poolInitInfo } = fixture.getInfos();
+  async function collectFees(fixture: WhirlpoolTestFixture) {
+    const { positions } = fixture.getInfos();
+    const { whirlpoolClient } = testCtx;
+    const position = await whirlpoolClient.getPosition(positions[0].publicKey, true);
+    const hasL = !position.getData().liquidity.isZero()
+    await (await position.collectFees(hasL)).buildAndExecute();
+  }
 
-    const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
-    const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey);
+  async function collectRewards(fixture: WhirlpoolTestFixture) {
+    const { positions } = fixture.getInfos();
+    const { whirlpoolClient } = testCtx;
+    const position = await whirlpoolClient.getPosition(positions[0].publicKey, true);
+    await (await position.collectRewards(undefined, true)).buildAndExecute();
+  }
 
-    const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
+  async function testClosePosition(fixture: WhirlpoolTestFixture, isWSOLTest = false) {
+    const { positions, poolInitInfo, rewards } = fixture.getInfos();
+    const { whirlpoolClient } = testCtx;
+    const ctx = whirlpoolClient.getContext();
+    const otherWallet = anchor.web3.Keypair.generate();
+
+    const pool = await whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, true);
+    const position = await whirlpoolClient.getPosition(positions[0].publicKey, true);
+    const preClosePoolData = pool.getData();
+    const positionAccountBalance = await ctx.connection.getBalance(positions[0].publicKey);
+
+    const txs = await pool.closePosition(
       position.getAddress(),
-      true
+      Percentage.fromFraction(10, 100),
+      otherWallet.publicKey,
+      undefined,
+      ctx.wallet.publicKey
     );
 
-    assert.notEqual(positionDataBefore, null);
-
-    const txs = await pool.closePosition(position.getAddress(), Percentage.fromFraction(10, 100));
-
-    for (const tx of txs) {
-      await tx.buildAndExecute();
+    // TODO: Our createWSOLAccountInstructions ignores payer and requires destinationWallet to sign
+    // We can remove this once we move to syncNative and wSOL becomes another ATA to handle.
+    if (isWSOLTest) {
+      txs[1].addSigner(otherWallet)
     }
 
-    const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
-      position.getAddress(),
-      true
+    await txs[0].buildAndExecute();
+    await txs[1].buildAndExecute();
+
+    // Verify liquidity and fees collected
+    const liquidityCollectedQuote = decreaseLiquidityQuoteByLiquidity(
+      position.getData().liquidity,
+      Percentage.fromDecimal(new Decimal(0)),
+      position,
+      pool
     );
 
-    assert.equal(positionDataAfter, null);
+    const feeQuote = collectFeesQuote({
+      position: position.getData(),
+      whirlpool: pool.getData(),
+      tickLower: position.getLowerTickData(),
+      tickUpper: position.getUpperTickData(),
+    });
+    const accountAPubkey = await deriveATA(otherWallet.publicKey, poolInitInfo.tokenMintA);
+    const accountA = await ctx.fetcher.getTokenInfo(accountAPubkey, true);
+    const expectAmountA = liquidityCollectedQuote.tokenMinA.add(feeQuote.feeOwedA);
+    if (isWSOLTest) {
+      // If this is a WSOL test, we have to account for account rent retrieval
+      const solInOtherWallet = await ctx.connection.getBalance(otherWallet.publicKey);
+      const minAccountExempt = await ctx.fetcher.getAccountRentExempt();
+      const expectedReceivedSol = liquidityCollectedQuote.tokenMinA
+        .add(feeQuote.feeOwedA)
+        .add(new u64(positionAccountBalance))
+        .add(new u64(minAccountExempt))
+        .add(new u64(minAccountExempt))
+        .toNumber();
+      assert.equal(solInOtherWallet, expectedReceivedSol);
+    } else if (expectAmountA.isZero()) {
+      assert.ok(!accountA || accountA.amount.isZero());
+    } else {
+      assert.equal(
+        accountA?.amount.toString(),
+        expectAmountA.toString()
+      );
+    }
+
+    const accountBPubkey = await deriveATA(otherWallet.publicKey, poolInitInfo.tokenMintB);
+    const accountB = await ctx.fetcher.getTokenInfo(accountBPubkey, true);
+    const expectAmountB = liquidityCollectedQuote.tokenMinB.add(feeQuote.feeOwedB);
+    if (expectAmountB.isZero()) {
+      assert.ok(!accountB || accountB.amount.isZero());
+    } else {
+      assert.equal(
+        accountB?.amount.toString(),
+        expectAmountB.toString()
+      );
+    }
+
+    // Verify reward collected. We use the same timestamp that the closePosition call used to collectRewards.
+    const postClosePoolData = await pool.refreshData();
+    const rewardQuote = collectRewardsQuote({
+      position: position.getData(),
+      whirlpool: preClosePoolData,
+      tickLower: position.getLowerTickData(),
+      tickUpper: position.getUpperTickData(),
+      timeStampInSeconds: postClosePoolData.rewardLastUpdatedTimestamp,
+    });
+    for (let i = 0; i < NUM_REWARDS; i++) {
+      if (!!rewards[i]) {
+        const rewardATA = await deriveATA(otherWallet.publicKey, rewards[i].rewardMint);
+        const rewardTokenAccount = await ctx.fetcher.getTokenInfo(rewardATA, true);
+        assert.equal(rewardTokenAccount?.amount.toString(), rewardQuote[i]?.toString());
+      }
+    }
   }
 
   context("when the whirlpool is SPL-only", () => {
@@ -242,9 +246,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ],
       });
 
-      await accrueFees(fixture);
+      await accrueFeesAndRewards(fixture);
       await removeLiquidity(fixture);
-
       await testClosePosition(fixture);
     });
 
@@ -270,9 +273,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ],
       });
 
-      await accrueRewards(fixture);
       await removeLiquidity(fixture);
-
+      await collectFees(fixture);
       await testClosePosition(fixture);
     });
 
@@ -284,11 +286,10 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ],
       });
 
-      await accrueFees(fixture);
+      await accrueFeesAndRewards(fixture);
       await testClosePosition(fixture);
     });
 
-    // TODO(meep): This test fails because of reward quote not working (I think)
     it("should close a position with only liquidity and rewards", async () => {
       const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
         tickSpacing,
@@ -311,7 +312,6 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ],
       });
 
-      await accrueRewards(fixture);
       await testClosePosition(fixture);
     });
 
@@ -337,8 +337,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ],
       });
 
-      await accrueFees(fixture);
-      await accrueRewards(fixture);
+      await accrueFeesAndRewards(fixture);
       await removeLiquidity(fixture);
       await testClosePosition(fixture);
     });
@@ -365,8 +364,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ],
       });
 
-      await accrueFees(fixture);
-      await accrueRewards(fixture);
+      await accrueFeesAndRewards(fixture);
       await testClosePosition(fixture);
     });
 
@@ -410,8 +408,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ctx.wallet.publicKey
       );
 
-      await accrueFees(fixture);
-      await accrueRewards(fixture);
+      await accrueFeesAndRewards(fixture);
       await transfer(testCtx.provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
       const { poolInitInfo } = fixture.getInfos();
@@ -469,9 +466,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
         tokenAIsNative: true,
       });
 
-      await accrueFees(fixture);
-      await accrueRewards(fixture);
-      await testClosePosition(fixture);
+      await accrueFeesAndRewards(fixture);
+      await testClosePosition(fixture, true);
     });
 
     it("should close a position with liquidity, fees, and rewards (no ATA)", async () => {
@@ -515,8 +511,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ctx.wallet.publicKey
       );
 
-      await accrueFees(fixture);
-      await accrueRewards(fixture);
+      await accrueFeesAndRewards(fixture);
       await transfer(testCtx.provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
       const { poolInitInfo } = fixture.getInfos();

@@ -10,11 +10,9 @@ import {
   decreaseLiquidityQuoteByLiquidity,
   increaseLiquidityQuoteByInputToken,
   PDAUtil,
-  PriceMath,
-  TickArrayUtil,
-  TickUtil,
+  PriceMath, TickUtil,
   toTx,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import {
@@ -24,7 +22,7 @@ import {
   systemTransferTx,
   TickSpacing,
   transfer,
-  ZERO_BN,
+  ZERO_BN
 } from "../../utils";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
@@ -311,7 +309,7 @@ describe("whirlpool-impl", () => {
     // In same tick array - start index 22528
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
-    const vaultStartBalance = 1_000_000;
+    const vaultStartBalance = 1_000_000_000;
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
@@ -325,7 +323,7 @@ describe("whirlpool-impl", () => {
           vaultAmount: new u64(vaultStartBalance),
         },
         {
-          emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+          emissionsPerSecondX64: MathUtil.toX64(new Decimal(5)),
           vaultAmount: new u64(vaultStartBalance),
         },
         {
@@ -431,6 +429,20 @@ describe("whirlpool-impl", () => {
     const rewardAccount1 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[1].mint);
     const rewardAccount2 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[2].mint);
 
+    const feesQuote = collectFeesQuote({
+      whirlpool: poolData,
+      position: positionData,
+      tickLower: position.getLowerTickData(),
+      tickUpper: position.getUpperTickData(),
+    });
+
+    const rewardsQuote = collectRewardsQuote({
+      whirlpool: poolData,
+      position: positionData,
+      tickLower: position.getLowerTickData(),
+      tickUpper: position.getUpperTickData(),
+    });
+
     let ataTx: TransactionBuilder | undefined;
     let closeTx: TransactionBuilder;
     if (txs.length === 1) {
@@ -444,42 +456,6 @@ describe("whirlpool-impl", () => {
 
     await ataTx?.buildAndExecute();
     await closeTx.addSigner(otherWallet).buildAndExecute();
-
-    const tickLowerArrayData = await ctx.fetcher.getTickArray(
-      positionWithFees.tickArrayLower,
-      true
-    );
-
-    const tickUpperArrayData = await ctx.fetcher.getTickArray(
-      positionWithFees.tickArrayUpper,
-      true
-    );
-
-    const tickLower = TickArrayUtil.getTickFromArray(
-      tickLowerArrayData!,
-      tickLowerIndex,
-      tickSpacing
-    );
-
-    const tickUpper = TickArrayUtil.getTickFromArray(
-      tickUpperArrayData!,
-      tickUpperIndex,
-      tickSpacing
-    );
-
-    const feesQuote = collectFeesQuote({
-      whirlpool: poolData,
-      position: positionData,
-      tickLower,
-      tickUpper,
-    });
-
-    const rewardsQuote = collectRewardsQuote({
-      whirlpool: await pool.refreshData(),
-      position: await position.refreshData(),
-      tickLower,
-      tickUpper,
-    });
 
     assert.equal(
       await getTokenBalance(ctx.provider, dWalletTokenAAccount),
@@ -608,33 +584,18 @@ describe("whirlpool-impl", () => {
       pool
     );
 
-    const tickLowerArrayData = await ctx.fetcher.getTickArray(
-      positionWithFees.tickArrayLower,
-      true
-    );
-
-    const tickUpperArrayData = await ctx.fetcher.getTickArray(
-      positionWithFees.tickArrayUpper,
-      true
-    );
-
-    const tickLower = TickArrayUtil.getTickFromArray(
-      tickLowerArrayData!,
-      tickLowerIndex,
-      tickSpacing
-    );
-
-    const tickUpper = TickArrayUtil.getTickFromArray(
-      tickUpperArrayData!,
-      tickUpperIndex,
-      tickSpacing
-    );
-
     const feesQuote = collectFeesQuote({
       whirlpool: poolData,
       position: positionData,
-      tickLower,
-      tickUpper,
+      tickLower: position.getLowerTickData(),
+      tickUpper: position.getUpperTickData(),
+    });
+
+    const rewardsQuote = collectRewardsQuote({
+      whirlpool: poolData,
+      position: positionData,
+      tickLower: position.getLowerTickData(),
+      tickUpper: position.getUpperTickData(),
     });
 
     const dWalletTokenBAccount = await deriveATA(otherWallet.publicKey, poolData.tokenMintB);
@@ -672,13 +633,6 @@ describe("whirlpool-impl", () => {
     const minAccountExempt = await ctx.fetcher.getAccountRentExempt();
     const solReceived = otherWalletBalanceAfter - otherWalletBalanceBefore;
 
-    // TODO: Why is the reward quote only correct when data is collected after the tx is ran?
-    const rewardsQuote = collectRewardsQuote({
-      whirlpool: await pool.refreshData(),
-      position: await position.refreshData(),
-      tickLower,
-      tickUpper,
-    });
     /**
      * Expected tokenA (SOL) returns on other wallet
      * 1. withdraw value from decrease_liq (decrease_quote, though not always accurate)

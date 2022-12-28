@@ -69,16 +69,23 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
         }
       });
     });
-    await this.ctx.fetcher.listMintInfos(Array.from(tokenMints), refresh);
-    await this.ctx.fetcher.listTokenInfos(Array.from(tokenAccounts), refresh);
+
+    await Promise.all([
+      this.ctx.fetcher.listMintInfos(Array.from(tokenMints), refresh),
+      this.ctx.fetcher.listTokenInfos(Array.from(tokenAccounts), refresh),
+    ]);
 
     const whirlpools: Whirlpool[] = [];
     for (let i = 0; i < accounts.length; i++) {
       const account = accounts[i];
       const poolAddress = poolAddresses[i];
-      const tokenInfos = await getTokenMintInfos(this.ctx.fetcher, account, false);
-      const vaultInfos = await getTokenVaultAccountInfos(this.ctx.fetcher, account, false);
-      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, false);
+
+      const [tokenInfos, vaultInfos, rewardInfos] = await Promise.all([
+        getTokenMintInfos(this.ctx.fetcher, account, false),
+        getTokenVaultAccountInfos(this.ctx.fetcher, account, false),
+        getRewardInfos(this.ctx.fetcher, account, false),
+      ]);
+
       whirlpools.push(
         new WhirlpoolImpl(
           this.ctx,

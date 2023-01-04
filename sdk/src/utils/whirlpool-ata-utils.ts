@@ -1,7 +1,15 @@
-import { Instruction, resolveOrCreateATAs, TokenUtil } from "@orca-so/common-sdk";
+import {
+  Instruction,
+  resolveOrCreateATAs,
+  TokenUtil,
+  TransactionBuilder,
+  ZERO,
+} from "@orca-so/common-sdk";
+import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PoolUtil, WhirlpoolContext } from "..";
 import { WhirlpoolData } from "../types/public";
+import { createWSOLAccountInstructions } from "./spl-token-utils";
 import { convertListToMap } from "./txn-utils";
 
 export enum TokenMintTypes {
@@ -143,4 +151,22 @@ export async function resolveAtaForMints(
     ataTokenAddresses: affliatedTokenAtaMap,
     resolveAtaIxs,
   };
+}
+
+/**
+ * Helper methods.
+ */
+export function addNativeMintHandlingIx(
+  txBuilder: TransactionBuilder,
+  affliatedTokenAtaMap: Record<string, PublicKey>,
+  destinationWallet: PublicKey,
+  accountExemption: number
+) {
+  let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
+    destinationWallet,
+    ZERO,
+    accountExemption
+  );
+  affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
+  txBuilder.prependInstruction(resolveWSolIx);
 }

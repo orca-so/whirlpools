@@ -4,7 +4,10 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
 import { initTickArrayIx } from "../instructions";
-import { collectAllForPositionAddressesTxns } from "../instructions/composites";
+import {
+  collectAllForPositionAddressesTxns,
+  collectProtocolFees,
+} from "../instructions/composites";
 import { WhirlpoolIx } from "../ix";
 import { AccountFetcher } from "../network/public";
 import { WhirlpoolData } from "../types/public";
@@ -275,5 +278,9 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       },
       refresh
     );
+  }
+
+  public async collectProtocolFeesForPools(poolAddresses: Address[]): Promise<TransactionBuilder> {
+    return collectProtocolFees(this.ctx, poolAddresses);
   }
 }

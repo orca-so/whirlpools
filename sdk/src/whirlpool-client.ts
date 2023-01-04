@@ -100,6 +100,8 @@ export interface WhirlpoolClient {
     initialTick: number,
     funder: Address
   ) => Promise<{ poolKey: PublicKey; tx: TransactionBuilder }>;
+
+  collectProtocolFeesForPools: (poolAddresses: Address[]) => Promise<TransactionBuilder>;
 }
 
 /**

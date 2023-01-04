@@ -9,7 +9,11 @@ import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
 import { getAssociatedTokenAddressSync } from "../../utils/spl-token-utils";
 import { convertListToMap } from "../../utils/txn-utils";
-import { getTokenMintsFromWhirlpools, resolveAtaForMints } from "../../utils/whirlpool-ata-utils";
+import {
+  addNativeMintHandlingIx,
+  getTokenMintsFromWhirlpools,
+  resolveAtaForMints,
+} from "../../utils/whirlpool-ata-utils";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
 
 /**
@@ -195,24 +199,6 @@ export async function collectAllForPositionsTxns(
 
   txBuilders.push(pendingTxBuilder);
   return txBuilders;
-}
-
-/**
- * Helper methods.
- */
-function addNativeMintHandlingIx(
-  txBuilder: TransactionBuilder,
-  affliatedTokenAtaMap: Record<string, PublicKey>,
-  destinationWallet: PublicKey,
-  accountExemption: number
-) {
-  let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
-    destinationWallet,
-    ZERO,
-    accountExemption
-  );
-  affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
-  txBuilder.prependInstruction(resolveWSolIx);
 }
 
 // TODO: Once individual collect ix for positions is implemented, maybe migrate over if it can take custom ATA?

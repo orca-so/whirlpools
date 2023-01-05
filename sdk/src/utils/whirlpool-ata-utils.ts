@@ -160,7 +160,7 @@ export async function resolveAtaForMints(
 }
 
 /**
- * Helper methods.
+ * Add native WSOL mint handling to a transaction builder.
  */
 export function addNativeMintHandlingIx(
   txBuilder: TransactionBuilder,

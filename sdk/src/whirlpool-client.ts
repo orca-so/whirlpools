@@ -101,6 +101,11 @@ export interface WhirlpoolClient {
     funder: Address
   ) => Promise<{ poolKey: PublicKey; tx: TransactionBuilder }>;
 
+  /**
+   * Collect protocol fees from a list of pools
+   * @param poolAddresses the addresses of the Whirlpool accounts to collect protocol fees from
+   * @returns A transaction builder to resolve ATA for tokenA and tokenB if needed, and collect protocol fees for all pools
+   */
   collectProtocolFeesForPools: (poolAddresses: Address[]) => Promise<TransactionBuilder>;
 }
 

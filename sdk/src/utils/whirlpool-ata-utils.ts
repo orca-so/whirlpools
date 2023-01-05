@@ -32,19 +32,19 @@ export function getTokenMintsFromWhirlpools(
 ) {
   let hasNativeMint = false;
   const mints = Array.from(
-    whirlpoolDatas.reduce<Set<PublicKey>>((accu, whirlpoolData) => {
+    whirlpoolDatas.reduce<Set<string>>((accu, whirlpoolData) => {
       if (whirlpoolData) {
         if (mintTypes === TokenMintTypes.ALL || mintTypes === TokenMintTypes.POOL_ONLY) {
           const { tokenMintA, tokenMintB } = whirlpoolData;
           // TODO: Once we move to sync-native for wSOL wrapping, we can simplify and use wSOL ATA instead of a custom token account.
           if (!TokenUtil.isNativeMint(tokenMintA)) {
-            accu.add(tokenMintA);
+            accu.add(tokenMintA.toBase58());
           } else {
             hasNativeMint = true;
           }
 
           if (!TokenUtil.isNativeMint(tokenMintB)) {
-            accu.add(tokenMintB);
+            accu.add(tokenMintB.toBase58());
           } else {
             hasNativeMint = true;
           }
@@ -57,14 +57,15 @@ export function getTokenMintsFromWhirlpools(
               hasNativeMint = true;
             }
             if (PoolUtil.isRewardInitialized(reward)) {
-              accu.add(reward.mint);
+              accu.add(reward.mint.toBase58());
             }
           });
         }
       }
       return accu;
-    }, new Set<PublicKey>())
-  );
+    }, new Set<string>())
+  ).map((mint) => new PublicKey(mint));
+
   return {
     mintMap: mints,
     hasNativeMint,

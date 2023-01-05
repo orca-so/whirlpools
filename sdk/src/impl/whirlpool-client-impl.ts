@@ -134,7 +134,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       .map((position) => position?.whirlpool.toBase58())
       .flatMap((x) => (!!x ? x : []));
     await this.ctx.fetcher.listPools(whirlpoolAddrs, refresh);
-    const tickArrayAddresses: Set<PublicKey> = new Set();
+    const tickArrayAddresses: Set<string> = new Set();
     await Promise.all(
       positions.map(async (pos) => {
         if (pos) {
@@ -152,8 +152,8 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
               pos.whirlpool,
               this.ctx.program.programId
             ).publicKey;
-            tickArrayAddresses.add(lowerTickArrayPda);
-            tickArrayAddresses.add(upperTickArrayPda);
+            tickArrayAddresses.add(lowerTickArrayPda.toBase58());
+            tickArrayAddresses.add(upperTickArrayPda.toBase58());
           }
         }
       })

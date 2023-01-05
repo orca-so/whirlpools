@@ -18,6 +18,11 @@ export enum TokenMintTypes {
   REWARD_ONLY = "REWARDS_ONLY",
 }
 
+export type WhirlpoolsTokenMints = {
+  mintMap: PublicKey[];
+  hasNativeMint: boolean;
+};
+
 /**
  * Fetch a list of affliated tokens from a list of whirlpools
  *
@@ -29,7 +34,7 @@ export enum TokenMintTypes {
 export function getTokenMintsFromWhirlpools(
   whirlpoolDatas: (WhirlpoolData | null)[],
   mintTypes = TokenMintTypes.ALL
-) {
+): WhirlpoolsTokenMints {
   let hasNativeMint = false;
   const mints = Array.from(
     whirlpoolDatas.reduce<Set<string>>((accu, whirlpoolData) => {

@@ -1,7 +1,15 @@
-import { Instruction, resolveOrCreateATAs, TokenUtil } from "@orca-so/common-sdk";
+import {
+  Instruction,
+  resolveOrCreateATAs,
+  TokenUtil,
+  TransactionBuilder,
+  ZERO,
+} from "@orca-so/common-sdk";
+import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PoolUtil, WhirlpoolContext } from "..";
 import { WhirlpoolData } from "../types/public";
+import { createWSOLAccountInstructions } from "./spl-token-utils";
 import { convertListToMap } from "./txn-utils";
 
 export enum TokenMintTypes {
@@ -9,6 +17,11 @@ export enum TokenMintTypes {
   POOL_ONLY = "POOL_ONLY",
   REWARD_ONLY = "REWARDS_ONLY",
 }
+
+export type WhirlpoolsTokenMints = {
+  mintMap: PublicKey[];
+  hasNativeMint: boolean;
+};
 
 /**
  * Fetch a list of affliated tokens from a list of whirlpools
@@ -21,22 +34,22 @@ export enum TokenMintTypes {
 export function getTokenMintsFromWhirlpools(
   whirlpoolDatas: (WhirlpoolData | null)[],
   mintTypes = TokenMintTypes.ALL
-) {
+): WhirlpoolsTokenMints {
   let hasNativeMint = false;
   const mints = Array.from(
-    whirlpoolDatas.reduce<Set<PublicKey>>((accu, whirlpoolData) => {
+    whirlpoolDatas.reduce<Set<string>>((accu, whirlpoolData) => {
       if (whirlpoolData) {
         if (mintTypes === TokenMintTypes.ALL || mintTypes === TokenMintTypes.POOL_ONLY) {
           const { tokenMintA, tokenMintB } = whirlpoolData;
           // TODO: Once we move to sync-native for wSOL wrapping, we can simplify and use wSOL ATA instead of a custom token account.
           if (!TokenUtil.isNativeMint(tokenMintA)) {
-            accu.add(tokenMintA);
+            accu.add(tokenMintA.toBase58());
           } else {
             hasNativeMint = true;
           }
 
           if (!TokenUtil.isNativeMint(tokenMintB)) {
-            accu.add(tokenMintB);
+            accu.add(tokenMintB.toBase58());
           } else {
             hasNativeMint = true;
           }
@@ -49,14 +62,15 @@ export function getTokenMintsFromWhirlpools(
               hasNativeMint = true;
             }
             if (PoolUtil.isRewardInitialized(reward)) {
-              accu.add(reward.mint);
+              accu.add(reward.mint.toBase58());
             }
           });
         }
       }
       return accu;
-    }, new Set<PublicKey>())
-  );
+    }, new Set<string>())
+  ).map((mint) => new PublicKey(mint));
+
   return {
     mintMap: mints,
     hasNativeMint,
@@ -143,4 +157,22 @@ export async function resolveAtaForMints(
     ataTokenAddresses: affliatedTokenAtaMap,
     resolveAtaIxs,
   };
+}
+
+/**
+ * Add native WSOL mint handling to a transaction builder.
+ */
+export function addNativeMintHandlingIx(
+  txBuilder: TransactionBuilder,
+  affliatedTokenAtaMap: Record<string, PublicKey>,
+  destinationWallet: PublicKey,
+  accountExemption: number
+) {
+  let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
+    destinationWallet,
+    ZERO,
+    accountExemption
+  );
+  affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
+  txBuilder.prependInstruction(resolveWSolIx);
 }

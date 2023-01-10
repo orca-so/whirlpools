@@ -1,5 +1,5 @@
 import { PDA } from "@orca-so/common-sdk";
-import { Program } from "@project-serum/anchor";
+import { Address, Program } from "@project-serum/anchor";
 import { WhirlpoolContext } from ".";
 import { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
@@ -10,6 +10,9 @@ import * as ix from "./instructions";
  * @category Core
  */
 export class WhirlpoolIx {
+
+  /// ********************* Program Instructions *********************
+
   /**
    * Initializes a WhirlpoolsConfig account that hosts info & authorities
    * required to govern a set of Whirlpools.
@@ -417,6 +420,9 @@ export class WhirlpoolIx {
     return ix.setRewardEmissionsSuperAuthorityIx(program, params);
   }
 
+  /// ********************* End: Program Instructions *********************
+  /// **************** Convienience Instruction Methods *******************
+
   /**
    * A set of transactions to collect all fees and rewards from a list of positions.
    *
@@ -425,11 +431,25 @@ export class WhirlpoolIx {
    * @param refresh - if true, will always fetch for the latest values on chain to compute.
    * @returns
    */
-  public static collectAllForPositionsTxns(
+  public static collectAllForPositions(
     ctx: WhirlpoolContext,
     params: ix.CollectAllPositionAddressParams,
     refresh: boolean
   ) {
     return ix.collectAllForPositionAddressesTxns(ctx, params, refresh);
   }
+
+  /**
+   * Collect protocol fees from a list of pools
+   * @param poolAddresses the addresses of the Whirlpool accounts to collect protocol fees from
+   * @returns A transaction builder to resolve ATA for tokenA and tokenB if needed, and collect protocol fees for all pools
+   */
+  public static collectProtocolFeesForPools(
+    ctx: WhirlpoolContext,
+    poolKeys: Address[]
+  ) {
+    return ix.collectProtocolFees(ctx, poolKeys)
+  }
+
+  /// ************** End: Convienience Instruction Methods *****************
 }

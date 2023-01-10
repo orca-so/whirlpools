@@ -1,3 +1,4 @@
+import { PDA } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { AccountFetcher } from "../../network/public";
@@ -6,7 +7,7 @@ import {
   MIN_TICK_INDEX,
   TickArrayData,
   TickData,
-  TICK_ARRAY_SIZE,
+  TICK_ARRAY_SIZE
 } from "../../types/public";
 import { PDAUtil } from "./pda-utils";
 
@@ -20,7 +21,7 @@ enum TickSearchDirection {
  * @category Whirlpool Utils
  */
 export class TickUtil {
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Get the offset index to access a tick at a given tick-index in a tick-array
@@ -198,14 +199,14 @@ export class TickArrayUtil {
    * @param whirlpoolAddress - Address for the Whirlpool for these tick-arrays
    * @returns TickArray PDAs for the sequence`
    */
-  public static async getTickArrayPDAs(
+  public static getTickArrayPDAs(
     tick: number,
     tickSpacing: number,
     numOfTickArrays: number,
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
     aToB: boolean
-  ) {
+  ): PDA[] {
     let arrayIndexList = [...Array(numOfTickArrays).keys()];
     if (aToB) {
       arrayIndexList = arrayIndexList.map((value) => -value);

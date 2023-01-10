@@ -35,7 +35,7 @@
     "watch": "tsc -w -p src",
     "prepublishOnly": "yarn build",
     "prettier-format": "prettier --config .prettierrc 'src/**/*.ts' --write",
-    "test": "jest",
+    "test": "anchor test",
     "docs": "npx typedoc --options typedoc.json"
   },
   "lint-staged": {

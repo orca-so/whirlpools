@@ -23,6 +23,14 @@ yarn add "decimal.js"
 
 Read instructions on how to use the SDK on the [Orca Developer Portal](https://orca-so.gitbook.io/orca-developer-portal/orca/welcome).
 
+## Tests
+
+To run tests for the SDK, setup your anchor environment and run:
+
+```
+anchor test
+```
+
 # License
 
 [Apache 2.0](https://choosealicense.com/licenses/apache-2.0/)

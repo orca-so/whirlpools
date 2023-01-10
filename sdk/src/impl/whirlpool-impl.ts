@@ -189,7 +189,7 @@ export class WhirlpoolImpl implements Whirlpool {
       input: quote,
       whirlpool: this.data,
       poolAddress: this.address,
-      resolveAssociatedTokenAccounts: true,
+      resolveAta: true,
       wallet: sourceWalletKey,
     });
   }
@@ -229,7 +229,7 @@ export class WhirlpoolImpl implements Whirlpool {
       input: quote,
       wallet: sourceWalletKey,
       poolAddress: this.address,
-      resolveAssociatedTokenAccounts: true,
+      resolveAta: true,
       whirlpool: this.data,
     });
 

@@ -19,27 +19,14 @@ import { SwapInput, swapIx } from "../swap-ix";
  * @param whirlpool - A {@link WhirlpoolData} on-chain data object for the pool
  * @param input - A quote on the desired tokenIn and tokenOut for this swap. Use {@link swapQuoteWithParams} or other swap quote functions to generate this object.
  * @param wallet - The wallet that tokens will be withdrawn and deposit into.
- * @param resolveAssociatedTokenAccounts - If true, function will automatically resolve and create token ATA to receive tokens.
- * @param tokenAAssociatedAddress - If resolveAssociatedTokenAccounts is false, provide the ATA for tokenA
- * @param tokenBAssociatedAddress - If resolveAssociatedTokenAccounts is false, provide the ATA for tokenB
+ * @param resolveAta - If true, function will automatically resolve and create token ATA to receive tokens. If false, it will derive the ATA using the wallet key, but will not create the ATAs.
  */
-export type SwapBuilderParams = SwapBuilderParamsWithATA | SwapBuilderParamsWithResolveATA;
-
-type SwapBuilderParamsWithResolveATA = {
-  resolveAssociatedTokenAccounts: true;
-} & SwapBuilderParamsBase;
-
-type SwapBuilderParamsWithATA = {
-  resolveAssociatedTokenAccounts: false;
-  tokenAAssociatedAddress: Address;
-  tokenBAssociatedAddress: Address;
-} & SwapBuilderParamsBase;
-
-type SwapBuilderParamsBase = {
+export type SwapBuilderParams = {
   poolAddress: Address;
   whirlpool: WhirlpoolData;
   input: SwapInput;
   wallet: PublicKey;
+  resolveAta: boolean;
 };
 
 export async function swap(
@@ -65,7 +52,7 @@ export async function swap(
   const txBuilder = new TransactionBuilder(ctx.provider.connection, ctx.provider.wallet);
 
   let tokenOwnerAccountA: PublicKey, tokenOwnerAccountB: PublicKey;
-  if (params.resolveAssociatedTokenAccounts) {
+  if (params.resolveAta) {
     const [resolvedAtaA, resolvedAtaB] = await resolveOrCreateATAs(
       ctx.connection,
       wallet,

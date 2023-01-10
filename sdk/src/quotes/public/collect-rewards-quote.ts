@@ -81,9 +81,9 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
       rewardGrowthsBelowX64 =
         tickCurrentIndex < tickLowerIndex
           ? MathUtil.subUnderflowU128(
-            adjustedRewardGrowthGlobalX64,
-            tickLowerRewardGrowthsOutsideX64
-          )
+              adjustedRewardGrowthGlobalX64,
+              tickLowerRewardGrowthsOutsideX64
+            )
           : tickLowerRewardGrowthsOutsideX64;
     }
 
@@ -93,9 +93,9 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
         tickCurrentIndex < tickUpperIndex
           ? tickUpperRewardGrowthsOutsideX64
           : MathUtil.subUnderflowU128(
-            adjustedRewardGrowthGlobalX64,
-            tickUpperRewardGrowthsOutsideX64
-          );
+              adjustedRewardGrowthGlobalX64,
+              tickUpperRewardGrowthsOutsideX64
+            );
     }
 
     const rewardGrowthInsideX64 = MathUtil.subUnderflowU128(

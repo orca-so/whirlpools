@@ -4,9 +4,7 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
 import { initTickArrayIx } from "../instructions";
-import {
-  collectAllForPositionAddressesTxns
-} from "../instructions/composites";
+import { collectAllForPositionAddressesTxns } from "../instructions/composites";
 import { WhirlpoolIx } from "../ix";
 import { AccountFetcher } from "../network/public";
 import { WhirlpoolData } from "../types/public";
@@ -18,7 +16,7 @@ import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./
 import { WhirlpoolImpl } from "./whirlpool-impl";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
-  constructor(readonly ctx: WhirlpoolContext) { }
+  constructor(readonly ctx: WhirlpoolContext) {}
 
   public getContext(): WhirlpoolContext {
     return this.ctx;
@@ -278,5 +276,4 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       refresh
     );
   }
-
 }

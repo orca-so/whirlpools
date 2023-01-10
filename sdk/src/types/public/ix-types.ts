@@ -1,8 +1,5 @@
 export {
   ClosePositionParams,
-  CollectAllParams,
-  CollectAllPositionAddressParams,
-  CollectAllPositionParams,
   CollectFeesParams,
   CollectProtocolFeesParams,
   CollectRewardParams,
@@ -31,3 +28,9 @@ export {
   SwapParams,
   UpdateFeesAndRewardsParams,
 } from "../../instructions/";
+export {
+  CollectAllParams,
+  CollectAllPositionAddressParams,
+  CollectAllPositionParams,
+  SwapBuilderParams,
+} from "../../instructions/composites";

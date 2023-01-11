@@ -1,3 +1,4 @@
+import { PDA } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { AccountFetcher } from "../../network/public";
@@ -198,14 +199,14 @@ export class TickArrayUtil {
    * @param whirlpoolAddress - Address for the Whirlpool for these tick-arrays
    * @returns TickArray PDAs for the sequence`
    */
-  public static async getTickArrayPDAs(
+  public static getTickArrayPDAs(
     tick: number,
     tickSpacing: number,
     numOfTickArrays: number,
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
     aToB: boolean
-  ) {
+  ): PDA[] {
     let arrayIndexList = [...Array(numOfTickArrays).keys()];
     if (aToB) {
       arrayIndexList = arrayIndexList.map((value) => -value);

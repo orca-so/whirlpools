@@ -21,9 +21,9 @@ import {
   initTickArrayIx,
   openPositionIx,
   openPositionWithMetadataIx,
+  swapAsync,
   SwapInput,
 } from "../instructions";
-import { WhirlpoolIxBuilders } from "../ix";
 import {
   collectFeesQuote,
   collectRewardsQuote,
@@ -185,13 +185,17 @@ export class WhirlpoolImpl implements Whirlpool {
     const sourceWalletKey = sourceWallet
       ? AddressUtil.toPubKey(sourceWallet)
       : this.ctx.wallet.publicKey;
-    return WhirlpoolIxBuilders.swap(this.ctx, {
-      input: quote,
-      whirlpool: this.data,
-      poolAddress: this.address,
-      resolveAssociatedTokenAccounts: true,
-      wallet: sourceWalletKey,
-    });
+    return swapAsync(
+      this.ctx,
+      {
+        swapInput: quote,
+        whirlpool: this.address,
+        whirlpoolData: this.data,
+        wallet: sourceWalletKey,
+        resolveATA: true,
+      },
+      true
+    );
   }
 
   async swapWithDevFees(
@@ -225,13 +229,17 @@ export class WhirlpoolImpl implements Whirlpool {
       );
     }
 
-    const swapTxBuilder = await WhirlpoolIxBuilders.swap(this.ctx, {
-      input: quote,
-      wallet: sourceWalletKey,
-      poolAddress: this.address,
-      resolveAssociatedTokenAccounts: true,
-      whirlpool: this.data,
-    });
+    const swapTxBuilder = await swapAsync(
+      this.ctx,
+      {
+        swapInput: quote,
+        whirlpool: this.address,
+        whirlpoolData: this.data,
+        wallet: sourceWalletKey,
+        resolveATA: true,
+      },
+      true
+    );
 
     txBuilder.addInstruction(swapTxBuilder.compressIx(true));
 

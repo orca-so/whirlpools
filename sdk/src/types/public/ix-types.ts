@@ -24,13 +24,15 @@ export {
   SetRewardAuthorityParams,
   SetRewardEmissionsParams,
   SetRewardEmissionsSuperAuthorityParams,
+  SwapClientParams,
   SwapInput,
   SwapParams,
+  SwapRawParams,
   UpdateFeesAndRewardsParams,
 } from "../../instructions/";
 export {
   CollectAllParams,
   CollectAllPositionAddressParams,
   CollectAllPositionParams,
-  SwapBuilderParams,
+  SwapAsyncParams,
 } from "../../instructions/composites";

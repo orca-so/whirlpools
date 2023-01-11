@@ -5,11 +5,13 @@ import { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
 
 /**
- * Convienience instruction builders for the Whirlpools program.
+ * Instruction builders that performs additional magic prior to executing an instruction.
+ * These functions can make additional network calls and additional logic to perform common Solana checks.
+ * Ex. resolving ATA and checks on account existance.
  *
  * @category Core
  */
-export class WhirlpoolIxBuilders {
+export class WhirlpoolAsyncIx {
   /**
    * A set of transactions to collect all fees and rewards from a list of positions.
    *
@@ -18,7 +20,7 @@ export class WhirlpoolIxBuilders {
    * @param refresh - if true, will always fetch for the latest values on chain to compute.
    * @returns
    */
-  public static collectAllForPositions(
+  public static async collectAllForPositions(
     ctx: WhirlpoolContext,
     params: ix.CollectAllPositionAddressParams,
     refresh: boolean
@@ -33,7 +35,7 @@ export class WhirlpoolIxBuilders {
    * @param poolAddresses the addresses of the Whirlpool accounts to collect protocol fees from
    * @returns A transaction builder to resolve ATA for tokenA and tokenB if needed, and collect protocol fees for all pools
    */
-  public static collectProtocolFeesForPools(ctx: WhirlpoolContext, poolKeys: Address[]) {
+  public static async collectProtocolFeesForPools(ctx: WhirlpoolContext, poolKeys: Address[]) {
     return ix.collectProtocolFees(ctx, poolKeys);
   }
 
@@ -41,16 +43,16 @@ export class WhirlpoolIxBuilders {
    * Execute a swap with tick-array checks and token ATA resolving.
    *
    * @param ctx - WhirlpoolContext object for the current environment.
-   * @param params {@link SwapBuilderParams}
+   * @param params {@link SwapWithMagicParams}
    * @returns A transaction builder that may resolve ATA for tokenA/B and execute a swap with the provided parameters.
    */
-  public static swap(ctx: WhirlpoolContext, params: ix.SwapBuilderParams) {
-    return ix.swap(ctx, params);
+  public static async swap(ctx: WhirlpoolContext, params: ix.SwapAsyncParams, refresh: boolean) {
+    return ix.swapAsync(ctx, params, refresh);
   }
 }
 
 /**
- * Raw instruction set for the Whirlpools program.
+ * Instruction builders for the Whirlpools program.
  *
  * @category Core
  */
@@ -227,7 +229,7 @@ export class WhirlpoolIx {
    *
    * ### Parameters
    * @param program - program object containing services required to generate the instruction
-   * @param params - SwapParams object
+   * @param params - {@link SwapParams}
    * @returns - Instruction to perform the action.
    */
   public static swapIx(program: Program<Whirlpool>, params: ix.SwapParams) {
@@ -463,7 +465,7 @@ export class WhirlpoolIx {
   }
 
   /**
-   * DEPRECATED - Use {@link WhirlpoolIxBuilders.collectAllForPositions}
+   * DEPRECATED - Use {@link WhirlpoolAsyncIx.collectAllForPositions}
    *
    * A set of transactions to collect all fees and rewards from a list of positions.
    *
@@ -473,7 +475,7 @@ export class WhirlpoolIx {
    * @param refresh - if true, will always fetch for the latest values on chain to compute.
    * @returns
    */
-  public static collectAllForPositions(
+  public static collectAllForPositionsTxns(
     ctx: WhirlpoolContext,
     params: ix.CollectAllPositionAddressParams,
     refresh: boolean

@@ -9,6 +9,7 @@ import { PDAUtil, TickArrayUtil } from "../utils/public";
 /**
  * Parameters and accounts to swap on a Whirlpool
  * Option to use {@link SwapRawParams} or {@link SwapClientParams}
+ * @category Instruction Types
  */
 export type SwapParams = SwapRawParams | SwapClientParams;
 

@@ -28,11 +28,14 @@ export {
   SwapInput,
   SwapParams,
   SwapRawParams,
-  UpdateFeesAndRewardsParams,
+  UpdateFeesAndRewardsParams
 } from "../../instructions/";
 export {
   CollectAllParams,
   CollectAllPositionAddressParams,
   CollectAllPositionParams,
   SwapAsyncParams,
+  SwapAsyncWithATA,
+  SwapAsyncWithResolveATA
 } from "../../instructions/composites";
+

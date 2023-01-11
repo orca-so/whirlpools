@@ -1,5 +1,4 @@
 import { Instruction, TokenUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
-import { createWSOLAccountInstructions } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import { Address } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PACKET_DATA_SIZE, PublicKey } from "@solana/web3.js";
@@ -12,14 +11,14 @@ import { convertListToMap } from "../../utils/txn-utils";
 import {
   addNativeMintHandlingIx,
   getTokenMintsFromWhirlpools,
-  resolveAtaForMints,
+  resolveAtaForMints
 } from "../../utils/whirlpool-ata-utils";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
 
 /**
  * Parameters to collect all fees and rewards from a list of positions.
  *
- * @category Instruction Types
+ * @category Async Instruction Types
  * @param positionAddrs - An array of Whirlpool position addresses.
  * @param receiver - The destination wallet that collected fees & reward will be sent to. Defaults to ctx.wallet key.
  * @param positionOwner - The wallet key that contains the position token. Defaults to ctx.wallet key.
@@ -33,7 +32,7 @@ export type CollectAllPositionAddressParams = {
 /**
  * Parameters to collect all fees and rewards from a list of positions.
  *
- * @category Instruction Types
+ * @category Async Instruction Types
  * @param positions - An array of Whirlpool positions.
  * @param receiver - The destination wallet that collected fees & reward will be sent to. Defaults to ctx.wallet key.
  * @param positionOwner - The wallet key that contains the position token. Defaults to ctx.wallet key.
@@ -47,7 +46,7 @@ export type CollectAllPositionParams = {
 /**
  * Common parameters between {@link CollectAllPositionParams} & {@link CollectAllPositionAddressParams}
  *
- * @category Instruction Types
+ * @category Async Instruction Types
  * @param receiver - The destination wallet that collected fees & reward will be sent to. Defaults to ctx.wallet key.
  * @param positionOwner - The wallet key that contains the position token. Defaults to ctx.wallet key.
  * @param positionAuthority - The authority key that can authorize operation on the position. Defaults to ctx.wallet key.

@@ -6,6 +6,7 @@ import { SwapClientParams, swapIx } from "../swap-ix";
 /**
  * Parameters to build a swap transaction with additional sanity checks.
  *
+ * @category Async Instruction Types
  * @param poolAddress - The public key for the Whirlpool to swap on
  * @param whirlpool - A {@link WhirlpoolData} on-chain data object for the pool
  * @param input - A quote on the desired tokenIn and tokenOut for this swap. Use {@link swapQuoteWithParams} or other swap quote functions to generate this object.
@@ -16,12 +17,26 @@ import { SwapClientParams, swapIx } from "../swap-ix";
  */
 export type SwapAsyncParams = SwapAsyncWithResolveATA | SwapAsyncWithATA;
 
-type SwapAsyncWithResolveATA = { resolveATA: true } & Omit<
+/**
+ * @category Async Instruction Types
+ */
+export type SwapAsyncWithResolveATA = { resolveATA: true } & Omit<
   SwapClientParams,
   "inputTokenAssociatedAddress" | "outputTokenAssociatedAddress" | "isClientParams"
 >;
-type SwapAsyncWithATA = { resolveATA: false } & Omit<SwapClientParams, "isClientParams">;
 
+/**
+ * @category Async Instruction Types
+ */
+export type SwapAsyncWithATA = { resolveATA: false } & Omit<SwapClientParams, "isClientParams">;
+
+/**
+ * Swap instruction builder method with resolveATA & additional checks.
+ * @param ctx - WhirlpoolContext object for the current environment.
+ * @param params - {@link SwapAsyncParams}
+ * @param refresh - If true, the network calls will always fetch for the latest values.
+ * @returns 
+ */
 export async function swapAsync(ctx: WhirlpoolContext, params: SwapAsyncParams, refresh: boolean) {
   const { wallet, whirlpoolData, swapInput } = params;
   const { aToB, amount } = swapInput;

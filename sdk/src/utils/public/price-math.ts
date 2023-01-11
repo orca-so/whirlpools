@@ -1,7 +1,7 @@
 import { MathUtil } from "@orca-so/common-sdk";
 import { BN } from "@project-serum/anchor";
 import Decimal from "decimal.js";
-import { MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "../../types/public";
+import { MAX_SQRT_PRICE, MAX_TICK_INDEX, MIN_SQRT_PRICE, MIN_TICK_INDEX } from "../../types/public";
 import { TickUtil } from "./tick-utils";
 
 const BIT_PRECISION = 14;
@@ -107,9 +107,18 @@ export class PriceMath {
   }
 
   public static priceToTickIndex(price: Decimal, decimalsA: number, decimalsB: number): number {
-    return PriceMath.sqrtPriceX64ToTickIndex(
-      PriceMath.priceToSqrtPriceX64(price, decimalsA, decimalsB)
-    );
+    const sqrtPriceX64 = PriceMath.priceToSqrtPriceX64(price, decimalsA, decimalsB);
+    if (sqrtPriceX64.gt(new BN(MAX_SQRT_PRICE))) {
+      console.warn("Provided price is too high, returning max tick index.");
+      return MAX_TICK_INDEX;
+    }
+
+    if (sqrtPriceX64.lt(new BN(MIN_SQRT_PRICE))) {
+      console.warn("Provided price is too low, returning min tick index.");
+      return MIN_TICK_INDEX;
+    }
+
+    return PriceMath.sqrtPriceX64ToTickIndex(sqrtPriceX64);
   }
 
   public static priceToInitializableTickIndex(

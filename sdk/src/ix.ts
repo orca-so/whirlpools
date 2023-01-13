@@ -5,53 +5,6 @@ import { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
 
 /**
- * Instruction builders that performs additional magic prior to executing an instruction.
- * These functions can make additional network calls and additional logic to perform common Solana checks.
- * Ex. resolving ATA and checks on account existance.
- *
- * @category Core
- */
-export class WhirlpoolAsyncIx {
-  /**
-   * A set of transactions to collect all fees and rewards from a list of positions.
-   *
-   * @param ctx - WhirlpoolContext object for the current environment.
-   * @param params - {@link CollectAllPositionAddressParams}
-   * @param refresh - if true, will always fetch for the latest values on chain to compute.
-   * @returns
-   */
-  public static async collectAllForPositions(
-    ctx: WhirlpoolContext,
-    params: ix.CollectAllPositionAddressParams,
-    refresh: boolean
-  ) {
-    return ix.collectAllForPositionAddressesTxns(ctx, params, refresh);
-  }
-
-  /**
-   * Collect protocol fees from a list of pools
-   *
-   * @param ctx - WhirlpoolContext object for the current environment.
-   * @param poolAddresses the addresses of the Whirlpool accounts to collect protocol fees from
-   * @returns A transaction builder to resolve ATA for tokenA and tokenB if needed, and collect protocol fees for all pools
-   */
-  public static async collectProtocolFeesForPools(ctx: WhirlpoolContext, poolKeys: Address[]) {
-    return ix.collectProtocolFees(ctx, poolKeys);
-  }
-
-  /**
-   * Execute a swap with tick-array checks and token ATA resolving.
-   *
-   * @param ctx - WhirlpoolContext object for the current environment.
-   * @param params {@link SwapWithMagicParams}
-   * @returns A transaction builder that may resolve ATA for tokenA/B and execute a swap with the provided parameters.
-   */
-  public static async swap(ctx: WhirlpoolContext, params: ix.SwapAsyncParams, refresh: boolean) {
-    return ix.swapAsync(ctx, params, refresh);
-  }
-}
-
-/**
  * Instruction builders for the Whirlpools program.
  *
  * @category Core
@@ -465,21 +418,30 @@ export class WhirlpoolIx {
   }
 
   /**
-   * DEPRECATED - Use {@link WhirlpoolAsyncIx.collectAllForPositions}
    *
    * A set of transactions to collect all fees and rewards from a list of positions.
    *
-   * @deprecated
    * @param ctx - WhirlpoolContext object for the current environment.
    * @param params - CollectAllPositionAddressParams object.
    * @param refresh - if true, will always fetch for the latest values on chain to compute.
    * @returns
    */
-  public static collectAllForPositionsTxns(
+  public static async collectAllForPositionsTxns(
     ctx: WhirlpoolContext,
     params: ix.CollectAllPositionAddressParams,
     refresh: boolean
   ) {
     return ix.collectAllForPositionAddressesTxns(ctx, params, refresh);
+  }
+
+  /**
+   * Collect protocol fees from a list of pools
+   *
+   * @param ctx - WhirlpoolContext object for the current environment.
+   * @param poolAddresses the addresses of the Whirlpool accounts to collect protocol fees from
+   * @returns A transaction builder to resolve ATA for tokenA and tokenB if needed, and collect protocol fees for all pools
+   */
+  public static async collectProtocolFeesForPools(ctx: WhirlpoolContext, poolKeys: Address[]) {
+    return ix.collectProtocolFees(ctx, poolKeys);
   }
 }

@@ -11,7 +11,7 @@ import { convertListToMap } from "../../utils/txn-utils";
 import {
   addNativeMintHandlingIx,
   getTokenMintsFromWhirlpools,
-  resolveAtaForMints
+  resolveAtaForMints,
 } from "../../utils/whirlpool-ata-utils";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
 

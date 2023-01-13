@@ -181,7 +181,7 @@ export class WhirlpoolImpl implements Whirlpool {
     );
   }
 
-  async swap(quote: SwapInput, sourceWallet?: Address) {
+  async swap(quote: SwapInput, sourceWallet?: Address): Promise<TransactionBuilder> {
     const sourceWalletKey = sourceWallet
       ? AddressUtil.toPubKey(sourceWallet)
       : this.ctx.wallet.publicKey;
@@ -189,10 +189,8 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx,
       {
         swapInput: quote,
-        whirlpool: this.address,
-        whirlpoolData: this.data,
+        whirlpool: this,
         wallet: sourceWalletKey,
-        resolveATA: true,
       },
       true
     );
@@ -233,10 +231,8 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx,
       {
         swapInput: quote,
-        whirlpool: this.address,
-        whirlpoolData: this.data,
+        whirlpool: this,
         wallet: sourceWalletKey,
-        resolveATA: true,
       },
       true
     );

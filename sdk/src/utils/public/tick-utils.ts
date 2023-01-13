@@ -1,3 +1,5 @@
+import { AddressUtil } from "@orca-so/common-sdk";
+import { Address } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { AccountFetcher } from "../../network/public";
@@ -6,7 +8,7 @@ import {
   MIN_TICK_INDEX,
   TickArrayData,
   TickData,
-  TICK_ARRAY_SIZE,
+  TICK_ARRAY_SIZE
 } from "../../types/public";
 import { PDAUtil } from "./pda-utils";
 
@@ -20,7 +22,7 @@ enum TickSearchDirection {
  * @category Whirlpool Utils
  */
 export class TickUtil {
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Get the offset index to access a tick at a given tick-index in a tick-array
@@ -214,6 +216,38 @@ export class TickArrayUtil {
       const startTick = TickUtil.getStartTickIndex(tick, tickSpacing, value);
       return PDAUtil.getTickArray(programId, whirlpoolAddress, startTick);
     });
+  }
+
+  /**
+   * Return a string containing all of the uninitialized arrays in the provided addresses.
+   * Useful for creating error messages.
+   * 
+   * @param tickArrayAddrs - A list of tick-array addresses to verify.
+   * @param fetcher - {@link AccountFetcher}
+   * @param refresh - If true, always fetch the latest on-chain data
+   * @returns A string of all uninitialized tick array addresses, delimited by ",". Falsy value if all arrays are initialized.
+   */
+  public static async getUninitializedArraysString(
+    tickArrayAddrs: Address[],
+    fetcher: AccountFetcher,
+    refresh: boolean
+  ) {
+    const taAddrs = AddressUtil.toPubKeys(tickArrayAddrs);
+    const tickArrayData = await fetcher.listTickArrays(taAddrs, refresh);
+
+    // Verify tick arrays are initialized if the user provided them.
+    if (tickArrayData) {
+      const uninitializedIndices = TickArrayUtil.getUninitializedArrays(tickArrayData);
+      if (uninitializedIndices.length > 0) {
+        const uninitializedArrays = uninitializedIndices
+          .map((index) => taAddrs[index].toBase58())
+          .join(", ");
+
+        return uninitializedArrays;
+      }
+    }
+
+    return null;
   }
 
   public static async getUninitializedArraysPDAs(

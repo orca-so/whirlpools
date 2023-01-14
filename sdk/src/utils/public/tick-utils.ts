@@ -8,7 +8,7 @@ import {
   MIN_TICK_INDEX,
   TickArrayData,
   TickData,
-  TICK_ARRAY_SIZE
+  TICK_ARRAY_SIZE,
 } from "../../types/public";
 import { PDAUtil } from "./pda-utils";
 
@@ -22,7 +22,7 @@ enum TickSearchDirection {
  * @category Whirlpool Utils
  */
 export class TickUtil {
-  private constructor() { }
+  private constructor() {}
 
   /**
    * Get the offset index to access a tick at a given tick-index in a tick-array
@@ -221,7 +221,7 @@ export class TickArrayUtil {
   /**
    * Return a string containing all of the uninitialized arrays in the provided addresses.
    * Useful for creating error messages.
-   * 
+   *
    * @param tickArrayAddrs - A list of tick-array addresses to verify.
    * @param fetcher - {@link AccountFetcher}
    * @param refresh - If true, always fetch the latest on-chain data

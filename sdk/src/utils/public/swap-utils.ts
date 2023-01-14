@@ -11,7 +11,7 @@ import {
   SwapInput,
   SwapParams,
   TickArray,
-  WhirlpoolData
+  WhirlpoolData,
 } from "../../types/public";
 import { Whirlpool } from "../../whirlpool-client";
 import { adjustForSlippage } from "../math/token-math";
@@ -174,7 +174,7 @@ export class SwapUtils {
   /**
    * Convert a quote object and WhirlpoolClient's {@link Whirlpool} object into a {@link SwapParams} type
    * to be plugged into {@link WhirlpoolIx.swapIx}.
-   * 
+   *
    * @param quote - A {@link SwapQuote} type generated from {@link swapQuoteWithParams}
    * @param ctx - {@link WhirlpoolContext}
    * @param whirlpool - A {@link Whirlpool} object from WhirlpoolClient

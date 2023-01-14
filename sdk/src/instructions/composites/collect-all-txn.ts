@@ -1,5 +1,4 @@
 import { Instruction, TokenUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
-import { createWSOLAccountInstructions } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import { Address } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PACKET_DATA_SIZE, PublicKey } from "@solana/web3.js";

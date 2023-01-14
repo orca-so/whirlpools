@@ -5,18 +5,10 @@ import { PublicKey } from "@solana/web3.js";
 import { Whirlpool } from "../artifacts/whirlpool";
 
 /**
- * Parameters and accounts to swap on a Whirlpool
+ * Raw parameters and accounts to swap on a Whirlpool
  *
  * @category Instruction Types
- * @param aToB - The direction of the swap. True if swapping from A to B. False if swapping from B to A.
- * @param amountSpecifiedIsInput - Specifies the token the parameter `amount`represents. If true, the amount represents
- *                                 the input token of the swap.
- * @param amount - The amount of input or output token to swap from (depending on amountSpecifiedIsInput).
- * @param otherAmountThreshold - The maximum/minimum of input/output token to swap into (depending on amountSpecifiedIsInput).
- * @param sqrtPriceLimit - The maximum/minimum price the swap will swap to.
- * @param tickArray0 - PublicKey of the tick-array where the Whirlpool's currentTickIndex resides in
- * @param tickArray1 - The next tick-array in the swap direction. If the swap will not reach the next tick-aray, input the same array as tickArray0.
- * @param tickArray2 - The next tick-array in the swap direction after tickArray2. If the swap will not reach the next tick-aray, input the same array as tickArray1.
+ * @param swapInput - Parameters in {@link SwapInput}
  * @param whirlpool - PublicKey for the whirlpool that the position will be opened for.
  * @param tokenOwnerAccountA - PublicKey for the associated token account for tokenA in the collection wallet
  * @param tokenOwnerAccountB - PublicKey for the associated token account for tokenB in the collection wallet
@@ -36,7 +28,7 @@ export type SwapParams = SwapInput & {
 };
 
 /**
- * Parameters to swap on a Whirlpool
+ * Parameters that describe the nature of a swap on a Whirlpool.
  *
  * @category Instruction Types
  * @param aToB - The direction of the swap. True if swapping from A to B. False if swapping from B to A.
@@ -64,15 +56,7 @@ export type SwapInput = {
  * Parameters to swap on a Whirlpool with developer fees
  *
  * @category Instruction Types
- * @param aToB - The direction of the swap. True if swapping from A to B. False if swapping from B to A.
- * @param amountSpecifiedIsInput - Specifies the token the parameter `amount`represents. If true, the amount represents
- *                                 the input token of the swap.
- * @param amount - The amount of input or output token to swap from (depending on amountSpecifiedIsInput).
- * @param otherAmountThreshold - The maximum/minimum of input/output token to swap into (depending on amountSpecifiedIsInput).
- * @param sqrtPriceLimit - The maximum/minimum price the swap will swap to.
- * @param tickArray0 - PublicKey of the tick-array where the Whirlpool's currentTickIndex resides in
- * @param tickArray1 - The next tick-array in the swap direction. If the swap will not reach the next tick-aray, input the same array as tickArray0.
- * @param tickArray2 - The next tick-array in the swap direction after tickArray2. If the swap will not reach the next tick-aray, input the same array as tickArray1.
+ * @param swapInput - Parameters in {@link SwapInput}
  * @param devFeeAmount -  FeeAmount (developer fees) charged on this swap
  */
 export type DevFeeSwapInput = SwapInput & {
@@ -95,7 +79,7 @@ export type DevFeeSwapInput = SwapInput & {
  * ### Parameters
  * @category Instructions
  * @param context - Context object containing services required to generate the instruction
- * @param params - SwapParams object
+ * @param params - {@link SwapParams}
  * @returns - Instruction to perform the action.
  */
 export function swapIx(program: Program<Whirlpool>, params: SwapParams): Instruction {

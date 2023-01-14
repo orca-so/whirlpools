@@ -5,7 +5,7 @@ import { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
 
 /**
- * Instruction set for the Whirlpools program.
+ * Instruction builders for the Whirlpools program.
  *
  * @category Core
  */
@@ -182,7 +182,7 @@ export class WhirlpoolIx {
    *
    * ### Parameters
    * @param program - program object containing services required to generate the instruction
-   * @param params - SwapParams object
+   * @param params - {@link SwapParams}
    * @returns - Instruction to perform the action.
    */
   public static swapIx(program: Program<Whirlpool>, params: ix.SwapParams) {
@@ -418,14 +418,16 @@ export class WhirlpoolIx {
   }
 
   /**
+   * DEPRECATED - use ${@link WhirlpoolClient} collectFeesAndRewardsForPositions function
    * A set of transactions to collect all fees and rewards from a list of positions.
    *
+   * @deprecated
    * @param ctx - WhirlpoolContext object for the current environment.
    * @param params - CollectAllPositionAddressParams object.
    * @param refresh - if true, will always fetch for the latest values on chain to compute.
    * @returns
    */
-  public static collectAllForPositionsTxns(
+  public static async collectAllForPositionsTxns(
     ctx: WhirlpoolContext,
     params: ix.CollectAllPositionAddressParams,
     refresh: boolean

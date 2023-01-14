@@ -1,15 +1,19 @@
-import { ZERO, U64_MAX, Percentage } from "@orca-so/common-sdk";
+import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
+import { Address } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
+import { WhirlpoolContext } from "../..";
 import { AccountFetcher } from "../../network/public";
 import {
-  MIN_SQRT_PRICE,
   MAX_SQRT_PRICE,
-  WhirlpoolData,
   MAX_SWAP_TICK_ARRAYS,
-  TickArray,
+  MIN_SQRT_PRICE,
   SwapInput,
+  SwapParams,
+  TickArray,
+  WhirlpoolData,
 } from "../../types/public";
+import { Whirlpool } from "../../whirlpool-client";
 import { adjustForSlippage } from "../math/token-math";
 import { PDAUtil } from "./pda-utils";
 import { PoolUtil } from "./pool-utils";
@@ -165,5 +169,46 @@ export class SwapUtils {
         otherAmountThreshold: adjustForSlippage(estAmountIn, slippageTolerance, true),
       };
     }
+  }
+
+  /**
+   * Convert a quote object and WhirlpoolClient's {@link Whirlpool} object into a {@link SwapParams} type
+   * to be plugged into {@link WhirlpoolIx.swapIx}.
+   *
+   * @param quote - A {@link SwapQuote} type generated from {@link swapQuoteWithParams}
+   * @param ctx - {@link WhirlpoolContext}
+   * @param whirlpool - A {@link Whirlpool} object from WhirlpoolClient
+   * @param inputTokenAssociatedAddress - The public key for the ATA of the input token in the swap
+   * @param outputTokenAssociatedAddress - The public key for the ATA of the input token in the swap
+   * @param wallet - The token authority for this swap
+   * @returns A converted {@link SwapParams} generated from the input
+   */
+  public static getSwapParamsFromQuote(
+    quote: SwapInput,
+    ctx: WhirlpoolContext,
+    whirlpool: Whirlpool,
+    inputTokenAssociatedAddress: Address,
+    outputTokenAssociatedAddress: Address,
+    wallet: PublicKey
+  ) {
+    const addr = whirlpool.getAddress();
+    const data = whirlpool.getData();
+    const aToB = quote.aToB;
+    const [inputTokenATA, outputTokenATA] = AddressUtil.toPubKeys([
+      inputTokenAssociatedAddress,
+      outputTokenAssociatedAddress,
+    ]);
+    const oraclePda = PDAUtil.getOracle(ctx.program.programId, addr);
+    const params: SwapParams = {
+      whirlpool: whirlpool.getAddress(),
+      tokenOwnerAccountA: aToB ? inputTokenATA : outputTokenATA,
+      tokenOwnerAccountB: aToB ? outputTokenATA : inputTokenATA,
+      tokenVaultA: data.tokenVaultA,
+      tokenVaultB: data.tokenVaultB,
+      oracle: oraclePda.publicKey,
+      tokenAuthority: wallet,
+      ...quote,
+    };
+    return params;
   }
 }

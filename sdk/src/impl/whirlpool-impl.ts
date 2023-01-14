@@ -21,8 +21,8 @@ import {
   initTickArrayIx,
   openPositionIx,
   openPositionWithMetadataIx,
+  swapAsync,
   SwapInput,
-  swapIx,
 } from "../instructions";
 import {
   collectFeesQuote,
@@ -181,11 +181,19 @@ export class WhirlpoolImpl implements Whirlpool {
     );
   }
 
-  async swap(quote: SwapInput, sourceWallet?: Address) {
+  async swap(quote: SwapInput, sourceWallet?: Address): Promise<TransactionBuilder> {
     const sourceWalletKey = sourceWallet
       ? AddressUtil.toPubKey(sourceWallet)
       : this.ctx.wallet.publicKey;
-    return this.getSwapTx(quote, sourceWalletKey);
+    return swapAsync(
+      this.ctx,
+      {
+        swapInput: quote,
+        whirlpool: this,
+        wallet: sourceWalletKey,
+      },
+      true
+    );
   }
 
   async swapWithDevFees(
@@ -219,7 +227,19 @@ export class WhirlpoolImpl implements Whirlpool {
       );
     }
 
-    return this.getSwapTx(quote, sourceWalletKey, txBuilder);
+    const swapTxBuilder = await swapAsync(
+      this.ctx,
+      {
+        swapInput: quote,
+        whirlpool: this,
+        wallet: sourceWalletKey,
+      },
+      true
+    );
+
+    txBuilder.addInstruction(swapTxBuilder.compressIx(true));
+
+    return txBuilder;
   }
 
   /**
@@ -547,64 +567,6 @@ export class WhirlpoolImpl implements Whirlpool {
     txBuilders.push(txBuilder);
 
     return txBuilders;
-  }
-
-  private async getSwapTx(
-    input: SwapInput,
-    wallet: PublicKey,
-    initTxBuilder?: TransactionBuilder
-  ): Promise<TransactionBuilder> {
-    invariant(input.amount.gt(ZERO), "swap amount must be more than zero.");
-
-    // Check if all the tick arrays have been initialized.
-    const tickArrayAddresses = [input.tickArray0, input.tickArray1, input.tickArray2];
-    const tickArrays = await this.ctx.fetcher.listTickArrays(tickArrayAddresses, true);
-    const uninitializedIndices = TickArrayUtil.getUninitializedArrays(tickArrays);
-    if (uninitializedIndices.length > 0) {
-      const uninitializedArrays = uninitializedIndices
-        .map((index) => tickArrayAddresses[index].toBase58())
-        .join(", ");
-      throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
-    }
-
-    const { amount, aToB } = input;
-    const whirlpool = this.data;
-    const txBuilder =
-      initTxBuilder ??
-      new TransactionBuilder(this.ctx.provider.connection, this.ctx.provider.wallet);
-
-    const [ataA, ataB] = await resolveOrCreateATAs(
-      this.ctx.connection,
-      wallet,
-      [
-        { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: aToB ? amount : ZERO },
-        { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: !aToB ? amount : ZERO },
-      ],
-      () => this.ctx.fetcher.getAccountRentExempt()
-    );
-
-    const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
-    const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB;
-
-    txBuilder.addInstruction(tokenOwnerAccountAIx);
-    txBuilder.addInstruction(tokenOwnerAccountBIx);
-
-    const oraclePda = PDAUtil.getOracle(this.ctx.program.programId, this.address);
-
-    txBuilder.addInstruction(
-      swapIx(this.ctx.program, {
-        ...input,
-        whirlpool: this.address,
-        tokenAuthority: wallet,
-        tokenOwnerAccountA,
-        tokenVaultA: whirlpool.tokenVaultA,
-        tokenOwnerAccountB,
-        tokenVaultB: whirlpool.tokenVaultB,
-        oracle: oraclePda.publicKey,
-      })
-    );
-
-    return txBuilder;
   }
 
   private async refresh() {

@@ -172,7 +172,7 @@ pub fn swap(
             } else {
                 next_tick_index
             };
-        } else {
+        } else if swap_computation.next_price != curr_sqrt_price {
             curr_tick_index = tick_index_from_sqrt_price(&swap_computation.next_price);
         }
 

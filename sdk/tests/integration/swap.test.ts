@@ -3,6 +3,7 @@ import * as anchor from "@project-serum/anchor";
 import { web3 } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
@@ -13,6 +14,8 @@ import {
   SwapParams,
   swapQuoteByInputToken,
   TickArrayData,
+  TickUtil,
+  TICK_ARRAY_SIZE,
   toTx,
   WhirlpoolContext,
   WhirlpoolIx,
@@ -582,6 +585,257 @@ describe("swap", () => {
       await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey),
       tokenVaultBBefore.add(quote.estimatedAmountIn).toString()
     );
+  });
+
+  it("swaps aToB across initialized tick with no movement", async () => {
+    const startingTick = 91720;
+    const tickSpacing = TickSpacing.Stable;
+    const startingTickArrayStartIndex = TickUtil.getStartTickIndex(startingTick, tickSpacing);
+    const aToB = true;
+    const startSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(startingTick);
+    const initialLiquidity = new anchor.BN(10_000_000);
+    const additionalLiquidity = new anchor.BN(2_000_000);
+
+    const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokens(ctx, TickSpacing.Stable, startSqrtPrice);
+    await initTickArrayRange(
+      ctx,
+      whirlpoolPda.publicKey,
+      startingTickArrayStartIndex + TICK_ARRAY_SIZE * tickSpacing * 2,
+      5,
+      TickSpacing.Stable,
+      aToB
+    );
+    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+    const initialParams: FundedPositionParams[] = [
+      {
+        liquidityAmount: initialLiquidity,
+        tickLowerIndex: startingTickArrayStartIndex + tickSpacing,
+        tickUpperIndex: startingTickArrayStartIndex + TICK_ARRAY_SIZE * tickSpacing * 2 - tickSpacing,
+      },
+    ];
+
+    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, initialParams);
+
+    const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+    let whirlpool = await client.getPool(whirlpoolKey, true);
+    let whirlpoolData = whirlpool.getData();
+
+    // Position covers the current price, so liquidity should be equal to the initial funded position
+    assert.ok(whirlpoolData.liquidity.eq(new anchor.BN(10_000_000)));
+
+    const nextParams: FundedPositionParams[] = [
+      {
+        liquidityAmount: additionalLiquidity,
+        tickLowerIndex: startingTick - tickSpacing * 2,
+        tickUpperIndex: startingTick,
+      },
+    ];
+
+    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, nextParams);
+
+    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpoolData = whirlpool.getData();
+    // Whirlpool.currentTick is 91720, so the newly funded position's upper tick is not
+    // strictly less than 91720 so the liquidity is not added.
+    assert.ok(whirlpoolData.liquidity.eq(initialLiquidity));
+    assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
+    assert.equal(whirlpoolData.tickCurrentIndex, startingTick);
+
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      new u64(1),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        ...quote,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
+
+    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpoolData = whirlpool.getData();
+
+    // After the above swap, since the amount is so low, it is completely taken by fees
+    // thus, the sqrt price will remain the same, the starting tick will decrement since it
+    // is an aToB swap ending on initialized tick, and since the tick is crossed, 
+    // the liquidity will be added
+    assert.equal(whirlpoolData.tickCurrentIndex, startingTick - 1);
+    assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
+    assert.ok(whirlpoolData.liquidity.eq(initialLiquidity.add(additionalLiquidity)));
+
+    const quote2 = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      new u64(1),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        ...quote2,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
+
+    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpoolData = whirlpool.getData();
+
+    // After the above swap, since the amount is so low, it is completely taken by fees
+    // thus, the sqrt price will remaing the same, the starting tick will not decrement
+    // since it is an aToB swap ending on an uninitialized tick, no tick is crossed
+    assert.equal(whirlpoolData.tickCurrentIndex, startingTick - 1);
+    assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
+    assert.ok(whirlpoolData.liquidity.eq(initialLiquidity.add(additionalLiquidity)));
+  });
+
+
+  it("swaps aToB with small remainder across initialized tick", async () => {
+    const startingTick = 91728;
+    const tickSpacing = TickSpacing.Stable;
+    const startingTickArrayStartIndex = TickUtil.getStartTickIndex(startingTick, tickSpacing);
+    const aToB = true;
+    const startSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(startingTick);
+    const initialLiquidity = new anchor.BN(10_000_000);
+    const additionalLiquidity = new anchor.BN(2_000_000);
+
+    const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokens(ctx, TickSpacing.Stable, startSqrtPrice);
+    await initTickArrayRange(
+      ctx,
+      whirlpoolPda.publicKey,
+      startingTickArrayStartIndex + TICK_ARRAY_SIZE * tickSpacing * 2,
+      5,
+      TickSpacing.Stable,
+      aToB
+    );
+    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+    const initialParams: FundedPositionParams[] = [
+      {
+        liquidityAmount: initialLiquidity,
+        tickLowerIndex: startingTickArrayStartIndex + tickSpacing,
+        tickUpperIndex: startingTickArrayStartIndex + TICK_ARRAY_SIZE * tickSpacing * 2 - tickSpacing,
+      },
+    ];
+
+    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, initialParams);
+
+    const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+    let whirlpool = await client.getPool(whirlpoolKey, true);
+    let whirlpoolData = whirlpool.getData();
+
+    // Position covers the current price, so liquidity should be equal to the initial funded position
+    assert.ok(whirlpoolData.liquidity.eq(new anchor.BN(10_000_000)));
+
+    const nextParams: FundedPositionParams[] = [
+      {
+        liquidityAmount: additionalLiquidity,
+        tickLowerIndex: startingTick - tickSpacing * 3,
+        tickUpperIndex: startingTick - tickSpacing,
+      },
+    ];
+
+    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, nextParams);
+
+    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpoolData = whirlpool.getData();
+    // Whirlpool.currentTick is 91720, so the newly funded position's upper tick is not
+    // strictly less than 91720 so the liquidity is not added.
+    assert.ok(whirlpoolData.liquidity.eq(initialLiquidity));
+    assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
+    assert.equal(whirlpoolData.tickCurrentIndex, startingTick);
+
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      new u64(1),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        ...quote,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
+
+    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpoolData = whirlpool.getData();
+
+    // After the above swap, since the amount is so low, it is completely taken by fees
+    // thus, the sqrt price will remain the same, the starting tick will stay the same since it
+    // is an aToB swap ending on initialized tick and no tick is crossed
+    assert.equal(whirlpoolData.tickCurrentIndex, startingTick);
+    assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
+    assert.ok(whirlpoolData.liquidity.eq(initialLiquidity));
+
+    const quote2 = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      new u64(43),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        ...quote2,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePda.publicKey,
+      })
+    ).buildAndExecute();
+
+    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpoolData = whirlpool.getData();
+
+    // After the above swap, there will be a small amount remaining that crosses
+    // an initialized tick index, but isn't enough to move the sqrt price.
+    assert.equal(whirlpoolData.tickCurrentIndex, startingTick - tickSpacing - 1);
+    assert.ok(whirlpoolData.sqrtPrice.eq(PriceMath.tickIndexToSqrtPriceX64(startingTick - tickSpacing)));
+    assert.ok(whirlpoolData.liquidity.eq(initialLiquidity.add(additionalLiquidity)));
   });
 
   it("swaps across three tick arrays", async () => {

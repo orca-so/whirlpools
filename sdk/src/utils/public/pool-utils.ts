@@ -3,7 +3,7 @@ import { Address, BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { WhirlpoolData, WhirlpoolRewardInfoData } from "../../types/public";
+import { TOKEN_MINTS, WhirlpoolData, WhirlpoolRewardInfoData } from "../../types/public";
 import { PriceMath } from "./price-math";
 import { TokenType } from "./types";
 
@@ -212,12 +212,12 @@ export function toTokenAmount(a: number, b: number): TokenAmounts {
 // The number that the mint maps to determines the priority that it will be used as the quote
 // currency.
 const QUOTE_TOKENS: { [mint: string]: number } = {
-  Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB: 100, // USDT
-  EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v: 90, // USDC
-  USDH1SM1ojwWUga67PGrgFWUHibbjqMvuMaDkRJTgkX: 80, // USDH
-  So11111111111111111111111111111111111111112: 70, // SOL
-  mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So: 60, // mSOL
-  "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj": 50, // stSOL
+  [TOKEN_MINTS["USDT"]]: 100,
+  [TOKEN_MINTS["USDC"]]: 90, // USDC
+  [TOKEN_MINTS["USDH"]]: 80, // USDH
+  [TOKEN_MINTS["SOL"]]: 70, // SOL
+  [TOKEN_MINTS["mSOL"]]: 60, // mSOL
+  [TOKEN_MINTS["stSOL"]]: 50, // stSOL
 };
 
 const DEFAULT_QUOTE_PRIORITY = 0;

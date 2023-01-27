@@ -15,6 +15,17 @@ export const ORCA_WHIRLPOOL_PROGRAM_ID = new PublicKey(
  */
 export const ORCA_WHIRLPOOLS_CONFIG = new PublicKey("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ");
 
+export const ORCA_SUPPORTED_TICK_SPACINGS = [1, 8, 64, 128];
+
+export const TOKEN_MINTS = {
+  USDC: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  SOL: "So11111111111111111111111111111111111111112",
+  USDT: "Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB",
+  USDH: "USDH1SM1ojwWUga67PGrgFWUHibbjqMvuMaDkRJTgkX",
+  mSOL: "mSoLzYCxHdYgdzU16g5QSh3i5K3z3KZK7ytfqcJm7So",
+  stSOL: "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj",
+};
+
 /**
  * The number of rewards supported by this whirlpool.
  * @category Constants

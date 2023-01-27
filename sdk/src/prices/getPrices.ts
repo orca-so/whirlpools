@@ -27,7 +27,7 @@ export async function fetchPoolPrices(
   const poolMap = await getPoolsForMints(ctx, mints);
   const tickArrayMap = await getTickArraysForPools(ctx, poolMap);
 
-  return getPoolPrices(mints, poolMap, tickArrayMap);
+  return calculatePoolPrices(mints, poolMap, tickArrayMap);
 }
 
 function liquidityThresholdCheck(
@@ -166,7 +166,7 @@ function cleanMints(mints: PublicKey[]): PublicKey[] {
   return Array.from(mintSet).map((mint) => new PublicKey(mint));
 }
 
-function getPoolPrices(mints: PublicKey[], poolMap: PoolMap, tickArrayMap: TickArrayMap) {
+function calculatePoolPrices(mints: PublicKey[], poolMap: PoolMap, tickArrayMap: TickArrayMap) {
   mints = cleanMints(mints);
 
   const prices = getPriceForQuoteToken(

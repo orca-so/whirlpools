@@ -1,12 +1,7 @@
-// liquidityThresholdCheck
-// params: pool, tick arrays, amount threshold, price impact threshold
-// Given a pool and tick arrays, check if there is sufficient liquidity
-
 import { Percentage } from "@orca-so/common-sdk";
 import { BN, translateAddress } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { WhirlpoolContext } from "../context";
 import { swapQuoteWithParams } from "../quotes/public/swap-quote";
 import {
   ORCA_SUPPORTED_TICK_SPACINGS,

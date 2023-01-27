@@ -6,6 +6,7 @@ import { Percentage } from "@orca-so/common-sdk";
 import { BN, translateAddress } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
+import { WhirlpoolContext } from "../context";
 import { swapQuoteWithParams } from "../quotes/public/swap-quote";
 import {
   ORCA_SUPPORTED_TICK_SPACINGS,
@@ -18,6 +19,16 @@ import {
 } from "../types/public";
 import { PoolUtil, SwapUtils } from "../utils/public";
 import { PDAUtil } from "../utils/public/pda-utils";
+
+export async function fetchPoolPrices(
+  ctx: WhirlpoolContext,
+  mints: PublicKey[]
+): Promise<PriceMap> {
+  const poolMap = await getPoolsForMints(ctx, mints);
+  const tickArrayMap = await getTickArraysForPools(ctx, poolMap);
+
+  return getPoolPrices(mints, poolMap, tickArrayMap);
+}
 
 function liquidityThresholdCheck(
   pool: WhirlpoolData,
@@ -148,13 +159,18 @@ const PRICE_IMPACT_THRESHOLD = 1.05;
 // TODO: Auto-generate based on SOL price
 const SOL_THRESHOLD_AMOUNT = new BN(20_000_000_000);
 
-function getPoolPrices(mints: PublicKey[], poolMap: PoolMap, tickArrayMap: TickArrayMap) {
+function cleanMints(mints: PublicKey[]): PublicKey[] {
   const mintSet = new Set(mints.map((mint) => mint.toBase58()));
-  mintSet.add(TOKEN_MINTS["SOL"]);
+  mintSet.delete(TOKEN_MINTS["SOL"]);
   mintSet.delete(TOKEN_MINTS["USDC"]);
+  return Array.from(mintSet).map((mint) => new PublicKey(mint));
+}
+
+function getPoolPrices(mints: PublicKey[], poolMap: PoolMap, tickArrayMap: TickArrayMap) {
+  mints = cleanMints(mints);
 
   const prices = getPriceForQuoteToken(
-    Array.from(mintSet).map((mint) => new PublicKey(mint)),
+    mints.concat(new PublicKey(TOKEN_MINTS["SOL"])),
     new PublicKey(TOKEN_MINTS["USDC"]),
     poolMap,
     tickArrayMap,
@@ -168,7 +184,7 @@ function getPoolPrices(mints: PublicKey[], poolMap: PoolMap, tickArrayMap: TickA
   solMintSet.delete(TOKEN_MINTS["USDC"]);
 
   const solPrices = getPriceForQuoteToken(
-    Array.from(solMintSet).map((mint) => new PublicKey(mint)),
+    mints,
     new PublicKey(TOKEN_MINTS["SOL"]),
     poolMap,
     tickArrayMap,
@@ -196,4 +212,72 @@ function getPoolPrices(mints: PublicKey[], poolMap: PoolMap, tickArrayMap: TickA
   });
 
   return prices;
+}
+
+async function getPoolsForMints(ctx: WhirlpoolContext, mints: PublicKey[]): Promise<PoolMap> {
+  const pools: PoolMap = {};
+
+  const poolAddresses: PublicKey[] = mints
+    .map((mint): PublicKey[] =>
+      ORCA_SUPPORTED_TICK_SPACINGS.map((tickSpacing): PublicKey[] => {
+        const usdcPool = PDAUtil.getWhirlpool(
+          ORCA_WHIRLPOOL_PROGRAM_ID,
+          ORCA_WHIRLPOOLS_CONFIG,
+          mint,
+          new PublicKey(TOKEN_MINTS["USDC"]),
+          tickSpacing
+        ).publicKey;
+        const solPool = PDAUtil.getWhirlpool(
+          ORCA_WHIRLPOOL_PROGRAM_ID,
+          ORCA_WHIRLPOOLS_CONFIG,
+          mint,
+          new PublicKey(TOKEN_MINTS["SOL"]),
+          tickSpacing
+        ).publicKey;
+        return [usdcPool, solPool];
+      }).flat()
+    )
+    .flat();
+
+  const poolDatas = await ctx.fetcher.listPools(poolAddresses, false);
+
+  poolAddresses.forEach((poolAddress, idx) => {
+    const poolData = poolDatas[idx];
+    if (!poolData) {
+      return;
+    }
+
+    pools[poolAddress.toBase58()] = poolData;
+  });
+
+  return pools;
+}
+
+async function getTickArraysForPools(ctx: WhirlpoolContext, pools: PoolMap): Promise<TickArrayMap> {
+  const tickArrayMap: TickArrayMap = {};
+
+  const tickArrayAddresses = Object.entries(pools)
+    .map(([poolAddress, pool]): PublicKey[] => {
+      return SwapUtils.getTickArrayPublicKeys(
+        pool.tickCurrentIndex,
+        pool.tickSpacing,
+        true,
+        ORCA_WHIRLPOOL_PROGRAM_ID,
+        new PublicKey(poolAddress)
+      );
+    })
+    .flat();
+
+  const tickArrays = await ctx.fetcher.listTickArrays(tickArrayAddresses, true);
+
+  tickArrayAddresses.forEach((tickArrayAddress, idx) => {
+    const tickArray = tickArrays[idx];
+    if (!tickArray) {
+      return;
+    }
+
+    tickArrayMap[tickArrayAddress.toBase58()] = tickArray;
+  });
+
+  return tickArrayMap;
 }

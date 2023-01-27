@@ -109,7 +109,7 @@ pub fn mint_position_token_and_remove_authority<'info>(
 
 const WP_METADATA_NAME: &str = "Orca Whirlpool Position";
 const WP_METADATA_SYMBOL: &str = "OWP";
-const WP_METADATA_URI: &str = "https://arweave.net/KZlsubXZyzeSYi2wJhyL7SY-DAot_OXhfWSYQGLmmOc";
+const WP_METADATA_URI: &str = "https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws";
 
 pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
     whirlpool: &Account<'info, Whirlpool>,

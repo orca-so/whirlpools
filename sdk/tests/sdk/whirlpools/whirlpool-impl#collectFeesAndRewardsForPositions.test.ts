@@ -320,6 +320,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
+        timeStampInSeconds: poolData!.rewardLastUpdatedTimestamp,
       });
 
       assert.ok(feeQuote.feeOwedA.gt(ZERO));
@@ -370,6 +371,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
+        timeStampInSeconds: poolData!.rewardLastUpdatedTimestamp,
       });
 
       assert.ok(feeQuote.feeOwedA.eq(ZERO));
@@ -382,21 +384,29 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
   context("when the whirlpool is SPL-only", () => {
     it("should collect fees and rewards, create all ATAs", async () => {
-      await baseTestSenario(false, false);
+      const tokenAIsNative = false;
+      const ataExists = false;
+      await baseTestSenario(tokenAIsNative, ataExists);
     });
 
     it("should collect fees and rewards, all ATAs exists", async () => {
-      await baseTestSenario(false, true);
+      const tokenAIsNative = false;
+      const ataExists = true;
+      await baseTestSenario(tokenAIsNative, ataExists);
     });
   });
 
   context("when the whirlpool is SOL-SPL", () => {
     it("should collect fees and rewards, create all ATAs", async () => {
-      await baseTestSenario(true, false);
+      const tokenAIsNative = true;
+      const ataExists = false;
+      await baseTestSenario(tokenAIsNative, ataExists);
     });
 
     it("should collect fees and rewards, all ATAs exists", async () => {
-      await baseTestSenario(true, true);
+      const tokenAIsNative = true;
+      const ataExists = true;
+      await baseTestSenario(tokenAIsNative, ataExists);
     });
   });
 });

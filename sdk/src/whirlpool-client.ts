@@ -74,7 +74,6 @@ export interface WhirlpoolClient {
    * @param positionAddress the addresses of the Position accounts to collect fee & rewards from.
    * @param refresh true to always request newest data from chain with this request
    * @returns A set of transaction-builders to resolve ATA for affliated tokens, collect fee & rewards for all positions.
-   *          The first transaction should always be processed as it contains all the resolve ATA instructions to receive tokens.
    */
   collectFeesAndRewardsForPositions: (
     positionAddresses: Address[],

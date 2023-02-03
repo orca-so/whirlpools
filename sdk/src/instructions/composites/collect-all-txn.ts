@@ -1,18 +1,15 @@
-import { Instruction, TokenUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import { Instruction, resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import { Address } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { PACKET_DATA_SIZE, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { PositionData, WhirlpoolContext } from "../..";
 import { WhirlpoolIx } from "../../ix";
 import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
-import { getAssociatedTokenAddressSync } from "../../utils/spl-token-utils";
-import { convertListToMap } from "../../utils/txn-utils";
-import {
-  addNativeMintHandlingIx,
-  getTokenMintsFromWhirlpools,
-  resolveAtaForMints,
-} from "../../utils/whirlpool-ata-utils";
+import { getAssociatedTokenAddressSync, createWSOLAccountInstructions } from "../../utils/spl-token-utils";
+import { convertListToMap, checkMergedTransactionSizeIsValid } from "../../utils/txn-utils";
+import { getTokenMintsFromWhirlpools } from "../../utils/whirlpool-ata-utils";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
 
 /**
@@ -68,7 +65,6 @@ export type CollectAllParams = {
  * @param params - CollectAllPositionAddressParams object
  * @param refresh - if true, will always fetch for the latest on-chain data.
  * @returns A set of transaction-builders to resolve ATA for affliated tokens, collect fee & rewards for all positions.
- *          The first transaction should always be processed as it contains all the resolve ATA instructions to receive tokens.
  */
 export async function collectAllForPositionAddressesTxns(
   ctx: WhirlpoolContext,
@@ -117,68 +113,66 @@ export async function collectAllForPositionsTxns(
   const whirlpoolDatas = await ctx.fetcher.listPools(whirlpoolAddrs, false);
   const whirlpools = convertListToMap(whirlpoolDatas, whirlpoolAddrs);
 
+  const allMints = getTokenMintsFromWhirlpools(whirlpoolDatas);
   const accountExemption = await ctx.fetcher.getAccountRentExempt();
-  const { ataTokenAddresses: affliatedTokenAtaMap, resolveAtaIxs } = await resolveAtaForMints(ctx, {
-    mints: getTokenMintsFromWhirlpools(whirlpoolDatas).mintMap,
-    accountExemption,
-    receiver: receiverKey,
-    payer: payerKey,
-  });
+
+  // resolvedAtas[mint] => Instruction & { address }
+  // if already ATA exists, Instruction will be EMPTY_INSTRUCTION
+  const resolvedAtas = convertListToMap(
+    await resolveOrCreateATAs(
+      ctx.connection,
+      receiverKey,
+      allMints.mintMap.map((tokenMint) => ({ tokenMint })),
+      async () => accountExemption,
+      payerKey,
+      true // CreateIdempotent
+    ),
+    allMints.mintMap.map((mint) => mint.toBase58())
+  );
 
   const latestBlockhash = await ctx.connection.getLatestBlockhash("singleGossip");
   const txBuilders: TransactionBuilder[] = [];
 
-  let pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet).addInstructions(
-    resolveAtaIxs
-  );
-  let pendingTxBuilderTxSize = await pendingTxBuilder.txnSize({ latestBlockhash });
   let posIndex = 0;
+  let pendingTxBuilder = null;
+  let touchedMints = null;
   let reattempt = false;
-
   while (posIndex < positionList.length) {
-    const [positionAddr, position] = positionList[posIndex];
-    let positionTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet);
-    const { whirlpool: whirlpoolKey, positionMint } = position;
-    const whirlpool = whirlpools[whirlpoolKey.toBase58()];
-
-    if (!whirlpool) {
-      throw new Error(
-        `Unable to process positionMint ${positionMint} - unable to derive whirlpool ${whirlpoolKey.toBase58()}`
-      );
-    }
-    const posHandlesNativeMint =
-      TokenUtil.isNativeMint(whirlpool.tokenMintA) || TokenUtil.isNativeMint(whirlpool.tokenMintB);
-    const txBuilderHasNativeMint = !!affliatedTokenAtaMap[NATIVE_MINT.toBase58()];
-
-    // Add NATIVE_MINT token account creation to this transaction if position requires NATIVE_MINT handling.
-    if (posHandlesNativeMint && !txBuilderHasNativeMint) {
-      addNativeMintHandlingIx(
-        positionTxBuilder,
-        affliatedTokenAtaMap,
+    if (!pendingTxBuilder || !touchedMints) {
+      pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet);
+      touchedMints = new Set<string>();
+      resolvedAtas[NATIVE_MINT.toBase58()] = createWSOLAccountInstructions(
         receiverKey,
-        accountExemption
+        ZERO,
+        accountExemption,
       );
     }
 
-    // Build position instructions
-    const collectIxForPosition = constructCollectPositionIx(
+    // Build collect instructions
+    const [positionAddr, position] = positionList[posIndex];
+    const collectIxForPosition = constructCollectIxForPosition(
       ctx,
       new PublicKey(positionAddr),
       position,
       whirlpools,
       positionOwnerKey,
       positionAuthorityKey,
-      affliatedTokenAtaMap
+      resolvedAtas,
+      touchedMints,
     );
+    const positionTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet);
     positionTxBuilder.addInstructions(collectIxForPosition);
 
     // Attempt to push the new instructions into the pending builder
     // Iterate to the next position if possible
     // Create a builder and reattempt if the current one is full.
-    const incrementTxSize = await positionTxBuilder.txnSize({ latestBlockhash });
-    if (pendingTxBuilderTxSize + incrementTxSize < PACKET_DATA_SIZE) {
+    const mergeable = await checkMergedTransactionSizeIsValid(
+      ctx,
+      [pendingTxBuilder, positionTxBuilder],
+      latestBlockhash,
+    );
+    if (mergeable) {
       pendingTxBuilder.addInstruction(positionTxBuilder.compressIx(false));
-      pendingTxBuilderTxSize = pendingTxBuilderTxSize + incrementTxSize;
       posIndex += 1;
       reattempt = false;
     } else {
@@ -189,26 +183,28 @@ export async function collectAllForPositionsTxns(
       }
 
       txBuilders.push(pendingTxBuilder);
-      delete affliatedTokenAtaMap[NATIVE_MINT.toBase58()];
-      pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.provider.wallet);
-      pendingTxBuilderTxSize = 0;
+      pendingTxBuilder = null;
+      touchedMints = null;
       reattempt = true;
     }
   }
 
-  txBuilders.push(pendingTxBuilder);
+  if (pendingTxBuilder) {
+    txBuilders.push(pendingTxBuilder);
+  }
   return txBuilders;
 }
 
 // TODO: Once individual collect ix for positions is implemented, maybe migrate over if it can take custom ATA?
-const constructCollectPositionIx = (
+const constructCollectIxForPosition = (
   ctx: WhirlpoolContext,
   positionKey: PublicKey,
   position: PositionData,
   whirlpools: Record<string, WhirlpoolData | null>,
   positionOwner: PublicKey,
   positionAuthority: PublicKey,
-  affliatedTokenAtaMap: Record<string, PublicKey>
+  resolvedAtas: Record<string, ResolvedTokenAddressInstruction>,
+  touchedMints: Set<string>,
 ) => {
   const ixForPosition: Instruction[] = [];
   const {
@@ -219,14 +215,21 @@ const constructCollectPositionIx = (
     positionMint,
     rewardInfos: positionRewardInfos,
   } = position;
-  const whirlpool = whirlpools[whirlpoolKey.toBase58()];
 
+  const whirlpool = whirlpools[whirlpoolKey.toBase58()];
   if (!whirlpool) {
     throw new Error(
       `Unable to process positionMint ${positionMint} - unable to derive whirlpool ${whirlpoolKey.toBase58()}`
     );
   }
   const { tickSpacing } = whirlpool;
+  const mintA = whirlpool.tokenMintA.toBase58();
+  const mintB = whirlpool.tokenMintB.toBase58();
+
+  const positionTokenAccount = getAssociatedTokenAddressSync(
+    positionMint.toBase58(),
+    positionOwner.toBase58()
+  );
 
   // Update fee and reward values if necessary
   if (!liquidity.eq(ZERO)) {
@@ -249,18 +252,22 @@ const constructCollectPositionIx = (
   }
 
   // Collect Fee
-  const positionTokenAccount = getAssociatedTokenAddressSync(
-    positionMint.toBase58(),
-    positionOwner.toBase58()
-  );
+  if (!touchedMints.has(mintA)) {
+    ixForPosition.push(resolvedAtas[mintA]);
+    touchedMints.add(mintA);
+  }
+  if (!touchedMints.has(mintB)) {
+    ixForPosition.push(resolvedAtas[mintB]);
+    touchedMints.add(mintB);
+  }
   ixForPosition.push(
     WhirlpoolIx.collectFeesIx(ctx.program, {
       whirlpool: whirlpoolKey,
       position: positionKey,
       positionAuthority,
       positionTokenAccount,
-      tokenOwnerAccountA: affliatedTokenAtaMap[whirlpool.tokenMintA.toBase58()],
-      tokenOwnerAccountB: affliatedTokenAtaMap[whirlpool.tokenMintB.toBase58()],
+      tokenOwnerAccountA: resolvedAtas[mintA].address,
+      tokenOwnerAccountB: resolvedAtas[mintB].address,
       tokenVaultA: whirlpool.tokenVaultA,
       tokenVaultB: whirlpool.tokenVaultB,
     })
@@ -271,6 +278,11 @@ const constructCollectPositionIx = (
   positionRewardInfos.forEach((_, index) => {
     const rewardInfo = whirlpool.rewardInfos[index];
     if (PoolUtil.isRewardInitialized(rewardInfo)) {
+      const mintReward = rewardInfo.mint.toBase58();
+      if (!touchedMints.has(mintReward)) {
+        ixForPosition.push(resolvedAtas[mintReward]);
+        touchedMints.add(mintReward);
+      }
       ixForPosition.push(
         WhirlpoolIx.collectRewardIx(ctx.program, {
           whirlpool: whirlpoolKey,
@@ -278,7 +290,7 @@ const constructCollectPositionIx = (
           positionAuthority,
           positionTokenAccount,
           rewardIndex: index,
-          rewardOwnerAccount: affliatedTokenAtaMap[rewardInfo.mint.toBase58()],
+          rewardOwnerAccount: resolvedAtas[mintReward].address,
           rewardVault: rewardInfo.vault,
         })
       );

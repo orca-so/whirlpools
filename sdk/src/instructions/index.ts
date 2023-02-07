@@ -22,4 +22,5 @@ export * from "./set-reward-authority-ix";
 export * from "./set-reward-emissions-ix";
 export * from "./set-reward-emissions-super-authority-ix";
 export * from "./swap-ix";
+export * from "./two-hop-swap-ix";
 export * from "./update-fees-and-rewards-ix";

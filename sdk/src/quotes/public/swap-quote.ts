@@ -49,13 +49,15 @@ export type SwapQuote = NormalSwapQuote | DevFeeSwapQuote;
  * @param estimatedEndSqrtPrice - Approximate sqrtPrice the Whirlpool will land on after this swap
  * @param estimatedFeeAmount - Approximate feeAmount (all fees) charged on this swap
  */
-export type NormalSwapQuote = {
+export type SwapEstimates = {
   estimatedAmountIn: u64;
   estimatedAmountOut: u64;
   estimatedEndTickIndex: number;
   estimatedEndSqrtPrice: BN;
   estimatedFeeAmount: u64;
-} & SwapInput;
+}
+
+export type NormalSwapQuote = SwapInput & SwapEstimates;
 
 /**
  * Get an estimated swap quote using input token amount.

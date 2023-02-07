@@ -1,7 +1,10 @@
-import { MathUtil, PDA } from "@orca-so/common-sdk";
+
+
+import { AddressUtil, MathUtil, PDA } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
-import { u64 } from "@solana/spl-token";
+import { NATIVE_MINT, u64 } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import Decimal from "decimal.js";
 import {
   createAndMintToAssociatedTokenAccount,
   createMint,
@@ -11,6 +14,7 @@ import {
 } from ".";
 import {
   InitConfigParams,
+  InitFeeTierParams,
   InitializeRewardParams,
   InitPoolParams,
   InitTickArrayParams,
@@ -31,9 +35,233 @@ import {
   generateDefaultInitPoolParams,
   generateDefaultInitTickArrayParams,
   generateDefaultOpenPositionParams,
+  TestConfigParams,
+  TestWhirlpoolsConfigKeypairs,
 } from "./test-builders";
 
-const defaultInitSqrtPrice = MathUtil.toX64_BN(new anchor.BN(5));
+interface TestPoolParams {
+  configInitInfo: InitConfigParams;
+  configKeypairs: TestWhirlpoolsConfigKeypairs;
+  poolInitInfo: InitPoolParams;
+  feeTierParams: any;
+}
+
+interface InitTestFeeTierParams {
+  tickSpacing: number;
+  feeRate?: number;
+}
+
+interface InitTestPoolParams {
+  mintIndices: [number, number];
+  tickSpacing: number;
+  feeTierIndex?: number; 
+  initSqrtPrice?: anchor.BN; 
+}
+
+interface InitTestMintParams {
+  // Default false
+  isNative?: boolean;
+}
+
+interface InitTestTokenAccParams {
+  mintIndex: number;
+  mintAmount?: anchor.BN;
+}
+
+interface InitTestTickArrayRangeParams {
+  poolIndex: number;
+  startTickIndex: number;
+  arrayCount: number;
+  aToB: boolean;
+}
+
+interface InitTestPositionParams {
+  poolIndex: number;
+  fundParams: FundedPositionParams[];
+}
+
+export interface InitAquariumParams {
+  // Single-ton per aquarium
+  configParams?: TestConfigParams;
+
+  initFeeTierParams: InitTestFeeTierParams[];
+
+  initMintParams: InitTestMintParams[];
+
+  initTokenAccParams: InitTestTokenAccParams[];
+
+  initPoolParams: InitTestPoolParams[];
+
+  initTickArrayRangeParams: InitTestTickArrayRangeParams[];
+
+  initPositionParams: InitTestPositionParams[];
+}
+
+export interface TestAquarium {
+  configParams: TestConfigParams;
+  feeTierParams: InitFeeTierParams[];
+  mintKeys: PublicKey[];
+  tokenAccounts: { mint: PublicKey, account: PublicKey }[];
+  pools: InitPoolParams[];
+  tickArrays: { params: InitTestTickArrayRangeParams, pdas: PDA[] }[];
+}
+
+const DEFAULT_FEE_RATE = 3000;
+const DEFAULT_MINT_AMOUNT = new anchor.BN("15000000000");
+const DEFAULT_SQRT_PRICE = MathUtil.toX64(new Decimal(5));
+
+const DEFAULT_INIT_FEE_TIER = [{ tickSpacing: TickSpacing.Standard }];
+const DEFAULT_INIT_MINT = [{}, {}];
+const DEFAULT_INIT_TOKEN = [{ mintIndex: 0 }, { mintIndex: 1 }];
+const DEFAULT_INIT_POOL: InitTestPoolParams[] = [{ mintIndices: [0, 1], tickSpacing: TickSpacing.Standard }];
+const DEFAULT_INIT_TICK_ARR: InitTestTickArrayRangeParams[] = [];
+const DEFAULT_INIT_POSITION: InitTestPositionParams[] = [];
+
+export function getDefaultAquarium(): InitAquariumParams {
+  return {
+    initFeeTierParams: [...DEFAULT_INIT_FEE_TIER],
+    initMintParams: [...DEFAULT_INIT_MINT],
+    initTokenAccParams: [...DEFAULT_INIT_TOKEN],
+    initPoolParams: [...DEFAULT_INIT_POOL],
+    initTickArrayRangeParams: [...DEFAULT_INIT_TICK_ARR],
+    initPositionParams: [...DEFAULT_INIT_POSITION],
+  };
+}
+
+export async function buildTestAquariums(
+  ctx: WhirlpoolContext,
+  initParams: InitAquariumParams[],
+): Promise<TestAquarium[]> {
+  const aquariums = [];
+  // Airdrop SOL into provider wallet;
+  await ctx.connection.requestAirdrop(ctx.provider.wallet.publicKey, 100_000_000_000_000);
+  for (const initParam of initParams) {
+    // Create configs
+    let configParams = initParam.configParams;
+    if (!configParams) {
+      configParams = generateDefaultConfigParams(ctx);
+    }
+    // Could batch
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configParams.configInitInfo)).buildAndExecute();
+
+    const {
+      initFeeTierParams,
+      initMintParams,
+      initTokenAccParams,
+      initPoolParams,
+      initTickArrayRangeParams,
+      initPositionParams,
+    } = initParam;
+
+    const feeTierParams: InitFeeTierParams[] = [];
+    for (const initFeeTierParam of initFeeTierParams) {
+      const { tickSpacing } = initFeeTierParam;
+      const feeRate = initFeeTierParam.feeRate !== undefined
+        ? initFeeTierParam.feeRate
+        : DEFAULT_FEE_RATE;
+      const { params } = await initFeeTier(
+        ctx,
+        configParams.configInitInfo,
+        configParams.configKeypairs.feeAuthorityKeypair,
+        tickSpacing,
+        feeRate,
+      );
+      feeTierParams.push(params);
+    }
+
+    // TODO: Handle native vs sorted mint keys
+    const mintKeys = (await Promise.all(initMintParams.map(({ isNative }) => 
+      isNative ? NATIVE_MINT : createMint(ctx.provider)
+    ))).sort(PoolUtil.compareMints);
+
+    const tokenAccounts = await Promise.all(initTokenAccParams.map(async (initTokenAccParam) => {
+      const { mintIndex, mintAmount = DEFAULT_MINT_AMOUNT } = initTokenAccParam;
+      const mintKey = mintKeys[mintIndex];
+      const account = await createAndMintToAssociatedTokenAccount(
+        ctx.provider,
+        mintKey,
+        mintAmount,
+      );
+      return { mint: mintKey, account };
+    }));
+
+    const pools = await Promise.all(initPoolParams.map(async initPoolParam => {
+      const {
+        tickSpacing,
+        mintIndices,
+        initSqrtPrice = DEFAULT_SQRT_PRICE,
+        feeTierIndex = 0,
+      } = initPoolParam;
+      const [mintOne, mintTwo] = mintIndices.map(idx => mintKeys[idx]);
+      const [tokenMintA, tokenMintB] = PoolUtil.orderMints(mintOne, mintTwo).map(AddressUtil.toPubKey);
+
+      const configKey = configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey;
+      const whirlpoolPda = PDAUtil.getWhirlpool(
+        ctx.program.programId,
+        configKey,
+        tokenMintA,
+        tokenMintB,
+        tickSpacing,
+      );
+      
+      const poolParam = {
+        initSqrtPrice,
+        whirlpoolsConfig: configKey,
+        tokenMintA,
+        tokenMintB,
+        whirlpoolPda,
+        tokenVaultAKeypair: Keypair.generate(),
+        tokenVaultBKeypair: Keypair.generate(),
+        feeTierKey: feeTierParams[feeTierIndex].feeTierPda.publicKey,
+        tickSpacing,
+        // TODO: funder
+        funder: ctx.wallet.publicKey,
+      };
+
+      const tx = toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, poolParam));
+      await tx.buildAndExecute();
+      return poolParam;
+    }));
+
+    const tickArrays = await Promise.all(initTickArrayRangeParams.map(async initTickArrayRangeParam => {
+      const { poolIndex, startTickIndex, arrayCount, aToB } = initTickArrayRangeParam;
+      const pool = pools[poolIndex];
+      const pdas = await initTickArrayRange(ctx, pool.whirlpoolPda.publicKey, startTickIndex, arrayCount, pool.tickSpacing, aToB);
+      return {
+        params: initTickArrayRangeParam,
+        pdas,
+      };
+    }));
+
+    await Promise.all(initPositionParams.map(async initPositionParam => {
+      const { poolIndex, fundParams } = initPositionParam;
+      const pool = pools[poolIndex];
+      const tokenAccKeys = getTokenAccsForPools([pool], tokenAccounts);
+      await fundPositions(ctx, pool, tokenAccKeys[0], tokenAccKeys[1], fundParams);
+    }));
+
+    aquariums.push({
+      configParams,
+      feeTierParams,
+      mintKeys,
+      tokenAccounts,
+      pools,
+      tickArrays,
+    });
+  }
+  return aquariums;
+}
+
+export function getTokenAccsForPools(pools: InitPoolParams[], tokenAccounts: { mint: PublicKey, account: PublicKey }[]) {
+  const mints = [];
+  for (const pool of pools) {
+    mints.push(pool.tokenMintA);
+    mints.push(pool.tokenMintB);
+  }
+  return mints.map(mint => 
+    tokenAccounts.find(acc => acc.mint === mint)!.account
+  );
+}
 
 /**
  * Initialize a brand new WhirlpoolsConfig account and construct a set of InitPoolParams
@@ -46,7 +274,7 @@ export async function buildTestPoolParams(
   ctx: WhirlpoolContext,
   tickSpacing: number,
   defaultFeeRate = 3000,
-  initSqrtPrice = defaultInitSqrtPrice,
+  initSqrtPrice = DEFAULT_SQRT_PRICE,
   funder?: PublicKey,
   tokenAIsNative = false
 ) {
@@ -86,11 +314,11 @@ export async function buildTestPoolParams(
 export async function initTestPool(
   ctx: WhirlpoolContext,
   tickSpacing: number,
-  initSqrtPrice = defaultInitSqrtPrice,
+  initSqrtPrice = DEFAULT_SQRT_PRICE,
   funder?: Keypair,
   tokenAIsNative = false
 ) {
-  const { configInitInfo, poolInitInfo, configKeypairs, feeTierParams } = await buildTestPoolParams(
+  const poolParams = await buildTestPoolParams(
     ctx,
     tickSpacing,
     3000,
@@ -99,6 +327,15 @@ export async function initTestPool(
     tokenAIsNative
   );
 
+  return await initTestPoolFromParams(ctx, poolParams, funder);
+}
+
+export async function initTestPoolFromParams(
+  ctx: WhirlpoolContext,
+  poolParams: TestPoolParams,
+  funder?: Keypair,
+) {
+  const { configInitInfo, poolInitInfo, configKeypairs, feeTierParams } = poolParams;
   const tx = toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, poolInitInfo));
   if (funder) {
     tx.addSigner(funder);
@@ -110,7 +347,7 @@ export async function initTestPool(
     configKeypairs,
     poolInitInfo,
     feeTierParams,
-  };
+  }; 
 }
 
 export async function initFeeTier(
@@ -292,7 +529,7 @@ export async function initTickArray(
 export async function initTestPoolWithTokens(
   ctx: WhirlpoolContext,
   tickSpacing: number,
-  initSqrtPrice = defaultInitSqrtPrice,
+  initSqrtPrice = DEFAULT_SQRT_PRICE,
   mintAmount = new anchor.BN("15000000000"),
   tokenAIsNative = false
 ) {

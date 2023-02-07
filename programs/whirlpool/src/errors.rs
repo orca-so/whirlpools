@@ -101,6 +101,11 @@ pub enum ErrorCode {
     AmountCalcOverflow, //0x1797
     #[msg("Amount remaining overflows")]
     AmountRemainingOverflow, //0x1798
+
+    #[msg("Invalid intermediary mint")]
+    InvalidIntermediaryMint, //0x1799
+    #[msg("Duplicate two hop pool")]
+    DuplicateTwoHopPool, //0x179a
 }
 
 impl From<TryFromIntError> for ErrorCode {

@@ -22,6 +22,7 @@ pub mod set_reward_authority_by_super_authority;
 pub mod set_reward_emissions;
 pub mod set_reward_emissions_super_authority;
 pub mod swap;
+pub mod two_hop_swap;
 pub mod update_fees_and_rewards;
 
 pub use close_position::*;
@@ -48,4 +49,5 @@ pub use set_reward_authority_by_super_authority::*;
 pub use set_reward_emissions::*;
 pub use set_reward_emissions_super_authority::*;
 pub use swap::*;
+pub use two_hop_swap::*;
 pub use update_fees_and_rewards::*;

@@ -9,7 +9,7 @@ import { Whirlpool } from "../artifacts/whirlpool";
  *
  * @category Instruction Types
  * @param swapInput - Parameters in {@link SwapInput}
- * @param whirlpool - PublicKey for the whirlpool that the position will be opened for.
+ * @param whirlpool - PublicKey for the whirlpool that the swap will occur on
  * @param tokenOwnerAccountA - PublicKey for the associated token account for tokenA in the collection wallet
  * @param tokenOwnerAccountB - PublicKey for the associated token account for tokenB in the collection wallet
  * @param tokenVaultA - PublicKey for the tokenA vault for this whirlpool.

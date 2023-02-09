@@ -77,9 +77,6 @@ describe("two-hop-swap", () => {
     let whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
     let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
 
-    console.log("pre-swap price 1", whirlpoolOne.getData().sqrtPrice.toString());
-    console.log("pre-swap price 2", whirlpoolOne.getData().sqrtPrice.toString());
-
     const [inputToken, intermediaryToken, _outputToken] = mintKeys;
 
     const quote = await swapQuoteByInputToken(
@@ -101,9 +98,6 @@ describe("two-hop-swap", () => {
       fetcher,
       true
     );
-
-    console.log("quote1", quote.sqrtPriceLimit.toString());
-    console.log("quote2", quote2.sqrtPriceLimit.toString());
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
 
@@ -134,9 +128,6 @@ describe("two-hop-swap", () => {
 
     whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
     whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
-
-    console.log("post-swap price 1", whirlpoolOne.getData().sqrtPrice.toString());
-    console.log("post-swap price 2", whirlpoolOne.getData().sqrtPrice.toString());
   });
 
   it("fails swaps [2] with multi_swap, amountSpecifiedIsInput=true, slippage", async () => {
@@ -345,21 +336,14 @@ describe("two-hop-swap", () => {
     );
   });
 
-  it.only("swaps [2] with multi_swap, amount_specified_is_input=true, price limit", async () => {
+  it("swaps [2] with multi_swap, amount_specified_is_input=true, price limit", async () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;
-
-    let tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
-
-    const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
     let whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
     let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
-
-    console.log("pre-swap price 1", whirlpoolOne.getData().sqrtPrice.toString());
-    console.log("pre-swap price 2", whirlpoolOne.getData().sqrtPrice.toString());
 
     const [inputToken, intermediaryToken, _outputToken] = mintKeys;
 
@@ -367,7 +351,7 @@ describe("two-hop-swap", () => {
       whirlpoolOne,
       inputToken,
       new u64(1000),
-      Percentage.fromFraction(1, 100),
+      Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
       true
@@ -383,23 +367,17 @@ describe("two-hop-swap", () => {
       true
     );
 
-    quote2.sqrtPriceLimit = new anchor.BN("92187764767811004295");
-
-    console.log("quote1", quote.sqrtPriceLimit.toString());
-    console.log("quote2", quote2.sqrtPriceLimit.toString());
+    // Set a price limit that is less than the 1% slippage threshold,
+    // which will allow the swap to go through
+    quote2.sqrtPriceLimit = quote2.estimatedEndSqrtPrice.add(
+      whirlpoolTwo
+        .getData()
+        .sqrtPrice.sub(quote2.estimatedEndSqrtPrice)
+        .mul(new anchor.BN("5"))
+        .div(new anchor.BN("1000"))
+    );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
-
-    twoHopQuote.otherAmountThreshold = new anchor.BN("0");
-
-    console.log("quoteOneEstimatedAmountOut", quote.estimatedAmountOut.toString());
-    console.log(
-      "swapOneEstimatedAmountOut",
-      twoHopQuote.swapOneEstimates.estimatedAmountOut.toString()
-    );
-    console.log("swapTwoEstimatedAmountOut", quote2.estimatedAmountOut.toString());
-    console.log("threshold", twoHopQuote.otherAmountThreshold.toString());
-    console.log("estimatedAmountOut", twoHopQuote.swapTwoEstimates.estimatedAmountOut.toString());
 
     await toTx(
       ctx,
@@ -410,34 +388,66 @@ describe("two-hop-swap", () => {
       })
     ).buildAndExecute();
 
-    const newTokenVaultBalances = await getTokenBalancesForVaults(pools);
-
-    // assert.deepEqual(newTokenVaultBalances, [
-    //   tokenVaultBalances[0].add(quote.estimatedAmountIn),
-    //   tokenVaultBalances[1].sub(quote.estimatedAmountOut),
-    //   tokenVaultBalances[2].add(quote2.estimatedAmountIn),
-    //   tokenVaultBalances[3].sub(quote2.estimatedAmountOut),
-    // ]);
-
-    console.log("amoutOut", tokenVaultBalances[3].sub(newTokenVaultBalances[3]).toString());
-
-    const prevTbs = [...tokenBalances];
-    tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
-
-    // assert.deepEqual(tokenBalances, [
-    //   prevTbs[0].sub(quote.estimatedAmountIn),
-    //   prevTbs[1],
-    //   prevTbs[2].add(quote2.estimatedAmountOut),
-    // ]);
-
     whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
     whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
 
-    console.log("post-swap price 1", whirlpoolOne.getData().sqrtPrice.toString());
-    console.log("post-swap price 2", whirlpoolOne.getData().sqrtPrice.toString());
+    assert.equal(whirlpoolTwo.getData().sqrtPrice.eq(quote2.sqrtPriceLimit), true);
   });
 
-  it("fails swaps [2] with multi_swap, amount_specified_is_input=false, price limit", async () => {});
+  it("fails swaps [2] with multi_swap, amount_specified_is_input=false, price limit", async () => {
+    const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
+    const { tokenAccounts, mintKeys, pools } = aquarium;
+
+    const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+    const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
+
+    const [inputToken, intermediaryToken, _outputToken] = mintKeys;
+
+    const quote = await swapQuoteByInputToken(
+      whirlpoolOne,
+      inputToken,
+      new u64(1000),
+      Percentage.fromFraction(0, 100),
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    const quote2 = await swapQuoteByInputToken(
+      whirlpoolTwo,
+      intermediaryToken,
+      quote.estimatedAmountOut,
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    // Set a price limit that is greater than the 1% slippage threshold,
+    // which will cause the swap to fail
+    quote2.sqrtPriceLimit = quote2.estimatedEndSqrtPrice.add(
+      whirlpoolTwo
+        .getData()
+        .sqrtPrice.sub(quote2.estimatedEndSqrtPrice)
+        .mul(new anchor.BN("15"))
+        .div(new anchor.BN("1000"))
+    );
+
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
+
+    await assert.rejects(
+      toTx(
+        ctx,
+        WhirlpoolIx.twoHopSwapIx(ctx.program, {
+          ...twoHopQuote,
+          ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+          tokenAuthority: ctx.wallet.publicKey,
+        })
+      ).buildAndExecute()
+    );
+  });
 
   function getParamsFromPools(
     pools: [InitPoolParams, InitPoolParams],

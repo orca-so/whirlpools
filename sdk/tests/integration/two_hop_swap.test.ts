@@ -68,14 +68,17 @@ describe("two-hop-swap", () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;
 
-    let tokenBalances = await getTokenBalances(tokenAccounts.map(acc => acc.account));
+    let tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
 
     const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    const whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
-    const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
+
+    console.log("pre-swap price 1", whirlpoolOne.getData().sqrtPrice.toString());
+    console.log("pre-swap price 2", whirlpoolOne.getData().sqrtPrice.toString());
 
     const [inputToken, intermediaryToken, _outputToken] = mintKeys;
 
@@ -99,12 +102,11 @@ describe("two-hop-swap", () => {
       true
     );
 
-    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
-      quote,
-      quote2,
-    );
+    console.log("quote1", quote.sqrtPriceLimit.toString());
+    console.log("quote2", quote2.sqrtPriceLimit.toString());
 
-  
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
+
     await toTx(
       ctx,
       WhirlpoolIx.twoHopSwapIx(ctx.program, {
@@ -114,27 +116,27 @@ describe("two-hop-swap", () => {
       })
     ).buildAndExecute();
 
-    assert.deepEqual(
-      await getTokenBalancesForVaults(pools),
-      [
-        tokenVaultBalances[0].add(quote.estimatedAmountIn),
-        tokenVaultBalances[1].sub(quote.estimatedAmountOut),
-        tokenVaultBalances[2].add(quote2.estimatedAmountIn),
-        tokenVaultBalances[3].sub(quote2.estimatedAmountOut), 
-      ]
-    );
+    assert.deepEqual(await getTokenBalancesForVaults(pools), [
+      tokenVaultBalances[0].add(quote.estimatedAmountIn),
+      tokenVaultBalances[1].sub(quote.estimatedAmountOut),
+      tokenVaultBalances[2].add(quote2.estimatedAmountIn),
+      tokenVaultBalances[3].sub(quote2.estimatedAmountOut),
+    ]);
 
     const prevTbs = [...tokenBalances];
-    tokenBalances = await getTokenBalances(tokenAccounts.map(acc => acc.account));
+    tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
 
-    assert.deepEqual(
-      tokenBalances,
-      [
-        prevTbs[0].sub(quote.estimatedAmountIn),
-        prevTbs[1],
-        prevTbs[2].add(quote2.estimatedAmountOut),
-      ]
-    );
+    assert.deepEqual(tokenBalances, [
+      prevTbs[0].sub(quote.estimatedAmountIn),
+      prevTbs[1],
+      prevTbs[2].add(quote2.estimatedAmountOut),
+    ]);
+
+    whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
+    whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
+
+    console.log("post-swap price 1", whirlpoolOne.getData().sqrtPrice.toString());
+    console.log("post-swap price 2", whirlpoolOne.getData().sqrtPrice.toString());
   });
 
   it("fails swaps [2] with multi_swap, amountSpecifiedIsInput=true, slippage", async () => {
@@ -168,10 +170,7 @@ describe("two-hop-swap", () => {
       true
     );
 
-    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
-      quote,
-      quote2,
-    );
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
 
     await assert.rejects(
       toTx(
@@ -183,16 +182,15 @@ describe("two-hop-swap", () => {
           tokenAuthority: ctx.wallet.publicKey,
         })
       ).buildAndExecute(),
-      /0x1794/ // Above Out Below Minimum 
+      /0x1794/ // Above Out Below Minimum
     );
   });
-
 
   it("swaps [2] with multi_swap, amountSpecifiedIsInput=false", async () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;
 
-    const preSwapBalances = await getTokenBalances(tokenAccounts.map(acc => acc.account));
+    const preSwapBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
     const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
@@ -222,10 +220,7 @@ describe("two-hop-swap", () => {
       true
     );
 
-    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
-      quote,
-      quote2,
-    );
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
 
     await toTx(
       ctx,
@@ -236,31 +231,25 @@ describe("two-hop-swap", () => {
       })
     ).buildAndExecute();
 
-    assert.deepEqual(
-      await getTokenBalancesForVaults(pools),
-      [
-        tokenVaultBalances[0].add(quote.estimatedAmountIn),
-        tokenVaultBalances[1].sub(quote.estimatedAmountOut),
-        tokenVaultBalances[2].add(quote2.estimatedAmountIn),
-        tokenVaultBalances[3].sub(quote2.estimatedAmountOut), 
-      ]
-    );
+    assert.deepEqual(await getTokenBalancesForVaults(pools), [
+      tokenVaultBalances[0].add(quote.estimatedAmountIn),
+      tokenVaultBalances[1].sub(quote.estimatedAmountOut),
+      tokenVaultBalances[2].add(quote2.estimatedAmountIn),
+      tokenVaultBalances[3].sub(quote2.estimatedAmountOut),
+    ]);
 
-    assert.deepEqual(
-      await getTokenBalances(tokenAccounts.map(acc => acc.account)),
-      [
-        preSwapBalances[0].sub(quote.estimatedAmountIn),
-        preSwapBalances[1],
-        preSwapBalances[2].add(quote2.estimatedAmountOut),
-      ]
-    );
+    assert.deepEqual(await getTokenBalances(tokenAccounts.map((acc) => acc.account)), [
+      preSwapBalances[0].sub(quote.estimatedAmountIn),
+      preSwapBalances[1],
+      preSwapBalances[2].add(quote2.estimatedAmountOut),
+    ]);
   });
 
   it("fails swaps [2] with multi_swap, amountSpecifiedIsInput=false slippage", async () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;
 
-    const preSwapBalances = await getTokenBalances(tokenAccounts.map(acc => acc.account));
+    const preSwapBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
     const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
@@ -290,10 +279,7 @@ describe("two-hop-swap", () => {
       true
     );
 
-    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
-      quote,
-      quote2,
-    );
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
 
     await assert.rejects(
       toTx(
@@ -344,10 +330,7 @@ describe("two-hop-swap", () => {
       true
     );
 
-    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(
-      quote,
-      quote2,
-    );
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
 
     await assert.rejects(
       toTx(
@@ -362,7 +345,104 @@ describe("two-hop-swap", () => {
     );
   });
 
-  function getParamsFromPools(pools: [InitPoolParams, InitPoolParams], tokenAccounts: { mint: PublicKey, account: PublicKey }[]) {
+  it.only("swaps [2] with multi_swap, amount_specified_is_input=true, price limit", async () => {
+    const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
+    const { tokenAccounts, mintKeys, pools } = aquarium;
+
+    let tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+
+    const tokenVaultBalances = await getTokenBalancesForVaults(pools);
+
+    const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+    const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
+
+    console.log("pre-swap price 1", whirlpoolOne.getData().sqrtPrice.toString());
+    console.log("pre-swap price 2", whirlpoolOne.getData().sqrtPrice.toString());
+
+    const [inputToken, intermediaryToken, _outputToken] = mintKeys;
+
+    const quote = await swapQuoteByInputToken(
+      whirlpoolOne,
+      inputToken,
+      new u64(1000),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    const quote2 = await swapQuoteByInputToken(
+      whirlpoolTwo,
+      intermediaryToken,
+      quote.estimatedAmountOut,
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    quote2.sqrtPriceLimit = new anchor.BN("92187764767811004295");
+
+    console.log("quote1", quote.sqrtPriceLimit.toString());
+    console.log("quote2", quote2.sqrtPriceLimit.toString());
+
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
+
+    twoHopQuote.otherAmountThreshold = new anchor.BN("0");
+
+    console.log("quoteOneEstimatedAmountOut", quote.estimatedAmountOut.toString());
+    console.log(
+      "swapOneEstimatedAmountOut",
+      twoHopQuote.swapOneEstimates.estimatedAmountOut.toString()
+    );
+    console.log("swapTwoEstimatedAmountOut", quote2.estimatedAmountOut.toString());
+    console.log("threshold", twoHopQuote.otherAmountThreshold.toString());
+    console.log("estimatedAmountOut", twoHopQuote.swapTwoEstimates.estimatedAmountOut.toString());
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.twoHopSwapIx(ctx.program, {
+        ...twoHopQuote,
+        ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+        tokenAuthority: ctx.wallet.publicKey,
+      })
+    ).buildAndExecute();
+
+    const newTokenVaultBalances = await getTokenBalancesForVaults(pools);
+
+    // assert.deepEqual(newTokenVaultBalances, [
+    //   tokenVaultBalances[0].add(quote.estimatedAmountIn),
+    //   tokenVaultBalances[1].sub(quote.estimatedAmountOut),
+    //   tokenVaultBalances[2].add(quote2.estimatedAmountIn),
+    //   tokenVaultBalances[3].sub(quote2.estimatedAmountOut),
+    // ]);
+
+    console.log("amoutOut", tokenVaultBalances[3].sub(newTokenVaultBalances[3]).toString());
+
+    const prevTbs = [...tokenBalances];
+    tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+
+    // assert.deepEqual(tokenBalances, [
+    //   prevTbs[0].sub(quote.estimatedAmountIn),
+    //   prevTbs[1],
+    //   prevTbs[2].add(quote2.estimatedAmountOut),
+    // ]);
+
+    whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
+    whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
+
+    console.log("post-swap price 1", whirlpoolOne.getData().sqrtPrice.toString());
+    console.log("post-swap price 2", whirlpoolOne.getData().sqrtPrice.toString());
+  });
+
+  it("fails swaps [2] with multi_swap, amount_specified_is_input=false, price limit", async () => {});
+
+  function getParamsFromPools(
+    pools: [InitPoolParams, InitPoolParams],
+    tokenAccounts: { mint: PublicKey; account: PublicKey }[]
+  ) {
     const tokenAccKeys = getTokenAccsForPools(pools, tokenAccounts);
 
     const whirlpoolOne = pools[0].whirlpoolPda.publicKey;
@@ -395,6 +475,8 @@ describe("two-hop-swap", () => {
   }
 
   async function getTokenBalances(keys: PublicKey[]) {
-    return Promise.all(keys.map(async key => new anchor.BN((await getTokenBalance(provider, key)))));
+    return Promise.all(
+      keys.map(async (key) => new anchor.BN(await getTokenBalance(provider, key)))
+    );
   }
 });

@@ -233,12 +233,14 @@ export async function buildTestAquariums(
       };
     }));
 
+    
     await Promise.all(initPositionParams.map(async initPositionParam => {
       const { poolIndex, fundParams } = initPositionParam;
       const pool = pools[poolIndex];
       const tokenAccKeys = getTokenAccsForPools([pool], tokenAccounts);
       await fundPositions(ctx, pool, tokenAccKeys[0], tokenAccKeys[1], fundParams);
     }));
+
 
     aquariums.push({
       configParams,

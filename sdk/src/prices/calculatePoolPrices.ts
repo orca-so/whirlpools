@@ -1,4 +1,4 @@
-import { Percentage } from "@orca-so/common-sdk";
+import { AddressUtil, Percentage } from "@orca-so/common-sdk";
 import { BN, translateAddress } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -15,7 +15,7 @@ import {
 import { PoolUtil, SwapUtils } from "../utils/public";
 import { PDAUtil } from "../utils/public/pda-utils";
 
-export type PoolMap = { [key: string]: WhirlpoolData };
+export type PoolMap = Record<string, WhirlpoolData>;
 export type TickArrayMap = { [key: string]: TickArrayData };
 export type PriceMap = { [key: string]: Decimal | null };
 export type TickSpacingAccumulator = null | { pool: WhirlpoolData; address: PublicKey };
@@ -136,11 +136,12 @@ function getPriceForQuoteToken(
     mints.map((mint) => {
       const acc = ORCA_SUPPORTED_TICK_SPACINGS.reduce<TickSpacingAccumulator>(
         (acc, tickSpacing) => {
+          const [mintA, mintB] = PoolUtil.orderMints(mint, baseTokenMint);
           const pda = PDAUtil.getWhirlpool(
             ORCA_WHIRLPOOL_PROGRAM_ID,
             ORCA_WHIRLPOOLS_CONFIG,
-            mint,
-            baseTokenMint,
+            AddressUtil.toPubKey(mintA),
+            AddressUtil.toPubKey(mintB),
             tickSpacing
           );
 

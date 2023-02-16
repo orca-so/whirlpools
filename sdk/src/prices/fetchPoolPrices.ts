@@ -1,3 +1,4 @@
+import { AddressUtil } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "../context";
 import {
@@ -6,7 +7,8 @@ import {
   ORCA_WHIRLPOOL_PROGRAM_ID,
   TOKEN_MINTS,
 } from "../types/public";
-import { SwapUtils, PDAUtil } from "../utils/public";
+import { SwapUtils, PDAUtil, PoolUtil } from "../utils/public";
+import { convertListToMap } from "../utils/txn-utils";
 import { calculatePoolPrices, PoolMap, PriceMap, TickArrayMap } from "./calculatePoolPrices";
 
 /**
@@ -27,34 +29,50 @@ export async function fetchPoolPrices(
   return calculatePoolPrices(mints, poolMap, tickArrayMap);
 }
 
-async function getPoolsForMints(ctx: WhirlpoolContext, mints: PublicKey[]): Promise<PoolMap> {
-  const pools: PoolMap = {};
-
-  const poolAddresses: PublicKey[] = mints
-    .map((mint): PublicKey[] =>
-      ORCA_SUPPORTED_TICK_SPACINGS.map((tickSpacing): PublicKey[] => {
-        const usdcPool = PDAUtil.getWhirlpool(
-          ORCA_WHIRLPOOL_PROGRAM_ID,
-          ORCA_WHIRLPOOLS_CONFIG,
-          mint,
-          new PublicKey(TOKEN_MINTS["USDC"]),
-          tickSpacing
-        ).publicKey;
-        const solPool = PDAUtil.getWhirlpool(
-          ORCA_WHIRLPOOL_PROGRAM_ID,
-          ORCA_WHIRLPOOLS_CONFIG,
-          mint,
-          new PublicKey(TOKEN_MINTS["SOL"]),
-          tickSpacing
-        ).publicKey;
-        return [usdcPool, solPool];
+async function getPoolsForMints(
+  ctx: WhirlpoolContext,
+  mints: PublicKey[],
+  baseTokens = [TOKEN_MINTS["USDC"], TOKEN_MINTS["SOL"]]
+): Promise<PoolMap> {
+  const poolAddresses: string[] = mints
+    .map((mint): string[] =>
+      ORCA_SUPPORTED_TICK_SPACINGS.map((tickSpacing): string[] => {
+        return baseTokens.map((baseToken): string => {
+          const [mintA, mintB] = PoolUtil.orderMints(mint, baseToken);
+          return PDAUtil.getWhirlpool(
+            ORCA_WHIRLPOOL_PROGRAM_ID,
+            ORCA_WHIRLPOOLS_CONFIG,
+            AddressUtil.toPubKey(mintA),
+            AddressUtil.toPubKey(mintB),
+            tickSpacing
+          ).publicKey.toBase58();
+        });
       }).flat()
     )
     .flat();
 
-  const poolDatas = await ctx.fetcher.listPools(poolAddresses, false);
+  const poolDatas = await ctx.fetcher.listPools(poolAddresses, true);
 
-  return convertDataToMap(poolDatas, poolAddresses);
+  const [filteredPoolDatas, filteredPoolAddresses] = filterNullObjects(poolDatas, poolAddresses);
+  return convertListToMap(filteredPoolDatas, filteredPoolAddresses);
+}
+
+// Filter out null objects in the first array and remove the corresponding objects in the second array
+function filterNullObjects<T, K>(
+  firstArray: Array<T | null>,
+  secondArray: Array<K>
+): [Array<T>, Array<K>] {
+  const filteredFirstArray: Array<T> = [];
+  const filteredSecondArray: Array<K> = [];
+
+  firstArray.forEach((item, idx) => {
+    if (item !== null) {
+      filteredFirstArray.push(item);
+      filteredSecondArray.push(secondArray[idx]);
+    }
+  });
+
+  return [filteredFirstArray, filteredSecondArray];
 }
 
 async function getTickArraysForPools(ctx: WhirlpoolContext, pools: PoolMap): Promise<TickArrayMap> {
@@ -68,21 +86,14 @@ async function getTickArraysForPools(ctx: WhirlpoolContext, pools: PoolMap): Pro
         new PublicKey(poolAddress)
       );
     })
-    .flat();
+    .flat()
+    .map((tickArray): string => tickArray.toBase58());
 
   const tickArrays = await ctx.fetcher.listTickArrays(tickArrayAddresses, true);
 
-  return convertDataToMap(tickArrays, tickArrayAddresses);
-}
-
-function convertDataToMap<T>(data: (T | null)[], addresses: PublicKey[]): { [key: string]: T } {
-  const map: { [key: string]: T } = {};
-  data.forEach((item, idx) => {
-    if (item === null) {
-      return;
-    }
-
-    map[addresses[idx].toBase58()] = item;
-  });
-  return map;
+  const [filteredTickArrays, filteredTickArrayAddresses] = filterNullObjects(
+    tickArrays,
+    tickArrayAddresses
+  );
+  return convertListToMap(filteredTickArrays, filteredTickArrayAddresses);
 }

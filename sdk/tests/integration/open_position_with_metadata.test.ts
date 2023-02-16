@@ -68,7 +68,7 @@ describe("open_position_with_metadata", () => {
     assert.ok(metadata.data.updateAuthority === "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr");
     assert.ok(metadata.data.mint === positionMint.toString());
     assert.ok(
-      metadata.data.data.uri === `https://arweave.net/KZlsubXZyzeSYi2wJhyL7SY-DAot_OXhfWSYQGLmmOc`
+      metadata.data.data.uri === `https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws`
     );
   }
 

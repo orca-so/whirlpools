@@ -24,7 +24,7 @@ import {
   InitAquariumParams,
 } from "../utils/init-utils";
 
-describe.only("two-hop swap", () => {
+describe("two-hop swap", () => {
   const provider = anchor.AnchorProvider.local();
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
@@ -65,7 +65,7 @@ describe.only("two-hop swap", () => {
     aqConfig.initPositionParams.push({ poolIndex: 1, fundParams });
   });
 
-  describe.only("fails [2] with two-hop swap, invalid accounts", () => {
+  describe("fails [2] with two-hop swap, invalid accounts", () => {
     let baseIxParams: TwoHopSwapParams;
     beforeEach(async () => {
       const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
@@ -112,7 +112,7 @@ describe.only("two-hop swap", () => {
           ...baseIxParams,
           whirlpoolOne: baseIxParams.whirlpoolTwo,
         },
-        /0x7d6/ // ConstraintRaw
+        /0x7d3/ // ConstraintRaw
       );
     });
 
@@ -122,7 +122,7 @@ describe.only("two-hop swap", () => {
           ...baseIxParams,
           tokenOwnerAccountOneA: baseIxParams.tokenOwnerAccountOneB,
         },
-        /0x7d6/ // ConstraintRaw
+        /0x7d3/ // ConstraintRaw
       );
     });
 
@@ -132,7 +132,7 @@ describe.only("two-hop swap", () => {
           ...baseIxParams,
           tokenVaultOneA: baseIxParams.tokenVaultOneB,
         },
-        /0x7d6/ // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 

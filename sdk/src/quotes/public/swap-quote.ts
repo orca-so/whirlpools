@@ -5,7 +5,7 @@ import invariant from "tiny-invariant";
 import { SwapInput } from "../../instructions";
 import { AccountFetcher } from "../../network/public";
 import { TickArray, WhirlpoolData } from "../../types/public";
-import { PoolUtil, TokenType } from "../../utils/public";
+import { PoolUtil, SwapDirection, TokenType } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";
 import { Whirlpool } from "../../whirlpool-client";
 import { simulateSwap } from "../swap/swap-quote-impl";
@@ -49,13 +49,15 @@ export type SwapQuote = NormalSwapQuote | DevFeeSwapQuote;
  * @param estimatedEndSqrtPrice - Approximate sqrtPrice the Whirlpool will land on after this swap
  * @param estimatedFeeAmount - Approximate feeAmount (all fees) charged on this swap
  */
-export type NormalSwapQuote = {
+export type SwapEstimates = {
   estimatedAmountIn: u64;
   estimatedAmountOut: u64;
   estimatedEndTickIndex: number;
   estimatedEndSqrtPrice: BN;
   estimatedFeeAmount: u64;
-} & SwapInput;
+}
+
+export type NormalSwapQuote = SwapInput & SwapEstimates;
 
 /**
  * Get an estimated swap quote using input token amount.
@@ -83,7 +85,6 @@ export async function swapQuoteByInputToken(
     whirlpool,
     inputTokenMint,
     tokenAmount,
-    TokenType.TokenA,
     true,
     programId,
     fetcher,
@@ -121,7 +122,6 @@ export async function swapQuoteByOutputToken(
     whirlpool,
     outputTokenMint,
     tokenAmount,
-    TokenType.TokenB,
     false,
     programId,
     fetcher,
@@ -162,7 +162,6 @@ async function swapQuoteByToken(
   whirlpool: Whirlpool,
   inputTokenMint: Address,
   tokenAmount: u64,
-  amountSpecifiedTokenType: TokenType,
   amountSpecifiedIsInput: boolean,
   programId: Address,
   fetcher: AccountFetcher,
@@ -173,7 +172,7 @@ async function swapQuoteByToken(
   const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
   invariant(!!swapTokenType, "swapTokenMint does not match any tokens on this pool");
 
-  const aToB = swapTokenType === amountSpecifiedTokenType;
+  const aToB = SwapUtils.getSwapDirection(whirlpoolData, swapMintKey, amountSpecifiedIsInput) === SwapDirection.AtoB;
 
   const tickArrays = await SwapUtils.getTickArrays(
     whirlpoolData.tickCurrentIndex,

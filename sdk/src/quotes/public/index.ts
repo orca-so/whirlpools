@@ -4,3 +4,4 @@ export * from "./collect-fees-quote";
 export * from "./collect-rewards-quote";
 export * from "./swap-quote";
 export * from "./dev-fee-swap-quote";
+export * from "./two-hop-swap-quote";

@@ -55,21 +55,14 @@ export class PoolUtil {
   }
 
   public static orderMints(mintX: Address, mintY: Address): [Address, Address] {
-    let mintA, mintB;
-    if (
-      Buffer.compare(
-        AddressUtil.toPubKey(mintX).toBuffer(),
-        AddressUtil.toPubKey(mintY).toBuffer()
-      ) < 0
-    ) {
-      mintA = mintX;
-      mintB = mintY;
-    } else {
-      mintA = mintY;
-      mintB = mintX;
-    }
+    return this.compareMints(mintX, mintY) < 0 ? [mintX, mintY] : [mintY, mintX];
+  }
 
-    return [mintA, mintB];
+  public static compareMints(mintX: Address, mintY: Address): number {
+    return Buffer.compare(
+      AddressUtil.toPubKey(mintX).toBuffer(),
+      AddressUtil.toPubKey(mintY).toBuffer()
+    );
   }
 
   /**

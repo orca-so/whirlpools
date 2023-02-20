@@ -12,7 +12,7 @@ import {
   ZERO_BN,
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
-import { initTestPool, initTestPoolWithLiquidity, openPosition } from "../utils/init-utils";
+import { initializePositionBundle, initTestPool, initTestPoolWithLiquidity, openBundledPosition, openPosition } from "../utils/init-utils";
 
 describe("close_position", () => {
   const provider = anchor.AnchorProvider.local();
@@ -421,7 +421,45 @@ describe("close_position", () => {
           positionTokenAccount: position.tokenAccount,
         })
       ).buildAndExecute(),
-      /0x7dc/ // ConstraintAddress
+      // Seeds constraint added by adding PositionBundle, so ConstraintSeeds will be violated first
+      /0x7d6/ // ConstraintSeeds (seed constraint was violated)
     );
+  });
+
+  describe("bundled position", () => {
+    it("fails if position is BUNDLED position", async () => {
+      const fixture = await new WhirlpoolTestFixture(ctx).init({
+        tickSpacing: TickSpacing.Standard,
+        positions: [],
+      });
+      const { poolInitInfo } = fixture.getInfos();
+
+      // open bundled position
+      const positionBundleInfo = await initializePositionBundle(ctx);
+      const bundleIndex = 0;
+      const positionInitInfo = await openBundledPosition(
+        ctx,
+        poolInitInfo.whirlpoolPda.publicKey,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        bundleIndex,
+        0,
+        128,
+      );
+
+      // try to close bundled position
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.closePositionIx(ctx.program, {
+            positionAuthority: provider.wallet.publicKey,
+            receiver: provider.wallet.publicKey,
+            position: positionInitInfo.params.bundledPositionPda.publicKey,
+            positionMint: positionBundleInfo.positionBundleMintKeypair.publicKey,
+            positionTokenAccount: positionBundleInfo.positionBundleTokenAccount,
+          })
+        ).buildAndExecute(),
+        /0x7d6/ // ConstraintSeeds (seed constraint was violated)
+      );
+    });
   });
 });

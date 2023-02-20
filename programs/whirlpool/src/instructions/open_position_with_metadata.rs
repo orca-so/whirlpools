@@ -4,11 +4,7 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount};
 
 use crate::{state::*, util::mint_position_token_with_metadata_and_remove_authority};
 
-use whirlpool_nft_update_auth::ID as WP_NFT_UPDATE_AUTH;
-mod whirlpool_nft_update_auth {
-    use super::*;
-    declare_id!("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr");
-}
+use crate::constants::nft::whirlpool_nft_update_auth::ID as WP_NFT_UPDATE_AUTH;
 
 #[derive(Accounts)]
 #[instruction(bumps: OpenPositionWithMetadataBumps)]

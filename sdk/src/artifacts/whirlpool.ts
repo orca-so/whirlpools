@@ -1213,6 +1213,254 @@ export type Whirlpool = {
           "type": "u128"
         }
       ]
+    },
+    {
+      "name": "initializePositionBundle",
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initializePositionBundleWithMetadata",
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "positionBundleMetadata",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "metadataUpdateAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deletePositionBundle",
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "openBundledPosition",
+      "accounts": [
+        {
+          "name": "bundledPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "whirlpool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bundleIndex",
+          "type": "u16"
+        },
+        {
+          "name": "tickLowerIndex",
+          "type": "i32"
+        },
+        {
+          "name": "tickUpperIndex",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "closeBundledPosition",
+      "accounts": [
+        {
+          "name": "bundledPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bundleIndex",
+          "type": "u16"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1309,6 +1557,27 @@ export type Whirlpool = {
                   "defined": "PositionRewardInfo"
                 },
                 3
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "positionBundle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionBundleMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "positionBitmap",
+            "type": {
+              "array": [
+                "u8",
+                32
               ]
             }
           }
@@ -1827,6 +2096,26 @@ export type Whirlpool = {
       "code": 6042,
       "name": "DuplicateTwoHopPool",
       "msg": "Duplicate two hop pool"
+    },
+    {
+      "code": 6043,
+      "name": "InvalidBundleIndex",
+      "msg": "Bundle index is out of bounds"
+    },
+    {
+      "code": 6044,
+      "name": "BundledPositionAlreadyOpened",
+      "msg": "Position has already been opened"
+    },
+    {
+      "code": 6045,
+      "name": "BundledPositionAlreadyClosed",
+      "msg": "Position has already been closed"
+    },
+    {
+      "code": 6046,
+      "name": "PositionBundleNotDeletable",
+      "msg": "Unable to delete PositionBundle with open positions"
     }
   ]
 };
@@ -3046,6 +3335,254 @@ export const IDL: Whirlpool = {
           "type": "u128"
         }
       ]
+    },
+    {
+      "name": "initializePositionBundle",
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initializePositionBundleWithMetadata",
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "positionBundleMetadata",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "metadataUpdateAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deletePositionBundle",
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "openBundledPosition",
+      "accounts": [
+        {
+          "name": "bundledPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "whirlpool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bundleIndex",
+          "type": "u16"
+        },
+        {
+          "name": "tickLowerIndex",
+          "type": "i32"
+        },
+        {
+          "name": "tickUpperIndex",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "closeBundledPosition",
+      "accounts": [
+        {
+          "name": "bundledPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bundleIndex",
+          "type": "u16"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -3142,6 +3679,27 @@ export const IDL: Whirlpool = {
                   "defined": "PositionRewardInfo"
                 },
                 3
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "name": "positionBundle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionBundleMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "positionBitmap",
+            "type": {
+              "array": [
+                "u8",
+                32
               ]
             }
           }
@@ -3660,6 +4218,26 @@ export const IDL: Whirlpool = {
       "code": 6042,
       "name": "DuplicateTwoHopPool",
       "msg": "Duplicate two hop pool"
+    },
+    {
+      "code": 6043,
+      "name": "InvalidBundleIndex",
+      "msg": "Bundle index is out of bounds"
+    },
+    {
+      "code": 6044,
+      "name": "BundledPositionAlreadyOpened",
+      "msg": "Position has already been opened"
+    },
+    {
+      "code": 6045,
+      "name": "BundledPositionAlreadyClosed",
+      "msg": "Position has already been closed"
+    },
+    {
+      "code": 6046,
+      "name": "PositionBundleNotDeletable",
+      "msg": "Unable to delete PositionBundle with open positions"
     }
   ]
 };

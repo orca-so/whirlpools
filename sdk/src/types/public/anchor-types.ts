@@ -20,6 +20,7 @@ export enum AccountName {
   TickArray = "TickArray",
   Whirlpool = "Whirlpool",
   FeeTier = "FeeTier",
+  PositionBundle = "PositionBundle",
 }
 
 const IDL = WhirlpoolIDL as Idl;
@@ -156,4 +157,12 @@ export type FeeTierData = {
   whirlpoolsConfig: PublicKey;
   tickSpacing: number;
   defaultFeeRate: number;
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type PositionBundleData = {
+  positionBundleMint: PublicKey;
+  positionBitmap: number[];
 };

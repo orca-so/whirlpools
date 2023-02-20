@@ -8,6 +8,17 @@ use std::convert::TryFrom;
 
 use crate::errors::ErrorCode;
 
+pub fn verify_position_bundle_authority<'info>(
+    position_bundle_token_account: &TokenAccount,
+    position_bundle_authority: &Signer<'info>,
+) -> Result<(), ProgramError> {
+    // use same logic
+    verify_position_authority(
+        position_bundle_token_account,
+        position_bundle_authority,
+    )
+}
+
 pub fn verify_position_authority<'info>(
     position_token_account: &TokenAccount,
     position_authority: &Signer<'info>,

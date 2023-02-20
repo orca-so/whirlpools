@@ -532,4 +532,82 @@ pub mod whirlpool {
             sqrt_price_limit_two,
         );
     }
+
+    /// Initializes a PositionBundle account that bundles several positions.
+    /// A unique token will be minted to represent the position bundle in the users wallet.
+    pub fn initialize_position_bundle(
+        ctx: Context<InitializePositionBundle>,
+    ) -> ProgramResult {
+        return instructions::initialize_position_bundle::handler(ctx);
+    }
+
+    /// Initializes a PositionBundle account that bundles several positions.
+    /// A unique token will be minted to represent the position bundle in the users wallet.
+    /// Additional Metaplex metadata is appended to identify the token.
+    pub fn initialize_position_bundle_with_metadata(
+        ctx: Context<InitializePositionBundleWithMetadata>,
+    ) -> ProgramResult {
+        return instructions::initialize_position_bundle_with_metadata::handler(ctx);
+    }
+
+    /// Delete a PositionBundle account. Burns the position bundle token in the owner's wallet.
+    /// 
+    /// ### Authority
+    /// - `position_bundle_owner` - The owner that owns the position bundle token.
+    /// 
+    /// ### Special Errors
+    /// - `PositionBundleNotDeletable` - The provided position bundle has open positions.
+    pub fn delete_position_bundle(
+        ctx: Context<DeletePositionBundle>,
+    ) -> ProgramResult {
+        return instructions::delete_position_bundle::handler(ctx);
+    }
+
+    /// Open a bundled position in a Whirlpool. No new tokens are issued
+    /// because the owner of the position bundle becomes the owner of the position.
+    /// The position will start off with 0 liquidity.
+    /// 
+    /// ### Authority
+    /// - `position_bundle_authority` - authority that owns the token corresponding to this desired position bundle.
+    ///
+    /// ### Parameters
+    /// - `bundle_index` - The bundle index that we'd like to open.
+    /// - `tick_lower_index` - The tick specifying the lower end of the position range.
+    /// - `tick_upper_index` - The tick specifying the upper end of the position range.
+    ///
+    /// #### Special Errors
+    /// - `InvalidBundleIndex` - If the provided bundle index is out of bounds.
+    /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
+    ///                        the tick-spacing in this pool.
+    pub fn open_bundled_position(
+        ctx: Context<OpenBundledPosition>,
+        bundle_index: u16,
+        tick_lower_index: i32,
+        tick_upper_index: i32,
+    ) -> ProgramResult {
+        return instructions::open_bundled_position::handler(
+            ctx,
+            bundle_index,
+            tick_lower_index,
+            tick_upper_index
+        );
+    }
+
+    /// Close a bundled position in a Whirlpool.
+    ///
+    /// ### Authority
+    /// - `position_bundle_authority` - authority that owns the token corresponding to this desired position bundle.
+    ///
+    /// ### Parameters
+    /// - `bundle_index` - The bundle index that we'd like to close.
+    ///
+    /// #### Special Errors
+    /// - `InvalidBundleIndex` - If the provided bundle index is out of bounds.
+    /// - `ClosePositionNotEmpty` - The provided position account is not empty.
+    pub fn close_bundled_position(
+        ctx: Context<CloseBundledPosition>,
+        bundle_index: u16,
+    ) -> ProgramResult {
+        return instructions::close_bundled_position::handler(ctx, bundle_index);
+    }
 }

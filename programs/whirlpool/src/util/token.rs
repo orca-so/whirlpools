@@ -2,8 +2,13 @@ use crate::state::Whirlpool;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 use mpl_token_metadata::instruction::create_metadata_accounts_v3;
-use solana_program::program::invoke_signed;
+use solana_program::program::{invoke_signed, invoke};
 use spl_token::instruction::{burn_checked, close_account, mint_to, set_authority, AuthorityType};
+
+use crate::constants::nft::{
+    WP_METADATA_NAME, WP_METADATA_SYMBOL, WP_METADATA_URI,
+    WPB_METADATA_NAME_PREFIX, WPB_METADATA_SYMBOL, WPB_METADATA_URI
+};
 
 pub fn transfer_from_owner_to_vault<'info>(
     position_authority: &Signer<'info>,
@@ -108,10 +113,6 @@ pub fn mint_position_token_and_remove_authority<'info>(
     remove_position_token_mint_authority(whirlpool, position_mint, token_program)
 }
 
-const WP_METADATA_NAME: &str = "Orca Whirlpool Position";
-const WP_METADATA_SYMBOL: &str = "OWP";
-const WP_METADATA_URI: &str = "https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws";
-
 pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
     whirlpool: &Account<'info, Whirlpool>,
     position_mint: &Account<'info, Mint>,
@@ -215,4 +216,150 @@ fn remove_position_token_mint_authority<'info>(
         &[&whirlpool.seeds()],
     )?;
     Ok(())
+}
+
+pub fn mint_position_bundle_token_and_remove_authority<'info>(
+    funder: &Signer<'info>,
+    position_bundle_mint: &Account<'info, Mint>,
+    position_bundle_token_account: &Account<'info, TokenAccount>,
+    token_program: &Program<'info, Token>,
+) -> ProgramResult {
+    mint_position_bundle_token(
+        funder,
+        position_bundle_mint,
+        position_bundle_token_account,
+        token_program,
+    )?;
+    remove_position_bundle_token_mint_authority(
+        funder,
+        position_bundle_mint,
+        token_program
+    )
+}
+
+pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
+    funder: &Signer<'info>,
+    position_bundle_mint: &Account<'info, Mint>,
+    position_bundle_token_account: &Account<'info, TokenAccount>,
+    position_bundle_metadata: &UncheckedAccount<'info>,
+    metadata_update_auth: &UncheckedAccount<'info>,
+    metadata_program: &UncheckedAccount<'info>,
+    token_program: &Program<'info, Token>,
+    system_program: &Program<'info, System>,
+    rent: &Sysvar<'info, Rent>,
+) -> ProgramResult {
+    mint_position_bundle_token(
+        funder,
+        position_bundle_mint,
+        position_bundle_token_account,
+        token_program,
+    )?;
+
+    // Create Metadata
+    // Orca Position Bundle xxxx...yyyy
+    // xxxx and yyyy are the first and last 4 chars of mint address
+    let mint_address = position_bundle_mint.key().to_string();
+    let mut nft_name = String::from(WPB_METADATA_NAME_PREFIX);
+    nft_name += " ";
+    nft_name += &mint_address[0..4];
+    nft_name += "...";
+    nft_name += &mint_address[mint_address.len()-4..];
+
+    invoke(
+        &create_metadata_accounts_v2(
+            metadata_program.key(),
+            position_bundle_metadata.key(),
+            position_bundle_mint.key(),
+            funder.key(),
+            funder.key(),
+            metadata_update_auth.key(),
+            nft_name,
+            WPB_METADATA_SYMBOL.to_string(),
+            WPB_METADATA_URI.to_string(),
+            None,
+            0,
+            false,
+            true,
+            None,
+            None,
+        ),
+        &[
+            position_bundle_metadata.to_account_info(),
+            position_bundle_mint.to_account_info(),
+            metadata_update_auth.to_account_info(),
+            funder.to_account_info(),
+            metadata_program.to_account_info(),
+            system_program.to_account_info(),
+            rent.to_account_info(),
+        ],
+    )?;
+
+    remove_position_bundle_token_mint_authority(
+        funder,
+        position_bundle_mint,
+        token_program
+    )
+}
+
+fn mint_position_bundle_token<'info>(
+    funder: &Signer<'info>,
+    position_bundle_mint: &Account<'info, Mint>,
+    position_bundle_token_account: &Account<'info, TokenAccount>,
+    token_program: &Program<'info, Token>,
+) -> ProgramResult {
+    invoke(
+        &mint_to(
+            token_program.key,
+            position_bundle_mint.to_account_info().key,
+            position_bundle_token_account.to_account_info().key,
+            funder.to_account_info().key,
+            &[],
+            1,
+        )?,
+        &[
+            position_bundle_mint.to_account_info(),
+            position_bundle_token_account.to_account_info(),
+            funder.to_account_info(),
+            token_program.to_account_info(),
+        ],
+    )
+}
+
+fn remove_position_bundle_token_mint_authority<'info>(
+    funder: &Signer<'info>,
+    position_bundle_mint: &Account<'info, Mint>,
+    token_program: &Program<'info, Token>,
+) -> ProgramResult {
+    invoke(
+        &set_authority(
+            token_program.key,
+            position_bundle_mint.to_account_info().key,
+            Option::None,
+            AuthorityType::MintTokens,
+            funder.to_account_info().key,
+            &[],
+        )?,
+        &[
+            position_bundle_mint.to_account_info(),
+            funder.to_account_info(),
+            token_program.to_account_info(),
+        ],
+    )
+}
+
+pub fn burn_and_close_position_bundle_token<'info>(
+    position_bundle_authority: &Signer<'info>,
+    receiver: &UncheckedAccount<'info>,
+    position_bundle_mint: &Account<'info, Mint>,
+    position_bundle_token_account: &Account<'info, TokenAccount>,
+    token_program: &Program<'info, Token>,
+) -> ProgramResult {
+    // use same logic
+    burn_and_close_user_position_token(
+        position_bundle_authority,
+        receiver,
+        position_bundle_mint,
+        position_bundle_token_account,
+        token_program,
+    )
 }

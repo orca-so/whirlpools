@@ -5,6 +5,7 @@ import { Connection, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import {
   AccountName,
+  PositionBundleData,
   PositionData,
   TickArrayData,
   WhirlpoolData,
@@ -18,6 +19,7 @@ import {
   ParsableFeeTier,
   ParsableMintInfo,
   ParsablePosition,
+  ParsablePositionBundle,
   ParsableTickArray,
   ParsableTokenInfo,
   ParsableWhirlpool,
@@ -33,6 +35,7 @@ type CachedValue =
   | PositionData
   | TickArrayData
   | FeeTierData
+  | PositionBundleData
   | AccountInfo
   | MintInfo;
 
@@ -182,6 +185,17 @@ export class AccountFetcher {
   }
 
   /**
+   * Retrieve a cached position bundle account. Fetch from rpc on cache miss.
+   *
+   * @param address position bundle address
+   * @param refresh force cache refresh
+   * @returns position bundle account
+   */
+  public async getPositionBundle(address: Address, refresh = false): Promise<PositionBundleData | null> {
+    return this.get(AddressUtil.toPubKey(address), ParsablePositionBundle, refresh);
+  }
+
+  /**
    * Retrieve a list of cached whirlpool accounts. Fetch from rpc for cache misses.
    *
    * @param addresses whirlpool addresses
@@ -282,6 +296,20 @@ export class AccountFetcher {
    */
   public async listMintInfos(addresses: Address[], refresh: boolean): Promise<(MintInfo | null)[]> {
     return this.list(AddressUtil.toPubKeys(addresses), ParsableMintInfo, refresh);
+  }
+
+  /**
+   * Retrieve a list of cached position bundle accounts. Fetch from rpc for cache misses.
+   *
+   * @param addresses position bundle addresses
+   * @param refresh force cache refresh
+   * @returns position bundle accounts
+   */
+  public async listPositionBundles(
+    addresses: Address[],
+    refresh: boolean
+  ): Promise<(PositionBundleData | null)[]> {
+    return this.list(AddressUtil.toPubKeys(addresses), ParsablePositionBundle, refresh);
   }
 
   /**

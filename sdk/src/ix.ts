@@ -88,7 +88,6 @@ export class WhirlpoolIx {
    * #### Special Errors
    * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
    *
-
    * @param program - program object containing services required to generate the instruction
    * @param params - OpenPositionParams object
    * @returns - Instruction to perform the action.
@@ -105,7 +104,6 @@ export class WhirlpoolIx {
    * #### Special Errors
    * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
    *
-
    * @param program - program object containing services required to generate the instruction
    * @param params - OpenPositionParams object and a derived PDA that hosts the position's metadata.
    * @returns - Instruction to perform the action.
@@ -158,7 +156,6 @@ export class WhirlpoolIx {
   /**
    * Close a position in a Whirlpool. Burns the position token in the owner's wallet.
    *
-
    * @param program - program object containing services required to generate the instruction
    * @param params - ClosePositionParams object
    * @returns - Instruction to perform the action.
@@ -261,7 +258,6 @@ export class WhirlpoolIx {
    * Collect rewards accrued for this reward index in a position.
    * Call updateFeesAndRewards before this to update the position to the newest accrued values.
    *
-
    * @param program - program object containing services required to generate the instruction
    * @param params - CollectRewardParams object
    * @returns - Instruction to perform the action.
@@ -439,6 +435,90 @@ export class WhirlpoolIx {
     params: ix.SetRewardEmissionsSuperAuthorityParams
   ) {
     return ix.setRewardEmissionsSuperAuthorityIx(program, params);
+  }
+
+  /**
+   * Initializes a PositionBundle account.
+   *
+   * @param program - program object containing services required to generate the instruction
+   * @param params - InitializePositionBundleParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static initializePositionBundleIx(
+    program: Program<Whirlpool>,
+    params: ix.InitializePositionBundleParams
+  ) {
+    return ix.initializePositionBundleIx(program, params);
+  }
+
+  /**
+   * Initializes a PositionBundle account.
+   * Additional Metaplex metadata is appended to identify the token.
+   *
+   * @param program - program object containing services required to generate the instruction
+   * @param params - InitializePositionBundleParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static initializePositionBundleWithMetadataIx(
+    program: Program<Whirlpool>,
+    params: ix.InitializePositionBundleParams & { positionBundleMetadataPda: PDA }
+  ) {
+    return ix.initializePositionBundleWithMetadataIx(program, params);
+  }
+
+  /**
+   * Deletes a PositionBundle account.
+   * 
+   * #### Special Errors
+   * `PositionBundleNotDeletable` - The provided position bundle has open positions.
+   *
+   * @param program - program object containing services required to generate the instruction
+   * @param params - DeletePositionBundleParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static deletePositionBundleIx(
+    program: Program<Whirlpool>,
+    params: ix.DeletePositionBundleParams
+  ) {
+    return ix.deletePositionBundleIx(program, params);
+  }
+
+  /**
+   * Open a bundled position in a Whirlpool.
+   * No new tokens are issued because the owner of the position bundle becomes the owner of the position.
+   * The position will start off with 0 liquidity.
+   *
+   * #### Special Errors
+   * `InvalidBundleIndex` - If the provided bundle index is out of bounds.
+   * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
+   *
+   * @param program - program object containing services required to generate the instruction
+   * @param params - OpenBundledPositionParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static openBundledPositionIx(
+    program: Program<Whirlpool>,
+    params: ix.OpenBundledPositionParams
+  ) {
+    return ix.openBundledPositionIx(program, params);
+  }
+
+  /**
+   * Close a bundled position in a Whirlpool.
+   * 
+   * #### Special Errors
+   * `InvalidBundleIndex` - If the provided bundle index is out of bounds.
+   * `ClosePositionNotEmpty` - The provided position account is not empty.
+   *
+   * @param program - program object containing services required to generate the instruction
+   * @param params - CloseBundledPositionParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static closeBundledPositionIx(
+    program: Program<Whirlpool>,
+    params: ix.CloseBundledPositionParams
+  ) {
+    return ix.closeBundledPositionIx(program, params);
   }
 
   /**

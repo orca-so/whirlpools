@@ -11,6 +11,7 @@ const PDA_METADATA_SEED = "metadata";
 const PDA_TICK_ARRAY_SEED = "tick_array";
 const PDA_FEE_TIER_SEED = "fee_tier";
 const PDA_ORACLE_SEED = "oracle";
+const PDA_POSITION_BUNDLE_SEED = "position_bundle";
 
 /**
  * @category Whirlpool Utils
@@ -166,6 +167,63 @@ export class PDAUtil {
     return AddressUtil.findProgramAddress(
       [Buffer.from(PDA_ORACLE_SEED), whirlpoolAddress.toBuffer()],
       programId
+    );
+  }
+
+  /**
+   * @category Program Derived Addresses
+   * @param programId
+   * @param positionBundleMintKey
+   * @param bundleIndex
+   * @returns
+   */
+  public static getBundledPosition(
+    programId: PublicKey,
+    positionBundleMintKey: PublicKey,
+    bundleIndex: number
+  ) {
+    return AddressUtil.findProgramAddress(
+      [
+        Buffer.from(PDA_POSITION_SEED),
+        positionBundleMintKey.toBuffer(),
+        Buffer.from(bundleIndex.toString()),
+      ],
+      programId
+    );
+  }
+
+  /**
+   * @category Program Derived Addresses
+   * @param programId
+   * @param positionBundleMintKey
+   * @returns
+   */
+  public static getPositionBundle(
+    programId: PublicKey,
+    positionBundleMintKey: PublicKey,
+  ) {
+    return AddressUtil.findProgramAddress(
+      [
+        Buffer.from(PDA_POSITION_BUNDLE_SEED),
+        positionBundleMintKey.toBuffer(),
+      ],
+      programId
+    );
+  }
+
+  /**
+   * @category Program Derived Addresses
+   * @param positionBundleMintKey
+   * @returns
+   */
+  public static getPositionBundleMetadata(positionBundleMintKey: PublicKey) {
+    return AddressUtil.findProgramAddress(
+      [
+        Buffer.from(PDA_METADATA_SEED),
+        METADATA_PROGRAM_ADDRESS.toBuffer(),
+        positionBundleMintKey.toBuffer(),
+      ],
+      METADATA_PROGRAM_ADDRESS
     );
   }
 }

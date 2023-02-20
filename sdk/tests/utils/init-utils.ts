@@ -1,6 +1,4 @@
-
-
-import { AddressUtil, MathUtil, PDA } from "@orca-so/common-sdk";
+import { deriveATA, AddressUtil, MathUtil, PDA } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
 import { NATIVE_MINT, u64 } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
@@ -34,6 +32,7 @@ import {
   generateDefaultInitFeeTierParams,
   generateDefaultInitPoolParams,
   generateDefaultInitTickArrayParams,
+  generateDefaultOpenBundledPositionParams,
   generateDefaultOpenPositionParams,
   TestConfigParams,
   TestWhirlpoolsConfigKeypairs,
@@ -848,4 +847,103 @@ export async function initTestPoolWithLiquidity(ctx: WhirlpoolContext) {
     tokenAccountB,
     tickArrays,
   };
+}
+
+export async function initializePositionBundleWithMetadata(
+  ctx: WhirlpoolContext,
+  owner: PublicKey = ctx.provider.wallet.publicKey,
+  funder?: Keypair
+) {
+  const positionBundleMintKeypair = Keypair.generate();
+  const positionBundlePda = PDAUtil.getPositionBundle(ctx.program.programId, positionBundleMintKeypair.publicKey);
+  const positionBundleMetadataPda = PDAUtil.getPositionBundleMetadata(positionBundleMintKeypair.publicKey);
+  const positionBundleTokenAccount = await deriveATA(owner, positionBundleMintKeypair.publicKey);
+
+  const tx = toTx(ctx, WhirlpoolIx.initializePositionBundleWithMetadataIx(
+    ctx.program,
+    {
+      positionBundleMintKeypair,
+      positionBundlePda,
+      positionBundleMetadataPda,
+      owner,
+      positionBundleTokenAccount,
+      funder: !!funder ? funder.publicKey : owner,
+    },
+  ));
+  if (funder) {
+    tx.addSigner(funder);
+  }
+
+  const txId = await tx.buildAndExecute();
+
+  return {
+    txId,
+    positionBundleMintKeypair,
+    positionBundlePda,
+    positionBundleMetadataPda,
+    positionBundleTokenAccount,
+  };
+}
+
+export async function initializePositionBundle(
+  ctx: WhirlpoolContext,
+  owner: PublicKey = ctx.provider.wallet.publicKey,
+  funder?: Keypair
+) {
+  const positionBundleMintKeypair = Keypair.generate();
+  const positionBundlePda = PDAUtil.getPositionBundle(ctx.program.programId, positionBundleMintKeypair.publicKey);
+  const positionBundleTokenAccount = await deriveATA(owner, positionBundleMintKeypair.publicKey);
+
+  const tx = toTx(ctx, WhirlpoolIx.initializePositionBundleIx(
+    ctx.program,
+    {
+      positionBundleMintKeypair,
+      positionBundlePda,
+      owner,
+      positionBundleTokenAccount,
+      funder: !!funder ? funder.publicKey : owner,
+    },
+  ));
+  if (funder) {
+    tx.addSigner(funder);
+  }
+
+  const txId = await tx.buildAndExecute();
+
+  return {
+    txId,
+    positionBundleMintKeypair,
+    positionBundlePda,
+    positionBundleTokenAccount,
+  };
+}
+
+export async function openBundledPosition(
+  ctx: WhirlpoolContext,
+  whirlpool: PublicKey,
+  positionBundleMint: PublicKey,
+  bundleIndex: number,
+  tickLowerIndex: number,
+  tickUpperIndex: number,
+  owner: PublicKey = ctx.provider.wallet.publicKey,
+  funder?: Keypair
+) {
+  const { params } = await generateDefaultOpenBundledPositionParams(
+    ctx,
+    whirlpool,
+    positionBundleMint,
+    bundleIndex,  
+    tickLowerIndex,
+    tickUpperIndex,
+    owner,
+    funder?.publicKey || owner
+  );
+
+  const tx = toTx(ctx, WhirlpoolIx.openBundledPositionIx(ctx.program, params));
+  if (funder) {
+    tx.addSigner(funder);
+  }
+  
+  const txId = await tx.buildAndExecute();
+  return { txId, params };
 }

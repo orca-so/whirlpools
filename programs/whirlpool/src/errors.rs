@@ -106,6 +106,15 @@ pub enum ErrorCode {
     InvalidIntermediaryMint, //0x1799
     #[msg("Duplicate two hop pool")]
     DuplicateTwoHopPool, //0x179a
+
+    #[msg("Bundle index is out of bounds")]
+    InvalidBundleIndex, //0x179b
+    #[msg("Position has already been opened")]
+    BundledPositionAlreadyOpened, //0x179c
+    #[msg("Position has already been closed")]
+    BundledPositionAlreadyClosed, //0x179d
+    #[msg("Unable to delete PositionBundle with open positions")]
+    PositionBundleNotDeletable, //0x179e
 }
 
 impl From<TryFromIntError> for ErrorCode {

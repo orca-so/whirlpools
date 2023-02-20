@@ -7,6 +7,7 @@ import {
   TickArrayData,
   AccountName,
   FeeTierData,
+  PositionBundleData,
 } from "../../types/public";
 import { BorshAccountsCoder, Idl } from "@project-serum/anchor";
 import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
@@ -134,6 +135,27 @@ export class ParsableFeeTier {
 /**
  * @category Parsables
  */
+@staticImplements<ParsableEntity<PositionBundleData>>()
+export class ParsablePositionBundle {
+  private constructor() {}
+
+  public static parse(data: Buffer | undefined | null): PositionBundleData | null {
+    if (!data) {
+      return null;
+    }
+
+    try {
+      return parseAnchorAccount(AccountName.PositionBundle, data);
+    } catch (e) {
+      console.error(`error while parsing PositionBundle: ${e}`);
+      return null;
+    }
+  }
+} 
+
+/**
+ * @category Parsables
+ */
 @staticImplements<ParsableEntity<AccountInfo>>()
 export class ParsableTokenInfo {
   private constructor() {}
@@ -173,7 +195,7 @@ export class ParsableMintInfo {
         decimals: buffer.decimals,
         isInitialized: buffer.isInitialized !== 0,
         freezeAuthority:
-          buffer.freezeAuthority === 0 ? null : new PublicKey(buffer.freezeAuthority),
+          buffer.freezeAuthorityOption === 0 ? null : new PublicKey(buffer.freezeAuthority),
       };
 
       return mintInfo;

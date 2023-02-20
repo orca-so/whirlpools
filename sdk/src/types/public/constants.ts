@@ -52,6 +52,12 @@ export const MIN_SQRT_PRICE = "4295048016";
 export const TICK_ARRAY_SIZE = 88;
 
 /**
+ * The number of bundled positions that a position-bundle account can hold.
+ * @category Constants
+ */
+export const POSITION_BUNDLE_SIZE = 256;
+
+/**
  * @category Constants
  */
 export const METADATA_PROGRAM_ADDRESS = new PublicKey(
@@ -75,3 +81,11 @@ export const PROTOCOL_FEE_RATE_MUL_VALUE = new BN(10_000);
  * @category Constants
  */
 export const FEE_RATE_MUL_VALUE = new BN(1_000_000);
+
+/**
+ * The public key that is allowed to update the metadata of Whirlpool NFTs.
+ * @category Constants
+ */
+export const WHIRLPOOL_NFT_UPDATE_AUTH = new PublicKey(
+  "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr"
+);

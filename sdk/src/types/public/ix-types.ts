@@ -27,6 +27,10 @@ export {
   SwapInput,
   SwapParams,
   UpdateFeesAndRewardsParams,
+  InitializePositionBundleParams,
+  DeletePositionBundleParams,
+  OpenBundledPositionParams,
+  CloseBundledPositionParams,
 } from "../../instructions/";
 export {
   CollectAllParams,

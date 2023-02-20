@@ -2,9 +2,12 @@ import { ZERO } from "@orca-so/common-sdk";
 import { web3 } from "@project-serum/anchor";
 import { PublicKey, Keypair } from "@solana/web3.js";
 import { BN } from "bn.js";
+import invariant from "tiny-invariant";
 import {
   AccountFetcher,
   PDAUtil,
+  PositionBundleData,
+  POSITION_BUNDLE_SIZE,
   PriceMath,
   TickArray,
   TickArrayData,
@@ -98,3 +101,16 @@ export async function getTickArrays(
     };
   });
 }
+
+export const buildPositionBundleData = (occupiedBundleIndexes: number[]): PositionBundleData => {
+  invariant(POSITION_BUNDLE_SIZE % 8 == 0, "POSITION_BUNDLE_SIZE should be multiple of 8");
+
+  const positionBundleMint = Keypair.generate().publicKey;
+  const positionBitmap: number[] = new Array(POSITION_BUNDLE_SIZE / 8).fill(0);
+  occupiedBundleIndexes.forEach((bundleIndex) => {
+    const index = Math.floor(bundleIndex / 8);
+    const offset = bundleIndex % 8;
+    positionBitmap[index] = positionBitmap[index] | (1 << offset);
+  });
+  return { positionBundleMint, positionBitmap };
+};

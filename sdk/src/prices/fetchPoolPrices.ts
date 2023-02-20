@@ -1,15 +1,10 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
+import { DecimalsMap, defaultConfig, PoolMap, PriceMap, TickArrayMap } from ".";
 import { WhirlpoolContext } from "../context";
-import {
-  ORCA_SUPPORTED_TICK_SPACINGS,
-  ORCA_WHIRLPOOLS_CONFIG,
-  ORCA_WHIRLPOOL_PROGRAM_ID,
-  TOKEN_MINTS,
-} from "../types/public";
 import { SwapUtils, PDAUtil, PoolUtil } from "../utils/public";
 import { convertListToMap } from "../utils/txn-utils";
-import { calculatePoolPrices, PoolMap, PriceMap, TickArrayMap } from "./calculatePoolPrices";
+import { calculatePoolPrices } from "./calculatePoolPrices";
 
 /**
  * fetchPoolPrices asynchronously fetches the prices for the given mints.
@@ -21,33 +16,53 @@ import { calculatePoolPrices, PoolMap, PriceMap, TickArrayMap } from "./calculat
  */
 export async function fetchPoolPrices(
   ctx: WhirlpoolContext,
-  mints: PublicKey[]
+  mints: PublicKey[],
+  config = defaultConfig
 ): Promise<PriceMap> {
-  const poolMap = await getPoolsForMints(ctx, mints);
-  const tickArrayMap = await getTickArraysForPools(ctx, poolMap);
+  const poolMap = await fetchPoolsForMints(ctx, mints, config);
+  const tickArrayMap = await fetchTickArraysForPools(ctx, poolMap, config);
+  const decimalsMap = await fetchDecimalsForMints(ctx, mints);
 
-  return calculatePoolPrices(mints, poolMap, tickArrayMap);
+  return calculatePoolPrices(mints, poolMap, tickArrayMap, decimalsMap);
 }
 
-async function getPoolsForMints(
+export async function fetchDecimalsForMints(
+  ctx: WhirlpoolContext,
+  mints: PublicKey[]
+): Promise<DecimalsMap> {
+  const mintInfos = await ctx.fetcher.listMintInfos(mints, true);
+  return mintInfos.reduce((acc, mintInfo, index) => {
+    if (!mintInfo) {
+      throw new Error(`Mint account does not exist: ${mints[index].toBase58()}`);
+    }
+
+    acc[mints[index].toBase58()] = mintInfo.decimals;
+    return acc;
+  }, {} as DecimalsMap);
+}
+
+export async function fetchPoolsForMints(
   ctx: WhirlpoolContext,
   mints: PublicKey[],
-  baseTokens = [TOKEN_MINTS["USDC"], TOKEN_MINTS["SOL"]]
+  config = defaultConfig
 ): Promise<PoolMap> {
+  const { quoteTokens, tickSpacings, programId, whirlpoolsConfig } = config;
   const poolAddresses: string[] = mints
     .map((mint): string[] =>
-      ORCA_SUPPORTED_TICK_SPACINGS.map((tickSpacing): string[] => {
-        return baseTokens.map((baseToken): string => {
-          const [mintA, mintB] = PoolUtil.orderMints(mint, baseToken);
-          return PDAUtil.getWhirlpool(
-            ORCA_WHIRLPOOL_PROGRAM_ID,
-            ORCA_WHIRLPOOLS_CONFIG,
-            AddressUtil.toPubKey(mintA),
-            AddressUtil.toPubKey(mintB),
-            tickSpacing
-          ).publicKey.toBase58();
-        });
-      }).flat()
+      tickSpacings
+        .map((tickSpacing): string[] => {
+          return quoteTokens.map((quoteToken): string => {
+            const [mintA, mintB] = PoolUtil.orderMints(mint, quoteToken);
+            return PDAUtil.getWhirlpool(
+              programId,
+              whirlpoolsConfig,
+              AddressUtil.toPubKey(mintA),
+              AddressUtil.toPubKey(mintB),
+              tickSpacing
+            ).publicKey.toBase58();
+          });
+        })
+        .flat()
     )
     .flat();
 
@@ -75,14 +90,20 @@ function filterNullObjects<T, K>(
   return [filteredFirstArray, filteredSecondArray];
 }
 
-async function getTickArraysForPools(ctx: WhirlpoolContext, pools: PoolMap): Promise<TickArrayMap> {
+export async function fetchTickArraysForPools(
+  ctx: WhirlpoolContext,
+  pools: PoolMap,
+  config = defaultConfig
+): Promise<TickArrayMap> {
+  const { programId } = config;
   const tickArrayAddresses = Object.entries(pools)
     .map(([poolAddress, pool]): PublicKey[] => {
       return SwapUtils.getTickArrayPublicKeys(
         pool.tickCurrentIndex,
         pool.tickSpacing,
+        // TODO: Fetch tick arrays in the correct direction or fetch tick arrays in both directions
         true,
-        ORCA_WHIRLPOOL_PROGRAM_ID,
+        programId,
         new PublicKey(poolAddress)
       );
     })

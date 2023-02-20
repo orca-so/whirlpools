@@ -9,6 +9,7 @@ export * from "./types/public";
 export * from "./types/public/anchor-types";
 export * from "./utils/public";
 export * from "./whirlpool-client";
+export * from "./prices";
 
 // Global rules for Decimals
 //  - 40 digits of precision for the largest number

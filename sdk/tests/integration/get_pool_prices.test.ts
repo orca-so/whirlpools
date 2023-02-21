@@ -4,7 +4,9 @@ import {
   fetchDecimalsForMints,
   fetchPoolsForMints,
   fetchTickArraysForPools,
+  GetPricesConfig,
   PriceMath,
+  ThresholdConfig,
   WhirlpoolContext,
 } from "../../src";
 import { TickSpacing } from "../utils";
@@ -18,40 +20,28 @@ import * as assert from "assert";
 import { u64 } from "@solana/spl-token";
 import Decimal from "decimal.js";
 import { MathUtil } from "@orca-so/common-sdk";
+import { PublicKey } from "@solana/web3.js";
 
 describe("get_pool_prices", () => {
   const provider = anchor.AnchorProvider.env();
   const program = anchor.workspace.Whirlpool;
   const context = WhirlpoolContext.fromWorkspace(provider, program);
 
-  it("successfully calculates the price for one token with a single pool", async () => {
-    // Initialize pool
-    const { poolInitInfo, configInitInfo } = await initTestPoolWithLiquidity(context);
-
-    const config = {
-      quoteTokens: [poolInitInfo.tokenMintB.toBase58()],
-      tickSpacings: [TickSpacing.Standard],
-      programId: program.programId,
-      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
-    };
-
-    const thresholdConfig = {
-      amountThreshold: new u64(100),
-      priceImpactThreshold: 1.05,
-    };
-
-    const mints = [poolInitInfo.tokenMintA, poolInitInfo.tokenMintB];
-
-    // fetch PoolMap
+  async function fetchMaps(context: WhirlpoolContext, mints: PublicKey[], config: GetPricesConfig) {
     const poolMap = await fetchPoolsForMints(context, mints, config);
-
-    // fetch TickArrayMap
     const tickArrayMap = await fetchTickArraysForPools(context, poolMap);
-
     const decimalsMap = await fetchDecimalsForMints(context, mints);
 
-    assert.equal(Object.keys(poolMap).length, 1);
-    assert.equal(Object.keys(tickArrayMap).length, 3);
+    return { poolMap, tickArrayMap, decimalsMap };
+  }
+
+  async function fetchAndCalculate(
+    context: WhirlpoolContext,
+    mints: PublicKey[],
+    config: GetPricesConfig,
+    thresholdConfig: ThresholdConfig
+  ) {
+    const { poolMap, tickArrayMap, decimalsMap } = await fetchMaps(context, mints, config);
 
     const priceMap = calculatePoolPrices(
       mints,
@@ -61,6 +51,45 @@ describe("get_pool_prices", () => {
       config,
       thresholdConfig
     );
+
+    return {
+      poolMap,
+      tickArrayMap,
+      decimalsMap,
+      priceMap,
+    };
+  }
+
+  function getDefaultThresholdConfig() {
+    return {
+      amountThreshold: new u64(100),
+      priceImpactThreshold: 1.05,
+    };
+  }
+
+  it("successfully calculates the price for one token with a single pool", async () => {
+    const { poolInitInfo, configInitInfo } = await initTestPoolWithLiquidity(context);
+
+    const config = {
+      quoteTokens: [poolInitInfo.tokenMintB.toBase58()],
+      tickSpacings: [TickSpacing.Standard],
+      programId: program.programId,
+      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+    };
+
+    const thresholdConfig = getDefaultThresholdConfig();
+
+    const mints = [poolInitInfo.tokenMintA, poolInitInfo.tokenMintB];
+
+    const { poolMap, tickArrayMap, priceMap } = await fetchAndCalculate(
+      context,
+      mints,
+      config,
+      thresholdConfig
+    );
+
+    assert.equal(Object.keys(poolMap).length, 1);
+    assert.equal(Object.keys(tickArrayMap).length, 3);
 
     assert.equal(Object.keys(priceMap).length, 2);
   });
@@ -106,33 +135,19 @@ describe("get_pool_prices", () => {
       whirlpoolsConfig: configParams.configInitInfo.whirlpoolsConfigKeypair.publicKey,
     };
 
-    const thresholdConfig = {
-      amountThreshold: new u64(100),
-      priceImpactThreshold: 1.05,
-    };
+    const thresholdConfig = getDefaultThresholdConfig();
 
     const mints = [mintKeys[0], mintKeys[1], mintKeys[2]];
 
-    // fetch PoolMap
-    const poolMap = await fetchPoolsForMints(context, mints, config);
-
-    // fetch TickArrayMap
-    const tickArrayMap = await fetchTickArraysForPools(context, poolMap);
-
-    const decimalsMap = await fetchDecimalsForMints(context, mints);
-
-    assert.equal(Object.keys(poolMap).length, 2);
-    assert.equal(Object.keys(tickArrayMap).length, 6);
-
-    const priceMap = calculatePoolPrices(
+    const { poolMap, tickArrayMap, priceMap } = await fetchAndCalculate(
+      context,
       mints,
-      poolMap,
-      tickArrayMap,
-      decimalsMap,
       config,
       thresholdConfig
     );
 
+    assert.equal(Object.keys(poolMap).length, 2);
+    assert.equal(Object.keys(tickArrayMap).length, 6);
     assert.equal(Object.keys(priceMap).length, 3);
   });
 
@@ -148,7 +163,6 @@ describe("get_pool_prices", () => {
     // Add tick arrays and positions
     const aToB = false;
 
-    // TODO: Adjust tick indices for 64 tick spacing
     aqConfig.initTickArrayRangeParams.push({
       poolIndex: 0,
       startTickIndex: 22528,
@@ -188,36 +202,17 @@ describe("get_pool_prices", () => {
       whirlpoolsConfig: configParams.configInitInfo.whirlpoolsConfigKeypair.publicKey,
     };
 
-    const thresholdConfig = {
-      amountThreshold: new u64(100),
-      priceImpactThreshold: 1.05,
-    };
+    const thresholdConfig = getDefaultThresholdConfig();
 
     const mints = [mintKeys[0], mintKeys[1]];
 
-    // fetch PoolMap
-    const poolMap = await fetchPoolsForMints(context, mints, config);
-
-    // fetch TickArrayMap
-    const tickArrayMap = await fetchTickArraysForPools(context, poolMap);
-
-    const decimalsMap = await fetchDecimalsForMints(context, mints);
+    const { poolMap, priceMap } = await fetchAndCalculate(context, mints, config, thresholdConfig);
 
     assert.equal(Object.keys(poolMap).length, 2);
-
-    const priceMap = calculatePoolPrices(
-      mints,
-      poolMap,
-      tickArrayMap,
-      decimalsMap,
-      config,
-      thresholdConfig
-    );
-
     assert.equal(Object.keys(priceMap).length, 2);
   });
 
-  it.only("successfully calculates the price for one token which requires an indirect pool to calculate price", async () => {
+  it("successfully calculates the price for one token which requires an indirect pool to calculate price", async () => {
     const aqConfig = getDefaultAquarium();
     // Add a third token and account and a second pool
     aqConfig.initMintParams.push({});
@@ -258,32 +253,19 @@ describe("get_pool_prices", () => {
       whirlpoolsConfig: configParams.configInitInfo.whirlpoolsConfigKeypair.publicKey,
     };
 
-    const thresholdConfig = {
-      amountThreshold: new u64(100),
-      priceImpactThreshold: 1.05,
-    };
+    const thresholdConfig = getDefaultThresholdConfig();
 
     const mints = [mintKeys[0], mintKeys[1], mintKeys[2]];
 
-    // fetch PoolMap
-    const poolMap = await fetchPoolsForMints(context, mints, config);
-
-    // fetch TickArrayMap
-    const tickArrayMap = await fetchTickArraysForPools(context, poolMap);
-
-    const decimalsMap = await fetchDecimalsForMints(context, mints);
-
-    assert.equal(Object.keys(poolMap).length, 2);
-    assert.equal(Object.keys(tickArrayMap).length, 6);
-
-    const priceMap = calculatePoolPrices(
+    const { poolMap, tickArrayMap, priceMap } = await fetchAndCalculate(
+      context,
       mints,
-      poolMap,
-      tickArrayMap,
-      decimalsMap,
       config,
       thresholdConfig
     );
+
+    assert.equal(Object.keys(poolMap).length, 2);
+    assert.equal(Object.keys(tickArrayMap).length, 6);
 
     assert.equal(Object.keys(priceMap).length, 3);
   });

@@ -98,14 +98,24 @@ export async function fetchTickArraysForPools(
   const { programId } = config;
   const tickArrayAddresses = Object.entries(pools)
     .map(([poolAddress, pool]): PublicKey[] => {
-      return SwapUtils.getTickArrayPublicKeys(
+      const aToBTickArrayPublicKeys = SwapUtils.getTickArrayPublicKeys(
         pool.tickCurrentIndex,
         pool.tickSpacing,
-        // TODO: Fetch tick arrays in the correct direction or fetch tick arrays in both directions
         true,
         programId,
         new PublicKey(poolAddress)
       );
+
+      const bToATickArrayPublicKeys = SwapUtils.getTickArrayPublicKeys(
+        pool.tickCurrentIndex,
+        pool.tickSpacing,
+        false,
+        programId,
+        new PublicKey(poolAddress)
+      );
+
+      // Fetch tick arrays in both directions
+      return [...aToBTickArrayPublicKeys, ...bToATickArrayPublicKeys.slice(1)];
     })
     .flat()
     .map((tickArray): string => tickArray.toBase58());

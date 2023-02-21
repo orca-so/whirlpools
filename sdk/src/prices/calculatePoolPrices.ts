@@ -1,4 +1,4 @@
-import { AddressUtil, Percentage } from "@orca-so/common-sdk";
+import { AddressUtil, DecimalUtil, Percentage } from "@orca-so/common-sdk";
 import { Address, BN, translateAddress } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -17,6 +17,10 @@ import { swapQuoteWithParams } from "../quotes/public/swap-quote";
 import { TickArray, WhirlpoolData } from "../types/public";
 import { PoolUtil, PriceMath, SwapUtils } from "../utils/public";
 import { PDAUtil } from "../utils/public/pda-utils";
+
+function areQuoteTokensInMintsArray(mints: PublicKey[], quoteTokens: string[]): boolean {
+  return quoteTokens.every((quoteToken) => mints.some((mint) => mint.toBase58() === quoteToken));
+}
 
 /**
  * calculatePoolPrices will calculate the price of each token in the given mints array
@@ -41,6 +45,10 @@ export function calculatePoolPrices(
   thresholdConfig = defaultThresholdConfig
 ): PriceMap {
   // Ensure that quote tokens are in the mints array
+  if (!areQuoteTokensInMintsArray(mints, config.quoteTokens)) {
+    throw new Error("Quote tokens must be in mints array");
+  }
+
   const mintSet = new Set(mints.map((mint) => mint.toBase58()));
   config.quoteTokens.forEach((quoteToken) => mintSet.add(quoteToken));
   mints = Array.from(mintSet).map((mint) => new PublicKey(mint));
@@ -69,8 +77,10 @@ export function calculatePoolPrices(
     // Populate the price map with any prices that were calculated
     // Use the price of the quote token against the first quote token
     mints.forEach((mint) => {
+      // Get the price of the mint token against the quote token
       const mintPrice = price[mint.toBase58()];
-      const quoteTokenPrice = prices[quoteToken.toBase58()];
+      // Get the price of the quote token against the first quote token
+      const quoteTokenPrice = prices[quoteToken.toBase58()] || price[quoteToken.toBase58()];
       if (mintPrice != null && quoteTokenPrice != null) {
         prices[mint.toBase58()] = mintPrice.mul(quoteTokenPrice);
       }
@@ -87,7 +97,8 @@ function checkLiquidityThreshold(
   pool: WhirlpoolData,
   tickArrays: TickArray[],
   aToB: boolean,
-  thresholdConfig: ThresholdConfig
+  thresholdConfig: ThresholdConfig,
+  decimalsMap: DecimalsMap
 ): boolean {
   const { amountThreshold, priceImpactThreshold } = thresholdConfig;
   const { estimatedAmountOut } = swapQuoteWithParams(
@@ -103,17 +114,27 @@ function checkLiquidityThreshold(
     Percentage.fromDecimal(new Decimal(0))
   );
 
-  // Calculate the price of base token against the quote token
-  // The input token is the quote token. We want Base/Quote.
-  // If aToB is true, then A is the quote token and B/A is the correct price.
+  const price = getPrice(pool, decimalsMap).pow(aToB ? 1 : -1);
 
-  // TODO: Convert everything to decimals, I guess?
-  const price = new Decimal(pool.sqrtPrice.toString()).pow(aToB ? 2 : -2);
-  const amountOutThreshold = new BN(
-    new Decimal(amountThreshold.toString()).mul(price).mul(priceImpactThreshold).toString()
-  );
+  const inputDecimals = decimalsMap[aToB ? pool.tokenMintA.toBase58() : pool.tokenMintB.toBase58()];
+  const outputDecimals =
+    decimalsMap[aToB ? pool.tokenMintB.toBase58() : pool.tokenMintA.toBase58()];
 
-  return estimatedAmountOut.lt(amountOutThreshold);
+  const amountInDecimals = DecimalUtil.fromU64(amountThreshold, inputDecimals);
+
+  const estimatedAmountOutInDecimals = DecimalUtil.fromU64(estimatedAmountOut, outputDecimals);
+
+  const amountOutThreshold = amountInDecimals
+    .mul(price)
+    .div(priceImpactThreshold)
+    .toDecimalPlaces(outputDecimals);
+
+  // console.log("amountInDecimals", amountInDecimals.toString());
+  // console.log("price", price.toString());
+  // console.log("estimatedAmountOutInDecimals", estimatedAmountOutInDecimals.toString());
+  // console.log("amountOutThreshold", amountOutThreshold.toString());
+
+  return amountOutThreshold.lte(estimatedAmountOutInDecimals);
 
   // TODO: Calculate the opposite direction
 }
@@ -143,7 +164,7 @@ function getMostLiquidPool(
     return null;
   }
 
-  return pools.reduce<TickSpacingAccumulator>((acc, { address, pool }) => {
+  return pools.slice(1).reduce<TickSpacingAccumulator>((acc, { address, pool }) => {
     if (pool.liquidity.lt(acc.pool.liquidity)) {
       return acc;
     }
@@ -179,7 +200,13 @@ function calculatePricesForQuoteToken(
 
       const tickArrays = getTickArrays(pool, address, aToB, tickArrayMap, config);
 
-      const thresholdPassed = checkLiquidityThreshold(pool, tickArrays, aToB, thresholdConfig);
+      const thresholdPassed = checkLiquidityThreshold(
+        pool,
+        tickArrays,
+        aToB,
+        thresholdConfig,
+        decimalsMap
+      );
 
       if (!thresholdPassed) {
         return [mint.toBase58(), null];
@@ -214,11 +241,15 @@ function getTickArrays(
 }
 
 function getPrice(pool: WhirlpoolData, decimalsMap: DecimalsMap) {
-  const tokenA = decimalsMap[pool.tokenMintA.toBase58()];
-  const tokenB = decimalsMap[pool.tokenMintB.toBase58()];
-  if (!tokenA || !tokenB) {
+  const tokenAAddress = pool.tokenMintA.toBase58();
+  const tokenBAddress = pool.tokenMintB.toBase58();
+  if (!(tokenAAddress in decimalsMap) || !(tokenBAddress in decimalsMap)) {
     throw new Error("Missing token decimals");
   }
 
-  return PriceMath.sqrtPriceX64ToPrice(pool.sqrtPrice, tokenA, tokenB);
+  return PriceMath.sqrtPriceX64ToPrice(
+    pool.sqrtPrice,
+    decimalsMap[tokenAAddress],
+    decimalsMap[tokenBAddress]
+  );
 }

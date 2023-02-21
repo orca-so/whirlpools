@@ -298,7 +298,7 @@ export async function buildTestPoolParams(
   defaultFeeRate = 3000,
   initSqrtPrice = DEFAULT_SQRT_PRICE,
   funder?: PublicKey,
-  tokenAIsNative = false
+  reuseTokenA?: PublicKey
 ) {
   const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
   await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
@@ -317,7 +317,7 @@ export async function buildTestPoolParams(
     tickSpacing,
     initSqrtPrice,
     funder,
-    tokenAIsNative
+    reuseTokenA
   );
   return {
     configInitInfo,
@@ -338,7 +338,7 @@ export async function initTestPool(
   tickSpacing: number,
   initSqrtPrice = DEFAULT_SQRT_PRICE,
   funder?: Keypair,
-  tokenAIsNative = false
+  reuseTokenA?: PublicKey
 ) {
   const poolParams = await buildTestPoolParams(
     ctx,
@@ -346,10 +346,10 @@ export async function initTestPool(
     3000,
     initSqrtPrice,
     funder?.publicKey,
-    tokenAIsNative
+    reuseTokenA
   );
 
-  return await initTestPoolFromParams(ctx, poolParams, funder);
+  return initTestPoolFromParams(ctx, poolParams, funder);
 }
 
 export async function initTestPoolFromParams(
@@ -553,16 +553,16 @@ export async function initTestPoolWithTokens(
   tickSpacing: number,
   initSqrtPrice = DEFAULT_SQRT_PRICE,
   mintAmount = new anchor.BN("15000000000"),
-  tokenAIsNative = false
+  reuseTokenA?: PublicKey
 ) {
   const provider = ctx.provider;
 
-  const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPool(
+  const { poolInitInfo, configInitInfo, configKeypairs, feeTierParams } = await initTestPool(
     ctx,
     tickSpacing,
     initSqrtPrice,
     undefined,
-    tokenAIsNative
+    reuseTokenA
   );
 
   const { tokenMintA, tokenMintB, whirlpoolPda } = poolInitInfo;
@@ -594,6 +594,7 @@ export async function initTestPoolWithTokens(
     poolInitInfo,
     configInitInfo,
     configKeypairs,
+    feeTierParams,
     whirlpoolPda,
     tokenAccountA,
     tokenAccountB,
@@ -824,15 +825,27 @@ export async function fundPositions(
   );
 }
 
-export async function initTestPoolWithLiquidity(ctx: WhirlpoolContext) {
+export async function initTestPoolWithLiquidity(
+  ctx: WhirlpoolContext,
+  initSqrtPrice = DEFAULT_SQRT_PRICE,
+  mintAmount = new anchor.BN("15000000000"),
+  reuseTokenA?: PublicKey
+) {
   const {
     poolInitInfo,
     configInitInfo,
     configKeypairs,
+    feeTierParams,
     whirlpoolPda,
     tokenAccountA,
     tokenAccountB,
-  } = await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+  } = await initTestPoolWithTokens(
+    ctx,
+    TickSpacing.Standard,
+    initSqrtPrice,
+    mintAmount,
+    reuseTokenA
+  );
 
   const tickArrays = await initTickArrayRange(
     ctx,
@@ -867,5 +880,6 @@ export async function initTestPoolWithLiquidity(ctx: WhirlpoolContext) {
     tokenAccountA,
     tokenAccountB,
     tickArrays,
+    feeTierParams,
   };
 }

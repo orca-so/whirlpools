@@ -19,15 +19,6 @@ import { TickArray, WhirlpoolData } from "../types/public";
 import { PoolUtil, PriceMath, SwapUtils } from "../utils/public";
 import { PDAUtil } from "../utils/public/pda-utils";
 
-function convertAmount(
-  amount: u64,
-  price: Decimal,
-  amountDecimal: number,
-  resultDecimal: number
-): u64 {
-  return DecimalUtil.toU64(DecimalUtil.fromU64(amount, amountDecimal).div(price), resultDecimal);
-}
-
 /**
  * calculatePoolPrices will calculate the price of each token in the mints array.
  * Each token will be priced against the first quote token in the config.quoteTokens array
@@ -106,12 +97,10 @@ export function calculatePoolPrices(
       }
     );
 
-    // Populate the price map with any prices that were calculated
-    // Use the price of the quote token against the first quote token
+    // Populate the results map with the calculated prices.
+    // Ensure that the price is quoted against the first quote token and not the current quote token.
     remainingMints.forEach((mint) => {
-      // Get the price of the mint token against the quote token
       const mintPrice = prices[mint.toBase58()];
-      // Get the price of the quote token against the first quote token
       const quoteTokenPrice = results[quoteToken.toBase58()] || prices[quoteToken.toBase58()];
       if (mintPrice != null && quoteTokenPrice != null) {
         results[mint.toBase58()] = mintPrice.mul(quoteTokenPrice);
@@ -154,6 +143,7 @@ function checkLiquidity(
     return false;
   }
 
+  // Calculate the maximum amount in that is allowed against the desired output
   let price, inputDecimals, outputDecimals;
   if (aToB) {
     price = getPrice(pool, decimalsMap);
@@ -291,4 +281,13 @@ function getPrice(pool: WhirlpoolData, decimalsMap: DecimalsMap) {
 
 function isSubset(listA: string[], listB: string[]): boolean {
   return listA.every((itemA) => listB.includes(itemA));
+}
+
+function convertAmount(
+  amount: u64,
+  price: Decimal,
+  amountDecimal: number,
+  resultDecimal: number
+): u64 {
+  return DecimalUtil.toU64(DecimalUtil.fromU64(amount, amountDecimal).div(price), resultDecimal);
 }

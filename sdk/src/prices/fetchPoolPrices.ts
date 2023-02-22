@@ -3,7 +3,7 @@ import { PublicKey } from "@solana/web3.js";
 import { DecimalsMap, defaultConfig, PoolMap, PriceMap, TickArrayMap } from ".";
 import { WhirlpoolContext } from "../context";
 import { SwapUtils, PDAUtil, PoolUtil } from "../utils/public";
-import { convertListToMap } from "../utils/txn-utils";
+import { convertListToMap, filterNullObjects } from "../utils/txn-utils";
 import { calculatePoolPrices } from "./calculatePoolPrices";
 
 /**
@@ -17,20 +17,22 @@ import { calculatePoolPrices } from "./calculatePoolPrices";
 export async function fetchPoolPrices(
   ctx: WhirlpoolContext,
   mints: PublicKey[],
-  config = defaultConfig
+  config = defaultConfig,
+  refresh = true
 ): Promise<PriceMap> {
-  const poolMap = await fetchPoolsForMints(ctx, mints, config);
-  const tickArrayMap = await fetchTickArraysForPools(ctx, poolMap, config);
-  const decimalsMap = await fetchDecimalsForMints(ctx, mints);
+  const poolMap = await fetchPoolsForMints(ctx, mints, config, refresh);
+  const tickArrayMap = await fetchTickArraysForPools(ctx, poolMap, config, refresh);
+  const decimalsMap = await fetchDecimalsForMints(ctx, mints, refresh);
 
   return calculatePoolPrices(mints, poolMap, tickArrayMap, decimalsMap);
 }
 
 export async function fetchDecimalsForMints(
   ctx: WhirlpoolContext,
-  mints: PublicKey[]
+  mints: PublicKey[],
+  refresh = true
 ): Promise<DecimalsMap> {
-  const mintInfos = await ctx.fetcher.listMintInfos(mints, true);
+  const mintInfos = await ctx.fetcher.listMintInfos(mints, refresh);
   return mintInfos.reduce((acc, mintInfo, index) => {
     if (!mintInfo) {
       throw new Error(`Mint account does not exist: ${mints[index].toBase58()}`);
@@ -44,7 +46,8 @@ export async function fetchDecimalsForMints(
 export async function fetchPoolsForMints(
   ctx: WhirlpoolContext,
   mints: PublicKey[],
-  config = defaultConfig
+  config = defaultConfig,
+  refresh = true
 ): Promise<PoolMap> {
   const { quoteTokens, tickSpacings, programId, whirlpoolsConfig } = config;
   const poolAddresses: string[] = mints
@@ -66,34 +69,17 @@ export async function fetchPoolsForMints(
     )
     .flat();
 
-  const poolDatas = await ctx.fetcher.listPools(poolAddresses, true);
+  const poolDatas = await ctx.fetcher.listPools(poolAddresses, refresh);
 
   const [filteredPoolDatas, filteredPoolAddresses] = filterNullObjects(poolDatas, poolAddresses);
   return convertListToMap(filteredPoolDatas, filteredPoolAddresses);
 }
 
-// Filter out null objects in the first array and remove the corresponding objects in the second array
-function filterNullObjects<T, K>(
-  firstArray: Array<T | null>,
-  secondArray: Array<K>
-): [Array<T>, Array<K>] {
-  const filteredFirstArray: Array<T> = [];
-  const filteredSecondArray: Array<K> = [];
-
-  firstArray.forEach((item, idx) => {
-    if (item !== null) {
-      filteredFirstArray.push(item);
-      filteredSecondArray.push(secondArray[idx]);
-    }
-  });
-
-  return [filteredFirstArray, filteredSecondArray];
-}
-
 export async function fetchTickArraysForPools(
   ctx: WhirlpoolContext,
   pools: PoolMap,
-  config = defaultConfig
+  config = defaultConfig,
+  refresh = true
 ): Promise<TickArrayMap> {
   const { programId } = config;
   const tickArrayAddresses = Object.entries(pools)
@@ -120,7 +106,7 @@ export async function fetchTickArraysForPools(
     .flat()
     .map((tickArray): string => tickArray.toBase58());
 
-  const tickArrays = await ctx.fetcher.listTickArrays(tickArrayAddresses, true);
+  const tickArrays = await ctx.fetcher.listTickArrays(tickArrayAddresses, refresh);
 
   const [filteredTickArrays, filteredTickArrayAddresses] = filterNullObjects(
     tickArrays,

@@ -22,7 +22,7 @@ import Decimal from "decimal.js";
 import { MathUtil } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 
-describe("get_pool_prices", () => {
+describe.only("get_pool_prices", () => {
   const provider = anchor.AnchorProvider.env();
   const program = anchor.workspace.Whirlpool;
   const context = WhirlpoolContext.fromWorkspace(provider, program);
@@ -60,9 +60,9 @@ describe("get_pool_prices", () => {
     };
   }
 
-  function getDefaultThresholdConfig() {
+  function getDefaultThresholdConfig(): ThresholdConfig {
     return {
-      amountThreshold: new u64(100),
+      amountOut: new u64(100),
       priceImpactThreshold: 1.05,
     };
   }

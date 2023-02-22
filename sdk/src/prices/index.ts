@@ -34,17 +34,17 @@ export const defaultConfig: GetPricesConfig = {
 };
 
 export type ThresholdConfig = {
-  amountThreshold: u64;
+  amountOut: u64;
   priceImpactThreshold: number;
 };
 
 export const defaultThresholdConfig: ThresholdConfig = {
-  amountThreshold: new u64(1_000_000_000),
+  amountOut: new u64(1_000_000_000),
   priceImpactThreshold: 1.05,
 };
 
 export type PoolMap = Record<string, WhirlpoolData>;
 export type TickArrayMap = Record<string, TickArrayData>;
 export type PriceMap = Record<string, Decimal | null>;
-export type TickSpacingAccumulator = { pool: WhirlpoolData; address: PublicKey };
+export type PoolObject = { pool: WhirlpoolData; address: PublicKey };
 export type DecimalsMap = Record<string, number>;

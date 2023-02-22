@@ -11,16 +11,12 @@ import {
   PriceMap,
   ThresholdConfig,
   TickArrayMap,
-  TickSpacingAccumulator,
+  PoolObject,
 } from ".";
 import { swapQuoteWithParams } from "../quotes/public/swap-quote";
 import { TickArray, WhirlpoolData } from "../types/public";
 import { PoolUtil, PriceMath, SwapUtils } from "../utils/public";
 import { PDAUtil } from "../utils/public/pda-utils";
-
-function areQuoteTokensInMintsArray(mints: PublicKey[], quoteTokens: string[]): boolean {
-  return quoteTokens.every((quoteToken) => mints.some((mint) => mint.toBase58() === quoteToken));
-}
 
 /**
  * calculatePoolPrices will calculate the price of each token in the given mints array
@@ -45,17 +41,18 @@ export function calculatePoolPrices(
   thresholdConfig = defaultThresholdConfig
 ): PriceMap {
   // Ensure that quote tokens are in the mints array
-  if (!areQuoteTokensInMintsArray(mints, config.quoteTokens)) {
+  if (
+    !isSubset(
+      config.quoteTokens,
+      mints.map((mint) => mint.toBase58())
+    )
+  ) {
     throw new Error("Quote tokens must be in mints array");
   }
 
-  const mintSet = new Set(mints.map((mint) => mint.toBase58()));
-  config.quoteTokens.forEach((quoteToken) => mintSet.add(quoteToken));
-  mints = Array.from(mintSet).map((mint) => new PublicKey(mint));
-
   const remainingQuoteTokens = config.quoteTokens.map((token) => new PublicKey(token));
 
-  const prices: PriceMap = {};
+  const prices: PriceMap = Object.fromEntries(mints.map((mint) => [mint, null]));
 
   while (remainingQuoteTokens.length > 0 && mints.length > 0) {
     // Get prices for mints using the next token in remainingQuoteTokens as the quote token
@@ -93,50 +90,56 @@ export function calculatePoolPrices(
   return prices;
 }
 
-function checkLiquidityThreshold(
+function checkLiquidity(
   pool: WhirlpoolData,
   tickArrays: TickArray[],
   aToB: boolean,
   thresholdConfig: ThresholdConfig,
   decimalsMap: DecimalsMap
 ): boolean {
-  const { amountThreshold, priceImpactThreshold } = thresholdConfig;
-  const { estimatedAmountOut } = swapQuoteWithParams(
-    {
-      whirlpoolData: pool,
-      aToB,
-      amountSpecifiedIsInput: true,
-      tokenAmount: amountThreshold,
-      otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
-      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-      tickArrays,
-    },
-    Percentage.fromDecimal(new Decimal(0))
-  );
+  const { amountOut, priceImpactThreshold } = thresholdConfig;
 
-  const price = getPrice(pool, decimalsMap).pow(aToB ? 1 : -1);
+  let estimatedAmountIn;
 
-  const inputDecimals = decimalsMap[aToB ? pool.tokenMintA.toBase58() : pool.tokenMintB.toBase58()];
-  const outputDecimals =
-    decimalsMap[aToB ? pool.tokenMintB.toBase58() : pool.tokenMintA.toBase58()];
+  try {
+    ({ estimatedAmountIn } = swapQuoteWithParams(
+      {
+        whirlpoolData: pool,
+        aToB,
+        amountSpecifiedIsInput: false,
+        tokenAmount: amountOut,
+        otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+        sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+        tickArrays,
+      },
+      Percentage.fromDecimal(new Decimal(0))
+    ));
+  } catch (e) {
+    // If a quote could not be generated, assume there is insufficient liquidity
+    return false;
+  }
 
-  const amountInDecimals = DecimalUtil.fromU64(amountThreshold, inputDecimals);
+  let price, inputDecimals, outputDecimals;
+  if (aToB) {
+    price = getPrice(pool, decimalsMap);
+    inputDecimals = decimalsMap[pool.tokenMintA.toBase58()];
+    outputDecimals = decimalsMap[pool.tokenMintB.toBase58()];
+  } else {
+    price = getPrice(pool, decimalsMap).pow(-1);
+    inputDecimals = decimalsMap[pool.tokenMintB.toBase58()];
+    outputDecimals = decimalsMap[pool.tokenMintA.toBase58()];
+  }
 
-  const estimatedAmountOutInDecimals = DecimalUtil.fromU64(estimatedAmountOut, outputDecimals);
+  const amountOutDecimals = DecimalUtil.fromU64(amountOut, inputDecimals);
 
-  const amountOutThreshold = amountInDecimals
+  const estimatedAmountInDecimals = DecimalUtil.fromU64(estimatedAmountIn, outputDecimals);
+
+  const maxAmountIn = amountOutDecimals
     .mul(price)
     .div(priceImpactThreshold)
     .toDecimalPlaces(outputDecimals);
 
-  // console.log("amountInDecimals", amountInDecimals.toString());
-  // console.log("price", price.toString());
-  // console.log("estimatedAmountOutInDecimals", estimatedAmountOutInDecimals.toString());
-  // console.log("amountOutThreshold", amountOutThreshold.toString());
-
-  return amountOutThreshold.lte(estimatedAmountOutInDecimals);
-
-  // TODO: Calculate the opposite direction
+  return estimatedAmountInDecimals.lte(maxAmountIn);
 }
 
 function getMostLiquidPool(
@@ -144,7 +147,7 @@ function getMostLiquidPool(
   mintB: Address,
   poolMap: PoolMap,
   config = defaultConfig
-): TickSpacingAccumulator | null {
+): PoolObject | null {
   const { tickSpacings, programId, whirlpoolsConfig } = config;
   const pools = tickSpacings
     .map((tickSpacing) => {
@@ -164,7 +167,7 @@ function getMostLiquidPool(
     return null;
   }
 
-  return pools.slice(1).reduce<TickSpacingAccumulator>((acc, { address, pool }) => {
+  return pools.slice(1).reduce<PoolObject>((acc, { address, pool }) => {
     if (pool.liquidity.lt(acc.pool.liquidity)) {
       return acc;
     }
@@ -189,7 +192,10 @@ function calculatePricesForQuoteToken(
       }
 
       const [mintA, mintB] = PoolUtil.orderMints(mint, quoteTokenMint);
-      const aToB = translateAddress(mintA).equals(quoteTokenMint);
+
+      // The quote token is the output token.
+      // Therefore, if the quote token is mintB, then we are swapping from mintA to mintB.
+      const aToB = translateAddress(mintB).equals(quoteTokenMint);
 
       const poolCandidate = getMostLiquidPool(mintA, mintB, poolMap, config);
       if (poolCandidate == null) {
@@ -200,20 +206,14 @@ function calculatePricesForQuoteToken(
 
       const tickArrays = getTickArrays(pool, address, aToB, tickArrayMap, config);
 
-      const thresholdPassed = checkLiquidityThreshold(
-        pool,
-        tickArrays,
-        aToB,
-        thresholdConfig,
-        decimalsMap
-      );
+      const isPoolLiquid = checkLiquidity(pool, tickArrays, aToB, thresholdConfig, decimalsMap);
 
-      if (!thresholdPassed) {
+      if (!isPoolLiquid) {
         return [mint.toBase58(), null];
       }
 
       const price = getPrice(pool, decimalsMap);
-      const quotePrice = aToB ? price : price.pow(-1);
+      const quotePrice = aToB ? price.pow(-1) : price;
       return [mint.toBase58(), quotePrice];
     })
   );
@@ -252,4 +252,8 @@ function getPrice(pool: WhirlpoolData, decimalsMap: DecimalsMap) {
     decimalsMap[tokenAAddress],
     decimalsMap[tokenBAddress]
   );
+}
+
+function isSubset(listA: string[], listB: string[]): boolean {
+  return listA.every((itemA) => listB.includes(itemA));
 }

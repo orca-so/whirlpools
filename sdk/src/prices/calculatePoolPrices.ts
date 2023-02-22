@@ -29,18 +29,20 @@ function convertAmount(
 }
 
 /**
- * calculatePoolPrices will calculate the price of each token in the given mints array
- * The price is calculated based on the pool with the highest liquidity
- * In order for the pool to be considered, it must have sufficient liquidity
- * Sufficient liquidity is defined by the thresholdAmount and priceImpactThreshold
- * For example, if the thresholdAmount is 1000 USDC and the priceImpactThreshold is 0.01
- * Then the pool must support 1000 USDC of liquidity without a price impact of 1%
- * In order to calculate sufficient liquidity, the caller of the function must provide
- * the tick arrays required to calculate the price impact
- * @param mints
- * @param poolMap
- * @param tickArrayMap
- * @returns PriceMap
+ * calculatePoolPrices will calculate the price of each token in the mints array.
+ * Each token will be priced against the first quote token in the config.quoteTokens array
+ * with sufficient liquidity. If a token does not have sufficient liquidity against the
+ * first quote token, then it will be priced against the next quote token in the array.
+ * If a token does not have sufficient liquidity against any quote token,
+ * then the price will be set to null.
+ * The threshold for "sufficient liquidity" is defined by the thresholdConfig
+ *
+ * The caller of the function must provide the accounts through the following parameters:
+ *  - poolMap: A map of pool addresses to pool data
+ *  - tickArrayMap: A map of pool addresses to tick array data
+ *  - decimalsMap: A map of token mint addresses to token decimals
+ *
+ * fetchPoolPrices.ts provides functions to fetch these accounts
  */
 export function calculatePoolPrices(
   mints: PublicKey[],

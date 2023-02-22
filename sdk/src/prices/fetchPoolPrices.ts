@@ -15,8 +15,8 @@ import { calculatePoolPrices } from "./calculatePoolPrices";
 
 /**
  * fetchPoolPrices asynchronously fetches the prices for the given mints.
- * The whirlpool accounts and tick array accounts required to calculate the prices are fetched naively.
- * If the caller already has the accounts, it is recommended to use calculatePoolPrices instead.
+ * The accounts required ot calculate the prices are fetched naively.
+ * If the accounts have already been fetched, directly invoke calculatePoolPrices.
  * @param ctx
  * @param mints
  * @returns

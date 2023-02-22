@@ -269,12 +269,4 @@ describe.only("get_pool_prices", () => {
 
     assert.equal(Object.keys(priceMap).length, 3);
   });
-
-  it("fails if missing mint accounts");
-
-  it("does not return a price if insufficient liquidity");
-
-  it("does not return a price if no pools");
-
-  it("does not return a price if missing tick arrays, but provide warning?");
 });

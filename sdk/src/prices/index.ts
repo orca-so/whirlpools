@@ -17,7 +17,7 @@ export type GetPricesConfig = {
   // The first token must be the token that is being priced against the other tokens
   // The subsequent tokens are alternative tokens that can be used to price the first token
   // Tokens must be in base58
-  quoteTokens: string[];
+  quoteTokens: PublicKey[];
   tickSpacings: number[];
   programId: PublicKey;
   whirlpoolsConfig: PublicKey;
@@ -25,7 +25,13 @@ export type GetPricesConfig = {
 
 // Default config for Orca's mainnet deployment.
 // Supply your own if you are using a different deployment.
-export const defaultQuoteTokens: string[] = [TOKEN_MINTS["USDC"], TOKEN_MINTS["SOL"]];
+export const defaultQuoteTokens: PublicKey[] = [
+  TOKEN_MINTS["USDC"],
+  TOKEN_MINTS["SOL"],
+  TOKEN_MINTS["mSOL"],
+  TOKEN_MINTS["stSOL"],
+].map((mint) => new PublicKey(mint));
+
 export const defaultConfig: GetPricesConfig = {
   quoteTokens: defaultQuoteTokens,
   tickSpacings: ORCA_SUPPORTED_TICK_SPACINGS,

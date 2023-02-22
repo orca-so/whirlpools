@@ -70,8 +70,8 @@ describe.only("get_pool_prices", () => {
   it("successfully calculates the price for one token with a single pool", async () => {
     const { poolInitInfo, configInitInfo } = await initTestPoolWithLiquidity(context);
 
-    const config = {
-      quoteTokens: [poolInitInfo.tokenMintB.toBase58()],
+    const config: GetPricesConfig = {
+      quoteTokens: [poolInitInfo.tokenMintB],
       tickSpacings: [TickSpacing.Standard],
       programId: program.programId,
       whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
@@ -128,8 +128,8 @@ describe.only("get_pool_prices", () => {
     const aquarium = (await buildTestAquariums(context, [aqConfig]))[0];
     const { mintKeys, configParams } = aquarium;
 
-    const config = {
-      quoteTokens: [mintKeys[1].toBase58()],
+    const config: GetPricesConfig = {
+      quoteTokens: [mintKeys[1]],
       tickSpacings: [TickSpacing.Standard],
       programId: program.programId,
       whirlpoolsConfig: configParams.configInitInfo.whirlpoolsConfigKeypair.publicKey,
@@ -195,8 +195,8 @@ describe.only("get_pool_prices", () => {
     const aquarium = (await buildTestAquariums(context, [aqConfig]))[0];
     const { mintKeys, configParams } = aquarium;
 
-    const config = {
-      quoteTokens: [mintKeys[1].toBase58()],
+    const config: GetPricesConfig = {
+      quoteTokens: [mintKeys[1]],
       tickSpacings: [TickSpacing.Standard, TickSpacing.SixtyFour],
       programId: program.programId,
       whirlpoolsConfig: configParams.configInitInfo.whirlpoolsConfigKeypair.publicKey,
@@ -246,8 +246,8 @@ describe.only("get_pool_prices", () => {
     const aquarium = (await buildTestAquariums(context, [aqConfig]))[0];
     const { mintKeys, configParams } = aquarium;
 
-    const config = {
-      quoteTokens: [mintKeys[2].toBase58(), mintKeys[1].toBase58()],
+    const config: GetPricesConfig = {
+      quoteTokens: [mintKeys[2], mintKeys[1]],
       tickSpacings: [TickSpacing.Standard],
       programId: program.programId,
       whirlpoolsConfig: configParams.configInitInfo.whirlpoolsConfigKeypair.publicKey,

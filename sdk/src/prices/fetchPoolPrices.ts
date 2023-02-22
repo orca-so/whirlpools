@@ -1,6 +1,13 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { DecimalsMap, defaultConfig, PoolMap, PriceMap, TickArrayMap } from ".";
+import {
+  DecimalsMap,
+  defaultConfig,
+  defaultThresholdConfig,
+  PoolMap,
+  PriceMap,
+  TickArrayMap,
+} from ".";
 import { WhirlpoolContext } from "../context";
 import { SwapUtils, PDAUtil, PoolUtil } from "../utils/public";
 import { convertListToMap, filterNullObjects } from "../utils/txn-utils";
@@ -18,13 +25,14 @@ export async function fetchPoolPrices(
   ctx: WhirlpoolContext,
   mints: PublicKey[],
   config = defaultConfig,
+  thresholdConfig = defaultThresholdConfig,
   refresh = true
 ): Promise<PriceMap> {
   const poolMap = await fetchPoolsForMints(ctx, mints, config, refresh);
   const tickArrayMap = await fetchTickArraysForPools(ctx, poolMap, config, refresh);
   const decimalsMap = await fetchDecimalsForMints(ctx, mints, refresh);
 
-  return calculatePoolPrices(mints, poolMap, tickArrayMap, decimalsMap);
+  return calculatePoolPrices(mints, poolMap, tickArrayMap, decimalsMap, config, thresholdConfig);
 }
 
 export async function fetchDecimalsForMints(

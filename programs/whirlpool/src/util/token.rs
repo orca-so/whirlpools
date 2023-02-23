@@ -1,7 +1,7 @@
 use crate::state::Whirlpool;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
-use mpl_token_metadata::instruction::create_metadata_accounts_v2;
+use mpl_token_metadata::instruction::create_metadata_accounts_v3;
 use solana_program::program::invoke_signed;
 use spl_token::instruction::{burn_checked, close_account, mint_to, set_authority, AuthorityType};
 
@@ -133,7 +133,7 @@ pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
 
     let metadata_mint_auth_account = whirlpool;
     invoke_signed(
-        &create_metadata_accounts_v2(
+        &create_metadata_accounts_v3(
             metadata_program.key(),
             position_metadata_account.key(),
             position_mint.key(),
@@ -147,6 +147,7 @@ pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
             0,
             false,
             true,
+            None,
             None,
             None,
         ),

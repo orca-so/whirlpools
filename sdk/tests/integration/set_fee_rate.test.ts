@@ -114,7 +114,9 @@ describe("set_fee_rate", () => {
         },
         signers: [configKeypairs.feeAuthorityKeypair],
       }),
-      /A has_one constraint was violated/ // ConstraintHasOne
+      // message have been changed
+      // https://github.com/coral-xyz/anchor/pull/2101/files#diff-e564d6832afe5358ef129e96970ba1e5180b5e74aba761831e1923c06d7b839fR412
+      /A has[_ ]one constraint was violated/ // ConstraintHasOne
     );
   });
 

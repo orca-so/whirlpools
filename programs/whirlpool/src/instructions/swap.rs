@@ -38,7 +38,7 @@ pub struct Swap<'info> {
     pub tick_array_2: AccountLoader<'info, TickArray>,
 
     #[account(seeds = [b"oracle", whirlpool.key().as_ref()],bump)]
-    /// Oracle is currently unused and will be enabled on subsequent updates
+    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle: UncheckedAccount<'info>,
 }
 

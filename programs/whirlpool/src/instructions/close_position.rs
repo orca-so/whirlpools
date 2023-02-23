@@ -9,6 +9,7 @@ use crate::util::{burn_and_close_user_position_token, verify_position_authority}
 pub struct ClosePosition<'info> {
     pub position_authority: Signer<'info>,
 
+    /// CHECK: safe, for receiving rent only
     #[account(mut)]
     pub receiver: UncheckedAccount<'info>,
 

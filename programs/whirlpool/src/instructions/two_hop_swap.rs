@@ -60,11 +60,11 @@ pub struct TwoHopSwap<'info> {
     pub tick_array_two_2: AccountLoader<'info, TickArray>,
 
     #[account(seeds = [b"oracle", whirlpool_one.key().as_ref()],bump)]
-    /// Oracle is currently unused and will be enabled on subsequent updates
+    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_one: UncheckedAccount<'info>,
 
     #[account(seeds = [b"oracle", whirlpool_two.key().as_ref()],bump)]
-    /// Oracle is currently unused and will be enabled on subsequent updates
+    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_two: UncheckedAccount<'info>,
 }
 

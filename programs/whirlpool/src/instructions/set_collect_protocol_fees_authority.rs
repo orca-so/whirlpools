@@ -10,6 +10,7 @@ pub struct SetCollectProtocolFeesAuthority<'info> {
     #[account(address = whirlpools_config.collect_protocol_fees_authority)]
     pub collect_protocol_fees_authority: Signer<'info>,
 
+    /// CHECK: safe, the account that will be new authority can be arbitrary
     pub new_collect_protocol_fees_authority: UncheckedAccount<'info>,
 }
 

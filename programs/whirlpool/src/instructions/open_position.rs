@@ -10,6 +10,7 @@ pub struct OpenPosition<'info> {
     #[account(mut)]
     pub funder: Signer<'info>,
 
+    /// CHECK: safe, the account that will be the owner of the position can be arbitrary
     pub owner: UncheckedAccount<'info>,
 
     #[account(init,

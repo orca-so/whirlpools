@@ -10,6 +10,7 @@ pub struct SetFeeAuthority<'info> {
     #[account(address = whirlpools_config.fee_authority)]
     pub fee_authority: Signer<'info>,
 
+    /// CHECK: safe, the account that will be new authority can be arbitrary
     pub new_fee_authority: UncheckedAccount<'info>,
 }
 

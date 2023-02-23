@@ -11,6 +11,7 @@ pub struct SetRewardAuthority<'info> {
     #[account(address = whirlpool.reward_infos[reward_index as usize].authority)]
     pub reward_authority: Signer<'info>,
 
+    /// CHECK: safe, the account that will be new authority can be arbitrary
     pub new_reward_authority: UncheckedAccount<'info>,
 }
 

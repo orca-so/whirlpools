@@ -49,7 +49,7 @@ pub struct InitializePool<'info> {
 
 pub fn handler(
     ctx: Context<InitializePool>,
-    bumps: WhirlpoolBumps,
+    _bumps: WhirlpoolBumps,
     tick_spacing: u16,
     initial_sqrt_price: u128,
 ) -> Result<()> {
@@ -61,9 +61,12 @@ pub fn handler(
 
     let default_fee_rate = ctx.accounts.fee_tier.default_fee_rate;
 
+    // ignore the bump passed and use one Anchor derived
+    let bump = *ctx.bumps.get("whirlpool").unwrap();
+
     Ok(whirlpool.initialize(
         whirlpools_config,
-        bumps.whirlpool_bump,
+        bump,
         tick_spacing,
         initial_sqrt_price,
         default_fee_rate,

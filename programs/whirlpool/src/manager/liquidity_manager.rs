@@ -10,7 +10,7 @@ use crate::{
     math::{get_amount_delta_a, get_amount_delta_b, sqrt_price_from_tick_index},
     state::*,
 };
-use anchor_lang::prelude::{AccountLoader, ProgramError};
+use anchor_lang::prelude::{AccountLoader, *};
 
 #[derive(Debug)]
 pub struct ModifyLiquidityUpdate {
@@ -31,7 +31,7 @@ pub fn calculate_modify_liquidity<'info>(
     tick_array_upper: &AccountLoader<'info, TickArray>,
     liquidity_delta: i128,
     timestamp: u64,
-) -> Result<ModifyLiquidityUpdate, ProgramError> {
+) -> Result<ModifyLiquidityUpdate> {
     let tick_array_lower = tick_array_lower.load()?;
     let tick_lower =
         tick_array_lower.get_tick(position.tick_lower_index, whirlpool.tick_spacing)?;
@@ -58,7 +58,7 @@ pub fn calculate_fee_and_reward_growths<'info>(
     tick_array_lower: &AccountLoader<'info, TickArray>,
     tick_array_upper: &AccountLoader<'info, TickArray>,
     timestamp: u64,
-) -> Result<(PositionUpdate, [WhirlpoolRewardInfo; NUM_REWARDS]), ProgramError> {
+) -> Result<(PositionUpdate, [WhirlpoolRewardInfo; NUM_REWARDS])> {
     let tick_array_lower = tick_array_lower.load()?;
     let tick_lower =
         tick_array_lower.get_tick(position.tick_lower_index, whirlpool.tick_spacing)?;
@@ -92,7 +92,7 @@ fn _calculate_modify_liquidity(
     tick_upper_index: i32,
     liquidity_delta: i128,
     timestamp: u64,
-) -> Result<ModifyLiquidityUpdate, ErrorCode> {
+) -> Result<ModifyLiquidityUpdate> {
     // Disallow only updating position fee and reward growth when position has zero liquidity
     if liquidity_delta == 0 && position.liquidity == 0 {
         return Err(ErrorCode::LiquidityZero.into());
@@ -170,7 +170,7 @@ pub fn calculate_liquidity_token_deltas(
     sqrt_price: u128,
     position: &Position,
     liquidity_delta: i128,
-) -> Result<(u64, u64), ErrorCode> {
+) -> Result<(u64, u64)> {
     if liquidity_delta == 0 {
         return Err(ErrorCode::LiquidityZero.into());
     }
@@ -206,7 +206,7 @@ pub fn sync_modify_liquidity_values<'info>(
     tick_array_upper: &AccountLoader<'info, TickArray>,
     modify_liquidity_update: ModifyLiquidityUpdate,
     reward_last_updated_timestamp: u64,
-) -> Result<(), ProgramError> {
+) -> Result<()> {
     position.update(&modify_liquidity_update.position_update);
 
     tick_array_lower.load_mut()?.update_tick(

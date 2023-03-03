@@ -7,6 +7,7 @@ use crate::{
     state::*,
     util::SwapTickSequence,
 };
+use anchor_lang::prelude::*;
 use std::convert::TryInto;
 
 #[derive(Debug)]
@@ -29,7 +30,7 @@ pub fn swap(
     amount_specified_is_input: bool,
     a_to_b: bool,
     timestamp: u64,
-) -> Result<PostSwapUpdate, ErrorCode> {
+) -> Result<PostSwapUpdate> {
     if sqrt_price_limit < MIN_SQRT_PRICE_X64 || sqrt_price_limit > MAX_SQRT_PRICE_X64 {
         return Err(ErrorCode::SqrtPriceOutOfBounds.into());
     }
@@ -88,8 +89,8 @@ pub fn swap(
             amount_remaining = amount_remaining
                 .checked_sub(swap_computation.amount_in)
                 .ok_or(ErrorCode::AmountRemainingOverflow)?;
-            amount_remaining = amount_remaining.
-                checked_sub(swap_computation.fee_amount)
+            amount_remaining = amount_remaining
+                .checked_sub(swap_computation.fee_amount)
                 .ok_or(ErrorCode::AmountRemainingOverflow)?;
 
             amount_calculated = amount_calculated
@@ -233,7 +234,7 @@ fn calculate_update(
     fee_growth_global_a: u128,
     fee_growth_global_b: u128,
     reward_infos: &[WhirlpoolRewardInfo; NUM_REWARDS],
-) -> Result<(TickUpdate, u128), ErrorCode> {
+) -> Result<(TickUpdate, u128), > {
     // Use updated fee_growth for crossing tick
     // Use -liquidity_net if going left, +liquidity_net going right
     let signed_liquidity_net = if a_to_b {
@@ -2499,7 +2500,6 @@ mod swap_error_tests {
         swap_test_info.run(&mut tick_sequence, 100);
     }
 
-
     #[test]
     #[should_panic(expected = "AmountCalcOverflow")]
     // Swapping at high liquidity/price can lead to an amount calculated
@@ -2511,7 +2511,8 @@ mod swap_error_tests {
         // Use filled arrays to minimize the the overflow from calculations, rather than accumulation
         let array_1_ticks: Vec<TestTickInfo> = build_filled_tick_array(439296, TS_128);
         let array_2_ticks: Vec<TestTickInfo> = build_filled_tick_array(439296 - 88 * 128, TS_128);
-        let array_3_ticks: Vec<TestTickInfo> = build_filled_tick_array(439296 - 2 * 88 * 128, TS_128);
+        let array_3_ticks: Vec<TestTickInfo> =
+            build_filled_tick_array(439296 - 2 * 88 * 128, TS_128);
         let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
             tick_spacing: TS_128,
             liquidity: (u32::MAX as u128) << 2,
@@ -2533,5 +2534,4 @@ mod swap_error_tests {
         );
         swap_test_info.run(&mut tick_sequence, 100);
     }
-
 }

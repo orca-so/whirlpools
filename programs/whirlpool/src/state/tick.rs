@@ -178,9 +178,9 @@ impl TickArray {
         tick_index: i32,
         tick_spacing: u16,
         a_to_b: bool,
-    ) -> Result<Option<i32>, ErrorCode> {
+    ) -> Result<Option<i32>> {
         if !self.in_search_range(tick_index, tick_spacing, !a_to_b) {
-            return Err(ErrorCode::InvalidTickArraySequence);
+            return Err(ErrorCode::InvalidTickArraySequence.into());
         }
 
         let mut curr_offset = match self.tick_offset(tick_index, tick_spacing) {
@@ -224,7 +224,7 @@ impl TickArray {
         &mut self,
         whirlpool: &Account<Whirlpool>,
         start_tick_index: i32,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         if !Tick::check_is_valid_start_tick(start_tick_index, whirlpool.tick_spacing) {
             return Err(ErrorCode::InvalidStartTick.into());
         }
@@ -243,15 +243,15 @@ impl TickArray {
     /// # Returns
     /// - `&Tick`: A reference to the desired Tick object
     /// - `TickNotFound`: - The provided tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
-    pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick, ErrorCode> {
+    pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
         if !self.check_in_array_bounds(tick_index, tick_spacing)
             || !Tick::check_is_usable_tick(tick_index, tick_spacing)
         {
-            return Err(ErrorCode::TickNotFound);
+            return Err(ErrorCode::TickNotFound.into());
         }
         let offset = self.tick_offset(tick_index, tick_spacing)?;
         if offset < 0 {
-            return Err(ErrorCode::TickNotFound);
+            return Err(ErrorCode::TickNotFound.into());
         }
         Ok(&self.ticks[offset as usize])
     }
@@ -270,15 +270,15 @@ impl TickArray {
         tick_index: i32,
         tick_spacing: u16,
         update: &TickUpdate,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         if !self.check_in_array_bounds(tick_index, tick_spacing)
             || !Tick::check_is_usable_tick(tick_index, tick_spacing)
         {
-            return Err(ErrorCode::TickNotFound);
+            return Err(ErrorCode::TickNotFound.into());
         }
         let offset = self.tick_offset(tick_index, tick_spacing)?;
         if offset < 0 {
-            return Err(ErrorCode::TickNotFound);
+            return Err(ErrorCode::TickNotFound.into());
         }
         self.ticks.get_mut(offset as usize).unwrap().update(update);
         Ok(())
@@ -319,9 +319,9 @@ impl TickArray {
     }
 
     // Calculates an offset from a tick index that can be used to access the tick data
-    pub fn tick_offset(&self, tick_index: i32, tick_spacing: u16) -> Result<isize, ErrorCode> {
+    pub fn tick_offset(&self, tick_index: i32, tick_spacing: u16) -> Result<isize> {
         if tick_spacing == 0 {
-            return Err(ErrorCode::InvalidTickSpacing);
+            return Err(ErrorCode::InvalidTickSpacing.into());
         }
 
         Ok(get_offset(tick_index, self.start_tick_index, tick_spacing))

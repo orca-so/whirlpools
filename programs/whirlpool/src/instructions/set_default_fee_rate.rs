@@ -16,7 +16,7 @@ pub struct SetDefaultFeeRate<'info> {
 /*
    Updates the default fee rate on a FeeTier object.
 */
-pub fn handler(ctx: Context<SetDefaultFeeRate>, default_fee_rate: u16) -> ProgramResult {
+pub fn handler(ctx: Context<SetDefaultFeeRate>, default_fee_rate: u16) -> Result<()> {
     Ok(ctx
         .accounts
         .fee_tier

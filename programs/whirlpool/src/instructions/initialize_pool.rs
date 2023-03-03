@@ -21,7 +21,7 @@ pub struct InitializePool<'info> {
         token_mint_b.key().as_ref(),
         tick_spacing.to_le_bytes().as_ref()
       ],
-      bump = bumps.whirlpool_bump,
+      bump,
       payer = funder,
       space = Whirlpool::LEN)]
     pub whirlpool: Box<Account<'info, Whirlpool>>,
@@ -52,7 +52,7 @@ pub fn handler(
     bumps: WhirlpoolBumps,
     tick_spacing: u16,
     initial_sqrt_price: u128,
-) -> ProgramResult {
+) -> Result<()> {
     let token_mint_a = ctx.accounts.token_mint_a.key();
     let token_mint_b = ctx.accounts.token_mint_b.key();
 

@@ -27,7 +27,7 @@ pub struct ClosePosition<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<ClosePosition>) -> ProgramResult {
+pub fn handler(ctx: Context<ClosePosition>) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,

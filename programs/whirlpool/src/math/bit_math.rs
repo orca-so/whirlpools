@@ -112,8 +112,8 @@ mod fuzz_tests {
                 assert!(rounded.is_err());
             } else {
                 let unrounded = n / d;
-                let div_unrounded = div_round_up_if(n, d, false)?;
-                let diff = rounded? - unrounded;
+                let div_unrounded = div_round_up_if(n, d, false).unwrap();
+                let diff = rounded.unwrap() - unrounded;
                 assert!(unrounded == div_unrounded);
                 assert!(diff <= 1);
                 assert!((diff == 1) == (n % d > 0));
@@ -143,7 +143,7 @@ mod fuzz_tests {
                 let other_remainder = other_dividend % other_divisor;
 
                 let unrounded = div_round_up_if_u256(dividend, divisor, false);
-                assert!(unrounded? == other_quotient.try_into_u128()?);
+                assert!(unrounded.unwrap() == other_quotient.try_into_u128().unwrap());
 
                 let diff = rounded.unwrap() - unrounded.unwrap();
                 assert!(diff <= 1);
@@ -166,7 +166,7 @@ mod fuzz_tests {
                 let other_d = U256::from(d);
                 let other_result = other_p / other_d;
 
-                let unrounded = checked_mul_div_round_up_if(n0, n1, d, false)?;
+                let unrounded = checked_mul_div_round_up_if(n0, n1, d, false).unwrap();
                 assert!(U256::from(unrounded) == other_result);
 
                 let diff = U256::from(result.unwrap()) - other_result;
@@ -182,12 +182,12 @@ mod fuzz_tests {
             if n0.checked_mul(n1).is_none() {
                 assert!(result.is_err());
             } else {
-                let p = (U256::from(n0) * U256::from(n1)).try_into_u128()?;
+                let p = (U256::from(n0) * U256::from(n1)).try_into_u128().unwrap();
 
                 let i = (p >> 64) as u64;
 
 
-                assert!(i == checked_mul_shift_right_round_up_if(n0, n1, false)?);
+                assert!(i == checked_mul_shift_right_round_up_if(n0, n1, false).unwrap());
 
                 if i == u64::MAX && (p & Q64_MASK > 0) {
                     assert!(result.is_err());

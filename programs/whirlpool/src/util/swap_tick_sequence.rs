@@ -251,7 +251,7 @@ mod swap_tick_sequence_tests {
                     TS_128,
                 );
 
-                assert_eq!(result.unwrap_err(), ErrorCode::TickNotFound);
+                assert_eq!(result.unwrap_err(), ErrorCode::TickNotFound.into());
 
                 let update_result = swap_tick_sequence.update_tick(
                     uninitializable_search_tick.0,
@@ -263,7 +263,7 @@ mod swap_tick_sequence_tests {
                         ..Default::default()
                     },
                 );
-                assert_eq!(update_result.unwrap_err(), ErrorCode::TickNotFound);
+                assert_eq!(update_result.unwrap_err(), ErrorCode::TickNotFound.into());
             }
         }
 
@@ -328,7 +328,7 @@ mod swap_tick_sequence_tests {
             let get_result = swap_tick_sequence.get_tick(3, 5000, TS_128);
             assert_eq!(
                 get_result.unwrap_err(),
-                ErrorCode::TickArrayIndexOutofBounds
+                ErrorCode::TickArrayIndexOutofBounds.into()
             );
 
             let update_result = swap_tick_sequence.update_tick(
@@ -341,7 +341,7 @@ mod swap_tick_sequence_tests {
             );
             assert_eq!(
                 update_result.unwrap_err(),
-                ErrorCode::TickArrayIndexOutofBounds
+                ErrorCode::TickArrayIndexOutofBounds.into()
             );
         }
     }

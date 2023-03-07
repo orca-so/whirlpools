@@ -153,7 +153,7 @@ export class PriceModule {
    * first quote token, then it will be priced against the next quote token in the array.
    * If a token does not have sufficient liquidity against any quote token,
    * then the price will be set to null.
-   * The threshold for "sufficient liquidity" is defined by the thresholdConfig
+   * The threshold for "sufficient liquidity" is defined by the thresholdConfig parameter.
    *
    * The caller of the function must provide the accounts through the following parameters:
    *  - poolMap: A map of pool addresses to pool data

@@ -1,12 +1,11 @@
 import { AddressUtil, DecimalUtil, Percentage } from "@orca-so/common-sdk";
-import { Address, BN, translateAddress } from "@project-serum/anchor";
+import { Address, translateAddress } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import {
   DecimalsMap,
   defaultConfig,
-  defaultThresholdConfig,
   GetPricesConfig,
   PoolMap,
   PriceMap,
@@ -19,102 +18,7 @@ import { TickArray, WhirlpoolData } from "../types/public";
 import { PoolUtil, PriceMath, SwapUtils } from "../utils/public";
 import { PDAUtil } from "../utils/public/pda-utils";
 
-/**
- * calculatePoolPrices will calculate the price of each token in the mints array.
- * Each token will be priced against the first quote token in the config.quoteTokens array
- * with sufficient liquidity. If a token does not have sufficient liquidity against the
- * first quote token, then it will be priced against the next quote token in the array.
- * If a token does not have sufficient liquidity against any quote token,
- * then the price will be set to null.
- * The threshold for "sufficient liquidity" is defined by the thresholdConfig
- *
- * The caller of the function must provide the accounts through the following parameters:
- *  - poolMap: A map of pool addresses to pool data
- *  - tickArrayMap: A map of pool addresses to tick array data
- *  - decimalsMap: A map of token mint addresses to token decimals
- *
- * fetchPoolPrices.ts provides functions to fetch these accounts
- */
-export function calculatePoolPrices(
-  mints: PublicKey[],
-  poolMap: PoolMap,
-  tickArrayMap: TickArrayMap,
-  decimalsMap: DecimalsMap,
-  config = defaultConfig,
-  thresholdConfig = defaultThresholdConfig
-): PriceMap {
-  // Ensure that quote tokens are in the mints array
-  if (
-    !isSubset(
-      config.quoteTokens.map((mint) => mint.toBase58()),
-      mints.map((mint) => mint.toBase58())
-    )
-  ) {
-    throw new Error("Quote tokens must be in mints array");
-  }
-
-  const results: PriceMap = Object.fromEntries(mints.map((mint) => [mint, null]));
-
-  const remainingQuoteTokens = config.quoteTokens.slice();
-  let remainingMints = mints.slice();
-
-  while (remainingQuoteTokens.length > 0 && remainingMints.length > 0) {
-    // Get prices for mints using the next token in remainingQuoteTokens as the quote token
-    const quoteToken = remainingQuoteTokens.shift();
-    if (!quoteToken) {
-      throw new Error("Unreachable: remainingQuoteTokens is an empty array");
-    }
-
-    // Convert the threshold amount out from the first quote token to the current quote token
-    let amountOut;
-    // If the quote token is the first quote token, then the amount out is the threshold amount
-    if (quoteToken.equals(config.quoteTokens[0])) {
-      amountOut = thresholdConfig.amountOut;
-    } else {
-      const quoteTokenPrice = results[quoteToken.toBase58()];
-      if (!quoteTokenPrice) {
-        throw new Error("All quote tokens must have a price against the first quote token");
-      }
-
-      amountOut = convertAmount(
-        thresholdConfig.amountOut,
-        quoteTokenPrice,
-        decimalsMap[config.quoteTokens[0].toBase58()],
-        decimalsMap[quoteToken.toBase58()]
-      );
-    }
-
-    const prices = calculatePricesForQuoteToken(
-      remainingMints,
-      quoteToken,
-      poolMap,
-      tickArrayMap,
-      decimalsMap,
-      config,
-      {
-        amountOut,
-        priceImpactThreshold: thresholdConfig.priceImpactThreshold,
-      }
-    );
-
-    // Populate the results map with the calculated prices.
-    // Ensure that the price is quoted against the first quote token and not the current quote token.
-    remainingMints.forEach((mint) => {
-      const mintPrice = prices[mint.toBase58()];
-      const quoteTokenPrice = results[quoteToken.toBase58()] || prices[quoteToken.toBase58()];
-      if (mintPrice != null && quoteTokenPrice != null) {
-        results[mint.toBase58()] = mintPrice.mul(quoteTokenPrice);
-      }
-    });
-
-    // Filter out any mints that do not have a price
-    remainingMints = remainingMints.filter((mint) => results[mint.toBase58()] == null);
-  }
-
-  return results;
-}
-
-function checkLiquidity(
+export function checkLiquidity(
   pool: WhirlpoolData,
   tickArrays: TickArray[],
   aToB: boolean,
@@ -167,7 +71,7 @@ function checkLiquidity(
   return estimatedAmountInDecimals.lte(maxAmountInDecimals);
 }
 
-function getMostLiquidPool(
+export function getMostLiquidPool(
   mintA: Address,
   mintB: Address,
   poolMap: PoolMap,
@@ -201,7 +105,7 @@ function getMostLiquidPool(
   }, pools[0]);
 }
 
-function calculatePricesForQuoteToken(
+export function calculatePricesForQuoteToken(
   mints: PublicKey[],
   quoteTokenMint: PublicKey,
   poolMap: PoolMap,
@@ -279,11 +183,11 @@ function getPrice(pool: WhirlpoolData, decimalsMap: DecimalsMap) {
   );
 }
 
-function isSubset(listA: string[], listB: string[]): boolean {
+export function isSubset(listA: string[], listB: string[]): boolean {
   return listA.every((itemA) => listB.includes(itemA));
 }
 
-function convertAmount(
+export function convertAmount(
   amount: u64,
   price: Decimal,
   amountDecimal: number,

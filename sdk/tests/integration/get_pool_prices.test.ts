@@ -22,7 +22,7 @@ import Decimal from "decimal.js";
 import { MathUtil } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 
-describe.only("get_pool_prices", () => {
+describe("get_pool_prices", () => {
   const provider = anchor.AnchorProvider.env();
   const program = anchor.workspace.Whirlpool;
   const context = WhirlpoolContext.fromWorkspace(provider, program);

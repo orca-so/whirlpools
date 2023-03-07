@@ -10,8 +10,7 @@ import {
   WhirlpoolData,
 } from "../types/public";
 
-export * from "./fetchPoolPrices";
-export * from "./calculatePoolPrices";
+export * from "./price-module";
 
 export type GetPricesConfig = {
   // The first token must be the token that is being priced against the other tokens
@@ -47,6 +46,12 @@ export type ThresholdConfig = {
 export const defaultThresholdConfig: ThresholdConfig = {
   amountOut: new u64(1_000_000_000),
   priceImpactThreshold: 1.05,
+};
+
+export type PriceCalculationData = {
+  poolMap: PoolMap;
+  tickArrayMap: TickArrayMap;
+  decimalsMap: DecimalsMap;
 };
 
 export type PoolMap = Record<string, WhirlpoolData>;

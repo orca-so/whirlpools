@@ -1,3 +1,5 @@
+import { Address } from "@project-serum/anchor";
+
 /**
  * An enum for the direction of a swap.
  * @category Whirlpool Utils
@@ -14,4 +16,13 @@ export enum SwapDirection {
 export enum TokenType {
   TokenA = 1,
   TokenB,
+}
+
+/**
+ * An object containing the token pairs of a Whirlpool.
+ */
+export interface PoolTokenPair {
+  address: Address;
+  tokenMintA: Address;
+  tokenMintB: Address;
 }

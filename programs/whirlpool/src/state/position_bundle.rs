@@ -18,7 +18,7 @@ impl PositionBundle {
     pub fn initialize(
         &mut self,
         position_bundle_mint: Pubkey,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         self.position_bundle_mint = position_bundle_mint;
         // position_bitmap is initialized using Default trait
         Ok(())
@@ -38,14 +38,14 @@ impl PositionBundle {
     pub fn open_bundled_position(
         &mut self,
         bundle_index: u16,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         self.update_bitmap(bundle_index, true)
     }
 
     pub fn close_bundled_position(
         &mut self,
         bundle_index: u16,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         self.update_bitmap(bundle_index, false)
     }
 
@@ -53,9 +53,9 @@ impl PositionBundle {
         &mut self,
         bundle_index: u16,
         open: bool,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         if !PositionBundle::is_valid_bundle_index(bundle_index) {
-            return Err(ErrorCode::InvalidBundleIndex);
+            return Err(ErrorCode::InvalidBundleIndex.into());
         }
 
         let bitmap_index = bundle_index / 8;
@@ -69,12 +69,12 @@ impl PositionBundle {
         if open && opened {
             // UNREACHABLE
             // Anchor should reject with AccountDiscriminatorAlreadySet
-            return Err(ErrorCode::BundledPositionAlreadyOpened);
+            return Err(ErrorCode::BundledPositionAlreadyOpened.into());
         }
         if !open && !opened {
             // UNREACHABLE
             // Anchor should reject with AccountNotInitialized
-            return Err(ErrorCode::BundledPositionAlreadyClosed);
+            return Err(ErrorCode::BundledPositionAlreadyClosed.into());
         }
 
         let updated_bitmap = bitmap ^ mask;

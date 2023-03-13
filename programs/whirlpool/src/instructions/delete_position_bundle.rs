@@ -22,6 +22,7 @@ pub struct DeletePositionBundle<'info> {
 
     pub position_bundle_owner: Signer<'info>,
 
+    /// CHECK: safe, for receiving rent only
     #[account(mut)]
     pub receiver: UncheckedAccount<'info>,
 
@@ -29,7 +30,7 @@ pub struct DeletePositionBundle<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<DeletePositionBundle>) -> ProgramResult {
+pub fn handler(ctx: Context<DeletePositionBundle>) -> Result<()> {
     let position_bundle = &ctx.accounts.position_bundle;
 
     if !position_bundle.is_deletable() {

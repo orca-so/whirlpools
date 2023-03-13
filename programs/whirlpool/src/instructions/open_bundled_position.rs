@@ -43,7 +43,7 @@ pub fn handler(
     bundle_index: u16,
     tick_lower_index: i32,
     tick_upper_index: i32,
-) -> ProgramResult {
+) -> Result<()> {
     let whirlpool = &ctx.accounts.whirlpool;
     let position_bundle = &mut ctx.accounts.position_bundle;
     let position = &mut ctx.accounts.bundled_position;

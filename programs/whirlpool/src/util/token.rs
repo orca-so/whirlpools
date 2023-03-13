@@ -223,7 +223,7 @@ pub fn mint_position_bundle_token_and_remove_authority<'info>(
     position_bundle_mint: &Account<'info, Mint>,
     position_bundle_token_account: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
-) -> ProgramResult {
+) -> Result<()> {
     mint_position_bundle_token(
         funder,
         position_bundle_mint,
@@ -247,7 +247,7 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     token_program: &Program<'info, Token>,
     system_program: &Program<'info, System>,
     rent: &Sysvar<'info, Rent>,
-) -> ProgramResult {
+) -> Result<()> {
     mint_position_bundle_token(
         funder,
         position_bundle_mint,
@@ -266,7 +266,7 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     nft_name += &mint_address[mint_address.len()-4..];
 
     invoke(
-        &create_metadata_accounts_v2(
+        &create_metadata_accounts_v3(
             metadata_program.key(),
             position_bundle_metadata.key(),
             position_bundle_mint.key(),
@@ -280,6 +280,7 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
             0,
             false,
             true,
+            None,
             None,
             None,
         ),
@@ -306,7 +307,7 @@ fn mint_position_bundle_token<'info>(
     position_bundle_mint: &Account<'info, Mint>,
     position_bundle_token_account: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
-) -> ProgramResult {
+) -> Result<()> {
     invoke(
         &mint_to(
             token_program.key,
@@ -322,14 +323,16 @@ fn mint_position_bundle_token<'info>(
             funder.to_account_info(),
             token_program.to_account_info(),
         ],
-    )
+    )?;
+
+    Ok(())
 }
 
 fn remove_position_bundle_token_mint_authority<'info>(
     funder: &Signer<'info>,
     position_bundle_mint: &Account<'info, Mint>,
     token_program: &Program<'info, Token>,
-) -> ProgramResult {
+) -> Result<()> {
     invoke(
         &set_authority(
             token_program.key,
@@ -344,7 +347,9 @@ fn remove_position_bundle_token_mint_authority<'info>(
             funder.to_account_info(),
             token_program.to_account_info(),
         ],
-    )
+    )?;
+
+    Ok(())
 }
 
 pub fn burn_and_close_position_bundle_token<'info>(
@@ -353,7 +358,7 @@ pub fn burn_and_close_position_bundle_token<'info>(
     position_bundle_mint: &Account<'info, Mint>,
     position_bundle_token_account: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
-) -> ProgramResult {
+) -> Result<()> {
     // use same logic
     burn_and_close_user_position_token(
         position_bundle_authority,

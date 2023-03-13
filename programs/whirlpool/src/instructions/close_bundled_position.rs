@@ -30,6 +30,7 @@ pub struct CloseBundledPosition<'info> {
 
     pub position_bundle_authority: Signer<'info>,
 
+    /// CHECK: safe, for receiving rent only
     #[account(mut)]
     pub receiver: UncheckedAccount<'info>,
 }
@@ -37,7 +38,7 @@ pub struct CloseBundledPosition<'info> {
 pub fn handler(
     ctx: Context<CloseBundledPosition>,
     bundle_index: u16,
-) -> ProgramResult {
+) -> Result<()> {
     let position_bundle = &mut ctx.accounts.position_bundle;
 
     // Allow delegation

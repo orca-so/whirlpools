@@ -537,7 +537,7 @@ pub mod whirlpool {
     /// A unique token will be minted to represent the position bundle in the users wallet.
     pub fn initialize_position_bundle(
         ctx: Context<InitializePositionBundle>,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         return instructions::initialize_position_bundle::handler(ctx);
     }
 
@@ -546,7 +546,7 @@ pub mod whirlpool {
     /// Additional Metaplex metadata is appended to identify the token.
     pub fn initialize_position_bundle_with_metadata(
         ctx: Context<InitializePositionBundleWithMetadata>,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         return instructions::initialize_position_bundle_with_metadata::handler(ctx);
     }
 
@@ -559,7 +559,7 @@ pub mod whirlpool {
     /// - `PositionBundleNotDeletable` - The provided position bundle has open positions.
     pub fn delete_position_bundle(
         ctx: Context<DeletePositionBundle>,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         return instructions::delete_position_bundle::handler(ctx);
     }
 
@@ -584,7 +584,7 @@ pub mod whirlpool {
         bundle_index: u16,
         tick_lower_index: i32,
         tick_upper_index: i32,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         return instructions::open_bundled_position::handler(
             ctx,
             bundle_index,
@@ -607,7 +607,7 @@ pub mod whirlpool {
     pub fn close_bundled_position(
         ctx: Context<CloseBundledPosition>,
         bundle_index: u16,
-    ) -> ProgramResult {
+    ) -> Result<()> {
         return instructions::close_bundled_position::handler(ctx, bundle_index);
     }
 }

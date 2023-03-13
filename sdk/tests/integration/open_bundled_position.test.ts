@@ -353,8 +353,7 @@ describe("open_bundled_position", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        // seed and PDA unmatch
-        (err) => { return JSON.stringify(err).includes("Cross-program invocation with unauthorized signer or writable account") }
+        /0x7d6/ // ConstraintSeeds
       );
     });
 
@@ -371,8 +370,7 @@ describe("open_bundled_position", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        // seed and PDA unmatch
-        (err) => { return JSON.stringify(err).includes("Cross-program invocation with unauthorized signer or writable account") }
+        /0x7d6/ // ConstraintSeeds
       );
     });
 
@@ -478,7 +476,7 @@ describe("open_bundled_position", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /invalid program argument/
+        /0xbc7/ // AccountSysvarMismatch
       );
     });
   });

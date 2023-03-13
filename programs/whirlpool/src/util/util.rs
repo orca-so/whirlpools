@@ -11,7 +11,7 @@ use crate::errors::ErrorCode;
 pub fn verify_position_bundle_authority<'info>(
     position_bundle_token_account: &TokenAccount,
     position_bundle_authority: &Signer<'info>,
-) -> Result<(), ProgramError> {
+) -> Result<()> {
     // use same logic
     verify_position_authority(
         position_bundle_token_account,

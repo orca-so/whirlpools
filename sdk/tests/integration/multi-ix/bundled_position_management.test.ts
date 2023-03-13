@@ -833,6 +833,70 @@ describe("bundled position management tests", () => {
       assert.ok(receiverBalance > 0);
     });
 
+    it("successfully close & re-open bundled position with the same bundle index in single Tx", async () => {
+      // create test pool
+      const ctx = testCtx.whirlpoolCtx;
+      const fixture = await new WhirlpoolTestFixture(ctx).init({
+        tickSpacing,
+        positions: [],
+        rewards: [],
+      });
+      const { poolInitInfo, rewards } = fixture.getInfos();
+
+      // initialize position bundle
+      const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
+      const bundleIndex = Math.floor(Math.random() * POSITION_BUNDLE_SIZE);
+
+      const bundledPositionPda = PDAUtil.getBundledPosition(ctx.program.programId, positionBundleInfo.positionBundleMintKeypair.publicKey, bundleIndex);
+      const bundledPositionPubkey = bundledPositionPda.publicKey;
+      const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
+
+      const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
+      builder
+        // open
+        .addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {
+          bundledPositionPda,
+          bundleIndex,
+          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
+          positionBundleAuthority: ctx.wallet.publicKey,
+          positionBundleTokenAccount: positionBundleInfo.positionBundleTokenAccount,
+          tickLowerIndex,
+          tickUpperIndex,
+          whirlpool: whirlpoolPubkey,
+          funder: ctx.wallet.publicKey
+        }))
+        // close
+        .addInstruction(WhirlpoolIx.closeBundledPositionIx(ctx.program, {
+          bundledPosition: bundledPositionPubkey,
+          bundleIndex,
+          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
+          positionBundleAuthority: ctx.wallet.publicKey,
+          positionBundleTokenAccount: positionBundleInfo.positionBundleTokenAccount,
+          receiver: whirlpoolPubkey,
+        }))
+        // reopen bundled position with same bundleIndex in single Tx
+        .addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {
+          bundledPositionPda,
+          bundleIndex,
+          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
+          positionBundleAuthority: ctx.wallet.publicKey,
+          positionBundleTokenAccount: positionBundleInfo.positionBundleTokenAccount,
+          tickLowerIndex: tickLowerIndex + tickSpacing,
+          tickUpperIndex: tickUpperIndex + tickSpacing,
+          whirlpool: whirlpoolPubkey,
+          funder: ctx.wallet.publicKey
+        }));
+
+      // Account closing reassigns to system program and reallocates
+      // https://github.com/coral-xyz/anchor/pull/2169
+      // in Anchor v0.26.0, close & open in same Tx will success.
+      await builder.buildAndExecute();
+      const postReopen = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      assert.ok(postReopen!.liquidity.isZero());
+      assert.ok(postReopen!.tickLowerIndex === tickLowerIndex + tickSpacing);
+      assert.ok(postReopen!.tickUpperIndex === tickUpperIndex + tickSpacing);
+    });
+
     it("successfully open bundled position & swap & close bundled position in single Tx", async () => {
       // create test pool
       const ctx = testCtx.whirlpoolCtx;
@@ -1028,13 +1092,15 @@ describe("bundled position management tests", () => {
       
       await builder.buildAndExecute();
 
+      // Account closing reassigns to system program and reallocates
+      // https://github.com/coral-xyz/anchor/pull/2169
       const postClose = await ctx.connection.getAccountInfo(positionBundleInfo.positionBundlePda.publicKey, "confirmed");
       assert.ok(postClose !== null);
-      // CLOSED_ACCOUNT_DISCRIMINATOR should be written to clearly indicate that it is closed
-      assert.ok(postClose.data.slice(0, 8).every((byte) => byte === 0xFF));
+      assert.ok(postClose.owner.equals(SystemProgram.programId));
+      assert.ok(postClose.data.length === 0);
     });
 
-    it("The discriminator of the closed bundled position is marked as closed", async () => {
+    it("The owner of closed account should be system program", async () => {
       // create test pool
       const ctx = testCtx.whirlpoolCtx;
       const fixture = await new WhirlpoolTestFixture(ctx).init({
@@ -1099,74 +1165,12 @@ describe("bundled position management tests", () => {
       
       await builder.buildAndExecute();
 
+      // Account closing reassigns to system program and reallocates
+      // https://github.com/coral-xyz/anchor/pull/2169
       const postClose = await ctx.connection.getAccountInfo(bundledPositionPubkey, "confirmed");
       assert.ok(postClose !== null);
-      // CLOSED_ACCOUNT_DISCRIMINATOR should be written to clearly indicate that it is closed
-      assert.ok(postClose.data.slice(0, 8).every((byte) => byte === 0xFF));
-    });
-
-    it("should be failed: close & re-open bundled position with the same bundle index in single Tx", async () => {
-      // create test pool
-      const ctx = testCtx.whirlpoolCtx;
-      const fixture = await new WhirlpoolTestFixture(ctx).init({
-        tickSpacing,
-        positions: [],
-        rewards: [],
-      });
-      const { poolInitInfo, rewards } = fixture.getInfos();
-
-      // initialize position bundle
-      const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
-      const bundleIndex = Math.floor(Math.random() * POSITION_BUNDLE_SIZE);
-
-      const bundledPositionPda = PDAUtil.getBundledPosition(ctx.program.programId, positionBundleInfo.positionBundleMintKeypair.publicKey, bundleIndex);
-      const bundledPositionPubkey = bundledPositionPda.publicKey;
-      const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-
-      const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
-      builder
-        // open
-        .addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {
-          bundledPositionPda,
-          bundleIndex,
-          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
-          positionBundleAuthority: ctx.wallet.publicKey,
-          positionBundleTokenAccount: positionBundleInfo.positionBundleTokenAccount,
-          tickLowerIndex,
-          tickUpperIndex,
-          whirlpool: whirlpoolPubkey,
-          funder: ctx.wallet.publicKey
-        }))
-        // close
-        .addInstruction(WhirlpoolIx.closeBundledPositionIx(ctx.program, {
-          bundledPosition: bundledPositionPubkey,
-          bundleIndex,
-          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
-          positionBundleAuthority: ctx.wallet.publicKey,
-          positionBundleTokenAccount: positionBundleInfo.positionBundleTokenAccount,
-          receiver: whirlpoolPubkey,
-        }))
-        // reopen bundled position with same bundleIndex in single Tx
-        .addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {
-          bundledPositionPda,
-          bundleIndex,
-          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
-          positionBundleAuthority: ctx.wallet.publicKey,
-          positionBundleTokenAccount: positionBundleInfo.positionBundleTokenAccount,
-          tickLowerIndex,
-          tickUpperIndex,
-          whirlpool: whirlpoolPubkey,
-          funder: ctx.wallet.publicKey
-        }));
-    
-      await assert.rejects(
-        builder.buildAndExecute(),
-        // Account will be released at the end of transaction
-        // CLOSED_ACCOUNT_DISCRIMINATOR is written to clearly indicate that it is closed,
-        // so it cannot be abused until it is completely closed
-        // https://github.com/coral-xyz/anchor/blob/master/lang/src/common.rs#L6
-        (err) => { return JSON.stringify(err).includes("already in use") }
-      );  
+      assert.ok(postClose.owner.equals(SystemProgram.programId));
+      assert.ok(postClose.data.length === 0);
     });
 
     it("should be failed: close bundled position and then updateFeesAndRewards in single Tx", async () => {
@@ -1222,8 +1226,7 @@ describe("bundled position management tests", () => {
     
       await assert.rejects(
         builder.buildAndExecute(),
-        // CLOSED_ACCOUNT_DISCRIMINATOR should be written to clearly indicate that it is closed
-        /0xbba/,  // AccountDiscriminatorMismatch
+        /0xbc4/ // AccountNotInitialized
       );  
     });
   });

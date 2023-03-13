@@ -233,7 +233,7 @@ describe("initialize_position_bundle_with_metadata", () => {
         
       await assert.rejects(
         tx.buildAndExecute(),
-        /Cross-program invocation with unauthorized signer or writable account/ // cannot init PDA account
+        /0x7d6/ // ConstraintSeeds
       );
     });
 
@@ -305,7 +305,7 @@ describe("initialize_position_bundle_with_metadata", () => {
     
       await assert.rejects(
         tx.buildAndExecute(),
-        /invalid program argument/
+        /0xbc7/ // AccountSysvarMismatch
       );
     });
 

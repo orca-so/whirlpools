@@ -17,7 +17,6 @@ pub struct InitializePositionBundleWithMetadata<'info> {
 
     #[account(init,
         payer = funder,
-        space = Mint::LEN,
         mint::authority = funder, // will be removed in the transaction
         mint::decimals = 0,
     )]
@@ -35,6 +34,7 @@ pub struct InitializePositionBundleWithMetadata<'info> {
     )]
     pub position_bundle_token_account: Box<Account<'info, TokenAccount>>,
 
+    /// CHECK: safe, the account that will be the owner of the position bundle can be arbitrary
     pub position_bundle_owner: UncheckedAccount<'info>,
 
     #[account(mut)]
@@ -57,7 +57,7 @@ pub struct InitializePositionBundleWithMetadata<'info> {
 
 pub fn handler(
     ctx: Context<InitializePositionBundleWithMetadata>,
-) -> ProgramResult {
+) -> Result<()> {
   let position_bundle_mint = &ctx.accounts.position_bundle_mint;
   let position_bundle = &mut ctx.accounts.position_bundle;
 

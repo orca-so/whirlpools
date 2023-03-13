@@ -1,19 +1,67 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
+import { PoolTokenPair } from "../public";
+import { PoolGraph, RouteFindOptions, RoutePath, RoutePathMap } from "../public/pool-graph";
 
-export interface TokenPairPool {
-  address: Address;
-  tokenMintA: Address;
-  tokenMintB: Address;
+export class AdjacencyPoolGraph implements PoolGraph {
+  readonly graph: {
+    [k: string]: PoolGraphEdge[];
+  };
+
+  constructor(pools: PoolTokenPair[]) {
+    this.graph = buildPoolGraph(pools);
+  }
+
+  getRoutes(startMint: Address, endMint: Address, options: RouteFindOptions): RoutePath[] {
+    const [startMintKey, endMintKey] = [AddressUtil.toString(startMint), AddressUtil.toString(endMint)];
+    const walkMap = findWalks(
+      [[startMintKey, endMintKey]],
+      this.graph,
+      options.intermediateTokens.map((token) => AddressUtil.toString(token))
+    );
+
+    return Object.values(walkMap).map(walks => {
+      return walks.map(walk => {
+        return {
+          startMint: startMintKey,
+          endMint: endMintKey,
+          edges: walk
+        }
+      })
+    }).flatMap(x => x);
+  }
+
+  getAllRoutes(tokens: [Address, Address][], options: RouteFindOptions): RoutePathMap {
+    const tokenPairs = tokens.map(([startMint, endMint]) => {
+      // TODO: Deal with mint ordering here
+      return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
+    })
+    const walkMap = findWalks(tokenPairs, this.graph, options.intermediateTokens.map((token) => AddressUtil.toString(token)))
+    const walkEntries = Object.entries(walkMap).map(([routeId, walks]) => {
+      const [startMint, endMint] = routeId.split("-");
+      const paths = walks.map<RoutePath>(walk => {
+        return {
+          startMint,
+          endMint,
+          edges: walk
+        }
+      })
+      return [routeId, paths] as const;
+    });
+
+    return Object.fromEntries(walkEntries);
+  }
 }
 
-export type PoolGraphEdge = {
+type AdjacencyPoolGraphMap = Record<string, Array<PoolGraphEdge>>;
+
+type PoolGraphEdge = {
   address: string;
   otherToken: string;
 };
 
-export type PoolGraph = Record<string, Array<PoolGraphEdge>>;
-export type PoolWalks = Record<string, string[][]>;
+// A record of route-id (tokenA-tokenB) to a list of edges
+type PoolWalks = Record<string, string[][]>;
 
 /**
  * Convenience method for finding walks between pairs of tokens, given a set of pools pairing tokens
@@ -22,20 +70,16 @@ export type PoolWalks = Record<string, string[][]>;
  * @param intermediateTokens Allowed list of tokens that can be intermediate tokens.
  * @returns Walks between pairs of tokens
  */
-export function findWalksFromPools(
-  pairs: Array<[string, string]>,
-  pools: TokenPairPool[],
-  intermediateTokens?: string[]
-) {
-  const poolGraph = buildPoolGraph(pools);
-  return findWalks(pairs, poolGraph, intermediateTokens);
-}
+// export function findWalksFromPools(
+//   pairs: Array<[string, string]>,
+//   pools: PoolTokenPair[],
+//   intermediateTokens?: string[]
+// ) {
+//   const poolGraph = buildPoolGraph(pools);
+//   return findWalks(pairs, poolGraph, intermediateTokens);
+// }
 
-/**
- * Note: we use an adjacency list as a representation of our pool graph,
- * since we assume that most token pairings don't exist as pools
- */
-export function buildPoolGraph(pools: TokenPairPool[]) {
+function buildPoolGraph(pools: PoolTokenPair[]) {
   const poolGraphSet = pools.reduce((poolGraph: Record<string, Set<PoolGraphEdge>>, pool) => {
     const { address, tokenMintA, tokenMintB } = pool;
     const [addr, mintA, mintB] = AddressUtil.toPubKeys([address, tokenMintA, tokenMintB]).map(
@@ -62,9 +106,9 @@ export function buildPoolGraph(pools: TokenPairPool[]) {
 
 // This is currently hardcoded to find walks of max length 2, generalizing to longer walks
 // may mean that a adjacency matrix might have better performance
-export function findWalks(
-  tokenPairs: Array<[string, string]>,
-  poolGraph: PoolGraph,
+function findWalks(
+  tokenPairs: (readonly [string, string])[],
+  poolGraph: AdjacencyPoolGraphMap,
   intermediateTokens?: string[]
 ) {
   const walks: PoolWalks = {};
@@ -114,7 +158,7 @@ export function findWalks(
  * @param destinationMint - The token the swap is trading for.
  * @returns A string representing the routeId between the two provided tokens.
  */
-export function getRouteId(sourceMint: string, destinationMint: string) {
+function getRouteId(sourceMint: string, destinationMint: string) {
   const [mintA, mintB] = stringSortMintKeys(sourceMint, destinationMint);
   return `${mintA}/${mintB}`;
 }

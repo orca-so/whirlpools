@@ -6,7 +6,7 @@ import {
   PoolTokenPair,
   Route,
   RouteFindOptions,
-  RouteMap,
+  RouteMap
 } from "../public/pool-graph";
 
 export class AdjacencyPoolGraph implements PoolGraph {

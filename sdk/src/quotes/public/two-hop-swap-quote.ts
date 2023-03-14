@@ -17,8 +17,8 @@ export type TwoHopSwapQuote = NormalTwoHopSwapQuote; // TODO dev swap
  * @experimental Not yet ready for use
  */
 export type NormalTwoHopSwapQuote = {
-  swapOneEstimates: SwapEstimates,
-  swapTwoEstimates: SwapEstimates,
+  swapOneEstimates: SwapEstimates;
+  swapTwoEstimates: SwapEstimates;
 } & TwoHopSwapInput;
 
 /**
@@ -28,12 +28,12 @@ export type NormalTwoHopSwapQuote = {
  */
 export function twoHopSwapQuoteFromSwapQuotes(
   swapQuoteOne: SwapQuote,
-  swapQuoteTwo: SwapQuote,
+  swapQuoteTwo: SwapQuote
 ): TwoHopSwapQuote {
   const amountSpecifiedIsInput = swapQuoteOne.amountSpecifiedIsInput;
   // If amount specified is input, then we care about input of the first swap
   // otherwise we care about output of the second swap
-  let [amount, otherAmountThreshold] = amountSpecifiedIsInput 
+  let [amount, otherAmountThreshold] = amountSpecifiedIsInput
     ? [swapQuoteOne.amount, swapQuoteTwo.otherAmountThreshold]
     : [swapQuoteTwo.amount, swapQuoteOne.otherAmountThreshold];
 

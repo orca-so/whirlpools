@@ -1,4 +1,3 @@
-
 /**
  * An enum for the direction of a swap.
  * @category Whirlpool Utils

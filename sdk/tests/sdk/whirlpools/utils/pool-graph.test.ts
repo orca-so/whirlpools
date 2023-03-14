@@ -1,7 +1,7 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import * as assert from "assert";
-import { PoolGraphBuilder, PoolGraphUtils, PoolTokenPair, RoutePath } from "../../../../src";
+import { PoolGraphBuilder, PoolGraphUtils, PoolTokenPair, Route } from "../../../../src";
 import {
   solConnectedPools,
   uniqueTokenMintsGraphData,
@@ -89,6 +89,21 @@ describe("PoolGraph tests", () => {
         [rlbSolPool, mSolSolPool],
         [rlbUsdcPool, msolUsdcPool],
       ]);
+    });
+
+    it("only allow 2-hop routes that go through tokens from the intermediate token list ", async () => {
+      const testData = [...solConnectedPools, ...usdcConnectedPools];
+      const graph = PoolGraphBuilder.buildPoolGraph(testData);
+      const rlbUsdcPool = usdcConnectedPools[0];
+      const msolUsdcPool = usdcConnectedPools[1];
+      const results = graph.getAllRoutes([[rlbUsdcPool.tokenMintB, msolUsdcPool.tokenMintB]], {
+        intermediateTokens: [rlbUsdcPool.tokenMintA],
+      });
+      const resultEntries = Object.entries(results);
+
+      // Assert that the SOL routes are filtered out
+      assert.equal(resultEntries.length, 1);
+      assertGetAllRoutesResult(resultEntries[0], [[rlbUsdcPool, msolUsdcPool]]);
     });
 
     it("multiple tokenPair input to multiple routes exist - verify token order, edge ordering", async () => {
@@ -213,10 +228,29 @@ describe("PoolGraph tests", () => {
       );
     });
   });
+
+  it("only allow 2-hop routes that go through tokens from the intermediate token list ", async () => {
+    const testData = [...solConnectedPools, ...usdcConnectedPools];
+    const graph = PoolGraphBuilder.buildPoolGraph(testData);
+    const rlbUsdcPool = usdcConnectedPools[0];
+    const msolUsdcPool = usdcConnectedPools[1];
+    const result = graph.getRoute(rlbUsdcPool.tokenMintB, msolUsdcPool.tokenMintB, {
+      intermediateTokens: [rlbUsdcPool.tokenMintA],
+    });
+    assertGetRouteResult(
+      result,
+      [
+        [rlbUsdcPool, msolUsdcPool],
+      ],
+      rlbUsdcPool.tokenMintB,
+      msolUsdcPool.tokenMintB
+    );
+  });
+
 });
 
 function assertGetAllRoutesResult(
-  [routeId, routes]: [string, RoutePath[]],
+  [routeId, routes]: [string, Route[]],
   expectedRoutes: PoolTokenPair[][]
 ) {
   const deconstructRouteId = PoolGraphUtils.deconstructRouteId(routeId);
@@ -245,7 +279,7 @@ function assertGetAllRoutesResult(
 }
 
 function assertGetRouteResult(
-  routes: RoutePath[],
+  routes: Route[],
   expectedRoutes: PoolTokenPair[][],
   expectedStartMint: Address,
   expectedEndMint: Address
@@ -257,7 +291,7 @@ function assertGetRouteResult(
 }
 
 function assertRoute(
-  path: RoutePath,
+  path: Route,
   pathIndex: number,
   expectedStartMint: Address,
   expectedEndMint: Address,

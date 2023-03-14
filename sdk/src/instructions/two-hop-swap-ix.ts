@@ -88,7 +88,7 @@ export type TwoHopSwapInput = {
  * - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
  * - `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.
  * - `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool.
- *  
+ *
  * ### Parameters
  * @category Instructions
  * @param context - Context object containing services required to generate the instruction
@@ -122,7 +122,7 @@ export function twoHopSwapIx(program: Program<Whirlpool>, params: TwoHopSwapPara
     tickArrayTwo1,
     tickArrayTwo2,
     oracleOne,
-    oracleTwo
+    oracleTwo,
   } = params;
 
   const ix = program.instruction.twoHopSwap(
@@ -154,7 +154,7 @@ export function twoHopSwapIx(program: Program<Whirlpool>, params: TwoHopSwapPara
         tickArrayTwo1,
         tickArrayTwo2,
         oracleOne,
-        oracleTwo
+        oracleTwo,
       },
     }
   );

@@ -1,4 +1,4 @@
-import { TransactionBuilder } from "@orca-so/common-sdk";;
+import { TransactionBuilder } from "@orca-so/common-sdk";
 import { WhirlpoolContext } from "..";
 
 export function convertListToMap<T>(fetchedData: T[], addresses: string[]) {
@@ -18,7 +18,7 @@ export async function checkMergedTransactionSizeIsValid(
   latestBlockhash: Readonly<{
     blockhash: string;
     lastValidBlockHeight: number;
-  }>,
+  }>
 ): Promise<boolean> {
   const merged = new TransactionBuilder(ctx.connection, ctx.wallet);
   builders.forEach((builder) => merged.addInstruction(builder.compressIx(true)));

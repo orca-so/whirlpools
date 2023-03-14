@@ -1,6 +1,13 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
-import { PoolGraph, PoolGraphUtils, PoolTokenPair, Route, RouteFindOptions, RouteMap } from "../public/pool-graph";
+import {
+  PoolGraph,
+  PoolGraphUtils,
+  PoolTokenPair,
+  Route,
+  RouteFindOptions,
+  RouteMap,
+} from "../public/pool-graph";
 
 export class AdjacencyPoolGraph implements PoolGraph {
   readonly graph: {
@@ -12,7 +19,10 @@ export class AdjacencyPoolGraph implements PoolGraph {
   }
 
   getRoute(startMint: Address, endMint: Address, options?: RouteFindOptions): Route[] {
-    const [startMintKey, endMintKey] = [AddressUtil.toString(startMint), AddressUtil.toString(endMint)];
+    const [startMintKey, endMintKey] = [
+      AddressUtil.toString(startMint),
+      AddressUtil.toString(endMint),
+    ];
 
     const walkMap = findWalks(
       [[startMintKey, endMintKey]],
@@ -20,32 +30,38 @@ export class AdjacencyPoolGraph implements PoolGraph {
       options?.intermediateTokens.map((token) => AddressUtil.toString(token))
     );
 
-    return Object.values(walkMap).map(walks => {
-      return walks.map(walk => {
-        return {
-          startMint: startMintKey,
-          endMint: endMintKey,
-          edges: walk
-        }
+    return Object.values(walkMap)
+      .map((walks) => {
+        return walks.map((walk) => {
+          return {
+            startMint: startMintKey,
+            endMint: endMintKey,
+            edges: walk,
+          };
+        });
       })
-    }).flatMap(x => x);
+      .flatMap((x) => x);
   }
 
   getAllRoutes(tokens: [Address, Address][], options?: RouteFindOptions): RouteMap {
     const tokenPairs = tokens.map(([startMint, endMint]) => {
       return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
-    })
-    const walkMap = findWalks(tokenPairs, this.graph, options?.intermediateTokens.map((token) => AddressUtil.toString(token)))
+    });
+    const walkMap = findWalks(
+      tokenPairs,
+      this.graph,
+      options?.intermediateTokens.map((token) => AddressUtil.toString(token))
+    );
 
     const walkEntries = Object.entries(walkMap).map(([routeId, walks]) => {
       const [startMint, endMint] = routeId.split("-");
-      const paths = walks.map<Route>(walk => {
+      const paths = walks.map<Route>((walk) => {
         return {
           startMint,
           endMint,
-          edges: walk
-        }
-      })
+          edges: walk,
+        };
+      });
       return [routeId, paths] as const;
     });
 
@@ -98,7 +114,6 @@ function findWalks(
   const walks: PoolWalks = {};
 
   tokenPairs.forEach(([tokenMintA, tokenMintB]) => {
-
     let routes = [];
 
     const poolA = poolGraph[tokenMintA] || [];

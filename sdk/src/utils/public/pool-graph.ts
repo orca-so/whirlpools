@@ -13,18 +13,17 @@ export interface PoolTokenPair {
   tokenMintB: Address;
 }
 
-
 /**
  * A map of route ids to a list of routes between the two tokens
  * The route id can be obtained from {@link PoolGraphUtils.getRouteId}
- * 
+ *
  * @category PoolGraph
  */
 export type RouteMap = Record<string, Route[]>;
 
 /**
  * A route between two tokens
- * 
+ *
  * @category PoolGraph
  * @param startMint - The token the route starts with
  * @param endMint - The token the route ends with
@@ -38,7 +37,7 @@ export type Route = {
 
 /**
  * Options for finding a route between two tokens
- * 
+ *
  * @category PoolGraph
  * @param intermediateTokens - A list of tokens that can be used as intermediate hops
  */
@@ -71,7 +70,7 @@ export type PoolGraph = {
 
 /**
  * A builder class for creating a {@link PoolGraph}
- * 
+ *
  * Note: we use an adjacency list as a representation of our pool graph,
  * since we assume that most token pairings don't exist as pools
  * @category PoolGraph

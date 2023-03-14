@@ -55,7 +55,7 @@ export type SwapEstimates = {
   estimatedEndTickIndex: number;
   estimatedEndSqrtPrice: BN;
   estimatedFeeAmount: u64;
-}
+};
 
 /**
  * A collection of estimated values from quoting a swap. Object can be directly used in a swap transaction.
@@ -176,7 +176,9 @@ async function swapQuoteByToken(
   const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
   invariant(!!swapTokenType, "swapTokenMint does not match any tokens on this pool");
 
-  const aToB = SwapUtils.getSwapDirection(whirlpoolData, swapMintKey, amountSpecifiedIsInput) === SwapDirection.AtoB;
+  const aToB =
+    SwapUtils.getSwapDirection(whirlpoolData, swapMintKey, amountSpecifiedIsInput) ===
+    SwapDirection.AtoB;
 
   const tickArrays = await SwapUtils.getTickArrays(
     whirlpoolData.tickCurrentIndex,

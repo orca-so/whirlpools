@@ -1,7 +1,7 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import { PoolTokenPair } from "../public";
-import { PoolGraph, RouteFindOptions, RoutePath, RoutePathMap } from "../public/pool-graph";
+import { PoolGraph, PoolGraphUtils, RouteFindOptions, RoutePath, RoutePathMap } from "../public/pool-graph";
 
 export class AdjacencyPoolGraph implements PoolGraph {
   readonly graph: {
@@ -14,6 +14,7 @@ export class AdjacencyPoolGraph implements PoolGraph {
 
   getRoute(startMint: Address, endMint: Address, options?: RouteFindOptions): RoutePath[] {
     const [startMintKey, endMintKey] = [AddressUtil.toString(startMint), AddressUtil.toString(endMint)];
+
     const walkMap = findWalks(
       [[startMintKey, endMintKey]],
       this.graph,
@@ -33,10 +34,10 @@ export class AdjacencyPoolGraph implements PoolGraph {
 
   getAllRoutes(tokens: [Address, Address][], options?: RouteFindOptions): RoutePathMap {
     const tokenPairs = tokens.map(([startMint, endMint]) => {
-      // TODO: Deal with mint ordering here
       return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
     })
     const walkMap = findWalks(tokenPairs, this.graph, options?.intermediateTokens.map((token) => AddressUtil.toString(token)))
+
     const walkEntries = Object.entries(walkMap).map(([routeId, walks]) => {
       const [startMint, endMint] = routeId.split("-");
       const paths = walks.map<RoutePath>(walk => {
@@ -62,22 +63,6 @@ type PoolGraphEdge = {
 
 // A record of route-id (tokenA-tokenB) to a list of edges
 type PoolWalks = Record<string, string[][]>;
-
-/**
- * Convenience method for finding walks between pairs of tokens, given a set of pools pairing tokens
- * @param pairs Pairs of tokens for which to find walks.
- * @param pools Pools that allow bi-directional swaps between token pairs.
- * @param intermediateTokens Allowed list of tokens that can be intermediate tokens.
- * @returns Walks between pairs of tokens
- */
-// export function findWalksFromPools(
-//   pairs: Array<[string, string]>,
-//   pools: PoolTokenPair[],
-//   intermediateTokens?: string[]
-// ) {
-//   const poolGraph = buildPoolGraph(pools);
-//   return findWalks(pairs, poolGraph, intermediateTokens);
-// }
 
 function buildPoolGraph(pools: PoolTokenPair[]) {
   const poolGraphSet = pools.reduce((poolGraph: Record<string, Set<PoolGraphEdge>>, pool) => {
@@ -114,6 +99,7 @@ function findWalks(
   const walks: PoolWalks = {};
 
   tokenPairs.forEach(([tokenMintA, tokenMintB]) => {
+
     let routes = [];
 
     const poolA = poolGraph[tokenMintA] || [];
@@ -141,29 +127,9 @@ function findWalks(
     });
 
     if (routes.length > 0) {
-      walks[getRouteId(tokenMintA, tokenMintB)] = routes;
+      walks[PoolGraphUtils.getRouteId(tokenMintA, tokenMintB)] = routes;
     }
   });
 
   return walks;
-}
-
-/**
- * Returns a route id for a swap between source & destination mint for the Orca UI.
- *
- * The route ID is the key in the TradeRoutes data structure, mapping to a
- * collection of routes that can trade between the two tokens.
- *
- * @param sourceMint - The token the swap is trading from.
- * @param destinationMint - The token the swap is trading for.
- * @returns A string representing the routeId between the two provided tokens.
- */
-function getRouteId(sourceMint: string, destinationMint: string) {
-  const [mintA, mintB] = stringSortMintKeys(sourceMint, destinationMint);
-  return `${mintA}/${mintB}`;
-}
-
-// Not the right way to sort public-keys, but this doesn't matter when we generate route-ids.
-function stringSortMintKeys(mintA: string, mintB: string) {
-  return [mintA, mintB].sort();
 }

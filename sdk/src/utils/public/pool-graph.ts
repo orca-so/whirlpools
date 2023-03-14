@@ -5,41 +5,73 @@ import { AdjacencyPoolGraph } from "../graphs/adjacency-pool-graph";
 import { convertListToMap } from "../txn-utils";
 import { PoolTokenPair } from "./types";
 
-// A record of id (tokenA-tokenB) to a list of paths between the two tokens
-export type RoutePathMap = Record<string, RoutePath[]>;
+/**
+ * A map of route ids to a list of routes between the two tokens
+ * The route id can be obtained from {@link PoolGraphUtils.getRouteId}
+ */
+export type RouteMap = Record<string, Route[]>;
 
-// A route between two tokens
-export type RoutePath = {
+/**
+ * A route between two tokens
+ * @param startMint - The token the route starts with
+ * @param endMint - The token the route ends with
+ * @param edges - An ordered list of pool addresses that make up the route
+ */
+export type Route = {
   startMint: string;
   endMint: string;
   edges: string[];
 };
 
-// TODO: Add max-hop here. For now it's hardcoded to 2.
+/**
+ * Options for finding a route between two tokens
+ * @param intermediateTokens - A list of tokens that can be used as intermediate hops
+ */
 export type RouteFindOptions = {
   intermediateTokens: Address[];
 };
 
-export type RouteEdge = {
-  tokenA: Address;
-  tokenB: Address;
-};
-
+/**
+ * A type representing a graph of pools that can be used to find routes between two tokens.
+ */
 export type PoolGraph = {
-  getRoute: (startMint: Address, endMint: Address, options?: RouteFindOptions) => RoutePath[];
-  getAllRoutes(tokens: [Address, Address][], options?: RouteFindOptions): RoutePathMap;
+  /**
+   * Get a list of routes between two tokens for this pool graph.
+   * @param startMint The token the route starts with
+   * @param endMint The token the route ends with
+   * @param options Options for finding a route
+   * @returns A list of routes between the two tokens
+   */
+  getRoute: (startMint: Address, endMint: Address, options?: RouteFindOptions) => Route[];
+
+  /**
+   * Get a map of routes from a list of token pairs for this pool graph.
+   * @param tokens A list of token pairs to find routes for. The first token in the pair is the start token, and the second token is the end token.
+   * @param options Options for finding a route
+   * @return A map of routes from a list of token pairs
+   */
+  getAllRoutes(tokens: [Address, Address][], options?: RouteFindOptions): RouteMap;
 };
 
 /**
  * Note: we use an adjacency list as a representation of our pool graph,
  * since we assume that most token pairings don't exist as pools
  */
+/**
+ * A builder class for creating a {@link PoolGraph}
+ */
 export class PoolGraphBuilder {
+
+  /**
+   * Fetch data and build a {@link PoolGraph} from a list of pools addresses
+   * @param pools - a list of pool addresses to generate this pool graph
+   * @param fetcher - {@link AccountFetcher} to use for fetching pool data
+   * @returns A {@link PoolGraph} with the provided pools
+   */
   static async buildPoolGraphWithFetch(
     pools: Address[],
     fetcher: AccountFetcher
   ): Promise<PoolGraph> {
-    // Fetch pools and convert to PoolTokenPair
     const poolAccounts = convertListToMap(
       await fetcher.listPools(pools, false),
       pools.map((pool) => AddressUtil.toPubKey(pool).toBase58())
@@ -60,6 +92,11 @@ export class PoolGraphBuilder {
     return new AdjacencyPoolGraph(poolTokenPairs);
   }
 
+  /**
+   * Build a {@link PoolGraph} from a list of pools in the format of {@link PoolTokenPair}
+   * @param pools - a list of {@link PoolTokenPair} to generate this pool graph
+   * @returns A {@link PoolGraph} with the provided pools
+   */
   static buildPoolGraph(pools: PoolTokenPair[]): PoolGraph {
     return new AdjacencyPoolGraph(pools);
   }
@@ -80,6 +117,11 @@ export class PoolGraphUtils {
     return `${sortedMints[0]}-${sortedMints[1]}`;
   }
 
+  /**
+   * Deconstruct a route id into the two tokens it represents
+   * @param routeId - The route id to deconstruct
+   * @returns A tuple of the two tokens in the route id. Returns undefined if the provided routeId is invalid.
+   */
   static deconstructRouteId(routeId: string): [string, string] | undefined {
     const split = routeId.split("-");
 

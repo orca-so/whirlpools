@@ -1,7 +1,7 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import { PoolTokenPair } from "../public";
-import { PoolGraph, PoolGraphUtils, RouteFindOptions, RoutePath, RoutePathMap } from "../public/pool-graph";
+import { PoolGraph, PoolGraphUtils, Route, RouteFindOptions, RouteMap } from "../public/pool-graph";
 
 export class AdjacencyPoolGraph implements PoolGraph {
   readonly graph: {
@@ -12,7 +12,7 @@ export class AdjacencyPoolGraph implements PoolGraph {
     this.graph = buildPoolGraph(pools);
   }
 
-  getRoute(startMint: Address, endMint: Address, options?: RouteFindOptions): RoutePath[] {
+  getRoute(startMint: Address, endMint: Address, options?: RouteFindOptions): Route[] {
     const [startMintKey, endMintKey] = [AddressUtil.toString(startMint), AddressUtil.toString(endMint)];
 
     const walkMap = findWalks(
@@ -32,7 +32,7 @@ export class AdjacencyPoolGraph implements PoolGraph {
     }).flatMap(x => x);
   }
 
-  getAllRoutes(tokens: [Address, Address][], options?: RouteFindOptions): RoutePathMap {
+  getAllRoutes(tokens: [Address, Address][], options?: RouteFindOptions): RouteMap {
     const tokenPairs = tokens.map(([startMint, endMint]) => {
       return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
     })
@@ -40,7 +40,7 @@ export class AdjacencyPoolGraph implements PoolGraph {
 
     const walkEntries = Object.entries(walkMap).map(([routeId, walks]) => {
       const [startMint, endMint] = routeId.split("-");
-      const paths = walks.map<RoutePath>(walk => {
+      const paths = walks.map<Route>(walk => {
         return {
           startMint,
           endMint,

@@ -91,6 +91,27 @@ describe("PoolGraph tests", () => {
       ]);
     });
 
+    it("duplicated token-pairs will be deduped in results", async () => {
+      const testData = [...solConnectedPools, ...usdcConnectedPools];
+      const graph = PoolGraphBuilder.buildPoolGraph(testData);
+      const rlbSolPool = solConnectedPools[0];
+      const mSolSolPool = solConnectedPools[1];
+      const results = graph.getAllRoutes([
+        [rlbSolPool.tokenMintB, mSolSolPool.tokenMintB],
+        [rlbSolPool.tokenMintB, mSolSolPool.tokenMintB],
+      ]);
+      const resultEntries = Object.entries(results);
+
+      assert.equal(resultEntries.length, 1);
+      const rlbUsdcPool = usdcConnectedPools[0];
+      const msolUsdcPool = usdcConnectedPools[1];
+
+      assertGetAllRoutesResult(resultEntries[0], [
+        [rlbSolPool, mSolSolPool],
+        [rlbUsdcPool, msolUsdcPool],
+      ]);
+    });
+
     it("only allow 2-hop routes that go through tokens from the intermediate token list ", async () => {
       const testData = [...solConnectedPools, ...usdcConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
@@ -239,14 +260,11 @@ describe("PoolGraph tests", () => {
     });
     assertGetRouteResult(
       result,
-      [
-        [rlbUsdcPool, msolUsdcPool],
-      ],
+      [[rlbUsdcPool, msolUsdcPool]],
       rlbUsdcPool.tokenMintB,
       msolUsdcPool.tokenMintB
     );
   });
-
 });
 
 function assertGetAllRoutesResult(

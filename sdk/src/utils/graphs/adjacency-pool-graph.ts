@@ -12,12 +12,12 @@ export class AdjacencyPoolGraph implements PoolGraph {
     this.graph = buildPoolGraph(pools);
   }
 
-  getRoutes(startMint: Address, endMint: Address, options: RouteFindOptions): RoutePath[] {
+  getRoute(startMint: Address, endMint: Address, options?: RouteFindOptions): RoutePath[] {
     const [startMintKey, endMintKey] = [AddressUtil.toString(startMint), AddressUtil.toString(endMint)];
     const walkMap = findWalks(
       [[startMintKey, endMintKey]],
       this.graph,
-      options.intermediateTokens.map((token) => AddressUtil.toString(token))
+      options?.intermediateTokens.map((token) => AddressUtil.toString(token))
     );
 
     return Object.values(walkMap).map(walks => {
@@ -31,12 +31,12 @@ export class AdjacencyPoolGraph implements PoolGraph {
     }).flatMap(x => x);
   }
 
-  getAllRoutes(tokens: [Address, Address][], options: RouteFindOptions): RoutePathMap {
+  getAllRoutes(tokens: [Address, Address][], options?: RouteFindOptions): RoutePathMap {
     const tokenPairs = tokens.map(([startMint, endMint]) => {
       // TODO: Deal with mint ordering here
       return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
     })
-    const walkMap = findWalks(tokenPairs, this.graph, options.intermediateTokens.map((token) => AddressUtil.toString(token)))
+    const walkMap = findWalks(tokenPairs, this.graph, options?.intermediateTokens.map((token) => AddressUtil.toString(token)))
     const walkEntries = Object.entries(walkMap).map(([routeId, walks]) => {
       const [startMint, endMint] = routeId.split("-");
       const paths = walks.map<RoutePath>(walk => {

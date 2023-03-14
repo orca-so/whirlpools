@@ -3,16 +3,29 @@ import { Address } from "@project-serum/anchor";
 import { AccountFetcher } from "../..";
 import { AdjacencyPoolGraph } from "../graphs/adjacency-pool-graph";
 import { convertListToMap } from "../txn-utils";
-import { PoolTokenPair } from "./types";
+
+/**
+ * An object containing the token pairs of a Whirlpool.
+ */
+export interface PoolTokenPair {
+  address: Address;
+  tokenMintA: Address;
+  tokenMintB: Address;
+}
+
 
 /**
  * A map of route ids to a list of routes between the two tokens
  * The route id can be obtained from {@link PoolGraphUtils.getRouteId}
+ * 
+ * @category PoolGraph
  */
 export type RouteMap = Record<string, Route[]>;
 
 /**
  * A route between two tokens
+ * 
+ * @category PoolGraph
  * @param startMint - The token the route starts with
  * @param endMint - The token the route ends with
  * @param edges - An ordered list of pool addresses that make up the route
@@ -25,6 +38,8 @@ export type Route = {
 
 /**
  * Options for finding a route between two tokens
+ * 
+ * @category PoolGraph
  * @param intermediateTokens - A list of tokens that can be used as intermediate hops
  */
 export type RouteFindOptions = {
@@ -33,6 +48,7 @@ export type RouteFindOptions = {
 
 /**
  * A type representing a graph of pools that can be used to find routes between two tokens.
+ * @category PoolGraph
  */
 export type PoolGraph = {
   /**
@@ -54,14 +70,13 @@ export type PoolGraph = {
 };
 
 /**
+ * A builder class for creating a {@link PoolGraph}
+ * 
  * Note: we use an adjacency list as a representation of our pool graph,
  * since we assume that most token pairings don't exist as pools
- */
-/**
- * A builder class for creating a {@link PoolGraph}
+ * @category PoolGraph
  */
 export class PoolGraphBuilder {
-
   /**
    * Fetch data and build a {@link PoolGraph} from a list of pools addresses
    * @param pools - a list of pool addresses to generate this pool graph
@@ -102,6 +117,10 @@ export class PoolGraphBuilder {
   }
 }
 
+/**
+ * A utility class for working with pool graphs
+ * @category PoolGraph
+ */
 export class PoolGraphUtils {
   /**
    * Returns a route id for a swap between source & destination mint for the Orca UI.

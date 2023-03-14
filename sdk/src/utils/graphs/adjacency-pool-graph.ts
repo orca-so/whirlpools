@@ -1,7 +1,6 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
-import { PoolTokenPair } from "../public";
-import { PoolGraph, PoolGraphUtils, Route, RouteFindOptions, RouteMap } from "../public/pool-graph";
+import { PoolGraph, PoolGraphUtils, PoolTokenPair, Route, RouteFindOptions, RouteMap } from "../public/pool-graph";
 
 export class AdjacencyPoolGraph implements PoolGraph {
   readonly graph: {

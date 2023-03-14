@@ -26,8 +26,8 @@ export type RouteEdge = {
 }
 
 export type PoolGraph = {
-  getRoutes: (startMint: Address, endMint: Address, options: RouteFindOptions) => RoutePath[];
-  getAllRoutes(tokens: [Address, Address][], options: RouteFindOptions): RoutePathMap;
+  getRoute: (startMint: Address, endMint: Address, options?: RouteFindOptions) => RoutePath[];
+  getAllRoutes(tokens: [Address, Address][], options?: RouteFindOptions): RoutePathMap;
 }
 
 /**

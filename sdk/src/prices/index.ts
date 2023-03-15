@@ -6,9 +6,9 @@ import {
   ORCA_WHIRLPOOLS_CONFIG,
   ORCA_WHIRLPOOL_PROGRAM_ID,
   TickArrayData,
-  TOKEN_MINTS,
-  WhirlpoolData,
+  WhirlpoolData
 } from "../types/public";
+import { TOKEN_MINTS } from "../utils/constants";
 
 export * from "./price-module";
 

@@ -3,7 +3,8 @@ import { Address, BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
-import { TOKEN_MINTS, WhirlpoolData, WhirlpoolRewardInfoData } from "../../types/public";
+import { WhirlpoolData, WhirlpoolRewardInfoData } from "../../types/public";
+import { TOKEN_MINTS } from "../constants";
 import { PriceMath } from "./price-math";
 import { TokenType } from "./types";
 
@@ -11,7 +12,7 @@ import { TokenType } from "./types";
  * @category Whirlpool Utils
  */
 export class PoolUtil {
-  private constructor() {}
+  private constructor() { }
 
   public static isRewardInitialized(rewardInfo: WhirlpoolRewardInfoData): boolean {
     return (

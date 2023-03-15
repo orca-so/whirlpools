@@ -30,8 +30,7 @@ describe("whirlpool-client-impl", () => {
         TickSpacing.Standard,
         3000,
         PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
-        funderKeypair.publicKey,
-        false
+        funderKeypair.publicKey
       )
     ).poolInitInfo;
   });

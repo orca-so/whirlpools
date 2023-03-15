@@ -1,36 +1,31 @@
+import { MathUtil } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
+import { u64 } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
+import * as assert from "assert";
+import Decimal from "decimal.js";
 import {
-  calculatePoolPrices,
-  fetchDecimalsForMints,
-  fetchPoolsForMints,
-  fetchTickArraysForPools,
-  GetPricesConfig,
-  PriceMath,
-  ThresholdConfig,
-  WhirlpoolContext,
+  GetPricesConfig, GetPricesThresholdConfig, PriceModule,
+  PriceModuleUtils, WhirlpoolContext
 } from "../../src";
 import { TickSpacing } from "../utils";
 import {
   buildTestAquariums,
   FundedPositionParams,
   getDefaultAquarium,
-  initTestPoolWithLiquidity,
+  initTestPoolWithLiquidity
 } from "../utils/init-utils";
-import * as assert from "assert";
-import { u64 } from "@solana/spl-token";
-import Decimal from "decimal.js";
-import { MathUtil } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
 
-describe("get_pool_prices", () => {
+// TODO: Move these tests to use mock data instead of relying on solana localnet. It's very slow.
+describe.only("get_pool_prices", () => {
   const provider = anchor.AnchorProvider.env();
   const program = anchor.workspace.Whirlpool;
   const context = WhirlpoolContext.fromWorkspace(provider, program);
 
   async function fetchMaps(context: WhirlpoolContext, mints: PublicKey[], config: GetPricesConfig) {
-    const poolMap = await fetchPoolsForMints(context, mints, config);
-    const tickArrayMap = await fetchTickArraysForPools(context, poolMap);
-    const decimalsMap = await fetchDecimalsForMints(context, mints);
+    const poolMap = await PriceModuleUtils.fetchPoolDataFromMints(context, mints, config);
+    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(context, poolMap);
+    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(context, mints);
 
     return { poolMap, tickArrayMap, decimalsMap };
   }
@@ -39,15 +34,17 @@ describe("get_pool_prices", () => {
     context: WhirlpoolContext,
     mints: PublicKey[],
     config: GetPricesConfig,
-    thresholdConfig: ThresholdConfig
+    thresholdConfig: GetPricesThresholdConfig
   ) {
     const { poolMap, tickArrayMap, decimalsMap } = await fetchMaps(context, mints, config);
 
-    const priceMap = calculatePoolPrices(
+    const priceMap = PriceModule.calculateTokenPrices(
       mints,
-      poolMap,
-      tickArrayMap,
-      decimalsMap,
+      {
+        poolMap,
+        tickArrayMap,
+        decimalsMap,
+      },
       config,
       thresholdConfig
     );
@@ -60,9 +57,9 @@ describe("get_pool_prices", () => {
     };
   }
 
-  function getDefaultThresholdConfig(): ThresholdConfig {
+  function getDefaultThresholdConfig(): GetPricesThresholdConfig {
     return {
-      amountOut: new u64(100),
+      amountOut: new u64(1_000_000),
       priceImpactThreshold: 1.05,
     };
   }
@@ -235,7 +232,7 @@ describe("get_pool_prices", () => {
     });
     const fundParams: FundedPositionParams[] = [
       {
-        liquidityAmount: new anchor.BN(10_000_000),
+        liquidityAmount: new anchor.BN(10_000_000_000),
         tickLowerIndex: 29440,
         tickUpperIndex: 33536,
       },

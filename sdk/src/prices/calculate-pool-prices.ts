@@ -5,24 +5,23 @@ import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import {
   DecimalsMap,
-  defaultConfig,
+  defaultGetPricesConfig,
   GetPricesConfig,
+  GetPricesThresholdConfig,
   PoolMap,
   PriceMap,
-  ThresholdConfig,
-  TickArrayMap,
-  PoolObject,
+  TickArrayMap
 } from ".";
 import { swapQuoteWithParams } from "../quotes/public/swap-quote";
 import { TickArray, WhirlpoolData } from "../types/public";
 import { PoolUtil, PriceMath, SwapUtils } from "../utils/public";
 import { PDAUtil } from "../utils/public/pda-utils";
 
-export function checkLiquidity(
+function checkLiquidity(
   pool: WhirlpoolData,
   tickArrays: TickArray[],
   aToB: boolean,
-  thresholdConfig: ThresholdConfig,
+  thresholdConfig: GetPricesThresholdConfig,
   decimalsMap: DecimalsMap
 ): boolean {
   const { amountOut, priceImpactThreshold } = thresholdConfig;
@@ -71,11 +70,12 @@ export function checkLiquidity(
   return estimatedAmountInDecimals.lte(maxAmountInDecimals);
 }
 
-export function getMostLiquidPool(
+type PoolObject = { pool: WhirlpoolData; address: PublicKey };
+function getMostLiquidPool(
   mintA: Address,
   mintB: Address,
   poolMap: PoolMap,
-  config = defaultConfig
+  config = defaultGetPricesConfig
 ): PoolObject | null {
   const { tickSpacings, programId, whirlpoolsConfig } = config;
   const pools = tickSpacings
@@ -106,16 +106,17 @@ export function getMostLiquidPool(
 }
 
 export function calculatePricesForQuoteToken(
-  mints: PublicKey[],
+  mints: Address[],
   quoteTokenMint: PublicKey,
   poolMap: PoolMap,
   tickArrayMap: TickArrayMap,
   decimalsMap: DecimalsMap,
   config: GetPricesConfig,
-  thresholdConfig: ThresholdConfig
+  thresholdConfig: GetPricesThresholdConfig
 ): PriceMap {
   return Object.fromEntries(
-    mints.map((mint) => {
+    mints.map((mintAddr) => {
+      const mint = AddressUtil.toPubKey(mintAddr);
       if (mint.equals(quoteTokenMint)) {
         return [mint.toBase58(), new Decimal(1)];
       }
@@ -153,7 +154,7 @@ function getTickArrays(
   address: PublicKey,
   aToB: boolean,
   tickArrayMap: TickArrayMap,
-  config = defaultConfig
+  config = defaultGetPricesConfig
 ): TickArray[] {
   const { programId } = config;
   const tickArrayPublicKeys = SwapUtils.getTickArrayPublicKeys(

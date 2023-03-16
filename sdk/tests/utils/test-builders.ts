@@ -56,9 +56,16 @@ export const generateDefaultConfigParams = (
 
 export const createInOrderMints = async (context: WhirlpoolContext, reuseTokenA?: PublicKey) => {
   const provider = context.provider;
-  const tokenXMintPubKey = reuseTokenA || (await createMint(provider));
-  const tokenYMintPubKey = await createMint(provider);
-  return PoolUtil.orderMints(tokenXMintPubKey, tokenYMintPubKey).map(AddressUtil.toPubKey);
+  const tokenXMintPubKey = reuseTokenA ?? (await createMint(provider));
+
+  // ensure reuseTokenA is the first mint if reuseTokenA is provided
+  while (true) {
+    const tokenYMintPubKey = await createMint(provider);
+    const ordered = PoolUtil.orderMints(tokenXMintPubKey, tokenYMintPubKey).map(AddressUtil.toPubKey);
+    if (!reuseTokenA || ordered[0].equals(reuseTokenA)) {
+      return ordered;
+    }
+  }
 };
 
 export const generateDefaultInitPoolParams = async (

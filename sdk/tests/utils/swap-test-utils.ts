@@ -39,7 +39,7 @@ export async function setupSwapTest(setup: SwapTestPoolParams, tokenAIsNative = 
     setup.tickSpacing,
     setup.initSqrtPrice,
     setup.tokenMintAmount,
-    NATIVE_MINT
+    tokenAIsNative ? NATIVE_MINT : undefined
   );
 
   const whirlpool = await setup.client.getPool(whirlpoolPda.publicKey, true);

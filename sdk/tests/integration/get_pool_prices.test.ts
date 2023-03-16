@@ -17,7 +17,7 @@ import {
 } from "../utils/init-utils";
 
 // TODO: Move these tests to use mock data instead of relying on solana localnet. It's very slow.
-describe.only("get_pool_prices", () => {
+describe("get_pool_prices", () => {
   const provider = anchor.AnchorProvider.env();
   const program = anchor.workspace.Whirlpool;
   const context = WhirlpoolContext.fromWorkspace(provider, program);

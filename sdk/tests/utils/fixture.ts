@@ -1,5 +1,5 @@
 import { PublicKey, Keypair } from "@solana/web3.js";
-import { u64 } from "@solana/spl-token";
+import { NATIVE_MINT, u64 } from "@solana/spl-token";
 import { InitConfigParams, InitPoolParams, TickUtil, WhirlpoolContext } from "../../src";
 import {
   FundedPositionInfo,
@@ -54,7 +54,7 @@ export class WhirlpoolTestFixture {
         tickSpacing,
         initialSqrtPrice,
         undefined,
-        tokenAIsNative
+        tokenAIsNative ? NATIVE_MINT : undefined
       );
 
     this.poolInitInfo = poolInitInfo;

@@ -61,11 +61,11 @@ export type PoolGraph = {
 
   /**
    * Get a map of routes from a list of token pairs for this pool graph.
-   * @param tokens A list of token pairs to find routes for. The first token in the pair is the start token, and the second token is the end token.
+   * @param searchTokenPairs A list of token pairs to find routes for. The first token in the pair is the start token, and the second token is the end token.
    * @param options Options for finding a route
    * @return A map of routes from a list of token pairs
    */
-  getAllRoutes(tokens: [Address, Address][], options?: RouteFindOptions): RouteMap;
+  getAllRoutes(searchTokenPairs: [Address, Address][], options?: RouteFindOptions): RouteMap;
 };
 
 /**
@@ -108,11 +108,11 @@ export class PoolGraphBuilder {
 
   /**
    * Build a {@link PoolGraph} from a list of pools in the format of {@link PoolTokenPair}
-   * @param pools - a list of {@link PoolTokenPair} to generate this pool graph
+   * @param poolTokenPairs - a list of {@link PoolTokenPair} to generate this pool graph
    * @returns A {@link PoolGraph} with the provided pools
    */
-  static buildPoolGraph(pools: PoolTokenPair[]): PoolGraph {
-    return new AdjacencyPoolGraph(pools);
+  static buildPoolGraph(poolTokenPairs: PoolTokenPair[]): PoolGraph {
+    return new AdjacencyPoolGraph(poolTokenPairs);
   }
 }
 
@@ -121,6 +121,7 @@ export class PoolGraphBuilder {
  * @category PoolGraph
  */
 export class PoolGraphUtils {
+  static readonly ROUTE_ID_DELIMINTER = "-";
   /**
    * Returns a route id for a swap between source & destination mint for the Orca UI.
    * The route id is a string of the two mints in alphabetical order, separated by a dash.
@@ -132,7 +133,7 @@ export class PoolGraphUtils {
   static getRouteId(tokenA: Address, tokenB: Address): string {
     const mints = [AddressUtil.toString(tokenA), AddressUtil.toString(tokenB)];
     const sortedMints = mints.sort();
-    return `${sortedMints[0]}-${sortedMints[1]}`;
+    return `${sortedMints[0]}${PoolGraphUtils.ROUTE_ID_DELIMINTER}${sortedMints[1]}`;
   }
 
   /**
@@ -141,7 +142,7 @@ export class PoolGraphUtils {
    * @returns A tuple of the two tokens in the route id. Returns undefined if the provided routeId is invalid.
    */
   static deconstructRouteId(routeId: string): [string, string] | undefined {
-    const split = routeId.split("-");
+    const split = routeId.split(PoolGraphUtils.ROUTE_ID_DELIMINTER);
 
     if (split.length !== 2) {
       console.error("Invalid routeId");

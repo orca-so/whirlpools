@@ -43,18 +43,22 @@ export class AdjacencyPoolGraph implements PoolGraph {
       .flatMap((x) => x);
   }
 
-  getAllRoutes(tokens: [Address, Address][], options?: RouteFindOptions): RouteMap {
-    const tokenPairs = tokens.map(([startMint, endMint]) => {
+  getAllRoutes(searchTokenPairs: [Address, Address][], options?: RouteFindOptions): RouteMap {
+    const searchTokenPairsAddrs = searchTokenPairs.map(([startMint, endMint]) => {
       return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
     });
     const walkMap = findWalks(
-      tokenPairs,
+      searchTokenPairsAddrs,
       this.graph,
       options?.intermediateTokens.map((token) => AddressUtil.toString(token))
     );
 
     const walkEntries = Object.entries(walkMap).map(([routeId, walks]) => {
-      const [startMint, endMint] = routeId.split("-");
+      const deconstructRouteId = PoolGraphUtils.deconstructRouteId(routeId);
+      if (deconstructRouteId === undefined) {
+        throw new Error(`Invalid route id: ${routeId}`);
+      }
+      const [startMint, endMint] = deconstructRouteId;
       const paths = walks.map<Route>((walk) => {
         return {
           startMint,

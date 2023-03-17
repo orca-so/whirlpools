@@ -38,12 +38,10 @@ export type Route = {
 };
 
 /**
- * A type representing a pool graph edge
- * NOTE: User has to figure out the directionality
+ * A type representing a pool graph edge.
  *
  * @category PoolGraph
  */
-// TODO: Figure out directionality in this type
 export type Hop = {
   poolAddress: Address;
 }
@@ -151,12 +149,11 @@ export class PoolGraphUtils {
    * @param routeId - The route id to deconstruct
    * @returns A tuple of the two tokens in the route id. Returns undefined if the provided routeId is invalid.
    */
-  static deconstructRouteId(routeId: string): [string, string] | undefined {
+  static deconstructRouteId(routeId: string): [string, string] {
     const split = routeId.split(PoolGraphUtils.ROUTE_ID_DELIMINTER);
 
     if (split.length !== 2) {
-      console.error("Invalid routeId");
-      return undefined;
+      throw new Error(`Invalid route id: ${routeId}`)
     }
 
     const [tokenA, tokenB] = split;

@@ -153,7 +153,7 @@ describe.only("PoolGraph tests", () => {
       assertGetAllRoutesResult(results, expectedRoutesForTokenPairQueries);
     });
 
-    it.only("same token-pairs but with reversed order has unique search ids", async () => {
+    it("same token-pairs but with reversed order has unique search ids", async () => {
       const testData = [...solConnectedPools, ...usdcConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
@@ -164,8 +164,6 @@ describe.only("PoolGraph tests", () => {
 
       const results = graph.getAllRoutes(searchTokenPairs);
       assert.equal(results.length, 2);
-
-      console.log(`results: ${JSON.stringify(results, null, 2)}`)
 
       // TODO: Directionality of the hops is not being considered
       const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
@@ -333,11 +331,7 @@ function assertGetAllRoutesResult(
 
   searchResultEntires.forEach((searchEntry, entryIndex) => {
     const [routeId, routes] = searchEntry;
-    const dRouteId = PoolGraphUtils.deconstructRouteId(routeId);
-    if (!dRouteId) {
-      throw new Error(`assertGetAllRoutesResult - Invalid routeId at entry ${entryIndex} of route (${routeId})`);
-    }
-    const [startMint, endMint] = dRouteId;
+    const [startMint, endMint] = PoolGraphUtils.deconstructRouteId(routeId);
 
     // Assert route is correct
     const expectedRoutesForEntry = expectedRoutes[entryIndex];

@@ -1,12 +1,14 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
+import { PublicKey } from "@solana/web3.js";
 import {
+  Hop,
   PoolGraph,
   PoolGraphUtils,
   PoolTokenPair,
   Route,
   RouteFindOptions,
-  RouteMap
+  RouteSearchEntires
 } from "../public/pool-graph";
 
 export class AdjacencyPoolGraph implements PoolGraph {
@@ -30,20 +32,23 @@ export class AdjacencyPoolGraph implements PoolGraph {
       options?.intermediateTokens.map((token) => AddressUtil.toString(token))
     );
 
-    return Object.values(walkMap)
-      .map((walks) => {
-        return walks.map((walk) => {
-          return {
-            startMint: startMintKey,
-            endMint: endMintKey,
-            edges: walk,
-          };
-        });
-      })
-      .flatMap((x) => x);
+    const internalRouteId = getInternalRouteId(startMintKey, endMintKey);
+    const searchRouteId = PoolGraphUtils.getSearchRouteId(startMint, endMint);
+    const routeForSearchPair = walkMap[internalRouteId];
+    if (routeForSearchPair === undefined) {
+      return [];
+    }
+
+    return routeForSearchPair.map((route) => {
+      return {
+        startTokenMint: startMintKey,
+        endTokenMint: endMintKey,
+        hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
+      };
+    });
   }
 
-  getAllRoutes(searchTokenPairs: [Address, Address][], options?: RouteFindOptions): RouteMap {
+  getAllRoutes(searchTokenPairs: [Address, Address][], options?: RouteFindOptions): RouteSearchEntires {
     const searchTokenPairsAddrs = searchTokenPairs.map(([startMint, endMint]) => {
       return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
     });
@@ -53,25 +58,35 @@ export class AdjacencyPoolGraph implements PoolGraph {
       options?.intermediateTokens.map((token) => AddressUtil.toString(token))
     );
 
-    const walkEntries = Object.entries(walkMap).map(([routeId, walks]) => {
-      const deconstructRouteId = PoolGraphUtils.deconstructRouteId(routeId);
-      if (deconstructRouteId === undefined) {
-        throw new Error(`Invalid route id: ${routeId}`);
-      }
-      const [startMint, endMint] = deconstructRouteId;
-      const paths = walks.map<Route>((walk) => {
+    const results = searchTokenPairsAddrs.map(([startMint, endMint]) => {
+      const searchRouteId = PoolGraphUtils.getSearchRouteId(startMint, endMint);
+      const internalRouteId = getInternalRouteId(startMint, endMint);
+      const routesForSearchPair = walkMap[internalRouteId];
+      const paths = routesForSearchPair ? routesForSearchPair.map<Route>((route) => {
         return {
-          startMint,
-          endMint,
-          edges: walk,
+          startTokenMint: startMint,
+          endTokenMint: endMint,
+          hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
         };
-      });
-      return [routeId, paths] as const;
+      }) : [];
+
+
+      return [searchRouteId, paths] as const;
     });
 
-    return Object.fromEntries(walkEntries);
+    return results;
   }
 }
+
+function getHopsFromRoute(internalRouteId: string, searchRouteId: string, route: string[]): Hop[] {
+  // Naive technique to check directionality, but we will assume internal & search route id are generated from the
+  // same token pair.
+
+  const shouldReverseRoute = internalRouteId !== searchRouteId
+  const finalRoutes = !shouldReverseRoute ? route : route.reverse();
+  return finalRoutes.map(hopStr => { return { poolAddress: new PublicKey(hopStr) } })
+}
+
 
 type AdjacencyPoolGraphMap = Record<string, Array<PoolGraphEdge>>;
 
@@ -145,9 +160,15 @@ function findWalks(
     });
 
     if (routes.length > 0) {
-      walks[PoolGraphUtils.getRouteId(tokenMintA, tokenMintB)] = routes;
+      walks[getInternalRouteId(tokenMintA, tokenMintB)] = routes;
     }
   });
 
   return walks;
+}
+
+function getInternalRouteId(tokenA: Address, tokenB: Address): string {
+  const mints = [AddressUtil.toString(tokenA), AddressUtil.toString(tokenB)];
+  const sortedMints = mints.sort();
+  return `${sortedMints[0]}${PoolGraphUtils.ROUTE_ID_DELIMINTER}${sortedMints[1]}`;
 }

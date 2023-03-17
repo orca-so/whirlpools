@@ -14,15 +14,17 @@ export interface PoolTokenPair {
 }
 
 /**
- * A map of route ids to a list of routes between the two tokens
- * The route id can be obtained from {@link PoolGraphUtils.getRouteId}
+ * Route search results for a series of graph search queries between two tokens.
+ * The search id for each entry can be obtained from {@link PoolGraphUtils.getSearchRouteId}
+ * If routes exist for that search id exists, it will be an array of routes.
+ * If routes do not exist, it will be an empty array.
  *
  * @category PoolGraph
  */
-export type RouteMap = Record<string, Route[]>;
+export type RouteSearchEntires = (readonly [string, Route[]])[];
 
 /**
- * A route between two tokens
+ * A route to trade from start token mint to end token mint.
  *
  * @category PoolGraph
  * @param startMint - The token the route starts with
@@ -30,10 +32,21 @@ export type RouteMap = Record<string, Route[]>;
  * @param edges - An ordered list of pool addresses that make up the route
  */
 export type Route = {
-  startMint: string;
-  endMint: string;
-  edges: string[];
+  startTokenMint: string;
+  endTokenMint: string;
+  hops: Hop[];
 };
+
+/**
+ * A type representing a pool graph edge
+ * NOTE: User has to figure out the directionality
+ *
+ * @category PoolGraph
+ */
+// TODO: Figure out directionality in this type
+export type Hop = {
+  poolAddress: Address;
+}
 
 /**
  * Options for finding a route between two tokens
@@ -52,10 +65,10 @@ export type RouteFindOptions = {
 export type PoolGraph = {
   /**
    * Get a list of routes between two tokens for this pool graph.
-   * @param startMint The token the route starts with
-   * @param endMint The token the route ends with
+   * @param startMint The token the route starts from
+   * @param endMint The token the route ends in
    * @param options Options for finding a route
-   * @returns A list of routes between the two tokens
+   * @returns A list of routes between the two tokens. If no routes are found, it will be an empty array.
    */
   getRoute: (startMint: Address, endMint: Address, options?: RouteFindOptions) => Route[];
 
@@ -63,9 +76,9 @@ export type PoolGraph = {
    * Get a map of routes from a list of token pairs for this pool graph.
    * @param searchTokenPairs A list of token pairs to find routes for. The first token in the pair is the start token, and the second token is the end token.
    * @param options Options for finding a route
-   * @return A map of routes from a list of token pairs
+   * @return An array of search result entires in the same order as the searchTokenPairs.
    */
-  getAllRoutes(searchTokenPairs: [Address, Address][], options?: RouteFindOptions): RouteMap;
+  getAllRoutes(searchTokenPairs: [Address, Address][], options?: RouteFindOptions): RouteSearchEntires;
 };
 
 /**
@@ -122,18 +135,15 @@ export class PoolGraphBuilder {
  */
 export class PoolGraphUtils {
   static readonly ROUTE_ID_DELIMINTER = "-";
+
   /**
-   * Returns a route id for a swap between source & destination mint for the Orca UI.
-   * The route id is a string of the two mints in alphabetical order, separated by a dash.
-   *
-   * @param sourceMint - The token the swap is trading from.
-   * @param destinationMint - The token the swap is trading for.
-   * @returns A string representing the routeId between the two provided tokens.
+   * Get a search route id from two tokens. The id can be used to identify a route between the two tokens in {@link RouteSearchEntires}.
+   * @param tokenA The first token in the route
+   * @param tokenB The second token in the route
+   * @returns A route id that can be used to identify a route between the two tokens in {@link RouteSearchEntires}.
    */
-  static getRouteId(tokenA: Address, tokenB: Address): string {
-    const mints = [AddressUtil.toString(tokenA), AddressUtil.toString(tokenB)];
-    const sortedMints = mints.sort();
-    return `${sortedMints[0]}${PoolGraphUtils.ROUTE_ID_DELIMINTER}${sortedMints[1]}`;
+  static getSearchRouteId(tokenA: Address, tokenB: Address): string {
+    return `${AddressUtil.toString(tokenA)}${PoolGraphUtils.ROUTE_ID_DELIMINTER}${AddressUtil.toString(tokenB)}`;
   }
 
   /**

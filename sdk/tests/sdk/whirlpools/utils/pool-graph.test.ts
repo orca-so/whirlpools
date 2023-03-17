@@ -320,6 +320,38 @@ describe.only("PoolGraph tests", () => {
       );
     });
   });
+
+  describe("Pool graph edge cases", () => {
+    it("Zero pools in graph should not return any results", async () => {
+      const graph = PoolGraphBuilder.buildPoolGraph([]);
+      const uniqueTokenPair = uniqueTokenMintsGraphTokenUnsortedData[0];
+      const results = graph.getAllRoutes([
+        [uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB],
+      ]);
+      assert.equal(results.length, 1);
+      const searchId = PoolGraphUtils.getSearchRouteId(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
+
+      assertGetAllRoutesResult(results, [[searchId, []]]);
+    });
+
+    it("Duplicate pool data in input should not affect output", async () => {
+      const testData = [...solConnectedPools, ...solConnectedPools, ...uniqueTokenMintsGraphData];
+      const graph = PoolGraphBuilder.buildPoolGraph(testData);
+
+      const searchTokenPairs: [Address, Address][] = [
+        [uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB]
+      ]
+      const results = graph.getAllRoutes(searchTokenPairs);
+      assert.equal(results.length, 1);
+
+      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+          [uniqueTokenPair]
+        ]]];
+
+      assertGetAllRoutesResult(results, expectedRoutesForTokenPairQueries);
+    });
+  });
 });
 
 function assertGetAllRoutesResult(

@@ -101,22 +101,30 @@ type PoolGraphEdge = {
 type PoolWalks = Record<string, string[][]>;
 
 function buildPoolGraph(pools: PoolTokenPair[]) {
-  const poolGraphSet = pools.reduce((poolGraph: Record<string, Set<PoolGraphEdge>>, pool) => {
+  const poolGraphSet = pools.reduce((poolGraph: Record<string, PoolGraphEdge[]>, pool) => {
     const { address, tokenMintA, tokenMintB } = pool;
-    const [addr, mintA, mintB] = AddressUtil.toPubKeys([address, tokenMintA, tokenMintB]).map(
-      (pk) => pk.toBase58()
-    );
+    const [addr, mintA, mintB] = AddressUtil.toStrings([address, tokenMintA, tokenMintB]);
 
     if (poolGraph[mintA] === undefined) {
-      poolGraph[mintA] = new Set();
+      poolGraph[mintA] = [];
     }
 
     if (poolGraph[mintB] === undefined) {
-      poolGraph[mintB] = new Set();
+      poolGraph[mintB] = [];
     }
 
-    poolGraph[mintA].add({ address: addr, otherToken: mintB });
-    poolGraph[mintB].add({ address: addr, otherToken: mintA });
+    const existingAddressesForA = poolGraph[mintA].map((p) => p.address);
+    const existingAddressesForB = poolGraph[mintB].map((p) => p.address);
+
+
+    if (!existingAddressesForA.includes(addr)) {
+      poolGraph[mintA].push({ address: addr, otherToken: mintB });
+    }
+
+    if (!existingAddressesForB.includes(addr)) {
+      poolGraph[mintB].push({ address: addr, otherToken: mintA });
+    }
+
     return poolGraph;
   }, {});
 

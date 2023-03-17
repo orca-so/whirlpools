@@ -280,33 +280,37 @@ export class PriceModuleUtils {
     refresh = true
   ): Promise<TickArrayMap> {
     const { programId } = config;
-    const tickArrayAddresses = Object.entries(pools)
-      .map(([poolAddress, pool]): PublicKey[] => {
-        const aToBTickArrayPublicKeys = SwapUtils.getTickArrayPublicKeys(
-          pool.tickCurrentIndex,
-          pool.tickSpacing,
-          true,
-          programId,
-          new PublicKey(poolAddress)
-        );
 
-        const bToATickArrayPublicKeys = SwapUtils.getTickArrayPublicKeys(
-          pool.tickCurrentIndex,
-          pool.tickSpacing,
-          false,
-          programId,
-          new PublicKey(poolAddress)
-        );
+    const getQuoteTokenOrder = (mint: PublicKey) => {
+      const index = config.quoteTokens.findIndex((quoteToken) => quoteToken.equals(mint));
+      return index === -1 ? config.quoteTokens.length : index;
+    }
 
-        // Fetch tick arrays in both directions
-        if (aToBTickArrayPublicKeys[0].equals(bToATickArrayPublicKeys[0])) {
-          return aToBTickArrayPublicKeys.concat(bToATickArrayPublicKeys.slice(1));
-        } else {
-          return aToBTickArrayPublicKeys.concat(bToATickArrayPublicKeys);
-        }
-      })
-      .flat()
-      .map((tickArray): string => tickArray.toBase58());
+    // select tick arrays based on the direction of swapQuote
+    // TickArray is a large account, which affects decoding time.
+    // Fetching can be performed in parallel, but it is preferable to fetch the minimum number of accounts necessary.
+    const tickArrayAddressSet = new Set<string>();
+    Object.entries(pools).forEach(([address, pool]) => {
+      const orderA = getQuoteTokenOrder(pool.tokenMintA);
+      const orderB = getQuoteTokenOrder(pool.tokenMintB);
+
+      if (orderA === orderB) {
+        // neigher tokenMintA nor tokenMintB is a quote token
+        return;
+      }
+
+      const aToB = orderA > orderB;
+      
+      const tickArrayPubkeys = SwapUtils.getTickArrayPublicKeys(
+        pool.tickCurrentIndex,
+        pool.tickSpacing,
+        aToB,
+        programId,
+        new PublicKey(address),
+      );
+      tickArrayPubkeys.forEach((p) => tickArrayAddressSet.add(p.toBase58()));
+    });
+    const tickArrayAddresses = Array.from(tickArrayAddressSet);
 
     const tickArrays = await ctx.fetcher.listTickArrays(tickArrayAddresses, refresh);
 

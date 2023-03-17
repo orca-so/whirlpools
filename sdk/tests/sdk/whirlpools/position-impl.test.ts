@@ -89,7 +89,7 @@ describe("position-impl", () => {
 
     // [Action] Withdraw half of the liquidity away from the position and verify
     const withdrawHalf = postIncreaseData.liquidity.div(new anchor.BN(2));
-    const decrease_quote = await decreaseLiquidityQuoteByLiquidity(
+    const decrease_quote = decreaseLiquidityQuoteByLiquidity(
       withdrawHalf,
       Percentage.fromFraction(0, 100),
       position,

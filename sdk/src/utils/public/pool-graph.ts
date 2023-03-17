@@ -6,6 +6,7 @@ import { convertListToMap } from "../txn-utils";
 
 /**
  * An object containing the token pairs of a Whirlpool.
+ * @category PoolGraph
  */
 export interface PoolTokenPair {
   address: Address;

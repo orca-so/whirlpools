@@ -7,7 +7,7 @@ import {
   PoolTokenPair,
   Route,
   RouteSearchEntries,
-  RouteSearchOptions,
+  RouteSearchOptions
 } from "./public/pool-graph";
 import { PoolGraphUtils } from "./public/pool-graph-utils";
 
@@ -67,12 +67,12 @@ export class AdjacencyListPoolGraph implements PoolGraph {
 
       const paths = routesForSearchPair
         ? routesForSearchPair.map<Route>((route) => {
-            return {
-              startTokenMint: AddressUtil.toString(startMint),
-              endTokenMint: AddressUtil.toString(endMint),
-              hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
-            };
-          })
+          return {
+            startTokenMint: AddressUtil.toString(startMint),
+            endTokenMint: AddressUtil.toString(endMint),
+            hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
+          };
+        })
         : [];
 
       // save to cache
@@ -140,9 +140,7 @@ function buildPoolGraph(pools: PoolTokenPair[]): Readonly<AdjacencyPoolGraphMap>
     return poolGraph;
   }, {});
 
-  return Object.fromEntries(
-    Object.entries(poolGraphSet).map(([mint, otherMints]) => [mint, otherMints])
-  );
+  return poolGraphSet;
 }
 
 // This is currently hardcoded to find walks of max length 2, generalizing to longer walks

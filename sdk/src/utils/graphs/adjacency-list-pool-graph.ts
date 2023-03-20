@@ -7,7 +7,7 @@ import {
   PoolTokenPair,
   Route,
   RouteSearchEntries,
-  RouteSearchOptions
+  RouteSearchOptions,
 } from "./public/pool-graph";
 import { PoolGraphUtils } from "./public/pool-graph-utils";
 
@@ -67,12 +67,12 @@ export class AdjacencyListPoolGraph implements PoolGraph {
 
       const paths = routesForSearchPair
         ? routesForSearchPair.map<Route>((route) => {
-          return {
-            startTokenMint: AddressUtil.toString(startMint),
-            endTokenMint: AddressUtil.toString(endMint),
-            hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
-          };
-        })
+            return {
+              startTokenMint: AddressUtil.toString(startMint),
+              endTokenMint: AddressUtil.toString(endMint),
+              hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
+            };
+          })
         : [];
 
       // save to cache
@@ -114,25 +114,27 @@ function buildPoolGraph(pools: PoolTokenPair[]): Readonly<AdjacencyPoolGraphMap>
 
     if (poolGraph[mintA] === undefined) {
       poolGraph[mintA] = [];
+      insertedPoolCache[mintA] = new Set<string>();
     }
 
     if (poolGraph[mintB] === undefined) {
       poolGraph[mintB] = [];
+      insertedPoolCache[mintB] = new Set<string>();
     }
 
-    const insertedPoolsForA = insertedPoolCache[mintA] ?? new Set<string>();
-    const insertedPoolsForB = insertedPoolCache[mintB] ?? new Set<string>();
+    const [insertedPoolsForA, insertedPoolsForB] = [
+      insertedPoolCache[mintA],
+      insertedPoolCache[mintB],
+    ];
 
     if (!insertedPoolsForA.has(addr)) {
       poolGraph[mintA].push({ address: addr, otherToken: mintB });
       insertedPoolsForA.add(addr);
-      insertedPoolCache[mintA] = insertedPoolsForA;
     }
 
     if (!insertedPoolsForB.has(addr)) {
       poolGraph[mintB].push({ address: addr, otherToken: mintA });
       insertedPoolsForB.add(addr);
-      insertedPoolCache[mintB] = insertedPoolsForB;
     }
 
     return poolGraph;

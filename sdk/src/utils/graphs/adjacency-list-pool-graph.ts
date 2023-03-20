@@ -127,16 +127,12 @@ function buildPoolGraph(pools: PoolTokenPair[]): Readonly<AdjacencyPoolGraphMap>
       poolGraph[mintA].push({ address: addr, otherToken: mintB });
       insertedPoolsForA.add(addr);
       insertedPoolCache[mintA] = insertedPoolsForA;
-    } else {
-      console.error(`buildPoolGraph - Duplicate pool found for ${mintA} ${mintB}`)
     }
 
     if (!insertedPoolsForB.has(addr)) {
       poolGraph[mintB].push({ address: addr, otherToken: mintA });
       insertedPoolsForB.add(addr);
       insertedPoolCache[mintB] = insertedPoolsForB;
-    } else {
-      console.log(`buildPoolGraph - Duplicate pool found for ${mintA} ${mintB}`)
     }
 
     return poolGraph;

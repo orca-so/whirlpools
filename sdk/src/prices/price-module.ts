@@ -8,7 +8,7 @@ import {
   PoolMap,
   PriceCalculationData,
   PriceMap,
-  TickArrayMap
+  TickArrayMap,
 } from ".";
 import { WhirlpoolContext } from "../context";
 import { PDAUtil, PoolUtil, SwapUtils } from "../utils/public";

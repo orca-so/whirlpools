@@ -107,6 +107,7 @@ type PoolGraphEdge = {
 type PoolWalks = Record<string, string[][]>;
 
 function buildPoolGraph(pools: PoolTokenPair[]): Readonly<AdjacencyPoolGraphMap> {
+  const insertedPoolCache: Record<string, Set<string>> = {};
   const poolGraphSet = pools.reduce((poolGraph: Record<string, PoolGraphEdge[]>, pool) => {
     const { address, tokenMintA, tokenMintB } = pool;
     const [addr, mintA, mintB] = AddressUtil.toStrings([address, tokenMintA, tokenMintB]);
@@ -119,15 +120,23 @@ function buildPoolGraph(pools: PoolTokenPair[]): Readonly<AdjacencyPoolGraphMap>
       poolGraph[mintB] = [];
     }
 
-    const existingAddressesForA = poolGraph[mintA].map((p) => p.address);
-    const existingAddressesForB = poolGraph[mintB].map((p) => p.address);
+    const insertedPoolsForA = insertedPoolCache[mintA] ?? new Set<string>();
+    const insertedPoolsForB = insertedPoolCache[mintB] ?? new Set<string>();
 
-    if (!existingAddressesForA.includes(addr)) {
+    if (!insertedPoolsForA.has(addr)) {
       poolGraph[mintA].push({ address: addr, otherToken: mintB });
+      insertedPoolsForA.add(addr);
+      insertedPoolCache[mintA] = insertedPoolsForA;
+    } else {
+      console.error(`buildPoolGraph - Duplicate pool found for ${mintA} ${mintB}`)
     }
 
-    if (!existingAddressesForB.includes(addr)) {
+    if (!insertedPoolsForB.has(addr)) {
       poolGraph[mintB].push({ address: addr, otherToken: mintA });
+      insertedPoolsForB.add(addr);
+      insertedPoolCache[mintB] = insertedPoolsForB;
+    } else {
+      console.log(`buildPoolGraph - Duplicate pool found for ${mintA} ${mintB}`)
     }
 
     return poolGraph;

@@ -55,11 +55,17 @@ export type RouteSearchOptions = {
 
 /**
  * A type representing a graph of pools that can be used to find routes between two tokens.
+ *
  * @category PoolGraph
  */
 export type PoolGraph = {
   /**
    * Get a list of routes between two tokens for this pool graph.
+   *
+   * Notes:
+   * - Only support routes with up to 2 hops
+   * - Routes between two identical token mints are not supported.
+   *
    * @param startMint The token the route starts from
    * @param endMint The token the route ends in
    * @param options Options for finding a route
@@ -69,6 +75,11 @@ export type PoolGraph = {
 
   /**
    * Get a map of routes from a list of token pairs for this pool graph.
+   *
+   * Notes:
+   * - Only support routes with up to 2 hops
+   * - Routes between two identical token mints are not supported.
+   *
    * @param searchTokenPairs A list of token pairs to find routes for. The first token in the pair is the start token, and the second token is the end token.
    * @param options Options for finding a route
    * @return An array of search result entires in the same order as the searchTokenPairs.

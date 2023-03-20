@@ -16,9 +16,11 @@ import { PoolGraphUtils } from "./public/pool-graph-utils";
  *
  * Whirlpools (Pools (edges) & Tokens (nodes)) are sparse graphs concentrated on popular pairs such as SOL, USDC etc.
  * Therefore this implementation is more efficient in memory consumption & building than a matrix.
+ * 
+ * TODO: This implementation does not support 2-hop routes between identical tokens.
  */
 export class AdjacencyListPoolGraph implements PoolGraph {
-  readonly graph: Record<string, PoolGraphEdge[]>;
+  readonly graph: Readonly<AdjacencyPoolGraphMap>;
   readonly cache: Record<string, Route[]> = {};
 
   constructor(pools: PoolTokenPair[]) {
@@ -36,7 +38,9 @@ export class AdjacencyListPoolGraph implements PoolGraph {
   ): RouteSearchEntries {
     // Filter out the pairs that has cached values
     const searchTokenPairsToFind = searchTokenPairs.filter(([startMint, endMint]) => {
-      return !this.cache[PoolGraphUtils.getSearchRouteId(startMint, endMint)];
+      const hasNoCacheValue = !this.cache[PoolGraphUtils.getSearchRouteId(startMint, endMint)];
+      const notSameToken = AddressUtil.toString(startMint) !== AddressUtil.toString(endMint)
+      return hasNoCacheValue && notSameToken
     });
 
     const searchTokenPairsToFindAddrs = searchTokenPairsToFind.map(([startMint, endMint]) => {
@@ -61,14 +65,15 @@ export class AdjacencyListPoolGraph implements PoolGraph {
       const internalRouteId = getInternalRouteId(startMint, endMint);
       const routesForSearchPair = walkMap[internalRouteId];
 
-      const paths = routesForSearchPair ?
-        routesForSearchPair.map<Route>((route) => {
+      const paths = routesForSearchPair
+        ? routesForSearchPair.map<Route>((route) => {
           return {
             startTokenMint: AddressUtil.toString(startMint),
             endTokenMint: AddressUtil.toString(endMint),
             hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
           };
-        }) : [];
+        })
+        : [];
 
       // save to cache
       this.cache[searchRouteId] = paths;
@@ -84,14 +89,14 @@ function getHopsFromRoute(internalRouteId: string, searchRouteId: string, route:
   const [intStartA] = PoolGraphUtils.deconstructRouteId(internalRouteId);
   const [searchStartA] = PoolGraphUtils.deconstructRouteId(searchRouteId);
   const shouldReverseRoute = searchStartA !== intStartA;
-  const finalRoutes = shouldReverseRoute ? route.reverse() : route;
+  const finalRoutes = shouldReverseRoute ? route.slice().reverse() : route;
 
   return finalRoutes.map((hopStr) => {
     return { poolAddress: new PublicKey(hopStr) };
   });
 }
 
-type AdjacencyPoolGraphMap = Record<string, Array<PoolGraphEdge>>;
+type AdjacencyPoolGraphMap = Record<string, PoolGraphEdge[]>;
 
 type PoolGraphEdge = {
   address: string;
@@ -101,7 +106,7 @@ type PoolGraphEdge = {
 // A record of route-id (tokenA-tokenB) to a list of edges
 type PoolWalks = Record<string, string[][]>;
 
-function buildPoolGraph(pools: PoolTokenPair[]) {
+function buildPoolGraph(pools: PoolTokenPair[]): Readonly<AdjacencyPoolGraphMap> {
   const poolGraphSet = pools.reduce((poolGraph: Record<string, PoolGraphEdge[]>, pool) => {
     const { address, tokenMintA, tokenMintB } = pool;
     const [addr, mintA, mintB] = AddressUtil.toStrings([address, tokenMintA, tokenMintB]);
@@ -129,12 +134,13 @@ function buildPoolGraph(pools: PoolTokenPair[]) {
   }, {});
 
   return Object.fromEntries(
-    Object.entries(poolGraphSet).map(([mint, otherMints]) => [mint, Array.from(otherMints)])
+    Object.entries(poolGraphSet).map(([mint, otherMints]) => [mint, otherMints])
   );
 }
 
 // This is currently hardcoded to find walks of max length 2, generalizing to longer walks
 // may mean that a adjacency matrix might have better performance
+// NOTE: that this function does not support routing between the same token on hop length 2.
 function findWalks(
   tokenPairs: (readonly [string, string])[],
   poolGraph: AdjacencyPoolGraphMap,

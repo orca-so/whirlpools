@@ -3,6 +3,7 @@ import { Address } from "@project-serum/anchor";
 import * as assert from "assert";
 import { PoolGraphBuilder, PoolGraphUtils, PoolTokenPair, Route, RouteSearchEntries } from "../../../../src";
 import {
+  feeTierPoolsGraphData,
   solConnectedPools,
   uniqueTokenMintsGraphData,
   uniqueTokenMintsGraphTokenUnsortedData,
@@ -14,11 +15,13 @@ const uniqueTokenPairSorted = uniqueTokenMintsGraphData[0];
 const rlbSolPool = solConnectedPools[0];
 const mSolSolPool = solConnectedPools[1];
 const dustSolPool = solConnectedPools[2];
+const usdcSolPool = solConnectedPools[4];
 const rlbUsdcPool = usdcConnectedPools[0];
 const msolUsdcPool = usdcConnectedPools[1];
 const dustUsdcPool = usdcConnectedPools[2];
+const usdcMint: Address = feeTierPoolsGraphData[0].tokenMintB;
 
-describe("PoolGraph tests", () => {
+describe.only("PoolGraph tests", () => {
   describe("getRoutesForPairs", () => {
     it("Route does not exist", async () => {
       const testData = [...solConnectedPools];
@@ -32,6 +35,22 @@ describe("PoolGraph tests", () => {
 
       assertgetRoutesForPairsResult(results, [[searchId, []]]);
     });
+
+    it("Route between the same token mint", async () => {
+      const testData = [...solConnectedPools, ...feeTierPoolsGraphData];
+      const graph = PoolGraphBuilder.buildPoolGraph(testData);
+
+
+      const searchTokenPairs: [Address, Address][] = [
+        [usdcMint, usdcMint]
+      ]
+      const results = graph.getRoutesForPairs(searchTokenPairs);
+      assert.equal(results.length, 1);
+
+      const searchId = PoolGraphUtils.getSearchRouteId(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintA);
+
+      assertgetRoutesForPairsResult(results, [[searchId, []]]);
+    })
 
     it("1 route exist", async () => {
       const testData = [...solConnectedPools, ...uniqueTokenMintsGraphData];
@@ -285,6 +304,14 @@ describe("PoolGraph tests", () => {
         uniqueTokenPair.tokenMintB
       );
     });
+
+    it("Route between the same token mint", async () => {
+      const testData = [...solConnectedPools, ...feeTierPoolsGraphData];
+      const graph = PoolGraphBuilder.buildPoolGraph(testData);
+      const results = graph.getRoute(usdcMint, usdcMint);
+
+      assertGetRouteResult(results, [], usdcMint, usdcMint);
+    })
 
     it("1 route with 2 hops exist - verify edge ordering correct", async () => {
       const testData = [...solConnectedPools];

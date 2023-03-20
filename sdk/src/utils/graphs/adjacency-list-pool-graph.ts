@@ -7,7 +7,7 @@ import {
   PoolTokenPair,
   Route,
   RouteSearchEntries,
-  RouteSearchOptions
+  RouteSearchOptions,
 } from "./public/pool-graph";
 import { PoolGraphUtils } from "./public/pool-graph-utils";
 
@@ -67,12 +67,12 @@ export class AdjacencyListPoolGraph implements PoolGraph {
 
       const paths = routesForSearchPair
         ? routesForSearchPair.map<Route>((route) => {
-          return {
-            startTokenMint: AddressUtil.toString(startMint),
-            endTokenMint: AddressUtil.toString(endMint),
-            hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
-          };
-        })
+            return {
+              startTokenMint: AddressUtil.toString(startMint),
+              endTokenMint: AddressUtil.toString(endMint),
+              hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
+            };
+          })
         : [];
 
       // save to cache

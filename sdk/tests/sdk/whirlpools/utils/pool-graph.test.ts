@@ -413,14 +413,18 @@ describe("PoolGraph tests", () => {
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
       const searchTokenPairs: [Address, Address][] = [
-        [uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB]
+        [uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB],
+        [rlbSolPool.tokenMintA, rlbSolPool.tokenMintB]
       ]
       const results = graph.getRoutesForPairs(searchTokenPairs);
-      assert.equal(results.length, 1);
+
+      assert.equal(results.length, 2);
 
       const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
         [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [uniqueTokenPair]
+        ]], [PoolGraphUtils.getSearchRouteId(rlbSolPool.tokenMintA, rlbSolPool.tokenMintB), [
+          [rlbSolPool]
         ]]];
 
       assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);

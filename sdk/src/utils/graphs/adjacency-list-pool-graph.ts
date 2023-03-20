@@ -7,7 +7,7 @@ import {
   PoolTokenPair,
   Route,
   RouteSearchEntries,
-  RouteSearchOptions,
+  RouteSearchOptions
 } from "./public/pool-graph";
 import { PoolGraphUtils } from "./public/pool-graph-utils";
 
@@ -18,9 +18,8 @@ import { PoolGraphUtils } from "./public/pool-graph-utils";
  * Therefore this implementation is more efficient in memory consumption & building than a matrix.
  */
 export class AdjacencyListPoolGraph implements PoolGraph {
-  readonly graph: {
-    [k: string]: PoolGraphEdge[];
-  };
+  readonly graph: Record<string, PoolGraphEdge[]>;
+  readonly cache: Record<string, Route[]> = {};
 
   constructor(pools: PoolTokenPair[]) {
     this.graph = buildPoolGraph(pools);
@@ -35,28 +34,44 @@ export class AdjacencyListPoolGraph implements PoolGraph {
     searchTokenPairs: [Address, Address][],
     options?: RouteSearchOptions
   ): RouteSearchEntries {
-    const searchTokenPairsAddrs = searchTokenPairs.map(([startMint, endMint]) => {
+    // Filter out the pairs that has cached values
+    const searchTokenPairsToFind = searchTokenPairs.filter(([startMint, endMint]) => {
+      return !this.cache[PoolGraphUtils.getSearchRouteId(startMint, endMint)];
+    });
+
+    const searchTokenPairsToFindAddrs = searchTokenPairsToFind.map(([startMint, endMint]) => {
       return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
     });
+
     const walkMap = findWalks(
-      searchTokenPairsAddrs,
+      searchTokenPairsToFindAddrs,
       this.graph,
       options?.intermediateTokens.map((token) => AddressUtil.toString(token))
     );
 
-    const results = searchTokenPairsAddrs.map(([startMint, endMint]) => {
+    const results = searchTokenPairs.map(([startMint, endMint]) => {
       const searchRouteId = PoolGraphUtils.getSearchRouteId(startMint, endMint);
+
+      let cacheValue = this.cache[searchRouteId];
+      if (!!cacheValue) {
+        return [searchRouteId, cacheValue] as const;
+      }
+
+      // If we don't have a cached value, we should have a walkMap entry
       const internalRouteId = getInternalRouteId(startMint, endMint);
       const routesForSearchPair = walkMap[internalRouteId];
-      const paths = routesForSearchPair
-        ? routesForSearchPair.map<Route>((route) => {
-            return {
-              startTokenMint: startMint,
-              endTokenMint: endMint,
-              hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
-            };
-          })
-        : [];
+
+      const paths = routesForSearchPair ?
+        routesForSearchPair.map<Route>((route) => {
+          return {
+            startTokenMint: AddressUtil.toString(startMint),
+            endTokenMint: AddressUtil.toString(endMint),
+            hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
+          };
+        }) : [];
+
+      // save to cache
+      this.cache[searchRouteId] = paths;
 
       return [searchRouteId, paths] as const;
     });

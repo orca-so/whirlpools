@@ -16,7 +16,7 @@ import { PoolGraphUtils } from "./public/pool-graph-utils";
  *
  * Whirlpools (Pools (edges) & Tokens (nodes)) are sparse graphs concentrated on popular pairs such as SOL, USDC etc.
  * Therefore this implementation is more efficient in memory consumption & building than a matrix.
- * 
+ *
  * TODO: This implementation does not support 2-hop routes between identical tokens.
  */
 export class AdjacencyListPoolGraph implements PoolGraph {
@@ -39,8 +39,8 @@ export class AdjacencyListPoolGraph implements PoolGraph {
     // Filter out the pairs that has cached values
     const searchTokenPairsToFind = searchTokenPairs.filter(([startMint, endMint]) => {
       const hasNoCacheValue = !this.cache[PoolGraphUtils.getSearchRouteId(startMint, endMint)];
-      const notSameToken = AddressUtil.toString(startMint) !== AddressUtil.toString(endMint)
-      return hasNoCacheValue && notSameToken
+      const notTheSameTokens = AddressUtil.toString(startMint) !== AddressUtil.toString(endMint);
+      return hasNoCacheValue && notTheSameTokens;
     });
 
     const searchTokenPairsToFindAddrs = searchTokenPairsToFind.map(([startMint, endMint]) => {
@@ -151,9 +151,12 @@ function findWalks(
   tokenPairs.forEach(([tokenMintFrom, tokenMintTo]) => {
     let routes = [];
 
+    // Adjust walk's from & to token based of of internal route id.
     const internalRouteId = getInternalRouteId(tokenMintFrom, tokenMintTo);
-    const poolsForTokenFrom = poolGraph[tokenMintFrom] || [];
-    const poolsForTokenTo = poolGraph[tokenMintTo] || [];
+    const [internalTokenMintFrom, internalTokenMintTo] = [tokenMintFrom, tokenMintTo].sort();
+
+    const poolsForTokenFrom = poolGraph[internalTokenMintFrom] || [];
+    const poolsForTokenTo = poolGraph[internalTokenMintTo] || [];
 
     // If the internal route id has already been created, then there is no need to re-search the route.
     // Possible that the route was searched in reverse.
@@ -185,10 +188,7 @@ function findWalks(
     });
 
     if (routes.length > 0) {
-      const [intStartA] = PoolGraphUtils.deconstructRouteId(internalRouteId);
-      const routeIdWasReversed = intStartA !== tokenMintFrom;
-      const finalRoutes = routeIdWasReversed ? routes.map((route) => route.reverse()) : routes;
-      walks[internalRouteId] = finalRoutes;
+      walks[internalRouteId] = routes;
     }
   });
 

@@ -15,7 +15,6 @@ const uniqueTokenPairSorted = uniqueTokenMintsGraphData[0];
 const rlbSolPool = solConnectedPools[0];
 const mSolSolPool = solConnectedPools[1];
 const dustSolPool = solConnectedPools[2];
-const usdcSolPool = solConnectedPools[4];
 const rlbUsdcPool = usdcConnectedPools[0];
 const msolUsdcPool = usdcConnectedPools[1];
 const dustUsdcPool = usdcConnectedPools[2];

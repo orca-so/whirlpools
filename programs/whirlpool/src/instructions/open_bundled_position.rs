@@ -10,7 +10,7 @@ pub struct OpenBundledPosition<'info> {
         payer = funder,
         space = Position::LEN,
         seeds = [
-            b"position".as_ref(),
+            b"bundled_position".as_ref(),
             position_bundle.position_bundle_mint.key().as_ref(),
             bundle_index.to_string().as_bytes()
         ],

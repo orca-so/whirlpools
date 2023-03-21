@@ -12,6 +12,7 @@ const PDA_TICK_ARRAY_SEED = "tick_array";
 const PDA_FEE_TIER_SEED = "fee_tier";
 const PDA_ORACLE_SEED = "oracle";
 const PDA_POSITION_BUNDLE_SEED = "position_bundle";
+const PDA_BUNDLED_POSITION_SEED = "bundled_position";
 
 /**
  * @category Whirlpool Utils
@@ -184,7 +185,7 @@ export class PDAUtil {
   ) {
     return AddressUtil.findProgramAddress(
       [
-        Buffer.from(PDA_POSITION_SEED),
+        Buffer.from(PDA_BUNDLED_POSITION_SEED),
         positionBundleMintKey.toBuffer(),
         Buffer.from(bundleIndex.toString()),
       ],

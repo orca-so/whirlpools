@@ -108,29 +108,6 @@ describe("PoolGraph tests", () => {
       assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
     });
 
-    it("assert caching layer returns the same route on same call", async () => {
-      const testData = [...solConnectedPools];
-      const graph = PoolGraphBuilder.buildPoolGraph(testData);
-
-
-      const searchTokenPairs: [Address, Address][] = [
-        [rlbSolPool.tokenMintB, mSolSolPool.tokenMintB]
-      ]
-      const results = graph.getRoutesForPairs(searchTokenPairs);
-      const cachedResult = graph.getRoutesForPairs(searchTokenPairs);
-
-      assert.equal(results.length, 1);
-      assert.equal(cachedResult.length, 1);
-
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
-          [rlbSolPool, mSolSolPool]
-        ]]];
-
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
-      assertgetRoutesForPairsResult(cachedResult, expectedRoutesForTokenPairQueries);
-    });
-
     it("1 route with 2 hops exist - verify edge ordering correct (reverse)", async () => {
       const testData = [...solConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
@@ -349,31 +326,6 @@ describe("PoolGraph tests", () => {
           [rlbSolPool, mSolSolPool],
           [rlbUsdcPool, msolUsdcPool],
         ],
-        rlbSolPool.tokenMintB,
-        mSolSolPool.tokenMintB
-      );
-    });
-
-    it("assert caching layer returns the same value on second call", async () => {
-      const testData = [...solConnectedPools, ...usdcConnectedPools];
-      const graph = PoolGraphBuilder.buildPoolGraph(testData);
-
-      const result = graph.getRoute(rlbSolPool.tokenMintB, mSolSolPool.tokenMintB);
-      const cachedResult = graph.getRoute(rlbSolPool.tokenMintB, mSolSolPool.tokenMintB);
-
-      const expected = [
-        [rlbSolPool, mSolSolPool],
-        [rlbUsdcPool, msolUsdcPool],
-      ];
-      assertGetRouteResult(
-        result,
-        expected,
-        rlbSolPool.tokenMintB,
-        mSolSolPool.tokenMintB
-      );
-      assertGetRouteResult(
-        cachedResult,
-        expected,
         rlbSolPool.tokenMintB,
         mSolSolPool.tokenMintB
       );

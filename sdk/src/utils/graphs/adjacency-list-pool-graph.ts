@@ -7,7 +7,7 @@ import {
   PoolTokenPair,
   Route,
   RouteSearchEntries,
-  RouteSearchOptions,
+  RouteSearchOptions
 } from "./public/pool-graph";
 import { PoolGraphUtils } from "./public/pool-graph-utils";
 
@@ -21,7 +21,6 @@ import { PoolGraphUtils } from "./public/pool-graph-utils";
  */
 export class AdjacencyListPoolGraph implements PoolGraph {
   readonly graph: Readonly<AdjacencyPoolGraphMap>;
-  readonly cache: Record<string, Route[]> = {};
 
   constructor(pools: PoolTokenPair[]) {
     this.graph = buildPoolGraph(pools);
@@ -36,11 +35,8 @@ export class AdjacencyListPoolGraph implements PoolGraph {
     searchTokenPairs: [Address, Address][],
     options?: RouteSearchOptions
   ): RouteSearchEntries {
-    // Filter out the pairs that has cached values
     const searchTokenPairsToFind = searchTokenPairs.filter(([startMint, endMint]) => {
-      const hasNoCacheValue = !this.cache[PoolGraphUtils.getSearchRouteId(startMint, endMint)];
-      const notTheSameTokens = AddressUtil.toString(startMint) !== AddressUtil.toString(endMint);
-      return hasNoCacheValue && notTheSameTokens;
+      return AddressUtil.toString(startMint) !== AddressUtil.toString(endMint);
     });
 
     const searchTokenPairsToFindAddrs = searchTokenPairsToFind.map(([startMint, endMint]) => {
@@ -56,27 +52,18 @@ export class AdjacencyListPoolGraph implements PoolGraph {
     const results = searchTokenPairs.map(([startMint, endMint]) => {
       const searchRouteId = PoolGraphUtils.getSearchRouteId(startMint, endMint);
 
-      let cacheValue = this.cache[searchRouteId];
-      if (!!cacheValue) {
-        return [searchRouteId, cacheValue] as const;
-      }
-
-      // If we don't have a cached value, we should have a walkMap entry
       const internalRouteId = getInternalRouteId(startMint, endMint);
       const routesForSearchPair = walkMap[internalRouteId];
 
       const paths = routesForSearchPair
         ? routesForSearchPair.map<Route>((route) => {
-            return {
-              startTokenMint: AddressUtil.toString(startMint),
-              endTokenMint: AddressUtil.toString(endMint),
-              hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
-            };
-          })
+          return {
+            startTokenMint: AddressUtil.toString(startMint),
+            endTokenMint: AddressUtil.toString(endMint),
+            hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
+          };
+        })
         : [];
-
-      // save to cache
-      this.cache[searchRouteId] = paths;
 
       return [searchRouteId, paths] as const;
     });

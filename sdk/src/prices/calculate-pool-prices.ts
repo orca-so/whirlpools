@@ -10,7 +10,7 @@ import {
   GetPricesThresholdConfig,
   PoolMap,
   PriceMap,
-  TickArrayMap
+  TickArrayMap,
 } from ".";
 import { swapQuoteWithParams } from "../quotes/public/swap-quote";
 import { TickArray, WhirlpoolData } from "../types/public";

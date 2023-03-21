@@ -209,9 +209,9 @@ export class WhirlpoolIx {
    * @param params - TwoHopSwapParams object
    * @returns - Instruction to perform the action.
    */
-    public static twoHopSwapIx(program: Program<Whirlpool>, params: ix.TwoHopSwapParams) {
-      return ix.twoHopSwapIx(program, params);
-    }
+  public static twoHopSwapIx(program: Program<Whirlpool>, params: ix.TwoHopSwapParams) {
+    return ix.twoHopSwapIx(program, params);
+  }
 
   /**
    * Update the accrued fees and rewards for a position.

@@ -5,7 +5,7 @@ import invariant from "tiny-invariant";
 import { SwapInput } from "../../instructions";
 import { AccountFetcher } from "../../network/public";
 import { TickArray, WhirlpoolData } from "../../types/public";
-import { PoolUtil, SwapDirection, TokenType } from "../../utils/public";
+import { PoolUtil, SwapDirection } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";
 import { Whirlpool } from "../../whirlpool-client";
 import { simulateSwap } from "../swap/swap-quote-impl";
@@ -55,8 +55,12 @@ export type SwapEstimates = {
   estimatedEndTickIndex: number;
   estimatedEndSqrtPrice: BN;
   estimatedFeeAmount: u64;
-}
+};
 
+/**
+ * A collection of estimated values from quoting a swap. Object can be directly used in a swap transaction.
+ * @category Quotes
+ */
 export type NormalSwapQuote = SwapInput & SwapEstimates;
 
 /**
@@ -172,7 +176,9 @@ async function swapQuoteByToken(
   const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
   invariant(!!swapTokenType, "swapTokenMint does not match any tokens on this pool");
 
-  const aToB = SwapUtils.getSwapDirection(whirlpoolData, swapMintKey, amountSpecifiedIsInput) === SwapDirection.AtoB;
+  const aToB =
+    SwapUtils.getSwapDirection(whirlpoolData, swapMintKey, amountSpecifiedIsInput) ===
+    SwapDirection.AtoB;
 
   const tickArrays = await SwapUtils.getTickArrays(
     whirlpoolData.tickCurrentIndex,

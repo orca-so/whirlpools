@@ -14,5 +14,5 @@ pub const WP_METADATA_URI: &str = "https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0
 
 pub const WPB_METADATA_NAME_PREFIX: &str = "Orca Position Bundle";
 pub const WPB_METADATA_SYMBOL: &str = "OPB";
-pub const WPB_METADATA_URI: &str = "https://arweave.net/A_Wo8dx2_3lSUwMIi7bdT_sqxi8soghRNAWXXiqXpgE";
-
+pub const WPB_METADATA_URI: &str =
+    "https://arweave.net/A_Wo8dx2_3lSUwMIi7bdT_sqxi8soghRNAWXXiqXpgE";

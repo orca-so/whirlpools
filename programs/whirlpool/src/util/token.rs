@@ -2,12 +2,12 @@ use crate::state::Whirlpool;
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 use mpl_token_metadata::instruction::create_metadata_accounts_v3;
-use solana_program::program::{invoke_signed, invoke};
+use solana_program::program::{invoke, invoke_signed};
 use spl_token::instruction::{burn_checked, close_account, mint_to, set_authority, AuthorityType};
 
 use crate::constants::nft::{
-    WP_METADATA_NAME, WP_METADATA_SYMBOL, WP_METADATA_URI,
-    WPB_METADATA_NAME_PREFIX, WPB_METADATA_SYMBOL, WPB_METADATA_URI
+    WPB_METADATA_NAME_PREFIX, WPB_METADATA_SYMBOL, WPB_METADATA_URI, WP_METADATA_NAME,
+    WP_METADATA_SYMBOL, WP_METADATA_URI,
 };
 
 pub fn transfer_from_owner_to_vault<'info>(
@@ -230,11 +230,7 @@ pub fn mint_position_bundle_token_and_remove_authority<'info>(
         position_bundle_token_account,
         token_program,
     )?;
-    remove_position_bundle_token_mint_authority(
-        funder,
-        position_bundle_mint,
-        token_program
-    )
+    remove_position_bundle_token_mint_authority(funder, position_bundle_mint, token_program)
 }
 
 pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
@@ -263,7 +259,7 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     nft_name += " ";
     nft_name += &mint_address[0..4];
     nft_name += "...";
-    nft_name += &mint_address[mint_address.len()-4..];
+    nft_name += &mint_address[mint_address.len() - 4..];
 
     invoke(
         &create_metadata_accounts_v3(
@@ -295,11 +291,7 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
         ],
     )?;
 
-    remove_position_bundle_token_mint_authority(
-        funder,
-        position_bundle_mint,
-        token_program
-    )
+    remove_position_bundle_token_mint_authority(funder, position_bundle_mint, token_program)
 }
 
 fn mint_position_bundle_token<'info>(

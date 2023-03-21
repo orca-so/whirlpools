@@ -535,9 +535,7 @@ pub mod whirlpool {
 
     /// Initializes a PositionBundle account that bundles several positions.
     /// A unique token will be minted to represent the position bundle in the users wallet.
-    pub fn initialize_position_bundle(
-        ctx: Context<InitializePositionBundle>,
-    ) -> Result<()> {
+    pub fn initialize_position_bundle(ctx: Context<InitializePositionBundle>) -> Result<()> {
         return instructions::initialize_position_bundle::handler(ctx);
     }
 
@@ -551,22 +549,20 @@ pub mod whirlpool {
     }
 
     /// Delete a PositionBundle account. Burns the position bundle token in the owner's wallet.
-    /// 
+    ///
     /// ### Authority
     /// - `position_bundle_owner` - The owner that owns the position bundle token.
-    /// 
+    ///
     /// ### Special Errors
     /// - `PositionBundleNotDeletable` - The provided position bundle has open positions.
-    pub fn delete_position_bundle(
-        ctx: Context<DeletePositionBundle>,
-    ) -> Result<()> {
+    pub fn delete_position_bundle(ctx: Context<DeletePositionBundle>) -> Result<()> {
         return instructions::delete_position_bundle::handler(ctx);
     }
 
     /// Open a bundled position in a Whirlpool. No new tokens are issued
     /// because the owner of the position bundle becomes the owner of the position.
     /// The position will start off with 0 liquidity.
-    /// 
+    ///
     /// ### Authority
     /// - `position_bundle_authority` - authority that owns the token corresponding to this desired position bundle.
     ///
@@ -589,7 +585,7 @@ pub mod whirlpool {
             ctx,
             bundle_index,
             tick_lower_index,
-            tick_upper_index
+            tick_upper_index,
         );
     }
 

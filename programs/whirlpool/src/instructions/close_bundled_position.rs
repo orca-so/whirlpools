@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{TokenAccount};
+use anchor_spl::token::TokenAccount;
 
 use crate::errors::ErrorCode;
 use crate::{state::*, util::verify_position_bundle_authority};
@@ -35,10 +35,7 @@ pub struct CloseBundledPosition<'info> {
     pub receiver: UncheckedAccount<'info>,
 }
 
-pub fn handler(
-    ctx: Context<CloseBundledPosition>,
-    bundle_index: u16,
-) -> Result<()> {
+pub fn handler(ctx: Context<CloseBundledPosition>, bundle_index: u16) -> Result<()> {
     let position_bundle = &mut ctx.accounts.position_bundle;
 
     // Allow delegation

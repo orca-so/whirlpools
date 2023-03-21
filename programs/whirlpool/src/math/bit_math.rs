@@ -57,11 +57,7 @@ pub fn checked_mul_shift_right_round_up_if(
         return Err(ErrorCode::MultiplicationOverflow);
     }
 
-    Ok(if should_round {
-        result + 1
-    } else {
-        result
-    })
+    Ok(if should_round { result + 1 } else { result })
 }
 
 pub fn div_round_up(n: u128, d: u128) -> Result<u128, ErrorCode> {
@@ -315,7 +311,6 @@ mod test_bit_math {
             );
             assert_eq!(div_round_up(u128::MAX - 1, u128::MAX).unwrap(), 1);
         }
-
     }
 
     mod test_mult_shift_right_round_up {
@@ -323,21 +318,59 @@ mod test_bit_math {
 
         #[test]
         fn test_mul_shift_right_ok() {
-            assert_eq!(checked_mul_shift_right_round_up_if(u64::MAX as u128, 1, false).unwrap(), 0);
-            assert_eq!(checked_mul_shift_right_round_up_if(u64::MAX as u128, 1, true).unwrap(), 1);
-            assert_eq!(checked_mul_shift_right_round_up_if(u64::MAX as u128 + 1, 1, false).unwrap(), 1);
-            assert_eq!(checked_mul_shift_right_round_up_if(u64::MAX as u128 + 1, 1, true).unwrap(), 1);
-            assert_eq!(checked_mul_shift_right_round_up_if(u32::MAX as u128, u32::MAX as u128, false).unwrap(), 0);
-            assert_eq!(checked_mul_shift_right_round_up_if(u32::MAX as u128, u32::MAX as u128, true).unwrap(), 1);
-            assert_eq!(checked_mul_shift_right_round_up_if(u32::MAX as u128 + 1, u32::MAX as u128 + 2, false).unwrap(), 1);
-            assert_eq!(checked_mul_shift_right_round_up_if(u32::MAX as u128 + 1, u32::MAX as u128 + 2, true).unwrap(), 2);
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u64::MAX as u128, 1, false).unwrap(),
+                0
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u64::MAX as u128, 1, true).unwrap(),
+                1
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u64::MAX as u128 + 1, 1, false).unwrap(),
+                1
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u64::MAX as u128 + 1, 1, true).unwrap(),
+                1
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u32::MAX as u128, u32::MAX as u128, false)
+                    .unwrap(),
+                0
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u32::MAX as u128, u32::MAX as u128, true)
+                    .unwrap(),
+                1
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(
+                    u32::MAX as u128 + 1,
+                    u32::MAX as u128 + 2,
+                    false
+                )
+                .unwrap(),
+                1
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(
+                    u32::MAX as u128 + 1,
+                    u32::MAX as u128 + 2,
+                    true
+                )
+                .unwrap(),
+                2
+            );
         }
 
         #[test]
         fn test_mul_shift_right_u64_max() {
             assert!(checked_mul_shift_right_round_up_if(u128::MAX, 1, true).is_err());
-            assert_eq!(checked_mul_shift_right_round_up_if(u128::MAX, 1, false).unwrap(), u64::MAX);
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u128::MAX, 1, false).unwrap(),
+                u64::MAX
+            );
         }
-
     }
 }

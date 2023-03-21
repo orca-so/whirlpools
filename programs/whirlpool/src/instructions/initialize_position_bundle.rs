@@ -33,7 +33,7 @@ pub struct InitializePositionBundle<'info> {
 
     #[account(mut)]
     pub funder: Signer<'info>,
-    
+
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
@@ -41,20 +41,16 @@ pub struct InitializePositionBundle<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 
-pub fn handler(
-    ctx: Context<InitializePositionBundle>,
-) -> Result<()> {
-  let position_bundle_mint = &ctx.accounts.position_bundle_mint;
-  let position_bundle = &mut ctx.accounts.position_bundle;
+pub fn handler(ctx: Context<InitializePositionBundle>) -> Result<()> {
+    let position_bundle_mint = &ctx.accounts.position_bundle_mint;
+    let position_bundle = &mut ctx.accounts.position_bundle;
 
-  position_bundle.initialize(
-    position_bundle_mint.key()
-  )?;
+    position_bundle.initialize(position_bundle_mint.key())?;
 
-  mint_position_bundle_token_and_remove_authority(
-    &ctx.accounts.funder,
-    position_bundle_mint,
-    &ctx.accounts.position_bundle_token_account,
-    &ctx.accounts.token_program,
-  )
+    mint_position_bundle_token_and_remove_authority(
+        &ctx.accounts.funder,
+        position_bundle_mint,
+        &ctx.accounts.position_bundle_token_account,
+        &ctx.accounts.token_program,
+    )
 }

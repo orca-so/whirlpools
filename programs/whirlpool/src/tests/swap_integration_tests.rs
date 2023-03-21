@@ -149,7 +149,9 @@ fn run_swap_integration_tests() {
                 msg!("");
 
                 fail_cases += 1;
-            } else if expected_error.is_some() && !anchor_lang::error!(expected_error.unwrap()).eq(&e) {
+            } else if expected_error.is_some()
+                && !anchor_lang::error!(expected_error.unwrap()).eq(&e)
+            {
                 fail_cases += 1;
 
                 msg!("Test case {} - {}", test_id, test.description);

@@ -13,10 +13,7 @@ pub fn verify_position_bundle_authority<'info>(
     position_bundle_authority: &Signer<'info>,
 ) -> Result<()> {
     // use same logic
-    verify_position_authority(
-        position_bundle_token_account,
-        position_bundle_authority,
-    )
+    verify_position_authority(position_bundle_token_account, position_bundle_authority)
 }
 
 pub fn verify_position_authority<'info>(

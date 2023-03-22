@@ -20,7 +20,7 @@ const msolUsdcPool = usdcConnectedPools[1];
 const dustUsdcPool = usdcConnectedPools[2];
 const usdcMint: Address = feeTierPoolsGraphData[0].tokenMintB;
 
-describe.only("PoolGraph tests", () => {
+describe("PoolGraph tests", () => {
   describe("getPathsForPairs", () => {
     it("Path does not exist", async () => {
       const testData = [...solConnectedPools];

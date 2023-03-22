@@ -11,27 +11,27 @@ export interface PoolTokenPair {
 }
 
 /**
- * Route search results for a series of graph search queries between two tokens.
+ * Results for a series of graph search queries between two tokens.
  * The search id for each entry can be obtained from {@link PoolGraphUtils.getSearchRouteId}
- * If routes exist for that search id exists, it will be an array of routes.
- * If routes do not exist, it will be an empty array.
+ * If a path exist between tokens for that search id, it will be an array of paths.
+ * If paths do not exist, it will be an empty array.
  *
  * @category PoolGraph
  */
-export type RouteSearchEntries = (readonly [string, Route[]])[];
+export type PathSearchEntries = (readonly [string, Path[]])[];
 
 /**
- * A route to trade from start token mint to end token mint.
+ * A path to trade from start token mint to end token mint.
  *
  * @category PoolGraph
- * @param startMint - The token the route starts with
- * @param endMint - The token the route ends with
- * @param edges - An ordered list of pool addresses that make up the route
+ * @param startMint - The token the path starts with
+ * @param endMint - The token the path ends with
+ * @param edges - An ordered list of edges (pool addresses) that make up the path
  */
-export type Route = {
+export type Path = {
   startTokenMint: string;
   endTokenMint: string;
-  hops: Hop[];
+  edges: Edge[];
 };
 
 /**
@@ -39,53 +39,54 @@ export type Route = {
  *
  * @category PoolGraph
  */
-export type Hop = {
+export type Edge = {
   poolAddress: Address;
 };
 
 /**
- * Options for finding a route between two tokens
+ * Options for finding a path between two tokens
  *
  * @category PoolGraph
  * @param intermediateTokens - A list of tokens that can be used as intermediate hops
  */
-export type RouteSearchOptions = {
+export type PathSearchOptions = {
   intermediateTokens: Address[];
 };
 
 /**
- * A type representing a graph of pools that can be used to find routes between two tokens.
+ * A type representing an undirected graph of pools that can be used to find paths between two tokens.
+ * In this graph, nodes are token mints, and edges are pools
  *
  * @category PoolGraph
  */
 export type PoolGraph = {
   /**
-   * Get a list of routes between two tokens for this pool graph.
+   * Get a list of paths between two tokens for this pool graph.
    *
    * Notes:
-   * - Only support routes with up to 2 hops
-   * - Routes between two identical token mints are not supported.
+   * - Only support paths with up to 2 edges
+   * - Paths searching between two identical token mints are not supported.
    *
-   * @param startMint The token the route starts from
-   * @param endMint The token the route ends in
-   * @param options Options for finding a route
-   * @returns A list of routes between the two tokens. If no routes are found, it will be an empty array.
+   * @param startMint The token the path starts from
+   * @param endMint The token the path ends in
+   * @param options Options for finding a path
+   * @returns A list of path between the two tokens. If no path are found, it will be an empty array.
    */
-  getRoute: (startMint: Address, endMint: Address, options?: RouteSearchOptions) => Route[];
+  getPath: (startMint: Address, endMint: Address, options?: PathSearchOptions) => Path[];
 
   /**
-   * Get a map of routes from a list of token pairs for this pool graph.
+   * Get a map of paths from a list of token pairs for this pool graph.
    *
    * Notes:
-   * - Only support routes with up to 2 hops
-   * - Routes between two identical token mints are not supported.
+   * - Only support paths with up to 2 edges
+   * - Paths searching between two identical token mints are not supported.
    *
-   * @param searchTokenPairs A list of token pairs to find routes for. The first token in the pair is the start token, and the second token is the end token.
-   * @param options Options for finding a route
+   * @param searchTokenPairs A list of token pairs to find paths for. The first token in the pair is the start token, and the second token is the end token.
+   * @param options Options for finding a path
    * @return An array of search result entires in the same order as the searchTokenPairs.
    */
-  getRoutesForPairs(
+  getPathsForPairs(
     searchTokenPairs: [Address, Address][],
-    options?: RouteSearchOptions
-  ): RouteSearchEntries;
+    options?: PathSearchOptions
+  ): PathSearchEntries;
 };

@@ -1,7 +1,7 @@
 import { AddressUtil } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import * as assert from "assert";
-import { PoolGraphBuilder, PoolGraphUtils, PoolTokenPair, Route, RouteSearchEntries } from "../../../../src";
+import { Path, PathSearchEntries, PoolGraphBuilder, PoolGraphUtils, PoolTokenPair } from "../../../../src";
 import {
   feeTierPoolsGraphData,
   solConnectedPools,
@@ -20,22 +20,22 @@ const msolUsdcPool = usdcConnectedPools[1];
 const dustUsdcPool = usdcConnectedPools[2];
 const usdcMint: Address = feeTierPoolsGraphData[0].tokenMintB;
 
-describe("PoolGraph tests", () => {
-  describe("getRoutesForPairs", () => {
-    it("Route does not exist", async () => {
+describe.only("PoolGraph tests", () => {
+  describe("getPathsForPairs", () => {
+    it("Path does not exist", async () => {
       const testData = [...solConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
       const uniqueTokenPair = uniqueTokenMintsGraphTokenUnsortedData[0];
-      const results = graph.getRoutesForPairs([
+      const results = graph.getPathsForPairs([
         [uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB],
       ]);
       assert.equal(results.length, 1);
-      const searchId = PoolGraphUtils.getSearchRouteId(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
+      const searchId = PoolGraphUtils.getSearchPathId(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
 
-      assertgetRoutesForPairsResult(results, [[searchId, []]]);
+      assertGetPathsForPairsResult(results, [[searchId, []]]);
     });
 
-    it("Route between the same token mint", async () => {
+    it("Path between the same token mint", async () => {
       const testData = [...solConnectedPools, ...feeTierPoolsGraphData];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
@@ -43,15 +43,15 @@ describe("PoolGraph tests", () => {
       const searchTokenPairs: [Address, Address][] = [
         [usdcMint, usdcMint]
       ]
-      const results = graph.getRoutesForPairs(searchTokenPairs);
+      const results = graph.getPathsForPairs(searchTokenPairs);
       assert.equal(results.length, 1);
 
-      const searchId = PoolGraphUtils.getSearchRouteId(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintA);
+      const searchId = PoolGraphUtils.getSearchPathId(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintA);
 
-      assertgetRoutesForPairsResult(results, [[searchId, []]]);
+      assertGetPathsForPairsResult(results, [[searchId, []]]);
     })
 
-    it("1 route exist", async () => {
+    it("1 path exist", async () => {
       const testData = [...solConnectedPools, ...uniqueTokenMintsGraphData];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
@@ -59,36 +59,36 @@ describe("PoolGraph tests", () => {
       const searchTokenPairs: [Address, Address][] = [
         [uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB]
       ]
-      const results = graph.getRoutesForPairs(searchTokenPairs);
+      const results = graph.getPathsForPairs(searchTokenPairs);
       assert.equal(results.length, 1);
 
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+      const expectedPathsForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [uniqueTokenPair]
         ]]];
 
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
+      assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries);
     });
 
-    it("1 route exist - token ordering reversed", async () => {
+    it("1 path exist - token ordering reversed", async () => {
       const testData = [...solConnectedPools, ...uniqueTokenMintsGraphTokenUnsortedData];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
       const searchTokenPairs: [Address, Address][] = [
         [uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB]
       ]
-      const results = graph.getRoutesForPairs(searchTokenPairs);
+      const results = graph.getPathsForPairs(searchTokenPairs);
 
       assert.equal(results.length, 1);
 
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+      const expectedPathsForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [uniqueTokenPairSorted]
         ]]];
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
+      assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries);
     });
 
-    it("1 route with 2 hops exist - verify edge ordering correct", async () => {
+    it("1 path with 2 edges exist - verify edge ordering correct", async () => {
       const testData = [...solConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
@@ -96,54 +96,54 @@ describe("PoolGraph tests", () => {
       const searchTokenPairs: [Address, Address][] = [
         [rlbSolPool.tokenMintB, mSolSolPool.tokenMintB]
       ]
-      const results = graph.getRoutesForPairs(searchTokenPairs);
+      const results = graph.getPathsForPairs(searchTokenPairs);
 
       assert.equal(results.length, 1);
 
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+      const expectedPathsForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [rlbSolPool, mSolSolPool]
         ]]];
 
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
+      assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries);
     });
 
-    it("1 route with 2 hops exist - verify edge ordering correct (reverse)", async () => {
+    it("1 path with 2 edges exist - verify edge ordering correct (reverse)", async () => {
       const testData = [...solConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
       const searchTokenPairs: [Address, Address][] = [
         [mSolSolPool.tokenMintB, rlbSolPool.tokenMintB]
       ]
-      const results = graph.getRoutesForPairs(searchTokenPairs);
+      const results = graph.getPathsForPairs(searchTokenPairs);
 
       assert.equal(results.length, 1);
 
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+      const expectedPathsForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [mSolSolPool, rlbSolPool]
         ]]];
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
+      assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries);
     });
 
-    it("1 tokenPair input to multiple routes exist - verify token order, edge ordering", async () => {
+    it("1 tokenPair input to multiple paths exist - verify token order, edge ordering", async () => {
       const testData = [...solConnectedPools, ...usdcConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
       const searchTokenPairs: [Address, Address][] = [
         [rlbSolPool.tokenMintB, mSolSolPool.tokenMintB]
       ]
-      const results = graph.getRoutesForPairs(searchTokenPairs);
+      const results = graph.getPathsForPairs(searchTokenPairs);
 
       assert.equal(results.length, 1);
 
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+      const expectedPathsForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [rlbSolPool, mSolSolPool],
           [rlbUsdcPool, msolUsdcPool],
         ]]];
 
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
+      assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries);
     });
 
     it("duplicated token-pairs will still be executed and ordered in results", async () => {
@@ -155,20 +155,20 @@ describe("PoolGraph tests", () => {
         [rlbSolPool.tokenMintB, mSolSolPool.tokenMintB],
       ]
 
-      const results = graph.getRoutesForPairs(searchTokenPairs);
+      const results = graph.getPathsForPairs(searchTokenPairs);
       assert.equal(results.length, 2);
 
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+      const expectedPathsForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [rlbSolPool, mSolSolPool],
           [rlbUsdcPool, msolUsdcPool],
         ]],
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[1][0], searchTokenPairs[1][1]), [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[1][0], searchTokenPairs[1][1]), [
           [rlbSolPool, mSolSolPool],
           [rlbUsdcPool, msolUsdcPool],
         ]]];
 
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
+      assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries);
     });
 
     it("same token-pairs but with reversed order has unique search ids", async () => {
@@ -180,47 +180,47 @@ describe("PoolGraph tests", () => {
         [mSolSolPool.tokenMintB, rlbSolPool.tokenMintB],
       ]
 
-      const results = graph.getRoutesForPairs(searchTokenPairs);
+      const results = graph.getPathsForPairs(searchTokenPairs);
       assert.equal(results.length, 2);
 
-      // TODO: Directionality of the hops is not being considered
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+      // TODO: Directionality of the edges is not being considered
+      const expectedPathsForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [rlbSolPool, mSolSolPool],
           [rlbUsdcPool, msolUsdcPool],
         ]],
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[1][0], searchTokenPairs[1][1]), [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[1][0], searchTokenPairs[1][1]), [
           [mSolSolPool, rlbSolPool],
           [msolUsdcPool, rlbUsdcPool],
         ]]];
 
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
+      assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries);
     });
 
-    it("only allow 2-hop routes that go through tokens from the intermediate token list ", async () => {
+    it("only allow 2-edge paths that go through tokens from the intermediate token list ", async () => {
       const testData = [...solConnectedPools, ...usdcConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
       const searchTokenPairs: [Address, Address][] = [
         [rlbUsdcPool.tokenMintB, msolUsdcPool.tokenMintB]
       ];
-      const results = graph.getRoutesForPairs(searchTokenPairs, {
+      const results = graph.getPathsForPairs(searchTokenPairs, {
         intermediateTokens: [rlbUsdcPool.tokenMintA],
       });
 
-      // Assert that the SOL routes are filtered out
+      // Assert that the SOL paths are filtered out
       assert.equal(results.length, 1);
 
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+      const expectedPathsForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [rlbUsdcPool, msolUsdcPool]
         ]]
       ];
 
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
+      assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries);
     });
 
-    it("multiple tokenPair input to multiple routes exist - verify token order, edge ordering", async () => {
+    it("multiple tokenPair input to multiple paths exist - verify token order, edge ordering", async () => {
       const testData = [...solConnectedPools, ...usdcConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
@@ -229,38 +229,38 @@ describe("PoolGraph tests", () => {
         [dustSolPool.tokenMintB, mSolSolPool.tokenMintB],
       ]
 
-      const results = graph.getRoutesForPairs(searchTokenPairs);
+      const results = graph.getPathsForPairs(searchTokenPairs);
 
       assert.equal(results.length, 2);
 
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+      const expectedPathsForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [rlbSolPool, mSolSolPool],
           [rlbUsdcPool, msolUsdcPool],
         ]],
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[1][0], searchTokenPairs[1][1]), [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[1][0], searchTokenPairs[1][1]), [
           [dustSolPool, mSolSolPool],
           [dustUsdcPool, msolUsdcPool],
         ]]];
 
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries)
+      assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries)
     });
   });
 
-  describe("getRoute", async () => {
-    it("Route does not exist", async () => {
+  describe("getPath", async () => {
+    it("Path does not exist", async () => {
       const testData = [...solConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
-      const result = graph.getRoute(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
+      const result = graph.getPath(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
       assert.equal(result.length, 0);
     });
 
-    it("1 route exist", async () => {
+    it("1 path exist", async () => {
       const testData = [...solConnectedPools, ...uniqueTokenMintsGraphData];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
-      const result = graph.getRoute(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
+      const result = graph.getPath(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
 
-      assertGetRouteResult(
+      assertGetPathResult(
         result,
         [[uniqueTokenPair]],
         uniqueTokenPair.tokenMintA,
@@ -268,12 +268,12 @@ describe("PoolGraph tests", () => {
       );
     });
 
-    it("1 route exist - token ordering reversed", async () => {
+    it("1 path exist - token ordering reversed", async () => {
       const testData = [...solConnectedPools, ...uniqueTokenMintsGraphTokenUnsortedData];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
-      const result = graph.getRoute(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
-      assertGetRouteResult(
+      const result = graph.getPath(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
+      assertGetPathResult(
         result,
         [[uniqueTokenPairSorted]],
         uniqueTokenPair.tokenMintA,
@@ -281,20 +281,20 @@ describe("PoolGraph tests", () => {
       );
     });
 
-    it("Route between the same token mint", async () => {
+    it("Path between the same token mint", async () => {
       const testData = [...solConnectedPools, ...feeTierPoolsGraphData];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
-      const results = graph.getRoute(usdcMint, usdcMint);
+      const results = graph.getPath(usdcMint, usdcMint);
 
-      assertGetRouteResult(results, [], usdcMint, usdcMint);
+      assertGetPathResult(results, [], usdcMint, usdcMint);
     })
 
-    it("1 route with 2 hops exist - verify edge ordering correct", async () => {
+    it("1 path with 2 edges exist - verify edge ordering correct", async () => {
       const testData = [...solConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
-      const result = graph.getRoute(rlbSolPool.tokenMintB, mSolSolPool.tokenMintB);
-      assertGetRouteResult(
+      const result = graph.getPath(rlbSolPool.tokenMintB, mSolSolPool.tokenMintB);
+      assertGetPathResult(
         result,
         [[rlbSolPool, mSolSolPool]],
         rlbSolPool.tokenMintB,
@@ -302,12 +302,12 @@ describe("PoolGraph tests", () => {
       );
     });
 
-    it("1 route with 2 hops exist - verify edge ordering correct (reverse)", async () => {
+    it("1 path with 2 edges exist - verify edge ordering correct (reverse)", async () => {
       const testData = [...solConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
-      const result = graph.getRoute(mSolSolPool.tokenMintB, rlbSolPool.tokenMintB);
-      assertGetRouteResult(
+      const result = graph.getPath(mSolSolPool.tokenMintB, rlbSolPool.tokenMintB);
+      assertGetPathResult(
         result,
         [[mSolSolPool, rlbSolPool]],
         mSolSolPool.tokenMintB,
@@ -315,12 +315,12 @@ describe("PoolGraph tests", () => {
       );
     });
 
-    it("1 tokenPair input to multiple routes exist - verify token order, edge ordering", async () => {
+    it("1 tokenPair input to multiple paths exist - verify token order, edge ordering", async () => {
       const testData = [...solConnectedPools, ...usdcConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
-      const result = graph.getRoute(rlbSolPool.tokenMintB, mSolSolPool.tokenMintB);
-      assertGetRouteResult(
+      const result = graph.getPath(rlbSolPool.tokenMintB, mSolSolPool.tokenMintB);
+      assertGetPathResult(
         result,
         [
           [rlbSolPool, mSolSolPool],
@@ -331,14 +331,14 @@ describe("PoolGraph tests", () => {
       );
     });
 
-    it("only allow 2-hop routes that go through tokens from the intermediate token list ", async () => {
+    it("only allow 2-edge paths that go through tokens from the intermediate token list ", async () => {
       const testData = [...solConnectedPools, ...usdcConnectedPools];
       const graph = PoolGraphBuilder.buildPoolGraph(testData);
 
-      const result = graph.getRoute(rlbUsdcPool.tokenMintB, msolUsdcPool.tokenMintB, {
+      const result = graph.getPath(rlbUsdcPool.tokenMintB, msolUsdcPool.tokenMintB, {
         intermediateTokens: [rlbUsdcPool.tokenMintA],
       });
-      assertGetRouteResult(
+      assertGetPathResult(
         result,
         [[rlbUsdcPool, msolUsdcPool]],
         rlbUsdcPool.tokenMintB,
@@ -351,13 +351,13 @@ describe("PoolGraph tests", () => {
     it("Zero pools in graph should not return any results", async () => {
       const graph = PoolGraphBuilder.buildPoolGraph([]);
       const uniqueTokenPair = uniqueTokenMintsGraphTokenUnsortedData[0];
-      const results = graph.getRoutesForPairs([
+      const results = graph.getPathsForPairs([
         [uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB],
       ]);
       assert.equal(results.length, 1);
-      const searchId = PoolGraphUtils.getSearchRouteId(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
+      const searchId = PoolGraphUtils.getSearchPathId(uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB);
 
-      assertgetRoutesForPairsResult(results, [[searchId, []]]);
+      assertGetPathsForPairsResult(results, [[searchId, []]]);
     });
 
     it("Duplicate pool data in input should not affect output", async () => {
@@ -368,79 +368,79 @@ describe("PoolGraph tests", () => {
         [uniqueTokenPair.tokenMintA, uniqueTokenPair.tokenMintB],
         [rlbSolPool.tokenMintA, rlbSolPool.tokenMintB]
       ]
-      const results = graph.getRoutesForPairs(searchTokenPairs);
+      const results = graph.getPathsForPairs(searchTokenPairs);
 
       assert.equal(results.length, 2);
 
-      const expectedRoutesForTokenPairQueries: [string, PoolTokenPair[][]][] = [
-        [PoolGraphUtils.getSearchRouteId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
+      const expectedPathsForTokenPairQueries: [string, PoolTokenPair[][]][] = [
+        [PoolGraphUtils.getSearchPathId(searchTokenPairs[0][0], searchTokenPairs[0][1]), [
           [uniqueTokenPair]
-        ]], [PoolGraphUtils.getSearchRouteId(rlbSolPool.tokenMintA, rlbSolPool.tokenMintB), [
+        ]], [PoolGraphUtils.getSearchPathId(rlbSolPool.tokenMintA, rlbSolPool.tokenMintB), [
           [rlbSolPool]
         ]]];
 
-      assertgetRoutesForPairsResult(results, expectedRoutesForTokenPairQueries);
+      assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries);
     });
   });
 });
 
-function assertgetRoutesForPairsResult(
-  searchResultEntires: RouteSearchEntries,
-  expectedRoutes: [string, PoolTokenPair[][]][]
+function assertGetPathsForPairsResult(
+  searchResultEntires: PathSearchEntries,
+  expectedPaths: [string, PoolTokenPair[][]][]
 ) {
 
-  assert.equal(searchResultEntires.length, expectedRoutes.length, `Number of routes should match expected routes`);
+  assert.equal(searchResultEntires.length, expectedPaths.length, `Number of paths should match expected paths`);
 
   searchResultEntires.forEach((searchEntry, entryIndex) => {
-    const [routeId, routes] = searchEntry;
-    const [startMint, endMint] = PoolGraphUtils.deconstructRouteId(routeId);
+    const [pathId, paths] = searchEntry;
+    const [startMint, endMint] = PoolGraphUtils.deconstructPathId(pathId);
 
-    // Assert route is correct
-    const expectedRoutesForEntry = expectedRoutes[entryIndex];
+    // Assert path is correct
+    const expectedPathsForEntry = expectedPaths[entryIndex];
 
     assert.equal(
-      routes.length,
-      expectedRoutesForEntry[1].length,
+      paths.length,
+      expectedPathsForEntry[1].length,
       "Expected number of paths to match expected pools"
     );
 
-    assertGetRouteResult(routes, expectedRoutesForEntry[1], startMint, endMint);
+    assertGetPathResult(paths, expectedPathsForEntry[1], startMint, endMint);
   })
 }
 
-function assertGetRouteResult(
-  routes: Route[],
-  expectedRoutes: PoolTokenPair[][],
+function assertGetPathResult(
+  paths: Path[],
+  expectedPaths: PoolTokenPair[][],
   expectedStartMint: Address,
   expectedEndMint: Address
 ) {
-  assert.equal(routes.length, expectedRoutes.length);
-  routes.forEach((route, routeIndex) => {
-    assertRoute(route, routeIndex, expectedStartMint, expectedEndMint, expectedRoutes);
+  assert.equal(paths.length, expectedPaths.length);
+  paths.forEach((path, pathIndex) => {
+    assertPath(path, pathIndex, expectedStartMint, expectedEndMint, expectedPaths);
   });
 }
 
-function assertRoute(
-  route: Route,
-  routeIndex: number,
+function assertPath(
+  path: Path,
+  pathIndex: number,
   expectedStartMint: Address,
   expectedEndMint: Address,
-  expectedRoutes: PoolTokenPair[][]
+  expectedPaths: PoolTokenPair[][]
 ) {
-  assert.equal(route.startTokenMint, AddressUtil.toString(expectedStartMint));
-  assert.equal(route.endTokenMint, AddressUtil.toString(expectedEndMint));
+  assert.equal(path.startTokenMint, AddressUtil.toString(expectedStartMint));
+  assert.equal(path.endTokenMint, AddressUtil.toString(expectedEndMint));
 
-  const expectedRoute = expectedRoutes[routeIndex];
+  const expectedPath = expectedPaths[pathIndex];
   assert.equal(
-    route.hops.length,
-    expectedRoute.length,
-    `Expected number of edges to match expected pools at index ${routeIndex}`
+    path.edges.length,
+    expectedPath.length,
+    `Expected number of edges to match expected pools at index ${pathIndex}`
   );
-  route.hops.forEach((hop, hopIndex) => {
+  path.edges.forEach((edge, edgeIndex) => {
     assert.equal(
-      AddressUtil.toString(hop.poolAddress),
-      AddressUtil.toString(expectedRoutes[routeIndex][hopIndex].address),
-      `Expected edge pool address to match expected pool addr at hop index ${hopIndex}`
+      AddressUtil.toString(edge.poolAddress),
+      AddressUtil.toString(expectedPaths[pathIndex][edgeIndex].address),
+      `Expected edge pool address to match expected pool addr at edge index ${edgeIndex}`
     );
   });
 }

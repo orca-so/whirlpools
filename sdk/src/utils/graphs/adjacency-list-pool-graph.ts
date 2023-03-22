@@ -2,12 +2,12 @@ import { AddressUtil } from "@orca-so/common-sdk";
 import { Address } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import {
-  Hop,
+  Edge,
+  Path,
+  PathSearchEntries,
+  PathSearchOptions,
   PoolGraph,
   PoolTokenPair,
-  Route,
-  RouteSearchEntries,
-  RouteSearchOptions
 } from "./public/pool-graph";
 import { PoolGraphUtils } from "./public/pool-graph-utils";
 
@@ -17,7 +17,7 @@ import { PoolGraphUtils } from "./public/pool-graph-utils";
  * Whirlpools (Pools (edges) & Tokens (nodes)) are sparse graphs concentrated on popular pairs such as SOL, USDC etc.
  * Therefore this implementation is more efficient in memory consumption & building than a matrix.
  *
- * TODO: This implementation does not support 2-hop routes between identical tokens.
+ * TODO: This implementation does not support 2-edge paths between identical tokens.
  */
 export class AdjacencyListPoolGraph implements PoolGraph {
   readonly graph: Readonly<AdjacencyPoolGraphMap>;
@@ -26,15 +26,15 @@ export class AdjacencyListPoolGraph implements PoolGraph {
     this.graph = buildPoolGraph(pools);
   }
 
-  getRoute(startMint: Address, endMint: Address, options?: RouteSearchOptions): Route[] {
-    const results = this.getRoutesForPairs([[startMint, endMint]], options);
+  getPath(startMint: Address, endMint: Address, options?: PathSearchOptions): Path[] {
+    const results = this.getPathsForPairs([[startMint, endMint]], options);
     return results[0][1];
   }
 
-  getRoutesForPairs(
+  getPathsForPairs(
     searchTokenPairs: [Address, Address][],
-    options?: RouteSearchOptions
-  ): RouteSearchEntries {
+    options?: PathSearchOptions
+  ): PathSearchEntries {
     const searchTokenPairsToFind = searchTokenPairs.filter(([startMint, endMint]) => {
       return AddressUtil.toString(startMint) !== AddressUtil.toString(endMint);
     });
@@ -50,19 +50,19 @@ export class AdjacencyListPoolGraph implements PoolGraph {
     );
 
     const results = searchTokenPairs.map(([startMint, endMint]) => {
-      const searchRouteId = PoolGraphUtils.getSearchRouteId(startMint, endMint);
+      const searchRouteId = PoolGraphUtils.getSearchPathId(startMint, endMint);
 
       const internalRouteId = getInternalRouteId(startMint, endMint);
-      const routesForSearchPair = walkMap[internalRouteId];
+      const pathsForSearchPair = walkMap[internalRouteId];
 
-      const paths = routesForSearchPair
-        ? routesForSearchPair.map<Route>((route) => {
-          return {
-            startTokenMint: AddressUtil.toString(startMint),
-            endTokenMint: AddressUtil.toString(endMint),
-            hops: getHopsFromRoute(internalRouteId, searchRouteId, route),
-          };
-        })
+      const paths = pathsForSearchPair
+        ? pathsForSearchPair.map<Path>((path) => {
+            return {
+              startTokenMint: AddressUtil.toString(startMint),
+              endTokenMint: AddressUtil.toString(endMint),
+              edges: getHopsFromRoute(internalRouteId, searchRouteId, path),
+            };
+          })
         : [];
 
       return [searchRouteId, paths] as const;
@@ -72,11 +72,11 @@ export class AdjacencyListPoolGraph implements PoolGraph {
   }
 }
 
-function getHopsFromRoute(internalRouteId: string, searchRouteId: string, route: string[]): Hop[] {
-  const [intStartA] = PoolGraphUtils.deconstructRouteId(internalRouteId);
-  const [searchStartA] = PoolGraphUtils.deconstructRouteId(searchRouteId);
+function getHopsFromRoute(internalRouteId: string, searchRouteId: string, path: string[]): Edge[] {
+  const [intStartA] = PoolGraphUtils.deconstructPathId(internalRouteId);
+  const [searchStartA] = PoolGraphUtils.deconstructPathId(searchRouteId);
   const shouldReverseRoute = searchStartA !== intStartA;
-  const finalRoutes = shouldReverseRoute ? route.slice().reverse() : route;
+  const finalRoutes = shouldReverseRoute ? path.slice().reverse() : path;
 
   return finalRoutes.map((hopStr) => {
     return { poolAddress: new PublicKey(hopStr) };
@@ -90,7 +90,7 @@ type PoolGraphEdge = {
   otherToken: string;
 };
 
-// A record of route-id (tokenA-tokenB) to a list of edges
+// A record of path-id (tokenA-tokenB) to a list of edges
 type PoolWalks = Record<string, string[][]>;
 
 function buildPoolGraph(pools: PoolTokenPair[]): Readonly<AdjacencyPoolGraphMap> {
@@ -141,33 +141,33 @@ function findWalks(
   const walks: PoolWalks = {};
 
   tokenPairs.forEach(([tokenMintFrom, tokenMintTo]) => {
-    let routes = [];
+    let paths = [];
 
-    // Adjust walk's from & to token based of of internal route id.
-    const internalRouteId = getInternalRouteId(tokenMintFrom, tokenMintTo);
+    // Adjust walk's from & to token based of of internal path id.
+    const internalPathId = getInternalRouteId(tokenMintFrom, tokenMintTo);
     const [internalTokenMintFrom, internalTokenMintTo] = [tokenMintFrom, tokenMintTo].sort();
 
     const poolsForTokenFrom = poolGraph[internalTokenMintFrom] || [];
     const poolsForTokenTo = poolGraph[internalTokenMintTo] || [];
 
-    // If the internal route id has already been created, then there is no need to re-search the route.
-    // Possible that the route was searched in reverse.
-    if (!!walks[internalRouteId]) {
+    // If the internal path id has already been created, then there is no need to re-search the path.
+    // Possible that the path was searched in reverse.
+    if (!!walks[internalPathId]) {
       return;
     }
 
-    // Find all direct pool routes, i.e. all edges shared between tokenA and tokenB
+    // Find all direct pool paths, i.e. all edges shared between tokenA and tokenB
     const singleHop = poolsForTokenFrom
       .filter(({ address }) => poolsForTokenTo.some((p) => p.address === address))
       .map((op) => [op.address]);
-    routes.push(...singleHop);
+    paths.push(...singleHop);
 
     // Remove all direct edges from poolA to poolB
     const firstHop = poolsForTokenFrom.filter(
       ({ address }) => !poolsForTokenTo.some((p) => p.address === address)
     );
 
-    // Find all edges/nodes from neighbors of A that connect to B to create routes of length 2
+    // Find all edges/nodes from neighbors of A that connect to B to create paths of length 2
     // tokenA --> tokenX --> tokenB
     firstHop.forEach((firstPool) => {
       const intermediateToken = firstPool.otherToken;
@@ -175,12 +175,12 @@ function findWalks(
         const secondHops = poolsForTokenTo
           .filter((secondPool) => secondPool.otherToken === intermediateToken)
           .map((secondPool) => [firstPool.address, secondPool.address]);
-        routes.push(...secondHops);
+        paths.push(...secondHops);
       }
     });
 
-    if (routes.length > 0) {
-      walks[internalRouteId] = routes;
+    if (paths.length > 0) {
+      walks[internalPathId] = paths;
     }
   });
 
@@ -190,5 +190,5 @@ function findWalks(
 function getInternalRouteId(tokenA: Address, tokenB: Address): string {
   const mints = [AddressUtil.toString(tokenA), AddressUtil.toString(tokenB)];
   const sortedMints = mints.sort();
-  return `${sortedMints[0]}${PoolGraphUtils.ROUTE_ID_DELIMITER}${sortedMints[1]} `;
+  return `${sortedMints[0]}${PoolGraphUtils.PATH_ID_DELIMITER}${sortedMints[1]} `;
 }

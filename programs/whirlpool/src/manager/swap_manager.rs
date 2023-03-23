@@ -1,3 +1,5 @@
+use solana_program::msg;
+
 use crate::{
     errors::ErrorCode,
     manager::{
@@ -185,6 +187,14 @@ pub fn swap(
     } else {
         (amount_calculated, amount - amount_remaining)
     };
+
+    let fee_growth = if a_to_b {
+        curr_fee_growth_global_input - whirlpool.fee_growth_global_a
+    } else {
+        curr_fee_growth_global_input - whirlpool.fee_growth_global_b
+    };
+
+    msg!("g{}", fee_growth);
 
     Ok(PostSwapUpdate {
         amount_a,

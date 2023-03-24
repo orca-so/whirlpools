@@ -1,8 +1,8 @@
-use crate::state::Whirlpool;
+use crate::state::{PositionBundle, Whirlpool};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 use mpl_token_metadata::instruction::create_metadata_accounts_v3;
-use solana_program::program::{invoke, invoke_signed};
+use solana_program::program::invoke_signed;
 use spl_token::instruction::{burn_checked, close_account, mint_to, set_authority, AuthorityType};
 
 use crate::constants::nft::{
@@ -219,22 +219,30 @@ fn remove_position_token_mint_authority<'info>(
 }
 
 pub fn mint_position_bundle_token_and_remove_authority<'info>(
-    funder: &Signer<'info>,
+    position_bundle: &Account<'info, PositionBundle>,
     position_bundle_mint: &Account<'info, Mint>,
     position_bundle_token_account: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
+    position_bundle_seeds: &[&[u8]],
 ) -> Result<()> {
     mint_position_bundle_token(
-        funder,
+        position_bundle,
         position_bundle_mint,
         position_bundle_token_account,
         token_program,
+        position_bundle_seeds,
     )?;
-    remove_position_bundle_token_mint_authority(funder, position_bundle_mint, token_program)
+    remove_position_bundle_token_mint_authority(
+        position_bundle,
+        position_bundle_mint,
+        token_program,
+        position_bundle_seeds,
+    )
 }
 
 pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     funder: &Signer<'info>,
+    position_bundle: &Account<'info, PositionBundle>,
     position_bundle_mint: &Account<'info, Mint>,
     position_bundle_token_account: &Account<'info, TokenAccount>,
     position_bundle_metadata: &UncheckedAccount<'info>,
@@ -243,12 +251,14 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     token_program: &Program<'info, Token>,
     system_program: &Program<'info, System>,
     rent: &Sysvar<'info, Rent>,
+    position_bundle_seeds: &[&[u8]],
 ) -> Result<()> {
     mint_position_bundle_token(
-        funder,
+        position_bundle,
         position_bundle_mint,
         position_bundle_token_account,
         token_program,
+        position_bundle_seeds,
     )?;
 
     // Create Metadata
@@ -261,12 +271,12 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     nft_name += "...";
     nft_name += &mint_address[mint_address.len() - 4..];
 
-    invoke(
+    invoke_signed(
         &create_metadata_accounts_v3(
             metadata_program.key(),
             position_bundle_metadata.key(),
             position_bundle_mint.key(),
-            funder.key(),
+            position_bundle.key(),
             funder.key(),
             metadata_update_auth.key(),
             nft_name,
@@ -281,6 +291,7 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
             None,
         ),
         &[
+            position_bundle.to_account_info(),
             position_bundle_metadata.to_account_info(),
             position_bundle_mint.to_account_info(),
             metadata_update_auth.to_account_info(),
@@ -289,56 +300,66 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
             system_program.to_account_info(),
             rent.to_account_info(),
         ],
+        &[position_bundle_seeds],
     )?;
 
-    remove_position_bundle_token_mint_authority(funder, position_bundle_mint, token_program)
+    remove_position_bundle_token_mint_authority(
+        position_bundle,
+        position_bundle_mint,
+        token_program,
+        position_bundle_seeds,
+    )
 }
 
 fn mint_position_bundle_token<'info>(
-    funder: &Signer<'info>,
+    position_bundle: &Account<'info, PositionBundle>,
     position_bundle_mint: &Account<'info, Mint>,
     position_bundle_token_account: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
+    position_bundle_seeds: &[&[u8]],
 ) -> Result<()> {
-    invoke(
+    invoke_signed(
         &mint_to(
             token_program.key,
             position_bundle_mint.to_account_info().key,
             position_bundle_token_account.to_account_info().key,
-            funder.to_account_info().key,
+            position_bundle.to_account_info().key,
             &[],
             1,
         )?,
         &[
             position_bundle_mint.to_account_info(),
             position_bundle_token_account.to_account_info(),
-            funder.to_account_info(),
+            position_bundle.to_account_info(),
             token_program.to_account_info(),
         ],
+        &[position_bundle_seeds],
     )?;
 
     Ok(())
 }
 
 fn remove_position_bundle_token_mint_authority<'info>(
-    funder: &Signer<'info>,
+    position_bundle: &Account<'info, PositionBundle>,
     position_bundle_mint: &Account<'info, Mint>,
     token_program: &Program<'info, Token>,
+    position_bundle_seeds: &[&[u8]],
 ) -> Result<()> {
-    invoke(
+    invoke_signed(
         &set_authority(
             token_program.key,
             position_bundle_mint.to_account_info().key,
             Option::None,
             AuthorityType::MintTokens,
-            funder.to_account_info().key,
+            position_bundle.to_account_info().key,
             &[],
         )?,
         &[
             position_bundle_mint.to_account_info(),
-            funder.to_account_info(),
+            position_bundle.to_account_info(),
             token_program.to_account_info(),
         ],
+        &[position_bundle_seeds],
     )?;
 
     Ok(())

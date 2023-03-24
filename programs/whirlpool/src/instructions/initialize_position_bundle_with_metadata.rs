@@ -17,7 +17,7 @@ pub struct InitializePositionBundleWithMetadata<'info> {
 
     #[account(init,
         payer = funder,
-        mint::authority = funder, // will be removed in the transaction
+        mint::authority = position_bundle, // will be removed in the transaction
         mint::decimals = 0,
     )]
     pub position_bundle_mint: Account<'info, Mint>,
@@ -61,8 +61,11 @@ pub fn handler(ctx: Context<InitializePositionBundleWithMetadata>) -> Result<()>
 
     position_bundle.initialize(position_bundle_mint.key())?;
 
+    let bump = *ctx.bumps.get("position_bundle").unwrap();
+
     mint_position_bundle_token_with_metadata_and_remove_authority(
         &ctx.accounts.funder,
+        &ctx.accounts.position_bundle,
         position_bundle_mint,
         &ctx.accounts.position_bundle_token_account,
         &ctx.accounts.position_bundle_metadata,
@@ -71,5 +74,10 @@ pub fn handler(ctx: Context<InitializePositionBundleWithMetadata>) -> Result<()>
         &ctx.accounts.token_program,
         &ctx.accounts.system_program,
         &ctx.accounts.rent,
+        &[
+            b"position_bundle".as_ref(),
+            position_bundle_mint.key().as_ref(),
+            &[bump],
+        ],
     )
 }

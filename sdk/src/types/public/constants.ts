@@ -16,6 +16,12 @@ export const ORCA_WHIRLPOOL_PROGRAM_ID = new PublicKey(
 export const ORCA_WHIRLPOOLS_CONFIG = new PublicKey("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ");
 
 /**
+ * Orca's supported tick spacings.
+ * @category Constants
+ */
+export const ORCA_SUPPORTED_TICK_SPACINGS = [1, 8, 64, 128];
+
+/**
  * The number of rewards supported by this whirlpool.
  * @category Constants
  */

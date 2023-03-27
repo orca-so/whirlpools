@@ -1,6 +1,6 @@
 import { Percentage } from "@orca-so/common-sdk";
 import * as anchor from "@project-serum/anchor";
-import { u64 } from "@solana/spl-token";
+import { NATIVE_MINT, u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { TickSpacing } from ".";
 import { TICK_ARRAY_SIZE, Whirlpool, WhirlpoolClient, WhirlpoolContext } from "../../src";
@@ -39,7 +39,7 @@ export async function setupSwapTest(setup: SwapTestPoolParams, tokenAIsNative = 
     setup.tickSpacing,
     setup.initSqrtPrice,
     setup.tokenMintAmount,
-    tokenAIsNative
+    tokenAIsNative ? NATIVE_MINT : undefined
   );
 
   const whirlpool = await setup.client.getPool(whirlpoolPda.publicKey, true);

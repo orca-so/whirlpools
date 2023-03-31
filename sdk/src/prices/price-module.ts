@@ -295,7 +295,7 @@ export class PriceModuleUtils {
       const orderB = getQuoteTokenOrder(pool.tokenMintB);
 
       if (orderA === orderB) {
-        // neigher tokenMintA nor tokenMintB is a quote token
+        // neither tokenMintA nor tokenMintB is a quote token
         return;
       }
 

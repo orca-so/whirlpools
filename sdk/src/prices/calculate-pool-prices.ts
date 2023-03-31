@@ -1,5 +1,5 @@
 import { AddressUtil, DecimalUtil, Percentage } from "@orca-so/common-sdk";
-import { Address, translateAddress } from "@project-serum/anchor";
+import { Address } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -119,10 +119,10 @@ export function calculatePricesForQuoteToken(
 
       // The quote token is the output token.
       // Therefore, if the quote token is mintB, then we are swapping from mintA to mintB.
-      const aToB = translateAddress(mintB).equals(quoteTokenMint);
+      const aToB = AddressUtil.toPubKey(mintB).equals(quoteTokenMint);
 
       const baseTokenMint = aToB ? mintA : mintB;
-      const poolCandidate = mostLiquidPools[translateAddress(baseTokenMint).toBase58()];
+      const poolCandidate = mostLiquidPools[AddressUtil.toString(baseTokenMint)];
       if (poolCandidate === undefined) {
         return [mint.toBase58(), null];
       }

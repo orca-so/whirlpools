@@ -1,5 +1,5 @@
 import { AddressUtil, DecimalUtil, Percentage } from "@orca-so/common-sdk";
-import { Address, translateAddress } from "@project-serum/anchor";
+import { Address } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -15,7 +15,6 @@ import {
 import { swapQuoteWithParams } from "../quotes/public/swap-quote";
 import { TickArray, WhirlpoolData } from "../types/public";
 import { PoolUtil, PriceMath, SwapUtils } from "../utils/public";
-import { PDAUtil } from "../utils/public/pda-utils";
 
 function checkLiquidity(
   pool: WhirlpoolData,
@@ -71,38 +70,31 @@ function checkLiquidity(
 }
 
 type PoolObject = { pool: WhirlpoolData; address: PublicKey };
-function getMostLiquidPool(
-  mintA: Address,
-  mintB: Address,
+function getMostLiquidPools(
+  quoteTokenMint: PublicKey,
   poolMap: PoolMap,
-  config = defaultGetPricesConfig
-): PoolObject | null {
-  const { tickSpacings, programId, whirlpoolsConfig } = config;
-  const pools = tickSpacings
-    .map((tickSpacing) => {
-      const pda = PDAUtil.getWhirlpool(
-        programId,
-        whirlpoolsConfig,
-        AddressUtil.toPubKey(mintA),
-        AddressUtil.toPubKey(mintB),
-        tickSpacing
-      );
+): Record<string, PoolObject> {
+  const mostLiquidPools = new Map<string, PoolObject>();
+  Object.entries(poolMap).forEach(([address, pool]) => {
+      const mintA = pool.tokenMintA.toBase58();
+      const mintB = pool.tokenMintB.toBase58();
 
-      return { address: pda.publicKey, pool: poolMap[pda.publicKey.toBase58()] };
-    })
-    .filter(({ pool }) => pool != null);
+      if (pool.liquidity.isZero()) {
+          return;
+      }
+      if (!pool.tokenMintA.equals(quoteTokenMint) && !pool.tokenMintB.equals(quoteTokenMint)) {
+          return;
+      }
 
-  if (pools.length === 0) {
-    return null;
-  }
+      const baseTokenMint = pool.tokenMintA.equals(quoteTokenMint) ? mintB : mintA;
 
-  return pools.slice(1).reduce<PoolObject>((acc, { address, pool }) => {
-    if (pool.liquidity.lt(acc.pool.liquidity)) {
-      return acc;
-    }
+      const existingPool = mostLiquidPools.get(baseTokenMint);
+      if (!existingPool || pool.liquidity.gt(existingPool.pool.liquidity)) {
+          mostLiquidPools.set(baseTokenMint, { address: AddressUtil.toPubKey(address), pool });
+      }
+  });
 
-    return { pool, address };
-  }, pools[0]);
+  return Object.fromEntries(mostLiquidPools);
 }
 
 export function calculatePricesForQuoteToken(
@@ -114,6 +106,8 @@ export function calculatePricesForQuoteToken(
   config: GetPricesConfig,
   thresholdConfig: GetPricesThresholdConfig
 ): PriceMap {
+  const mostLiquidPools = getMostLiquidPools(quoteTokenMint, poolMap);
+
   return Object.fromEntries(
     mints.map((mintAddr) => {
       const mint = AddressUtil.toPubKey(mintAddr);
@@ -125,10 +119,11 @@ export function calculatePricesForQuoteToken(
 
       // The quote token is the output token.
       // Therefore, if the quote token is mintB, then we are swapping from mintA to mintB.
-      const aToB = translateAddress(mintB).equals(quoteTokenMint);
+      const aToB = AddressUtil.toPubKey(mintB).equals(quoteTokenMint);
 
-      const poolCandidate = getMostLiquidPool(mintA, mintB, poolMap, config);
-      if (poolCandidate == null) {
+      const baseTokenMint = aToB ? mintA : mintB;
+      const poolCandidate = mostLiquidPools[AddressUtil.toString(baseTokenMint)];
+      if (poolCandidate === undefined) {
         return [mint.toBase58(), null];
       }
 

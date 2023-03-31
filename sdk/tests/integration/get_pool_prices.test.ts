@@ -24,7 +24,7 @@ describe("get_pool_prices", () => {
 
   async function fetchMaps(context: WhirlpoolContext, mints: PublicKey[], config: GetPricesConfig) {
     const poolMap = await PriceModuleUtils.fetchPoolDataFromMints(context, mints, config);
-    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(context, poolMap);
+    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(context, poolMap, config);
     const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(context, mints);
 
     return { poolMap, tickArrayMap, decimalsMap };
@@ -86,7 +86,7 @@ describe("get_pool_prices", () => {
     );
 
     assert.equal(Object.keys(poolMap).length, 1);
-    assert.equal(Object.keys(tickArrayMap).length, 3);
+    assert.equal(Object.keys(tickArrayMap).length, 1); // mintA to mintB direction
 
     assert.equal(Object.keys(priceMap).length, 2);
   });
@@ -143,8 +143,12 @@ describe("get_pool_prices", () => {
       thresholdConfig
     );
 
+    // mints are sorted (mintKeys[0] < mintKeys[1] < mintKeys[2])
+    const fetchedTickArrayForPool0 = 1; // A to B direction (mintKeys[0] to mintKeys[1])
+    const fetchedTickArrayForPool1 = 3; // B to A direction (mintKeys[2] to mintKeys[1])
+
     assert.equal(Object.keys(poolMap).length, 2);
-    assert.equal(Object.keys(tickArrayMap).length, 6);
+    assert.equal(Object.keys(tickArrayMap).length, fetchedTickArrayForPool0 + fetchedTickArrayForPool1);
     assert.equal(Object.keys(priceMap).length, 3);
   });
 
@@ -261,9 +265,12 @@ describe("get_pool_prices", () => {
       thresholdConfig
     );
 
+    // mints are sorted (mintKeys[0] < mintKeys[1] < mintKeys[2])
+    const fetchedTickArrayForPool0 = 1; // A to B direction (mintKeys[0] to mintKeys[1])
+    const fetchedTickArrayForPool1 = 1; // A to B direction (mintKeys[1] to mintKeys[2])
+    
     assert.equal(Object.keys(poolMap).length, 2);
-    assert.equal(Object.keys(tickArrayMap).length, 6);
-
+    assert.equal(Object.keys(tickArrayMap).length, fetchedTickArrayForPool0 + fetchedTickArrayForPool1);
     assert.equal(Object.keys(priceMap).length, 3);
   });
 });

@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import {
   InitPoolParams,
@@ -6,7 +6,7 @@ import {
   toTx,
   WhirlpoolContext,
   WhirlpoolData,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import { TickSpacing } from "../utils";
 import { initTestPool } from "../utils/init-utils";
@@ -139,7 +139,7 @@ describe("set_default_fee_rate", () => {
           feeAuthority: feeAuthorityKeypair.publicKey,
         },
       }),
-      /Signature verification failed/
+      /Transaction signature verification failure/
     );
   });
 

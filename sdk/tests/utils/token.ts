@@ -1,6 +1,6 @@
-import { deriveATA, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import { AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
+import { deriveATA, TransactionBuilder } from "@orca-so/common-sdk";
 import { createWSOLAccountInstructions } from "@orca-so/common-sdk/dist/helpers/token-instructions";
-import { AnchorProvider, BN, web3 } from "@project-serum/anchor";
 import {
   AccountLayout,
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -8,7 +8,7 @@ import {
   NATIVE_MINT,
   Token,
   TOKEN_PROGRAM_ID,
-  u64,
+  u64
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 

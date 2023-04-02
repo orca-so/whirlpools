@@ -1,4 +1,4 @@
-import { BN, BorshAccountsCoder, Idl } from "@project-serum/anchor";
+import { BN, BorshAccountsCoder, Idl } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import WhirlpoolIDL from "../../artifacts/whirlpool.json";
 

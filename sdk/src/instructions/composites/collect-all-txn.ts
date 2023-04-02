@@ -1,6 +1,6 @@
+import { Address } from "@coral-xyz/anchor";
 import { Instruction, resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
 import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
-import { Address } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PositionData, WhirlpoolContext } from "../..";
@@ -8,10 +8,10 @@ import { WhirlpoolIx } from "../../ix";
 import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
 import {
-  getAssociatedTokenAddressSync,
   createWSOLAccountInstructions,
+  getAssociatedTokenAddressSync,
 } from "../../utils/spl-token-utils";
-import { convertListToMap, checkMergedTransactionSizeIsValid } from "../../utils/txn-utils";
+import { checkMergedTransactionSizeIsValid, convertListToMap } from "../../utils/txn-utils";
 import { getTokenMintsFromWhirlpools } from "../../utils/whirlpool-ata-utils";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
 

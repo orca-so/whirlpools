@@ -1,5 +1,7 @@
-import { PublicKey, Keypair } from "@solana/web3.js";
+import { BN } from "@coral-xyz/anchor";
 import { NATIVE_MINT, u64 } from "@solana/spl-token";
+import { Keypair, PublicKey } from "@solana/web3.js";
+import { TickSpacing, ZERO_BN } from ".";
 import { InitConfigParams, InitPoolParams, TickUtil, WhirlpoolContext } from "../../src";
 import {
   FundedPositionInfo,
@@ -7,10 +9,8 @@ import {
   fundPositions,
   initRewardAndSetEmissions,
   initTestPoolWithTokens,
-  initTickArray,
+  initTickArray
 } from "./init-utils";
-import { BN } from "@project-serum/anchor";
-import { TickSpacing, ZERO_BN } from ".";
 
 interface InitFixtureParams {
   tickSpacing: number;

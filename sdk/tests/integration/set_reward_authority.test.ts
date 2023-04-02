@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
 import { NUM_REWARDS, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
 import { TickSpacing } from "../utils";
@@ -104,7 +104,7 @@ describe("set_reward_authority", () => {
           rewardIndex: 0,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /Transaction signature verification failure/
     );
   });
 });

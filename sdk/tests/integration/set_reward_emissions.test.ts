@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
 import { createAndMintToTokenAccount, mintToByAuthority, TickSpacing, ZERO_BN } from "../utils";
@@ -189,7 +189,7 @@ describe("set_reward_emissions", () => {
           emissionsPerSecondX64,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /Transaction signature verification failure/
     );
   });
 });

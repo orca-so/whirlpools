@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
@@ -12,7 +12,7 @@ import {
   toTx,
   WhirlpoolContext,
   WhirlpoolData,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import {
   approveToken,
@@ -20,7 +20,7 @@ import {
   getTokenBalance,
   TickSpacing,
   transfer,
-  ZERO_BN,
+  ZERO_BN
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
@@ -498,7 +498,7 @@ describe("collect_fees", () => {
           tokenVaultB: tokenVaultBKeypair.publicKey,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /Transaction signature verification failure/
     );
   });
 

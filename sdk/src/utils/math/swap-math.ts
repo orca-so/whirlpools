@@ -1,8 +1,8 @@
+import { BN } from "@coral-xyz/anchor";
 import { u64 } from "@solana/spl-token";
-import { BN } from "@project-serum/anchor";
-import { getAmountDeltaA, getAmountDeltaB, getNextSqrtPrice } from "./token-math";
-import { BitMath } from "./bit-math";
 import { FEE_RATE_MUL_VALUE } from "../../types/public";
+import { BitMath } from "./bit-math";
+import { getAmountDeltaA, getAmountDeltaB, getNextSqrtPrice } from "./token-math";
 
 export type SwapStep = {
   amountIn: BN;

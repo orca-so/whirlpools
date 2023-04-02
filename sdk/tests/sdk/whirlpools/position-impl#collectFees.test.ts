@@ -1,7 +1,7 @@
+import * as anchor from "@coral-xyz/anchor";
 import { deriveATA, MathUtil } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
-import * as assert from "assert";
 import { u64 } from "@solana/spl-token";
+import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
@@ -11,7 +11,7 @@ import {
   Whirlpool,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../../src";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { WhirlpoolTestFixture } from "../../utils/fixture";

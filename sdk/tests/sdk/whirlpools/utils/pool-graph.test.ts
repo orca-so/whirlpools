@@ -1,5 +1,5 @@
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
 import * as assert from "assert";
 import { Path, PathSearchEntries, PoolGraphBuilder, PoolGraphUtils, PoolTokenPair } from "../../../../src";
 import {

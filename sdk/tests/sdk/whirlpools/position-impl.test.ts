@@ -1,12 +1,12 @@
+import * as anchor from "@coral-xyz/anchor";
 import { deriveATA, Percentage } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
   decreaseLiquidityQuoteByLiquidity,
   increaseLiquidityQuoteByInputToken,
-  PriceMath,
+  PriceMath
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { createAssociatedTokenAccount, TickSpacing, transfer } from "../../utils";

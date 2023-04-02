@@ -1,11 +1,11 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { FeeTierData, PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../utils";
 import { initFeeTier } from "../utils/init-utils";
 import {
   generateDefaultConfigParams,
-  generateDefaultInitFeeTierParams,
+  generateDefaultInitFeeTierParams
 } from "../utils/test-builders";
 
 describe("initialize_fee_tier", () => {
@@ -109,7 +109,7 @@ describe("initialize_fee_tier", () => {
           )
         )
       ).buildAndExecute(),
-      /Signature verification failed/
+      /Transaction signature verification failure/
     );
   });
 

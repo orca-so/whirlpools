@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { deriveATA } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { AccountInfo, ASSOCIATED_TOKEN_PROGRAM_ID, MintInfo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
@@ -8,11 +8,11 @@ import {
   PositionBundleData,
   POSITION_BUNDLE_SIZE,
   toTx,
-  WhirlpoolContext,
+  WhirlpoolContext
 } from "../../src";
 import {
   createMintInstructions,
-  mintToByAuthority,
+  mintToByAuthority
 } from "../utils";
 import { initializePositionBundle } from "../utils/init-utils";
 
@@ -184,7 +184,6 @@ describe("initialize_position_bundle", () => {
     await createMintTx.buildAndExecute();
 
     const tx = await createInitializePositionBundleTx(ctx, {}, positionBundleMintKeypair);
-  
     await assert.rejects(
       tx.buildAndExecute(),
       (err) => { return JSON.stringify(err).includes("already in use") }
@@ -193,11 +192,11 @@ describe("initialize_position_bundle", () => {
 
   describe("invalid input account", () => {
     it("should be failed: invalid position bundle address", async () => {
-      const tx = await createInitializePositionBundleTx(ctx, { 
+      const tx = await createInitializePositionBundleTx(ctx, {
         // invalid parameter
         positionBundle: PDAUtil.getPositionBundle(ctx.program.programId, Keypair.generate().publicKey).publicKey,
       });
-        
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0x7d6/ // ConstraintSeeds
@@ -205,11 +204,11 @@ describe("initialize_position_bundle", () => {
     });
 
     it("should be failed: invalid ATA address", async () => {
-      const tx = await createInitializePositionBundleTx(ctx, { 
+      const tx = await createInitializePositionBundleTx(ctx, {
         // invalid parameter
         positionBundleTokenAccount: await deriveATA(ctx.wallet.publicKey, Keypair.generate().publicKey),
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /An account required by the instruction is missing/ // Anchor cannot create derived ATA
@@ -217,11 +216,11 @@ describe("initialize_position_bundle", () => {
     });
 
     it("should be failed: invalid token program", async () => {
-      const tx = await createInitializePositionBundleTx(ctx, { 
+      const tx = await createInitializePositionBundleTx(ctx, {
         // invalid parameter
         tokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0xbc0/ // InvalidProgramId
@@ -229,11 +228,11 @@ describe("initialize_position_bundle", () => {
     });
 
     it("should be failed: invalid system program", async () => {
-      const tx = await createInitializePositionBundleTx(ctx, { 
+      const tx = await createInitializePositionBundleTx(ctx, {
         // invalid parameter
         systemProgram: TOKEN_PROGRAM_ID,
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0xbc0/ // InvalidProgramId
@@ -241,11 +240,11 @@ describe("initialize_position_bundle", () => {
     });
 
     it("should be failed: invalid rent sysvar", async () => {
-      const tx = await createInitializePositionBundleTx(ctx, { 
+      const tx = await createInitializePositionBundleTx(ctx, {
         // invalid parameter
         rent: anchor.web3.SYSVAR_CLOCK_PUBKEY,
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0xbc7/ // AccountSysvarMismatch
@@ -253,11 +252,11 @@ describe("initialize_position_bundle", () => {
     });
 
     it("should be failed: invalid associated token program", async () => {
-      const tx = await createInitializePositionBundleTx(ctx, { 
+      const tx = await createInitializePositionBundleTx(ctx, {
         // invalid parameter
         associatedTokenProgram: TOKEN_PROGRAM_ID,
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0xbc0/ // InvalidProgramId

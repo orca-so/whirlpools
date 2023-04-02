@@ -1,6 +1,5 @@
 import { ZERO } from "@orca-so/common-sdk";
-import { web3 } from "@project-serum/anchor";
-import { PublicKey, Keypair } from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import invariant from "tiny-invariant";
 import {
@@ -13,7 +12,7 @@ import {
   TickArrayData,
   TickData,
   TICK_ARRAY_SIZE,
-  WhirlpoolContext,
+  WhirlpoolContext
 } from "../../src";
 
 export const testWhirlpoolData = {

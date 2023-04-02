@@ -1,9 +1,8 @@
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { Program } from "@project-serum/anchor";
-import { Whirlpool } from "../artifacts/whirlpool";
+import { BN, Program } from "@coral-xyz/anchor";
 import { Instruction } from "@orca-so/common-sdk";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { BN } from "@project-serum/anchor";
+import { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to remove liquidity from a position.

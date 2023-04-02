@@ -1,3 +1,4 @@
+import { Address } from "@coral-xyz/anchor";
 import {
   AddressUtil,
   deriveATA,
@@ -6,7 +7,6 @@ import {
   TransactionBuilder,
   ZERO,
 } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";

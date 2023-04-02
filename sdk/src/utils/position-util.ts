@@ -1,10 +1,10 @@
+import { BN } from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
-import { BN } from "@project-serum/anchor";
 import {
   getLowerSqrtPriceFromTokenA,
+  getLowerSqrtPriceFromTokenB,
   getUpperSqrtPriceFromTokenA,
   getUpperSqrtPriceFromTokenB,
-  getLowerSqrtPriceFromTokenB,
 } from "./swap-utils";
 
 export enum SwapDirection {

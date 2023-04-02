@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolIx } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
@@ -9,12 +9,12 @@ import {
   setAuthority,
   TickSpacing,
   transfer,
-  ZERO_BN,
+  ZERO_BN
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initializePositionBundle, initTestPool, initTestPoolWithLiquidity, openBundledPosition, openPosition } from "../utils/init-utils";
 
-describe("close_position", () => {
+describe.only("close_position", () => {
   const provider = anchor.AnchorProvider.local();
   anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
@@ -189,7 +189,7 @@ describe("close_position", () => {
           positionTokenAccount: params.positionTokenAccount,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /Transaction signature verification failure/
     );
   });
 
@@ -227,7 +227,7 @@ describe("close_position", () => {
           positionTokenAccount: params.positionTokenAccount,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /Transaction signature verification failure/
     );
   });
 

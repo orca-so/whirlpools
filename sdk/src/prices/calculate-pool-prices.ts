@@ -1,5 +1,5 @@
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, DecimalUtil, Percentage } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -72,26 +72,26 @@ function checkLiquidity(
 type PoolObject = { pool: WhirlpoolData; address: PublicKey };
 function getMostLiquidPools(
   quoteTokenMint: PublicKey,
-  poolMap: PoolMap,
+  poolMap: PoolMap
 ): Record<string, PoolObject> {
   const mostLiquidPools = new Map<string, PoolObject>();
   Object.entries(poolMap).forEach(([address, pool]) => {
-      const mintA = pool.tokenMintA.toBase58();
-      const mintB = pool.tokenMintB.toBase58();
+    const mintA = pool.tokenMintA.toBase58();
+    const mintB = pool.tokenMintB.toBase58();
 
-      if (pool.liquidity.isZero()) {
-          return;
-      }
-      if (!pool.tokenMintA.equals(quoteTokenMint) && !pool.tokenMintB.equals(quoteTokenMint)) {
-          return;
-      }
+    if (pool.liquidity.isZero()) {
+      return;
+    }
+    if (!pool.tokenMintA.equals(quoteTokenMint) && !pool.tokenMintB.equals(quoteTokenMint)) {
+      return;
+    }
 
-      const baseTokenMint = pool.tokenMintA.equals(quoteTokenMint) ? mintB : mintA;
+    const baseTokenMint = pool.tokenMintA.equals(quoteTokenMint) ? mintB : mintA;
 
-      const existingPool = mostLiquidPools.get(baseTokenMint);
-      if (!existingPool || pool.liquidity.gt(existingPool.pool.liquidity)) {
-          mostLiquidPools.set(baseTokenMint, { address: AddressUtil.toPubKey(address), pool });
-      }
+    const existingPool = mostLiquidPools.get(baseTokenMint);
+    if (!existingPool || pool.liquidity.gt(existingPool.pool.liquidity)) {
+      mostLiquidPools.set(baseTokenMint, { address: AddressUtil.toPubKey(address), pool });
+    }
   });
 
   return Object.fromEntries(mostLiquidPools);

@@ -1,28 +1,21 @@
+import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import {
-  buildWhirlpoolClient,
-  MAX_TICK_INDEX,
-  MIN_TICK_INDEX,
-  MAX_SQRT_PRICE,
-  MIN_SQRT_PRICE,
-  PriceMath,
+  buildWhirlpoolClient, MAX_SQRT_PRICE, MAX_TICK_INDEX, MIN_SQRT_PRICE, MIN_TICK_INDEX, PriceMath,
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
-  swapQuoteWithParams,
-  TICK_ARRAY_SIZE,
-  WhirlpoolContext,
-  SwapUtils,
+  swapQuoteWithParams, SwapUtils, TICK_ARRAY_SIZE,
+  WhirlpoolContext
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
 import { assertInputOutputQuoteEqual, assertQuoteAndResults, TickSpacing } from "../../../utils";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
-  setupSwapTest,
+  setupSwapTest
 } from "../../../utils/swap-test-utils";
 import { getVaultAmounts } from "../../../utils/whirlpools-test-utils";
 

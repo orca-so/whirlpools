@@ -1,5 +1,5 @@
-import { SystemProgram, Keypair, PublicKey } from "@solana/web3.js";
-import { Program } from "@project-serum/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { Whirlpool } from "../artifacts/whirlpool";
 
 import { Instruction } from "@orca-so/common-sdk";

@@ -1,5 +1,5 @@
+import { BN, Program } from "@coral-xyz/anchor";
 import { Instruction } from "@orca-so/common-sdk";
-import { BN, Program } from "@project-serum/anchor";
 import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { Whirlpool } from "../artifacts/whirlpool";

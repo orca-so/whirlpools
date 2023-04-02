@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolIx, WhirlpoolsConfigData } from "../../src";
 import { generateDefaultConfigParams } from "../utils/test-builders";
@@ -51,7 +51,7 @@ describe("set_reward_emissions_super_authority", () => {
           newRewardEmissionsSuperAuthority: provider.wallet.publicKey,
         },
       }),
-      /Signature verification failed/
+      /Transaction signature verification failure/
     );
   });
 

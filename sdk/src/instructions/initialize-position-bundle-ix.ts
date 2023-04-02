@@ -1,11 +1,10 @@
-import { Program } from "@project-serum/anchor";
-import { Whirlpool } from "../artifacts/whirlpool";
-import { Instruction } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
-import { PublicKey, SystemProgram, Keypair } from "@solana/web3.js";
-import { PDA } from "@orca-so/common-sdk";
+import * as anchor from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
+import { Instruction, PDA } from "@orca-so/common-sdk";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import { METADATA_PROGRAM_ADDRESS, WHIRLPOOL_NFT_UPDATE_AUTH } from "..";
+import { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to initialize a PositionBundle account.
@@ -37,12 +36,12 @@ export function initializePositionBundleIx(
   program: Program<Whirlpool>,
   params: InitializePositionBundleParams
 ): Instruction {
-  const { 
+  const {
     owner,
     positionBundlePda,
     positionBundleMintKeypair,
     positionBundleTokenAccount,
-    funder,  
+    funder,
   } = params;
 
   const ix = program.instruction.initializePositionBundle({
@@ -75,17 +74,17 @@ export function initializePositionBundleIx(
  * @param params - InitializePositionBundleParams object
  * @returns - Instruction to perform the action.
  */
- export function initializePositionBundleWithMetadataIx(
+export function initializePositionBundleWithMetadataIx(
   program: Program<Whirlpool>,
   params: InitializePositionBundleParams & { positionBundleMetadataPda: PDA }
 ): Instruction {
-  const { 
+  const {
     owner,
     positionBundlePda,
     positionBundleMintKeypair,
     positionBundleTokenAccount,
     positionBundleMetadataPda,
-    funder,  
+    funder,
   } = params;
 
   const ix = program.instruction.initializePositionBundleWithMetadata({

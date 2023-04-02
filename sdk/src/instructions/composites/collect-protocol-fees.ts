@@ -1,6 +1,6 @@
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, Instruction, TokenUtil, TransactionBuilder } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
-import { NATIVE_MINT, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { NATIVE_MINT } from "@solana/spl-token";
 import { PACKET_DATA_SIZE } from "@solana/web3.js";
 import { WhirlpoolContext } from "../..";
 import {

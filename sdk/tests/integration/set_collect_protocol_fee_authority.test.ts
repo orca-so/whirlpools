@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolIx, WhirlpoolsConfigData } from "../../src";
 import { generateDefaultConfigParams } from "../utils/test-builders";
@@ -49,7 +49,7 @@ describe("set_collect_protocol_fee_authority", () => {
           newCollectProtocolFeesAuthority: provider.wallet.publicKey,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /Transaction signature verification failure/
     );
   });
 

@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, PDA } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -11,7 +11,7 @@ import {
   toTx,
   WhirlpoolContext,
   WhirlpoolData,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import {
   asyncAssertTokenVault,
@@ -19,7 +19,7 @@ import {
   ONE_SOL,
   systemTransferTx,
   TickSpacing,
-  ZERO_BN,
+  ZERO_BN
 } from "../utils";
 import { buildTestPoolParams, initTestPool } from "../utils/init-utils";
 

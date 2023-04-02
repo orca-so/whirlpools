@@ -1,5 +1,5 @@
+import { BN, Program, web3 } from "@coral-xyz/anchor";
 import { deriveATA, ONE } from "@orca-so/common-sdk";
-import { BN, Program, web3 } from "@project-serum/anchor";
 import { AccountLayout, NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";

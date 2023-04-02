@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import {
   InitPoolParams,
@@ -7,7 +7,7 @@ import {
   TICK_ARRAY_SIZE,
   toTx,
   WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../utils";
 import { initTestPool, initTickArray } from "../utils/init-utils";

@@ -1,5 +1,5 @@
+import { Address } from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { AccountFetcher } from "../..";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";

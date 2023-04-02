@@ -1,5 +1,5 @@
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import {
   DecimalsMap,
@@ -284,7 +284,7 @@ export class PriceModuleUtils {
     const getQuoteTokenOrder = (mint: PublicKey) => {
       const index = config.quoteTokens.findIndex((quoteToken) => quoteToken.equals(mint));
       return index === -1 ? config.quoteTokens.length : index;
-    }
+    };
 
     // select tick arrays based on the direction of swapQuote
     // TickArray is a large account, which affects decoding time.
@@ -300,13 +300,13 @@ export class PriceModuleUtils {
       }
 
       const aToB = orderA > orderB;
-      
+
       const tickArrayPubkeys = SwapUtils.getTickArrayPublicKeys(
         pool.tickCurrentIndex,
         pool.tickSpacing,
         aToB,
         programId,
-        new PublicKey(address),
+        new PublicKey(address)
       );
       tickArrayPubkeys.forEach((p) => tickArrayAddressSet.add(p.toBase58()));
     });

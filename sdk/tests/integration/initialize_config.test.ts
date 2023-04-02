@@ -1,11 +1,11 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import {
   InitConfigParams,
   toTx,
   WhirlpoolContext,
   WhirlpoolIx,
-  WhirlpoolsConfigData,
+  WhirlpoolsConfigData
 } from "../../src";
 import { ONE_SOL, systemTransferTx } from "../utils";
 import { generateDefaultConfigParams } from "../utils/test-builders";

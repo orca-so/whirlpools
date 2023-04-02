@@ -1,8 +1,8 @@
-import { Percentage, ZERO } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
-import { Address } from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { Address } from "@coral-xyz/anchor";
+import { Percentage } from "@orca-so/common-sdk";
 import { u64 } from "@solana/spl-token";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
 import {
   buildWhirlpoolClient, PriceMath,

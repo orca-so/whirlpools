@@ -1,7 +1,8 @@
+import * as anchor from "@coral-xyz/anchor";
 import { deriveATA, MathUtil, SendTxRequest, TransactionBuilder, TransactionProcessor, ZERO } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
-import * as assert from "assert";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, NATIVE_MINT, Token, TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
+import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
@@ -14,12 +15,11 @@ import {
   Whirlpool,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../../src";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { FundedPositionInfo } from "../../utils/init-utils";
-import { PublicKey } from "@solana/web3.js";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -143,7 +143,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
 
-    for (let i=0; i<NUM_REWARDS; i++) {
+    for (let i = 0; i < NUM_REWARDS; i++) {
       await toTx(
         ctx,
         WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
@@ -171,7 +171,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     await burnAndCloseATA(ctx, ataA);
     await burnAndCloseATA(ctx, ataB);
 
-    for (let i=0; i<NUM_REWARDS; i++) {
+    for (let i = 0; i < NUM_REWARDS; i++) {
       if (PoolUtil.isRewardInitialized(pool.getRewardInfos()[i])) {
         const mintReward = pool.getRewardInfos()[i].mint;
         const ataReward = await deriveATA(ctx.wallet.publicKey, mintReward);
@@ -224,7 +224,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     await createATA(ctx, ataA, mintA);
     await createATA(ctx, ataB, mintB);
 
-    for (let i=0; i<NUM_REWARDS; i++) {
+    for (let i = 0; i < NUM_REWARDS; i++) {
       if (PoolUtil.isRewardInitialized(pool.getRewardInfos()[i])) {
         const mintReward = pool.getRewardInfos()[i].mint;
         const ataReward = await deriveATA(ctx.wallet.publicKey, mintReward);
@@ -262,7 +262,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     const positions: FundedPositionInfo[] = [];
     const numOfPool = 3;
 
-    for (let i=0; i<numOfPool; i++) {
+    for (let i = 0; i < numOfPool; i++) {
       const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
         tokenAIsNative,
         tickSpacing,

@@ -1,13 +1,12 @@
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
-import { PublicKey } from "@solana/web3.js";
 import {
   Edge,
   Path,
   PathSearchEntries,
   PathSearchOptions,
   PoolGraph,
-  PoolTokenPair,
+  PoolTokenPair
 } from "./public/pool-graph";
 import { PoolGraphUtils } from "./public/pool-graph-utils";
 

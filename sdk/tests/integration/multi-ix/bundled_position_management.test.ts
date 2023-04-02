@@ -1,15 +1,15 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { deriveATA, MathUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import { u64 } from "@solana/spl-token";
+import { Keypair, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
-import { toTx, WhirlpoolIx, Whirlpool, WhirlpoolClient, buildWhirlpoolClient, PDAUtil, collectFeesQuote, NUM_REWARDS, ORCA_WHIRLPOOL_PROGRAM_ID, PoolUtil, PriceMath, POSITION_BUNDLE_SIZE, PositionBundleData } from "../../../src";
+import { BN } from "bn.js";
+import Decimal from "decimal.js";
+import { buildWhirlpoolClient, collectFeesQuote, NUM_REWARDS, PDAUtil, PoolUtil, PositionBundleData, POSITION_BUNDLE_SIZE, PriceMath, toTx, Whirlpool, WhirlpoolClient, WhirlpoolIx } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { createTokenAccount, TickSpacing, ZERO_BN } from "../../utils";
-import { initializePositionBundle, openBundledPosition } from "../../utils/init-utils";
-import { u64 } from "@solana/spl-token";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
-import { deriveATA, MathUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
-import Decimal from "decimal.js";
-import { Keypair, SystemProgram } from "@solana/web3.js";
-import { BN } from "bn.js";
+import { initializePositionBundle, openBundledPosition } from "../../utils/init-utils";
 
 
 interface SharedTestContext {
@@ -64,7 +64,7 @@ describe("bundled position management tests", () => {
   }
 
   function checkBitmap(account: PositionBundleData, openedBundleIndexes: number[]) {
-    for (let i=0; i<POSITION_BUNDLE_SIZE; i++) {
+    for (let i = 0; i < POSITION_BUNDLE_SIZE; i++) {
       if (openedBundleIndexes.includes(i)) {
         assert.ok(checkBitmapIsOpened(account, i));
       }
@@ -161,7 +161,7 @@ describe("bundled position management tests", () => {
 
     const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
 
-    for (let i=0; i<NUM_REWARDS; i++) {
+    for (let i = 0; i < NUM_REWARDS; i++) {
       await toTx(
         ctx,
         WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
@@ -184,7 +184,6 @@ describe("bundled position management tests", () => {
       rewards: [],
     });
     const { poolInitInfo, rewards } = fixture.getInfos();
-    
     // initialize position bundle
     const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
     const positionBundlePubkey = positionBundleInfo.positionBundlePda.publicKey;
@@ -194,13 +193,13 @@ describe("bundled position management tests", () => {
     const openedBundleIndexes: number[] = [];
 
     // open all
-    for (let startBundleIndex=0; startBundleIndex<POSITION_BUNDLE_SIZE; startBundleIndex+= batchSize) {
+    for (let startBundleIndex = 0; startBundleIndex < POSITION_BUNDLE_SIZE; startBundleIndex += batchSize) {
       const minBundleIndex = startBundleIndex;
       const maxBundleIndex = Math.min(startBundleIndex + batchSize, POSITION_BUNDLE_SIZE) - 1;
 
       const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
 
-      for (let bundleIndex=minBundleIndex; bundleIndex<=maxBundleIndex; bundleIndex++) {
+      for (let bundleIndex = minBundleIndex; bundleIndex <= maxBundleIndex; bundleIndex++) {
         const bundledPositionPda = PDAUtil.getBundledPosition(ctx.program.programId, positionBundleInfo.positionBundleMintKeypair.publicKey, bundleIndex);
         builder.addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {
           bundledPositionPda,
@@ -223,13 +222,13 @@ describe("bundled position management tests", () => {
     assert.equal(openedBundleIndexes.length, POSITION_BUNDLE_SIZE);
 
     // close all
-    for (let startBundleIndex=0; startBundleIndex<POSITION_BUNDLE_SIZE; startBundleIndex+= batchSize) {
+    for (let startBundleIndex = 0; startBundleIndex < POSITION_BUNDLE_SIZE; startBundleIndex += batchSize) {
       const minBundleIndex = startBundleIndex;
       const maxBundleIndex = Math.min(startBundleIndex + batchSize, POSITION_BUNDLE_SIZE) - 1;
 
       const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
 
-      for (let bundleIndex=minBundleIndex; bundleIndex<=maxBundleIndex; bundleIndex++) {
+      for (let bundleIndex = minBundleIndex; bundleIndex <= maxBundleIndex; bundleIndex++) {
         const bundledPositionPda = PDAUtil.getBundledPosition(ctx.program.programId, positionBundleInfo.positionBundleMintKeypair.publicKey, bundleIndex);
         builder.addInstruction(WhirlpoolIx.closeBundledPositionIx(ctx.program, {
           bundledPosition: bundledPositionPda.publicKey,
@@ -340,7 +339,7 @@ describe("bundled position management tests", () => {
       WhirlpoolIx.increaseLiquidityIx(ctx.program, {
         ...modifyLiquidityParams,
         tokenMaxA: depositAmounts.tokenA,
-        tokenMaxB: depositAmounts.tokenB,  
+        tokenMaxB: depositAmounts.tokenB,
       })
     ).buildAndExecute();
     const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
@@ -380,7 +379,7 @@ describe("bundled position management tests", () => {
         tokenOwnerAccountB,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-        whirlpool: whirlpoolPubkey,  
+        whirlpool: whirlpoolPubkey,
       })
     ).buildAndExecute();
     const postCollectFees = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
@@ -388,7 +387,7 @@ describe("bundled position management tests", () => {
     assert.ok(postCollectFees!.feeOwedB.isZero());
 
     // collectReward
-    for (let i=0; i<NUM_REWARDS; i++) {
+    for (let i = 0; i < NUM_REWARDS; i++) {
       const ata = await createTokenAccount(
         provider,
         rewards[i].rewardMint,
@@ -412,7 +411,6 @@ describe("bundled position management tests", () => {
       const postCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
       assert.ok(postCollectReward!.rewardInfos[i].amountOwed.isZero());
     }
-    
     // decreaseLiquidity
     const withdrawAmounts = PoolUtil.getTokenAmountsFromLiquidity(
       liquidityAmount,
@@ -485,7 +483,7 @@ describe("bundled position management tests", () => {
     const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
     const bundleIndex = Math.floor(Math.random() * POSITION_BUNDLE_SIZE);
 
-    for (let iter=0; iter<openCloseIterationNum; iter++) {
+    for (let iter = 0; iter < openCloseIterationNum; iter++) {
       // open bundled position
       const positionInitInfo = await openBundledPosition(
         ctx,
@@ -532,7 +530,6 @@ describe("bundled position management tests", () => {
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         true
       );
-      
       const preIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
       assert.ok(preIncrease!.liquidity.isZero());
       await toTx(
@@ -540,7 +537,7 @@ describe("bundled position management tests", () => {
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           ...modifyLiquidityParams,
           tokenMaxA: depositAmounts.tokenA,
-          tokenMaxB: depositAmounts.tokenB,  
+          tokenMaxB: depositAmounts.tokenB,
         })
       ).buildAndExecute();
       const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
@@ -553,7 +550,6 @@ describe("bundled position management tests", () => {
 
       await sleep(2); // accrueRewards
       await accrueFees(fixture);
-      
       // decreaseLiquidity
       const withdrawAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
@@ -587,7 +583,7 @@ describe("bundled position management tests", () => {
           tokenOwnerAccountB,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-          whirlpool: whirlpoolPubkey,  
+          whirlpool: whirlpoolPubkey,
         })
       ).buildAndExecute();
       const postCollectFees = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
@@ -595,7 +591,7 @@ describe("bundled position management tests", () => {
       assert.ok(postCollectFees!.feeOwedB.isZero());
 
       // collectReward
-      for (let i=0; i<NUM_REWARDS; i++) {
+      for (let i = 0; i < NUM_REWARDS; i++) {
         const ata = await createTokenAccount(
           provider,
           rewards[i].rewardMint,
@@ -701,13 +697,12 @@ describe("bundled position management tests", () => {
         .addInstruction(WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           ...modifyLiquidityParams,
           tokenMaxA: depositAmounts.tokenA,
-          tokenMaxB: depositAmounts.tokenB,  
+          tokenMaxB: depositAmounts.tokenB,
         }));
       await openIncreaseBuilder.buildAndExecute();
       const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
       assert.ok(postIncrease!.liquidity.eq(liquidityAmount));
 
-      
       const withdrawAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
         (await ctx.fetcher.getPool(whirlpoolPubkey, true))!.sqrtPrice,
@@ -812,7 +807,7 @@ describe("bundled position management tests", () => {
         .addInstruction(WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           ...modifyLiquidityParams,
           tokenMaxA: depositAmounts.tokenA,
-          tokenMaxB: depositAmounts.tokenB,  
+          tokenMaxB: depositAmounts.tokenB,
         }))
         .addInstruction(WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
           ...modifyLiquidityParams,
@@ -989,7 +984,7 @@ describe("bundled position management tests", () => {
         .addInstruction(WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           ...modifyLiquidityParams,
           tokenMaxA: depositAmounts.tokenA,
-          tokenMaxB: depositAmounts.tokenB,  
+          tokenMaxB: depositAmounts.tokenB,
         }))
         .addInstruction(WhirlpoolIx.swapIx(ctx.program, {
           amount: swapInput,
@@ -1038,7 +1033,7 @@ describe("bundled position management tests", () => {
           tokenOwnerAccountB: receiverAtaB,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-          whirlpool: whirlpoolPubkey,  
+          whirlpool: whirlpoolPubkey,
         }))
         .addInstruction(WhirlpoolIx.closeBundledPositionIx(ctx.program, {
           bundledPosition: bundledPositionPubkey,
@@ -1079,7 +1074,7 @@ describe("bundled position management tests", () => {
         }))
         // fund rent
         .addInstruction({
-          instructions:[
+          instructions: [
             SystemProgram.transfer({
               fromPubkey: ctx.wallet.publicKey,
               toPubkey: positionBundleInfo.positionBundlePda.publicKey,
@@ -1089,7 +1084,6 @@ describe("bundled position management tests", () => {
           cleanupInstructions: [],
           signers: [],
         });
-      
       await builder.buildAndExecute();
 
       // Account closing reassigns to system program and reallocates
@@ -1152,7 +1146,7 @@ describe("bundled position management tests", () => {
         }))
         // fund rent
         .addInstruction({
-          instructions:[
+          instructions: [
             SystemProgram.transfer({
               fromPubkey: ctx.wallet.publicKey,
               toPubkey: bundledPositionPubkey,
@@ -1162,7 +1156,6 @@ describe("bundled position management tests", () => {
           cleanupInstructions: [],
           signers: [],
         });
-      
       await builder.buildAndExecute();
 
       // Account closing reassigns to system program and reallocates
@@ -1223,11 +1216,11 @@ describe("bundled position management tests", () => {
           tickArrayUpper,
           whirlpool: whirlpoolPubkey,
         }));
-    
+
       await assert.rejects(
         builder.buildAndExecute(),
         /0xbc4/ // AccountNotInitialized
-      );  
+      );
     });
   });
 

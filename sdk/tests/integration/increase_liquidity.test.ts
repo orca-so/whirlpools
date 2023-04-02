@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
@@ -12,7 +12,7 @@ import {
   toTx,
   WhirlpoolContext,
   WhirlpoolData,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
 import {
@@ -25,13 +25,13 @@ import {
   MAX_U64,
   TickSpacing,
   transfer,
-  ZERO_BN,
+  ZERO_BN
 } from "../utils";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
 import {
   generateDefaultInitTickArrayParams,
-  generateDefaultOpenPositionParams,
+  generateDefaultOpenPositionParams
 } from "../utils/test-builders";
 
 describe("increase_liquidity", () => {
@@ -970,7 +970,7 @@ describe("increase_liquidity", () => {
           tickArrayUpper: positionInitInfo.tickArrayUpper,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /Transaction signature verification failure/
     );
   });
 

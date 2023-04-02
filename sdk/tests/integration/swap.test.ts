@@ -1,9 +1,8 @@
+import * as anchor from "@coral-xyz/anchor";
+import { web3 } from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
-import { web3 } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
-import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
@@ -18,7 +17,7 @@ import {
   TICK_ARRAY_SIZE,
   toTx,
   WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import { getTokenBalance, MAX_U64, TickSpacing, ZERO_BN } from "../utils";
 import {
@@ -28,7 +27,7 @@ import {
   initTestPoolWithLiquidity,
   initTestPoolWithTokens,
   initTickArrayRange,
-  withdrawPositions,
+  withdrawPositions
 } from "../utils/init-utils";
 
 describe("swap", () => {

@@ -1,5 +1,5 @@
+import { BN } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import { BN } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import { METADATA_PROGRAM_ADDRESS } from "../../types/public";
 import { PriceMath } from "./price-math";
@@ -199,15 +199,9 @@ export class PDAUtil {
    * @param positionBundleMintKey
    * @returns
    */
-  public static getPositionBundle(
-    programId: PublicKey,
-    positionBundleMintKey: PublicKey,
-  ) {
+  public static getPositionBundle(programId: PublicKey, positionBundleMintKey: PublicKey) {
     return AddressUtil.findProgramAddress(
-      [
-        Buffer.from(PDA_POSITION_BUNDLE_SEED),
-        positionBundleMintKey.toBuffer(),
-      ],
+      [Buffer.from(PDA_POSITION_BUNDLE_SEED), positionBundleMintKey.toBuffer()],
       programId
     );
   }

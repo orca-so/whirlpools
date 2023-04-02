@@ -1,5 +1,5 @@
+import { AnchorProvider, web3 } from "@coral-xyz/anchor";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { web3, AnchorProvider } from "@project-serum/anchor";
 
 export function systemTransferTx(
   provider: AnchorProvider,

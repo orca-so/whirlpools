@@ -1,4 +1,6 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { PDA, Percentage } from "@orca-so/common-sdk";
+import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import {
   buildWhirlpoolClient,
@@ -8,19 +10,14 @@ import {
   POSITION_BUNDLE_SIZE,
   toTx,
   WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import {
-  approveToken,
-  TickSpacing,
-  transfer,
-  ONE_SOL,
-  systemTransferTx,
-  createAssociatedTokenAccount,
+  approveToken, createAssociatedTokenAccount, ONE_SOL,
+  systemTransferTx, TickSpacing,
+  transfer
 } from "../utils";
-import { PDA, Percentage } from "@orca-so/common-sdk";
 import { initializePositionBundle, initTestPool, openBundledPosition, openPosition } from "../utils/init-utils";
-import { u64 } from "@solana/spl-token";
 import { mintTokensToTestAccount } from "../utils/test-builders";
 
 describe("close_bundled_position", () => {
@@ -67,7 +64,7 @@ describe("close_bundled_position", () => {
   }
 
   function checkBitmap(account: PositionBundleData, openedBundleIndexes: number[]) {
-    for (let i=0; i<POSITION_BUNDLE_SIZE; i++) {
+    for (let i = 0; i < POSITION_BUNDLE_SIZE; i++) {
       if (openedBundleIndexes.includes(i)) {
         assert.ok(checkBitmapIsOpened(account, i));
       }
@@ -108,7 +105,6 @@ describe("close_bundled_position", () => {
         receiver: receiverKeypair.publicKey,
       })
     ).buildAndExecute();
-    
     const postAccount = await fetcher.getPosition(bundledPositionPda.publicKey, true);
     const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
     checkBitmap(postPositionBundle!, []);
@@ -144,7 +140,6 @@ describe("close_bundled_position", () => {
         receiver: ctx.wallet.publicKey,
       })
     );
-    
     await assert.rejects(
       tx.buildAndExecute(),
       /0x7d6/ // ConstraintSeeds (seed constraint was violated)
@@ -179,7 +174,6 @@ describe("close_bundled_position", () => {
 
     // close...
     await tx.buildAndExecute();
-    
     // re-close...
     await assert.rejects(
       tx.buildAndExecute(),
@@ -240,7 +234,6 @@ describe("close_bundled_position", () => {
         receiver: ctx.wallet.publicKey,
       })
     );
-    
     await assert.rejects(
       tx.buildAndExecute(),
       /0x1775/ // ClosePositionNotEmpty
@@ -268,7 +261,6 @@ describe("close_bundled_position", () => {
         tickLowerIndex,
         tickUpperIndex
       );
-      
       const tx = toTx(
         ctx,
         WhirlpoolIx.closeBundledPositionIx(ctx.program, {
@@ -280,7 +272,6 @@ describe("close_bundled_position", () => {
           receiver: ctx.wallet.publicKey,
         })
       );
-  
       await assert.rejects(
         tx.buildAndExecute(),
         /0x7d6/ // ConstraintSeeds (seed constraint was violated)
@@ -300,7 +291,6 @@ describe("close_bundled_position", () => {
         tickLowerIndex,
         tickUpperIndex
       );
-      
       const tx = toTx(
         ctx,
         WhirlpoolIx.closeBundledPositionIx(ctx.program, {
@@ -312,7 +302,6 @@ describe("close_bundled_position", () => {
           receiver: ctx.wallet.publicKey,
         })
       );
-  
       await assert.rejects(
         tx.buildAndExecute(),
         /0x7d6/ // ConstraintSeeds (seed constraint was violated)
@@ -338,7 +327,6 @@ describe("close_bundled_position", () => {
         funderKeypair.publicKey,
         ctx.wallet.publicKey,
       );
-      
       const tx = toTx(
         ctx,
         WhirlpoolIx.closeBundledPositionIx(ctx.program, {
@@ -370,7 +358,6 @@ describe("close_bundled_position", () => {
         tickLowerIndex,
         tickUpperIndex
       );
-      
       const tx = toTx(
         ctx,
         WhirlpoolIx.closeBundledPositionIx(ctx.program, {
@@ -401,7 +388,6 @@ describe("close_bundled_position", () => {
         tickLowerIndex,
         tickUpperIndex
       );
-      
       const tx = toTx(
         ctx,
         WhirlpoolIx.closeBundledPositionIx(ctx.program, {
@@ -461,7 +447,6 @@ describe("close_bundled_position", () => {
         funderKeypair.publicKey,
         1,
       );
-  
       await tx.buildAndExecute();
       const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
       checkBitmapIsClosed(positionBundle!, 0);
@@ -544,7 +529,6 @@ describe("close_bundled_position", () => {
         funderKeypair.publicKey,
         0,
       );
-  
       await assert.rejects(
         tx.buildAndExecute(),
         /0x1784/ // InvalidPositionTokenAmount

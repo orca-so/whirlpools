@@ -116,13 +116,13 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@orca-so/common-sdk@^0.1.12":
-  version "0.1.12"
-  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.1.12.tgz#40dd1577e27e7e24bd388233b758d4035fb3ac58"
-  integrity sha512-YtrwwnrkgnOLWPiXzKPdz+L6XRBfwXMd5zI0MZm2olCmyaM41RpKyHd+NW/adem+Eb2Ey0FVd+Bie6pRlY1Z0g==
+"@orca-so/common-sdk@0.2.0-beta.1":
+  version "0.2.0-beta.1"
+  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.2.0-beta.1.tgz#997584801d0eb99177fc7a085c54ec39244a27fc"
+  integrity sha512-TfJVCO4+waQnpCiaxAzL2CJK4s//qz8hN6V3Mk1aGqcdoM6XFg1la4Ez7ELD8YoJzHv+QkQ3Lp+EKomtAFsJcg==
   dependencies:
-    "@project-serum/anchor" "~0.25.0"
     "@solana/spl-token" "0.1.8"
+    "@solana/web3.js" "^1.74.0"
     decimal.js "^10.3.1"
     tiny-invariant "^1.2.0"
 
@@ -190,6 +190,28 @@
     borsh "^0.7.0"
     bs58 "^4.0.1"
     buffer "6.0.1"
+    fast-stable-stringify "^1.0.0"
+    jayson "^3.4.4"
+    node-fetch "^2.6.7"
+    rpc-websockets "^7.5.1"
+    superstruct "^0.14.2"
+
+"@solana/web3.js@^1.74.0":
+  version "1.75.0"
+  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.75.0.tgz#824c6f78865007bca758ca18f268d6f7363b42e5"
+  integrity sha512-rHQgdo1EWfb+nPUpHe4O7i8qJPELHKNR5PAZRK+a7XxiykqOfbaAlPt5boDWAGPnYbSv0ziWZv5mq9DlFaQCxg==
+  dependencies:
+    "@babel/runtime" "^7.12.5"
+    "@noble/ed25519" "^1.7.0"
+    "@noble/hashes" "^1.1.2"
+    "@noble/secp256k1" "^1.6.3"
+    "@solana/buffer-layout" "^4.0.0"
+    agentkeepalive "^4.2.1"
+    bigint-buffer "^1.1.5"
+    bn.js "^5.0.0"
+    borsh "^0.7.0"
+    bs58 "^4.0.1"
+    buffer "6.0.3"
     fast-stable-stringify "^1.0.0"
     jayson "^3.4.4"
     node-fetch "^2.6.7"

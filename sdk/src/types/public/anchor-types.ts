@@ -32,10 +32,13 @@ const IDL = WhirlpoolIDL as Idl;
 export const WHIRLPOOL_CODER = new BorshAccountsCoder(IDL);
 
 /**
- * Size of the Whirlpool account in bytes.
- * @category Solana Accounts
+ * Get the size of an account owned by the Whirlpool program in bytes.
+ * @param accountName Whirlpool account name
+ * @returns Size in bytes of the account
  */
-export const WHIRLPOOL_ACCOUNT_SIZE = WHIRLPOOL_CODER.size(IDL.accounts![4]);
+export function getAccountSize(accountName: AccountName) {
+  return WHIRLPOOL_CODER.size(IDL.accounts!.find((account) => account.name === accountName)!);
+}
 
 /**
  * @category Solana Accounts

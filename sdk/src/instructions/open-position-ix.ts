@@ -2,7 +2,7 @@ import { Program } from "@project-serum/anchor";
 import { Whirlpool } from "../artifacts/whirlpool";
 import { PublicKey } from "@solana/web3.js";
 import { PDA, Instruction } from "@orca-so/common-sdk";
-import { METADATA_PROGRAM_ADDRESS } from "..";
+import { METADATA_PROGRAM_ADDRESS, WHIRLPOOL_NFT_UPDATE_AUTH } from "..";
 import {
   OpenPositionBumpsData,
   OpenPositionWithMetadataBumpsData,
@@ -96,7 +96,7 @@ export function openPositionWithMetadataIx(
       ...openPositionAccounts(params),
       positionMetadataAccount: metadataPda.publicKey,
       metadataProgram: METADATA_PROGRAM_ADDRESS,
-      metadataUpdateAuth: new PublicKey("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr"),
+      metadataUpdateAuth: WHIRLPOOL_NFT_UPDATE_AUTH,
     },
   });
 

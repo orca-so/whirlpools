@@ -5,11 +5,7 @@ use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
     state::{TickArray, Whirlpool},
-    util::{
-        to_timestamp_u64,
-        SwapTickSequence,
-        update_and_swap_whirlpool,
-    },
+    util::{to_timestamp_u64, update_and_swap_whirlpool, SwapTickSequence},
 };
 
 #[derive(Accounts)]
@@ -64,11 +60,11 @@ pub struct TwoHopSwap<'info> {
     pub tick_array_two_2: AccountLoader<'info, TickArray>,
 
     #[account(seeds = [b"oracle", whirlpool_one.key().as_ref()],bump)]
-    /// Oracle is currently unused and will be enabled on subsequent updates
+    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_one: UncheckedAccount<'info>,
 
     #[account(seeds = [b"oracle", whirlpool_two.key().as_ref()],bump)]
-    /// Oracle is currently unused and will be enabled on subsequent updates
+    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_two: UncheckedAccount<'info>,
 }
 
@@ -81,7 +77,7 @@ pub fn handler(
     a_to_b_two: bool,
     sqrt_price_limit_one: u128,
     sqrt_price_limit_two: u128,
-) -> ProgramResult {
+) -> Result<()> {
     let clock = Clock::get()?;
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
@@ -115,7 +111,7 @@ pub fn handler(
         ctx.accounts.tick_array_one_2.load_mut().ok(),
     );
 
-    let mut swap_tick_sequence_two= SwapTickSequence::new(
+    let mut swap_tick_sequence_two = SwapTickSequence::new(
         ctx.accounts.tick_array_two_0.load_mut().unwrap(),
         ctx.accounts.tick_array_two_1.load_mut().ok(),
         ctx.accounts.tick_array_two_2.load_mut().ok(),

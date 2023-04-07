@@ -307,7 +307,7 @@ mod fuzz_tests {
             if liquidity.leading_zeros() + sqrt_price.leading_zeros() < Q64_RESOLUTION.into() {
                 assert!(case_1_price.is_err());
             } else {
-                assert!(amount >= get_amount_delta_a(sqrt_price, case_1_price?, liquidity, true)?);
+                assert!(amount >= get_amount_delta_a(sqrt_price, case_1_price.unwrap(), liquidity, true).unwrap());
 
                 // Case 2. amount_specified_is_input = false, a_to_b = false
                 // We are removing token A from the supply, causing price to increase (Eq 1.)
@@ -327,12 +327,12 @@ mod fuzz_tests {
                 if liquidity_x64 <= product {
                     assert!(case_2_price.is_err());
                 } else {
-                    assert!(amount <= get_amount_delta_a(sqrt_price, case_2_price?, liquidity, false)?);
-                    assert!(case_2_price? >= sqrt_price);
+                    assert!(amount <= get_amount_delta_a(sqrt_price, case_2_price.unwrap(), liquidity, false).unwrap());
+                    assert!(case_2_price.unwrap() >= sqrt_price);
                 }
 
                 if amount == 0 {
-                    assert!(case_1_price? == case_2_price?);
+                    assert!(case_1_price.unwrap() == case_2_price.unwrap());
                 }
             }
         }
@@ -351,9 +351,9 @@ mod fuzz_tests {
             // Because a lower price is inversely correlated with an increased supply of B,
             // a lower price means that we are adding less B. Thus when performing math, we wish to round the
             // price down, since that means that we are guaranteed to not exceed the fixed amount of B provided.
-            let case_3_price = get_next_sqrt_price_from_b_round_down(sqrt_price, liquidity, amount, true)?;
+            let case_3_price = get_next_sqrt_price_from_b_round_down(sqrt_price, liquidity, amount, true).unwrap();
             assert!(case_3_price >= sqrt_price);
-            assert!(amount >= get_amount_delta_b(sqrt_price, case_3_price, liquidity, true)?);
+            assert!(amount >= get_amount_delta_b(sqrt_price, case_3_price, liquidity, true).unwrap());
 
             // Case 4. amount_specified_is_input = false, a_to_b = true
             // We are removing token B from the supply, causing price to decrease (Eq 1.)
@@ -365,22 +365,22 @@ mod fuzz_tests {
 
             // Q64.0 << 64 => Q64.64
             let amount_x64 = u128::from(amount) << Q64_RESOLUTION;
-            let delta = div_round_up(amount_x64, liquidity.into())?;
+            let delta = div_round_up(amount_x64, liquidity.into()).unwrap();
 
             if sqrt_price < delta {
                 // In Case 4, error if sqrt_price < delta
                 assert!(case_4_price.is_err());
             } else {
-                let calc_delta = get_amount_delta_b(sqrt_price, case_4_price?, liquidity, false);
+                let calc_delta = get_amount_delta_b(sqrt_price, case_4_price.unwrap(), liquidity, false);
                 if calc_delta.is_ok() {
-                    assert!(amount <= calc_delta?);
+                    assert!(amount <= calc_delta.unwrap());
                 }
                 // In Case 4, price is decreasing
-                assert!(case_4_price? <= sqrt_price);
+                assert!(case_4_price.unwrap() <= sqrt_price);
             }
 
             if amount == 0 {
-                assert!(case_3_price == case_4_price?);
+                assert!(case_3_price == case_4_price.unwrap());
             }
         }
 
@@ -398,17 +398,17 @@ mod fuzz_tests {
             if liquidity.leading_zeros() + (sqrt_price_upper - sqrt_price_lower).leading_zeros() < Q64_RESOLUTION.into() {
                 assert!(rounded.is_err())
             } else {
-                let unrounded = get_amount_delta_a(sqrt_price_0, sqrt_price_1, liquidity, false)?;
+                let unrounded = get_amount_delta_a(sqrt_price_0, sqrt_price_1, liquidity, false).unwrap();
 
                 // Price difference symmetry
-                assert_eq!(rounded?, get_amount_delta_a(sqrt_price_1, sqrt_price_0, liquidity, true)?);
-                assert_eq!(unrounded, get_amount_delta_a(sqrt_price_1, sqrt_price_0, liquidity, false)?);
+                assert_eq!(rounded.unwrap(), get_amount_delta_a(sqrt_price_1, sqrt_price_0, liquidity, true).unwrap());
+                assert_eq!(unrounded, get_amount_delta_a(sqrt_price_1, sqrt_price_0, liquidity, false).unwrap());
 
                 // Rounded should always be larger
-                assert!(unrounded <= rounded?);
+                assert!(unrounded <= rounded.unwrap());
 
                 // Diff should be no more than 1
-                assert!(rounded? - unrounded <= 1);
+                assert!(rounded.unwrap() - unrounded <= 1);
             }
         }
 
@@ -440,17 +440,17 @@ mod fuzz_tests {
             } else if round_up_delta > u64_max_in_u256 {
                 assert!(rounded.is_err());
                 // Price symmmetry
-                assert_eq!(unrounded?, get_amount_delta_b(sqrt_price_1, sqrt_price_0, liquidity, false)?);
+                assert_eq!(unrounded.unwrap(), get_amount_delta_b(sqrt_price_1, sqrt_price_0, liquidity, false).unwrap());
             } else {
                 // Price difference symmetry
-                assert_eq!(rounded?, get_amount_delta_b(sqrt_price_1, sqrt_price_0, liquidity, true)?);
-                assert_eq!(unrounded?, get_amount_delta_b(sqrt_price_1, sqrt_price_0, liquidity, false)?);
+                assert_eq!(rounded.unwrap(), get_amount_delta_b(sqrt_price_1, sqrt_price_0, liquidity, true).unwrap());
+                assert_eq!(unrounded.unwrap(), get_amount_delta_b(sqrt_price_1, sqrt_price_0, liquidity, false).unwrap());
 
                 // Rounded should always be larger
-                assert!(unrounded? <= rounded? );
+                assert!(unrounded.unwrap() <= rounded.unwrap());
 
                 // Diff should be no more than 1
-                assert!(rounded? - unrounded? <= 1);
+                assert!(rounded.unwrap() - unrounded.unwrap() <= 1);
             }
 
         }

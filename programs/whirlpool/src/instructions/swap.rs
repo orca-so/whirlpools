@@ -5,11 +5,7 @@ use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
     state::{TickArray, Whirlpool},
-    util::{
-        to_timestamp_u64,
-        SwapTickSequence,
-        update_and_swap_whirlpool
-    },
+    util::{to_timestamp_u64, update_and_swap_whirlpool, SwapTickSequence},
 };
 
 #[derive(Accounts)]
@@ -42,7 +38,7 @@ pub struct Swap<'info> {
     pub tick_array_2: AccountLoader<'info, TickArray>,
 
     #[account(seeds = [b"oracle", whirlpool.key().as_ref()],bump)]
-    /// Oracle is currently unused and will be enabled on subsequent updates
+    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle: UncheckedAccount<'info>,
 }
 
@@ -53,7 +49,7 @@ pub fn handler(
     sqrt_price_limit: u128,
     amount_specified_is_input: bool,
     a_to_b: bool, // Zero for one
-) -> ProgramResult {
+) -> Result<()> {
     let whirlpool = &mut ctx.accounts.whirlpool;
     let clock = Clock::get()?;
     // Update the global reward growth which increases as a function of time.

@@ -17,7 +17,7 @@ pub fn handler(
     liquidity_amount: u128,
     token_min_a: u64,
     token_min_b: u64,
-) -> ProgramResult {
+) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,

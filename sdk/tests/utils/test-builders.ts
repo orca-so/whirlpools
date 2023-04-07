@@ -16,6 +16,7 @@ import {
   InitPoolParams,
   InitTickArrayParams,
   OpenPositionParams,
+  OpenBundledPositionParams,
   PDAUtil,
   PoolUtil,
   PriceMath,
@@ -252,5 +253,41 @@ export async function initPosition(
   return {
     positionMint,
     positionAddress: PDAUtil.getPosition(ctx.program.programId, positionMint),
+  };
+}
+
+export async function generateDefaultOpenBundledPositionParams(
+  context: WhirlpoolContext,
+  whirlpool: PublicKey,
+  positionBundleMint: PublicKey,
+  bundleIndex: number,
+  tickLowerIndex: number,
+  tickUpperIndex: number,
+  owner: PublicKey,
+  funder?: PublicKey
+): Promise<{ params: Required<OpenBundledPositionParams> }> {
+  const bundledPositionPda = PDAUtil.getBundledPosition(context.program.programId, positionBundleMint, bundleIndex);
+  const positionBundle = PDAUtil.getPositionBundle(context.program.programId, positionBundleMint).publicKey;
+
+  const positionBundleTokenAccount = await Token.getAssociatedTokenAddress(
+    ASSOCIATED_TOKEN_PROGRAM_ID,
+    TOKEN_PROGRAM_ID,
+    positionBundleMint,
+    owner
+  );
+
+  const params: Required<OpenBundledPositionParams> = {
+    bundleIndex,
+    bundledPositionPda,
+    positionBundle,
+    positionBundleAuthority: owner,
+    funder: funder || owner,
+    positionBundleTokenAccount,
+    whirlpool: whirlpool,
+    tickLowerIndex,
+    tickUpperIndex,
+  };
+  return {
+    params,
   };
 }

@@ -21,7 +21,7 @@ pub struct InitializePool<'info> {
         token_mint_b.key().as_ref(),
         tick_spacing.to_le_bytes().as_ref()
       ],
-      bump = bumps.whirlpool_bump,
+      bump,
       payer = funder,
       space = Whirlpool::LEN)]
     pub whirlpool: Box<Account<'info, Whirlpool>>,
@@ -49,10 +49,10 @@ pub struct InitializePool<'info> {
 
 pub fn handler(
     ctx: Context<InitializePool>,
-    bumps: WhirlpoolBumps,
+    _bumps: WhirlpoolBumps,
     tick_spacing: u16,
     initial_sqrt_price: u128,
-) -> ProgramResult {
+) -> Result<()> {
     let token_mint_a = ctx.accounts.token_mint_a.key();
     let token_mint_b = ctx.accounts.token_mint_b.key();
 
@@ -61,9 +61,12 @@ pub fn handler(
 
     let default_fee_rate = ctx.accounts.fee_tier.default_fee_rate;
 
+    // ignore the bump passed and use one Anchor derived
+    let bump = *ctx.bumps.get("whirlpool").unwrap();
+
     Ok(whirlpool.initialize(
         whirlpools_config,
-        bumps.whirlpool_bump,
+        bump,
         tick_spacing,
         initial_sqrt_price,
         default_fee_rate,

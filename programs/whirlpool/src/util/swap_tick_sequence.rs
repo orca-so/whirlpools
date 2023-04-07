@@ -1,5 +1,6 @@
 use crate::errors::ErrorCode;
 use crate::state::*;
+use anchor_lang::prelude::*;
 use std::cell::RefMut;
 
 pub struct SwapTickSequence<'info> {
@@ -39,11 +40,11 @@ impl<'info> SwapTickSequence<'info> {
         array_index: usize,
         tick_index: i32,
         tick_spacing: u16,
-    ) -> Result<&Tick, ErrorCode> {
+    ) -> Result<&Tick> {
         let array = self.arrays.get(array_index);
         match array {
             Some(array) => array.get_tick(tick_index, tick_spacing),
-            _ => Err(ErrorCode::TickArrayIndexOutofBounds),
+            _ => Err(ErrorCode::TickArrayIndexOutofBounds.into()),
         }
     }
 
@@ -64,14 +65,14 @@ impl<'info> SwapTickSequence<'info> {
         tick_index: i32,
         tick_spacing: u16,
         update: &TickUpdate,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         let array = self.arrays.get_mut(array_index);
         match array {
             Some(array) => {
                 array.update_tick(tick_index, tick_spacing, update)?;
                 Ok(())
             }
-            _ => Err(ErrorCode::TickArrayIndexOutofBounds),
+            _ => Err(ErrorCode::TickArrayIndexOutofBounds.into()),
         }
     }
 
@@ -80,11 +81,11 @@ impl<'info> SwapTickSequence<'info> {
         array_index: usize,
         tick_index: i32,
         tick_spacing: u16,
-    ) -> Result<isize, ErrorCode> {
+    ) -> Result<isize> {
         let array = self.arrays.get(array_index);
         match array {
             Some(array) => array.tick_offset(tick_index, tick_spacing),
-            _ => Err(ErrorCode::TickArrayIndexOutofBounds),
+            _ => Err(ErrorCode::TickArrayIndexOutofBounds.into()),
         }
     }
 
@@ -108,7 +109,7 @@ impl<'info> SwapTickSequence<'info> {
         tick_spacing: u16,
         a_to_b: bool,
         start_array_index: usize,
-    ) -> Result<(usize, i32), ErrorCode> {
+    ) -> Result<(usize, i32)> {
         let ticks_in_array = TICK_ARRAY_SIZE * tick_spacing as i32;
         let mut search_index = tick_index;
         let mut array_index = start_array_index;
@@ -118,7 +119,7 @@ impl<'info> SwapTickSequence<'info> {
             // If we get to the end of the array sequence and next_index is still not found, throw error
             let next_array = match self.arrays.get(array_index) {
                 Some(array) => array,
-                None => return Err(ErrorCode::TickArraySequenceInvalidIndex),
+                None => return Err(ErrorCode::TickArraySequenceInvalidIndex.into()),
             };
 
             let next_index =
@@ -250,7 +251,7 @@ mod swap_tick_sequence_tests {
                     TS_128,
                 );
 
-                assert_eq!(result.unwrap_err(), ErrorCode::TickNotFound);
+                assert_eq!(result.unwrap_err(), ErrorCode::TickNotFound.into());
 
                 let update_result = swap_tick_sequence.update_tick(
                     uninitializable_search_tick.0,
@@ -262,7 +263,7 @@ mod swap_tick_sequence_tests {
                         ..Default::default()
                     },
                 );
-                assert_eq!(update_result.unwrap_err(), ErrorCode::TickNotFound);
+                assert_eq!(update_result.unwrap_err(), ErrorCode::TickNotFound.into());
             }
         }
 
@@ -327,7 +328,7 @@ mod swap_tick_sequence_tests {
             let get_result = swap_tick_sequence.get_tick(3, 5000, TS_128);
             assert_eq!(
                 get_result.unwrap_err(),
-                ErrorCode::TickArrayIndexOutofBounds
+                ErrorCode::TickArrayIndexOutofBounds.into()
             );
 
             let update_result = swap_tick_sequence.update_tick(
@@ -340,7 +341,7 @@ mod swap_tick_sequence_tests {
             );
             assert_eq!(
                 update_result.unwrap_err(),
-                ErrorCode::TickArrayIndexOutofBounds
+                ErrorCode::TickArrayIndexOutofBounds.into()
             );
         }
     }

@@ -17,14 +17,14 @@ impl FeeTier {
         whirlpools_config: &Account<WhirlpoolsConfig>,
         tick_spacing: u16,
         default_fee_rate: u16,
-    ) -> Result<(), ErrorCode> {
+    ) -> Result<()> {
         self.whirlpools_config = whirlpools_config.key();
         self.tick_spacing = tick_spacing;
         self.update_default_fee_rate(default_fee_rate)?;
         Ok(())
     }
 
-    pub fn update_default_fee_rate(&mut self, default_fee_rate: u16) -> Result<(), ErrorCode> {
+    pub fn update_default_fee_rate(&mut self, default_fee_rate: u16) -> Result<()> {
         if default_fee_rate > MAX_FEE_RATE {
             return Err(ErrorCode::FeeRateMaxExceeded.into());
         }

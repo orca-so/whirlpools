@@ -1,9 +1,18 @@
 export type Whirlpool = {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": "whirlpool",
   "instructions": [
     {
       "name": "initializeConfig",
+      "docs": [
+        "Initializes a WhirlpoolsConfig account that hosts info & authorities",
+        "required to govern a set of Whirlpools.",
+        "",
+        "### Parameters",
+        "- `fee_authority` - Authority authorized to initialize fee-tiers and set customs fees.",
+        "- `collect_protocol_fees_authority` - Authority authorized to collect protocol fees.",
+        "- `reward_emissions_super_authority` - Authority authorized to set reward authorities in pools."
+      ],
       "accounts": [
         {
           "name": "config",
@@ -42,6 +51,20 @@ export type Whirlpool = {
     },
     {
       "name": "initializePool",
+      "docs": [
+        "Initializes a Whirlpool account.",
+        "Fee rate is set to the default values on the config and supplied fee_tier.",
+        "",
+        "### Parameters",
+        "- `bumps` - The bump value when deriving the PDA of the Whirlpool address.",
+        "- `tick_spacing` - The desired tick spacing for this pool.",
+        "- `initial_sqrt_price` - The desired initial sqrt-price for this pool",
+        "",
+        "#### Special Errors",
+        "`InvalidTokenMintOrder` - The order of mints have to be ordered by",
+        "`SqrtPriceOutOfBounds` - provided initial_sqrt_price is not between 2^-64 to 2^64",
+        ""
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -118,6 +141,17 @@ export type Whirlpool = {
     },
     {
       "name": "initializeTickArray",
+      "docs": [
+        "Initializes a tick_array account to represent a tick-range in a Whirlpool.",
+        "",
+        "### Parameters",
+        "- `start_tick_index` - The starting tick index for this tick-array.",
+        "Has to be a multiple of TickArray size & the tick spacing of this pool.",
+        "",
+        "#### Special Errors",
+        "- `InvalidStartTick` - if the provided start tick is out of bounds or is not a multiple of",
+        "TICK_ARRAY_SIZE * tick spacing."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -149,6 +183,20 @@ export type Whirlpool = {
     },
     {
       "name": "initializeFeeTier",
+      "docs": [
+        "Initializes a fee_tier account usable by Whirlpools in a WhirlpoolConfig space.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority in the WhirlpoolConfig",
+        "",
+        "### Parameters",
+        "- `tick_spacing` - The tick-spacing that this fee-tier suggests the default_fee_rate for.",
+        "- `default_fee_rate` - The default fee rate that a pool will use if the pool uses this",
+        "fee tier during initialization.",
+        "",
+        "#### Special Errors",
+        "- `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE."
+      ],
       "accounts": [
         {
           "name": "config",
@@ -189,6 +237,21 @@ export type Whirlpool = {
     },
     {
       "name": "initializeReward",
+      "docs": [
+        "Initialize reward for a Whirlpool. A pool can only support up to a set number of rewards.",
+        "",
+        "### Authority",
+        "- \"reward_authority\" - assigned authority by the reward_super_authority for the specified",
+        "reward-index in this Whirlpool",
+        "",
+        "### Parameters",
+        "- `reward_index` - The reward index that we'd like to initialize. (0 <= index <= NUM_REWARDS)",
+        "",
+        "#### Special Errors",
+        "- `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized",
+        "index in this pool, or exceeds NUM_REWARDS, or",
+        "all reward slots for this pool has been initialized."
+      ],
       "accounts": [
         {
           "name": "rewardAuthority",
@@ -240,6 +303,25 @@ export type Whirlpool = {
     },
     {
       "name": "setRewardEmissions",
+      "docs": [
+        "Set the reward emissions for a reward in a Whirlpool.",
+        "",
+        "### Authority",
+        "- \"reward_authority\" - assigned authority by the reward_super_authority for the specified",
+        "reward-index in this Whirlpool",
+        "",
+        "### Parameters",
+        "- `reward_index` - The reward index (0 <= index <= NUM_REWARDS) that we'd like to modify.",
+        "- `emissions_per_second_x64` - The amount of rewards emitted in this pool.",
+        "",
+        "#### Special Errors",
+        "- `RewardVaultAmountInsufficient` - The amount of rewards in the reward vault cannot emit",
+        "more than a day of desired emissions.",
+        "- `InvalidTimestamp` - Provided timestamp is not in order with the previous timestamp.",
+        "- `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized",
+        "index in this pool, or exceeds NUM_REWARDS, or",
+        "all reward slots for this pool has been initialized."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -270,6 +352,18 @@ export type Whirlpool = {
     },
     {
       "name": "openPosition",
+      "docs": [
+        "Open a position in a Whirlpool. A unique token will be minted to represent the position",
+        "in the users wallet. The position will start off with 0 liquidity.",
+        "",
+        "### Parameters",
+        "- `tick_lower_index` - The tick specifying the lower end of the position range.",
+        "- `tick_upper_index` - The tick specifying the upper end of the position range.",
+        "",
+        "#### Special Errors",
+        "- `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of",
+        "the tick-spacing in this pool."
+      ],
       "accounts": [
         {
           "name": "funder",
@@ -341,6 +435,19 @@ export type Whirlpool = {
     },
     {
       "name": "openPositionWithMetadata",
+      "docs": [
+        "Open a position in a Whirlpool. A unique token will be minted to represent the position",
+        "in the users wallet. Additional Metaplex metadata is appended to identify the token.",
+        "The position will start off with 0 liquidity.",
+        "",
+        "### Parameters",
+        "- `tick_lower_index` - The tick specifying the lower end of the position range.",
+        "- `tick_upper_index` - The tick specifying the upper end of the position range.",
+        "",
+        "#### Special Errors",
+        "- `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of",
+        "the tick-spacing in this pool."
+      ],
       "accounts": [
         {
           "name": "funder",
@@ -365,7 +472,10 @@ export type Whirlpool = {
         {
           "name": "positionMetadataAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "https://github.com/metaplex-foundation/metaplex-program-library/blob/master/token-metadata/program/src/utils.rs#L873"
+          ]
         },
         {
           "name": "positionTokenAccount",
@@ -427,6 +537,22 @@ export type Whirlpool = {
     },
     {
       "name": "increaseLiquidity",
+      "docs": [
+        "Add liquidity to a position in the Whirlpool. This call also updates the position's accrued fees and rewards.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position.",
+        "",
+        "### Parameters",
+        "- `liquidity_amount` - The total amount of Liquidity the user is willing to deposit.",
+        "- `token_max_a` - The maximum amount of tokenA the user is willing to deposit.",
+        "- `token_max_b` - The maximum amount of tokenB the user is willing to deposit.",
+        "",
+        "#### Special Errors",
+        "- `LiquidityZero` - Provided liquidity amount is zero.",
+        "- `LiquidityTooHigh` - Provided liquidity exceeds u128::max.",
+        "- `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -501,6 +627,22 @@ export type Whirlpool = {
     },
     {
       "name": "decreaseLiquidity",
+      "docs": [
+        "Withdraw liquidity from a position in the Whirlpool. This call also updates the position's accrued fees and rewards.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position.",
+        "",
+        "### Parameters",
+        "- `liquidity_amount` - The total amount of Liquidity the user desires to withdraw.",
+        "- `token_min_a` - The minimum amount of tokenA the user is willing to withdraw.",
+        "- `token_min_b` - The minimum amount of tokenB the user is willing to withdraw.",
+        "",
+        "#### Special Errors",
+        "- `LiquidityZero` - Provided liquidity amount is zero.",
+        "- `LiquidityTooHigh` - Provided liquidity exceeds u128::max.",
+        "- `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -575,6 +717,13 @@ export type Whirlpool = {
     },
     {
       "name": "updateFeesAndRewards",
+      "docs": [
+        "Update the accrued fees and rewards for a position.",
+        "",
+        "#### Special Errors",
+        "- `TickNotFound` - Provided tick array account does not contain the tick for this position.",
+        "- `LiquidityZero` - Position has zero liquidity and therefore already has the most updated fees and reward values."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -601,6 +750,12 @@ export type Whirlpool = {
     },
     {
       "name": "collectFees",
+      "docs": [
+        "Collect fees accrued for this position.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -652,6 +807,12 @@ export type Whirlpool = {
     },
     {
       "name": "collectReward",
+      "docs": [
+        "Collect rewards accrued for this position.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -698,6 +859,12 @@ export type Whirlpool = {
     },
     {
       "name": "collectProtocolFees",
+      "docs": [
+        "Collect the protocol fees accrued in this Whirlpool",
+        "",
+        "### Authority",
+        "- `collect_protocol_fees_authority` - assigned authority in the WhirlpoolConfig that can collect protocol fees"
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -744,6 +911,29 @@ export type Whirlpool = {
     },
     {
       "name": "swap",
+      "docs": [
+        "Perform a swap in this Whirlpool",
+        "",
+        "### Authority",
+        "- \"token_authority\" - The authority to withdraw tokens from the input token account.",
+        "",
+        "### Parameters",
+        "- `amount` - The amount of input or output token to swap from (depending on amount_specified_is_input).",
+        "- `other_amount_threshold` - The maximum/minimum of input/output token to swap into (depending on amount_specified_is_input).",
+        "- `sqrt_price_limit` - The maximum/minimum price the swap will swap to.",
+        "- `amount_specified_is_input` - Specifies the token the parameter `amount`represents. If true, the amount represents the input token of the swap.",
+        "- `a_to_b` - The direction of the swap. True if swapping from A to B. False if swapping from B to A.",
+        "",
+        "#### Special Errors",
+        "- `ZeroTradableAmount` - User provided parameter `amount` is 0.",
+        "- `InvalidSqrtPriceLimitDirection` - User provided parameter `sqrt_price_limit` does not match the direction of the trade.",
+        "- `SqrtPriceOutOfBounds` - User provided parameter `sqrt_price_limit` is over Whirlppool's max/min bounds for sqrt-price.",
+        "- `InvalidTickArraySequence` - User provided tick-arrays are not in sequential order required to proceed in this trade direction.",
+        "- `TickArraySequenceInvalidIndex` - The swap loop attempted to access an invalid array index during the query of the next initialized tick.",
+        "- `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.",
+        "- `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.",
+        "- `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0."
+      ],
       "accounts": [
         {
           "name": "tokenProgram",
@@ -826,6 +1016,15 @@ export type Whirlpool = {
     },
     {
       "name": "closePosition",
+      "docs": [
+        "Close a position in a Whirlpool. Burns the position token in the owner's wallet.",
+        "",
+        "### Authority",
+        "- \"position_authority\" - The authority that owns the position token.",
+        "",
+        "#### Special Errors",
+        "- `ClosePositionNotEmpty` - The provided position account is not empty."
+      ],
       "accounts": [
         {
           "name": "positionAuthority",
@@ -862,6 +1061,20 @@ export type Whirlpool = {
     },
     {
       "name": "setDefaultFeeRate",
+      "docs": [
+        "Set the default_fee_rate for a FeeTier",
+        "Only the current fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority in the WhirlpoolConfig",
+        "",
+        "### Parameters",
+        "- `default_fee_rate` - The default fee rate that a pool will use if the pool uses this",
+        "fee tier during initialization.",
+        "",
+        "#### Special Errors",
+        "- `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -888,6 +1101,20 @@ export type Whirlpool = {
     },
     {
       "name": "setDefaultProtocolFeeRate",
+      "docs": [
+        "Sets the default protocol fee rate for a WhirlpoolConfig",
+        "Protocol fee rate is represented as a basis point.",
+        "Only the current fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority that can modify pool fees in the WhirlpoolConfig",
+        "",
+        "### Parameters",
+        "- `default_protocol_fee_rate` - Rate that is referenced during the initialization of a Whirlpool using this config.",
+        "",
+        "#### Special Errors",
+        "- `ProtocolFeeRateMaxExceeded` - If the provided default_protocol_fee_rate exceeds MAX_PROTOCOL_FEE_RATE."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -909,6 +1136,20 @@ export type Whirlpool = {
     },
     {
       "name": "setFeeRate",
+      "docs": [
+        "Sets the fee rate for a Whirlpool.",
+        "Fee rate is represented as hundredths of a basis point.",
+        "Only the current fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority that can modify pool fees in the WhirlpoolConfig",
+        "",
+        "### Parameters",
+        "- `fee_rate` - The rate that the pool will use to calculate fees going onwards.",
+        "",
+        "#### Special Errors",
+        "- `FeeRateMaxExceeded` - If the provided fee_rate exceeds MAX_FEE_RATE."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -935,6 +1176,20 @@ export type Whirlpool = {
     },
     {
       "name": "setProtocolFeeRate",
+      "docs": [
+        "Sets the protocol fee rate for a Whirlpool.",
+        "Protocol fee rate is represented as a basis point.",
+        "Only the current fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority that can modify pool fees in the WhirlpoolConfig",
+        "",
+        "### Parameters",
+        "- `protocol_fee_rate` - The rate that the pool will use to calculate protocol fees going onwards.",
+        "",
+        "#### Special Errors",
+        "- `ProtocolFeeRateMaxExceeded` - If the provided default_protocol_fee_rate exceeds MAX_PROTOCOL_FEE_RATE."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -961,6 +1216,15 @@ export type Whirlpool = {
     },
     {
       "name": "setFeeAuthority",
+      "docs": [
+        "Sets the fee authority for a WhirlpoolConfig.",
+        "The fee authority can set the fee & protocol fee rate for individual pools or",
+        "set the default fee rate for newly minted pools.",
+        "Only the current fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority that can modify pool fees in the WhirlpoolConfig"
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -982,6 +1246,13 @@ export type Whirlpool = {
     },
     {
       "name": "setCollectProtocolFeesAuthority",
+      "docs": [
+        "Sets the fee authority to collect protocol fees for a WhirlpoolConfig.",
+        "Only the current collect protocol fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority that can collect protocol fees in the WhirlpoolConfig"
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -1003,6 +1274,18 @@ export type Whirlpool = {
     },
     {
       "name": "setRewardAuthority",
+      "docs": [
+        "Set the whirlpool reward authority at the provided `reward_index`.",
+        "Only the current reward authority for this reward index has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"reward_authority\" - Set authority that can control reward emission for this particular reward.",
+        "",
+        "#### Special Errors",
+        "- `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized",
+        "index in this pool, or exceeds NUM_REWARDS, or",
+        "all reward slots for this pool has been initialized."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -1029,6 +1312,18 @@ export type Whirlpool = {
     },
     {
       "name": "setRewardAuthorityBySuperAuthority",
+      "docs": [
+        "Set the whirlpool reward authority at the provided `reward_index`.",
+        "Only the current reward super authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"reward_authority\" - Set authority that can control reward emission for this particular reward.",
+        "",
+        "#### Special Errors",
+        "- `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized",
+        "index in this pool, or exceeds NUM_REWARDS, or",
+        "all reward slots for this pool has been initialized."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -1060,6 +1355,14 @@ export type Whirlpool = {
     },
     {
       "name": "setRewardEmissionsSuperAuthority",
+      "docs": [
+        "Set the whirlpool reward super authority for a WhirlpoolConfig",
+        "Only the current reward super authority has permission to invoke this instruction.",
+        "This instruction will not change the authority on any `WhirlpoolRewardInfo` whirlpool rewards.",
+        "",
+        "### Authority",
+        "- \"reward_emissions_super_authority\" - Set authority that can control reward authorities for all pools in this config space."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -1081,6 +1384,33 @@ export type Whirlpool = {
     },
     {
       "name": "twoHopSwap",
+      "docs": [
+        "Perform a two-hop swap in this Whirlpool",
+        "",
+        "### Authority",
+        "- \"token_authority\" - The authority to withdraw tokens from the input token account.",
+        "",
+        "### Parameters",
+        "- `amount` - The amount of input or output token to swap from (depending on amount_specified_is_input).",
+        "- `other_amount_threshold` - The maximum/minimum of input/output token to swap into (depending on amount_specified_is_input).",
+        "- `amount_specified_is_input` - Specifies the token the parameter `amount`represents. If true, the amount represents the input token of the swap.",
+        "- `a_to_b_one` - The direction of the swap of hop one. True if swapping from A to B. False if swapping from B to A.",
+        "- `a_to_b_two` - The direction of the swap of hop two. True if swapping from A to B. False if swapping from B to A.",
+        "- `sqrt_price_limit_one` - The maximum/minimum price the swap will swap to in the first hop.",
+        "- `sqrt_price_limit_two` - The maximum/minimum price the swap will swap to in the second hop.",
+        "",
+        "#### Special Errors",
+        "- `ZeroTradableAmount` - User provided parameter `amount` is 0.",
+        "- `InvalidSqrtPriceLimitDirection` - User provided parameter `sqrt_price_limit` does not match the direction of the trade.",
+        "- `SqrtPriceOutOfBounds` - User provided parameter `sqrt_price_limit` is over Whirlppool's max/min bounds for sqrt-price.",
+        "- `InvalidTickArraySequence` - User provided tick-arrays are not in sequential order required to proceed in this trade direction.",
+        "- `TickArraySequenceInvalidIndex` - The swap loop attempted to access an invalid array index during the query of the next initialized tick.",
+        "- `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.",
+        "- `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.",
+        "- `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.",
+        "- `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.",
+        "- `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool."
+      ],
       "accounts": [
         {
           "name": "tokenProgram",
@@ -1213,6 +1543,306 @@ export type Whirlpool = {
           "type": "u128"
         }
       ]
+    },
+    {
+      "name": "initializePositionBundle",
+      "docs": [
+        "Initializes a PositionBundle account that bundles several positions.",
+        "A unique token will be minted to represent the position bundle in the users wallet."
+      ],
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initializePositionBundleWithMetadata",
+      "docs": [
+        "Initializes a PositionBundle account that bundles several positions.",
+        "A unique token will be minted to represent the position bundle in the users wallet.",
+        "Additional Metaplex metadata is appended to identify the token."
+      ],
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "positionBundleMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "https://github.com/metaplex-foundation/metaplex-program-library/blob/773a574c4b34e5b9f248a81306ec24db064e255f/token-metadata/program/src/utils/metadata.rs#L100"
+          ]
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "metadataUpdateAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deletePositionBundle",
+      "docs": [
+        "Delete a PositionBundle account. Burns the position bundle token in the owner's wallet.",
+        "",
+        "### Authority",
+        "- `position_bundle_owner` - The owner that owns the position bundle token.",
+        "",
+        "### Special Errors",
+        "- `PositionBundleNotDeletable` - The provided position bundle has open positions."
+      ],
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "openBundledPosition",
+      "docs": [
+        "Open a bundled position in a Whirlpool. No new tokens are issued",
+        "because the owner of the position bundle becomes the owner of the position.",
+        "The position will start off with 0 liquidity.",
+        "",
+        "### Authority",
+        "- `position_bundle_authority` - authority that owns the token corresponding to this desired position bundle.",
+        "",
+        "### Parameters",
+        "- `bundle_index` - The bundle index that we'd like to open.",
+        "- `tick_lower_index` - The tick specifying the lower end of the position range.",
+        "- `tick_upper_index` - The tick specifying the upper end of the position range.",
+        "",
+        "#### Special Errors",
+        "- `InvalidBundleIndex` - If the provided bundle index is out of bounds.",
+        "- `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of",
+        "the tick-spacing in this pool."
+      ],
+      "accounts": [
+        {
+          "name": "bundledPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "whirlpool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bundleIndex",
+          "type": "u16"
+        },
+        {
+          "name": "tickLowerIndex",
+          "type": "i32"
+        },
+        {
+          "name": "tickUpperIndex",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "closeBundledPosition",
+      "docs": [
+        "Close a bundled position in a Whirlpool.",
+        "",
+        "### Authority",
+        "- `position_bundle_authority` - authority that owns the token corresponding to this desired position bundle.",
+        "",
+        "### Parameters",
+        "- `bundle_index` - The bundle index that we'd like to close.",
+        "",
+        "#### Special Errors",
+        "- `InvalidBundleIndex` - If the provided bundle index is out of bounds.",
+        "- `ClosePositionNotEmpty` - The provided position account is not empty."
+      ],
+      "accounts": [
+        {
+          "name": "bundledPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bundleIndex",
+          "type": "u16"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -1256,6 +1886,27 @@ export type Whirlpool = {
           {
             "name": "defaultFeeRate",
             "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "positionBundle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionBundleMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "positionBitmap",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }
@@ -1528,27 +2179,49 @@ export type Whirlpool = {
     },
     {
       "name": "WhirlpoolRewardInfo",
+      "docs": [
+        "Stores the state relevant for tracking liquidity mining rewards at the `Whirlpool` level.",
+        "These values are used in conjunction with `PositionRewardInfo`, `Tick.reward_growths_outside`,",
+        "and `Whirlpool.reward_last_updated_timestamp` to determine how many rewards are earned by open",
+        "positions."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "mint",
+            "docs": [
+              "Reward token mint."
+            ],
             "type": "publicKey"
           },
           {
             "name": "vault",
+            "docs": [
+              "Reward vault token account."
+            ],
             "type": "publicKey"
           },
           {
             "name": "authority",
+            "docs": [
+              "Authority account that has permission to initialize the reward and set emissions."
+            ],
             "type": "publicKey"
           },
           {
             "name": "emissionsPerSecondX64",
+            "docs": [
+              "Q64.64 number that indicates how many tokens per second are earned per unit of liquidity."
+            ],
             "type": "u128"
           },
           {
             "name": "growthGlobalX64",
+            "docs": [
+              "Q64.64 number that tracks the total tokens earned per unit of liquidity since the reward",
+              "emissions were turned on."
+            ],
             "type": "u128"
           }
         ]
@@ -1827,16 +2500,45 @@ export type Whirlpool = {
       "code": 6042,
       "name": "DuplicateTwoHopPool",
       "msg": "Duplicate two hop pool"
+    },
+    {
+      "code": 6043,
+      "name": "InvalidBundleIndex",
+      "msg": "Bundle index is out of bounds"
+    },
+    {
+      "code": 6044,
+      "name": "BundledPositionAlreadyOpened",
+      "msg": "Position has already been opened"
+    },
+    {
+      "code": 6045,
+      "name": "BundledPositionAlreadyClosed",
+      "msg": "Position has already been closed"
+    },
+    {
+      "code": 6046,
+      "name": "PositionBundleNotDeletable",
+      "msg": "Unable to delete PositionBundle with open positions"
     }
   ]
 };
 
 export const IDL: Whirlpool = {
-  "version": "0.1.0",
+  "version": "0.2.0",
   "name": "whirlpool",
   "instructions": [
     {
       "name": "initializeConfig",
+      "docs": [
+        "Initializes a WhirlpoolsConfig account that hosts info & authorities",
+        "required to govern a set of Whirlpools.",
+        "",
+        "### Parameters",
+        "- `fee_authority` - Authority authorized to initialize fee-tiers and set customs fees.",
+        "- `collect_protocol_fees_authority` - Authority authorized to collect protocol fees.",
+        "- `reward_emissions_super_authority` - Authority authorized to set reward authorities in pools."
+      ],
       "accounts": [
         {
           "name": "config",
@@ -1875,6 +2577,20 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "initializePool",
+      "docs": [
+        "Initializes a Whirlpool account.",
+        "Fee rate is set to the default values on the config and supplied fee_tier.",
+        "",
+        "### Parameters",
+        "- `bumps` - The bump value when deriving the PDA of the Whirlpool address.",
+        "- `tick_spacing` - The desired tick spacing for this pool.",
+        "- `initial_sqrt_price` - The desired initial sqrt-price for this pool",
+        "",
+        "#### Special Errors",
+        "`InvalidTokenMintOrder` - The order of mints have to be ordered by",
+        "`SqrtPriceOutOfBounds` - provided initial_sqrt_price is not between 2^-64 to 2^64",
+        ""
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -1951,6 +2667,17 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "initializeTickArray",
+      "docs": [
+        "Initializes a tick_array account to represent a tick-range in a Whirlpool.",
+        "",
+        "### Parameters",
+        "- `start_tick_index` - The starting tick index for this tick-array.",
+        "Has to be a multiple of TickArray size & the tick spacing of this pool.",
+        "",
+        "#### Special Errors",
+        "- `InvalidStartTick` - if the provided start tick is out of bounds or is not a multiple of",
+        "TICK_ARRAY_SIZE * tick spacing."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -1982,6 +2709,20 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "initializeFeeTier",
+      "docs": [
+        "Initializes a fee_tier account usable by Whirlpools in a WhirlpoolConfig space.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority in the WhirlpoolConfig",
+        "",
+        "### Parameters",
+        "- `tick_spacing` - The tick-spacing that this fee-tier suggests the default_fee_rate for.",
+        "- `default_fee_rate` - The default fee rate that a pool will use if the pool uses this",
+        "fee tier during initialization.",
+        "",
+        "#### Special Errors",
+        "- `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE."
+      ],
       "accounts": [
         {
           "name": "config",
@@ -2022,6 +2763,21 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "initializeReward",
+      "docs": [
+        "Initialize reward for a Whirlpool. A pool can only support up to a set number of rewards.",
+        "",
+        "### Authority",
+        "- \"reward_authority\" - assigned authority by the reward_super_authority for the specified",
+        "reward-index in this Whirlpool",
+        "",
+        "### Parameters",
+        "- `reward_index` - The reward index that we'd like to initialize. (0 <= index <= NUM_REWARDS)",
+        "",
+        "#### Special Errors",
+        "- `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized",
+        "index in this pool, or exceeds NUM_REWARDS, or",
+        "all reward slots for this pool has been initialized."
+      ],
       "accounts": [
         {
           "name": "rewardAuthority",
@@ -2073,6 +2829,25 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "setRewardEmissions",
+      "docs": [
+        "Set the reward emissions for a reward in a Whirlpool.",
+        "",
+        "### Authority",
+        "- \"reward_authority\" - assigned authority by the reward_super_authority for the specified",
+        "reward-index in this Whirlpool",
+        "",
+        "### Parameters",
+        "- `reward_index` - The reward index (0 <= index <= NUM_REWARDS) that we'd like to modify.",
+        "- `emissions_per_second_x64` - The amount of rewards emitted in this pool.",
+        "",
+        "#### Special Errors",
+        "- `RewardVaultAmountInsufficient` - The amount of rewards in the reward vault cannot emit",
+        "more than a day of desired emissions.",
+        "- `InvalidTimestamp` - Provided timestamp is not in order with the previous timestamp.",
+        "- `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized",
+        "index in this pool, or exceeds NUM_REWARDS, or",
+        "all reward slots for this pool has been initialized."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -2103,6 +2878,18 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "openPosition",
+      "docs": [
+        "Open a position in a Whirlpool. A unique token will be minted to represent the position",
+        "in the users wallet. The position will start off with 0 liquidity.",
+        "",
+        "### Parameters",
+        "- `tick_lower_index` - The tick specifying the lower end of the position range.",
+        "- `tick_upper_index` - The tick specifying the upper end of the position range.",
+        "",
+        "#### Special Errors",
+        "- `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of",
+        "the tick-spacing in this pool."
+      ],
       "accounts": [
         {
           "name": "funder",
@@ -2174,6 +2961,19 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "openPositionWithMetadata",
+      "docs": [
+        "Open a position in a Whirlpool. A unique token will be minted to represent the position",
+        "in the users wallet. Additional Metaplex metadata is appended to identify the token.",
+        "The position will start off with 0 liquidity.",
+        "",
+        "### Parameters",
+        "- `tick_lower_index` - The tick specifying the lower end of the position range.",
+        "- `tick_upper_index` - The tick specifying the upper end of the position range.",
+        "",
+        "#### Special Errors",
+        "- `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of",
+        "the tick-spacing in this pool."
+      ],
       "accounts": [
         {
           "name": "funder",
@@ -2198,7 +2998,10 @@ export const IDL: Whirlpool = {
         {
           "name": "positionMetadataAccount",
           "isMut": true,
-          "isSigner": false
+          "isSigner": false,
+          "docs": [
+            "https://github.com/metaplex-foundation/metaplex-program-library/blob/master/token-metadata/program/src/utils.rs#L873"
+          ]
         },
         {
           "name": "positionTokenAccount",
@@ -2260,6 +3063,22 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "increaseLiquidity",
+      "docs": [
+        "Add liquidity to a position in the Whirlpool. This call also updates the position's accrued fees and rewards.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position.",
+        "",
+        "### Parameters",
+        "- `liquidity_amount` - The total amount of Liquidity the user is willing to deposit.",
+        "- `token_max_a` - The maximum amount of tokenA the user is willing to deposit.",
+        "- `token_max_b` - The maximum amount of tokenB the user is willing to deposit.",
+        "",
+        "#### Special Errors",
+        "- `LiquidityZero` - Provided liquidity amount is zero.",
+        "- `LiquidityTooHigh` - Provided liquidity exceeds u128::max.",
+        "- `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -2334,6 +3153,22 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "decreaseLiquidity",
+      "docs": [
+        "Withdraw liquidity from a position in the Whirlpool. This call also updates the position's accrued fees and rewards.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position.",
+        "",
+        "### Parameters",
+        "- `liquidity_amount` - The total amount of Liquidity the user desires to withdraw.",
+        "- `token_min_a` - The minimum amount of tokenA the user is willing to withdraw.",
+        "- `token_min_b` - The minimum amount of tokenB the user is willing to withdraw.",
+        "",
+        "#### Special Errors",
+        "- `LiquidityZero` - Provided liquidity amount is zero.",
+        "- `LiquidityTooHigh` - Provided liquidity exceeds u128::max.",
+        "- `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -2408,6 +3243,13 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "updateFeesAndRewards",
+      "docs": [
+        "Update the accrued fees and rewards for a position.",
+        "",
+        "#### Special Errors",
+        "- `TickNotFound` - Provided tick array account does not contain the tick for this position.",
+        "- `LiquidityZero` - Position has zero liquidity and therefore already has the most updated fees and reward values."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -2434,6 +3276,12 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "collectFees",
+      "docs": [
+        "Collect fees accrued for this position.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -2485,6 +3333,12 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "collectReward",
+      "docs": [
+        "Collect rewards accrued for this position.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -2531,6 +3385,12 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "collectProtocolFees",
+      "docs": [
+        "Collect the protocol fees accrued in this Whirlpool",
+        "",
+        "### Authority",
+        "- `collect_protocol_fees_authority` - assigned authority in the WhirlpoolConfig that can collect protocol fees"
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -2577,6 +3437,29 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "swap",
+      "docs": [
+        "Perform a swap in this Whirlpool",
+        "",
+        "### Authority",
+        "- \"token_authority\" - The authority to withdraw tokens from the input token account.",
+        "",
+        "### Parameters",
+        "- `amount` - The amount of input or output token to swap from (depending on amount_specified_is_input).",
+        "- `other_amount_threshold` - The maximum/minimum of input/output token to swap into (depending on amount_specified_is_input).",
+        "- `sqrt_price_limit` - The maximum/minimum price the swap will swap to.",
+        "- `amount_specified_is_input` - Specifies the token the parameter `amount`represents. If true, the amount represents the input token of the swap.",
+        "- `a_to_b` - The direction of the swap. True if swapping from A to B. False if swapping from B to A.",
+        "",
+        "#### Special Errors",
+        "- `ZeroTradableAmount` - User provided parameter `amount` is 0.",
+        "- `InvalidSqrtPriceLimitDirection` - User provided parameter `sqrt_price_limit` does not match the direction of the trade.",
+        "- `SqrtPriceOutOfBounds` - User provided parameter `sqrt_price_limit` is over Whirlppool's max/min bounds for sqrt-price.",
+        "- `InvalidTickArraySequence` - User provided tick-arrays are not in sequential order required to proceed in this trade direction.",
+        "- `TickArraySequenceInvalidIndex` - The swap loop attempted to access an invalid array index during the query of the next initialized tick.",
+        "- `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.",
+        "- `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.",
+        "- `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0."
+      ],
       "accounts": [
         {
           "name": "tokenProgram",
@@ -2659,6 +3542,15 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "closePosition",
+      "docs": [
+        "Close a position in a Whirlpool. Burns the position token in the owner's wallet.",
+        "",
+        "### Authority",
+        "- \"position_authority\" - The authority that owns the position token.",
+        "",
+        "#### Special Errors",
+        "- `ClosePositionNotEmpty` - The provided position account is not empty."
+      ],
       "accounts": [
         {
           "name": "positionAuthority",
@@ -2695,6 +3587,20 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "setDefaultFeeRate",
+      "docs": [
+        "Set the default_fee_rate for a FeeTier",
+        "Only the current fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority in the WhirlpoolConfig",
+        "",
+        "### Parameters",
+        "- `default_fee_rate` - The default fee rate that a pool will use if the pool uses this",
+        "fee tier during initialization.",
+        "",
+        "#### Special Errors",
+        "- `FeeRateMaxExceeded` - If the provided default_fee_rate exceeds MAX_FEE_RATE."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -2721,6 +3627,20 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "setDefaultProtocolFeeRate",
+      "docs": [
+        "Sets the default protocol fee rate for a WhirlpoolConfig",
+        "Protocol fee rate is represented as a basis point.",
+        "Only the current fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority that can modify pool fees in the WhirlpoolConfig",
+        "",
+        "### Parameters",
+        "- `default_protocol_fee_rate` - Rate that is referenced during the initialization of a Whirlpool using this config.",
+        "",
+        "#### Special Errors",
+        "- `ProtocolFeeRateMaxExceeded` - If the provided default_protocol_fee_rate exceeds MAX_PROTOCOL_FEE_RATE."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -2742,6 +3662,20 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "setFeeRate",
+      "docs": [
+        "Sets the fee rate for a Whirlpool.",
+        "Fee rate is represented as hundredths of a basis point.",
+        "Only the current fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority that can modify pool fees in the WhirlpoolConfig",
+        "",
+        "### Parameters",
+        "- `fee_rate` - The rate that the pool will use to calculate fees going onwards.",
+        "",
+        "#### Special Errors",
+        "- `FeeRateMaxExceeded` - If the provided fee_rate exceeds MAX_FEE_RATE."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -2768,6 +3702,20 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "setProtocolFeeRate",
+      "docs": [
+        "Sets the protocol fee rate for a Whirlpool.",
+        "Protocol fee rate is represented as a basis point.",
+        "Only the current fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority that can modify pool fees in the WhirlpoolConfig",
+        "",
+        "### Parameters",
+        "- `protocol_fee_rate` - The rate that the pool will use to calculate protocol fees going onwards.",
+        "",
+        "#### Special Errors",
+        "- `ProtocolFeeRateMaxExceeded` - If the provided default_protocol_fee_rate exceeds MAX_PROTOCOL_FEE_RATE."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -2794,6 +3742,15 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "setFeeAuthority",
+      "docs": [
+        "Sets the fee authority for a WhirlpoolConfig.",
+        "The fee authority can set the fee & protocol fee rate for individual pools or",
+        "set the default fee rate for newly minted pools.",
+        "Only the current fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority that can modify pool fees in the WhirlpoolConfig"
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -2815,6 +3772,13 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "setCollectProtocolFeesAuthority",
+      "docs": [
+        "Sets the fee authority to collect protocol fees for a WhirlpoolConfig.",
+        "Only the current collect protocol fee authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"fee_authority\" - Set authority that can collect protocol fees in the WhirlpoolConfig"
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -2836,6 +3800,18 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "setRewardAuthority",
+      "docs": [
+        "Set the whirlpool reward authority at the provided `reward_index`.",
+        "Only the current reward authority for this reward index has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"reward_authority\" - Set authority that can control reward emission for this particular reward.",
+        "",
+        "#### Special Errors",
+        "- `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized",
+        "index in this pool, or exceeds NUM_REWARDS, or",
+        "all reward slots for this pool has been initialized."
+      ],
       "accounts": [
         {
           "name": "whirlpool",
@@ -2862,6 +3838,18 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "setRewardAuthorityBySuperAuthority",
+      "docs": [
+        "Set the whirlpool reward authority at the provided `reward_index`.",
+        "Only the current reward super authority has permission to invoke this instruction.",
+        "",
+        "### Authority",
+        "- \"reward_authority\" - Set authority that can control reward emission for this particular reward.",
+        "",
+        "#### Special Errors",
+        "- `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized",
+        "index in this pool, or exceeds NUM_REWARDS, or",
+        "all reward slots for this pool has been initialized."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -2893,6 +3881,14 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "setRewardEmissionsSuperAuthority",
+      "docs": [
+        "Set the whirlpool reward super authority for a WhirlpoolConfig",
+        "Only the current reward super authority has permission to invoke this instruction.",
+        "This instruction will not change the authority on any `WhirlpoolRewardInfo` whirlpool rewards.",
+        "",
+        "### Authority",
+        "- \"reward_emissions_super_authority\" - Set authority that can control reward authorities for all pools in this config space."
+      ],
       "accounts": [
         {
           "name": "whirlpoolsConfig",
@@ -2914,6 +3910,33 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "twoHopSwap",
+      "docs": [
+        "Perform a two-hop swap in this Whirlpool",
+        "",
+        "### Authority",
+        "- \"token_authority\" - The authority to withdraw tokens from the input token account.",
+        "",
+        "### Parameters",
+        "- `amount` - The amount of input or output token to swap from (depending on amount_specified_is_input).",
+        "- `other_amount_threshold` - The maximum/minimum of input/output token to swap into (depending on amount_specified_is_input).",
+        "- `amount_specified_is_input` - Specifies the token the parameter `amount`represents. If true, the amount represents the input token of the swap.",
+        "- `a_to_b_one` - The direction of the swap of hop one. True if swapping from A to B. False if swapping from B to A.",
+        "- `a_to_b_two` - The direction of the swap of hop two. True if swapping from A to B. False if swapping from B to A.",
+        "- `sqrt_price_limit_one` - The maximum/minimum price the swap will swap to in the first hop.",
+        "- `sqrt_price_limit_two` - The maximum/minimum price the swap will swap to in the second hop.",
+        "",
+        "#### Special Errors",
+        "- `ZeroTradableAmount` - User provided parameter `amount` is 0.",
+        "- `InvalidSqrtPriceLimitDirection` - User provided parameter `sqrt_price_limit` does not match the direction of the trade.",
+        "- `SqrtPriceOutOfBounds` - User provided parameter `sqrt_price_limit` is over Whirlppool's max/min bounds for sqrt-price.",
+        "- `InvalidTickArraySequence` - User provided tick-arrays are not in sequential order required to proceed in this trade direction.",
+        "- `TickArraySequenceInvalidIndex` - The swap loop attempted to access an invalid array index during the query of the next initialized tick.",
+        "- `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.",
+        "- `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.",
+        "- `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.",
+        "- `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.",
+        "- `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool."
+      ],
       "accounts": [
         {
           "name": "tokenProgram",
@@ -3046,6 +4069,306 @@ export const IDL: Whirlpool = {
           "type": "u128"
         }
       ]
+    },
+    {
+      "name": "initializePositionBundle",
+      "docs": [
+        "Initializes a PositionBundle account that bundles several positions.",
+        "A unique token will be minted to represent the position bundle in the users wallet."
+      ],
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initializePositionBundleWithMetadata",
+      "docs": [
+        "Initializes a PositionBundle account that bundles several positions.",
+        "A unique token will be minted to represent the position bundle in the users wallet.",
+        "Additional Metaplex metadata is appended to identify the token."
+      ],
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "positionBundleMetadata",
+          "isMut": true,
+          "isSigner": false,
+          "docs": [
+            "https://github.com/metaplex-foundation/metaplex-program-library/blob/773a574c4b34e5b9f248a81306ec24db064e255f/token-metadata/program/src/utils/metadata.rs#L100"
+          ]
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "metadataUpdateAuth",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "associatedTokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "metadataProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deletePositionBundle",
+      "docs": [
+        "Delete a PositionBundle account. Burns the position bundle token in the owner's wallet.",
+        "",
+        "### Authority",
+        "- `position_bundle_owner` - The owner that owns the position bundle token.",
+        "",
+        "### Special Errors",
+        "- `PositionBundleNotDeletable` - The provided position bundle has open positions."
+      ],
+      "accounts": [
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleMint",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleOwner",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "openBundledPosition",
+      "docs": [
+        "Open a bundled position in a Whirlpool. No new tokens are issued",
+        "because the owner of the position bundle becomes the owner of the position.",
+        "The position will start off with 0 liquidity.",
+        "",
+        "### Authority",
+        "- `position_bundle_authority` - authority that owns the token corresponding to this desired position bundle.",
+        "",
+        "### Parameters",
+        "- `bundle_index` - The bundle index that we'd like to open.",
+        "- `tick_lower_index` - The tick specifying the lower end of the position range.",
+        "- `tick_upper_index` - The tick specifying the upper end of the position range.",
+        "",
+        "#### Special Errors",
+        "- `InvalidBundleIndex` - If the provided bundle index is out of bounds.",
+        "- `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of",
+        "the tick-spacing in this pool."
+      ],
+      "accounts": [
+        {
+          "name": "bundledPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "whirlpool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bundleIndex",
+          "type": "u16"
+        },
+        {
+          "name": "tickLowerIndex",
+          "type": "i32"
+        },
+        {
+          "name": "tickUpperIndex",
+          "type": "i32"
+        }
+      ]
+    },
+    {
+      "name": "closeBundledPosition",
+      "docs": [
+        "Close a bundled position in a Whirlpool.",
+        "",
+        "### Authority",
+        "- `position_bundle_authority` - authority that owns the token corresponding to this desired position bundle.",
+        "",
+        "### Parameters",
+        "- `bundle_index` - The bundle index that we'd like to close.",
+        "",
+        "#### Special Errors",
+        "- `InvalidBundleIndex` - If the provided bundle index is out of bounds.",
+        "- `ClosePositionNotEmpty` - The provided position account is not empty."
+      ],
+      "accounts": [
+        {
+          "name": "bundledPosition",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionBundleAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "bundleIndex",
+          "type": "u16"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -3089,6 +4412,27 @@ export const IDL: Whirlpool = {
           {
             "name": "defaultFeeRate",
             "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "positionBundle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "positionBundleMint",
+            "type": "publicKey"
+          },
+          {
+            "name": "positionBitmap",
+            "type": {
+              "array": [
+                "u8",
+                32
+              ]
+            }
           }
         ]
       }
@@ -3361,27 +4705,49 @@ export const IDL: Whirlpool = {
     },
     {
       "name": "WhirlpoolRewardInfo",
+      "docs": [
+        "Stores the state relevant for tracking liquidity mining rewards at the `Whirlpool` level.",
+        "These values are used in conjunction with `PositionRewardInfo`, `Tick.reward_growths_outside`,",
+        "and `Whirlpool.reward_last_updated_timestamp` to determine how many rewards are earned by open",
+        "positions."
+      ],
       "type": {
         "kind": "struct",
         "fields": [
           {
             "name": "mint",
+            "docs": [
+              "Reward token mint."
+            ],
             "type": "publicKey"
           },
           {
             "name": "vault",
+            "docs": [
+              "Reward vault token account."
+            ],
             "type": "publicKey"
           },
           {
             "name": "authority",
+            "docs": [
+              "Authority account that has permission to initialize the reward and set emissions."
+            ],
             "type": "publicKey"
           },
           {
             "name": "emissionsPerSecondX64",
+            "docs": [
+              "Q64.64 number that indicates how many tokens per second are earned per unit of liquidity."
+            ],
             "type": "u128"
           },
           {
             "name": "growthGlobalX64",
+            "docs": [
+              "Q64.64 number that tracks the total tokens earned per unit of liquidity since the reward",
+              "emissions were turned on."
+            ],
             "type": "u128"
           }
         ]
@@ -3660,6 +5026,26 @@ export const IDL: Whirlpool = {
       "code": 6042,
       "name": "DuplicateTwoHopPool",
       "msg": "Duplicate two hop pool"
+    },
+    {
+      "code": 6043,
+      "name": "InvalidBundleIndex",
+      "msg": "Bundle index is out of bounds"
+    },
+    {
+      "code": 6044,
+      "name": "BundledPositionAlreadyOpened",
+      "msg": "Position has already been opened"
+    },
+    {
+      "code": 6045,
+      "name": "BundledPositionAlreadyClosed",
+      "msg": "Position has already been closed"
+    },
+    {
+      "code": 6046,
+      "name": "PositionBundleNotDeletable",
+      "msg": "Unable to delete PositionBundle with open positions"
     }
   ]
 };

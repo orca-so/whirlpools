@@ -12,6 +12,7 @@ import {
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
 import { assertInputOutputQuoteEqual, assertQuoteAndResults, TickSpacing } from "../../../utils";
+import { defaultConfirmOptions } from "../../../utils/const";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
@@ -20,8 +21,8 @@ import {
 import { getVaultAmounts } from "../../../utils/whirlpools-test-utils";
 
 describe("swap traversal tests", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

@@ -2,11 +2,12 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
 import { createMint, ONE_SOL, systemTransferTx, TickSpacing } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initializeReward, initTestPool } from "../utils/init-utils";
 
 describe("initialize_reward", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

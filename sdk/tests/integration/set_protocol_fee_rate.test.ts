@@ -2,12 +2,12 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
 import { TickSpacing } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 import { generateDefaultConfigParams } from "../utils/test-builders";
 
 describe("set_protocol_fee_rate", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -27,14 +27,13 @@ describe("set_protocol_fee_rate", () => {
 
     assert.equal(whirlpool.protocolFeeRate, configInitInfo.defaultProtocolFeeRate);
 
-    await program.rpc.setProtocolFeeRate(newProtocolFeeRate, {
-      accounts: {
-        whirlpoolsConfig: whirlpoolsConfigKey,
-        whirlpool: whirlpoolKey,
-        feeAuthority: feeAuthorityKeypair.publicKey,
-      },
-      signers: [feeAuthorityKeypair],
-    });
+    const txBuilder = toTx(ctx, WhirlpoolIx.setProtocolFeeRateIx(program, {
+      whirlpool: whirlpoolKey,
+      whirlpoolsConfig: whirlpoolsConfigKey,
+      feeAuthority: feeAuthorityKeypair.publicKey,
+      protocolFeeRate: newProtocolFeeRate
+    })).addSigner(feeAuthorityKeypair);
+    await txBuilder.buildAndExecute();
 
     whirlpool = (await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, true)) as WhirlpoolData;
     assert.equal(whirlpool.protocolFeeRate, newProtocolFeeRate);
@@ -86,7 +85,7 @@ describe("set_protocol_fee_rate", () => {
           protocolFeeRate: newProtocolFeeRate,
         })
       ).buildAndExecute(),
-      /Transaction signature verification failure/
+      /.*signature verification fail.*/i
     );
   });
 

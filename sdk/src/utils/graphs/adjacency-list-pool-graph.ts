@@ -1,5 +1,6 @@
 import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
+import { PublicKey } from "@solana/web3.js";
 import {
   Edge,
   Path,
@@ -56,12 +57,12 @@ export class AdjacencyListPoolGraph implements PoolGraph {
 
       const paths = pathsForSearchPair
         ? pathsForSearchPair.map<Path>((path) => {
-            return {
-              startTokenMint: AddressUtil.toString(startMint),
-              endTokenMint: AddressUtil.toString(endMint),
-              edges: getHopsFromRoute(internalRouteId, searchRouteId, path),
-            };
-          })
+          return {
+            startTokenMint: AddressUtil.toString(startMint),
+            endTokenMint: AddressUtil.toString(endMint),
+            edges: getHopsFromRoute(internalRouteId, searchRouteId, path),
+          };
+        })
         : [];
 
       return [searchRouteId, paths] as const;

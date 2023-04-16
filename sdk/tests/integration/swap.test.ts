@@ -5,21 +5,22 @@ import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  buildWhirlpoolClient,
   MAX_SQRT_PRICE,
   MIN_SQRT_PRICE,
   PDAUtil,
   PriceMath,
   SwapParams,
-  swapQuoteByInputToken,
+  TICK_ARRAY_SIZE,
   TickArrayData,
   TickUtil,
-  TICK_ARRAY_SIZE,
-  toTx,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
+  buildWhirlpoolClient,
+  swapQuoteByInputToken,
+  toTx
 } from "../../src";
-import { getTokenBalance, MAX_U64, TickSpacing, ZERO_BN } from "../utils";
+import { MAX_U64, TickSpacing, ZERO_BN, getTokenBalance } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import {
   FundedPositionParams,
   fundPositions,
@@ -31,8 +32,8 @@ import {
 } from "../utils/init-utils";
 
 describe("swap", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

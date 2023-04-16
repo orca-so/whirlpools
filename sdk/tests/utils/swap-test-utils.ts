@@ -34,7 +34,7 @@ export interface SwapTestSetup {
 }
 
 export async function setupSwapTest(setup: SwapTestPoolParams, tokenAIsNative = false) {
-  const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } = await initTestPoolWithTokens(
+  const { whirlpoolPda } = await initTestPoolWithTokens(
     setup.ctx,
     setup.tickSpacing,
     setup.initSqrtPrice,

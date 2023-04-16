@@ -9,16 +9,17 @@ import {
   PriceModuleUtils, WhirlpoolContext
 } from "../../src";
 import { TickSpacing } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import {
-  buildTestAquariums,
   FundedPositionParams,
+  buildTestAquariums,
   getDefaultAquarium,
   initTestPoolWithLiquidity
 } from "../utils/init-utils";
 
 // TODO: Move these tests to use mock data instead of relying on solana localnet. It's very slow.
 describe("get_pool_prices", () => {
-  const provider = anchor.AnchorProvider.env();
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
   const program = anchor.workspace.Whirlpool;
   const context = WhirlpoolContext.fromWorkspace(provider, program);
 
@@ -268,7 +269,7 @@ describe("get_pool_prices", () => {
     // mints are sorted (mintKeys[0] < mintKeys[1] < mintKeys[2])
     const fetchedTickArrayForPool0 = 1; // A to B direction (mintKeys[0] to mintKeys[1])
     const fetchedTickArrayForPool1 = 1; // A to B direction (mintKeys[1] to mintKeys[2])
-    
+
     assert.equal(Object.keys(poolMap).length, 2);
     assert.equal(Object.keys(tickArrayMap).length, fetchedTickArrayForPool0 + fetchedTickArrayForPool1);
     assert.equal(Object.keys(priceMap).length, 3);

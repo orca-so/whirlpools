@@ -3,30 +3,28 @@ import { PDA, Percentage } from "@orca-so/common-sdk";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import {
+  InitPoolParams,
+  POSITION_BUNDLE_SIZE,
+  PositionBundleData,
+  WhirlpoolContext,
+  WhirlpoolIx,
   buildWhirlpoolClient,
   increaseLiquidityQuoteByInputTokenWithParams,
-  InitPoolParams,
-  PositionBundleData,
-  POSITION_BUNDLE_SIZE,
-  toTx,
-  WhirlpoolContext,
-  WhirlpoolIx
+  toTx
 } from "../../src";
 import {
-  approveToken, createAssociatedTokenAccount, ONE_SOL,
-  systemTransferTx, TickSpacing,
+  ONE_SOL,
+  TickSpacing,
+  approveToken, createAssociatedTokenAccount,
+  systemTransferTx,
   transfer
 } from "../utils";
-import { initializePositionBundle, initTestPool, openBundledPosition, openPosition } from "../utils/init-utils";
+import { defaultConfirmOptions } from "../utils/const";
+import { initTestPool, initializePositionBundle, openBundledPosition, openPosition } from "../utils/init-utils";
 import { mintTokensToTestAccount } from "../utils/test-builders";
 
 describe("close_bundled_position", () => {
-  const provider = anchor.AnchorProvider.local(undefined, {
-    commitment: "confirmed",
-    preflightCommitment: "confirmed",
-  });
-
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const client = buildWhirlpoolClient(ctx);

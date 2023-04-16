@@ -5,8 +5,8 @@ import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web
 import * as assert from "assert";
 import {
   PDAUtil,
-  PositionBundleData,
   POSITION_BUNDLE_SIZE,
+  PositionBundleData,
   toTx,
   WhirlpoolContext
 } from "../../src";
@@ -14,15 +14,13 @@ import {
   createMintInstructions,
   mintToByAuthority
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initializePositionBundle } from "../utils/init-utils";
 
 describe("initialize_position_bundle", () => {
-  const provider = anchor.AnchorProvider.local(undefined, {
-    commitment: "confirmed",
-    preflightCommitment: "confirmed",
-  });
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
-  anchor.setProvider(anchor.AnchorProvider.env());
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

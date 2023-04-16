@@ -1,11 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolIx, WhirlpoolsConfigData } from "../../src";
+import { defaultConfirmOptions } from "../utils/const";
 import { generateDefaultConfigParams } from "../utils/test-builders";
 
 describe("set_collect_protocol_fee_authority", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -49,7 +50,7 @@ describe("set_collect_protocol_fee_authority", () => {
           newCollectProtocolFeesAuthority: provider.wallet.publicKey,
         })
       ).buildAndExecute(),
-      /Transaction signature verification failure/
+      /.*signature verification fail.*/i
     );
   });
 

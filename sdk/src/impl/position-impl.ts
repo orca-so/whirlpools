@@ -24,6 +24,7 @@ import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/p
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { createWSOLAccountInstructions } from "../utils/spl-token-utils";
+import { contextToBuilderOptions } from "../utils/txn-utils";
 import {
   getTokenMintsFromWhirlpools,
   resolveAtaForMints,
@@ -105,7 +106,8 @@ export class PositionImpl implements Position {
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      contextToBuilderOptions(this.ctx.opts)
     );
 
     let tokenOwnerAccountA: PublicKey;
@@ -181,7 +183,8 @@ export class PositionImpl implements Position {
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      contextToBuilderOptions(this.ctx.opts)
     );
     let tokenOwnerAccountA: PublicKey;
     let tokenOwnerAccountB: PublicKey;
@@ -251,7 +254,7 @@ export class PositionImpl implements Position {
       );
     }
 
-    let txBuilder = new TransactionBuilder(this.ctx.provider.connection, this.ctx.provider.wallet);
+    let txBuilder = new TransactionBuilder(this.ctx.provider.connection, this.ctx.provider.wallet, contextToBuilderOptions(this.ctx.opts));
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
 
@@ -348,7 +351,8 @@ export class PositionImpl implements Position {
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      contextToBuilderOptions(this.ctx.opts)
     );
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();

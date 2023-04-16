@@ -1,6 +1,7 @@
 import { resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { SwapUtils, TickArrayUtil, Whirlpool, WhirlpoolContext } from "../..";
+import { contextToBuilderOptions } from "../../utils/txn-utils";
 import { SwapInput, swapIx } from "../swap-ix";
 
 export type SwapAsyncParams = {
@@ -23,7 +24,7 @@ export async function swapAsync(
 ): Promise<TransactionBuilder> {
   const { wallet, whirlpool, swapInput } = params;
   const { aToB, amount } = swapInput;
-  const txBuilder = new TransactionBuilder(ctx.connection, ctx.wallet);
+  const txBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
   const tickArrayAddresses = [swapInput.tickArray0, swapInput.tickArray1, swapInput.tickArray2];
 
   let uninitializedArrays = await TickArrayUtil.getUninitializedArraysString(

@@ -17,7 +17,9 @@ import {
   WhirlpoolContext,
   WhirlpoolIx
 } from "../../../src";
+import { contextToBuilderOptions } from "../../../src/utils/txn-utils";
 import { TickSpacing, ZERO_BN } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { FundedPositionInfo } from "../../utils/init-utils";
 
@@ -38,14 +40,15 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
   const sleep = (second: number) => new Promise(resolve => setTimeout(resolve, second * 1000))
 
   before(() => {
-    const provider = anchor.AnchorProvider.local(undefined, {
-      commitment: "confirmed",
-      preflightCommitment: "confirmed",
-    });
+    const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;
-    const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
+    const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program, undefined, undefined, {
+      userDefaultBuildOptions: {
+        maxSupportedTransactionVersion: "legacy",
+      }
+    });
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
     testCtx = {
@@ -201,7 +204,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
       []
     );
 
-    const tx = new TransactionBuilder(ctx.connection, ctx.wallet);
+    const tx = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
     tx.addInstruction({
       instructions: [burnIx, closeIx],
       cleanupInstructions: [],
@@ -248,7 +251,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
       ctx.wallet.publicKey
     );
 
-    const tx = new TransactionBuilder(ctx.connection, ctx.wallet);
+    const tx = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
     tx.addInstruction({
       instructions: [createATAIx],
       cleanupInstructions: [],
@@ -336,9 +339,11 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     );
     assert.ok(txs.length >= 2);
 
+    // TODO: We should not depend on Transaction Processor for mass txn sending. SendTxRequest is also a hack.
+    // Remove when we have an official multi-transaction sending solution.
     const requests: SendTxRequest[] = [];
     for (const tx of txs) {
-      requests.push(await tx.build());
+      requests.push(await tx.build() as SendTxRequest);
     }
 
     const parallel = true;
@@ -347,7 +352,10 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const txResults = await execute();
     for (const result of txResults) {
-      assert.ok(result.status === "fulfilled");
+      if (result.status === "rejected") {
+        console.log(result.reason);
+      }
+      assert.equal(result.status, "fulfilled");
     }
 
     // check all positions have no fees and rewards

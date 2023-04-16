@@ -13,13 +13,14 @@ import { AccountFetcher } from "../network/public";
 import { WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, PriceMath, TickUtil } from "../utils/public";
+import { contextToBuilderOptions } from "../utils/txn-utils";
 import { Position, Whirlpool, WhirlpoolClient } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./util";
 import { WhirlpoolImpl } from "./whirlpool-impl";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
-  constructor(readonly ctx: WhirlpoolContext) {}
+  constructor(readonly ctx: WhirlpoolContext) { }
 
   public getContext(): WhirlpoolContext {
     return this.ctx;
@@ -223,7 +224,8 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      contextToBuilderOptions(this.ctx.opts)
     );
 
     const initPoolIx = WhirlpoolIx.initializePoolIx(this.ctx.program, {

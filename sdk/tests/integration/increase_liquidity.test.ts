@@ -9,24 +9,26 @@ import {
   PriceMath,
   TickArrayData,
   TickUtil,
-  toTx,
   WhirlpoolContext,
   WhirlpoolData,
-  WhirlpoolIx
+  WhirlpoolIx,
+  toTx
 } from "../../src";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
+import { contextToBuilderOptions } from "../../src/utils/txn-utils";
 import {
+  MAX_U64,
+  TickSpacing,
+  ZERO_BN,
   approveToken,
   assertTick,
   createAndMintToTokenAccount,
   createMint,
   createTokenAccount,
   getTokenBalance,
-  MAX_U64,
-  TickSpacing,
-  transfer,
-  ZERO_BN
+  transfer
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
 import {
@@ -35,8 +37,8 @@ import {
 } from "../utils/test-builders";
 
 describe("increase_liquidity", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -217,7 +219,7 @@ describe("increase_liquidity", () => {
       TickUtil.getStartTickIndex(tickUpperIndex, tickSpacing)
     ).publicKey;
 
-    await new TransactionBuilder(ctx.provider.connection, ctx.provider.wallet)
+    await new TransactionBuilder(ctx.provider.connection, ctx.provider.wallet, contextToBuilderOptions(ctx.opts))
       // TODO: create a ComputeBudgetInstruction to request more compute
       .addInstruction(
         WhirlpoolIx.initTickArrayIx(
@@ -970,7 +972,7 @@ describe("increase_liquidity", () => {
           tickArrayUpper: positionInitInfo.tickArrayUpper,
         })
       ).buildAndExecute(),
-      /Transaction signature verification failure/
+      /.*signature verification fail.*/i
     );
   });
 

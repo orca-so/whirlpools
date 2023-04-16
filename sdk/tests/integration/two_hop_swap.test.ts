@@ -16,6 +16,7 @@ import {
 } from "../../src";
 import { TwoHopSwapParams } from "../../src/instructions";
 import { getTokenBalance, TickSpacing } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import {
   buildTestAquariums,
   FundedPositionParams,
@@ -25,8 +26,8 @@ import {
 } from "../utils/init-utils";
 
 describe("two-hop swap", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

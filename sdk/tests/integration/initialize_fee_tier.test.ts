@@ -2,6 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { FeeTierData, PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initFeeTier } from "../utils/init-utils";
 import {
   generateDefaultConfigParams,
@@ -9,8 +10,8 @@ import {
 } from "../utils/test-builders";
 
 describe("initialize_fee_tier", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -109,7 +110,7 @@ describe("initialize_fee_tier", () => {
           )
         )
       ).buildAndExecute(),
-      /Transaction signature verification failure/
+      /.*signature verification fail.*/i
     );
   });
 

@@ -1,28 +1,28 @@
 import { Address, BN, translateAddress } from "@coral-xyz/anchor";
 import {
   AddressUtil,
-  deriveATA,
   Percentage,
-  resolveOrCreateATAs,
   TokenUtil,
   TransactionBuilder,
   ZERO,
+  deriveATA,
+  resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
 import {
-  closePositionIx,
-  decreaseLiquidityIx,
   DevFeeSwapInput,
   IncreaseLiquidityInput,
+  SwapInput,
+  closePositionIx,
+  decreaseLiquidityIx,
   increaseLiquidityIx,
   initTickArrayIx,
   openPositionIx,
   openPositionWithMetadataIx,
   swapAsync,
-  SwapInput,
 } from "../instructions";
 import {
   collectFeesQuote,
@@ -33,10 +33,11 @@ import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from 
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { createWSOLAccountInstructions } from "../utils/spl-token-utils";
+import { contextToBuilderOptions } from "../utils/txn-utils";
 import {
+  TokenMintTypes,
   getTokenMintsFromWhirlpools,
   resolveAtaForMints,
-  TokenMintTypes,
 } from "../utils/whirlpool-ata-utils";
 import { Whirlpool } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
@@ -142,7 +143,8 @@ export class WhirlpoolImpl implements Whirlpool {
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      contextToBuilderOptions(this.ctx.opts)
     );
     initTickArrayStartPdas.forEach((initTickArrayInfo) => {
       txBuilder.addInstruction(
@@ -206,7 +208,8 @@ export class WhirlpoolImpl implements Whirlpool {
     const payerKey = payer ? AddressUtil.toPubKey(payer) : this.ctx.wallet.publicKey;
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      contextToBuilderOptions(this.ctx.opts)
     );
 
     if (!quote.devFeeAmount.eq(ZERO)) {
@@ -284,7 +287,8 @@ export class WhirlpoolImpl implements Whirlpool {
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      contextToBuilderOptions(this.ctx.opts)
     );
 
     const positionIx = (withMetadata ? openPositionWithMetadataIx : openPositionIx)(
@@ -378,14 +382,16 @@ export class WhirlpoolImpl implements Whirlpool {
 
     const tokenAccountsTxBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      contextToBuilderOptions(this.ctx.opts)
     );
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      contextToBuilderOptions(this.ctx.opts),
     );
 
     const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(

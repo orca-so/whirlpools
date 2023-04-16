@@ -18,6 +18,7 @@ import {
   assertQuoteAndResults,
   TickSpacing
 } from "../../../utils";
+import { defaultConfirmOptions } from "../../../utils/const";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
@@ -26,8 +27,8 @@ import {
 import { getVaultAmounts } from "../../../utils/whirlpools-test-utils";
 
 describe("whirlpool-dev-fee-swap", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const client = buildWhirlpoolClient(ctx);

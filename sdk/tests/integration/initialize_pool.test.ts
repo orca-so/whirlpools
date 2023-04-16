@@ -8,24 +8,25 @@ import {
   MIN_SQRT_PRICE,
   PDAUtil,
   PriceMath,
-  toTx,
   WhirlpoolContext,
   WhirlpoolData,
-  WhirlpoolIx
+  WhirlpoolIx,
+  toTx
 } from "../../src";
 import {
+  ONE_SOL,
+  TickSpacing,
+  ZERO_BN,
   asyncAssertTokenVault,
   createMint,
-  ONE_SOL,
-  systemTransferTx,
-  TickSpacing,
-  ZERO_BN
+  systemTransferTx
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { buildTestPoolParams, initTestPool } from "../utils/init-utils";
 
 describe("initialize_pool", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

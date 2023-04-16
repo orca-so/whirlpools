@@ -6,28 +6,29 @@ import Decimal from "decimal.js";
 import {
   PositionData,
   TickArrayData,
-  toTx,
   WhirlpoolContext,
   WhirlpoolData,
-  WhirlpoolIx
+  WhirlpoolIx,
+  toTx
 } from "../../src";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../src/quotes/public/decrease-liquidity-quote";
 import {
+  TickSpacing,
+  ZERO_BN,
   approveToken,
   assertTick,
   createAndMintToTokenAccount,
   createMint,
   createTokenAccount,
-  TickSpacing,
-  transfer,
-  ZERO_BN
+  transfer
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
 
 describe("decrease_liquidity", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -778,7 +779,7 @@ describe("decrease_liquidity", () => {
           tickArrayUpper: position.tickArrayUpper,
         })
       ).buildAndExecute(),
-      /Transaction signature verification failure/
+      /.*signature verification fail.*/i
     );
   });
 

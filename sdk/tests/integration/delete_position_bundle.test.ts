@@ -3,7 +3,7 @@ import { PDA } from "@orca-so/common-sdk";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
-import { InitPoolParams, PositionBundleData, POSITION_BUNDLE_SIZE, toTx, WhirlpoolIx } from "../../src";
+import { InitPoolParams, POSITION_BUNDLE_SIZE, PositionBundleData, toTx, WhirlpoolIx } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
 import {
   approveToken,
@@ -13,15 +13,13 @@ import {
   TickSpacing,
   transfer
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initializePositionBundle, initializePositionBundleWithMetadata, initTestPool, openBundledPosition } from "../utils/init-utils";
 
 describe("delete_position_bundle", () => {
-  const provider = anchor.AnchorProvider.local(undefined, {
-    commitment: "confirmed",
-    preflightCommitment: "confirmed",
-  });
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
-  anchor.setProvider(anchor.AnchorProvider.env());
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

@@ -10,11 +10,12 @@ import {
   WhirlpoolContext
 } from "../../../src";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import { buildTestPoolParams } from "../../utils/init-utils";
 
 describe("whirlpool-client-impl", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const client = buildWhirlpoolClient(ctx);

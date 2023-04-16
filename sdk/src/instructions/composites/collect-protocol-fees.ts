@@ -3,11 +3,12 @@ import { AddressUtil, Instruction, TokenUtil, TransactionBuilder } from "@orca-s
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PACKET_DATA_SIZE } from "@solana/web3.js";
 import { WhirlpoolContext } from "../..";
+import { contextToBuilderOptions } from "../../utils/txn-utils";
 import {
+  TokenMintTypes,
   addNativeMintHandlingIx,
   getTokenMintsFromWhirlpools,
   resolveAtaForMints,
-  TokenMintTypes,
 } from "../../utils/whirlpool-ata-utils";
 import { collectProtocolFeesIx } from "../collect-protocol-fees-ix";
 
@@ -28,8 +29,8 @@ export async function collectProtocolFees(
     payer: payerKey,
   });
 
-  const latestBlockhash = await ctx.connection.getLatestBlockhash("singleGossip");
-  let txBuilder = new TransactionBuilder(ctx.connection, ctx.wallet).addInstructions(resolveAtaIxs);
+  const latestBlockhash = await ctx.connection.getLatestBlockhash();
+  let txBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts)).addInstructions(resolveAtaIxs);
 
   const instructions: Instruction[] = [];
 

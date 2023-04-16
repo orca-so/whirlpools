@@ -7,25 +7,22 @@ import * as assert from "assert";
 import {
   METADATA_PROGRAM_ADDRESS,
   PDAUtil,
-  PositionBundleData,
   POSITION_BUNDLE_SIZE,
+  PositionBundleData,
   toTx,
-  WhirlpoolContext,
-  WHIRLPOOL_NFT_UPDATE_AUTH
+  WHIRLPOOL_NFT_UPDATE_AUTH,
+  WhirlpoolContext
 } from "../../src";
 import {
   createMintInstructions,
   mintToByAuthority
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initializePositionBundleWithMetadata } from "../utils/init-utils";
 
 describe("initialize_position_bundle_with_metadata", () => {
-  const provider = anchor.AnchorProvider.local(undefined, {
-    commitment: "confirmed",
-    preflightCommitment: "confirmed",
-  });
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
-  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

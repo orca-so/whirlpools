@@ -11,12 +11,12 @@ import {
   transfer,
   ZERO_BN
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initializePositionBundle, initTestPool, initTestPoolWithLiquidity, openBundledPosition, openPosition } from "../utils/init-utils";
 
-describe.only("close_position", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+describe("close_position", () => {
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
 
@@ -189,7 +189,7 @@ describe.only("close_position", () => {
           positionTokenAccount: params.positionTokenAccount,
         })
       ).buildAndExecute(),
-      /Transaction signature verification failure/
+      /.*signature verification fail.*/i
     );
   });
 
@@ -227,7 +227,7 @@ describe.only("close_position", () => {
           positionTokenAccount: params.positionTokenAccount,
         })
       ).buildAndExecute(),
-      /Transaction signature verification failure/
+      /.*signature verification fail.*/i
     );
   });
 

@@ -1,13 +1,13 @@
 import { AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
-import { deriveATA, TransactionBuilder } from "@orca-so/common-sdk";
+import { TransactionBuilder, deriveATA } from "@orca-so/common-sdk";
 import { createWSOLAccountInstructions } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import {
-  AccountLayout,
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  AccountLayout,
   AuthorityType,
   NATIVE_MINT,
-  Token,
   TOKEN_PROGRAM_ID,
+  Token,
   u64
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
@@ -162,7 +162,8 @@ export async function createAndMintToAssociatedTokenAccount(
   // Tests who want to test with SOL will have to request their own airdrop.
   if (mint.equals(NATIVE_MINT)) {
     const rentExemption = await provider.connection.getMinimumBalanceForRentExemption(
-      AccountLayout.span
+      AccountLayout.span,
+      "confirmed"
     );
     const txBuilder = new TransactionBuilder(provider.connection, provider.wallet);
     const { address: tokenAccount, ...ix } = createWSOLAccountInstructions(

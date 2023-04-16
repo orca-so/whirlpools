@@ -9,12 +9,13 @@ import {
   WhirlpoolIx
 } from "../../src";
 import { TickSpacing } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 import { createInOrderMints, generateDefaultConfigParams } from "../utils/test-builders";
 
 describe("set_default_fee_rate", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -139,7 +140,7 @@ describe("set_default_fee_rate", () => {
           feeAuthority: feeAuthorityKeypair.publicKey,
         },
       }),
-      /Transaction signature verification failure/
+      /.*signature verification fail.*/i
     );
   });
 

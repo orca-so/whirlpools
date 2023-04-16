@@ -8,10 +8,10 @@ import {
   PositionBundleData,
   PositionData,
   TickArrayData,
-  WhirlpoolData,
-  WhirlpoolsConfigData,
   WHIRLPOOL_ACCOUNT_SIZE,
   WHIRLPOOL_CODER,
+  WhirlpoolData,
+  WhirlpoolsConfigData,
 } from "../..";
 import { FeeTierData } from "../../types/public";
 import {

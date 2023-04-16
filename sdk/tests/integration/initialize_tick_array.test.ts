@@ -3,19 +3,20 @@ import * as assert from "assert";
 import {
   InitPoolParams,
   InitTickArrayParams,
-  TickArrayData,
   TICK_ARRAY_SIZE,
-  toTx,
+  TickArrayData,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
+  toTx
 } from "../../src";
-import { ONE_SOL, systemTransferTx, TickSpacing } from "../utils";
+import { ONE_SOL, TickSpacing, systemTransferTx } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool, initTickArray } from "../utils/init-utils";
 import { generateDefaultInitTickArrayParams } from "../utils/test-builders";
 
 describe("initialize_tick_array", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

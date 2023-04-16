@@ -19,8 +19,8 @@ import {
   OpenPositionParams,
   PDAUtil,
   PriceMath,
-  TickUtil,
   TICK_ARRAY_SIZE,
+  TickUtil,
   toTx,
   WhirlpoolClient,
   WhirlpoolContext,
@@ -283,7 +283,9 @@ export function getTokenAccsForPools(
     mints.push(pool.tokenMintA);
     mints.push(pool.tokenMintB);
   }
-  return mints.map((mint) => tokenAccounts.find((acc) => acc.mint === mint)!.account);
+  return mints.map((mint) =>
+    tokenAccounts.find((acc) => acc.mint.equals(mint))!.account
+  );
 }
 
 /**
@@ -576,8 +578,8 @@ export async function initTestPoolWithTokens(
   );
   await ctx.connection.confirmTransaction({
     signature: airdropTx,
-    ...(await ctx.connection.getLatestBlockhash()),
-  });
+    ...(await ctx.connection.getLatestBlockhash("confirmed")),
+  }, "confirmed");
 
   const tokenAccountA = await createAndMintToAssociatedTokenAccount(
     provider,

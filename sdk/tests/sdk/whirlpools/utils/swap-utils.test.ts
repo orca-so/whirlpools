@@ -3,11 +3,12 @@ import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
 import { PDAUtil, SwapDirection, SwapUtils, TICK_ARRAY_SIZE } from "../../../../src";
 import { WhirlpoolContext } from "../../../../src/context";
+import { defaultConfirmOptions } from "../../../utils/const";
 import { testWhirlpoolData } from "../../../utils/testDataTypes";
 
 describe("SwapUtils tests", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
 

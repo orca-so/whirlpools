@@ -8,9 +8,9 @@ import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
   PDAUtil,
+  POSITION_BUNDLE_SIZE,
   PositionBundleData,
   PositionData,
-  POSITION_BUNDLE_SIZE,
   toTx,
   WhirlpoolContext,
   WhirlpoolIx
@@ -24,15 +24,13 @@ import {
   transfer,
   ZERO_BN
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initializePositionBundle, initTestPool, openBundledPosition } from "../utils/init-utils";
 
 describe("open_bundled_position", () => {
-  const provider = anchor.AnchorProvider.local(undefined, {
-    commitment: "confirmed",
-    preflightCommitment: "confirmed",
-  });
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
-  anchor.setProvider(anchor.AnchorProvider.env());
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

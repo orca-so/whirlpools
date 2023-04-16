@@ -4,16 +4,18 @@ import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import BN from "bn.js";
 import {
-  buildWhirlpoolClient, PriceMath,
-  swapQuoteByInputToken,
-  swapQuoteWithParams,
+  PriceMath,
   SwapUtils,
   TICK_ARRAY_SIZE,
-  WhirlpoolContext
+  WhirlpoolContext,
+  buildWhirlpoolClient,
+  swapQuoteByInputToken,
+  swapQuoteWithParams
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
 import { adjustForSlippage } from "../../../../src/utils/position-util";
 import { TickSpacing } from "../../../utils";
+import { defaultConfirmOptions } from "../../../utils/const";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
@@ -22,8 +24,8 @@ import {
 import { getTickArrays } from "../../../utils/testDataTypes";
 
 describe("swap arrays test", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

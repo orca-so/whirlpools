@@ -15,7 +15,6 @@ import {
   toTx
 } from "../../src";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
-import { contextToBuilderOptions } from "../../src/utils/txn-utils";
 import {
   MAX_U64,
   TickSpacing,
@@ -219,7 +218,7 @@ describe("increase_liquidity", () => {
       TickUtil.getStartTickIndex(tickUpperIndex, tickSpacing)
     ).publicKey;
 
-    await new TransactionBuilder(ctx.provider.connection, ctx.provider.wallet, contextToBuilderOptions(ctx.opts))
+    await new TransactionBuilder(ctx.provider.connection, ctx.provider.wallet, ctx.txBuilderOpts)
       // TODO: create a ComputeBudgetInstruction to request more compute
       .addInstruction(
         WhirlpoolIx.initTickArrayIx(

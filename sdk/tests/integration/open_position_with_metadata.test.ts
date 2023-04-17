@@ -19,7 +19,6 @@ import {
   toTx
 } from "../../src";
 import { openPositionAccounts } from "../../src/utils/instructions-util";
-import { contextToBuilderOptions } from "../../src/utils/txn-utils";
 import {
   ONE_SOL,
   TickSpacing,
@@ -310,7 +309,7 @@ describe("open_position_with_metadata", () => {
 
     it("fails with non-program metadata program", async () => {
       const notMetadataProgram = Keypair.generate();
-      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet, contextToBuilderOptions(ctx.opts)).addInstruction(
+      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet, ctx.txBuilderOpts).addInstruction(
         buildOpenWithAccountOverrides({
           metadataProgram: notMetadataProgram.publicKey,
         })
@@ -325,7 +324,7 @@ describe("open_position_with_metadata", () => {
     });
 
     it("fails with non-metadata program ", async () => {
-      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet, contextToBuilderOptions(ctx.opts)).addInstruction(
+      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet, ctx.txBuilderOpts).addInstruction(
         buildOpenWithAccountOverrides({
           metadataProgram: TOKEN_PROGRAM_ID,
         })
@@ -341,7 +340,7 @@ describe("open_position_with_metadata", () => {
 
     it("fails with non-valid update_authority program", async () => {
       const notUpdateAuth = Keypair.generate();
-      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet, contextToBuilderOptions(ctx.opts)).addInstruction(
+      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet, ctx.txBuilderOpts).addInstruction(
         buildOpenWithAccountOverrides({
           metadataUpdateAuth: notUpdateAuth.publicKey,
         })

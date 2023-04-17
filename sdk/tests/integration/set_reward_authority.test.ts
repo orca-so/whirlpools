@@ -2,7 +2,6 @@ import * as anchor from "@coral-xyz/anchor";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import { NUM_REWARDS, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
-import { contextToBuilderOptions } from "../../src/utils/txn-utils";
 import { TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
@@ -18,7 +17,7 @@ describe("set_reward_authority", () => {
     const { configKeypairs, poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
 
     const newKeypairs = generateKeypairs(NUM_REWARDS);
-    const txBuilder = new TransactionBuilder(provider.connection, provider.wallet, contextToBuilderOptions(ctx.opts));
+    const txBuilder = new TransactionBuilder(provider.connection, provider.wallet, ctx.txBuilderOpts);
     for (let i = 0; i < NUM_REWARDS; i++) {
       txBuilder.addInstruction(
         WhirlpoolIx.setRewardAuthorityIx(ctx.program, {

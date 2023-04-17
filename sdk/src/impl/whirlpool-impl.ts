@@ -33,7 +33,6 @@ import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from 
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { createWSOLAccountInstructions } from "../utils/spl-token-utils";
-import { contextToBuilderOptions } from "../utils/txn-utils";
 import {
   TokenMintTypes,
   getTokenMintsFromWhirlpools,
@@ -144,7 +143,7 @@ export class WhirlpoolImpl implements Whirlpool {
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
       this.ctx.provider.wallet,
-      contextToBuilderOptions(this.ctx.opts)
+      this.ctx.txBuilderOpts
     );
     initTickArrayStartPdas.forEach((initTickArrayInfo) => {
       txBuilder.addInstruction(
@@ -209,7 +208,7 @@ export class WhirlpoolImpl implements Whirlpool {
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
       this.ctx.provider.wallet,
-      contextToBuilderOptions(this.ctx.opts)
+      this.ctx.txBuilderOpts
     );
 
     if (!quote.devFeeAmount.eq(ZERO)) {
@@ -288,7 +287,7 @@ export class WhirlpoolImpl implements Whirlpool {
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
       this.ctx.provider.wallet,
-      contextToBuilderOptions(this.ctx.opts)
+      this.ctx.txBuilderOpts
     );
 
     const positionIx = (withMetadata ? openPositionWithMetadataIx : openPositionIx)(
@@ -383,7 +382,7 @@ export class WhirlpoolImpl implements Whirlpool {
     const tokenAccountsTxBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
       this.ctx.provider.wallet,
-      contextToBuilderOptions(this.ctx.opts)
+      this.ctx.txBuilderOpts
     );
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
@@ -391,7 +390,7 @@ export class WhirlpoolImpl implements Whirlpool {
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
       this.ctx.provider.wallet,
-      contextToBuilderOptions(this.ctx.opts),
+      this.ctx.txBuilderOpts
     );
 
     const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(

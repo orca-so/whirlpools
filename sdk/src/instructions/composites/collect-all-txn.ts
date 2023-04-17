@@ -11,7 +11,7 @@ import {
   createWSOLAccountInstructions,
   getAssociatedTokenAddressSync,
 } from "../../utils/spl-token-utils";
-import { checkMergedTransactionSizeIsValid, contextToBuilderOptions, convertListToMap } from "../../utils/txn-utils";
+import { checkMergedTransactionSizeIsValid, convertListToMap } from "../../utils/txn-utils";
 import { getTokenMintsFromWhirlpools } from "../../utils/whirlpool-ata-utils";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
 
@@ -142,7 +142,7 @@ export async function collectAllForPositionsTxns(
   let reattempt = false;
   while (posIndex < positionList.length) {
     if (!pendingTxBuilder || !touchedMints) {
-      pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       touchedMints = new Set<string>();
       resolvedAtas[NATIVE_MINT.toBase58()] = createWSOLAccountInstructions(
         receiverKey,
@@ -163,7 +163,7 @@ export async function collectAllForPositionsTxns(
       resolvedAtas,
       touchedMints
     );
-    const positionTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+    const positionTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
     positionTxBuilder.addInstructions(collectIxForPosition);
 
     // Attempt to push the new instructions into the pending builder

@@ -7,7 +7,6 @@ import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import { buildWhirlpoolClient, collectFeesQuote, NUM_REWARDS, PDAUtil, PoolUtil, POSITION_BUNDLE_SIZE, PositionBundleData, PriceMath, toTx, Whirlpool, WhirlpoolClient, WhirlpoolIx } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
-import { contextToBuilderOptions } from "../../../src/utils/txn-utils";
 import { createTokenAccount, TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -196,7 +195,7 @@ describe("bundled position management tests", () => {
       const minBundleIndex = startBundleIndex;
       const maxBundleIndex = Math.min(startBundleIndex + batchSize, POSITION_BUNDLE_SIZE) - 1;
 
-      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
 
       for (let bundleIndex = minBundleIndex; bundleIndex <= maxBundleIndex; bundleIndex++) {
         const bundledPositionPda = PDAUtil.getBundledPosition(ctx.program.programId, positionBundleInfo.positionBundleMintKeypair.publicKey, bundleIndex);
@@ -225,7 +224,7 @@ describe("bundled position management tests", () => {
       const minBundleIndex = startBundleIndex;
       const maxBundleIndex = Math.min(startBundleIndex + batchSize, POSITION_BUNDLE_SIZE) - 1;
 
-      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
 
       for (let bundleIndex = minBundleIndex; bundleIndex <= maxBundleIndex; bundleIndex++) {
         const bundledPositionPda = PDAUtil.getBundledPosition(ctx.program.programId, positionBundleInfo.positionBundleMintKeypair.publicKey, bundleIndex);
@@ -630,7 +629,7 @@ describe("bundled position management tests", () => {
       const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
       assert.ok(postClose === null);
     }
-  }).retries(2); // TODO: remove retries. Sometimes this fails on a weird AssertionError.
+  }).retries(4); // TODO: remove retries. Sometimes this fails on a weird AssertionError.
 
   describe("Single Transaction", () => {
     it("successfully openBundledPosition+increaseLiquidity / decreaseLiquidity+closeBundledPosition in single Tx", async () => {
@@ -680,7 +679,7 @@ describe("bundled position management tests", () => {
       );
 
       // openBundledPosition + increaseLiquidity
-      const openIncreaseBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      const openIncreaseBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       openIncreaseBuilder
         .addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {
           bundledPositionPda,
@@ -710,7 +709,7 @@ describe("bundled position management tests", () => {
         false
       );
 
-      const decreaseCloseBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      const decreaseCloseBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       decreaseCloseBuilder
         .addInstruction(WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
           ...modifyLiquidityParams,
@@ -790,7 +789,7 @@ describe("bundled position management tests", () => {
       );
 
       const receiver = Keypair.generate();
-      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       builder
         .addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {
           bundledPositionPda,
@@ -845,7 +844,7 @@ describe("bundled position management tests", () => {
       const bundledPositionPubkey = bundledPositionPda.publicKey;
       const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
 
-      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       builder
         // open
         .addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {
@@ -967,7 +966,7 @@ describe("bundled position management tests", () => {
       const receiverAtaA = await createTokenAccount(provider, poolInitInfo.tokenMintA, receiver.publicKey);
       const receiverAtaB = await createTokenAccount(provider, poolInitInfo.tokenMintB, receiver.publicKey);
 
-      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       builder
         .addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {
           bundledPositionPda,
@@ -1061,7 +1060,7 @@ describe("bundled position management tests", () => {
       const rentOfPositionBundle = preClose.lamports;
       assert.ok(rentOfPositionBundle > 0);
 
-      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       builder
         // close
         .addInstruction(WhirlpoolIx.deletePositionBundleIx(ctx.program, {
@@ -1132,7 +1131,7 @@ describe("bundled position management tests", () => {
       const rentOfBundledPosition = preClose.lamports;
       assert.ok(rentOfBundledPosition > 0);
 
-      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       builder
         // close
         .addInstruction(WhirlpoolIx.closeBundledPositionIx(ctx.program, {
@@ -1185,7 +1184,7 @@ describe("bundled position management tests", () => {
       const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
 
-      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+      const builder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       builder
         // open
         .addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {

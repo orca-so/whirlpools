@@ -1,15 +1,25 @@
 import { AnchorProvider, Idl, Program } from "@coral-xyz/anchor";
-import { BuildOptions, LookupTableFetcher, Wallet } from "@orca-so/common-sdk";
+import {
+  BuildOptions,
+  LookupTableFetcher,
+  TransactionBuilderOptions,
+  Wallet,
+} from "@orca-so/common-sdk";
 import { Commitment, ConfirmOptions, Connection, PublicKey, SendOptions } from "@solana/web3.js";
 import { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
 import { AccountFetcher } from "./network/public";
+import { contextToBuilderOptions } from "./utils/txn-utils";
 
+/**
+ * Default settings used when interacting with transactions.
+ * @category Core
+ */
 export type WhirlpoolContextOpts = {
-  userDefaultBuildOptions?: Partial<BuildOptions>,
-  userDefaultSendOptions?: Partial<SendOptions>,
-  userDefaultConfirmCommitment?: Commitment
-}
+  userDefaultBuildOptions?: Partial<BuildOptions>;
+  userDefaultSendOptions?: Partial<SendOptions>;
+  userDefaultConfirmCommitment?: Commitment;
+};
 
 /**
  * @category Core
@@ -22,6 +32,7 @@ export class WhirlpoolContext {
   readonly fetcher: AccountFetcher;
   readonly lookupTableFetcher: LookupTableFetcher | undefined;
   readonly opts: WhirlpoolContextOpts;
+  readonly txBuilderOpts: TransactionBuilderOptions | undefined;
 
   public static from(
     connection: Connection,
@@ -46,7 +57,14 @@ export class WhirlpoolContext {
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ) {
-    return new WhirlpoolContext(provider, provider.wallet, program, fetcher, lookupTableFetcher, opts);
+    return new WhirlpoolContext(
+      provider,
+      provider.wallet,
+      program,
+      fetcher,
+      lookupTableFetcher,
+      opts
+    );
   }
 
   public static withProvider(
@@ -57,7 +75,14 @@ export class WhirlpoolContext {
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
     const program = new Program(WhirlpoolIDL as Idl, programId, provider);
-    return new WhirlpoolContext(provider, provider.wallet, program, fetcher, lookupTableFetcher, opts);
+    return new WhirlpoolContext(
+      provider,
+      provider.wallet,
+      program,
+      fetcher,
+      lookupTableFetcher,
+      opts
+    );
   }
 
   public constructor(
@@ -77,6 +102,7 @@ export class WhirlpoolContext {
     this.fetcher = fetcher;
     this.lookupTableFetcher = lookupTableFetcher;
     this.opts = opts;
+    this.txBuilderOpts = contextToBuilderOptions(this.opts);
   }
 
   // TODO: Add another factory method to build from on-chain IDL

@@ -17,7 +17,6 @@ import {
   WhirlpoolContext,
   WhirlpoolIx
 } from "../../../src";
-import { contextToBuilderOptions } from "../../../src/utils/txn-utils";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -204,7 +203,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
       []
     );
 
-    const tx = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+    const tx = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
     tx.addInstruction({
       instructions: [burnIx, closeIx],
       cleanupInstructions: [],
@@ -251,7 +250,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
       ctx.wallet.publicKey
     );
 
-    const tx = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+    const tx = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
     tx.addInstruction({
       instructions: [createATAIx],
       cleanupInstructions: [],

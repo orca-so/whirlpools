@@ -13,7 +13,7 @@ test = "ts-mocha -p sdk/tests/tsconfig.json -t 1000000 sdk/tests/**/*.test.ts"
 
 [test.validator]
 slots_per_epoch = "33"
-ticks_per_slot = 10
+ticks_per_slot = 7
 url = "https://api.mainnet-beta.solana.com"
 
 [[test.validator.clone]]

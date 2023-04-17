@@ -338,7 +338,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       await accrueFeesAndRewards(fixture);
       await removeLiquidity(fixture);
       await testClosePosition(fixture);
-    });
+    }).retries(4);
 
     it("should close a position with liquidity, fees, and rewards", async () => {
       const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({

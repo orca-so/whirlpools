@@ -1,4 +1,8 @@
-import { TransactionBuilder, TransactionBuilderOptions, defaultTransactionBuilderOptions } from "@orca-so/common-sdk";
+import {
+  TransactionBuilder,
+  TransactionBuilderOptions,
+  defaultTransactionBuilderOptions,
+} from "@orca-so/common-sdk";
 import { WhirlpoolContext, WhirlpoolContextOpts as WhirlpoolContextOptions } from "..";
 
 export function convertListToMap<T>(fetchedData: T[], addresses: string[]): Record<string, T> {
@@ -38,7 +42,7 @@ export async function checkMergedTransactionSizeIsValid(
     lastValidBlockHeight: number;
   }>
 ): Promise<boolean> {
-  const merged = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts));
+  const merged = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
   builders.forEach((builder) => merged.addInstruction(builder.compressIx(true)));
   try {
     const size = await merged.txnSize({
@@ -50,18 +54,22 @@ export async function checkMergedTransactionSizeIsValid(
   }
 }
 
-export function contextToBuilderOptions(opts: WhirlpoolContextOptions): TransactionBuilderOptions | undefined {
+export function contextToBuilderOptions(
+  opts: WhirlpoolContextOptions
+): TransactionBuilderOptions | undefined {
   if (opts) {
     return {
       defaultBuildOption: {
         ...defaultTransactionBuilderOptions.defaultBuildOption,
-        ...opts.userDefaultBuildOptions
+        ...opts.userDefaultBuildOptions,
       },
       defaultSendOption: {
         ...defaultTransactionBuilderOptions.defaultSendOption,
-        ...opts.userDefaultSendOptions
+        ...opts.userDefaultSendOptions,
       },
-      defaultConfirmationCommitment: opts.userDefaultConfirmCommitment ?? defaultTransactionBuilderOptions.defaultConfirmationCommitment
+      defaultConfirmationCommitment:
+        opts.userDefaultConfirmCommitment ??
+        defaultTransactionBuilderOptions.defaultConfirmationCommitment,
     };
   }
   return undefined;

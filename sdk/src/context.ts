@@ -5,7 +5,7 @@ import {
   TransactionBuilderOptions,
   Wallet,
 } from "@orca-so/common-sdk";
-import { Commitment, ConfirmOptions, Connection, PublicKey, SendOptions } from "@solana/web3.js";
+import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js";
 import { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
 import { AccountFetcher } from "./network/public";
@@ -40,14 +40,14 @@ export class WhirlpoolContext {
     programId: PublicKey,
     fetcher = new AccountFetcher(connection),
     lookupTableFetcher?: LookupTableFetcher,
-    confirmOpts: ConfirmOptions = {
-      commitment: "confirmed",
-      preflightCommitment: "confirmed",
-    }
+    opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
-    const anchorProvider = new AnchorProvider(connection, wallet, confirmOpts);
+    const anchorProvider = new AnchorProvider(connection, wallet, {
+      commitment: opts.userDefaultConfirmCommitment || "confirmed",
+      preflightCommitment: opts.userDefaultConfirmCommitment || "confirmed",
+    });
     const program = new Program(WhirlpoolIDL as Idl, programId, anchorProvider);
-    return new WhirlpoolContext(anchorProvider, anchorProvider.wallet, program, fetcher);
+    return new WhirlpoolContext(anchorProvider, anchorProvider.wallet, program, fetcher, lookupTableFetcher, opts);
   }
 
   public static fromWorkspace(
@@ -95,7 +95,6 @@ export class WhirlpoolContext {
   ) {
     this.connection = provider.connection;
     this.wallet = wallet;
-    this.opts = opts;
     // It's a hack but it works on Anchor workspace *shrug*
     this.program = program as unknown as Program<Whirlpool>;
     this.provider = provider;

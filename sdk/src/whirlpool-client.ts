@@ -5,6 +5,7 @@ import { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
 import { DevFeeSwapInput, SwapInput } from "./instructions";
 import { AccountFetcher } from "./network/public";
+import { WhirlpoolRouter } from "./router/public";
 import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
@@ -31,6 +32,13 @@ export interface WhirlpoolClient {
    * @return an AccountFetcher instance
    */
   getFetcher: () => AccountFetcher;
+
+  /**
+   * Get a WhirlpoolRouter to help generate the best prices when transacting across a set of pools.
+   * @param poolAddresses the addresses of the Whirlpool account addresses to route through
+   * @returns a {@link WhirlpoolRouter} instance
+   */
+  getRouter: (poolAddresses: Address[]) => Promise<WhirlpoolRouter>;
 
   /**
    * Get a Whirlpool object to interact with the Whirlpool account at the given address.

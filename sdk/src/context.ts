@@ -22,6 +22,7 @@ export type WhirlpoolContextOpts = {
 };
 
 /**
+ * Context for storing environment classes and objects for usage throughout the SDK
  * @category Core
  */
 export class WhirlpoolContext {
@@ -57,14 +58,7 @@ export class WhirlpoolContext {
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ) {
-    return new WhirlpoolContext(
-      provider,
-      provider.wallet,
-      program,
-      fetcher,
-      lookupTableFetcher,
-      opts
-    );
+    return new WhirlpoolContext(provider, provider.wallet, program, fetcher, lookupTableFetcher, opts);
   }
 
   public static withProvider(
@@ -75,14 +69,7 @@ export class WhirlpoolContext {
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
     const program = new Program(WhirlpoolIDL as Idl, programId, provider);
-    return new WhirlpoolContext(
-      provider,
-      provider.wallet,
-      program,
-      fetcher,
-      lookupTableFetcher,
-      opts
-    );
+    return new WhirlpoolContext(provider, provider.wallet, program, fetcher, lookupTableFetcher, opts);
   }
 
   public constructor(

@@ -37,8 +37,32 @@ export const WHIRLPOOL_CODER = new BorshAccountsCoder(IDL);
  * @returns Size in bytes of the account
  */
 export function getAccountSize(accountName: AccountName) {
-  return WHIRLPOOL_CODER.size(IDL.accounts!.find((account) => account.name === accountName)!);
+  const size = WHIRLPOOL_CODER.size(IDL.accounts!.find((account) => account.name === accountName)!);
+  return size + RESERVED_BYTES[accountName];
 }
+
+/**
+ * Reserved bytes for each account used for calculating the account size.
+ */
+const RESERVED_BYTES: ReservedBytes = {
+  [AccountName.WhirlpoolsConfig]: 2,
+  [AccountName.Position]: 0,
+  [AccountName.TickArray]: 0,
+  [AccountName.Whirlpool]: 0,
+  [AccountName.FeeTier]: 0,
+  [AccountName.PositionBundle]: 64,
+};
+
+type ReservedBytes = {
+  [name in AccountName]: number;
+};
+
+/**
+ * Size of the Whirlpool account in bytes.
+ * @deprecated Please use {@link getAccountSize} instead.
+ * @category Solana Accounts
+ */
+export const WHIRLPOOL_ACCOUNT_SIZE = getAccountSize(AccountName.Whirlpool);
 
 /**
  * @category Solana Accounts

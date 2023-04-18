@@ -10,10 +10,9 @@ import {
   TickArrayData,
   WhirlpoolData,
   WhirlpoolsConfigData,
-  WHIRLPOOL_ACCOUNT_SIZE,
   WHIRLPOOL_CODER,
 } from "../..";
-import { FeeTierData } from "../../types/public";
+import { FeeTierData, getAccountSize } from "../../types/public";
 import {
   ParsableEntity,
   ParsableFeeTier,
@@ -221,7 +220,7 @@ export class AccountFetcher {
     configId,
   }: ListWhirlpoolParams): Promise<WhirlpoolAccount[]> {
     const filters = [
-      { dataSize: WHIRLPOOL_ACCOUNT_SIZE },
+      { dataSize: getAccountSize(AccountName.Whirlpool) },
       {
         memcmp: WHIRLPOOL_CODER.memcmp(
           AccountName.Whirlpool,

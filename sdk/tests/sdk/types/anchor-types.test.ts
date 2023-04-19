@@ -13,10 +13,10 @@ describe("anchor-types", () => {
       [AccountName.PositionBundle]: 136,
     };
     Object.values(AccountName).forEach((name) => {
-      let actualSize;
       try {
+        const actualSize = getAccountSize(name);
         assert.equal(
-          getAccountSize(name),
+          actualSize,
           expectedSizes[name],
           `For ${name} expected ${expectedSizes[name]} but got ${actualSize}`
         );

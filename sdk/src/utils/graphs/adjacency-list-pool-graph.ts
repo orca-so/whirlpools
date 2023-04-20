@@ -1,6 +1,6 @@
 import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import _ from "lodash";
+const _ = require("lodash");
 import "lodash.combinations";
 import {
   Edge,
@@ -63,12 +63,12 @@ export class AdjacencyListPoolGraph implements PoolGraph {
 
       const paths = pathsForSearchPair
         ? pathsForSearchPair.map<Path>((path) => {
-          return {
-            startTokenMint: startMint,
-            endTokenMint: endMint,
-            edges: getHopsFromRoute(path, reversed),
-          };
-        })
+            return {
+              startTokenMint: startMint,
+              endTokenMint: endMint,
+              edges: getHopsFromRoute(path, reversed),
+            };
+          })
         : [];
 
       return [searchRouteId, paths] as const;
@@ -105,12 +105,12 @@ export class AdjacencyListPoolGraph implements PoolGraph {
 
         const paths = pathsForSearchPair
           ? pathsForSearchPair.map<Path>((path) => {
-            return {
-              startTokenMint: startMint,
-              endTokenMint: endMint,
-              edges: getHopsFromRoute(path, reversed),
-            };
-          })
+              return {
+                startTokenMint: startMint,
+                endTokenMint: endMint,
+                edges: getHopsFromRoute(path, reversed),
+              };
+            })
           : [];
 
         acc.push([searchRouteId, paths]);
@@ -118,12 +118,12 @@ export class AdjacencyListPoolGraph implements PoolGraph {
         const reversedSearchRouteId = PoolGraphUtils.getSearchPathId(endMint, startMint);
         const reversedPaths = pathsForSearchPair
           ? pathsForSearchPair.map<Path>((path) => {
-            return {
-              startTokenMint: endMint,
-              endTokenMint: startMint,
-              edges: getHopsFromRoute(path, !reversed),
-            };
-          })
+              return {
+                startTokenMint: endMint,
+                endTokenMint: startMint,
+                edges: getHopsFromRoute(path, !reversed),
+              };
+            })
           : [];
 
         acc.push([reversedSearchRouteId, reversedPaths]);

@@ -68,7 +68,9 @@ describe("collect_reward", () => {
       rewards,
     } = fixture.getInfos();
 
-    await sleep(500);
+    // accrue rewards
+    await sleep(1200);
+
     await toTx(
       ctx,
       WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
@@ -91,6 +93,11 @@ describe("collect_reward", () => {
       tickUpper: positionPreCollect.getUpperTickData(),
       timeStampInSeconds: pool.getData().rewardLastUpdatedTimestamp
     });
+
+    // Check that the expectation is not zero
+    for (let i = 0; i < NUM_REWARDS; i++) {
+      assert.ok(!expectation[i]!.isZero());
+    }
 
     // Perform collect rewards tx
     for (let i = 0; i < NUM_REWARDS; i++) {
@@ -145,6 +152,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -200,6 +211,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -260,6 +275,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -305,6 +324,10 @@ describe("collect_reward", () => {
       poolInitInfo: { whirlpoolPda },
       positions,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const fakeRewardMint = await createMint(provider);
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -341,6 +364,9 @@ describe("collect_reward", () => {
       ],
     });
     const { positions, rewards } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
 
     const {
       poolInitInfo: { whirlpoolPda },
@@ -383,6 +409,9 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -429,6 +458,9 @@ describe("collect_reward", () => {
       rewards,
     } = fixture.getInfos();
 
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -469,6 +501,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -510,6 +546,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -552,6 +592,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -592,6 +636,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -630,6 +678,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       tokenMintA,
@@ -668,6 +720,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       tokenMintA,

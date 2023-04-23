@@ -11,7 +11,7 @@ import {
   WhirlpoolClient,
   WhirlpoolContext
 } from "../../../src";
-import { TickSpacing } from "../../utils";
+import { sleep, TickSpacing } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 
@@ -76,6 +76,9 @@ describe("PositionImpl#collectRewards()", () => {
       const otherWallet = anchor.web3.Keypair.generate();
       const preCollectPoolData = pool.getData();
 
+      // accrue rewards
+      await sleep(1200);
+
       await (
         await position.collectRewards(
           rewards.map((r) => r.rewardMint),
@@ -97,6 +100,11 @@ describe("PositionImpl#collectRewards()", () => {
         tickUpper: position.getUpperTickData(),
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
+
+      // Check that the expectation is not zero
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        assert.ok(!quote[i]!.isZero());
+      }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = await deriveATA(otherWallet.publicKey, rewards[i].rewardMint);
@@ -137,6 +145,9 @@ describe("PositionImpl#collectRewards()", () => {
       const otherWallet = anchor.web3.Keypair.generate();
       const preCollectPoolData = pool.getData();
 
+      // accrue rewards
+      await sleep(1200);
+
       await (
         await position.collectRewards(
           rewards.map((r) => r.rewardMint),
@@ -159,6 +170,11 @@ describe("PositionImpl#collectRewards()", () => {
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
 
+      // Check that the expectation is not zero
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        assert.ok(!quote[i]!.isZero());
+      }
+      
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = await deriveATA(otherWallet.publicKey, rewards[i].rewardMint);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, true);

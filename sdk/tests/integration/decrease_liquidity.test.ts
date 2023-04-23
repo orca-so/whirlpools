@@ -20,6 +20,7 @@ import {
   createAndMintToTokenAccount,
   createMint,
   createTokenAccount,
+  sleep,
   transfer
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -45,6 +46,9 @@ describe("decrease_liquidity", () => {
     const { poolInitInfo, tokenAccountA, tokenAccountB, positions } = fixture.getInfos();
     const { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair } = poolInitInfo;
     const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+
+    // To check if rewardLastUpdatedTimestamp is updated
+    await sleep(1200);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: new anchor.BN(1_000_000),
@@ -74,7 +78,7 @@ describe("decrease_liquidity", () => {
 
     const remainingLiquidity = liquidityAmount.sub(removalQuote.liquidityAmount);
     const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
-    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
+    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gt(poolBefore.rewardLastUpdatedTimestamp));
     assert.ok(poolAfter.liquidity.eq(remainingLiquidity));
 
     const position = await fetcher.getPosition(positions[0].publicKey, true);

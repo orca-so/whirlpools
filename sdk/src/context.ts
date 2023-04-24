@@ -47,7 +47,14 @@ export class WhirlpoolContext {
       preflightCommitment: opts.userDefaultConfirmCommitment || "confirmed",
     });
     const program = new Program(WhirlpoolIDL as Idl, programId, anchorProvider);
-    return new WhirlpoolContext(anchorProvider, anchorProvider.wallet, program, fetcher, lookupTableFetcher, opts);
+    return new WhirlpoolContext(
+      anchorProvider,
+      anchorProvider.wallet,
+      program,
+      fetcher,
+      lookupTableFetcher,
+      opts
+    );
   }
 
   public static fromWorkspace(

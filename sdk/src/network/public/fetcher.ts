@@ -10,7 +10,7 @@ import {
   TickArrayData,
   WHIRLPOOL_CODER,
   WhirlpoolData,
-  WhirlpoolsConfigData
+  WhirlpoolsConfigData,
 } from "../..";
 import { FeeTierData, getAccountSize } from "../../types/public";
 import {

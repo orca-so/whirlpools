@@ -9,7 +9,7 @@ import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js"
 import { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
 import { AccountFetcher } from "./network/public";
-import { contextToBuilderOptions } from "./utils/txn-utils";
+import { contextOptionsToBuilderOptions } from "./utils/txn-utils";
 
 /**
  * Default settings used when interacting with transactions.
@@ -101,7 +101,7 @@ export class WhirlpoolContext {
     this.fetcher = fetcher;
     this.lookupTableFetcher = lookupTableFetcher;
     this.opts = opts;
-    this.txBuilderOpts = contextToBuilderOptions(this.opts);
+    this.txBuilderOpts = contextOptionsToBuilderOptions(this.opts);
   }
 
   // TODO: Add another factory method to build from on-chain IDL

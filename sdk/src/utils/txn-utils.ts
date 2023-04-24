@@ -54,23 +54,20 @@ export async function checkMergedTransactionSizeIsValid(
   }
 }
 
-export function contextToBuilderOptions(
+export function contextOptionsToBuilderOptions(
   opts: WhirlpoolContextOptions
 ): TransactionBuilderOptions | undefined {
-  if (opts) {
-    return {
-      defaultBuildOption: {
-        ...defaultTransactionBuilderOptions.defaultBuildOption,
-        ...opts.userDefaultBuildOptions,
-      },
-      defaultSendOption: {
-        ...defaultTransactionBuilderOptions.defaultSendOption,
-        ...opts.userDefaultSendOptions,
-      },
-      defaultConfirmationCommitment:
-        opts.userDefaultConfirmCommitment ??
-        defaultTransactionBuilderOptions.defaultConfirmationCommitment,
-    };
-  }
-  return undefined;
+  return {
+    defaultBuildOption: {
+      ...defaultTransactionBuilderOptions.defaultBuildOption,
+      ...opts.userDefaultBuildOptions,
+    },
+    defaultSendOption: {
+      ...defaultTransactionBuilderOptions.defaultSendOption,
+      ...opts.userDefaultSendOptions,
+    },
+    defaultConfirmationCommitment:
+      opts.userDefaultConfirmCommitment ??
+      defaultTransactionBuilderOptions.defaultConfirmationCommitment,
+  };
 }

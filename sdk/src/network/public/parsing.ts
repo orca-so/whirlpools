@@ -1,17 +1,17 @@
+import { BorshAccountsCoder, Idl } from "@coral-xyz/anchor";
+import { TokenUtil } from "@orca-so/common-sdk";
 import { AccountInfo, MintInfo, MintLayout, u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
 import {
-  WhirlpoolsConfigData,
-  WhirlpoolData,
-  PositionData,
-  TickArrayData,
   AccountName,
   FeeTierData,
   PositionBundleData,
+  PositionData,
+  TickArrayData,
+  WhirlpoolData,
+  WhirlpoolsConfigData,
 } from "../../types/public";
-import { BorshAccountsCoder, Idl } from "@project-serum/anchor";
-import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
-import { TokenUtil } from "@orca-so/common-sdk";
 
 /**
  * Static abstract class definition to parse entities.
@@ -151,7 +151,7 @@ export class ParsablePositionBundle {
       return null;
     }
   }
-} 
+}
 
 /**
  * @category Parsables

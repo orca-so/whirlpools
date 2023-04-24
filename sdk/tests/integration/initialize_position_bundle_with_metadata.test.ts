@@ -1,31 +1,28 @@
+import * as anchor from "@coral-xyz/anchor";
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 import { deriveATA, PDA } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { AccountInfo, ASSOCIATED_TOKEN_PROGRAM_ID, MintInfo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import {
   METADATA_PROGRAM_ADDRESS,
   PDAUtil,
-  PositionBundleData,
   POSITION_BUNDLE_SIZE,
+  PositionBundleData,
   toTx,
-  WhirlpoolContext,
   WHIRLPOOL_NFT_UPDATE_AUTH,
+  WhirlpoolContext
 } from "../../src";
 import {
   createMintInstructions,
-  mintToByAuthority,
+  mintToByAuthority
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initializePositionBundleWithMetadata } from "../utils/init-utils";
 
 describe("initialize_position_bundle_with_metadata", () => {
-  const provider = anchor.AnchorProvider.local(undefined, {
-    commitment: "confirmed",
-    preflightCommitment: "confirmed",
-  });
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
-  anchor.setProvider(anchor.AnchorProvider.env());
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -101,10 +98,10 @@ describe("initialize_position_bundle_with_metadata", () => {
 
     const mintAddress = positionMint.toBase58();
     const nftName = WPB_METADATA_NAME_PREFIX
-                  + " "
-                  + mintAddress.slice(0, 4)
-                  + "..."
-                  + mintAddress.slice(-4);
+      + " "
+      + mintAddress.slice(0, 4)
+      + "..."
+      + mintAddress.slice(-4);
 
     assert.ok(metadataPda != null);
     const metadata = await Metadata.load(provider.connection, metadataPda.publicKey);
@@ -217,7 +214,6 @@ describe("initialize_position_bundle_with_metadata", () => {
     await createMintTx.buildAndExecute();
 
     const tx = await createInitializePositionBundleWithMetadataTx(ctx, {}, positionBundleMintKeypair);
-  
     await assert.rejects(
       tx.buildAndExecute(),
       (err) => { return JSON.stringify(err).includes("already in use") }
@@ -226,11 +222,11 @@ describe("initialize_position_bundle_with_metadata", () => {
 
   describe("invalid input account", () => {
     it("should be failed: invalid position bundle address", async () => {
-      const tx = await createInitializePositionBundleWithMetadataTx(ctx, { 
+      const tx = await createInitializePositionBundleWithMetadataTx(ctx, {
         // invalid parameter
         positionBundle: PDAUtil.getPositionBundle(ctx.program.programId, Keypair.generate().publicKey).publicKey,
       });
-        
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0x7d6/ // ConstraintSeeds
@@ -238,11 +234,11 @@ describe("initialize_position_bundle_with_metadata", () => {
     });
 
     it("should be failed: invalid metadata address", async () => {
-      const tx = await createInitializePositionBundleWithMetadataTx(ctx, { 
+      const tx = await createInitializePositionBundleWithMetadataTx(ctx, {
         // invalid parameter
         positionBundleMetadata: PDAUtil.getPositionBundleMetadata(Keypair.generate().publicKey).publicKey,
       });
-      
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0x5/ // InvalidMetadataKey: cannot create Metadata
@@ -250,11 +246,11 @@ describe("initialize_position_bundle_with_metadata", () => {
     });
 
     it("should be failed: invalid ATA address", async () => {
-      const tx = await createInitializePositionBundleWithMetadataTx(ctx, { 
+      const tx = await createInitializePositionBundleWithMetadataTx(ctx, {
         // invalid parameter
         positionBundleTokenAccount: await deriveATA(ctx.wallet.publicKey, Keypair.generate().publicKey),
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /An account required by the instruction is missing/ // Anchor cannot create derived ATA
@@ -262,11 +258,11 @@ describe("initialize_position_bundle_with_metadata", () => {
     });
 
     it("should be failed: invalid update auth", async () => {
-      const tx = await createInitializePositionBundleWithMetadataTx(ctx, { 
+      const tx = await createInitializePositionBundleWithMetadataTx(ctx, {
         // invalid parameter
         metadataUpdateAuth: Keypair.generate().publicKey,
       });
-      
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0x7dc/ // ConstraintAddress
@@ -274,11 +270,11 @@ describe("initialize_position_bundle_with_metadata", () => {
     });
 
     it("should be failed: invalid token program", async () => {
-      const tx = await createInitializePositionBundleWithMetadataTx(ctx, { 
+      const tx = await createInitializePositionBundleWithMetadataTx(ctx, {
         // invalid parameter
         tokenProgram: ASSOCIATED_TOKEN_PROGRAM_ID,
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0xbc0/ // InvalidProgramId
@@ -286,11 +282,11 @@ describe("initialize_position_bundle_with_metadata", () => {
     });
 
     it("should be failed: invalid system program", async () => {
-      const tx = await createInitializePositionBundleWithMetadataTx(ctx, { 
+      const tx = await createInitializePositionBundleWithMetadataTx(ctx, {
         // invalid parameter
         systemProgram: TOKEN_PROGRAM_ID,
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0xbc0/ // InvalidProgramId
@@ -298,11 +294,11 @@ describe("initialize_position_bundle_with_metadata", () => {
     });
 
     it("should be failed: invalid rent sysvar", async () => {
-      const tx = await createInitializePositionBundleWithMetadataTx(ctx, { 
+      const tx = await createInitializePositionBundleWithMetadataTx(ctx, {
         // invalid parameter
         rent: anchor.web3.SYSVAR_CLOCK_PUBKEY,
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0xbc7/ // AccountSysvarMismatch
@@ -310,11 +306,11 @@ describe("initialize_position_bundle_with_metadata", () => {
     });
 
     it("should be failed: invalid associated token program", async () => {
-      const tx = await createInitializePositionBundleWithMetadataTx(ctx, { 
+      const tx = await createInitializePositionBundleWithMetadataTx(ctx, {
         // invalid parameter
         associatedTokenProgram: TOKEN_PROGRAM_ID,
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0xbc0/ // InvalidProgramId
@@ -322,11 +318,11 @@ describe("initialize_position_bundle_with_metadata", () => {
     });
 
     it("should be failed: invalid metadata program", async () => {
-      const tx = await createInitializePositionBundleWithMetadataTx(ctx, { 
+      const tx = await createInitializePositionBundleWithMetadataTx(ctx, {
         // invalid parameter
         metadataProgram: TOKEN_PROGRAM_ID,
       });
-    
+
       await assert.rejects(
         tx.buildAndExecute(),
         /0x7dc/ // ConstraintAddress

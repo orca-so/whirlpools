@@ -1,5 +1,5 @@
-import { deriveATA, AddressUtil, MathUtil, PDA } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
+import { AddressUtil, deriveATA, MathUtil, PDA } from "@orca-so/common-sdk";
 import { NATIVE_MINT, u64 } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -8,7 +8,7 @@ import {
   createMint,
   mintToByAuthority,
   TickSpacing,
-  ZERO_BN,
+  ZERO_BN
 } from ".";
 import {
   InitConfigParams,
@@ -19,12 +19,12 @@ import {
   OpenPositionParams,
   PDAUtil,
   PriceMath,
-  TickUtil,
   TICK_ARRAY_SIZE,
+  TickUtil,
   toTx,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
 import {
@@ -35,7 +35,7 @@ import {
   generateDefaultOpenBundledPositionParams,
   generateDefaultOpenPositionParams,
   TestConfigParams,
-  TestWhirlpoolsConfigKeypairs,
+  TestWhirlpoolsConfigKeypairs
 } from "./test-builders";
 
 interface TestPoolParams {
@@ -283,7 +283,9 @@ export function getTokenAccsForPools(
     mints.push(pool.tokenMintA);
     mints.push(pool.tokenMintB);
   }
-  return mints.map((mint) => tokenAccounts.find((acc) => acc.mint === mint)!.account);
+  return mints.map((mint) =>
+    tokenAccounts.find((acc) => acc.mint.equals(mint))!.account
+  );
 }
 
 /**
@@ -576,8 +578,8 @@ export async function initTestPoolWithTokens(
   );
   await ctx.connection.confirmTransaction({
     signature: airdropTx,
-    ...(await ctx.connection.getLatestBlockhash()),
-  });
+    ...(await ctx.connection.getLatestBlockhash("confirmed")),
+  }, "confirmed");
 
   const tokenAccountA = await createAndMintToAssociatedTokenAccount(
     provider,
@@ -968,7 +970,7 @@ export async function openBundledPosition(
     ctx,
     whirlpool,
     positionBundleMint,
-    bundleIndex,  
+    bundleIndex,
     tickLowerIndex,
     tickUpperIndex,
     owner,
@@ -979,7 +981,6 @@ export async function openBundledPosition(
   if (funder) {
     tx.addSigner(funder);
   }
-  
   const txId = await tx.buildAndExecute();
   return { txId, params };
 }

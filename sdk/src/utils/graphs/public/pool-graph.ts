@@ -1,4 +1,4 @@
-import { Address } from "@project-serum/anchor";
+import { Address } from "@coral-xyz/anchor";
 
 /**
  * An object containing the token pairs of a Whirlpool.

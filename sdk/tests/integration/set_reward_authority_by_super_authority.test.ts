@@ -1,12 +1,13 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
 import { TickSpacing } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 
 describe("set_reward_authority_by_super_authority", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -97,7 +98,7 @@ describe("set_reward_authority_by_super_authority", () => {
           rewardIndex: 0,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /.*signature verification fail.*/i
     );
   });
 

@@ -1,5 +1,5 @@
+import { Address, BN } from "@coral-xyz/anchor";
 import { AddressUtil, MathUtil, Percentage } from "@orca-so/common-sdk";
-import { Address, BN } from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";

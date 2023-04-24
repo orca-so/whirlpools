@@ -1,9 +1,9 @@
+import * as anchor from "@coral-xyz/anchor";
 import { PDA } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
-import { InitPoolParams, METADATA_PROGRAM_ADDRESS, PositionBundleData, POSITION_BUNDLE_SIZE, toTx, WhirlpoolIx } from "../../src";
+import { InitPoolParams, POSITION_BUNDLE_SIZE, PositionBundleData, toTx, WhirlpoolIx } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
 import {
   approveToken,
@@ -11,17 +11,15 @@ import {
   ONE_SOL,
   systemTransferTx,
   TickSpacing,
-  transfer,
+  transfer
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initializePositionBundle, initializePositionBundleWithMetadata, initTestPool, openBundledPosition } from "../utils/init-utils";
 
 describe("delete_position_bundle", () => {
-  const provider = anchor.AnchorProvider.local(undefined, {
-    commitment: "confirmed",
-    preflightCommitment: "confirmed",
-  });
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
-  anchor.setProvider(anchor.AnchorProvider.env());
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -402,7 +400,7 @@ describe("delete_position_bundle", () => {
       await assert.rejects(
         tx.buildAndExecute(),
         /0x7dc/  // ConstraintAddress
-      );      
+      );
     });
 
     it("should be failed: invalid position bundle mint", async () => {
@@ -429,7 +427,7 @@ describe("delete_position_bundle", () => {
       await assert.rejects(
         tx.buildAndExecute(),
         /0x7dc/  // ConstraintAddress
-      );      
+      );
     });
 
     it("should be failed: invalid ATA (amount is zero)", async () => {
@@ -448,7 +446,7 @@ describe("delete_position_bundle", () => {
             ctx.wallet.publicKey,
             [],
             1
-          )    
+          )
         ],
         cleanupInstructions: [],
         signers: []

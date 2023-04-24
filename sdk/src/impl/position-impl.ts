@@ -1,3 +1,4 @@
+import { Address } from "@coral-xyz/anchor";
 import {
   AddressUtil,
   deriveATA,
@@ -6,7 +7,6 @@ import {
   TransactionBuilder,
   ZERO,
 } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
@@ -105,7 +105,8 @@ export class PositionImpl implements Position {
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      this.ctx.txBuilderOpts
     );
 
     let tokenOwnerAccountA: PublicKey;
@@ -181,7 +182,8 @@ export class PositionImpl implements Position {
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      this.ctx.txBuilderOpts
     );
     let tokenOwnerAccountA: PublicKey;
     let tokenOwnerAccountB: PublicKey;
@@ -251,7 +253,11 @@ export class PositionImpl implements Position {
       );
     }
 
-    let txBuilder = new TransactionBuilder(this.ctx.provider.connection, this.ctx.provider.wallet);
+    let txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet,
+      this.ctx.txBuilderOpts
+    );
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
 
@@ -348,7 +354,8 @@ export class PositionImpl implements Position {
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
-      this.ctx.provider.wallet
+      this.ctx.provider.wallet,
+      this.ctx.txBuilderOpts
     );
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();

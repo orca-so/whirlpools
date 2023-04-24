@@ -1,6 +1,6 @@
+import * as anchor from "@coral-xyz/anchor";
+import { web3 } from "@coral-xyz/anchor";
 import { PDA } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
-import { web3 } from "@project-serum/anchor";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
@@ -24,12 +24,13 @@ import {
   TickSpacing,
   ZERO_BN
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool, openPosition } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
 
 describe("open_position", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { deriveATA, MathUtil, Percentage } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
@@ -13,7 +13,8 @@ import {
   WhirlpoolClient,
   WhirlpoolContext
 } from "../../../src";
-import { createAssociatedTokenAccount, TickSpacing, transfer, ZERO_BN } from "../../utils";
+import { createAssociatedTokenAccount, sleep, TickSpacing, transfer, ZERO_BN } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 
 interface SharedTestContext {
@@ -32,10 +33,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
   const liquidityAmount = new u64(10_000_000);
 
   before(() => {
-    const provider = anchor.AnchorProvider.local(undefined, {
-      commitment: "confirmed",
-      preflightCommitment: "confirmed",
-    });
+    const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;
@@ -81,6 +79,9 @@ describe("WhirlpoolImpl#closePosition()", () => {
       tickArray1: tickArrayPda.publicKey,
       tickArray2: tickArrayPda.publicKey,
     })).buildAndExecute()
+
+    // accrue rewards
+    await sleep(1200);
   }
 
   async function removeLiquidity(fixture: WhirlpoolTestFixture) {
@@ -273,6 +274,10 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ],
       });
 
+      // accrue rewards
+      // closePosition does not attempt to create an ATA unless reward has accumulated.
+      await sleep(1200);
+
       await removeLiquidity(fixture);
       await collectFees(fixture);
       await testClosePosition(fixture);
@@ -311,6 +316,10 @@ describe("WhirlpoolImpl#closePosition()", () => {
           },
         ],
       });
+
+      // accrue rewards
+      // closePosition does not attempt to create an ATA unless reward has accumulated.
+      await sleep(1200);
 
       await testClosePosition(fixture);
     });

@@ -1,31 +1,31 @@
+import * as anchor from "@coral-xyz/anchor";
 import { AddressUtil, Percentage, ZERO } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import BN from "bn.js";
 import {
-  buildWhirlpoolClient,
-  PDAUtil,
   PriceMath,
-  swapQuoteByInputToken,
-  swapQuoteWithParams,
   SwapUtils,
   TICK_ARRAY_SIZE,
   WhirlpoolContext,
+  buildWhirlpoolClient,
+  swapQuoteByInputToken,
+  swapQuoteWithParams
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
 import { adjustForSlippage } from "../../../../src/utils/position-util";
 import { TickSpacing } from "../../../utils";
+import { defaultConfirmOptions } from "../../../utils/const";
 import {
   arrayTickIndexToTickIndex,
   buildPosition,
-  setupSwapTest,
+  setupSwapTest
 } from "../../../utils/swap-test-utils";
 import { getTickArrays } from "../../../utils/testDataTypes";
 
 describe("swap arrays test", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -121,7 +121,7 @@ describe("swap arrays test", () => {
       (err: Error) => err.message.indexOf(expectedError) != -1
     );
   });
-  
+
   /**
    * |-------------c1--c2-|xxxxxxxxxxxxxxxxx|-------------------|
    */

@@ -1,5 +1,5 @@
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { WhirlpoolContext } from "../..";

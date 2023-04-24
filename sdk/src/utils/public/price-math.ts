@@ -1,5 +1,5 @@
+import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { BN } from "@project-serum/anchor";
 import Decimal from "decimal.js";
 import { MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "../../types/public";
 import { TickUtil } from "./tick-utils";

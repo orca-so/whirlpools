@@ -1,8 +1,8 @@
+import * as anchor from "@coral-xyz/anchor";
+import { web3 } from "@coral-xyz/anchor";
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 import { PDA, TransactionBuilder } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
-import { web3 } from "@project-serum/anchor";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import {
@@ -14,26 +14,27 @@ import {
   OpenPositionWithMetadataBumpsData,
   PDAUtil,
   PositionData,
-  toTx,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
+  toTx
 } from "../../src";
 import { openPositionAccounts } from "../../src/utils/instructions-util";
 import {
+  ONE_SOL,
+  TickSpacing,
+  ZERO_BN,
   createMint,
   createMintInstructions,
   mintToByAuthority,
-  ONE_SOL,
-  systemTransferTx,
-  TickSpacing,
-  ZERO_BN
+  systemTransferTx
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool, openPositionWithMetadata } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
 
 describe("open_position_with_metadata", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -308,7 +309,7 @@ describe("open_position_with_metadata", () => {
 
     it("fails with non-program metadata program", async () => {
       const notMetadataProgram = Keypair.generate();
-      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet).addInstruction(
+      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet, ctx.txBuilderOpts).addInstruction(
         buildOpenWithAccountOverrides({
           metadataProgram: notMetadataProgram.publicKey,
         })
@@ -323,7 +324,7 @@ describe("open_position_with_metadata", () => {
     });
 
     it("fails with non-metadata program ", async () => {
-      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet).addInstruction(
+      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet, ctx.txBuilderOpts).addInstruction(
         buildOpenWithAccountOverrides({
           metadataProgram: TOKEN_PROGRAM_ID,
         })
@@ -339,7 +340,7 @@ describe("open_position_with_metadata", () => {
 
     it("fails with non-valid update_authority program", async () => {
       const notUpdateAuth = Keypair.generate();
-      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet).addInstruction(
+      const tx = new TransactionBuilder(ctx.provider.connection, ctx.wallet, ctx.txBuilderOpts).addInstruction(
         buildOpenWithAccountOverrides({
           metadataUpdateAuth: notUpdateAuth.publicKey,
         })

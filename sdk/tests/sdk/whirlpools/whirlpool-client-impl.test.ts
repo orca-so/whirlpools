@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -7,14 +7,15 @@ import {
   PDAUtil,
   PriceMath,
   TickUtil,
-  WhirlpoolContext,
+  WhirlpoolContext
 } from "../../../src";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import { buildTestPoolParams } from "../../utils/init-utils";
 
 describe("whirlpool-client-impl", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const client = buildWhirlpoolClient(ctx);
@@ -104,7 +105,7 @@ describe("whirlpool-client-impl", () => {
 
     assert.ok(
       tickArrayAccountAfter.startTickIndex ===
-        TickUtil.getStartTickIndex(initalTick, poolInitInfo.tickSpacing)
+      TickUtil.getStartTickIndex(initalTick, poolInitInfo.tickSpacing)
     );
     assert.ok(tickArrayAccountAfter.ticks.length > 0);
     assert.ok(tickArrayAccountAfter.whirlpool.equals(expectedPda.publicKey));

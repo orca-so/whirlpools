@@ -1,10 +1,8 @@
+import { AnchorProvider } from "@coral-xyz/anchor";
 import { AddressUtil, MathUtil, PDA, Percentage } from "@orca-so/common-sdk";
-import { AnchorProvider } from "@project-serum/anchor";
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  NATIVE_MINT,
-  Token,
-  TOKEN_PROGRAM_ID,
+  ASSOCIATED_TOKEN_PROGRAM_ID, Token,
+  TOKEN_PROGRAM_ID
 } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -14,13 +12,10 @@ import {
   InitConfigParams,
   InitFeeTierParams,
   InitPoolParams,
-  InitTickArrayParams,
-  OpenPositionParams,
-  OpenBundledPositionParams,
-  PDAUtil,
+  InitTickArrayParams, OpenBundledPositionParams, OpenPositionParams, PDAUtil,
   PoolUtil,
   PriceMath,
-  Whirlpool,
+  Whirlpool
 } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
 

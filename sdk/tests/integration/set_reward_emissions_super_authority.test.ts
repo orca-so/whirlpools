@@ -1,11 +1,12 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolIx, WhirlpoolsConfigData } from "../../src";
+import { defaultConfirmOptions } from "../utils/const";
 import { generateDefaultConfigParams } from "../utils/test-builders";
 
 describe("set_reward_emissions_super_authority", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -51,7 +52,7 @@ describe("set_reward_emissions_super_authority", () => {
           newRewardEmissionsSuperAuthority: provider.wallet.publicKey,
         },
       }),
-      /Signature verification failed/
+      /.*signature verification fail.*/i
     );
   });
 

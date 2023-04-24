@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, PDA } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -8,24 +8,25 @@ import {
   MIN_SQRT_PRICE,
   PDAUtil,
   PriceMath,
-  toTx,
   WhirlpoolContext,
   WhirlpoolData,
   WhirlpoolIx,
+  toTx
 } from "../../src";
 import {
-  asyncAssertTokenVault,
-  createMint,
   ONE_SOL,
-  systemTransferTx,
   TickSpacing,
   ZERO_BN,
+  asyncAssertTokenVault,
+  createMint,
+  systemTransferTx
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { buildTestPoolParams, initTestPool } from "../utils/init-utils";
 
 describe("initialize_pool", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

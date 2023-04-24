@@ -1,5 +1,5 @@
+import { BN } from "@coral-xyz/anchor";
 import { Percentage, ZERO } from "@orca-so/common-sdk";
-import { BN } from "@project-serum/anchor";
 import invariant from "tiny-invariant";
 import { DecreaseLiquidityInput } from "../../instructions";
 import {

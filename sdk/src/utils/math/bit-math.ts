@@ -1,5 +1,5 @@
-import { ZERO, ONE, MathUtil, TWO, U64_MAX } from "@orca-so/common-sdk";
-import { BN } from "@project-serum/anchor";
+import { BN } from "@coral-xyz/anchor";
+import { MathUtil, ONE, TWO, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { MathErrorCode, WhirlpoolsError } from "../../errors/errors";
 
 export class BitMath {

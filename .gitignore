@@ -8,5 +8,5 @@ test-ledger/
 sdk/dist/
 sdk/node_modules
 .vscode/
-.yalc/
-yalc.lock
+**/.yalc/
+**/yalc.lock

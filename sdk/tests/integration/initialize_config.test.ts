@@ -1,18 +1,19 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import {
   InitConfigParams,
   toTx,
   WhirlpoolContext,
   WhirlpoolIx,
-  WhirlpoolsConfigData,
+  WhirlpoolsConfigData
 } from "../../src";
 import { ONE_SOL, systemTransferTx } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { generateDefaultConfigParams } from "../utils/test-builders";
 
 describe("initialize_config", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

@@ -1,13 +1,14 @@
-import * as assert from "assert";
-import * as anchor from "@project-serum/anchor";
-import { WhirlpoolContext } from "../../../../src/context";
-import { SwapUtils, SwapDirection, PDAUtil, TICK_ARRAY_SIZE } from "../../../../src";
-import { testWhirlpoolData } from "../../../utils/testDataTypes";
+import * as anchor from "@coral-xyz/anchor";
 import { Keypair } from "@solana/web3.js";
+import * as assert from "assert";
+import { PDAUtil, SwapDirection, SwapUtils, TICK_ARRAY_SIZE } from "../../../../src";
+import { WhirlpoolContext } from "../../../../src/context";
+import { defaultConfirmOptions } from "../../../utils/const";
+import { testWhirlpoolData } from "../../../utils/testDataTypes";
 
 describe("SwapUtils tests", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
 
@@ -67,9 +68,9 @@ describe("SwapUtils tests", () => {
       );
 
       const expected = [
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*0).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*-1).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*-2).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 0).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * -1).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * -2).publicKey,
       ];
       result.forEach((k, i) => assert.equal(k.toBase58(), expected[i].toBase58()));
     });
@@ -91,9 +92,9 @@ describe("SwapUtils tests", () => {
       );
 
       const expected = [
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*0).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*-1).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*-2).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 0).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * -1).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * -2).publicKey,
       ];
       result.forEach((k, i) => assert.equal(k.toBase58(), expected[i].toBase58()));
     });
@@ -115,9 +116,9 @@ describe("SwapUtils tests", () => {
       );
 
       const expected = [
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*0).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*-1).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*-2).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 0).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * -1).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * -2).publicKey,
       ];
       result.forEach((k, i) => assert.equal(k.toBase58(), expected[i].toBase58()));
     });
@@ -139,9 +140,9 @@ describe("SwapUtils tests", () => {
       );
 
       const expected = [
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*0).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*1).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*2).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 0).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 1).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 2).publicKey,
       ];
       result.forEach((k, i) => assert.equal(k.toBase58(), expected[i].toBase58()));
     });
@@ -163,9 +164,9 @@ describe("SwapUtils tests", () => {
       );
 
       const expected = [
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*0).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*1).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*2).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 0).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 1).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 2).publicKey,
       ];
       result.forEach((k, i) => assert.equal(k.toBase58(), expected[i].toBase58()));
     });
@@ -187,9 +188,9 @@ describe("SwapUtils tests", () => {
       );
 
       const expected = [
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*1).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*2).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*3).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 1).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 2).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 3).publicKey,
       ];
       result.forEach((k, i) => assert.equal(k.toBase58(), expected[i].toBase58()));
     });
@@ -211,9 +212,9 @@ describe("SwapUtils tests", () => {
       );
 
       const expected = [
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*1).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*2).publicKey,
-        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray*3).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 1).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 2).publicKey,
+        PDAUtil.getTickArray(programId, whirlpoolPubkey, ticksInArray * 3).publicKey,
       ];
       result.forEach((k, i) => assert.equal(k.toBase58(), expected[i].toBase58()));
     });

@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
@@ -12,21 +12,22 @@ import {
   toTx,
   twoHopSwapQuoteFromSwapQuotes,
   WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import { TwoHopSwapParams } from "../../src/instructions";
 import { getTokenBalance, TickSpacing } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import {
   buildTestAquariums,
   FundedPositionParams,
   getDefaultAquarium,
   getTokenAccsForPools,
-  InitAquariumParams,
+  InitAquariumParams
 } from "../utils/init-utils";
 
 describe("two-hop swap", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -70,14 +71,14 @@ describe("two-hop swap", () => {
     beforeEach(async () => {
       const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
       const { tokenAccounts, mintKeys, pools } = aquarium;
-  
+
       const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
       const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
       const whirlpoolOne = await client.getPool(whirlpoolOneKey, true);
       const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, true);
-  
+
       const [inputToken, intermediaryToken, _outputToken] = mintKeys;
-  
+
       const quote = await swapQuoteByInputToken(
         whirlpoolOne,
         inputToken,
@@ -87,7 +88,7 @@ describe("two-hop swap", () => {
         fetcher,
         true
       );
-  
+
       const quote2 = await swapQuoteByInputToken(
         whirlpoolTwo,
         intermediaryToken,
@@ -97,7 +98,7 @@ describe("two-hop swap", () => {
         fetcher,
         true
       );
-  
+
       const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
       baseIxParams = {
         ...twoHopQuote,
@@ -155,7 +156,7 @@ describe("two-hop swap", () => {
         /0x7d6/ // Constraint Seeds
       );
     });
-  
+
     it("fails invalid tick array one", async () => {
       await rejectParams(
         {
@@ -296,7 +297,7 @@ describe("two-hop swap", () => {
       arrayCount: 12,
       aToB: false,
     });
-  
+
 
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;

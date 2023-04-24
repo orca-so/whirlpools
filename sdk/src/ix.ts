@@ -1,5 +1,5 @@
+import { Program } from "@coral-xyz/anchor";
 import { PDA } from "@orca-so/common-sdk";
-import { Program } from "@project-serum/anchor";
 import { WhirlpoolContext } from ".";
 import { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
@@ -468,7 +468,7 @@ export class WhirlpoolIx {
 
   /**
    * Deletes a PositionBundle account.
-   * 
+   *
    * #### Special Errors
    * `PositionBundleNotDeletable` - The provided position bundle has open positions.
    *
@@ -505,7 +505,7 @@ export class WhirlpoolIx {
 
   /**
    * Close a bundled position in a Whirlpool.
-   * 
+   *
    * #### Special Errors
    * `InvalidBundleIndex` - If the provided bundle index is out of bounds.
    * `ClosePositionNotEmpty` - The provided position account is not empty.

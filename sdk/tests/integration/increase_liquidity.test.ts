@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
@@ -9,34 +9,36 @@ import {
   PriceMath,
   TickArrayData,
   TickUtil,
-  toTx,
   WhirlpoolContext,
   WhirlpoolData,
   WhirlpoolIx,
+  toTx
 } from "../../src";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
 import {
+  MAX_U64,
+  TickSpacing,
+  ZERO_BN,
   approveToken,
   assertTick,
   createAndMintToTokenAccount,
   createMint,
   createTokenAccount,
   getTokenBalance,
-  MAX_U64,
-  TickSpacing,
-  transfer,
-  ZERO_BN,
+  sleep,
+  transfer
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
 import {
   generateDefaultInitTickArrayParams,
-  generateDefaultOpenPositionParams,
+  generateDefaultOpenPositionParams
 } from "../utils/test-builders";
 
 describe("increase_liquidity", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -63,6 +65,9 @@ describe("increase_liquidity", () => {
       tokenAmount
     );
 
+    // To check if rewardLastUpdatedTimestamp is updated
+    await sleep(1200);
+
     await toTx(
       ctx,
       WhirlpoolIx.increaseLiquidityIx(ctx.program, {
@@ -86,7 +91,7 @@ describe("increase_liquidity", () => {
     assert.ok(position.liquidity.eq(liquidityAmount));
 
     const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
-    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
+    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gt(poolBefore.rewardLastUpdatedTimestamp));
     assert.equal(
       await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
       tokenAmount.tokenA.toString()
@@ -217,7 +222,7 @@ describe("increase_liquidity", () => {
       TickUtil.getStartTickIndex(tickUpperIndex, tickSpacing)
     ).publicKey;
 
-    await new TransactionBuilder(ctx.provider.connection, ctx.provider.wallet)
+    await new TransactionBuilder(ctx.provider.connection, ctx.provider.wallet, ctx.txBuilderOpts)
       // TODO: create a ComputeBudgetInstruction to request more compute
       .addInstruction(
         WhirlpoolIx.initTickArrayIx(
@@ -970,7 +975,7 @@ describe("increase_liquidity", () => {
           tickArrayUpper: positionInitInfo.tickArrayUpper,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /.*signature verification fail.*/i
     );
   });
 

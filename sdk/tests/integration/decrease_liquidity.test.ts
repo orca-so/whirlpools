@@ -1,33 +1,35 @@
+import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
   PositionData,
   TickArrayData,
-  toTx,
   WhirlpoolContext,
   WhirlpoolData,
   WhirlpoolIx,
+  toTx
 } from "../../src";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../src/quotes/public/decrease-liquidity-quote";
 import {
+  TickSpacing,
+  ZERO_BN,
   approveToken,
   assertTick,
   createAndMintToTokenAccount,
   createMint,
   createTokenAccount,
-  TickSpacing,
-  transfer,
-  ZERO_BN,
+  sleep,
+  transfer
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
 
 describe("decrease_liquidity", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -44,6 +46,9 @@ describe("decrease_liquidity", () => {
     const { poolInitInfo, tokenAccountA, tokenAccountB, positions } = fixture.getInfos();
     const { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair } = poolInitInfo;
     const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+
+    // To check if rewardLastUpdatedTimestamp is updated
+    await sleep(1200);
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: new anchor.BN(1_000_000),
@@ -73,7 +78,7 @@ describe("decrease_liquidity", () => {
 
     const remainingLiquidity = liquidityAmount.sub(removalQuote.liquidityAmount);
     const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
-    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
+    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gt(poolBefore.rewardLastUpdatedTimestamp));
     assert.ok(poolAfter.liquidity.eq(remainingLiquidity));
 
     const position = await fetcher.getPosition(positions[0].publicKey, true);
@@ -778,7 +783,7 @@ describe("decrease_liquidity", () => {
           tickArrayUpper: position.tickArrayUpper,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /.*signature verification fail.*/i
     );
   });
 

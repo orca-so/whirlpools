@@ -1,11 +1,9 @@
-import { Program } from "@project-serum/anchor";
-import { Whirlpool } from "../artifacts/whirlpool";
-import { SystemProgram, SYSVAR_RENT_PUBKEY, PublicKey, Keypair } from "@solana/web3.js";
-import { Instruction } from "@orca-so/common-sdk";
-import { WhirlpoolBumpsData } from "../types/public/anchor-types";
+import { BN, Program } from "@coral-xyz/anchor";
+import { Instruction, PDA } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { BN } from "@project-serum/anchor";
-import { PDA } from "@orca-so/common-sdk";
+import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import { Whirlpool } from "../artifacts/whirlpool";
+import { WhirlpoolBumpsData } from "../types/public/anchor-types";
 
 /**
  * Parameters to initialize a Whirlpool account.

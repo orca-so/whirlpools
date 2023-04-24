@@ -1,9 +1,5 @@
 import invariant from "tiny-invariant";
-import {
-  PositionBundleData,
-  POSITION_BUNDLE_SIZE,
-} from "../../types/public";
-
+import { PositionBundleData, POSITION_BUNDLE_SIZE } from "../../types/public";
 
 /**
  * A collection of utility functions when interacting with a PositionBundle.
@@ -80,7 +76,7 @@ export class PositionBundleUtil {
       if (occupied) {
         result.push(index);
       }
-    })
+    });
     return result;
   }
 
@@ -96,7 +92,7 @@ export class PositionBundleUtil {
       if (!occupied) {
         result.push(index);
       }
-    })
+    });
     return result;
   }
 
@@ -106,7 +102,7 @@ export class PositionBundleUtil {
    * @param positionBundle The position bundle to be checked
    * @returns The first unoccupied bundle index, null if the position bundle is full
    */
-  public static findUnoccupiedBundleIndex(positionBundle: PositionBundleData): number|null {
+  public static findUnoccupiedBundleIndex(positionBundle: PositionBundleData): number | null {
     const unoccupied = PositionBundleUtil.getUnoccupiedBundleIndexes(positionBundle);
     return unoccupied.length === 0 ? null : unoccupied[0];
   }
@@ -120,10 +116,10 @@ export class PositionBundleUtil {
   public static convertBitmapToArray(positionBundle: PositionBundleData): boolean[] {
     const result: boolean[] = [];
     positionBundle.positionBitmap.map((bitmap) => {
-      for (let offset=0; offset<8; offset++) {
+      for (let offset = 0; offset < 8; offset++) {
         result.push((bitmap & (1 << offset)) !== 0);
       }
-    })
+    });
     return result;
   }
 }

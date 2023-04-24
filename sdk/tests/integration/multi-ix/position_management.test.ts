@@ -1,14 +1,15 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolIx } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { TickSpacing } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPool, openPosition } from "../../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 
 describe("position management tests", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

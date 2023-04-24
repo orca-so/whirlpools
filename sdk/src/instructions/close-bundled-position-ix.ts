@@ -1,6 +1,6 @@
+import { Program } from "@coral-xyz/anchor";
 import { Instruction } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { Program } from "@project-serum/anchor";
 import { Whirlpool } from "../artifacts/whirlpool";
 
 /**
@@ -25,7 +25,7 @@ export type CloseBundledPositionParams = {
 
 /**
  * Close a bundled position in a Whirlpool.
- * 
+ *
  * #### Special Errors
  * `InvalidBundleIndex` - If the provided bundle index is out of bounds.
  * `ClosePositionNotEmpty` - The provided position account is not empty.

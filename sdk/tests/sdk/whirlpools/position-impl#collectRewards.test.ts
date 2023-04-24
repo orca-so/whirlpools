@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { deriveATA, MathUtil } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
@@ -11,7 +11,8 @@ import {
   WhirlpoolClient,
   WhirlpoolContext
 } from "../../../src";
-import { TickSpacing } from "../../utils";
+import { sleep, TickSpacing } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 
 interface SharedTestContext {
@@ -30,11 +31,7 @@ describe("PositionImpl#collectRewards()", () => {
   const liquidityAmount = new u64(10_000_000);
 
   before(() => {
-    const provider = anchor.AnchorProvider.local(undefined, {
-      commitment: "confirmed",
-      preflightCommitment: "confirmed",
-    });
-
+    const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -79,6 +76,9 @@ describe("PositionImpl#collectRewards()", () => {
       const otherWallet = anchor.web3.Keypair.generate();
       const preCollectPoolData = pool.getData();
 
+      // accrue rewards
+      await sleep(1200);
+
       await (
         await position.collectRewards(
           rewards.map((r) => r.rewardMint),
@@ -100,6 +100,11 @@ describe("PositionImpl#collectRewards()", () => {
         tickUpper: position.getUpperTickData(),
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
+
+      // Check that the expectation is not zero
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        assert.ok(!quote[i]!.isZero());
+      }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = await deriveATA(otherWallet.publicKey, rewards[i].rewardMint);
@@ -140,6 +145,9 @@ describe("PositionImpl#collectRewards()", () => {
       const otherWallet = anchor.web3.Keypair.generate();
       const preCollectPoolData = pool.getData();
 
+      // accrue rewards
+      await sleep(1200);
+
       await (
         await position.collectRewards(
           rewards.map((r) => r.rewardMint),
@@ -162,6 +170,11 @@ describe("PositionImpl#collectRewards()", () => {
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
 
+      // Check that the expectation is not zero
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        assert.ok(!quote[i]!.isZero());
+      }
+      
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = await deriveATA(otherWallet.publicKey, rewards[i].rewardMint);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, true);

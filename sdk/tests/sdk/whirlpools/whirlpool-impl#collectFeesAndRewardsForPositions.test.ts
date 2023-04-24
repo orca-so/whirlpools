@@ -1,7 +1,8 @@
+import * as anchor from "@coral-xyz/anchor";
 import { deriveATA, MathUtil, SendTxRequest, TransactionBuilder, TransactionProcessor, ZERO } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
-import * as assert from "assert";
 import { ASSOCIATED_TOKEN_PROGRAM_ID, NATIVE_MINT, Token, TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
+import { PublicKey } from "@solana/web3.js";
+import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
@@ -14,12 +15,12 @@ import {
   Whirlpool,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../../src";
 import { TickSpacing, ZERO_BN } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { FundedPositionInfo } from "../../utils/init-utils";
-import { PublicKey } from "@solana/web3.js";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -38,14 +39,15 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
   const sleep = (second: number) => new Promise(resolve => setTimeout(resolve, second * 1000))
 
   before(() => {
-    const provider = anchor.AnchorProvider.local(undefined, {
-      commitment: "confirmed",
-      preflightCommitment: "confirmed",
-    });
+    const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;
-    const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
+    const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program, undefined, undefined, {
+      userDefaultBuildOptions: {
+        maxSupportedTransactionVersion: "legacy",
+      }
+    });
     const whirlpoolClient = buildWhirlpoolClient(whirlpoolCtx);
 
     testCtx = {
@@ -143,7 +145,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
 
-    for (let i=0; i<NUM_REWARDS; i++) {
+    for (let i = 0; i < NUM_REWARDS; i++) {
       await toTx(
         ctx,
         WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
@@ -171,7 +173,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     await burnAndCloseATA(ctx, ataA);
     await burnAndCloseATA(ctx, ataB);
 
-    for (let i=0; i<NUM_REWARDS; i++) {
+    for (let i = 0; i < NUM_REWARDS; i++) {
       if (PoolUtil.isRewardInitialized(pool.getRewardInfos()[i])) {
         const mintReward = pool.getRewardInfos()[i].mint;
         const ataReward = await deriveATA(ctx.wallet.publicKey, mintReward);
@@ -201,7 +203,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
       []
     );
 
-    const tx = new TransactionBuilder(ctx.connection, ctx.wallet);
+    const tx = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
     tx.addInstruction({
       instructions: [burnIx, closeIx],
       cleanupInstructions: [],
@@ -224,7 +226,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     await createATA(ctx, ataA, mintA);
     await createATA(ctx, ataB, mintB);
 
-    for (let i=0; i<NUM_REWARDS; i++) {
+    for (let i = 0; i < NUM_REWARDS; i++) {
       if (PoolUtil.isRewardInitialized(pool.getRewardInfos()[i])) {
         const mintReward = pool.getRewardInfos()[i].mint;
         const ataReward = await deriveATA(ctx.wallet.publicKey, mintReward);
@@ -248,7 +250,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
       ctx.wallet.publicKey
     );
 
-    const tx = new TransactionBuilder(ctx.connection, ctx.wallet);
+    const tx = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
     tx.addInstruction({
       instructions: [createATAIx],
       cleanupInstructions: [],
@@ -262,7 +264,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     const positions: FundedPositionInfo[] = [];
     const numOfPool = 3;
 
-    for (let i=0; i<numOfPool; i++) {
+    for (let i = 0; i < numOfPool; i++) {
       const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
         tokenAIsNative,
         tickSpacing,
@@ -336,9 +338,11 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     );
     assert.ok(txs.length >= 2);
 
+    // TODO: We should not depend on Transaction Processor for mass txn sending. SendTxRequest is also a hack.
+    // Remove when we have an official multi-transaction sending solution.
     const requests: SendTxRequest[] = [];
     for (const tx of txs) {
-      requests.push(await tx.build());
+      requests.push(await tx.build() as SendTxRequest);
     }
 
     const parallel = true;
@@ -347,7 +351,10 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const txResults = await execute();
     for (const result of txResults) {
-      assert.ok(result.status === "fulfilled");
+      if (result.status === "rejected") {
+        console.log(result.reason);
+      }
+      assert.equal(result.status, "fulfilled");
     }
 
     // check all positions have no fees and rewards

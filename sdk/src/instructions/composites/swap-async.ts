@@ -23,7 +23,7 @@ export async function swapAsync(
 ): Promise<TransactionBuilder> {
   const { wallet, whirlpool, swapInput } = params;
   const { aToB, amount } = swapInput;
-  const txBuilder = new TransactionBuilder(ctx.connection, ctx.wallet);
+  const txBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
   const tickArrayAddresses = [swapInput.tickArray0, swapInput.tickArray1, swapInput.tickArray2];
 
   let uninitializedArrays = await TickArrayUtil.getUninitializedArraysString(

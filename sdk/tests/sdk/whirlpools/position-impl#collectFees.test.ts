@@ -1,7 +1,7 @@
+import * as anchor from "@coral-xyz/anchor";
 import { deriveATA, MathUtil } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
-import * as assert from "assert";
 import { u64 } from "@solana/spl-token";
+import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
@@ -11,9 +11,10 @@ import {
   Whirlpool,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../../src";
 import { TickSpacing, ZERO_BN } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 
 interface SharedTestContext {
@@ -31,10 +32,7 @@ describe("PositionImpl#collectFees()", () => {
   const liquidityAmount = new u64(10_000_000);
 
   before(() => {
-    const provider = anchor.AnchorProvider.local(undefined, {
-      commitment: "confirmed",
-      preflightCommitment: "confirmed",
-    });
+    const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;

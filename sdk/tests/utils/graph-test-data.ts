@@ -1,4 +1,4 @@
-import { Address } from "@project-serum/anchor";
+import { Address } from "@coral-xyz/anchor";
 import { PoolTokenPair } from "../../src";
 
 export const solConnectedPools: PoolTokenPair[] = [

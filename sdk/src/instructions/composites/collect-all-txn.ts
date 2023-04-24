@@ -1,6 +1,6 @@
+import { Address } from "@coral-xyz/anchor";
 import { Instruction, resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
 import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
-import { Address } from "@project-serum/anchor";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PositionData, WhirlpoolContext } from "../..";
@@ -8,10 +8,10 @@ import { WhirlpoolIx } from "../../ix";
 import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
 import {
-  getAssociatedTokenAddressSync,
   createWSOLAccountInstructions,
+  getAssociatedTokenAddressSync,
 } from "../../utils/spl-token-utils";
-import { convertListToMap, checkMergedTransactionSizeIsValid } from "../../utils/txn-utils";
+import { checkMergedTransactionSizeIsValid, convertListToMap } from "../../utils/txn-utils";
 import { getTokenMintsFromWhirlpools } from "../../utils/whirlpool-ata-utils";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
 
@@ -133,7 +133,7 @@ export async function collectAllForPositionsTxns(
     allMints.mintMap.map((mint) => mint.toBase58())
   );
 
-  const latestBlockhash = await ctx.connection.getLatestBlockhash("singleGossip");
+  const latestBlockhash = await ctx.connection.getLatestBlockhash();
   const txBuilders: TransactionBuilder[] = [];
 
   let posIndex = 0;
@@ -142,7 +142,7 @@ export async function collectAllForPositionsTxns(
   let reattempt = false;
   while (posIndex < positionList.length) {
     if (!pendingTxBuilder || !touchedMints) {
-      pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet);
+      pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       touchedMints = new Set<string>();
       resolvedAtas[NATIVE_MINT.toBase58()] = createWSOLAccountInstructions(
         receiverKey,
@@ -163,7 +163,7 @@ export async function collectAllForPositionsTxns(
       resolvedAtas,
       touchedMints
     );
-    const positionTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet);
+    const positionTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
     positionTxBuilder.addInstructions(collectIxForPosition);
 
     // Attempt to push the new instructions into the pending builder

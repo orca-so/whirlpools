@@ -1,5 +1,5 @@
+import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { BN } from "@project-serum/anchor";
 import invariant from "tiny-invariant";
 import { NUM_REWARDS, PositionData, TickData, WhirlpoolData } from "../../types/public";
 import { BitMath } from "../../utils/math/bit-math";

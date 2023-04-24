@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import {
   InitPoolParams,
@@ -6,15 +6,16 @@ import {
   toTx,
   WhirlpoolContext,
   WhirlpoolData,
-  WhirlpoolIx,
+  WhirlpoolIx
 } from "../../src";
 import { TickSpacing } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 import { createInOrderMints } from "../utils/test-builders";
 
 describe("set_default_protocol_fee_rate", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -109,7 +110,7 @@ describe("set_default_protocol_fee_rate", () => {
           feeAuthority: feeAuthorityKeypair.publicKey,
         },
       }),
-      /Signature verification failed/
+      /.*signature verification fail.*/i
     );
   });
 

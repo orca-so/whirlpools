@@ -1,5 +1,5 @@
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
 import { AccountInfo, AccountLayout, MintInfo } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
@@ -8,9 +8,9 @@ import {
   PositionBundleData,
   PositionData,
   TickArrayData,
+  WHIRLPOOL_CODER,
   WhirlpoolData,
   WhirlpoolsConfigData,
-  WHIRLPOOL_CODER,
 } from "../..";
 import { FeeTierData, getAccountSize } from "../../types/public";
 import {
@@ -190,7 +190,10 @@ export class AccountFetcher {
    * @param refresh force cache refresh
    * @returns position bundle account
    */
-  public async getPositionBundle(address: Address, refresh = false): Promise<PositionBundleData | null> {
+  public async getPositionBundle(
+    address: Address,
+    refresh = false
+  ): Promise<PositionBundleData | null> {
     return this.get(AddressUtil.toPubKey(address), ParsablePositionBundle, refresh);
   }
 

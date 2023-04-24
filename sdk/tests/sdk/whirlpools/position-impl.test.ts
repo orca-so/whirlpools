@@ -1,21 +1,22 @@
+import * as anchor from "@coral-xyz/anchor";
 import { deriveATA, Percentage } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
   decreaseLiquidityQuoteByLiquidity,
   increaseLiquidityQuoteByInputToken,
-  PriceMath,
+  PriceMath
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { createAssociatedTokenAccount, TickSpacing, transfer } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
 import { initPosition, mintTokensToTestAccount } from "../../utils/test-builders";
 
 describe("position-impl", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;

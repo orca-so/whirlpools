@@ -1,5 +1,5 @@
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import { Address } from "@project-serum/anchor";
 import { AccountFetcher } from "../../../network/public";
 import { convertListToMap } from "../../txn-utils";
 import { AdjacencyListPoolGraph } from "../adjacency-list-pool-graph";

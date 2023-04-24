@@ -1,4 +1,4 @@
-import * as anchor from "@project-serum/anchor";
+import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolIx } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
@@ -9,14 +9,14 @@ import {
   setAuthority,
   TickSpacing,
   transfer,
-  ZERO_BN,
+  ZERO_BN
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initializePositionBundle, initTestPool, initTestPoolWithLiquidity, openBundledPosition, openPosition } from "../utils/init-utils";
 
 describe("close_position", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
 
@@ -189,7 +189,7 @@ describe("close_position", () => {
           positionTokenAccount: params.positionTokenAccount,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /.*signature verification fail.*/i
     );
   });
 
@@ -227,7 +227,7 @@ describe("close_position", () => {
           positionTokenAccount: params.positionTokenAccount,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /.*signature verification fail.*/i
     );
   });
 

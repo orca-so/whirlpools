@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { deriveATA, MathUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
@@ -19,24 +19,20 @@ import {
   createAssociatedTokenAccount,
   getTokenBalance,
   ONE_SOL,
+  sleep,
   systemTransferTx,
   TickSpacing,
   transfer,
   ZERO_BN
 } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
 
 describe("whirlpool-impl", () => {
-  // The default commitment of AnchorProvider is "processed".
-  // But commitment of some Token operations is based on “confirmed”, and preflight simulation sometimes fail.
-  // So use "confirmed" consistently.
-  const provider = anchor.AnchorProvider.local(undefined, {
-    commitment: "confirmed",
-    preflightCommitment: "confirmed",
-  });
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -112,9 +108,8 @@ describe("whirlpool-impl", () => {
     );
     openIx.addSigner(funderKeypair);
 
-    // TODO: We should be using TransactionProcessor after we figure this out
-    // https://app.asana.com/0/1200519991815470/1202452931559633/f
-    await TransactionBuilder.sendAll(ctx.provider, [initTickArrayTx, openIx]);
+    await initTickArrayTx.buildAndExecute();
+    await openIx.buildAndExecute();
 
     // Verify position exists and numbers fit input parameters
     const positionAddress = PDAUtil.getPosition(ctx.program.programId, positionMint).publicKey;
@@ -222,9 +217,8 @@ describe("whirlpool-impl", () => {
     );
     openIx.addSigner(funderKeypair);
 
-    // TODO: We should be using TransactionProcessor after we figure this out
-    // https://app.asana.com/0/1200519991815470/1202452931559633/f
-    await TransactionBuilder.sendAll(ctx.provider, [initTickArrayTx, openIx]);
+    await initTickArrayTx.buildAndExecute();
+    await openIx.buildAndExecute();
 
     // Verify position exists and numbers fit input parameters
     const positionAddress = PDAUtil.getPosition(ctx.program.programId, positionMint).publicKey;
@@ -386,6 +380,10 @@ describe("whirlpool-impl", () => {
       })
     ).buildAndExecute();
 
+    // accrue rewards
+    // closePosition does not attempt to create an ATA unless reward has accumulated.
+    await sleep(1200);
+
     const [positionWithFees] = positions;
 
     // Transfer the position token to another wallet
@@ -452,7 +450,10 @@ describe("whirlpool-impl", () => {
 
     // To calculate the rewards that have accumulated up to the timing of the close,
     // the block time at transaction execution is used.
-    const tx = await ctx.provider.connection.getTransaction(signature);
+    // TODO: maxSupportedTransactionVersion needs to come from ctx
+    const tx = await ctx.provider.connection.getTransaction(signature, {
+      maxSupportedTransactionVersion: 0
+    });
     const closeTimestampInSeconds = new anchor.BN(tx!.blockTime!.toString());
     const rewardsQuote = collectRewardsQuote({
       whirlpool: poolData,
@@ -559,6 +560,10 @@ describe("whirlpool-impl", () => {
       })
     ).buildAndExecute();
 
+    // accrue rewards
+    // closePosition does not attempt to create an ATA unless reward has accumulated.
+    await sleep(1200);
+
     const [positionWithFees] = positions;
 
     // Transfer the position token to another wallet
@@ -628,7 +633,10 @@ describe("whirlpool-impl", () => {
 
     // To calculate the rewards that have accumulated up to the timing of the close,
     // the block time at transaction execution is used.
-    const tx = await ctx.provider.connection.getTransaction(signature);
+    // TODO: maxSupportedTransactionVersion needs to come from ctx
+    const tx = await ctx.provider.connection.getTransaction(signature, {
+      maxSupportedTransactionVersion: 0,
+    });
     const closeTimestampInSeconds = new anchor.BN(tx!.blockTime!.toString());
     const rewardsQuote = collectRewardsQuote({
       whirlpool: poolData,

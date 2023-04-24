@@ -1,7 +1,7 @@
-import { Program } from "@project-serum/anchor";
-import { Whirlpool } from "../artifacts/whirlpool";
+import { Program } from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import { Whirlpool } from "../artifacts/whirlpool";
 
 import { Instruction } from "@orca-so/common-sdk";
 

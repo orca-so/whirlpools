@@ -8,10 +8,13 @@ url = "https://anchor.projectserum.com"
 cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
-# wait for update to anchor to support cloning
-# [[test.genesis]]
-# address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
-# program = "../metaplex-program-library/token-metadata/target/deploy/mpl_token_metadata.so"
-
 [scripts]
 test = "ts-mocha -p sdk/tests/tsconfig.json -t 1000000 sdk/tests/**/*.test.ts"
+
+[test.validator]
+slots_per_epoch = "33"
+ticks_per_slot = 7
+url = "https://api.mainnet-beta.solana.com"
+
+[[test.validator.clone]]
+address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"

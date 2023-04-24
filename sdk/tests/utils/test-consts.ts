@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
-import * as anchor from "@project-serum/anchor";
 
 export const TEST_TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(TOKEN_PROGRAM_ID.toString());
 

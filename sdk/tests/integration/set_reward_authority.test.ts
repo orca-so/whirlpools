@@ -1,13 +1,14 @@
+import * as anchor from "@coral-xyz/anchor";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import * as assert from "assert";
 import { NUM_REWARDS, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
 import { TickSpacing } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 
 describe("set_reward_authority", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -16,7 +17,7 @@ describe("set_reward_authority", () => {
     const { configKeypairs, poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
 
     const newKeypairs = generateKeypairs(NUM_REWARDS);
-    const txBuilder = new TransactionBuilder(provider.connection, provider.wallet);
+    const txBuilder = new TransactionBuilder(provider.connection, provider.wallet, ctx.txBuilderOpts);
     for (let i = 0; i < NUM_REWARDS; i++) {
       txBuilder.addInstruction(
         WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
@@ -29,7 +30,9 @@ describe("set_reward_authority", () => {
     }
     await txBuilder
       .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
-      .buildAndExecute();
+      .buildAndExecute({
+        maxSupportedTransactionVersion: undefined,
+      });
 
     const pool = (await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey)) as WhirlpoolData;
     for (let i = 0; i < NUM_REWARDS; i++) {
@@ -104,7 +107,7 @@ describe("set_reward_authority", () => {
           rewardIndex: 0,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /.*signature verification fail.*/i
     );
   });
 });

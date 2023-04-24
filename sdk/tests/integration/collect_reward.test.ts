@@ -1,5 +1,5 @@
+import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import * as anchor from "@project-serum/anchor";
 import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
@@ -20,12 +20,13 @@ import {
   transfer,
   ZERO_BN
 } from "../utils";
+import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
 
 describe("collect_reward", () => {
-  const provider = anchor.AnchorProvider.local();
-  anchor.setProvider(anchor.AnchorProvider.env());
+  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -67,7 +68,9 @@ describe("collect_reward", () => {
       rewards,
     } = fixture.getInfos();
 
-    await sleep(500);
+    // accrue rewards
+    await sleep(1200);
+
     await toTx(
       ctx,
       WhirlpoolIx.updateFeesAndRewardsIx(ctx.program, {
@@ -90,6 +93,11 @@ describe("collect_reward", () => {
       tickUpper: positionPreCollect.getUpperTickData(),
       timeStampInSeconds: pool.getData().rewardLastUpdatedTimestamp
     });
+
+    // Check that the expectation is not zero
+    for (let i = 0; i < NUM_REWARDS; i++) {
+      assert.ok(!expectation[i]!.isZero());
+    }
 
     // Perform collect rewards tx
     for (let i = 0; i < NUM_REWARDS; i++) {
@@ -144,6 +152,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -199,6 +211,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -259,6 +275,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -304,6 +324,10 @@ describe("collect_reward", () => {
       poolInitInfo: { whirlpoolPda },
       positions,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const fakeRewardMint = await createMint(provider);
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -340,6 +364,9 @@ describe("collect_reward", () => {
       ],
     });
     const { positions, rewards } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
 
     const {
       poolInitInfo: { whirlpoolPda },
@@ -382,6 +409,9 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
 
     const rewardOwnerAccount = await createTokenAccount(
       provider,
@@ -428,6 +458,9 @@ describe("collect_reward", () => {
       rewards,
     } = fixture.getInfos();
 
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -468,6 +501,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -509,6 +546,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -551,6 +592,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -571,7 +616,7 @@ describe("collect_reward", () => {
           rewardIndex: 0,
         })
       ).buildAndExecute(),
-      /Signature verification failed/
+      /.*signature verification fail.*/i
     );
   });
 
@@ -591,6 +636,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       rewards[0].rewardMint,
@@ -629,6 +678,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       tokenMintA,
@@ -667,6 +720,10 @@ describe("collect_reward", () => {
       positions,
       rewards,
     } = fixture.getInfos();
+
+    // accrue rewards
+    await sleep(1200);
+
     const rewardOwnerAccount = await createTokenAccount(
       provider,
       tokenMintA,

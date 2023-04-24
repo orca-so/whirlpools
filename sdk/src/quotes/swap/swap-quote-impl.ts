@@ -1,10 +1,10 @@
+import { BN } from "@coral-xyz/anchor";
 import { ZERO } from "@orca-so/common-sdk";
-import { SwapQuoteParam, SwapQuote } from "../public";
-import { BN } from "@project-serum/anchor";
-import { TickArraySequence } from "./tick-array-sequence";
-import { computeSwap } from "./swap-manager";
-import { MAX_SQRT_PRICE, MAX_SWAP_TICK_ARRAYS, MIN_SQRT_PRICE } from "../../types/public";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
+import { MAX_SQRT_PRICE, MAX_SWAP_TICK_ARRAYS, MIN_SQRT_PRICE } from "../../types/public";
+import { SwapQuote, SwapQuoteParam } from "../public";
+import { computeSwap } from "./swap-manager";
+import { TickArraySequence } from "./tick-array-sequence";
 
 /**
  * Figure out the quote parameters needed to successfully complete this trade on chain

@@ -79,7 +79,7 @@ export class AdjacencyListPoolGraph implements PoolGraph {
   getAllPaths(options?: PathSearchOptions | undefined): PathSearchEntries {
     const tokenPairCombinations = _.combinations(this.tokens, 2) as [string, string][];
     const searchTokenPairsInString = tokenPairCombinations.map(([startMint, endMint]) => {
-      return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
+      return [startMint, endMint] as const;
     });
 
     const searchTokenPairsToFind = searchTokenPairsInString.filter(([startMint, endMint]) => {

@@ -8,8 +8,8 @@ import { Path, PoolGraph, SwapUtils } from "../utils/public";
 import { getBestRoutesFromQuoteMap } from "./convert-quote-map";
 import {
   ExecutableRoute,
-  RouterUtils,
   RouteSelectOptions,
+  RouterUtils,
   RoutingOptions,
   Trade,
   TradeRoute,
@@ -18,7 +18,7 @@ import {
 import { getQuoteMap } from "./quote-map";
 
 export class WhirlpoolRouterImpl implements WhirlpoolRouter {
-  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) {}
+  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) { }
 
   async findAllRoutes(
     trade: Trade,
@@ -32,7 +32,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
       return Promise.reject(
         new WhirlpoolsError(
           `Could not find route for ${tokenIn} -> ${tokenOut}`,
-          RouteQueryErrorCode.ROUTE_DOES_NOT_EXIST
+          RouteQueryErrorCode.RouteDoesNotExist
         )
       );
     }
@@ -41,7 +41,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
       return Promise.reject(
         new WhirlpoolsError(
           `findBestRoutes error - input amount is zero.`,
-          RouteQueryErrorCode.ZERO_INPUT_AMOUNT
+          RouteQueryErrorCode.ZeroInputAmount
         )
       );
     }
@@ -74,7 +74,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
           return Promise.reject(
             new WhirlpoolsError(
               `All swap quote generation failed on amount too high.`,
-              RouteQueryErrorCode.TRADE_AMOUNT_TOO_HIGH
+              RouteQueryErrorCode.TradeAmountTooHigh
             )
           );
         }
@@ -85,7 +85,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
       return Promise.reject(
         new WhirlpoolsError(
           `Stack error received on quote generation.`,
-          RouteQueryErrorCode.GENERAL,
+          RouteQueryErrorCode.General,
           e.stack
         )
       );

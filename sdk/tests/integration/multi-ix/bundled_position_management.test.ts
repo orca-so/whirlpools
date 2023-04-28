@@ -477,6 +477,9 @@ describe("bundled position management tests", () => {
     // increase feeGrowth
     await accrueFees(fixture);
 
+    // increase rewardGrowth
+    await sleep(2);
+
     // initialize position bundle
     const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
     const bundleIndex = Math.floor(Math.random() * POSITION_BUNDLE_SIZE);

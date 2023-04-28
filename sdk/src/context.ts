@@ -9,7 +9,7 @@ import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js"
 import { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
 import { AccountFetcher } from "./network/public";
-import { contextToBuilderOptions } from "./utils/txn-utils";
+import { contextOptionsToBuilderOptions } from "./utils/txn-utils";
 
 /**
  * Default settings used when interacting with transactions.
@@ -48,7 +48,14 @@ export class WhirlpoolContext {
       preflightCommitment: opts.userDefaultConfirmCommitment || "confirmed",
     });
     const program = new Program(WhirlpoolIDL as Idl, programId, anchorProvider);
-    return new WhirlpoolContext(anchorProvider, anchorProvider.wallet, program, fetcher, lookupTableFetcher, opts);
+    return new WhirlpoolContext(
+      anchorProvider,
+      anchorProvider.wallet,
+      program,
+      fetcher,
+      lookupTableFetcher,
+      opts
+    );
   }
 
   public static fromWorkspace(
@@ -58,7 +65,14 @@ export class WhirlpoolContext {
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ) {
-    return new WhirlpoolContext(provider, provider.wallet, program, fetcher, lookupTableFetcher, opts);
+    return new WhirlpoolContext(
+      provider,
+      provider.wallet,
+      program,
+      fetcher,
+      lookupTableFetcher,
+      opts
+    );
   }
 
   public static withProvider(
@@ -69,7 +83,14 @@ export class WhirlpoolContext {
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
     const program = new Program(WhirlpoolIDL as Idl, programId, provider);
-    return new WhirlpoolContext(provider, provider.wallet, program, fetcher, lookupTableFetcher, opts);
+    return new WhirlpoolContext(
+      provider,
+      provider.wallet,
+      program,
+      fetcher,
+      lookupTableFetcher,
+      opts
+    );
   }
 
   public constructor(
@@ -88,7 +109,7 @@ export class WhirlpoolContext {
     this.fetcher = fetcher;
     this.lookupTableFetcher = lookupTableFetcher;
     this.opts = opts;
-    this.txBuilderOpts = contextToBuilderOptions(this.opts);
+    this.txBuilderOpts = contextOptionsToBuilderOptions(this.opts);
   }
 
   // TODO: Add another factory method to build from on-chain IDL

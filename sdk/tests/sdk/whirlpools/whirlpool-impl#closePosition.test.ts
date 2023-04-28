@@ -13,7 +13,7 @@ import {
   WhirlpoolClient,
   WhirlpoolContext
 } from "../../../src";
-import { createAssociatedTokenAccount, TickSpacing, transfer, ZERO_BN } from "../../utils";
+import { createAssociatedTokenAccount, sleep, TickSpacing, transfer, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 
@@ -79,6 +79,9 @@ describe("WhirlpoolImpl#closePosition()", () => {
       tickArray1: tickArrayPda.publicKey,
       tickArray2: tickArrayPda.publicKey,
     })).buildAndExecute()
+
+    // accrue rewards
+    await sleep(1200);
   }
 
   async function removeLiquidity(fixture: WhirlpoolTestFixture) {
@@ -271,6 +274,10 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ],
       });
 
+      // accrue rewards
+      // closePosition does not attempt to create an ATA unless reward has accumulated.
+      await sleep(1200);
+
       await removeLiquidity(fixture);
       await collectFees(fixture);
       await testClosePosition(fixture);
@@ -309,6 +316,10 @@ describe("WhirlpoolImpl#closePosition()", () => {
           },
         ],
       });
+
+      // accrue rewards
+      // closePosition does not attempt to create an ATA unless reward has accumulated.
+      await sleep(1200);
 
       await testClosePosition(fixture);
     });

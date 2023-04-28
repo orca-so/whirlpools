@@ -176,12 +176,25 @@ export async function createAndMintToAssociatedTokenAccount(
     return tokenAccount;
   }
 
-  const tokenAccount = await createAssociatedTokenAccount(
-    provider,
-    mint,
-    destinationWalletKey,
-    payerKey
-  );
+  const tokenAccounts = await provider.connection.getParsedTokenAccountsByOwner(destinationWalletKey, {
+    programId: TOKEN_PROGRAM_ID,
+  });
+
+  let tokenAccount = tokenAccounts.value.map((account) => {
+    if(account.account.data.parsed.info.mint === mint.toString()) {
+      return account.pubkey
+    }
+  }).filter(Boolean)[0];
+
+  if(!tokenAccount) {
+    tokenAccount = await createAssociatedTokenAccount(
+      provider,
+      mint,
+      destinationWalletKey,
+      payerKey
+    );
+  }
+
   await mintToByAuthority(provider, mint, tokenAccount, new u64(amount.toString()));
   return tokenAccount;
 }

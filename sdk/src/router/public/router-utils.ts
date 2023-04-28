@@ -93,7 +93,7 @@ export class RouterUtils {
       let v0TxSize;
       if (opts.maxSupportedTransactionVersion !== "legacy" && ctx.lookupTableFetcher) {
         const addressesToLookup = RouterUtils.getTouchedTickArraysFromRoute(route);
-        if (addressesToLookup.length > MAX_LOOKUP_TABLE_SIZE) {
+        if (addressesToLookup.length > MAX_LOOKUP_TABLE_FETCH_SIZE) {
           continue;
         }
 
@@ -196,7 +196,7 @@ const ENCODED_LIMIT = 1644;
 const MEASURE_ROUTE_MAX = 100;
 
 // The maximum number of tick arrays to lookup per network request
-const MAX_LOOKUP_TABLE_SIZE = 50;
+const MAX_LOOKUP_TABLE_FETCH_SIZE = 50;
 
 // A dummy blockhash to use for measuring transaction sizes
 const MEASUREMENT_BLOCKHASH = {

@@ -97,6 +97,10 @@ export class AdjacencyListPoolGraph implements PoolGraph {
     const results = searchTokenPairsInString.reduce<PathSearchEntries>(
       (acc, [startMint, endMint]) => {
         const searchRouteId = PoolGraphUtils.getSearchPathId(startMint, endMint);
+        if (startMint === endMint) {
+          acc.push([searchRouteId, []]);
+          return acc;
+        }
 
         const [internalStartMint, internalEndMint] = [startMint, endMint].sort();
         const internalRouteId = getInternalRouteId(internalStartMint, internalEndMint, false);

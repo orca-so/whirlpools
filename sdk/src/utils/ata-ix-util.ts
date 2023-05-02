@@ -1,6 +1,4 @@
-import {
-  Token
-} from "@solana/spl-token";
+import { Token } from "@solana/spl-token";
 import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js";
 
 export function createAssociatedTokenAccountInstruction(

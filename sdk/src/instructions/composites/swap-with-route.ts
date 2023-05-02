@@ -43,7 +43,11 @@ export async function getSwapFromRoute(
   ctx: WhirlpoolContext,
   params: SwapFromRouteParams,
   refresh: boolean = false,
-  txBuilder: TransactionBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, contextOptionsToBuilderOptions(ctx.opts))
+  txBuilder: TransactionBuilder = new TransactionBuilder(
+    ctx.connection,
+    ctx.wallet,
+    contextOptionsToBuilderOptions(ctx.opts)
+  )
 ) {
   const { route, wallet, resolvedAtaAccounts, slippage } = params;
   const requiredAtas = new Set<string>();

@@ -1,4 +1,4 @@
-import { AddressUtil, LookupTableFetcher, Percentage } from "@orca-so/common-sdk";
+import { AddressUtil, LookupTableFetcher, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { AccountInfo } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { ExecutableRoute, RoutingOptions, TradeRoute } from ".";
@@ -20,10 +20,15 @@ export type AtaAccountInfo = Pick<AccountInfo, "address" | "owner" | "mint">;
  * @param slippageTolerance The slippage tolerance to use when selecting the best route.
  * @param maxSupportedTransactionVersion The maximum transaction version that the wallet supports.
  * @param availableAtaAccounts A list of ATA accounts that are available in this wallet to use for the swap.
+ * @param onRouteEvaluation
+ * A callback that is called right before a route is evaluated. Users have a chance to add additional instructions
+ * to be added for an accurate txn size measurement. (ex. Adding a priority fee ix to the transaction)
+ * 
  */
 export type RouteSelectOptions = {
   maxSupportedTransactionVersion: "legacy" | number;
   availableAtaAccounts?: AtaAccountInfo[];
+  onRouteEvaluation?: (route: Readonly<TradeRoute>, tx: TransactionBuilder) => void;
 };
 
 /**
@@ -76,6 +81,10 @@ export class RouterUtils {
         },
         false
       );
+
+      if (!!opts.onRouteEvaluation) {
+        opts.onRouteEvaluation(route, tx);
+      }
 
       try {
         const legacyTxSize = await tx.txnSize({

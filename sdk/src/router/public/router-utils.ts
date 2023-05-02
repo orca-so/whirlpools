@@ -22,7 +22,6 @@ export type AtaAccountInfo = Pick<AccountInfo, "address" | "owner" | "mint">;
  * @param availableAtaAccounts A list of ATA accounts that are available in this wallet to use for the swap.
  */
 export type RouteSelectOptions = {
-  slippageTolerance: Percentage;
   maxSupportedTransactionVersion: "legacy" | number;
   availableAtaAccounts?: AtaAccountInfo[];
 };
@@ -71,7 +70,7 @@ export class RouterUtils {
         ctx,
         {
           route,
-          slippage: opts.slippageTolerance,
+          slippage: Percentage.fromFraction(0, 100),
           resolvedAtaAccounts: opts.availableAtaAccounts ?? null,
           wallet: wallet.publicKey,
         },
@@ -158,7 +157,6 @@ export class RouterUtils {
   static getDefaultSelectOptions(): RouteSelectOptions {
     return {
       maxSupportedTransactionVersion: 0,
-      slippageTolerance: Percentage.fromFraction(1, 100),
     };
   }
 }

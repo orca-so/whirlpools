@@ -97,6 +97,8 @@ export class AdjacencyListPoolGraph implements PoolGraph {
     const results = searchTokenPairsInString.reduce<PathSearchEntries>(
       (acc, [startMint, endMint]) => {
         const searchRouteId = PoolGraphUtils.getSearchPathId(startMint, endMint);
+
+        // We do not support routes that routes between identical tokens
         if (startMint === endMint) {
           acc.push([searchRouteId, []]);
           return acc;

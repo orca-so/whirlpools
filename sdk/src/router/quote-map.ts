@@ -7,7 +7,7 @@ import { AccountFetcher } from "..";
 import { SwapErrorCode } from "../errors/errors";
 import { SwapQuoteParam, swapQuoteWithParams } from "../quotes/public";
 import { Path } from "../utils/public";
-import { batchBuildSwapQuoteParams, SwapQuoteRequest } from "./batch-swap-quote";
+import { SwapQuoteRequest, batchBuildSwapQuoteParams } from "./batch-swap-quote";
 import { RoutingOptions, Trade, TradeHop } from "./public";
 
 // Key between <splitPercent, array of quotes with successful hop quotes>
@@ -36,7 +36,7 @@ export async function getQuoteMap(
 
   const { percents, amounts } = getSplitPercentageAmts(tradeAmount, percentIncrement);
   // The max route length is the number of iterations of quoting that we need to do
-  const maxRouteLength = Math.max(...paths.map((path) => path.edges.length));
+  const maxRouteLength = Math.max(...paths.map((path) => path.edges.length), 0);
 
   // For hop 0 of all routes, get swap quotes using [inputAmount, inputTokenMint]
   // For hop 1..n of all routes, get swap quotes using [outputAmount, outputTokenMint] of hop n-1 as input
@@ -115,8 +115,8 @@ function populateQuoteMap(
       const [inputMint, outputMint] = aToB ? [mintA, mintB] : [mintB, mintA];
       path.calculatedEdgeQuotes[edgeIndex] = {
         success: true,
-        amountIn: amountSpecifiedIsInput ? tokenAmount : quote.otherAmountThreshold,
-        amountOut: amountSpecifiedIsInput ? quote.otherAmountThreshold : tokenAmount,
+        amountIn: amountSpecifiedIsInput ? tokenAmount : quote.estimatedAmountIn,
+        amountOut: amountSpecifiedIsInput ? quote.estimatedAmountOut : tokenAmount,
         whirlpool: request.whirlpool,
         inputMint,
         outputMint,

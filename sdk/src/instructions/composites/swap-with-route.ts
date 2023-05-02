@@ -266,7 +266,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
         quote: {
           ...swapQuoteTwo.quote,
           otherAmountThreshold: adjustForSlippage(
-            swapQuoteTwo.quote.otherAmountThreshold,
+            swapQuoteTwo.quote.estimatedAmountOut,
             slippage,
             false
           ),
@@ -278,7 +278,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
         quote: {
           ...swapQuoteOne.quote,
           otherAmountThreshold: adjustForSlippage(
-            swapQuoteOne.quote.otherAmountThreshold,
+            swapQuoteOne.quote.estimatedAmountIn,
             slippage,
             true
           ),

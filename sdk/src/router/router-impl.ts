@@ -28,7 +28,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
     const { tokenIn, tokenOut, tradeAmount, amountSpecifiedIsInput } = trade;
     const paths = this.poolGraph.getPath(tokenIn, tokenOut);
 
-    if (!paths) {
+    if (paths.length === 0) {
       return Promise.reject(
         new WhirlpoolsError(
           `Could not find route for ${tokenIn} -> ${tokenOut}`,

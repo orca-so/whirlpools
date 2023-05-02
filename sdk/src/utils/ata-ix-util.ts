@@ -1,18 +1,7 @@
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
-  Token,
-  TOKEN_PROGRAM_ID
+  Token
 } from "@solana/spl-token";
 import { PublicKey, SystemProgram, TransactionInstruction } from "@solana/web3.js";
-
-export async function deriveATA(ownerAddress: PublicKey, tokenMint: PublicKey): Promise<PublicKey> {
-  return await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    tokenMint,
-    ownerAddress
-  );
-}
 
 export function createAssociatedTokenAccountInstruction(
   associatedTokenProgramId: PublicKey,

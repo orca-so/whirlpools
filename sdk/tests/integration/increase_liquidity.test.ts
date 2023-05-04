@@ -25,6 +25,7 @@ import {
   createMint,
   createTokenAccount,
   getTokenBalance,
+  sleep,
   transfer
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -64,6 +65,9 @@ describe("increase_liquidity", () => {
       tokenAmount
     );
 
+    // To check if rewardLastUpdatedTimestamp is updated
+    await sleep(1200);
+
     await toTx(
       ctx,
       WhirlpoolIx.increaseLiquidityIx(ctx.program, {
@@ -87,7 +91,7 @@ describe("increase_liquidity", () => {
     assert.ok(position.liquidity.eq(liquidityAmount));
 
     const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
-    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
+    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gt(poolBefore.rewardLastUpdatedTimestamp));
     assert.equal(
       await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
       tokenAmount.tokenA.toString()

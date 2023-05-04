@@ -28,7 +28,7 @@ import {
 import { createAssociatedTokenAccountInstruction } from "../../utils/ata-ix-util";
 import { adjustForSlippage } from "../../utils/position-util";
 import { createWSOLAccountInstructions } from "../../utils/spl-token-utils";
-import { contextToBuilderOptions } from "../../utils/txn-utils";
+import { contextOptionsToBuilderOptions } from "../../utils/txn-utils";
 import { swapIx } from "../swap-ix";
 import { twoHopSwapIx } from "../two-hop-swap-ix";
 
@@ -43,7 +43,11 @@ export async function getSwapFromRoute(
   ctx: WhirlpoolContext,
   params: SwapFromRouteParams,
   refresh: boolean = false,
-  txBuilder: TransactionBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, contextToBuilderOptions(ctx.opts))
+  txBuilder: TransactionBuilder = new TransactionBuilder(
+    ctx.connection,
+    ctx.wallet,
+    contextOptionsToBuilderOptions(ctx.opts)
+  )
 ) {
   const { route, wallet, resolvedAtaAccounts, slippage } = params;
   const requiredAtas = new Set<string>();
@@ -266,7 +270,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
         quote: {
           ...swapQuoteTwo.quote,
           otherAmountThreshold: adjustForSlippage(
-            swapQuoteTwo.quote.otherAmountThreshold,
+            swapQuoteTwo.quote.estimatedAmountOut,
             slippage,
             false
           ),
@@ -278,7 +282,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
         quote: {
           ...swapQuoteOne.quote,
           otherAmountThreshold: adjustForSlippage(
-            swapQuoteOne.quote.otherAmountThreshold,
+            swapQuoteOne.quote.estimatedAmountIn,
             slippage,
             true
           ),

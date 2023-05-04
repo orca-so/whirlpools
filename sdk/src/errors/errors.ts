@@ -23,10 +23,10 @@ export enum SwapErrorCode {
 }
 
 export enum RouteQueryErrorCode {
-  ROUTE_DOES_NOT_EXIST = "ROUTE_DOES_NOT_EXIST",
-  TRADE_AMOUNT_TOO_HIGH = "TRADE_AMOUNT_TOO_HIGH",
-  ZERO_INPUT_AMOUNT = "ZERO_INPUT_AMOUNT",
-  GENERAL = "GENERAL",
+  RouteDoesNotExist = "RouteDoesNotExist",
+  TradeAmountTooHigh = "TradeAmountTooHigh",
+  ZeroInputAmount = "ZeroInputAmount",
+  General = "General",
 }
 
 export type WhirlpoolsErrorCode =

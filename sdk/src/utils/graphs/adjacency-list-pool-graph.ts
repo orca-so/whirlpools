@@ -79,7 +79,7 @@ export class AdjacencyListPoolGraph implements PoolGraph {
   getAllPaths(options?: PathSearchOptions | undefined): PathSearchEntries {
     const tokenPairCombinations = _.combinations(this.tokens, 2) as [string, string][];
     const searchTokenPairsInString = tokenPairCombinations.map(([startMint, endMint]) => {
-      return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
+      return [startMint, endMint] as const;
     });
 
     const searchTokenPairsToFind = searchTokenPairsInString.filter(([startMint, endMint]) => {
@@ -97,6 +97,12 @@ export class AdjacencyListPoolGraph implements PoolGraph {
     const results = searchTokenPairsInString.reduce<PathSearchEntries>(
       (acc, [startMint, endMint]) => {
         const searchRouteId = PoolGraphUtils.getSearchPathId(startMint, endMint);
+
+        // We do not support routes that routes between identical tokens
+        if (startMint === endMint) {
+          acc.push([searchRouteId, []]);
+          return acc;
+        }
 
         const [internalStartMint, internalEndMint] = [startMint, endMint].sort();
         const internalRouteId = getInternalRouteId(internalStartMint, internalEndMint, false);

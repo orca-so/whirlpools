@@ -1,4 +1,9 @@
-import { AddressUtil, LookupTableFetcher, Percentage } from "@orca-so/common-sdk";
+import {
+  AddressUtil,
+  LookupTableFetcher,
+  Percentage,
+  TransactionBuilder,
+} from "@orca-so/common-sdk";
 import { AccountInfo } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { ExecutableRoute, RoutingOptions, TradeRoute } from ".";
@@ -20,11 +25,15 @@ export type AtaAccountInfo = Pick<AccountInfo, "address" | "owner" | "mint">;
  * @param slippageTolerance The slippage tolerance to use when selecting the best route.
  * @param maxSupportedTransactionVersion The maximum transaction version that the wallet supports.
  * @param availableAtaAccounts A list of ATA accounts that are available in this wallet to use for the swap.
+ * @param onRouteEvaluation
+ * A callback that is called right before a route is evaluated. Users have a chance to add additional instructions
+ * to be added for an accurate txn size measurement. (ex. Adding a priority fee ix to the transaction)
+ *
  */
 export type RouteSelectOptions = {
-  slippageTolerance: Percentage;
   maxSupportedTransactionVersion: "legacy" | number;
   availableAtaAccounts?: AtaAccountInfo[];
+  onRouteEvaluation?: (route: Readonly<TradeRoute>, tx: TransactionBuilder) => void;
 };
 
 /**
@@ -71,12 +80,16 @@ export class RouterUtils {
         ctx,
         {
           route,
-          slippage: opts.slippageTolerance,
+          slippage: Percentage.fromFraction(0, 100),
           resolvedAtaAccounts: opts.availableAtaAccounts ?? null,
           wallet: wallet.publicKey,
         },
         false
       );
+
+      if (!!opts.onRouteEvaluation) {
+        opts.onRouteEvaluation(route, tx);
+      }
 
       try {
         const legacyTxSize = tx.txnSize({
@@ -93,7 +106,7 @@ export class RouterUtils {
       let v0TxSize;
       if (opts.maxSupportedTransactionVersion !== "legacy" && ctx.lookupTableFetcher) {
         const addressesToLookup = RouterUtils.getTouchedTickArraysFromRoute(route);
-        if (addressesToLookup.length > MAX_LOOKUP_TABLE_SIZE) {
+        if (addressesToLookup.length > MAX_LOOKUP_TABLE_FETCH_SIZE) {
           continue;
         }
 
@@ -158,7 +171,6 @@ export class RouterUtils {
   static getDefaultSelectOptions(): RouteSelectOptions {
     return {
       maxSupportedTransactionVersion: 0,
-      slippageTolerance: Percentage.fromFraction(1, 100),
     };
   }
 }
@@ -196,7 +208,7 @@ const ENCODED_LIMIT = 1644;
 const MEASURE_ROUTE_MAX = 100;
 
 // The maximum number of tick arrays to lookup per network request
-const MAX_LOOKUP_TABLE_SIZE = 50;
+const MAX_LOOKUP_TABLE_FETCH_SIZE = 50;
 
 // A dummy blockhash to use for measuring transaction sizes
 const MEASUREMENT_BLOCKHASH = {

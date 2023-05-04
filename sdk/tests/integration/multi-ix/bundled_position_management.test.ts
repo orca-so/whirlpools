@@ -477,6 +477,9 @@ describe("bundled position management tests", () => {
     // increase feeGrowth
     await accrueFees(fixture);
 
+    // increase rewardGrowth
+    await sleep(2);
+
     // initialize position bundle
     const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
     const bundleIndex = Math.floor(Math.random() * POSITION_BUNDLE_SIZE);
@@ -629,7 +632,7 @@ describe("bundled position management tests", () => {
       const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
       assert.ok(postClose === null);
     }
-  }).retries(4); // TODO: remove retries. Sometimes this fails on a weird AssertionError.
+  });
 
   describe("Single Transaction", () => {
     it("successfully openBundledPosition+increaseLiquidity / decreaseLiquidity+closeBundledPosition in single Tx", async () => {

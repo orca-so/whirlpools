@@ -19,6 +19,7 @@ import {
   createAssociatedTokenAccount,
   getTokenBalance,
   ONE_SOL,
+  sleep,
   systemTransferTx,
   TickSpacing,
   transfer,
@@ -379,6 +380,10 @@ describe("whirlpool-impl", () => {
       })
     ).buildAndExecute();
 
+    // accrue rewards
+    // closePosition does not attempt to create an ATA unless reward has accumulated.
+    await sleep(1200);
+
     const [positionWithFees] = positions;
 
     // Transfer the position token to another wallet
@@ -554,6 +559,10 @@ describe("whirlpool-impl", () => {
         oracle: oraclePda.publicKey,
       })
     ).buildAndExecute();
+
+    // accrue rewards
+    // closePosition does not attempt to create an ATA unless reward has accumulated.
+    await sleep(1200);
 
     const [positionWithFees] = positions;
 

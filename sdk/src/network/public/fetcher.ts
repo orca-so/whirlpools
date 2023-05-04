@@ -8,9 +8,9 @@ import {
   PositionBundleData,
   PositionData,
   TickArrayData,
+  WHIRLPOOL_CODER,
   WhirlpoolData,
   WhirlpoolsConfigData,
-  WHIRLPOOL_CODER,
 } from "../..";
 import { FeeTierData, getAccountSize } from "../../types/public";
 import {

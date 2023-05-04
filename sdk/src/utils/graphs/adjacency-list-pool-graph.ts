@@ -1,6 +1,6 @@
 import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-const _ = require("lodash");
+import _ from "lodash";
 import "lodash.combinations";
 import {
   Edge,

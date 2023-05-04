@@ -79,7 +79,7 @@ export class RouterUtils {
       );
 
       try {
-        const legacyTxSize = await tx.txnSize({
+        const legacyTxSize = tx.txnSize({
           latestBlockhash: MEASUREMENT_BLOCKHASH,
           maxSupportedTransactionVersion: "legacy",
         });
@@ -101,7 +101,7 @@ export class RouterUtils {
           addressesToLookup
         );
         try {
-          v0TxSize = await tx.txnSize({
+          v0TxSize = tx.txnSize({
             latestBlockhash: MEASUREMENT_BLOCKHASH,
             maxSupportedTransactionVersion: opts.maxSupportedTransactionVersion,
             lookupTableAccounts,

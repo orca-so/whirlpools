@@ -4,7 +4,6 @@ import {
   MEASUREMENT_BLOCKHASH,
   Percentage,
   TransactionBuilder,
-  TX_BASE64_ENCODED_SIZE_LIMIT,
   TX_SIZE_LIMIT,
 } from "@orca-so/common-sdk";
 import { AccountInfo } from "@solana/spl-token";
@@ -123,7 +122,7 @@ export class RouterUtils {
             lookupTableAccounts,
           });
 
-          if (v0TxSize !== undefined && v0TxSize < TX_BASE64_ENCODED_SIZE_LIMIT) {
+          if (v0TxSize !== undefined && v0TxSize < TX_SIZE_LIMIT) {
             return [route, lookupTableAccounts];
           }
         } catch (e) {

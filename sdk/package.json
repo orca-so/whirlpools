@@ -8,7 +8,7 @@
   "dependencies": {
     "@coral-xyz/anchor": "~0.27.0",
     "@metaplex-foundation/mpl-token-metadata": "1.2.5",
-    "@orca-so/common-sdk": "0.2.2-beta.1",
+    "@orca-so/common-sdk": "0.2.2",
     "@solana/spl-token": "^0.1.8",
     "@solana/web3.js": "~1.74.0",
     "decimal.js": "^10.3.1",

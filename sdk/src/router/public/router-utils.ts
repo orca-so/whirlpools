@@ -1,8 +1,10 @@
 import {
   AddressUtil,
   LookupTableFetcher,
+  MEASUREMENT_BLOCKHASH,
   Percentage,
   TransactionBuilder,
+  TX_SIZE_LIMIT,
 } from "@orca-so/common-sdk";
 import { AccountInfo } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -92,11 +94,11 @@ export class RouterUtils {
       }
 
       try {
-        const legacyTxSize = await tx.txnSize({
+        const legacyTxSize = tx.txnSize({
           latestBlockhash: MEASUREMENT_BLOCKHASH,
           maxSupportedTransactionVersion: "legacy",
         });
-        if (legacyTxSize !== undefined && legacyTxSize < TX_LIMIT) {
+        if (legacyTxSize !== undefined && legacyTxSize <= TX_SIZE_LIMIT) {
           return [route, undefined];
         }
       } catch (e) {
@@ -114,13 +116,13 @@ export class RouterUtils {
           addressesToLookup
         );
         try {
-          v0TxSize = await tx.txnSize({
+          v0TxSize = tx.txnSize({
             latestBlockhash: MEASUREMENT_BLOCKHASH,
             maxSupportedTransactionVersion: opts.maxSupportedTransactionVersion,
             lookupTableAccounts,
           });
 
-          if (v0TxSize !== undefined && v0TxSize < ENCODED_LIMIT) {
+          if (v0TxSize !== undefined && v0TxSize <= TX_SIZE_LIMIT) {
             return [route, lookupTableAccounts];
           }
         } catch (e) {
@@ -198,20 +200,8 @@ async function loadLookupTablesForRoutes(
   );
 }
 
-// The hard-coded limit of a transaction size in bytes
-const TX_LIMIT = 1232;
-
-// The hard-coded limit of an encoded transaction size in bytes
-const ENCODED_LIMIT = 1644;
-
 // The maximum number of routes to measure
 const MEASURE_ROUTE_MAX = 100;
 
 // The maximum number of tick arrays to lookup per network request
 const MAX_LOOKUP_TABLE_FETCH_SIZE = 50;
-
-// A dummy blockhash to use for measuring transaction sizes
-const MEASUREMENT_BLOCKHASH = {
-  blockhash: "65FJ2gp6jC2x87bycfdZpxDyjiodcAoymxR6PMZzfavY",
-  lastValidBlockHeight: 160381350,
-};

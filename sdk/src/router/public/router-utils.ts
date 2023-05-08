@@ -122,7 +122,7 @@ export class RouterUtils {
             lookupTableAccounts,
           });
 
-          if (v0TxSize !== undefined && v0TxSize < TX_SIZE_LIMIT) {
+          if (v0TxSize !== undefined && v0TxSize <= TX_SIZE_LIMIT) {
             return [route, lookupTableAccounts];
           }
         } catch (e) {

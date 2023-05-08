@@ -98,7 +98,7 @@ export class RouterUtils {
           latestBlockhash: MEASUREMENT_BLOCKHASH,
           maxSupportedTransactionVersion: "legacy",
         });
-        if (legacyTxSize !== undefined && legacyTxSize < TX_SIZE_LIMIT) {
+        if (legacyTxSize !== undefined && legacyTxSize <= TX_SIZE_LIMIT) {
           return [route, undefined];
         }
       } catch (e) {

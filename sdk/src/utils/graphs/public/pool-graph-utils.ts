@@ -9,10 +9,10 @@ export class PoolGraphUtils {
   static readonly PATH_ID_DELIMITER = "-";
 
   /**
-   * Get a search path id from two tokens. The id can be used to identify a path between the two tokens in {@link RouteSearchEntires}.
+   * Get a search path id from two tokens. The id can be used to identify a path between the two tokens in {@link PathSearchEntries}.
    * @param tokenA The first token in the path
    * @param tokenB The second token in the path
-   * @returns A path id that can be used to identify a path between the two tokens in {@link RouteSearchEntires}.
+   * @returns A path id that can be used to identify a path between the two tokens in {@link PathSearchEntries}.
    */
   static getSearchPathId(tokenA: Address, tokenB: Address): string {
     return `${AddressUtil.toString(tokenA)}${
@@ -25,7 +25,7 @@ export class PoolGraphUtils {
    * @param pathId - The path id to deconstruct
    * @returns A tuple of the two tokens in the path id. Returns undefined if the provided pathId is invalid.
    */
-  static deconstructPathId(pathId: string): [string, string] {
+  static deconstructPathId(pathId: string): readonly [string, string] {
     const split = pathId.split(PoolGraphUtils.PATH_ID_DELIMITER);
 
     if (split.length !== 2) {
@@ -33,6 +33,6 @@ export class PoolGraphUtils {
     }
 
     const [tokenA, tokenB] = split;
-    return [tokenA, tokenB];
+    return [tokenA, tokenB] as const;
   }
 }

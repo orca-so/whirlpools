@@ -21,6 +21,17 @@ import { TickUtil } from "./tick-utils";
 import { SwapDirection, TokenType } from "./types";
 
 /**
+ * A request to fetch the tick-arrays that a swap may traverse across.
+ * @category Whirlpool Utils
+ */
+export interface TickArrayRequest {
+  whirlpoolAddress: PublicKey;
+  aToB: boolean;
+  tickCurrentIndex: number;
+  tickSpacing: number;
+}
+
+/**
  * @category Whirlpool Utils
  */
 export class SwapUtils {
@@ -125,19 +136,54 @@ export class SwapUtils {
     fetcher: AccountFetcher,
     refresh: boolean
   ): Promise<TickArray[]> {
-    const addresses = SwapUtils.getTickArrayPublicKeys(
-      tickCurrentIndex,
-      tickSpacing,
-      aToB,
-      programId,
-      whirlpoolAddress
-    );
+    const data = await this.getBatchTickArrays(programId, fetcher, refresh, [
+      { tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress },
+    ]);
+    return data[0];
+  }
+
+  /**
+   * Fetch a batch of tick-arrays for a set of TA requests.
+   * @param programId - The Whirlpool programId which the Whirlpool lives on.
+   * @param fetcher - AccountFetcher object to fetch solana accounts
+   * @param refresh - If true, fetcher would default to fetching the latest accounts
+   * @param tickArrayRequests - An array of {@link TickArrayRequest} of tick-arrays to request for.
+   * @returns A array of request indicies mapped to an array of resulting PublicKeys.
+   */
+  public static async getBatchTickArrays(
+    programId: PublicKey,
+    fetcher: AccountFetcher,
+    refresh: boolean,
+    tickArrayRequests: TickArrayRequest[]
+  ): Promise<TickArray[][]> {
+    let addresses: PublicKey[] = [];
+    let requestToIndices = [];
+
+    // Each individual tick array request may correspond to more than one tick array
+    // so we map each request to a slice of the batch request
+    for (let i = 0; i < tickArrayRequests.length; i++) {
+      const { tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress } = tickArrayRequests[i];
+      const requestAddresses = SwapUtils.getTickArrayPublicKeys(
+        tickCurrentIndex,
+        tickSpacing,
+        aToB,
+        programId,
+        whirlpoolAddress
+      );
+      requestToIndices.push([addresses.length, addresses.length + requestAddresses.length]);
+      addresses.push(...requestAddresses);
+    }
     const data = await fetcher.listTickArrays(addresses, refresh);
-    return addresses.map((addr, index) => {
-      return {
+
+    // Re-map from flattened batch data to TickArray[] for request
+    return requestToIndices.map((indices) => {
+      const [start, end] = indices;
+      const addressSlice = addresses.slice(start, end);
+      const dataSlice = data.slice(start, end);
+      return addressSlice.map((addr, index) => ({
         address: addr,
-        data: data[index],
-      };
+        data: dataSlice[index],
+      }));
     });
   }
 
@@ -191,20 +237,41 @@ export class SwapUtils {
     outputTokenAssociatedAddress: Address,
     wallet: PublicKey
   ) {
-    const addr = whirlpool.getAddress();
     const data = whirlpool.getData();
+    return this.getSwapParamsFromQuoteKeys(
+      quote,
+      ctx,
+      whirlpool.getAddress(),
+      data.tokenVaultA,
+      data.tokenVaultB,
+      inputTokenAssociatedAddress,
+      outputTokenAssociatedAddress,
+      wallet
+    );
+  }
+
+  public static getSwapParamsFromQuoteKeys(
+    quote: SwapInput,
+    ctx: WhirlpoolContext,
+    whirlpool: PublicKey,
+    tokenVaultA: PublicKey,
+    tokenVaultB: PublicKey,
+    inputTokenAssociatedAddress: Address,
+    outputTokenAssociatedAddress: Address,
+    wallet: PublicKey
+  ) {
     const aToB = quote.aToB;
     const [inputTokenATA, outputTokenATA] = AddressUtil.toPubKeys([
       inputTokenAssociatedAddress,
       outputTokenAssociatedAddress,
     ]);
-    const oraclePda = PDAUtil.getOracle(ctx.program.programId, addr);
+    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpool);
     const params: SwapParams = {
-      whirlpool: whirlpool.getAddress(),
+      whirlpool,
       tokenOwnerAccountA: aToB ? inputTokenATA : outputTokenATA,
       tokenOwnerAccountB: aToB ? outputTokenATA : inputTokenATA,
-      tokenVaultA: data.tokenVaultA,
-      tokenVaultB: data.tokenVaultB,
+      tokenVaultA,
+      tokenVaultB,
       oracle: oraclePda.publicKey,
       tokenAuthority: wallet,
       ...quote,

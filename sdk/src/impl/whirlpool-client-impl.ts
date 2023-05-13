@@ -10,6 +10,7 @@ import {
 } from "../instructions/composites";
 import { WhirlpoolIx } from "../ix";
 import { AccountFetcher } from "../network/public";
+import { WhirlpoolRouter, WhirlpoolRouterBuilder } from "../router/public";
 import { WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, PriceMath, TickUtil } from "../utils/public";
@@ -27,6 +28,10 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
 
   public getFetcher(): AccountFetcher {
     return this.ctx.fetcher;
+  }
+
+  public getRouter(poolAddresses: Address[]): Promise<WhirlpoolRouter> {
+    return WhirlpoolRouterBuilder.buildWithPools(this.ctx, poolAddresses);
   }
 
   public async getPool(poolAddress: Address, refresh = false): Promise<Whirlpool> {

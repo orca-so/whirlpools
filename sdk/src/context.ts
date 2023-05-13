@@ -22,6 +22,7 @@ export type WhirlpoolContextOpts = {
 };
 
 /**
+ * Context for storing environment classes and objects for usage throughout the SDK
  * @category Core
  */
 export class WhirlpoolContext {

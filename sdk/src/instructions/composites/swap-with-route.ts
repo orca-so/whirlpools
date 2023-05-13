@@ -265,7 +265,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
     };
 
     if (amountSpecifiedIsInput) {
-      updatedQuote.hopQuotes[1] = {
+      updatedQuote.hopQuotes = [updatedQuote.hopQuotes[0], {
         ...swapQuoteTwo,
         quote: {
           ...swapQuoteTwo.quote,
@@ -275,9 +275,9 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
             false
           ),
         },
-      };
+      }];
     } else {
-      updatedQuote.hopQuotes[0] = {
+      updatedQuote.hopQuotes = [{
         ...swapQuoteOne,
         quote: {
           ...swapQuoteOne.quote,
@@ -287,7 +287,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
             true
           ),
         },
-      };
+      }, updatedQuote.hopQuotes[1]];
     }
     return updatedQuote;
   }

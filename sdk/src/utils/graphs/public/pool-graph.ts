@@ -89,4 +89,11 @@ export type PoolGraph = {
     searchTokenPairs: [Address, Address][],
     options?: PathSearchOptions
   ): PathSearchEntries;
+
+  /**
+   * Get a list of all paths for this pool graph.
+   * @param options Options for finding a path
+   * @return An array of all permutations of token-pairs to the paths for each pair.
+   */
+  getAllPaths(options?: PathSearchOptions): PathSearchEntries;
 };

@@ -22,15 +22,27 @@ export enum SwapErrorCode {
   TickArraySequenceInvalid = `TickArraySequenceInvalid`,
 }
 
-export type WhirlpoolsErrorCode = TokenErrorCode | SwapErrorCode | MathErrorCode;
+export enum RouteQueryErrorCode {
+  RouteDoesNotExist = "RouteDoesNotExist",
+  TradeAmountTooHigh = "TradeAmountTooHigh",
+  ZeroInputAmount = "ZeroInputAmount",
+  General = "General",
+}
+
+export type WhirlpoolsErrorCode =
+  | TokenErrorCode
+  | SwapErrorCode
+  | MathErrorCode
+  | RouteQueryErrorCode;
 
 export class WhirlpoolsError extends Error {
   message: string;
   errorCode?: WhirlpoolsErrorCode;
-  constructor(message: string, errorCode?: WhirlpoolsErrorCode) {
+  constructor(message: string, errorCode?: WhirlpoolsErrorCode, stack?: string) {
     super(message);
     this.message = message;
     this.errorCode = errorCode;
+    this.stack = stack;
   }
 
   public static isWhirlpoolsErrorCode(e: any, code: WhirlpoolsErrorCode): boolean {

@@ -174,7 +174,7 @@ describe("PositionImpl#collectRewards()", () => {
       for (let i = 0; i < NUM_REWARDS; i++) {
         assert.ok(!quote[i]!.isZero());
       }
-      
+
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = await deriveATA(otherWallet.publicKey, rewards[i].rewardMint);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, true);

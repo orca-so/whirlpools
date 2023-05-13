@@ -116,10 +116,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@orca-so/common-sdk@0.2.1":
-  version "0.2.1"
-  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.2.1.tgz#fd95ee300a031cb798de59bfaab7f653f04adeec"
-  integrity sha512-HbY2HEisHZPuKPzmJDBSsGx9BVrv3ubK3h0zTp9jVOJyO2k92H/YYq/G0nBGZJgXr1HgAnMZnQMNVtVaEO5FmA==
+"@orca-so/common-sdk@0.2.2":
+  version "0.2.2"
+  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.2.2.tgz#c912ad3d6d37df5119fa40ca21b9e4ccd3855582"
+  integrity sha512-ZL8D9/RbT0xKb9CIVMPl7ZBzbhQGCsskyEy1DKMlQTPyktzLXyN0SRAg+NgjLnGd9mJwB/8JX0c7SyB5zE9wlQ==
   dependencies:
     "@solana/spl-token" "0.1.8"
     "@solana/web3.js" "^1.74.0"
@@ -261,6 +261,11 @@
   version "0.0.29"
   resolved "https://registry.yarnpkg.com/@types/json5/-/json5-0.0.29.tgz#ee28707ae94e11d2b827bcbe5270bcea7f3e71ee"
   integrity sha512-dRLjCWHYg4oaA77cxO64oO+7JwCwnIzkZPdrrC71jQmQtlhM556pwKo5bUzqvZndkVbeFLIIi+9TC40JNF5hNQ==
+
+"@types/lodash@4.14.194":
+  version "4.14.194"
+  resolved "https://registry.yarnpkg.com/@types/lodash/-/lodash-4.14.194.tgz#b71eb6f7a0ff11bff59fc987134a093029258a76"
+  integrity sha512-r22s9tAS7imvBt2lyHC9B8AGwWnXaYb1tY09oyLkXDs4vArpYJzw09nj8MLx5VfciBPGIb+ZwG0ssYnEPJxn/g==
 
 "@types/mocha@^9.0.0":
   version "9.1.1"
@@ -1087,6 +1092,11 @@ locate-path@^6.0.0:
   integrity sha512-iPZK6eYjbxRu3uB4/WZ3EsEIMJFMqAoopl3R+zuq0UjcAm/MO6KCweDgPfP3elTztoKP3KtnVHxTn2NHBSDVUw==
   dependencies:
     p-locate "^5.0.0"
+
+lodash.combinations@^18.11.1:
+  version "18.11.1"
+  resolved "https://registry.yarnpkg.com/lodash.combinations/-/lodash.combinations-18.11.1.tgz#4b55cba7f01f6a8fd889a15fe6f57f0e61a77b4f"
+  integrity sha512-0jtulyUQA1My13JuMR23MHqsMk8pQswcy+fO0jTKRp41bi+dDWflv/Ct4qRW6CcbLkk2Qi3PZyzx+tqgqSYLug==
 
 lodash@^4.17.20:
   version "4.17.21"

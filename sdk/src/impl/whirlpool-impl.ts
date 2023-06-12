@@ -31,7 +31,6 @@ import {
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
-import { createWSOLAccountInstructions } from "../utils/spl-token-utils";
 import {
   TokenMintTypes,
   getTokenMintsFromWhirlpools,
@@ -483,7 +482,7 @@ export class WhirlpoolImpl implements Whirlpool {
 
     // Handle native mint
     if (affiliatedMints.hasNativeMint) {
-      let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
+      let { address: wSOLAta, ...resolveWSolIx } = TokenUtil.createWrappedNativeAccountInstruction(
         destinationWallet,
         ZERO,
         accountExemption,

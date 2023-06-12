@@ -2,31 +2,31 @@ import { Address } from "@coral-xyz/anchor";
 import {
   AddressUtil,
   Instruction,
-  resolveOrCreateATAs,
+  TokenUtil,
   TransactionBuilder,
-  ZERO
+  ZERO,
+  resolveOrCreateATAs
 } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
+import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
 import {
+  DecreaseLiquidityInput,
+  IncreaseLiquidityInput,
   collectFeesIx,
   collectRewardIx,
-  DecreaseLiquidityInput,
   decreaseLiquidityIx,
-  IncreaseLiquidityInput,
   increaseLiquidityIx,
   updateFeesAndRewardsIx,
 } from "../instructions";
 import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
-import { createWSOLAccountInstructions } from "../utils/spl-token-utils";
 import {
+  TokenMintTypes,
   getTokenMintsFromWhirlpools,
   resolveAtaForMints,
-  TokenMintTypes,
 } from "../utils/whirlpool-ata-utils";
 import { Position } from "../whirlpool-client";
 
@@ -277,7 +277,7 @@ export class PositionImpl implements Position {
       txBuilder.addInstructions(resolveAtaIxs);
 
       if (affliatedMints.hasNativeMint) {
-        let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
+        let { address: wSOLAta, ...resolveWSolIx } = TokenUtil.createWrappedNativeAccountInstruction(
           destinationWalletKey,
           ZERO,
           accountExemption,
@@ -373,7 +373,7 @@ export class PositionImpl implements Position {
       );
 
       if (rewardMints.hasNativeMint) {
-        let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
+        let { address: wSOLAta, ...resolveWSolIx } = TokenUtil.createWrappedNativeAccountInstruction(
           destinationWalletKey,
           ZERO,
           accountExemption

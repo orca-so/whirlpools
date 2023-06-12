@@ -1,5 +1,5 @@
 import { AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
-import { TransactionBuilder } from "@orca-so/common-sdk";
+import { TransactionBuilder, createWrappedNativeAccountInstruction } from "@orca-so/common-sdk";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   AccountLayout,
@@ -165,7 +165,7 @@ export async function createAndMintToAssociatedTokenAccount(
       "confirmed"
     );
     const txBuilder = new TransactionBuilder(provider.connection, provider.wallet);
-    const { address: tokenAccount, ...ix } = createWSOLAccountInstructions(
+    const { address: tokenAccount, ...ix } = createWrappedNativeAccountInstruction(
       destinationWalletKey,
       new BN(amount.toString()),
       rentExemption

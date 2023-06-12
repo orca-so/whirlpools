@@ -2,6 +2,7 @@ import {
   AddressUtil,
   EMPTY_INSTRUCTION,
   Percentage,
+  TokenUtil,
   TransactionBuilder,
   ZERO,
 } from "@orca-so/common-sdk";
@@ -27,7 +28,6 @@ import {
 } from "../..";
 import { createAssociatedTokenAccountInstruction } from "../../utils/ata-ix-util";
 import { adjustForSlippage } from "../../utils/position-util";
-import { createWSOLAccountInstructions } from "../../utils/spl-token-utils";
 import { contextOptionsToBuilderOptions } from "../../utils/txn-utils";
 import { swapIx } from "../swap-ix";
 import { twoHopSwapIx } from "../two-hop-swap-ix";
@@ -139,7 +139,7 @@ export async function getSwapFromRoute(
   const ataIxes = Object.values(ataInstructionMap);
 
   if (hasNativeMint) {
-    const solIx = createWSOLAccountInstructions(
+    const solIx = TokenUtil.createWrappedNativeAccountInstruction(
       wallet,
       nativeMintAmount,
       await ctx.fetcher.getAccountRentExempt()

@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -394,7 +393,7 @@ describe("increase_liquidity", () => {
     const { positionPda, positionTokenAccount: positionTokenAccountAddress } = positionInfo.params;
 
     const tokenAmount = {
-      tokenA: new u64(0),
+      tokenA: new BN(0),
       tokenB: MAX_U64,
     };
     const estLiquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -454,7 +453,7 @@ describe("increase_liquidity", () => {
     const { positionPda, positionTokenAccount: positionTokenAccountAddress } = positionInfo.params;
 
     const tokenAmount = {
-      tokenA: new u64(0),
+      tokenA: new BN(0),
       tokenB: MAX_U64,
     };
     const estLiquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -501,8 +500,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount: ZERO_BN,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -536,8 +535,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(999_999_999),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(999_999_999),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -570,8 +569,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(999_999_999),
-          tokenMaxB: new u64(0),
+          tokenMaxA: new BN(999_999_999),
+          tokenMaxB: new BN(0),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -611,8 +610,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -636,8 +635,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -673,8 +672,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -722,8 +721,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionPda.publicKey,
@@ -758,8 +757,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -780,8 +779,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -816,8 +815,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -838,8 +837,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -877,8 +876,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positionInitInfo.publicKey,
@@ -919,8 +918,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positionInitInfo.publicKey,
@@ -961,8 +960,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positionInitInfo.publicKey,
@@ -999,8 +998,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positionInitInfo.publicKey,
@@ -1043,8 +1042,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -1087,8 +1086,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,

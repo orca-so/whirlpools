@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { PDA, Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import {
   InitPoolParams,
@@ -204,7 +203,7 @@ describe("close_bundled_position", () => {
       tickUpperIndex,
       tickCurrentIndex: pool.getData().tickCurrentIndex,
       inputTokenMint: poolInitInfo.tokenMintB,
-      inputTokenAmount: new u64(1_000_000),
+      inputTokenAmount: new BN(1_000_000),
     });
 
     await mintTokensToTestAccount(

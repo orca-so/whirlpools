@@ -1,6 +1,5 @@
 import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { AccountFetcher } from "..";
@@ -18,8 +17,8 @@ export type PathQuote = {
   path: Path;
   edgesPoolAddrs: string[];
   splitPercent: number;
-  amountIn: u64;
-  amountOut: u64;
+  amountIn: BN;
+  amountOut: BN;
   calculatedEdgeQuotes: TradeHopQuoteSuccess[];
 };
 
@@ -206,7 +205,7 @@ function buildQuoteUpdateRequests(
         : currentQuote.calculatedEdgeQuotes[hop + 1];
 
       // If this is the first hop, use the input mint and amount, otherwise use the output of the last hop
-      let tokenAmount: u64;
+      let tokenAmount: BN;
       let tradeToken: Address;
       if (startingRouteEval) {
         tokenAmount = tradeAmount;
@@ -299,13 +298,13 @@ function sanitizeQuoteMap(
   return [prunedQuoteMap, failureErrors] as const;
 }
 
-function getSplitPercentageAmts(inputAmount: u64, minPercent: number = 5) {
+function getSplitPercentageAmts(inputAmount: BN, minPercent: number = 5) {
   const percents = [];
   const amounts = [];
 
   for (let i = 1; i <= 100 / minPercent; i++) {
     percents.push(i * minPercent);
-    amounts.push(inputAmount.mul(new u64(i * minPercent)).div(new u64(100)));
+    amounts.push(inputAmount.mul(new BN(i * minPercent)).div(new BN(100)));
   }
 
   return { percents, amounts };

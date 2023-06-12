@@ -1,7 +1,7 @@
 import { Address } from "@coral-xyz/anchor";
 import { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import { AddressLookupTableAccount } from "@solana/web3.js";
+import BN from "bn.js";
 import { SwapQuote } from "../../quotes/public";
 import { Path } from "../../utils/public";
 import { AtaAccountInfo, RouteSelectOptions } from "./router-utils";
@@ -21,7 +21,7 @@ export * from "./router-utils";
 export type Trade = {
   tokenIn: Address;
   tokenOut: Address;
-  tradeAmount: u64;
+  tradeAmount: BN;
   amountSpecifiedIsInput: boolean;
 };
 
@@ -53,8 +53,8 @@ export type RoutingOptions = {
  */
 export type TradeRoute = {
   subRoutes: SubTradeRoute[];
-  totalAmountIn: u64;
-  totalAmountOut: u64;
+  totalAmountIn: BN;
+  totalAmountOut: BN;
 };
 
 /**
@@ -70,8 +70,8 @@ export type TradeRoute = {
 export type SubTradeRoute = {
   path: Path;
   splitPercent: number;
-  amountIn: u64;
-  amountOut: u64;
+  amountIn: BN;
+  amountOut: BN;
   hopQuotes: TradeHop[];
 };
 
@@ -91,8 +91,8 @@ export type SubTradeRoute = {
  * @param quote The {@link SwapQuote} for this hop.
  */
 export type TradeHop = {
-  amountIn: u64;
-  amountOut: u64;
+  amountIn: BN;
+  amountOut: BN;
   whirlpool: Address;
   inputMint: Address;
   outputMint: Address;

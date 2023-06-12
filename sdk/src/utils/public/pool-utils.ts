@@ -1,7 +1,7 @@
-import { Address, BN } from "@coral-xyz/anchor";
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, MathUtil, Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import Decimal from "decimal.js";
 import { WhirlpoolData, WhirlpoolRewardInfoData } from "../../types/public";
 import { TOKEN_MINTS } from "../constants";
@@ -12,7 +12,7 @@ import { TokenType } from "./types";
  * @category Whirlpool Utils
  */
 export class PoolUtil {
-  private constructor() {}
+  private constructor() { }
 
   public static isRewardInitialized(rewardInfo: WhirlpoolRewardInfoData): boolean {
     return (
@@ -109,13 +109,13 @@ export class PoolUtil {
     // TODO: round up
     if (round_up) {
       return {
-        tokenA: new u64(tokenA.ceil().toString()),
-        tokenB: new u64(tokenB.ceil().toString()),
+        tokenA: new BN(tokenA.ceil().toString()),
+        tokenB: new BN(tokenB.ceil().toString()),
       };
     } else {
       return {
-        tokenA: new u64(tokenA.floor().toString()),
-        tokenB: new u64(tokenB.floor().toString()),
+        tokenA: new BN(tokenA.floor().toString()),
+        tokenB: new BN(tokenB.floor().toString()),
       };
     }
   }
@@ -188,8 +188,8 @@ export class PoolUtil {
  * @category Whirlpool Utils
  */
 export type TokenAmounts = {
-  tokenA: u64;
-  tokenB: u64;
+  tokenA: BN;
+  tokenB: BN;
 };
 
 /**
@@ -197,8 +197,8 @@ export type TokenAmounts = {
  */
 export function toTokenAmount(a: number, b: number): TokenAmounts {
   return {
-    tokenA: new u64(a.toString()),
-    tokenB: new u64(b.toString()),
+    tokenA: new BN(a.toString()),
+    tokenB: new BN(b.toString()),
   };
 }
 
@@ -229,7 +229,7 @@ function sortByQuotePriority(mintLeft: PublicKey, mintRight: PublicKey): number 
 }
 
 // Convert this function based on Delta A = Delta L * (1/sqrt(lower) - 1/sqrt(upper))
-function estLiquidityForTokenA(sqrtPrice1: BN, sqrtPrice2: BN, tokenAmount: u64) {
+function estLiquidityForTokenA(sqrtPrice1: BN, sqrtPrice2: BN, tokenAmount: BN) {
   const lowerSqrtPriceX64 = BN.min(sqrtPrice1, sqrtPrice2);
   const upperSqrtPriceX64 = BN.max(sqrtPrice1, sqrtPrice2);
 
@@ -240,7 +240,7 @@ function estLiquidityForTokenA(sqrtPrice1: BN, sqrtPrice2: BN, tokenAmount: u64)
 }
 
 // Convert this function based on Delta B = Delta L * (sqrt_price(upper) - sqrt_price(lower))
-function estLiquidityForTokenB(sqrtPrice1: BN, sqrtPrice2: BN, tokenAmount: u64) {
+function estLiquidityForTokenB(sqrtPrice1: BN, sqrtPrice2: BN, tokenAmount: BN) {
   const lowerSqrtPriceX64 = BN.min(sqrtPrice1, sqrtPrice2);
   const upperSqrtPriceX64 = BN.max(sqrtPrice1, sqrtPrice2);
 

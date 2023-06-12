@@ -1,7 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import { AddressUtil, MathUtil, PDA } from "@orca-so/common-sdk";
-import { NATIVE_MINT, getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
+import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import Decimal from "decimal.js";
 import {
   TickSpacing,
@@ -443,7 +444,7 @@ export async function initRewardAndSetEmissions(
   rewardAuthorityKeypair: anchor.web3.Keypair,
   whirlpool: PublicKey,
   rewardIndex: number,
-  vaultAmount: u64 | number,
+  vaultAmount: BN | number,
   emissionsPerSecondX64: anchor.BN,
   funder?: Keypair
 ) {

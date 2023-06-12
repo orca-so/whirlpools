@@ -1,16 +1,16 @@
 import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, DecimalUtil, Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import Decimal from "decimal.js";
 import {
   DecimalsMap,
-  defaultGetPricesConfig,
   GetPricesConfig,
   GetPricesThresholdConfig,
   PoolMap,
   PriceMap,
   TickArrayMap,
+  defaultGetPricesConfig,
 } from ".";
 import { swapQuoteWithParams } from "../quotes/public/swap-quote";
 import { TickArray, WhirlpoolData } from "../types/public";
@@ -57,9 +57,9 @@ function checkLiquidity(
     outputDecimals = decimalsMap[pool.tokenMintA.toBase58()];
   }
 
-  const amountOutDecimals = DecimalUtil.fromU64(amountOut, outputDecimals);
+  const amountOutDecimals = DecimalUtil.fromBN(amountOut, outputDecimals);
 
-  const estimatedAmountInDecimals = DecimalUtil.fromU64(estimatedAmountIn, inputDecimals);
+  const estimatedAmountInDecimals = DecimalUtil.fromBN(estimatedAmountIn, inputDecimals);
 
   const maxAmountInDecimals = amountOutDecimals
     .div(price)
@@ -184,10 +184,10 @@ export function isSubset(listA: string[], listB: string[]): boolean {
 }
 
 export function convertAmount(
-  amount: u64,
+  amount: BN,
   price: Decimal,
   amountDecimal: number,
   resultDecimal: number
-): u64 {
-  return DecimalUtil.toU64(DecimalUtil.fromU64(amount, amountDecimal).div(price), resultDecimal);
+): BN {
+  return DecimalUtil.toBN(DecimalUtil.fromBN(amount, amountDecimal).div(price), resultDecimal);
 }

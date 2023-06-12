@@ -1,7 +1,8 @@
-import { BN, Program } from "@coral-xyz/anchor";
+import { Program } from "@coral-xyz/anchor";
 import { Instruction } from "@orca-so/common-sdk";
-import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import { Whirlpool } from "../artifacts/whirlpool";
 
 /**
@@ -59,8 +60,8 @@ export type TwoHopSwapParams = TwoHopSwapInput & {
  * @param tickArrayTwo2 - The next tick-array in the swap direction after tickArray2 of swap-Two. If the swap will not reach the next tick-aray, input the same array as tickArray1.
  */
 export type TwoHopSwapInput = {
-  amount: u64;
-  otherAmountThreshold: u64;
+  amount: BN;
+  otherAmountThreshold: BN;
   amountSpecifiedIsInput: boolean;
   aToBOne: boolean;
   aToBTwo: boolean;

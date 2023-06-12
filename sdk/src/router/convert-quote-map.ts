@@ -1,4 +1,4 @@
-import { u64 } from "@solana/spl-token";
+import BN from "bn.js";
 import { kSmallestPartition } from "../utils/math/k-smallest-partition";
 import { RoutingOptions, SubTradeRoute, TradeRoute } from "./public";
 import { PathQuote, SanitizedQuoteMap } from "./quote-map";
@@ -43,8 +43,8 @@ function convertPathQuoteToSubTradeRoute(pathQuote: PathQuote): SubTradeRoute {
 type InternalRoute = {
   quotes: PathQuote[];
   splitPercent: number;
-  totalIn: u64;
-  totalOut: u64;
+  totalIn: BN;
+  totalOut: BN;
 };
 
 function getSingleHopSplit(quoteMap: SanitizedQuoteMap): InternalRoute[] {
@@ -93,8 +93,8 @@ function generateRoutes(percentMap: SanitizedQuoteMap, maxSplits: number): Inter
     {
       quotes: [],
       splitPercent: 0,
-      totalIn: new u64(0),
-      totalOut: new u64(0),
+      totalIn: new BN(0),
+      totalOut: new BN(0),
     },
     routes
   );

@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
+import BN from "bn.js";
 import Decimal from "decimal.js";
 import {
   collectFeesQuote,
@@ -69,7 +69,7 @@ describe("collect_fees", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -91,7 +91,7 @@ describe("collect_fees", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -123,8 +123,8 @@ describe("collect_fees", () => {
       positions[0].publicKey,
       true
     )) as PositionData;
-    assert.ok(positionBeforeCollect.feeOwedA.eq(new u64(581)));
-    assert.ok(positionBeforeCollect.feeOwedB.eq(new u64(581)));
+    assert.ok(positionBeforeCollect.feeOwedA.eq(new BN(581)));
+    assert.ok(positionBeforeCollect.feeOwedB.eq(new BN(581)));
 
     const feeAccountA = await createTokenAccount(provider, tokenMintA, provider.wallet.publicKey);
     const feeAccountB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);

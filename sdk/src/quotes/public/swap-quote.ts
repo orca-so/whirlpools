@@ -1,6 +1,6 @@
-import { Address, BN } from "@coral-xyz/anchor";
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import BN from "bn.js";
 import invariant from "tiny-invariant";
 import { SwapInput } from "../../instructions";
 import { AccountFetcher } from "../../network/public";
@@ -24,8 +24,8 @@ import { DevFeeSwapQuote } from "./dev-fee-swap-quote";
  */
 export type SwapQuoteParam = {
   whirlpoolData: WhirlpoolData;
-  tokenAmount: u64;
-  otherAmountThreshold: u64;
+  tokenAmount: BN;
+  otherAmountThreshold: BN;
   sqrtPriceLimit: BN;
   aToB: boolean;
   amountSpecifiedIsInput: boolean;
@@ -50,11 +50,11 @@ export type SwapQuote = NormalSwapQuote | DevFeeSwapQuote;
  * @param estimatedFeeAmount - Approximate feeAmount (all fees) charged on this swap
  */
 export type SwapEstimates = {
-  estimatedAmountIn: u64;
-  estimatedAmountOut: u64;
+  estimatedAmountIn: BN;
+  estimatedAmountOut: BN;
   estimatedEndTickIndex: number;
   estimatedEndSqrtPrice: BN;
-  estimatedFeeAmount: u64;
+  estimatedFeeAmount: BN;
 };
 
 /**
@@ -79,7 +79,7 @@ export type NormalSwapQuote = SwapInput & SwapEstimates;
 export async function swapQuoteByInputToken(
   whirlpool: Whirlpool,
   inputTokenMint: Address,
-  tokenAmount: u64,
+  tokenAmount: BN,
   slippageTolerance: Percentage,
   programId: Address,
   fetcher: AccountFetcher,
@@ -116,7 +116,7 @@ export async function swapQuoteByInputToken(
 export async function swapQuoteByOutputToken(
   whirlpool: Whirlpool,
   outputTokenMint: Address,
-  tokenAmount: u64,
+  tokenAmount: BN,
   slippageTolerance: Percentage,
   programId: Address,
   fetcher: AccountFetcher,
@@ -165,7 +165,7 @@ export function swapQuoteWithParams(
 async function swapQuoteByToken(
   whirlpool: Whirlpool,
   inputTokenMint: Address,
-  tokenAmount: u64,
+  tokenAmount: BN,
   amountSpecifiedIsInput: boolean,
   programId: Address,
   fetcher: AccountFetcher,

@@ -1,6 +1,5 @@
 import { AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { createWSOLAccountInstructions } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   AccountLayout,
@@ -8,8 +7,7 @@ import {
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
   Token,
-  getAssociatedTokenAddressSync,
-  u64
+  getAssociatedTokenAddressSync
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
 
@@ -145,7 +143,7 @@ export async function createAndMintToTokenAccount(
   amount: number | BN
 ): Promise<web3.PublicKey> {
   const tokenAccount = await createTokenAccount(provider, mint, provider.wallet.publicKey);
-  await mintToByAuthority(provider, mint, tokenAccount, new u64(amount.toString()));
+  await mintToByAuthority(provider, mint, tokenAccount, new BN(amount.toString()));
   return tokenAccount;
 }
 
@@ -169,7 +167,7 @@ export async function createAndMintToAssociatedTokenAccount(
     const txBuilder = new TransactionBuilder(provider.connection, provider.wallet);
     const { address: tokenAccount, ...ix } = createWSOLAccountInstructions(
       destinationWalletKey,
-      new u64(amount.toString()),
+      new BN(amount.toString()),
       rentExemption
     );
     txBuilder.addInstruction({ ...ix, cleanupInstructions: [] });
@@ -196,7 +194,7 @@ export async function createAndMintToAssociatedTokenAccount(
     );
   }
 
-  await mintToByAuthority(provider, mint, tokenAccount, new u64(amount.toString()));
+  await mintToByAuthority(provider, mint, tokenAccount, new BN(amount.toString()));
   return tokenAccount;
 }
 
@@ -208,7 +206,7 @@ export async function approveToken(
   provider: AnchorProvider,
   tokenAccount: web3.PublicKey,
   delegate: web3.PublicKey,
-  amount: number | u64,
+  amount: number | BN,
   owner?: web3.Keypair
 ) {
   const tx = new web3.Transaction();

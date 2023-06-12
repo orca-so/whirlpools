@@ -1,6 +1,6 @@
 import { BorshAccountsCoder, Idl } from "@coral-xyz/anchor";
 import { TokenUtil } from "@orca-so/common-sdk";
-import { AccountInfo, MintInfo, MintLayout, u64 } from "@solana/spl-token";
+import { AccountInfo, MintInfo, MintLayout } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
 import {
@@ -32,7 +32,7 @@ export interface ParsableEntity<T> {
  */
 @staticImplements<ParsableEntity<WhirlpoolsConfigData>>()
 export class ParsableWhirlpoolsConfig {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(data: Buffer | undefined | null): WhirlpoolsConfigData | null {
     if (!data) {
@@ -53,7 +53,7 @@ export class ParsableWhirlpoolsConfig {
  */
 @staticImplements<ParsableEntity<WhirlpoolData>>()
 export class ParsableWhirlpool {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(data: Buffer | undefined | null): WhirlpoolData | null {
     if (!data) {
@@ -74,7 +74,7 @@ export class ParsableWhirlpool {
  */
 @staticImplements<ParsableEntity<PositionData>>()
 export class ParsablePosition {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(data: Buffer | undefined | null): PositionData | null {
     if (!data) {
@@ -95,7 +95,7 @@ export class ParsablePosition {
  */
 @staticImplements<ParsableEntity<TickArrayData>>()
 export class ParsableTickArray {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(data: Buffer | undefined | null): TickArrayData | null {
     if (!data) {
@@ -116,7 +116,7 @@ export class ParsableTickArray {
  */
 @staticImplements<ParsableEntity<FeeTierData>>()
 export class ParsableFeeTier {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(data: Buffer | undefined | null): FeeTierData | null {
     if (!data) {
@@ -137,7 +137,7 @@ export class ParsableFeeTier {
  */
 @staticImplements<ParsableEntity<PositionBundleData>>()
 export class ParsablePositionBundle {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(data: Buffer | undefined | null): PositionBundleData | null {
     if (!data) {
@@ -158,7 +158,7 @@ export class ParsablePositionBundle {
  */
 @staticImplements<ParsableEntity<AccountInfo>>()
 export class ParsableTokenInfo {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(data: Buffer | undefined | null): AccountInfo | null {
     if (!data) {
@@ -179,7 +179,7 @@ export class ParsableTokenInfo {
  */
 @staticImplements<ParsableEntity<MintInfo>>()
 export class ParsableMintInfo {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(data: Buffer | undefined | null): MintInfo | null {
     if (!data) {
@@ -191,7 +191,7 @@ export class ParsableMintInfo {
       const mintInfo: MintInfo = {
         mintAuthority:
           buffer.mintAuthorityOption === 0 ? null : new PublicKey(buffer.mintAuthority),
-        supply: u64.fromBuffer(buffer.supply),
+        supply: BN.fromBuffer(buffer.supply),
         decimals: buffer.decimals,
         isInitialized: buffer.isInitialized !== 0,
         freezeAuthority:

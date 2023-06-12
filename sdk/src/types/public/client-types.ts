@@ -1,18 +1,19 @@
-import { AccountInfo, MintInfo, u64 } from "@solana/spl-token";
+import { Account, Mint } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import { TickArrayData, WhirlpoolRewardInfoData } from "./anchor-types";
 
 /**
  * Extended MintInfo type to host token info.
  * @category WhirlpoolClient
  */
-export type TokenInfo = MintInfo & { mint: PublicKey };
+export type TokenInfo = Mint & { mint: PublicKey };
 
 /**
  * Extended AccountInfo type to host account info for a Token.
  * @category WhirlpoolClient
  */
-export type TokenAccountInfo = AccountInfo;
+export type TokenAccountInfo = Account;
 
 /**
  * Type to represent a reward for a reward index on a Whirlpool.
@@ -20,7 +21,7 @@ export type TokenAccountInfo = AccountInfo;
  */
 export type WhirlpoolRewardInfo = WhirlpoolRewardInfoData & {
   initialized: boolean;
-  vaultAmount: u64;
+  vaultAmount: BN;
 };
 
 /**

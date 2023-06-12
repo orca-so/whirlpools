@@ -1,7 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   PDAUtil,
@@ -314,15 +315,15 @@ describe("whirlpool-impl", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(5)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -340,7 +341,7 @@ describe("whirlpool-impl", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -362,7 +363,7 @@ describe("whirlpool-impl", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -408,7 +409,7 @@ describe("whirlpool-impl", () => {
     const poolData = pool.getData();
     const txs = await pool.closePosition(
       positionWithFees.publicKey,
-      new Percentage(new u64(10), new u64(100)),
+      new Percentage(new BN(10), new BN(100)),
       otherWallet.publicKey,
       otherWallet.publicKey,
       ctx.wallet.publicKey
@@ -493,15 +494,15 @@ describe("whirlpool-impl", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
       tokenAIsNative: true,
@@ -520,7 +521,7 @@ describe("whirlpool-impl", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000_00),
+        amount: new BN(200_000_00),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -542,7 +543,7 @@ describe("whirlpool-impl", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000_00),
+        amount: new BN(200_000_00),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -608,7 +609,7 @@ describe("whirlpool-impl", () => {
 
     const txs = await pool.closePosition(
       positionWithFees.publicKey,
-      new Percentage(new u64(10), new u64(100)),
+      new Percentage(new BN(10), new BN(100)),
       otherWallet.publicKey,
       otherWallet.publicKey,
       ctx.wallet.publicKey
@@ -665,9 +666,9 @@ describe("whirlpool-impl", () => {
      */
     const expectedtokenA = decreaseLiquidityQuote.tokenMinA
       .add(feesQuote.feeOwedA)
-      .add(new u64(positionAccountBalance))
-      .add(new u64(minAccountExempt))
-      .add(new u64(minAccountExempt))
+      .add(new BN(positionAccountBalance))
+      .add(new BN(minAccountExempt))
+      .add(new BN(minAccountExempt))
       .toNumber();
     assert.ok(solReceived === expectedtokenA);
 

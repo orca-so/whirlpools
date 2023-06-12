@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import { BN } from "bn.js";
@@ -28,7 +28,7 @@ describe("bundled position management tests", () => {
   const tickUpperIndex = 33536;
   const tickSpacing = TickSpacing.Standard;
   const vaultStartBalance = 1_000_000;
-  const liquidityAmount = new u64(10_000_000);
+  const liquidityAmount = new BN(10_000_000);
   const sleep = (second: number) => new Promise(resolve => setTimeout(resolve, second * 1000))
 
   before(() => {
@@ -92,7 +92,7 @@ describe("bundled position management tests", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -114,7 +114,7 @@ describe("bundled position management tests", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -271,15 +271,15 @@ describe("bundled position management tests", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -460,15 +460,15 @@ describe("bundled position management tests", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -743,15 +743,15 @@ describe("bundled position management tests", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
       });
@@ -812,8 +812,8 @@ describe("bundled position management tests", () => {
         }))
         .addInstruction(WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
           ...modifyLiquidityParams,
-          tokenMinA: new u64(0),
-          tokenMinB: new u64(0),
+          tokenMinA: new BN(0),
+          tokenMinB: new BN(0),
         }))
         .addInstruction(WhirlpoolIx.closeBundledPositionIx(ctx.program, {
           bundledPosition: bundledPositionPubkey,
@@ -904,15 +904,15 @@ describe("bundled position management tests", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
       });
@@ -955,7 +955,7 @@ describe("bundled position management tests", () => {
         true
       );
 
-      const swapInput = new u64(200_000);
+      const swapInput = new BN(200_000);
       const poolLiquidity = new BN(liquidityAmount.muln(2).toString());
       const estimatedFee = new BN(swapInput.toString())
         .muln(3).divn(1000) // feeRate 0.3%
@@ -1023,8 +1023,8 @@ describe("bundled position management tests", () => {
         }))
         .addInstruction(WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
           ...modifyLiquidityParams,
-          tokenMinA: new u64(0),
-          tokenMinB: new u64(0),
+          tokenMinA: new BN(0),
+          tokenMinB: new BN(0),
         }))
         .addInstruction(WhirlpoolIx.collectFeesIx(ctx.program, {
           position: bundledPositionPubkey,

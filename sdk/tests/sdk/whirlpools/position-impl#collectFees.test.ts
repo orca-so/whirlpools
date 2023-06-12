@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -29,7 +29,7 @@ describe("PositionImpl#collectFees()", () => {
   const tickLowerIndex = 29440;
   const tickUpperIndex = 33536;
   const tickSpacing = TickSpacing.Standard;
-  const liquidityAmount = new u64(10_000_000);
+  const liquidityAmount = new BN(10_000_000);
 
   before(() => {
     const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -68,7 +68,7 @@ describe("PositionImpl#collectFees()", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -90,7 +90,7 @@ describe("PositionImpl#collectFees()", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,

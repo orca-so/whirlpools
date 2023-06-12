@@ -1,6 +1,6 @@
 import { Address } from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import BN from "bn.js";
 import { AccountFetcher } from "../..";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
 import { Whirlpool } from "../../whirlpool-client";
@@ -23,8 +23,8 @@ export type DevFeeSwapQuote = NormalSwapQuote & {
   // If there are third party requests in the future for this functionality, we can launch it
   // but with the caveat that the % collected is only an estimate.
   amountSpecifiedIsInput: true;
-  estimatedSwapFeeAmount: u64;
-  devFeeAmount: u64;
+  estimatedSwapFeeAmount: BN;
+  devFeeAmount: BN;
 };
 
 /**
@@ -44,7 +44,7 @@ export type DevFeeSwapQuote = NormalSwapQuote & {
 export async function swapQuoteByInputTokenWithDevFees(
   whirlpool: Whirlpool,
   inputTokenMint: Address,
-  tokenAmount: u64,
+  tokenAmount: BN,
   slippageTolerance: Percentage,
   programId: Address,
   fetcher: AccountFetcher,

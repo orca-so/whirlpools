@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
@@ -65,7 +64,7 @@ describe("collect_protocol_fees", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -87,7 +86,7 @@ describe("collect_protocol_fees", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -106,8 +105,8 @@ describe("collect_protocol_fees", () => {
     ).buildAndExecute();
 
     const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
-    assert.ok(poolAfter?.protocolFeeOwedA.eq(new u64(150)));
-    assert.ok(poolAfter?.protocolFeeOwedB.eq(new u64(150)));
+    assert.ok(poolAfter?.protocolFeeOwedA.eq(new BN(150)));
+    assert.ok(poolAfter?.protocolFeeOwedB.eq(new BN(150)));
 
     const destA = await createTokenAccount(provider, tokenMintA, provider.wallet.publicKey);
     const destB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);

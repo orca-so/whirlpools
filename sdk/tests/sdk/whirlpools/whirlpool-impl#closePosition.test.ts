@@ -1,7 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   NUM_REWARDS,
@@ -30,7 +31,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
   const tickUpperIndex = 33536;
   const vaultStartBalance = 1_000_000;
   const tickSpacing = TickSpacing.Standard;
-  const liquidityAmount = new u64(10_000_000);
+  const liquidityAmount = new BN(10_000_000);
 
   before(() => {
     const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -58,7 +59,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
     // Accrue fees in token A
     const pool = await whirlpoolClient.getPool(whirlpoolPda.publicKey, true);
     await (await pool.swap({
-      amount: new u64(200_000),
+      amount: new BN(200_000),
       amountSpecifiedIsInput: true,
       sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
       otherAmountThreshold: ZERO_BN,
@@ -70,7 +71,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
 
     // Accrue fees in token B
     await (await pool.swap({
-      amount: new u64(200_000),
+      amount: new BN(200_000),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
       amountSpecifiedIsInput: true,
@@ -171,9 +172,9 @@ describe("WhirlpoolImpl#closePosition()", () => {
       const minAccountExempt = await ctx.fetcher.getAccountRentExempt();
       const expectedReceivedSol = liquidityCollectedQuote.tokenMinA
         .add(feeQuote.feeOwedA)
-        .add(new u64(positionAccountBalance))
-        .add(new u64(minAccountExempt))
-        .add(new u64(minAccountExempt))
+        .add(new BN(positionAccountBalance))
+        .add(new BN(minAccountExempt))
+        .add(new BN(minAccountExempt))
         .toNumber();
       assert.equal(solInOtherWallet, expectedReceivedSol);
     } else if (expectAmountA.isZero()) {
@@ -261,15 +262,15 @@ describe("WhirlpoolImpl#closePosition()", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
       });
@@ -304,15 +305,15 @@ describe("WhirlpoolImpl#closePosition()", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
       });
@@ -333,15 +334,15 @@ describe("WhirlpoolImpl#closePosition()", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
       });
@@ -360,15 +361,15 @@ describe("WhirlpoolImpl#closePosition()", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
       });
@@ -387,15 +388,15 @@ describe("WhirlpoolImpl#closePosition()", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
       });
@@ -461,15 +462,15 @@ describe("WhirlpoolImpl#closePosition()", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
         tokenAIsNative: true,
@@ -489,15 +490,15 @@ describe("WhirlpoolImpl#closePosition()", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
         tokenAIsNative: true,

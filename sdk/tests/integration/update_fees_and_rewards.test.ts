@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import { PDAUtil, PositionData, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
 import { sleep, TickSpacing, ZERO_BN } from "../utils";
@@ -26,7 +26,7 @@ describe("update_fees_and_rewards", () => {
       tickSpacing,
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(1_000_000) }],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -52,7 +52,7 @@ describe("update_fees_and_rewards", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(100_000),
+        amount: new BN(100_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
         amountSpecifiedIsInput: true,

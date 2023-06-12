@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import Decimal from "decimal.js";
@@ -60,7 +59,7 @@ describe("get_pool_prices", () => {
 
   function getDefaultThresholdConfig(): GetPricesThresholdConfig {
     return {
-      amountOut: new u64(1_000_000),
+      amountOut: new BN(1_000_000),
       priceImpactThreshold: 1.05,
     };
   }

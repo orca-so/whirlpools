@@ -11,10 +11,10 @@ import {
   AccountInfo,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
-  getAssociatedTokenAddressSync,
-  u64,
+  getAssociatedTokenAddressSync
 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import {
   AtaAccountInfo,
   PDAUtil,
@@ -53,9 +53,9 @@ export async function getSwapFromRoute(
   const requiredAtas = new Set<string>();
   const requiredTickArrays = [];
   let hasNativeMint = false;
-  let nativeMintAmount = new u64(0);
+  let nativeMintAmount = new BN(0);
 
-  function addOrNative(mint: string, amount: u64) {
+  function addOrNative(mint: string, amount: BN) {
     if (mint === NATIVE_MINT.toBase58()) {
       hasNativeMint = true;
       nativeMintAmount = nativeMintAmount.add(amount);

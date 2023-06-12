@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -50,15 +49,15 @@ describe("collect_reward", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -143,7 +142,7 @@ describe("collect_reward", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -202,7 +201,7 @@ describe("collect_reward", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -266,7 +265,7 @@ describe("collect_reward", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -360,7 +359,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const { positions, rewards } = fixture.getInfos();
@@ -401,7 +400,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -449,7 +448,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -493,7 +492,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -538,7 +537,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -584,7 +583,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -628,7 +627,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -670,7 +669,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -712,7 +711,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {

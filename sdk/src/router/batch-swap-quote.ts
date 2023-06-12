@@ -1,6 +1,6 @@
 import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import BN from "bn.js";
 import invariant from "tiny-invariant";
 import { AccountFetcher } from "..";
 import { SwapQuoteParam } from "../quotes/public";
@@ -9,7 +9,7 @@ import { PoolUtil, SwapDirection, SwapUtils } from "../utils/public";
 export interface SwapQuoteRequest {
   whirlpool: Address;
   tradeTokenMint: Address;
-  tokenAmount: u64;
+  tokenAmount: BN;
   amountSpecifiedIsInput: boolean;
 }
 

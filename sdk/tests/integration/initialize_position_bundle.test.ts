@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { AccountInfo, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, MintInfo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { Account, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, MintInfo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import {
@@ -68,7 +68,7 @@ describe("initialize_position_bundle", () => {
 
   async function checkPositionBundleTokenAccount(positionBundleTokenAccountPubkey: PublicKey, owner: PublicKey, positionBundleMintPubkey: PublicKey) {
     // verify position bundle Token account
-    const positionBundleTokenAccount = (await ctx.fetcher.getTokenInfo(positionBundleTokenAccountPubkey, true)) as AccountInfo;
+    const positionBundleTokenAccount = (await ctx.fetcher.getTokenInfo(positionBundleTokenAccountPubkey, true)) as Account;
     assert.ok(positionBundleTokenAccount.amount.eqn(1));
     assert.ok(positionBundleTokenAccount.mint.equals(positionBundleMintPubkey));
     assert.ok(positionBundleTokenAccount.owner.equals(owner));

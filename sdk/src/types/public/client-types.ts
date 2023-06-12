@@ -10,7 +10,7 @@ import { TickArrayData, WhirlpoolRewardInfoData } from "./anchor-types";
 export type TokenInfo = Mint & { mint: PublicKey };
 
 /**
- * Extended AccountInfo type to host account info for a Token.
+ * Extended (token) Account type to host account info for a Token.
  * @category WhirlpoolClient
  */
 export type TokenAccountInfo = Account;

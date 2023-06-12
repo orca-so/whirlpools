@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 import { PDA } from "@orca-so/common-sdk";
-import { AccountInfo, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, MintInfo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, MintInfo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import {
@@ -25,7 +25,6 @@ describe("initialize_position_bundle_with_metadata", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
 
   async function createInitializePositionBundleWithMetadataTx(ctx: WhirlpoolContext, overwrite: any, mintKeypair?: Keypair) {
     const positionBundleMintKeypair = mintKeypair ?? Keypair.generate();
@@ -75,7 +74,7 @@ describe("initialize_position_bundle_with_metadata", () => {
 
   async function checkPositionBundleTokenAccount(positionBundleTokenAccountPubkey: PublicKey, owner: PublicKey, positionBundleMintPubkey: PublicKey) {
     // verify position bundle Token account
-    const positionBundleTokenAccount = (await ctx.fetcher.getTokenInfo(positionBundleTokenAccountPubkey, true)) as AccountInfo;
+    const positionBundleTokenAccount = await ctx.fetcher.getTokenInfo(positionBundleTokenAccountPubkey, true);
     assert.ok(positionBundleTokenAccount.amount.eqn(1));
     assert.ok(positionBundleTokenAccount.mint.equals(positionBundleMintPubkey));
     assert.ok(positionBundleTokenAccount.owner.equals(owner));

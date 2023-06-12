@@ -1,10 +1,10 @@
 import BN from "bn.js";
 import { AccountFetcher, PoolUtil, TokenInfo } from "..";
 import {
+  TokenAccountInfo,
   WhirlpoolData,
   WhirlpoolRewardInfo,
   WhirlpoolRewardInfoData,
-  TokenAccountInfo,
 } from "../types/public";
 
 export async function getTokenMintInfos(
@@ -52,7 +52,7 @@ async function getRewardInfo(
       throw new Error(`Unable to fetch TokenAccountInfo for vault - ${data.vault}`);
     }
     rewardInfo.initialized = true;
-    rewardInfo.vaultAmount = vaultInfo.amount;
+    rewardInfo.vaultAmount = new BN(vaultInfo.amount.toString());
   }
   return rewardInfo;
 }

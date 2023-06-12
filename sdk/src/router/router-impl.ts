@@ -1,6 +1,6 @@
 import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import { AccountInfo } from "@solana/spl-token";
+import { Account } from "@solana/spl-token";
 import { AccountFetcher, WhirlpoolContext } from "..";
 import { RouteQueryErrorCode, SwapErrorCode, WhirlpoolsError } from "../errors/errors";
 import { getSwapFromRoute } from "../instructions/composites/swap-with-route";
@@ -18,7 +18,7 @@ import {
 import { getQuoteMap } from "./quote-map";
 
 export class WhirlpoolRouterImpl implements WhirlpoolRouter {
-  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) {}
+  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) { }
 
   async findAllRoutes(
     trade: Trade,
@@ -106,7 +106,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
   async swap(
     trade: TradeRoute,
     slippage: Percentage,
-    resolvedAtas: AccountInfo[] | null
+    resolvedAtas: Account[] | null
   ): Promise<TransactionBuilder> {
     const txBuilder = await getSwapFromRoute(
       this.ctx,

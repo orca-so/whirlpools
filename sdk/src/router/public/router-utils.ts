@@ -6,7 +6,7 @@ import {
   TransactionBuilder,
   TX_SIZE_LIMIT,
 } from "@orca-so/common-sdk";
-import { AccountInfo } from "@solana/spl-token";
+import { Account } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { ExecutableRoute, RoutingOptions, TradeRoute } from ".";
 import { WhirlpoolContext } from "../../context";
@@ -19,7 +19,7 @@ import { isWalletConnected } from "../../utils/wallet-utils";
  * @param owner The owner address of the ATA.
  * @param mint The mint of the token the ATA represents.
  */
-export type AtaAccountInfo = Pick<AccountInfo, "address" | "owner" | "mint">;
+export type AtaAccountInfo = Pick<Account, "address" | "owner" | "mint">;
 
 /**
  * Parameters to configure the selection of the best route.

@@ -9,7 +9,7 @@ import {
 import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
-  AccountInfo,
+  Account,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
   getAssociatedTokenAddressSync
@@ -128,7 +128,7 @@ export async function getSwapFromRoute(
         return Promise.resolve(
           keys.map((key) =>
             resolvedAtaAccounts.find((ata) => ata.address?.toBase58() === key.toBase58())
-          ) as AccountInfo[]
+          ) as Account[]
         );
       } else {
         return ctx.fetcher.listTokenInfos(keys, false);

@@ -1,17 +1,17 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import { MathUtil } from "@orca-so/common-sdk";
+import { getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  buildWhirlpoolClient,
-  collectRewardsQuote,
   NUM_REWARDS,
   Whirlpool,
   WhirlpoolClient,
-  WhirlpoolContext
+  WhirlpoolContext,
+  buildWhirlpoolClient,
+  collectRewardsQuote
 } from "../../../src";
-import { sleep, TickSpacing } from "../../utils";
+import { TickSpacing, sleep } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 
@@ -107,7 +107,7 @@ describe("PositionImpl#collectRewards()", () => {
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
-        const rewardATA = await deriveATA(otherWallet.publicKey, rewards[i].rewardMint);
+        const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, true);
         assert.equal(rewardTokenAccount?.amount.toString(), quote[i]?.toString());
       }
@@ -176,7 +176,7 @@ describe("PositionImpl#collectRewards()", () => {
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
-        const rewardATA = await deriveATA(otherWallet.publicKey, rewards[i].rewardMint);
+        const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, true);
         assert.equal(rewardTokenAccount?.amount.toString(), quote[i]?.toString());
       }

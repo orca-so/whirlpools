@@ -1,29 +1,29 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, MathUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import { MathUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
+import { getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
+  PDAUtil,
+  PriceMath, TickUtil,
+  WhirlpoolIx,
   buildWhirlpoolClient,
   collectFeesQuote,
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidity,
   increaseLiquidityQuoteByInputToken,
-  PDAUtil,
-  PriceMath, TickUtil,
-  toTx,
-  WhirlpoolIx
+  toTx
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import {
+  ONE_SOL,
+  TickSpacing,
+  ZERO_BN,
   createAssociatedTokenAccount,
   getTokenBalance,
-  ONE_SOL,
   sleep,
   systemTransferTx,
-  TickSpacing,
-  transfer,
-  ZERO_BN
+  transfer
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -241,7 +241,7 @@ describe("whirlpool-impl", () => {
 
     // Transfer the position token to another wallet
     const otherWallet = anchor.web3.Keypair.generate();
-    const walletPositionTokenAccount = await deriveATA(ctx.wallet.publicKey, positionMint);
+    const walletPositionTokenAccount = getAssociatedTokenAddressSync(positionMint, ctx.wallet.publicKey);
     const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
       ctx.provider,
       positionMint,
@@ -286,8 +286,8 @@ describe("whirlpool-impl", () => {
     const postClosePosition = await fetcher.getPosition(positionAddress, true);
     assert.ok(postClosePosition === null);
 
-    const dWalletTokenAAccount = await deriveATA(destinationWallet.publicKey, poolData.tokenMintA);
-    const dWalletTokenBAccount = await deriveATA(destinationWallet.publicKey, poolData.tokenMintB);
+    const dWalletTokenAAccount = getAssociatedTokenAddressSync(poolData.tokenMintA, destinationWallet.publicKey,);
+    const dWalletTokenBAccount = getAssociatedTokenAddressSync(poolData.tokenMintB, destinationWallet.publicKey);
 
     assert.equal(
       await getTokenBalance(ctx.provider, dWalletTokenAAccount),
@@ -388,7 +388,7 @@ describe("whirlpool-impl", () => {
 
     // Transfer the position token to another wallet
     const otherWallet = anchor.web3.Keypair.generate();
-    const walletPositionTokenAccount = await deriveATA(
+    const walletPositionTokenAccount = getAssociatedTokenAddressSync(
       ctx.wallet.publicKey,
       positionWithFees.mintKeypair.publicKey
     );
@@ -421,11 +421,11 @@ describe("whirlpool-impl", () => {
       pool
     );
 
-    const dWalletTokenAAccount = await deriveATA(otherWallet.publicKey, poolData.tokenMintA);
-    const dWalletTokenBAccount = await deriveATA(otherWallet.publicKey, poolData.tokenMintB);
-    const rewardAccount0 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[0].mint);
-    const rewardAccount1 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[1].mint);
-    const rewardAccount2 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[2].mint);
+    const dWalletTokenAAccount = getAssociatedTokenAddressSync(poolData.tokenMintA, otherWallet.publicKey,);
+    const dWalletTokenBAccount = getAssociatedTokenAddressSync(poolData.tokenMintB, otherWallet.publicKey,);
+    const rewardAccount0 = getAssociatedTokenAddressSync(poolData.rewardInfos[0].mint, otherWallet.publicKey,);
+    const rewardAccount1 = getAssociatedTokenAddressSync(poolData.rewardInfos[1].mint, otherWallet.publicKey,);
+    const rewardAccount2 = getAssociatedTokenAddressSync(poolData.rewardInfos[2].mint, otherWallet.publicKey,);
 
     const feesQuote = collectFeesQuote({
       whirlpool: poolData,
@@ -568,7 +568,7 @@ describe("whirlpool-impl", () => {
 
     // Transfer the position token to another wallet
     const otherWallet = anchor.web3.Keypair.generate();
-    const walletPositionTokenAccount = await deriveATA(
+    const walletPositionTokenAccount = getAssociatedTokenAddressSync(
       ctx.wallet.publicKey,
       positionWithFees.mintKeypair.publicKey
     );
@@ -601,10 +601,10 @@ describe("whirlpool-impl", () => {
       tickUpper: position.getUpperTickData(),
     });
 
-    const dWalletTokenBAccount = await deriveATA(otherWallet.publicKey, poolData.tokenMintB);
-    const rewardAccount0 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[0].mint);
-    const rewardAccount1 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[1].mint);
-    const rewardAccount2 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[2].mint);
+    const dWalletTokenBAccount = getAssociatedTokenAddressSync(poolData.tokenMintB, otherWallet.publicKey,);
+    const rewardAccount0 = getAssociatedTokenAddressSync(poolData.rewardInfos[0].mint, otherWallet.publicKey,);
+    const rewardAccount1 = getAssociatedTokenAddressSync(poolData.rewardInfos[1].mint, otherWallet.publicKey,);
+    const rewardAccount2 = getAssociatedTokenAddressSync(poolData.rewardInfos[2].mint, otherWallet.publicKey,);
 
     const txs = await pool.closePosition(
       positionWithFees.publicKey,

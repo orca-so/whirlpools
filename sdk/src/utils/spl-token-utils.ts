@@ -1,31 +1,15 @@
 import { Instruction } from "@orca-so/common-sdk";
 import {
   AccountLayout,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   NATIVE_MINT,
   Token,
-  TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID
 } from "@solana/spl-token";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
 import BN from "bn.js";
 
 export function isNativeMint(mint: PublicKey) {
   return mint.equals(NATIVE_MINT);
-}
-
-// TODO: Update spl-token so we get this method
-export function getAssociatedTokenAddressSync(
-  mint: string,
-  owner: string,
-  programId = TOKEN_PROGRAM_ID,
-  associatedTokenProgramId = ASSOCIATED_TOKEN_PROGRAM_ID
-): PublicKey {
-  const [address] = PublicKey.findProgramAddressSync(
-    [new PublicKey(owner).toBuffer(), programId.toBuffer(), new PublicKey(mint).toBuffer()],
-    associatedTokenProgramId
-  );
-
-  return address;
 }
 
 // TODO: This is a temp fn to help add payer / differing destination params to the original method

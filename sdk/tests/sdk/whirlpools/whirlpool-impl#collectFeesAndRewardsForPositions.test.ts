@@ -1,21 +1,21 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, MathUtil, SendTxRequest, TransactionBuilder, TransactionProcessor, ZERO } from "@orca-so/common-sdk";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, NATIVE_MINT, Token, TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
+import { MathUtil, SendTxRequest, TransactionBuilder, TransactionProcessor, ZERO } from "@orca-so/common-sdk";
+import { ASSOCIATED_TOKEN_PROGRAM_ID, NATIVE_MINT, TOKEN_PROGRAM_ID, Token, getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  buildWhirlpoolClient,
-  collectFeesQuote,
-  collectRewardsQuote,
   NUM_REWARDS,
   PDAUtil,
   PoolUtil,
-  toTx,
   Whirlpool,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
+  buildWhirlpoolClient,
+  collectFeesQuote,
+  collectRewardsQuote,
+  toTx
 } from "../../../src";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
@@ -168,15 +168,15 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const mintA = pool.getTokenAInfo().mint;
     const mintB = pool.getTokenBInfo().mint;
-    const ataA = await deriveATA(ctx.wallet.publicKey, mintA);
-    const ataB = await deriveATA(ctx.wallet.publicKey, mintB);
+    const ataA = getAssociatedTokenAddressSync(mintA, ctx.wallet.publicKey);
+    const ataB = getAssociatedTokenAddressSync(mintB, ctx.wallet.publicKey);
     await burnAndCloseATA(ctx, ataA);
     await burnAndCloseATA(ctx, ataB);
 
     for (let i = 0; i < NUM_REWARDS; i++) {
       if (PoolUtil.isRewardInitialized(pool.getRewardInfos()[i])) {
         const mintReward = pool.getRewardInfos()[i].mint;
-        const ataReward = await deriveATA(ctx.wallet.publicKey, mintReward);
+        const ataReward = getAssociatedTokenAddressSync(mintReward, ctx.wallet.publicKey);
         await burnAndCloseATA(ctx, ataReward);
       }
     }
@@ -221,15 +221,15 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const mintA = pool.getTokenAInfo().mint;
     const mintB = pool.getTokenBInfo().mint;
-    const ataA = await deriveATA(ctx.wallet.publicKey, mintA);
-    const ataB = await deriveATA(ctx.wallet.publicKey, mintB);
+    const ataA = getAssociatedTokenAddressSync(mintA, ctx.wallet.publicKey);
+    const ataB = getAssociatedTokenAddressSync(mintB, ctx.wallet.publicKey);
     await createATA(ctx, ataA, mintA);
     await createATA(ctx, ataB, mintB);
 
     for (let i = 0; i < NUM_REWARDS; i++) {
       if (PoolUtil.isRewardInitialized(pool.getRewardInfos()[i])) {
         const mintReward = pool.getRewardInfos()[i].mint;
-        const ataReward = await deriveATA(ctx.wallet.publicKey, mintReward);
+        const ataReward = getAssociatedTokenAddressSync(mintReward, ctx.wallet.publicKey);
         await createATA(ctx, ataReward, mintReward);
       }
     }

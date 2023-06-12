@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA } from "@orca-so/common-sdk";
-import { AccountInfo, ASSOCIATED_TOKEN_PROGRAM_ID, MintInfo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { AccountInfo, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, MintInfo, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import {
@@ -28,7 +27,7 @@ describe("initialize_position_bundle", () => {
   async function createInitializePositionBundleTx(ctx: WhirlpoolContext, overwrite: any, mintKeypair?: Keypair) {
     const positionBundleMintKeypair = mintKeypair ?? Keypair.generate();
     const positionBundlePda = PDAUtil.getPositionBundle(ctx.program.programId, positionBundleMintKeypair.publicKey);
-    const positionBundleTokenAccount = await deriveATA(ctx.wallet.publicKey, positionBundleMintKeypair.publicKey);
+    const positionBundleTokenAccount = getAssociatedTokenAddressSync(positionBundleMintKeypair.publicKey, ctx.wallet.publicKey);
 
     const defaultAccounts = {
       positionBundle: positionBundlePda.publicKey,
@@ -204,7 +203,7 @@ describe("initialize_position_bundle", () => {
     it("should be failed: invalid ATA address", async () => {
       const tx = await createInitializePositionBundleTx(ctx, {
         // invalid parameter
-        positionBundleTokenAccount: await deriveATA(ctx.wallet.publicKey, Keypair.generate().publicKey),
+        positionBundleTokenAccount: getAssociatedTokenAddressSync(Keypair.generate().publicKey, ctx.wallet.publicKey),
       });
 
       await assert.rejects(

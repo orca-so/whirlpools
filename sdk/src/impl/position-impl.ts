@@ -1,13 +1,12 @@
 import { Address } from "@coral-xyz/anchor";
 import {
   AddressUtil,
-  deriveATA,
   Instruction,
   resolveOrCreateATAs,
   TransactionBuilder,
-  ZERO,
+  ZERO
 } from "@orca-so/common-sdk";
-import { NATIVE_MINT } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
@@ -130,10 +129,10 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     } else {
-      tokenOwnerAccountA = await deriveATA(sourceWalletKey, whirlpool.tokenMintA);
-      tokenOwnerAccountB = await deriveATA(sourceWalletKey, whirlpool.tokenMintB);
+      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey);
+      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey);
     }
-    const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
+    const positionTokenAccount = getAssociatedTokenAddressSync(this.data.positionMint, positionWalletKey);
 
     const increaseIx = increaseLiquidityIx(this.ctx.program, {
       ...liquidityInput,
@@ -203,15 +202,15 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     } else {
-      tokenOwnerAccountA = await deriveATA(sourceWalletKey, whirlpool.tokenMintA);
-      tokenOwnerAccountB = await deriveATA(sourceWalletKey, whirlpool.tokenMintB);
+      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey);
+      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey);
     }
 
     const decreaseIx = decreaseLiquidityIx(this.ctx.program, {
       ...liquidityInput,
       whirlpool: this.data.whirlpool,
       position: this.address,
-      positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
+      positionTokenAccount: getAssociatedTokenAddressSync(this.data.positionMint, positionWalletKey),
       tokenOwnerAccountA,
       tokenOwnerAccountB,
       tokenVaultA: whirlpool.tokenVaultA,
@@ -303,7 +302,7 @@ export class PositionImpl implements Position {
       `No owner token account provided for wallet ${destinationWalletKey.toBase58()} for token B ${whirlpool.tokenMintB.toBase58()} `
     );
 
-    const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
+    const positionTokenAccount = getAssociatedTokenAddressSync(this.data.positionMint, positionWalletKey);
 
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
       const updateIx = await this.updateFeesAndRewards();
@@ -388,7 +387,7 @@ export class PositionImpl implements Position {
       ataMap = { ...affliatedTokenAtaMap };
     }
 
-    const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
+    const positionTokenAccount = getAssociatedTokenAddressSync(this.data.positionMint, positionWalletKey);
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
       const updateIx = await this.updateFeesAndRewards();
       txBuilder.addInstruction(updateIx);

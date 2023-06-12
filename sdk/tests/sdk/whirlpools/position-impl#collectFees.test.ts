@@ -1,17 +1,17 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import { MathUtil } from "@orca-so/common-sdk";
+import { getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  buildWhirlpoolClient,
-  collectFeesQuote,
   PDAUtil,
-  toTx,
   Whirlpool,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
+  buildWhirlpoolClient,
+  collectFeesQuote,
+  toTx
 } from "../../../src";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
@@ -178,11 +178,11 @@ describe("PositionImpl#collectFees()", () => {
 
       assert.notEqual(positionDataAfter, null);
 
-      const accountAPubkey = await deriveATA(otherWallet.publicKey, poolInitInfo.tokenMintA);
+      const accountAPubkey = getAssociatedTokenAddressSync(otherWallet.publicKey, poolInitInfo.tokenMintA);
       const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, true);
       assert.ok(accountA && accountA.amount.eq(quote.feeOwedA));
 
-      const accountBPubkey = await deriveATA(otherWallet.publicKey, poolInitInfo.tokenMintB);
+      const accountBPubkey = getAssociatedTokenAddressSync(otherWallet.publicKey, poolInitInfo.tokenMintB);
       const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, true);
       assert.ok(accountB && accountB.amount.eq(quote.feeOwedB));
     });
@@ -252,7 +252,7 @@ describe("PositionImpl#collectFees()", () => {
         quote.feeOwedA.toNumber() + minAccountExempt
       );
 
-      const accountBPubkey = await deriveATA(otherWallet.publicKey, poolInitInfo.tokenMintB);
+      const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
       const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, true);
       assert.ok(accountB && accountB.amount.eq(quote.feeOwedB));
     });

@@ -1,5 +1,5 @@
 import { AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
-import { TransactionBuilder, deriveATA } from "@orca-so/common-sdk";
+import { TransactionBuilder } from "@orca-so/common-sdk";
 import { createWSOLAccountInstructions } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -8,6 +8,7 @@ import {
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
   Token,
+  getAssociatedTokenAddressSync,
   u64
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
@@ -66,7 +67,7 @@ export async function createAssociatedTokenAccount(
   owner: web3.PublicKey,
   payer: web3.PublicKey
 ) {
-  const ataAddress = await deriveATA(owner, mint);
+  const ataAddress = getAssociatedTokenAddressSync(mint, owner);
 
   const instr = Token.createAssociatedTokenAccountInstruction(
     ASSOCIATED_TOKEN_PROGRAM_ID,
@@ -181,12 +182,12 @@ export async function createAndMintToAssociatedTokenAccount(
   });
 
   let tokenAccount = tokenAccounts.value.map((account) => {
-    if(account.account.data.parsed.info.mint === mint.toString()) {
+    if (account.account.data.parsed.info.mint === mint.toString()) {
       return account.pubkey
     }
   }).filter(Boolean)[0];
 
-  if(!tokenAccount) {
+  if (!tokenAccount) {
     tokenAccount = await createAssociatedTokenAccount(
       provider,
       mint,

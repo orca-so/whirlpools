@@ -1,6 +1,5 @@
 import {
   AddressUtil,
-  deriveATA,
   EMPTY_INSTRUCTION,
   Percentage,
   TransactionBuilder,
@@ -8,10 +7,11 @@ import {
 } from "@orca-so/common-sdk";
 import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import {
-  AccountInfo,
   ASSOCIATED_TOKEN_PROGRAM_ID,
+  AccountInfo,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
   u64,
 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -22,8 +22,8 @@ import {
   SwapUtils,
   TickArrayUtil,
   TradeRoute,
-  twoHopSwapQuoteFromSwapQuotes,
   WhirlpoolContext,
+  twoHopSwapQuoteFromSwapQuotes,
 } from "../..";
 import { createAssociatedTokenAccountInstruction } from "../../utils/ata-ix-util";
 import { adjustForSlippage } from "../../utils/position-util";
@@ -318,7 +318,7 @@ async function cachedResolveOrCreateNonNativeATAs(
 ): Promise<{ [tokenMint: string]: ResolvedTokenAddressInstruction }> {
   const instructionMap: { [tokenMint: string]: ResolvedTokenAddressInstruction } = {};
   const tokenMintArray = Array.from(tokenMints).map((tm) => new PublicKey(tm));
-  const tokenAtas = await Promise.all(tokenMintArray.map((tm) => deriveATA(ownerAddress, tm)));
+  const tokenAtas = tokenMintArray.map((tm) => getAssociatedTokenAddressSync(tm, ownerAddress));
   const tokenAccounts = await getTokenAccounts(tokenAtas);
   tokenAccounts.forEach((tokenAccount, index) => {
     const ataAddress = tokenAtas[index]!;

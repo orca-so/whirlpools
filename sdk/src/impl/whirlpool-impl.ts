@@ -5,10 +5,9 @@ import {
   TokenUtil,
   TransactionBuilder,
   ZERO,
-  deriveATA,
-  resolveOrCreateATAs,
+  resolveOrCreateATAs
 } from "@orca-so/common-sdk";
-import { NATIVE_MINT } from "@solana/spl-token";
+import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
@@ -282,7 +281,7 @@ export class WhirlpoolImpl implements Whirlpool {
       positionMintKeypair.publicKey
     );
     const metadataPda = PDAUtil.getPositionMetadata(positionMintKeypair.publicKey);
-    const positionTokenAccountAddress = await deriveATA(wallet, positionMintKeypair.publicKey);
+    const positionTokenAccountAddress = getAssociatedTokenAddressSync(positionMintKeypair.publicKey, wallet);
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -377,7 +376,7 @@ export class WhirlpoolImpl implements Whirlpool {
       `Position ${positionAddress.toBase58()} is not a position for Whirlpool ${this.address.toBase58()}`
     );
 
-    const positionTokenAccount = await deriveATA(positionWallet, positionData.positionMint);
+    const positionTokenAccount = getAssociatedTokenAddressSync(positionData.positionMint, positionWallet);
 
     const tokenAccountsTxBuilder = new TransactionBuilder(
       this.ctx.provider.connection,

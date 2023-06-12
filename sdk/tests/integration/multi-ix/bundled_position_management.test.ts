@@ -1,13 +1,13 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, MathUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import { MathUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import { getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
-import { buildWhirlpoolClient, collectFeesQuote, NUM_REWARDS, PDAUtil, PoolUtil, POSITION_BUNDLE_SIZE, PositionBundleData, PriceMath, toTx, Whirlpool, WhirlpoolClient, WhirlpoolIx } from "../../../src";
+import { NUM_REWARDS, PDAUtil, POSITION_BUNDLE_SIZE, PoolUtil, PositionBundleData, PriceMath, Whirlpool, WhirlpoolClient, WhirlpoolIx, buildWhirlpoolClient, collectFeesQuote, toTx } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
-import { createTokenAccount, TickSpacing, ZERO_BN } from "../../utils";
+import { TickSpacing, ZERO_BN, createTokenAccount } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initializePositionBundle, openBundledPosition } from "../../utils/init-utils";
@@ -304,8 +304,8 @@ describe("bundled position management tests", () => {
     const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(positionInitInfo.params.tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
     const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(positionInitInfo.params.tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
     const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-    const tokenOwnerAccountA = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintA);
-    const tokenOwnerAccountB = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintB);
+    const tokenOwnerAccountA = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, ctx.wallet.publicKey);
+    const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
     const modifyLiquidityParams = {
       liquidityAmount,
@@ -500,8 +500,8 @@ describe("bundled position management tests", () => {
       const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(positionInitInfo.params.tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(positionInitInfo.params.tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-      const tokenOwnerAccountA = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintA);
-      const tokenOwnerAccountB = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintB);
+      const tokenOwnerAccountA = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, ctx.wallet.publicKey);
+      const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
       // initialized check (No data left over from previous opening)
       const postOpen = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
@@ -656,8 +656,8 @@ describe("bundled position management tests", () => {
       const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-      const tokenOwnerAccountA = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintA);
-      const tokenOwnerAccountB = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintB);
+      const tokenOwnerAccountA = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, ctx.wallet.publicKey);
+      const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
       const modifyLiquidityParams = {
         liquidityAmount,
@@ -766,8 +766,8 @@ describe("bundled position management tests", () => {
       const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-      const tokenOwnerAccountA = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintA);
-      const tokenOwnerAccountB = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintB);
+      const tokenOwnerAccountA = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, ctx.wallet.publicKey);
+      const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
       const modifyLiquidityParams = {
         liquidityAmount,
@@ -927,8 +927,8 @@ describe("bundled position management tests", () => {
       const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-      const tokenOwnerAccountA = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintA);
-      const tokenOwnerAccountB = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintB);
+      const tokenOwnerAccountA = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, ctx.wallet.publicKey);
+      const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
       const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPubkey, 22528);
       const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey);

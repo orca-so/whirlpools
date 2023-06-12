@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, Percentage } from "@orca-so/common-sdk";
+import { Percentage } from "@orca-so/common-sdk";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -181,7 +182,7 @@ describe("position-impl", () => {
 
     // Transfer the position token to another wallet
     const otherWallet = anchor.web3.Keypair.generate();
-    const walletPositionTokenAccount = await deriveATA(ctx.wallet.publicKey, positionMint);
+    const walletPositionTokenAccount = getAssociatedTokenAddressSync(positionMint, ctx.wallet.publicKey);
     const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
       ctx.provider,
       positionMint,

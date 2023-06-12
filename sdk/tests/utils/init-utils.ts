@@ -1,41 +1,41 @@
 import * as anchor from "@coral-xyz/anchor";
-import { AddressUtil, deriveATA, MathUtil, PDA } from "@orca-so/common-sdk";
-import { NATIVE_MINT, u64 } from "@solana/spl-token";
+import { AddressUtil, MathUtil, PDA } from "@orca-so/common-sdk";
+import { NATIVE_MINT, getAssociatedTokenAddressSync, u64 } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import {
+  TickSpacing,
+  ZERO_BN,
   createAndMintToAssociatedTokenAccount,
   createMint,
-  mintToByAuthority,
-  TickSpacing,
-  ZERO_BN
+  mintToByAuthority
 } from ".";
 import {
   InitConfigParams,
   InitFeeTierParams,
-  InitializeRewardParams,
   InitPoolParams,
   InitTickArrayParams,
+  InitializeRewardParams,
   OpenPositionParams,
   PDAUtil,
   PriceMath,
   TICK_ARRAY_SIZE,
   TickUtil,
-  toTx,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
+  toTx
 } from "../../src";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
 import {
+  TestConfigParams,
+  TestWhirlpoolsConfigKeypairs,
   generateDefaultConfigParams,
   generateDefaultInitFeeTierParams,
   generateDefaultInitPoolParams,
   generateDefaultInitTickArrayParams,
   generateDefaultOpenBundledPositionParams,
-  generateDefaultOpenPositionParams,
-  TestConfigParams,
-  TestWhirlpoolsConfigKeypairs
+  generateDefaultOpenPositionParams
 } from "./test-builders";
 
 interface TestPoolParams {
@@ -895,7 +895,7 @@ export async function initializePositionBundleWithMetadata(
   const positionBundleMintKeypair = Keypair.generate();
   const positionBundlePda = PDAUtil.getPositionBundle(ctx.program.programId, positionBundleMintKeypair.publicKey);
   const positionBundleMetadataPda = PDAUtil.getPositionBundleMetadata(positionBundleMintKeypair.publicKey);
-  const positionBundleTokenAccount = await deriveATA(owner, positionBundleMintKeypair.publicKey);
+  const positionBundleTokenAccount = getAssociatedTokenAddressSync(positionBundleMintKeypair.publicKey, owner);
 
   const tx = toTx(ctx, WhirlpoolIx.initializePositionBundleWithMetadataIx(
     ctx.program,
@@ -930,7 +930,7 @@ export async function initializePositionBundle(
 ) {
   const positionBundleMintKeypair = Keypair.generate();
   const positionBundlePda = PDAUtil.getPositionBundle(ctx.program.programId, positionBundleMintKeypair.publicKey);
-  const positionBundleTokenAccount = await deriveATA(owner, positionBundleMintKeypair.publicKey);
+  const positionBundleTokenAccount = getAssociatedTokenAddressSync(positionBundleMintKeypair.publicKey, owner);
 
   const tx = toTx(ctx, WhirlpoolIx.initializePositionBundleIx(
     ctx.program,

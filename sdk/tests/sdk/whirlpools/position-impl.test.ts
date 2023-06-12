@@ -10,7 +10,7 @@ import {
   PriceMath
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
-import { createAssociatedTokenAccount, TickSpacing, transfer } from "../../utils";
+import { createAssociatedTokenAccount, TickSpacing, transferToken } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
 import { initPosition, mintTokensToTestAccount } from "../../utils/test-builders";
@@ -189,7 +189,7 @@ describe("position-impl", () => {
       otherWallet.publicKey,
       ctx.wallet.publicKey
     );
-    await transfer(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
     // Mint to this other wallet and increase more tokens
     await mintTokensToTestAccount(

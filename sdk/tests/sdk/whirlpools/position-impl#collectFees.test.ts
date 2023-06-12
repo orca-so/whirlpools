@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { Account, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -178,13 +179,13 @@ describe("PositionImpl#collectFees()", () => {
 
       assert.notEqual(positionDataAfter, null);
 
-      const accountAPubkey = getAssociatedTokenAddressSync(otherWallet.publicKey, poolInitInfo.tokenMintA);
-      const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, true);
-      assert.ok(accountA && accountA.amount.eq(quote.feeOwedA));
+      const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
+      const accountA: Account = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, true);
+      assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA));
 
-      const accountBPubkey = getAssociatedTokenAddressSync(otherWallet.publicKey, poolInitInfo.tokenMintB);
+      const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
       const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, true);
-      assert.ok(accountB && accountB.amount.eq(quote.feeOwedB));
+      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
     });
   });
 
@@ -254,7 +255,7 @@ describe("PositionImpl#collectFees()", () => {
 
       const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
       const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, true);
-      assert.ok(accountB && accountB.amount.eq(quote.feeOwedB));
+      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
     });
   });
 });

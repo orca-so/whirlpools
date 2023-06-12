@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import BN from "bn.js";
 import Decimal from "decimal.js";
 import {
   collectFeesQuote,
@@ -19,7 +19,7 @@ import {
   createTokenAccount,
   getTokenBalance,
   TickSpacing,
-  transfer,
+  transferToken,
   ZERO_BN
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -272,7 +272,7 @@ describe("collect_fees", () => {
       newOwner.publicKey
     );
 
-    await transfer(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
 
     await toTx(
       ctx,
@@ -368,7 +368,7 @@ describe("collect_fees", () => {
       /0x7d3/ // ConstraintRaw
     );
 
-    await transfer(provider, positions[0].tokenAccount, positionTokenAccount2, 1);
+    await transferToken(provider, positions[0].tokenAccount, positionTokenAccount2, 1);
 
     await assert.rejects(
       toTx(

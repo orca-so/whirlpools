@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { Account, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
@@ -14,7 +14,7 @@ import {
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidity
 } from "../../../src";
-import { TickSpacing, ZERO_BN, createAssociatedTokenAccount, sleep, transfer } from "../../utils";
+import { TickSpacing, ZERO_BN, createAssociatedTokenAccount, sleep, transferToken } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 
@@ -164,7 +164,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       tickUpper: position.getUpperTickData(),
     });
     const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
-    const accountA = await ctx.fetcher.getTokenInfo(accountAPubkey, true);
+    const accountA = (await ctx.fetcher.getTokenInfo(accountAPubkey, true)) as Account;
     const expectAmountA = liquidityCollectedQuote.tokenMinA.add(feeQuote.feeOwedA);
     if (isWSOLTest) {
       // If this is a WSOL test, we have to account for account rent retrieval
@@ -178,7 +178,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
         .toNumber();
       assert.equal(solInOtherWallet, expectedReceivedSol);
     } else if (expectAmountA.isZero()) {
-      assert.ok(!accountA || accountA.amount.isZero());
+      assert.ok(!accountA || accountA.amount === 0n);
     } else {
       assert.equal(
         accountA?.amount.toString(),
@@ -190,7 +190,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
     const accountB = await ctx.fetcher.getTokenInfo(accountBPubkey, true);
     const expectAmountB = liquidityCollectedQuote.tokenMinB.add(feeQuote.feeOwedB);
     if (expectAmountB.isZero()) {
-      assert.ok(!accountB || accountB.amount.isZero());
+      assert.ok(!accountB || accountB.amount === 0n);
     } else {
       assert.equal(
         accountB?.amount.toString(),
@@ -419,7 +419,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       );
 
       await accrueFeesAndRewards(fixture);
-      await transfer(testCtx.provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+      await transferToken(testCtx.provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
       const { poolInitInfo } = fixture.getInfos();
 
@@ -523,7 +523,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       );
 
       await accrueFeesAndRewards(fixture);
-      await transfer(testCtx.provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+      await transferToken(testCtx.provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
       const { poolInitInfo } = fixture.getInfos();
 

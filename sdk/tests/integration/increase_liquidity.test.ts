@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   PDAUtil,
@@ -25,7 +26,7 @@ import {
   createTokenAccount,
   getTokenBalance,
   sleep,
-  transfer
+  transferToken
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
@@ -628,7 +629,7 @@ describe("increase_liquidity", () => {
     );
 
     // Send position token to other position token account
-    await transfer(provider, positionInitInfo.tokenAccount, newPositionTokenAccount, 1);
+    await transferToken(provider, positionInitInfo.tokenAccount, newPositionTokenAccount, 1);
 
     await assert.rejects(
       toTx(

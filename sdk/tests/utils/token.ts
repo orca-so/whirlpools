@@ -1,12 +1,17 @@
 import { AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
-import { TransactionBuilder, createWrappedNativeAccountInstruction } from "@orca-so/common-sdk";
+import { TokenUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   AccountLayout,
-  AuthorityType,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
-  Token,
+  createApproveInstruction,
+  createAssociatedTokenAccountInstruction,
+  createBurnInstruction,
+  createInitializeAccount3Instruction,
+  createInitializeMintInstruction,
+  createMintToInstruction,
+  createSetAuthorityInstruction,
+  createTransferInstruction,
   getAssociatedTokenAddressSync
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID } from "./test-consts";
@@ -42,7 +47,7 @@ export async function createMintInstructions(
       lamports: await provider.connection.getMinimumBalanceForRentExemption(82),
       programId: TEST_TOKEN_PROGRAM_ID,
     }),
-    Token.createInitMintInstruction(TEST_TOKEN_PROGRAM_ID, mint, 0, authority, null),
+    createInitializeMintInstruction(mint, 0, authority, null)
   ];
   return instructions;
 }
@@ -66,14 +71,11 @@ export async function createAssociatedTokenAccount(
   payer: web3.PublicKey
 ) {
   const ataAddress = getAssociatedTokenAddressSync(mint, owner);
-
-  const instr = Token.createAssociatedTokenAccountInstruction(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    mint,
+  const instr = createAssociatedTokenAccountInstruction(
+    payer,
     ataAddress,
     owner,
-    payer
+    mint,
   );
   const tx = new web3.Transaction();
   tx.add(instr);
@@ -99,7 +101,7 @@ async function createTokenAccountInstrs(
       lamports,
       programId: TEST_TOKEN_PROGRAM_ID,
     }),
-    Token.createInitAccountInstruction(TEST_TOKEN_PROGRAM_ID, mint, newAccountPubkey, owner),
+    createInitializeAccount3Instruction(newAccountPubkey, mint, owner)
   ];
 }
 
@@ -110,21 +112,20 @@ async function createTokenAccountInstrs(
  * @param destination Destination token account to receive tokens
  * @param amount Number of tokens to mint
  */
-export async function mintToByAuthority(
+export async function mintToDestination(
   provider: AnchorProvider,
   mint: web3.PublicKey,
   destination: web3.PublicKey,
   amount: number | BN
 ): Promise<string> {
   const tx = new web3.Transaction();
+  const amountVal = amount instanceof BN ? BigInt(amount.toString()) : amount;
   tx.add(
-    Token.createMintToInstruction(
-      TOKEN_PROGRAM_ID,
+    createMintToInstruction(
       mint,
       destination,
       provider.wallet.publicKey,
-      [],
-      amount
+      amountVal
     )
   );
   return provider.sendAndConfirm(tx, [], { commitment: "confirmed" });
@@ -143,7 +144,7 @@ export async function createAndMintToTokenAccount(
   amount: number | BN
 ): Promise<web3.PublicKey> {
   const tokenAccount = await createTokenAccount(provider, mint, provider.wallet.publicKey);
-  await mintToByAuthority(provider, mint, tokenAccount, new BN(amount.toString()));
+  await mintToDestination(provider, mint, tokenAccount, new BN(amount.toString()));
   return tokenAccount;
 }
 
@@ -165,7 +166,7 @@ export async function createAndMintToAssociatedTokenAccount(
       "confirmed"
     );
     const txBuilder = new TransactionBuilder(provider.connection, provider.wallet);
-    const { address: tokenAccount, ...ix } = createWrappedNativeAccountInstruction(
+    const { address: tokenAccount, ...ix } = TokenUtil.createWrappedNativeAccountInstruction(
       destinationWalletKey,
       new BN(amount.toString()),
       rentExemption
@@ -194,8 +195,8 @@ export async function createAndMintToAssociatedTokenAccount(
     );
   }
 
-  await mintToByAuthority(provider, mint, tokenAccount, new BN(amount.toString()));
-  return tokenAccount;
+  await mintToDestination(provider, mint, tokenAccount!, new BN(amount.toString()));
+  return tokenAccount!;
 }
 
 export async function getTokenBalance(provider: AnchorProvider, vault: web3.PublicKey) {
@@ -210,15 +211,9 @@ export async function approveToken(
   owner?: web3.Keypair
 ) {
   const tx = new web3.Transaction();
+  const amountVal = amount instanceof BN ? BigInt(amount.toString()) : amount;
   tx.add(
-    Token.createApproveInstruction(
-      TOKEN_PROGRAM_ID,
-      tokenAccount,
-      delegate,
-      owner?.publicKey || provider.wallet.publicKey,
-      [],
-      amount
-    )
+    createApproveInstruction(tokenAccount, delegate, owner?.publicKey || provider.wallet.publicKey, amountVal)
   );
   return provider.sendAndConfirm(tx, !!owner ? [owner] : [], { commitment: "confirmed" });
 }
@@ -227,25 +222,23 @@ export async function setAuthority(
   provider: AnchorProvider,
   tokenAccount: web3.PublicKey,
   newAuthority: web3.PublicKey,
-  authorityType: AuthorityType,
+  authorityType: number,
   authority: web3.Keypair
 ) {
   const tx = new web3.Transaction();
   tx.add(
-    Token.createSetAuthorityInstruction(
-      TOKEN_PROGRAM_ID,
+    createSetAuthorityInstruction(
       tokenAccount,
-      newAuthority,
-      authorityType,
       authority.publicKey,
-      []
+      authorityType,
+      newAuthority,
     )
   );
 
   return provider.sendAndConfirm(tx, [authority], { commitment: "confirmed" });
 }
 
-export async function transfer(
+export async function transferToken(
   provider: AnchorProvider,
   source: web3.PublicKey,
   destination: web3.PublicKey,
@@ -253,14 +246,23 @@ export async function transfer(
 ) {
   const tx = new web3.Transaction();
   tx.add(
-    Token.createTransferInstruction(
-      TOKEN_PROGRAM_ID,
-      source,
-      destination,
-      provider.wallet.publicKey,
-      [],
-      amount
-    )
+    createTransferInstruction(source, destination, provider.wallet.publicKey, amount)
+  );
+  return provider.sendAndConfirm(tx, [], { commitment: "confirmed" });
+}
+
+export async function burnToken(
+  provider: AnchorProvider,
+  account: web3.PublicKey,
+  mint: web3.PublicKey,
+  amount: number | BN,
+  owner?: web3.PublicKey
+) {
+  const ownerKey = owner ?? provider.wallet.publicKey;
+  const tx = new web3.Transaction();
+  const amountVal = amount instanceof BN ? BigInt(amount.toString()) : amount;
+  tx.add(
+    createBurnInstruction(account, mint, ownerKey, amountVal)
   );
   return provider.sendAndConfirm(tx, [], { commitment: "confirmed" });
 }

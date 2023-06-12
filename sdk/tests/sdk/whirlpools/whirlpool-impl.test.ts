@@ -24,7 +24,7 @@ import {
   getTokenBalance,
   sleep,
   systemTransferTx,
-  transfer
+  transferToken
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -249,7 +249,7 @@ describe("whirlpool-impl", () => {
       otherWallet.publicKey,
       ctx.wallet.publicKey
     );
-    await transfer(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
     // [Action] Close Position
     const expectationQuote = await decreaseLiquidityQuoteByLiquidity(
@@ -390,8 +390,8 @@ describe("whirlpool-impl", () => {
     // Transfer the position token to another wallet
     const otherWallet = anchor.web3.Keypair.generate();
     const walletPositionTokenAccount = getAssociatedTokenAddressSync(
+      positionWithFees.mintKeypair.publicKey,
       ctx.wallet.publicKey,
-      positionWithFees.mintKeypair.publicKey
     );
 
     const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
@@ -401,7 +401,7 @@ describe("whirlpool-impl", () => {
       ctx.wallet.publicKey
     );
 
-    await transfer(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
     const pool = await client.getPool(whirlpoolPda.publicKey, true);
     const position = await client.getPosition(positionWithFees.publicKey, true);
@@ -570,8 +570,8 @@ describe("whirlpool-impl", () => {
     // Transfer the position token to another wallet
     const otherWallet = anchor.web3.Keypair.generate();
     const walletPositionTokenAccount = getAssociatedTokenAddressSync(
+      positionWithFees.mintKeypair.publicKey,
       ctx.wallet.publicKey,
-      positionWithFees.mintKeypair.publicKey
     );
 
     const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
@@ -581,7 +581,7 @@ describe("whirlpool-impl", () => {
       ctx.wallet.publicKey
     );
 
-    await transfer(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
     const pool = await client.getPool(whirlpoolPda.publicKey, true);
     const position = await client.getPosition(positionWithFees.publicKey, true);

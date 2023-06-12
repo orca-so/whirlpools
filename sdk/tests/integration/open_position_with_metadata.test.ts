@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
 import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 import { PDA, TransactionBuilder } from "@orca-so/common-sdk";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID, Token } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import {
@@ -25,7 +25,7 @@ import {
   ZERO_BN,
   createMint,
   createMintInstructions,
-  mintToByAuthority,
+  mintToDestination,
   systemTransferTx
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -126,33 +126,21 @@ describe("open_position_with_metadata", () => {
       positionTokenAccount: positionTokenAccountAddress,
     } = positionInitInfo.params;
 
-    const token = new Token(
-      ctx.connection,
-      positionMintAddress,
-      TOKEN_PROGRAM_ID,
-      web3.Keypair.generate()
-    );
-
     await checkMetadata(metadataPda, positionMintAddress);
 
-    const userTokenAccount = await token.getAccountInfo(positionTokenAccountAddress);
-    assert.ok(userTokenAccount.amount.eq(new anchor.BN(1)));
+    const userTokenAccount = await getAccount(ctx.connection, positionTokenAccountAddress);
+    assert.ok(userTokenAccount.amount === 1n);
     assert.ok(userTokenAccount.owner.equals(newOwner.publicKey));
 
     await assert.rejects(
-      mintToByAuthority(provider, positionMintAddress, positionTokenAccountAddress, 1),
+      mintToDestination(provider, positionMintAddress, positionTokenAccountAddress, 1),
       /0x5/ // the total supply of this token is fixed
     );
   });
 
   it("user must pass the valid token ATA account", async () => {
     const anotherMintKey = await createMint(provider, provider.wallet.publicKey);
-    const positionTokenAccountAddress = await Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      anotherMintKey,
-      ctx.provider.wallet.publicKey
-    );
+    const positionTokenAccountAddress = getAssociatedTokenAddressSync(anotherMintKey, provider.wallet.publicKey)
 
     await assert.rejects(
       toTx(
@@ -213,12 +201,7 @@ describe("open_position_with_metadata", () => {
     const positionPda = PDAUtil.getPosition(ctx.program.programId, positionMintKeypair.publicKey);
     const metadataPda = PDAUtil.getPositionMetadata(positionMintKeypair.publicKey);
 
-    const positionTokenAccountAddress = await Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      positionMintKeypair.publicKey,
-      provider.wallet.publicKey
-    );
+    const positionTokenAccountAddress = getAssociatedTokenAddressSync(positionMintKeypair.publicKey, provider.wallet.publicKey);
 
     const tx = new web3.Transaction();
     tx.add(

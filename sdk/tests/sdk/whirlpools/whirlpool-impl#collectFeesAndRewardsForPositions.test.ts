@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, SendTxRequest, TransactionBuilder, TransactionProcessor, ZERO } from "@orca-so/common-sdk";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, NATIVE_MINT, TOKEN_PROGRAM_ID, Token, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { NATIVE_MINT, createAssociatedTokenAccountInstruction, createBurnInstruction, createCloseAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import { BN } from "bn.js";
@@ -187,22 +187,8 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     const account = await ctx.fetcher.getTokenInfo(ata, true);
     if (account === null) return;
 
-    const burnIx = Token.createBurnInstruction(
-      TOKEN_PROGRAM_ID,
-      account.mint,
-      ata,
-      ctx.wallet.publicKey,
-      [],
-      account.amount
-    );
-
-    const closeIx = Token.createCloseAccountInstruction(
-      TOKEN_PROGRAM_ID,
-      ata,
-      ctx.wallet.publicKey,
-      ctx.wallet.publicKey,
-      []
-    );
+    const burnIx = createBurnInstruction(ata, account.mint, ctx.wallet.publicKey, account.amount);
+    const closeIx = createCloseAccountInstruction(ata, ctx.wallet.publicKey, ctx.wallet.publicKey, []);
 
     const tx = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
     tx.addInstruction({
@@ -241,14 +227,11 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const account = await ctx.fetcher.getTokenInfo(ata, true);
     if (account !== null) return;
-
-    const createATAIx = Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      mint,
+    const createATAIx = createAssociatedTokenAccountInstruction(
+      ctx.wallet.publicKey,
       ata,
       ctx.wallet.publicKey,
-      ctx.wallet.publicKey
+      mint,
     );
 
     const tx = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);

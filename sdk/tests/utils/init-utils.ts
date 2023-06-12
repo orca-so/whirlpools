@@ -9,7 +9,7 @@ import {
   ZERO_BN,
   createAndMintToAssociatedTokenAccount,
   createMint,
-  mintToByAuthority
+  mintToDestination
 } from ".";
 import {
   InitConfigParams,
@@ -451,7 +451,9 @@ export async function initRewardAndSetEmissions(
   const {
     params: { rewardMint, rewardVaultKeypair },
   } = await initializeReward(ctx, rewardAuthorityKeypair, whirlpool, rewardIndex, funder);
-  await mintToByAuthority(ctx.provider, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
+
+  await mintToDestination(ctx.provider, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
+
   await toTx(
     ctx,
     WhirlpoolIx.setRewardEmissionsIx(ctx.program, {

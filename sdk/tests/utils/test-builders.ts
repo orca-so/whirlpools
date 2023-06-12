@@ -1,21 +1,20 @@
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { AddressUtil, MathUtil, PDA, Percentage } from "@orca-so/common-sdk";
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID, Token,
-  TOKEN_PROGRAM_ID
+  getAssociatedTokenAddressSync
 } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { createAndMintToAssociatedTokenAccount, createMint } from ".";
 import {
-  increaseLiquidityQuoteByInputToken,
   InitConfigParams,
   InitFeeTierParams,
   InitPoolParams,
   InitTickArrayParams, OpenBundledPositionParams, OpenPositionParams, PDAUtil,
   PoolUtil,
   PriceMath,
-  Whirlpool
+  Whirlpool,
+  increaseLiquidityQuoteByInputToken
 } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
 
@@ -148,12 +147,7 @@ export async function generateDefaultOpenPositionParams(
 
   const metadataPda = PDAUtil.getPositionMetadata(positionMintKeypair.publicKey);
 
-  const positionTokenAccountAddress = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    positionMintKeypair.publicKey,
-    owner
-  );
+  const positionTokenAccountAddress = getAssociatedTokenAddressSync(positionMintKeypair.publicKey, owner)
 
   const params: Required<OpenPositionParams & { metadataPda: PDA }> = {
     funder: funder || context.wallet.publicKey,
@@ -264,12 +258,7 @@ export async function generateDefaultOpenBundledPositionParams(
   const bundledPositionPda = PDAUtil.getBundledPosition(context.program.programId, positionBundleMint, bundleIndex);
   const positionBundle = PDAUtil.getPositionBundle(context.program.programId, positionBundleMint).publicKey;
 
-  const positionBundleTokenAccount = await Token.getAssociatedTokenAddress(
-    ASSOCIATED_TOKEN_PROGRAM_ID,
-    TOKEN_PROGRAM_ID,
-    positionBundleMint,
-    owner
-  );
+  const positionBundleTokenAccount = getAssociatedTokenAddressSync(positionBundleMint, owner);
 
   const params: Required<OpenBundledPositionParams> = {
     bundleIndex,

@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { PDA, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
+import BN from "bn.js";
 import {
   InitPoolParams,
   POSITION_BUNDLE_SIZE,
@@ -16,7 +17,7 @@ import {
   TickSpacing,
   approveToken, createAssociatedTokenAccount,
   systemTransferTx,
-  transfer
+  transferToken
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool, initializePositionBundle, openBundledPosition, openPosition } from "../utils/init-utils";
@@ -554,7 +555,7 @@ describe("close_bundled_position", () => {
         ctx.wallet.publicKey,
       );
 
-      await transfer(
+      await transferToken(
         provider,
         positionBundleInfo.positionBundleTokenAccount,
         funderATA,
@@ -562,7 +563,7 @@ describe("close_bundled_position", () => {
       );
 
       const tokenInfo = await fetcher.getTokenInfo(funderATA, true);
-      assert.ok(tokenInfo?.amount.eqn(1));
+      assert.ok(tokenInfo?.amount === 1n);
 
       const tx = toTx(
         ctx,

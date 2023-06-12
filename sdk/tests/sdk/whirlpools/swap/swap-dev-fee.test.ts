@@ -131,6 +131,7 @@ describe("whirlpool-dev-fee-swap", () => {
     const whirlpoolData = await whirlpool.refreshData();
     const swapToken = aToB ? whirlpoolData.tokenMintA : whirlpoolData.tokenMintB;
     const beforeVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+
     const { inputTokenQuote, postFeeInputTokenQuote, inputTokenQuoteWithDevFees } = await getQuotes(
       ctx,
       whirlpool,

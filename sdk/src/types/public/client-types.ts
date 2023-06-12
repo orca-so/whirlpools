@@ -4,7 +4,7 @@ import BN from "bn.js";
 import { TickArrayData, WhirlpoolRewardInfoData } from "./anchor-types";
 
 /**
- * Extended MintInfo type to host token info.
+ * Extended Mint type to host token info.
  * @category WhirlpoolClient
  */
 export type TokenInfo = Mint & { mint: PublicKey };

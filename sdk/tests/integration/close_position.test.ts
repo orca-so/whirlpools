@@ -6,9 +6,10 @@ import {
   approveToken,
   createAndMintToTokenAccount,
   createTokenAccount,
+
   setAuthority,
   TickSpacing,
-  transfer,
+  transferToken,
   ZERO_BN
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -67,7 +68,7 @@ describe("close_position", () => {
       ctx.provider,
       params.positionTokenAccount,
       delegate.publicKey,
-      "CloseAccount",
+      3,
       owner
     );
 
@@ -129,7 +130,7 @@ describe("close_position", () => {
       newOwner.publicKey
     );
 
-    await transfer(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
 
     await toTx(
       ctx,
@@ -212,7 +213,7 @@ describe("close_position", () => {
       ctx.provider,
       params.positionTokenAccount,
       delegate.publicKey,
-      "CloseAccount",
+      3,
       owner
     );
 
@@ -309,7 +310,7 @@ describe("close_position", () => {
       ctx.provider,
       params.positionTokenAccount,
       delegate.publicKey,
-      "CloseAccount",
+      3,
       owner
     );
 
@@ -350,7 +351,7 @@ describe("close_position", () => {
       ctx.provider,
       params.positionTokenAccount,
       delegate.publicKey,
-      "CloseAccount",
+      3,
       owner
     );
 

@@ -8,10 +8,9 @@ import {
 } from "@orca-so/common-sdk";
 import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   Account,
   NATIVE_MINT,
-  TOKEN_PROGRAM_ID,
+  createAssociatedTokenAccountInstruction,
   getAssociatedTokenAddressSync
 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -26,7 +25,6 @@ import {
   WhirlpoolContext,
   twoHopSwapQuoteFromSwapQuotes,
 } from "../..";
-import { createAssociatedTokenAccountInstruction } from "../../utils/ata-ix-util";
 import { adjustForSlippage } from "../../utils/position-util";
 import { contextOptionsToBuilderOptions } from "../../utils/txn-utils";
 import { swapIx } from "../swap-ix";
@@ -333,13 +331,10 @@ async function cachedResolveOrCreateNonNativeATAs(
       resolvedInstruction = { address: ataAddress, ...EMPTY_INSTRUCTION };
     } else {
       const createAtaInstruction = createAssociatedTokenAccountInstruction(
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-        TOKEN_PROGRAM_ID,
-        tokenMintArray[index],
+        payer,
         ataAddress,
         ownerAddress,
-        payer,
-        modeIdempotent
+        tokenMintArray[index]
       );
 
       resolvedInstruction = {

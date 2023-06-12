@@ -2,6 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   GetPricesConfig, GetPricesThresholdConfig, PriceModule,

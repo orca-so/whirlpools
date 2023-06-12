@@ -1046,8 +1046,8 @@ describe("bundled position management tests", () => {
         }));
 
       await builder.buildAndExecute();
-      assert.ok((await ctx.fetcher.getTokenInfo(receiverAtaA, true))!.amount.eqn(estimatedFee));
-      assert.ok((await ctx.fetcher.getTokenInfo(receiverAtaB, true))!.amount.eqn(estimatedFee));
+      assert.ok((await ctx.fetcher.getTokenInfo(receiverAtaA, true))!.amount === BigInt(estimatedFee.toString()));
+      assert.ok((await ctx.fetcher.getTokenInfo(receiverAtaB, true))!.amount === BigInt(estimatedFee.toString()));
     });
   });
 

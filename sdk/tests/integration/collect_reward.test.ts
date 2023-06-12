@@ -1,4 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
@@ -16,7 +17,7 @@ import {
   getTokenBalance,
   sleep,
   TickSpacing,
-  transfer,
+  transferToken,
   ZERO_BN
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -226,7 +227,7 @@ describe("collect_reward", () => {
       positions[0].mintKeypair.publicKey,
       delegate.publicKey
     );
-    await transfer(provider, positions[0].tokenAccount, delegatePositionAccount, 1);
+    await transferToken(provider, positions[0].tokenAccount, delegatePositionAccount, 1);
 
     await toTx(
       ctx,
@@ -422,7 +423,7 @@ describe("collect_reward", () => {
       positions[0].mintKeypair.publicKey,
       provider.wallet.publicKey
     );
-    await transfer(provider, positions[0].tokenAccount, otherPositionAcount, 1);
+    await transferToken(provider, positions[0].tokenAccount, otherPositionAcount, 1);
     await assert.rejects(
       toTx(
         ctx,

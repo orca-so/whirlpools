@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   PositionData,
@@ -20,7 +21,7 @@ import {
   createMint,
   createTokenAccount,
   sleep,
-  transfer
+  transferToken
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
@@ -250,7 +251,7 @@ describe("decrease_liquidity", () => {
       position.mintKeypair.publicKey,
       newOwner.publicKey
     );
-    await transfer(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
 
     await toTx(
       ctx,
@@ -449,7 +450,7 @@ describe("decrease_liquidity", () => {
     );
 
     // Send position token to other position token account
-    await transfer(provider, position.tokenAccount, newPositionTokenAccount, 1);
+    await transferToken(provider, position.tokenAccount, newPositionTokenAccount, 1);
 
     await assert.rejects(
       toTx(

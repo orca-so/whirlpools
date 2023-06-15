@@ -205,7 +205,7 @@
     "@solana/buffer-layout-utils" "^0.2.0"
     buffer "^6.0.3"
 
-"@solana/web3.js@^1.21.0", "@solana/web3.js@^1.31.0", "@solana/web3.js@^1.36.0", "@solana/web3.js@^1.68.0", "@solana/web3.js@~1.74.0":
+"@solana/web3.js@^1.21.0", "@solana/web3.js@^1.31.0", "@solana/web3.js@^1.36.0", "@solana/web3.js@^1.68.0":
   version "1.74.0"
   resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.74.0.tgz#dbcbeabb830dd7cbbcf5e31404ca79c9785cbf2d"
   integrity sha512-RKZyPqizPCxmpMGfpu4fuplNZEWCrhRBjjVstv5QnAJvgln1jgOfgui+rjl1ExnqDnWKg9uaZ5jtGROH/cwabg==
@@ -227,7 +227,7 @@
     rpc-websockets "^7.5.1"
     superstruct "^0.14.2"
 
-"@solana/web3.js@^1.32.0":
+"@solana/web3.js@^1.32.0", "@solana/web3.js@^1.75.0":
   version "1.77.3"
   resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.77.3.tgz#2cbeaa1dd24f8fa386ac924115be82354dfbebab"
   integrity sha512-PHaO0BdoiQRPpieC1p31wJsBaxwIOWLh8j2ocXNKX8boCQVldt26Jqm2tZE4KlrvnCIV78owPLv1pEUgqhxZ3w==

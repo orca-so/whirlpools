@@ -10,7 +10,7 @@
     "@metaplex-foundation/mpl-token-metadata": "1.2.5",
     "@orca-so/common-sdk": "0.2.2",
     "@solana/spl-token": "^0.3.8",
-    "@solana/web3.js": "~1.74.0",
+    "@solana/web3.js": "^1.75.0",
     "decimal.js": "^10.3.1",
     "lodash.combinations": "^18.11.1",
     "tiny-invariant": "^1.2.0"

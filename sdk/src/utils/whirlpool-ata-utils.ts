@@ -3,7 +3,7 @@ import {
   TokenUtil,
   TransactionBuilder,
   ZERO,
-  resolveOrCreateATAs
+  resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";

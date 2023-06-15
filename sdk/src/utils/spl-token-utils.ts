@@ -1,6 +1,4 @@
-import {
-  NATIVE_MINT,
-} from "@solana/spl-token";
+import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 
 export function isNativeMint(mint: PublicKey) {

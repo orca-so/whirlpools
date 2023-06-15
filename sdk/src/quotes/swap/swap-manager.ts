@@ -154,13 +154,13 @@ function calculateEstTokens(
 ) {
   return aToB === amountSpecifiedIsInput
     ? {
-      amountA: amount.sub(amountRemaining),
-      amountB: amountCalculated,
-    }
+        amountA: amount.sub(amountRemaining),
+        amountB: amountCalculated,
+      }
     : {
-      amountA: amountCalculated,
-      amountB: amount.sub(amountRemaining),
-    };
+        amountA: amountCalculated,
+        amountB: amount.sub(amountRemaining),
+      };
 }
 
 function calculateNextLiquidity(tickNetLiquidity: BN, currLiquidity: BN, aToB: boolean) {

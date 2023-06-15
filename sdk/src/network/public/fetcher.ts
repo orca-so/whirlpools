@@ -1,5 +1,11 @@
 import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, ParsableEntity, ParsableMintInfo, ParsableTokenAccountInfo, getMultipleAccountsInMap } from "@orca-so/common-sdk";
+import {
+  AddressUtil,
+  ParsableEntity,
+  ParsableMintInfo,
+  ParsableTokenAccountInfo,
+  getMultipleAccountsInMap,
+} from "@orca-so/common-sdk";
 import { Account, AccountLayout, Mint } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
@@ -269,10 +275,7 @@ export class AccountFetcher {
    * @param refresh force cache refresh
    * @returns token info accounts
    */
-  public async listTokenInfos(
-    addresses: Address[],
-    refresh: boolean
-  ): Promise<(Account | null)[]> {
+  public async listTokenInfos(addresses: Address[], refresh: boolean): Promise<(Account | null)[]> {
     return this.list(AddressUtil.toPubKeys(addresses), ParsableTokenAccountInfo, refresh);
   }
 
@@ -366,7 +369,10 @@ export class AccountFetcher {
 
     /* Fetch accounts not found in cache */
     if (undefinedAccounts.length > 0) {
-      const fetchedAccountsMap = await getMultipleAccountsInMap(this.connection, undefinedAccounts.map((account) => account.key));
+      const fetchedAccountsMap = await getMultipleAccountsInMap(
+        this.connection,
+        undefinedAccounts.map((account) => account.key)
+      );
       undefinedAccounts.forEach(({ cacheIndex, key }) => {
         const fetchedEntry = fetchedAccountsMap.get(key);
         const value = entity.parse(AddressUtil.toPubKey(key), fetchedEntry);
@@ -382,5 +388,4 @@ export class AccountFetcher {
     invariant(result.length === addresses.length, "not enough results fetched");
     return result;
   }
-
 }

@@ -17,9 +17,12 @@ import {
  */
 @staticImplements<ParsableEntity<WhirlpoolsConfigData>>()
 export class ParsableWhirlpoolsConfig {
-  private constructor() { }
+  private constructor() {}
 
-  public static parse(address: PublicKey, accountData: AccountInfo<Buffer> | undefined | null): WhirlpoolsConfigData | null {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): WhirlpoolsConfigData | null {
     if (!accountData) {
       return null;
     }
@@ -38,9 +41,12 @@ export class ParsableWhirlpoolsConfig {
  */
 @staticImplements<ParsableEntity<WhirlpoolData>>()
 export class ParsableWhirlpool {
-  private constructor() { }
+  private constructor() {}
 
-  public static parse(address: PublicKey, accountData: AccountInfo<Buffer> | undefined | null): WhirlpoolData | null {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): WhirlpoolData | null {
     if (!accountData?.data) {
       return null;
     }
@@ -59,9 +65,12 @@ export class ParsableWhirlpool {
  */
 @staticImplements<ParsableEntity<PositionData>>()
 export class ParsablePosition {
-  private constructor() { }
+  private constructor() {}
 
-  public static parse(address: PublicKey, accountData: AccountInfo<Buffer> | undefined | null): PositionData | null {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): PositionData | null {
     if (!accountData?.data) {
       return null;
     }
@@ -80,9 +89,12 @@ export class ParsablePosition {
  */
 @staticImplements<ParsableEntity<TickArrayData>>()
 export class ParsableTickArray {
-  private constructor() { }
+  private constructor() {}
 
-  public static parse(address: PublicKey, accountData: AccountInfo<Buffer> | undefined | null): TickArrayData | null {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): TickArrayData | null {
     if (!accountData?.data) {
       return null;
     }
@@ -101,9 +113,12 @@ export class ParsableTickArray {
  */
 @staticImplements<ParsableEntity<FeeTierData>>()
 export class ParsableFeeTier {
-  private constructor() { }
+  private constructor() {}
 
-  public static parse(address: PublicKey, accountData: AccountInfo<Buffer> | undefined | null): FeeTierData | null {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): FeeTierData | null {
     if (!accountData?.data) {
       return null;
     }
@@ -122,9 +137,12 @@ export class ParsableFeeTier {
  */
 @staticImplements<ParsableEntity<PositionBundleData>>()
 export class ParsablePositionBundle {
-  private constructor() { }
+  private constructor() {}
 
-  public static parse(address: PublicKey, accountData: AccountInfo<Buffer> | undefined | null): PositionBundleData | null {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): PositionBundleData | null {
     if (!accountData?.data) {
       return null;
     }
@@ -137,7 +155,6 @@ export class ParsablePositionBundle {
     }
   }
 }
-
 
 const WhirlpoolCoder = new BorshAccountsCoder(WhirlpoolIDL as Idl);
 

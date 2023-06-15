@@ -11,7 +11,7 @@ import {
   Account,
   NATIVE_MINT,
   createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddressSync
+  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
@@ -263,29 +263,35 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
     };
 
     if (amountSpecifiedIsInput) {
-      updatedQuote.hopQuotes = [updatedQuote.hopQuotes[0], {
-        ...swapQuoteTwo,
-        quote: {
-          ...swapQuoteTwo.quote,
-          otherAmountThreshold: adjustForSlippage(
-            swapQuoteTwo.quote.estimatedAmountOut,
-            slippage,
-            false
-          ),
+      updatedQuote.hopQuotes = [
+        updatedQuote.hopQuotes[0],
+        {
+          ...swapQuoteTwo,
+          quote: {
+            ...swapQuoteTwo.quote,
+            otherAmountThreshold: adjustForSlippage(
+              swapQuoteTwo.quote.estimatedAmountOut,
+              slippage,
+              false
+            ),
+          },
         },
-      }];
+      ];
     } else {
-      updatedQuote.hopQuotes = [{
-        ...swapQuoteOne,
-        quote: {
-          ...swapQuoteOne.quote,
-          otherAmountThreshold: adjustForSlippage(
-            swapQuoteOne.quote.estimatedAmountIn,
-            slippage,
-            true
-          ),
+      updatedQuote.hopQuotes = [
+        {
+          ...swapQuoteOne,
+          quote: {
+            ...swapQuoteOne.quote,
+            otherAmountThreshold: adjustForSlippage(
+              swapQuoteOne.quote.estimatedAmountIn,
+              slippage,
+              true
+            ),
+          },
         },
-      }, updatedQuote.hopQuotes[1]];
+        updatedQuote.hopQuotes[1],
+      ];
     }
     return updatedQuote;
   }

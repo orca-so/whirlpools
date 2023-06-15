@@ -1,5 +1,11 @@
 import { Address } from "@coral-xyz/anchor";
-import { Instruction, TokenUtil, TransactionBuilder, ZERO, resolveOrCreateATAs } from "@orca-so/common-sdk";
+import {
+  Instruction,
+  TokenUtil,
+  TransactionBuilder,
+  ZERO,
+  resolveOrCreateATAs,
+} from "@orca-so/common-sdk";
 import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -225,10 +231,7 @@ const constructCollectIxForPosition = (
   const mintA = whirlpool.tokenMintA.toBase58();
   const mintB = whirlpool.tokenMintB.toBase58();
 
-  const positionTokenAccount = getAssociatedTokenAddressSync(
-    positionMint,
-    positionOwner
-  );
+  const positionTokenAccount = getAssociatedTokenAddressSync(positionMint, positionOwner);
 
   // Update fee and reward values if necessary
   if (!liquidity.eq(ZERO)) {

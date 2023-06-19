@@ -15,12 +15,12 @@ export async function getTokenMintInfos(
   const mintA = data.tokenMintA;
   const infoA = await fetcher.getMintInfo(mintA, refresh);
   if (!infoA) {
-    throw new Error(`Unable to fetch Mint for mint - ${mintA}`);
+    throw new Error(`Unable to fetch MintInfo for mint - ${mintA}`);
   }
   const mintB = data.tokenMintB;
   const infoB = await fetcher.getMintInfo(mintB, refresh);
   if (!infoB) {
-    throw new Error(`Unable to fetch Mint for mint - ${mintB}`);
+    throw new Error(`Unable to fetch MintInfo for mint - ${mintB}`);
   }
   return [
     { mint: mintA, ...infoA },

@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { Account, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -180,7 +180,7 @@ describe("PositionImpl#collectFees()", () => {
       assert.notEqual(positionDataAfter, null);
 
       const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
-      const accountA: Account = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, true);
+      const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, true);
       assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA));
 
       const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);

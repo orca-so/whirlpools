@@ -65,11 +65,12 @@ describe("open_position_with_metadata", () => {
 
   async function checkMetadata(metadataPda: PDA | undefined, positionMint: PublicKey) {
     assert.ok(metadataPda != null);
-    const metadata = await Metadata.load(provider.connection, metadataPda.publicKey);
-    assert.ok(metadata.data.updateAuthority === "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr");
-    assert.ok(metadata.data.mint === positionMint.toString());
+
+    const metadata = await Metadata.fromAccountAddress(provider.connection, metadataPda.publicKey);
+    assert.ok(metadata.updateAuthority.toBase58() === "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr");
+    assert.ok(metadata.mint.toBase58() === positionMint.toString());
     assert.ok(
-      metadata.data.data.uri === `https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws`
+      metadata.data.uri.replace(/\0/g, '') === `https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws`
     );
   }
 

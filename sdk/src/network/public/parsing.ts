@@ -17,13 +17,13 @@ import {
  */
 @staticImplements<ParsableEntity<WhirlpoolsConfigData>>()
 export class ParsableWhirlpoolsConfig {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(
     address: PublicKey,
     accountData: AccountInfo<Buffer> | undefined | null
   ): WhirlpoolsConfigData | null {
-    if (!accountData) {
+    if (!accountData?.data) {
       return null;
     }
 
@@ -41,7 +41,7 @@ export class ParsableWhirlpoolsConfig {
  */
 @staticImplements<ParsableEntity<WhirlpoolData>>()
 export class ParsableWhirlpool {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(
     address: PublicKey,
@@ -65,7 +65,7 @@ export class ParsableWhirlpool {
  */
 @staticImplements<ParsableEntity<PositionData>>()
 export class ParsablePosition {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(
     address: PublicKey,
@@ -89,7 +89,7 @@ export class ParsablePosition {
  */
 @staticImplements<ParsableEntity<TickArrayData>>()
 export class ParsableTickArray {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(
     address: PublicKey,
@@ -113,7 +113,7 @@ export class ParsableTickArray {
  */
 @staticImplements<ParsableEntity<FeeTierData>>()
 export class ParsableFeeTier {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(
     address: PublicKey,
@@ -137,7 +137,7 @@ export class ParsableFeeTier {
  */
 @staticImplements<ParsableEntity<PositionBundleData>>()
 export class ParsablePositionBundle {
-  private constructor() {}
+  private constructor() { }
 
   public static parse(
     address: PublicKey,

@@ -2,6 +2,7 @@ import { AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
 import { TokenUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import {
   AccountLayout,
+  AuthorityType,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
   createApproveInstruction,
@@ -222,7 +223,7 @@ export async function setAuthority(
   provider: AnchorProvider,
   tokenAccount: web3.PublicKey,
   newAuthority: web3.PublicKey,
-  authorityType: number,
+  authorityType: AuthorityType,
   authority: web3.Keypair
 ) {
   const tx = new web3.Transaction();

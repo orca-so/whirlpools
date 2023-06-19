@@ -510,7 +510,6 @@ describe("WhirlpoolImpl#closePosition()", () => {
       const position = await testCtx.whirlpoolClient.getPosition(positionData.publicKey, true);
 
       const walletPositionTokenAccount = getAssociatedTokenAddressSync(
-
         positionData.mintKeypair.publicKey,
         testCtx.whirlpoolCtx.wallet.publicKey,
       );

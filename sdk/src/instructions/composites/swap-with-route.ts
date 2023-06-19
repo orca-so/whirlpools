@@ -11,7 +11,7 @@ import {
   Account,
   NATIVE_MINT,
   createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddressSync,
+  getAssociatedTokenAddressSync
 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
@@ -317,8 +317,7 @@ async function cachedResolveOrCreateNonNativeATAs(
   ownerAddress: PublicKey,
   tokenMints: Set<string>,
   getTokenAccounts: (keys: PublicKey[]) => Promise<Array<AtaAccountInfo | null>>,
-  payer = ownerAddress,
-  modeIdempotent: boolean = false
+  payer = ownerAddress
 ): Promise<{ [tokenMint: string]: ResolvedTokenAddressInstruction }> {
   const instructionMap: { [tokenMint: string]: ResolvedTokenAddressInstruction } = {};
   const tokenMintArray = Array.from(tokenMints).map((tm) => new PublicKey(tm));
@@ -340,7 +339,7 @@ async function cachedResolveOrCreateNonNativeATAs(
         payer,
         ataAddress,
         ownerAddress,
-        tokenMintArray[index]
+        tokenMintArray[index],
       );
 
       resolvedInstruction = {

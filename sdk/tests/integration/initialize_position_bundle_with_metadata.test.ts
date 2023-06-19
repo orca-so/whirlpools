@@ -134,13 +134,13 @@ describe("initialize_position_bundle_with_metadata", () => {
       WPB_METADATA_NAME_PREFIX + " " + mintAddress.slice(0, 4) + "..." + mintAddress.slice(-4);
 
     assert.ok(metadataPda != null);
-    const metadata = await Metadata.load(provider.connection, metadataPda.publicKey);
-    assert.ok(metadata.data.mint === positionMint.toString());
-    assert.ok(metadata.data.updateAuthority === WHIRLPOOL_NFT_UPDATE_AUTH.toBase58());
-    assert.ok(metadata.data.isMutable);
-    assert.strictEqual(metadata.data.data.name, nftName);
-    assert.strictEqual(metadata.data.data.symbol, WPB_METADATA_SYMBOL);
-    assert.strictEqual(metadata.data.data.uri, WPB_METADATA_URI);
+    const metadata = await Metadata.fromAccountAddress(provider.connection, metadataPda.publicKey);
+    assert.ok(metadata.mint.toBase58() === positionMint.toString());
+    assert.ok(metadata.updateAuthority.toBase58() === WHIRLPOOL_NFT_UPDATE_AUTH.toBase58());
+    assert.ok(metadata.isMutable);
+    assert.strictEqual(metadata.data.name.replace(/\0/g, ''), nftName);
+    assert.strictEqual(metadata.data.symbol.replace(/\0/g, ''), WPB_METADATA_SYMBOL);
+    assert.strictEqual(metadata.data.uri.replace(/\0/g, ''), WPB_METADATA_URI);
   }
 
   async function createOtherWallet(): Promise<Keypair> {

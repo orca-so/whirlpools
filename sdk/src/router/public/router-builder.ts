@@ -27,7 +27,7 @@ export class WhirlpoolRouterBuilder {
    * @returns A {@link WhirlpoolRouter} that can be used to find routes and execute swaps
    */
   static async buildWithPools(ctx: WhirlpoolContext, pools: Address[]): Promise<WhirlpoolRouter> {
-    const poolGraph = await PoolGraphBuilder.buildPoolGraphWithFetch(pools, ctx.fetcher);
+    const poolGraph = await PoolGraphBuilder.buildPoolGraphWithFetch(pools, ctx.cache);
     return new WhirlpoolRouterImpl(ctx, poolGraph);
   }
 }

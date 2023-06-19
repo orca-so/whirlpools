@@ -1,5 +1,6 @@
 import { Address } from "@coral-xyz/anchor";
 import {
+  AccountFetchOpts,
   AddressUtil,
   Instruction,
   TokenUtil,
@@ -20,6 +21,7 @@ import {
   increaseLiquidityIx,
   updateFeesAndRewardsIx,
 } from "../instructions";
+import { AVOID_REFRESH, PREFER_REFRESH } from "../network/public/account-cache";
 import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
@@ -97,7 +99,7 @@ export class PositionImpl implements Position {
       : this.ctx.wallet.publicKey;
     const ataPayerKey = ataPayer ? AddressUtil.toPubKey(ataPayer) : this.ctx.wallet.publicKey;
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
+    const whirlpool = await this.ctx.cache.getPool(this.data.whirlpool, PREFER_REFRESH);
     if (!whirlpool) {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
@@ -119,7 +121,7 @@ export class PositionImpl implements Position {
           { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: liquidityInput.tokenMaxA },
           { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: liquidityInput.tokenMaxB },
         ],
-        () => this.ctx.fetcher.getAccountRentExempt(),
+        () => this.ctx.cache.getAccountRentExempt(),
         ataPayerKey
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
@@ -176,7 +178,7 @@ export class PositionImpl implements Position {
       ? AddressUtil.toPubKey(positionWallet)
       : this.ctx.wallet.publicKey;
     const ataPayerKey = ataPayer ? AddressUtil.toPubKey(ataPayer) : this.ctx.wallet.publicKey;
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
+    const whirlpool = await this.ctx.cache.getPool(this.data.whirlpool, PREFER_REFRESH);
 
     if (!whirlpool) {
       throw new Error("Unable to fetch whirlpool for this position.");
@@ -195,7 +197,7 @@ export class PositionImpl implements Position {
         this.ctx.connection,
         sourceWalletKey,
         [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
-        () => this.ctx.fetcher.getAccountRentExempt(),
+        () => this.ctx.cache.getAccountRentExempt(),
         ataPayerKey
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
@@ -243,7 +245,7 @@ export class PositionImpl implements Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    refresh = false
+    opts: AccountFetchOpts = AVOID_REFRESH
   ): Promise<TransactionBuilder> {
     const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
       destinationWallet ?? this.ctx.wallet.publicKey,
@@ -251,7 +253,7 @@ export class PositionImpl implements Position {
       ataPayer ?? this.ctx.wallet.publicKey,
     ]);
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, refresh);
+    const whirlpool = await this.ctx.cache.getPool(this.data.whirlpool, opts);
     if (!whirlpool) {
       throw new Error(
         `Unable to fetch whirlpool (${this.data.whirlpool}) for this position (${this.address}).`
@@ -264,7 +266,7 @@ export class PositionImpl implements Position {
       this.ctx.txBuilderOpts
     );
 
-    const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
+    const accountExemption = await this.ctx.cache.getAccountRentExempt();
 
     let ataMap = { ...ownerTokenAccountMap };
 
@@ -342,7 +344,7 @@ export class PositionImpl implements Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    refresh = true
+    opts: AccountFetchOpts = PREFER_REFRESH
   ): Promise<TransactionBuilder> {
     const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
       destinationWallet ?? this.ctx.wallet.publicKey,
@@ -350,7 +352,7 @@ export class PositionImpl implements Position {
       ataPayer ?? this.ctx.wallet.publicKey,
     ]);
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, refresh);
+    const whirlpool = await this.ctx.cache.getPool(this.data.whirlpool, opts);
     if (!whirlpool) {
       throw new Error(
         `Unable to fetch whirlpool(${this.data.whirlpool}) for this position(${this.address}).`
@@ -367,7 +369,7 @@ export class PositionImpl implements Position {
       this.ctx.txBuilderOpts
     );
 
-    const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
+    const accountExemption = await this.ctx.cache.getAccountRentExempt();
 
     let ataMap = { ...ownerTokenAccountMap };
     if (!ownerTokenAccountMap) {
@@ -440,21 +442,21 @@ export class PositionImpl implements Position {
   }
 
   private async refresh() {
-    const positionAccount = await this.ctx.fetcher.getPosition(this.address, true);
+    const positionAccount = await this.ctx.cache.getPosition(this.address, PREFER_REFRESH);
     if (!!positionAccount) {
       this.data = positionAccount;
     }
-    const whirlpoolAccount = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
+    const whirlpoolAccount = await this.ctx.cache.getPool(this.data.whirlpool, PREFER_REFRESH);
     if (!!whirlpoolAccount) {
       this.whirlpoolData = whirlpoolAccount;
     }
 
-    const [lowerTickArray, upperTickArray] = await getTickArrayDataForPosition(
+    const [lowerTickArray, upperTickArray] = (await getTickArrayDataForPosition(
       this.ctx,
       this.data,
       this.whirlpoolData,
-      true
-    );
+      PREFER_REFRESH
+    )).values();
     if (lowerTickArray) {
       this.lowerTickArrayData = lowerTickArray;
     }
@@ -464,7 +466,7 @@ export class PositionImpl implements Position {
   }
 
   private async updateFeesAndRewards(): Promise<Instruction> {
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool);
+    const whirlpool = await this.ctx.cache.getPool(this.data.whirlpool);
     if (!whirlpool) {
       throw new Error(
         `Unable to fetch whirlpool(${this.data.whirlpool}) for this position(${this.address}).`

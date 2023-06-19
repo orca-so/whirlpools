@@ -15,6 +15,7 @@ import {
   WhirlpoolContext,
   WhirlpoolIx
 } from "../../src";
+import { PREFER_REFRESH } from "../../src/network/public/account-cache";
 import {
   approveToken,
   createAssociatedTokenAccount,
@@ -33,7 +34,7 @@ describe("open_bundled_position", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 128;
@@ -146,7 +147,7 @@ describe("open_bundled_position", () => {
     const position = (await fetcher.getPosition(bundledPositionPda.publicKey)) as PositionData;
     checkPositionAccountContents(position, positionBundleInfo.positionBundleMintKeypair.publicKey);
 
-    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true)) as PositionBundleData;
+    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH)) as PositionBundleData;
     checkBitmap(positionBundle, [bundleIndex]);
   });
 
@@ -176,7 +177,7 @@ describe("open_bundled_position", () => {
     const position = (await fetcher.getPosition(bundledPositionPda.publicKey)) as PositionData;
     checkPositionAccountContents(position, positionBundleInfo.positionBundleMintKeypair.publicKey);
 
-    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true)) as PositionBundleData;
+    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH)) as PositionBundleData;
     checkBitmap(positionBundle, [bundleIndex]);
   });
 
@@ -199,7 +200,7 @@ describe("open_bundled_position", () => {
       checkPositionAccountContents(position, positionBundleInfo.positionBundleMintKeypair.publicKey);
     }
 
-    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true)) as PositionBundleData;
+    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH)) as PositionBundleData;
     checkBitmap(positionBundle, bundleIndexes);
   });
 
@@ -314,7 +315,7 @@ describe("open_bundled_position", () => {
       tickUpperIndex
     );
 
-    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true)) as PositionBundleData;
+    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH)) as PositionBundleData;
     assert.ok(checkBitmapIsOpened(positionBundle, bundleIndex));
 
     await assert.rejects(
@@ -500,7 +501,7 @@ describe("open_bundled_position", () => {
         funderKeypair
       );
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
       checkBitmapIsOpened(positionBundle!, 0);
     });
 
@@ -523,7 +524,7 @@ describe("open_bundled_position", () => {
       );
       // owner can open even if delegation exists
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
       checkBitmapIsOpened(positionBundle!, 0);
     });
 
@@ -577,7 +578,7 @@ describe("open_bundled_position", () => {
         1
       );
 
-      const tokenInfo = await fetcher.getTokenInfo(funderATA, true);
+      const tokenInfo = await fetcher.getTokenInfo(funderATA, PREFER_REFRESH);
       assert.ok(tokenInfo?.amount === 1n);
 
       const tx = toTx(
@@ -597,7 +598,7 @@ describe("open_bundled_position", () => {
       tx.addSigner(funderKeypair);
 
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
       checkBitmapIsOpened(positionBundle!, 0);
     });
   });

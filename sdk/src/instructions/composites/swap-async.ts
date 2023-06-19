@@ -1,4 +1,4 @@
-import { resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import { AccountFetchOpts, resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { SwapUtils, TickArrayUtil, Whirlpool, WhirlpoolContext } from "../..";
 import { SwapInput, swapIx } from "../swap-ix";
@@ -13,13 +13,13 @@ export type SwapAsyncParams = {
  * Swap instruction builder method with resolveATA & additional checks.
  * @param ctx - WhirlpoolContext object for the current environment.
  * @param params - {@link SwapAsyncParams}
- * @param refresh - If true, the network calls will always fetch for the latest values.
+ * @param opts - {@link AccountFetchOpts} to use for account fetching.
  * @returns
  */
 export async function swapAsync(
   ctx: WhirlpoolContext,
   params: SwapAsyncParams,
-  refresh: boolean
+  opts: AccountFetchOpts
 ): Promise<TransactionBuilder> {
   const { wallet, whirlpool, swapInput } = params;
   const { aToB, amount } = swapInput;
@@ -28,8 +28,8 @@ export async function swapAsync(
 
   let uninitializedArrays = await TickArrayUtil.getUninitializedArraysString(
     tickArrayAddresses,
-    ctx.fetcher,
-    refresh
+    ctx.cache,
+    opts
   );
   if (uninitializedArrays) {
     throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
@@ -43,7 +43,7 @@ export async function swapAsync(
       { tokenMint: data.tokenMintA, wrappedSolAmountIn: aToB ? amount : ZERO },
       { tokenMint: data.tokenMintB, wrappedSolAmountIn: !aToB ? amount : ZERO },
     ],
-    () => ctx.fetcher.getAccountRentExempt()
+    () => ctx.cache.getAccountRentExempt()
   );
   const { address: ataAKey, ...tokenOwnerAccountAIx } = resolvedAtaA;
   const { address: ataBKey, ...tokenOwnerAccountBIx } = resolvedAtaB;

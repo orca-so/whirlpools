@@ -29,7 +29,7 @@ describe("initialize_pool", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
 
   it("successfully init a Standard account", async () => {
     const price = MathUtil.toX64(new Decimal(5));

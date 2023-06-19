@@ -9,6 +9,7 @@ import {
   toTx,
   WhirlpoolContext
 } from "../../src";
+import { PREFER_REFRESH } from "../../src/network/public/account-cache";
 import {
   createMintInstructions,
   mintToDestination
@@ -22,7 +23,7 @@ describe("initialize_position_bundle", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
 
   async function createInitializePositionBundleTx(ctx: WhirlpoolContext, overwrite: any, mintKeypair?: Keypair) {
     const positionBundleMintKeypair = mintKeypair ?? Keypair.generate();
@@ -57,7 +58,7 @@ describe("initialize_position_bundle", () => {
 
   async function checkPositionBundleMint(positionBundleMintPubkey: PublicKey) {
     // verify position bundle Mint account
-    const positionBundleMint = (await ctx.fetcher.getMintInfo(positionBundleMintPubkey, true)) as Mint;
+    const positionBundleMint = (await ctx.cache.getMintInfo(positionBundleMintPubkey, PREFER_REFRESH)) as Mint;
     // should have NFT characteristics
     assert.strictEqual(positionBundleMint.decimals, 0);
     assert.ok(positionBundleMint.supply === 1n);
@@ -68,7 +69,7 @@ describe("initialize_position_bundle", () => {
 
   async function checkPositionBundleTokenAccount(positionBundleTokenAccountPubkey: PublicKey, owner: PublicKey, positionBundleMintPubkey: PublicKey) {
     // verify position bundle Token account
-    const positionBundleTokenAccount = (await ctx.fetcher.getTokenInfo(positionBundleTokenAccountPubkey, true)) as Account;
+    const positionBundleTokenAccount = (await ctx.cache.getTokenInfo(positionBundleTokenAccountPubkey, PREFER_REFRESH)) as Account;
     assert.ok(positionBundleTokenAccount.amount === 1n);
     assert.ok(positionBundleTokenAccount.mint.equals(positionBundleMintPubkey));
     assert.ok(positionBundleTokenAccount.owner.equals(owner));
@@ -76,7 +77,7 @@ describe("initialize_position_bundle", () => {
 
   async function checkPositionBundle(positionBundlePubkey: PublicKey, positionBundleMintPubkey: PublicKey) {
     // verify PositionBundle account
-    const positionBundle = (await ctx.fetcher.getPositionBundle(positionBundlePubkey, true)) as PositionBundleData;
+    const positionBundle = (await ctx.cache.getPositionBundle(positionBundlePubkey, PREFER_REFRESH)) as PositionBundleData;
     assert.ok(positionBundle.positionBundleMint.equals(positionBundleMintPubkey));
     assert.strictEqual(positionBundle.positionBitmap.length * 8, POSITION_BUNDLE_SIZE);
     for (const bitmap of positionBundle.positionBitmap) {

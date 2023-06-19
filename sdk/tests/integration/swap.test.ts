@@ -19,6 +19,7 @@ import {
   swapQuoteByInputToken,
   toTx
 } from "../../src";
+import { PREFER_REFRESH } from "../../src/network/public/account-cache";
 import { MAX_U64, TickSpacing, ZERO_BN, getTokenBalance } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import {
@@ -36,7 +37,7 @@ describe("swap", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
   const client = buildWhirlpoolClient(ctx);
 
   it("fail on token vault mint a does not match whirlpool token a", async () => {
@@ -551,7 +552,7 @@ describe("swap", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
     const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-    const whirlpool = await client.getPool(whirlpoolKey, true);
+    const whirlpool = await client.getPool(whirlpoolKey, PREFER_REFRESH);
     const whirlpoolData = whirlpool.getData();
     const quote = await swapQuoteByInputToken(
       whirlpool,
@@ -560,7 +561,7 @@ describe("swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      true
+      PREFER_REFRESH
     );
 
     await toTx(
@@ -620,7 +621,7 @@ describe("swap", () => {
     await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, initialParams);
 
     const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-    let whirlpool = await client.getPool(whirlpoolKey, true);
+    let whirlpool = await client.getPool(whirlpoolKey, PREFER_REFRESH);
     let whirlpoolData = whirlpool.getData();
 
     // Position covers the current price, so liquidity should be equal to the initial funded position
@@ -636,7 +637,7 @@ describe("swap", () => {
 
     await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, nextParams);
 
-    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpool = await client.getPool(whirlpoolKey, PREFER_REFRESH);
     whirlpoolData = whirlpool.getData();
     // Whirlpool.currentTick is 91720, so the newly funded position's upper tick is not
     // strictly less than 91720 so the liquidity is not added.
@@ -651,7 +652,7 @@ describe("swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      true
+      PREFER_REFRESH
     );
 
     await toTx(
@@ -668,7 +669,7 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpool = await client.getPool(whirlpoolKey, PREFER_REFRESH);
     whirlpoolData = whirlpool.getData();
 
     // After the above swap, since the amount is so low, it is completely taken by fees
@@ -686,7 +687,7 @@ describe("swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      true
+      PREFER_REFRESH
     );
 
     await toTx(
@@ -703,7 +704,7 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpool = await client.getPool(whirlpoolKey, PREFER_REFRESH);
     whirlpoolData = whirlpool.getData();
 
     // After the above swap, since the amount is so low, it is completely taken by fees
@@ -747,7 +748,7 @@ describe("swap", () => {
     await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, initialParams);
 
     const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-    let whirlpool = await client.getPool(whirlpoolKey, true);
+    let whirlpool = await client.getPool(whirlpoolKey, PREFER_REFRESH);
     let whirlpoolData = whirlpool.getData();
 
     // Position covers the current price, so liquidity should be equal to the initial funded position
@@ -763,7 +764,7 @@ describe("swap", () => {
 
     await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, nextParams);
 
-    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpool = await client.getPool(whirlpoolKey, PREFER_REFRESH);
     whirlpoolData = whirlpool.getData();
     // Whirlpool.currentTick is 91720, so the newly funded position's upper tick is not
     // strictly less than 91720 so the liquidity is not added.
@@ -778,7 +779,7 @@ describe("swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      true
+      PREFER_REFRESH
     );
 
     await toTx(
@@ -795,7 +796,7 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpool = await client.getPool(whirlpoolKey, PREFER_REFRESH);
     whirlpoolData = whirlpool.getData();
 
     // After the above swap, since the amount is so low, it is completely taken by fees
@@ -812,7 +813,7 @@ describe("swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      true
+      PREFER_REFRESH
     );
 
     await toTx(
@@ -829,7 +830,7 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    whirlpool = await client.getPool(whirlpoolKey, true);
+    whirlpool = await client.getPool(whirlpoolKey, PREFER_REFRESH);
     whirlpoolData = whirlpool.getData();
 
     // After the above swap, there will be a small amount remaining that crosses

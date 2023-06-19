@@ -14,6 +14,7 @@ import {
   collectFeesQuote,
   toTx
 } from "../../../src";
+import { PREFER_REFRESH } from "../../../src/network/public/account-cache";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -140,9 +141,9 @@ describe("PositionImpl#collectFees()", () => {
       const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
       const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey);
 
-      const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
+      const positionDataBefore = await testCtx.whirlpoolCtx.cache.getPosition(
         position.getAddress(),
-        true
+        PREFER_REFRESH
       );
 
       const otherWallet = anchor.web3.Keypair.generate();
@@ -167,24 +168,24 @@ describe("PositionImpl#collectFees()", () => {
         otherWallet.publicKey,
         testCtx.provider.wallet.publicKey,
         testCtx.provider.wallet.publicKey,
-        true
+        PREFER_REFRESH
       );
 
       await tx.buildAndExecute();
 
-      const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
+      const positionDataAfter = await testCtx.whirlpoolCtx.cache.getPosition(
         position.getAddress(),
-        true
+        PREFER_REFRESH
       );
 
       assert.notEqual(positionDataAfter, null);
 
       const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
-      const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, true);
+      const accountA = await testCtx.whirlpoolCtx.cache.getTokenInfo(accountAPubkey, PREFER_REFRESH);
       assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA));
 
       const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
-      const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, true);
+      const accountB = await testCtx.whirlpoolCtx.cache.getTokenInfo(accountBPubkey, PREFER_REFRESH);
       assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
     });
   });
@@ -206,9 +207,9 @@ describe("PositionImpl#collectFees()", () => {
       const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
       const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey);
 
-      const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
+      const positionDataBefore = await testCtx.whirlpoolCtx.cache.getPosition(
         position.getAddress(),
-        true
+        PREFER_REFRESH
       );
 
       const otherWallet = anchor.web3.Keypair.generate();
@@ -234,27 +235,27 @@ describe("PositionImpl#collectFees()", () => {
         otherWallet.publicKey,
         testCtx.provider.wallet.publicKey,
         testCtx.provider.wallet.publicKey,
-        true
+        PREFER_REFRESH
       );
 
       await tx.addSigner(otherWallet).buildAndExecute();
 
-      const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
+      const positionDataAfter = await testCtx.whirlpoolCtx.cache.getPosition(
         position.getAddress(),
-        true
+        PREFER_REFRESH
       );
 
       assert.notEqual(positionDataAfter, null);
 
       const solBalanceAfter = await testCtx.provider.connection.getBalance(otherWallet.publicKey);
-      const minAccountExempt = await testCtx.whirlpoolCtx.fetcher.getAccountRentExempt();
+      const minAccountExempt = await testCtx.whirlpoolCtx.cache.getAccountRentExempt();
       assert.equal(
         solBalanceAfter - solBalanceBefore,
         quote.feeOwedA.toNumber() + minAccountExempt
       );
 
       const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
-      const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, true);
+      const accountB = await testCtx.whirlpoolCtx.cache.getTokenInfo(accountBPubkey, PREFER_REFRESH);
       assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
     });
   });

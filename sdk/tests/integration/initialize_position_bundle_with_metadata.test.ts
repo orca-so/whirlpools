@@ -19,6 +19,7 @@ import {
   WHIRLPOOL_NFT_UPDATE_AUTH,
   WhirlpoolContext,
 } from "../../src";
+import { PREFER_REFRESH } from "../../src/network/public/account-cache";
 import {
   createMintInstructions,
   mintToDestination
@@ -81,9 +82,9 @@ describe("initialize_position_bundle_with_metadata", () => {
 
   async function checkPositionBundleMint(positionBundleMintPubkey: PublicKey) {
     // verify position bundle Mint account
-    const positionBundleMint = (await ctx.fetcher.getMintInfo(
+    const positionBundleMint = (await ctx.cache.getMintInfo(
       positionBundleMintPubkey,
-      true
+      PREFER_REFRESH
     )) as Mint;
     // should have NFT characteristics
     assert.strictEqual(positionBundleMint.decimals, 0);
@@ -99,9 +100,9 @@ describe("initialize_position_bundle_with_metadata", () => {
     positionBundleMintPubkey: PublicKey
   ) {
     // verify position bundle Token account
-    const positionBundleTokenAccount = (await ctx.fetcher.getTokenInfo(
+    const positionBundleTokenAccount = (await ctx.cache.getTokenInfo(
       positionBundleTokenAccountPubkey,
-      true
+      PREFER_REFRESH
     )) as Account;
     assert.ok(positionBundleTokenAccount.amount === 1n);
     assert.ok(positionBundleTokenAccount.mint.equals(positionBundleMintPubkey));
@@ -113,9 +114,9 @@ describe("initialize_position_bundle_with_metadata", () => {
     positionBundleMintPubkey: PublicKey
   ) {
     // verify PositionBundle account
-    const positionBundle = (await ctx.fetcher.getPositionBundle(
+    const positionBundle = (await ctx.cache.getPositionBundle(
       positionBundlePubkey,
-      true
+      PREFER_REFRESH
     )) as PositionBundleData;
     assert.ok(positionBundle.positionBundleMint.equals(positionBundleMintPubkey));
     assert.strictEqual(positionBundle.positionBitmap.length * 8, POSITION_BUNDLE_SIZE);

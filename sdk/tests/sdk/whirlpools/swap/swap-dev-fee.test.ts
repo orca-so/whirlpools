@@ -3,7 +3,7 @@ import { Address } from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
-import { BN } from "bn.js";
+import BN from "bn.js";
 import {
   buildWhirlpoolClient, PriceMath,
   swapQuoteByInputToken,
@@ -11,6 +11,7 @@ import {
   WhirlpoolContext
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
+import { PREFER_REFRESH } from "../../../../src/network/public/account-cache";
 import { swapQuoteByInputTokenWithDevFees } from "../../../../src/quotes/public/dev-fee-swap-quote";
 import {
   assertDevFeeQuotes,
@@ -69,8 +70,8 @@ describe("whirlpool-dev-fee-swap", () => {
       inputTokenAmount,
       slippageTolerance,
       ctx.program.programId,
-      ctx.fetcher,
-      true
+      ctx.cache,
+      PREFER_REFRESH
     );
     const postFeeInputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
@@ -78,8 +79,8 @@ describe("whirlpool-dev-fee-swap", () => {
       postFeeTokenAmount,
       slippageTolerance,
       ctx.program.programId,
-      ctx.fetcher,
-      true
+      ctx.cache,
+      PREFER_REFRESH
     );
     const inputTokenQuoteWithDevFees = await swapQuoteByInputTokenWithDevFees(
       whirlpool,
@@ -87,9 +88,9 @@ describe("whirlpool-dev-fee-swap", () => {
       inputTokenAmount,
       slippageTolerance,
       ctx.program.programId,
-      ctx.fetcher,
+      ctx.cache,
       devFeePercentage,
-      true
+      PREFER_REFRESH
     );
     assertDevFeeQuotes(inputTokenQuote, postFeeInputTokenQuote, inputTokenQuoteWithDevFees);
     await (
@@ -383,9 +384,9 @@ describe("whirlpool-dev-fee-swap", () => {
           inputTokenAmount,
           slippageTolerance,
           ctx.program.programId,
-          ctx.fetcher,
+          ctx.cache,
           devFeePercentage,
-          true
+          PREFER_REFRESH
         ),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
     );
@@ -423,9 +424,9 @@ describe("whirlpool-dev-fee-swap", () => {
           inputTokenAmount,
           slippageTolerance,
           ctx.program.programId,
-          ctx.fetcher,
+          ctx.cache,
           devFeePercentage,
-          true
+          PREFER_REFRESH
         ),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
     );
@@ -447,8 +448,8 @@ async function getQuotes(
     inputTokenAmount,
     slippageTolerance,
     ctx.program.programId,
-    ctx.fetcher,
-    true
+    ctx.cache,
+    PREFER_REFRESH
   );
   const postFeeInputTokenQuote = await swapQuoteByInputToken(
     whirlpool,
@@ -456,8 +457,8 @@ async function getQuotes(
     postFeeTokenAmount,
     slippageTolerance,
     ctx.program.programId,
-    ctx.fetcher,
-    true
+    ctx.cache,
+    PREFER_REFRESH
   );
   const inputTokenQuoteWithDevFees = await swapQuoteByInputTokenWithDevFees(
     whirlpool,
@@ -465,9 +466,9 @@ async function getQuotes(
     inputTokenAmount,
     slippageTolerance,
     ctx.program.programId,
-    ctx.fetcher,
+    ctx.cache,
     devFeePercentage,
-    true
+    PREFER_REFRESH
   );
 
   return { inputTokenQuote, postFeeInputTokenQuote, inputTokenQuoteWithDevFees };

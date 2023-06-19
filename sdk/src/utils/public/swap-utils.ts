@@ -1,9 +1,9 @@
 import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
+import { AccountFetchOpts, AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { WhirlpoolContext } from "../..";
-import { AccountFetcher } from "../../network/public";
+import { WhirlpoolAccountCacheInterface } from "../../network/public/account-cache";
 import {
   MAX_SQRT_PRICE,
   MAX_SWAP_TICK_ARRAYS,
@@ -123,8 +123,8 @@ export class SwapUtils {
    * @param aToB - The direction of the trade.
    * @param programId - The Whirlpool programId which the Whirlpool lives on.
    * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
-   * @param fetcher - AccountFetcher object to fetch solana accounts
-   * @param refresh - If true, fetcher would default to fetching the latest accounts
+   * @param cache - WhirlpoolAccountCacheInterface object to fetch solana accounts
+   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
    * @returns An array of PublicKey[] for the tickArray accounts that this swap may traverse across.
    */
   public static async getTickArrays(
@@ -133,28 +133,28 @@ export class SwapUtils {
     aToB: boolean,
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
-    fetcher: AccountFetcher,
-    refresh: boolean
+    cache: WhirlpoolAccountCacheInterface,
+    opts?: AccountFetchOpts
   ): Promise<TickArray[]> {
-    const data = await this.getBatchTickArrays(programId, fetcher, refresh, [
+    const data = await this.getBatchTickArrays(programId, cache, [
       { tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress },
-    ]);
+    ], opts);
     return data[0];
   }
 
   /**
    * Fetch a batch of tick-arrays for a set of TA requests.
    * @param programId - The Whirlpool programId which the Whirlpool lives on.
-   * @param fetcher - AccountFetcher object to fetch solana accounts
-   * @param refresh - If true, fetcher would default to fetching the latest accounts
+   * @param cache - WhirlpoolAccountCacheInterface instance to fetch solana accounts
    * @param tickArrayRequests - An array of {@link TickArrayRequest} of tick-arrays to request for.
+   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
    * @returns A array of request indicies mapped to an array of resulting PublicKeys.
    */
   public static async getBatchTickArrays(
     programId: PublicKey,
-    fetcher: AccountFetcher,
-    refresh: boolean,
-    tickArrayRequests: TickArrayRequest[]
+    cache: WhirlpoolAccountCacheInterface,
+    tickArrayRequests: TickArrayRequest[],
+    opts?: AccountFetchOpts,
   ): Promise<TickArray[][]> {
     let addresses: PublicKey[] = [];
     let requestToIndices = [];
@@ -173,7 +173,7 @@ export class SwapUtils {
       requestToIndices.push([addresses.length, addresses.length + requestAddresses.length]);
       addresses.push(...requestAddresses);
     }
-    const data = await fetcher.listTickArrays(addresses, refresh);
+    const data = await cache.getTickArrays(addresses, opts);
 
     // Re-map from flattened batch data to TickArray[] for request
     return requestToIndices.map((indices) => {

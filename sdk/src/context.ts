@@ -8,7 +8,7 @@ import {
 import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js";
 import { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
-import { AccountFetcher } from "./network/public";
+import { DEFAULT_WHIRLPOOL_RETENTION_POLICY, WhirlpoolAccountCache, WhirlpoolAccountCacheInterface } from "./network/public/account-cache";
 import { contextOptionsToBuilderOptions } from "./utils/txn-utils";
 
 /**
@@ -30,7 +30,7 @@ export class WhirlpoolContext {
   readonly wallet: Wallet;
   readonly program: Program<Whirlpool>;
   readonly provider: AnchorProvider;
-  readonly fetcher: AccountFetcher;
+  readonly cache: WhirlpoolAccountCacheInterface;
   readonly lookupTableFetcher: LookupTableFetcher | undefined;
   readonly opts: WhirlpoolContextOpts;
   readonly txBuilderOpts: TransactionBuilderOptions | undefined;
@@ -39,7 +39,7 @@ export class WhirlpoolContext {
     connection: Connection,
     wallet: Wallet,
     programId: PublicKey,
-    fetcher = new AccountFetcher(connection),
+    cache = new WhirlpoolAccountCache(connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
@@ -52,7 +52,7 @@ export class WhirlpoolContext {
       anchorProvider,
       anchorProvider.wallet,
       program,
-      fetcher,
+      cache,
       lookupTableFetcher,
       opts
     );
@@ -61,7 +61,7 @@ export class WhirlpoolContext {
   public static fromWorkspace(
     provider: AnchorProvider,
     program: Program,
-    fetcher = new AccountFetcher(provider.connection),
+    cache = new WhirlpoolAccountCache(provider.connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ) {
@@ -69,7 +69,7 @@ export class WhirlpoolContext {
       provider,
       provider.wallet,
       program,
-      fetcher,
+      cache,
       lookupTableFetcher,
       opts
     );
@@ -78,7 +78,7 @@ export class WhirlpoolContext {
   public static withProvider(
     provider: AnchorProvider,
     programId: PublicKey,
-    fetcher = new AccountFetcher(provider.connection),
+    cache = new WhirlpoolAccountCache(provider.connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
@@ -87,7 +87,7 @@ export class WhirlpoolContext {
       provider,
       provider.wallet,
       program,
-      fetcher,
+      cache,
       lookupTableFetcher,
       opts
     );
@@ -97,7 +97,7 @@ export class WhirlpoolContext {
     provider: AnchorProvider,
     wallet: Wallet,
     program: Program,
-    fetcher: AccountFetcher,
+    cache: WhirlpoolAccountCacheInterface,
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ) {
@@ -106,7 +106,7 @@ export class WhirlpoolContext {
     // It's a hack but it works on Anchor workspace *shrug*
     this.program = program as unknown as Program<Whirlpool>;
     this.provider = provider;
-    this.fetcher = fetcher;
+    this.cache = cache;
     this.lookupTableFetcher = lookupTableFetcher;
     this.opts = opts;
     this.txBuilderOpts = contextOptionsToBuilderOptions(this.opts);

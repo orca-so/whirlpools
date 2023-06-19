@@ -9,7 +9,7 @@ describe("set_reward_emissions_super_authority", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
 
   it("successfully set_reward_emissions_super_authority with super authority keypair", async () => {
     const {

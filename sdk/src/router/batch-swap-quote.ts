@@ -1,8 +1,8 @@
 import { Address } from "@coral-xyz/anchor";
-import { AddressUtil } from "@orca-so/common-sdk";
+import { AccountFetchOpts, AddressUtil } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import invariant from "tiny-invariant";
-import { AccountFetcher } from "..";
+import { WhirlpoolAccountCacheInterface } from "../network/public/account-cache";
 import { SwapQuoteParam } from "../quotes/public";
 import { PoolUtil, SwapDirection, SwapUtils } from "../utils/public";
 
@@ -16,18 +16,18 @@ export interface SwapQuoteRequest {
 export async function batchBuildSwapQuoteParams(
   quoteRequests: SwapQuoteRequest[],
   programId: Address,
-  fetcher: AccountFetcher,
-  refresh: boolean
+  cache: WhirlpoolAccountCacheInterface,
+  opts?: AccountFetchOpts
 ): Promise<SwapQuoteParam[]> {
-  const whirlpools = await fetcher.listPools(
+  const whirlpools = await cache.getPools(
     quoteRequests.map((req) => req.whirlpool),
-    refresh
+    opts
   );
   const program = AddressUtil.toPubKey(programId);
 
   const tickArrayRequests = quoteRequests.map((quoteReq, index) => {
     const { whirlpool, tokenAmount, tradeTokenMint, amountSpecifiedIsInput } = quoteReq;
-    const whirlpoolData = whirlpools[index]!;
+    const whirlpoolData = whirlpools.get(AddressUtil.toString(whirlpool))!;
     const swapMintKey = AddressUtil.toPubKey(tradeTokenMint);
     const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
     invariant(!!swapTokenType, "swapTokenMint does not match any tokens on this pool");
@@ -47,9 +47,9 @@ export async function batchBuildSwapQuoteParams(
 
   const tickArrays = await SwapUtils.getBatchTickArrays(
     program,
-    fetcher,
-    refresh,
-    tickArrayRequests
+    cache,
+    tickArrayRequests,
+    opts
   );
 
   return tickArrayRequests.map((req, index) => {

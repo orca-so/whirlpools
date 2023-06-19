@@ -11,6 +11,7 @@ import {
   WhirlpoolIx,
   toTx
 } from "../../src";
+import { PREFER_REFRESH } from "../../src/network/public/account-cache";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../src/quotes/public/decrease-liquidity-quote";
 import {
   TickSpacing,
@@ -32,7 +33,7 @@ describe("decrease_liquidity", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
 
   it("successfully decrease liquidity from position in one tick array", async () => {
     const liquidityAmount = new anchor.BN(1_250_000);
@@ -45,7 +46,7 @@ describe("decrease_liquidity", () => {
     });
     const { poolInitInfo, tokenAccountA, tokenAccountB, positions } = fixture.getInfos();
     const { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair } = poolInitInfo;
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
 
     // To check if rewardLastUpdatedTimestamp is updated
     await sleep(1200);
@@ -77,16 +78,16 @@ describe("decrease_liquidity", () => {
     ).buildAndExecute();
 
     const remainingLiquidity = liquidityAmount.sub(removalQuote.liquidityAmount);
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
     assert.ok(poolAfter.rewardLastUpdatedTimestamp.gt(poolBefore.rewardLastUpdatedTimestamp));
     assert.ok(poolAfter.liquidity.eq(remainingLiquidity));
 
-    const position = await fetcher.getPosition(positions[0].publicKey, true);
+    const position = await fetcher.getPosition(positions[0].publicKey, PREFER_REFRESH);
     assert.ok(position?.liquidity.eq(remainingLiquidity));
 
     const tickArray = (await fetcher.getTickArray(
       positions[0].tickArrayLower,
-      true
+      PREFER_REFRESH
     )) as TickArrayData;
     assertTick(tickArray.ticks[56], true, remainingLiquidity, remainingLiquidity);
     assertTick(tickArray.ticks[70], true, remainingLiquidity, remainingLiquidity.neg());
@@ -104,7 +105,7 @@ describe("decrease_liquidity", () => {
     const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
     const { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair } = poolInitInfo;
     const position = positions[0];
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
 
     const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
       liquidity: new anchor.BN(1_000_000),
@@ -133,22 +134,22 @@ describe("decrease_liquidity", () => {
     ).buildAndExecute();
 
     const remainingLiquidity = liquidityAmount.sub(removalQuote.liquidityAmount);
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
 
     assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
     assert.ok(poolAfter.liquidity.eq(remainingLiquidity));
 
-    const positionAfter = (await fetcher.getPosition(position.publicKey, true)) as PositionData;
+    const positionAfter = (await fetcher.getPosition(position.publicKey, PREFER_REFRESH)) as PositionData;
     assert.ok(positionAfter.liquidity.eq(remainingLiquidity));
 
     const tickArrayLower = (await fetcher.getTickArray(
       position.tickArrayLower,
-      true
+      PREFER_REFRESH
     )) as TickArrayData;
     assertTick(tickArrayLower.ticks[78], true, remainingLiquidity, remainingLiquidity);
     const tickArrayUpper = (await fetcher.getTickArray(
       position.tickArrayUpper,
-      true
+      PREFER_REFRESH
     )) as TickArrayData;
     assertTick(tickArrayUpper.ticks[10], true, remainingLiquidity, remainingLiquidity.neg());
   });

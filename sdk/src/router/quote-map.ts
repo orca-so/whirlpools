@@ -2,8 +2,8 @@ import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, Percentage } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { AccountFetcher } from "..";
 import { SwapErrorCode } from "../errors/errors";
+import { AVOID_REFRESH, WhirlpoolAccountCacheInterface } from "../network/public/account-cache";
 import { SwapQuoteParam, swapQuoteWithParams } from "../quotes/public";
 import { Path } from "../utils/public";
 import { SwapQuoteRequest, batchBuildSwapQuoteParams } from "./batch-swap-quote";
@@ -27,7 +27,7 @@ export async function getQuoteMap(
   paths: Path[],
   amountSpecifiedIsInput: boolean,
   programId: PublicKey,
-  fetcher: AccountFetcher,
+  cache: WhirlpoolAccountCacheInterface,
   opts: RoutingOptions
 ) {
   const { percentIncrement, numTopPartialQuotes } = opts;
@@ -62,8 +62,8 @@ export async function getQuoteMap(
       const quoteParams = await batchBuildSwapQuoteParams(
         quoteUpdates.map((update) => update.request),
         AddressUtil.toPubKey(programId),
-        fetcher,
-        false
+        cache,
+        AVOID_REFRESH
       );
 
       populateQuoteMap(quoteUpdates, quoteParams, quoteMap);

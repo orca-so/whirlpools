@@ -1,5 +1,6 @@
 import { Address, BN, translateAddress } from "@coral-xyz/anchor";
 import {
+  AccountFetchOpts,
   AddressUtil,
   Percentage,
   TokenUtil,
@@ -23,6 +24,7 @@ import {
   openPositionWithMetadataIx,
   swapAsync,
 } from "../instructions";
+import { AVOID_REFRESH, PREFER_REFRESH } from "../network/public/account-cache";
 import {
   collectFeesQuote,
   collectRewardsQuote,
@@ -124,14 +126,14 @@ export class WhirlpoolImpl implements Whirlpool {
     );
   }
 
-  async initTickArrayForTicks(ticks: number[], funder?: Address, refresh = true) {
+  async initTickArrayForTicks(ticks: number[], funder?: Address, opts: AccountFetchOpts = { ttl: Number.POSITIVE_INFINITY }) {
     const initTickArrayStartPdas = await TickArrayUtil.getUninitializedArraysPDAs(
       ticks,
       this.ctx.program.programId,
       this.address,
       this.data.tickSpacing,
-      this.ctx.fetcher,
-      refresh
+      this.ctx.cache,
+      opts
     );
 
     if (!initTickArrayStartPdas.length) {
@@ -191,7 +193,7 @@ export class WhirlpoolImpl implements Whirlpool {
         whirlpool: this,
         wallet: sourceWalletKey,
       },
-      true
+      PREFER_REFRESH
     );
   }
 
@@ -221,7 +223,7 @@ export class WhirlpoolImpl implements Whirlpool {
           inputToken.mint,
           inputToken.decimals,
           quote.devFeeAmount,
-          () => this.ctx.fetcher.getAccountRentExempt(),
+          () => this.ctx.cache.getAccountRentExempt(),
           payerKey
         )
       );
@@ -234,7 +236,7 @@ export class WhirlpoolImpl implements Whirlpool {
         whirlpool: this,
         wallet: sourceWalletKey,
       },
-      true
+      PREFER_REFRESH
     );
 
     txBuilder.addInstruction(swapTxBuilder.compressIx(true));
@@ -260,7 +262,7 @@ export class WhirlpoolImpl implements Whirlpool {
 
     invariant(liquidity.gt(new BN(0)), "liquidity must be greater than zero");
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.address, false);
+    const whirlpool = await this.ctx.cache.getPool(this.address, AVOID_REFRESH);
     if (!whirlpool) {
       throw new Error(`Whirlpool not found: ${translateAddress(this.address).toBase58()}`);
     }
@@ -314,7 +316,7 @@ export class WhirlpoolImpl implements Whirlpool {
         { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: tokenMaxA },
         { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: tokenMaxB },
       ],
-      () => this.ctx.fetcher.getAccountRentExempt(),
+      () => this.ctx.cache.getAccountRentExempt(),
       funder
     );
     const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
@@ -366,7 +368,7 @@ export class WhirlpoolImpl implements Whirlpool {
     positionWallet: PublicKey,
     payerKey: PublicKey
   ): Promise<TransactionBuilder[]> {
-    const positionData = await this.ctx.fetcher.getPosition(positionAddress, true);
+    const positionData = await this.ctx.cache.getPosition(positionAddress, PREFER_REFRESH);
     if (!positionData) {
       throw new Error(`Position not found: ${positionAddress.toBase58()}`);
     }
@@ -389,7 +391,7 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.txBuilderOpts
     );
 
-    const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
+    const accountExemption = await this.ctx.cache.getAccountRentExempt();
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -415,7 +417,7 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx,
       positionData,
       whirlpool,
-      true
+      PREFER_REFRESH
     );
 
     invariant(
@@ -537,7 +539,7 @@ export class WhirlpoolImpl implements Whirlpool {
         destinationWallet,
         positionWallet,
         payerKey,
-        true
+        PREFER_REFRESH
       );
 
       txBuilder.addInstruction(collectFeexTx.compressIx(false));
@@ -579,13 +581,13 @@ export class WhirlpoolImpl implements Whirlpool {
   }
 
   private async refresh() {
-    const account = await this.ctx.fetcher.getPool(this.address, true);
+    const account = await this.ctx.cache.getPool(this.address, PREFER_REFRESH);
     if (!!account) {
-      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, true);
+      const rewardInfos = await getRewardInfos(this.ctx.cache, account, PREFER_REFRESH);
       const [tokenVaultAInfo, tokenVaultBInfo] = await getTokenVaultAccountInfos(
-        this.ctx.fetcher,
+        this.ctx.cache,
         account,
-        true
+        PREFER_REFRESH
       );
       this.data = account;
       this.tokenVaultAInfo = tokenVaultAInfo;

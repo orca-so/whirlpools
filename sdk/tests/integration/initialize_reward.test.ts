@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
+import { PREFER_REFRESH } from "../../src/network/public/account-cache";
 import { createMint, ONE_SOL, systemTransferTx, TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initializeReward, initTestPool } from "../utils/init-utils";
@@ -10,7 +11,7 @@ describe("initialize_reward", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
 
   it("successfully initializes reward at index 0", async () => {
     const { poolInitInfo, configKeypairs } = await initTestPool(ctx, TickSpacing.Standard);
@@ -24,7 +25,7 @@ describe("initialize_reward", () => {
 
     const whirlpool = (await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
-      true
+      PREFER_REFRESH
     )) as WhirlpoolData;
 
     assert.ok(whirlpool.rewardInfos[0].mint.equals(params.rewardMint));
@@ -49,7 +50,7 @@ describe("initialize_reward", () => {
 
     const whirlpool2 = (await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
-      true
+      PREFER_REFRESH
     )) as WhirlpoolData;
 
     assert.ok(whirlpool2.rewardInfos[0].mint.equals(params.rewardMint));

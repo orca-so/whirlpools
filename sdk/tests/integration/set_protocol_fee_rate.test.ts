@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
+import { PREFER_REFRESH } from "../../src/network/public/account-cache";
 import { TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
@@ -10,7 +11,7 @@ describe("set_protocol_fee_rate", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
 
   it("successfully sets_protocol_fee_rate", async () => {
     const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPool(
@@ -23,7 +24,7 @@ describe("set_protocol_fee_rate", () => {
 
     const newProtocolFeeRate = 50;
 
-    let whirlpool = (await fetcher.getPool(whirlpoolKey, true)) as WhirlpoolData;
+    let whirlpool = (await fetcher.getPool(whirlpoolKey, PREFER_REFRESH)) as WhirlpoolData;
 
     assert.equal(whirlpool.protocolFeeRate, configInitInfo.defaultProtocolFeeRate);
 
@@ -35,7 +36,7 @@ describe("set_protocol_fee_rate", () => {
     })).addSigner(feeAuthorityKeypair);
     await txBuilder.buildAndExecute();
 
-    whirlpool = (await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    whirlpool = (await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
     assert.equal(whirlpool.protocolFeeRate, newProtocolFeeRate);
   });
 

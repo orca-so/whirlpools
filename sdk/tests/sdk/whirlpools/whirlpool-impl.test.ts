@@ -16,6 +16,7 @@ import {
   toTx
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
+import { PREFER_REFRESH } from "../../../src/network/public/account-cache";
 import {
   ONE_SOL,
   TickSpacing,
@@ -36,7 +37,7 @@ describe("whirlpool-impl", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
   const client = buildWhirlpoolClient(ctx);
 
   it("open and add liquidity to a position, then close", async () => {
@@ -114,7 +115,7 @@ describe("whirlpool-impl", () => {
 
     // Verify position exists and numbers fit input parameters
     const positionAddress = PDAUtil.getPosition(ctx.program.programId, positionMint).publicKey;
-    const position = await client.getPosition(positionAddress, true);
+    const position = await client.getPosition(positionAddress, PREFER_REFRESH);
     const positionData = position.getData();
 
     const tickLowerIndex = TickUtil.getInitializableTickIndex(
@@ -139,7 +140,7 @@ describe("whirlpool-impl", () => {
     }
 
     // Verify position is closed and owner wallet has the tokens back
-    const postClosePosition = await fetcher.getPosition(positionAddress, true);
+    const postClosePosition = await fetcher.getPosition(positionAddress, PREFER_REFRESH);
     assert.ok(postClosePosition === null);
 
     // TODO: we are leaking 1 decimal place of token?
@@ -223,7 +224,7 @@ describe("whirlpool-impl", () => {
 
     // Verify position exists and numbers fit input parameters
     const positionAddress = PDAUtil.getPosition(ctx.program.programId, positionMint).publicKey;
-    const position = await client.getPosition(positionAddress, true);
+    const position = await client.getPosition(positionAddress, PREFER_REFRESH);
     const positionData = position.getData();
 
     const tickLowerIndex = TickUtil.getInitializableTickIndex(
@@ -284,7 +285,7 @@ describe("whirlpool-impl", () => {
     await closeTx.addSigner(otherWallet).buildAndExecute();
 
     // Verify position is closed and owner wallet has the tokens back
-    const postClosePosition = await fetcher.getPosition(positionAddress, true);
+    const postClosePosition = await fetcher.getPosition(positionAddress, PREFER_REFRESH);
     assert.ok(postClosePosition === null);
 
     const dWalletTokenAAccount = getAssociatedTokenAddressSync(poolData.tokenMintA, destinationWallet.publicKey,);
@@ -403,8 +404,8 @@ describe("whirlpool-impl", () => {
 
     await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
-    const pool = await client.getPool(whirlpoolPda.publicKey, true);
-    const position = await client.getPosition(positionWithFees.publicKey, true);
+    const pool = await client.getPool(whirlpoolPda.publicKey, PREFER_REFRESH);
+    const position = await client.getPosition(positionWithFees.publicKey, PREFER_REFRESH);
     const positionData = position.getData();
     const poolData = pool.getData();
     const txs = await pool.closePosition(
@@ -583,8 +584,8 @@ describe("whirlpool-impl", () => {
 
     await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
-    const pool = await client.getPool(whirlpoolPda.publicKey, true);
-    const position = await client.getPosition(positionWithFees.publicKey, true);
+    const pool = await client.getPool(whirlpoolPda.publicKey, PREFER_REFRESH);
+    const position = await client.getPosition(positionWithFees.publicKey, PREFER_REFRESH);
     const positionData = position.getData();
     const poolData = pool.getData();
 
@@ -649,7 +650,7 @@ describe("whirlpool-impl", () => {
 
     const otherWalletBalanceAfter = await ctx.connection.getBalance(otherWallet.publicKey);
 
-    const minAccountExempt = await ctx.fetcher.getAccountRentExempt();
+    const minAccountExempt = await ctx.cache.getAccountRentExempt();
     const solReceived = otherWalletBalanceAfter - otherWalletBalanceBefore;
 
     /**

@@ -19,7 +19,7 @@ describe("initialize_tick_array", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
 
   it("successfully init a TickArray account", async () => {
     const tickSpacing = TickSpacing.Standard;

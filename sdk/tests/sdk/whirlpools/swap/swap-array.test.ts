@@ -12,6 +12,7 @@ import {
   swapQuoteWithParams
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
+import { PREFER_REFRESH } from "../../../../src/network/public/account-cache";
 import { adjustForSlippage } from "../../../../src/utils/position-util";
 import { TickSpacing } from "../../../utils";
 import { defaultConfirmOptions } from "../../../utils/const";
@@ -27,7 +28,7 @@ describe("swap arrays test", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
   const client = buildWhirlpoolClient(ctx);
   const tickSpacing = TickSpacing.SixtyFour;
   const slippageTolerance = Percentage.fromFraction(0, 100);
@@ -63,7 +64,7 @@ describe("swap arrays test", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      PREFER_REFRESH
     );
 
     // Verify with an actual swap.
@@ -115,7 +116,7 @@ describe("swap arrays test", () => {
         slippageTolerance,
         ctx.program.programId,
         fetcher,
-        true
+        PREFER_REFRESH
       ),
       (err: Error) => err.message.indexOf(expectedError) != -1
     );
@@ -152,7 +153,7 @@ describe("swap arrays test", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      PREFER_REFRESH
     );
 
     // Verify with an actual swap.
@@ -204,7 +205,7 @@ describe("swap arrays test", () => {
         slippageTolerance,
         ctx.program.programId,
         fetcher,
-        true
+        PREFER_REFRESH
       ),
       (err: Error) => err.message.indexOf(expectedError) != -1
     );
@@ -241,7 +242,7 @@ describe("swap arrays test", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      PREFER_REFRESH
     );
 
     // Verify with an actual swap.
@@ -291,7 +292,7 @@ describe("swap arrays test", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      PREFER_REFRESH
     );
 
     // Verify with an actual swap.
@@ -341,7 +342,7 @@ describe("swap arrays test", () => {
       ctx.program.programId,
       whirlpool.getAddress(),
       fetcher,
-      true
+      PREFER_REFRESH
     );
     assert.throws(
       () =>
@@ -392,7 +393,7 @@ describe("swap arrays test", () => {
       ctx.program.programId,
       whirlpool.getAddress(),
       fetcher,
-      true
+      PREFER_REFRESH
     );
     assert.throws(
       () =>
@@ -442,7 +443,7 @@ describe("swap arrays test", () => {
       ctx.program.programId,
       whirlpool.getAddress(),
       fetcher,
-      true
+      PREFER_REFRESH
     );
     assert.throws(
       () =>
@@ -492,7 +493,7 @@ describe("swap arrays test", () => {
       ctx.program.programId,
       whirlpool.getAddress(),
       fetcher,
-      true
+      PREFER_REFRESH
     );
 
     assert.throws(

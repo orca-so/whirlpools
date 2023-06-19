@@ -1,16 +1,17 @@
 import { Address } from "@coral-xyz/anchor";
-import { AddressUtil } from "@orca-so/common-sdk";
+import { AccountFetchOpts, AddressUtil } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import {
   DecimalsMap,
-  defaultGetPricesConfig,
-  defaultGetPricesThresholdConfig,
   PoolMap,
   PriceCalculationData,
   PriceMap,
   TickArrayMap,
+  defaultGetPricesConfig,
+  defaultGetPricesThresholdConfig,
 } from ".";
 import { WhirlpoolContext } from "../context";
+import { AVOID_REFRESH, PREFER_REFRESH } from "../network/public/account-cache";
 import { PDAUtil, PoolUtil, SwapUtils } from "../utils/public";
 import { convertListToMap, filterNullObjects } from "../utils/txn-utils";
 import { calculatePricesForQuoteToken, convertAmount, isSubset } from "./calculate-pool-prices";
@@ -30,7 +31,7 @@ export class PriceModule {
    * @param mints The mints to fetch prices for.
    * @param config The configuration for the price calculation.
    * @param thresholdConfig - The threshold configuration for the price calculation.
-   * @param refresh Whether to refresh the cache.
+   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
    * @param availableData - Data that is already available to avoid redundant fetches.
    * @returns A map of token addresses to prices.
    */
@@ -39,18 +40,18 @@ export class PriceModule {
     mints: Address[],
     config = defaultGetPricesConfig,
     thresholdConfig = defaultGetPricesThresholdConfig,
-    refresh = true,
+    opts = PREFER_REFRESH,
     availableData: Partial<PriceCalculationData> = {}
   ): Promise<PriceMap> {
     const poolMap = availableData?.poolMap
       ? availableData?.poolMap
-      : await PriceModuleUtils.fetchPoolDataFromMints(ctx, mints, config, refresh);
+      : await PriceModuleUtils.fetchPoolDataFromMints(ctx, mints, config, opts);
     const tickArrayMap = availableData?.tickArrayMap
       ? availableData.tickArrayMap
-      : await PriceModuleUtils.fetchTickArraysForPools(ctx, poolMap, config, refresh);
+      : await PriceModuleUtils.fetchTickArraysForPools(ctx, poolMap, config, opts);
     const decimalsMap = availableData?.decimalsMap
       ? availableData.decimalsMap
-      : await PriceModuleUtils.fetchDecimalsForMints(ctx, mints, false);
+      : await PriceModuleUtils.fetchDecimalsForMints(ctx, mints, AVOID_REFRESH);
 
     return PriceModule.calculateTokenPrices(
       mints,
@@ -71,7 +72,7 @@ export class PriceModule {
    * @param pools The pools to fetch prices for.
    * @param config The configuration for the price calculation.
    * @param thresholdConfig The threshold configuration for the price calculation.
-   * @param refresh Whether to refresh the cache.
+   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
    * @returns A map of token addresses to prices
    */
   static async fetchTokenPricesByPools(
@@ -79,9 +80,9 @@ export class PriceModule {
     pools: Address[],
     config = defaultGetPricesConfig,
     thresholdConfig = defaultGetPricesThresholdConfig,
-    refresh = true
+    opts: AccountFetchOpts = PREFER_REFRESH
   ): Promise<PriceMap> {
-    const poolDatas = await ctx.fetcher.listPools(pools, refresh);
+    const poolDatas = Array.from((await ctx.cache.getPools(pools, opts)).values());
     const [filteredPoolDatas, filteredPoolAddresses] = filterNullObjects(poolDatas, pools);
     const poolMap = convertListToMap(
       filteredPoolDatas,
@@ -92,7 +93,7 @@ export class PriceModule {
       ctx,
       poolMap,
       config,
-      refresh
+      opts
     );
     const mints = Array.from(
       Object.values(poolMap).reduce((acc, pool) => {
@@ -101,7 +102,7 @@ export class PriceModule {
         return acc;
       }, new Set<string>())
     );
-    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(ctx, mints, false);
+    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(ctx, mints, AVOID_REFRESH);
 
     return PriceModule.calculateTokenPrices(
       mints,
@@ -229,14 +230,14 @@ export class PriceModuleUtils {
    * @param ctx {@link WhirlpoolContext}
    * @param mints The mints to fetch pool data for.
    * @param config The configuration for the price calculation.
-   * @param refresh Whether to refresh the cache.
+   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
    * @returns A {@link PoolMap} of pool addresses to pool data.
    */
   static async fetchPoolDataFromMints(
     ctx: WhirlpoolContext,
     mints: Address[],
     config = defaultGetPricesConfig,
-    refresh = true
+    opts = PREFER_REFRESH
   ): Promise<PoolMap> {
     const { quoteTokens, tickSpacings, programId, whirlpoolsConfig } = config;
     const poolAddresses: string[] = mints
@@ -258,7 +259,7 @@ export class PriceModuleUtils {
       )
       .flat();
 
-    const poolDatas = await ctx.fetcher.listPools(poolAddresses, refresh);
+    const poolDatas = Array.from((await ctx.cache.getPools(poolAddresses, opts)).values());
 
     const [filteredPoolDatas, filteredPoolAddresses] = filterNullObjects(poolDatas, poolAddresses);
     return convertListToMap(filteredPoolDatas, filteredPoolAddresses);
@@ -270,14 +271,14 @@ export class PriceModuleUtils {
    * @param ctx {@link WhirlpoolData}
    * @param pools The pools to fetch tick-array data for.
    * @param config The configuration for the price calculation.
-   * @param refresh Whether to refresh the cache.
+   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
    * @returns A {@link TickArrayMap} of tick-array addresses to tick-array data.
    */
   static async fetchTickArraysForPools(
     ctx: WhirlpoolContext,
     pools: PoolMap,
     config = defaultGetPricesConfig,
-    refresh = true
+    opts: AccountFetchOpts = PREFER_REFRESH
   ): Promise<TickArrayMap> {
     const { programId } = config;
 
@@ -312,7 +313,7 @@ export class PriceModuleUtils {
     });
     const tickArrayAddresses = Array.from(tickArrayAddressSet);
 
-    const tickArrays = await ctx.fetcher.listTickArrays(tickArrayAddresses, refresh);
+    const tickArrays = await ctx.cache.getTickArrays(tickArrayAddresses, opts);
 
     const [filteredTickArrays, filteredTickArrayAddresses] = filterNullObjects(
       tickArrays,
@@ -325,15 +326,15 @@ export class PriceModuleUtils {
    * Fetch the decimals to token mapping for the given mints.
    * @param ctx {@link WhirlpoolContext}
    * @param mints The mints to fetch decimals for.
-   * @param refresh Whether to refresh the cache.
+   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
    * @returns A {@link DecimalsMap} of mint addresses to decimals.
    */
   static async fetchDecimalsForMints(
     ctx: WhirlpoolContext,
     mints: Address[],
-    refresh = true
+    opts = PREFER_REFRESH
   ): Promise<DecimalsMap> {
-    const mintInfos = await ctx.fetcher.listMintInfos(mints, refresh);
+    const mintInfos = Array.from((await ctx.cache.getMintInfos(mints, opts)).values());
 
     return mintInfos.reduce((acc, mintInfo, index) => {
       const mint = AddressUtil.toString(mints[index]);

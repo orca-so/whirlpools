@@ -1,9 +1,10 @@
 import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
+import { AccountFetchOpts, AddressUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { Account } from "@solana/spl-token";
-import { AccountFetcher, WhirlpoolContext } from "..";
+import { WhirlpoolContext } from "..";
 import { RouteQueryErrorCode, SwapErrorCode, WhirlpoolsError } from "../errors/errors";
 import { getSwapFromRoute } from "../instructions/composites/swap-with-route";
+import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountCacheInterface } from "../network/public/account-cache";
 import { Path, PoolGraph, SwapUtils } from "../utils/public";
 import { getBestRoutesFromQuoteMap } from "./convert-quote-map";
 import {
@@ -18,12 +19,12 @@ import {
 import { getQuoteMap } from "./quote-map";
 
 export class WhirlpoolRouterImpl implements WhirlpoolRouter {
-  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) {}
+  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) { }
 
   async findAllRoutes(
     trade: Trade,
-    refresh: boolean,
-    opts?: Partial<RoutingOptions>
+    opts?: Partial<RoutingOptions>,
+    cacheOpts?: AccountFetchOpts
   ): Promise<TradeRoute[]> {
     const { tokenIn, tokenOut, tradeAmount, amountSpecifiedIsInput } = trade;
     const paths = this.poolGraph.getPath(tokenIn, tokenOut);
@@ -47,10 +48,10 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
     }
 
     const routingOptions = { ...RouterUtils.getDefaultRouteOptions(), ...opts };
-    const { program, fetcher } = this.ctx;
+    const { program, cache: fetcher } = this.ctx;
     const programId = program.programId;
 
-    await prefetchRoutes(paths, programId, fetcher, refresh);
+    await prefetchRoutes(paths, programId, fetcher, cacheOpts);
 
     try {
       const [quoteMap, failures] = await getQuoteMap(
@@ -94,11 +95,11 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
 
   async findBestRoute(
     trade: Trade,
-    refresh: boolean,
     routingOpts?: Partial<RoutingOptions>,
-    selectionOpts?: Partial<RouteSelectOptions>
+    selectionOpts?: Partial<RouteSelectOptions>,
+    cacheOpts?: AccountFetchOpts
   ): Promise<ExecutableRoute | null> {
-    const allRoutes = await this.findAllRoutes(trade, refresh, routingOpts);
+    const allRoutes = await this.findAllRoutes(trade, routingOpts, cacheOpts);
     const selectOpts = { ...RouterUtils.getDefaultSelectOptions(), selectionOpts };
     return await RouterUtils.selectFirstExecutableRoute(this.ctx, allRoutes, selectOpts);
   }
@@ -116,7 +117,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
         resolvedAtaAccounts: resolvedAtas,
         wallet: this.ctx.wallet.publicKey,
       },
-      true
+      PREFER_REFRESH
     );
     return txBuilder;
   }
@@ -126,8 +127,8 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
 async function prefetchRoutes(
   paths: Path[],
   programId: Address,
-  fetcher: AccountFetcher,
-  refresh: boolean = false
+  cache: WhirlpoolAccountCacheInterface,
+  opts: AccountFetchOpts = AVOID_REFRESH
 ): Promise<void> {
   const poolSet = new Set<string>();
   for (let i = 0; i < paths.length; i++) {
@@ -138,11 +139,10 @@ async function prefetchRoutes(
   }
 
   const ps = Array.from(poolSet);
-  const allWps = await fetcher.listPools(ps, refresh);
+  const allWps = (await cache.getPools(ps, opts));
 
   const tickArrayAddresses = [];
-  for (let i = 0; i < allWps.length; i++) {
-    const wp = allWps[i];
+  for (const [key, wp] of allWps) {
     if (wp == null) {
       continue;
     }
@@ -151,19 +151,19 @@ async function prefetchRoutes(
       wp.tickSpacing,
       true,
       AddressUtil.toPubKey(programId),
-      AddressUtil.toPubKey(ps[i])
+      AddressUtil.toPubKey(key)
     );
     const addr2 = SwapUtils.getTickArrayPublicKeys(
       wp.tickCurrentIndex,
       wp.tickSpacing,
       false,
       AddressUtil.toPubKey(programId),
-      AddressUtil.toPubKey(ps[i])
+      AddressUtil.toPubKey(key)
     );
     const allAddrs = [...addr1, ...addr2].map((k) => k.toBase58());
     const unique = Array.from(new Set(allAddrs));
     tickArrayAddresses.push(...unique);
   }
 
-  await fetcher.listTickArrays(tickArrayAddresses, refresh);
+  await cache.getTickArrays(tickArrayAddresses, opts);
 }

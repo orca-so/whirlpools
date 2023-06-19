@@ -27,6 +27,7 @@ import {
   WhirlpoolIx,
   toTx
 } from "../../src";
+import { PREFER_REFRESH } from "../../src/network/public/account-cache";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
 import {
   TestConfigParams,
@@ -643,7 +644,7 @@ export async function withdrawPositions(
   tokenOwnerAccountA: PublicKey,
   tokenOwnerAccountB: PublicKey
 ) {
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
   await Promise.all(
     positionInfos.map(async (info) => {
       const pool = await fetcher.getPool(info.initParams.whirlpool);
@@ -734,7 +735,7 @@ export async function fundPositionsWithClient(
   whirlpoolKey: PublicKey,
   fundParams: FundedPositionParams[]
 ) {
-  const whirlpool = await client.getPool(whirlpoolKey, true);
+  const whirlpool = await client.getPool(whirlpoolKey, PREFER_REFRESH);
   const whirlpoolData = whirlpool.getData();
   await Promise.all(
     fundParams.map(async (param, idx) => {

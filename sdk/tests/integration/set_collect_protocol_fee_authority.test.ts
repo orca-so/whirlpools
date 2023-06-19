@@ -9,7 +9,7 @@ describe("set_collect_protocol_fee_authority", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
 
   it("successfully set_collect_protocol_fee_authority", async () => {
     const {

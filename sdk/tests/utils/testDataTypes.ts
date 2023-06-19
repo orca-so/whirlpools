@@ -3,17 +3,17 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import { BN } from "bn.js";
 import invariant from "tiny-invariant";
 import {
-  AccountFetcher,
   PDAUtil,
-  PositionBundleData,
   POSITION_BUNDLE_SIZE,
+  PositionBundleData,
   PriceMath,
+  TICK_ARRAY_SIZE,
   TickArray,
   TickArrayData,
   TickData,
-  TICK_ARRAY_SIZE,
   WhirlpoolContext
 } from "../../src";
+import { PREFER_REFRESH, WhirlpoolAccountCacheInterface } from "../../src/network/public/account-cache";
 
 export const testWhirlpoolData = {
   whirlpoolsConfig: Keypair.generate().publicKey,
@@ -86,13 +86,13 @@ export async function getTickArrays(
   startIndices: number[],
   ctx: WhirlpoolContext,
   whirlpoolKey: PublicKey,
-  fetcher: AccountFetcher
+  cache: WhirlpoolAccountCacheInterface
 ) {
   const tickArrayPdas = await startIndices.map((value) =>
     PDAUtil.getTickArray(ctx.program.programId, whirlpoolKey, value)
   );
   const tickArrayAddresses = tickArrayPdas.map((pda) => pda.publicKey);
-  const tickArrays = await fetcher.listTickArrays(tickArrayAddresses, true);
+  const tickArrays = await cache.getTickArrays(tickArrayAddresses, PREFER_REFRESH);
   return tickArrayAddresses.map((addr, index) => {
     return {
       address: addr,

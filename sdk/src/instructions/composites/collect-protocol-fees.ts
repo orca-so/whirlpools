@@ -3,6 +3,7 @@ import { AddressUtil, Instruction, TokenUtil, TransactionBuilder } from "@orca-s
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PACKET_DATA_SIZE } from "@solana/web3.js";
 import { WhirlpoolContext } from "../..";
+import { AVOID_REFRESH } from "../../network/public/account-cache";
 import {
   TokenMintTypes,
   addNativeMintHandlingIx,
@@ -18,9 +19,9 @@ export async function collectProtocolFees(
   const receiverKey = ctx.wallet.publicKey;
   const payerKey = ctx.wallet.publicKey;
 
-  const whirlpoolDatas = await ctx.fetcher.listPools(poolAddresses, false);
+  const whirlpoolDatas = Array.from((await ctx.cache.getPools(poolAddresses, AVOID_REFRESH)).values());
 
-  const accountExemption = await ctx.fetcher.getAccountRentExempt();
+  const accountExemption = await ctx.cache.getAccountRentExempt();
   const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(ctx, {
     mints: getTokenMintsFromWhirlpools(whirlpoolDatas, TokenMintTypes.POOL_ONLY).mintMap,
     accountExemption,
@@ -38,12 +39,12 @@ export async function collectProtocolFees(
   const instructions: Instruction[] = [];
 
   for (const poolAddress of poolAddresses) {
-    const pool = await ctx.fetcher.getPool(poolAddress);
+    const pool = await ctx.cache.getPool(poolAddress);
     if (!pool) {
       throw new Error(`Pool not found: ${poolAddress}`);
     }
 
-    const poolConfig = await ctx.fetcher.getConfig(pool.whirlpoolsConfig);
+    const poolConfig = await ctx.cache.getConfig(pool.whirlpoolsConfig);
     if (!poolConfig) {
       throw new Error(`Config not found: ${pool.whirlpoolsConfig}`);
     }

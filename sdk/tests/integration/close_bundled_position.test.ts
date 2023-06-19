@@ -12,6 +12,7 @@ import {
   increaseLiquidityQuoteByInputTokenWithParams,
   toTx
 } from "../../src";
+import { PREFER_REFRESH } from "../../src/network/public/account-cache";
 import {
   ONE_SOL,
   TickSpacing,
@@ -28,7 +29,7 @@ describe("close_bundled_position", () => {
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const client = buildWhirlpoolClient(ctx);
-  const fetcher = ctx.fetcher;
+  const fetcher = ctx.cache;
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 128;
@@ -86,8 +87,8 @@ describe("close_bundled_position", () => {
     );
     const { bundledPositionPda } = positionInitInfo.params;
 
-    const preAccount = await fetcher.getPosition(bundledPositionPda.publicKey, true);
-    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const preAccount = await fetcher.getPosition(bundledPositionPda.publicKey, PREFER_REFRESH);
+    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
     checkBitmap(prePositionBundle!, [bundleIndex]);
     assert.ok(preAccount !== null);
 
@@ -103,8 +104,8 @@ describe("close_bundled_position", () => {
         receiver: receiverKeypair.publicKey,
       })
     ).buildAndExecute();
-    const postAccount = await fetcher.getPosition(bundledPositionPda.publicKey, true);
-    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const postAccount = await fetcher.getPosition(bundledPositionPda.publicKey, PREFER_REFRESH);
+    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
     checkBitmap(postPositionBundle!, []);
     assert.ok(postAccount === null);
 
@@ -194,7 +195,7 @@ describe("close_bundled_position", () => {
     const { bundledPositionPda } = positionInitInfo.params;
 
     // deposit
-    const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey, true);
+    const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey, PREFER_REFRESH);
     const quote = increaseLiquidityQuoteByInputTokenWithParams({
       tokenMintA: poolInitInfo.tokenMintA,
       tokenMintB: poolInitInfo.tokenMintB,
@@ -216,7 +217,7 @@ describe("close_bundled_position", () => {
       ctx.wallet.publicKey
     );
 
-    const position = await client.getPosition(bundledPositionPda.publicKey, true);
+    const position = await client.getPosition(bundledPositionPda.publicKey, PREFER_REFRESH);
     await (await position.increaseLiquidity(quote)).buildAndExecute();
     assert.ok((await position.refreshData()).liquidity.gtn(0));
 
@@ -446,7 +447,7 @@ describe("close_bundled_position", () => {
         1,
       );
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
       checkBitmapIsClosed(positionBundle!, 0);
     });
 
@@ -485,7 +486,7 @@ describe("close_bundled_position", () => {
 
       // owner can close even if delegation exists
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
       checkBitmapIsClosed(positionBundle!, 0);
     });
 
@@ -562,7 +563,7 @@ describe("close_bundled_position", () => {
         1
       );
 
-      const tokenInfo = await fetcher.getTokenInfo(funderATA, true);
+      const tokenInfo = await fetcher.getTokenInfo(funderATA, PREFER_REFRESH);
       assert.ok(tokenInfo?.amount === 1n);
 
       const tx = toTx(
@@ -579,7 +580,7 @@ describe("close_bundled_position", () => {
       tx.addSigner(funderKeypair);
 
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
       checkBitmapIsClosed(positionBundle!, 0);
     });
   });

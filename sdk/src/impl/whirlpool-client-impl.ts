@@ -34,7 +34,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     return WhirlpoolRouterBuilder.buildWithPools(this.ctx, poolAddresses);
   }
 
-  public async getPool(poolAddress: Address, opts?: AccountFetchOpts): Promise<Whirlpool> {
+  public async getPool(poolAddress: Address, opts = AVOID_REFRESH): Promise<Whirlpool> {
     const account = await this.ctx.cache.getPool(poolAddress, opts);
     if (!account) {
       throw new Error(`Unable to fetch Whirlpool at address at ${poolAddress}`);
@@ -54,7 +54,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     );
   }
 
-  public async getPools(poolAddresses: Address[], opts?: AccountFetchOpts): Promise<Whirlpool[]> {
+  public async getPools(poolAddresses: Address[], opts = AVOID_REFRESH): Promise<Whirlpool[]> {
     const accounts = Array.from((await this.ctx.cache.getPools(poolAddresses, opts)).values()).filter(
       (account): account is WhirlpoolData => !!account
     );
@@ -100,7 +100,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     return whirlpools;
   }
 
-  public async getPosition(positionAddress: Address, opts?: AccountFetchOpts): Promise<Position> {
+  public async getPosition(positionAddress: Address, opts = AVOID_REFRESH): Promise<Position> {
     const account = await this.ctx.cache.getPosition(positionAddress, opts);
     if (!account) {
       throw new Error(`Unable to fetch Position at address at ${positionAddress}`);
@@ -110,12 +110,12 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       throw new Error(`Unable to fetch Whirlpool for Position at address at ${positionAddress}`);
     }
 
-    const [lowerTickArray, upperTickArray] = (await getTickArrayDataForPosition(
+    const [lowerTickArray, upperTickArray] = await getTickArrayDataForPosition(
       this.ctx,
       account,
       whirlAccount,
       opts
-    )).values();
+    );
     if (!lowerTickArray || !upperTickArray) {
       throw new Error(`Unable to fetch TickArrays for Position at address at ${positionAddress}`);
     }
@@ -131,7 +131,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
 
   public async getPositions(
     positionAddresses: Address[],
-    opts?: AccountFetchOpts
+    opts = AVOID_REFRESH
   ): Promise<Record<string, Position | null>> {
     // TODO: Prefetch and use fetcher as a cache - Think of a cleaner way to prefetch
     const positions = Array.from((await this.ctx.cache.getPositions(positionAddresses, opts)).values());
@@ -186,7 +186,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     tickSpacing: number,
     initialTick: number,
     funder: Address,
-    opts?: AccountFetchOpts
+    opts = AVOID_REFRESH
   ): Promise<{ poolKey: PublicKey; tx: TransactionBuilder }> {
     invariant(TickUtil.checkTickInBounds(initialTick), "initialTick is out of bounds.");
     invariant(

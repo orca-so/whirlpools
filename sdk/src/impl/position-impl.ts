@@ -451,12 +451,12 @@ export class PositionImpl implements Position {
       this.whirlpoolData = whirlpoolAccount;
     }
 
-    const [lowerTickArray, upperTickArray] = (await getTickArrayDataForPosition(
+    const [lowerTickArray, upperTickArray] = await getTickArrayDataForPosition(
       this.ctx,
       this.data,
       this.whirlpoolData,
       PREFER_REFRESH
-    )).values();
+    );
     if (lowerTickArray) {
       this.lowerTickArrayData = lowerTickArray;
     }

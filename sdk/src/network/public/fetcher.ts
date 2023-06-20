@@ -1,6 +1,12 @@
 import { Address } from "@coral-xyz/anchor";
-import { AddressUtil } from "@orca-so/common-sdk";
-import { AccountInfo, AccountLayout, MintInfo } from "@solana/spl-token";
+import {
+  AddressUtil,
+  ParsableEntity,
+  ParsableMintInfo,
+  ParsableTokenAccountInfo,
+  getMultipleAccountsInMap,
+} from "@orca-so/common-sdk";
+import { Account, AccountLayout, Mint } from "@solana/spl-token";
 import { Connection, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import {
@@ -14,13 +20,10 @@ import {
 } from "../..";
 import { FeeTierData, getAccountSize } from "../../types/public";
 import {
-  ParsableEntity,
   ParsableFeeTier,
-  ParsableMintInfo,
   ParsablePosition,
   ParsablePositionBundle,
   ParsableTickArray,
-  ParsableTokenInfo,
   ParsableWhirlpool,
   ParsableWhirlpoolsConfig,
 } from "./parsing";
@@ -35,8 +38,8 @@ type CachedValue =
   | TickArrayData
   | FeeTierData
   | PositionBundleData
-  | AccountInfo
-  | MintInfo;
+  | Account
+  | Mint;
 
 /**
  * Include both the entity (i.e. type) of the stored value, and the value itself
@@ -45,16 +48,6 @@ interface CachedContent<T extends CachedValue> {
   entity: ParsableEntity<T>;
   value: CachedValue | null;
 }
-
-/**
- * Type for rpc batch request response
- */
-type GetMultipleAccountsResponse = {
-  error?: string;
-  result?: {
-    value?: ({ data: [string, string] } | null)[];
-  };
-};
 
 /**
  * Filter params for Whirlpools when invoking getProgramAccounts.
@@ -157,8 +150,8 @@ export class AccountFetcher {
    * @param refresh force cache refresh
    * @returns token info account
    */
-  public async getTokenInfo(address: Address, refresh = false): Promise<AccountInfo | null> {
-    return this.get(AddressUtil.toPubKey(address), ParsableTokenInfo, refresh);
+  public async getTokenInfo(address: Address, refresh = false): Promise<Account | null> {
+    return this.get(AddressUtil.toPubKey(address), ParsableTokenAccountInfo, refresh);
   }
 
   /**
@@ -168,7 +161,7 @@ export class AccountFetcher {
    * @param refresh force cache refresh
    * @returns mint info account
    */
-  public async getMintInfo(address: Address, refresh = false): Promise<MintInfo | null> {
+  public async getMintInfo(address: Address, refresh = false): Promise<Mint | null> {
     return this.get(AddressUtil.toPubKey(address), ParsableMintInfo, refresh);
   }
 
@@ -238,7 +231,7 @@ export class AccountFetcher {
 
     const parsedAccounts: WhirlpoolAccount[] = [];
     accounts.forEach(({ pubkey, account }) => {
-      const parsedAccount = ParsableWhirlpool.parse(account.data);
+      const parsedAccount = ParsableWhirlpool.parse(pubkey, account);
       invariant(!!parsedAccount, `could not parse whirlpool: ${pubkey.toBase58()}`);
       parsedAccounts.push([pubkey, parsedAccount]);
       this._cache[pubkey.toBase58()] = { entity: ParsableWhirlpool, value: parsedAccount };
@@ -282,11 +275,8 @@ export class AccountFetcher {
    * @param refresh force cache refresh
    * @returns token info accounts
    */
-  public async listTokenInfos(
-    addresses: Address[],
-    refresh: boolean
-  ): Promise<(AccountInfo | null)[]> {
-    return this.list(AddressUtil.toPubKeys(addresses), ParsableTokenInfo, refresh);
+  public async listTokenInfos(addresses: Address[], refresh: boolean): Promise<(Account | null)[]> {
+    return this.list(AddressUtil.toPubKeys(addresses), ParsableTokenAccountInfo, refresh);
   }
 
   /**
@@ -296,7 +286,7 @@ export class AccountFetcher {
    * @param refresh force cache refresh
    * @returns mint info accounts
    */
-  public async listMintInfos(addresses: Address[], refresh: boolean): Promise<(MintInfo | null)[]> {
+  public async listMintInfos(addresses: Address[], refresh: boolean): Promise<(Mint | null)[]> {
     return this.list(AddressUtil.toPubKeys(addresses), ParsableMintInfo, refresh);
   }
 
@@ -320,11 +310,12 @@ export class AccountFetcher {
    */
   public async refreshAll(): Promise<void> {
     const addresses: string[] = Object.keys(this._cache);
-    const data = await this.bulkRequest(addresses);
+    const fetchedAccountsMap = await getMultipleAccountsInMap(this.connection, addresses);
 
-    for (const [idx, [key, cachedContent]] of Object.entries(this._cache).entries()) {
+    for (const [key, cachedContent] of Object.entries(this._cache)) {
       const entity = cachedContent.entity;
-      const value = entity.parse(data[idx]);
+      const fetchedEntry = fetchedAccountsMap.get(key);
+      const value = entity.parse(AddressUtil.toPubKey(key), fetchedEntry);
 
       this._cache[key] = { entity, value };
     }
@@ -348,8 +339,7 @@ export class AccountFetcher {
     }
 
     const accountInfo = await this.connection.getAccountInfo(address);
-    const accountData = accountInfo?.data;
-    const value = entity.parse(accountData);
+    const value = entity.parse(address, accountInfo);
     this._cache[key] = { entity, value };
 
     return value;
@@ -379,9 +369,13 @@ export class AccountFetcher {
 
     /* Fetch accounts not found in cache */
     if (undefinedAccounts.length > 0) {
-      const data = await this.bulkRequest(undefinedAccounts.map((account) => account.key));
-      undefinedAccounts.forEach(({ cacheIndex, key }, dataIndex) => {
-        const value = entity.parse(data[dataIndex]);
+      const fetchedAccountsMap = await getMultipleAccountsInMap(
+        this.connection,
+        undefinedAccounts.map((account) => account.key)
+      );
+      undefinedAccounts.forEach(({ cacheIndex, key }) => {
+        const fetchedEntry = fetchedAccountsMap.get(key);
+        const value = entity.parse(AddressUtil.toPubKey(key), fetchedEntry);
         invariant(cachedValues[cacheIndex]?.[1] === undefined, "unexpected non-undefined value");
         cachedValues[cacheIndex] = [key, value];
         this._cache[key] = { entity, value };
@@ -393,40 +387,5 @@ export class AccountFetcher {
       .filter((value): value is T | null => value !== undefined);
     invariant(result.length === addresses.length, "not enough results fetched");
     return result;
-  }
-
-  /**
-   * Make batch rpc request
-   */
-  private async bulkRequest(addresses: string[]): Promise<(Buffer | null)[]> {
-    const responses: Promise<GetMultipleAccountsResponse>[] = [];
-    const chunk = 100; // getMultipleAccounts has limitation of 100 accounts per request
-
-    for (let i = 0; i < addresses.length; i += chunk) {
-      const addressesSubset = addresses.slice(i, i + chunk);
-      const res = (this.connection as any)._rpcRequest("getMultipleAccounts", [
-        addressesSubset,
-        { commitment: this.connection.commitment },
-      ]);
-      responses.push(res);
-    }
-
-    const combinedResult: (Buffer | null)[] = [];
-
-    (await Promise.all(responses)).forEach((res) => {
-      invariant(!res.error, `bulkRequest result error: ${res.error}`);
-      invariant(!!res.result?.value, "bulkRequest no value");
-
-      res.result.value.forEach((account) => {
-        if (!account || account.data[1] !== "base64") {
-          combinedResult.push(null);
-        } else {
-          combinedResult.push(Buffer.from(account.data[0], account.data[1]));
-        }
-      });
-    });
-
-    invariant(combinedResult.length === addresses.length, "bulkRequest not enough results");
-    return combinedResult;
   }
 }

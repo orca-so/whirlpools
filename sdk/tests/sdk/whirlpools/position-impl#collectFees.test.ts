@@ -1,17 +1,18 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import { BN } from "@coral-xyz/anchor";
+import { MathUtil } from "@orca-so/common-sdk";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  buildWhirlpoolClient,
-  collectFeesQuote,
   PDAUtil,
-  toTx,
   Whirlpool,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
+  buildWhirlpoolClient,
+  collectFeesQuote,
+  toTx
 } from "../../../src";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
@@ -29,7 +30,7 @@ describe("PositionImpl#collectFees()", () => {
   const tickLowerIndex = 29440;
   const tickUpperIndex = 33536;
   const tickSpacing = TickSpacing.Standard;
-  const liquidityAmount = new u64(10_000_000);
+  const liquidityAmount = new BN(10_000_000);
 
   before(() => {
     const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -68,7 +69,7 @@ describe("PositionImpl#collectFees()", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -90,7 +91,7 @@ describe("PositionImpl#collectFees()", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -178,13 +179,13 @@ describe("PositionImpl#collectFees()", () => {
 
       assert.notEqual(positionDataAfter, null);
 
-      const accountAPubkey = await deriveATA(otherWallet.publicKey, poolInitInfo.tokenMintA);
+      const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
       const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, true);
-      assert.ok(accountA && accountA.amount.eq(quote.feeOwedA));
+      assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA));
 
-      const accountBPubkey = await deriveATA(otherWallet.publicKey, poolInitInfo.tokenMintB);
+      const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
       const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, true);
-      assert.ok(accountB && accountB.amount.eq(quote.feeOwedB));
+      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
     });
   });
 
@@ -252,9 +253,9 @@ describe("PositionImpl#collectFees()", () => {
         quote.feeOwedA.toNumber() + minAccountExempt
       );
 
-      const accountBPubkey = await deriveATA(otherWallet.publicKey, poolInitInfo.tokenMintB);
+      const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
       const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, true);
-      assert.ok(accountB && accountB.amount.eq(quote.feeOwedB));
+      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
     });
   });
 });

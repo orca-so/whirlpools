@@ -1,6 +1,6 @@
 import { BN, Program, web3 } from "@coral-xyz/anchor";
-import { deriveATA, ONE } from "@orca-so/common-sdk";
-import { AccountLayout, NATIVE_MINT } from "@solana/spl-token";
+import { ONE } from "@orca-so/common-sdk";
+import { AccountLayout, NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import { SwapQuote, WhirlpoolContext } from "../../src";
@@ -98,7 +98,7 @@ export async function assertDevTokenAmount(
     return;
   }
 
-  const tokenDevWalletAta = await deriveATA(devWallet, swapToken);
+  const tokenDevWalletAta = getAssociatedTokenAddressSync(swapToken, devWallet);
   const afterDevWalletAmount = await getTokenBalance(ctx.provider, tokenDevWalletAta);
   assert.equal(
     expectationQuote.devFeeAmount,

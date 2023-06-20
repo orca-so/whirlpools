@@ -1,7 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
-import { NATIVE_MINT, u64 } from "@solana/spl-token";
+import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import { TickSpacing } from ".";
 import { TICK_ARRAY_SIZE, Whirlpool, WhirlpoolClient, WhirlpoolContext } from "../../src";
 import {
@@ -21,7 +22,7 @@ export interface SwapTestPoolParams {
 }
 
 export interface SwapTestSwapParams {
-  swapAmount: u64;
+  swapAmount: BN;
   aToB: boolean;
   amountSpecifiedIsInput: boolean;
   slippageTolerance: Percentage;

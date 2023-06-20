@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, Percentage } from "@orca-so/common-sdk";
+import { Percentage } from "@orca-so/common-sdk";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -9,7 +10,7 @@ import {
   PriceMath
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
-import { createAssociatedTokenAccount, TickSpacing, transfer } from "../../utils";
+import { createAssociatedTokenAccount, TickSpacing, transferToken } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
 import { initPosition, mintTokensToTestAccount } from "../../utils/test-builders";
@@ -181,14 +182,14 @@ describe("position-impl", () => {
 
     // Transfer the position token to another wallet
     const otherWallet = anchor.web3.Keypair.generate();
-    const walletPositionTokenAccount = await deriveATA(ctx.wallet.publicKey, positionMint);
+    const walletPositionTokenAccount = getAssociatedTokenAddressSync(positionMint, ctx.wallet.publicKey);
     const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
       ctx.provider,
       positionMint,
       otherWallet.publicKey,
       ctx.wallet.publicKey
     );
-    await transfer(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
     // Mint to this other wallet and increase more tokens
     await mintTokensToTestAccount(

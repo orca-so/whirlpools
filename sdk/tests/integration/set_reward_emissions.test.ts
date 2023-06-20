@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
-import { createAndMintToTokenAccount, mintToByAuthority, TickSpacing, ZERO_BN } from "../utils";
+import { createAndMintToTokenAccount, mintToDestination, TickSpacing, ZERO_BN } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initializeReward, initTestPool } from "../utils/init-utils";
 
@@ -31,7 +31,7 @@ describe("set_reward_emissions", () => {
       rewardIndex
     );
 
-    await mintToByAuthority(provider, rewardMint, rewardVaultKeypair.publicKey, 10000);
+    await mintToDestination(provider, rewardMint, rewardVaultKeypair.publicKey, 10000);
 
     await toTx(
       ctx,

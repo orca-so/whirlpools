@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -19,7 +19,7 @@ import {
   createTokenAccount,
   getTokenBalance,
   TickSpacing,
-  transfer,
+  transferToken,
   ZERO_BN
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -69,7 +69,7 @@ describe("collect_fees", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -91,7 +91,7 @@ describe("collect_fees", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -123,8 +123,8 @@ describe("collect_fees", () => {
       positions[0].publicKey,
       true
     )) as PositionData;
-    assert.ok(positionBeforeCollect.feeOwedA.eq(new u64(581)));
-    assert.ok(positionBeforeCollect.feeOwedB.eq(new u64(581)));
+    assert.ok(positionBeforeCollect.feeOwedA.eq(new BN(581)));
+    assert.ok(positionBeforeCollect.feeOwedB.eq(new BN(581)));
 
     const feeAccountA = await createTokenAccount(provider, tokenMintA, provider.wallet.publicKey);
     const feeAccountB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);
@@ -272,7 +272,7 @@ describe("collect_fees", () => {
       newOwner.publicKey
     );
 
-    await transfer(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
 
     await toTx(
       ctx,
@@ -368,7 +368,7 @@ describe("collect_fees", () => {
       /0x7d3/ // ConstraintRaw
     );
 
-    await transfer(provider, positions[0].tokenAccount, positionTokenAccount2, 1);
+    await transferToken(provider, positions[0].tokenAccount, positionTokenAccount2, 1);
 
     await assert.rejects(
       toTx(

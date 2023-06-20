@@ -1,21 +1,22 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, MathUtil, SendTxRequest, TransactionBuilder, TransactionProcessor, ZERO } from "@orca-so/common-sdk";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, NATIVE_MINT, Token, TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
+import { MathUtil, SendTxRequest, TransactionBuilder, TransactionProcessor, ZERO } from "@orca-so/common-sdk";
+import { NATIVE_MINT, createAssociatedTokenAccountInstruction, createBurnInstruction, createCloseAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
-  buildWhirlpoolClient,
-  collectFeesQuote,
-  collectRewardsQuote,
   NUM_REWARDS,
   PDAUtil,
   PoolUtil,
-  toTx,
   Whirlpool,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
+  buildWhirlpoolClient,
+  collectFeesQuote,
+  collectRewardsQuote,
+  toTx
 } from "../../../src";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
@@ -35,7 +36,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
   const tickUpperIndex = 33536;
   const tickSpacing = TickSpacing.Standard;
   const vaultStartBalance = 1_000_000;
-  const liquidityAmount = new u64(10_000_000);
+  const liquidityAmount = new BN(10_000_000);
   const sleep = (second: number) => new Promise(resolve => setTimeout(resolve, second * 1000))
 
   before(() => {
@@ -78,7 +79,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -100,7 +101,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -168,15 +169,15 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const mintA = pool.getTokenAInfo().mint;
     const mintB = pool.getTokenBInfo().mint;
-    const ataA = await deriveATA(ctx.wallet.publicKey, mintA);
-    const ataB = await deriveATA(ctx.wallet.publicKey, mintB);
+    const ataA = getAssociatedTokenAddressSync(mintA, ctx.wallet.publicKey);
+    const ataB = getAssociatedTokenAddressSync(mintB, ctx.wallet.publicKey);
     await burnAndCloseATA(ctx, ataA);
     await burnAndCloseATA(ctx, ataB);
 
     for (let i = 0; i < NUM_REWARDS; i++) {
       if (PoolUtil.isRewardInitialized(pool.getRewardInfos()[i])) {
         const mintReward = pool.getRewardInfos()[i].mint;
-        const ataReward = await deriveATA(ctx.wallet.publicKey, mintReward);
+        const ataReward = getAssociatedTokenAddressSync(mintReward, ctx.wallet.publicKey);
         await burnAndCloseATA(ctx, ataReward);
       }
     }
@@ -186,22 +187,8 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     const account = await ctx.fetcher.getTokenInfo(ata, true);
     if (account === null) return;
 
-    const burnIx = Token.createBurnInstruction(
-      TOKEN_PROGRAM_ID,
-      account.mint,
-      ata,
-      ctx.wallet.publicKey,
-      [],
-      account.amount
-    );
-
-    const closeIx = Token.createCloseAccountInstruction(
-      TOKEN_PROGRAM_ID,
-      ata,
-      ctx.wallet.publicKey,
-      ctx.wallet.publicKey,
-      []
-    );
+    const burnIx = createBurnInstruction(ata, account.mint, ctx.wallet.publicKey, account.amount);
+    const closeIx = createCloseAccountInstruction(ata, ctx.wallet.publicKey, ctx.wallet.publicKey, []);
 
     const tx = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
     tx.addInstruction({
@@ -221,15 +208,15 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const mintA = pool.getTokenAInfo().mint;
     const mintB = pool.getTokenBInfo().mint;
-    const ataA = await deriveATA(ctx.wallet.publicKey, mintA);
-    const ataB = await deriveATA(ctx.wallet.publicKey, mintB);
+    const ataA = getAssociatedTokenAddressSync(mintA, ctx.wallet.publicKey);
+    const ataB = getAssociatedTokenAddressSync(mintB, ctx.wallet.publicKey);
     await createATA(ctx, ataA, mintA);
     await createATA(ctx, ataB, mintB);
 
     for (let i = 0; i < NUM_REWARDS; i++) {
       if (PoolUtil.isRewardInitialized(pool.getRewardInfos()[i])) {
         const mintReward = pool.getRewardInfos()[i].mint;
-        const ataReward = await deriveATA(ctx.wallet.publicKey, mintReward);
+        const ataReward = getAssociatedTokenAddressSync(mintReward, ctx.wallet.publicKey);
         await createATA(ctx, ataReward, mintReward);
       }
     }
@@ -240,14 +227,11 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const account = await ctx.fetcher.getTokenInfo(ata, true);
     if (account !== null) return;
-
-    const createATAIx = Token.createAssociatedTokenAccountInstruction(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      mint,
+    const createATAIx = createAssociatedTokenAccountInstruction(
+      ctx.wallet.publicKey,
       ata,
       ctx.wallet.publicKey,
-      ctx.wallet.publicKey
+      mint,
     );
 
     const tx = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
@@ -277,15 +261,15 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
       });

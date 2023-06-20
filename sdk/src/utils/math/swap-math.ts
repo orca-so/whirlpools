@@ -1,5 +1,4 @@
-import { BN } from "@coral-xyz/anchor";
-import { u64 } from "@solana/spl-token";
+import BN from "bn.js";
 import { FEE_RATE_MUL_VALUE } from "../../types/public";
 import { BitMath } from "./bit-math";
 import { getAmountDeltaA, getAmountDeltaB, getNextSqrtPrice } from "./token-math";
@@ -12,7 +11,7 @@ export type SwapStep = {
 };
 
 export function computeSwapStep(
-  amountRemaining: u64,
+  amountRemaining: BN,
   feeRate: number,
   currLiquidity: BN,
   currSqrtPrice: BN,

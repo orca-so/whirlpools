@@ -1,8 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   MAX_SQRT_PRICE,
@@ -63,7 +63,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(10),
+          amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
@@ -108,7 +108,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(10),
+          amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
@@ -155,7 +155,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(10),
+          amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
@@ -202,7 +202,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(10),
+          amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
@@ -244,7 +244,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(10),
+          amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
@@ -290,7 +290,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(10),
+          amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(-50000),
           amountSpecifiedIsInput: true,
@@ -332,7 +332,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(10),
+          amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
@@ -374,7 +374,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(10),
+          amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
@@ -412,7 +412,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(10),
+          amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
@@ -457,7 +457,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(10),
+          amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
@@ -497,7 +497,7 @@ describe("swap", () => {
       toTx(
         ctx,
         WhirlpoolIx.swapIx(ctx.program, {
-          amount: new u64(0),
+          amount: new BN(0),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
@@ -556,7 +556,7 @@ describe("swap", () => {
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(100000),
+      new BN(100000),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -647,7 +647,7 @@ describe("swap", () => {
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(1),
+      new BN(1),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -682,7 +682,7 @@ describe("swap", () => {
     const quote2 = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(1),
+      new BN(1),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -774,7 +774,7 @@ describe("swap", () => {
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(1),
+      new BN(1),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -808,7 +808,7 @@ describe("swap", () => {
     const quote2 = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(43),
+      new BN(43),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -894,7 +894,7 @@ describe("swap", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(7051000),
+        amount: new BN(7051000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(28500),
         amountSpecifiedIsInput: true,
@@ -934,7 +934,7 @@ describe("swap", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, poolInitInfo.whirlpoolPda.publicKey);
 
     const params: SwapParams = {
-      amount: new u64(10),
+      amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: MathUtil.toX64(new Decimal(4294886578)),
       amountSpecifiedIsInput: true,
@@ -968,7 +968,7 @@ describe("swap", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, poolInitInfo.whirlpoolPda.publicKey);
 
     const params: SwapParams = {
-      amount: new u64(10),
+      amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: new anchor.BN(MAX_SQRT_PRICE).add(new anchor.BN(1)),
       amountSpecifiedIsInput: true,
@@ -1002,7 +1002,7 @@ describe("swap", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, poolInitInfo.whirlpoolPda.publicKey);
 
     const params: SwapParams = {
-      amount: new u64(10),
+      amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: new anchor.BN(MIN_SQRT_PRICE).sub(new anchor.BN(1)),
       amountSpecifiedIsInput: true,
@@ -1054,7 +1054,7 @@ describe("swap", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
     const params = {
-      amount: new u64(10),
+      amount: new BN(10),
       otherAmountThreshold: MAX_U64,
       sqrtPriceLimit: new anchor.BN(MIN_SQRT_PRICE),
       amountSpecifiedIsInput: true,
@@ -1106,7 +1106,7 @@ describe("swap", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
     const params = {
-      amount: new u64(10),
+      amount: new BN(10),
       otherAmountThreshold: MAX_U64,
       sqrtPriceLimit: new anchor.BN(MAX_SQRT_PRICE),
       amountSpecifiedIsInput: true,
@@ -1158,7 +1158,7 @@ describe("swap", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
     const params = {
-      amount: new u64(10),
+      amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: new anchor.BN(MIN_SQRT_PRICE),
       amountSpecifiedIsInput: false,
@@ -1210,7 +1210,7 @@ describe("swap", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
     const params = {
-      amount: new u64(10),
+      amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: new anchor.BN(MAX_SQRT_PRICE),
       amountSpecifiedIsInput: false,
@@ -1343,7 +1343,7 @@ describe("swap", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(829996),
+        amount: new BN(829996),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(29240),
         amountSpecifiedIsInput: false,
@@ -1384,7 +1384,7 @@ describe("swap", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(14538074),
+        amount: new BN(14538074),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(27712),
         amountSpecifiedIsInput: false,
@@ -1425,7 +1425,7 @@ describe("swap", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(829996),
+        amount: new BN(829996),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(29240),
         amountSpecifiedIsInput: false,
@@ -1466,7 +1466,7 @@ describe("swap", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(14538074),
+        amount: new BN(14538074),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(27712),
         amountSpecifiedIsInput: false,
@@ -1507,7 +1507,7 @@ describe("swap", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(829996),
+        amount: new BN(829996),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(29240),
         amountSpecifiedIsInput: false,
@@ -1548,7 +1548,7 @@ describe("swap", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(14538074),
+        amount: new BN(14538074),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(27712),
         amountSpecifiedIsInput: false,

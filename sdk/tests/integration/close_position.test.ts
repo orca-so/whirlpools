@@ -1,4 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
+import { AuthorityType } from "@solana/spl-token";
 import * as assert from "assert";
 import { toTx, WhirlpoolIx } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
@@ -8,7 +9,7 @@ import {
   createTokenAccount,
   setAuthority,
   TickSpacing,
-  transfer,
+  transferToken,
   ZERO_BN
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -67,7 +68,7 @@ describe("close_position", () => {
       ctx.provider,
       params.positionTokenAccount,
       delegate.publicKey,
-      "CloseAccount",
+      AuthorityType.CloseAccount,
       owner
     );
 
@@ -129,7 +130,7 @@ describe("close_position", () => {
       newOwner.publicKey
     );
 
-    await transfer(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
 
     await toTx(
       ctx,
@@ -212,7 +213,7 @@ describe("close_position", () => {
       ctx.provider,
       params.positionTokenAccount,
       delegate.publicKey,
-      "CloseAccount",
+      AuthorityType.CloseAccount,
       owner
     );
 
@@ -309,7 +310,7 @@ describe("close_position", () => {
       ctx.provider,
       params.positionTokenAccount,
       delegate.publicKey,
-      "CloseAccount",
+      AuthorityType.CloseAccount,
       owner
     );
 
@@ -350,7 +351,7 @@ describe("close_position", () => {
       ctx.provider,
       params.positionTokenAccount,
       delegate.publicKey,
-      "CloseAccount",
+      AuthorityType.CloseAccount,
       owner
     );
 

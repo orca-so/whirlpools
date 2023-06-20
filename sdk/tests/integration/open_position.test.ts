@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
 import { PDA } from "@orca-so/common-sdk";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
 import {
@@ -11,18 +11,18 @@ import {
   OpenPositionParams,
   PDAUtil,
   PositionData,
-  toTx,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
+  toTx
 } from "../../src";
 import {
+  ONE_SOL,
+  TickSpacing,
+  ZERO_BN,
   createMint,
   createMintInstructions,
-  mintToByAuthority,
-  ONE_SOL,
-  systemTransferTx,
-  TickSpacing,
-  ZERO_BN
+  mintToDestination,
+  systemTransferTx
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool, openPosition } from "../utils/init-utils";
@@ -107,31 +107,19 @@ describe("open_position", () => {
     const { positionMintAddress, positionTokenAccount: positionTokenAccountAddress } =
       positionInitInfo.params;
 
-    const token = new Token(
-      ctx.connection,
-      positionMintAddress,
-      TOKEN_PROGRAM_ID,
-      web3.Keypair.generate()
-    );
-
-    const userTokenAccount = await token.getAccountInfo(positionTokenAccountAddress);
-    assert.ok(userTokenAccount.amount.eq(new anchor.BN(1)));
+    const userTokenAccount = await getAccount(ctx.connection, positionTokenAccountAddress);
+    assert.ok(userTokenAccount.amount === 1n);
     assert.ok(userTokenAccount.owner.equals(newOwner.publicKey));
 
     await assert.rejects(
-      mintToByAuthority(provider, positionMintAddress, positionTokenAccountAddress, 1),
+      mintToDestination(provider, positionMintAddress, positionTokenAccountAddress, 1),
       /0x5/ // the total supply of this token is fixed
     );
   });
 
   it("user must pass the valid token ATA account", async () => {
     const anotherMintKey = await createMint(provider, provider.wallet.publicKey);
-    const positionTokenAccountAddress = await Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      anotherMintKey,
-      ctx.provider.wallet.publicKey
-    );
+    const positionTokenAccountAddress = getAssociatedTokenAddressSync(anotherMintKey, provider.wallet.publicKey)
 
     await assert.rejects(
       toTx(
@@ -191,12 +179,7 @@ describe("open_position", () => {
     const positionMintKeypair = anchor.web3.Keypair.generate();
     const positionPda = PDAUtil.getPosition(ctx.program.programId, positionMintKeypair.publicKey);
 
-    const positionTokenAccountAddress = await Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
-      positionMintKeypair.publicKey,
-      provider.wallet.publicKey
-    );
+    const positionTokenAccountAddress = getAssociatedTokenAddressSync(positionMintKeypair.publicKey, provider.wallet.publicKey)
 
     const tx = new web3.Transaction();
     tx.add(

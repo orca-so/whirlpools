@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import {
@@ -65,7 +64,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(150000),
+      new BN(150000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -128,7 +127,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(190000000),
+      new BN(190000000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -187,7 +186,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(200000000),
+      new BN(200000000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -245,7 +244,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(450000000),
+      new BN(450000000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -306,7 +305,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(150000000),
+      new BN(150000000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -364,7 +363,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(75000000),
+      new BN(75000000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -422,7 +421,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(15000000),
+      new BN(15000000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -480,7 +479,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(7500000),
+      new BN(7500000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -538,7 +537,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(45000000),
+      new BN(45000000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -596,7 +595,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(49500000),
+      new BN(49500000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -647,7 +646,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(119500000),
+      new BN(119500000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -698,7 +697,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(119500000),
+      new BN(119500000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -749,7 +748,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(119500000),
+      new BN(119500000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -800,7 +799,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(159500000),
+      new BN(159500000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -881,7 +880,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64(102195000),
+      new BN(102195000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -961,7 +960,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(99900000),
+      new BN(99900000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -1013,7 +1012,7 @@ describe("swap traversal tests", () => {
         await swapQuoteByInputToken(
           whirlpool,
           whirlpoolData.tokenMintB,
-          new u64(9159500000),
+          new BN(9159500000),
           slippageTolerance,
           ctx.program.programId,
           fetcher,
@@ -1061,7 +1060,7 @@ describe("swap traversal tests", () => {
         await swapQuoteByInputToken(
           whirlpool,
           whirlpoolData.tokenMintA,
-          new u64(9159500000),
+          new BN(9159500000),
           slippageTolerance,
           ctx.program.programId,
           fetcher,
@@ -1109,7 +1108,7 @@ describe("swap traversal tests", () => {
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64("12595000000000"),
+      new BN("12595000000000"),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -1151,7 +1150,7 @@ describe("swap traversal tests", () => {
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
-      new u64("12595000000000"),
+      new BN("12595000000000"),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -1194,7 +1193,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(200000000),
+      new BN(200000000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -1250,7 +1249,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(200000000),
+      new BN(200000000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -1306,7 +1305,7 @@ describe("swap traversal tests", () => {
     const inputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
-      new u64(200000000),
+      new BN(200000000),
       slippageTolerance,
       ctx.program.programId,
       fetcher,
@@ -1372,7 +1371,7 @@ describe("swap traversal tests", () => {
           {
             aToB,
             amountSpecifiedIsInput: true,
-            tokenAmount: new u64("10000"),
+            tokenAmount: new BN("10000"),
             whirlpoolData,
             tickArrays,
             sqrtPriceLimit: new BN(MIN_SQRT_PRICE).subn(1),
@@ -1424,7 +1423,7 @@ describe("swap traversal tests", () => {
           {
             aToB,
             amountSpecifiedIsInput: true,
-            tokenAmount: new u64("10000"),
+            tokenAmount: new BN("10000"),
             whirlpoolData,
             tickArrays,
             sqrtPriceLimit: new BN(MAX_SQRT_PRICE).addn(1),

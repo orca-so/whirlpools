@@ -1,16 +1,18 @@
 import { Address } from "@coral-xyz/anchor";
-import { Instruction, resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import {
+  Instruction,
+  TokenUtil,
+  TransactionBuilder,
+  ZERO,
+  resolveOrCreateATAs,
+} from "@orca-so/common-sdk";
 import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
-import { NATIVE_MINT } from "@solana/spl-token";
+import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PositionData, WhirlpoolContext } from "../..";
 import { WhirlpoolIx } from "../../ix";
 import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
-import {
-  createWSOLAccountInstructions,
-  getAssociatedTokenAddressSync,
-} from "../../utils/spl-token-utils";
 import { checkMergedTransactionSizeIsValid, convertListToMap } from "../../utils/txn-utils";
 import { getTokenMintsFromWhirlpools } from "../../utils/whirlpool-ata-utils";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
@@ -144,7 +146,7 @@ export async function collectAllForPositionsTxns(
     if (!pendingTxBuilder || !touchedMints) {
       pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       touchedMints = new Set<string>();
-      resolvedAtas[NATIVE_MINT.toBase58()] = createWSOLAccountInstructions(
+      resolvedAtas[NATIVE_MINT.toBase58()] = TokenUtil.createWrappedNativeAccountInstruction(
         receiverKey,
         ZERO,
         accountExemption
@@ -229,10 +231,7 @@ const constructCollectIxForPosition = (
   const mintA = whirlpool.tokenMintA.toBase58();
   const mintB = whirlpool.tokenMintB.toBase58();
 
-  const positionTokenAccount = getAssociatedTokenAddressSync(
-    positionMint.toBase58(),
-    positionOwner.toBase58()
-  );
+  const positionTokenAccount = getAssociatedTokenAddressSync(positionMint, positionOwner);
 
   // Update fee and reward values if necessary
   if (!liquidity.eq(ZERO)) {

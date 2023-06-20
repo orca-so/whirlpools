@@ -1,6 +1,7 @@
-import { BN, Program } from "@coral-xyz/anchor";
-import { TOKEN_PROGRAM_ID, u64 } from "@solana/spl-token";
+import { Program } from "@coral-xyz/anchor";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import { Whirlpool } from "../artifacts/whirlpool";
 
 import { Instruction } from "@orca-so/common-sdk";
@@ -48,8 +49,8 @@ export type IncreaseLiquidityParams = {
  * @param liquidityAmount - the desired amount of liquidity to deposit into the position/
  */
 export type IncreaseLiquidityInput = {
-  tokenMaxA: u64;
-  tokenMaxB: u64;
+  tokenMaxA: BN;
+  tokenMaxB: BN;
   liquidityAmount: BN;
 };
 

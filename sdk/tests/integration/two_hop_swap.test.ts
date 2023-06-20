@@ -1,8 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import {
   buildWhirlpoolClient,
   InitPoolParams,
@@ -82,7 +82,7 @@ describe("two-hop swap", () => {
       const quote = await swapQuoteByInputToken(
         whirlpoolOne,
         inputToken,
-        new u64(1000),
+        new BN(1000),
         Percentage.fromFraction(1, 100),
         ctx.program.programId,
         fetcher,
@@ -232,7 +232,7 @@ describe("two-hop swap", () => {
     const quote = await swapQuoteByInputToken(
       whirlpoolOne,
       inputToken,
-      new u64(1000),
+      new BN(1000),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -317,7 +317,7 @@ describe("two-hop swap", () => {
     const quote = await swapQuoteByInputToken(
       whirlpoolOne,
       tokenA,
-      new u64(1000),
+      new BN(1000),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -376,7 +376,7 @@ describe("two-hop swap", () => {
     const quote = await swapQuoteByInputToken(
       whirlpoolOne,
       inputToken,
-      new u64(1000),
+      new BN(1000),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -401,7 +401,7 @@ describe("two-hop swap", () => {
         WhirlpoolIx.twoHopSwapIx(ctx.program, {
           ...twoHopQuote,
           ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
-          otherAmountThreshold: new u64(613309),
+          otherAmountThreshold: new BN(613309),
           tokenAuthority: ctx.wallet.publicKey,
         })
       ).buildAndExecute(),
@@ -426,7 +426,7 @@ describe("two-hop swap", () => {
     const quote2 = await swapQuoteByOutputToken(
       whirlpoolTwo,
       outputToken,
-      new u64(1000),
+      new BN(1000),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -485,7 +485,7 @@ describe("two-hop swap", () => {
     const quote2 = await swapQuoteByOutputToken(
       whirlpoolTwo,
       outputToken,
-      new u64(1000),
+      new BN(1000),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -510,7 +510,7 @@ describe("two-hop swap", () => {
         WhirlpoolIx.twoHopSwapIx(ctx.program, {
           ...twoHopQuote,
           ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
-          otherAmountThreshold: new u64(2),
+          otherAmountThreshold: new BN(2),
           tokenAuthority: ctx.wallet.publicKey,
         })
       ).buildAndExecute(),
@@ -536,7 +536,7 @@ describe("two-hop swap", () => {
     const quote2 = await swapQuoteByOutputToken(
       whirlpoolTwo,
       outputToken,
-      new u64(1000),
+      new BN(1000),
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -582,7 +582,7 @@ describe("two-hop swap", () => {
     const quote = await swapQuoteByInputToken(
       whirlpoolOne,
       inputToken,
-      new u64(1000),
+      new BN(1000),
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
@@ -641,7 +641,7 @@ describe("two-hop swap", () => {
     const quote = await swapQuoteByInputToken(
       whirlpoolOne,
       inputToken,
-      new u64(1000),
+      new BN(1000),
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
@@ -699,7 +699,7 @@ describe("two-hop swap", () => {
     const quote = await swapQuoteByInputToken(
       whirlpoolOne,
       inputToken,
-      new u64(1000),
+      new BN(1000),
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
@@ -755,7 +755,7 @@ describe("two-hop swap", () => {
     const quote = await swapQuoteByInputToken(
       whirlpoolOne,
       inputToken,
-      new u64(1000),
+      new BN(1000),
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,

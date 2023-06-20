@@ -1,6 +1,5 @@
-import { BN } from "@coral-xyz/anchor";
 import { Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import BN from "bn.js";
 import { MathErrorCode, TokenErrorCode, WhirlpoolsError } from "../../errors/errors";
 import { MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "../../types/public";
 import { BitMath } from "./bit-math";
@@ -43,7 +42,7 @@ export function getAmountDeltaB(
 export function getNextSqrtPrice(
   sqrtPrice: BN,
   currLiquidity: BN,
-  amount: u64,
+  amount: BN,
   amountSpecifiedIsInput: boolean,
   aToB: boolean
 ) {
@@ -77,7 +76,7 @@ function toIncreasingPriceOrder(sqrtPrice0: BN, sqrtPrice1: BN) {
 function getNextSqrtPriceFromARoundUp(
   sqrtPrice: BN,
   currLiquidity: BN,
-  amount: u64,
+  amount: BN,
   amountSpecifiedIsInput: boolean
 ) {
   if (amount.eq(ZERO)) {
@@ -125,7 +124,7 @@ function getNextSqrtPriceFromARoundUp(
 function getNextSqrtPriceFromBRoundDown(
   sqrtPrice: BN,
   currLiquidity: BN,
-  amount: u64,
+  amount: BN,
   amountSpecifiedIsInput: boolean
 ) {
   let amountX64 = amount.shln(64);

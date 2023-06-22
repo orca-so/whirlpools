@@ -110,7 +110,7 @@ describe("PositionImpl#collectRewards()", () => {
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
-        const rewardTokenAccount = await testCtx.whirlpoolCtx.cache.getTokenInfo(rewardATA, PREFER_REFRESH);
+        const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, PREFER_REFRESH);
         assert.equal(rewardTokenAccount?.amount.toString(), quote[i]?.toString());
       }
     });
@@ -179,7 +179,7 @@ describe("PositionImpl#collectRewards()", () => {
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
-        const rewardTokenAccount = await testCtx.whirlpoolCtx.cache.getTokenInfo(rewardATA, PREFER_REFRESH);
+        const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, PREFER_REFRESH);
         assert.equal(rewardTokenAccount?.amount.toString(), quote[i]?.toString());
       }
     });

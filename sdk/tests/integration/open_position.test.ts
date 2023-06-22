@@ -33,7 +33,7 @@ describe("open_position", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   let defaultParams: OpenPositionParams;
   let defaultMint: Keypair;

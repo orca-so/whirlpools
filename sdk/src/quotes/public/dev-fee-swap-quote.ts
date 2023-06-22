@@ -1,8 +1,8 @@
 import { Address } from "@coral-xyz/anchor";
-import { AccountFetchOpts, Percentage } from "@orca-so/common-sdk";
+import { Percentage } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
-import { WhirlpoolAccountCacheInterface } from "../../network/public/account-cache";
+import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-cache";
 import { Whirlpool } from "../../whirlpool-client";
 import { NormalSwapQuote, swapQuoteByInputToken } from "./swap-quote";
 
@@ -37,7 +37,7 @@ export type DevFeeSwapQuote = NormalSwapQuote & {
  * @param slippageTolerance - The amount of slippage to account for in this quote
  * @param programId - PublicKey for the Whirlpool ProgramId
  * @param cache - WhirlpoolAccountCacheInterface instance to fetch solana accounts
- * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
+ * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
  * @param devFeePercentage - The percentage amount to send to developer wallet prior to the swap. Percentage num/dem values has to match token decimal.
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
@@ -47,9 +47,9 @@ export async function swapQuoteByInputTokenWithDevFees(
   tokenAmount: BN,
   slippageTolerance: Percentage,
   programId: Address,
-  cache: WhirlpoolAccountCacheInterface,
+  cache: WhirlpoolAccountFetcherInterface,
   devFeePercentage: Percentage,
-  opts?: AccountFetchOpts
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<DevFeeSwapQuote> {
   if (devFeePercentage.toDecimal().greaterThanOrEqualTo(1)) {
     throw new WhirlpoolsError(

@@ -1,6 +1,5 @@
 import { Address } from "@coral-xyz/anchor";
 import {
-  AccountFetchOpts,
   Instruction,
   TokenUtil,
   TransactionBuilder,
@@ -12,7 +11,7 @@ import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PositionData, WhirlpoolContext } from "../..";
 import { WhirlpoolIx } from "../../ix";
-import { AVOID_REFRESH } from "../../network/public/account-cache";
+import { AVOID_REFRESH, WhirlpoolAccountFetchOptions } from "../../network/public/account-cache";
 import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
 import { checkMergedTransactionSizeIsValid, convertListToMap } from "../../utils/txn-utils";
@@ -70,16 +69,16 @@ export type CollectAllParams = {
  * @experimental
  * @param ctx - WhirlpoolContext object for the current environment.
  * @param params - CollectAllPositionAddressParams object
- * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
+ * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
  * @returns A set of transaction-builders to resolve ATA for affliated tokens, collect fee & rewards for all positions.
  */
 export async function collectAllForPositionAddressesTxns(
   ctx: WhirlpoolContext,
   params: CollectAllPositionAddressParams,
-  opts: AccountFetchOpts = AVOID_REFRESH
+  opts: WhirlpoolAccountFetchOptions = AVOID_REFRESH
 ): Promise<TransactionBuilder[]> {
   const { positions, ...rest } = params;
-  const fetchedPositions = await ctx.cache.getPositions(positions, opts);
+  const fetchedPositions = await ctx.fetcher.getPositions(positions, opts);
 
   const positionMap: Record<string, PositionData> = {};
   fetchedPositions.forEach((pos, addr) => {
@@ -115,10 +114,10 @@ export async function collectAllForPositionsTxns(
   }
 
   const whirlpoolAddrs = positionList.map(([, pos]) => pos.whirlpool.toBase58());
-  const whirlpools = await ctx.cache.getPools(whirlpoolAddrs, AVOID_REFRESH);
+  const whirlpools = await ctx.fetcher.getPools(whirlpoolAddrs, AVOID_REFRESH);
 
   const allMints = getTokenMintsFromWhirlpools(Array.from(whirlpools.values()));
-  const accountExemption = await ctx.cache.getAccountRentExempt();
+  const accountExemption = await ctx.fetcher.getAccountRentExempt();
 
   // resolvedAtas[mint] => Instruction & { address }
   // if already ATA exists, Instruction will be EMPTY_INSTRUCTION

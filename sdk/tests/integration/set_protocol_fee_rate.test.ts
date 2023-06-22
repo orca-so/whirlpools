@@ -11,7 +11,7 @@ describe("set_protocol_fee_rate", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully sets_protocol_fee_rate", async () => {
     const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPool(

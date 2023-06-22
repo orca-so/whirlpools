@@ -1,7 +1,6 @@
-import { AccountFetchOpts } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import { PoolUtil, TokenInfo } from "..";
-import { WhirlpoolAccountCacheInterface } from "../network/public/account-cache";
+import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../network/public/account-cache";
 import {
   TokenAccountInfo,
   WhirlpoolData,
@@ -10,9 +9,9 @@ import {
 } from "../types/public";
 
 export async function getTokenMintInfos(
-  cache: WhirlpoolAccountCacheInterface,
+  cache: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
-  opts?: AccountFetchOpts
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<TokenInfo[]> {
   const mintA = data.tokenMintA;
   const infoA = await cache.getMintInfo(mintA, opts);
@@ -31,9 +30,9 @@ export async function getTokenMintInfos(
 }
 
 export async function getRewardInfos(
-  cache: WhirlpoolAccountCacheInterface,
+  cache: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
-  opts?: AccountFetchOpts
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<WhirlpoolRewardInfo[]> {
   const rewardInfos: WhirlpoolRewardInfo[] = [];
   for (const rewardInfo of data.rewardInfos) {
@@ -43,9 +42,9 @@ export async function getRewardInfos(
 }
 
 async function getRewardInfo(
-  cache: WhirlpoolAccountCacheInterface,
+  cache: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolRewardInfoData,
-  opts?: AccountFetchOpts
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<WhirlpoolRewardInfo> {
   const rewardInfo = { ...data, initialized: false, vaultAmount: new BN(0) };
   if (PoolUtil.isRewardInitialized(data)) {
@@ -60,9 +59,9 @@ async function getRewardInfo(
 }
 
 export async function getTokenVaultAccountInfos(
-  cache: WhirlpoolAccountCacheInterface,
+  cache: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
-  opts?: AccountFetchOpts
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<TokenAccountInfo[]> {
   const vaultA = data.tokenVaultA;
   const vaultInfoA = await cache.getTokenInfo(vaultA, opts);

@@ -1,5 +1,5 @@
-import { AccountFetchOpts } from "@orca-so/common-sdk";
 import { WhirlpoolContext } from "../..";
+import { WhirlpoolAccountFetchOptions } from "../../network/public/account-cache";
 import { PositionData, WhirlpoolData } from "../../types/public";
 import { PDAUtil } from "../public";
 
@@ -7,7 +7,7 @@ export async function getTickArrayDataForPosition(
   ctx: WhirlpoolContext,
   position: PositionData,
   whirlpool: WhirlpoolData,
-  opts?: AccountFetchOpts
+  opts?: WhirlpoolAccountFetchOptions
 ) {
   const lowerTickArrayKey = PDAUtil.getTickArrayFromTickIndex(
     position.tickLowerIndex,
@@ -22,5 +22,5 @@ export async function getTickArrayDataForPosition(
     ctx.program.programId
   ).publicKey;
 
-  return await ctx.cache.getTickArrays([lowerTickArrayKey, upperTickArrayKey], opts);
+  return await ctx.fetcher.getTickArrays([lowerTickArrayKey, upperTickArrayKey], opts);
 }

@@ -34,7 +34,7 @@ describe("open_bundled_position", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   const tickLowerIndex = 0;
   const tickUpperIndex = 128;

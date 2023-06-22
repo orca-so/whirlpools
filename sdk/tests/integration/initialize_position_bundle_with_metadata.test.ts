@@ -82,7 +82,7 @@ describe("initialize_position_bundle_with_metadata", () => {
 
   async function checkPositionBundleMint(positionBundleMintPubkey: PublicKey) {
     // verify position bundle Mint account
-    const positionBundleMint = (await ctx.cache.getMintInfo(
+    const positionBundleMint = (await ctx.fetcher.getMintInfo(
       positionBundleMintPubkey,
       PREFER_REFRESH
     )) as Mint;
@@ -100,7 +100,7 @@ describe("initialize_position_bundle_with_metadata", () => {
     positionBundleMintPubkey: PublicKey
   ) {
     // verify position bundle Token account
-    const positionBundleTokenAccount = (await ctx.cache.getTokenInfo(
+    const positionBundleTokenAccount = (await ctx.fetcher.getTokenInfo(
       positionBundleTokenAccountPubkey,
       PREFER_REFRESH
     )) as Account;
@@ -114,7 +114,7 @@ describe("initialize_position_bundle_with_metadata", () => {
     positionBundleMintPubkey: PublicKey
   ) {
     // verify PositionBundle account
-    const positionBundle = (await ctx.cache.getPositionBundle(
+    const positionBundle = (await ctx.fetcher.getPositionBundle(
       positionBundlePubkey,
       PREFER_REFRESH
     )) as PositionBundleData;

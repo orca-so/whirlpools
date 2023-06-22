@@ -11,7 +11,7 @@ describe("set_reward_emissions", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   const emissionsPerSecondX64 = new anchor.BN(10_000).shln(64).div(new anchor.BN(60 * 60 * 24));
 

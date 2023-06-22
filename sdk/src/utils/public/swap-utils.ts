@@ -1,9 +1,9 @@
 import { Address } from "@coral-xyz/anchor";
-import { AccountFetchOpts, AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
+import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { WhirlpoolContext } from "../..";
-import { WhirlpoolAccountCacheInterface } from "../../network/public/account-cache";
+import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-cache";
 import {
   MAX_SQRT_PRICE,
   MAX_SWAP_TICK_ARRAYS,
@@ -124,7 +124,7 @@ export class SwapUtils {
    * @param programId - The Whirlpool programId which the Whirlpool lives on.
    * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
    * @param cache - WhirlpoolAccountCacheInterface object to fetch solana accounts
-   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
+   * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns An array of PublicKey[] for the tickArray accounts that this swap may traverse across.
    */
   public static async getTickArrays(
@@ -133,8 +133,8 @@ export class SwapUtils {
     aToB: boolean,
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
-    cache: WhirlpoolAccountCacheInterface,
-    opts?: AccountFetchOpts
+    cache: WhirlpoolAccountFetcherInterface,
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<TickArray[]> {
     const data = await this.getBatchTickArrays(programId, cache, [
       { tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress },
@@ -147,14 +147,14 @@ export class SwapUtils {
    * @param programId - The Whirlpool programId which the Whirlpool lives on.
    * @param cache - WhirlpoolAccountCacheInterface instance to fetch solana accounts
    * @param tickArrayRequests - An array of {@link TickArrayRequest} of tick-arrays to request for.
-   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
+   * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A array of request indicies mapped to an array of resulting PublicKeys.
    */
   public static async getBatchTickArrays(
     programId: PublicKey,
-    cache: WhirlpoolAccountCacheInterface,
+    cache: WhirlpoolAccountFetcherInterface,
     tickArrayRequests: TickArrayRequest[],
-    opts?: AccountFetchOpts,
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<TickArray[][]> {
     let addresses: PublicKey[] = [];
     let requestToIndices = [];

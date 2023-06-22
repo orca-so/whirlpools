@@ -19,9 +19,9 @@ export async function collectProtocolFees(
   const receiverKey = ctx.wallet.publicKey;
   const payerKey = ctx.wallet.publicKey;
 
-  const whirlpoolDatas = Array.from((await ctx.cache.getPools(poolAddresses, AVOID_REFRESH)).values());
+  const whirlpoolDatas = Array.from((await ctx.fetcher.getPools(poolAddresses, AVOID_REFRESH)).values());
 
-  const accountExemption = await ctx.cache.getAccountRentExempt();
+  const accountExemption = await ctx.fetcher.getAccountRentExempt();
   const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(ctx, {
     mints: getTokenMintsFromWhirlpools(whirlpoolDatas, TokenMintTypes.POOL_ONLY).mintMap,
     accountExemption,
@@ -39,12 +39,12 @@ export async function collectProtocolFees(
   const instructions: Instruction[] = [];
 
   for (const poolAddress of poolAddresses) {
-    const pool = await ctx.cache.getPool(poolAddress);
+    const pool = await ctx.fetcher.getPool(poolAddress);
     if (!pool) {
       throw new Error(`Pool not found: ${poolAddress}`);
     }
 
-    const poolConfig = await ctx.cache.getConfig(pool.whirlpoolsConfig);
+    const poolConfig = await ctx.fetcher.getConfig(pool.whirlpoolsConfig);
     if (!poolConfig) {
       throw new Error(`Config not found: ${pool.whirlpoolsConfig}`);
     }

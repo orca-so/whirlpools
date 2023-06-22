@@ -141,7 +141,7 @@ describe("PositionImpl#collectFees()", () => {
       const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
       const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey);
 
-      const positionDataBefore = await testCtx.whirlpoolCtx.cache.getPosition(
+      const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
         PREFER_REFRESH
       );
@@ -173,7 +173,7 @@ describe("PositionImpl#collectFees()", () => {
 
       await tx.buildAndExecute();
 
-      const positionDataAfter = await testCtx.whirlpoolCtx.cache.getPosition(
+      const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
         PREFER_REFRESH
       );
@@ -181,11 +181,11 @@ describe("PositionImpl#collectFees()", () => {
       assert.notEqual(positionDataAfter, null);
 
       const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
-      const accountA = await testCtx.whirlpoolCtx.cache.getTokenInfo(accountAPubkey, PREFER_REFRESH);
+      const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, PREFER_REFRESH);
       assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA));
 
       const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
-      const accountB = await testCtx.whirlpoolCtx.cache.getTokenInfo(accountBPubkey, PREFER_REFRESH);
+      const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, PREFER_REFRESH);
       assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
     });
   });
@@ -207,7 +207,7 @@ describe("PositionImpl#collectFees()", () => {
       const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
       const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey);
 
-      const positionDataBefore = await testCtx.whirlpoolCtx.cache.getPosition(
+      const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
         PREFER_REFRESH
       );
@@ -240,7 +240,7 @@ describe("PositionImpl#collectFees()", () => {
 
       await tx.addSigner(otherWallet).buildAndExecute();
 
-      const positionDataAfter = await testCtx.whirlpoolCtx.cache.getPosition(
+      const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
         PREFER_REFRESH
       );
@@ -248,14 +248,14 @@ describe("PositionImpl#collectFees()", () => {
       assert.notEqual(positionDataAfter, null);
 
       const solBalanceAfter = await testCtx.provider.connection.getBalance(otherWallet.publicKey);
-      const minAccountExempt = await testCtx.whirlpoolCtx.cache.getAccountRentExempt();
+      const minAccountExempt = await testCtx.whirlpoolCtx.fetcher.getAccountRentExempt();
       assert.equal(
         solBalanceAfter - solBalanceBefore,
         quote.feeOwedA.toNumber() + minAccountExempt
       );
 
       const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
-      const accountB = await testCtx.whirlpoolCtx.cache.getTokenInfo(accountBPubkey, PREFER_REFRESH);
+      const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, PREFER_REFRESH);
       assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
     });
   });

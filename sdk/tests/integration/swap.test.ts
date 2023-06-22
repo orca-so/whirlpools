@@ -37,7 +37,7 @@ describe("swap", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
   const client = buildWhirlpoolClient(ctx);
 
   it("fail on token vault mint a does not match whirlpool token a", async () => {

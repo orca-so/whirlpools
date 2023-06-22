@@ -11,7 +11,7 @@ describe("initialize_reward", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully initializes reward at index 0", async () => {
     const { poolInitInfo, configKeypairs } = await initTestPool(ctx, TickSpacing.Standard);

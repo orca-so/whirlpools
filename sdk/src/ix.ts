@@ -1,8 +1,9 @@
 import { Program } from "@coral-xyz/anchor";
-import { AccountFetchOpts, PDA } from "@orca-so/common-sdk";
+import { PDA } from "@orca-so/common-sdk";
 import { WhirlpoolContext } from ".";
 import { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
+import { WhirlpoolAccountFetchOptions } from "./network/public/account-cache";
 
 /**
  * Instruction builders for the Whirlpools program.
@@ -528,13 +529,13 @@ export class WhirlpoolIx {
    * @deprecated
    * @param ctx - WhirlpoolContext object for the current environment.
    * @param params - CollectAllPositionAddressParams object.
-   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
+   * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns
    */
   public static async collectAllForPositionsTxns(
     ctx: WhirlpoolContext,
     params: ix.CollectAllPositionAddressParams,
-    opts?: AccountFetchOpts
+    opts?: WhirlpoolAccountFetchOptions
   ) {
     return ix.collectAllForPositionAddressesTxns(ctx, params, opts);
   }

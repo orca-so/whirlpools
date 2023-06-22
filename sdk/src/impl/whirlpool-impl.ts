@@ -1,6 +1,5 @@
 import { Address, BN, translateAddress } from "@coral-xyz/anchor";
 import {
-  AccountFetchOpts,
   AddressUtil,
   Percentage,
   TokenUtil,
@@ -126,13 +125,13 @@ export class WhirlpoolImpl implements Whirlpool {
     );
   }
 
-  async initTickArrayForTicks(ticks: number[], funder?: Address, opts: AccountFetchOpts = { ttl: Number.POSITIVE_INFINITY }) {
+  async initTickArrayForTicks(ticks: number[], funder?: Address, opts = AVOID_REFRESH) {
     const initTickArrayStartPdas = await TickArrayUtil.getUninitializedArraysPDAs(
       ticks,
       this.ctx.program.programId,
       this.address,
       this.data.tickSpacing,
-      this.ctx.cache,
+      this.ctx.fetcher,
       opts
     );
 
@@ -223,7 +222,7 @@ export class WhirlpoolImpl implements Whirlpool {
           inputToken.mint,
           inputToken.decimals,
           quote.devFeeAmount,
-          () => this.ctx.cache.getAccountRentExempt(),
+          () => this.ctx.fetcher.getAccountRentExempt(),
           payerKey
         )
       );
@@ -262,7 +261,7 @@ export class WhirlpoolImpl implements Whirlpool {
 
     invariant(liquidity.gt(new BN(0)), "liquidity must be greater than zero");
 
-    const whirlpool = await this.ctx.cache.getPool(this.address, AVOID_REFRESH);
+    const whirlpool = await this.ctx.fetcher.getPool(this.address, AVOID_REFRESH);
     if (!whirlpool) {
       throw new Error(`Whirlpool not found: ${translateAddress(this.address).toBase58()}`);
     }
@@ -316,7 +315,7 @@ export class WhirlpoolImpl implements Whirlpool {
         { tokenMint: whirlpool.tokenMintA, wrappedSolAmountIn: tokenMaxA },
         { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: tokenMaxB },
       ],
-      () => this.ctx.cache.getAccountRentExempt(),
+      () => this.ctx.fetcher.getAccountRentExempt(),
       funder
     );
     const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
@@ -368,7 +367,7 @@ export class WhirlpoolImpl implements Whirlpool {
     positionWallet: PublicKey,
     payerKey: PublicKey
   ): Promise<TransactionBuilder[]> {
-    const positionData = await this.ctx.cache.getPosition(positionAddress, PREFER_REFRESH);
+    const positionData = await this.ctx.fetcher.getPosition(positionAddress, PREFER_REFRESH);
     if (!positionData) {
       throw new Error(`Position not found: ${positionAddress.toBase58()}`);
     }
@@ -391,7 +390,7 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.txBuilderOpts
     );
 
-    const accountExemption = await this.ctx.cache.getAccountRentExempt();
+    const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -581,11 +580,11 @@ export class WhirlpoolImpl implements Whirlpool {
   }
 
   private async refresh() {
-    const account = await this.ctx.cache.getPool(this.address, PREFER_REFRESH);
+    const account = await this.ctx.fetcher.getPool(this.address, PREFER_REFRESH);
     if (!!account) {
-      const rewardInfos = await getRewardInfos(this.ctx.cache, account, PREFER_REFRESH);
+      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, PREFER_REFRESH);
       const [tokenVaultAInfo, tokenVaultBInfo] = await getTokenVaultAccountInfos(
-        this.ctx.cache,
+        this.ctx.fetcher,
         account,
         PREFER_REFRESH
       );

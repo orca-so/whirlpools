@@ -70,7 +70,7 @@ describe("whirlpool-dev-fee-swap", () => {
       inputTokenAmount,
       slippageTolerance,
       ctx.program.programId,
-      ctx.cache,
+      ctx.fetcher,
       PREFER_REFRESH
     );
     const postFeeInputTokenQuote = await swapQuoteByInputToken(
@@ -79,7 +79,7 @@ describe("whirlpool-dev-fee-swap", () => {
       postFeeTokenAmount,
       slippageTolerance,
       ctx.program.programId,
-      ctx.cache,
+      ctx.fetcher,
       PREFER_REFRESH
     );
     const inputTokenQuoteWithDevFees = await swapQuoteByInputTokenWithDevFees(
@@ -88,7 +88,7 @@ describe("whirlpool-dev-fee-swap", () => {
       inputTokenAmount,
       slippageTolerance,
       ctx.program.programId,
-      ctx.cache,
+      ctx.fetcher,
       devFeePercentage,
       PREFER_REFRESH
     );
@@ -384,7 +384,7 @@ describe("whirlpool-dev-fee-swap", () => {
           inputTokenAmount,
           slippageTolerance,
           ctx.program.programId,
-          ctx.cache,
+          ctx.fetcher,
           devFeePercentage,
           PREFER_REFRESH
         ),
@@ -424,7 +424,7 @@ describe("whirlpool-dev-fee-swap", () => {
           inputTokenAmount,
           slippageTolerance,
           ctx.program.programId,
-          ctx.cache,
+          ctx.fetcher,
           devFeePercentage,
           PREFER_REFRESH
         ),
@@ -448,7 +448,7 @@ async function getQuotes(
     inputTokenAmount,
     slippageTolerance,
     ctx.program.programId,
-    ctx.cache,
+    ctx.fetcher,
     PREFER_REFRESH
   );
   const postFeeInputTokenQuote = await swapQuoteByInputToken(
@@ -457,7 +457,7 @@ async function getQuotes(
     postFeeTokenAmount,
     slippageTolerance,
     ctx.program.programId,
-    ctx.cache,
+    ctx.fetcher,
     PREFER_REFRESH
   );
   const inputTokenQuoteWithDevFees = await swapQuoteByInputTokenWithDevFees(
@@ -466,7 +466,7 @@ async function getQuotes(
     inputTokenAmount,
     slippageTolerance,
     ctx.program.programId,
-    ctx.cache,
+    ctx.fetcher,
     devFeePercentage,
     PREFER_REFRESH
   );

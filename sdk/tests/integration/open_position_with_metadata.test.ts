@@ -37,7 +37,7 @@ describe("open_position_with_metadata", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   let defaultParams: Required<OpenPositionParams & { metadataPda: PDA }>;
   let defaultMint: Keypair;

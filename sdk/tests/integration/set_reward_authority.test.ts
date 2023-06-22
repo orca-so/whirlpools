@@ -11,7 +11,7 @@ describe("set_reward_authority", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully set_reward_authority at every reward index", async () => {
     const { configKeypairs, poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);

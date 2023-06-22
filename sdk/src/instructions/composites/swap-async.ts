@@ -1,6 +1,7 @@
-import { AccountFetchOpts, resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import { resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { SwapUtils, TickArrayUtil, Whirlpool, WhirlpoolContext } from "../..";
+import { WhirlpoolAccountFetchOptions } from "../../network/public/account-cache";
 import { SwapInput, swapIx } from "../swap-ix";
 
 export type SwapAsyncParams = {
@@ -13,13 +14,13 @@ export type SwapAsyncParams = {
  * Swap instruction builder method with resolveATA & additional checks.
  * @param ctx - WhirlpoolContext object for the current environment.
  * @param params - {@link SwapAsyncParams}
- * @param opts - {@link AccountFetchOpts} to use for account fetching.
+ * @param opts - {@link WhirlpoolAccountFetchOptions} to use for account fetching.
  * @returns
  */
 export async function swapAsync(
   ctx: WhirlpoolContext,
   params: SwapAsyncParams,
-  opts: AccountFetchOpts
+  opts: WhirlpoolAccountFetchOptions
 ): Promise<TransactionBuilder> {
   const { wallet, whirlpool, swapInput } = params;
   const { aToB, amount } = swapInput;
@@ -28,7 +29,7 @@ export async function swapAsync(
 
   let uninitializedArrays = await TickArrayUtil.getUninitializedArraysString(
     tickArrayAddresses,
-    ctx.cache,
+    ctx.fetcher,
     opts
   );
   if (uninitializedArrays) {
@@ -43,7 +44,7 @@ export async function swapAsync(
       { tokenMint: data.tokenMintA, wrappedSolAmountIn: aToB ? amount : ZERO },
       { tokenMint: data.tokenMintB, wrappedSolAmountIn: !aToB ? amount : ZERO },
     ],
-    () => ctx.cache.getAccountRentExempt()
+    () => ctx.fetcher.getAccountRentExempt()
   );
   const { address: ataAKey, ...tokenOwnerAccountAIx } = resolvedAtaA;
   const { address: ataBKey, ...tokenOwnerAccountBIx } = resolvedAtaB;

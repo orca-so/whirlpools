@@ -33,7 +33,7 @@ describe("decrease_liquidity", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully decrease liquidity from position in one tick array", async () => {
     const liquidityAmount = new anchor.BN(1_250_000);

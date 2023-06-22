@@ -12,7 +12,7 @@ describe("position management tests", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully closes and opens a position in one transaction", async () => {
     const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);

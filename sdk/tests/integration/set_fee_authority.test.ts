@@ -9,7 +9,7 @@ describe("set_fee_authority", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully set_fee_authority", async () => {
     const {

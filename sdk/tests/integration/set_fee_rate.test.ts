@@ -12,7 +12,7 @@ describe("set_fee_rate", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully sets_fee_rate", async () => {
     const { poolInitInfo, configInitInfo, configKeypairs, feeTierParams } = await initTestPool(

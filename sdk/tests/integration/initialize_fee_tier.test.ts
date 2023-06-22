@@ -14,7 +14,7 @@ describe("initialize_fee_tier", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully init a FeeRate stable account", async () => {
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);

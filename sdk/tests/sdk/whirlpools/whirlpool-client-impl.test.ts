@@ -70,8 +70,8 @@ describe("whirlpool-client-impl", () => {
     assert.ok(expectedPda.publicKey.equals(actualPubkey));
 
     const [whirlpoolAccountBefore, tickArrayAccountBefore] = await Promise.all([
-      ctx.cache.getPool(expectedPda.publicKey, PREFER_REFRESH),
-      ctx.cache.getTickArray(startTickArrayPda.publicKey, PREFER_REFRESH),
+      ctx.fetcher.getPool(expectedPda.publicKey, PREFER_REFRESH),
+      ctx.fetcher.getTickArray(startTickArrayPda.publicKey, PREFER_REFRESH),
     ]);
 
     assert.ok(whirlpoolAccountBefore === null);
@@ -80,8 +80,8 @@ describe("whirlpool-client-impl", () => {
     await tx.addSigner(funderKeypair).buildAndExecute();
 
     const [whirlpoolAccountAfter, tickArrayAccountAfter] = await Promise.all([
-      ctx.cache.getPool(expectedPda.publicKey, PREFER_REFRESH),
-      ctx.cache.getTickArray(startTickArrayPda.publicKey, PREFER_REFRESH),
+      ctx.fetcher.getPool(expectedPda.publicKey, PREFER_REFRESH),
+      ctx.fetcher.getTickArray(startTickArrayPda.publicKey, PREFER_REFRESH),
     ]);
 
     assert.ok(whirlpoolAccountAfter !== null);

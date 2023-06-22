@@ -21,7 +21,7 @@ describe("position-impl", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
   const client = buildWhirlpoolClient(ctx);
 
   it("increase and decrease liquidity on position", async () => {

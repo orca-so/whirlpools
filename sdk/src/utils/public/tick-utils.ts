@@ -1,8 +1,8 @@
 import { Address } from "@coral-xyz/anchor";
-import { AccountFetchOpts, AddressUtil, PDA } from "@orca-so/common-sdk";
+import { AddressUtil, PDA } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
-import { WhirlpoolAccountCacheInterface } from "../../network/public/account-cache";
+import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-cache";
 import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
@@ -223,14 +223,14 @@ export class TickArrayUtil {
    * Useful for creating error messages.
    *
    * @param tickArrayAddrs - A list of tick-array addresses to verify.
-   * @param cache - {@link WhirlpoolAccountCacheInterface}
-   * @param opts an {@link AccountFetchOpts} object to define fetch and cache options when accessing on-chain accounts
+   * @param cache - {@link WhirlpoolAccountFetcherInterface}
+   * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A string of all uninitialized tick array addresses, delimited by ",". Falsy value if all arrays are initialized.
    */
   public static async getUninitializedArraysString(
     tickArrayAddrs: Address[],
-    cache: WhirlpoolAccountCacheInterface,
-    opts?: AccountFetchOpts
+    cache: WhirlpoolAccountFetcherInterface,
+    opts?: WhirlpoolAccountFetchOptions
   ) {
     const taAddrs = AddressUtil.toPubKeys(tickArrayAddrs);
     const tickArrayData = await cache.getTickArrays(taAddrs, opts);
@@ -255,8 +255,8 @@ export class TickArrayUtil {
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
     tickSpacing: number,
-    cache: WhirlpoolAccountCacheInterface,
-    opts: AccountFetchOpts
+    cache: WhirlpoolAccountFetcherInterface,
+    opts: WhirlpoolAccountFetchOptions
   ) {
     const startTicks = ticks.map((tick) => TickUtil.getStartTickIndex(tick, tickSpacing));
     const removeDupeTicks = [...new Set(startTicks)];

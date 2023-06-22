@@ -42,7 +42,7 @@ describe("increase_liquidity", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("increase liquidity of a position spanning two tick arrays", async () => {
     const currTick = 0;

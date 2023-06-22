@@ -1,5 +1,4 @@
 import {
-  AccountFetchOpts,
   AddressUtil,
   EMPTY_INSTRUCTION,
   Percentage,
@@ -26,7 +25,7 @@ import {
   WhirlpoolContext,
   twoHopSwapQuoteFromSwapQuotes,
 } from "../..";
-import { AVOID_REFRESH } from "../../network/public/account-cache";
+import { AVOID_REFRESH, WhirlpoolAccountFetchOptions } from "../../network/public/account-cache";
 import { adjustForSlippage } from "../../utils/position-util";
 import { contextOptionsToBuilderOptions } from "../../utils/txn-utils";
 import { swapIx } from "../swap-ix";
@@ -42,7 +41,7 @@ export type SwapFromRouteParams = {
 export async function getSwapFromRoute(
   ctx: WhirlpoolContext,
   params: SwapFromRouteParams,
-  opts: AccountFetchOpts = AVOID_REFRESH,
+  opts: WhirlpoolAccountFetchOptions = AVOID_REFRESH,
   txBuilder: TransactionBuilder = new TransactionBuilder(
     ctx.connection,
     ctx.wallet,
@@ -108,7 +107,7 @@ export async function getSwapFromRoute(
 
   let uninitializedArrays = await TickArrayUtil.getUninitializedArraysString(
     requiredTickArrays,
-    ctx.cache,
+    ctx.fetcher,
     opts
   );
   if (uninitializedArrays) {
@@ -131,7 +130,7 @@ export async function getSwapFromRoute(
           ) as Account[]
         );
       } else {
-        return ctx.cache.getTokenInfos(keys, opts).then(result => Array.from(result.values()));
+        return ctx.fetcher.getTokenInfos(keys, opts).then(result => Array.from(result.values()));
       }
     }
   );
@@ -142,7 +141,7 @@ export async function getSwapFromRoute(
     const solIx = TokenUtil.createWrappedNativeAccountInstruction(
       wallet,
       nativeMintAmount,
-      await ctx.cache.getAccountRentExempt()
+      await ctx.fetcher.getAccountRentExempt()
     );
     txBuilder.addInstruction(solIx);
     ataInstructionMap[NATIVE_MINT.toBase58()] = solIx;

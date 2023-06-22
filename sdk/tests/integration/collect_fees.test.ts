@@ -31,7 +31,7 @@ describe("collect_fees", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully collect fees", async () => {
     // In same tick array - start index 22528

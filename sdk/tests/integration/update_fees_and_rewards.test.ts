@@ -15,7 +15,7 @@ describe("update_fees_and_rewards", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully updates fees and rewards", async () => {
     // In same tick array - start index 22528

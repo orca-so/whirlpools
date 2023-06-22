@@ -1,8 +1,8 @@
 import { Address } from "@coral-xyz/anchor";
-import { AccountFetchOpts, AddressUtil } from "@orca-so/common-sdk";
+import { AddressUtil } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import invariant from "tiny-invariant";
-import { WhirlpoolAccountCacheInterface } from "../network/public/account-cache";
+import { WhirlpoolAccountFetcherInterface, WhirlpoolAccountFetchOptions } from "../network/public/account-cache";
 import { SwapQuoteParam } from "../quotes/public";
 import { PoolUtil, SwapDirection, SwapUtils } from "../utils/public";
 
@@ -16,8 +16,8 @@ export interface SwapQuoteRequest {
 export async function batchBuildSwapQuoteParams(
   quoteRequests: SwapQuoteRequest[],
   programId: Address,
-  cache: WhirlpoolAccountCacheInterface,
-  opts?: AccountFetchOpts
+  cache: WhirlpoolAccountFetcherInterface,
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<SwapQuoteParam[]> {
   const whirlpools = await cache.getPools(
     quoteRequests.map((req) => req.whirlpool),

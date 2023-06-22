@@ -215,7 +215,7 @@ describe("bundled position management tests", () => {
       }
 
       await builder.buildAndExecute();
-      const positionBundleAccount = await ctx.cache.getPositionBundle(positionBundlePubkey, PREFER_REFRESH);
+      const positionBundleAccount = await ctx.fetcher.getPositionBundle(positionBundlePubkey, PREFER_REFRESH);
       checkBitmap(positionBundleAccount!, openedBundleIndexes);
     }
     assert.equal(openedBundleIndexes.length, POSITION_BUNDLE_SIZE);
@@ -241,7 +241,7 @@ describe("bundled position management tests", () => {
       }
 
       await builder.buildAndExecute();
-      const positionBundleAccount = await ctx.cache.getPositionBundle(positionBundlePubkey, PREFER_REFRESH);
+      const positionBundleAccount = await ctx.fetcher.getPositionBundle(positionBundlePubkey, PREFER_REFRESH);
       checkBitmap(positionBundleAccount!, openedBundleIndexes);
     }
     assert.equal(openedBundleIndexes.length, 0);
@@ -257,7 +257,7 @@ describe("bundled position management tests", () => {
         receiver: ctx.wallet.publicKey,
       })
     ).buildAndExecute();
-    const positionBundleAccount = await ctx.cache.getPositionBundle(positionBundlePubkey, PREFER_REFRESH);
+    const positionBundleAccount = await ctx.fetcher.getPositionBundle(positionBundlePubkey, PREFER_REFRESH);
     assert.ok(positionBundleAccount === null);
   });
 
@@ -325,13 +325,13 @@ describe("bundled position management tests", () => {
     // increaseLiquidity
     const depositAmounts = PoolUtil.getTokenAmountsFromLiquidity(
       liquidityAmount,
-      (await ctx.cache.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
+      (await ctx.fetcher.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
       PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
       PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
       true
     );
 
-    const preIncrease = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+    const preIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
     assert.ok(preIncrease!.liquidity.isZero());
     await toTx(
       ctx,
@@ -341,7 +341,7 @@ describe("bundled position management tests", () => {
         tokenMaxB: depositAmounts.tokenB,
       })
     ).buildAndExecute();
-    const postIncrease = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+    const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
     assert.ok(postIncrease!.liquidity.eq(liquidityAmount));
 
     await sleep(2); // accrueRewards
@@ -349,7 +349,7 @@ describe("bundled position management tests", () => {
     await stopRewardsEmission(fixture);
 
     // updateFeesAndRewards
-    const preUpdate = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+    const preUpdate = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
     assert.ok(preUpdate!.feeOwedA.isZero());
     assert.ok(preUpdate!.feeOwedB.isZero());
     assert.ok(preUpdate!.rewardInfos.every((r) => r.amountOwed.isZero()));
@@ -362,7 +362,7 @@ describe("bundled position management tests", () => {
         whirlpool: whirlpoolPubkey,
       })
     ).buildAndExecute();
-    const postUpdate = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+    const postUpdate = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
     assert.ok(postUpdate!.feeOwedA.gtn(0));
     assert.ok(postUpdate!.feeOwedB.gtn(0));
     assert.ok(postUpdate!.rewardInfos.every((r) => r.amountOwed.gtn(0)));
@@ -381,7 +381,7 @@ describe("bundled position management tests", () => {
         whirlpool: whirlpoolPubkey,
       })
     ).buildAndExecute();
-    const postCollectFees = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+    const postCollectFees = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
     assert.ok(postCollectFees!.feeOwedA.isZero());
     assert.ok(postCollectFees!.feeOwedB.isZero());
 
@@ -393,7 +393,7 @@ describe("bundled position management tests", () => {
         ctx.wallet.publicKey
       );
 
-      const preCollectReward = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const preCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(preCollectReward!.rewardInfos[i].amountOwed.gtn(0));
       await toTx(
         ctx,
@@ -407,19 +407,19 @@ describe("bundled position management tests", () => {
           whirlpool: whirlpoolPubkey,
         })
       ).buildAndExecute();
-      const postCollectReward = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const postCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(postCollectReward!.rewardInfos[i].amountOwed.isZero());
     }
     // decreaseLiquidity
     const withdrawAmounts = PoolUtil.getTokenAmountsFromLiquidity(
       liquidityAmount,
-      (await ctx.cache.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
+      (await ctx.fetcher.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
       PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
       PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
       false
     );
 
-    const preDecrease = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+    const preDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
     assert.ok(preDecrease!.liquidity.eq(liquidityAmount));
     await toTx(
       ctx,
@@ -429,7 +429,7 @@ describe("bundled position management tests", () => {
         tokenMinB: withdrawAmounts.tokenB,
       })
     ).buildAndExecute();
-    const postDecrease = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+    const postDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
     assert.ok(postDecrease!.liquidity.isZero());
 
     // close bundled position
@@ -444,7 +444,7 @@ describe("bundled position management tests", () => {
         receiver: ctx.wallet.publicKey,
       })
     ).buildAndExecute();
-    const postClose = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+    const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
     assert.ok(postClose === null);
   });
 
@@ -505,7 +505,7 @@ describe("bundled position management tests", () => {
       const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
       // initialized check (No data left over from previous opening)
-      const postOpen = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const postOpen = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(postOpen!.feeGrowthCheckpointA.isZero());
       assert.ok(postOpen!.feeGrowthCheckpointB.isZero());
       assert.ok(postOpen!.rewardInfos.every((r) => r.growthInsideCheckpoint.isZero()));
@@ -527,12 +527,12 @@ describe("bundled position management tests", () => {
       // increaseLiquidity
       const depositAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.cache.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         true
       );
-      const preIncrease = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const preIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(preIncrease!.liquidity.isZero());
       await toTx(
         ctx,
@@ -542,7 +542,7 @@ describe("bundled position management tests", () => {
           tokenMaxB: depositAmounts.tokenB,
         })
       ).buildAndExecute();
-      const postIncrease = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(postIncrease!.liquidity.eq(liquidityAmount));
 
       // non-zero check
@@ -555,13 +555,13 @@ describe("bundled position management tests", () => {
       // decreaseLiquidity
       const withdrawAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.cache.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         false
       );
 
-      const preDecrease = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const preDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(preDecrease!.liquidity.eq(liquidityAmount));
       await toTx(
         ctx,
@@ -571,7 +571,7 @@ describe("bundled position management tests", () => {
           tokenMinB: withdrawAmounts.tokenB,
         })
       ).buildAndExecute();
-      const postDecrease = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const postDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(postDecrease!.liquidity.isZero());
 
       // collectFees
@@ -588,7 +588,7 @@ describe("bundled position management tests", () => {
           whirlpool: whirlpoolPubkey,
         })
       ).buildAndExecute();
-      const postCollectFees = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const postCollectFees = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(postCollectFees!.feeOwedA.isZero());
       assert.ok(postCollectFees!.feeOwedB.isZero());
 
@@ -600,7 +600,7 @@ describe("bundled position management tests", () => {
           ctx.wallet.publicKey
         );
 
-        const preCollectReward = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+        const preCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
         assert.ok(preCollectReward!.rewardInfos[i].amountOwed.gtn(0));
         await toTx(
           ctx,
@@ -614,7 +614,7 @@ describe("bundled position management tests", () => {
             whirlpool: whirlpoolPubkey,
           })
         ).buildAndExecute();
-        const postCollectReward = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+        const postCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
         assert.ok(postCollectReward!.rewardInfos[i].amountOwed.isZero());
       }
 
@@ -630,7 +630,7 @@ describe("bundled position management tests", () => {
           receiver: ctx.wallet.publicKey,
         })
       ).buildAndExecute();
-      const postClose = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(postClose === null);
     }
   });
@@ -676,7 +676,7 @@ describe("bundled position management tests", () => {
 
       const depositAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.cache.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         true
@@ -702,12 +702,12 @@ describe("bundled position management tests", () => {
           tokenMaxB: depositAmounts.tokenB,
         }));
       await openIncreaseBuilder.buildAndExecute();
-      const postIncrease = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(postIncrease!.liquidity.eq(liquidityAmount));
 
       const withdrawAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.cache.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         false
@@ -729,7 +729,7 @@ describe("bundled position management tests", () => {
           receiver: ctx.wallet.publicKey,
         }));
       await decreaseCloseBuilder.buildAndExecute();
-      const postClose = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(postClose === null);
     });
 
@@ -786,7 +786,7 @@ describe("bundled position management tests", () => {
 
       const depositAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.cache.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         true
@@ -888,7 +888,7 @@ describe("bundled position management tests", () => {
       // https://github.com/coral-xyz/anchor/pull/2169
       // in Anchor v0.26.0, close & open in same Tx will success.
       await builder.buildAndExecute();
-      const postReopen = await ctx.cache.getPosition(bundledPositionPubkey, PREFER_REFRESH);
+      const postReopen = await ctx.fetcher.getPosition(bundledPositionPubkey, PREFER_REFRESH);
       assert.ok(postReopen!.liquidity.isZero());
       assert.ok(postReopen!.tickLowerIndex === tickLowerIndex + tickSpacing);
       assert.ok(postReopen!.tickUpperIndex === tickUpperIndex + tickSpacing);
@@ -950,7 +950,7 @@ describe("bundled position management tests", () => {
 
       const depositAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.cache.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, PREFER_REFRESH))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         true
@@ -1047,8 +1047,8 @@ describe("bundled position management tests", () => {
         }));
 
       await builder.buildAndExecute();
-      assert.ok((await ctx.cache.getTokenInfo(receiverAtaA, PREFER_REFRESH))!.amount === BigInt(estimatedFee.toString()));
-      assert.ok((await ctx.cache.getTokenInfo(receiverAtaB, PREFER_REFRESH))!.amount === BigInt(estimatedFee.toString()));
+      assert.ok((await ctx.fetcher.getTokenInfo(receiverAtaA, PREFER_REFRESH))!.amount === BigInt(estimatedFee.toString()));
+      assert.ok((await ctx.fetcher.getTokenInfo(receiverAtaB, PREFER_REFRESH))!.amount === BigInt(estimatedFee.toString()));
     });
   });
 

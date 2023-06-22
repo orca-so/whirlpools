@@ -37,7 +37,7 @@ describe("whirlpool-impl", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
   const client = buildWhirlpoolClient(ctx);
 
   it("open and add liquidity to a position, then close", async () => {
@@ -650,7 +650,7 @@ describe("whirlpool-impl", () => {
 
     const otherWalletBalanceAfter = await ctx.connection.getBalance(otherWallet.publicKey);
 
-    const minAccountExempt = await ctx.cache.getAccountRentExempt();
+    const minAccountExempt = await ctx.fetcher.getAccountRentExempt();
     const solReceived = otherWalletBalanceAfter - otherWalletBalanceBefore;
 
     /**

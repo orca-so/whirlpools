@@ -1,10 +1,10 @@
 import { Address } from "@coral-xyz/anchor";
-import { AccountFetchOpts, AddressUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
+import { AddressUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { Account } from "@solana/spl-token";
 import { WhirlpoolContext } from "..";
 import { RouteQueryErrorCode, SwapErrorCode, WhirlpoolsError } from "../errors/errors";
 import { getSwapFromRoute } from "../instructions/composites/swap-with-route";
-import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountCacheInterface } from "../network/public/account-cache";
+import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../network/public/account-cache";
 import { Path, PoolGraph, SwapUtils } from "../utils/public";
 import { getBestRoutesFromQuoteMap } from "./convert-quote-map";
 import {
@@ -24,7 +24,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
   async findAllRoutes(
     trade: Trade,
     opts?: Partial<RoutingOptions>,
-    cacheOpts?: AccountFetchOpts
+    cacheOpts?: WhirlpoolAccountFetchOptions
   ): Promise<TradeRoute[]> {
     const { tokenIn, tokenOut, tradeAmount, amountSpecifiedIsInput } = trade;
     const paths = this.poolGraph.getPath(tokenIn, tokenOut);
@@ -48,7 +48,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
     }
 
     const routingOptions = { ...RouterUtils.getDefaultRouteOptions(), ...opts };
-    const { program, cache: fetcher } = this.ctx;
+    const { program, fetcher: fetcher } = this.ctx;
     const programId = program.programId;
 
     await prefetchRoutes(paths, programId, fetcher, cacheOpts);
@@ -97,7 +97,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
     trade: Trade,
     routingOpts?: Partial<RoutingOptions>,
     selectionOpts?: Partial<RouteSelectOptions>,
-    cacheOpts?: AccountFetchOpts
+    cacheOpts?: WhirlpoolAccountFetchOptions
   ): Promise<ExecutableRoute | null> {
     const allRoutes = await this.findAllRoutes(trade, routingOpts, cacheOpts);
     const selectOpts = { ...RouterUtils.getDefaultSelectOptions(), selectionOpts };
@@ -127,8 +127,8 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
 async function prefetchRoutes(
   paths: Path[],
   programId: Address,
-  cache: WhirlpoolAccountCacheInterface,
-  opts: AccountFetchOpts = AVOID_REFRESH
+  cache: WhirlpoolAccountFetcherInterface,
+  opts: WhirlpoolAccountFetchOptions = AVOID_REFRESH
 ): Promise<void> {
   const poolSet = new Set<string>();
   for (let i = 0; i < paths.length; i++) {

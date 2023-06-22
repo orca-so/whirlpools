@@ -15,7 +15,7 @@ describe("collect_protocol_fees", () => {
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.cache;
+  const fetcher = ctx.fetcher;
 
   it("successfully collects fees", async () => {
     // In same tick array - start index 22528

@@ -1,4 +1,4 @@
-import { AccountCache, Address, BasicSupportedTypes, ParsableEntity, ParsableMintInfo, ParsableTokenAccountInfo, RetentionPolicy, SimpleAccountCache, SimpleAccountFetchOptions } from "@orca-so/common-sdk";
+import { AccountCache, Address, BasicSupportedTypes, ParsableEntity, ParsableMintInfo, ParsableTokenAccountInfo, RetentionPolicy, SimpleAccountFetchOptions, SimpleAccountFetcher } from "@orca-so/common-sdk";
 import { AccountLayout, Mint, Account as TokenAccount } from "@solana/spl-token";
 import { Connection } from "@solana/web3.js";
 import { ParsableFeeTier, ParsablePosition, ParsablePositionBundle, ParsableTickArray, ParsableWhirlpool, ParsableWhirlpoolsConfig } from "../..";
@@ -42,7 +42,7 @@ export interface WhirlpoolAccountFetcherInterface extends AccountCache<Whirlpool
   getPositionBundles(addresses: Address[], opts?: WhirlpoolAccountFetchOptions): Promise<ReadonlyMap<string, PositionBundleData | null>>
 }
 
-export class WhirlpoolAccountFetcher extends SimpleAccountCache<WhirlpoolSupportedTypes, WhirlpoolAccountFetchOptions> implements WhirlpoolAccountFetcherInterface {
+export class WhirlpoolAccountFetcher extends SimpleAccountFetcher<WhirlpoolSupportedTypes, WhirlpoolAccountFetchOptions> implements WhirlpoolAccountFetcherInterface {
   private _accountRentExempt: number | undefined;
 
   constructor(readonly connection: Connection, readonly retentionPolicy: RetentionPolicy<WhirlpoolSupportedTypes>) {

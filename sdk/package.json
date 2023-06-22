@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "dependencies": {
     "@coral-xyz/anchor": "~0.27.0",
-    "@orca-so/common-sdk": "^0.3.0-beta-1",
+    "@orca-so/common-sdk": "^0.3.0-beta-2",
     "@solana/spl-token": "^0.3.8",
     "@solana/web3.js": "^1.75.0",
     "decimal.js": "^10.3.1",

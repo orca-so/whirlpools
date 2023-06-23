@@ -63,7 +63,7 @@ export type WhirlpoolAccountFetchOptions = SimpleAccountFetchOptions;
  * Default fetch option for always fetching when making an account request to the {@link WhirlpoolAccountFetcherInterface}
  * @category Network
  */
-export const PREFER_REFRESH: WhirlpoolAccountFetchOptions = { maxAge: 0 };
+export const IGNORE_CACHE: WhirlpoolAccountFetchOptions = { maxAge: 0 };
 
 /**
  * Default fetch option for always using the cached value for an account request to the {@link WhirlpoolAccountFetcherInterface}
@@ -230,8 +230,7 @@ export interface WhirlpoolAccountFetcherInterface
  */
 export class WhirlpoolAccountFetcher
   extends SimpleAccountFetcher<WhirlpoolSupportedTypes, WhirlpoolAccountFetchOptions>
-  implements WhirlpoolAccountFetcherInterface
-{
+  implements WhirlpoolAccountFetcherInterface {
   private _accountRentExempt: number | undefined;
 
   constructor(

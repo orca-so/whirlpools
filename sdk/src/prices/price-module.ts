@@ -13,7 +13,7 @@ import {
 import { WhirlpoolContext } from "../context";
 import {
   AVOID_REFRESH,
-  PREFER_REFRESH,
+  IGNORE_CACHE,
   WhirlpoolAccountFetchOptions,
 } from "../network/public/account-fetcher";
 import { PDAUtil, PoolUtil, SwapUtils } from "../utils/public";
@@ -44,7 +44,7 @@ export class PriceModule {
     mints: Address[],
     config = defaultGetPricesConfig,
     thresholdConfig = defaultGetPricesThresholdConfig,
-    opts = PREFER_REFRESH,
+    opts = IGNORE_CACHE,
     availableData: Partial<PriceCalculationData> = {}
   ): Promise<PriceMap> {
     const poolMap = availableData?.poolMap
@@ -84,7 +84,7 @@ export class PriceModule {
     pools: Address[],
     config = defaultGetPricesConfig,
     thresholdConfig = defaultGetPricesThresholdConfig,
-    opts: WhirlpoolAccountFetchOptions = PREFER_REFRESH
+    opts: WhirlpoolAccountFetchOptions = IGNORE_CACHE
   ): Promise<PriceMap> {
     const poolDatas = Array.from((await ctx.fetcher.getPools(pools, opts)).values());
     const [filteredPoolDatas, filteredPoolAddresses] = filterNullObjects(poolDatas, pools);
@@ -236,7 +236,7 @@ export class PriceModuleUtils {
     ctx: WhirlpoolContext,
     mints: Address[],
     config = defaultGetPricesConfig,
-    opts = PREFER_REFRESH
+    opts = IGNORE_CACHE
   ): Promise<PoolMap> {
     const { quoteTokens, tickSpacings, programId, whirlpoolsConfig } = config;
     const poolAddresses: string[] = mints
@@ -277,7 +277,7 @@ export class PriceModuleUtils {
     ctx: WhirlpoolContext,
     pools: PoolMap,
     config = defaultGetPricesConfig,
-    opts: WhirlpoolAccountFetchOptions = PREFER_REFRESH
+    opts: WhirlpoolAccountFetchOptions = IGNORE_CACHE
   ): Promise<TickArrayMap> {
     const { programId } = config;
 
@@ -331,7 +331,7 @@ export class PriceModuleUtils {
   static async fetchDecimalsForMints(
     ctx: WhirlpoolContext,
     mints: Address[],
-    opts = PREFER_REFRESH
+    opts = IGNORE_CACHE
   ): Promise<DecimalsMap> {
     const mintInfos = Array.from((await ctx.fetcher.getMintInfos(mints, opts)).values());
 

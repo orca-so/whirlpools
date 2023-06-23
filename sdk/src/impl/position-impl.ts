@@ -22,7 +22,7 @@ import {
 } from "../instructions";
 import {
   AVOID_REFRESH,
-  PREFER_REFRESH,
+  IGNORE_CACHE,
   WhirlpoolAccountFetchOptions,
 } from "../network/public/account-fetcher";
 import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
@@ -102,7 +102,7 @@ export class PositionImpl implements Position {
       : this.ctx.wallet.publicKey;
     const ataPayerKey = ataPayer ? AddressUtil.toPubKey(ataPayer) : this.ctx.wallet.publicKey;
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, PREFER_REFRESH);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, IGNORE_CACHE);
     if (!whirlpool) {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
@@ -181,7 +181,7 @@ export class PositionImpl implements Position {
       ? AddressUtil.toPubKey(positionWallet)
       : this.ctx.wallet.publicKey;
     const ataPayerKey = ataPayer ? AddressUtil.toPubKey(ataPayer) : this.ctx.wallet.publicKey;
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, PREFER_REFRESH);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, IGNORE_CACHE);
 
     if (!whirlpool) {
       throw new Error("Unable to fetch whirlpool for this position.");
@@ -347,7 +347,7 @@ export class PositionImpl implements Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    opts: WhirlpoolAccountFetchOptions = PREFER_REFRESH
+    opts: WhirlpoolAccountFetchOptions = IGNORE_CACHE
   ): Promise<TransactionBuilder> {
     const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
       destinationWallet ?? this.ctx.wallet.publicKey,
@@ -445,11 +445,11 @@ export class PositionImpl implements Position {
   }
 
   private async refresh() {
-    const positionAccount = await this.ctx.fetcher.getPosition(this.address, PREFER_REFRESH);
+    const positionAccount = await this.ctx.fetcher.getPosition(this.address, IGNORE_CACHE);
     if (!!positionAccount) {
       this.data = positionAccount;
     }
-    const whirlpoolAccount = await this.ctx.fetcher.getPool(this.data.whirlpool, PREFER_REFRESH);
+    const whirlpoolAccount = await this.ctx.fetcher.getPool(this.data.whirlpool, IGNORE_CACHE);
     if (!!whirlpoolAccount) {
       this.whirlpoolData = whirlpoolAccount;
     }
@@ -458,7 +458,7 @@ export class PositionImpl implements Position {
       this.ctx,
       this.data,
       this.whirlpoolData,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
     if (lowerTickArray) {
       this.lowerTickArrayData = lowerTickArray;

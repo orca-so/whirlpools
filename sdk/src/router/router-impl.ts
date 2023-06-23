@@ -6,7 +6,7 @@ import { RouteQueryErrorCode, SwapErrorCode, WhirlpoolsError } from "../errors/e
 import { getSwapFromRoute } from "../instructions/composites/swap-with-route";
 import {
   AVOID_REFRESH,
-  PREFER_REFRESH,
+  IGNORE_CACHE,
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/account-fetcher";
@@ -24,7 +24,7 @@ import {
 import { getQuoteMap } from "./quote-map";
 
 export class WhirlpoolRouterImpl implements WhirlpoolRouter {
-  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) {}
+  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) { }
 
   async findAllRoutes(
     trade: Trade,
@@ -122,7 +122,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
         resolvedAtaAccounts: resolvedAtas,
         wallet: this.ctx.wallet.publicKey,
       },
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
     return txBuilder;
   }

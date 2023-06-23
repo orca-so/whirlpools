@@ -11,7 +11,7 @@ import {
 import { WhirlpoolIx } from "../ix";
 import {
   AVOID_REFRESH,
-  PREFER_REFRESH,
+  IGNORE_CACHE,
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/account-fetcher";
@@ -25,7 +25,7 @@ import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./
 import { WhirlpoolImpl } from "./whirlpool-impl";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
-  constructor(readonly ctx: WhirlpoolContext) {}
+  constructor(readonly ctx: WhirlpoolContext) { }
 
   public getContext(): WhirlpoolContext {
     return this.ctx;
@@ -170,7 +170,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
         }
       })
     );
-    await this.ctx.fetcher.getTickArrays(Array.from(tickArrayAddresses), PREFER_REFRESH);
+    await this.ctx.fetcher.getTickArrays(Array.from(tickArrayAddresses), IGNORE_CACHE);
 
     // Use getPosition and the prefetched values to generate the Positions
     const results = await Promise.all(

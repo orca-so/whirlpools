@@ -23,7 +23,7 @@ import {
   openPositionWithMetadataIx,
   swapAsync,
 } from "../instructions";
-import { AVOID_REFRESH, PREFER_REFRESH } from "../network/public/account-fetcher";
+import { AVOID_REFRESH, IGNORE_CACHE } from "../network/public/account-fetcher";
 import {
   collectFeesQuote,
   collectRewardsQuote,
@@ -192,7 +192,7 @@ export class WhirlpoolImpl implements Whirlpool {
         whirlpool: this,
         wallet: sourceWalletKey,
       },
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
   }
 
@@ -235,7 +235,7 @@ export class WhirlpoolImpl implements Whirlpool {
         whirlpool: this,
         wallet: sourceWalletKey,
       },
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     txBuilder.addInstruction(swapTxBuilder.compressIx(true));
@@ -367,7 +367,7 @@ export class WhirlpoolImpl implements Whirlpool {
     positionWallet: PublicKey,
     payerKey: PublicKey
   ): Promise<TransactionBuilder[]> {
-    const positionData = await this.ctx.fetcher.getPosition(positionAddress, PREFER_REFRESH);
+    const positionData = await this.ctx.fetcher.getPosition(positionAddress, IGNORE_CACHE);
     if (!positionData) {
       throw new Error(`Position not found: ${positionAddress.toBase58()}`);
     }
@@ -416,7 +416,7 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx,
       positionData,
       whirlpool,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     invariant(
@@ -538,7 +538,7 @@ export class WhirlpoolImpl implements Whirlpool {
         destinationWallet,
         positionWallet,
         payerKey,
-        PREFER_REFRESH
+        IGNORE_CACHE
       );
 
       txBuilder.addInstruction(collectFeexTx.compressIx(false));
@@ -580,13 +580,13 @@ export class WhirlpoolImpl implements Whirlpool {
   }
 
   private async refresh() {
-    const account = await this.ctx.fetcher.getPool(this.address, PREFER_REFRESH);
+    const account = await this.ctx.fetcher.getPool(this.address, IGNORE_CACHE);
     if (!!account) {
-      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, PREFER_REFRESH);
+      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, IGNORE_CACHE);
       const [tokenVaultAInfo, tokenVaultBInfo] = await getTokenVaultAccountInfos(
         this.ctx.fetcher,
         account,
-        PREFER_REFRESH
+        IGNORE_CACHE
       );
       this.data = account;
       this.tokenVaultAInfo = tokenVaultAInfo;

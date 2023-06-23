@@ -4,7 +4,7 @@ import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import { PDAUtil, PositionData, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
 import { sleep, TickSpacing, ZERO_BN } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
@@ -41,7 +41,7 @@ describe("update_fees_and_rewards", () => {
 
     const positionBefore = (await fetcher.getPosition(
       positions[0].publicKey,
-      PREFER_REFRESH
+      IGNORE_CACHE
     )) as PositionData;
     assert.ok(positionBefore.feeGrowthCheckpointA.eq(ZERO_BN));
     assert.ok(positionBefore.feeGrowthCheckpointB.eq(ZERO_BN));
@@ -82,7 +82,7 @@ describe("update_fees_and_rewards", () => {
         tickArrayUpper: tickArrayPda.publicKey,
       })
     ).buildAndExecute();
-    const positionAfter = (await fetcher.getPosition(positions[0].publicKey, PREFER_REFRESH)) as PositionData;
+    const positionAfter = (await fetcher.getPosition(positions[0].publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(positionAfter.feeOwedA.gt(positionBefore.feeOwedA));
     assert.ok(positionAfter.feeOwedB.eq(ZERO_BN));
     assert.ok(positionAfter.feeGrowthCheckpointA.gt(positionBefore.feeGrowthCheckpointA));

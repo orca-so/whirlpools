@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
 import { createMint, ONE_SOL, systemTransferTx, TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initializeReward, initTestPool } from "../utils/init-utils";
@@ -25,7 +25,7 @@ describe("initialize_reward", () => {
 
     const whirlpool = (await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
-      PREFER_REFRESH
+      IGNORE_CACHE
     )) as WhirlpoolData;
 
     assert.ok(whirlpool.rewardInfos[0].mint.equals(params.rewardMint));
@@ -50,7 +50,7 @@ describe("initialize_reward", () => {
 
     const whirlpool2 = (await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
-      PREFER_REFRESH
+      IGNORE_CACHE
     )) as WhirlpoolData;
 
     assert.ok(whirlpool2.rewardInfos[0].mint.equals(params.rewardMint));

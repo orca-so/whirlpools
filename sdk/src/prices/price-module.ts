@@ -12,8 +12,8 @@ import {
 } from ".";
 import { WhirlpoolContext } from "../context";
 import {
-  AVOID_REFRESH,
   IGNORE_CACHE,
+  PREFER_CACHE,
   WhirlpoolAccountFetchOptions,
 } from "../network/public/account-fetcher";
 import { PDAUtil, PoolUtil, SwapUtils } from "../utils/public";
@@ -55,7 +55,7 @@ export class PriceModule {
       : await PriceModuleUtils.fetchTickArraysForPools(ctx, poolMap, config, opts);
     const decimalsMap = availableData?.decimalsMap
       ? availableData.decimalsMap
-      : await PriceModuleUtils.fetchDecimalsForMints(ctx, mints, AVOID_REFRESH);
+      : await PriceModuleUtils.fetchDecimalsForMints(ctx, mints, PREFER_CACHE);
 
     return PriceModule.calculateTokenPrices(
       mints,
@@ -101,7 +101,7 @@ export class PriceModule {
         return acc;
       }, new Set<string>())
     );
-    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(ctx, mints, AVOID_REFRESH);
+    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(ctx, mints, PREFER_CACHE);
 
     return PriceModule.calculateTokenPrices(
       mints,

@@ -5,7 +5,7 @@ import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
 import { InitPoolParams, POSITION_BUNDLE_SIZE, PositionBundleData, WhirlpoolIx, toTx } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
-import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
 import {
   ONE_SOL,
   TickSpacing,
@@ -57,7 +57,7 @@ describe("delete_position_bundle", () => {
     );
 
     // PositionBundle account exists
-    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
+    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(prePositionBundle !== null);
 
     // NFT supply should be 1
@@ -89,7 +89,7 @@ describe("delete_position_bundle", () => {
     const postBalance = await provider.connection.getBalance(owner.publicKey, "confirmed");
 
     // PositionBundle account should be closed
-    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
+    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(postPositionBundle === null);
 
     // NFT should be burned and its supply should be 0
@@ -119,7 +119,7 @@ describe("delete_position_bundle", () => {
     );
 
     // PositionBundle account exists
-    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
+    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(prePositionBundle !== null);
 
     // NFT supply should be 1
@@ -148,7 +148,7 @@ describe("delete_position_bundle", () => {
     const postBalance = await provider.connection.getBalance(owner.publicKey, "confirmed");
 
     // PositionBundle account should be closed
-    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
+    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(postPositionBundle === null);
 
     // NFT should be burned and its supply should be 0
@@ -213,11 +213,11 @@ describe("delete_position_bundle", () => {
     );
     const { bundledPositionPda } = positionInitInfo.params;
 
-    const position = await fetcher.getPosition(positionInitInfo.params.bundledPositionPda.publicKey, PREFER_REFRESH);
+    const position = await fetcher.getPosition(positionInitInfo.params.bundledPositionPda.publicKey, IGNORE_CACHE);
     assert.equal(position!.tickLowerIndex, tickLowerIndex);
     assert.equal(position!.tickUpperIndex, tickUpperIndex);
 
-    const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
+    const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     checkBitmapIsOpened(positionBundle!, bundleIndex);
 
     const tx = toTx(
@@ -252,7 +252,7 @@ describe("delete_position_bundle", () => {
 
     // should be ok
     await tx.buildAndExecute();
-    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
+    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(deleted === null);
   });
 
@@ -273,11 +273,11 @@ describe("delete_position_bundle", () => {
     );
     const { bundledPositionPda } = positionInitInfo.params;
 
-    const position = await fetcher.getPosition(positionInitInfo.params.bundledPositionPda.publicKey, PREFER_REFRESH);
+    const position = await fetcher.getPosition(positionInitInfo.params.bundledPositionPda.publicKey, IGNORE_CACHE);
     assert.equal(position!.tickLowerIndex, tickLowerIndex);
     assert.equal(position!.tickUpperIndex, tickUpperIndex);
 
-    const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
+    const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     checkBitmapIsOpened(positionBundle!, bundleIndex);
 
     const tx = toTx(
@@ -312,7 +312,7 @@ describe("delete_position_bundle", () => {
 
     // should be ok
     await tx.buildAndExecute();
-    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
+    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(deleted === null);
   });
 
@@ -373,7 +373,7 @@ describe("delete_position_bundle", () => {
     ).addSigner(delegate);
 
     await txAfterTransfer.buildAndExecute();
-    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, PREFER_REFRESH);
+    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(deleted === null);
   });
 

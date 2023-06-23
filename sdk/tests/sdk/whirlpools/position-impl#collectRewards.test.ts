@@ -12,7 +12,7 @@ import {
   buildWhirlpoolClient,
   collectRewardsQuote
 } from "../../../src";
-import { PREFER_REFRESH } from "../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../src/network/public/account-fetcher";
 import { TickSpacing, sleep } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -72,8 +72,8 @@ describe("PositionImpl#collectRewards()", () => {
 
       const { positions, poolInitInfo, rewards } = fixture.getInfos();
 
-      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, PREFER_REFRESH);
-      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey, PREFER_REFRESH);
+      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
 
       const otherWallet = anchor.web3.Keypair.generate();
       const preCollectPoolData = pool.getData();
@@ -89,7 +89,7 @@ describe("PositionImpl#collectRewards()", () => {
           otherWallet.publicKey,
           testCtx.provider.wallet.publicKey,
           testCtx.provider.wallet.publicKey,
-          PREFER_REFRESH
+          IGNORE_CACHE
         )
       ).buildAndExecute();
 
@@ -110,7 +110,7 @@ describe("PositionImpl#collectRewards()", () => {
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
-        const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, PREFER_REFRESH);
+        const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
         assert.equal(rewardTokenAccount?.amount.toString(), quote[i]?.toString());
       }
     });
@@ -142,8 +142,8 @@ describe("PositionImpl#collectRewards()", () => {
 
       const { positions, poolInitInfo, rewards } = fixture.getInfos();
 
-      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, PREFER_REFRESH);
-      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey, PREFER_REFRESH);
+      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
       const otherWallet = anchor.web3.Keypair.generate();
       const preCollectPoolData = pool.getData();
 
@@ -158,7 +158,7 @@ describe("PositionImpl#collectRewards()", () => {
           otherWallet.publicKey,
           testCtx.provider.wallet.publicKey,
           testCtx.provider.wallet.publicKey,
-          PREFER_REFRESH
+          IGNORE_CACHE
         )
       ).buildAndExecute();
 
@@ -179,7 +179,7 @@ describe("PositionImpl#collectRewards()", () => {
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
-        const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, PREFER_REFRESH);
+        const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
         assert.equal(rewardTokenAccount?.amount.toString(), quote[i]?.toString());
       }
     });

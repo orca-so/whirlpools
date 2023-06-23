@@ -9,7 +9,7 @@ import {
   NUM_REWARDS, toTx,
   WhirlpoolContext, WhirlpoolIx
 } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
 import {
   approveToken,
   createAndMintToTokenAccount,
@@ -83,8 +83,8 @@ describe("collect_reward", () => {
     ).buildAndExecute();
 
     // Generate collect reward expectation
-    const pool = await client.getPool(whirlpoolPda.publicKey, PREFER_REFRESH);
-    const positionPreCollect = await client.getPosition(positions[0].publicKey, PREFER_REFRESH);
+    const pool = await client.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
+    const positionPreCollect = await client.getPosition(positions[0].publicKey, IGNORE_CACHE);
 
     // Lock the collectRewards quote to the last time we called updateFeesAndRewards
     const expectation = collectRewardsQuote({
@@ -127,7 +127,7 @@ describe("collect_reward", () => {
         await getTokenBalance(provider, rewards[i].rewardVaultKeypair.publicKey)
       );
       assert.equal(vaultStartBalance - collectedBalance, vaultBalance);
-      const position = await fetcher.getPosition(positions[0].publicKey, PREFER_REFRESH);
+      const position = await fetcher.getPosition(positions[0].publicKey, IGNORE_CACHE);
       assert.equal(position?.rewardInfos[i].amountOwed, 0);
       assert.ok(position?.rewardInfos[i].growthInsideCheckpoint.gte(ZERO_BN));
     }

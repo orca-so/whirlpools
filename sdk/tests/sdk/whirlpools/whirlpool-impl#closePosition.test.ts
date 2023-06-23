@@ -14,7 +14,7 @@ import {
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidity
 } from "../../../src";
-import { PREFER_REFRESH } from "../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../src/network/public/account-fetcher";
 import { TickSpacing, ZERO_BN, createAssociatedTokenAccount, sleep, transferToken } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -58,7 +58,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
     const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 22528);
 
     // Accrue fees in token A
-    const pool = await whirlpoolClient.getPool(whirlpoolPda.publicKey, PREFER_REFRESH);
+    const pool = await whirlpoolClient.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
     await (await pool.swap({
       amount: new BN(200_000),
       amountSpecifiedIsInput: true,
@@ -91,8 +91,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
       poolInitInfo,
       positions: [positionInfo],
     } = fixture.getInfos();
-    const position = await testCtx.whirlpoolClient.getPosition(positionInfo.publicKey, PREFER_REFRESH);
-    const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, PREFER_REFRESH);
+    const position = await testCtx.whirlpoolClient.getPosition(positionInfo.publicKey, IGNORE_CACHE);
+    const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
 
 
     const liquidityCollectedQuote = await decreaseLiquidityQuoteByLiquidity(
@@ -110,7 +110,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
   async function collectFees(fixture: WhirlpoolTestFixture) {
     const { positions } = fixture.getInfos();
     const { whirlpoolClient } = testCtx;
-    const position = await whirlpoolClient.getPosition(positions[0].publicKey, PREFER_REFRESH);
+    const position = await whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
     const hasL = !position.getData().liquidity.isZero()
     await (await position.collectFees(hasL)).buildAndExecute();
   }
@@ -118,7 +118,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
   async function collectRewards(fixture: WhirlpoolTestFixture) {
     const { positions } = fixture.getInfos();
     const { whirlpoolClient } = testCtx;
-    const position = await whirlpoolClient.getPosition(positions[0].publicKey, PREFER_REFRESH);
+    const position = await whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
     await (await position.collectRewards(undefined, true)).buildAndExecute();
   }
 
@@ -128,8 +128,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
     const ctx = whirlpoolClient.getContext();
     const otherWallet = anchor.web3.Keypair.generate();
 
-    const pool = await whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, PREFER_REFRESH);
-    const position = await whirlpoolClient.getPosition(positions[0].publicKey, PREFER_REFRESH);
+    const pool = await whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+    const position = await whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
     const preClosePoolData = pool.getData();
     const positionAccountBalance = await ctx.connection.getBalance(positions[0].publicKey);
 
@@ -165,7 +165,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       tickUpper: position.getUpperTickData(),
     });
     const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
-    const accountA = (await ctx.fetcher.getTokenInfo(accountAPubkey, PREFER_REFRESH)) as Account;
+    const accountA = (await ctx.fetcher.getTokenInfo(accountAPubkey, IGNORE_CACHE)) as Account;
     const expectAmountA = liquidityCollectedQuote.tokenMinA.add(feeQuote.feeOwedA);
     if (isWSOLTest) {
       // If this is a WSOL test, we have to account for account rent retrieval
@@ -188,7 +188,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
     }
 
     const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
-    const accountB = await ctx.fetcher.getTokenInfo(accountBPubkey, PREFER_REFRESH);
+    const accountB = await ctx.fetcher.getTokenInfo(accountBPubkey, IGNORE_CACHE);
     const expectAmountB = liquidityCollectedQuote.tokenMinB.add(feeQuote.feeOwedB);
     if (expectAmountB.isZero()) {
       assert.ok(!accountB || accountB.amount === 0n);
@@ -211,7 +211,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
     for (let i = 0; i < NUM_REWARDS; i++) {
       if (!!rewards[i]) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
-        const rewardTokenAccount = await ctx.fetcher.getTokenInfo(rewardATA, PREFER_REFRESH);
+        const rewardTokenAccount = await ctx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
         assert.equal(rewardTokenAccount?.amount.toString(), rewardQuote[i]?.toString());
       }
     }
@@ -405,7 +405,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       const otherWallet = anchor.web3.Keypair.generate();
       const positionData = fixture.getInfos().positions[0];
 
-      const position = await testCtx.whirlpoolClient.getPosition(positionData.publicKey, PREFER_REFRESH);
+      const position = await testCtx.whirlpoolClient.getPosition(positionData.publicKey, IGNORE_CACHE);
 
       const walletPositionTokenAccount = getAssociatedTokenAddressSync(
         positionData.mintKeypair.publicKey,
@@ -428,7 +428,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
 
       const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
-        PREFER_REFRESH
+        IGNORE_CACHE
       );
 
       assert.notEqual(positionDataBefore, null);
@@ -446,7 +446,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
 
       const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
-        PREFER_REFRESH
+        IGNORE_CACHE
       );
 
       assert.equal(positionDataAfter, null);
@@ -508,7 +508,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       const otherWallet = anchor.web3.Keypair.generate();
       const positionData = fixture.getInfos().positions[0];
 
-      const position = await testCtx.whirlpoolClient.getPosition(positionData.publicKey, PREFER_REFRESH);
+      const position = await testCtx.whirlpoolClient.getPosition(positionData.publicKey, IGNORE_CACHE);
 
       const walletPositionTokenAccount = getAssociatedTokenAddressSync(
         positionData.mintKeypair.publicKey,
@@ -531,7 +531,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
 
       const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
-        PREFER_REFRESH
+        IGNORE_CACHE
       );
 
       assert.notEqual(positionDataBefore, null);
@@ -549,7 +549,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
 
       const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
-        PREFER_REFRESH
+        IGNORE_CACHE
       );
 
       assert.equal(positionDataAfter, null);

@@ -21,8 +21,8 @@ import {
   updateFeesAndRewardsIx,
 } from "../instructions";
 import {
-  AVOID_REFRESH,
   IGNORE_CACHE,
+  PREFER_CACHE,
   WhirlpoolAccountFetchOptions,
 } from "../network/public/account-fetcher";
 import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
@@ -248,7 +248,7 @@ export class PositionImpl implements Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    opts: WhirlpoolAccountFetchOptions = AVOID_REFRESH
+    opts: WhirlpoolAccountFetchOptions = PREFER_CACHE
   ): Promise<TransactionBuilder> {
     const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
       destinationWallet ?? this.ctx.wallet.publicKey,

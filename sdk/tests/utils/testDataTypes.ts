@@ -13,7 +13,7 @@ import {
   TickData,
   WhirlpoolContext
 } from "../../src";
-import { PREFER_REFRESH, WhirlpoolAccountFetcherInterface } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE, WhirlpoolAccountFetcherInterface } from "../../src/network/public/account-fetcher";
 
 export const testWhirlpoolData = {
   whirlpoolsConfig: Keypair.generate().publicKey,
@@ -92,7 +92,7 @@ export async function getTickArrays(
     PDAUtil.getTickArray(ctx.program.programId, whirlpoolKey, value)
   );
   const tickArrayAddresses = tickArrayPdas.map((pda) => pda.publicKey);
-  const tickArrays = await cache.getTickArrays(tickArrayAddresses, PREFER_REFRESH);
+  const tickArrays = await cache.getTickArrays(tickArrayAddresses, IGNORE_CACHE);
   return tickArrayAddresses.map((addr, index) => {
     return {
       address: addr,

@@ -25,7 +25,7 @@ import {
   WhirlpoolContext,
   twoHopSwapQuoteFromSwapQuotes,
 } from "../..";
-import { AVOID_REFRESH, WhirlpoolAccountFetchOptions } from "../../network/public/account-fetcher";
+import { PREFER_CACHE, WhirlpoolAccountFetchOptions } from "../../network/public/account-fetcher";
 import { adjustForSlippage } from "../../utils/position-util";
 import { contextOptionsToBuilderOptions } from "../../utils/txn-utils";
 import { swapIx } from "../swap-ix";
@@ -41,7 +41,7 @@ export type SwapFromRouteParams = {
 export async function getSwapFromRoute(
   ctx: WhirlpoolContext,
   params: SwapFromRouteParams,
-  opts: WhirlpoolAccountFetchOptions = AVOID_REFRESH,
+  opts: WhirlpoolAccountFetchOptions = PREFER_CACHE,
   txBuilder: TransactionBuilder = new TransactionBuilder(
     ctx.connection,
     ctx.wallet,

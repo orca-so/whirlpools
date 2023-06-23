@@ -18,7 +18,7 @@ import {
   collectRewardsQuote,
   toTx
 } from "../../../src";
-import { PREFER_REFRESH } from "../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../src/network/public/account-fetcher";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -185,7 +185,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
   }
 
   async function burnAndCloseATA(ctx: WhirlpoolContext, ata: PublicKey) {
-    const account = await ctx.fetcher.getTokenInfo(ata, PREFER_REFRESH);
+    const account = await ctx.fetcher.getTokenInfo(ata, IGNORE_CACHE);
     if (account === null) return;
 
     const burnIx = createBurnInstruction(ata, account.mint, ctx.wallet.publicKey, account.amount);
@@ -226,7 +226,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
   async function createATA(ctx: WhirlpoolContext, ata: PublicKey, mint: PublicKey) {
     if (mint.equals(NATIVE_MINT)) return;
 
-    const account = await ctx.fetcher.getTokenInfo(ata, PREFER_REFRESH);
+    const account = await ctx.fetcher.getTokenInfo(ata, IGNORE_CACHE);
     if (account !== null) return;
     const createATAIx = createAssociatedTokenAccountInstruction(
       ctx.wallet.publicKey,
@@ -290,7 +290,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     for (const positionInfo of positions) {
       const position = await testCtx.whirlpoolClient.getPosition(positionInfo.publicKey);
 
-      const poolData = await testCtx.whirlpoolCtx.fetcher.getPool(position.getData().whirlpool, PREFER_REFRESH);
+      const poolData = await testCtx.whirlpoolCtx.fetcher.getPool(position.getData().whirlpool, IGNORE_CACHE);
       const positionData = await position.refreshData();
       const tickLowerData = position.getLowerTickData();
       const tickUpperData = position.getLowerTickData();
@@ -319,7 +319,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
     const txs = await testCtx.whirlpoolClient.collectFeesAndRewardsForPositions(
       positions.map((p) => p.publicKey),
-      PREFER_REFRESH,
+      IGNORE_CACHE,
     );
     assert.ok(txs.length >= 2);
 
@@ -346,7 +346,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     for (const positionInfo of positions) {
       const position = await testCtx.whirlpoolClient.getPosition(positionInfo.publicKey);
 
-      const poolData = await testCtx.whirlpoolCtx.fetcher.getPool(position.getData().whirlpool, PREFER_REFRESH);
+      const poolData = await testCtx.whirlpoolCtx.fetcher.getPool(position.getData().whirlpool, IGNORE_CACHE);
       const positionData = await position.refreshData();
       const tickLowerData = position.getLowerTickData();
       const tickUpperData = position.getLowerTickData();

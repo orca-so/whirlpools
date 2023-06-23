@@ -23,7 +23,7 @@ import {
   openPositionWithMetadataIx,
   swapAsync,
 } from "../instructions";
-import { AVOID_REFRESH, IGNORE_CACHE } from "../network/public/account-fetcher";
+import { IGNORE_CACHE, PREFER_CACHE } from "../network/public/account-fetcher";
 import {
   collectFeesQuote,
   collectRewardsQuote,
@@ -125,7 +125,7 @@ export class WhirlpoolImpl implements Whirlpool {
     );
   }
 
-  async initTickArrayForTicks(ticks: number[], funder?: Address, opts = AVOID_REFRESH) {
+  async initTickArrayForTicks(ticks: number[], funder?: Address, opts = PREFER_CACHE) {
     const initTickArrayStartPdas = await TickArrayUtil.getUninitializedArraysPDAs(
       ticks,
       this.ctx.program.programId,
@@ -261,7 +261,7 @@ export class WhirlpoolImpl implements Whirlpool {
 
     invariant(liquidity.gt(new BN(0)), "liquidity must be greater than zero");
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.address, AVOID_REFRESH);
+    const whirlpool = await this.ctx.fetcher.getPool(this.address, PREFER_CACHE);
     if (!whirlpool) {
       throw new Error(`Whirlpool not found: ${translateAddress(this.address).toBase58()}`);
     }

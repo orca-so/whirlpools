@@ -69,7 +69,7 @@ export const IGNORE_CACHE: WhirlpoolAccountFetchOptions = { maxAge: 0 };
  * Default fetch option for always using the cached value for an account request to the {@link WhirlpoolAccountFetcherInterface}
  * @category Network
  */
-export const AVOID_REFRESH: WhirlpoolAccountFetchOptions = { maxAge: Number.POSITIVE_INFINITY };
+export const PREFER_CACHE: WhirlpoolAccountFetchOptions = { maxAge: Number.POSITIVE_INFINITY };
 
 /**
  * Fetcher interface for fetching {@link WhirlpoolSupportedTypes} from the network

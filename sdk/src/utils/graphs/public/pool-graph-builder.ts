@@ -1,6 +1,6 @@
 import { Address } from "@coral-xyz/anchor";
 import {
-  AVOID_REFRESH,
+  PREFER_CACHE,
   WhirlpoolAccountFetcherInterface,
 } from "../../../network/public/account-fetcher";
 import { AdjacencyListPoolGraph } from "../adjacency-list-pool-graph";
@@ -24,7 +24,7 @@ export class PoolGraphBuilder {
     pools: Address[],
     cache: WhirlpoolAccountFetcherInterface
   ): Promise<PoolGraph> {
-    const poolAccounts = await cache.getPools(pools, AVOID_REFRESH);
+    const poolAccounts = await cache.getPools(pools, PREFER_CACHE);
     const poolTokenPairs = Array.from(poolAccounts.entries())
       .map(([addr, pool]) => {
         if (pool) {

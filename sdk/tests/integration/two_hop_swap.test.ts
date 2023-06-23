@@ -15,7 +15,7 @@ import {
   WhirlpoolIx
 } from "../../src";
 import { TwoHopSwapParams } from "../../src/instructions";
-import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
 import { getTokenBalance, TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import {
@@ -75,8 +75,8 @@ describe("two-hop swap", () => {
 
       const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
       const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-      const whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-      const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+      const whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+      const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
       const [inputToken, intermediaryToken, _outputToken] = mintKeys;
 
@@ -87,7 +87,7 @@ describe("two-hop swap", () => {
         Percentage.fromFraction(1, 100),
         ctx.program.programId,
         fetcher,
-        PREFER_REFRESH
+        IGNORE_CACHE
       );
 
       const quote2 = await swapQuoteByInputToken(
@@ -97,7 +97,7 @@ describe("two-hop swap", () => {
         Percentage.fromFraction(1, 100),
         ctx.program.programId,
         fetcher,
-        PREFER_REFRESH
+        IGNORE_CACHE
       );
 
       const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -225,8 +225,8 @@ describe("two-hop swap", () => {
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    let whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     const [inputToken, intermediaryToken, _outputToken] = mintKeys;
 
@@ -237,7 +237,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -247,7 +247,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -277,8 +277,8 @@ describe("two-hop swap", () => {
       prevTbs[2].add(quote2.estimatedAmountOut),
     ]);
 
-    whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
   });
 
 
@@ -310,8 +310,8 @@ describe("two-hop swap", () => {
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    let whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     const [tokenA, tokenB, _outputToken] = mintKeys;
 
@@ -322,7 +322,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -332,7 +332,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -369,8 +369,8 @@ describe("two-hop swap", () => {
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    const whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    const whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     const [inputToken, intermediaryToken, _outputToken] = mintKeys;
 
@@ -381,7 +381,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -391,7 +391,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -419,8 +419,8 @@ describe("two-hop swap", () => {
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    const whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    const whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     const [_inputToken, intermediaryToken, outputToken] = mintKeys;
 
@@ -431,7 +431,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const quote = await swapQuoteByOutputToken(
@@ -441,7 +441,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -478,8 +478,8 @@ describe("two-hop swap", () => {
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    const whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    const whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     const [_inputToken, intermediaryToken, outputToken] = mintKeys;
 
@@ -490,7 +490,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const quote = await swapQuoteByOutputToken(
@@ -500,7 +500,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -529,8 +529,8 @@ describe("two-hop swap", () => {
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    const whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    const whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     const [_inputToken, intermediaryToken, outputToken] = mintKeys;
 
@@ -541,7 +541,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const quote = await swapQuoteByOutputToken(
@@ -551,7 +551,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -575,8 +575,8 @@ describe("two-hop swap", () => {
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    let whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     const [inputToken, intermediaryToken, _outputToken] = mintKeys;
 
@@ -587,7 +587,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -597,7 +597,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     // Set a price limit that is less than the 1% slippage threshold,
@@ -621,8 +621,8 @@ describe("two-hop swap", () => {
       })
     ).buildAndExecute();
 
-    whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     assert.equal(whirlpoolOne.getData().sqrtPrice.eq(quote.sqrtPriceLimit), true);
   });
@@ -634,8 +634,8 @@ describe("two-hop swap", () => {
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    let whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     const [inputToken, intermediaryToken, _outputToken] = mintKeys;
 
@@ -646,7 +646,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -656,7 +656,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     // Set a price limit that is less than the 1% slippage threshold,
@@ -680,8 +680,8 @@ describe("two-hop swap", () => {
       })
     ).buildAndExecute();
 
-    whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     assert.equal(whirlpoolTwo.getData().sqrtPrice.eq(quote2.sqrtPriceLimit), true);
   });
@@ -692,8 +692,8 @@ describe("two-hop swap", () => {
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    let whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     const [inputToken, intermediaryToken, _outputToken] = mintKeys;
 
@@ -704,7 +704,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -714,7 +714,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     // Set a price limit that is less than the 1% slippage threshold,
@@ -748,8 +748,8 @@ describe("two-hop swap", () => {
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
-    let whirlpoolOne = await client.getPool(whirlpoolOneKey, PREFER_REFRESH);
-    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, PREFER_REFRESH);
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
     const [inputToken, intermediaryToken, _outputToken] = mintKeys;
 
@@ -760,7 +760,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -770,7 +770,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
 
     // Set a price limit that is greater than the 1% slippage threshold,

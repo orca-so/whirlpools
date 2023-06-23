@@ -5,8 +5,8 @@ import { WhirlpoolContext } from "..";
 import { RouteQueryErrorCode, SwapErrorCode, WhirlpoolsError } from "../errors/errors";
 import { getSwapFromRoute } from "../instructions/composites/swap-with-route";
 import {
-  AVOID_REFRESH,
   IGNORE_CACHE,
+  PREFER_CACHE,
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/account-fetcher";
@@ -133,7 +133,7 @@ async function prefetchRoutes(
   paths: Path[],
   programId: Address,
   cache: WhirlpoolAccountFetcherInterface,
-  opts: WhirlpoolAccountFetchOptions = AVOID_REFRESH
+  opts: WhirlpoolAccountFetchOptions = PREFER_CACHE
 ): Promise<void> {
   const poolSet = new Set<string>();
   for (let i = 0; i < paths.length; i++) {

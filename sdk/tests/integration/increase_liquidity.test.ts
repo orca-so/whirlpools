@@ -14,7 +14,7 @@ import {
   WhirlpoolIx,
   toTx
 } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
 import {
   MAX_U64,
@@ -57,7 +57,7 @@ describe("increase_liquidity", () => {
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     const tokenAmount = toTokenAmount(167_000, 167_000);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
       currTick,
@@ -88,10 +88,10 @@ describe("increase_liquidity", () => {
       })
     ).buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionInitInfo.publicKey, PREFER_REFRESH)) as PositionData;
+    const position = (await fetcher.getPosition(positionInitInfo.publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(position.liquidity.eq(liquidityAmount));
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolAfter.rewardLastUpdatedTimestamp.gt(poolBefore.rewardLastUpdatedTimestamp));
     assert.equal(
       await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
@@ -105,12 +105,12 @@ describe("increase_liquidity", () => {
 
     const tickArrayLower = (await fetcher.getTickArray(
       positionInitInfo.tickArrayLower,
-      PREFER_REFRESH
+      IGNORE_CACHE
     )) as TickArrayData;
     assertTick(tickArrayLower.ticks[78], true, liquidityAmount, liquidityAmount);
     const tickArrayUpper = (await fetcher.getTickArray(
       positionInitInfo.tickArrayUpper,
-      PREFER_REFRESH
+      IGNORE_CACHE
     )) as TickArrayData;
     assertTick(tickArrayUpper.ticks[10], true, liquidityAmount, liquidityAmount.neg());
   });
@@ -127,7 +127,7 @@ describe("increase_liquidity", () => {
     const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
 
     const tokenAmount = toTokenAmount(1_000_000, 0);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -167,18 +167,18 @@ describe("increase_liquidity", () => {
     );
 
     const expectedLiquidity = new anchor.BN(liquidityAmount);
-    const position = (await fetcher.getPosition(positionInitInfo.publicKey, PREFER_REFRESH)) as PositionData;
+    const position = (await fetcher.getPosition(positionInitInfo.publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(position.liquidity.eq(expectedLiquidity));
 
     const tickArray = (await fetcher.getTickArray(
       positionInitInfo.tickArrayLower,
-      PREFER_REFRESH
+      IGNORE_CACHE
     )) as TickArrayData;
 
     assertTick(tickArray.ticks[56], true, expectedLiquidity, expectedLiquidity);
     assertTick(tickArray.ticks[70], true, expectedLiquidity, expectedLiquidity.neg());
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
     assert.equal(poolAfter.liquidity, 0);
   });
@@ -193,7 +193,7 @@ describe("increase_liquidity", () => {
     });
     const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
     const { whirlpoolPda, tickSpacing } = poolInitInfo;
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
 
     const tokenAmount = toTokenAmount(1_000_000, 0);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -279,16 +279,16 @@ describe("increase_liquidity", () => {
     const expectedLiquidity = new anchor.BN(liquidityAmount);
     const position = (await fetcher.getPosition(
       params.positionPda.publicKey,
-      PREFER_REFRESH
+      IGNORE_CACHE
     )) as PositionData;
     assert.ok(position.liquidity.eq(expectedLiquidity));
 
-    const tickArray = (await fetcher.getTickArray(tickArrayLower, PREFER_REFRESH)) as TickArrayData;
+    const tickArray = (await fetcher.getTickArray(tickArrayLower, IGNORE_CACHE)) as TickArrayData;
 
     assertTick(tickArray.ticks[56], true, expectedLiquidity, expectedLiquidity);
     assertTick(tickArray.ticks[70], true, expectedLiquidity, expectedLiquidity.neg());
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
     assert.equal(poolAfter.liquidity, 0);
   });
@@ -306,7 +306,7 @@ describe("increase_liquidity", () => {
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     const tokenAmount = toTokenAmount(0, 167_000);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
       currTick,
@@ -341,10 +341,10 @@ describe("increase_liquidity", () => {
       .addSigner(delegate)
       .buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionInitInfo.publicKey, PREFER_REFRESH)) as PositionData;
+    const position = (await fetcher.getPosition(positionInitInfo.publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(position.liquidity.eq(liquidityAmount));
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
     assert.equal(
       await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
@@ -358,12 +358,12 @@ describe("increase_liquidity", () => {
 
     const tickArrayLower = (await fetcher.getTickArray(
       positionInitInfo.tickArrayLower,
-      PREFER_REFRESH
+      IGNORE_CACHE
     )) as TickArrayData;
     assertTick(tickArrayLower.ticks[78], true, liquidityAmount, liquidityAmount);
     const tickArrayUpper = (await fetcher.getTickArray(
       positionInitInfo.tickArrayUpper,
-      PREFER_REFRESH
+      IGNORE_CACHE
     )) as TickArrayData;
     assertTick(tickArrayUpper.ticks[10], true, liquidityAmount, liquidityAmount.neg());
   });
@@ -424,7 +424,7 @@ describe("increase_liquidity", () => {
       })
     ).buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionPda.publicKey, PREFER_REFRESH)) as PositionData;
+    const position = (await fetcher.getPosition(positionPda.publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(position.liquidity.eq(estLiquidityAmount));
   });
 
@@ -484,7 +484,7 @@ describe("increase_liquidity", () => {
       })
     ).buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionPda.publicKey, PREFER_REFRESH)) as PositionData;
+    const position = (await fetcher.getPosition(positionPda.publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(position.liquidity.eq(estLiquidityAmount));
   });
 

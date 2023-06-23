@@ -4,7 +4,7 @@ import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
 import { createTokenAccount, getTokenBalance, TickSpacing, ZERO_BN } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
@@ -54,7 +54,7 @@ describe("collect_protocol_fees", () => {
       .addSigner(feeAuthorityKeypair)
       .buildAndExecute();
 
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolBefore?.protocolFeeOwedA.eq(ZERO_BN));
     assert.ok(poolBefore?.protocolFeeOwedB.eq(ZERO_BN));
 
@@ -106,7 +106,7 @@ describe("collect_protocol_fees", () => {
       })
     ).buildAndExecute();
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolAfter?.protocolFeeOwedA.eq(new BN(150)));
     assert.ok(poolAfter?.protocolFeeOwedB.eq(new BN(150)));
 

@@ -9,7 +9,7 @@ import {
   TickUtil,
   WhirlpoolContext
 } from "../../../src";
-import { PREFER_REFRESH } from "../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../src/network/public/account-fetcher";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { buildTestPoolParams } from "../../utils/init-utils";
@@ -70,8 +70,8 @@ describe("whirlpool-client-impl", () => {
     assert.ok(expectedPda.publicKey.equals(actualPubkey));
 
     const [whirlpoolAccountBefore, tickArrayAccountBefore] = await Promise.all([
-      ctx.fetcher.getPool(expectedPda.publicKey, PREFER_REFRESH),
-      ctx.fetcher.getTickArray(startTickArrayPda.publicKey, PREFER_REFRESH),
+      ctx.fetcher.getPool(expectedPda.publicKey, IGNORE_CACHE),
+      ctx.fetcher.getTickArray(startTickArrayPda.publicKey, IGNORE_CACHE),
     ]);
 
     assert.ok(whirlpoolAccountBefore === null);
@@ -80,8 +80,8 @@ describe("whirlpool-client-impl", () => {
     await tx.addSigner(funderKeypair).buildAndExecute();
 
     const [whirlpoolAccountAfter, tickArrayAccountAfter] = await Promise.all([
-      ctx.fetcher.getPool(expectedPda.publicKey, PREFER_REFRESH),
-      ctx.fetcher.getTickArray(startTickArrayPda.publicKey, PREFER_REFRESH),
+      ctx.fetcher.getPool(expectedPda.publicKey, IGNORE_CACHE),
+      ctx.fetcher.getTickArray(startTickArrayPda.publicKey, IGNORE_CACHE),
     ]);
 
     assert.ok(whirlpoolAccountAfter !== null);

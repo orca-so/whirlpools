@@ -11,7 +11,7 @@ import {
   WhirlpoolContext
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
-import { PREFER_REFRESH } from "../../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../../src/network/public/account-fetcher";
 import { swapQuoteByInputTokenWithDevFees } from "../../../../src/quotes/public/dev-fee-swap-quote";
 import {
   assertDevFeeQuotes,
@@ -71,7 +71,7 @@ describe("whirlpool-dev-fee-swap", () => {
       slippageTolerance,
       ctx.program.programId,
       ctx.fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
     const postFeeInputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
@@ -80,7 +80,7 @@ describe("whirlpool-dev-fee-swap", () => {
       slippageTolerance,
       ctx.program.programId,
       ctx.fetcher,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
     const inputTokenQuoteWithDevFees = await swapQuoteByInputTokenWithDevFees(
       whirlpool,
@@ -90,7 +90,7 @@ describe("whirlpool-dev-fee-swap", () => {
       ctx.program.programId,
       ctx.fetcher,
       devFeePercentage,
-      PREFER_REFRESH
+      IGNORE_CACHE
     );
     assertDevFeeQuotes(inputTokenQuote, postFeeInputTokenQuote, inputTokenQuoteWithDevFees);
     await (
@@ -386,7 +386,7 @@ describe("whirlpool-dev-fee-swap", () => {
           ctx.program.programId,
           ctx.fetcher,
           devFeePercentage,
-          PREFER_REFRESH
+          IGNORE_CACHE
         ),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
     );
@@ -426,7 +426,7 @@ describe("whirlpool-dev-fee-swap", () => {
           ctx.program.programId,
           ctx.fetcher,
           devFeePercentage,
-          PREFER_REFRESH
+          IGNORE_CACHE
         ),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
     );
@@ -449,7 +449,7 @@ async function getQuotes(
     slippageTolerance,
     ctx.program.programId,
     ctx.fetcher,
-    PREFER_REFRESH
+    IGNORE_CACHE
   );
   const postFeeInputTokenQuote = await swapQuoteByInputToken(
     whirlpool,
@@ -458,7 +458,7 @@ async function getQuotes(
     slippageTolerance,
     ctx.program.programId,
     ctx.fetcher,
-    PREFER_REFRESH
+    IGNORE_CACHE
   );
   const inputTokenQuoteWithDevFees = await swapQuoteByInputTokenWithDevFees(
     whirlpool,
@@ -468,7 +468,7 @@ async function getQuotes(
     ctx.program.programId,
     ctx.fetcher,
     devFeePercentage,
-    PREFER_REFRESH
+    IGNORE_CACHE
   );
 
   return { inputTokenQuote, postFeeInputTokenQuote, inputTokenQuoteWithDevFees };

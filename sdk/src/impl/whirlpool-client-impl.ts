@@ -10,8 +10,8 @@ import {
 } from "../instructions/composites";
 import { WhirlpoolIx } from "../ix";
 import {
-  AVOID_REFRESH,
   IGNORE_CACHE,
+  PREFER_CACHE,
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/account-fetcher";
@@ -39,7 +39,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     return WhirlpoolRouterBuilder.buildWithPools(this.ctx, poolAddresses);
   }
 
-  public async getPool(poolAddress: Address, opts = AVOID_REFRESH): Promise<Whirlpool> {
+  public async getPool(poolAddress: Address, opts = PREFER_CACHE): Promise<Whirlpool> {
     const account = await this.ctx.fetcher.getPool(poolAddress, opts);
     if (!account) {
       throw new Error(`Unable to fetch Whirlpool at address at ${poolAddress}`);
@@ -59,7 +59,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     );
   }
 
-  public async getPools(poolAddresses: Address[], opts = AVOID_REFRESH): Promise<Whirlpool[]> {
+  public async getPools(poolAddresses: Address[], opts = PREFER_CACHE): Promise<Whirlpool[]> {
     const accounts = Array.from(
       (await this.ctx.fetcher.getPools(poolAddresses, opts)).values()
     ).filter((account): account is WhirlpoolData => !!account);
@@ -86,9 +86,9 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     for (let i = 0; i < accounts.length; i++) {
       const account = accounts[i];
       const poolAddress = poolAddresses[i];
-      const tokenInfos = await getTokenMintInfos(this.ctx.fetcher, account, AVOID_REFRESH);
-      const vaultInfos = await getTokenVaultAccountInfos(this.ctx.fetcher, account, AVOID_REFRESH);
-      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, AVOID_REFRESH);
+      const tokenInfos = await getTokenMintInfos(this.ctx.fetcher, account, PREFER_CACHE);
+      const vaultInfos = await getTokenVaultAccountInfos(this.ctx.fetcher, account, PREFER_CACHE);
+      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, PREFER_CACHE);
       whirlpools.push(
         new WhirlpoolImpl(
           this.ctx,
@@ -105,7 +105,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     return whirlpools;
   }
 
-  public async getPosition(positionAddress: Address, opts = AVOID_REFRESH): Promise<Position> {
+  public async getPosition(positionAddress: Address, opts = PREFER_CACHE): Promise<Position> {
     const account = await this.ctx.fetcher.getPosition(positionAddress, opts);
     if (!account) {
       throw new Error(`Unable to fetch Position at address at ${positionAddress}`);
@@ -136,7 +136,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
 
   public async getPositions(
     positionAddresses: Address[],
-    opts = AVOID_REFRESH
+    opts = PREFER_CACHE
   ): Promise<Record<string, Position | null>> {
     // TODO: Prefetch and use fetcher as a cache - Think of a cleaner way to prefetch
     const positions = Array.from(
@@ -150,7 +150,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     await Promise.all(
       positions.map(async (pos) => {
         if (pos) {
-          const pool = await this.ctx.fetcher.getPool(pos.whirlpool, AVOID_REFRESH);
+          const pool = await this.ctx.fetcher.getPool(pos.whirlpool, PREFER_CACHE);
           if (pool) {
             const lowerTickArrayPda = PDAUtil.getTickArrayFromTickIndex(
               pos.tickLowerIndex,
@@ -176,7 +176,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     const results = await Promise.all(
       positionAddresses.map(async (pos) => {
         try {
-          const position = await this.getPosition(pos, AVOID_REFRESH);
+          const position = await this.getPosition(pos, PREFER_CACHE);
           return [pos, position];
         } catch {
           return [pos, null];
@@ -193,7 +193,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     tickSpacing: number,
     initialTick: number,
     funder: Address,
-    opts = AVOID_REFRESH
+    opts = PREFER_CACHE
   ): Promise<{ poolKey: PublicKey; tx: TransactionBuilder }> {
     invariant(TickUtil.checkTickInBounds(initialTick), "initialTick is out of bounds.");
     invariant(

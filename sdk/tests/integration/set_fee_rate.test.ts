@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
 import { TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
@@ -25,7 +25,7 @@ describe("set_fee_rate", () => {
 
     const newFeeRate = 50;
 
-    let whirlpool = (await fetcher.getPool(whirlpoolKey, PREFER_REFRESH)) as WhirlpoolData;
+    let whirlpool = (await fetcher.getPool(whirlpoolKey, IGNORE_CACHE)) as WhirlpoolData;
 
     assert.equal(whirlpool.feeRate, feeTierParams.defaultFeeRate);
 
@@ -37,7 +37,7 @@ describe("set_fee_rate", () => {
     })).addSigner(feeAuthorityKeypair);
     await setFeeRateTx.buildAndExecute();
 
-    whirlpool = (await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, PREFER_REFRESH)) as WhirlpoolData;
+    whirlpool = (await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.equal(whirlpool.feeRate, newFeeRate);
   });
 

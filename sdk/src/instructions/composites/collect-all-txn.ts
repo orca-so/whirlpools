@@ -11,7 +11,7 @@ import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PositionData, WhirlpoolContext } from "../..";
 import { WhirlpoolIx } from "../../ix";
-import { AVOID_REFRESH, WhirlpoolAccountFetchOptions } from "../../network/public/account-fetcher";
+import { PREFER_CACHE, WhirlpoolAccountFetchOptions } from "../../network/public/account-fetcher";
 import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
 import { checkMergedTransactionSizeIsValid, convertListToMap } from "../../utils/txn-utils";
@@ -75,7 +75,7 @@ export type CollectAllParams = {
 export async function collectAllForPositionAddressesTxns(
   ctx: WhirlpoolContext,
   params: CollectAllPositionAddressParams,
-  opts: WhirlpoolAccountFetchOptions = AVOID_REFRESH
+  opts: WhirlpoolAccountFetchOptions = PREFER_CACHE
 ): Promise<TransactionBuilder[]> {
   const { positions, ...rest } = params;
   const fetchedPositions = await ctx.fetcher.getPositions(positions, opts);
@@ -114,7 +114,7 @@ export async function collectAllForPositionsTxns(
   }
 
   const whirlpoolAddrs = positionList.map(([, pos]) => pos.whirlpool.toBase58());
-  const whirlpools = await ctx.fetcher.getPools(whirlpoolAddrs, AVOID_REFRESH);
+  const whirlpools = await ctx.fetcher.getPools(whirlpoolAddrs, PREFER_CACHE);
 
   const allMints = getTokenMintsFromWhirlpools(Array.from(whirlpools.values()));
   const accountExemption = await ctx.fetcher.getAccountRentExempt();

@@ -11,7 +11,7 @@ import {
   Account,
   NATIVE_MINT,
   createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddressSync
+  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
@@ -130,7 +130,7 @@ export async function getSwapFromRoute(
           ) as Account[]
         );
       } else {
-        return ctx.fetcher.getTokenInfos(keys, opts).then(result => Array.from(result.values()));
+        return ctx.fetcher.getTokenInfos(keys, opts).then((result) => Array.from(result.values()));
       }
     }
   );
@@ -340,7 +340,7 @@ async function cachedResolveOrCreateNonNativeATAs(
         payer,
         ataAddress,
         ownerAddress,
-        tokenMintArray[index],
+        tokenMintArray[index]
       );
 
       resolvedInstruction = {

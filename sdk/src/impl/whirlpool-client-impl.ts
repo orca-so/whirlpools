@@ -9,7 +9,12 @@ import {
   collectProtocolFees,
 } from "../instructions/composites";
 import { WhirlpoolIx } from "../ix";
-import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../network/public/account-fetcher";
+import {
+  AVOID_REFRESH,
+  PREFER_REFRESH,
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "../network/public/account-fetcher";
 import { WhirlpoolRouter, WhirlpoolRouterBuilder } from "../router/public";
 import { WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
@@ -20,7 +25,7 @@ import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./
 import { WhirlpoolImpl } from "./whirlpool-impl";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
-  constructor(readonly ctx: WhirlpoolContext) { }
+  constructor(readonly ctx: WhirlpoolContext) {}
 
   public getContext(): WhirlpoolContext {
     return this.ctx;
@@ -55,9 +60,9 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
   }
 
   public async getPools(poolAddresses: Address[], opts = AVOID_REFRESH): Promise<Whirlpool[]> {
-    const accounts = Array.from((await this.ctx.fetcher.getPools(poolAddresses, opts)).values()).filter(
-      (account): account is WhirlpoolData => !!account
-    );
+    const accounts = Array.from(
+      (await this.ctx.fetcher.getPools(poolAddresses, opts)).values()
+    ).filter((account): account is WhirlpoolData => !!account);
     if (accounts.length !== poolAddresses.length) {
       throw new Error(`Unable to fetch all Whirlpools at addresses ${poolAddresses}`);
     }
@@ -134,7 +139,9 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     opts = AVOID_REFRESH
   ): Promise<Record<string, Position | null>> {
     // TODO: Prefetch and use fetcher as a cache - Think of a cleaner way to prefetch
-    const positions = Array.from((await this.ctx.fetcher.getPositions(positionAddresses, opts)).values());
+    const positions = Array.from(
+      (await this.ctx.fetcher.getPositions(positionAddresses, opts)).values()
+    );
     const whirlpoolAddrs = positions
       .map((position) => position?.whirlpool.toBase58())
       .flatMap((x) => (!!x ? x : []));

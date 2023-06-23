@@ -3,7 +3,10 @@ import { AddressUtil, Percentage } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import invariant from "tiny-invariant";
 import { SwapInput } from "../../instructions";
-import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-fetcher";
+import {
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "../../network/public/account-fetcher";
 import { TickArray, WhirlpoolData } from "../../types/public";
 import { PoolUtil, SwapDirection } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";

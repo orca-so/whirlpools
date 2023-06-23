@@ -2,7 +2,10 @@ import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, PDA } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
-import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-fetcher";
+import {
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "../../network/public/account-fetcher";
 import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
@@ -22,7 +25,7 @@ enum TickSearchDirection {
  * @category Whirlpool Utils
  */
 export class TickUtil {
-  private constructor() { }
+  private constructor() {}
 
   /**
    * Get the offset index to access a tick at a given tick-index in a tick-array

@@ -4,7 +4,10 @@ import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
 import { DevFeeSwapInput, SwapInput } from "./instructions";
-import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "./network/public/account-fetcher";
+import {
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "./network/public/account-fetcher";
 import { WhirlpoolRouter } from "./router/public";
 import {
   DecreaseLiquidityInput,

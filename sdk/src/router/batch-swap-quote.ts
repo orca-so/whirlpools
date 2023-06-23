@@ -2,7 +2,10 @@ import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import invariant from "tiny-invariant";
-import { WhirlpoolAccountFetcherInterface, WhirlpoolAccountFetchOptions } from "../network/public/account-fetcher";
+import {
+  WhirlpoolAccountFetcherInterface,
+  WhirlpoolAccountFetchOptions,
+} from "../network/public/account-fetcher";
 import { SwapQuoteParam } from "../quotes/public";
 import { PoolUtil, SwapDirection, SwapUtils } from "../utils/public";
 
@@ -45,12 +48,7 @@ export async function batchBuildSwapQuoteParams(
     };
   });
 
-  const tickArrays = await SwapUtils.getBatchTickArrays(
-    program,
-    cache,
-    tickArrayRequests,
-    opts
-  );
+  const tickArrays = await SwapUtils.getBatchTickArrays(program, cache, tickArrayRequests, opts);
 
   return tickArrayRequests.map((req, index) => {
     const { whirlpoolData, tokenAmount, aToB, amountSpecifiedIsInput } = req;

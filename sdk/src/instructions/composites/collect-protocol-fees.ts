@@ -19,7 +19,9 @@ export async function collectProtocolFees(
   const receiverKey = ctx.wallet.publicKey;
   const payerKey = ctx.wallet.publicKey;
 
-  const whirlpoolDatas = Array.from((await ctx.fetcher.getPools(poolAddresses, AVOID_REFRESH)).values());
+  const whirlpoolDatas = Array.from(
+    (await ctx.fetcher.getPools(poolAddresses, AVOID_REFRESH)).values()
+  );
 
   const accountExemption = await ctx.fetcher.getAccountRentExempt();
   const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(ctx, {

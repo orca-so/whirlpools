@@ -4,7 +4,12 @@ import { Account } from "@solana/spl-token";
 import { WhirlpoolContext } from "..";
 import { RouteQueryErrorCode, SwapErrorCode, WhirlpoolsError } from "../errors/errors";
 import { getSwapFromRoute } from "../instructions/composites/swap-with-route";
-import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../network/public/account-fetcher";
+import {
+  AVOID_REFRESH,
+  PREFER_REFRESH,
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "../network/public/account-fetcher";
 import { Path, PoolGraph, SwapUtils } from "../utils/public";
 import { getBestRoutesFromQuoteMap } from "./convert-quote-map";
 import {
@@ -19,7 +24,7 @@ import {
 import { getQuoteMap } from "./quote-map";
 
 export class WhirlpoolRouterImpl implements WhirlpoolRouter {
-  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) { }
+  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) {}
 
   async findAllRoutes(
     trade: Trade,
@@ -139,7 +144,7 @@ async function prefetchRoutes(
   }
 
   const ps = Array.from(poolSet);
-  const allWps = (await cache.getPools(ps, opts));
+  const allWps = await cache.getPools(ps, opts);
 
   const tickArrayAddresses = [];
   for (const [key, wp] of allWps) {

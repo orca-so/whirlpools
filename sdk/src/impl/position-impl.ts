@@ -5,7 +5,7 @@ import {
   TokenUtil,
   TransactionBuilder,
   ZERO,
-  resolveOrCreateATAs
+  resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
 import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -20,7 +20,11 @@ import {
   increaseLiquidityIx,
   updateFeesAndRewardsIx,
 } from "../instructions";
-import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions } from "../network/public/account-fetcher";
+import {
+  AVOID_REFRESH,
+  PREFER_REFRESH,
+  WhirlpoolAccountFetchOptions,
+} from "../network/public/account-fetcher";
 import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";

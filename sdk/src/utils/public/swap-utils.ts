@@ -3,7 +3,10 @@ import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { WhirlpoolContext } from "../..";
-import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-fetcher";
+import {
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "../../network/public/account-fetcher";
 import {
   MAX_SQRT_PRICE,
   MAX_SWAP_TICK_ARRAYS,
@@ -136,9 +139,12 @@ export class SwapUtils {
     cache: WhirlpoolAccountFetcherInterface,
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<TickArray[]> {
-    const data = await this.getBatchTickArrays(programId, cache, [
-      { tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress },
-    ], opts);
+    const data = await this.getBatchTickArrays(
+      programId,
+      cache,
+      [{ tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress }],
+      opts
+    );
     return data[0];
   }
 
@@ -154,7 +160,7 @@ export class SwapUtils {
     programId: PublicKey,
     cache: WhirlpoolAccountFetcherInterface,
     tickArrayRequests: TickArrayRequest[],
-    opts?: WhirlpoolAccountFetchOptions,
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<TickArray[][]> {
     let addresses: PublicKey[] = [];
     let requestToIndices = [];

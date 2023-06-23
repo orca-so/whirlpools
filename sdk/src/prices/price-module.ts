@@ -11,7 +11,11 @@ import {
   defaultGetPricesThresholdConfig,
 } from ".";
 import { WhirlpoolContext } from "../context";
-import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions } from "../network/public/account-fetcher";
+import {
+  AVOID_REFRESH,
+  PREFER_REFRESH,
+  WhirlpoolAccountFetchOptions,
+} from "../network/public/account-fetcher";
 import { PDAUtil, PoolUtil, SwapUtils } from "../utils/public";
 import { convertListToMap, filterNullObjects } from "../utils/txn-utils";
 import { calculatePricesForQuoteToken, convertAmount, isSubset } from "./calculate-pool-prices";
@@ -89,12 +93,7 @@ export class PriceModule {
       AddressUtil.toStrings(filteredPoolAddresses)
     );
 
-    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(
-      ctx,
-      poolMap,
-      config,
-      opts
-    );
+    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(ctx, poolMap, config, opts);
     const mints = Array.from(
       Object.values(poolMap).reduce((acc, pool) => {
         acc.add(pool.tokenMintA.toBase58());

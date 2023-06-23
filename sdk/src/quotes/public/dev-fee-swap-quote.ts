@@ -2,7 +2,10 @@ import { Address } from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
-import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-fetcher";
+import {
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "../../network/public/account-fetcher";
 import { Whirlpool } from "../../whirlpool-client";
 import { NormalSwapQuote, swapQuoteByInputToken } from "./swap-quote";
 

@@ -43,7 +43,7 @@ export class WhirlpoolContext {
     connection: Connection,
     wallet: Wallet,
     programId: PublicKey,
-    cache = new WhirlpoolAccountFetcher(connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
+    fetcher: WhirlpoolAccountFetcherInterface = new WhirlpoolAccountFetcher(connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
@@ -56,7 +56,7 @@ export class WhirlpoolContext {
       anchorProvider,
       anchorProvider.wallet,
       program,
-      cache,
+      fetcher,
       lookupTableFetcher,
       opts
     );
@@ -65,7 +65,7 @@ export class WhirlpoolContext {
   public static fromWorkspace(
     provider: AnchorProvider,
     program: Program,
-    fetcher = new WhirlpoolAccountFetcher(provider.connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
+    fetcher: WhirlpoolAccountFetcherInterface = new WhirlpoolAccountFetcher(provider.connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ) {
@@ -82,7 +82,7 @@ export class WhirlpoolContext {
   public static withProvider(
     provider: AnchorProvider,
     programId: PublicKey,
-    fetcher = new WhirlpoolAccountFetcher(provider.connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
+    fetcher: WhirlpoolAccountFetcherInterface = new WhirlpoolAccountFetcher(provider.connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {

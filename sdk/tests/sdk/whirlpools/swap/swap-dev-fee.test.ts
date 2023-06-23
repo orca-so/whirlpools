@@ -11,7 +11,7 @@ import {
   WhirlpoolContext
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
-import { PREFER_REFRESH } from "../../../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../../../src/network/public/account-fetcher";
 import { swapQuoteByInputTokenWithDevFees } from "../../../../src/quotes/public/dev-fee-swap-quote";
 import {
   assertDevFeeQuotes,

@@ -11,7 +11,7 @@ import { PublicKey } from "@solana/web3.js";
 import { ExecutableRoute, RoutingOptions, TradeRoute } from ".";
 import { WhirlpoolContext } from "../../context";
 import { getSwapFromRoute } from "../../instructions/composites/swap-with-route";
-import { AVOID_REFRESH } from "../../network/public/account-cache";
+import { AVOID_REFRESH } from "../../network/public/account-fetcher";
 import { isWalletConnected } from "../../utils/wallet-utils";
 
 /**

@@ -25,7 +25,7 @@ import {
   WhirlpoolContext,
   twoHopSwapQuoteFromSwapQuotes,
 } from "../..";
-import { AVOID_REFRESH, WhirlpoolAccountFetchOptions } from "../../network/public/account-cache";
+import { AVOID_REFRESH, WhirlpoolAccountFetchOptions } from "../../network/public/account-fetcher";
 import { adjustForSlippage } from "../../utils/position-util";
 import { contextOptionsToBuilderOptions } from "../../utils/txn-utils";
 import { swapIx } from "../swap-ix";

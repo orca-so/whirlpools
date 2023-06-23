@@ -2,7 +2,7 @@ import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, PDA } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
-import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-cache";
+import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-fetcher";
 import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,

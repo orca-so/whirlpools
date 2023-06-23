@@ -9,7 +9,7 @@ import {
   collectProtocolFees,
 } from "../instructions/composites";
 import { WhirlpoolIx } from "../ix";
-import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../network/public/account-cache";
+import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../network/public/account-fetcher";
 import { WhirlpoolRouter, WhirlpoolRouterBuilder } from "../router/public";
 import { WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
@@ -26,7 +26,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     return this.ctx;
   }
 
-  public getCache(): WhirlpoolAccountFetcherInterface {
+  public getFetcher(): WhirlpoolAccountFetcherInterface {
     return this.ctx.fetcher;
   }
 

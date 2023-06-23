@@ -11,7 +11,7 @@ import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PositionData, WhirlpoolContext } from "../..";
 import { WhirlpoolIx } from "../../ix";
-import { AVOID_REFRESH, WhirlpoolAccountFetchOptions } from "../../network/public/account-cache";
+import { AVOID_REFRESH, WhirlpoolAccountFetchOptions } from "../../network/public/account-fetcher";
 import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
 import { checkMergedTransactionSizeIsValid, convertListToMap } from "../../utils/txn-utils";

@@ -3,7 +3,7 @@ import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { WhirlpoolContext } from "../..";
-import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-cache";
+import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../../network/public/account-fetcher";
 import {
   MAX_SQRT_PRICE,
   MAX_SWAP_TICK_ARRAYS,

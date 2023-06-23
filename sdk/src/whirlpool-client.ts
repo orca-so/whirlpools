@@ -4,7 +4,7 @@ import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
 import { DevFeeSwapInput, SwapInput } from "./instructions";
-import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "./network/public/account-cache";
+import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "./network/public/account-fetcher";
 import { WhirlpoolRouter } from "./router/public";
 import {
   DecreaseLiquidityInput,
@@ -31,7 +31,7 @@ export interface WhirlpoolClient {
    * Get an WhirlpoolAccountCacheInterface to fetch and cache Whirlpool accounts
    * @return an WhirlpoolAccountCacheInterface instance
    */
-  getCache: () => WhirlpoolAccountFetcherInterface;
+  getFetcher: () => WhirlpoolAccountFetcherInterface;
 
   /**
    * Get a WhirlpoolRouter to help generate the best prices when transacting across a set of pools.

@@ -2,7 +2,7 @@ import { Address } from "@coral-xyz/anchor";
 import { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { AddressLookupTableAccount } from "@solana/web3.js";
 import BN from "bn.js";
-import { WhirlpoolAccountFetchOptions } from "../../network/public/account-cache";
+import { WhirlpoolAccountFetchOptions } from "../../network/public/account-fetcher";
 import { SwapQuote } from "../../quotes/public";
 import { Path } from "../../utils/public";
 import { AtaAccountInfo, RouteSelectOptions } from "./router-utils";

@@ -11,7 +11,7 @@ import {
   WhirlpoolIx,
   toTx
 } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
 import { decreaseLiquidityQuoteByLiquidityWithParams } from "../../src/quotes/public/decrease-liquidity-quote";
 import {
   TickSpacing,

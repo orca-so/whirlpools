@@ -13,7 +13,7 @@ import {
   TickData,
   WhirlpoolContext
 } from "../../src";
-import { PREFER_REFRESH, WhirlpoolAccountFetcherInterface } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH, WhirlpoolAccountFetcherInterface } from "../../src/network/public/account-fetcher";
 
 export const testWhirlpoolData = {
   whirlpoolsConfig: Keypair.generate().publicKey,

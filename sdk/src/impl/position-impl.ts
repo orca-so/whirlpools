@@ -20,7 +20,7 @@ import {
   increaseLiquidityIx,
   updateFeesAndRewardsIx,
 } from "../instructions";
-import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions } from "../network/public/account-cache";
+import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions } from "../network/public/account-fetcher";
 import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";

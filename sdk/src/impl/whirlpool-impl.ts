@@ -23,7 +23,7 @@ import {
   openPositionWithMetadataIx,
   swapAsync,
 } from "../instructions";
-import { AVOID_REFRESH, PREFER_REFRESH } from "../network/public/account-cache";
+import { AVOID_REFRESH, PREFER_REFRESH } from "../network/public/account-fetcher";
 import {
   collectFeesQuote,
   collectRewardsQuote,

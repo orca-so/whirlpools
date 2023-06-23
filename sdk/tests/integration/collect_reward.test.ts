@@ -9,7 +9,7 @@ import {
   NUM_REWARDS, toTx,
   WhirlpoolContext, WhirlpoolIx
 } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
 import {
   approveToken,
   createAndMintToTokenAccount,

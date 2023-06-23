@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
 import { TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";

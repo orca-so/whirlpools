@@ -1,6 +1,6 @@
 import BN from "bn.js";
 import { PoolUtil, TokenInfo } from "..";
-import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../network/public/account-cache";
+import { WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../network/public/account-fetcher";
 import {
   TokenAccountInfo,
   WhirlpoolData,

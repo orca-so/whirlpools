@@ -16,7 +16,7 @@ import {
   toTx
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
-import { PREFER_REFRESH } from "../../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../../src/network/public/account-fetcher";
 import {
   ONE_SOL,
   TickSpacing,

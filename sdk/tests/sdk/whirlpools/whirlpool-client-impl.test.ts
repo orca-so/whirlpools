@@ -9,7 +9,7 @@ import {
   TickUtil,
   WhirlpoolContext
 } from "../../../src";
-import { PREFER_REFRESH } from "../../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../../src/network/public/account-fetcher";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { buildTestPoolParams } from "../../utils/init-utils";

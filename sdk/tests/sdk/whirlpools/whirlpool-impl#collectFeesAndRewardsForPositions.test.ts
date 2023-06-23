@@ -18,7 +18,7 @@ import {
   collectRewardsQuote,
   toTx
 } from "../../../src";
-import { PREFER_REFRESH } from "../../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../../src/network/public/account-fetcher";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";

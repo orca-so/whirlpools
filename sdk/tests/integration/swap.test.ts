@@ -19,7 +19,7 @@ import {
   swapQuoteByInputToken,
   toTx
 } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
 import { MAX_U64, TickSpacing, ZERO_BN, getTokenBalance } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import {

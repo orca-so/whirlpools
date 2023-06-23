@@ -5,7 +5,7 @@ import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { TickSpacing } from ".";
 import { TICK_ARRAY_SIZE, Whirlpool, WhirlpoolClient, WhirlpoolContext } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
 import {
   FundedPositionParams,
   fundPositionsWithClient,

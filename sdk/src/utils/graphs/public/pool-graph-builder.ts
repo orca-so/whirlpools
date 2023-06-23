@@ -1,5 +1,5 @@
 import { Address } from "@coral-xyz/anchor";
-import { AVOID_REFRESH, WhirlpoolAccountFetcherInterface } from "../../../network/public/account-cache";
+import { AVOID_REFRESH, WhirlpoolAccountFetcherInterface } from "../../../network/public/account-fetcher";
 import { AdjacencyListPoolGraph } from "../adjacency-list-pool-graph";
 import { PoolGraph, PoolTokenPair } from "./pool-graph";
 

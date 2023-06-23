@@ -3,7 +3,7 @@ import { PDA } from "@orca-so/common-sdk";
 import { WhirlpoolContext } from ".";
 import { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
-import { WhirlpoolAccountFetchOptions } from "./network/public/account-cache";
+import { WhirlpoolAccountFetchOptions } from "./network/public/account-fetcher";
 
 /**
  * Instruction builders for the Whirlpools program.

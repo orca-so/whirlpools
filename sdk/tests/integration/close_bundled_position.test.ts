@@ -12,7 +12,7 @@ import {
   increaseLiquidityQuoteByInputTokenWithParams,
   toTx
 } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
 import {
   ONE_SOL,
   TickSpacing,

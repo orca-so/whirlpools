@@ -9,7 +9,7 @@ import {
   toTx,
   WhirlpoolContext
 } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
 import {
   createMintInstructions,
   mintToDestination

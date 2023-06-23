@@ -1,4 +1,4 @@
-import { AccountCache, Address, BasicSupportedTypes, ParsableEntity, ParsableMintInfo, ParsableTokenAccountInfo, RetentionPolicy, SimpleAccountFetchOptions, SimpleAccountFetcher } from "@orca-so/common-sdk";
+import { AccountFetcher, Address, BasicSupportedTypes, ParsableEntity, ParsableMintInfo, ParsableTokenAccountInfo, RetentionPolicy, SimpleAccountFetchOptions, SimpleAccountFetcher } from "@orca-so/common-sdk";
 import { AccountLayout, Mint, Account as TokenAccount } from "@solana/spl-token";
 import { Connection } from "@solana/web3.js";
 import { ParsableFeeTier, ParsablePosition, ParsablePositionBundle, ParsableTickArray, ParsableWhirlpool, ParsableWhirlpoolsConfig } from "../..";
@@ -22,7 +22,7 @@ export type WhirlpoolAccountFetchOptions = SimpleAccountFetchOptions
 export const PREFER_REFRESH: WhirlpoolAccountFetchOptions = { maxAge: 0 };
 export const AVOID_REFRESH: WhirlpoolAccountFetchOptions = { maxAge: Number.POSITIVE_INFINITY };
 
-export interface WhirlpoolAccountFetcherInterface extends AccountCache<WhirlpoolSupportedTypes, WhirlpoolAccountFetchOptions> {
+export interface WhirlpoolAccountFetcherInterface extends AccountFetcher<WhirlpoolSupportedTypes, WhirlpoolAccountFetchOptions> {
   getAccountRentExempt(refresh?: boolean): Promise<number>
   getPool(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<WhirlpoolData | null>
   getPools(addresses: Address[], opts?: WhirlpoolAccountFetchOptions): Promise<ReadonlyMap<string, WhirlpoolData | null>>

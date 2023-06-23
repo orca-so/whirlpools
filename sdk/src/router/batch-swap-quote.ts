@@ -2,7 +2,7 @@ import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import invariant from "tiny-invariant";
-import { WhirlpoolAccountFetcherInterface, WhirlpoolAccountFetchOptions } from "../network/public/account-cache";
+import { WhirlpoolAccountFetcherInterface, WhirlpoolAccountFetchOptions } from "../network/public/account-fetcher";
 import { SwapQuoteParam } from "../quotes/public";
 import { PoolUtil, SwapDirection, SwapUtils } from "../utils/public";
 

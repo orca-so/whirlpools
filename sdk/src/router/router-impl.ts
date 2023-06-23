@@ -4,7 +4,7 @@ import { Account } from "@solana/spl-token";
 import { WhirlpoolContext } from "..";
 import { RouteQueryErrorCode, SwapErrorCode, WhirlpoolsError } from "../errors/errors";
 import { getSwapFromRoute } from "../instructions/composites/swap-with-route";
-import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../network/public/account-cache";
+import { AVOID_REFRESH, PREFER_REFRESH, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface } from "../network/public/account-fetcher";
 import { Path, PoolGraph, SwapUtils } from "../utils/public";
 import { getBestRoutesFromQuoteMap } from "./convert-quote-map";
 import {

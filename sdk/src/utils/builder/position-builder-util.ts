@@ -1,5 +1,5 @@
 import { WhirlpoolContext } from "../..";
-import { WhirlpoolAccountFetchOptions } from "../../network/public/account-cache";
+import { WhirlpoolAccountFetchOptions } from "../../network/public/account-fetcher";
 import { PositionData, WhirlpoolData } from "../../types/public";
 import { PDAUtil } from "../public";
 

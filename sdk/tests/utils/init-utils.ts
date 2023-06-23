@@ -27,7 +27,7 @@ import {
   WhirlpoolIx,
   toTx
 } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
 import {
   TestConfigParams,

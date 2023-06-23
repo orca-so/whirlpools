@@ -4,7 +4,7 @@ import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import { PDAUtil, PositionData, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
-import { PREFER_REFRESH } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
 import { sleep, TickSpacing, ZERO_BN } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";

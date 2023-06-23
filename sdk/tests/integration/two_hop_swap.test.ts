@@ -15,7 +15,7 @@ import {
   WhirlpoolIx
 } from "../../src";
 import { TwoHopSwapParams } from "../../src/instructions";
-import { PREFER_REFRESH } from "../../src/network/public/account-cache";
+import { PREFER_REFRESH } from "../../src/network/public/account-fetcher";
 import { getTokenBalance, TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import {

@@ -7,7 +7,7 @@ import { DevFeeSwapInput, SwapInput } from "./instructions";
 import {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
-} from "./network/public/account-fetcher";
+} from "./network/public/fetcher";
 import { WhirlpoolRouter } from "./router/public";
 import {
   DecreaseLiquidityInput,

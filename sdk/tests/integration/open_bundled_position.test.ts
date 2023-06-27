@@ -15,7 +15,7 @@ import {
   WhirlpoolContext,
   WhirlpoolIx
 } from "../../src";
-import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
   approveToken,
   createAssociatedTokenAccount,

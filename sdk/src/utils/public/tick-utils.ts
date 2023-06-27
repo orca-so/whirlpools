@@ -5,7 +5,7 @@ import invariant from "tiny-invariant";
 import {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
-} from "../../network/public/account-fetcher";
+} from "../../network/public/fetcher";
 import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,

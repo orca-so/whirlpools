@@ -24,7 +24,7 @@ import {
   IGNORE_CACHE,
   PREFER_CACHE,
   WhirlpoolAccountFetchOptions,
-} from "../network/public/account-fetcher";
+} from "../network/public/fetcher";
 import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";

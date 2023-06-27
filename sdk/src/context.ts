@@ -12,7 +12,7 @@ import {
   DEFAULT_WHIRLPOOL_RETENTION_POLICY,
   WhirlpoolAccountFetcher,
   WhirlpoolAccountFetcherInterface,
-} from "./network/public/account-fetcher";
+} from "./network/public/fetcher";
 import { contextOptionsToBuilderOptions } from "./utils/txn-utils";
 
 /**

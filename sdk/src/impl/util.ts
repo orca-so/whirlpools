@@ -3,7 +3,7 @@ import { PoolUtil, TokenInfo } from "..";
 import {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
-} from "../network/public/account-fetcher";
+} from "../network/public/fetcher";
 import {
   TokenAccountInfo,
   WhirlpoolData,

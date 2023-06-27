@@ -5,7 +5,7 @@ import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
 import {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
-} from "../../network/public/account-fetcher";
+} from "../../network/public/fetcher";
 import { Whirlpool } from "../../whirlpool-client";
 import { NormalSwapQuote, swapQuoteByInputToken } from "./swap-quote";
 

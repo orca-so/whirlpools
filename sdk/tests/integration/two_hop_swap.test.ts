@@ -15,7 +15,7 @@ import {
   WhirlpoolIx
 } from "../../src";
 import { TwoHopSwapParams } from "../../src/instructions";
-import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { getTokenBalance, TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import {

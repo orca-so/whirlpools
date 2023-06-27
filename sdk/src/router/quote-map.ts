@@ -3,7 +3,7 @@ import { AddressUtil, Percentage } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { SwapErrorCode } from "../errors/errors";
-import { PREFER_CACHE, WhirlpoolAccountFetcherInterface } from "../network/public/account-fetcher";
+import { PREFER_CACHE, WhirlpoolAccountFetcherInterface } from "../network/public/fetcher";
 import { SwapQuoteParam, swapQuoteWithParams } from "../quotes/public";
 import { Path } from "../utils/public";
 import { SwapQuoteRequest, batchBuildSwapQuoteParams } from "./batch-swap-quote";

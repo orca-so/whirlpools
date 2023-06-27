@@ -1,7 +1,7 @@
 import { resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { SwapUtils, TickArrayUtil, Whirlpool, WhirlpoolContext } from "../..";
-import { WhirlpoolAccountFetchOptions } from "../../network/public/account-fetcher";
+import { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
 import { SwapInput, swapIx } from "../swap-ix";
 
 export type SwapAsyncParams = {

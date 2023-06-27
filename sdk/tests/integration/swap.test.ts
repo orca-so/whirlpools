@@ -19,7 +19,7 @@ import {
   swapQuoteByInputToken,
   toTx
 } from "../../src";
-import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { MAX_U64, TickSpacing, ZERO_BN, getTokenBalance } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import {

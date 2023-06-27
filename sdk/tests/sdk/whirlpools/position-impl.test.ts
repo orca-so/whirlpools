@@ -10,7 +10,7 @@ import {
   PriceMath
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
-import { IGNORE_CACHE } from "../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { createAssociatedTokenAccount, TickSpacing, transferToken } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";

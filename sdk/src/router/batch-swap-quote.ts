@@ -5,7 +5,7 @@ import invariant from "tiny-invariant";
 import {
   WhirlpoolAccountFetcherInterface,
   WhirlpoolAccountFetchOptions,
-} from "../network/public/account-fetcher";
+} from "../network/public/fetcher";
 import { SwapQuoteParam } from "../quotes/public";
 import { PoolUtil, SwapDirection, SwapUtils } from "../utils/public";
 

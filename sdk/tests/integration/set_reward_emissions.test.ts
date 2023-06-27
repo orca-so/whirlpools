@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
-import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { createAndMintToTokenAccount, mintToDestination, TickSpacing, ZERO_BN } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initializeReward, initTestPool } from "../utils/init-utils";

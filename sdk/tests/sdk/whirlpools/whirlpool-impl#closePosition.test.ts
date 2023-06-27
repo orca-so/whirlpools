@@ -14,7 +14,7 @@ import {
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidity
 } from "../../../src";
-import { IGNORE_CACHE } from "../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing, ZERO_BN, createAssociatedTokenAccount, sleep, transferToken } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";

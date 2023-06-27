@@ -12,7 +12,7 @@ import {
   buildWhirlpoolClient,
   collectRewardsQuote
 } from "../../../src";
-import { IGNORE_CACHE } from "../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing, sleep } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";

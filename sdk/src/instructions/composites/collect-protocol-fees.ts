@@ -3,7 +3,7 @@ import { AddressUtil, Instruction, TokenUtil, TransactionBuilder } from "@orca-s
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PACKET_DATA_SIZE } from "@solana/web3.js";
 import { WhirlpoolContext } from "../..";
-import { PREFER_CACHE } from "../../network/public/account-fetcher";
+import { PREFER_CACHE } from "../../network/public/fetcher";
 import {
   TokenMintTypes,
   addNativeMintHandlingIx,

@@ -9,7 +9,7 @@ import {
   PREFER_CACHE,
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
-} from "../network/public/account-fetcher";
+} from "../network/public/fetcher";
 import { Path, PoolGraph, SwapUtils } from "../utils/public";
 import { getBestRoutesFromQuoteMap } from "./convert-quote-map";
 import {

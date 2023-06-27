@@ -2,7 +2,7 @@ import { Address } from "@coral-xyz/anchor";
 import {
   PREFER_CACHE,
   WhirlpoolAccountFetcherInterface,
-} from "../../../network/public/account-fetcher";
+} from "../../../network/public/fetcher";
 import { AdjacencyListPoolGraph } from "../adjacency-list-pool-graph";
 import { PoolGraph, PoolTokenPair } from "./pool-graph";
 

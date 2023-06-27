@@ -11,7 +11,7 @@ import {
   WhirlpoolContext
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
-import { IGNORE_CACHE } from "../../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import { swapQuoteByInputTokenWithDevFees } from "../../../../src/quotes/public/dev-fee-swap-quote";
 import {
   assertDevFeeQuotes,

@@ -7,7 +7,7 @@ import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import { NUM_REWARDS, PDAUtil, POSITION_BUNDLE_SIZE, PoolUtil, PositionBundleData, PriceMath, Whirlpool, WhirlpoolClient, WhirlpoolIx, buildWhirlpoolClient, collectFeesQuote, toTx } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
-import { IGNORE_CACHE } from "../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing, ZERO_BN, createTokenAccount } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";

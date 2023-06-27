@@ -12,7 +12,7 @@ import {
   swapQuoteWithParams
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
-import { IGNORE_CACHE } from "../../../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import { adjustForSlippage } from "../../../../src/utils/position-util";
 import { TickSpacing } from "../../../utils";
 import { defaultConfirmOptions } from "../../../utils/const";

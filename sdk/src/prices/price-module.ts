@@ -15,7 +15,7 @@ import {
   IGNORE_CACHE,
   PREFER_CACHE,
   WhirlpoolAccountFetchOptions,
-} from "../network/public/account-fetcher";
+} from "../network/public/fetcher";
 import { PDAUtil, PoolUtil, SwapUtils } from "../utils/public";
 import { convertListToMap, filterNullObjects } from "../utils/txn-utils";
 import { calculatePricesForQuoteToken, convertAmount, isSubset } from "./calculate-pool-prices";

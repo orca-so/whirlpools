@@ -6,7 +6,7 @@ import { SwapInput } from "../../instructions";
 import {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
-} from "../../network/public/account-fetcher";
+} from "../../network/public/fetcher";
 import { TickArray, WhirlpoolData } from "../../types/public";
 import { PoolUtil, SwapDirection } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";

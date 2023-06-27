@@ -14,7 +14,7 @@ import {
   WhirlpoolIx,
   toTx
 } from "../../src";
-import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
 import {
   MAX_U64,

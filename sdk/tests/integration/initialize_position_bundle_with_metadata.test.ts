@@ -19,7 +19,7 @@ import {
   WHIRLPOOL_NFT_UPDATE_AUTH,
   WhirlpoolContext,
 } from "../../src";
-import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
   createMintInstructions,
   mintToDestination

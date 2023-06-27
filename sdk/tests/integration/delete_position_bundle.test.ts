@@ -5,7 +5,7 @@ import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
 import { InitPoolParams, POSITION_BUNDLE_SIZE, PositionBundleData, WhirlpoolIx, toTx } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
-import { IGNORE_CACHE } from "../../src/network/public/account-fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
   ONE_SOL,
   TickSpacing,

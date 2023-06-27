@@ -6,7 +6,7 @@ import { WhirlpoolContext } from "../..";
 import {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
-} from "../../network/public/account-fetcher";
+} from "../../network/public/fetcher";
 import {
   MAX_SQRT_PRICE,
   MAX_SWAP_TICK_ARRAYS,

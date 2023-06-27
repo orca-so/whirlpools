@@ -14,6 +14,7 @@ import {
   WhirlpoolData,
   WhirlpoolIx
 } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
   approveToken,
   createTokenAccount,
@@ -121,7 +122,7 @@ describe("collect_fees", () => {
 
     const positionBeforeCollect = (await fetcher.getPosition(
       positions[0].publicKey,
-      true
+      IGNORE_CACHE
     )) as PositionData;
     assert.ok(positionBeforeCollect.feeOwedA.eq(new BN(581)));
     assert.ok(positionBeforeCollect.feeOwedB.eq(new BN(581)));
@@ -155,7 +156,7 @@ describe("collect_fees", () => {
         tokenVaultB: tokenVaultBKeypair.publicKey,
       })
     ).buildAndExecute();
-    const positionAfter = (await fetcher.getPosition(positions[0].publicKey, true)) as PositionData;
+    const positionAfter = (await fetcher.getPosition(positions[0].publicKey, IGNORE_CACHE)) as PositionData;
     const feeBalanceA = await getTokenBalance(provider, feeAccountA);
     const feeBalanceB = await getTokenBalance(provider, feeAccountB);
 
@@ -174,7 +175,7 @@ describe("collect_fees", () => {
         tickArrayUpper: positions[1].tickArrayUpper,
       })
     ).buildAndExecute();
-    const outOfRangePosition = await fetcher.getPosition(positions[1].publicKey, true);
+    const outOfRangePosition = await fetcher.getPosition(positions[1].publicKey, IGNORE_CACHE);
     assert.ok(outOfRangePosition?.feeOwedA.eq(ZERO_BN));
     assert.ok(outOfRangePosition?.feeOwedB.eq(ZERO_BN));
   });

@@ -10,6 +10,7 @@ import {
   WhirlpoolContext
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import { assertInputOutputQuoteEqual, assertQuoteAndResults, TickSpacing } from "../../../utils";
 import { defaultConfirmOptions } from "../../../utils/const";
 import {
@@ -68,7 +69,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
 
     const outputTokenQuote = await swapQuoteByOutputToken(
@@ -78,7 +79,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
 
@@ -131,7 +132,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -140,7 +141,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
 
@@ -190,7 +191,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -199,7 +200,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -248,7 +249,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -257,7 +258,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -309,7 +310,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -318,7 +319,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -367,7 +368,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -376,7 +377,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -425,7 +426,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -434,7 +435,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -483,7 +484,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -492,7 +493,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -541,7 +542,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -550,7 +551,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -599,7 +600,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -608,7 +609,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -650,7 +651,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -659,7 +660,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -701,7 +702,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -710,7 +711,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -752,7 +753,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -761,7 +762,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -803,7 +804,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -812,7 +813,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -884,7 +885,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -893,7 +894,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -964,7 +965,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const outputTokenQuote = await swapQuoteByOutputToken(
       whirlpool,
@@ -973,7 +974,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -1016,8 +1017,7 @@ describe("swap traversal tests", () => {
           slippageTolerance,
           ctx.program.programId,
           fetcher,
-
-          true
+          IGNORE_CACHE
         ),
       (err) => {
         const whirlErr = err as WhirlpoolsError;
@@ -1064,8 +1064,7 @@ describe("swap traversal tests", () => {
           slippageTolerance,
           ctx.program.programId,
           fetcher,
-
-          true
+          IGNORE_CACHE
         ),
       (err) => {
         const whirlErr = err as WhirlpoolsError;
@@ -1112,7 +1111,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     await (await whirlpool.swap(quote)).buildAndExecute();
 
@@ -1154,7 +1153,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     await (await whirlpool.swap(quote)).buildAndExecute();
 
@@ -1197,7 +1196,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const ta2StartTickIndex = 11264
     assert.ok(inputTokenQuote.estimatedEndTickIndex > ta2StartTickIndex); // traverse ta0, ta1, and ta2
@@ -1209,7 +1208,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -1253,7 +1252,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const ta2StartTickIndex = 11264
     assert.ok(inputTokenQuote.estimatedEndTickIndex > ta2StartTickIndex); // traverse ta0, ta1, and ta2
@@ -1265,7 +1264,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -1309,7 +1308,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     const ta2StartTickIndex = 11264
     assert.ok(inputTokenQuote.estimatedEndTickIndex > ta2StartTickIndex); // traverse ta0, ta1, and ta2
@@ -1321,7 +1320,7 @@ describe("swap traversal tests", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assertInputOutputQuoteEqual(inputTokenQuote, outputTokenQuote);
     await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
@@ -1363,7 +1362,7 @@ describe("swap traversal tests", () => {
       ctx.program.programId,
       whirlpool.getAddress(),
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assert.throws(
       () =>
@@ -1415,7 +1414,7 @@ describe("swap traversal tests", () => {
       ctx.program.programId,
       whirlpool.getAddress(),
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assert.throws(
       () =>

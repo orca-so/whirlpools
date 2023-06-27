@@ -4,7 +4,10 @@ import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
 import { DevFeeSwapInput, SwapInput } from "./instructions";
-import { AccountFetcher } from "./network/public";
+import {
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "./network/public/fetcher";
 import { WhirlpoolRouter } from "./router/public";
 import {
   DecreaseLiquidityInput,
@@ -28,10 +31,10 @@ export interface WhirlpoolClient {
   getContext: () => WhirlpoolContext;
 
   /**
-   * Get an AccountFetcher to fetch Whirlpool accounts
-   * @return an AccountFetcher instance
+   * Get an WhirlpoolAccountCacheInterface to fetch and cache Whirlpool accounts
+   * @return an WhirlpoolAccountCacheInterface instance
    */
-  getFetcher: () => AccountFetcher;
+  getFetcher: () => WhirlpoolAccountFetcherInterface;
 
   /**
    * Get a WhirlpoolRouter to help generate the best prices when transacting across a set of pools.
@@ -43,49 +46,49 @@ export interface WhirlpoolClient {
   /**
    * Get a Whirlpool object to interact with the Whirlpool account at the given address.
    * @param poolAddress the address of the Whirlpool account
-   * @param refresh true to always request newest data from chain with this request
+   * @param opts an options object to define fetch and cache options when accessing on-chain accounts
    * @return a Whirlpool object to interact with
    */
-  getPool: (poolAddress: Address, refresh?: boolean) => Promise<Whirlpool>;
+  getPool: (poolAddress: Address, opts?: WhirlpoolAccountFetchOptions) => Promise<Whirlpool>;
 
   /**
    * Get a list of Whirlpool objects matching the provided list of addresses.
    * @param poolAddresses the addresses of the Whirlpool accounts
-   * @param refresh true to always request newest data from chain with this request
+   * @param opts an options object to define fetch and cache options when accessing on-chain accounts
    * @return a list of Whirlpool objects to interact with
    */
-  getPools: (poolAddresses: Address[], refresh?: boolean) => Promise<Whirlpool[]>;
+  getPools: (poolAddresses: Address[], opts?: WhirlpoolAccountFetchOptions) => Promise<Whirlpool[]>;
 
   /**
    * Get a Position object to interact with the Position account at the given address.
    * @param positionAddress the address of the Position account
-   * @param refresh true to always request newest data from chain with this request
+   * @param opts an options object to define fetch and cache options when accessing on-chain accounts
    * @return a Position object to interact with.
    * @throws error when address does not return a Position account.
    */
-  getPosition: (positionAddress: Address, refresh?: boolean) => Promise<Position>;
+  getPosition: (positionAddress: Address, opts?: WhirlpoolAccountFetchOptions) => Promise<Position>;
 
   /**
    * Get a list of Position objects to interact with the Position account at the given addresses.
    * @param positionAddress the addresses of the Position accounts
-   * @param refresh true to always request newest data from chain with this request
+   * @param opts an options object to define fetch and cache options when accessing on-chain accounts
    * @return a Record object between account address and Position. If an address is not a Position account, it will be null.
    */
   getPositions: (
     positionAddresses: Address[],
-    refresh?: boolean
+    opts?: WhirlpoolAccountFetchOptions
   ) => Promise<Record<string, Position | null>>;
 
   /**
    * Collect all fees and rewards from a list of positions.
    * @experimental
    * @param positionAddress the addresses of the Position accounts to collect fee & rewards from.
-   * @param refresh true to always request newest data from chain with this request
+   * @param opts an options object to define fetch and cache options when accessing on-chain accounts
    * @returns A set of transaction-builders to resolve ATA for affliated tokens, collect fee & rewards for all positions.
    */
   collectFeesAndRewardsForPositions: (
     positionAddresses: Address[],
-    refresh?: boolean
+    opts?: WhirlpoolAccountFetchOptions
   ) => Promise<TransactionBuilder[]>;
 
   /**
@@ -187,13 +190,13 @@ export interface Whirlpool {
    *
    * @param ticks - A group of ticks that define the desired tick-arrays to initialize. If the tick's array has been initialized, it will be ignored.
    * @param funder - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
-   * @param refresh - whether this operation will fetch for the latest accounts if a cache version is available.
+   * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @return a transaction that will initialize the defined tick-arrays if executed. Return null if all of the tick's arrays are initialized.
    */
   initTickArrayForTicks: (
     ticks: number[],
     funder?: Address,
-    refresh?: boolean
+    opts?: WhirlpoolAccountFetchOptions
   ) => Promise<TransactionBuilder | null>;
 
   /**
@@ -378,7 +381,7 @@ export interface Position {
    * @param destinationWallet - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
    * @param ataPayer - wallet that will fund the creation of the new associated token accounts
-   * @param refresh - set to true to bypass cached on-chain data
+   * @param opts an options object to define fetch and cache options when accessing on-chain accounts
    * @return the transaction that will collect fees from the position
    */
   collectFees: (
@@ -387,7 +390,7 @@ export interface Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    refresh?: boolean
+    opts?: WhirlpoolAccountFetchOptions
   ) => Promise<TransactionBuilder>;
 
   /**
@@ -401,7 +404,7 @@ export interface Position {
    * @param destinationWallet - the wallet to deposit tokens into when withdrawing from the position. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
    * @param ataPayer - wallet that will fund the creation of the new associated token accounts
-   * @param refresh - set to true to bypass cached on-chain data
+   * @param opts an options object to define fetch and cache options when accessing on-chain accounts
    * @return the transaction that will collect fees from the position
    */
   collectRewards: (
@@ -411,6 +414,6 @@ export interface Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    refresh?: boolean
+    opts?: WhirlpoolAccountFetchOptions
   ) => Promise<TransactionBuilder>;
 }

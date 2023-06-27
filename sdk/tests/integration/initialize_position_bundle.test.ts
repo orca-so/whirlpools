@@ -9,6 +9,7 @@ import {
   toTx,
   WhirlpoolContext
 } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
   createMintInstructions,
   mintToDestination
@@ -57,7 +58,7 @@ describe("initialize_position_bundle", () => {
 
   async function checkPositionBundleMint(positionBundleMintPubkey: PublicKey) {
     // verify position bundle Mint account
-    const positionBundleMint = (await ctx.fetcher.getMintInfo(positionBundleMintPubkey, true)) as Mint;
+    const positionBundleMint = (await ctx.fetcher.getMintInfo(positionBundleMintPubkey, IGNORE_CACHE)) as Mint;
     // should have NFT characteristics
     assert.strictEqual(positionBundleMint.decimals, 0);
     assert.ok(positionBundleMint.supply === 1n);
@@ -68,7 +69,7 @@ describe("initialize_position_bundle", () => {
 
   async function checkPositionBundleTokenAccount(positionBundleTokenAccountPubkey: PublicKey, owner: PublicKey, positionBundleMintPubkey: PublicKey) {
     // verify position bundle Token account
-    const positionBundleTokenAccount = (await ctx.fetcher.getTokenInfo(positionBundleTokenAccountPubkey, true)) as Account;
+    const positionBundleTokenAccount = (await ctx.fetcher.getTokenInfo(positionBundleTokenAccountPubkey, IGNORE_CACHE)) as Account;
     assert.ok(positionBundleTokenAccount.amount === 1n);
     assert.ok(positionBundleTokenAccount.mint.equals(positionBundleMintPubkey));
     assert.ok(positionBundleTokenAccount.owner.equals(owner));
@@ -76,7 +77,7 @@ describe("initialize_position_bundle", () => {
 
   async function checkPositionBundle(positionBundlePubkey: PublicKey, positionBundleMintPubkey: PublicKey) {
     // verify PositionBundle account
-    const positionBundle = (await ctx.fetcher.getPositionBundle(positionBundlePubkey, true)) as PositionBundleData;
+    const positionBundle = (await ctx.fetcher.getPositionBundle(positionBundlePubkey, IGNORE_CACHE)) as PositionBundleData;
     assert.ok(positionBundle.positionBundleMint.equals(positionBundleMintPubkey));
     assert.strictEqual(positionBundle.positionBitmap.length * 8, POSITION_BUNDLE_SIZE);
     for (const bitmap of positionBundle.positionBitmap) {

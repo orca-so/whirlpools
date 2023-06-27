@@ -11,6 +11,7 @@ import { PublicKey } from "@solana/web3.js";
 import { ExecutableRoute, RoutingOptions, TradeRoute } from ".";
 import { WhirlpoolContext } from "../../context";
 import { getSwapFromRoute } from "../../instructions/composites/swap-with-route";
+import { PREFER_CACHE } from "../../network/public/fetcher";
 import { isWalletConnected } from "../../utils/wallet-utils";
 
 /**
@@ -86,7 +87,7 @@ export class RouterUtils {
           resolvedAtaAccounts: opts.availableAtaAccounts ?? null,
           wallet: wallet.publicKey,
         },
-        false
+        PREFER_CACHE
       );
 
       if (!!opts.onRouteEvaluation) {

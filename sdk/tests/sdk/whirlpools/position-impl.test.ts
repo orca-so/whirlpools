@@ -10,6 +10,7 @@ import {
   PriceMath
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
+import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { createAssociatedTokenAccount, TickSpacing, transferToken } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
@@ -68,7 +69,7 @@ describe("position-impl", () => {
     );
 
     // [Action] Increase liquidity by 70 tokens of tokenB
-    const position = await client.getPosition(positionAddress.publicKey, true);
+    const position = await client.getPosition(positionAddress.publicKey, IGNORE_CACHE);
     const preIncreaseData = position.getData();
     const increase_quote = increaseLiquidityQuoteByInputToken(
       poolInitInfo.tokenMintB,
@@ -152,7 +153,7 @@ describe("position-impl", () => {
     );
 
     // [Action] Increase liquidity by 70 tokens of tokenB & create the ATA in the new source Wallet
-    const position = await client.getPosition(positionAddress.publicKey, true);
+    const position = await client.getPosition(positionAddress.publicKey, IGNORE_CACHE);
     const preIncreaseData = position.getData();
     const increase_quote = increaseLiquidityQuoteByInputToken(
       poolInitInfo.tokenMintB,

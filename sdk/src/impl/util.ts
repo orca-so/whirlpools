@@ -1,5 +1,9 @@
 import BN from "bn.js";
-import { AccountFetcher, PoolUtil, TokenInfo } from "..";
+import { PoolUtil, TokenInfo } from "..";
+import {
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "../network/public/fetcher";
 import {
   TokenAccountInfo,
   WhirlpoolData,
@@ -8,17 +12,17 @@ import {
 } from "../types/public";
 
 export async function getTokenMintInfos(
-  fetcher: AccountFetcher,
+  fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
-  refresh: boolean
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<TokenInfo[]> {
   const mintA = data.tokenMintA;
-  const infoA = await fetcher.getMintInfo(mintA, refresh);
+  const infoA = await fetcher.getMintInfo(mintA, opts);
   if (!infoA) {
     throw new Error(`Unable to fetch MintInfo for mint - ${mintA}`);
   }
   const mintB = data.tokenMintB;
-  const infoB = await fetcher.getMintInfo(mintB, refresh);
+  const infoB = await fetcher.getMintInfo(mintB, opts);
   if (!infoB) {
     throw new Error(`Unable to fetch MintInfo for mint - ${mintB}`);
   }
@@ -29,25 +33,25 @@ export async function getTokenMintInfos(
 }
 
 export async function getRewardInfos(
-  fetcher: AccountFetcher,
+  fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
-  refresh: boolean
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<WhirlpoolRewardInfo[]> {
   const rewardInfos: WhirlpoolRewardInfo[] = [];
   for (const rewardInfo of data.rewardInfos) {
-    rewardInfos.push(await getRewardInfo(fetcher, rewardInfo, refresh));
+    rewardInfos.push(await getRewardInfo(fetcher, rewardInfo, opts));
   }
   return rewardInfos;
 }
 
 async function getRewardInfo(
-  fetcher: AccountFetcher,
+  fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolRewardInfoData,
-  refresh: boolean
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<WhirlpoolRewardInfo> {
   const rewardInfo = { ...data, initialized: false, vaultAmount: new BN(0) };
   if (PoolUtil.isRewardInitialized(data)) {
-    const vaultInfo = await fetcher.getTokenInfo(data.vault, refresh);
+    const vaultInfo = await fetcher.getTokenInfo(data.vault, opts);
     if (!vaultInfo) {
       throw new Error(`Unable to fetch TokenAccountInfo for vault - ${data.vault}`);
     }
@@ -58,17 +62,17 @@ async function getRewardInfo(
 }
 
 export async function getTokenVaultAccountInfos(
-  fetcher: AccountFetcher,
+  fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
-  refresh: boolean
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<TokenAccountInfo[]> {
   const vaultA = data.tokenVaultA;
-  const vaultInfoA = await fetcher.getTokenInfo(vaultA, refresh);
+  const vaultInfoA = await fetcher.getTokenInfo(vaultA, opts);
   if (!vaultInfoA) {
     throw new Error(`Unable to fetch TokenAccountInfo for vault - ${vaultA}`);
   }
   const vaultB = data.tokenVaultB;
-  const vaultInfoB = await fetcher.getTokenInfo(vaultB, refresh);
+  const vaultInfoB = await fetcher.getTokenInfo(vaultB, opts);
   if (!vaultInfoB) {
     throw new Error(`Unable to fetch TokenAccountInfo for vault - ${vaultB}`);
   }

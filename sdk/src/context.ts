@@ -8,7 +8,10 @@ import {
 import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js";
 import { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
-import { AccountFetcher } from "./network/public";
+import {
+  WhirlpoolAccountFetcherInterface,
+  buildDefaultAccountFetcher,
+} from "./network/public/fetcher";
 import { contextOptionsToBuilderOptions } from "./utils/txn-utils";
 
 /**
@@ -30,7 +33,7 @@ export class WhirlpoolContext {
   readonly wallet: Wallet;
   readonly program: Program<Whirlpool>;
   readonly provider: AnchorProvider;
-  readonly fetcher: AccountFetcher;
+  readonly fetcher: WhirlpoolAccountFetcherInterface;
   readonly lookupTableFetcher: LookupTableFetcher | undefined;
   readonly opts: WhirlpoolContextOpts;
   readonly txBuilderOpts: TransactionBuilderOptions | undefined;
@@ -39,7 +42,7 @@ export class WhirlpoolContext {
     connection: Connection,
     wallet: Wallet,
     programId: PublicKey,
-    fetcher = new AccountFetcher(connection),
+    fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
@@ -61,7 +64,7 @@ export class WhirlpoolContext {
   public static fromWorkspace(
     provider: AnchorProvider,
     program: Program,
-    fetcher = new AccountFetcher(provider.connection),
+    fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(provider.connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ) {
@@ -78,7 +81,7 @@ export class WhirlpoolContext {
   public static withProvider(
     provider: AnchorProvider,
     programId: PublicKey,
-    fetcher = new AccountFetcher(provider.connection),
+    fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(provider.connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
@@ -97,7 +100,7 @@ export class WhirlpoolContext {
     provider: AnchorProvider,
     wallet: Wallet,
     program: Program,
-    fetcher: AccountFetcher,
+    fetcher: WhirlpoolAccountFetcherInterface,
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ) {

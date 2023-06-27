@@ -13,11 +13,11 @@ import {
 } from "../../types/public";
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<WhirlpoolsConfigData>>()
 export class ParsableWhirlpoolsConfig {
-  private constructor() { }
+  private constructor() {}
 
   public static parse(
     address: PublicKey,
@@ -37,11 +37,11 @@ export class ParsableWhirlpoolsConfig {
 }
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<WhirlpoolData>>()
 export class ParsableWhirlpool {
-  private constructor() { }
+  private constructor() {}
 
   public static parse(
     address: PublicKey,
@@ -61,11 +61,11 @@ export class ParsableWhirlpool {
 }
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<PositionData>>()
 export class ParsablePosition {
-  private constructor() { }
+  private constructor() {}
 
   public static parse(
     address: PublicKey,
@@ -85,11 +85,11 @@ export class ParsablePosition {
 }
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<TickArrayData>>()
 export class ParsableTickArray {
-  private constructor() { }
+  private constructor() {}
 
   public static parse(
     address: PublicKey,
@@ -109,11 +109,11 @@ export class ParsableTickArray {
 }
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<FeeTierData>>()
 export class ParsableFeeTier {
-  private constructor() { }
+  private constructor() {}
 
   public static parse(
     address: PublicKey,
@@ -133,11 +133,11 @@ export class ParsableFeeTier {
 }
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<PositionBundleData>>()
 export class ParsablePositionBundle {
-  private constructor() { }
+  private constructor() {}
 
   public static parse(
     address: PublicKey,

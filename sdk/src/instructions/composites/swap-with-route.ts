@@ -11,7 +11,7 @@ import {
   Account,
   NATIVE_MINT,
   createAssociatedTokenAccountInstruction,
-  getAssociatedTokenAddressSync
+  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
@@ -25,6 +25,7 @@ import {
   WhirlpoolContext,
   twoHopSwapQuoteFromSwapQuotes,
 } from "../..";
+import { PREFER_CACHE, WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
 import { adjustForSlippage } from "../../utils/position-util";
 import { contextOptionsToBuilderOptions } from "../../utils/txn-utils";
 import { swapIx } from "../swap-ix";
@@ -40,7 +41,7 @@ export type SwapFromRouteParams = {
 export async function getSwapFromRoute(
   ctx: WhirlpoolContext,
   params: SwapFromRouteParams,
-  refresh: boolean = false,
+  opts: WhirlpoolAccountFetchOptions = PREFER_CACHE,
   txBuilder: TransactionBuilder = new TransactionBuilder(
     ctx.connection,
     ctx.wallet,
@@ -107,7 +108,7 @@ export async function getSwapFromRoute(
   let uninitializedArrays = await TickArrayUtil.getUninitializedArraysString(
     requiredTickArrays,
     ctx.fetcher,
-    refresh
+    opts
   );
   if (uninitializedArrays) {
     throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
@@ -129,7 +130,7 @@ export async function getSwapFromRoute(
           ) as Account[]
         );
       } else {
-        return ctx.fetcher.listTokenInfos(keys, false);
+        return ctx.fetcher.getTokenInfos(keys, opts).then((result) => Array.from(result.values()));
       }
     }
   );
@@ -339,7 +340,7 @@ async function cachedResolveOrCreateNonNativeATAs(
         payer,
         ataAddress,
         ownerAddress,
-        tokenMintArray[index],
+        tokenMintArray[index]
       );
 
       resolvedInstruction = {

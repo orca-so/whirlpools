@@ -1,4 +1,5 @@
 import { WhirlpoolContext } from "../..";
+import { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
 import { PositionData, WhirlpoolData } from "../../types/public";
 import { PDAUtil } from "../public";
 
@@ -6,7 +7,7 @@ export async function getTickArrayDataForPosition(
   ctx: WhirlpoolContext,
   position: PositionData,
   whirlpool: WhirlpoolData,
-  refresh: boolean
+  opts?: WhirlpoolAccountFetchOptions
 ) {
   const lowerTickArrayKey = PDAUtil.getTickArrayFromTickIndex(
     position.tickLowerIndex,
@@ -21,5 +22,5 @@ export async function getTickArrayDataForPosition(
     ctx.program.programId
   ).publicKey;
 
-  return await ctx.fetcher.listTickArrays([lowerTickArrayKey, upperTickArrayKey], refresh);
+  return await ctx.fetcher.getTickArrays([lowerTickArrayKey, upperTickArrayKey], opts);
 }

@@ -23,6 +23,7 @@ import {
   openPositionWithMetadataIx,
   swapAsync,
 } from "../instructions";
+import { IGNORE_CACHE, PREFER_CACHE } from "../network/public/fetcher";
 import {
   collectFeesQuote,
   collectRewardsQuote,
@@ -124,14 +125,14 @@ export class WhirlpoolImpl implements Whirlpool {
     );
   }
 
-  async initTickArrayForTicks(ticks: number[], funder?: Address, refresh = true) {
+  async initTickArrayForTicks(ticks: number[], funder?: Address, opts = IGNORE_CACHE) {
     const initTickArrayStartPdas = await TickArrayUtil.getUninitializedArraysPDAs(
       ticks,
       this.ctx.program.programId,
       this.address,
       this.data.tickSpacing,
       this.ctx.fetcher,
-      refresh
+      opts
     );
 
     if (!initTickArrayStartPdas.length) {
@@ -191,7 +192,7 @@ export class WhirlpoolImpl implements Whirlpool {
         whirlpool: this,
         wallet: sourceWalletKey,
       },
-      true
+      IGNORE_CACHE
     );
   }
 
@@ -234,7 +235,7 @@ export class WhirlpoolImpl implements Whirlpool {
         whirlpool: this,
         wallet: sourceWalletKey,
       },
-      true
+      IGNORE_CACHE
     );
 
     txBuilder.addInstruction(swapTxBuilder.compressIx(true));
@@ -260,7 +261,7 @@ export class WhirlpoolImpl implements Whirlpool {
 
     invariant(liquidity.gt(new BN(0)), "liquidity must be greater than zero");
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.address, false);
+    const whirlpool = await this.ctx.fetcher.getPool(this.address, PREFER_CACHE);
     if (!whirlpool) {
       throw new Error(`Whirlpool not found: ${translateAddress(this.address).toBase58()}`);
     }
@@ -366,7 +367,7 @@ export class WhirlpoolImpl implements Whirlpool {
     positionWallet: PublicKey,
     payerKey: PublicKey
   ): Promise<TransactionBuilder[]> {
-    const positionData = await this.ctx.fetcher.getPosition(positionAddress, true);
+    const positionData = await this.ctx.fetcher.getPosition(positionAddress, IGNORE_CACHE);
     if (!positionData) {
       throw new Error(`Position not found: ${positionAddress.toBase58()}`);
     }
@@ -415,7 +416,7 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx,
       positionData,
       whirlpool,
-      true
+      IGNORE_CACHE
     );
 
     invariant(
@@ -537,7 +538,7 @@ export class WhirlpoolImpl implements Whirlpool {
         destinationWallet,
         positionWallet,
         payerKey,
-        true
+        IGNORE_CACHE
       );
 
       txBuilder.addInstruction(collectFeexTx.compressIx(false));
@@ -579,13 +580,13 @@ export class WhirlpoolImpl implements Whirlpool {
   }
 
   private async refresh() {
-    const account = await this.ctx.fetcher.getPool(this.address, true);
+    const account = await this.ctx.fetcher.getPool(this.address, IGNORE_CACHE);
     if (!!account) {
-      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, true);
+      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, IGNORE_CACHE);
       const [tokenVaultAInfo, tokenVaultBInfo] = await getTokenVaultAccountInfos(
         this.ctx.fetcher,
         account,
-        true
+        IGNORE_CACHE
       );
       this.data = account;
       this.tokenVaultAInfo = tokenVaultAInfo;

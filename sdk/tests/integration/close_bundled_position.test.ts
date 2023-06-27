@@ -12,6 +12,7 @@ import {
   increaseLiquidityQuoteByInputTokenWithParams,
   toTx
 } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
   ONE_SOL,
   TickSpacing,
@@ -86,8 +87,8 @@ describe("close_bundled_position", () => {
     );
     const { bundledPositionPda } = positionInitInfo.params;
 
-    const preAccount = await fetcher.getPosition(bundledPositionPda.publicKey, true);
-    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const preAccount = await fetcher.getPosition(bundledPositionPda.publicKey, IGNORE_CACHE);
+    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     checkBitmap(prePositionBundle!, [bundleIndex]);
     assert.ok(preAccount !== null);
 
@@ -103,8 +104,8 @@ describe("close_bundled_position", () => {
         receiver: receiverKeypair.publicKey,
       })
     ).buildAndExecute();
-    const postAccount = await fetcher.getPosition(bundledPositionPda.publicKey, true);
-    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const postAccount = await fetcher.getPosition(bundledPositionPda.publicKey, IGNORE_CACHE);
+    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     checkBitmap(postPositionBundle!, []);
     assert.ok(postAccount === null);
 
@@ -194,7 +195,7 @@ describe("close_bundled_position", () => {
     const { bundledPositionPda } = positionInitInfo.params;
 
     // deposit
-    const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey, true);
+    const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
     const quote = increaseLiquidityQuoteByInputTokenWithParams({
       tokenMintA: poolInitInfo.tokenMintA,
       tokenMintB: poolInitInfo.tokenMintB,
@@ -216,7 +217,7 @@ describe("close_bundled_position", () => {
       ctx.wallet.publicKey
     );
 
-    const position = await client.getPosition(bundledPositionPda.publicKey, true);
+    const position = await client.getPosition(bundledPositionPda.publicKey, IGNORE_CACHE);
     await (await position.increaseLiquidity(quote)).buildAndExecute();
     assert.ok((await position.refreshData()).liquidity.gtn(0));
 
@@ -446,7 +447,7 @@ describe("close_bundled_position", () => {
         1,
       );
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
       checkBitmapIsClosed(positionBundle!, 0);
     });
 
@@ -485,7 +486,7 @@ describe("close_bundled_position", () => {
 
       // owner can close even if delegation exists
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
       checkBitmapIsClosed(positionBundle!, 0);
     });
 
@@ -562,7 +563,7 @@ describe("close_bundled_position", () => {
         1
       );
 
-      const tokenInfo = await fetcher.getTokenInfo(funderATA, true);
+      const tokenInfo = await fetcher.getTokenInfo(funderATA, IGNORE_CACHE);
       assert.ok(tokenInfo?.amount === 1n);
 
       const tx = toTx(
@@ -579,7 +580,7 @@ describe("close_bundled_position", () => {
       tx.addSigner(funderKeypair);
 
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
       checkBitmapIsClosed(positionBundle!, 0);
     });
   });

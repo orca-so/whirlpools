@@ -12,7 +12,7 @@ import WhirlpoolIDL from "../../artifacts/whirlpool.json";
 
 /**
  * Supported parasable account names from the Whirlpool contract.
- * @category Parsables
+ * @category Network
  */
 export enum AccountName {
   WhirlpoolsConfig = "WhirlpoolsConfig",

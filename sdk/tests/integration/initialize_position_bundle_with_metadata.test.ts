@@ -19,6 +19,7 @@ import {
   WHIRLPOOL_NFT_UPDATE_AUTH,
   WhirlpoolContext,
 } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
   createMintInstructions,
   mintToDestination
@@ -83,7 +84,7 @@ describe("initialize_position_bundle_with_metadata", () => {
     // verify position bundle Mint account
     const positionBundleMint = (await ctx.fetcher.getMintInfo(
       positionBundleMintPubkey,
-      true
+      IGNORE_CACHE
     )) as Mint;
     // should have NFT characteristics
     assert.strictEqual(positionBundleMint.decimals, 0);
@@ -101,7 +102,7 @@ describe("initialize_position_bundle_with_metadata", () => {
     // verify position bundle Token account
     const positionBundleTokenAccount = (await ctx.fetcher.getTokenInfo(
       positionBundleTokenAccountPubkey,
-      true
+      IGNORE_CACHE
     )) as Account;
     assert.ok(positionBundleTokenAccount.amount === 1n);
     assert.ok(positionBundleTokenAccount.mint.equals(positionBundleMintPubkey));
@@ -115,7 +116,7 @@ describe("initialize_position_bundle_with_metadata", () => {
     // verify PositionBundle account
     const positionBundle = (await ctx.fetcher.getPositionBundle(
       positionBundlePubkey,
-      true
+      IGNORE_CACHE
     )) as PositionBundleData;
     assert.ok(positionBundle.positionBundleMint.equals(positionBundleMintPubkey));
     assert.strictEqual(positionBundle.positionBitmap.length * 8, POSITION_BUNDLE_SIZE);

@@ -27,6 +27,7 @@ import {
   WhirlpoolIx,
   toTx
 } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
 import {
   TestConfigParams,
@@ -734,7 +735,7 @@ export async function fundPositionsWithClient(
   whirlpoolKey: PublicKey,
   fundParams: FundedPositionParams[]
 ) {
-  const whirlpool = await client.getPool(whirlpoolKey, true);
+  const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
   const whirlpoolData = whirlpool.getData();
   await Promise.all(
     fundParams.map(async (param, idx) => {

@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { createAndMintToTokenAccount, mintToDestination, TickSpacing, ZERO_BN } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initializeReward, initTestPool } from "../utils/init-utils";
@@ -48,7 +49,7 @@ describe("set_reward_emissions", () => {
 
     let whirlpool = (await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
-      true
+      IGNORE_CACHE
     )) as WhirlpoolData;
     assert.ok(whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(emissionsPerSecondX64));
 
@@ -66,7 +67,7 @@ describe("set_reward_emissions", () => {
       .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
       .buildAndExecute();
 
-    whirlpool = (await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    whirlpool = (await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(whirlpool.rewardInfos[0].emissionsPerSecondX64.eq(ZERO_BN));
   });
 

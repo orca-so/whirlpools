@@ -97,7 +97,7 @@ export async function getSwapFromRoute(
         ]
       );
 
-      const inputAmount = quoteOne.estimatedAmountIn;
+      const inputAmount = quoteOne.amountSpecifiedIsInput ? quoteOne.estimatedAmountIn : quoteOne.otherAmountThreshold;
       addOrNative(mintOneA.toString(), quoteOne.aToB ? inputAmount : ZERO);
       addOrNative(mintOneB.toString(), !quoteOne.aToB ? inputAmount : ZERO);
       addOrNative(mintTwoA.toString(), ZERO);

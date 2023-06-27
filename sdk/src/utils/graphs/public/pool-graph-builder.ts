@@ -22,9 +22,9 @@ export class PoolGraphBuilder {
    */
   static async buildPoolGraphWithFetch(
     pools: Address[],
-    cache: WhirlpoolAccountFetcherInterface
+    fetcher: WhirlpoolAccountFetcherInterface
   ): Promise<PoolGraph> {
-    const poolAccounts = await cache.getPools(pools, PREFER_CACHE);
+    const poolAccounts = await fetcher.getPools(pools, PREFER_CACHE);
     const poolTokenPairs = Array.from(poolAccounts.entries())
       .map(([addr, pool]) => {
         if (pool) {

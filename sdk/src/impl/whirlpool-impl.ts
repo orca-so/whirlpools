@@ -125,7 +125,7 @@ export class WhirlpoolImpl implements Whirlpool {
     );
   }
 
-  async initTickArrayForTicks(ticks: number[], funder?: Address, opts = PREFER_CACHE) {
+  async initTickArrayForTicks(ticks: number[], funder?: Address, opts = IGNORE_CACHE) {
     const initTickArrayStartPdas = await TickArrayUtil.getUninitializedArraysPDAs(
       ticks,
       this.ctx.program.programId,

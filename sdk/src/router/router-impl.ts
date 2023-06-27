@@ -29,7 +29,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
   async findAllRoutes(
     trade: Trade,
     opts?: Partial<RoutingOptions>,
-    cacheOpts?: WhirlpoolAccountFetchOptions
+    fetchOpts?: WhirlpoolAccountFetchOptions
   ): Promise<TradeRoute[]> {
     const { tokenIn, tokenOut, tradeAmount, amountSpecifiedIsInput } = trade;
     const paths = this.poolGraph.getPath(tokenIn, tokenOut);
@@ -53,10 +53,10 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
     }
 
     const routingOptions = { ...RouterUtils.getDefaultRouteOptions(), ...opts };
-    const { program, fetcher: fetcher } = this.ctx;
+    const { program, fetcher } = this.ctx;
     const programId = program.programId;
 
-    await prefetchRoutes(paths, programId, fetcher, cacheOpts);
+    await prefetchRoutes(paths, programId, fetcher, fetchOpts);
 
     try {
       const [quoteMap, failures] = await getQuoteMap(
@@ -102,9 +102,9 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
     trade: Trade,
     routingOpts?: Partial<RoutingOptions>,
     selectionOpts?: Partial<RouteSelectOptions>,
-    cacheOpts?: WhirlpoolAccountFetchOptions
+    fetchOpts?: WhirlpoolAccountFetchOptions
   ): Promise<ExecutableRoute | null> {
-    const allRoutes = await this.findAllRoutes(trade, routingOpts, cacheOpts);
+    const allRoutes = await this.findAllRoutes(trade, routingOpts, fetchOpts);
     const selectOpts = { ...RouterUtils.getDefaultSelectOptions(), selectionOpts };
     return await RouterUtils.selectFirstExecutableRoute(this.ctx, allRoutes, selectOpts);
   }
@@ -132,7 +132,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
 async function prefetchRoutes(
   paths: Path[],
   programId: Address,
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   opts: WhirlpoolAccountFetchOptions = PREFER_CACHE
 ): Promise<void> {
   const poolSet = new Set<string>();
@@ -144,7 +144,7 @@ async function prefetchRoutes(
   }
 
   const ps = Array.from(poolSet);
-  const allWps = await cache.getPools(ps, opts);
+  const allWps = await fetcher.getPools(ps, opts);
 
   const tickArrayAddresses = [];
   for (const [key, wp] of allWps) {
@@ -170,5 +170,5 @@ async function prefetchRoutes(
     tickArrayAddresses.push(...unique);
   }
 
-  await cache.getTickArrays(tickArrayAddresses, opts);
+  await fetcher.getTickArrays(tickArrayAddresses, opts);
 }

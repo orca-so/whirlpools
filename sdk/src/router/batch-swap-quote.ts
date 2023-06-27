@@ -19,16 +19,16 @@ export interface SwapQuoteRequest {
 export async function batchBuildSwapQuoteParams(
   quoteRequests: SwapQuoteRequest[],
   programId: Address,
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions
 ): Promise<SwapQuoteParam[]> {
-  const whirlpools = await cache.getPools(
+  const whirlpools = await fetcher.getPools(
     quoteRequests.map((req) => req.whirlpool),
     opts
   );
   const program = AddressUtil.toPubKey(programId);
 
-  const tickArrayRequests = quoteRequests.map((quoteReq, index) => {
+  const tickArrayRequests = quoteRequests.map((quoteReq) => {
     const { whirlpool, tokenAmount, tradeTokenMint, amountSpecifiedIsInput } = quoteReq;
     const whirlpoolData = whirlpools.get(AddressUtil.toString(whirlpool))!;
     const swapMintKey = AddressUtil.toPubKey(tradeTokenMint);
@@ -48,7 +48,7 @@ export async function batchBuildSwapQuoteParams(
     };
   });
 
-  const tickArrays = await SwapUtils.getBatchTickArrays(program, cache, tickArrayRequests, opts);
+  const tickArrays = await SwapUtils.getBatchTickArrays(program, fetcher, tickArrayRequests, opts);
 
   return tickArrayRequests.map((req, index) => {
     const { whirlpoolData, tokenAmount, aToB, amountSpecifiedIsInput } = req;

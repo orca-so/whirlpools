@@ -85,7 +85,7 @@ export async function swapQuoteByInputToken(
   tokenAmount: BN,
   slippageTolerance: Percentage,
   programId: Address,
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions
 ): Promise<SwapQuote> {
   const params = await swapQuoteByToken(
@@ -94,7 +94,7 @@ export async function swapQuoteByInputToken(
     tokenAmount,
     true,
     programId,
-    cache,
+    fetcher,
     opts
   );
   return swapQuoteWithParams(params, slippageTolerance);
@@ -122,7 +122,7 @@ export async function swapQuoteByOutputToken(
   tokenAmount: BN,
   slippageTolerance: Percentage,
   programId: Address,
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions
 ): Promise<SwapQuote> {
   const params = await swapQuoteByToken(
@@ -131,7 +131,7 @@ export async function swapQuoteByOutputToken(
     tokenAmount,
     false,
     programId,
-    cache,
+    fetcher,
     opts
   );
   return swapQuoteWithParams(params, slippageTolerance);
@@ -171,7 +171,7 @@ async function swapQuoteByToken(
   tokenAmount: BN,
   amountSpecifiedIsInput: boolean,
   programId: Address,
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions
 ): Promise<SwapQuoteParam> {
   const whirlpoolData = whirlpool.getData();
@@ -189,7 +189,7 @@ async function swapQuoteByToken(
     aToB,
     AddressUtil.toPubKey(programId),
     whirlpool.getAddress(),
-    cache,
+    fetcher,
     opts
   );
 

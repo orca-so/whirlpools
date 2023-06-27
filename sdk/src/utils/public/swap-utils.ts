@@ -136,12 +136,12 @@ export class SwapUtils {
     aToB: boolean,
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
-    cache: WhirlpoolAccountFetcherInterface,
+    fetcher: WhirlpoolAccountFetcherInterface,
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<TickArray[]> {
     const data = await this.getBatchTickArrays(
       programId,
-      cache,
+      fetcher,
       [{ tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress }],
       opts
     );
@@ -158,7 +158,7 @@ export class SwapUtils {
    */
   public static async getBatchTickArrays(
     programId: PublicKey,
-    cache: WhirlpoolAccountFetcherInterface,
+    fetcher: WhirlpoolAccountFetcherInterface,
     tickArrayRequests: TickArrayRequest[],
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<TickArray[][]> {
@@ -179,7 +179,7 @@ export class SwapUtils {
       requestToIndices.push([addresses.length, addresses.length + requestAddresses.length]);
       addresses.push(...requestAddresses);
     }
-    const data = await cache.getTickArrays(addresses, opts);
+    const data = await fetcher.getTickArrays(addresses, opts);
 
     // Re-map from flattened batch data to TickArray[] for request
     return requestToIndices.map((indices) => {

@@ -27,7 +27,7 @@ export async function getQuoteMap(
   paths: Path[],
   amountSpecifiedIsInput: boolean,
   programId: PublicKey,
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   opts: RoutingOptions
 ) {
   const { percentIncrement, numTopPartialQuotes } = opts;
@@ -62,7 +62,7 @@ export async function getQuoteMap(
       const quoteParams = await batchBuildSwapQuoteParams(
         quoteUpdates.map((update) => update.request),
         AddressUtil.toPubKey(programId),
-        cache,
+        fetcher,
         PREFER_CACHE
       );
 

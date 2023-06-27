@@ -25,7 +25,7 @@ enum TickSearchDirection {
  * @category Whirlpool Utils
  */
 export class TickUtil {
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Get the offset index to access a tick at a given tick-index in a tick-array
@@ -232,11 +232,11 @@ export class TickArrayUtil {
    */
   public static async getUninitializedArraysString(
     tickArrayAddrs: Address[],
-    cache: WhirlpoolAccountFetcherInterface,
+    fetcher: WhirlpoolAccountFetcherInterface,
     opts?: WhirlpoolAccountFetchOptions
   ) {
     const taAddrs = AddressUtil.toPubKeys(tickArrayAddrs);
-    const tickArrayData = await cache.getTickArrays(taAddrs, opts);
+    const tickArrayData = await fetcher.getTickArrays(taAddrs, opts);
 
     // Verify tick arrays are initialized if the user provided them.
     if (tickArrayData) {
@@ -258,7 +258,7 @@ export class TickArrayUtil {
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
     tickSpacing: number,
-    cache: WhirlpoolAccountFetcherInterface,
+    fetcher: WhirlpoolAccountFetcherInterface,
     opts: WhirlpoolAccountFetchOptions
   ) {
     const startTicks = ticks.map((tick) => TickUtil.getStartTickIndex(tick, tickSpacing));
@@ -266,7 +266,7 @@ export class TickArrayUtil {
     const tickArrayPDAs = removeDupeTicks.map((tick) =>
       PDAUtil.getTickArray(programId, whirlpoolAddress, tick)
     );
-    const fetchedArrays = await cache.getTickArrays(
+    const fetchedArrays = await fetcher.getTickArrays(
       tickArrayPDAs.map((pda) => pda.publicKey),
       opts
     );

@@ -12,17 +12,17 @@ import {
 } from "../types/public";
 
 export async function getTokenMintInfos(
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
   opts?: WhirlpoolAccountFetchOptions
 ): Promise<TokenInfo[]> {
   const mintA = data.tokenMintA;
-  const infoA = await cache.getMintInfo(mintA, opts);
+  const infoA = await fetcher.getMintInfo(mintA, opts);
   if (!infoA) {
     throw new Error(`Unable to fetch MintInfo for mint - ${mintA}`);
   }
   const mintB = data.tokenMintB;
-  const infoB = await cache.getMintInfo(mintB, opts);
+  const infoB = await fetcher.getMintInfo(mintB, opts);
   if (!infoB) {
     throw new Error(`Unable to fetch MintInfo for mint - ${mintB}`);
   }
@@ -33,25 +33,25 @@ export async function getTokenMintInfos(
 }
 
 export async function getRewardInfos(
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
   opts?: WhirlpoolAccountFetchOptions
 ): Promise<WhirlpoolRewardInfo[]> {
   const rewardInfos: WhirlpoolRewardInfo[] = [];
   for (const rewardInfo of data.rewardInfos) {
-    rewardInfos.push(await getRewardInfo(cache, rewardInfo, opts));
+    rewardInfos.push(await getRewardInfo(fetcher, rewardInfo, opts));
   }
   return rewardInfos;
 }
 
 async function getRewardInfo(
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolRewardInfoData,
   opts?: WhirlpoolAccountFetchOptions
 ): Promise<WhirlpoolRewardInfo> {
   const rewardInfo = { ...data, initialized: false, vaultAmount: new BN(0) };
   if (PoolUtil.isRewardInitialized(data)) {
-    const vaultInfo = await cache.getTokenInfo(data.vault, opts);
+    const vaultInfo = await fetcher.getTokenInfo(data.vault, opts);
     if (!vaultInfo) {
       throw new Error(`Unable to fetch TokenAccountInfo for vault - ${data.vault}`);
     }
@@ -62,17 +62,17 @@ async function getRewardInfo(
 }
 
 export async function getTokenVaultAccountInfos(
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
   opts?: WhirlpoolAccountFetchOptions
 ): Promise<TokenAccountInfo[]> {
   const vaultA = data.tokenVaultA;
-  const vaultInfoA = await cache.getTokenInfo(vaultA, opts);
+  const vaultInfoA = await fetcher.getTokenInfo(vaultA, opts);
   if (!vaultInfoA) {
     throw new Error(`Unable to fetch TokenAccountInfo for vault - ${vaultA}`);
   }
   const vaultB = data.tokenVaultB;
-  const vaultInfoB = await cache.getTokenInfo(vaultB, opts);
+  const vaultInfoB = await fetcher.getTokenInfo(vaultB, opts);
   if (!vaultInfoB) {
     throw new Error(`Unable to fetch TokenAccountInfo for vault - ${vaultB}`);
   }

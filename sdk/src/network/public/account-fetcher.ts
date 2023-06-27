@@ -197,6 +197,12 @@ export interface WhirlpoolAccountFetcherInterface
     address: Address,
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<WhirlpoolsConfigData | null>;
+
+  /**
+   * Fetch and cache the accounts for a given array of WhirlpoolConfig addresses
+   * @param addresses The array of WhirlpoolConfig account addresses
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
   getConfigs(
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
@@ -253,97 +259,97 @@ export class WhirlpoolAccountFetcher
 
   getPool(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<WhirlpoolData | null> {
     return super.getAccount(address, ParsableWhirlpool, opts);
   }
   getPools(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, WhirlpoolData | null>> {
     return super.getAccounts(addresses, ParsableWhirlpool, opts);
   }
   getPosition(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<PositionData | null> {
     return super.getAccount(address, ParsablePosition, opts);
   }
   getPositions(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, PositionData | null>> {
     return super.getAccounts(addresses, ParsablePosition, opts);
   }
   getTickArray(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<TickArrayData | null> {
     return super.getAccount(address, ParsableTickArray, opts);
   }
   getTickArrays(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyArray<TickArrayData | null>> {
     return super.getAccountsAsArray(addresses, ParsableTickArray, opts);
   }
   getFeeTier(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<FeeTierData | null> {
     return super.getAccount(address, ParsableFeeTier, opts);
   }
   getFeeTiers(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, FeeTierData | null>> {
     return super.getAccounts(addresses, ParsableFeeTier, opts);
   }
   getTokenInfo(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<TokenAccount | null> {
     return super.getAccount(address, ParsableTokenAccountInfo, opts);
   }
   getTokenInfos(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, TokenAccount | null>> {
     return super.getAccounts(addresses, ParsableTokenAccountInfo, opts);
   }
   getMintInfo(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<Mint | null> {
     return super.getAccount(address, ParsableMintInfo, opts);
   }
   getMintInfos(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, Mint | null>> {
     return super.getAccounts(addresses, ParsableMintInfo, opts);
   }
   getConfig(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<WhirlpoolsConfigData | null> {
     return super.getAccount(address, ParsableWhirlpoolsConfig, opts);
   }
   getConfigs(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, WhirlpoolsConfigData | null>> {
     return super.getAccounts(addresses, ParsableWhirlpoolsConfig, opts);
   }
   getPositionBundle(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<PositionBundleData | null> {
     return super.getAccount(address, ParsablePositionBundle, opts);
   }
   getPositionBundles(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions | undefined
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, PositionBundleData | null>> {
     return super.getAccounts(addresses, ParsablePositionBundle, opts);
   }

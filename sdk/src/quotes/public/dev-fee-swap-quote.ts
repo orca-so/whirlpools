@@ -50,7 +50,7 @@ export async function swapQuoteByInputTokenWithDevFees(
   tokenAmount: BN,
   slippageTolerance: Percentage,
   programId: Address,
-  cache: WhirlpoolAccountFetcherInterface,
+  fetcher: WhirlpoolAccountFetcherInterface,
   devFeePercentage: Percentage,
   opts?: WhirlpoolAccountFetchOptions
 ): Promise<DevFeeSwapQuote> {
@@ -71,7 +71,7 @@ export async function swapQuoteByInputTokenWithDevFees(
     tokenAmount.sub(devFeeAmount),
     slippageTolerance,
     programId,
-    cache,
+    fetcher,
     opts
   );
 

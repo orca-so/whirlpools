@@ -1,9 +1,7 @@
 import { Program } from "@coral-xyz/anchor";
 import { PDA } from "@orca-so/common-sdk";
-import { WhirlpoolContext } from ".";
 import { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
-import { WhirlpoolAccountFetchOptions } from "./network/public/account-fetcher";
 
 /**
  * Instruction builders for the Whirlpools program.
@@ -522,21 +520,4 @@ export class WhirlpoolIx {
     return ix.closeBundledPositionIx(program, params);
   }
 
-  /**
-   * DEPRECATED - use ${@link WhirlpoolClient} collectFeesAndRewardsForPositions function
-   * A set of transactions to collect all fees and rewards from a list of positions.
-   *
-   * @deprecated
-   * @param ctx - WhirlpoolContext object for the current environment.
-   * @param params - CollectAllPositionAddressParams object.
-   * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
-   * @returns
-   */
-  public static async collectAllForPositionsTxns(
-    ctx: WhirlpoolContext,
-    params: ix.CollectAllPositionAddressParams,
-    opts?: WhirlpoolAccountFetchOptions
-  ) {
-    return ix.collectAllForPositionAddressesTxns(ctx, params, opts);
-  }
 }

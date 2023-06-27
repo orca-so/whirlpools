@@ -86,13 +86,13 @@ export async function getTickArrays(
   startIndices: number[],
   ctx: WhirlpoolContext,
   whirlpoolKey: PublicKey,
-  cache: WhirlpoolAccountFetcherInterface
+  fetcher: WhirlpoolAccountFetcherInterface
 ) {
   const tickArrayPdas = await startIndices.map((value) =>
     PDAUtil.getTickArray(ctx.program.programId, whirlpoolKey, value)
   );
   const tickArrayAddresses = tickArrayPdas.map((pda) => pda.publicKey);
-  const tickArrays = await cache.getTickArrays(tickArrayAddresses, IGNORE_CACHE);
+  const tickArrays = await fetcher.getTickArrays(tickArrayAddresses, IGNORE_CACHE);
   return tickArrayAddresses.map((addr, index) => {
     return {
       address: addr,

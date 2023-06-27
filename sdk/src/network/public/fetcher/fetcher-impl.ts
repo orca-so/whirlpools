@@ -6,6 +6,11 @@ import { DEFAULT_WHIRLPOOL_RETENTION_POLICY, WhirlpoolAccountFetchOptions, Whirl
 import { FeeTierData, PositionBundleData, PositionData, TickArrayData, WhirlpoolData, WhirlpoolsConfigData } from "../../../types/public";
 import { ParsableFeeTier, ParsablePosition, ParsablePositionBundle, ParsableTickArray, ParsableWhirlpool, ParsableWhirlpoolsConfig } from "../parsing";
 
+/**
+ * Build a default instance of {@link WhirlpoolAccountFetcherInterface} with the default {@link AccountFetcher} implementation
+ * @param connection An instance of {@link Connection} to use for fetching accounts
+ * @returns An instance of {@link WhirlpoolAccountFetcherInterface}
+ */
 export const buildDefaultAccountFetcher = (connection: Connection) => {
   return new WhirlpoolAccountFetcher(connection, new SimpleAccountFetcher(connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY));
 }

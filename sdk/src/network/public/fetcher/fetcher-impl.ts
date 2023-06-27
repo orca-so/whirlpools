@@ -10,6 +10,7 @@ import { ParsableFeeTier, ParsablePosition, ParsablePositionBundle, ParsableTick
  * Build a default instance of {@link WhirlpoolAccountFetcherInterface} with the default {@link AccountFetcher} implementation
  * @param connection An instance of {@link Connection} to use for fetching accounts
  * @returns An instance of {@link WhirlpoolAccountFetcherInterface}
+ * @category Network
  */
 export const buildDefaultAccountFetcher = (connection: Connection) => {
   return new WhirlpoolAccountFetcher(connection, new SimpleAccountFetcher(connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY));

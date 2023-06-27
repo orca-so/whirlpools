@@ -1,15 +1,10 @@
 import {
-  AccountFetcher,
   Address,
   BasicSupportedTypes,
   ParsableEntity,
   SimpleAccountFetchOptions
 } from "@orca-so/common-sdk";
 import { Mint, Account as TokenAccount } from "@solana/spl-token";
-import {
-  ParsableTickArray,
-  ParsableWhirlpool
-} from "../../..";
 import {
   FeeTierData,
   PositionBundleData,
@@ -41,10 +36,7 @@ export type WhirlpoolSupportedTypes =
 export const DEFAULT_WHIRLPOOL_RETENTION_POLICY: ReadonlyMap<
   ParsableEntity<WhirlpoolSupportedTypes>,
   number
-> = new Map<ParsableEntity<WhirlpoolSupportedTypes>, number>([
-  [ParsableWhirlpool, 8 * 1000],
-  [ParsableTickArray, 8 * 1000],
-]);
+> = new Map<ParsableEntity<WhirlpoolSupportedTypes>, number>([]);
 
 /**
  * Type to define fetch options for the {@link WhirlpoolAccountFetcherInterface}
@@ -68,8 +60,7 @@ export const PREFER_CACHE: WhirlpoolAccountFetchOptions = { maxAge: Number.POSIT
  * Fetcher interface for fetching {@link WhirlpoolSupportedTypes} from the network
  * @category Network
  */
-export interface WhirlpoolAccountFetcherInterface
-  extends AccountFetcher<WhirlpoolSupportedTypes, WhirlpoolAccountFetchOptions> {
+export interface WhirlpoolAccountFetcherInterface {
   /**
    * Fetch and cache the rent exempt value
    * @param refresh If true, will always fetch from the network

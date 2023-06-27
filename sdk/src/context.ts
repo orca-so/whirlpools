@@ -3,15 +3,14 @@ import {
   BuildOptions,
   LookupTableFetcher,
   TransactionBuilderOptions,
-  Wallet,
+  Wallet
 } from "@orca-so/common-sdk";
 import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js";
 import { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
 import {
-  DEFAULT_WHIRLPOOL_RETENTION_POLICY,
-  WhirlpoolAccountFetcher,
   WhirlpoolAccountFetcherInterface,
+  buildDefaultAccountFetcher
 } from "./network/public/fetcher";
 import { contextOptionsToBuilderOptions } from "./utils/txn-utils";
 
@@ -43,7 +42,7 @@ export class WhirlpoolContext {
     connection: Connection,
     wallet: Wallet,
     programId: PublicKey,
-    fetcher: WhirlpoolAccountFetcherInterface = new WhirlpoolAccountFetcher(connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
+    fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
@@ -65,7 +64,7 @@ export class WhirlpoolContext {
   public static fromWorkspace(
     provider: AnchorProvider,
     program: Program,
-    fetcher: WhirlpoolAccountFetcherInterface = new WhirlpoolAccountFetcher(provider.connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
+    fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(provider.connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ) {
@@ -82,7 +81,7 @@ export class WhirlpoolContext {
   public static withProvider(
     provider: AnchorProvider,
     programId: PublicKey,
-    fetcher: WhirlpoolAccountFetcherInterface = new WhirlpoolAccountFetcher(provider.connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
+    fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(provider.connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {

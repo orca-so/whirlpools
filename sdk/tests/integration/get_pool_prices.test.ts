@@ -24,9 +24,9 @@ describe("get_pool_prices", () => {
   const context = WhirlpoolContext.fromWorkspace(provider, program);
 
   async function fetchMaps(context: WhirlpoolContext, mints: PublicKey[], config: GetPricesConfig) {
-    const poolMap = await PriceModuleUtils.fetchPoolDataFromMints(context, mints, config);
-    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(context, poolMap, config);
-    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(context, mints);
+    const poolMap = await PriceModuleUtils.fetchPoolDataFromMints(context.fetcher, mints, config);
+    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(context.fetcher, poolMap, config);
+    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(context.fetcher, mints);
 
     return { poolMap, tickArrayMap, decimalsMap };
   }

@@ -24,7 +24,7 @@ import {
 import { getQuoteMap } from "./quote-map";
 
 export class WhirlpoolRouterImpl implements WhirlpoolRouter {
-  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) { }
+  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) {}
 
   async findAllRoutes(
     trade: Trade,

@@ -25,7 +25,7 @@ import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./
 import { WhirlpoolImpl } from "./whirlpool-impl";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
-  constructor(readonly ctx: WhirlpoolContext) { }
+  constructor(readonly ctx: WhirlpoolContext) {}
 
   public getContext(): WhirlpoolContext {
     return this.ctx;

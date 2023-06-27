@@ -25,7 +25,7 @@ enum TickSearchDirection {
  * @category Whirlpool Utils
  */
 export class TickUtil {
-  private constructor() { }
+  private constructor() {}
 
   /**
    * Get the offset index to access a tick at a given tick-index in a tick-array

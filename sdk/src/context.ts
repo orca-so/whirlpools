@@ -3,14 +3,14 @@ import {
   BuildOptions,
   LookupTableFetcher,
   TransactionBuilderOptions,
-  Wallet
+  Wallet,
 } from "@orca-so/common-sdk";
 import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js";
 import { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
 import {
   WhirlpoolAccountFetcherInterface,
-  buildDefaultAccountFetcher
+  buildDefaultAccountFetcher,
 } from "./network/public/fetcher";
 import { contextOptionsToBuilderOptions } from "./utils/txn-utils";
 

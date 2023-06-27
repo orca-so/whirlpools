@@ -519,5 +519,4 @@ export class WhirlpoolIx {
   ) {
     return ix.closeBundledPositionIx(program, params);
   }
-
 }

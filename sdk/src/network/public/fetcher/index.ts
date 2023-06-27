@@ -2,7 +2,7 @@ import {
   Address,
   BasicSupportedTypes,
   ParsableEntity,
-  SimpleAccountFetchOptions
+  SimpleAccountFetchOptions,
 } from "@orca-so/common-sdk";
 import { Mint, Account as TokenAccount } from "@solana/spl-token";
 import {

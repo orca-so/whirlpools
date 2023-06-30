@@ -194,7 +194,8 @@ pub fn swap(
         curr_fee_growth_global_input - whirlpool.fee_growth_global_b
     };
 
-    msg!("g{}", fee_growth);
+    // Log delta in fee growth to track pool usage over time with off-chain analytics
+    msg!("fee_growth: {}", fee_growth);
 
     Ok(PostSwapUpdate {
         amount_a,

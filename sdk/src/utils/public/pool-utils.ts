@@ -12,7 +12,7 @@ import { TokenType } from "./types";
  * @category Whirlpool Utils
  */
 export class PoolUtil {
-  private constructor() {}
+  private constructor() { }
 
   public static isRewardInitialized(rewardInfo: WhirlpoolRewardInfoData): boolean {
     return (

@@ -1,9 +1,10 @@
-import { ONE, Percentage, U64_MAX } from "@orca-so/common-sdk";
+import { Percentage } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { PriceMath, RouterUtils } from "../../../src";
+<<<<<<< HEAD
 /**
  * ExactIn
  * a->b on some hops
@@ -12,6 +13,11 @@ import { PriceMath, RouterUtils } from "../../../src";
  * fees, no fees (300)
  */
 const maxDecimalAccuracy = 4;
+=======
+import { U64 } from "../../../src/utils/math/constants";
+
+const maxDecimalAccuracy = 6;
+>>>>>>> 887712e (finalize style)
 describe("RouterUtil - Price Impact tests", () => {
   // Mock a Orca -> USDC ExactIn trade that has no split route and goes through a single hop (ORCA -> USDC)
   it("ExactIn, a->b true, single-hop, 1 split", () => {
@@ -94,8 +100,8 @@ describe("RouterUtil - Price Impact tests", () => {
     assert.equal(impact.toString(), expect.toString());
   })
 
-  // Mock a ORCA -> USDC trade that has 2 split route and goes through a multi-hop (ORCA -> SOL -> USDC)
-  it.only("ExactOut, mix a->b, single & multi-hop, 2 splits", () => {
+  // Mock an ExactOut ORCA -> USDC trade that has 2 split route and goes through a multi-hop (ORCA -> SOL -> USDC)
+  it("ExactOut, mix a->b, single & multi-hop, 2 splits", () => {
     const params: RouteTestParam = {
       amountSpecifiedIsInput: false,
       totalAmountIn: new BN("64800628033"),
@@ -133,7 +139,6 @@ describe("RouterUtil - Price Impact tests", () => {
 
   // NOTE: The precision kept in these calculation slightly differs from the U64 calculation that we get from the RouterUtil function.
   function calculateImpact(params: RouteTestParam): Decimal {
-    const U64 = U64_MAX.add(ONE).toString();
     const { amountSpecifiedIsInput, totalAmountIn, totalAmountOut } = params;
 
     const finalBaseValue = params.subRouteParams.map((subRoute) => {
@@ -143,17 +148,14 @@ describe("RouterUtil - Price Impact tests", () => {
       directionalHops.forEach((hop, index) => {
         const { aToB, feeRate, sqrtPrice, amountIn, amountOut } = hop;
         const directionalSqrtPrice = aToB ? new Decimal(sqrtPrice.toString()) : new Decimal(PriceMath.invertSqrtPriceX64(sqrtPrice).toString());
-        console.log(`directionalSqrtPrice - ${directionalSqrtPrice.toString()}`)
-        const directionalPrice = directionalSqrtPrice.pow(2).div(U64).div(U64);
+        const directionalPrice = directionalSqrtPrice.pow(2).div(U64.toString()).div(U64.toString());
         if (amountSpecifiedIsInput) {
           const amountInDec = index === 0 ? new Decimal(amountIn.toString()) : hopResults[index - 1];
           const amountOutDec = amountInDec.times(new Decimal(1).sub(feeRate.toDecimal())).times(directionalPrice);
-          console.log(`nextAmountOutDec - ${amountOutDec.toString()}`)
           hopResults[index] = amountOutDec.round();
         } else {
           const amountOutDec = index === 0 ? new Decimal(amountOut.toString()) : hopResults[index - 1];
           const amountInDec = amountOutDec.div(new Decimal(1).sub(feeRate.toDecimal())).div(directionalPrice);
-          console.log(`nextAmountInDec - ${amountInDec.toString()}`)
           hopResults[index] = amountInDec.round();
         }
       });
@@ -162,11 +164,9 @@ describe("RouterUtil - Price Impact tests", () => {
 
     if (amountSpecifiedIsInput) {
       const totalAmountOutDec = new Decimal(totalAmountOut.toString())
-      console.log(`totalAmountOutDec - ${totalAmountOutDec.toString()} finalBaseValue - ${finalBaseValue.toString()}, delta - ${finalBaseValue.sub(totalAmountOutDec).toString()}`)
       return finalBaseValue.sub(totalAmountOutDec).div(totalAmountOutDec).mul(100);
     } else {
       const totalAmountInDec = new Decimal(totalAmountIn.toString())
-      console.log(`totalAmountInDec - ${totalAmountInDec.toString()} finalBaseValue - ${finalBaseValue.toString()}, delta - ${totalAmountInDec.sub(finalBaseValue).toString()}`)
       return totalAmountInDec.sub(finalBaseValue).div(totalAmountInDec).mul(100);
     }
   }

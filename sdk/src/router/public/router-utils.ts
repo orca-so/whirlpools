@@ -2,11 +2,9 @@ import {
   AddressUtil,
   LookupTableFetcher,
   MEASUREMENT_BLOCKHASH,
-  ONE,
   Percentage,
   TransactionBuilder,
-  TX_SIZE_LIMIT,
-  U64_MAX
+  TX_SIZE_LIMIT
 } from "@orca-so/common-sdk";
 import { Account } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -16,11 +14,9 @@ import { ExecutableRoute, RoutingOptions, Trade, TradeRoute } from ".";
 import { WhirlpoolContext } from "../../context";
 import { getSwapFromRoute } from "../../instructions/composites/swap-with-route";
 import { PREFER_CACHE } from "../../network/public/fetcher";
+import { U64 } from "../../utils/math/constants";
 import { PriceMath } from "../../utils/public";
 import { isWalletConnected } from "../../utils/wallet-utils";
-
-// TODO: Find a home
-const U64 = U64_MAX.add(ONE);
 
 /**
  * A type representing a Associated Token Account
@@ -143,10 +139,8 @@ export class RouterUtils {
     return null;
   }
 
-  // TODO: Current flow for exact-in only. Implement exact-out
   static getPriceImpactForRoute(trade: Trade, route: TradeRoute): Decimal {
     const { amountSpecifiedIsInput } = trade;
-    console.log(`trade - ${JSON.stringify(trade, undefined, 2)}`)
     const directionalSubroutes = amountSpecifiedIsInput ? route.subRoutes : route.subRoutes.slice().reverse();
 
     // For each route, perform the following:
@@ -171,28 +165,10 @@ export class RouterUtils {
           const amountIn = index === 0 ? quote.amountIn : acc[index - 1];
           const feeAdjustedAmount = amountIn.mul(totalFeeRate.denominator.sub(totalFeeRate.numerator)).div(totalFeeRate.denominator);
           nextBaseValue = price.mul(feeAdjustedAmount).div(U64);
-          const impact = new Decimal(nextBaseValue.toString()).sub(quote.amountOut.toString()).div(nextBaseValue.toString()).mul(100);
-
-          console.log(`Base output for route ${routeIndex} hop ${index}:`);
-          console.log(`aToB: ${aToB} amountSpecifiedIsInput: ${amountSpecifiedIsInput} sqrt-price: ${sqrtPrice.toString()}, quote.amountIn - ${quote.amountIn.toString()}, quote.amountOut - ${quote.amountOut.toString()}`);
-          console.log(`amountIn: ${amountIn.toString()} Fee adjusted amount in: ${feeAdjustedAmount.toString()}, directional sqrt price: ${directionalSqrtPrice.toString()}`);
-          console.log(`Total fee rate: ${totalFeeRate.toString()}, price: ${price.toString()}`);
-          console.log(`Base output: ${nextBaseValue.toString()} actual - ${quote.amountOut} impact - ${impact.toString()}`)
-          console.log(`quote: ${JSON.stringify(quote, undefined, 2)}`);
-          console.log(`\n`);
         } else {
           const amountOut = index === 0 ? quote.amountOut : acc[index - 1];
           const feeAdjustedAmount = amountOut.mul(U64).div(price)
           nextBaseValue = feeAdjustedAmount.mul(totalFeeRate.denominator).div(totalFeeRate.denominator.sub(totalFeeRate.numerator))
-
-          const impact = new Decimal(nextBaseValue.toString()).sub(quote.amountOut.toString()).div(nextBaseValue.toString()).mul(100);
-          console.log(`Base input for route ${routeIndex} hop ${index}:`);
-          console.log(`aToB: ${aToB} amountSpecifiedIsInput: ${amountSpecifiedIsInput} sqrt-price: ${sqrtPrice.toString()}, quote.amountIn - ${quote.amountIn.toString()}, quote.amountOut - ${quote.amountOut.toString()}`);
-          console.log(`amountOut: ${amountOut.toString()} Fee adjusted amount in: ${feeAdjustedAmount.toString()}, directional sqrt price: ${directionalSqrtPrice.toString()}`);
-          console.log(`Total fee rate: ${totalFeeRate.toString()}, price: ${price.toString()}`);
-          console.log(`Base input: ${nextBaseValue.toString()} actual - ${quote.amountIn} impact - ${impact.toString()}`)
-          console.log(`quote: ${JSON.stringify(quote, undefined, 2)}`);
-          console.log(`\n`);
         }
 
         acc.push(nextBaseValue);
@@ -204,9 +180,7 @@ export class RouterUtils {
 
     const totalBaseDecimal = new Decimal(totalBaseValue.toString());
     const comparableDec = new Decimal(!amountSpecifiedIsInput ? route.totalAmountIn.toString() : route.totalAmountOut.toString());
-    const otherDec = new Decimal(amountSpecifiedIsInput ? route.totalAmountIn.toString() : route.totalAmountOut.toString());
     const priceImpact = amountSpecifiedIsInput ? totalBaseDecimal.sub(comparableDec).div(comparableDec) : comparableDec.sub(totalBaseDecimal).div(comparableDec);
-    console.log(`Total base value: ${totalBaseValue.toString()}, actual comparable: ${comparableDec.toString()} actual other out: ${otherDec.toString()}, price impact: ${priceImpact.toString()}`);
 
     return priceImpact.mul(100);
   }

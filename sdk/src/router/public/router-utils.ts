@@ -139,20 +139,19 @@ export class RouterUtils {
     return null;
   }
 
+  /**
+   * Calculate the price impact for a route.
+   * @param trade The trade the user used to derive the route.
+   * @param route The route to calculate the price impact for.
+   * @returns A Decimal object representing the percentage value of the price impact (ex. 3.01%)
+   */
   static getPriceImpactForRoute(trade: Trade, route: TradeRoute): Decimal {
     const { amountSpecifiedIsInput } = trade;
     const directionalSubroutes = amountSpecifiedIsInput
       ? route.subRoutes
       : route.subRoutes.slice().reverse();
 
-    // For each route, perform the following:
-    // 1. Get the hop's amountIn. The first hop will always take the user input amount. Subsequent will be the output of the previous hop
-    // 2. Determine the feeAdjustedAmountIn by multiplying the amountIn by (1-fee)
-    // 3. Determine the price by multiplying the sqrtPrice by itself
-    // 4. Determine the baseOutput by multiplying the price by the feeAdjustedAmountIn. Record it.
-    // 5. Once the hop traversal is complete, get the hop's base amount out and aggregate it.
-    // 6. The difference between the aggregated base amount out and the actual amount out is the price impact
-    const totalBaseValue = directionalSubroutes.reduce((acc, route, routeIndex) => {
+    const totalBaseValue = directionalSubroutes.reduce((acc, route) => {
       const directionalHops = amountSpecifiedIsInput
         ? route.hopQuotes
         : route.hopQuotes.slice().reverse();
@@ -162,6 +161,7 @@ export class RouterUtils {
         // Inverse sqrt price will cause 1bps precision loss since ticks are spaces of 1bps
         const directionalSqrtPrice = aToB ? sqrtPrice : PriceMath.invertSqrtPriceX64(sqrtPrice);
 
+        // Convert from in/out -> base_out/in using the directional price & fee rate
         let nextBaseValue;
         const price = directionalSqrtPrice.mul(directionalSqrtPrice).div(U64);
         if (amountSpecifiedIsInput) {

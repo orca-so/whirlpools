@@ -4,20 +4,9 @@ import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
 import { PriceMath, RouterUtils } from "../../../src";
-<<<<<<< HEAD
-/**
- * ExactIn
- * a->b on some hops
- * 1 hop, multi-hop
- * 1 split, multi-split
- * fees, no fees (300)
- */
-const maxDecimalAccuracy = 4;
-=======
 import { U64 } from "../../../src/utils/math/constants";
 
-const maxDecimalAccuracy = 6;
->>>>>>> 887712e (finalize style)
+const maxDecimalAccuracy = 4;
 describe("RouterUtil - Price Impact tests", () => {
   // Mock a Orca -> USDC ExactIn trade that has no split route and goes through a single hop (ORCA -> USDC)
   it("ExactIn, a->b true, single-hop, 1 split", () => {

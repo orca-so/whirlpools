@@ -108,7 +108,6 @@ export type TradeHop = {
 };
 
 export type TradeHopSnapshot = {
-  amountSpecifiedIsInput: boolean;
   aToB: boolean;
   sqrtPrice: BN;
   totalFeeRate: Percentage;

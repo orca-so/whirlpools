@@ -125,7 +125,6 @@ function populateQuoteMap(
         vaultB,
         quote,
         snapshot: {
-          amountSpecifiedIsInput: swapParam.amountSpecifiedIsInput,
           aToB: swapParam.aToB,
           sqrtPrice: whirlpoolData.sqrtPrice,
           totalFeeRate: PoolUtil.getFeeRate(whirlpoolData.feeRate),

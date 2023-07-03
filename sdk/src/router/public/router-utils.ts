@@ -4,7 +4,7 @@ import {
   MEASUREMENT_BLOCKHASH,
   Percentage,
   TransactionBuilder,
-  TX_SIZE_LIMIT
+  TX_SIZE_LIMIT,
 } from "@orca-so/common-sdk";
 import { Account } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -141,7 +141,9 @@ export class RouterUtils {
 
   static getPriceImpactForRoute(trade: Trade, route: TradeRoute): Decimal {
     const { amountSpecifiedIsInput } = trade;
-    const directionalSubroutes = amountSpecifiedIsInput ? route.subRoutes : route.subRoutes.slice().reverse();
+    const directionalSubroutes = amountSpecifiedIsInput
+      ? route.subRoutes
+      : route.subRoutes.slice().reverse();
 
     // For each route, perform the following:
     // 1. Get the hop's amountIn. The first hop will always take the user input amount. Subsequent will be the output of the previous hop
@@ -151,11 +153,12 @@ export class RouterUtils {
     // 5. Once the hop traversal is complete, get the hop's base amount out and aggregate it.
     // 6. The difference between the aggregated base amount out and the actual amount out is the price impact
     const totalBaseValue = directionalSubroutes.reduce((acc, route, routeIndex) => {
-      const directionalHops = amountSpecifiedIsInput ? route.hopQuotes : route.hopQuotes.slice().reverse();
+      const directionalHops = amountSpecifiedIsInput
+        ? route.hopQuotes
+        : route.hopQuotes.slice().reverse();
       const baseOutputs = directionalHops.reduce((acc, quote, index) => {
-
         const { snapshot } = quote;
-        const { aToB, sqrtPrice, totalFeeRate } = snapshot
+        const { aToB, sqrtPrice, totalFeeRate } = snapshot;
         // Inverse sqrt price will cause 1bps precision loss since ticks are spaces of 1bps
         const directionalSqrtPrice = aToB ? sqrtPrice : PriceMath.invertSqrtPriceX64(sqrtPrice);
 
@@ -163,12 +166,16 @@ export class RouterUtils {
         const price = directionalSqrtPrice.mul(directionalSqrtPrice).div(U64);
         if (amountSpecifiedIsInput) {
           const amountIn = index === 0 ? quote.amountIn : acc[index - 1];
-          const feeAdjustedAmount = amountIn.mul(totalFeeRate.denominator.sub(totalFeeRate.numerator)).div(totalFeeRate.denominator);
+          const feeAdjustedAmount = amountIn
+            .mul(totalFeeRate.denominator.sub(totalFeeRate.numerator))
+            .div(totalFeeRate.denominator);
           nextBaseValue = price.mul(feeAdjustedAmount).div(U64);
         } else {
           const amountOut = index === 0 ? quote.amountOut : acc[index - 1];
-          const feeAdjustedAmount = amountOut.mul(U64).div(price)
-          nextBaseValue = feeAdjustedAmount.mul(totalFeeRate.denominator).div(totalFeeRate.denominator.sub(totalFeeRate.numerator))
+          const feeAdjustedAmount = amountOut.mul(U64).div(price);
+          nextBaseValue = feeAdjustedAmount
+            .mul(totalFeeRate.denominator)
+            .div(totalFeeRate.denominator.sub(totalFeeRate.numerator));
         }
 
         acc.push(nextBaseValue);
@@ -179,8 +186,12 @@ export class RouterUtils {
     }, new BN(0));
 
     const totalBaseDecimal = new Decimal(totalBaseValue.toString());
-    const comparableDec = new Decimal(!amountSpecifiedIsInput ? route.totalAmountIn.toString() : route.totalAmountOut.toString());
-    const priceImpact = amountSpecifiedIsInput ? totalBaseDecimal.sub(comparableDec).div(comparableDec) : comparableDec.sub(totalBaseDecimal).div(comparableDec);
+    const comparableDec = new Decimal(
+      !amountSpecifiedIsInput ? route.totalAmountIn.toString() : route.totalAmountOut.toString()
+    );
+    const priceImpact = amountSpecifiedIsInput
+      ? totalBaseDecimal.sub(comparableDec).div(comparableDec)
+      : comparableDec.sub(totalBaseDecimal).div(comparableDec);
 
     return priceImpact.mul(100);
   }

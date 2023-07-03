@@ -111,7 +111,7 @@ export type TradeHopSnapshot = {
   aToB: boolean;
   sqrtPrice: BN;
   totalFeeRate: Percentage;
-}
+};
 
 /**
  * A trade route that is ready to execute.

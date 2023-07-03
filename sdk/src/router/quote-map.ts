@@ -128,7 +128,7 @@ function populateQuoteMap(
           aToB: swapParam.aToB,
           sqrtPrice: whirlpoolData.sqrtPrice,
           totalFeeRate: PoolUtil.getFeeRate(whirlpoolData.feeRate),
-        }
+        },
       };
     } catch (e: any) {
       const errorCode: SwapErrorCode = e.errorCode;

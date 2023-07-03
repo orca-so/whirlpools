@@ -93,7 +93,12 @@ export class PriceModule {
       AddressUtil.toStrings(filteredPoolAddresses)
     );
 
-    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(fetcher, poolMap, config, opts);
+    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(
+      fetcher,
+      poolMap,
+      config,
+      opts
+    );
     const mints = Array.from(
       Object.values(poolMap).reduce((acc, pool) => {
         acc.add(pool.tokenMintA.toBase58());

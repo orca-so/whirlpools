@@ -127,7 +127,7 @@ export class PriceMath {
   /**
    * Utility to invert the price Pb/Pa to Pa/Pb
    * NOTE: precision is lost in this conversion
-   * 
+   *
    * @param price Pb / Pa
    * @param decimalsA Decimals of original token A (i.e. token A in the given Pb / Pa price)
    * @param decimalsB Decimals of original token B (i.e. token B in the given Pb / Pa price)
@@ -142,7 +142,7 @@ export class PriceMath {
   /**
    * Utility to invert the sqrtPriceX64 from X64 repr. of sqrt(Pb/Pa) to X64 repr. of sqrt(Pa/Pb)
    * NOTE: precision is lost in this conversion
-   * 
+   *
    * @param sqrtPriceX64 X64 representation of sqrt(Pb / Pa)
    * @returns inverted sqrtPriceX64, i.e. X64 representation of sqrt(Pa / Pb)
    */

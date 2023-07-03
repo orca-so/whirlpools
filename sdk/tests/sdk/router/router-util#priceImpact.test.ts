@@ -25,19 +25,25 @@ describe("RouterUtil - Price Impact tests", () => {
       amountSpecifiedIsInput: true,
       totalAmountIn: new BN("1000000"),
       totalAmountOut: new BN("581050"),
-      subRouteParams: [{
-        hops: [{
-          aToB: true,
-          feeRate: Percentage.fromFraction(3000, 1000000),
-          sqrtPrice: new BN("14082503933855903449"),
-          amountIn: new BN("1000000"),
-          amountOut: new BN("581050"),
-        }]
-      }]
+      subRouteParams: [
+        {
+          hops: [
+            {
+              aToB: true,
+              feeRate: Percentage.fromFraction(3000, 1000000),
+              sqrtPrice: new BN("14082503933855903449"),
+              amountIn: new BN("1000000"),
+              amountOut: new BN("581050"),
+            },
+          ],
+        },
+      ],
     };
     const { trade, routes } = buildRouteTest(params);
-    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(maxDecimalAccuracy)
-    const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy)
+    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(
+      maxDecimalAccuracy
+    );
+    const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy);
     assert.equal(impact.toString(), expect.toString());
   });
 
@@ -47,19 +53,25 @@ describe("RouterUtil - Price Impact tests", () => {
       amountSpecifiedIsInput: false,
       totalAmountIn: new BN("5833496"),
       totalAmountOut: new BN("10000000"),
-      subRouteParams: [{
-        hops: [{
-          aToB: false,
-          feeRate: Percentage.fromFraction(3000, 1000000),
-          sqrtPrice: new BN("14067691597581169278"),
-          amountIn: new BN("5833496"),
-          amountOut: new BN("10000000"),
-        }]
-      }]
+      subRouteParams: [
+        {
+          hops: [
+            {
+              aToB: false,
+              feeRate: Percentage.fromFraction(3000, 1000000),
+              sqrtPrice: new BN("14067691597581169278"),
+              amountIn: new BN("5833496"),
+              amountOut: new BN("10000000"),
+            },
+          ],
+        },
+      ],
     };
     const { trade, routes } = buildRouteTest(params);
-    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(maxDecimalAccuracy)
-    const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy)
+    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(
+      maxDecimalAccuracy
+    );
+    const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy);
     assert.equal(impact.toString(), expect.toString());
   });
 
@@ -69,36 +81,45 @@ describe("RouterUtil - Price Impact tests", () => {
       amountSpecifiedIsInput: true,
       totalAmountIn: new BN("40000000000"),
       totalAmountOut: new BN("22277933969"),
-      subRouteParams: [{
-        hops: [{
-          aToB: false,
-          feeRate: Percentage.fromFraction(3000, 1000000),
-          sqrtPrice: new BN("3363616053614750676"),
-          amountIn: new BN("32000000000"),
-          amountOut: new BN("925083736236"),
+      subRouteParams: [
+        {
+          hops: [
+            {
+              aToB: false,
+              feeRate: Percentage.fromFraction(3000, 1000000),
+              sqrtPrice: new BN("3363616053614750676"),
+              amountIn: new BN("32000000000"),
+              amountOut: new BN("925083736236"),
+            },
+            {
+              aToB: true,
+              feeRate: Percentage.fromFraction(3000, 1000000),
+              sqrtPrice: new BN("2567715337494939945"),
+              amountIn: new BN("925083736236"),
+              amountOut: new BN("17871834810"),
+            },
+          ],
         },
         {
-          aToB: true,
-          feeRate: Percentage.fromFraction(3000, 1000000),
-          sqrtPrice: new BN("2567715337494939945"),
-          amountIn: new BN("925083736236"),
-          amountOut: new BN("17871834810"),
-        }]
-      }, {
-        hops: [{
-          aToB: true,
-          feeRate: Percentage.fromFraction(3000, 1000000),
-          sqrtPrice: new BN("14082503933855903449"),
-          amountIn: new BN("8000000000"),
-          amountOut: new BN("4406099159"),
-        }]
-      }]
+          hops: [
+            {
+              aToB: true,
+              feeRate: Percentage.fromFraction(3000, 1000000),
+              sqrtPrice: new BN("14082503933855903449"),
+              amountIn: new BN("8000000000"),
+              amountOut: new BN("4406099159"),
+            },
+          ],
+        },
+      ],
     };
     const { trade, routes } = buildRouteTest(params);
-    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(maxDecimalAccuracy)
-    const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy)
+    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(
+      maxDecimalAccuracy
+    );
+    const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy);
     assert.equal(impact.toString(), expect.toString());
-  })
+  });
 
   // Mock an ExactOut ORCA -> USDC trade that has 2 split route and goes through a multi-hop (ORCA -> SOL -> USDC)
   it("ExactOut, mix a->b, single & multi-hop, 2 splits", () => {
@@ -106,67 +127,89 @@ describe("RouterUtil - Price Impact tests", () => {
       amountSpecifiedIsInput: false,
       totalAmountIn: new BN("64800628033"),
       totalAmountOut: new BN("34000000000"),
-      subRouteParams: [{
-        hops: [{
-          aToB: true,
-          feeRate: Percentage.fromFraction(3000, 1000000),
-          sqrtPrice: new BN("14067691597581169278"),
-          amountIn: new BN("13107594181"),
-          amountOut: new BN("6800000000"),
-        }]
-      }, {
-        hops: [
-          {
-            aToB: false,
-            feeRate: Percentage.fromFraction(3000, 1000000),
-            sqrtPrice: new BN("3366318822902200326"),
-            amountIn: new BN("51693033852"),
-            amountOut: new BN("1403541983350"),
-          }, {
-            aToB: true,
-            feeRate: Percentage.fromFraction(3000, 1000000),
-            sqrtPrice: new BN("2572953144905521240"),
-            amountIn: new BN("1403541983350"),
-            amountOut: new BN("27200000000"),
-          },]
-      }]
+      subRouteParams: [
+        {
+          hops: [
+            {
+              aToB: true,
+              feeRate: Percentage.fromFraction(3000, 1000000),
+              sqrtPrice: new BN("14067691597581169278"),
+              amountIn: new BN("13107594181"),
+              amountOut: new BN("6800000000"),
+            },
+          ],
+        },
+        {
+          hops: [
+            {
+              aToB: false,
+              feeRate: Percentage.fromFraction(3000, 1000000),
+              sqrtPrice: new BN("3366318822902200326"),
+              amountIn: new BN("51693033852"),
+              amountOut: new BN("1403541983350"),
+            },
+            {
+              aToB: true,
+              feeRate: Percentage.fromFraction(3000, 1000000),
+              sqrtPrice: new BN("2572953144905521240"),
+              amountIn: new BN("1403541983350"),
+              amountOut: new BN("27200000000"),
+            },
+          ],
+        },
+      ],
     };
     const { trade, routes } = buildRouteTest(params);
-    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(maxDecimalAccuracy)
-    const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy)
+    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(
+      maxDecimalAccuracy
+    );
+    const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy);
     assert.equal(impact.toString(), expect.toString());
-  })
+  });
 
   // NOTE: The precision kept in these calculation slightly differs from the U64 calculation that we get from the RouterUtil function.
   function calculateImpact(params: RouteTestParam): Decimal {
     const { amountSpecifiedIsInput, totalAmountIn, totalAmountOut } = params;
 
-    const finalBaseValue = params.subRouteParams.map((subRoute) => {
-      const { hops } = subRoute;
-      const directionalHops = amountSpecifiedIsInput ? hops : hops.slice().reverse();
-      const hopResults: Decimal[] = new Array(hops.length);
-      directionalHops.forEach((hop, index) => {
-        const { aToB, feeRate, sqrtPrice, amountIn, amountOut } = hop;
-        const directionalSqrtPrice = aToB ? new Decimal(sqrtPrice.toString()) : new Decimal(PriceMath.invertSqrtPriceX64(sqrtPrice).toString());
-        const directionalPrice = directionalSqrtPrice.pow(2).div(U64.toString()).div(U64.toString());
-        if (amountSpecifiedIsInput) {
-          const amountInDec = index === 0 ? new Decimal(amountIn.toString()) : hopResults[index - 1];
-          const amountOutDec = amountInDec.times(new Decimal(1).sub(feeRate.toDecimal())).times(directionalPrice);
-          hopResults[index] = amountOutDec.round();
-        } else {
-          const amountOutDec = index === 0 ? new Decimal(amountOut.toString()) : hopResults[index - 1];
-          const amountInDec = amountOutDec.div(new Decimal(1).sub(feeRate.toDecimal())).div(directionalPrice);
-          hopResults[index] = amountInDec.round();
-        }
-      });
-      return hopResults[hops.length - 1];
-    }).reduce((acc, cur) => acc.add(cur), new Decimal(0));
+    const finalBaseValue = params.subRouteParams
+      .map((subRoute) => {
+        const { hops } = subRoute;
+        const directionalHops = amountSpecifiedIsInput ? hops : hops.slice().reverse();
+        const hopResults: Decimal[] = new Array(hops.length);
+        directionalHops.forEach((hop, index) => {
+          const { aToB, feeRate, sqrtPrice, amountIn, amountOut } = hop;
+          const directionalSqrtPrice = aToB
+            ? new Decimal(sqrtPrice.toString())
+            : new Decimal(PriceMath.invertSqrtPriceX64(sqrtPrice).toString());
+          const directionalPrice = directionalSqrtPrice
+            .pow(2)
+            .div(U64.toString())
+            .div(U64.toString());
+          if (amountSpecifiedIsInput) {
+            const amountInDec =
+              index === 0 ? new Decimal(amountIn.toString()) : hopResults[index - 1];
+            const amountOutDec = amountInDec
+              .times(new Decimal(1).sub(feeRate.toDecimal()))
+              .times(directionalPrice);
+            hopResults[index] = amountOutDec.round();
+          } else {
+            const amountOutDec =
+              index === 0 ? new Decimal(amountOut.toString()) : hopResults[index - 1];
+            const amountInDec = amountOutDec
+              .div(new Decimal(1).sub(feeRate.toDecimal()))
+              .div(directionalPrice);
+            hopResults[index] = amountInDec.round();
+          }
+        });
+        return hopResults[hops.length - 1];
+      })
+      .reduce((acc, cur) => acc.add(cur), new Decimal(0));
 
     if (amountSpecifiedIsInput) {
-      const totalAmountOutDec = new Decimal(totalAmountOut.toString())
+      const totalAmountOutDec = new Decimal(totalAmountOut.toString());
       return finalBaseValue.sub(totalAmountOutDec).div(totalAmountOutDec).mul(100);
     } else {
-      const totalAmountInDec = new Decimal(totalAmountIn.toString())
+      const totalAmountInDec = new Decimal(totalAmountIn.toString());
       return totalAmountInDec.sub(finalBaseValue).div(totalAmountInDec).mul(100);
     }
   }
@@ -177,23 +220,23 @@ describe("RouterUtil - Price Impact tests", () => {
     sqrtPrice: BN;
     amountIn: BN;
     amountOut: BN;
-  }
+  };
   type SubRouteTestParam = {
     hops: TradeHopTestParam[];
-  }
+  };
   type RouteTestParam = {
     amountSpecifiedIsInput: boolean;
     subRouteParams: SubRouteTestParam[];
     totalAmountIn: BN;
     totalAmountOut: BN;
-  }
+  };
   function buildRouteTest(params: RouteTestParam) {
     return {
       trade: {
         tokenIn: "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
         tokenOut: "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
         tradeAmount: new BN(0),
-        amountSpecifiedIsInput: params.amountSpecifiedIsInput
+        amountSpecifiedIsInput: params.amountSpecifiedIsInput,
       },
       routes: {
         subRoutes: params.subRouteParams.map((subRouteParam) => {
@@ -228,8 +271,8 @@ describe("RouterUtil - Price Impact tests", () => {
                   aToB: hopParam.aToB,
                   totalFeeRate: hopParam.feeRate,
                   sqrtPrice: hopParam.sqrtPrice,
-                }
-              }
+                },
+              };
             }),
             path: {
               startTokenMint: "startTokenMint",
@@ -239,11 +282,11 @@ describe("RouterUtil - Price Impact tests", () => {
             splitPercent: 30,
             amountIn: new BN(0),
             amountOut: new BN(0),
-          }
+          };
         }),
         totalAmountIn: params.totalAmountIn,
         totalAmountOut: params.totalAmountOut,
-      }
-    }
+      },
+    };
   }
 });

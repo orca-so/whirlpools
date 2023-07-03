@@ -11,7 +11,7 @@ import { PriceMath, RouterUtils } from "../../../src";
  * 1 split, multi-split
  * fees, no fees (300)
  */
-const maxDecimalAccuracy = 6;
+const maxDecimalAccuracy = 4;
 describe("RouterUtil - Price Impact tests", () => {
   // Mock a Orca -> USDC ExactIn trade that has no split route and goes through a single hop (ORCA -> USDC)
   it("ExactIn, a->b true, single-hop, 1 split", () => {
@@ -163,11 +163,11 @@ describe("RouterUtil - Price Impact tests", () => {
     if (amountSpecifiedIsInput) {
       const totalAmountOutDec = new Decimal(totalAmountOut.toString())
       console.log(`totalAmountOutDec - ${totalAmountOutDec.toString()} finalBaseValue - ${finalBaseValue.toString()}, delta - ${finalBaseValue.sub(totalAmountOutDec).toString()}`)
-      return finalBaseValue.sub(totalAmountOutDec).div(totalAmountOutDec);
+      return finalBaseValue.sub(totalAmountOutDec).div(totalAmountOutDec).mul(100);
     } else {
       const totalAmountInDec = new Decimal(totalAmountIn.toString())
       console.log(`totalAmountInDec - ${totalAmountInDec.toString()} finalBaseValue - ${finalBaseValue.toString()}, delta - ${totalAmountInDec.sub(finalBaseValue).toString()}`)
-      return totalAmountInDec.sub(finalBaseValue).div(totalAmountInDec);
+      return totalAmountInDec.sub(finalBaseValue).div(totalAmountInDec).mul(100);
     }
   }
 

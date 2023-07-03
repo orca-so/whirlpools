@@ -208,7 +208,7 @@ export class RouterUtils {
     const priceImpact = amountSpecifiedIsInput ? totalBaseDecimal.sub(comparableDec).div(comparableDec) : comparableDec.sub(totalBaseDecimal).div(comparableDec);
     console.log(`Total base value: ${totalBaseValue.toString()}, actual comparable: ${comparableDec.toString()} actual other out: ${otherDec.toString()}, price impact: ${priceImpact.toString()}`);
 
-    return priceImpact;
+    return priceImpact.mul(100);
   }
 
   /**

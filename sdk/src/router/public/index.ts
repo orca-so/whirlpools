@@ -83,8 +83,6 @@ export type SubTradeRoute = {
  * @param amountIn The amount of token being traded in for this hop.
  * @param amountOut The amount of token being traded out for this hop.
  * @param whirlpool The address of the whirlpool that this hop is trading through.
- * @param sqrtPrice The square root price of the pool at the time of the trade.
- * @param totalFeeRate The total fee rate of the pool at the time of the trade.
  * @param inputMint The address of the input token mint.
  * @param outputMint The address of the output token mint.
  * @param mintA The address of the first mint in the pool.
@@ -92,6 +90,7 @@ export type SubTradeRoute = {
  * @param vaultA The address of the first vault in the pool.
  * @param vaultB The address of the second vault in the pool.
  * @param quote The {@link SwapQuote} for this hop.
+ * @param snapshot A snapshot of the whirlpool condition when this hop was made
  */
 export type TradeHop = {
   amountIn: BN;
@@ -107,10 +106,14 @@ export type TradeHop = {
   snapshot: TradeHopSnapshot;
 };
 
+/**
+ * A snapshot of the whirlpool condition when a trade hop was made.
+ * @category Router
+ */
 export type TradeHopSnapshot = {
   aToB: boolean;
   sqrtPrice: BN;
-  totalFeeRate: Percentage;
+  feeRate: Percentage;
 };
 
 /**

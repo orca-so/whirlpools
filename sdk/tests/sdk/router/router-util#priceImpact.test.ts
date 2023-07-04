@@ -196,7 +196,7 @@ describe("RouterUtil - Price Impact tests", () => {
 
     if (amountSpecifiedIsInput) {
       const totalAmountOutDec = new Decimal(totalAmountOut.toString());
-      return finalBaseValue.sub(totalAmountOutDec).div(totalAmountOutDec).mul(100);
+      return finalBaseValue.sub(totalAmountOutDec).div(finalBaseValue).mul(100);
     } else {
       const totalAmountInDec = new Decimal(totalAmountIn.toString());
       return totalAmountInDec.sub(finalBaseValue).div(totalAmountInDec).mul(100);
@@ -258,7 +258,7 @@ describe("RouterUtil - Price Impact tests", () => {
                 },
                 snapshot: {
                   aToB: hopParam.aToB,
-                  totalFeeRate: hopParam.feeRate,
+                  feeRate: hopParam.feeRate,
                   sqrtPrice: hopParam.sqrtPrice,
                 },
               };

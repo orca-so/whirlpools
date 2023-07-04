@@ -127,7 +127,7 @@ function populateQuoteMap(
         snapshot: {
           aToB: swapParam.aToB,
           sqrtPrice: whirlpoolData.sqrtPrice,
-          totalFeeRate: PoolUtil.getFeeRate(whirlpoolData.feeRate),
+          feeRate: PoolUtil.getFeeRate(whirlpoolData.feeRate),
         },
       };
     } catch (e: any) {

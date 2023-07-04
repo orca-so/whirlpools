@@ -147,17 +147,14 @@ export class RouterUtils {
    */
   static getPriceImpactForRoute(trade: Trade, route: TradeRoute): Decimal {
     const { amountSpecifiedIsInput } = trade;
-    const directionalSubroutes = amountSpecifiedIsInput
-      ? route.subRoutes
-      : route.subRoutes.slice().reverse();
 
-    const totalBaseValue = directionalSubroutes.reduce((acc, route) => {
+    const totalBaseValue = route.subRoutes.reduce((acc, route) => {
       const directionalHops = amountSpecifiedIsInput
         ? route.hopQuotes
         : route.hopQuotes.slice().reverse();
       const baseOutputs = directionalHops.reduce((acc, quote, index) => {
         const { snapshot } = quote;
-        const { aToB, sqrtPrice, totalFeeRate } = snapshot;
+        const { aToB, sqrtPrice, feeRate: totalFeeRate } = snapshot;
         // Inverse sqrt price will cause 1bps precision loss since ticks are spaces of 1bps
         const directionalSqrtPrice = aToB ? sqrtPrice : PriceMath.invertSqrtPriceX64(sqrtPrice);
 
@@ -185,13 +182,13 @@ export class RouterUtils {
       return acc.add(baseOutputs[baseOutputs.length - 1]);
     }, new BN(0));
 
-    const totalBaseDecimal = new Decimal(totalBaseValue.toString());
-    const comparableDec = new Decimal(
-      !amountSpecifiedIsInput ? route.totalAmountIn.toString() : route.totalAmountOut.toString()
+    const totalBaseValueDec = new Decimal(totalBaseValue.toString());
+    const totalAmountEstimatedDec = new Decimal(
+      amountSpecifiedIsInput ? route.totalAmountOut.toString() : route.totalAmountIn.toString()
     );
     const priceImpact = amountSpecifiedIsInput
-      ? totalBaseDecimal.sub(comparableDec).div(comparableDec)
-      : comparableDec.sub(totalBaseDecimal).div(comparableDec);
+      ? totalBaseValueDec.sub(totalAmountEstimatedDec).div(totalBaseValueDec)
+      : totalAmountEstimatedDec.sub(totalBaseValueDec).div(totalAmountEstimatedDec);
 
     return priceImpact.mul(100);
   }

@@ -5,7 +5,7 @@ import BN from "bn.js";
 import { SwapErrorCode } from "../errors/errors";
 import { PREFER_CACHE, WhirlpoolAccountFetcherInterface } from "../network/public/fetcher";
 import { SwapQuoteParam, swapQuoteWithParams } from "../quotes/public";
-import { Path } from "../utils/public";
+import { Path, PoolUtil } from "../utils/public";
 import { SwapQuoteRequest, batchBuildSwapQuoteParams } from "./batch-swap-quote";
 import { RoutingOptions, Trade, TradeHop } from "./public";
 
@@ -124,6 +124,11 @@ function populateQuoteMap(
         vaultA,
         vaultB,
         quote,
+        snapshot: {
+          aToB: swapParam.aToB,
+          sqrtPrice: whirlpoolData.sqrtPrice,
+          feeRate: PoolUtil.getFeeRate(whirlpoolData.feeRate),
+        },
       };
     } catch (e: any) {
       const errorCode: SwapErrorCode = e.errorCode;

@@ -90,6 +90,7 @@ export type SubTradeRoute = {
  * @param vaultA The address of the first vault in the pool.
  * @param vaultB The address of the second vault in the pool.
  * @param quote The {@link SwapQuote} for this hop.
+ * @param snapshot A snapshot of the whirlpool condition when this hop was made
  */
 export type TradeHop = {
   amountIn: BN;
@@ -102,6 +103,17 @@ export type TradeHop = {
   vaultA: Address;
   vaultB: Address;
   quote: SwapQuote;
+  snapshot: TradeHopSnapshot;
+};
+
+/**
+ * A snapshot of the whirlpool condition when a trade hop was made.
+ * @category Router
+ */
+export type TradeHopSnapshot = {
+  aToB: boolean;
+  sqrtPrice: BN;
+  feeRate: Percentage;
 };
 
 /**

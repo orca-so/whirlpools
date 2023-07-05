@@ -8,10 +8,14 @@ import {
 } from "@orca-so/common-sdk";
 import { Account } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { ExecutableRoute, RoutingOptions, TradeRoute } from ".";
+import BN from "bn.js";
+import Decimal from "decimal.js";
+import { ExecutableRoute, RoutingOptions, Trade, TradeRoute } from ".";
 import { WhirlpoolContext } from "../../context";
 import { getSwapFromRoute } from "../../instructions/composites/swap-with-route";
 import { PREFER_CACHE } from "../../network/public/fetcher";
+import { U64 } from "../../utils/math/constants";
+import { PriceMath } from "../../utils/public";
 import { isWalletConnected } from "../../utils/wallet-utils";
 
 /**
@@ -133,6 +137,60 @@ export class RouterUtils {
     }
 
     return null;
+  }
+
+  /**
+   * Calculate the price impact for a route.
+   * @param trade The trade the user used to derive the route.
+   * @param route The route to calculate the price impact for.
+   * @returns A Decimal object representing the percentage value of the price impact (ex. 3.01%)
+   */
+  static getPriceImpactForRoute(trade: Trade, route: TradeRoute): Decimal {
+    const { amountSpecifiedIsInput } = trade;
+
+    const totalBaseValue = route.subRoutes.reduce((acc, route) => {
+      const directionalHops = amountSpecifiedIsInput
+        ? route.hopQuotes
+        : route.hopQuotes.slice().reverse();
+      const baseOutputs = directionalHops.reduce((acc, quote, index) => {
+        const { snapshot } = quote;
+        const { aToB, sqrtPrice, feeRate } = snapshot;
+        // Inverse sqrt price will cause 1bps precision loss since ticks are spaces of 1bps
+        const directionalSqrtPrice = aToB ? sqrtPrice : PriceMath.invertSqrtPriceX64(sqrtPrice);
+
+        // Convert from in/out -> base_out/in using the directional price & fee rate
+        let nextBaseValue;
+        const price = directionalSqrtPrice.mul(directionalSqrtPrice).div(U64);
+        if (amountSpecifiedIsInput) {
+          const amountIn = index === 0 ? quote.amountIn : acc[index - 1];
+          const feeAdjustedAmount = amountIn
+            .mul(feeRate.denominator.sub(feeRate.numerator))
+            .div(feeRate.denominator);
+          nextBaseValue = price.mul(feeAdjustedAmount).div(U64);
+        } else {
+          const amountOut = index === 0 ? quote.amountOut : acc[index - 1];
+          const feeAdjustedAmount = amountOut.mul(U64).div(price);
+          nextBaseValue = feeAdjustedAmount
+            .mul(feeRate.denominator)
+            .div(feeRate.denominator.sub(feeRate.numerator));
+        }
+
+        acc.push(nextBaseValue);
+        return acc;
+      }, new Array<BN>());
+
+      return acc.add(baseOutputs[baseOutputs.length - 1]);
+    }, new BN(0));
+
+    const totalBaseValueDec = new Decimal(totalBaseValue.toString());
+    const totalAmountEstimatedDec = new Decimal(
+      amountSpecifiedIsInput ? route.totalAmountOut.toString() : route.totalAmountIn.toString()
+    );
+    const priceImpact = amountSpecifiedIsInput
+      ? totalBaseValueDec.sub(totalAmountEstimatedDec).div(totalBaseValueDec)
+      : totalAmountEstimatedDec.sub(totalBaseValueDec).div(totalAmountEstimatedDec);
+
+    return priceImpact.mul(100);
   }
 
   /**

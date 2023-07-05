@@ -154,7 +154,7 @@ export class RouterUtils {
         : route.hopQuotes.slice().reverse();
       const baseOutputs = directionalHops.reduce((acc, quote, index) => {
         const { snapshot } = quote;
-        const { aToB, sqrtPrice, feeRate: totalFeeRate } = snapshot;
+        const { aToB, sqrtPrice, feeRate } = snapshot;
         // Inverse sqrt price will cause 1bps precision loss since ticks are spaces of 1bps
         const directionalSqrtPrice = aToB ? sqrtPrice : PriceMath.invertSqrtPriceX64(sqrtPrice);
 
@@ -164,15 +164,15 @@ export class RouterUtils {
         if (amountSpecifiedIsInput) {
           const amountIn = index === 0 ? quote.amountIn : acc[index - 1];
           const feeAdjustedAmount = amountIn
-            .mul(totalFeeRate.denominator.sub(totalFeeRate.numerator))
-            .div(totalFeeRate.denominator);
+            .mul(feeRate.denominator.sub(feeRate.numerator))
+            .div(feeRate.denominator);
           nextBaseValue = price.mul(feeAdjustedAmount).div(U64);
         } else {
           const amountOut = index === 0 ? quote.amountOut : acc[index - 1];
           const feeAdjustedAmount = amountOut.mul(U64).div(price);
           nextBaseValue = feeAdjustedAmount
-            .mul(totalFeeRate.denominator)
-            .div(totalFeeRate.denominator.sub(totalFeeRate.numerator));
+            .mul(feeRate.denominator)
+            .div(feeRate.denominator.sub(feeRate.numerator));
         }
 
         acc.push(nextBaseValue);

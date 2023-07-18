@@ -1,12 +1,12 @@
 import { Address } from "@coral-xyz/anchor";
 import {
   Instruction,
+  ResolvedTokenAddressInstruction,
   TokenUtil,
   TransactionBuilder,
   ZERO,
   resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
-import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PositionData, WhirlpoolContext } from "../..";

@@ -148,10 +148,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@orca-so/common-sdk@^0.3.1":
-  version "0.3.1"
-  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.3.1.tgz#939232636b8888237981fad328ddb07a81decfa1"
-  integrity sha512-hk4wPdEBlugfJ2vBnap0P8bH/h/OX109s+NMPZT3CRmQX2IRaal/KBEHT/Gi3OuCG0JSPDvtiFKtXzHnScCt6A==
+"@orca-so/common-sdk@0.3.2-beta.0":
+  version "0.3.2-beta.0"
+  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.3.2-beta.0.tgz#0a16180e367b9faa068f8d691c7ded870e60b35b"
+  integrity sha512-4LyCgJjGyr2K+4Y8yukTjW0Dwll1w4TmzC9BZc2k8iBqIgK3t6CT5UyJffQ/YzzVzQrVR0m0CwTu3v0CT3rK5A==
   dependencies:
     "@solana/spl-token" "^0.3.8"
     "@solana/web3.js" "^1.75.0"

@@ -2,11 +2,11 @@ import {
   AddressUtil,
   EMPTY_INSTRUCTION,
   Percentage,
+  ResolvedTokenAddressInstruction,
   TokenUtil,
   TransactionBuilder,
-  ZERO,
+  ZERO,  
 } from "@orca-so/common-sdk";
-import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import {
   Account,
   NATIVE_MINT,

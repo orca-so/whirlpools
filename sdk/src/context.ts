@@ -4,6 +4,7 @@ import {
   LookupTableFetcher,
   TransactionBuilderOptions,
   Wallet,
+  WrappedSolAccountCreateMethod
 } from "@orca-so/common-sdk";
 import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js";
 import { Whirlpool } from "./artifacts/whirlpool";
@@ -21,19 +22,17 @@ export type WhirlpoolContextOpts = {
   userDefaultConfirmCommitment?: Commitment;
 };
 
-type CreateWrappedSolAccountMethod = "withSeed" | "withKeypair";
-
 /**
  * Default settings used when resolving token accounts.
  * @category Core
  */
 export type AccountResolverOpts = {
-  createWrappedSolAccountMethod: CreateWrappedSolAccountMethod;
+  createWrappedSolAccountMethod: WrappedSolAccountCreateMethod;
   allowPDAOwnerAddress: boolean;
 };
 
 const DEFAULT_ACCOUNT_RESOLVER_OPTS: AccountResolverOpts = {
-  createWrappedSolAccountMethod: "withKeypair",
+  createWrappedSolAccountMethod: "keypair",
   allowPDAOwnerAddress: false,
 };
 

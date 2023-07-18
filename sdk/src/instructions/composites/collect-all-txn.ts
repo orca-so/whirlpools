@@ -229,7 +229,7 @@ const constructCollectIxForPosition = (
   const mintA = whirlpool.tokenMintA.toBase58();
   const mintB = whirlpool.tokenMintB.toBase58();
 
-  const positionTokenAccount = getAssociatedTokenAddressSync(positionMint, positionOwner);
+  const positionTokenAccount = getAssociatedTokenAddressSync(positionMint, positionOwner, ctx.accountResolverOpts.allowPDAOwnerAddress);
 
   // Update fee and reward values if necessary
   if (!liquidity.eq(ZERO)) {

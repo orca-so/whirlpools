@@ -134,12 +134,13 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     } else {
-      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey);
-      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey);
+      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
+      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
     }
     const positionTokenAccount = getAssociatedTokenAddressSync(
       this.data.positionMint,
-      positionWalletKey
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
 
     const increaseIx = increaseLiquidityIx(this.ctx.program, {
@@ -210,8 +211,8 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     } else {
-      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey);
-      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey);
+      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
+      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
     }
 
     const decreaseIx = decreaseLiquidityIx(this.ctx.program, {
@@ -220,7 +221,8 @@ export class PositionImpl implements Position {
       position: this.address,
       positionTokenAccount: getAssociatedTokenAddressSync(
         this.data.positionMint,
-        positionWalletKey
+        positionWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
       ),
       tokenOwnerAccountA,
       tokenOwnerAccountB,
@@ -316,7 +318,8 @@ export class PositionImpl implements Position {
 
     const positionTokenAccount = getAssociatedTokenAddressSync(
       this.data.positionMint,
-      positionWalletKey
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
 
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
@@ -405,7 +408,8 @@ export class PositionImpl implements Position {
 
     const positionTokenAccount = getAssociatedTokenAddressSync(
       this.data.positionMint,
-      positionWalletKey
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
       const updateIx = await this.updateFeesAndRewards();

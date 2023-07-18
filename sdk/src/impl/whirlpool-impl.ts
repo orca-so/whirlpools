@@ -283,7 +283,8 @@ export class WhirlpoolImpl implements Whirlpool {
     const metadataPda = PDAUtil.getPositionMetadata(positionMintKeypair.publicKey);
     const positionTokenAccountAddress = getAssociatedTokenAddressSync(
       positionMintKeypair.publicKey,
-      wallet
+      wallet,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
 
     const txBuilder = new TransactionBuilder(
@@ -381,7 +382,8 @@ export class WhirlpoolImpl implements Whirlpool {
 
     const positionTokenAccount = getAssociatedTokenAddressSync(
       positionData.positionMint,
-      positionWallet
+      positionWallet,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
 
     const tokenAccountsTxBuilder = new TransactionBuilder(

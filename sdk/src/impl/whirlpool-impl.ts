@@ -317,7 +317,10 @@ export class WhirlpoolImpl implements Whirlpool {
         { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: tokenMaxB },
       ],
       () => this.ctx.fetcher.getAccountRentExempt(),
-      funder
+      funder,
+      undefined, // use default
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+      this.ctx.accountResolverOpts.createWrappedSolAccountMethod
     );
     const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
     const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB;

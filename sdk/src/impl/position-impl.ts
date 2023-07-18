@@ -125,7 +125,10 @@ export class PositionImpl implements Position {
           { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: liquidityInput.tokenMaxB },
         ],
         () => this.ctx.fetcher.getAccountRentExempt(),
-        ataPayerKey
+        ataPayerKey,
+        undefined, // use default
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        this.ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
       const { address: ataAddrB, ...tokenOwnerAccountBIx } = ataB!;
@@ -202,7 +205,10 @@ export class PositionImpl implements Position {
         sourceWalletKey,
         [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
         () => this.ctx.fetcher.getAccountRentExempt(),
-        ataPayerKey
+        ataPayerKey,
+        undefined, // use default
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        this.ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
       const { address: ataAddrB, ...tokenOwnerAccountBIx } = ataB!;

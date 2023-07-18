@@ -127,7 +127,10 @@ export async function resolveAtaForMints(
       return { tokenMint };
     }),
     async () => accountExemption,
-    payerKey
+    payerKey,
+    undefined, // use default
+    ctx.accountResolverOpts.allowPDAOwnerAddress,
+    ctx.accountResolverOpts.createWrappedSolAccountMethod
   );
 
   // Convert the results back into the specified format

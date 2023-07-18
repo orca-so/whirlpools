@@ -128,7 +128,9 @@ export async function collectAllForPositionsTxns(
       allMints.mintMap.map((tokenMint) => ({ tokenMint })),
       async () => accountExemption,
       payerKey,
-      true // CreateIdempotent
+      true, // CreateIdempotent
+      ctx.accountResolverOpts.allowPDAOwnerAddress,
+      ctx.accountResolverOpts.createWrappedSolAccountMethod
     ),
     allMints.mintMap.map((mint) => mint.toBase58())
   );

@@ -26,12 +26,12 @@ export type WhirlpoolContextOpts = {
  * Default settings used when resolving token accounts.
  * @category Core
  */
-export type AccountResolverOpts = {
+export type AccountResolverOptions = {
   createWrappedSolAccountMethod: WrappedSolAccountCreateMethod;
   allowPDAOwnerAddress: boolean;
 };
 
-const DEFAULT_ACCOUNT_RESOLVER_OPTS: AccountResolverOpts = {
+const DEFAULT_ACCOUNT_RESOLVER_OPTS: AccountResolverOptions = {
   createWrappedSolAccountMethod: "keypair",
   allowPDAOwnerAddress: false,
 };
@@ -49,7 +49,7 @@ export class WhirlpoolContext {
   readonly lookupTableFetcher: LookupTableFetcher | undefined;
   readonly opts: WhirlpoolContextOpts;
   readonly txBuilderOpts: TransactionBuilderOptions | undefined;
-  readonly accountResolverOpts: AccountResolverOpts;
+  readonly accountResolverOpts: AccountResolverOptions;
 
   public static from(
     connection: Connection,
@@ -58,7 +58,7 @@ export class WhirlpoolContext {
     fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
-    accountResolverOpts: AccountResolverOpts = DEFAULT_ACCOUNT_RESOLVER_OPTS,
+    accountResolverOpts: AccountResolverOptions = DEFAULT_ACCOUNT_RESOLVER_OPTS,
   ): WhirlpoolContext {
     const anchorProvider = new AnchorProvider(connection, wallet, {
       commitment: opts.userDefaultConfirmCommitment || "confirmed",
@@ -82,7 +82,7 @@ export class WhirlpoolContext {
     fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(provider.connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
-    accountResolverOpts: AccountResolverOpts = DEFAULT_ACCOUNT_RESOLVER_OPTS,
+    accountResolverOpts: AccountResolverOptions = DEFAULT_ACCOUNT_RESOLVER_OPTS,
   ) {
     return new WhirlpoolContext(
       provider,
@@ -101,7 +101,7 @@ export class WhirlpoolContext {
     fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(provider.connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
-    accountResolverOpts: AccountResolverOpts = DEFAULT_ACCOUNT_RESOLVER_OPTS,
+    accountResolverOpts: AccountResolverOptions = DEFAULT_ACCOUNT_RESOLVER_OPTS,
   ): WhirlpoolContext {
     const program = new Program(WhirlpoolIDL as Idl, programId, provider);
     return new WhirlpoolContext(
@@ -122,7 +122,7 @@ export class WhirlpoolContext {
     fetcher: WhirlpoolAccountFetcherInterface,
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
-    accountResolverOpts: AccountResolverOpts = DEFAULT_ACCOUNT_RESOLVER_OPTS,
+    accountResolverOpts: AccountResolverOptions = DEFAULT_ACCOUNT_RESOLVER_OPTS,
   ) {
     this.connection = provider.connection;
     this.wallet = wallet;

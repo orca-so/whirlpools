@@ -223,7 +223,8 @@ export class WhirlpoolImpl implements Whirlpool {
           inputToken.decimals,
           quote.devFeeAmount,
           () => this.ctx.fetcher.getAccountRentExempt(),
-          payerKey
+          payerKey,
+          this.ctx.accountResolverOpts.allowPDAOwnerAddress
         )
       );
     }

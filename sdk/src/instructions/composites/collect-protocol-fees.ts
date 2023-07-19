@@ -60,7 +60,7 @@ export async function collectProtocolFees(
     const txBuilderHasNativeMint = !!ataTokenAddresses[NATIVE_MINT.toBase58()];
 
     if (poolHandlesNativeMint && !txBuilderHasNativeMint) {
-      addNativeMintHandlingIx(txBuilder, ataTokenAddresses, receiverKey, accountExemption);
+      addNativeMintHandlingIx(txBuilder, ataTokenAddresses, receiverKey, accountExemption, ctx.accountResolverOpts.createWrappedSolAccountMethod);
     }
 
     // add collect ixn

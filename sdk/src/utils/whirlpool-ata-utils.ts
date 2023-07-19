@@ -4,6 +4,7 @@ import {
   TransactionBuilder,
   ZERO,
   resolveOrCreateATAs,
+  WrappedSolAccountCreateMethod,
 } from "@orca-so/common-sdk";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
@@ -168,12 +169,16 @@ export function addNativeMintHandlingIx(
   txBuilder: TransactionBuilder,
   affliatedTokenAtaMap: Record<string, PublicKey>,
   destinationWallet: PublicKey,
-  accountExemption: number
+  accountExemption: number,
+  createAccountMethod: WrappedSolAccountCreateMethod
 ) {
   let { address: wSOLAta, ...resolveWSolIx } = TokenUtil.createWrappedNativeAccountInstruction(
     destinationWallet,
     ZERO,
-    accountExemption
+    accountExemption,
+    undefined, // use default
+    undefined, // use default
+    createAccountMethod
   );
   affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
   txBuilder.prependInstruction(resolveWSolIx);

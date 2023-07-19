@@ -302,7 +302,8 @@ export class PositionImpl implements Position {
             ZERO,
             accountExemption,
             ataPayerKey,
-            destinationWalletKey
+            destinationWalletKey,
+            this.ctx.accountResolverOpts.createWrappedSolAccountMethod
           );
         affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
         txBuilder.addInstruction(resolveWSolIx);
@@ -401,7 +402,10 @@ export class PositionImpl implements Position {
           TokenUtil.createWrappedNativeAccountInstruction(
             destinationWalletKey,
             ZERO,
-            accountExemption
+            accountExemption,
+            ataPayerKey,
+            destinationWalletKey,
+            this.ctx.accountResolverOpts.createWrappedSolAccountMethod
           );
         affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
         txBuilder.addInstruction(resolveWSolIx);

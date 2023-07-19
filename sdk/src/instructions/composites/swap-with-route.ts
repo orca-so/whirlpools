@@ -145,7 +145,10 @@ export async function getSwapFromRoute(
     const solIx = TokenUtil.createWrappedNativeAccountInstruction(
       wallet,
       nativeMintAmount,
-      await ctx.fetcher.getAccountRentExempt()
+      await ctx.fetcher.getAccountRentExempt(),
+      undefined, // use default
+      undefined, // use default
+      ctx.accountResolverOpts.createWrappedSolAccountMethod
     );
     txBuilder.addInstruction(solIx);
     ataInstructionMap[NATIVE_MINT.toBase58()] = solIx;

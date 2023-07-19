@@ -499,7 +499,8 @@ export class WhirlpoolImpl implements Whirlpool {
         ZERO,
         accountExemption,
         payerKey,
-        destinationWallet
+        destinationWallet,
+        this.ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
       walletTokenAccountsByMint[NATIVE_MINT.toBase58()] = wSOLAta;
       txBuilder.addInstruction(resolveWSolIx);

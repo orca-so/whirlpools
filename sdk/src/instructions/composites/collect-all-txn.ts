@@ -149,7 +149,10 @@ export async function collectAllForPositionsTxns(
       resolvedAtas[NATIVE_MINT.toBase58()] = TokenUtil.createWrappedNativeAccountInstruction(
         receiverKey,
         ZERO,
-        accountExemption
+        accountExemption,
+        undefined, // use default
+        undefined, // use default
+        ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
     }
 

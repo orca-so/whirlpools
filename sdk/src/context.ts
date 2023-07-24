@@ -20,6 +20,7 @@ export type WhirlpoolContextOpts = {
   userDefaultBuildOptions?: Partial<BuildOptions>;
   userDefaultSendOptions?: Partial<SendOptions>;
   userDefaultConfirmCommitment?: Commitment;
+  accountResolverOptions?: AccountResolverOptions;
 };
 
 /**
@@ -58,7 +59,6 @@ export class WhirlpoolContext {
     fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
-    accountResolverOpts: AccountResolverOptions = DEFAULT_ACCOUNT_RESOLVER_OPTS,
   ): WhirlpoolContext {
     const anchorProvider = new AnchorProvider(connection, wallet, {
       commitment: opts.userDefaultConfirmCommitment || "confirmed",
@@ -72,7 +72,6 @@ export class WhirlpoolContext {
       fetcher,
       lookupTableFetcher,
       opts,
-      accountResolverOpts
     );
   }
 
@@ -82,7 +81,6 @@ export class WhirlpoolContext {
     fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(provider.connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
-    accountResolverOpts: AccountResolverOptions = DEFAULT_ACCOUNT_RESOLVER_OPTS,
   ) {
     return new WhirlpoolContext(
       provider,
@@ -91,7 +89,6 @@ export class WhirlpoolContext {
       fetcher,
       lookupTableFetcher,
       opts,
-      accountResolverOpts
     );
   }
 
@@ -101,7 +98,6 @@ export class WhirlpoolContext {
     fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(provider.connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
-    accountResolverOpts: AccountResolverOptions = DEFAULT_ACCOUNT_RESOLVER_OPTS,
   ): WhirlpoolContext {
     const program = new Program(WhirlpoolIDL as Idl, programId, provider);
     return new WhirlpoolContext(
@@ -111,7 +107,6 @@ export class WhirlpoolContext {
       fetcher,
       lookupTableFetcher,
       opts,
-      accountResolverOpts
     );
   }
 
@@ -122,7 +117,6 @@ export class WhirlpoolContext {
     fetcher: WhirlpoolAccountFetcherInterface,
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {},
-    accountResolverOpts: AccountResolverOptions = DEFAULT_ACCOUNT_RESOLVER_OPTS,
   ) {
     this.connection = provider.connection;
     this.wallet = wallet;
@@ -133,7 +127,7 @@ export class WhirlpoolContext {
     this.lookupTableFetcher = lookupTableFetcher;
     this.opts = opts;
     this.txBuilderOpts = contextOptionsToBuilderOptions(this.opts);
-    this.accountResolverOpts = accountResolverOpts;
+    this.accountResolverOpts = opts.accountResolverOptions ?? DEFAULT_ACCOUNT_RESOLVER_OPTS;
   }
 
   // TODO: Add another factory method to build from on-chain IDL

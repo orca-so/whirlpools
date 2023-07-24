@@ -125,7 +125,10 @@ export class PositionImpl implements Position {
           { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: liquidityInput.tokenMaxB },
         ],
         () => this.ctx.fetcher.getAccountRentExempt(),
-        ataPayerKey
+        ataPayerKey,
+        undefined, // use default
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        this.ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
       const { address: ataAddrB, ...tokenOwnerAccountBIx } = ataB!;
@@ -134,12 +137,13 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     } else {
-      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey);
-      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey);
+      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
+      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
     }
     const positionTokenAccount = getAssociatedTokenAddressSync(
       this.data.positionMint,
-      positionWalletKey
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
 
     const increaseIx = increaseLiquidityIx(this.ctx.program, {
@@ -201,7 +205,10 @@ export class PositionImpl implements Position {
         sourceWalletKey,
         [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
         () => this.ctx.fetcher.getAccountRentExempt(),
-        ataPayerKey
+        ataPayerKey,
+        undefined, // use default
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        this.ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
       const { address: ataAddrB, ...tokenOwnerAccountBIx } = ataB!;
@@ -210,8 +217,8 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     } else {
-      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey);
-      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey);
+      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
+      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
     }
 
     const decreaseIx = decreaseLiquidityIx(this.ctx.program, {
@@ -220,7 +227,8 @@ export class PositionImpl implements Position {
       position: this.address,
       positionTokenAccount: getAssociatedTokenAddressSync(
         this.data.positionMint,
-        positionWalletKey
+        positionWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
       ),
       tokenOwnerAccountA,
       tokenOwnerAccountB,
@@ -294,7 +302,8 @@ export class PositionImpl implements Position {
             ZERO,
             accountExemption,
             ataPayerKey,
-            destinationWalletKey
+            destinationWalletKey,
+            this.ctx.accountResolverOpts.createWrappedSolAccountMethod
           );
         affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
         txBuilder.addInstruction(resolveWSolIx);
@@ -316,7 +325,8 @@ export class PositionImpl implements Position {
 
     const positionTokenAccount = getAssociatedTokenAddressSync(
       this.data.positionMint,
-      positionWalletKey
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
 
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
@@ -392,7 +402,10 @@ export class PositionImpl implements Position {
           TokenUtil.createWrappedNativeAccountInstruction(
             destinationWalletKey,
             ZERO,
-            accountExemption
+            accountExemption,
+            ataPayerKey,
+            destinationWalletKey,
+            this.ctx.accountResolverOpts.createWrappedSolAccountMethod
           );
         affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
         txBuilder.addInstruction(resolveWSolIx);
@@ -405,7 +418,8 @@ export class PositionImpl implements Position {
 
     const positionTokenAccount = getAssociatedTokenAddressSync(
       this.data.positionMint,
-      positionWalletKey
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
       const updateIx = await this.updateFeesAndRewards();

@@ -29,8 +29,8 @@ export type AtaAccountInfo = Pick<Account, "address" | "owner" | "mint">;
 /**
  * Parameters to configure the selection of the best route.
  * @category Router
- * @param slippageTolerance The slippage tolerance to use when selecting the best route.
  * @param maxSupportedTransactionVersion The maximum transaction version that the wallet supports.
+ * @param maxTransactionSize The maximum transaction size that the wallet supports.
  * @param availableAtaAccounts A list of ATA accounts that are available in this wallet to use for the swap.
  * @param onRouteEvaluation
  * A callback that is called right before a route is evaluated. Users have a chance to add additional instructions
@@ -39,6 +39,7 @@ export type AtaAccountInfo = Pick<Account, "address" | "owner" | "mint">;
  */
 export type RouteSelectOptions = {
   maxSupportedTransactionVersion: "legacy" | number;
+  maxTransactionSize: number;
   availableAtaAccounts?: AtaAccountInfo[];
   onRouteEvaluation?: (route: Readonly<TradeRoute>, tx: TransactionBuilder) => void;
 };
@@ -103,7 +104,7 @@ export class RouterUtils {
           latestBlockhash: MEASUREMENT_BLOCKHASH,
           maxSupportedTransactionVersion: "legacy",
         });
-        if (legacyTxSize !== undefined && legacyTxSize <= TX_SIZE_LIMIT) {
+        if (legacyTxSize !== undefined && legacyTxSize <= opts.maxTransactionSize) {
           return [route, undefined];
         }
       } catch (e) {
@@ -127,7 +128,7 @@ export class RouterUtils {
             lookupTableAccounts,
           });
 
-          if (v0TxSize !== undefined && v0TxSize <= TX_SIZE_LIMIT) {
+          if (v0TxSize !== undefined && v0TxSize <= opts.maxTransactionSize) {
             return [route, lookupTableAccounts];
           }
         } catch (e) {
@@ -232,6 +233,7 @@ export class RouterUtils {
   static getDefaultSelectOptions(): RouteSelectOptions {
     return {
       maxSupportedTransactionVersion: 0,
+      maxTransactionSize: TX_SIZE_LIMIT,
     };
   }
 }

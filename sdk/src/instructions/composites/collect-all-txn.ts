@@ -1,12 +1,12 @@
 import { Address } from "@coral-xyz/anchor";
 import {
   Instruction,
+  ResolvedTokenAddressInstruction,
   TokenUtil,
   TransactionBuilder,
   ZERO,
   resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
-import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PositionData, WhirlpoolContext } from "../..";
@@ -128,7 +128,9 @@ export async function collectAllForPositionsTxns(
       allMints.mintMap.map((tokenMint) => ({ tokenMint })),
       async () => accountExemption,
       payerKey,
-      true // CreateIdempotent
+      true, // CreateIdempotent
+      ctx.accountResolverOpts.allowPDAOwnerAddress,
+      ctx.accountResolverOpts.createWrappedSolAccountMethod
     ),
     allMints.mintMap.map((mint) => mint.toBase58())
   );
@@ -147,7 +149,10 @@ export async function collectAllForPositionsTxns(
       resolvedAtas[NATIVE_MINT.toBase58()] = TokenUtil.createWrappedNativeAccountInstruction(
         receiverKey,
         ZERO,
-        accountExemption
+        accountExemption,
+        undefined, // use default
+        undefined, // use default
+        ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
     }
 
@@ -229,7 +234,7 @@ const constructCollectIxForPosition = (
   const mintA = whirlpool.tokenMintA.toBase58();
   const mintB = whirlpool.tokenMintB.toBase58();
 
-  const positionTokenAccount = getAssociatedTokenAddressSync(positionMint, positionOwner);
+  const positionTokenAccount = getAssociatedTokenAddressSync(positionMint, positionOwner, ctx.accountResolverOpts.allowPDAOwnerAddress);
 
   // Update fee and reward values if necessary
   if (!liquidity.eq(ZERO)) {

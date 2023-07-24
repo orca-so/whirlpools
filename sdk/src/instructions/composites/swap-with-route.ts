@@ -2,11 +2,11 @@ import {
   AddressUtil,
   EMPTY_INSTRUCTION,
   Percentage,
+  ResolvedTokenAddressInstruction,
   TokenUtil,
   TransactionBuilder,
-  ZERO,
+  ZERO,  
 } from "@orca-so/common-sdk";
-import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import {
   Account,
   NATIVE_MINT,
@@ -134,7 +134,9 @@ export async function getSwapFromRoute(
       } else {
         return ctx.fetcher.getTokenInfos(keys, opts).then((result) => Array.from(result.values()));
       }
-    }
+    },
+    undefined, // use default
+    ctx.accountResolverOpts.allowPDAOwnerAddress
   );
 
   const ataIxes = Object.values(ataInstructionMap);
@@ -143,7 +145,10 @@ export async function getSwapFromRoute(
     const solIx = TokenUtil.createWrappedNativeAccountInstruction(
       wallet,
       nativeMintAmount,
-      await ctx.fetcher.getAccountRentExempt()
+      await ctx.fetcher.getAccountRentExempt(),
+      undefined, // use default
+      undefined, // use default
+      ctx.accountResolverOpts.createWrappedSolAccountMethod
     );
     txBuilder.addInstruction(solIx);
     ataInstructionMap[NATIVE_MINT.toBase58()] = solIx;
@@ -313,18 +318,19 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
  * @param ownerAddress The user's public key
  * @param tokenMint Token mint address
  * @param payer Payer that would pay the rent for the creation of the ATAs
- * @param modeIdempotent Optional. Use CreateIdempotent instruction instead of Create instruction
+ * @param allowPDAOwnerAddress Optional. Allow PDA to be used as the ATA owner address
  * @returns
  */
 async function cachedResolveOrCreateNonNativeATAs(
   ownerAddress: PublicKey,
   tokenMints: Set<string>,
   getTokenAccounts: (keys: PublicKey[]) => Promise<Array<AtaAccountInfo | null>>,
-  payer = ownerAddress
+  payer = ownerAddress,
+  allowPDAOwnerAddress: boolean = false,
 ): Promise<{ [tokenMint: string]: ResolvedTokenAddressInstruction }> {
   const instructionMap: { [tokenMint: string]: ResolvedTokenAddressInstruction } = {};
   const tokenMintArray = Array.from(tokenMints).map((tm) => new PublicKey(tm));
-  const tokenAtas = tokenMintArray.map((tm) => getAssociatedTokenAddressSync(tm, ownerAddress));
+  const tokenAtas = tokenMintArray.map((tm) => getAssociatedTokenAddressSync(tm, ownerAddress, allowPDAOwnerAddress));
   const tokenAccounts = await getTokenAccounts(tokenAtas);
   tokenAccounts.forEach((tokenAccount, index) => {
     const ataAddress = tokenAtas[index]!;

@@ -209,4 +209,12 @@ export interface WhirlpoolAccountFetcherInterface {
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, PositionBundleData | null>>;
+
+  /**
+   * Populate the fetcher's cache with the given {@link WhirlpoolsData} accounts
+   * @param pools The map of whirlpool addresses to whirlpool accounts
+   */
+  populatePools(
+    pools: [Address, WhirlpoolData][]
+  ): void;
 }

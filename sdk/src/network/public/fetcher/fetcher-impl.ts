@@ -1,6 +1,7 @@
 import { Address } from "@coral-xyz/anchor";
 import {
   AccountFetcher,
+  AddressUtil,
   ParsableMintInfo,
   ParsableTokenAccountInfo,
   SimpleAccountFetcher,
@@ -54,7 +55,7 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
   constructor(
     readonly connection: Connection,
     readonly fetcher: AccountFetcher<WhirlpoolSupportedTypes, WhirlpoolAccountFetchOptions>
-  ) {}
+  ) { }
 
   async getAccountRentExempt(refresh: boolean = false): Promise<number> {
     // This value should be relatively static or at least not break according to spec
@@ -150,5 +151,9 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, PositionBundleData | null>> {
     return this.fetcher.getAccounts(addresses, ParsablePositionBundle, opts);
+  }
+  populatePools(pools: [Address, WhirlpoolData][]): void {
+    const poolMap = new Map(pools.map(([address, pool]) => [AddressUtil.toString(address), pool]));
+    this.fetcher.populateAccounts(poolMap, ParsableWhirlpool, Date.now());
   }
 }

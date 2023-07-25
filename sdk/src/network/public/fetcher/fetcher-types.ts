@@ -214,7 +214,5 @@ export interface WhirlpoolAccountFetcherInterface {
    * Populate the fetcher's cache with the given {@link WhirlpoolsData} accounts
    * @param pools The map of whirlpool addresses to whirlpool accounts
    */
-  populatePools(
-    pools: [Address, WhirlpoolData][]
-  ): void;
+  populatePools(pools: [Address, WhirlpoolData][]): void;
 }

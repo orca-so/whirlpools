@@ -7,7 +7,7 @@ import { ParsableWhirlpool } from "../parsing";
 /**
  * Retrieve a list of cached whirlpool addresses and accounts filtered by the given params using
  * getProgramAccounts.
-* @category Fetcher
+ * @category Fetcher
  *
  * @param connection The connection to use to fetch accounts
  * @param programId The Whirlpool program to search Whirlpool accounts for

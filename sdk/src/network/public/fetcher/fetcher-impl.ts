@@ -1,10 +1,10 @@
 import { Address } from "@coral-xyz/anchor";
 import {
   AccountFetcher,
-  AddressUtil,
+  ParsableEntity,
   ParsableMintInfo,
   ParsableTokenAccountInfo,
-  SimpleAccountFetcher,
+  SimpleAccountFetcher
 } from "@orca-so/common-sdk";
 import { AccountLayout, Mint, Account as TokenAccount } from "@solana/spl-token";
 import { Connection } from "@solana/web3.js";
@@ -55,7 +55,7 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
   constructor(
     readonly connection: Connection,
     readonly fetcher: AccountFetcher<WhirlpoolSupportedTypes, WhirlpoolAccountFetchOptions>
-  ) {}
+  ) { }
 
   async getAccountRentExempt(refresh: boolean = false): Promise<number> {
     // This value should be relatively static or at least not break according to spec
@@ -152,8 +152,7 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
   ): Promise<ReadonlyMap<string, PositionBundleData | null>> {
     return this.fetcher.getAccounts(addresses, ParsablePositionBundle, opts);
   }
-  populatePools(pools: [Address, WhirlpoolData][]): void {
-    const poolMap = new Map(pools.map(([address, pool]) => [AddressUtil.toString(address), pool]));
-    this.fetcher.populateAccounts(poolMap, ParsableWhirlpool, Date.now());
+  populateCache<T extends WhirlpoolSupportedTypes>(pools: ReadonlyMap<string, T>, parser: ParsableEntity<T>, now = Date.now()): void {
+    this.fetcher.populateAccounts(pools, parser, now);
   }
 }

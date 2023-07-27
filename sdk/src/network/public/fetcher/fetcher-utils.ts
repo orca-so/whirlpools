@@ -5,7 +5,7 @@ import { AccountName, WHIRLPOOL_CODER, WhirlpoolData, getAccountSize } from "../
 import { ParsableWhirlpool } from "../parsing";
 
 /**
- * Retrieve a list of cached whirlpool addresses and accounts filtered by the given params using
+ * Retrieve a list of whirlpool addresses and accounts filtered by the given params using
  * getProgramAccounts.
  * @category Fetcher
  *
@@ -14,7 +14,7 @@ import { ParsableWhirlpool } from "../parsing";
  * @param configId The {@link WhirlpoolConfig} account program address to filter by
  * @returns tuple of whirlpool addresses and accounts
  */
-export async function getAllWhirlpoolAccounts({
+export async function getAllWhirlpoolAccountsForConfig({
   connection,
   programId,
   configId,
@@ -22,7 +22,7 @@ export async function getAllWhirlpoolAccounts({
   connection: Connection;
   programId: Address;
   configId: Address;
-}): Promise<[Address, WhirlpoolData][]> {
+}): Promise<ReadonlyMap<string, WhirlpoolData>> {
   const filters = [
     { dataSize: getAccountSize(AccountName.Whirlpool) },
     {
@@ -44,5 +44,5 @@ export async function getAllWhirlpoolAccounts({
     parsedAccounts.push([pubkey, parsedAccount]);
   });
 
-  return parsedAccounts;
+  return new Map(parsedAccounts.map(([address, pool]) => [AddressUtil.toString(address), pool]));
 }

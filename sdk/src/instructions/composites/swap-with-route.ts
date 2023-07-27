@@ -5,7 +5,7 @@ import {
   ResolvedTokenAddressInstruction,
   TokenUtil,
   TransactionBuilder,
-  ZERO,  
+  ZERO,
 } from "@orca-so/common-sdk";
 import {
   Account,
@@ -326,11 +326,13 @@ async function cachedResolveOrCreateNonNativeATAs(
   tokenMints: Set<string>,
   getTokenAccounts: (keys: PublicKey[]) => Promise<Array<AtaAccountInfo | null>>,
   payer = ownerAddress,
-  allowPDAOwnerAddress: boolean = false,
+  allowPDAOwnerAddress: boolean = false
 ): Promise<{ [tokenMint: string]: ResolvedTokenAddressInstruction }> {
   const instructionMap: { [tokenMint: string]: ResolvedTokenAddressInstruction } = {};
   const tokenMintArray = Array.from(tokenMints).map((tm) => new PublicKey(tm));
-  const tokenAtas = tokenMintArray.map((tm) => getAssociatedTokenAddressSync(tm, ownerAddress, allowPDAOwnerAddress));
+  const tokenAtas = tokenMintArray.map((tm) =>
+    getAssociatedTokenAddressSync(tm, ownerAddress, allowPDAOwnerAddress)
+  );
   const tokenAccounts = await getTokenAccounts(tokenAtas);
   tokenAccounts.forEach((tokenAccount, index) => {
     const ataAddress = tokenAtas[index]!;

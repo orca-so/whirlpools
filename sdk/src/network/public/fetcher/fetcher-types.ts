@@ -209,4 +209,16 @@ export interface WhirlpoolAccountFetcherInterface {
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, PositionBundleData | null>>;
+
+  /**
+   * Populate the fetcher's cache with the given {@link WhirlpoolsData} accounts
+   * @param accounts The map of addresses to on-chain account data
+   * @param parser The {@link ParsableEntity} instance to parse the accounts
+   * @param now The current timestamp to use for the cache
+   */
+  populateCache<T extends WhirlpoolSupportedTypes>(
+    accounts: ReadonlyMap<string, T>,
+    parser: ParsableEntity<T>,
+    now: number
+  ): void;
 }

@@ -4,7 +4,7 @@ import {
   LookupTableFetcher,
   TransactionBuilderOptions,
   Wallet,
-  WrappedSolAccountCreateMethod
+  WrappedSolAccountCreateMethod,
 } from "@orca-so/common-sdk";
 import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js";
 import { Whirlpool } from "./artifacts/whirlpool";

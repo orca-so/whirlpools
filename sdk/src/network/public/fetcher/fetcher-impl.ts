@@ -1,6 +1,7 @@
 import { Address } from "@coral-xyz/anchor";
 import {
   AccountFetcher,
+  ParsableEntity,
   ParsableMintInfo,
   ParsableTokenAccountInfo,
   SimpleAccountFetcher,
@@ -150,5 +151,12 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, PositionBundleData | null>> {
     return this.fetcher.getAccounts(addresses, ParsablePositionBundle, opts);
+  }
+  populateCache<T extends WhirlpoolSupportedTypes>(
+    accounts: ReadonlyMap<string, T>,
+    parser: ParsableEntity<T>,
+    now = Date.now()
+  ): void {
+    this.fetcher.populateAccounts(accounts, parser, now);
   }
 }

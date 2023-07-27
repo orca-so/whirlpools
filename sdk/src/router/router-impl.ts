@@ -105,7 +105,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
     fetchOpts?: WhirlpoolAccountFetchOptions
   ): Promise<ExecutableRoute | null> {
     const allRoutes = await this.findAllRoutes(trade, routingOpts, fetchOpts);
-    const selectOpts = { ...RouterUtils.getDefaultSelectOptions(), selectionOpts };
+    const selectOpts = { ...RouterUtils.getDefaultSelectOptions(), ...selectionOpts };
     return await RouterUtils.selectFirstExecutableRoute(this.ctx, allRoutes, selectOpts);
   }
 

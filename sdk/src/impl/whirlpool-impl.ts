@@ -223,7 +223,8 @@ export class WhirlpoolImpl implements Whirlpool {
           inputToken.decimals,
           quote.devFeeAmount,
           () => this.ctx.fetcher.getAccountRentExempt(),
-          payerKey
+          payerKey,
+          this.ctx.accountResolverOpts.allowPDAOwnerAddress
         )
       );
     }
@@ -283,7 +284,8 @@ export class WhirlpoolImpl implements Whirlpool {
     const metadataPda = PDAUtil.getPositionMetadata(positionMintKeypair.publicKey);
     const positionTokenAccountAddress = getAssociatedTokenAddressSync(
       positionMintKeypair.publicKey,
-      wallet
+      wallet,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
 
     const txBuilder = new TransactionBuilder(
@@ -316,7 +318,10 @@ export class WhirlpoolImpl implements Whirlpool {
         { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: tokenMaxB },
       ],
       () => this.ctx.fetcher.getAccountRentExempt(),
-      funder
+      funder,
+      undefined, // use default
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+      this.ctx.accountResolverOpts.createWrappedSolAccountMethod
     );
     const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
     const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB;
@@ -381,7 +386,8 @@ export class WhirlpoolImpl implements Whirlpool {
 
     const positionTokenAccount = getAssociatedTokenAddressSync(
       positionData.positionMint,
-      positionWallet
+      positionWallet,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
 
     const tokenAccountsTxBuilder = new TransactionBuilder(
@@ -494,7 +500,8 @@ export class WhirlpoolImpl implements Whirlpool {
         ZERO,
         accountExemption,
         payerKey,
-        destinationWallet
+        destinationWallet,
+        this.ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
       walletTokenAccountsByMint[NATIVE_MINT.toBase58()] = wSOLAta;
       txBuilder.addInstruction(resolveWSolIx);

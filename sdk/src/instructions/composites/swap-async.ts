@@ -44,7 +44,11 @@ export async function swapAsync(
       { tokenMint: data.tokenMintA, wrappedSolAmountIn: aToB ? amount : ZERO },
       { tokenMint: data.tokenMintB, wrappedSolAmountIn: !aToB ? amount : ZERO },
     ],
-    () => ctx.fetcher.getAccountRentExempt()
+    () => ctx.fetcher.getAccountRentExempt(),
+    undefined, // use default
+    undefined, // use default
+    ctx.accountResolverOpts.allowPDAOwnerAddress,
+    ctx.accountResolverOpts.createWrappedSolAccountMethod
   );
   const { address: ataAKey, ...tokenOwnerAccountAIx } = resolvedAtaA;
   const { address: ataBKey, ...tokenOwnerAccountBIx } = resolvedAtaB;

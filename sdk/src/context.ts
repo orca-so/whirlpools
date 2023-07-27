@@ -4,6 +4,7 @@ import {
   LookupTableFetcher,
   TransactionBuilderOptions,
   Wallet,
+  WrappedSolAccountCreateMethod
 } from "@orca-so/common-sdk";
 import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js";
 import { Whirlpool } from "./artifacts/whirlpool";
@@ -19,6 +20,21 @@ export type WhirlpoolContextOpts = {
   userDefaultBuildOptions?: Partial<BuildOptions>;
   userDefaultSendOptions?: Partial<SendOptions>;
   userDefaultConfirmCommitment?: Commitment;
+  accountResolverOptions?: AccountResolverOptions;
+};
+
+/**
+ * Default settings used when resolving token accounts.
+ * @category Core
+ */
+export type AccountResolverOptions = {
+  createWrappedSolAccountMethod: WrappedSolAccountCreateMethod;
+  allowPDAOwnerAddress: boolean;
+};
+
+const DEFAULT_ACCOUNT_RESOLVER_OPTS: AccountResolverOptions = {
+  createWrappedSolAccountMethod: "keypair",
+  allowPDAOwnerAddress: false,
 };
 
 /**
@@ -34,6 +50,7 @@ export class WhirlpoolContext {
   readonly lookupTableFetcher: LookupTableFetcher | undefined;
   readonly opts: WhirlpoolContextOpts;
   readonly txBuilderOpts: TransactionBuilderOptions | undefined;
+  readonly accountResolverOpts: AccountResolverOptions;
 
   public static from(
     connection: Connection,
@@ -110,6 +127,7 @@ export class WhirlpoolContext {
     this.lookupTableFetcher = lookupTableFetcher;
     this.opts = opts;
     this.txBuilderOpts = contextOptionsToBuilderOptions(this.opts);
+    this.accountResolverOpts = opts.accountResolverOptions ?? DEFAULT_ACCOUNT_RESOLVER_OPTS;
   }
 
   // TODO: Add another factory method to build from on-chain IDL

@@ -137,8 +137,16 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     } else {
-      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
-      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
+      tokenOwnerAccountA = getAssociatedTokenAddressSync(
+        whirlpool.tokenMintA,
+        sourceWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+      );
+      tokenOwnerAccountB = getAssociatedTokenAddressSync(
+        whirlpool.tokenMintB,
+        sourceWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+      );
     }
     const positionTokenAccount = getAssociatedTokenAddressSync(
       this.data.positionMint,
@@ -217,8 +225,16 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     } else {
-      tokenOwnerAccountA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
-      tokenOwnerAccountB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, sourceWalletKey, this.ctx.accountResolverOpts.allowPDAOwnerAddress);
+      tokenOwnerAccountA = getAssociatedTokenAddressSync(
+        whirlpool.tokenMintA,
+        sourceWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+      );
+      tokenOwnerAccountB = getAssociatedTokenAddressSync(
+        whirlpool.tokenMintB,
+        sourceWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+      );
     }
 
     const decreaseIx = decreaseLiquidityIx(this.ctx.program, {

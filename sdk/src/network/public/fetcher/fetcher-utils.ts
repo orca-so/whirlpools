@@ -37,11 +37,11 @@ export async function getAllWhirlpoolAccountsForConfig({
     filters,
   });
 
-  const parsedAccounts: [Address, WhirlpoolData][] = [];
+  const parsedAccounts: [string, WhirlpoolData][] = [];
   accounts.forEach(({ pubkey, account }) => {
     const parsedAccount = ParsableWhirlpool.parse(pubkey, account);
     invariant(!!parsedAccount, `could not parse whirlpool: ${pubkey.toBase58()}`);
-    parsedAccounts.push([pubkey, parsedAccount]);
+    parsedAccounts.push([AddressUtil.toString(pubkey), parsedAccount]);
   });
 
   return new Map(parsedAccounts.map(([address, pool]) => [AddressUtil.toString(address), pool]));

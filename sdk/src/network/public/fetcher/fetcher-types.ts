@@ -212,9 +212,13 @@ export interface WhirlpoolAccountFetcherInterface {
 
   /**
    * Populate the fetcher's cache with the given {@link WhirlpoolsData} accounts
-   * @param pools The map of addresses to on-chain account data
+   * @param accounts The map of addresses to on-chain account data
    * @param parser The {@link ParsableEntity} instance to parse the accounts
    * @param now The current timestamp to use for the cache
    */
-  populateCache<T extends WhirlpoolSupportedTypes>(pools: ReadonlyMap<string, T>, parser: ParsableEntity<T>, now: number): void;
+  populateCache<T extends WhirlpoolSupportedTypes>(
+    accounts: ReadonlyMap<string, T>,
+    parser: ParsableEntity<T>,
+    now: number
+  ): void;
 }

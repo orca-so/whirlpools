@@ -1,7 +1,6 @@
 import { BorshAccountsCoder, Idl } from "@coral-xyz/anchor";
-import { TokenUtil } from "@orca-so/common-sdk";
-import { AccountInfo, MintInfo, MintLayout, u64 } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import { ParsableEntity, staticImplements } from "@orca-so/common-sdk";
+import { AccountInfo, PublicKey } from "@solana/web3.js";
 import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
 import {
   AccountName,
@@ -14,33 +13,22 @@ import {
 } from "../../types/public";
 
 /**
- * Static abstract class definition to parse entities.
- * @category Parsables
- */
-export interface ParsableEntity<T> {
-  /**
-   * Parse account data
-   *
-   * @param accountData Buffer data for the entity
-   * @returns Parsed entity
-   */
-  parse: (accountData: Buffer | undefined | null) => T | null;
-}
-
-/**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<WhirlpoolsConfigData>>()
 export class ParsableWhirlpoolsConfig {
   private constructor() {}
 
-  public static parse(data: Buffer | undefined | null): WhirlpoolsConfigData | null {
-    if (!data) {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): WhirlpoolsConfigData | null {
+    if (!accountData?.data) {
       return null;
     }
 
     try {
-      return parseAnchorAccount(AccountName.WhirlpoolsConfig, data);
+      return parseAnchorAccount(AccountName.WhirlpoolsConfig, accountData);
     } catch (e) {
       console.error(`error while parsing WhirlpoolsConfig: ${e}`);
       return null;
@@ -49,19 +37,22 @@ export class ParsableWhirlpoolsConfig {
 }
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<WhirlpoolData>>()
 export class ParsableWhirlpool {
   private constructor() {}
 
-  public static parse(data: Buffer | undefined | null): WhirlpoolData | null {
-    if (!data) {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): WhirlpoolData | null {
+    if (!accountData?.data) {
       return null;
     }
 
     try {
-      return parseAnchorAccount(AccountName.Whirlpool, data);
+      return parseAnchorAccount(AccountName.Whirlpool, accountData);
     } catch (e) {
       console.error(`error while parsing Whirlpool: ${e}`);
       return null;
@@ -70,19 +61,22 @@ export class ParsableWhirlpool {
 }
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<PositionData>>()
 export class ParsablePosition {
   private constructor() {}
 
-  public static parse(data: Buffer | undefined | null): PositionData | null {
-    if (!data) {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): PositionData | null {
+    if (!accountData?.data) {
       return null;
     }
 
     try {
-      return parseAnchorAccount(AccountName.Position, data);
+      return parseAnchorAccount(AccountName.Position, accountData);
     } catch (e) {
       console.error(`error while parsing Position: ${e}`);
       return null;
@@ -91,19 +85,22 @@ export class ParsablePosition {
 }
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<TickArrayData>>()
 export class ParsableTickArray {
   private constructor() {}
 
-  public static parse(data: Buffer | undefined | null): TickArrayData | null {
-    if (!data) {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): TickArrayData | null {
+    if (!accountData?.data) {
       return null;
     }
 
     try {
-      return parseAnchorAccount(AccountName.TickArray, data);
+      return parseAnchorAccount(AccountName.TickArray, accountData);
     } catch (e) {
       console.error(`error while parsing TickArray: ${e}`);
       return null;
@@ -112,19 +109,22 @@ export class ParsableTickArray {
 }
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<FeeTierData>>()
 export class ParsableFeeTier {
   private constructor() {}
 
-  public static parse(data: Buffer | undefined | null): FeeTierData | null {
-    if (!data) {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): FeeTierData | null {
+    if (!accountData?.data) {
       return null;
     }
 
     try {
-      return parseAnchorAccount(AccountName.FeeTier, data);
+      return parseAnchorAccount(AccountName.FeeTier, accountData);
     } catch (e) {
       console.error(`error while parsing FeeTier: ${e}`);
       return null;
@@ -133,19 +133,22 @@ export class ParsableFeeTier {
 }
 
 /**
- * @category Parsables
+ * @category Network
  */
 @staticImplements<ParsableEntity<PositionBundleData>>()
 export class ParsablePositionBundle {
   private constructor() {}
 
-  public static parse(data: Buffer | undefined | null): PositionBundleData | null {
-    if (!data) {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): PositionBundleData | null {
+    if (!accountData?.data) {
       return null;
     }
 
     try {
-      return parseAnchorAccount(AccountName.PositionBundle, data);
+      return parseAnchorAccount(AccountName.PositionBundle, accountData);
     } catch (e) {
       console.error(`error while parsing PositionBundle: ${e}`);
       return null;
@@ -153,72 +156,10 @@ export class ParsablePositionBundle {
   }
 }
 
-/**
- * @category Parsables
- */
-@staticImplements<ParsableEntity<AccountInfo>>()
-export class ParsableTokenInfo {
-  private constructor() {}
-
-  public static parse(data: Buffer | undefined | null): AccountInfo | null {
-    if (!data) {
-      return null;
-    }
-
-    try {
-      return TokenUtil.deserializeTokenAccount(data);
-    } catch (e) {
-      console.error(`error while parsing TokenAccount: ${e}`);
-      return null;
-    }
-  }
-}
-
-/**
- * @category Parsables
- */
-@staticImplements<ParsableEntity<MintInfo>>()
-export class ParsableMintInfo {
-  private constructor() {}
-
-  public static parse(data: Buffer | undefined | null): MintInfo | null {
-    if (!data) {
-      return null;
-    }
-
-    try {
-      const buffer = MintLayout.decode(data);
-      const mintInfo: MintInfo = {
-        mintAuthority:
-          buffer.mintAuthorityOption === 0 ? null : new PublicKey(buffer.mintAuthority),
-        supply: u64.fromBuffer(buffer.supply),
-        decimals: buffer.decimals,
-        isInitialized: buffer.isInitialized !== 0,
-        freezeAuthority:
-          buffer.freezeAuthorityOption === 0 ? null : new PublicKey(buffer.freezeAuthority),
-      };
-
-      return mintInfo;
-    } catch (e) {
-      console.error(`error while parsing MintInfo: ${e}`);
-      return null;
-    }
-  }
-}
-
-/**
- * Class decorator to define an interface with static methods
- * Reference: https://github.com/Microsoft/TypeScript/issues/13462#issuecomment-295685298
- */
-function staticImplements<T>() {
-  return <U extends T>(constructor: U) => {
-    constructor;
-  };
-}
-
 const WhirlpoolCoder = new BorshAccountsCoder(WhirlpoolIDL as Idl);
 
-function parseAnchorAccount(accountName: AccountName, data: Buffer) {
+function parseAnchorAccount(accountName: AccountName, accountData: AccountInfo<Buffer>) {
+  const data = accountData.data;
   const discriminator = BorshAccountsCoder.accountDiscriminator(accountName);
   if (discriminator.compare(data.slice(0, 8))) {
     console.error("incorrect account name during parsing");

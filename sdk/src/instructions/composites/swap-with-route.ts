@@ -1,20 +1,20 @@
 import {
   AddressUtil,
-  deriveATA,
   EMPTY_INSTRUCTION,
   Percentage,
+  ResolvedTokenAddressInstruction,
+  TokenUtil,
   TransactionBuilder,
   ZERO,
 } from "@orca-so/common-sdk";
-import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
 import {
-  AccountInfo,
-  ASSOCIATED_TOKEN_PROGRAM_ID,
+  Account,
   NATIVE_MINT,
-  TOKEN_PROGRAM_ID,
-  u64,
+  createAssociatedTokenAccountInstruction,
+  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import {
   AtaAccountInfo,
   PDAUtil,
@@ -22,12 +22,11 @@ import {
   SwapUtils,
   TickArrayUtil,
   TradeRoute,
-  twoHopSwapQuoteFromSwapQuotes,
   WhirlpoolContext,
+  twoHopSwapQuoteFromSwapQuotes,
 } from "../..";
-import { createAssociatedTokenAccountInstruction } from "../../utils/ata-ix-util";
+import { PREFER_CACHE, WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
 import { adjustForSlippage } from "../../utils/position-util";
-import { createWSOLAccountInstructions } from "../../utils/spl-token-utils";
 import { contextOptionsToBuilderOptions } from "../../utils/txn-utils";
 import { swapIx } from "../swap-ix";
 import { twoHopSwapIx } from "../two-hop-swap-ix";
@@ -42,7 +41,7 @@ export type SwapFromRouteParams = {
 export async function getSwapFromRoute(
   ctx: WhirlpoolContext,
   params: SwapFromRouteParams,
-  refresh: boolean = false,
+  opts: WhirlpoolAccountFetchOptions = PREFER_CACHE,
   txBuilder: TransactionBuilder = new TransactionBuilder(
     ctx.connection,
     ctx.wallet,
@@ -53,9 +52,9 @@ export async function getSwapFromRoute(
   const requiredAtas = new Set<string>();
   const requiredTickArrays = [];
   let hasNativeMint = false;
-  let nativeMintAmount = new u64(0);
+  let nativeMintAmount = new BN(0);
 
-  function addOrNative(mint: string, amount: u64) {
+  function addOrNative(mint: string, amount: BN) {
     if (mint === NATIVE_MINT.toBase58()) {
       hasNativeMint = true;
       nativeMintAmount = nativeMintAmount.add(amount);
@@ -98,7 +97,9 @@ export async function getSwapFromRoute(
         ]
       );
 
-      const inputAmount = quoteOne.estimatedAmountIn;
+      const inputAmount = quoteOne.amountSpecifiedIsInput
+        ? quoteOne.estimatedAmountIn
+        : quoteOne.otherAmountThreshold;
       addOrNative(mintOneA.toString(), quoteOne.aToB ? inputAmount : ZERO);
       addOrNative(mintOneB.toString(), !quoteOne.aToB ? inputAmount : ZERO);
       addOrNative(mintTwoA.toString(), ZERO);
@@ -109,7 +110,7 @@ export async function getSwapFromRoute(
   let uninitializedArrays = await TickArrayUtil.getUninitializedArraysString(
     requiredTickArrays,
     ctx.fetcher,
-    refresh
+    opts
   );
   if (uninitializedArrays) {
     throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
@@ -128,21 +129,26 @@ export async function getSwapFromRoute(
         return Promise.resolve(
           keys.map((key) =>
             resolvedAtaAccounts.find((ata) => ata.address?.toBase58() === key.toBase58())
-          ) as AccountInfo[]
+          ) as Account[]
         );
       } else {
-        return ctx.fetcher.listTokenInfos(keys, false);
+        return ctx.fetcher.getTokenInfos(keys, opts).then((result) => Array.from(result.values()));
       }
-    }
+    },
+    undefined, // use default
+    ctx.accountResolverOpts.allowPDAOwnerAddress
   );
 
   const ataIxes = Object.values(ataInstructionMap);
 
   if (hasNativeMint) {
-    const solIx = createWSOLAccountInstructions(
+    const solIx = TokenUtil.createWrappedNativeAccountInstruction(
       wallet,
       nativeMintAmount,
-      await ctx.fetcher.getAccountRentExempt()
+      await ctx.fetcher.getAccountRentExempt(),
+      undefined, // use default
+      undefined, // use default
+      ctx.accountResolverOpts.createWrappedSolAccountMethod
     );
     txBuilder.addInstruction(solIx);
     ataInstructionMap[NATIVE_MINT.toBase58()] = solIx;
@@ -265,29 +271,35 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
     };
 
     if (amountSpecifiedIsInput) {
-      updatedQuote.hopQuotes = [updatedQuote.hopQuotes[0], {
-        ...swapQuoteTwo,
-        quote: {
-          ...swapQuoteTwo.quote,
-          otherAmountThreshold: adjustForSlippage(
-            swapQuoteTwo.quote.estimatedAmountOut,
-            slippage,
-            false
-          ),
+      updatedQuote.hopQuotes = [
+        updatedQuote.hopQuotes[0],
+        {
+          ...swapQuoteTwo,
+          quote: {
+            ...swapQuoteTwo.quote,
+            otherAmountThreshold: adjustForSlippage(
+              swapQuoteTwo.quote.estimatedAmountOut,
+              slippage,
+              false
+            ),
+          },
         },
-      }];
+      ];
     } else {
-      updatedQuote.hopQuotes = [{
-        ...swapQuoteOne,
-        quote: {
-          ...swapQuoteOne.quote,
-          otherAmountThreshold: adjustForSlippage(
-            swapQuoteOne.quote.estimatedAmountIn,
-            slippage,
-            true
-          ),
+      updatedQuote.hopQuotes = [
+        {
+          ...swapQuoteOne,
+          quote: {
+            ...swapQuoteOne.quote,
+            otherAmountThreshold: adjustForSlippage(
+              swapQuoteOne.quote.estimatedAmountIn,
+              slippage,
+              true
+            ),
+          },
         },
-      }, updatedQuote.hopQuotes[1]];
+        updatedQuote.hopQuotes[1],
+      ];
     }
     return updatedQuote;
   }
@@ -306,7 +318,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
  * @param ownerAddress The user's public key
  * @param tokenMint Token mint address
  * @param payer Payer that would pay the rent for the creation of the ATAs
- * @param modeIdempotent Optional. Use CreateIdempotent instruction instead of Create instruction
+ * @param allowPDAOwnerAddress Optional. Allow PDA to be used as the ATA owner address
  * @returns
  */
 async function cachedResolveOrCreateNonNativeATAs(
@@ -314,11 +326,13 @@ async function cachedResolveOrCreateNonNativeATAs(
   tokenMints: Set<string>,
   getTokenAccounts: (keys: PublicKey[]) => Promise<Array<AtaAccountInfo | null>>,
   payer = ownerAddress,
-  modeIdempotent: boolean = false
+  allowPDAOwnerAddress: boolean = false
 ): Promise<{ [tokenMint: string]: ResolvedTokenAddressInstruction }> {
   const instructionMap: { [tokenMint: string]: ResolvedTokenAddressInstruction } = {};
   const tokenMintArray = Array.from(tokenMints).map((tm) => new PublicKey(tm));
-  const tokenAtas = await Promise.all(tokenMintArray.map((tm) => deriveATA(ownerAddress, tm)));
+  const tokenAtas = tokenMintArray.map((tm) =>
+    getAssociatedTokenAddressSync(tm, ownerAddress, allowPDAOwnerAddress)
+  );
   const tokenAccounts = await getTokenAccounts(tokenAtas);
   tokenAccounts.forEach((tokenAccount, index) => {
     const ataAddress = tokenAtas[index]!;
@@ -333,13 +347,10 @@ async function cachedResolveOrCreateNonNativeATAs(
       resolvedInstruction = { address: ataAddress, ...EMPTY_INSTRUCTION };
     } else {
       const createAtaInstruction = createAssociatedTokenAccountInstruction(
-        ASSOCIATED_TOKEN_PROGRAM_ID,
-        TOKEN_PROGRAM_ID,
-        tokenMintArray[index],
+        payer,
         ataAddress,
         ownerAddress,
-        payer,
-        modeIdempotent
+        tokenMintArray[index]
       );
 
       resolvedInstruction = {

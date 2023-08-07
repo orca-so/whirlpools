@@ -1,9 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import { PDAUtil, PositionData, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { sleep, TickSpacing, ZERO_BN } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
@@ -26,7 +27,7 @@ describe("update_fees_and_rewards", () => {
       tickSpacing,
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(1_000_000) }],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -40,7 +41,7 @@ describe("update_fees_and_rewards", () => {
 
     const positionBefore = (await fetcher.getPosition(
       positions[0].publicKey,
-      true
+      IGNORE_CACHE
     )) as PositionData;
     assert.ok(positionBefore.feeGrowthCheckpointA.eq(ZERO_BN));
     assert.ok(positionBefore.feeGrowthCheckpointB.eq(ZERO_BN));
@@ -52,7 +53,7 @@ describe("update_fees_and_rewards", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(100_000),
+        amount: new BN(100_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
         amountSpecifiedIsInput: true,
@@ -81,7 +82,7 @@ describe("update_fees_and_rewards", () => {
         tickArrayUpper: tickArrayPda.publicKey,
       })
     ).buildAndExecute();
-    const positionAfter = (await fetcher.getPosition(positions[0].publicKey, true)) as PositionData;
+    const positionAfter = (await fetcher.getPosition(positions[0].publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(positionAfter.feeOwedA.gt(positionBefore.feeOwedA));
     assert.ok(positionAfter.feeOwedB.eq(ZERO_BN));
     assert.ok(positionAfter.feeGrowthCheckpointA.gt(positionBefore.feeGrowthCheckpointA));

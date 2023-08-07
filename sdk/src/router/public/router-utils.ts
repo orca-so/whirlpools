@@ -6,11 +6,16 @@ import {
   TransactionBuilder,
   TX_SIZE_LIMIT,
 } from "@orca-so/common-sdk";
-import { AccountInfo } from "@solana/spl-token";
+import { Account } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { ExecutableRoute, RoutingOptions, TradeRoute } from ".";
+import BN from "bn.js";
+import Decimal from "decimal.js";
+import { ExecutableRoute, RoutingOptions, Trade, TradeRoute } from ".";
 import { WhirlpoolContext } from "../../context";
 import { getSwapFromRoute } from "../../instructions/composites/swap-with-route";
+import { PREFER_CACHE } from "../../network/public/fetcher";
+import { U64 } from "../../utils/math/constants";
+import { PriceMath } from "../../utils/public";
 import { isWalletConnected } from "../../utils/wallet-utils";
 
 /**
@@ -19,13 +24,13 @@ import { isWalletConnected } from "../../utils/wallet-utils";
  * @param owner The owner address of the ATA.
  * @param mint The mint of the token the ATA represents.
  */
-export type AtaAccountInfo = Pick<AccountInfo, "address" | "owner" | "mint">;
+export type AtaAccountInfo = Pick<Account, "address" | "owner" | "mint">;
 
 /**
  * Parameters to configure the selection of the best route.
  * @category Router
- * @param slippageTolerance The slippage tolerance to use when selecting the best route.
  * @param maxSupportedTransactionVersion The maximum transaction version that the wallet supports.
+ * @param maxTransactionSize The maximum transaction size that the wallet supports.
  * @param availableAtaAccounts A list of ATA accounts that are available in this wallet to use for the swap.
  * @param onRouteEvaluation
  * A callback that is called right before a route is evaluated. Users have a chance to add additional instructions
@@ -34,6 +39,7 @@ export type AtaAccountInfo = Pick<AccountInfo, "address" | "owner" | "mint">;
  */
 export type RouteSelectOptions = {
   maxSupportedTransactionVersion: "legacy" | number;
+  maxTransactionSize: number;
   availableAtaAccounts?: AtaAccountInfo[];
   onRouteEvaluation?: (route: Readonly<TradeRoute>, tx: TransactionBuilder) => void;
 };
@@ -86,7 +92,7 @@ export class RouterUtils {
           resolvedAtaAccounts: opts.availableAtaAccounts ?? null,
           wallet: wallet.publicKey,
         },
-        false
+        PREFER_CACHE
       );
 
       if (!!opts.onRouteEvaluation) {
@@ -98,7 +104,7 @@ export class RouterUtils {
           latestBlockhash: MEASUREMENT_BLOCKHASH,
           maxSupportedTransactionVersion: "legacy",
         });
-        if (legacyTxSize !== undefined && legacyTxSize <= TX_SIZE_LIMIT) {
+        if (legacyTxSize !== undefined && legacyTxSize <= opts.maxTransactionSize) {
           return [route, undefined];
         }
       } catch (e) {
@@ -122,7 +128,7 @@ export class RouterUtils {
             lookupTableAccounts,
           });
 
-          if (v0TxSize !== undefined && v0TxSize <= TX_SIZE_LIMIT) {
+          if (v0TxSize !== undefined && v0TxSize <= opts.maxTransactionSize) {
             return [route, lookupTableAccounts];
           }
         } catch (e) {
@@ -132,6 +138,60 @@ export class RouterUtils {
     }
 
     return null;
+  }
+
+  /**
+   * Calculate the price impact for a route.
+   * @param trade The trade the user used to derive the route.
+   * @param route The route to calculate the price impact for.
+   * @returns A Decimal object representing the percentage value of the price impact (ex. 3.01%)
+   */
+  static getPriceImpactForRoute(trade: Trade, route: TradeRoute): Decimal {
+    const { amountSpecifiedIsInput } = trade;
+
+    const totalBaseValue = route.subRoutes.reduce((acc, route) => {
+      const directionalHops = amountSpecifiedIsInput
+        ? route.hopQuotes
+        : route.hopQuotes.slice().reverse();
+      const baseOutputs = directionalHops.reduce((acc, quote, index) => {
+        const { snapshot } = quote;
+        const { aToB, sqrtPrice, feeRate } = snapshot;
+        // Inverse sqrt price will cause 1bps precision loss since ticks are spaces of 1bps
+        const directionalSqrtPrice = aToB ? sqrtPrice : PriceMath.invertSqrtPriceX64(sqrtPrice);
+
+        // Convert from in/out -> base_out/in using the directional price & fee rate
+        let nextBaseValue;
+        const price = directionalSqrtPrice.mul(directionalSqrtPrice).div(U64);
+        if (amountSpecifiedIsInput) {
+          const amountIn = index === 0 ? quote.amountIn : acc[index - 1];
+          const feeAdjustedAmount = amountIn
+            .mul(feeRate.denominator.sub(feeRate.numerator))
+            .div(feeRate.denominator);
+          nextBaseValue = price.mul(feeAdjustedAmount).div(U64);
+        } else {
+          const amountOut = index === 0 ? quote.amountOut : acc[index - 1];
+          const feeAdjustedAmount = amountOut.mul(U64).div(price);
+          nextBaseValue = feeAdjustedAmount
+            .mul(feeRate.denominator)
+            .div(feeRate.denominator.sub(feeRate.numerator));
+        }
+
+        acc.push(nextBaseValue);
+        return acc;
+      }, new Array<BN>());
+
+      return acc.add(baseOutputs[baseOutputs.length - 1]);
+    }, new BN(0));
+
+    const totalBaseValueDec = new Decimal(totalBaseValue.toString());
+    const totalAmountEstimatedDec = new Decimal(
+      amountSpecifiedIsInput ? route.totalAmountOut.toString() : route.totalAmountIn.toString()
+    );
+    const priceImpact = amountSpecifiedIsInput
+      ? totalBaseValueDec.sub(totalAmountEstimatedDec).div(totalBaseValueDec)
+      : totalAmountEstimatedDec.sub(totalBaseValueDec).div(totalAmountEstimatedDec);
+
+    return priceImpact.mul(100);
   }
 
   /**
@@ -173,6 +233,7 @@ export class RouterUtils {
   static getDefaultSelectOptions(): RouteSelectOptions {
     return {
       maxSupportedTransactionVersion: 0,
+      maxTransactionSize: TX_SIZE_LIMIT,
     };
   }
 }

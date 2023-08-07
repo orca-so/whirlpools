@@ -1,41 +1,43 @@
 import * as anchor from "@coral-xyz/anchor";
-import { AddressUtil, deriveATA, MathUtil, PDA } from "@orca-so/common-sdk";
-import { NATIVE_MINT, u64 } from "@solana/spl-token";
+import { AddressUtil, MathUtil, PDA } from "@orca-so/common-sdk";
+import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import Decimal from "decimal.js";
 import {
+  TickSpacing,
+  ZERO_BN,
   createAndMintToAssociatedTokenAccount,
   createMint,
-  mintToByAuthority,
-  TickSpacing,
-  ZERO_BN
+  mintToDestination
 } from ".";
 import {
   InitConfigParams,
   InitFeeTierParams,
-  InitializeRewardParams,
   InitPoolParams,
   InitTickArrayParams,
+  InitializeRewardParams,
   OpenPositionParams,
   PDAUtil,
   PriceMath,
   TICK_ARRAY_SIZE,
   TickUtil,
-  toTx,
   WhirlpoolClient,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
+  toTx
 } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
 import {
+  TestConfigParams,
+  TestWhirlpoolsConfigKeypairs,
   generateDefaultConfigParams,
   generateDefaultInitFeeTierParams,
   generateDefaultInitPoolParams,
   generateDefaultInitTickArrayParams,
   generateDefaultOpenBundledPositionParams,
-  generateDefaultOpenPositionParams,
-  TestConfigParams,
-  TestWhirlpoolsConfigKeypairs
+  generateDefaultOpenPositionParams
 } from "./test-builders";
 
 interface TestPoolParams {
@@ -443,14 +445,16 @@ export async function initRewardAndSetEmissions(
   rewardAuthorityKeypair: anchor.web3.Keypair,
   whirlpool: PublicKey,
   rewardIndex: number,
-  vaultAmount: u64 | number,
+  vaultAmount: BN | number,
   emissionsPerSecondX64: anchor.BN,
   funder?: Keypair
 ) {
   const {
     params: { rewardMint, rewardVaultKeypair },
   } = await initializeReward(ctx, rewardAuthorityKeypair, whirlpool, rewardIndex, funder);
-  await mintToByAuthority(ctx.provider, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
+
+  await mintToDestination(ctx.provider, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
+
   await toTx(
     ctx,
     WhirlpoolIx.setRewardEmissionsIx(ctx.program, {
@@ -731,7 +735,7 @@ export async function fundPositionsWithClient(
   whirlpoolKey: PublicKey,
   fundParams: FundedPositionParams[]
 ) {
-  const whirlpool = await client.getPool(whirlpoolKey, true);
+  const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
   const whirlpoolData = whirlpool.getData();
   await Promise.all(
     fundParams.map(async (param, idx) => {
@@ -895,7 +899,7 @@ export async function initializePositionBundleWithMetadata(
   const positionBundleMintKeypair = Keypair.generate();
   const positionBundlePda = PDAUtil.getPositionBundle(ctx.program.programId, positionBundleMintKeypair.publicKey);
   const positionBundleMetadataPda = PDAUtil.getPositionBundleMetadata(positionBundleMintKeypair.publicKey);
-  const positionBundleTokenAccount = await deriveATA(owner, positionBundleMintKeypair.publicKey);
+  const positionBundleTokenAccount = getAssociatedTokenAddressSync(positionBundleMintKeypair.publicKey, owner);
 
   const tx = toTx(ctx, WhirlpoolIx.initializePositionBundleWithMetadataIx(
     ctx.program,
@@ -930,7 +934,7 @@ export async function initializePositionBundle(
 ) {
   const positionBundleMintKeypair = Keypair.generate();
   const positionBundlePda = PDAUtil.getPositionBundle(ctx.program.programId, positionBundleMintKeypair.publicKey);
-  const positionBundleTokenAccount = await deriveATA(owner, positionBundleMintKeypair.publicKey);
+  const positionBundleTokenAccount = getAssociatedTokenAddressSync(positionBundleMintKeypair.publicKey, owner);
 
   const tx = toTx(ctx, WhirlpoolIx.initializePositionBundleIx(
     ctx.program,

@@ -1,18 +1,18 @@
-import { Address, BN } from "@coral-xyz/anchor";
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, DecimalUtil, Percentage, ZERO } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import Decimal from "decimal.js";
 import invariant from "tiny-invariant";
 import { IncreaseLiquidityInput } from "../../instructions";
 import {
+  PositionStatus,
+  PositionUtil,
   adjustForSlippage,
   getLiquidityFromTokenA,
   getLiquidityFromTokenB,
   getTokenAFromLiquidity,
   getTokenBFromLiquidity,
-  PositionStatus,
-  PositionUtil,
 } from "../../utils/position-util";
 import { PriceMath, TickUtil } from "../../utils/public";
 import { Whirlpool } from "../../whirlpool-client";
@@ -30,7 +30,7 @@ import { Whirlpool } from "../../whirlpool-client";
  * @param slippageTolerance - The maximum slippage allowed when calculating the minimum tokens received.
  */
 export type IncreaseLiquidityQuoteParam = {
-  inputTokenAmount: u64;
+  inputTokenAmount: BN;
   inputTokenMint: PublicKey;
   tokenMintA: PublicKey;
   tokenMintB: PublicKey;
@@ -45,7 +45,7 @@ export type IncreaseLiquidityQuoteParam = {
  * Return object from increase liquidity quote functions.
  * @category Quotes
  */
-export type IncreaseLiquidityQuote = IncreaseLiquidityInput & { tokenEstA: u64; tokenEstB: u64 };
+export type IncreaseLiquidityQuote = IncreaseLiquidityInput & { tokenEstA: BN; tokenEstB: BN };
 
 /**
  * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
@@ -76,7 +76,7 @@ export function increaseLiquidityQuoteByInputToken(
 
   return increaseLiquidityQuoteByInputTokenWithParams({
     inputTokenMint: inputMint,
-    inputTokenAmount: DecimalUtil.toU64(inputTokenAmount, inputTokenInfo.decimals),
+    inputTokenAmount: DecimalUtil.toBN(inputTokenAmount, inputTokenInfo.decimals),
     tickLowerIndex: TickUtil.getInitializableTickIndex(tickLower, data.tickSpacing),
     tickUpperIndex: TickUtil.getInitializableTickIndex(tickUpper, data.tickSpacing),
     slippageTolerance,

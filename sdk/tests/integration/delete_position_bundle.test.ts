@@ -1,20 +1,22 @@
 import * as anchor from "@coral-xyz/anchor";
 import { PDA } from "@orca-so/common-sdk";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { ASSOCIATED_TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
-import { InitPoolParams, POSITION_BUNDLE_SIZE, PositionBundleData, toTx, WhirlpoolIx } from "../../src";
+import { InitPoolParams, POSITION_BUNDLE_SIZE, PositionBundleData, WhirlpoolIx, toTx } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
-  approveToken,
-  createAssociatedTokenAccount,
   ONE_SOL,
-  systemTransferTx,
   TickSpacing,
-  transfer
+  approveToken,
+  burnToken,
+  createAssociatedTokenAccount,
+  systemTransferTx,
+  transferToken
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
-import { initializePositionBundle, initializePositionBundleWithMetadata, initTestPool, openBundledPosition } from "../utils/init-utils";
+import { initTestPool, initializePositionBundle, initializePositionBundleWithMetadata, openBundledPosition } from "../utils/init-utils";
 
 describe("delete_position_bundle", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -55,7 +57,7 @@ describe("delete_position_bundle", () => {
     );
 
     // PositionBundle account exists
-    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(prePositionBundle !== null);
 
     // NFT supply should be 1
@@ -87,7 +89,7 @@ describe("delete_position_bundle", () => {
     const postBalance = await provider.connection.getBalance(owner.publicKey, "confirmed");
 
     // PositionBundle account should be closed
-    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(postPositionBundle === null);
 
     // NFT should be burned and its supply should be 0
@@ -117,7 +119,7 @@ describe("delete_position_bundle", () => {
     );
 
     // PositionBundle account exists
-    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const prePositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(prePositionBundle !== null);
 
     // NFT supply should be 1
@@ -146,7 +148,7 @@ describe("delete_position_bundle", () => {
     const postBalance = await provider.connection.getBalance(owner.publicKey, "confirmed");
 
     // PositionBundle account should be closed
-    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const postPositionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(postPositionBundle === null);
 
     // NFT should be burned and its supply should be 0
@@ -211,11 +213,11 @@ describe("delete_position_bundle", () => {
     );
     const { bundledPositionPda } = positionInitInfo.params;
 
-    const position = await fetcher.getPosition(positionInitInfo.params.bundledPositionPda.publicKey, true);
+    const position = await fetcher.getPosition(positionInitInfo.params.bundledPositionPda.publicKey, IGNORE_CACHE);
     assert.equal(position!.tickLowerIndex, tickLowerIndex);
     assert.equal(position!.tickUpperIndex, tickUpperIndex);
 
-    const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     checkBitmapIsOpened(positionBundle!, bundleIndex);
 
     const tx = toTx(
@@ -250,7 +252,7 @@ describe("delete_position_bundle", () => {
 
     // should be ok
     await tx.buildAndExecute();
-    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(deleted === null);
   });
 
@@ -271,11 +273,11 @@ describe("delete_position_bundle", () => {
     );
     const { bundledPositionPda } = positionInitInfo.params;
 
-    const position = await fetcher.getPosition(positionInitInfo.params.bundledPositionPda.publicKey, true);
+    const position = await fetcher.getPosition(positionInitInfo.params.bundledPositionPda.publicKey, IGNORE_CACHE);
     assert.equal(position!.tickLowerIndex, tickLowerIndex);
     assert.equal(position!.tickUpperIndex, tickUpperIndex);
 
-    const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     checkBitmapIsOpened(positionBundle!, bundleIndex);
 
     const tx = toTx(
@@ -310,7 +312,7 @@ describe("delete_position_bundle", () => {
 
     // should be ok
     await tx.buildAndExecute();
-    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(deleted === null);
   });
 
@@ -352,7 +354,7 @@ describe("delete_position_bundle", () => {
       delegate.publicKey,
       ctx.wallet.publicKey
     );
-    await transfer(
+    await transferToken(
       provider,
       positionBundleInfo.positionBundleTokenAccount,
       delegateTokenAccount,
@@ -371,7 +373,7 @@ describe("delete_position_bundle", () => {
     ).addSigner(delegate);
 
     await txAfterTransfer.buildAndExecute();
-    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+    const deleted = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
     assert.ok(deleted === null);
   });
 
@@ -436,21 +438,7 @@ describe("delete_position_bundle", () => {
         ctx.wallet.publicKey,
       );
 
-      // burn NFT
-      await toTx(ctx, {
-        instructions: [
-          Token.createBurnInstruction(
-            TOKEN_PROGRAM_ID,
-            positionBundleInfo.positionBundleMintKeypair.publicKey,
-            positionBundleInfo.positionBundleTokenAccount,
-            ctx.wallet.publicKey,
-            [],
-            1
-          )
-        ],
-        cleanupInstructions: [],
-        signers: []
-      }).buildAndExecute();
+      await burnToken(ctx.provider, positionBundleInfo.positionBundleTokenAccount, positionBundleInfo.positionBundleMintKeypair.publicKey, 1);
 
       const tokenAccount = await fetcher.getTokenInfo(positionBundleInfo.positionBundleTokenAccount);
       assert.equal(tokenAccount!.amount.toString(), "0");

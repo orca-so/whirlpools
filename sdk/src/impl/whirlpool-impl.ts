@@ -5,10 +5,9 @@ import {
   TokenUtil,
   TransactionBuilder,
   ZERO,
-  deriveATA,
   resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
-import { NATIVE_MINT } from "@solana/spl-token";
+import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
@@ -24,6 +23,7 @@ import {
   openPositionWithMetadataIx,
   swapAsync,
 } from "../instructions";
+import { IGNORE_CACHE, PREFER_CACHE } from "../network/public/fetcher";
 import {
   collectFeesQuote,
   collectRewardsQuote,
@@ -32,7 +32,6 @@ import {
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
-import { createWSOLAccountInstructions } from "../utils/spl-token-utils";
 import {
   TokenMintTypes,
   getTokenMintsFromWhirlpools,
@@ -126,14 +125,14 @@ export class WhirlpoolImpl implements Whirlpool {
     );
   }
 
-  async initTickArrayForTicks(ticks: number[], funder?: Address, refresh = true) {
+  async initTickArrayForTicks(ticks: number[], funder?: Address, opts = IGNORE_CACHE) {
     const initTickArrayStartPdas = await TickArrayUtil.getUninitializedArraysPDAs(
       ticks,
       this.ctx.program.programId,
       this.address,
       this.data.tickSpacing,
       this.ctx.fetcher,
-      refresh
+      opts
     );
 
     if (!initTickArrayStartPdas.length) {
@@ -193,7 +192,7 @@ export class WhirlpoolImpl implements Whirlpool {
         whirlpool: this,
         wallet: sourceWalletKey,
       },
-      true
+      IGNORE_CACHE
     );
   }
 
@@ -224,7 +223,8 @@ export class WhirlpoolImpl implements Whirlpool {
           inputToken.decimals,
           quote.devFeeAmount,
           () => this.ctx.fetcher.getAccountRentExempt(),
-          payerKey
+          payerKey,
+          this.ctx.accountResolverOpts.allowPDAOwnerAddress
         )
       );
     }
@@ -236,7 +236,7 @@ export class WhirlpoolImpl implements Whirlpool {
         whirlpool: this,
         wallet: sourceWalletKey,
       },
-      true
+      IGNORE_CACHE
     );
 
     txBuilder.addInstruction(swapTxBuilder.compressIx(true));
@@ -262,7 +262,7 @@ export class WhirlpoolImpl implements Whirlpool {
 
     invariant(liquidity.gt(new BN(0)), "liquidity must be greater than zero");
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.address, false);
+    const whirlpool = await this.ctx.fetcher.getPool(this.address, PREFER_CACHE);
     if (!whirlpool) {
       throw new Error(`Whirlpool not found: ${translateAddress(this.address).toBase58()}`);
     }
@@ -282,7 +282,11 @@ export class WhirlpoolImpl implements Whirlpool {
       positionMintKeypair.publicKey
     );
     const metadataPda = PDAUtil.getPositionMetadata(positionMintKeypair.publicKey);
-    const positionTokenAccountAddress = await deriveATA(wallet, positionMintKeypair.publicKey);
+    const positionTokenAccountAddress = getAssociatedTokenAddressSync(
+      positionMintKeypair.publicKey,
+      wallet,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
+    );
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -314,7 +318,10 @@ export class WhirlpoolImpl implements Whirlpool {
         { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: tokenMaxB },
       ],
       () => this.ctx.fetcher.getAccountRentExempt(),
-      funder
+      funder,
+      undefined, // use default
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+      this.ctx.accountResolverOpts.createWrappedSolAccountMethod
     );
     const { address: tokenOwnerAccountA, ...tokenOwnerAccountAIx } = ataA;
     const { address: tokenOwnerAccountB, ...tokenOwnerAccountBIx } = ataB;
@@ -365,7 +372,7 @@ export class WhirlpoolImpl implements Whirlpool {
     positionWallet: PublicKey,
     payerKey: PublicKey
   ): Promise<TransactionBuilder[]> {
-    const positionData = await this.ctx.fetcher.getPosition(positionAddress, true);
+    const positionData = await this.ctx.fetcher.getPosition(positionAddress, IGNORE_CACHE);
     if (!positionData) {
       throw new Error(`Position not found: ${positionAddress.toBase58()}`);
     }
@@ -377,7 +384,11 @@ export class WhirlpoolImpl implements Whirlpool {
       `Position ${positionAddress.toBase58()} is not a position for Whirlpool ${this.address.toBase58()}`
     );
 
-    const positionTokenAccount = await deriveATA(positionWallet, positionData.positionMint);
+    const positionTokenAccount = getAssociatedTokenAddressSync(
+      positionData.positionMint,
+      positionWallet,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
+    );
 
     const tokenAccountsTxBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -411,7 +422,7 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx,
       positionData,
       whirlpool,
-      true
+      IGNORE_CACHE
     );
 
     invariant(
@@ -484,12 +495,13 @@ export class WhirlpoolImpl implements Whirlpool {
 
     // Handle native mint
     if (affiliatedMints.hasNativeMint) {
-      let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
+      let { address: wSOLAta, ...resolveWSolIx } = TokenUtil.createWrappedNativeAccountInstruction(
         destinationWallet,
         ZERO,
         accountExemption,
         payerKey,
-        destinationWallet
+        destinationWallet,
+        this.ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
       walletTokenAccountsByMint[NATIVE_MINT.toBase58()] = wSOLAta;
       txBuilder.addInstruction(resolveWSolIx);
@@ -533,7 +545,7 @@ export class WhirlpoolImpl implements Whirlpool {
         destinationWallet,
         positionWallet,
         payerKey,
-        true
+        IGNORE_CACHE
       );
 
       txBuilder.addInstruction(collectFeexTx.compressIx(false));
@@ -575,13 +587,13 @@ export class WhirlpoolImpl implements Whirlpool {
   }
 
   private async refresh() {
-    const account = await this.ctx.fetcher.getPool(this.address, true);
+    const account = await this.ctx.fetcher.getPool(this.address, IGNORE_CACHE);
     if (!!account) {
-      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, true);
+      const rewardInfos = await getRewardInfos(this.ctx.fetcher, account, IGNORE_CACHE);
       const [tokenVaultAInfo, tokenVaultBInfo] = await getTokenVaultAccountInfos(
         this.ctx.fetcher,
         account,
-        true
+        IGNORE_CACHE
       );
       this.data = account;
       this.tokenVaultAInfo = tokenVaultAInfo;

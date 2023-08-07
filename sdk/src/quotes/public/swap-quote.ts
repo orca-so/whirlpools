@@ -1,9 +1,12 @@
-import { Address, BN } from "@coral-xyz/anchor";
+import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import BN from "bn.js";
 import invariant from "tiny-invariant";
 import { SwapInput } from "../../instructions";
-import { AccountFetcher } from "../../network/public";
+import {
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "../../network/public/fetcher";
 import { TickArray, WhirlpoolData } from "../../types/public";
 import { PoolUtil, SwapDirection } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";
@@ -24,8 +27,8 @@ import { DevFeeSwapQuote } from "./dev-fee-swap-quote";
  */
 export type SwapQuoteParam = {
   whirlpoolData: WhirlpoolData;
-  tokenAmount: u64;
-  otherAmountThreshold: u64;
+  tokenAmount: BN;
+  otherAmountThreshold: BN;
   sqrtPriceLimit: BN;
   aToB: boolean;
   amountSpecifiedIsInput: boolean;
@@ -50,11 +53,11 @@ export type SwapQuote = NormalSwapQuote | DevFeeSwapQuote;
  * @param estimatedFeeAmount - Approximate feeAmount (all fees) charged on this swap
  */
 export type SwapEstimates = {
-  estimatedAmountIn: u64;
-  estimatedAmountOut: u64;
+  estimatedAmountIn: BN;
+  estimatedAmountOut: BN;
   estimatedEndTickIndex: number;
   estimatedEndSqrtPrice: BN;
-  estimatedFeeAmount: u64;
+  estimatedFeeAmount: BN;
 };
 
 /**
@@ -72,18 +75,18 @@ export type NormalSwapQuote = SwapInput & SwapEstimates;
  * @param tokenAmount - The amount of input token to swap from
  * @param slippageTolerance - The amount of slippage to account for in this quote
  * @param programId - PublicKey for the Whirlpool ProgramId
- * @param fetcher - AccountFetcher object to fetch solana accounts
- * @param refresh - If true, fetcher would default to fetching the latest accounts
+ * @param cache - WhirlpoolAccountCacheInterface instance object to fetch solana accounts
+ * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByInputToken(
   whirlpool: Whirlpool,
   inputTokenMint: Address,
-  tokenAmount: u64,
+  tokenAmount: BN,
   slippageTolerance: Percentage,
   programId: Address,
-  fetcher: AccountFetcher,
-  refresh: boolean
+  fetcher: WhirlpoolAccountFetcherInterface,
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<SwapQuote> {
   const params = await swapQuoteByToken(
     whirlpool,
@@ -92,7 +95,7 @@ export async function swapQuoteByInputToken(
     true,
     programId,
     fetcher,
-    refresh
+    opts
   );
   return swapQuoteWithParams(params, slippageTolerance);
 }
@@ -109,18 +112,18 @@ export async function swapQuoteByInputToken(
  * @param tokenAmount - The maximum amount of output token to receive in this swap.
  * @param slippageTolerance - The amount of slippage to account for in this quote
  * @param programId - PublicKey for the Whirlpool ProgramId
- * @param fetcher - AccountFetcher object to fetch solana accounts
- * @param refresh - If true, fetcher would default to fetching the latest accounts
+ * @param cache - WhirlpoolAccountCacheInterface instance to fetch solana accounts
+ * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByOutputToken(
   whirlpool: Whirlpool,
   outputTokenMint: Address,
-  tokenAmount: u64,
+  tokenAmount: BN,
   slippageTolerance: Percentage,
   programId: Address,
-  fetcher: AccountFetcher,
-  refresh: boolean
+  fetcher: WhirlpoolAccountFetcherInterface,
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<SwapQuote> {
   const params = await swapQuoteByToken(
     whirlpool,
@@ -129,7 +132,7 @@ export async function swapQuoteByOutputToken(
     false,
     programId,
     fetcher,
-    refresh
+    opts
   );
   return swapQuoteWithParams(params, slippageTolerance);
 }
@@ -165,11 +168,11 @@ export function swapQuoteWithParams(
 async function swapQuoteByToken(
   whirlpool: Whirlpool,
   inputTokenMint: Address,
-  tokenAmount: u64,
+  tokenAmount: BN,
   amountSpecifiedIsInput: boolean,
   programId: Address,
-  fetcher: AccountFetcher,
-  refresh: boolean
+  fetcher: WhirlpoolAccountFetcherInterface,
+  opts?: WhirlpoolAccountFetchOptions
 ): Promise<SwapQuoteParam> {
   const whirlpoolData = whirlpool.getData();
   const swapMintKey = AddressUtil.toPubKey(inputTokenMint);
@@ -187,7 +190,7 @@ async function swapQuoteByToken(
     AddressUtil.toPubKey(programId),
     whirlpool.getAddress(),
     fetcher,
-    refresh
+    opts
   );
 
   return {

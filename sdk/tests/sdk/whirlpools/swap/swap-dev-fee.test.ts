@@ -1,9 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Address } from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
+import BN from "bn.js";
 import {
   buildWhirlpoolClient, PriceMath,
   swapQuoteByInputToken,
@@ -11,6 +11,7 @@ import {
   WhirlpoolContext
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import { swapQuoteByInputTokenWithDevFees } from "../../../../src/quotes/public/dev-fee-swap-quote";
 import {
   assertDevFeeQuotes,
@@ -57,7 +58,7 @@ describe("whirlpool-dev-fee-swap", () => {
     });
 
     const devFeePercentage = Percentage.fromFraction(0, 1000); // 0%
-    const inputTokenAmount = new u64(119500000);
+    const inputTokenAmount = new BN(119500000);
     const postFeeTokenAmount = inputTokenAmount.sub(
       inputTokenAmount.mul(devFeePercentage.numerator).div(devFeePercentage.denominator)
     );
@@ -70,7 +71,7 @@ describe("whirlpool-dev-fee-swap", () => {
       slippageTolerance,
       ctx.program.programId,
       ctx.fetcher,
-      true
+      IGNORE_CACHE
     );
     const postFeeInputTokenQuote = await swapQuoteByInputToken(
       whirlpool,
@@ -79,7 +80,7 @@ describe("whirlpool-dev-fee-swap", () => {
       slippageTolerance,
       ctx.program.programId,
       ctx.fetcher,
-      true
+      IGNORE_CACHE
     );
     const inputTokenQuoteWithDevFees = await swapQuoteByInputTokenWithDevFees(
       whirlpool,
@@ -89,7 +90,7 @@ describe("whirlpool-dev-fee-swap", () => {
       ctx.program.programId,
       ctx.fetcher,
       devFeePercentage,
-      true
+      IGNORE_CACHE
     );
     assertDevFeeQuotes(inputTokenQuote, postFeeInputTokenQuote, inputTokenQuoteWithDevFees);
     await (
@@ -123,7 +124,7 @@ describe("whirlpool-dev-fee-swap", () => {
     });
 
     const devFeePercentage = Percentage.fromFraction(1, 1000); // 0.1%
-    const inputTokenAmount = new u64(1195000);
+    const inputTokenAmount = new BN(1195000);
     const postFeeTokenAmount = inputTokenAmount.sub(
       inputTokenAmount.mul(devFeePercentage.numerator).div(devFeePercentage.denominator)
     );
@@ -131,6 +132,7 @@ describe("whirlpool-dev-fee-swap", () => {
     const whirlpoolData = await whirlpool.refreshData();
     const swapToken = aToB ? whirlpoolData.tokenMintA : whirlpoolData.tokenMintB;
     const beforeVaultAmounts = await getVaultAmounts(ctx, whirlpoolData);
+
     const { inputTokenQuote, postFeeInputTokenQuote, inputTokenQuoteWithDevFees } = await getQuotes(
       ctx,
       whirlpool,
@@ -179,7 +181,7 @@ describe("whirlpool-dev-fee-swap", () => {
     });
 
     const devFeePercentage = Percentage.fromFraction(1, 100); // 1%
-    const inputTokenAmount = new u64(119500000);
+    const inputTokenAmount = new BN(119500000);
     const postFeeTokenAmount = inputTokenAmount.sub(
       inputTokenAmount.mul(devFeePercentage.numerator).div(devFeePercentage.denominator)
     );
@@ -258,7 +260,7 @@ describe("whirlpool-dev-fee-swap", () => {
     const { devWallet, balance: preDevWalletBalance } = await setupDevWallet(ctx, 10_000_000)
 
     const devFeePercentage = Percentage.fromFraction(1, 10000); // 0.01%
-    const inputTokenAmount = new u64(1_000_000_000); // Swap 1SOL
+    const inputTokenAmount = new BN(1_000_000_000); // Swap 1SOL
     const postFeeTokenAmount = inputTokenAmount.sub(
       inputTokenAmount.mul(devFeePercentage.numerator).div(devFeePercentage.denominator)
     );
@@ -316,7 +318,7 @@ describe("whirlpool-dev-fee-swap", () => {
     });
 
     const devFeePercentage = Percentage.fromFraction(500000, 1000000); // 50%
-    const inputTokenAmount = new u64(119500000);
+    const inputTokenAmount = new BN(119500000);
     const postFeeTokenAmount = inputTokenAmount.sub(
       inputTokenAmount.mul(devFeePercentage.numerator).div(devFeePercentage.denominator)
     );
@@ -370,7 +372,7 @@ describe("whirlpool-dev-fee-swap", () => {
     });
 
     const devFeePercentage = Percentage.fromFraction(100, 100); // 100%
-    const inputTokenAmount = new u64(119500000);
+    const inputTokenAmount = new BN(119500000);
     const whirlpoolData = await whirlpool.refreshData();
     const swapToken = whirlpoolData.tokenMintB;
 
@@ -384,7 +386,7 @@ describe("whirlpool-dev-fee-swap", () => {
           ctx.program.programId,
           ctx.fetcher,
           devFeePercentage,
-          true
+          IGNORE_CACHE
         ),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
     );
@@ -410,7 +412,7 @@ describe("whirlpool-dev-fee-swap", () => {
     });
 
     const devFeePercentage = Percentage.fromFraction(200, 100); // 200%
-    const inputTokenAmount = new u64(119500000);
+    const inputTokenAmount = new BN(119500000);
     const whirlpoolData = await whirlpool.refreshData();
     const swapToken = whirlpoolData.tokenMintB;
 
@@ -424,7 +426,7 @@ describe("whirlpool-dev-fee-swap", () => {
           ctx.program.programId,
           ctx.fetcher,
           devFeePercentage,
-          true
+          IGNORE_CACHE
         ),
       (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.InvalidDevFeePercentage
     );
@@ -435,8 +437,8 @@ async function getQuotes(
   ctx: WhirlpoolContext,
   whirlpool: Whirlpool,
   swapToken: Address,
-  inputTokenAmount: u64,
-  postFeeTokenAmount: u64,
+  inputTokenAmount: BN,
+  postFeeTokenAmount: BN,
   slippageTolerance: Percentage,
   devFeePercentage: Percentage
 ) {
@@ -447,7 +449,7 @@ async function getQuotes(
     slippageTolerance,
     ctx.program.programId,
     ctx.fetcher,
-    true
+    IGNORE_CACHE
   );
   const postFeeInputTokenQuote = await swapQuoteByInputToken(
     whirlpool,
@@ -456,7 +458,7 @@ async function getQuotes(
     slippageTolerance,
     ctx.program.programId,
     ctx.fetcher,
-    true
+    IGNORE_CACHE
   );
   const inputTokenQuoteWithDevFees = await swapQuoteByInputTokenWithDevFees(
     whirlpool,
@@ -466,7 +468,7 @@ async function getQuotes(
     ctx.program.programId,
     ctx.fetcher,
     devFeePercentage,
-    true
+    IGNORE_CACHE
   );
 
   return { inputTokenQuote, postFeeInputTokenQuote, inputTokenQuoteWithDevFees };

@@ -1,10 +1,9 @@
 import { ZERO } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import BN from "bn.js";
 import { PROTOCOL_FEE_RATE_MUL_VALUE, WhirlpoolData } from "../../types/public";
+import { computeSwapStep } from "../../utils/math/swap-math";
 import { PriceMath } from "../../utils/public";
 import { TickArraySequence } from "./tick-array-sequence";
-import { computeSwapStep } from "../../utils/math/swap-math";
 
 export type SwapResult = {
   amountA: BN;
@@ -17,7 +16,7 @@ export type SwapResult = {
 export function computeSwap(
   whirlpoolData: WhirlpoolData,
   tickSequence: TickArraySequence,
-  tokenAmount: u64,
+  tokenAmount: BN,
   sqrtPriceLimit: BN,
   amountSpecifiedIsInput: boolean,
   aToB: boolean
@@ -30,7 +29,7 @@ export function computeSwap(
   let totalFeeAmount = ZERO;
   const feeRate = whirlpoolData.feeRate;
   const protocolFeeRate = whirlpoolData.protocolFeeRate;
-  let currProtocolFee = new u64(0);
+  let currProtocolFee = new BN(0);
   let currFeeGrowthGlobalInput = aToB
     ? whirlpoolData.feeGrowthGlobalA
     : whirlpoolData.feeGrowthGlobalB;
@@ -143,7 +142,7 @@ function calculateFees(
 }
 
 function calculateProtocolFee(globalFee: BN, protocolFeeRate: number) {
-  return globalFee.mul(new u64(protocolFeeRate).div(PROTOCOL_FEE_RATE_MUL_VALUE));
+  return globalFee.mul(new BN(protocolFeeRate).div(PROTOCOL_FEE_RATE_MUL_VALUE));
 }
 
 function calculateEstTokens(

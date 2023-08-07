@@ -2,13 +2,16 @@ import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, PDA } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
-import { AccountFetcher } from "../../network/public";
+import {
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
+} from "../../network/public/fetcher";
 import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
+  TICK_ARRAY_SIZE,
   TickArrayData,
   TickData,
-  TICK_ARRAY_SIZE,
 } from "../../types/public";
 import { PDAUtil } from "./pda-utils";
 
@@ -223,17 +226,17 @@ export class TickArrayUtil {
    * Useful for creating error messages.
    *
    * @param tickArrayAddrs - A list of tick-array addresses to verify.
-   * @param fetcher - {@link AccountFetcher}
-   * @param refresh - If true, always fetch the latest on-chain data
+   * @param cache - {@link WhirlpoolAccountFetcherInterface}
+   * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A string of all uninitialized tick array addresses, delimited by ",". Falsy value if all arrays are initialized.
    */
   public static async getUninitializedArraysString(
     tickArrayAddrs: Address[],
-    fetcher: AccountFetcher,
-    refresh: boolean
+    fetcher: WhirlpoolAccountFetcherInterface,
+    opts?: WhirlpoolAccountFetchOptions
   ) {
     const taAddrs = AddressUtil.toPubKeys(tickArrayAddrs);
-    const tickArrayData = await fetcher.listTickArrays(taAddrs, refresh);
+    const tickArrayData = await fetcher.getTickArrays(taAddrs, opts);
 
     // Verify tick arrays are initialized if the user provided them.
     if (tickArrayData) {
@@ -255,17 +258,17 @@ export class TickArrayUtil {
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
     tickSpacing: number,
-    fetcher: AccountFetcher,
-    refresh: boolean
+    fetcher: WhirlpoolAccountFetcherInterface,
+    opts: WhirlpoolAccountFetchOptions
   ) {
     const startTicks = ticks.map((tick) => TickUtil.getStartTickIndex(tick, tickSpacing));
     const removeDupeTicks = [...new Set(startTicks)];
     const tickArrayPDAs = removeDupeTicks.map((tick) =>
       PDAUtil.getTickArray(programId, whirlpoolAddress, tick)
     );
-    const fetchedArrays = await fetcher.listTickArrays(
+    const fetchedArrays = await fetcher.getTickArrays(
       tickArrayPDAs.map((pda) => pda.publicKey),
-      refresh
+      opts
     );
     const uninitializedIndices = TickArrayUtil.getUninitializedArrays(fetchedArrays);
     return uninitializedIndices.map((index) => {
@@ -278,10 +281,10 @@ export class TickArrayUtil {
 
   /**
    * Evaluate a list of tick-array data and return the array of indices which the tick-arrays are not initialized.
-   * @param tickArrays - a list of TickArrayData or null objects from AccountFetcher.listTickArrays
+   * @param tickArrays - a list of TickArrayData or null objects from WhirlpoolAccountCacheInterface.getTickArrays
    * @returns an array of array-index for the input tickArrays that requires initialization.
    */
-  public static getUninitializedArrays(tickArrays: (TickArrayData | null)[]): number[] {
+  public static getUninitializedArrays(tickArrays: readonly (TickArrayData | null)[]): number[] {
     return tickArrays
       .map((value, index) => {
         if (!value) {

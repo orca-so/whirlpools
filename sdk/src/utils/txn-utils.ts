@@ -18,8 +18,8 @@ export function convertListToMap<T>(fetchedData: T[], addresses: string[]): Reco
 
 // Filter out null objects in the first array and remove the corresponding objects in the second array
 export function filterNullObjects<T, K>(
-  firstArray: Array<T | null>,
-  secondArray: Array<K>
+  firstArray: ReadonlyArray<T | null>,
+  secondArray: ReadonlyArray<K>
 ): [Array<T>, Array<K>] {
   const filteredFirstArray: Array<T> = [];
   const filteredSecondArray: Array<K> = [];

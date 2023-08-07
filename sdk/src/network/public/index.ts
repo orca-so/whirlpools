@@ -1,2 +1,2 @@
-export * from "./fetcher";
+export * from "./fetcher/";
 export * from "./parsing";

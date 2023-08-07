@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -9,6 +9,7 @@ import {
   NUM_REWARDS, toTx,
   WhirlpoolContext, WhirlpoolIx
 } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
   approveToken,
   createAndMintToTokenAccount,
@@ -17,7 +18,7 @@ import {
   getTokenBalance,
   sleep,
   TickSpacing,
-  transfer,
+  transferToken,
   ZERO_BN
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -50,15 +51,15 @@ describe("collect_reward", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -82,8 +83,8 @@ describe("collect_reward", () => {
     ).buildAndExecute();
 
     // Generate collect reward expectation
-    const pool = await client.getPool(whirlpoolPda.publicKey, true);
-    const positionPreCollect = await client.getPosition(positions[0].publicKey, true);
+    const pool = await client.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
+    const positionPreCollect = await client.getPosition(positions[0].publicKey, IGNORE_CACHE);
 
     // Lock the collectRewards quote to the last time we called updateFeesAndRewards
     const expectation = collectRewardsQuote({
@@ -126,7 +127,7 @@ describe("collect_reward", () => {
         await getTokenBalance(provider, rewards[i].rewardVaultKeypair.publicKey)
       );
       assert.equal(vaultStartBalance - collectedBalance, vaultBalance);
-      const position = await fetcher.getPosition(positions[0].publicKey, true);
+      const position = await fetcher.getPosition(positions[0].publicKey, IGNORE_CACHE);
       assert.equal(position?.rewardInfos[i].amountOwed, 0);
       assert.ok(position?.rewardInfos[i].growthInsideCheckpoint.gte(ZERO_BN));
     }
@@ -143,7 +144,7 @@ describe("collect_reward", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -202,7 +203,7 @@ describe("collect_reward", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -227,7 +228,7 @@ describe("collect_reward", () => {
       positions[0].mintKeypair.publicKey,
       delegate.publicKey
     );
-    await transfer(provider, positions[0].tokenAccount, delegatePositionAccount, 1);
+    await transferToken(provider, positions[0].tokenAccount, delegatePositionAccount, 1);
 
     await toTx(
       ctx,
@@ -266,7 +267,7 @@ describe("collect_reward", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -360,7 +361,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const { positions, rewards } = fixture.getInfos();
@@ -401,7 +402,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -423,7 +424,7 @@ describe("collect_reward", () => {
       positions[0].mintKeypair.publicKey,
       provider.wallet.publicKey
     );
-    await transfer(provider, positions[0].tokenAccount, otherPositionAcount, 1);
+    await transferToken(provider, positions[0].tokenAccount, otherPositionAcount, 1);
     await assert.rejects(
       toTx(
         ctx,
@@ -449,7 +450,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -493,7 +494,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -538,7 +539,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -584,7 +585,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -628,7 +629,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -670,7 +671,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {
@@ -712,7 +713,7 @@ describe("collect_reward", () => {
         { tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: new anchor.BN(1_000_000) },
       ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new u64(1_000_000) },
+        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
       ],
     });
     const {

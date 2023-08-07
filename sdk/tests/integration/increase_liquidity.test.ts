@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   PDAUtil,
@@ -14,6 +14,7 @@ import {
   WhirlpoolIx,
   toTx
 } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
 import {
   MAX_U64,
@@ -26,7 +27,7 @@ import {
   createTokenAccount,
   getTokenBalance,
   sleep,
-  transfer
+  transferToken
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
@@ -56,7 +57,7 @@ describe("increase_liquidity", () => {
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     const tokenAmount = toTokenAmount(167_000, 167_000);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
       currTick,
@@ -87,10 +88,10 @@ describe("increase_liquidity", () => {
       })
     ).buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionInitInfo.publicKey, true)) as PositionData;
+    const position = (await fetcher.getPosition(positionInitInfo.publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(position.liquidity.eq(liquidityAmount));
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolAfter.rewardLastUpdatedTimestamp.gt(poolBefore.rewardLastUpdatedTimestamp));
     assert.equal(
       await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
@@ -104,12 +105,12 @@ describe("increase_liquidity", () => {
 
     const tickArrayLower = (await fetcher.getTickArray(
       positionInitInfo.tickArrayLower,
-      true
+      IGNORE_CACHE
     )) as TickArrayData;
     assertTick(tickArrayLower.ticks[78], true, liquidityAmount, liquidityAmount);
     const tickArrayUpper = (await fetcher.getTickArray(
       positionInitInfo.tickArrayUpper,
-      true
+      IGNORE_CACHE
     )) as TickArrayData;
     assertTick(tickArrayUpper.ticks[10], true, liquidityAmount, liquidityAmount.neg());
   });
@@ -126,7 +127,7 @@ describe("increase_liquidity", () => {
     const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
 
     const tokenAmount = toTokenAmount(1_000_000, 0);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -166,18 +167,18 @@ describe("increase_liquidity", () => {
     );
 
     const expectedLiquidity = new anchor.BN(liquidityAmount);
-    const position = (await fetcher.getPosition(positionInitInfo.publicKey, true)) as PositionData;
+    const position = (await fetcher.getPosition(positionInitInfo.publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(position.liquidity.eq(expectedLiquidity));
 
     const tickArray = (await fetcher.getTickArray(
       positionInitInfo.tickArrayLower,
-      true
+      IGNORE_CACHE
     )) as TickArrayData;
 
     assertTick(tickArray.ticks[56], true, expectedLiquidity, expectedLiquidity);
     assertTick(tickArray.ticks[70], true, expectedLiquidity, expectedLiquidity.neg());
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
     assert.equal(poolAfter.liquidity, 0);
   });
@@ -192,7 +193,7 @@ describe("increase_liquidity", () => {
     });
     const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
     const { whirlpoolPda, tickSpacing } = poolInitInfo;
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
 
     const tokenAmount = toTokenAmount(1_000_000, 0);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -278,16 +279,16 @@ describe("increase_liquidity", () => {
     const expectedLiquidity = new anchor.BN(liquidityAmount);
     const position = (await fetcher.getPosition(
       params.positionPda.publicKey,
-      true
+      IGNORE_CACHE
     )) as PositionData;
     assert.ok(position.liquidity.eq(expectedLiquidity));
 
-    const tickArray = (await fetcher.getTickArray(tickArrayLower, true)) as TickArrayData;
+    const tickArray = (await fetcher.getTickArray(tickArrayLower, IGNORE_CACHE)) as TickArrayData;
 
     assertTick(tickArray.ticks[56], true, expectedLiquidity, expectedLiquidity);
     assertTick(tickArray.ticks[70], true, expectedLiquidity, expectedLiquidity.neg());
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
     assert.equal(poolAfter.liquidity, 0);
   });
@@ -305,7 +306,7 @@ describe("increase_liquidity", () => {
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     const tokenAmount = toTokenAmount(0, 167_000);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
       currTick,
@@ -340,10 +341,10 @@ describe("increase_liquidity", () => {
       .addSigner(delegate)
       .buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionInitInfo.publicKey, true)) as PositionData;
+    const position = (await fetcher.getPosition(positionInitInfo.publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(position.liquidity.eq(liquidityAmount));
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
     assert.equal(
       await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
@@ -357,12 +358,12 @@ describe("increase_liquidity", () => {
 
     const tickArrayLower = (await fetcher.getTickArray(
       positionInitInfo.tickArrayLower,
-      true
+      IGNORE_CACHE
     )) as TickArrayData;
     assertTick(tickArrayLower.ticks[78], true, liquidityAmount, liquidityAmount);
     const tickArrayUpper = (await fetcher.getTickArray(
       positionInitInfo.tickArrayUpper,
-      true
+      IGNORE_CACHE
     )) as TickArrayData;
     assertTick(tickArrayUpper.ticks[10], true, liquidityAmount, liquidityAmount.neg());
   });
@@ -394,7 +395,7 @@ describe("increase_liquidity", () => {
     const { positionPda, positionTokenAccount: positionTokenAccountAddress } = positionInfo.params;
 
     const tokenAmount = {
-      tokenA: new u64(0),
+      tokenA: new BN(0),
       tokenB: MAX_U64,
     };
     const estLiquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -423,7 +424,7 @@ describe("increase_liquidity", () => {
       })
     ).buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionPda.publicKey, true)) as PositionData;
+    const position = (await fetcher.getPosition(positionPda.publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(position.liquidity.eq(estLiquidityAmount));
   });
 
@@ -454,7 +455,7 @@ describe("increase_liquidity", () => {
     const { positionPda, positionTokenAccount: positionTokenAccountAddress } = positionInfo.params;
 
     const tokenAmount = {
-      tokenA: new u64(0),
+      tokenA: new BN(0),
       tokenB: MAX_U64,
     };
     const estLiquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -483,7 +484,7 @@ describe("increase_liquidity", () => {
       })
     ).buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionPda.publicKey, true)) as PositionData;
+    const position = (await fetcher.getPosition(positionPda.publicKey, IGNORE_CACHE)) as PositionData;
     assert.ok(position.liquidity.eq(estLiquidityAmount));
   });
 
@@ -501,8 +502,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount: ZERO_BN,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -536,8 +537,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(999_999_999),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(999_999_999),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -570,8 +571,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(999_999_999),
-          tokenMaxB: new u64(0),
+          tokenMaxA: new BN(999_999_999),
+          tokenMaxB: new BN(0),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -611,8 +612,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -629,15 +630,15 @@ describe("increase_liquidity", () => {
     );
 
     // Send position token to other position token account
-    await transfer(provider, positionInitInfo.tokenAccount, newPositionTokenAccount, 1);
+    await transferToken(provider, positionInitInfo.tokenAccount, newPositionTokenAccount, 1);
 
     await assert.rejects(
       toTx(
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -673,8 +674,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -722,8 +723,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionPda.publicKey,
@@ -758,8 +759,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -780,8 +781,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -816,8 +817,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -838,8 +839,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(1_000_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(1_000_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -877,8 +878,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positionInitInfo.publicKey,
@@ -919,8 +920,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positionInitInfo.publicKey,
@@ -961,8 +962,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positionInitInfo.publicKey,
@@ -999,8 +1000,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positionInitInfo.publicKey,
@@ -1043,8 +1044,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,
@@ -1087,8 +1088,8 @@ describe("increase_liquidity", () => {
         ctx,
         WhirlpoolIx.increaseLiquidityIx(ctx.program, {
           liquidityAmount,
-          tokenMaxA: new u64(0),
-          tokenMaxB: new u64(167_000),
+          tokenMaxA: new BN(0),
+          tokenMaxB: new BN(167_000),
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positionInitInfo.publicKey,

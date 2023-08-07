@@ -1,16 +1,19 @@
 import { Address } from "@coral-xyz/anchor";
-import { Instruction, resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
-import { ResolvedTokenAddressInstruction } from "@orca-so/common-sdk/dist/helpers/token-instructions";
-import { NATIVE_MINT } from "@solana/spl-token";
+import {
+  Instruction,
+  ResolvedTokenAddressInstruction,
+  TokenUtil,
+  TransactionBuilder,
+  ZERO,
+  resolveOrCreateATAs,
+} from "@orca-so/common-sdk";
+import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import { PositionData, WhirlpoolContext } from "../..";
 import { WhirlpoolIx } from "../../ix";
+import { PREFER_CACHE, WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
 import { WhirlpoolData } from "../../types/public";
 import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
-import {
-  createWSOLAccountInstructions,
-  getAssociatedTokenAddressSync,
-} from "../../utils/spl-token-utils";
 import { checkMergedTransactionSizeIsValid, convertListToMap } from "../../utils/txn-utils";
 import { getTokenMintsFromWhirlpools } from "../../utils/whirlpool-ata-utils";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
@@ -66,21 +69,19 @@ export type CollectAllParams = {
  * @experimental
  * @param ctx - WhirlpoolContext object for the current environment.
  * @param params - CollectAllPositionAddressParams object
- * @param refresh - if true, will always fetch for the latest on-chain data.
+ * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
  * @returns A set of transaction-builders to resolve ATA for affliated tokens, collect fee & rewards for all positions.
  */
 export async function collectAllForPositionAddressesTxns(
   ctx: WhirlpoolContext,
   params: CollectAllPositionAddressParams,
-  refresh = false
+  opts: WhirlpoolAccountFetchOptions = PREFER_CACHE
 ): Promise<TransactionBuilder[]> {
   const { positions, ...rest } = params;
-  const posData = convertListToMap(
-    await ctx.fetcher.listPositions(positions, refresh),
-    positions.map((pos) => pos.toString())
-  );
+  const fetchedPositions = await ctx.fetcher.getPositions(positions, opts);
+
   const positionMap: Record<string, PositionData> = {};
-  Object.entries(posData).forEach(([addr, pos]) => {
+  fetchedPositions.forEach((pos, addr) => {
     if (pos) {
       positionMap[addr] = pos;
     }
@@ -113,10 +114,9 @@ export async function collectAllForPositionsTxns(
   }
 
   const whirlpoolAddrs = positionList.map(([, pos]) => pos.whirlpool.toBase58());
-  const whirlpoolDatas = await ctx.fetcher.listPools(whirlpoolAddrs, false);
-  const whirlpools = convertListToMap(whirlpoolDatas, whirlpoolAddrs);
+  const whirlpools = await ctx.fetcher.getPools(whirlpoolAddrs, PREFER_CACHE);
 
-  const allMints = getTokenMintsFromWhirlpools(whirlpoolDatas);
+  const allMints = getTokenMintsFromWhirlpools(Array.from(whirlpools.values()));
   const accountExemption = await ctx.fetcher.getAccountRentExempt();
 
   // resolvedAtas[mint] => Instruction & { address }
@@ -128,7 +128,9 @@ export async function collectAllForPositionsTxns(
       allMints.mintMap.map((tokenMint) => ({ tokenMint })),
       async () => accountExemption,
       payerKey,
-      true // CreateIdempotent
+      true, // CreateIdempotent
+      ctx.accountResolverOpts.allowPDAOwnerAddress,
+      ctx.accountResolverOpts.createWrappedSolAccountMethod
     ),
     allMints.mintMap.map((mint) => mint.toBase58())
   );
@@ -144,10 +146,13 @@ export async function collectAllForPositionsTxns(
     if (!pendingTxBuilder || !touchedMints) {
       pendingTxBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
       touchedMints = new Set<string>();
-      resolvedAtas[NATIVE_MINT.toBase58()] = createWSOLAccountInstructions(
+      resolvedAtas[NATIVE_MINT.toBase58()] = TokenUtil.createWrappedNativeAccountInstruction(
         receiverKey,
         ZERO,
-        accountExemption
+        accountExemption,
+        undefined, // use default
+        undefined, // use default
+        ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
     }
 
@@ -203,7 +208,7 @@ const constructCollectIxForPosition = (
   ctx: WhirlpoolContext,
   positionKey: PublicKey,
   position: PositionData,
-  whirlpools: Record<string, WhirlpoolData | null>,
+  whirlpools: ReadonlyMap<string, WhirlpoolData | null>,
   positionOwner: PublicKey,
   positionAuthority: PublicKey,
   resolvedAtas: Record<string, ResolvedTokenAddressInstruction>,
@@ -219,7 +224,7 @@ const constructCollectIxForPosition = (
     rewardInfos: positionRewardInfos,
   } = position;
 
-  const whirlpool = whirlpools[whirlpoolKey.toBase58()];
+  const whirlpool = whirlpools.get(whirlpoolKey.toBase58());
   if (!whirlpool) {
     throw new Error(
       `Unable to process positionMint ${positionMint} - unable to derive whirlpool ${whirlpoolKey.toBase58()}`
@@ -230,8 +235,9 @@ const constructCollectIxForPosition = (
   const mintB = whirlpool.tokenMintB.toBase58();
 
   const positionTokenAccount = getAssociatedTokenAddressSync(
-    positionMint.toBase58(),
-    positionOwner.toBase58()
+    positionMint,
+    positionOwner,
+    ctx.accountResolverOpts.allowPDAOwnerAddress
   );
 
   // Update fee and reward values if necessary

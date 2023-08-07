@@ -1,5 +1,5 @@
-import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import Decimal from "decimal.js";
 import {
   ORCA_SUPPORTED_TICK_SPACINGS,
@@ -40,7 +40,7 @@ export type GetPricesConfig = {
  *                             that a Whirlpool can have to be included in the price calculation.
  */
 export type GetPricesThresholdConfig = {
-  amountOut: u64;
+  amountOut: BN;
   priceImpactThreshold: number;
 };
 
@@ -110,6 +110,6 @@ export const defaultGetPricesConfig: GetPricesConfig = {
  * @category PriceModule
  */
 export const defaultGetPricesThresholdConfig: GetPricesThresholdConfig = {
-  amountOut: new u64(1_000_000_000),
+  amountOut: new BN(1_000_000_000),
   priceImpactThreshold: 1.05,
 };

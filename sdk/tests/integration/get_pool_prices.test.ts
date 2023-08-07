@@ -1,8 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   GetPricesConfig, GetPricesThresholdConfig, PriceModule,
@@ -24,9 +24,9 @@ describe("get_pool_prices", () => {
   const context = WhirlpoolContext.fromWorkspace(provider, program);
 
   async function fetchMaps(context: WhirlpoolContext, mints: PublicKey[], config: GetPricesConfig) {
-    const poolMap = await PriceModuleUtils.fetchPoolDataFromMints(context, mints, config);
-    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(context, poolMap, config);
-    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(context, mints);
+    const poolMap = await PriceModuleUtils.fetchPoolDataFromMints(context.fetcher, mints, config);
+    const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(context.fetcher, poolMap, config);
+    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(context.fetcher, mints);
 
     return { poolMap, tickArrayMap, decimalsMap };
   }
@@ -60,7 +60,7 @@ describe("get_pool_prices", () => {
 
   function getDefaultThresholdConfig(): GetPricesThresholdConfig {
     return {
-      amountOut: new u64(1_000_000),
+      amountOut: new BN(1_000_000),
       priceImpactThreshold: 1.05,
     };
   }

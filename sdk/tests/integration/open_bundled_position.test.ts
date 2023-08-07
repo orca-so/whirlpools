@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { PDA } from "@orca-so/common-sdk";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, Token, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { PublicKey, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import {
@@ -15,13 +15,14 @@ import {
   WhirlpoolContext,
   WhirlpoolIx
 } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
   approveToken,
   createAssociatedTokenAccount,
   ONE_SOL,
   systemTransferTx,
   TickSpacing,
-  transfer,
+  transferToken,
   ZERO_BN
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -55,9 +56,7 @@ describe("open_bundled_position", () => {
   ) {
     const bundledPositionPda = PDAUtil.getBundledPosition(ctx.program.programId, positionBundleMint, bundleIndex);
     const positionBundle = PDAUtil.getPositionBundle(ctx.program.programId, positionBundleMint).publicKey;
-    const positionBundleTokenAccount = await Token.getAssociatedTokenAddress(
-      ASSOCIATED_TOKEN_PROGRAM_ID,
-      TOKEN_PROGRAM_ID,
+    const positionBundleTokenAccount = getAssociatedTokenAddressSync(
       positionBundleMint,
       ctx.wallet.publicKey
     );
@@ -148,7 +147,7 @@ describe("open_bundled_position", () => {
     const position = (await fetcher.getPosition(bundledPositionPda.publicKey)) as PositionData;
     checkPositionAccountContents(position, positionBundleInfo.positionBundleMintKeypair.publicKey);
 
-    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true)) as PositionBundleData;
+    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE)) as PositionBundleData;
     checkBitmap(positionBundle, [bundleIndex]);
   });
 
@@ -178,7 +177,7 @@ describe("open_bundled_position", () => {
     const position = (await fetcher.getPosition(bundledPositionPda.publicKey)) as PositionData;
     checkPositionAccountContents(position, positionBundleInfo.positionBundleMintKeypair.publicKey);
 
-    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true)) as PositionBundleData;
+    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE)) as PositionBundleData;
     checkBitmap(positionBundle, [bundleIndex]);
   });
 
@@ -201,7 +200,7 @@ describe("open_bundled_position", () => {
       checkPositionAccountContents(position, positionBundleInfo.positionBundleMintKeypair.publicKey);
     }
 
-    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true)) as PositionBundleData;
+    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE)) as PositionBundleData;
     checkBitmap(positionBundle, bundleIndexes);
   });
 
@@ -316,7 +315,7 @@ describe("open_bundled_position", () => {
       tickUpperIndex
     );
 
-    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true)) as PositionBundleData;
+    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE)) as PositionBundleData;
     assert.ok(checkBitmapIsOpened(positionBundle, bundleIndex));
 
     await assert.rejects(
@@ -502,7 +501,7 @@ describe("open_bundled_position", () => {
         funderKeypair
       );
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
       checkBitmapIsOpened(positionBundle!, 0);
     });
 
@@ -525,7 +524,7 @@ describe("open_bundled_position", () => {
       );
       // owner can open even if delegation exists
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
       checkBitmapIsOpened(positionBundle!, 0);
     });
 
@@ -572,15 +571,15 @@ describe("open_bundled_position", () => {
         ctx.wallet.publicKey,
       );
 
-      await transfer(
+      await transferToken(
         provider,
         positionBundleInfo.positionBundleTokenAccount,
         funderATA,
         1
       );
 
-      const tokenInfo = await fetcher.getTokenInfo(funderATA, true);
-      assert.ok(tokenInfo?.amount.eqn(1));
+      const tokenInfo = await fetcher.getTokenInfo(funderATA, IGNORE_CACHE);
+      assert.ok(tokenInfo?.amount === 1n);
 
       const tx = toTx(
         ctx,
@@ -599,7 +598,7 @@ describe("open_bundled_position", () => {
       tx.addSigner(funderKeypair);
 
       await tx.buildAndExecute();
-      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, true);
+      const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
       checkBitmapIsOpened(positionBundle!, 0);
     });
   });

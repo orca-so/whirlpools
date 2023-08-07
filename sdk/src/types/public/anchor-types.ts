@@ -12,7 +12,7 @@ import WhirlpoolIDL from "../../artifacts/whirlpool.json";
 
 /**
  * Supported parasable account names from the Whirlpool contract.
- * @category Parsables
+ * @category Network
  */
 export enum AccountName {
   WhirlpoolsConfig = "WhirlpoolsConfig",
@@ -23,13 +23,13 @@ export enum AccountName {
   PositionBundle = "PositionBundle",
 }
 
-const IDL = WhirlpoolIDL as Idl;
+export const WHIRLPOOL_IDL = WhirlpoolIDL as Idl;
 
 /**
  * The Anchor coder for the Whirlpool program.
  * @category Solana Accounts
  */
-export const WHIRLPOOL_CODER = new BorshAccountsCoder(IDL);
+export const WHIRLPOOL_CODER = new BorshAccountsCoder(WHIRLPOOL_IDL);
 
 /**
  * Get the size of an account owned by the Whirlpool program in bytes.
@@ -37,7 +37,9 @@ export const WHIRLPOOL_CODER = new BorshAccountsCoder(IDL);
  * @returns Size in bytes of the account
  */
 export function getAccountSize(accountName: AccountName) {
-  const size = WHIRLPOOL_CODER.size(IDL.accounts!.find((account) => account.name === accountName)!);
+  const size = WHIRLPOOL_CODER.size(
+    WHIRLPOOL_IDL.accounts!.find((account) => account.name === accountName)!
+  );
   return size + RESERVED_BYTES[accountName];
 }
 

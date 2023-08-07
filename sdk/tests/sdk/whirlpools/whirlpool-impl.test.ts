@@ -1,29 +1,31 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, MathUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import { MathUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
+  PDAUtil,
+  PriceMath, TickUtil,
+  WhirlpoolIx,
   buildWhirlpoolClient,
   collectFeesQuote,
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidity,
   increaseLiquidityQuoteByInputToken,
-  PDAUtil,
-  PriceMath, TickUtil,
-  toTx,
-  WhirlpoolIx
+  toTx
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
+import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
+  ONE_SOL,
+  TickSpacing,
+  ZERO_BN,
   createAssociatedTokenAccount,
   getTokenBalance,
-  ONE_SOL,
   sleep,
   systemTransferTx,
-  TickSpacing,
-  transfer,
-  ZERO_BN
+  transferToken
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
@@ -113,7 +115,7 @@ describe("whirlpool-impl", () => {
 
     // Verify position exists and numbers fit input parameters
     const positionAddress = PDAUtil.getPosition(ctx.program.programId, positionMint).publicKey;
-    const position = await client.getPosition(positionAddress, true);
+    const position = await client.getPosition(positionAddress, IGNORE_CACHE);
     const positionData = position.getData();
 
     const tickLowerIndex = TickUtil.getInitializableTickIndex(
@@ -138,7 +140,7 @@ describe("whirlpool-impl", () => {
     }
 
     // Verify position is closed and owner wallet has the tokens back
-    const postClosePosition = await fetcher.getPosition(positionAddress, true);
+    const postClosePosition = await fetcher.getPosition(positionAddress, IGNORE_CACHE);
     assert.ok(postClosePosition === null);
 
     // TODO: we are leaking 1 decimal place of token?
@@ -222,7 +224,7 @@ describe("whirlpool-impl", () => {
 
     // Verify position exists and numbers fit input parameters
     const positionAddress = PDAUtil.getPosition(ctx.program.programId, positionMint).publicKey;
-    const position = await client.getPosition(positionAddress, true);
+    const position = await client.getPosition(positionAddress, IGNORE_CACHE);
     const positionData = position.getData();
 
     const tickLowerIndex = TickUtil.getInitializableTickIndex(
@@ -241,14 +243,14 @@ describe("whirlpool-impl", () => {
 
     // Transfer the position token to another wallet
     const otherWallet = anchor.web3.Keypair.generate();
-    const walletPositionTokenAccount = await deriveATA(ctx.wallet.publicKey, positionMint);
+    const walletPositionTokenAccount = getAssociatedTokenAddressSync(positionMint, ctx.wallet.publicKey);
     const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
       ctx.provider,
       positionMint,
       otherWallet.publicKey,
       ctx.wallet.publicKey
     );
-    await transfer(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
     // [Action] Close Position
     const expectationQuote = await decreaseLiquidityQuoteByLiquidity(
@@ -283,11 +285,11 @@ describe("whirlpool-impl", () => {
     await closeTx.addSigner(otherWallet).buildAndExecute();
 
     // Verify position is closed and owner wallet has the tokens back
-    const postClosePosition = await fetcher.getPosition(positionAddress, true);
+    const postClosePosition = await fetcher.getPosition(positionAddress, IGNORE_CACHE);
     assert.ok(postClosePosition === null);
 
-    const dWalletTokenAAccount = await deriveATA(destinationWallet.publicKey, poolData.tokenMintA);
-    const dWalletTokenBAccount = await deriveATA(destinationWallet.publicKey, poolData.tokenMintB);
+    const dWalletTokenAAccount = getAssociatedTokenAddressSync(poolData.tokenMintA, destinationWallet.publicKey,);
+    const dWalletTokenBAccount = getAssociatedTokenAddressSync(poolData.tokenMintB, destinationWallet.publicKey);
 
     assert.equal(
       await getTokenBalance(ctx.provider, dWalletTokenAAccount),
@@ -314,15 +316,15 @@ describe("whirlpool-impl", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(5)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -340,7 +342,7 @@ describe("whirlpool-impl", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -362,7 +364,7 @@ describe("whirlpool-impl", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -388,9 +390,9 @@ describe("whirlpool-impl", () => {
 
     // Transfer the position token to another wallet
     const otherWallet = anchor.web3.Keypair.generate();
-    const walletPositionTokenAccount = await deriveATA(
+    const walletPositionTokenAccount = getAssociatedTokenAddressSync(
+      positionWithFees.mintKeypair.publicKey,
       ctx.wallet.publicKey,
-      positionWithFees.mintKeypair.publicKey
     );
 
     const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
@@ -400,15 +402,15 @@ describe("whirlpool-impl", () => {
       ctx.wallet.publicKey
     );
 
-    await transfer(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
-    const pool = await client.getPool(whirlpoolPda.publicKey, true);
-    const position = await client.getPosition(positionWithFees.publicKey, true);
+    const pool = await client.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
+    const position = await client.getPosition(positionWithFees.publicKey, IGNORE_CACHE);
     const positionData = position.getData();
     const poolData = pool.getData();
     const txs = await pool.closePosition(
       positionWithFees.publicKey,
-      new Percentage(new u64(10), new u64(100)),
+      new Percentage(new BN(10), new BN(100)),
       otherWallet.publicKey,
       otherWallet.publicKey,
       ctx.wallet.publicKey
@@ -421,11 +423,11 @@ describe("whirlpool-impl", () => {
       pool
     );
 
-    const dWalletTokenAAccount = await deriveATA(otherWallet.publicKey, poolData.tokenMintA);
-    const dWalletTokenBAccount = await deriveATA(otherWallet.publicKey, poolData.tokenMintB);
-    const rewardAccount0 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[0].mint);
-    const rewardAccount1 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[1].mint);
-    const rewardAccount2 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[2].mint);
+    const dWalletTokenAAccount = getAssociatedTokenAddressSync(poolData.tokenMintA, otherWallet.publicKey,);
+    const dWalletTokenBAccount = getAssociatedTokenAddressSync(poolData.tokenMintB, otherWallet.publicKey,);
+    const rewardAccount0 = getAssociatedTokenAddressSync(poolData.rewardInfos[0].mint, otherWallet.publicKey,);
+    const rewardAccount1 = getAssociatedTokenAddressSync(poolData.rewardInfos[1].mint, otherWallet.publicKey,);
+    const rewardAccount2 = getAssociatedTokenAddressSync(poolData.rewardInfos[2].mint, otherWallet.publicKey,);
 
     const feesQuote = collectFeesQuote({
       whirlpool: poolData,
@@ -493,15 +495,15 @@ describe("whirlpool-impl", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
       tokenAIsNative: true,
@@ -520,7 +522,7 @@ describe("whirlpool-impl", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000_00),
+        amount: new BN(200_000_00),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -542,7 +544,7 @@ describe("whirlpool-impl", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000_00),
+        amount: new BN(200_000_00),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -568,9 +570,9 @@ describe("whirlpool-impl", () => {
 
     // Transfer the position token to another wallet
     const otherWallet = anchor.web3.Keypair.generate();
-    const walletPositionTokenAccount = await deriveATA(
+    const walletPositionTokenAccount = getAssociatedTokenAddressSync(
+      positionWithFees.mintKeypair.publicKey,
       ctx.wallet.publicKey,
-      positionWithFees.mintKeypair.publicKey
     );
 
     const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
@@ -580,10 +582,10 @@ describe("whirlpool-impl", () => {
       ctx.wallet.publicKey
     );
 
-    await transfer(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
 
-    const pool = await client.getPool(whirlpoolPda.publicKey, true);
-    const position = await client.getPosition(positionWithFees.publicKey, true);
+    const pool = await client.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
+    const position = await client.getPosition(positionWithFees.publicKey, IGNORE_CACHE);
     const positionData = position.getData();
     const poolData = pool.getData();
 
@@ -601,14 +603,14 @@ describe("whirlpool-impl", () => {
       tickUpper: position.getUpperTickData(),
     });
 
-    const dWalletTokenBAccount = await deriveATA(otherWallet.publicKey, poolData.tokenMintB);
-    const rewardAccount0 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[0].mint);
-    const rewardAccount1 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[1].mint);
-    const rewardAccount2 = await deriveATA(otherWallet.publicKey, poolData.rewardInfos[2].mint);
+    const dWalletTokenBAccount = getAssociatedTokenAddressSync(poolData.tokenMintB, otherWallet.publicKey,);
+    const rewardAccount0 = getAssociatedTokenAddressSync(poolData.rewardInfos[0].mint, otherWallet.publicKey,);
+    const rewardAccount1 = getAssociatedTokenAddressSync(poolData.rewardInfos[1].mint, otherWallet.publicKey,);
+    const rewardAccount2 = getAssociatedTokenAddressSync(poolData.rewardInfos[2].mint, otherWallet.publicKey,);
 
     const txs = await pool.closePosition(
       positionWithFees.publicKey,
-      new Percentage(new u64(10), new u64(100)),
+      new Percentage(new BN(10), new BN(100)),
       otherWallet.publicKey,
       otherWallet.publicKey,
       ctx.wallet.publicKey
@@ -665,9 +667,9 @@ describe("whirlpool-impl", () => {
      */
     const expectedtokenA = decreaseLiquidityQuote.tokenMinA
       .add(feesQuote.feeOwedA)
-      .add(new u64(positionAccountBalance))
-      .add(new u64(minAccountExempt))
-      .add(new u64(minAccountExempt))
+      .add(new BN(positionAccountBalance))
+      .add(new BN(minAccountExempt))
+      .add(new BN(minAccountExempt))
       .toNumber();
     assert.ok(solReceived === expectedtokenA);
 

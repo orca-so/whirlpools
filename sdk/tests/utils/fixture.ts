@@ -1,5 +1,5 @@
 import { BN } from "@coral-xyz/anchor";
-import { NATIVE_MINT, u64 } from "@solana/spl-token";
+import { NATIVE_MINT } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { TickSpacing, ZERO_BN } from ".";
 import { InitConfigParams, InitPoolParams, TickUtil, WhirlpoolContext } from "../../src";
@@ -22,7 +22,7 @@ interface InitFixtureParams {
 
 interface RewardParam {
   emissionsPerSecondX64: BN;
-  vaultAmount: u64;
+  vaultAmount: BN;
 }
 
 interface InitializedRewardInfo {

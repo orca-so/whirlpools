@@ -1,9 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
+import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { createTokenAccount, getTokenBalance, TickSpacing, ZERO_BN } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
@@ -53,7 +54,7 @@ describe("collect_protocol_fees", () => {
       .addSigner(feeAuthorityKeypair)
       .buildAndExecute();
 
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
     assert.ok(poolBefore?.protocolFeeOwedA.eq(ZERO_BN));
     assert.ok(poolBefore?.protocolFeeOwedB.eq(ZERO_BN));
 
@@ -65,7 +66,7 @@ describe("collect_protocol_fees", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -87,7 +88,7 @@ describe("collect_protocol_fees", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -105,9 +106,9 @@ describe("collect_protocol_fees", () => {
       })
     ).buildAndExecute();
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, true)) as WhirlpoolData;
-    assert.ok(poolAfter?.protocolFeeOwedA.eq(new u64(150)));
-    assert.ok(poolAfter?.protocolFeeOwedB.eq(new u64(150)));
+    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
+    assert.ok(poolAfter?.protocolFeeOwedA.eq(new BN(150)));
+    assert.ok(poolAfter?.protocolFeeOwedB.eq(new BN(150)));
 
     const destA = await createTokenAccount(provider, tokenMintA, provider.wallet.publicKey);
     const destB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);

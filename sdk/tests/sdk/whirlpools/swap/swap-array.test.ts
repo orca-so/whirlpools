@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { AddressUtil, Percentage, ZERO } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import * as assert from "assert";
 import BN from "bn.js";
 import {
@@ -13,6 +12,7 @@ import {
   swapQuoteWithParams
 } from "../../../../src";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
+import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import { adjustForSlippage } from "../../../../src/utils/position-util";
 import { TickSpacing } from "../../../utils";
 import { defaultConfirmOptions } from "../../../utils/const";
@@ -56,7 +56,7 @@ describe("swap arrays test", () => {
     });
 
     const whirlpoolData = await whirlpool.refreshData();
-    const tradeAmount = new u64(10000);
+    const tradeAmount = new BN(10000);
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
@@ -64,7 +64,7 @@ describe("swap arrays test", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
 
     // Verify with an actual swap.
@@ -112,11 +112,11 @@ describe("swap arrays test", () => {
       swapQuoteByInputToken(
         whirlpool,
         whirlpoolData.tokenMintA,
-        new u64(40_000_000),
+        new BN(40_000_000),
         slippageTolerance,
         ctx.program.programId,
         fetcher,
-        true
+        IGNORE_CACHE
       ),
       (err: Error) => err.message.indexOf(expectedError) != -1
     );
@@ -145,7 +145,7 @@ describe("swap arrays test", () => {
     });
 
     const whirlpoolData = await whirlpool.refreshData();
-    const tradeAmount = new u64(10000);
+    const tradeAmount = new BN(10000);
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
@@ -153,7 +153,7 @@ describe("swap arrays test", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
 
     // Verify with an actual swap.
@@ -201,11 +201,11 @@ describe("swap arrays test", () => {
       swapQuoteByInputToken(
         whirlpool,
         whirlpoolData.tokenMintB,
-        new u64(40_000_000),
+        new BN(40_000_000),
         slippageTolerance,
         ctx.program.programId,
         fetcher,
-        true
+        IGNORE_CACHE
       ),
       (err: Error) => err.message.indexOf(expectedError) != -1
     );
@@ -234,7 +234,7 @@ describe("swap arrays test", () => {
     });
 
     const whirlpoolData = await whirlpool.refreshData();
-    const tradeAmount = new u64(10000);
+    const tradeAmount = new BN(10000);
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
@@ -242,7 +242,7 @@ describe("swap arrays test", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
 
     // Verify with an actual swap.
@@ -284,7 +284,7 @@ describe("swap arrays test", () => {
     });
 
     const whirlpoolData = await whirlpool.refreshData();
-    const tradeAmount = new u64(10000);
+    const tradeAmount = new BN(10000);
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
@@ -292,7 +292,7 @@ describe("swap arrays test", () => {
       slippageTolerance,
       ctx.program.programId,
       fetcher,
-      true
+      IGNORE_CACHE
     );
 
     // Verify with an actual swap.
@@ -342,7 +342,7 @@ describe("swap arrays test", () => {
       ctx.program.programId,
       whirlpool.getAddress(),
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assert.throws(
       () =>
@@ -350,7 +350,7 @@ describe("swap arrays test", () => {
           {
             aToB,
             amountSpecifiedIsInput: true,
-            tokenAmount: new u64("10000"),
+            tokenAmount: new BN("10000"),
             whirlpoolData,
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -393,7 +393,7 @@ describe("swap arrays test", () => {
       ctx.program.programId,
       whirlpool.getAddress(),
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assert.throws(
       () =>
@@ -401,7 +401,7 @@ describe("swap arrays test", () => {
           {
             aToB,
             amountSpecifiedIsInput: true,
-            tokenAmount: new u64("10000"),
+            tokenAmount: new BN("10000"),
             whirlpoolData,
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -443,7 +443,7 @@ describe("swap arrays test", () => {
       ctx.program.programId,
       whirlpool.getAddress(),
       fetcher,
-      true
+      IGNORE_CACHE
     );
     assert.throws(
       () =>
@@ -451,7 +451,7 @@ describe("swap arrays test", () => {
           {
             aToB,
             amountSpecifiedIsInput: true,
-            tokenAmount: new u64("10000"),
+            tokenAmount: new BN("10000"),
             whirlpoolData,
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -493,7 +493,7 @@ describe("swap arrays test", () => {
       ctx.program.programId,
       whirlpool.getAddress(),
       fetcher,
-      true
+      IGNORE_CACHE
     );
 
     assert.throws(
@@ -502,7 +502,7 @@ describe("swap arrays test", () => {
           {
             aToB,
             amountSpecifiedIsInput: true,
-            tokenAmount: new u64("10000"),
+            tokenAmount: new BN("10000"),
             whirlpoolData,
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -549,7 +549,7 @@ describe("swap arrays test", () => {
           {
             aToB,
             amountSpecifiedIsInput: true,
-            tokenAmount: new u64("10000"),
+            tokenAmount: new BN("10000"),
             whirlpoolData,
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -601,7 +601,7 @@ describe("swap arrays test", () => {
           {
             aToB,
             amountSpecifiedIsInput: true,
-            tokenAmount: new u64("10000"),
+            tokenAmount: new BN("10000"),
             whirlpoolData,
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
@@ -650,7 +650,7 @@ describe("swap arrays test", () => {
       AddressUtil.toPubKey(whirlpool.getAddress()),
       fetcher
     );
-    const tradeAmount = new u64("33588");
+    const tradeAmount = new BN("33588");
     const quote = swapQuoteWithParams(
       {
         aToB,
@@ -708,7 +708,7 @@ describe("swap arrays test", () => {
       AddressUtil.toPubKey(whirlpool.getAddress()),
       fetcher
     );
-    const tradeAmount = new u64("33588");
+    const tradeAmount = new BN("33588");
     const quote = swapQuoteWithParams(
       {
         aToB,
@@ -760,7 +760,7 @@ describe("swap arrays test", () => {
     });
 
     const whirlpoolData = await whirlpool.refreshData();
-    const tradeAmount = new u64(10000);
+    const tradeAmount = new BN(10000);
     const aToB = true;
     const tickArrays = SwapUtils.getTickArrayPublicKeys(
       whirlpoolData.tickCurrentIndex,
@@ -811,7 +811,7 @@ describe("swap arrays test", () => {
     });
 
     const whirlpoolData = await whirlpool.refreshData();
-    const tradeAmount = new u64(10000);
+    const tradeAmount = new BN(10000);
     const aToB = false;
     const tickArrays = SwapUtils.getTickArrayPublicKeys(
       whirlpoolData.tickCurrentIndex,

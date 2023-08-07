@@ -1,13 +1,14 @@
 import * as anchor from "@coral-xyz/anchor";
-import { deriveATA, MathUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
+import { MathUtil, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Keypair, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
-import { buildWhirlpoolClient, collectFeesQuote, NUM_REWARDS, PDAUtil, PoolUtil, POSITION_BUNDLE_SIZE, PositionBundleData, PriceMath, toTx, Whirlpool, WhirlpoolClient, WhirlpoolIx } from "../../../src";
+import { NUM_REWARDS, PDAUtil, POSITION_BUNDLE_SIZE, PoolUtil, PositionBundleData, PriceMath, Whirlpool, WhirlpoolClient, WhirlpoolIx, buildWhirlpoolClient, collectFeesQuote, toTx } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
-import { createTokenAccount, TickSpacing, ZERO_BN } from "../../utils";
+import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
+import { TickSpacing, ZERO_BN, createTokenAccount } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initializePositionBundle, openBundledPosition } from "../../utils/init-utils";
@@ -28,7 +29,7 @@ describe("bundled position management tests", () => {
   const tickUpperIndex = 33536;
   const tickSpacing = TickSpacing.Standard;
   const vaultStartBalance = 1_000_000;
-  const liquidityAmount = new u64(10_000_000);
+  const liquidityAmount = new BN(10_000_000);
   const sleep = (second: number) => new Promise(resolve => setTimeout(resolve, second * 1000))
 
   before(() => {
@@ -92,7 +93,7 @@ describe("bundled position management tests", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
         amountSpecifiedIsInput: true,
@@ -114,7 +115,7 @@ describe("bundled position management tests", () => {
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
-        amount: new u64(200_000),
+        amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
         amountSpecifiedIsInput: true,
@@ -214,7 +215,7 @@ describe("bundled position management tests", () => {
       }
 
       await builder.buildAndExecute();
-      const positionBundleAccount = await ctx.fetcher.getPositionBundle(positionBundlePubkey, true);
+      const positionBundleAccount = await ctx.fetcher.getPositionBundle(positionBundlePubkey, IGNORE_CACHE);
       checkBitmap(positionBundleAccount!, openedBundleIndexes);
     }
     assert.equal(openedBundleIndexes.length, POSITION_BUNDLE_SIZE);
@@ -240,7 +241,7 @@ describe("bundled position management tests", () => {
       }
 
       await builder.buildAndExecute();
-      const positionBundleAccount = await ctx.fetcher.getPositionBundle(positionBundlePubkey, true);
+      const positionBundleAccount = await ctx.fetcher.getPositionBundle(positionBundlePubkey, IGNORE_CACHE);
       checkBitmap(positionBundleAccount!, openedBundleIndexes);
     }
     assert.equal(openedBundleIndexes.length, 0);
@@ -256,7 +257,7 @@ describe("bundled position management tests", () => {
         receiver: ctx.wallet.publicKey,
       })
     ).buildAndExecute();
-    const positionBundleAccount = await ctx.fetcher.getPositionBundle(positionBundlePubkey, true);
+    const positionBundleAccount = await ctx.fetcher.getPositionBundle(positionBundlePubkey, IGNORE_CACHE);
     assert.ok(positionBundleAccount === null);
   });
 
@@ -271,15 +272,15 @@ describe("bundled position management tests", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -304,8 +305,8 @@ describe("bundled position management tests", () => {
     const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(positionInitInfo.params.tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
     const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(positionInitInfo.params.tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
     const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-    const tokenOwnerAccountA = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintA);
-    const tokenOwnerAccountB = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintB);
+    const tokenOwnerAccountA = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, ctx.wallet.publicKey);
+    const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
     const modifyLiquidityParams = {
       liquidityAmount,
@@ -324,13 +325,13 @@ describe("bundled position management tests", () => {
     // increaseLiquidity
     const depositAmounts = PoolUtil.getTokenAmountsFromLiquidity(
       liquidityAmount,
-      (await ctx.fetcher.getPool(whirlpoolPubkey, true))!.sqrtPrice,
+      (await ctx.fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE))!.sqrtPrice,
       PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
       PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
       true
     );
 
-    const preIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+    const preIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
     assert.ok(preIncrease!.liquidity.isZero());
     await toTx(
       ctx,
@@ -340,7 +341,7 @@ describe("bundled position management tests", () => {
         tokenMaxB: depositAmounts.tokenB,
       })
     ).buildAndExecute();
-    const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+    const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
     assert.ok(postIncrease!.liquidity.eq(liquidityAmount));
 
     await sleep(2); // accrueRewards
@@ -348,7 +349,7 @@ describe("bundled position management tests", () => {
     await stopRewardsEmission(fixture);
 
     // updateFeesAndRewards
-    const preUpdate = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+    const preUpdate = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
     assert.ok(preUpdate!.feeOwedA.isZero());
     assert.ok(preUpdate!.feeOwedB.isZero());
     assert.ok(preUpdate!.rewardInfos.every((r) => r.amountOwed.isZero()));
@@ -361,7 +362,7 @@ describe("bundled position management tests", () => {
         whirlpool: whirlpoolPubkey,
       })
     ).buildAndExecute();
-    const postUpdate = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+    const postUpdate = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
     assert.ok(postUpdate!.feeOwedA.gtn(0));
     assert.ok(postUpdate!.feeOwedB.gtn(0));
     assert.ok(postUpdate!.rewardInfos.every((r) => r.amountOwed.gtn(0)));
@@ -380,7 +381,7 @@ describe("bundled position management tests", () => {
         whirlpool: whirlpoolPubkey,
       })
     ).buildAndExecute();
-    const postCollectFees = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+    const postCollectFees = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
     assert.ok(postCollectFees!.feeOwedA.isZero());
     assert.ok(postCollectFees!.feeOwedB.isZero());
 
@@ -392,7 +393,7 @@ describe("bundled position management tests", () => {
         ctx.wallet.publicKey
       );
 
-      const preCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const preCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(preCollectReward!.rewardInfos[i].amountOwed.gtn(0));
       await toTx(
         ctx,
@@ -406,19 +407,19 @@ describe("bundled position management tests", () => {
           whirlpool: whirlpoolPubkey,
         })
       ).buildAndExecute();
-      const postCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const postCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(postCollectReward!.rewardInfos[i].amountOwed.isZero());
     }
     // decreaseLiquidity
     const withdrawAmounts = PoolUtil.getTokenAmountsFromLiquidity(
       liquidityAmount,
-      (await ctx.fetcher.getPool(whirlpoolPubkey, true))!.sqrtPrice,
+      (await ctx.fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE))!.sqrtPrice,
       PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
       PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
       false
     );
 
-    const preDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+    const preDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
     assert.ok(preDecrease!.liquidity.eq(liquidityAmount));
     await toTx(
       ctx,
@@ -428,7 +429,7 @@ describe("bundled position management tests", () => {
         tokenMinB: withdrawAmounts.tokenB,
       })
     ).buildAndExecute();
-    const postDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+    const postDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
     assert.ok(postDecrease!.liquidity.isZero());
 
     // close bundled position
@@ -443,7 +444,7 @@ describe("bundled position management tests", () => {
         receiver: ctx.wallet.publicKey,
       })
     ).buildAndExecute();
-    const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+    const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
     assert.ok(postClose === null);
   });
 
@@ -460,15 +461,15 @@ describe("bundled position management tests", () => {
       rewards: [
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
         {
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-          vaultAmount: new u64(vaultStartBalance),
+          vaultAmount: new BN(vaultStartBalance),
         },
       ],
     });
@@ -500,11 +501,11 @@ describe("bundled position management tests", () => {
       const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(positionInitInfo.params.tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(positionInitInfo.params.tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-      const tokenOwnerAccountA = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintA);
-      const tokenOwnerAccountB = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintB);
+      const tokenOwnerAccountA = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, ctx.wallet.publicKey);
+      const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
       // initialized check (No data left over from previous opening)
-      const postOpen = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const postOpen = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(postOpen!.feeGrowthCheckpointA.isZero());
       assert.ok(postOpen!.feeGrowthCheckpointB.isZero());
       assert.ok(postOpen!.rewardInfos.every((r) => r.growthInsideCheckpoint.isZero()));
@@ -526,12 +527,12 @@ describe("bundled position management tests", () => {
       // increaseLiquidity
       const depositAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.fetcher.getPool(whirlpoolPubkey, true))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         true
       );
-      const preIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const preIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(preIncrease!.liquidity.isZero());
       await toTx(
         ctx,
@@ -541,7 +542,7 @@ describe("bundled position management tests", () => {
           tokenMaxB: depositAmounts.tokenB,
         })
       ).buildAndExecute();
-      const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(postIncrease!.liquidity.eq(liquidityAmount));
 
       // non-zero check
@@ -554,13 +555,13 @@ describe("bundled position management tests", () => {
       // decreaseLiquidity
       const withdrawAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.fetcher.getPool(whirlpoolPubkey, true))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         false
       );
 
-      const preDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const preDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(preDecrease!.liquidity.eq(liquidityAmount));
       await toTx(
         ctx,
@@ -570,7 +571,7 @@ describe("bundled position management tests", () => {
           tokenMinB: withdrawAmounts.tokenB,
         })
       ).buildAndExecute();
-      const postDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const postDecrease = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(postDecrease!.liquidity.isZero());
 
       // collectFees
@@ -587,7 +588,7 @@ describe("bundled position management tests", () => {
           whirlpool: whirlpoolPubkey,
         })
       ).buildAndExecute();
-      const postCollectFees = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const postCollectFees = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(postCollectFees!.feeOwedA.isZero());
       assert.ok(postCollectFees!.feeOwedB.isZero());
 
@@ -599,7 +600,7 @@ describe("bundled position management tests", () => {
           ctx.wallet.publicKey
         );
 
-        const preCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+        const preCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
         assert.ok(preCollectReward!.rewardInfos[i].amountOwed.gtn(0));
         await toTx(
           ctx,
@@ -613,7 +614,7 @@ describe("bundled position management tests", () => {
             whirlpool: whirlpoolPubkey,
           })
         ).buildAndExecute();
-        const postCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+        const postCollectReward = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
         assert.ok(postCollectReward!.rewardInfos[i].amountOwed.isZero());
       }
 
@@ -629,7 +630,7 @@ describe("bundled position management tests", () => {
           receiver: ctx.wallet.publicKey,
         })
       ).buildAndExecute();
-      const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(postClose === null);
     }
   });
@@ -656,8 +657,8 @@ describe("bundled position management tests", () => {
       const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-      const tokenOwnerAccountA = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintA);
-      const tokenOwnerAccountB = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintB);
+      const tokenOwnerAccountA = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, ctx.wallet.publicKey);
+      const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
       const modifyLiquidityParams = {
         liquidityAmount,
@@ -675,7 +676,7 @@ describe("bundled position management tests", () => {
 
       const depositAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.fetcher.getPool(whirlpoolPubkey, true))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         true
@@ -701,12 +702,12 @@ describe("bundled position management tests", () => {
           tokenMaxB: depositAmounts.tokenB,
         }));
       await openIncreaseBuilder.buildAndExecute();
-      const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const postIncrease = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(postIncrease!.liquidity.eq(liquidityAmount));
 
       const withdrawAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.fetcher.getPool(whirlpoolPubkey, true))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         false
@@ -728,7 +729,7 @@ describe("bundled position management tests", () => {
           receiver: ctx.wallet.publicKey,
         }));
       await decreaseCloseBuilder.buildAndExecute();
-      const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const postClose = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(postClose === null);
     });
 
@@ -743,15 +744,15 @@ describe("bundled position management tests", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
       });
@@ -766,8 +767,8 @@ describe("bundled position management tests", () => {
       const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-      const tokenOwnerAccountA = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintA);
-      const tokenOwnerAccountB = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintB);
+      const tokenOwnerAccountA = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, ctx.wallet.publicKey);
+      const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
       const modifyLiquidityParams = {
         liquidityAmount,
@@ -785,7 +786,7 @@ describe("bundled position management tests", () => {
 
       const depositAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.fetcher.getPool(whirlpoolPubkey, true))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         true
@@ -812,8 +813,8 @@ describe("bundled position management tests", () => {
         }))
         .addInstruction(WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
           ...modifyLiquidityParams,
-          tokenMinA: new u64(0),
-          tokenMinB: new u64(0),
+          tokenMinA: new BN(0),
+          tokenMinB: new BN(0),
         }))
         .addInstruction(WhirlpoolIx.closeBundledPositionIx(ctx.program, {
           bundledPosition: bundledPositionPubkey,
@@ -887,7 +888,7 @@ describe("bundled position management tests", () => {
       // https://github.com/coral-xyz/anchor/pull/2169
       // in Anchor v0.26.0, close & open in same Tx will success.
       await builder.buildAndExecute();
-      const postReopen = await ctx.fetcher.getPosition(bundledPositionPubkey, true);
+      const postReopen = await ctx.fetcher.getPosition(bundledPositionPubkey, IGNORE_CACHE);
       assert.ok(postReopen!.liquidity.isZero());
       assert.ok(postReopen!.tickLowerIndex === tickLowerIndex + tickSpacing);
       assert.ok(postReopen!.tickUpperIndex === tickUpperIndex + tickSpacing);
@@ -904,15 +905,15 @@ describe("bundled position management tests", () => {
         rewards: [
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
           {
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new u64(vaultStartBalance),
+            vaultAmount: new BN(vaultStartBalance),
           },
         ],
       });
@@ -927,8 +928,8 @@ describe("bundled position management tests", () => {
       const tickArrayLower = PDAUtil.getTickArrayFromTickIndex(tickLowerIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const tickArrayUpper = PDAUtil.getTickArrayFromTickIndex(tickUpperIndex, poolInitInfo.tickSpacing, poolInitInfo.whirlpoolPda.publicKey, ctx.program.programId).publicKey;
       const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
-      const tokenOwnerAccountA = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintA);
-      const tokenOwnerAccountB = await deriveATA(ctx.wallet.publicKey, poolInitInfo.tokenMintB);
+      const tokenOwnerAccountA = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, ctx.wallet.publicKey);
+      const tokenOwnerAccountB = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, ctx.wallet.publicKey);
 
       const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPubkey, 22528);
       const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey);
@@ -949,13 +950,13 @@ describe("bundled position management tests", () => {
 
       const depositAmounts = PoolUtil.getTokenAmountsFromLiquidity(
         liquidityAmount,
-        (await ctx.fetcher.getPool(whirlpoolPubkey, true))!.sqrtPrice,
+        (await ctx.fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE))!.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex),
         true
       );
 
-      const swapInput = new u64(200_000);
+      const swapInput = new BN(200_000);
       const poolLiquidity = new BN(liquidityAmount.muln(2).toString());
       const estimatedFee = new BN(swapInput.toString())
         .muln(3).divn(1000) // feeRate 0.3%
@@ -1023,8 +1024,8 @@ describe("bundled position management tests", () => {
         }))
         .addInstruction(WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
           ...modifyLiquidityParams,
-          tokenMinA: new u64(0),
-          tokenMinB: new u64(0),
+          tokenMinA: new BN(0),
+          tokenMinB: new BN(0),
         }))
         .addInstruction(WhirlpoolIx.collectFeesIx(ctx.program, {
           position: bundledPositionPubkey,
@@ -1046,8 +1047,8 @@ describe("bundled position management tests", () => {
         }));
 
       await builder.buildAndExecute();
-      assert.ok((await ctx.fetcher.getTokenInfo(receiverAtaA, true))!.amount.eqn(estimatedFee));
-      assert.ok((await ctx.fetcher.getTokenInfo(receiverAtaB, true))!.amount.eqn(estimatedFee));
+      assert.ok((await ctx.fetcher.getTokenInfo(receiverAtaA, IGNORE_CACHE))!.amount === BigInt(estimatedFee.toString()));
+      assert.ok((await ctx.fetcher.getTokenInfo(receiverAtaB, IGNORE_CACHE))!.amount === BigInt(estimatedFee.toString()));
     });
   });
 

@@ -1,33 +1,37 @@
 import { Address } from "@coral-xyz/anchor";
 import {
   AddressUtil,
-  deriveATA,
   Instruction,
-  resolveOrCreateATAs,
+  TokenUtil,
   TransactionBuilder,
   ZERO,
+  resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
-import { NATIVE_MINT } from "@solana/spl-token";
+import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
 import {
+  DecreaseLiquidityInput,
+  IncreaseLiquidityInput,
   collectFeesIx,
   collectRewardIx,
-  DecreaseLiquidityInput,
   decreaseLiquidityIx,
-  IncreaseLiquidityInput,
   increaseLiquidityIx,
   updateFeesAndRewardsIx,
 } from "../instructions";
+import {
+  IGNORE_CACHE,
+  PREFER_CACHE,
+  WhirlpoolAccountFetchOptions,
+} from "../network/public/fetcher";
 import { PositionData, TickArrayData, TickData, WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
-import { createWSOLAccountInstructions } from "../utils/spl-token-utils";
 import {
+  TokenMintTypes,
   getTokenMintsFromWhirlpools,
   resolveAtaForMints,
-  TokenMintTypes,
 } from "../utils/whirlpool-ata-utils";
 import { Position } from "../whirlpool-client";
 
@@ -98,7 +102,7 @@ export class PositionImpl implements Position {
       : this.ctx.wallet.publicKey;
     const ataPayerKey = ataPayer ? AddressUtil.toPubKey(ataPayer) : this.ctx.wallet.publicKey;
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, IGNORE_CACHE);
     if (!whirlpool) {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
@@ -121,7 +125,10 @@ export class PositionImpl implements Position {
           { tokenMint: whirlpool.tokenMintB, wrappedSolAmountIn: liquidityInput.tokenMaxB },
         ],
         () => this.ctx.fetcher.getAccountRentExempt(),
-        ataPayerKey
+        ataPayerKey,
+        undefined, // use default
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        this.ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
       const { address: ataAddrB, ...tokenOwnerAccountBIx } = ataB!;
@@ -130,10 +137,22 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     } else {
-      tokenOwnerAccountA = await deriveATA(sourceWalletKey, whirlpool.tokenMintA);
-      tokenOwnerAccountB = await deriveATA(sourceWalletKey, whirlpool.tokenMintB);
+      tokenOwnerAccountA = getAssociatedTokenAddressSync(
+        whirlpool.tokenMintA,
+        sourceWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+      );
+      tokenOwnerAccountB = getAssociatedTokenAddressSync(
+        whirlpool.tokenMintB,
+        sourceWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+      );
     }
-    const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
+    const positionTokenAccount = getAssociatedTokenAddressSync(
+      this.data.positionMint,
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
+    );
 
     const increaseIx = increaseLiquidityIx(this.ctx.program, {
       ...liquidityInput,
@@ -174,7 +193,7 @@ export class PositionImpl implements Position {
       ? AddressUtil.toPubKey(positionWallet)
       : this.ctx.wallet.publicKey;
     const ataPayerKey = ataPayer ? AddressUtil.toPubKey(ataPayer) : this.ctx.wallet.publicKey;
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, IGNORE_CACHE);
 
     if (!whirlpool) {
       throw new Error("Unable to fetch whirlpool for this position.");
@@ -194,7 +213,10 @@ export class PositionImpl implements Position {
         sourceWalletKey,
         [{ tokenMint: whirlpool.tokenMintA }, { tokenMint: whirlpool.tokenMintB }],
         () => this.ctx.fetcher.getAccountRentExempt(),
-        ataPayerKey
+        ataPayerKey,
+        undefined, // use default
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        this.ctx.accountResolverOpts.createWrappedSolAccountMethod
       );
       const { address: ataAddrA, ...tokenOwnerAccountAIx } = ataA!;
       const { address: ataAddrB, ...tokenOwnerAccountBIx } = ataB!;
@@ -203,15 +225,27 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(tokenOwnerAccountAIx);
       txBuilder.addInstruction(tokenOwnerAccountBIx);
     } else {
-      tokenOwnerAccountA = await deriveATA(sourceWalletKey, whirlpool.tokenMintA);
-      tokenOwnerAccountB = await deriveATA(sourceWalletKey, whirlpool.tokenMintB);
+      tokenOwnerAccountA = getAssociatedTokenAddressSync(
+        whirlpool.tokenMintA,
+        sourceWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+      );
+      tokenOwnerAccountB = getAssociatedTokenAddressSync(
+        whirlpool.tokenMintB,
+        sourceWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+      );
     }
 
     const decreaseIx = decreaseLiquidityIx(this.ctx.program, {
       ...liquidityInput,
       whirlpool: this.data.whirlpool,
       position: this.address,
-      positionTokenAccount: await deriveATA(positionWalletKey, this.data.positionMint),
+      positionTokenAccount: getAssociatedTokenAddressSync(
+        this.data.positionMint,
+        positionWalletKey,
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+      ),
       tokenOwnerAccountA,
       tokenOwnerAccountB,
       tokenVaultA: whirlpool.tokenVaultA,
@@ -238,7 +272,7 @@ export class PositionImpl implements Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    refresh = false
+    opts: WhirlpoolAccountFetchOptions = PREFER_CACHE
   ): Promise<TransactionBuilder> {
     const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
       destinationWallet ?? this.ctx.wallet.publicKey,
@@ -246,7 +280,7 @@ export class PositionImpl implements Position {
       ataPayer ?? this.ctx.wallet.publicKey,
     ]);
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, refresh);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, opts);
     if (!whirlpool) {
       throw new Error(
         `Unable to fetch whirlpool (${this.data.whirlpool}) for this position (${this.address}).`
@@ -278,13 +312,15 @@ export class PositionImpl implements Position {
       txBuilder.addInstructions(resolveAtaIxs);
 
       if (affliatedMints.hasNativeMint) {
-        let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
-          destinationWalletKey,
-          ZERO,
-          accountExemption,
-          ataPayerKey,
-          destinationWalletKey
-        );
+        let { address: wSOLAta, ...resolveWSolIx } =
+          TokenUtil.createWrappedNativeAccountInstruction(
+            destinationWalletKey,
+            ZERO,
+            accountExemption,
+            ataPayerKey,
+            destinationWalletKey,
+            this.ctx.accountResolverOpts.createWrappedSolAccountMethod
+          );
         affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
         txBuilder.addInstruction(resolveWSolIx);
       }
@@ -303,7 +339,11 @@ export class PositionImpl implements Position {
       `No owner token account provided for wallet ${destinationWalletKey.toBase58()} for token B ${whirlpool.tokenMintB.toBase58()} `
     );
 
-    const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
+    const positionTokenAccount = getAssociatedTokenAddressSync(
+      this.data.positionMint,
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
+    );
 
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
       const updateIx = await this.updateFeesAndRewards();
@@ -333,7 +373,7 @@ export class PositionImpl implements Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    refresh = true
+    opts: WhirlpoolAccountFetchOptions = IGNORE_CACHE
   ): Promise<TransactionBuilder> {
     const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
       destinationWallet ?? this.ctx.wallet.publicKey,
@@ -341,7 +381,7 @@ export class PositionImpl implements Position {
       ataPayer ?? this.ctx.wallet.publicKey,
     ]);
 
-    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, refresh);
+    const whirlpool = await this.ctx.fetcher.getPool(this.data.whirlpool, opts);
     if (!whirlpool) {
       throw new Error(
         `Unable to fetch whirlpool(${this.data.whirlpool}) for this position(${this.address}).`
@@ -374,11 +414,15 @@ export class PositionImpl implements Position {
       );
 
       if (rewardMints.hasNativeMint) {
-        let { address: wSOLAta, ...resolveWSolIx } = createWSOLAccountInstructions(
-          destinationWalletKey,
-          ZERO,
-          accountExemption
-        );
+        let { address: wSOLAta, ...resolveWSolIx } =
+          TokenUtil.createWrappedNativeAccountInstruction(
+            destinationWalletKey,
+            ZERO,
+            accountExemption,
+            ataPayerKey,
+            destinationWalletKey,
+            this.ctx.accountResolverOpts.createWrappedSolAccountMethod
+          );
         affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
         txBuilder.addInstruction(resolveWSolIx);
       }
@@ -388,7 +432,11 @@ export class PositionImpl implements Position {
       ataMap = { ...affliatedTokenAtaMap };
     }
 
-    const positionTokenAccount = await deriveATA(positionWalletKey, this.data.positionMint);
+    const positionTokenAccount = getAssociatedTokenAddressSync(
+      this.data.positionMint,
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress
+    );
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
       const updateIx = await this.updateFeesAndRewards();
       txBuilder.addInstruction(updateIx);
@@ -427,11 +475,11 @@ export class PositionImpl implements Position {
   }
 
   private async refresh() {
-    const positionAccount = await this.ctx.fetcher.getPosition(this.address, true);
+    const positionAccount = await this.ctx.fetcher.getPosition(this.address, IGNORE_CACHE);
     if (!!positionAccount) {
       this.data = positionAccount;
     }
-    const whirlpoolAccount = await this.ctx.fetcher.getPool(this.data.whirlpool, true);
+    const whirlpoolAccount = await this.ctx.fetcher.getPool(this.data.whirlpool, IGNORE_CACHE);
     if (!!whirlpoolAccount) {
       this.whirlpoolData = whirlpoolAccount;
     }
@@ -440,7 +488,7 @@ export class PositionImpl implements Position {
       this.ctx,
       this.data,
       this.whirlpoolData,
-      true
+      IGNORE_CACHE
     );
     if (lowerTickArray) {
       this.lowerTickArrayData = lowerTickArray;

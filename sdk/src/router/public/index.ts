@@ -1,7 +1,8 @@
 import { Address } from "@coral-xyz/anchor";
 import { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import { u64 } from "@solana/spl-token";
 import { AddressLookupTableAccount } from "@solana/web3.js";
+import BN from "bn.js";
+import { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
 import { SwapQuote } from "../../quotes/public";
 import { Path } from "../../utils/public";
 import { AtaAccountInfo, RouteSelectOptions } from "./router-utils";
@@ -21,7 +22,7 @@ export * from "./router-utils";
 export type Trade = {
   tokenIn: Address;
   tokenOut: Address;
-  tradeAmount: u64;
+  tradeAmount: BN;
   amountSpecifiedIsInput: boolean;
 };
 
@@ -53,8 +54,8 @@ export type RoutingOptions = {
  */
 export type TradeRoute = {
   subRoutes: SubTradeRoute[];
-  totalAmountIn: u64;
-  totalAmountOut: u64;
+  totalAmountIn: BN;
+  totalAmountOut: BN;
 };
 
 /**
@@ -70,8 +71,8 @@ export type TradeRoute = {
 export type SubTradeRoute = {
   path: Path;
   splitPercent: number;
-  amountIn: u64;
-  amountOut: u64;
+  amountIn: BN;
+  amountOut: BN;
   hopQuotes: TradeHop[];
 };
 
@@ -89,10 +90,11 @@ export type SubTradeRoute = {
  * @param vaultA The address of the first vault in the pool.
  * @param vaultB The address of the second vault in the pool.
  * @param quote The {@link SwapQuote} for this hop.
+ * @param snapshot A snapshot of the whirlpool condition when this hop was made
  */
 export type TradeHop = {
-  amountIn: u64;
-  amountOut: u64;
+  amountIn: BN;
+  amountOut: BN;
   whirlpool: Address;
   inputMint: Address;
   outputMint: Address;
@@ -101,6 +103,17 @@ export type TradeHop = {
   vaultA: Address;
   vaultB: Address;
   quote: SwapQuote;
+  snapshot: TradeHopSnapshot;
+};
+
+/**
+ * A snapshot of the whirlpool condition when a trade hop was made.
+ * @category Router
+ */
+export type TradeHopSnapshot = {
+  aToB: boolean;
+  sqrtPrice: BN;
+  feeRate: Percentage;
 };
 
 /**
@@ -128,17 +141,18 @@ export interface WhirlpoolRouter {
    *
    * @param trade
    * The trade to find routes for.
-   * @param refresh
-   * If true, the call will fetch the latest on-chain data to calculate the routes.
+   * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @param opts
    * {@link RoutingOptions} to configure the router. Missing options will be filled with default values from
    * {@link RouterUtils.getDefaultRoutingOptions}.
+   * @param fetchOpts
+   * {@link WhirlpoolAccountFetchOptions} to configure the fetching of on-chain data.
    * @return A list of {@link TradeRoute} that can be used to execute a swap, ordered by the best other token amount.
    */
   findAllRoutes(
     trade: Trade,
-    refresh: boolean,
-    opts?: Partial<RoutingOptions>
+    opts?: Partial<RoutingOptions>,
+    fetchOpts?: WhirlpoolAccountFetchOptions
   ): Promise<TradeRoute[]>;
 
   /**
@@ -146,22 +160,23 @@ export interface WhirlpoolRouter {
    * under the current execution environment.
    * @param trade
    * The trade to find routes for.
-   * @param refresh
-   * If true, the call will fetch the latest on-chain data to calculate the routes.
+   * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @param opts
    * {@link RoutingOptions} to configure the router. Missing options will be filled with default values from
    * {@link RouterUtils.getDefaultRoutingOptions}.
    * @param selectionOpts
    * {@link RouteSelectOptions} to configure the selection of the best route. Missing options
    * will be filled with default values from {@link RouterUtils.getDefaultRouteSelectOptions}.
+   * @param fetchOpts
+   * {@link WhirlpoolAccountFetchOptions} to configure the fetching of on-chain data.
    * @returns
    * The best {@link ExecutableRoute} that can be used to execute a swap. If no executable route is found, null is returned.
    */
   findBestRoute(
     trade: Trade,
-    refresh: boolean,
     opts?: Partial<RoutingOptions>,
-    selectionOpts?: Partial<RouteSelectOptions>
+    selectionOpts?: Partial<RouteSelectOptions>,
+    fetchOpts?: WhirlpoolAccountFetchOptions
   ): Promise<ExecutableRoute | null>;
 
   /**

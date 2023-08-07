@@ -1,9 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
-import { NATIVE_MINT, u64 } from "@solana/spl-token";
+import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
+import BN from "bn.js";
 import { TickSpacing } from ".";
 import { TICK_ARRAY_SIZE, Whirlpool, WhirlpoolClient, WhirlpoolContext } from "../../src";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
   FundedPositionParams,
   fundPositionsWithClient,
@@ -21,7 +23,7 @@ export interface SwapTestPoolParams {
 }
 
 export interface SwapTestSwapParams {
-  swapAmount: u64;
+  swapAmount: BN;
   aToB: boolean;
   amountSpecifiedIsInput: boolean;
   slippageTolerance: Percentage;
@@ -42,7 +44,7 @@ export async function setupSwapTest(setup: SwapTestPoolParams, tokenAIsNative = 
     tokenAIsNative ? NATIVE_MINT : undefined
   );
 
-  const whirlpool = await setup.client.getPool(whirlpoolPda.publicKey, true);
+  const whirlpool = await setup.client.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
 
   await (await whirlpool.initTickArrayForTicks(setup.initArrayStartTicks))?.buildAndExecute();
 

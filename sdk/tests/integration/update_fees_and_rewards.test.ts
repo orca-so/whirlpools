@@ -17,7 +17,7 @@ describe("update_fees_and_rewards", () => {
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
-  it.only("successfully updates fees and rewards", async () => {
+  it("successfully updates fees and rewards", async () => {
     // In same tick array - start index 22528
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
@@ -50,9 +50,6 @@ describe("update_fees_and_rewards", () => {
 
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
-    // Let the swap accumulate some rewards
-    await sleep(1000);
-
     await toTx(
       ctx,
       WhirlpoolIx.swapIx(ctx.program, {
@@ -73,6 +70,8 @@ describe("update_fees_and_rewards", () => {
         oracle: oraclePda.publicKey,
       })
     ).buildAndExecute();
+
+    await sleep(1_000);
 
     await toTx(
       ctx,

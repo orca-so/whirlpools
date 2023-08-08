@@ -195,16 +195,16 @@ pub fn swap(
     };
 
     // Log delta in reward growth to track pool usage over time with off-chain analytics
-    let mut reward_info_deltas: [u128; 3] = [0, 0, 0];
     for (index, reward_info) in next_reward_infos.iter().enumerate() {
         if reward_info.initialized() {
             let old_reward_info = whirlpool.reward_infos[index];
-            reward_info_deltas[index] = reward_info.growth_global_x64 - old_reward_info.growth_global_x64;
+            let reward_delta = reward_info.growth_global_x64 - old_reward_info.growth_global_x64;
+            msg!("rg_{}: {}", index, reward_delta);
         }
     }
 
     // Log delta in fee growth to track pool usage over time with off-chain analytics
-    msg!("fg: {}, rg_1: {}, rg_2: {}, rg_3: {}", fee_growth, reward_info_deltas[0], reward_info_deltas[1], reward_info_deltas[2]);
+    msg!("fg: {}", fee_growth);
 
     Ok(PostSwapUpdate {
         amount_a,

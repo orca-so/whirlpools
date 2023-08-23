@@ -1,3 +1,5 @@
+use solana_program::msg;
+
 use crate::{
     errors::ErrorCode,
     manager::{
@@ -185,6 +187,15 @@ pub fn swap(
     } else {
         (amount_calculated, amount - amount_remaining)
     };
+
+    let fee_growth = if a_to_b {
+        curr_fee_growth_global_input - whirlpool.fee_growth_global_a
+    } else {
+        curr_fee_growth_global_input - whirlpool.fee_growth_global_b
+    };
+
+    // Log delta in fee growth to track pool usage over time with off-chain analytics
+    msg!("fee_growth: {}", fee_growth);
 
     Ok(PostSwapUpdate {
         amount_a,

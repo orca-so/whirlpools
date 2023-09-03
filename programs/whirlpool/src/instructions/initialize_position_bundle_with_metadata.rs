@@ -51,7 +51,7 @@ pub struct InitializePositionBundleWithMetadata<'info> {
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     /// CHECK: checked via account constraints
-    #[account(address = mpl_token_metadata::ID)]
+    #[account(address = token_metadata::ID)]
     pub metadata_program: UncheckedAccount<'info>,
 }
 

@@ -60,6 +60,26 @@ describe("initialize_fee_tier", () => {
     assert.ok(feeTierAccount.defaultFeeRate == params.defaultFeeRate);
   });
 
+  it("successfully init a FeeRate max account", async () => {
+    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
+
+    const testTickSpacing = TickSpacing.Standard;
+    const { params } = await initFeeTier(
+      ctx,
+      configInitInfo,
+      configKeypairs.feeAuthorityKeypair,
+      testTickSpacing,
+      30_000 // 3 %
+    );
+
+    const feeTierAccount = (await fetcher.getFeeTier(params.feeTierPda.publicKey)) as FeeTierData;
+
+    assert.ok(feeTierAccount.tickSpacing == params.tickSpacing);
+    assert.ok(feeTierAccount.defaultFeeRate == params.defaultFeeRate);
+    assert.ok(params.defaultFeeRate === 30_000);
+  });
+
   it("successfully init a FeeRate with another funder wallet", async () => {
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
     await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
@@ -86,7 +106,7 @@ describe("initialize_fee_tier", () => {
         configInitInfo,
         configKeypairs.feeAuthorityKeypair,
         TickSpacing.Stable,
-        20_000
+        30_000 + 1
       ),
       /0x178c/ // FeeRateMaxExceeded
     );

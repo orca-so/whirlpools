@@ -15,6 +15,8 @@ const uniqueTokenPairSorted = uniqueTokenMintsGraphData[0];
 const rlbSolPool = solConnectedPools[0];
 const mSolSolPool = solConnectedPools[1];
 const dustSolPool = solConnectedPools[2];
+const stSolSolPool = solConnectedPools[3];
+const usdcSolPool = solConnectedPools[4];
 const rlbUsdcPool = usdcConnectedPools[0];
 const msolUsdcPool = usdcConnectedPools[1];
 const dustUsdcPool = usdcConnectedPools[2];
@@ -380,6 +382,75 @@ describe("PoolGraph tests", () => {
         ]]];
 
       assertGetPathsForPairsResult(results, expectedPathsForTokenPairQueries);
+    });
+  });
+
+  describe("getAllPaths", () => {
+    it("Zero pools", async () => {
+      const graph = PoolGraphBuilder.buildPoolGraph([]);
+      const results = graph.getAllPaths();
+      assert.equal(results.length, 0);
+    });
+
+    it("solConnectedPools", () => {
+      const testData = solConnectedPools;
+      const graph = PoolGraphBuilder.buildPoolGraph(testData);
+
+      const results = graph.getAllPaths();
+
+      const sol = rlbSolPool.tokenMintA;
+      const rlb = rlbSolPool.tokenMintB;
+      const msol = mSolSolPool.tokenMintB;
+      const dust = dustSolPool.tokenMintB;
+      const stSol = stSolSolPool.tokenMintB;
+      const usdc = usdcSolPool.tokenMintB;
+
+      const expectedPaths = new Map<string, PoolTokenPair[][]>();
+
+      // combinations
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(sol, rlb), [[rlbSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(sol, msol), [[mSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(sol, dust), [[dustSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(sol, stSol), [[stSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(sol, usdc), [[usdcSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(rlb, msol), [[rlbSolPool, mSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(rlb, dust), [[rlbSolPool, dustSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(rlb, stSol), [[rlbSolPool, stSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(rlb, usdc), [[rlbSolPool, usdcSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(msol, dust), [[mSolSolPool, dustSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(msol, stSol), [[mSolSolPool, stSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(msol, usdc), [[mSolSolPool, usdcSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(dust, stSol), [[dustSolPool, stSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(dust, usdc), [[dustSolPool, usdcSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(stSol, usdc), [[stSolSolPool, usdcSolPool]]);
+     
+      // reverse
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(rlb, sol), [[rlbSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(msol, sol), [[mSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(dust, sol), [[dustSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(stSol, sol), [[stSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(usdc, sol), [[usdcSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(msol, rlb), [[mSolSolPool, rlbSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(dust, rlb), [[dustSolPool, rlbSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(stSol, rlb), [[stSolSolPool, rlbSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(usdc, rlb), [[usdcSolPool, rlbSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(dust, msol), [[dustSolPool, mSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(stSol, msol), [[stSolSolPool, mSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(usdc, msol), [[usdcSolPool, mSolSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(stSol, dust), [[stSolSolPool, dustSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(usdc, dust), [[usdcSolPool, dustSolPool]]);
+      expectedPaths.set(PoolGraphUtils.getSearchPathId(usdc, stSol), [[usdcSolPool, stSolSolPool]]);
+
+      assert.equal(results.length, expectedPaths.size, "Number of paths should match expected paths");
+
+      results.forEach((searchEntry) => {
+        const [pathId, paths] = searchEntry;
+        const [startMint, endMint] = PoolGraphUtils.deconstructPathId(pathId);
+
+        const expected = expectedPaths.get(pathId);
+        assert.ok(!!expected, `Expected path for ${pathId} to exist`);
+        assertGetPathResult(paths, expected, startMint, endMint);
+      });
     });
   });
 });

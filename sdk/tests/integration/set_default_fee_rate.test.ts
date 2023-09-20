@@ -78,12 +78,61 @@ describe("set_default_fee_rate", () => {
     assert.equal(whirlpool_1.feeRate, newDefaultFeeRate);
   });
 
+  it("successfully set_default_fee_rate max", async () => {
+    const { poolInitInfo, configInitInfo, configKeypairs, feeTierParams } = await initTestPool(
+      ctx,
+      TickSpacing.Standard
+    );
+    const whirlpoolsConfigKey = configInitInfo.whirlpoolsConfigKeypair.publicKey;
+    const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
+
+    const newDefaultFeeRate = 30_000;
+
+    await toTx(
+      ctx,
+      WhirlpoolIx.setDefaultFeeRateIx(ctx.program, {
+        whirlpoolsConfig: whirlpoolsConfigKey,
+        feeAuthority: feeAuthorityKeypair.publicKey,
+        tickSpacing: TickSpacing.Standard,
+        defaultFeeRate: newDefaultFeeRate,
+      })
+    )
+      .addSigner(feeAuthorityKeypair)
+      .buildAndExecute();
+
+    // Newly initialized whirlpools have new default fee rate
+    const [tokenMintA, tokenMintB] = await createInOrderMints(ctx);
+    const whirlpoolPda = PDAUtil.getWhirlpool(
+      ctx.program.programId,
+      whirlpoolsConfigKey,
+      tokenMintA,
+      tokenMintB,
+      TickSpacing.Stable
+    );
+    const tokenVaultAKeypair = anchor.web3.Keypair.generate();
+    const tokenVaultBKeypair = anchor.web3.Keypair.generate();
+
+    const newPoolInitInfo: InitPoolParams = {
+      ...poolInitInfo,
+      tokenMintA,
+      tokenMintB,
+      whirlpoolPda,
+      tokenVaultAKeypair,
+      tokenVaultBKeypair,
+      tickSpacing: TickSpacing.Stable,
+    };
+    await toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, newPoolInitInfo)).buildAndExecute();
+
+    const whirlpool_1 = (await fetcher.getPool(whirlpoolPda.publicKey)) as WhirlpoolData;
+    assert.equal(whirlpool_1.feeRate, newDefaultFeeRate);
+  });
+
   it("fails when default fee rate exceeds max", async () => {
     const { configInitInfo, configKeypairs } = await initTestPool(ctx, TickSpacing.Standard);
     const whirlpoolsConfigKey = configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
-    const newDefaultFeeRate = 20_000;
+    const newDefaultFeeRate = 30_000 + 1;
     await assert.rejects(
       toTx(
         ctx,

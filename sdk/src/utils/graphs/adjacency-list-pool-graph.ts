@@ -1,7 +1,5 @@
 import { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import _ from "lodash";
-import "lodash.combinations";
 import {
   Edge,
   Path,
@@ -77,7 +75,7 @@ export class AdjacencyListPoolGraph implements PoolGraph {
   }
 
   getAllPaths(options?: PathSearchOptions | undefined): PathSearchEntries {
-    const tokenPairCombinations = _.combinations(this.tokens, 2) as [string, string][];
+    const tokenPairCombinations = combinations2(this.tokens) as [string, string][];
     const searchTokenPairsInString = tokenPairCombinations.map(([startMint, endMint]) => {
       return [startMint, endMint] as const;
     });
@@ -264,4 +262,17 @@ function getInternalRouteId(tokenA: Address, tokenB: Address, sort = true): stri
   const mints = [AddressUtil.toString(tokenA), AddressUtil.toString(tokenB)];
   const sortedMints = sort ? mints.sort() : mints;
   return `${sortedMints[0]}${PoolGraphUtils.PATH_ID_DELIMITER}${sortedMints[1]}`;
+}
+
+// equivalent to lodash.combinations(array, 2)
+function combinations2<T>(array: Readonly<T[]>): [T, T][] {
+  const result: [T, T][] = [];
+
+  for (let i = 0; i < array.length - 1; i++) {
+    for (let j = i+1; j < array.length; j++) {
+      result.push([array[i], array[j]]);
+    }
+  }
+
+  return result;
 }

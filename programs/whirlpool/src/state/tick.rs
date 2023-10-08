@@ -157,6 +157,12 @@ impl Default for TickArray {
     }
 }
 
+pub enum NextInitTickIndex {
+    TickIndex(i32),
+    NoInitializedTickIndex,
+    NotInSearchRange,
+}
+
 impl TickArray {
     pub const LEN: usize = 8 + 36 + (Tick::LEN * TICK_ARRAY_SIZE_USIZE);
 
@@ -178,9 +184,9 @@ impl TickArray {
         tick_index: i32,
         tick_spacing: u16,
         a_to_b: bool,
-    ) -> Result<Option<i32>> {
+    ) -> Result<NextInitTickIndex> {
         if !self.in_search_range(tick_index, tick_spacing, !a_to_b) {
-            return Err(ErrorCode::InvalidTickArraySequence.into());
+            return Ok(NextInitTickIndex::NotInSearchRange);
         }
 
         let mut curr_offset = match self.tick_offset(tick_index, tick_spacing) {
@@ -197,9 +203,8 @@ impl TickArray {
         while curr_offset >= 0 && curr_offset < TICK_ARRAY_SIZE {
             let curr_tick = self.ticks[curr_offset as usize];
             if curr_tick.initialized {
-                return Ok(Some(
-                    (curr_offset * tick_spacing as i32) + self.start_tick_index,
-                ));
+                let tick_index = (curr_offset * tick_spacing as i32) + self.start_tick_index;
+                return Ok(NextInitTickIndex::TickIndex(tick_index));
             }
 
             curr_offset = if a_to_b {
@@ -209,7 +214,7 @@ impl TickArray {
             };
         }
 
-        Ok(None)
+        Ok(NextInitTickIndex::NoInitializedTickIndex)
     }
 
     /// Initialize the TickArray object

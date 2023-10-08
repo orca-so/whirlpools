@@ -122,14 +122,14 @@ impl<'info> SwapTickSequence<'info> {
                 None => return Err(ErrorCode::TickArraySequenceInvalidIndex.into()),
             };
 
-            let next_index =
-                next_array.get_next_init_tick_index(search_index, tick_spacing, a_to_b)?;
-
-            match next_index {
-                Some(next_index) => {
+            match next_array.get_next_init_tick_index(search_index, tick_spacing, a_to_b)? {
+                NextInitTickIndex::TickIndex(next_index) => {
                     return Ok((array_index, next_index));
                 }
-                None => {
+                NextInitTickIndex::NotInSearchRange => {
+                    array_index += 1;
+                }
+                NextInitTickIndex::NoInitializedTickIndex => {
                     // If we are at the last valid tick array, return the min/max tick index
                     if a_to_b && next_array.is_min_tick_array() {
                         return Ok((array_index, MIN_TICK_INDEX));
@@ -402,22 +402,19 @@ mod swap_tick_sequence_tests {
         }
 
         #[test]
-        #[should_panic(expected = "InvalidTickArraySequence")]
-        /// In an a_to_b search, search will panic if search index is on the last tick in array + 1
-        fn range_panic_on_end_range_plus_one() {
-            let ta0 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
+        /// In an a_to_b search, search will continue to the next tick array when the tick array is not in search range
+        fn search_range_continues_when_irrelevant_tick_array() {
+            const TS: u16 = TS_8;
+            let ta0 = build_tick_array(-11111111, vec![0, LAST_TICK_OFFSET]);
             let ta1 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
-            let ta2 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
-            let swap_tick_sequence = SwapTickSequence::new(
-                ta0.borrow_mut(),
-                Some(ta1.borrow_mut()),
-                Some(ta2.borrow_mut()),
-            );
+            let swap_tick_sequence =
+                SwapTickSequence::new(ta0.borrow_mut(), Some(ta1.borrow_mut()), None);
 
-            let last_tick_in_array_plus_one = TICK_ARRAY_SIZE as i32 * TS_8 as i32;
-            let (_, _) = swap_tick_sequence
-                .get_next_initialized_tick_index(last_tick_in_array_plus_one, TS_8, true, 1)
+            let (range_array_index, range_result_index) = swap_tick_sequence
+                .get_next_initialized_tick_index(0, TS, true, 0)
                 .unwrap();
+            assert_eq!(range_array_index, 1);
+            assert_eq!(range_result_index, 0);
         }
 
         #[test]
@@ -484,15 +481,20 @@ mod swap_tick_sequence_tests {
         }
 
         #[test]
-        #[should_panic(expected = "InvalidTickArraySequence")]
-        /// In an b_to_a search, search will panic if search index is less than the last usable tick in the previous tick-array
-        fn range_panic_on_start_range_sub_one() {
-            let ta0 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
-            let swap_tick_sequence = SwapTickSequence::new(ta0.borrow_mut(), None, None);
+        /// In an b_to_a search, search will continue to the next tick array when the tick array is not in search range
+        fn search_range_continues_when_irrelevant_tick_array() {
+            const TS: u16 = TS_8;
+            let ta0 = build_tick_array(-111111, vec![0, LAST_TICK_OFFSET]);
+            let ta1 = build_tick_array(0, vec![0, LAST_TICK_OFFSET]);
+            println!("{:?}", ta1.borrow_mut().ticks[0]);
+            let swap_tick_sequence =
+                SwapTickSequence::new(ta0.borrow_mut(), Some(ta1.borrow_mut()), None);
 
-            let (_, _) = swap_tick_sequence
-                .get_next_initialized_tick_index(TS_8 as i32 * -1 - 1, TS_8, false, 0)
+            let (range_array_index, range_result_index) = swap_tick_sequence
+                .get_next_initialized_tick_index(-1, TS, false, 1)
                 .unwrap();
+            assert_eq!(range_array_index, 1);
+            assert_eq!(range_result_index, 0);
         }
     }
 
@@ -500,7 +502,7 @@ mod swap_tick_sequence_tests {
         use super::*;
 
         /// SwapTickSequence will bound the ticks by tick-array, not max/min tick. This is to reduce duplicated responsibility
-        /// between thsi & the swap loop / compute_swap.
+        /// between this & the swap loop / compute_swap.
 
         #[test]
         fn b_to_a_search_reaching_max_tick() {

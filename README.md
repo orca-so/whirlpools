@@ -73,7 +73,7 @@ You can also see the generated [TypeDoc](https://orca-so.github.io/whirlpools/).
 
 ## Sample Codes
 
-You can find many sample codes covering basic operations [here](https://github.com/everlastingsong/tour-de-whirlpool/tree/main/src/EN).
+You can find sample code covering basic operations [here](https://github.com/everlastingsong/tour-de-whirlpool/tree/main/src/EN).
 
 ---
 

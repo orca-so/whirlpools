@@ -271,6 +271,8 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     nft_name += "...";
     nft_name += &mint_address[mint_address.len() - 4..];
 
+    // Add ORCA collection nft for better approach
+
     invoke_signed(
         &create_metadata_accounts_v3(
             metadata_program.key(),

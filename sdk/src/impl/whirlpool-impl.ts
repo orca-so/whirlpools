@@ -94,7 +94,8 @@ export class WhirlpoolImpl implements Whirlpool {
     tickUpper: number,
     liquidityInput: IncreaseLiquidityInput,
     wallet?: Address,
-    funder?: Address
+    funder?: Address,
+    positionMint?: Keypair
   ) {
     await this.refresh();
     return this.getOpenPositionWithOptMetadataTx(
@@ -111,8 +112,8 @@ export class WhirlpoolImpl implements Whirlpool {
     tickUpper: number,
     liquidityInput: IncreaseLiquidityInput,
     sourceWallet?: Address,
-    positionWallet?: Address,
-    funder?: Address
+    funder?: Address,
+    positionMint?: Keypair
   ) {
     await this.refresh();
     return this.getOpenPositionWithOptMetadataTx(
@@ -121,7 +122,8 @@ export class WhirlpoolImpl implements Whirlpool {
       liquidityInput,
       !!sourceWallet ? AddressUtil.toPubKey(sourceWallet) : this.ctx.wallet.publicKey,
       !!funder ? AddressUtil.toPubKey(funder) : this.ctx.wallet.publicKey,
-      true
+      true,
+      positionMint
     );
   }
 
@@ -253,7 +255,8 @@ export class WhirlpoolImpl implements Whirlpool {
     liquidityInput: IncreaseLiquidityInput,
     wallet: PublicKey,
     funder: PublicKey,
-    withMetadata: boolean = false
+    withMetadata: boolean = false,
+    positionMint?: Keypair
   ): Promise<{ positionMint: PublicKey; tx: TransactionBuilder }> {
     invariant(TickUtil.checkTickInBounds(tickLower), "tickLower is out of bounds.");
     invariant(TickUtil.checkTickInBounds(tickUpper), "tickUpper is out of bounds.");
@@ -276,7 +279,7 @@ export class WhirlpoolImpl implements Whirlpool {
       `upper tick ${tickUpper} is not an initializable tick for tick-spacing ${whirlpool.tickSpacing}`
     );
 
-    const positionMintKeypair = Keypair.generate();
+    const positionMintKeypair = positionMint ?? Keypair.generate();
     const positionPda = PDAUtil.getPosition(
       this.ctx.program.programId,
       positionMintKeypair.publicKey

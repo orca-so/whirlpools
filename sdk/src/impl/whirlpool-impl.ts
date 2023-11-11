@@ -95,7 +95,7 @@ export class WhirlpoolImpl implements Whirlpool {
     liquidityInput: IncreaseLiquidityInput,
     wallet?: Address,
     funder?: Address,
-    positionMint?: Keypair
+    positionMint?: PublicKey
   ) {
     await this.refresh();
     return this.getOpenPositionWithOptMetadataTx(
@@ -103,7 +103,9 @@ export class WhirlpoolImpl implements Whirlpool {
       tickUpper,
       liquidityInput,
       !!wallet ? AddressUtil.toPubKey(wallet) : this.ctx.wallet.publicKey,
-      !!funder ? AddressUtil.toPubKey(funder) : this.ctx.wallet.publicKey
+      !!funder ? AddressUtil.toPubKey(funder) : this.ctx.wallet.publicKey,
+      false,
+      positionMint
     );
   }
 
@@ -113,7 +115,7 @@ export class WhirlpoolImpl implements Whirlpool {
     liquidityInput: IncreaseLiquidityInput,
     sourceWallet?: Address,
     funder?: Address,
-    positionMint?: Keypair
+    positionMint?: PublicKey
   ) {
     await this.refresh();
     return this.getOpenPositionWithOptMetadataTx(
@@ -256,7 +258,7 @@ export class WhirlpoolImpl implements Whirlpool {
     wallet: PublicKey,
     funder: PublicKey,
     withMetadata: boolean = false,
-    positionMint?: Keypair
+    positionMint?: PublicKey
   ): Promise<{ positionMint: PublicKey; tx: TransactionBuilder }> {
     invariant(TickUtil.checkTickInBounds(tickLower), "tickLower is out of bounds.");
     invariant(TickUtil.checkTickInBounds(tickUpper), "tickUpper is out of bounds.");
@@ -279,14 +281,15 @@ export class WhirlpoolImpl implements Whirlpool {
       `upper tick ${tickUpper} is not an initializable tick for tick-spacing ${whirlpool.tickSpacing}`
     );
 
-    const positionMintKeypair = positionMint ?? Keypair.generate();
+    const positionMintKeypair =  Keypair.generate();
+    const positionMintPubkey = positionMint ?? positionMintKeypair.publicKey;
     const positionPda = PDAUtil.getPosition(
       this.ctx.program.programId,
-      positionMintKeypair.publicKey
+      positionMintPubkey
     );
-    const metadataPda = PDAUtil.getPositionMetadata(positionMintKeypair.publicKey);
+    const metadataPda = PDAUtil.getPositionMetadata(positionMintPubkey);
     const positionTokenAccountAddress = getAssociatedTokenAddressSync(
-      positionMintKeypair.publicKey,
+      positionMintPubkey,
       wallet,
       this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
@@ -304,14 +307,17 @@ export class WhirlpoolImpl implements Whirlpool {
         owner: wallet,
         positionPda,
         metadataPda,
-        positionMintAddress: positionMintKeypair.publicKey,
+        positionMintAddress: positionMintPubkey,
         positionTokenAccount: positionTokenAccountAddress,
         whirlpool: this.address,
         tickLowerIndex: tickLower,
         tickUpperIndex: tickUpper,
       }
     );
-    txBuilder.addInstruction(positionIx).addSigner(positionMintKeypair);
+    txBuilder.addInstruction(positionIx);
+    if(positionMint === undefined) {
+      txBuilder.addSigner(positionMintKeypair);
+    }
 
     const [ataA, ataB] = await resolveOrCreateATAs(
       this.ctx.connection,
@@ -363,7 +369,7 @@ export class WhirlpoolImpl implements Whirlpool {
     txBuilder.addInstruction(liquidityIx);
 
     return {
-      positionMint: positionMintKeypair.publicKey,
+      positionMint: positionMintPubkey,
       tx: txBuilder,
     };
   }

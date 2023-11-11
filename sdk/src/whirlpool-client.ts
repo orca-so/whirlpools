@@ -220,7 +220,7 @@ export interface Whirlpool {
     liquidityInput: IncreaseLiquidityInput,
     wallet?: Address,
     funder?: Address,
-    positionMint?: Keypair
+    positionMint?: PublicKey
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
   /**
@@ -244,7 +244,7 @@ export interface Whirlpool {
     liquidityInput: IncreaseLiquidityInput,
     wallet?: Address,
     funder?: Address,
-    positionMint?: Keypair
+    positionMint?: PublicKey
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
   /**

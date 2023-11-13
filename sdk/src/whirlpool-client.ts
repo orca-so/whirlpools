@@ -211,6 +211,7 @@ export interface Whirlpool {
    * @param liquidityInput - an InputLiquidityInput type to define the desired liquidity amount to deposit
    * @param wallet - the wallet to withdraw tokens to deposit into the position and house the position token. If null, the WhirlpoolContext wallet is used.
    * @param funder - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
+   * @param positionMint - the mint address of the position token to be created. If null, a new mint address will be created.
    * @return `positionMint` - the position to be created. `tx` - The transaction containing the instructions to perform the operation on chain.
    */
   openPosition: (
@@ -218,7 +219,8 @@ export interface Whirlpool {
     tickUpper: number,
     liquidityInput: IncreaseLiquidityInput,
     wallet?: Address,
-    funder?: Address
+    funder?: Address,
+    positionMint?: PublicKey
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
   /**
@@ -233,6 +235,7 @@ export interface Whirlpool {
    * @param liquidityInput - input that defines the desired liquidity amount and maximum tokens willing to be to deposited.
    * @param wallet - the wallet to withdraw tokens to deposit into the position and house the position token. If null, the WhirlpoolContext wallet is used.
    * @param funder - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
+   * @param positionMint - the mint address of the position token to be created. If null, a new mint address will be created.
    * @return `positionMint` - the position to be created. `tx` - The transaction containing the instructions to perform the operation on chain.
    */
   openPositionWithMetadata: (
@@ -240,7 +243,8 @@ export interface Whirlpool {
     tickUpper: number,
     liquidityInput: IncreaseLiquidityInput,
     wallet?: Address,
-    funder?: Address
+    funder?: Address,
+    positionMint?: PublicKey
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
   /**

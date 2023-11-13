@@ -281,7 +281,7 @@ export class WhirlpoolImpl implements Whirlpool {
       `upper tick ${tickUpper} is not an initializable tick for tick-spacing ${whirlpool.tickSpacing}`
     );
 
-    const positionMintKeypair =  Keypair.generate();
+    const positionMintKeypair = Keypair.generate();
     const positionMintPubkey = positionMint ?? positionMintKeypair.publicKey;
     const positionPda = PDAUtil.getPosition(
       this.ctx.program.programId,

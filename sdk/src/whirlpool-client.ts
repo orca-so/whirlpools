@@ -1,6 +1,6 @@
 import { Address } from "@coral-xyz/anchor";
 import { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import {Keypair, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
 import { DevFeeSwapInput, SwapInput } from "./instructions";

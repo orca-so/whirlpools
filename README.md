@@ -3,13 +3,17 @@
 Whirpools is an open-source concentrated liquidity AMM contract on the Solana blockchain.
 This repository contains the Rust smart contract as well as the Typescript SDK (`@orca-so/whirlpools-sdk`) to interact with a deployed program.
 
-The contract has been audited by Kudelski and Neodyme.
+The contract has been audited by [Kudelski and Neodyme](https://orca-so.gitbook.io/orca-developer-portal/whirlpools/overview#security-audits).
+
+The contract has been deployed using verifiable build, so that you can ensure that the hash of the on-chain program matches the hash of the program of the given codebase.
+- [Solana Verify CLI](https://github.com/Ellipsis-Labs/solana-verifiable-build)
+- [Verification result on Osec API](https://verify.osec.io/status/whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc)
 
 ## Requirements
 
-- Anchor 0.20.1
-- Solana 1.9.3
-- Rust 1.59.0
+- Anchor 0.26.0
+- Solana 1.14.12
+- Rust 1.60.0
 
 ## Setup
 
@@ -44,8 +48,8 @@ Use the SDK to interact with a deployed Whirlpools program via Typescript.
 In your package, run:
 
 ```
-yarn add `@orca-so/whirlpools-sdk`
-yarn add "@project-serum/anchor"
+yarn add "@orca-so/whirlpools-sdk"
+yarn add "@coral-xyz/anchor"
 yarn add "decimal.js"
 ```
 
@@ -65,13 +69,19 @@ anchor test
 
 In the `sdk` folder, run `yarn run docs`
 
+You can also see the generated [TypeDoc](https://orca-so.github.io/whirlpools/).
+
+## Sample Codes
+
+You can find sample code covering basic operations [here](https://github.com/everlastingsong/tour-de-whirlpool/tree/main/src/EN).
+
 ---
 
 # Support
 
-**Integration Questions**
+**Questions**
 
-Have problems integrating with the SDK? Pop by over to the Orca [Discord](https://discord.gg/nSwGWn5KSG) #integrations channel and chat with one of our engineers.
+Have problems integrating with the SDK? Pop by over to the Orca [Discord](https://discord.gg/nSwGWn5KSG) #dev-questions channel and chat with one of our engineers.
 
 **Feedback**
 

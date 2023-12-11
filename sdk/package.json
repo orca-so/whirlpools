@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-sdk",
-  "version": "0.11.4",
+  "version": "0.11.7",
   "description": "Typescript SDK to interact with Orca's Whirlpool program.",
   "license": "Apache-2.0",
   "main": "dist/index.js",
@@ -11,12 +11,10 @@
     "@solana/spl-token": "^0.3.8",
     "@solana/web3.js": "^1.75.0",
     "decimal.js": "^10.3.1",
-    "lodash.combinations": "^18.11.1",
     "tiny-invariant": "^1.2.0"
   },
   "devDependencies": {
     "@types/bn.js": "~5.1.0",
-    "@types/lodash": "4.14.194",
     "@types/mocha": "^9.0.0",
     "@metaplex-foundation/mpl-token-metadata": "2.12.0",
     "@typescript-eslint/eslint-plugin": "^4.26.0",

@@ -41,6 +41,33 @@ describe("set_fee_rate", () => {
     assert.equal(whirlpool.feeRate, newFeeRate);
   });
 
+  it("successfully sets_fee_rate max", async () => {
+    const { poolInitInfo, configInitInfo, configKeypairs, feeTierParams } = await initTestPool(
+      ctx,
+      TickSpacing.Standard
+    );
+    const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+    const whirlpoolsConfigKey = configInitInfo.whirlpoolsConfigKeypair.publicKey;
+    const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
+
+    const newFeeRate = 30_000;
+
+    let whirlpool = (await fetcher.getPool(whirlpoolKey, IGNORE_CACHE)) as WhirlpoolData;
+
+    assert.equal(whirlpool.feeRate, feeTierParams.defaultFeeRate);
+
+    const setFeeRateTx = toTx(ctx, WhirlpoolIx.setFeeRateIx(program, {
+      whirlpool: whirlpoolKey,
+      whirlpoolsConfig: whirlpoolsConfigKey,
+      feeAuthority: feeAuthorityKeypair.publicKey,
+      feeRate: newFeeRate
+    })).addSigner(feeAuthorityKeypair);
+    await setFeeRateTx.buildAndExecute();
+
+    whirlpool = (await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
+    assert.equal(whirlpool.feeRate, newFeeRate);
+  });
+
   it("fails when fee rate exceeds max", async () => {
     const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPool(
       ctx,
@@ -50,7 +77,7 @@ describe("set_fee_rate", () => {
     const whirlpoolsConfigKey = configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
-    const newFeeRate = 20_000;
+    const newFeeRate = 30_000 + 1;
     await assert.rejects(
       toTx(
         ctx,

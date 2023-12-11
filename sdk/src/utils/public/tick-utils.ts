@@ -170,6 +170,31 @@ export class TickUtil {
   public static invertTick(tick: number) {
     return -tick;
   }
+
+  /**
+   * Get the minimum and maximum tick index that can be initialized.
+   * 
+   * @param tickSpacing The tickSpacing for the Whirlpool
+   * @returns An array of numbers where the first element is the minimum tick index and the second element is the maximum tick index.
+   */
+  public static getFullRangeTickIndex(tickSpacing: number): [number, number] {
+    return [
+      Math.ceil(MIN_TICK_INDEX / tickSpacing) * tickSpacing,
+      Math.floor(MAX_TICK_INDEX / tickSpacing) * tickSpacing,
+    ];
+  }
+
+  /**
+   * Check if the tick range is the full range of the Whirlpool.
+   * @param tickSpacing The tickSpacing for the Whirlpool
+   * @param tickLowerIndex The lower tick index of the range
+   * @param tickUpperIndex The upper tick index of the range
+   * @returns true if the range is the full range of the Whirlpool, false otherwise.
+   */
+  public static isFullRange(tickSpacing: number, tickLowerIndex: number, tickUpperIndex: number): boolean {
+    const [min, max] = TickUtil.getFullRangeTickIndex(tickSpacing);
+    return tickLowerIndex === min && tickUpperIndex === max;
+  }
 }
 
 /**

@@ -15,7 +15,7 @@ In your package, run:
 
 ```
 yarn add `@orca-so/whirlpools-sdk`
-yarn add "@project-serum/anchor"
+yarn add "@coral-xyz/anchor"
 yarn add "decimal.js"
 ```
 

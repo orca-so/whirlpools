@@ -31,7 +31,7 @@ export class PositionUtil {
     tickLowerIndex: number,
     tickUpperIndex: number
   ): PositionStatus {
-    if (tickCurrentIndex < tickLowerIndex) {
+    if (tickCurrentIndex <= tickLowerIndex) {
       return PositionStatus.BelowRange;
     } else if (tickCurrentIndex < tickUpperIndex) {
       return PositionStatus.InRange;

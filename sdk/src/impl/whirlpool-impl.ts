@@ -584,15 +584,24 @@ export class WhirlpoolImpl implements Whirlpool {
 
     txBuilder.addInstruction(positionIx);
 
-    const txBuilders: TransactionBuilder[] = [];
-
-    if (!tokenAccountsTxBuilder.isEmpty()) {
-      txBuilders.push(tokenAccountsTxBuilder);
+    if (tokenAccountsTxBuilder.isEmpty()) {
+      return [txBuilder]
     }
 
-    txBuilders.push(txBuilder);
+    // This handles an edge case where the instructions are too
+    // large to fit in a single transaction and we need to split the
+    // instructions into two transactions.
+    if (
+      !tokenAccountsTxBuilder.isEmpty() &&
+      affiliatedMints.hasNativeMint &&
+      resolveAtaIxs.length >= 2 &&
+      this.ctx.opts.accountResolverOptions?.createWrappedSolAccountMethod != "ata"
+    ) {
+      return [tokenAccountsTxBuilder, txBuilder]
+    }
 
-    return txBuilders;
+    tokenAccountsTxBuilder.addInstruction(txBuilder.compressIx(false));
+    return [tokenAccountsTxBuilder]
   }
 
   private async refresh() {

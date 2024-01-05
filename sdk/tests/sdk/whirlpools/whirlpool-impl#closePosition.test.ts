@@ -144,11 +144,12 @@ describe("WhirlpoolImpl#closePosition()", () => {
     // TODO: Our createWSOLAccountInstructions ignores payer and requires destinationWallet to sign
     // We can remove this once we move to syncNative and wSOL becomes another ATA to handle.
     if (isWSOLTest) {
-      txs[1].addSigner(otherWallet)
+      txs[txs.length - 1].addSigner(otherWallet)
     }
 
-    await txs[0].buildAndExecute();
-    await txs[1].buildAndExecute();
+    for (const tx of txs) {
+      await tx.buildAndExecute();
+    }
 
     // Verify liquidity and fees collected
     const liquidityCollectedQuote = decreaseLiquidityQuoteByLiquidity(
@@ -441,8 +442,11 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ctx.wallet.publicKey
       );
 
-      await txs[0].buildAndExecute();
-      await txs[1].addSigner(otherWallet).buildAndExecute();
+      txs[txs.length - 1].addSigner(otherWallet)
+
+      for (const tx of txs) {
+        await tx.buildAndExecute();
+      }
 
       const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
@@ -544,8 +548,11 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ctx.wallet.publicKey
       );
 
-      await txs[0].buildAndExecute();
-      await txs[1].addSigner(otherWallet).buildAndExecute();
+      txs[txs.length - 1].addSigner(otherWallet)
+
+      for (const tx of txs) {
+        await tx.buildAndExecute();
+      }
 
       const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
@@ -554,5 +561,112 @@ describe("WhirlpoolImpl#closePosition()", () => {
 
       assert.equal(positionDataAfter, null);
     });
+  });
+
+  it("should only create 2 transactions if absolutely necessary", async () => {
+    const ctx = testCtx.whirlpoolCtx;
+    const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
+      tickSpacing,
+      positions: [
+        { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+      ],
+      rewards: [
+        {
+          emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+          vaultAmount: new BN(vaultStartBalance),
+        },
+        {
+          emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+          vaultAmount: new BN(vaultStartBalance),
+        },
+        {
+          emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+          vaultAmount: new BN(vaultStartBalance),
+        },
+      ],
+      tokenAIsNative: true,
+    });
+
+    const otherWallet = anchor.web3.Keypair.generate();
+    const positionData = fixture.getInfos().positions[0];
+
+    const position = await testCtx.whirlpoolClient.getPosition(positionData.publicKey, IGNORE_CACHE);
+
+    const walletPositionTokenAccount = getAssociatedTokenAddressSync(
+      positionData.mintKeypair.publicKey,
+      testCtx.whirlpoolCtx.wallet.publicKey,
+    );
+
+    const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
+      ctx.provider,
+      positionData.mintKeypair.publicKey,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+
+    await accrueFeesAndRewards(fixture);
+    await transferToken(testCtx.provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+
+    const { poolInitInfo } = fixture.getInfos();
+
+    const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
+
+    const txsWith4Ata = await pool.closePosition(
+      position.getAddress(),
+      Percentage.fromFraction(10, 100),
+      otherWallet.publicKey,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+    assert.equal(txsWith4Ata.length, 2);
+
+    await createAssociatedTokenAccount(
+      ctx.provider,
+      position.getWhirlpoolData().rewardInfos[0].mint,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+
+    const txsWith3Ata = await pool.closePosition(
+      position.getAddress(),
+      Percentage.fromFraction(10, 100),
+      otherWallet.publicKey,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+    assert.equal(txsWith3Ata.length, 2);
+
+    await createAssociatedTokenAccount(
+      ctx.provider,
+      position.getWhirlpoolData().rewardInfos[1].mint,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+
+    const txsWith2Ata = await pool.closePosition(
+      position.getAddress(),
+      Percentage.fromFraction(10, 100),
+      otherWallet.publicKey,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+    assert.equal(txsWith2Ata.length, 2);
+
+    await createAssociatedTokenAccount(
+      ctx.provider,
+      position.getWhirlpoolData().rewardInfos[2].mint,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+
+    const txsWith1Ata = await pool.closePosition(
+      position.getAddress(),
+      Percentage.fromFraction(10, 100),
+      otherWallet.publicKey,
+      otherWallet.publicKey,
+      ctx.wallet.publicKey
+    );
+    assert.equal(txsWith1Ata.length, 1);
+    await txsWith1Ata[0].addSigner(otherWallet).buildAndExecute();
   });
 });

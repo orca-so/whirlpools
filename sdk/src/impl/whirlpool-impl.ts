@@ -1,6 +1,7 @@
 import { Address, BN, translateAddress } from "@coral-xyz/anchor";
 import {
   AddressUtil,
+  MEASUREMENT_BLOCKHASH,
   Percentage,
   TokenUtil,
   TransactionBuilder,
@@ -40,6 +41,7 @@ import {
 import { Whirlpool } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
+import { checkMergedTransactionSizeIsValid } from "../utils/txn-utils";
 
 export class WhirlpoolImpl implements Whirlpool {
   private data: WhirlpoolData;
@@ -591,12 +593,12 @@ export class WhirlpoolImpl implements Whirlpool {
     // This handles an edge case where the instructions are too
     // large to fit in a single transaction and we need to split the
     // instructions into two transactions.
-    if (
-      !tokenAccountsTxBuilder.isEmpty() &&
-      affiliatedMints.hasNativeMint &&
-      resolveAtaIxs.length >= 2 &&
-      this.ctx.opts.accountResolverOptions?.createWrappedSolAccountMethod != "ata"
-    ) {
+    const canFitInOneTransaction = await checkMergedTransactionSizeIsValid(
+      this.ctx,
+      [tokenAccountsTxBuilder, txBuilder],
+      MEASUREMENT_BLOCKHASH
+    )
+    if (!canFitInOneTransaction) {
       return [tokenAccountsTxBuilder, txBuilder]
     }
 

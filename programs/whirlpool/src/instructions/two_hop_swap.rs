@@ -59,12 +59,12 @@ pub struct TwoHopSwap<'info> {
     #[account(mut, constraint = tick_array_two_2.load()?.whirlpool == whirlpool_two.key())]
     pub tick_array_two_2: AccountLoader<'info, TickArray>,
 
-    #[account(seeds = [b"oracle", whirlpool_one.key().as_ref()],bump)]
-    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
+    #[account(mut, seeds = [b"oracle", whirlpool_one.key().as_ref()], bump)]
+    /// CHECK: The existence of the Oracle account is checked in handler
     pub oracle_one: UncheckedAccount<'info>,
 
-    #[account(seeds = [b"oracle", whirlpool_two.key().as_ref()],bump)]
-    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
+    #[account(mut, seeds = [b"oracle", whirlpool_two.key().as_ref()], bump)]
+    /// CHECK: The existence of the Oracle account is checked in handler
     pub oracle_two: UncheckedAccount<'info>,
 }
 
@@ -84,6 +84,9 @@ pub fn handler(
 
     let whirlpool_one = &mut ctx.accounts.whirlpool_one;
     let whirlpool_two = &mut ctx.accounts.whirlpool_two;
+
+    let oracle_one = &mut ctx.accounts.oracle_one.to_account_info();
+    let oracle_two = &mut ctx.accounts.oracle_two.to_account_info();
 
     // Don't allow swaps on the same whirlpool
     if whirlpool_one.key() == whirlpool_two.key() {
@@ -211,6 +214,7 @@ pub fn handler(
 
     update_and_swap_whirlpool(
         whirlpool_one,
+        oracle_one,
         &ctx.accounts.token_authority,
         &ctx.accounts.token_owner_account_one_a,
         &ctx.accounts.token_owner_account_one_b,
@@ -224,6 +228,7 @@ pub fn handler(
 
     update_and_swap_whirlpool(
         whirlpool_two,
+        oracle_two,
         &ctx.accounts.token_authority,
         &ctx.accounts.token_owner_account_two_a,
         &ctx.accounts.token_owner_account_two_b,

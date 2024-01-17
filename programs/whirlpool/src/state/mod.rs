@@ -4,6 +4,7 @@ pub mod position;
 pub mod position_bundle;
 pub mod tick;
 pub mod whirlpool;
+pub mod oracle;
 
 pub use self::whirlpool::*;
 pub use config::*;
@@ -11,3 +12,4 @@ pub use fee_tier::*;
 pub use position::*;
 pub use position_bundle::*;
 pub use tick::*;
+pub use oracle::*;

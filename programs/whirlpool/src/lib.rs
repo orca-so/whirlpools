@@ -606,4 +606,11 @@ pub mod whirlpool {
     ) -> Result<()> {
         return instructions::close_bundled_position::handler(ctx, bundle_index);
     }
+
+    /// Initialize a Oracle account for a particular whirlpool.
+    /// Anyone who wants to use the oracle can invoke this instruction.
+    /// 
+    pub fn initialize_oracle(ctx: Context<InitializeOracle>) -> Result<()> {
+        return instructions::initialize_oracle::handler(ctx);
+    }
 }

@@ -37,8 +37,8 @@ pub struct Swap<'info> {
     #[account(mut, has_one = whirlpool)]
     pub tick_array_2: AccountLoader<'info, TickArray>,
 
-    #[account(seeds = [b"oracle", whirlpool.key().as_ref()],bump)]
-    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
+    #[account(mut, seeds = [b"oracle", whirlpool.key().as_ref()], bump)]
+    /// CHECK: The existence of the Oracle account is checked in handler
     pub oracle: UncheckedAccount<'info>,
 }
 
@@ -51,6 +51,9 @@ pub fn handler(
     a_to_b: bool, // Zero for one
 ) -> Result<()> {
     let whirlpool = &mut ctx.accounts.whirlpool;
+
+    let oracle = &mut ctx.accounts.oracle.to_account_info();
+
     let clock = Clock::get()?;
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
@@ -86,6 +89,7 @@ pub fn handler(
 
     update_and_swap_whirlpool(
         whirlpool,
+        oracle,
         &ctx.accounts.token_authority,
         &ctx.accounts.token_owner_account_a,
         &ctx.accounts.token_owner_account_b,

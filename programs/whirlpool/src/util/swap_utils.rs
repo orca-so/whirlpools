@@ -1,12 +1,13 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{Token, TokenAccount};
 
-use crate::{manager::swap_manager::PostSwapUpdate, state::Whirlpool};
+use crate::{manager::swap_manager::PostSwapUpdate, state::{Whirlpool, Oracle}};
 
 use super::{transfer_from_owner_to_vault, transfer_from_vault_to_owner};
 
 pub fn update_and_swap_whirlpool<'info>(
     whirlpool: &mut Account<'info, Whirlpool>,
+    oracle: &mut AccountInfo<'info>,
     token_authority: &Signer<'info>,
     token_owner_account_a: &Account<'info, TokenAccount>,
     token_owner_account_b: &Account<'info, TokenAccount>,
@@ -15,8 +16,18 @@ pub fn update_and_swap_whirlpool<'info>(
     token_program: &Program<'info, Token>,
     swap_update: PostSwapUpdate,
     is_token_fee_in_a: bool,
-    reward_last_updated_timestamp: u64,
+    timestamp: u64,
 ) -> Result<()> {
+    // Update the oracle if it has been initialized
+    if oracle.owner == &crate::id() {
+        let oracle_loader = AccountLoader::<Oracle>::try_from(oracle).unwrap();
+        let before_swap_tick_index = whirlpool.tick_current_index;
+        oracle_loader.load_mut().unwrap().add_observation_if_needed(
+            before_swap_tick_index,
+            timestamp as u32,
+        );
+    }
+
     whirlpool.update_after_swap(
         swap_update.next_liquidity,
         swap_update.next_tick_index,
@@ -25,9 +36,9 @@ pub fn update_and_swap_whirlpool<'info>(
         swap_update.next_reward_infos,
         swap_update.next_protocol_fee,
         is_token_fee_in_a,
-        reward_last_updated_timestamp,
+        timestamp,
     );
-
+    
     perform_swap(
         whirlpool,
         token_authority,

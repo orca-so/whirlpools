@@ -21,6 +21,7 @@ export enum AccountName {
   Whirlpool = "Whirlpool",
   FeeTier = "FeeTier",
   PositionBundle = "PositionBundle",
+  Oracle = "Oracle",
 }
 
 export const WHIRLPOOL_IDL = WhirlpoolIDL as Idl;
@@ -53,6 +54,7 @@ const RESERVED_BYTES: ReservedBytes = {
   [AccountName.Whirlpool]: 0,
   [AccountName.FeeTier]: 0,
   [AccountName.PositionBundle]: 64,
+  [AccountName.Oracle]: 0,
 };
 
 type ReservedBytes = {
@@ -194,4 +196,21 @@ export type FeeTierData = {
 export type PositionBundleData = {
   positionBundleMint: PublicKey;
   positionBitmap: number[];
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type OracleData = {
+  whirlpool: PublicKey;
+  observations: OracleObservationData[];
+  observationIndex: number;
+};
+
+/**
+ * @category Solana Accounts
+ */
+export type OracleObservationData = {
+  timestamp: number;
+  price: BN;
 };

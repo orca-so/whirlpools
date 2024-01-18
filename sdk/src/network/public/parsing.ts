@@ -5,6 +5,7 @@ import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
 import {
   AccountName,
   FeeTierData,
+  OracleData,
   PositionBundleData,
   PositionData,
   TickArrayData,
@@ -151,6 +152,30 @@ export class ParsablePositionBundle {
       return parseAnchorAccount(AccountName.PositionBundle, accountData);
     } catch (e) {
       console.error(`error while parsing PositionBundle: ${e}`);
+      return null;
+    }
+  }
+}
+
+/**
+ * @category Network
+ */
+@staticImplements<ParsableEntity<OracleData>>()
+export class ParsableOracle {
+  private constructor() {}
+
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): OracleData | null {
+    if (!accountData?.data) {
+      return null;
+    }
+
+    try {
+      return parseAnchorAccount(AccountName.Oracle, accountData);
+    } catch (e) {
+      console.error(`error while parsing Oracle: ${e}`);
       return null;
     }
   }

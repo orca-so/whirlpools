@@ -31,6 +31,7 @@ export {
   DeletePositionBundleParams,
   OpenBundledPositionParams,
   CloseBundledPositionParams,
+  InitializeOracleParams,
 } from "../../instructions/";
 export {
   CollectAllParams,

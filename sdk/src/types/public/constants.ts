@@ -64,6 +64,12 @@ export const TICK_ARRAY_SIZE = 88;
 export const POSITION_BUNDLE_SIZE = 256;
 
 /**
+ * The number of oracle observations that an oracle account can hold.
+ * @category Constants
+ */
+export const NUM_ORACLE_OBSERVATIONS = 720;
+
+/**
  * @category Constants
  */
 export const METADATA_PROGRAM_ADDRESS = new PublicKey(

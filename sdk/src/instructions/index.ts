@@ -9,6 +9,7 @@ export * from "./delete-position-bundle-ix";
 export * from "./increase-liquidity-ix";
 export * from "./initialize-config-ix";
 export * from "./initialize-fee-tier-ix";
+export * from "./initialize-oracle-ix";
 export * from "./initialize-pool-ix";
 export * from "./initialize-position-bundle-ix";
 export * from "./initialize-reward-ix";

@@ -16,6 +16,7 @@ import {
 } from "..";
 import {
   FeeTierData,
+  OracleData,
   PositionBundleData,
   PositionData,
   TickArrayData,
@@ -24,6 +25,7 @@ import {
 } from "../../../types/public";
 import {
   ParsableFeeTier,
+  ParsableOracle,
   ParsablePosition,
   ParsablePositionBundle,
   ParsableTickArray,
@@ -151,6 +153,18 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, PositionBundleData | null>> {
     return this.fetcher.getAccounts(addresses, ParsablePositionBundle, opts);
+  }
+  getOracle(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<OracleData | null> {
+    return this.fetcher.getAccount(address, ParsableOracle, opts);
+  }
+  getOracles(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<ReadonlyMap<string, OracleData | null>> {
+    return this.fetcher.getAccounts(addresses, ParsableOracle, opts);
   }
   populateCache<T extends WhirlpoolSupportedTypes>(
     accounts: ReadonlyMap<string, T>,

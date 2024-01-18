@@ -5,7 +5,7 @@ pub const OBSERVE_INTERVAL: u32 = 10; // 10
 // Max number of observations stored by the price oracle.
 pub const NUM_OBSERVATIONS: usize = 720; // at least 120 minutes (10 * 720 = 7200)
 
-#[derive(Copy, Clone, Debug, PartialEq, Default)]
+#[derive(Copy, Clone, AnchorSerialize, AnchorDeserialize, Default, Debug, PartialEq)]
 pub struct Observation {
     pub timestamp: u32,       // 4
     pub tick_cumulative: i64, // 8

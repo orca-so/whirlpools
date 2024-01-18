@@ -987,7 +987,7 @@
         },
         {
           "name": "oracle",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         }
       ],
@@ -1504,12 +1504,12 @@
         },
         {
           "name": "oracleOne",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "oracleTwo",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         }
       ],
@@ -1843,6 +1843,37 @@
           "type": "u16"
         }
       ]
+    },
+    {
+      "name": "initializeOracle",
+      "docs": [
+        "Initialize a Oracle account for a particular whirlpool.",
+        "Anyone who wants to use the oracle can invoke this instruction.",
+        ""
+      ],
+      "accounts": [
+        {
+          "name": "whirlpool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "oracle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -1885,6 +1916,33 @@
           },
           {
             "name": "defaultFeeRate",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "Oracle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "whirlpool",
+            "type": "publicKey"
+          },
+          {
+            "name": "observations",
+            "type": {
+              "array": [
+                {
+                  "defined": "Observation"
+                },
+                720
+              ]
+            }
+          },
+          {
+            "name": "observationIndex",
             "type": "u16"
           }
         ]
@@ -2096,6 +2154,22 @@
     }
   ],
   "types": [
+    {
+      "name": "Observation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "timestamp",
+            "type": "u32"
+          },
+          {
+            "name": "tickCumulative",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "OpenPositionBumps",
       "type": {

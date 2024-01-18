@@ -987,7 +987,7 @@ export type Whirlpool = {
         },
         {
           "name": "oracle",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         }
       ],
@@ -1504,12 +1504,12 @@ export type Whirlpool = {
         },
         {
           "name": "oracleOne",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "oracleTwo",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         }
       ],
@@ -1843,6 +1843,37 @@ export type Whirlpool = {
           "type": "u16"
         }
       ]
+    },
+    {
+      "name": "initializeOracle",
+      "docs": [
+        "Initialize a Oracle account for a particular whirlpool.",
+        "Anyone who wants to use the oracle can invoke this instruction.",
+        ""
+      ],
+      "accounts": [
+        {
+          "name": "whirlpool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "oracle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -1885,6 +1916,33 @@ export type Whirlpool = {
           },
           {
             "name": "defaultFeeRate",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "oracle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "whirlpool",
+            "type": "publicKey"
+          },
+          {
+            "name": "observations",
+            "type": {
+              "array": [
+                {
+                  "defined": "Observation"
+                },
+                720
+              ]
+            }
+          },
+          {
+            "name": "observationIndex",
             "type": "u16"
           }
         ]
@@ -2096,6 +2154,22 @@ export type Whirlpool = {
     }
   ],
   "types": [
+    {
+      "name": "Observation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "timestamp",
+            "type": "u32"
+          },
+          {
+            "name": "tickCumulative",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "OpenPositionBumps",
       "type": {
@@ -3513,7 +3587,7 @@ export const IDL: Whirlpool = {
         },
         {
           "name": "oracle",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         }
       ],
@@ -4030,12 +4104,12 @@ export const IDL: Whirlpool = {
         },
         {
           "name": "oracleOne",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         },
         {
           "name": "oracleTwo",
-          "isMut": false,
+          "isMut": true,
           "isSigner": false
         }
       ],
@@ -4369,6 +4443,37 @@ export const IDL: Whirlpool = {
           "type": "u16"
         }
       ]
+    },
+    {
+      "name": "initializeOracle",
+      "docs": [
+        "Initialize a Oracle account for a particular whirlpool.",
+        "Anyone who wants to use the oracle can invoke this instruction.",
+        ""
+      ],
+      "accounts": [
+        {
+          "name": "whirlpool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "oracle",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
@@ -4411,6 +4516,33 @@ export const IDL: Whirlpool = {
           },
           {
             "name": "defaultFeeRate",
+            "type": "u16"
+          }
+        ]
+      }
+    },
+    {
+      "name": "oracle",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "whirlpool",
+            "type": "publicKey"
+          },
+          {
+            "name": "observations",
+            "type": {
+              "array": [
+                {
+                  "defined": "Observation"
+                },
+                720
+              ]
+            }
+          },
+          {
+            "name": "observationIndex",
             "type": "u16"
           }
         ]
@@ -4622,6 +4754,22 @@ export const IDL: Whirlpool = {
     }
   ],
   "types": [
+    {
+      "name": "Observation",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "timestamp",
+            "type": "u32"
+          },
+          {
+            "name": "tickCumulative",
+            "type": "i64"
+          }
+        ]
+      }
+    },
     {
       "name": "OpenPositionBumps",
       "type": {

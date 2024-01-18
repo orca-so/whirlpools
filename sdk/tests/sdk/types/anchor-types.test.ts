@@ -11,6 +11,7 @@ describe("anchor-types", () => {
       [AccountName.Whirlpool]: 653,
       [AccountName.FeeTier]: 44,
       [AccountName.PositionBundle]: 136,
+      [AccountName.Oracle]: 8682,
     };
     Object.values(AccountName).forEach((name) => {
       try {

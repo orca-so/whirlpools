@@ -11,9 +11,10 @@ import {
   Account,
   NATIVE_MINT,
   createAssociatedTokenAccountInstruction,
+  createCloseAccountInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import { PublicKey, TransactionInstruction } from "@solana/web3.js";
 import BN from "bn.js";
 import {
   AtaAccountInfo,
@@ -50,6 +51,7 @@ export async function getSwapFromRoute(
 ) {
   const { route, wallet, resolvedAtaAccounts, slippage } = params;
   const requiredAtas = new Set<string>();
+  const requiredIntermediateAtas = new Set<string>();
   const requiredTickArrays = [];
   let hasNativeMint = false;
   let nativeMintAmount = new BN(0);
@@ -104,6 +106,7 @@ export async function getSwapFromRoute(
       addOrNative(mintOneB.toString(), !quoteOne.aToB ? inputAmount : ZERO);
       addOrNative(mintTwoA.toString(), ZERO);
       addOrNative(mintTwoB.toString(), ZERO);
+      requiredIntermediateAtas.add(quoteOne.aToB ? mintOneB.toString() : mintOneA.toString());
     }
   }
 
@@ -122,6 +125,7 @@ export async function getSwapFromRoute(
   const ataInstructionMap = await cachedResolveOrCreateNonNativeATAs(
     wallet,
     requiredAtas,
+    requiredIntermediateAtas,
     (keys) => {
       // TODO: if atas are not up to date, there might be failures, not sure if there's
       // any good way, other than to re-fetch each time?
@@ -317,6 +321,8 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
  *
  * @param ownerAddress The user's public key
  * @param tokenMint Token mint address
+ * @param intermediateTokenMints Any mints from the tokenMint set that are intermediates in a two-hop swap
+ * @param getTokenAccounts Function to get token accounts
  * @param payer Payer that would pay the rent for the creation of the ATAs
  * @param allowPDAOwnerAddress Optional. Allow PDA to be used as the ATA owner address
  * @returns
@@ -324,6 +330,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
 async function cachedResolveOrCreateNonNativeATAs(
   ownerAddress: PublicKey,
   tokenMints: Set<string>,
+  intermediateTokenMints: Set<string>,
   getTokenAccounts: (keys: PublicKey[]) => Promise<Array<AtaAccountInfo | null>>,
   payer = ownerAddress,
   allowPDAOwnerAddress: boolean = false
@@ -346,17 +353,27 @@ async function cachedResolveOrCreateNonNativeATAs(
 
       resolvedInstruction = { address: ataAddress, ...EMPTY_INSTRUCTION };
     } else {
-      const createAtaInstruction = createAssociatedTokenAccountInstruction(
+      const tokenMint = tokenMintArray[index];
+      const createAtaInstructions = [createAssociatedTokenAccountInstruction(
         payer,
         ataAddress,
         ownerAddress,
-        tokenMintArray[index]
-      );
+        tokenMint
+      )];
+
+      let cleanupInstructions: TransactionInstruction[] = [];
+      if (intermediateTokenMints.has(tokenMint.toBase58())) {
+        cleanupInstructions = [createCloseAccountInstruction(
+          ataAddress,
+          ownerAddress,
+          ownerAddress
+        )];
+      }
 
       resolvedInstruction = {
         address: ataAddress,
-        instructions: [createAtaInstruction],
-        cleanupInstructions: [],
+        instructions: createAtaInstructions,
+        cleanupInstructions: cleanupInstructions,
         signers: [],
       };
     }

@@ -212,5 +212,5 @@ export type OracleData = {
  */
 export type OracleObservationData = {
   timestamp: number;
-  price: BN;
+  tickCumulative: BN;
 };

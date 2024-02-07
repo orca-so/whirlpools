@@ -5,7 +5,9 @@ pub const OBSERVE_INTERVAL: u32 = 10; // 10
 // Max number of observations stored by the price oracle.
 pub const NUM_OBSERVATIONS: usize = 720; // at least 120 minutes (10 * 720 = 7200)
 
-#[derive(Copy, Clone, AnchorSerialize, AnchorDeserialize, Default, Debug, PartialEq)]
+#[zero_copy]
+#[derive(Default, Debug, PartialEq)]
+#[repr(packed)]
 pub struct Observation {
     pub timestamp: u32,       // 4
     pub tick_cumulative: i64, // 8
@@ -18,6 +20,7 @@ impl Observation {
 }
 
 #[account(zero_copy)]
+#[repr(packed)]
 pub struct Oracle {
     pub whirlpool: Pubkey,                             // 32
     pub observations: [Observation; NUM_OBSERVATIONS], // 8640
@@ -97,7 +100,8 @@ mod add_observation_tests {
         oracle.initialize(whirlpool, timestamp);
 
         assert_eq!(oracle.whirlpool, whirlpool);
-        assert_eq!(oracle.observation_index, 0);
+        let observation_index = oracle.observation_index;
+        assert_eq!(observation_index, 0);
 
         let actual_observation0 = oracle.observations[0];
         let expected_observation0 = Observation {
@@ -149,7 +153,8 @@ mod add_observation_tests {
             },
         ];
 
-        assert_eq!(oracle.observation_index, 3);
+        let observation_index = oracle.observation_index;
+        assert_eq!(observation_index, 3);
         assert_eq!(oracle.observations[0], expectations[0]);
         assert_eq!(oracle.observations[1], expectations[1]);
         assert_eq!(oracle.observations[2], expectations[2]);
@@ -194,7 +199,8 @@ mod add_observation_tests {
             },
         ];
 
-        assert_eq!(oracle.observation_index, 2);
+        let observation_index = oracle.observation_index;
+        assert_eq!(observation_index, 2);
         assert_eq!(oracle.observations[0], expectations[0]);
         assert_eq!(oracle.observations[1], expectations[1]);
         assert_eq!(oracle.observations[2], expectations[2]);
@@ -223,7 +229,8 @@ mod add_observation_tests {
             oracle.add_observation_if_needed(2, timestamp + ((i as u32) * OBSERVE_INTERVAL));
         }
 
-        assert_eq!(oracle.observation_index, 4);
+        let observation_index = oracle.observation_index;
+        assert_eq!(observation_index, 4);
 
         // overwritten
         for i in 0..5 {

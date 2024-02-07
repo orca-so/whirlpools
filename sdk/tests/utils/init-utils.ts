@@ -891,6 +891,30 @@ export async function initTestPoolWithLiquidity(
   };
 }
 
+export async function initializeOracle(
+  ctx: WhirlpoolContext,
+  whirlpool: PublicKey,
+  funder?: Keypair
+) {
+  const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpool);
+
+  const tx = toTx(ctx, WhirlpoolIx.initializeOracleIx(
+    ctx.program,
+    {
+      whirlpool,
+      funder: !!funder ? funder.publicKey : ctx.provider.wallet.publicKey,
+      oraclePda,
+    }
+  ));
+  if (funder) {
+    tx.addSigner(funder);
+  }
+
+  const txId = await tx.buildAndExecute(undefined, {skipPreflight: true});
+
+  return { txId, oraclePda };
+}
+
 export async function initializePositionBundleWithMetadata(
   ctx: WhirlpoolContext,
   owner: PublicKey = ctx.provider.wallet.publicKey,

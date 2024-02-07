@@ -519,4 +519,18 @@ export class WhirlpoolIx {
   ) {
     return ix.closeBundledPositionIx(program, params);
   }
+
+  /**
+   * Initializes an Oracle account.
+   *
+   * @param program - program object containing services required to generate the instruction
+   * @param params - InitializeOracleParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static initializeOracleIx(
+    program: Program<Whirlpool>,
+    params: ix.InitializeOracleParams
+  ) {
+    return ix.initializeOracleIx(program, params);
+  }
 }

@@ -1,5 +1,5 @@
 import invariant from "tiny-invariant";
-import { PositionBundleData, POSITION_BUNDLE_SIZE, WhirlpoolData, OracleData, OracleObservationData, NUM_ORACLE_OBSERVATIONS, MIN_TICK_INDEX, MAX_TICK_INDEX } from "../../types/public";
+import { WhirlpoolData, OracleData, OracleObservationData, NUM_ORACLE_OBSERVATIONS, MIN_TICK_INDEX, MAX_TICK_INDEX } from "../../types/public";
 import { BN } from "bn.js";
 
 /**
@@ -34,6 +34,13 @@ export class OracleUtil {
     invariant(meanTickIndex <= MAX_TICK_INDEX);
 
     return meanTickIndex;
+  }
+
+  public static getOldestObservation(
+    oracle: OracleData,
+  ): OracleObservationData {
+    const oldestObservationIndex = getOldestObservationIndex(oracle);
+    return oracle.observations[oldestObservationIndex];
   }
 
 }

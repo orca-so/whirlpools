@@ -113,7 +113,7 @@ describe("initialize_oracle", () => {
   });
 
   describe("invalid input account", () => {
-    it("should be failed: oracle address", async () => {
+    it("should be failed: invalid oracle address", async () => {
       const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
 
       const tx = await createInitializeOracleTx(ctx, poolInitInfo.whirlpoolPda.publicKey, {

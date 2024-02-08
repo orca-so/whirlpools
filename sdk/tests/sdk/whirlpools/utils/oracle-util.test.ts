@@ -529,4 +529,50 @@ describe("OracleUtil tests", () => {
     });
 
   });
+
+  describe("getOldestObservation", () => {
+    it("initialized", async () => {
+      const now = Math.floor(Date.now() / 1000);
+      const builder = new OracleDataBuilder(PublicKey.default, now - 100);
+      const oracleData = builder.build();
+
+      const oldest = OracleUtil.getOldestObservation(oracleData);
+      assert.equal(oldest.timestamp, now - 100);
+    });
+
+    it("no wrap", async () => {
+      const now = Math.floor(Date.now() / 1000);
+
+      const numUpdate = Math.floor(NUM_ORACLE_OBSERVATIONS / 2);
+      const initialTimestamp = now - 10 * numUpdate;
+      const initialTickIndex = -20;
+      const builder = new OracleDataBuilder(PublicKey.default, initialTimestamp);
+      for (let i = 1; i <= numUpdate; i++) {
+        builder.addObservation(initialTimestamp + 10 * i, initialTickIndex + i);
+      }
+      const oracleData = builder.build();
+
+      const oldest = OracleUtil.getOldestObservation(oracleData);
+      assert.equal(oldest.timestamp, initialTimestamp);
+      assert.equal(oldest, oracleData.observations[0]);
+    });
+
+    it("wrap", async () => {
+      const now = Math.floor(Date.now() / 1000);
+
+      const numUpdate = NUM_ORACLE_OBSERVATIONS + 5;
+      const initialTimestamp = now - 10 * numUpdate;
+      const initialTickIndex = -20;
+      const builder = new OracleDataBuilder(PublicKey.default, initialTimestamp);
+      for (let i = 1; i <= numUpdate; i++) {
+        builder.addObservation(initialTimestamp + 10 * i, initialTickIndex + i);
+      }
+      const oracleData = builder.build();
+
+      const oldest = OracleUtil.getOldestObservation(oracleData);
+      assert.equal(oracleData.observationIndex, 5);
+      assert.equal(oldest, oracleData.observations[6]);
+    });
+
+  });
 });

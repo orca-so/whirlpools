@@ -101,8 +101,8 @@ export function increaseLiquidityQuoteByInputTokenWithParams(
     `input token mint ${param.inputTokenMint.toBase58()} does not match any tokens in the provided pool.`
   );
 
-  const positionStatus = PositionUtil.getPositionStatus(
-    param.tickCurrentIndex,
+  const positionStatus = PositionUtil.getStrictPositionStatus(
+    param.sqrtPrice,
     param.tickLowerIndex,
     param.tickUpperIndex
   );

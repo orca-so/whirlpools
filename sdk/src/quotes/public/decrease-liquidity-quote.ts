@@ -87,8 +87,8 @@ export function decreaseLiquidityQuoteByLiquidityWithParams(
     "tickCurrentIndex is out of bounds."
   );
 
-  const positionStatus = PositionUtil.getPositionStatus(
-    param.tickCurrentIndex,
+  const positionStatus = PositionUtil.getStrictPositionStatus(
+    param.sqrtPrice,
     param.tickLowerIndex,
     param.tickUpperIndex
   );

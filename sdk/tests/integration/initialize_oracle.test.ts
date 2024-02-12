@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Account, ASSOCIATED_TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync, Mint, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { Keypair, LAMPORTS_PER_SOL, PublicKey, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import {
@@ -7,15 +7,11 @@ import {
   getAccountSize,
   NUM_ORACLE_OBSERVATIONS,
   PDAUtil,
-  POSITION_BUNDLE_SIZE,
-  PositionBundleData,
   toTx,
   WhirlpoolContext
 } from "../../src";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
-  createMintInstructions,
-  mintToDestination,
   TickSpacing
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";

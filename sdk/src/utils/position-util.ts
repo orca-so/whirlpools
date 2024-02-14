@@ -1,12 +1,12 @@
 import { BN } from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
+import { PriceMath } from "./public";
 import {
   getLowerSqrtPriceFromTokenA,
   getLowerSqrtPriceFromTokenB,
   getUpperSqrtPriceFromTokenA,
   getUpperSqrtPriceFromTokenB,
 } from "./swap-utils";
-import { PriceMath } from "./public";
 
 export enum SwapDirection {
   AtoB = "Swap A to B",
@@ -25,7 +25,7 @@ export enum PositionStatus {
 }
 
 export class PositionUtil {
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Returns the position status of a given tickCurrentIndex in relation to the tickLowerIndex and tickUpperIndex.
@@ -72,7 +72,7 @@ export class PositionUtil {
   ): PositionStatus {
     const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
     const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
-  
+
     if (sqrtPriceX64.lte(sqrtPriceLowerX64)) {
       return PositionStatus.BelowRange;
     } else if (sqrtPriceX64.gte(sqrtPriceUpperX64)) {

@@ -12,7 +12,7 @@ import {
   collectFeesQuote,
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidity,
-  increaseLiquidityQuoteByInputToken,
+  increaseLiquidityQuoteByInputToken_PriceSlippage,
   toTx
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
@@ -84,7 +84,7 @@ describe("whirlpool-impl", () => {
     );
 
     const inputTokenMint = poolData.tokenMintA;
-    const quote = increaseLiquidityQuoteByInputToken(
+    const quote = increaseLiquidityQuoteByInputToken_PriceSlippage(
       inputTokenMint,
       new Decimal(50),
       tickLower,
@@ -193,7 +193,7 @@ describe("whirlpool-impl", () => {
 
     const inputTokenMint = poolData.tokenMintA;
     const depositAmount = new Decimal(50);
-    const quote = increaseLiquidityQuoteByInputToken(
+    const quote = increaseLiquidityQuoteByInputToken_PriceSlippage(
       inputTokenMint,
       depositAmount,
       tickLower,

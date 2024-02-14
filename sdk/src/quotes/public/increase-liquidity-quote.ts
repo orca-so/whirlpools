@@ -45,7 +45,243 @@ export type IncreaseLiquidityQuoteParam = {
  * Return object from increase liquidity quote functions.
  * @category Quotes
  */
-export type IncreaseLiquidityQuote = IncreaseLiquidityInput & { tokenEstA: BN; tokenEstB: BN };
+export type IncreaseLiquidityQuote = IncreaseLiquidityInput & IncreaseLiquidityEstimate;
+type IncreaseLiquidityEstimate = { liquidityAmount: BN; tokenEstA: BN; tokenEstB: BN };
+
+/**
+ * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
+ * This new version calculates slippage based on price percentage movement, rather than setting the percentage threshold based on token estimates.
+ *
+ * @category Quotes
+ * @param inputTokenAmount - The amount of input tokens to deposit.
+ * @param inputTokenMint - The mint of the input token the user would like to deposit.
+ * @param tickLower - The lower index of the position that we are withdrawing from.
+ * @param tickUpper - The upper index of the position that we are withdrawing from.
+ * @param slippageTolerance - The maximum slippage allowed when calculating the minimum tokens received.
+ * @param whirlpool - A Whirlpool helper class to help interact with the Whirlpool account.
+ * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
+ */
+export function increaseLiquidityQuoteByInputToken_PriceSlippage(
+  inputTokenMint: Address,
+  inputTokenAmount: Decimal,
+  tickLower: number,
+  tickUpper: number,
+  slippageTolerance: Percentage,
+  whirlpool: Whirlpool
+) {
+  const data = whirlpool.getData();
+  const tokenAInfo = whirlpool.getTokenAInfo();
+  const tokenBInfo = whirlpool.getTokenBInfo();
+
+  const inputMint = AddressUtil.toPubKey(inputTokenMint);
+  const inputTokenInfo = inputMint.equals(tokenAInfo.mint) ? tokenAInfo : tokenBInfo;
+
+  return increaseLiquidityQuoteByInputTokenWithParams_PriceSlippage({
+    inputTokenMint: inputMint,
+    inputTokenAmount: DecimalUtil.toBN(inputTokenAmount, inputTokenInfo.decimals),
+    tickLowerIndex: TickUtil.getInitializableTickIndex(tickLower, data.tickSpacing),
+    tickUpperIndex: TickUtil.getInitializableTickIndex(tickUpper, data.tickSpacing),
+    slippageTolerance,
+    ...data,
+  });
+}
+
+/**
+ * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
+ * This new version calculates slippage based on price percentage movement, rather than setting the percentage threshold based on token estimates.
+ * 
+ * @category Quotes
+ * @param param IncreaseLiquidityQuoteParam
+ * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
+ */
+export function increaseLiquidityQuoteByInputTokenWithParams_PriceSlippage(
+  param: IncreaseLiquidityQuoteParam
+): IncreaseLiquidityQuote {
+  invariant(TickUtil.checkTickInBounds(param.tickLowerIndex), "tickLowerIndex is out of bounds.");
+  invariant(TickUtil.checkTickInBounds(param.tickUpperIndex), "tickUpperIndex is out of bounds.");
+  invariant(
+    param.inputTokenMint.equals(param.tokenMintA) || param.inputTokenMint.equals(param.tokenMintB),
+    `input token mint ${param.inputTokenMint.toBase58()} does not match any tokens in the provided pool.`
+  );
+
+  const {
+    adjustedSqrtPrice: lowerAdjustedSqrtPrice,
+    adjustedTickCurrentIndex: lowerAdjustedTickCurrentIndex,
+  } = adjustPriceForSlippage(param.sqrtPrice, param.slippageTolerance, true);
+  const {
+    adjustedSqrtPrice: upperAdjustedSqrtPrice,
+    adjustedTickCurrentIndex: upperAdjustedTickCurrentIndex,
+  } = adjustPriceForSlippage(param.sqrtPrice, param.slippageTolerance, false);
+
+  const lowerQuote = getQuoteByInputToken({
+    ...param,
+    sqrtPrice: lowerAdjustedSqrtPrice,
+    tickCurrentIndex: lowerAdjustedTickCurrentIndex,
+  });
+  const quote = getQuoteByInputToken(param);
+  const upperQuote = getQuoteByInputToken({
+    ...param,
+    sqrtPrice: upperAdjustedSqrtPrice,
+    tickCurrentIndex: upperAdjustedTickCurrentIndex,
+  });
+
+  return {
+    tokenMaxA: BN.max(BN.max(lowerQuote.tokenEstA, upperQuote.tokenEstA), quote.tokenEstA),
+    tokenMaxB: BN.max(BN.max(lowerQuote.tokenEstB, upperQuote.tokenEstB), quote.tokenEstB),
+    tokenEstA: quote.tokenEstA,
+    tokenEstB: quote.tokenEstB,
+    liquidityAmount: quote.liquidityAmount,
+  };
+}
+
+function getQuoteByInputToken(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityEstimate {
+  const positionStatus = PositionUtil.getStrictPositionStatus(
+    param.sqrtPrice,
+    param.tickLowerIndex,
+    param.tickUpperIndex
+  );
+
+  switch (positionStatus) {
+    case PositionStatus.BelowRange:
+      return getQuotePositionBelowRange(param);
+    case PositionStatus.InRange:
+      return getQuotePositionInRange(param);
+    case PositionStatus.AboveRange:
+      return getQuotePositionAboveRange(param);
+    default:
+      throw new Error(`type ${positionStatus} is an unknown PositionStatus`);
+  }
+}
+
+function adjustPriceForSlippage(
+  sqrtPrice: BN,
+  slippageTolerance: Percentage,
+  lowerBound: boolean
+): { adjustedSqrtPrice: BN; adjustedTickCurrentIndex: number } {
+  if (lowerBound) {
+    const adjustedSqrtPrice = sqrtPrice
+      .mul(slippageTolerance.denominator.sub(slippageTolerance.numerator))
+      .div(slippageTolerance.denominator);
+    const adjustedTickCurrentIndex = PriceMath.sqrtPriceX64ToTickIndex(adjustedSqrtPrice);
+    return { adjustedSqrtPrice, adjustedTickCurrentIndex };
+  }
+
+  const adjustedSqrtPrice = sqrtPrice
+    .mul(slippageTolerance.denominator.add(slippageTolerance.numerator))
+    .div(slippageTolerance.denominator);
+  const adjustedTickCurrentIndex = PriceMath.sqrtPriceX64ToTickIndex(adjustedSqrtPrice);
+  return { adjustedSqrtPrice, adjustedTickCurrentIndex };
+}
+
+function getQuotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityEstimate {
+  const { tokenMintA, inputTokenMint, inputTokenAmount, tickLowerIndex, tickUpperIndex } = param;
+
+  if (!tokenMintA.equals(inputTokenMint)) {
+    return {
+      tokenEstA: ZERO,
+      tokenEstB: ZERO,
+      liquidityAmount: ZERO,
+    };
+  }
+
+  const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
+  const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
+
+  const liquidityAmount = getLiquidityFromTokenA(
+    inputTokenAmount,
+    sqrtPriceLowerX64,
+    sqrtPriceUpperX64,
+    false
+  );
+
+  const tokenEstA = getTokenAFromLiquidity(
+    liquidityAmount,
+    sqrtPriceLowerX64,
+    sqrtPriceUpperX64,
+    true
+  );
+
+  return {
+    tokenEstA,
+    tokenEstB: ZERO,
+    liquidityAmount,
+  };
+}
+
+function getQuotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityEstimate {
+  const { tokenMintB, inputTokenMint, inputTokenAmount, tickLowerIndex, tickUpperIndex } = param;
+
+  if (!tokenMintB.equals(inputTokenMint)) {
+    return {
+      tokenEstA: ZERO,
+      tokenEstB: ZERO,
+      liquidityAmount: ZERO,
+    };
+  }
+
+  const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
+  const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
+  const liquidityAmount = getLiquidityFromTokenB(
+    inputTokenAmount,
+    sqrtPriceLowerX64,
+    sqrtPriceUpperX64,
+    false
+  );
+
+  const tokenEstB = getTokenBFromLiquidity(
+    liquidityAmount,
+    sqrtPriceLowerX64,
+    sqrtPriceUpperX64,
+    true
+  );
+
+  return {
+    tokenEstA: ZERO,
+    tokenEstB,
+    liquidityAmount,
+  };
+}
+
+function getQuotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityEstimate {
+  const {
+    tokenMintA,
+    sqrtPrice,
+    inputTokenMint,
+    inputTokenAmount,
+    tickLowerIndex,
+    tickUpperIndex,
+  } = param;
+
+  const sqrtPriceX64 = sqrtPrice;
+  const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
+  const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
+
+  let [tokenEstA, tokenEstB] = tokenMintA.equals(inputTokenMint)
+    ? [inputTokenAmount, undefined]
+    : [undefined, inputTokenAmount];
+
+  let liquidityAmount: BN;
+
+  if (tokenEstA) {
+    liquidityAmount = getLiquidityFromTokenA(tokenEstA, sqrtPriceX64, sqrtPriceUpperX64, false);
+    tokenEstA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceX64, sqrtPriceUpperX64, true);
+    tokenEstB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceX64, true);
+  } else if (tokenEstB) {
+    liquidityAmount = getLiquidityFromTokenB(tokenEstB, sqrtPriceLowerX64, sqrtPriceX64, false);
+    tokenEstA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceX64, sqrtPriceUpperX64, true);
+    tokenEstB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceX64, true);
+  } else {
+    throw new Error("invariant violation");
+  }
+
+  return {
+    tokenEstA,
+    tokenEstB,
+    liquidityAmount,
+  };
+}
+
+/*** Deprecated ***/
 
 /**
  * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
@@ -58,6 +294,7 @@ export type IncreaseLiquidityQuote = IncreaseLiquidityInput & { tokenEstA: BN; t
  * @param slippageTolerance - The maximum slippage allowed when calculating the minimum tokens received.
  * @param whirlpool - A Whirlpool helper class to help interact with the Whirlpool account.
  * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
+ * @deprecated Use increaseLiquidityQuoteByInputToken_PriceSlippage instead.
  */
 export function increaseLiquidityQuoteByInputToken(
   inputTokenMint: Address,
@@ -90,6 +327,7 @@ export function increaseLiquidityQuoteByInputToken(
  * @category Quotes
  * @param param IncreaseLiquidityQuoteParam
  * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
+ * @deprecated Use increaseLiquidityQuoteByInputTokenWithParams_PriceSlippage instead.
  */
 export function increaseLiquidityQuoteByInputTokenWithParams(
   param: IncreaseLiquidityQuoteParam
@@ -119,142 +357,49 @@ export function increaseLiquidityQuoteByInputTokenWithParams(
   }
 }
 
-/*** Private ***/
-
+/**
+ * @deprecated
+ */
 function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityQuote {
-  const {
-    tokenMintA,
-    inputTokenMint,
-    inputTokenAmount,
-    tickLowerIndex,
-    tickUpperIndex,
-    slippageTolerance,
-  } = param;
-
-  if (!tokenMintA.equals(inputTokenMint)) {
-    return {
-      tokenMaxA: ZERO,
-      tokenMaxB: ZERO,
-      tokenEstA: ZERO,
-      tokenEstB: ZERO,
-      liquidityAmount: ZERO,
-    };
-  }
-
-  const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
-  const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
-
-  const liquidityAmount = getLiquidityFromTokenA(
-    inputTokenAmount,
-    sqrtPriceLowerX64,
-    sqrtPriceUpperX64,
-    false
-  );
-
-  const tokenEstA = getTokenAFromLiquidity(
-    liquidityAmount,
-    sqrtPriceLowerX64,
-    sqrtPriceUpperX64,
-    true
-  );
-  const tokenMaxA = adjustForSlippage(tokenEstA, slippageTolerance, true);
+  const { slippageTolerance } = param;
+  const quote = getQuotePositionBelowRange(param);
 
   return {
-    tokenMaxA,
+    tokenMaxA: adjustForSlippage(quote.tokenEstA, slippageTolerance, true),
     tokenMaxB: ZERO,
-    tokenEstA,
-    tokenEstB: ZERO,
-    liquidityAmount,
+    ...quote,
   };
 }
 
+/**
+ * @deprecated
+ */
 function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityQuote {
-  const {
-    tokenMintA,
-    sqrtPrice,
-    inputTokenMint,
-    inputTokenAmount,
-    tickLowerIndex,
-    tickUpperIndex,
-    slippageTolerance,
-  } = param;
+  const { slippageTolerance } = param;
 
-  const sqrtPriceX64 = sqrtPrice;
-  const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
-  const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
+  const quote = getQuotePositionInRange(param);
 
-  let [tokenEstA, tokenEstB] = tokenMintA.equals(inputTokenMint)
-    ? [inputTokenAmount, undefined]
-    : [undefined, inputTokenAmount];
-
-  let liquidityAmount: BN;
-
-  if (tokenEstA) {
-    liquidityAmount = getLiquidityFromTokenA(tokenEstA, sqrtPriceX64, sqrtPriceUpperX64, false);
-    tokenEstA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceX64, sqrtPriceUpperX64, true);
-    tokenEstB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceX64, true);
-  } else if (tokenEstB) {
-    liquidityAmount = getLiquidityFromTokenB(tokenEstB, sqrtPriceLowerX64, sqrtPriceX64, false);
-    tokenEstA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceX64, sqrtPriceUpperX64, true);
-    tokenEstB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceX64, true);
-  } else {
-    throw new Error("invariant violation");
-  }
-
-  const tokenMaxA = adjustForSlippage(tokenEstA, slippageTolerance, true);
-  const tokenMaxB = adjustForSlippage(tokenEstB, slippageTolerance, true);
+  const tokenMaxA = adjustForSlippage(quote.tokenEstA, slippageTolerance, true);
+  const tokenMaxB = adjustForSlippage(quote.tokenEstB, slippageTolerance, true);
 
   return {
     tokenMaxA,
     tokenMaxB,
-    tokenEstA: tokenEstA!,
-    tokenEstB: tokenEstB!,
-    liquidityAmount,
+    ...quote,
   };
 }
 
+/**
+ * @deprecated
+ */
 function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityQuote {
-  const {
-    tokenMintB,
-    inputTokenMint,
-    inputTokenAmount,
-    tickLowerIndex,
-    tickUpperIndex,
-    slippageTolerance,
-  } = param;
-
-  if (!tokenMintB.equals(inputTokenMint)) {
-    return {
-      tokenMaxA: ZERO,
-      tokenMaxB: ZERO,
-      tokenEstA: ZERO,
-      tokenEstB: ZERO,
-      liquidityAmount: ZERO,
-    };
-  }
-
-  const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
-  const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
-  const liquidityAmount = getLiquidityFromTokenB(
-    inputTokenAmount,
-    sqrtPriceLowerX64,
-    sqrtPriceUpperX64,
-    false
-  );
-
-  const tokenEstB = getTokenBFromLiquidity(
-    liquidityAmount,
-    sqrtPriceLowerX64,
-    sqrtPriceUpperX64,
-    true
-  );
-  const tokenMaxB = adjustForSlippage(tokenEstB, slippageTolerance, true);
+  const { slippageTolerance } = param;
+  const quote = getQuotePositionAboveRange(param);
+  const tokenMaxB = adjustForSlippage(quote.tokenEstB, slippageTolerance, true);
 
   return {
     tokenMaxA: ZERO,
     tokenMaxB,
-    tokenEstA: ZERO,
-    tokenEstB,
-    liquidityAmount,
+    ...quote,
   };
 }

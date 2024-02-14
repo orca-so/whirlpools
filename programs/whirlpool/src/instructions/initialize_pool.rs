@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 
 #[derive(Accounts)]
+// now we don't use bumps, but we must list args in the same order to use tick_spacing arg.
 #[instruction(bumps: WhirlpoolBumps, tick_spacing: u16)]
 pub struct InitializePool<'info> {
     pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
@@ -62,7 +63,7 @@ pub fn handler(
     let default_fee_rate = ctx.accounts.fee_tier.default_fee_rate;
 
     // ignore the bump passed and use one Anchor derived
-    let bump = *ctx.bumps.get("whirlpool").unwrap();
+    let bump = ctx.bumps.whirlpool;
 
     Ok(whirlpool.initialize(
         whirlpools_config,

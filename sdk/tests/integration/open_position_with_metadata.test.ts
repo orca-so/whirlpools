@@ -301,9 +301,9 @@ describe("open_position_with_metadata", () => {
 
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
-        // AddressConstraint
-        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L84
-        /0x7dc/
+        // InvalidProgramId
+        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L180
+        /0xbc0/
       );
     });
 
@@ -316,9 +316,9 @@ describe("open_position_with_metadata", () => {
 
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
-        // AddressConstraint
-        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L84
-        /0x7dc/
+        // InvalidProgramId
+        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L180
+        /0xbc0/
       );
     });
 

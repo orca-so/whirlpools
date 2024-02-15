@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount};
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::state::Whirlpool;
 
@@ -15,18 +15,18 @@ pub struct InitializeRewardV2<'info> {
     #[account(mut)]
     pub whirlpool: Box<Account<'info, Whirlpool>>,
 
-    pub reward_mint: Box<Account<'info, Mint>>,
+    pub reward_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(
         init,
         payer = funder,
+        token::token_program = token_program,
         token::mint = reward_mint,
         token::authority = whirlpool
     )]
-    pub reward_vault: Box<Account<'info, TokenAccount>>,
+    pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(address = token::ID)]
-    pub token_program: Program<'info, Token>,
+    pub token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }

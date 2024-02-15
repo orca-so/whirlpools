@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::TokenAccount;
+use anchor_spl::token_interface::TokenAccount;
 
 use crate::errors::ErrorCode;
 use crate::manager::whirlpool_manager::next_whirlpool_reward_infos;
@@ -19,7 +19,7 @@ pub struct SetRewardEmissionsV2<'info> {
     pub reward_authority: Signer<'info>,
 
     #[account(address = whirlpool.reward_infos[reward_index as usize].vault)]
-    pub reward_vault: Account<'info, TokenAccount>,
+    pub reward_vault: InterfaceAccount<'info, TokenAccount>,
 }
 
 pub fn handler(

@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount};
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::memo::Memo;
 
 use crate::{
     errors::ErrorCode,
@@ -10,8 +11,12 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct TwoHopSwapV2<'info> {
-    #[account(address = token::ID)]
-    pub token_program: Program<'info, Token>,
+    pub token_program_one_a: Interface<'info, TokenInterface>,
+    pub token_program_one_b: Interface<'info, TokenInterface>,
+    pub token_program_two_a: Interface<'info, TokenInterface>,
+    pub token_program_two_b: Interface<'info, TokenInterface>,
+
+    pub memo_program: Program<'info, Memo>,
 
     pub token_authority: Signer<'info>,
 
@@ -21,25 +26,35 @@ pub struct TwoHopSwapV2<'info> {
     #[account(mut)]
     pub whirlpool_two: Box<Account<'info, Whirlpool>>,
 
+    #[account(address = whirlpool_one.token_mint_a)]
+    pub token_mint_one_a: InterfaceAccount<'info, Mint>,
+    #[account(address = whirlpool_one.token_mint_b)]
+    pub token_mint_one_b: InterfaceAccount<'info, Mint>,
+
     #[account(mut, constraint = token_owner_account_one_a.mint == whirlpool_one.token_mint_a)]
-    pub token_owner_account_one_a: Box<Account<'info, TokenAccount>>,
+    pub token_owner_account_one_a: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(mut, address = whirlpool_one.token_vault_a)]
-    pub token_vault_one_a: Box<Account<'info, TokenAccount>>,
+    pub token_vault_one_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut, constraint = token_owner_account_one_b.mint == whirlpool_one.token_mint_b)]
-    pub token_owner_account_one_b: Box<Account<'info, TokenAccount>>,
+    pub token_owner_account_one_b: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(mut, address = whirlpool_one.token_vault_b)]
-    pub token_vault_one_b: Box<Account<'info, TokenAccount>>,
+    pub token_vault_one_b: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(address = whirlpool_two.token_mint_a)]
+    pub token_mint_two_a: InterfaceAccount<'info, Mint>,
+    #[account(address = whirlpool_two.token_mint_b)]
+    pub token_mint_two_b: InterfaceAccount<'info, Mint>,
 
     #[account(mut, constraint = token_owner_account_two_a.mint == whirlpool_two.token_mint_a)]
-    pub token_owner_account_two_a: Box<Account<'info, TokenAccount>>,
+    pub token_owner_account_two_a: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(mut, address = whirlpool_two.token_vault_a)]
-    pub token_vault_two_a: Box<Account<'info, TokenAccount>>,
+    pub token_vault_two_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut, constraint = token_owner_account_two_b.mint == whirlpool_two.token_mint_b)]
-    pub token_owner_account_two_b: Box<Account<'info, TokenAccount>>,
+    pub token_owner_account_two_b: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(mut, address = whirlpool_two.token_vault_b)]
-    pub token_vault_two_b: Box<Account<'info, TokenAccount>>,
+    pub token_vault_two_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut, constraint = tick_array_one_0.load()?.whirlpool == whirlpool_one.key())]
     pub tick_array_one_0: AccountLoader<'info, TickArray>,
@@ -59,11 +74,11 @@ pub struct TwoHopSwapV2<'info> {
     #[account(mut, constraint = tick_array_two_2.load()?.whirlpool == whirlpool_two.key())]
     pub tick_array_two_2: AccountLoader<'info, TickArray>,
 
-    #[account(seeds = [b"oracle", whirlpool_one.key().as_ref()],bump)]
+    #[account(mut, seeds = [b"oracle", whirlpool_one.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_one: UncheckedAccount<'info>,
 
-    #[account(seeds = [b"oracle", whirlpool_two.key().as_ref()],bump)]
+    #[account(mut, seeds = [b"oracle", whirlpool_two.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_two: UncheckedAccount<'info>,
 }

@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount};
+use anchor_spl::token;
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::memo::Memo;
 
 use crate::{
     state::*,
@@ -19,18 +21,21 @@ pub struct CollectRewardV2<'info> {
         constraint = position_token_account.mint == position.position_mint,
         constraint = position_token_account.amount == 1
     )]
-    pub position_token_account: Box<Account<'info, TokenAccount>>,
+    pub position_token_account: Box<Account<'info, token::TokenAccount>>,
 
     #[account(mut,
         constraint = reward_owner_account.mint == whirlpool.reward_infos[reward_index as usize].mint
     )]
-    pub reward_owner_account: Box<Account<'info, TokenAccount>>,
+    pub reward_owner_account: Box<InterfaceAccount<'info, TokenAccount>>,
+
+    #[account(address = whirlpool.reward_infos[reward_index as usize].mint)]
+    pub reward_mint: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(mut, address = whirlpool.reward_infos[reward_index as usize].vault)]
-    pub reward_vault: Box<Account<'info, TokenAccount>>,
+    pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(address = token::ID)]
-    pub token_program: Program<'info, Token>,
+    pub token_program: Interface<'info, TokenInterface>,
+    pub memo_program: Program<'info, Memo>,
 }
 
 /// Collects all harvestable tokens for a specified reward.

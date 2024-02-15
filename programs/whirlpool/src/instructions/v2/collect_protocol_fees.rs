@@ -1,6 +1,7 @@
 use crate::{state::*, util::transfer_from_vault_to_owner};
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount};
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::memo::Memo;
 
 #[derive(Accounts)]
 pub struct CollectProtocolFeesV2<'info> {
@@ -12,20 +13,26 @@ pub struct CollectProtocolFeesV2<'info> {
     #[account(address = whirlpools_config.collect_protocol_fees_authority)]
     pub collect_protocol_fees_authority: Signer<'info>,
 
+    #[account(address = whirlpool.token_mint_a)]
+    pub token_mint_a: InterfaceAccount<'info, Mint>,
+    #[account(address = whirlpool.token_mint_b)]
+    pub token_mint_b: InterfaceAccount<'info, Mint>,
+
     #[account(mut, address = whirlpool.token_vault_a)]
-    pub token_vault_a: Account<'info, TokenAccount>,
+    pub token_vault_a: InterfaceAccount<'info, TokenAccount>,
 
     #[account(mut, address = whirlpool.token_vault_b)]
-    pub token_vault_b: Account<'info, TokenAccount>,
+    pub token_vault_b: InterfaceAccount<'info, TokenAccount>,
 
     #[account(mut, constraint = token_destination_a.mint == whirlpool.token_mint_a)]
-    pub token_destination_a: Account<'info, TokenAccount>,
+    pub token_destination_a: InterfaceAccount<'info, TokenAccount>,
 
     #[account(mut, constraint = token_destination_b.mint == whirlpool.token_mint_b)]
-    pub token_destination_b: Account<'info, TokenAccount>,
+    pub token_destination_b: InterfaceAccount<'info, TokenAccount>,
 
-    #[account(address = token::ID)]
-    pub token_program: Program<'info, Token>,
+    pub token_program_a: Interface<'info, TokenInterface>,
+    pub token_program_b: Interface<'info, TokenInterface>,
+    pub memo_program: Program<'info, Memo>,
 }
 
 pub fn handler(ctx: Context<CollectProtocolFeesV2>) -> Result<()> {

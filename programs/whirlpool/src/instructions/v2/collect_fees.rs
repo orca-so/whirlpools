@@ -1,5 +1,7 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Token, TokenAccount};
+use anchor_spl::token;
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::memo::Memo;
 
 use crate::{
     state::*,
@@ -18,20 +20,26 @@ pub struct CollectFeesV2<'info> {
         constraint = position_token_account.mint == position.position_mint,
         constraint = position_token_account.amount == 1
     )]
-    pub position_token_account: Box<Account<'info, TokenAccount>>,
+    pub position_token_account: Box<Account<'info, token::TokenAccount>>,
+
+    #[account(address = whirlpool.token_mint_a)]
+    pub token_mint_a: InterfaceAccount<'info, Mint>,
+    #[account(address = whirlpool.token_mint_b)]
+    pub token_mint_b: InterfaceAccount<'info, Mint>,
 
     #[account(mut, constraint = token_owner_account_a.mint == whirlpool.token_mint_a)]
-    pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
+    pub token_owner_account_a: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(mut, address = whirlpool.token_vault_a)]
-    pub token_vault_a: Box<Account<'info, TokenAccount>>,
+    pub token_vault_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut, constraint = token_owner_account_b.mint == whirlpool.token_mint_b)]
-    pub token_owner_account_b: Box<Account<'info, TokenAccount>>,
+    pub token_owner_account_b: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(mut, address = whirlpool.token_vault_b)]
-    pub token_vault_b: Box<Account<'info, TokenAccount>>,
+    pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(address = token::ID)]
-    pub token_program: Program<'info, Token>,
+    pub token_program_a: Interface<'info, TokenInterface>,
+    pub token_program_b: Interface<'info, TokenInterface>,
+    pub memo_program: Program<'info, Memo>,
 }
 
 pub fn handler(ctx: Context<CollectFeesV2>) -> Result<()> {

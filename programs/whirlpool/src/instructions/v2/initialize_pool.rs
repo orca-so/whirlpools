@@ -1,15 +1,14 @@
 use crate::state::*;
 use anchor_lang::prelude::*;
-use anchor_spl::token::{self, Mint, Token, TokenAccount};
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 #[derive(Accounts)]
-// now we don't use bumps, but we must list args in the same order to use tick_spacing arg.
-#[instruction(bumps: WhirlpoolBumps, tick_spacing: u16)]
+#[instruction(tick_spacing: u16)]
 pub struct InitializePoolV2<'info> {
     pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
 
-    pub token_mint_a: Account<'info, Mint>,
-    pub token_mint_b: Account<'info, Mint>,
+    pub token_mint_a: InterfaceAccount<'info, Mint>,
+    pub token_mint_b: InterfaceAccount<'info, Mint>,
 
     #[account(mut)]
     pub funder: Signer<'info>,
@@ -29,28 +28,29 @@ pub struct InitializePoolV2<'info> {
 
     #[account(init,
       payer = funder,
+      token::token_program = token_program_a,
       token::mint = token_mint_a,
       token::authority = whirlpool)]
-    pub token_vault_a: Box<Account<'info, TokenAccount>>,
+    pub token_vault_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(init,
       payer = funder,
+      token::token_program = token_program_b,
       token::mint = token_mint_b,
       token::authority = whirlpool)]
-    pub token_vault_b: Box<Account<'info, TokenAccount>>,
+    pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(has_one = whirlpools_config)]
     pub fee_tier: Account<'info, FeeTier>,
 
-    #[account(address = token::ID)]
-    pub token_program: Program<'info, Token>,
+    pub token_program_a: Interface<'info, TokenInterface>,
+    pub token_program_b: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }
 
 pub fn handler(
     ctx: Context<InitializePoolV2>,
-    _bumps: WhirlpoolBumps,
     tick_spacing: u16,
     initial_sqrt_price: u128,
 ) -> Result<()> {
@@ -64,6 +64,8 @@ pub fn handler(
 
     // ignore the bump passed and use one Anchor derived
     let bump = ctx.bumps.whirlpool;
+
+    // TODO(must): reject mint with harmful extensions
 
     Ok(whirlpool.initialize(
         whirlpools_config,

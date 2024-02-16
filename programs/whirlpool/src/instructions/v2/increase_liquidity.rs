@@ -9,7 +9,7 @@ use crate::manager::liquidity_manager::{
 };
 use crate::math::convert_to_liquidity_delta;
 use crate::state::*;
-use crate::util::{to_timestamp_u64, transfer_from_owner_to_vault, verify_position_authority};
+use crate::util::{to_timestamp_u64, v2::transfer_from_owner_to_vault_v2, verify_position_authority};
 
 #[derive(Accounts)]
 pub struct ModifyLiquidityV2<'info> {
@@ -102,19 +102,21 @@ pub fn handler(
         return Err(ErrorCode::TokenMaxExceeded.into());
     }
 
-    transfer_from_owner_to_vault(
+    transfer_from_owner_to_vault_v2(
         &ctx.accounts.position_authority,
+        &ctx.accounts.token_mint_a,
         &ctx.accounts.token_owner_account_a,
         &ctx.accounts.token_vault_a,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_a,
         delta_a,
     )?;
 
-    transfer_from_owner_to_vault(
+    transfer_from_owner_to_vault_v2(
         &ctx.accounts.position_authority,
+        &ctx.accounts.token_mint_b,
         &ctx.accounts.token_owner_account_b,
         &ctx.accounts.token_vault_b,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_b,
         delta_b,
     )?;
 

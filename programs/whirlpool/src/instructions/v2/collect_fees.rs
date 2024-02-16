@@ -4,8 +4,9 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
 use crate::{
+    constants::memo,
     state::*,
-    util::{transfer_from_vault_to_owner, verify_position_authority},
+    util::{v2::transfer_from_vault_to_owner_v2, verify_position_authority},
 };
 
 #[derive(Accounts)]
@@ -56,20 +57,26 @@ pub fn handler(ctx: Context<CollectFeesV2>) -> Result<()> {
 
     position.reset_fees_owed();
 
-    transfer_from_vault_to_owner(
+    transfer_from_vault_to_owner_v2(
         &ctx.accounts.whirlpool,
+        &ctx.accounts.token_mint_a,
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_owner_account_a,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_a,
+        &ctx.accounts.memo_program,
         fee_owed_a,
+        memo::TRANSFER_MEMO_COLLECT_FEES.as_bytes(),
     )?;
 
-    transfer_from_vault_to_owner(
+    transfer_from_vault_to_owner_v2(
         &ctx.accounts.whirlpool,
+        &ctx.accounts.token_mint_b,
         &ctx.accounts.token_vault_b,
         &ctx.accounts.token_owner_account_b,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_b,
+        &ctx.accounts.memo_program,
         fee_owed_b,
+        memo::TRANSFER_MEMO_COLLECT_FEES.as_bytes(),
     )?;
 
     Ok(())

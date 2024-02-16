@@ -5,7 +5,8 @@ use crate::manager::liquidity_manager::{
     calculate_liquidity_token_deltas, calculate_modify_liquidity, sync_modify_liquidity_values,
 };
 use crate::math::convert_to_liquidity_delta;
-use crate::util::{to_timestamp_u64, transfer_from_vault_to_owner, verify_position_authority};
+use crate::util::{to_timestamp_u64, v2::transfer_from_vault_to_owner_v2, verify_position_authority};
+use crate::constants::memo;
 
 use super::ModifyLiquidityV2;
 
@@ -62,20 +63,26 @@ pub fn handler(
         return Err(ErrorCode::TokenMinSubceeded.into());
     }
 
-    transfer_from_vault_to_owner(
+    transfer_from_vault_to_owner_v2(
         &ctx.accounts.whirlpool,
+        &ctx.accounts.token_mint_a,
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_owner_account_a,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_a,
+        &ctx.accounts.memo_program,
         delta_a,
+        memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
     )?;
 
-    transfer_from_vault_to_owner(
+    transfer_from_vault_to_owner_v2(
         &ctx.accounts.whirlpool,
+        &ctx.accounts.token_mint_b,
         &ctx.accounts.token_vault_b,
         &ctx.accounts.token_owner_account_b,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_b,
+        &ctx.accounts.memo_program,
         delta_b,
+        memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
     )?;
 
     Ok(())

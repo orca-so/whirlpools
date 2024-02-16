@@ -1,4 +1,4 @@
-use crate::{state::*, util::transfer_from_vault_to_owner};
+use crate::{constants::memo, state::*, util::v2::transfer_from_vault_to_owner_v2};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
@@ -38,20 +38,26 @@ pub struct CollectProtocolFeesV2<'info> {
 pub fn handler(ctx: Context<CollectProtocolFeesV2>) -> Result<()> {
     let whirlpool = &ctx.accounts.whirlpool;
 
-    transfer_from_vault_to_owner(
+    transfer_from_vault_to_owner_v2(
         whirlpool,
+        &ctx.accounts.token_mint_a,
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_destination_a,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_a,
+        &ctx.accounts.memo_program,
         whirlpool.protocol_fee_owed_a,
+        memo::TRANSFER_MEMO_COLLECT_PROTOCOL_FEES.as_bytes(),
     )?;
 
-    transfer_from_vault_to_owner(
+    transfer_from_vault_to_owner_v2(
         whirlpool,
+        &ctx.accounts.token_mint_b,
         &ctx.accounts.token_vault_b,
         &ctx.accounts.token_destination_b,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_b,
+        &ctx.accounts.memo_program,
         whirlpool.protocol_fee_owed_b,
+        memo::TRANSFER_MEMO_COLLECT_PROTOCOL_FEES.as_bytes(),
     )?;
 
     Ok(ctx.accounts.whirlpool.reset_protocol_fees_owed())

@@ -108,6 +108,7 @@ pub fn is_supported_token_mint<'info>(token_mint: &InterfaceAccount<'info, Mint>
             extension::ExtensionType::MetadataPointer => {}
             extension::ExtensionType::PermanentDelegate => {
                 // TODO(must): additional check
+                return Ok(false); // safe guard at the moment
             }
             // No possibility to support the following extensions
             extension::ExtensionType::DefaultAccountState => { return Ok(false); }

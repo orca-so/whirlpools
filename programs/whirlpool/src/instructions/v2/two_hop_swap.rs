@@ -6,7 +6,8 @@ use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
     state::{TickArray, Whirlpool},
-    util::{to_timestamp_u64, update_and_swap_whirlpool, SwapTickSequence},
+    util::{to_timestamp_u64, v2::update_and_swap_whirlpool_v2, SwapTickSequence},
+    constants::memo,
 };
 
 #[derive(Accounts)]
@@ -224,29 +225,39 @@ pub fn handler(
         }
     }
 
-    update_and_swap_whirlpool(
+    update_and_swap_whirlpool_v2(
         whirlpool_one,
         &ctx.accounts.token_authority,
+        &ctx.accounts.token_mint_one_a,
+        &ctx.accounts.token_mint_one_b,
         &ctx.accounts.token_owner_account_one_a,
         &ctx.accounts.token_owner_account_one_b,
         &ctx.accounts.token_vault_one_a,
         &ctx.accounts.token_vault_one_b,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_one_a,
+        &ctx.accounts.token_program_one_b,
+        &ctx.accounts.memo_program,
         swap_update_one,
         a_to_b_one,
         timestamp,
+        memo::TRANSFER_MEMO_SWAP.as_bytes(),
     )?;
 
-    update_and_swap_whirlpool(
+    update_and_swap_whirlpool_v2(
         whirlpool_two,
         &ctx.accounts.token_authority,
+        &ctx.accounts.token_mint_two_a,
+        &ctx.accounts.token_mint_two_b,
         &ctx.accounts.token_owner_account_two_a,
         &ctx.accounts.token_owner_account_two_b,
         &ctx.accounts.token_vault_two_a,
         &ctx.accounts.token_vault_two_b,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_two_a,
+        &ctx.accounts.token_program_two_b,
+        &ctx.accounts.memo_program,
         swap_update_two,
         a_to_b_two,
         timestamp,
+        memo::TRANSFER_MEMO_SWAP.as_bytes(),
     )
 }

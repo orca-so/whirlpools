@@ -6,7 +6,8 @@ use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
     state::{TickArray, Whirlpool},
-    util::{to_timestamp_u64, update_and_swap_whirlpool, SwapTickSequence},
+    util::{to_timestamp_u64, v2::update_and_swap_whirlpool_v2, SwapTickSequence},
+    constants::memo,
 };
 
 #[derive(Accounts)]
@@ -92,16 +93,21 @@ pub fn handler(
         }
     }
 
-    update_and_swap_whirlpool(
+    update_and_swap_whirlpool_v2(
         whirlpool,
         &ctx.accounts.token_authority,
+        &ctx.accounts.token_mint_a,
+        &ctx.accounts.token_mint_b,
         &ctx.accounts.token_owner_account_a,
         &ctx.accounts.token_owner_account_b,
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_vault_b,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_program_a,
+        &ctx.accounts.token_program_b,
+        &ctx.accounts.memo_program,
         swap_update,
         a_to_b,
         timestamp,
+        memo::TRANSFER_MEMO_SWAP.as_bytes(),
     )
 }

@@ -76,8 +76,9 @@ fn is_transfer_memo_required<'info>(token_account: &InterfaceAccount<'info, Toke
         return Ok(false);
     }
 
-    let token_account_data = StateWithExtensions::<spl_token_2022::state::Account>::unpack(&token_account_info.try_borrow_data()?)?;
-    let extension = token_account_data.get_extension::<extension::memo_transfer::MemoTransfer>();
+    let token_account_data = token_account_info.try_borrow_data()?;
+    let token_account_unpacked = StateWithExtensions::<spl_token_2022::state::Account>::unpack(&token_account_data)?;
+    let extension = token_account_unpacked.get_extension::<extension::memo_transfer::MemoTransfer>();
 
     if let Ok(memo_transfer) = extension {
         return Ok(memo_transfer.require_incoming_transfer_memos.into());

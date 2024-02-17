@@ -707,13 +707,11 @@ pub mod whirlpool {
     ///
     pub fn initialize_pool_v2(
         ctx: Context<InitializePoolV2>,
-        bumps: WhirlpoolBumps,
         tick_spacing: u16,
         initial_sqrt_price: u128,
     ) -> Result<()> {
         return instructions::v2::initialize_pool::handler(
             ctx,
-            bumps,
             tick_spacing,
             initial_sqrt_price,
         );

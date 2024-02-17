@@ -90,7 +90,10 @@ fn is_transfer_memo_required<'info>(token_account: &InterfaceAccount<'info, Toke
 pub fn is_supported_token_mint<'info>(token_mint: &InterfaceAccount<'info, Mint>) -> Result<bool> {
     let token_mint_info = token_mint.to_account_info();
 
-    // TODO(must): handle FreezeAuthority
+    if token_mint.freeze_authority.is_some() {
+        // TODO(must): handle FreezeAuthority
+        return Ok(false); // safe guard at the moment
+    }
 
     if *token_mint_info.owner == Token::id() {
         return Ok(true);

@@ -7,7 +7,7 @@ use crate::{
     manager::swap_manager::*,
     state::{TickArray, Whirlpool},
     util::{to_timestamp_u64, v2::update_and_swap_whirlpool_v2, SwapTickSequence},
-    constants::memo,
+    constants::transfer_memo,
 };
 
 #[derive(Accounts)]
@@ -240,7 +240,7 @@ pub fn handler(
         swap_update_one,
         a_to_b_one,
         timestamp,
-        memo::TRANSFER_MEMO_SWAP.as_bytes(),
+        transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
     )?;
 
     update_and_swap_whirlpool_v2(
@@ -258,6 +258,6 @@ pub fn handler(
         swap_update_two,
         a_to_b_two,
         timestamp,
-        memo::TRANSFER_MEMO_SWAP.as_bytes(),
+        transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
     )
 }

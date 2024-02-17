@@ -6,7 +6,7 @@ use crate::manager::liquidity_manager::{
 };
 use crate::math::convert_to_liquidity_delta;
 use crate::util::{to_timestamp_u64, v2::transfer_from_vault_to_owner_v2, verify_position_authority};
-use crate::constants::memo;
+use crate::constants::transfer_memo;
 
 use super::ModifyLiquidityV2;
 
@@ -71,7 +71,7 @@ pub fn handler(
         &ctx.accounts.token_program_a,
         &ctx.accounts.memo_program,
         delta_a,
-        memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
+        transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
     )?;
 
     transfer_from_vault_to_owner_v2(
@@ -82,7 +82,7 @@ pub fn handler(
         &ctx.accounts.token_program_b,
         &ctx.accounts.memo_program,
         delta_b,
-        memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
+        transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
     )?;
 
     Ok(())

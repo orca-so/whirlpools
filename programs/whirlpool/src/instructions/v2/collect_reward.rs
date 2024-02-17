@@ -4,7 +4,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
 use crate::{
-    constants::memo,
+    constants::transfer_memo,
     state::*,
     util::{v2::transfer_from_vault_to_owner_v2, verify_position_authority},
 };
@@ -76,7 +76,7 @@ pub fn handler(ctx: Context<CollectRewardV2>, reward_index: u8) -> Result<()> {
         &ctx.accounts.token_program,
         &ctx.accounts.memo_program,
         transfer_amount,
-        memo::TRANSFER_MEMO_COLLECT_REWARD.as_bytes(),
+        transfer_memo::TRANSFER_MEMO_COLLECT_REWARD.as_bytes(),
     )?)
 }
 

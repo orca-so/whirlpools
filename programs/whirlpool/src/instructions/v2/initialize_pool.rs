@@ -1,6 +1,11 @@
-use crate::state::*;
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+
+use crate::{
+  errors::ErrorCode,
+  state::*,
+  util::v2::is_supported_token_mint
+};
 
 #[derive(Accounts)]
 #[instruction(tick_spacing: u16)]
@@ -65,7 +70,13 @@ pub fn handler(
     // ignore the bump passed and use one Anchor derived
     let bump = ctx.bumps.whirlpool;
 
-    // TODO(must): reject mint with harmful extensions
+    // Don't allow creating a pool with unsupported token mints
+    if !is_supported_token_mint(&ctx.accounts.token_mint_a).unwrap() {
+      return Err(ErrorCode::UnsupportedTokenMint.into());
+    }
+    if !is_supported_token_mint(&ctx.accounts.token_mint_b).unwrap() {
+      return Err(ErrorCode::UnsupportedTokenMint.into());
+    }
 
     Ok(whirlpool.initialize(
         whirlpools_config,

@@ -86,3 +86,37 @@ fn is_transfer_memo_required<'info>(token_account: &InterfaceAccount<'info, Toke
         return Ok(false);
     }
 }
+
+pub fn is_supported_token_mint<'info>(token_mint: &InterfaceAccount<'info, Mint>) -> Result<bool> {
+    let token_mint_info = token_mint.to_account_info();
+
+    // TODO(must): handle FreezeAuthority
+
+    if *token_mint_info.owner == Token::id() {
+        return Ok(true);
+    }
+
+    let token_mint_data = token_mint_info.try_borrow_data()?;
+    let token_mint_unpacked = StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
+
+    let extensions = token_mint_unpacked.get_extension_types()?;
+    for extension in extensions {
+        match extension {
+            // supported
+            extension::ExtensionType::TransferFeeConfig => {}
+            extension::ExtensionType::TokenMetadata => {}
+            extension::ExtensionType::MetadataPointer => {}
+            extension::ExtensionType::PermanentDelegate => {
+                // TODO(must): additional check
+            }
+            // No possibility to support the following extensions
+            extension::ExtensionType::DefaultAccountState => { return Ok(false); }
+            extension::ExtensionType::MintCloseAuthority => { return Ok(false); }
+            extension::ExtensionType::NonTransferable => { return Ok(false); }
+            // mint has unknown or unsupported extensions
+            _ => { return Ok(false); }
+        }
+    }
+
+    return Ok(true);
+}

@@ -71,6 +71,13 @@ export const METADATA_PROGRAM_ADDRESS = new PublicKey(
 );
 
 /**
+ * @category Constants
+ */
+export const MEMO_PROGRAM_ADDRESS = new PublicKey(
+  "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+);
+
+/**
  * The maximum number of tick-arrays that can traversed across in a swap.
  * @category Constants
  */

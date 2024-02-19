@@ -519,4 +519,76 @@ export class WhirlpoolIx {
   ) {
     return ix.closeBundledPositionIx(program, params);
   }
+
+  // V2 instructions
+  // TODO: comments
+  public static collectFeesV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.CollectFeesV2Params
+  ) {
+    return ix.collectFeesV2Ix(program, params)
+  }
+
+  public static collectProtocolFeesV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.CollectProtocolFeesV2Params
+  ) {
+    return ix.collectProtocolFeesV2Ix(program, params)
+  }
+
+  public static collectRewardV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.CollectRewardV2Params
+  ) {
+    return ix.collectRewardV2Ix(program, params)
+  }
+
+  public static decreaseLiquidityV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.DecreaseLiquidityV2Params
+  ) {
+    return ix.decreaseLiquidityV2Ix(program, params)
+  }
+
+  public static increaseLiquidityV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.IncreaseLiquidityV2Params
+  ) {
+    return ix.increaseLiquidityV2Ix(program, params)
+  }
+  
+  public static initializePoolV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.InitPoolV2Params
+  ) {
+    return ix.initializePoolV2Ix(program, params)
+  }
+  
+  public static initializeRewardV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.InitializeRewardV2Params
+  ) {
+    return ix.initializeRewardV2Ix(program, params)
+  }
+  
+  public static setRewardEmissionsV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.SetRewardEmissionsV2Params
+  ) {
+    return ix.setRewardEmissionsV2Ix(program, params)
+  }
+  
+  public static swapV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.SwapV2Params
+  ) {
+    return ix.swapV2Ix(program, params)
+  }
+  
+  public static twoHopSwapV2Ix(
+    program: Program<Whirlpool>,
+    params: ix.TwoHopSwapV2Params
+  ) {
+    return ix.twoHopSwapV2Ix(program, params)
+  }
 }

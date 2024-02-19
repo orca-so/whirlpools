@@ -1843,6 +1843,968 @@
           "type": "u16"
         }
       ]
+    },
+    {
+      "name": "collectFeesV2",
+      "docs": [
+        "Collect fees accrued for this position.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position."
+      ],
+      "accounts": [
+        {
+          "name": "whirlpool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "position",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "memoProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "collectProtocolFeesV2",
+      "docs": [
+        "Collect the protocol fees accrued in this Whirlpool",
+        "",
+        "### Authority",
+        "- `collect_protocol_fees_authority` - assigned authority in the WhirlpoolConfig that can collect protocol fees"
+      ],
+      "accounts": [
+        {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whirlpool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "collectProtocolFeesAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenMintA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenDestinationA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenDestinationB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "memoProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "collectRewardV2",
+      "docs": [
+        "Collect rewards accrued for this position.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position."
+      ],
+      "accounts": [
+        {
+          "name": "whirlpool",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "position",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rewardOwnerAccount",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rewardVault",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "memoProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "decreaseLiquidityV2",
+      "docs": [
+        "Withdraw liquidity from a position in the Whirlpool. This call also updates the position's accrued fees and rewards.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position.",
+        "",
+        "### Parameters",
+        "- `liquidity_amount` - The total amount of Liquidity the user desires to withdraw.",
+        "- `token_min_a` - The minimum amount of tokenA the user is willing to withdraw.",
+        "- `token_min_b` - The minimum amount of tokenB the user is willing to withdraw.",
+        "",
+        "#### Special Errors",
+        "- `LiquidityZero` - Provided liquidity amount is zero.",
+        "- `LiquidityTooHigh` - Provided liquidity exceeds u128::max.",
+        "- `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount."
+      ],
+      "accounts": [
+        {
+          "name": "whirlpool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "memoProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "position",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArrayLower",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArrayUpper",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "liquidityAmount",
+          "type": "u128"
+        },
+        {
+          "name": "tokenMinA",
+          "type": "u64"
+        },
+        {
+          "name": "tokenMinB",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "increaseLiquidityV2",
+      "docs": [
+        "Add liquidity to a position in the Whirlpool. This call also updates the position's accrued fees and rewards.",
+        "",
+        "### Authority",
+        "- `position_authority` - authority that owns the token corresponding to this desired position.",
+        "",
+        "### Parameters",
+        "- `liquidity_amount` - The total amount of Liquidity the user is willing to deposit.",
+        "- `token_max_a` - The maximum amount of tokenA the user is willing to deposit.",
+        "- `token_max_b` - The maximum amount of tokenB the user is willing to deposit.",
+        "",
+        "#### Special Errors",
+        "- `LiquidityZero` - Provided liquidity amount is zero.",
+        "- `LiquidityTooHigh` - Provided liquidity exceeds u128::max.",
+        "- `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount."
+      ],
+      "accounts": [
+        {
+          "name": "whirlpool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "memoProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "positionAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "position",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "positionTokenAccount",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArrayLower",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArrayUpper",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "liquidityAmount",
+          "type": "u128"
+        },
+        {
+          "name": "tokenMaxA",
+          "type": "u64"
+        },
+        {
+          "name": "tokenMaxB",
+          "type": "u64"
+        }
+      ]
+    },
+    {
+      "name": "initializePoolV2",
+      "docs": [
+        "Initializes a Whirlpool account.",
+        "Fee rate is set to the default values on the config and supplied fee_tier.",
+        "",
+        "### Parameters",
+        "- `bumps` - The bump value when deriving the PDA of the Whirlpool address.",
+        "- `tick_spacing` - The desired tick spacing for this pool.",
+        "- `initial_sqrt_price` - The desired initial sqrt-price for this pool",
+        "",
+        "#### Special Errors",
+        "`InvalidTokenMintOrder` - The order of mints have to be ordered by",
+        "`SqrtPriceOutOfBounds` - provided initial_sqrt_price is not between 2^-64 to 2^64",
+        ""
+      ],
+      "accounts": [
+        {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "whirlpool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultA",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenVaultB",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "feeTier",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "tickSpacing",
+          "type": "u16"
+        },
+        {
+          "name": "initialSqrtPrice",
+          "type": "u128"
+        }
+      ]
+    },
+    {
+      "name": "initializeRewardV2",
+      "docs": [
+        "Initialize reward for a Whirlpool. A pool can only support up to a set number of rewards.",
+        "",
+        "### Authority",
+        "- \"reward_authority\" - assigned authority by the reward_super_authority for the specified",
+        "reward-index in this Whirlpool",
+        "",
+        "### Parameters",
+        "- `reward_index` - The reward index that we'd like to initialize. (0 <= index <= NUM_REWARDS)",
+        "",
+        "#### Special Errors",
+        "- `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized",
+        "index in this pool, or exceeds NUM_REWARDS, or",
+        "all reward slots for this pool has been initialized."
+      ],
+      "accounts": [
+        {
+          "name": "rewardAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "whirlpool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rewardVault",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "tokenProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rent",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u8"
+        }
+      ]
+    },
+    {
+      "name": "setRewardEmissionsV2",
+      "docs": [
+        "Set the reward emissions for a reward in a Whirlpool.",
+        "",
+        "### Authority",
+        "- \"reward_authority\" - assigned authority by the reward_super_authority for the specified",
+        "reward-index in this Whirlpool",
+        "",
+        "### Parameters",
+        "- `reward_index` - The reward index (0 <= index <= NUM_REWARDS) that we'd like to modify.",
+        "- `emissions_per_second_x64` - The amount of rewards emitted in this pool.",
+        "",
+        "#### Special Errors",
+        "- `RewardVaultAmountInsufficient` - The amount of rewards in the reward vault cannot emit",
+        "more than a day of desired emissions.",
+        "- `InvalidTimestamp` - Provided timestamp is not in order with the previous timestamp.",
+        "- `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized",
+        "index in this pool, or exceeds NUM_REWARDS, or",
+        "all reward slots for this pool has been initialized."
+      ],
+      "accounts": [
+        {
+          "name": "whirlpool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "rewardAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "rewardVault",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "rewardIndex",
+          "type": "u8"
+        },
+        {
+          "name": "emissionsPerSecondX64",
+          "type": "u128"
+        }
+      ]
+    },
+    {
+      "name": "swapV2",
+      "docs": [
+        "Perform a swap in this Whirlpool",
+        "",
+        "### Authority",
+        "- \"token_authority\" - The authority to withdraw tokens from the input token account.",
+        "",
+        "### Parameters",
+        "- `amount` - The amount of input or output token to swap from (depending on amount_specified_is_input).",
+        "- `other_amount_threshold` - The maximum/minimum of input/output token to swap into (depending on amount_specified_is_input).",
+        "- `sqrt_price_limit` - The maximum/minimum price the swap will swap to.",
+        "- `amount_specified_is_input` - Specifies the token the parameter `amount`represents. If true, the amount represents the input token of the swap.",
+        "- `a_to_b` - The direction of the swap. True if swapping from A to B. False if swapping from B to A.",
+        "",
+        "#### Special Errors",
+        "- `ZeroTradableAmount` - User provided parameter `amount` is 0.",
+        "- `InvalidSqrtPriceLimitDirection` - User provided parameter `sqrt_price_limit` does not match the direction of the trade.",
+        "- `SqrtPriceOutOfBounds` - User provided parameter `sqrt_price_limit` is over Whirlppool's max/min bounds for sqrt-price.",
+        "- `InvalidTickArraySequence` - User provided tick-arrays are not in sequential order required to proceed in this trade direction.",
+        "- `TickArraySequenceInvalidIndex` - The swap loop attempted to access an invalid array index during the query of the next initialized tick.",
+        "- `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.",
+        "- `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.",
+        "- `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0."
+      ],
+      "accounts": [
+        {
+          "name": "tokenProgramA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "memoProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "whirlpool",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArray0",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArray1",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArray2",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "oracle",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "otherAmountThreshold",
+          "type": "u64"
+        },
+        {
+          "name": "sqrtPriceLimit",
+          "type": "u128"
+        },
+        {
+          "name": "amountSpecifiedIsInput",
+          "type": "bool"
+        },
+        {
+          "name": "aToB",
+          "type": "bool"
+        }
+      ]
+    },
+    {
+      "name": "twoHopSwapV2",
+      "docs": [
+        "Perform a two-hop swap in this Whirlpool",
+        "",
+        "### Authority",
+        "- \"token_authority\" - The authority to withdraw tokens from the input token account.",
+        "",
+        "### Parameters",
+        "- `amount` - The amount of input or output token to swap from (depending on amount_specified_is_input).",
+        "- `other_amount_threshold` - The maximum/minimum of input/output token to swap into (depending on amount_specified_is_input).",
+        "- `amount_specified_is_input` - Specifies the token the parameter `amount`represents. If true, the amount represents the input token of the swap.",
+        "- `a_to_b_one` - The direction of the swap of hop one. True if swapping from A to B. False if swapping from B to A.",
+        "- `a_to_b_two` - The direction of the swap of hop two. True if swapping from A to B. False if swapping from B to A.",
+        "- `sqrt_price_limit_one` - The maximum/minimum price the swap will swap to in the first hop.",
+        "- `sqrt_price_limit_two` - The maximum/minimum price the swap will swap to in the second hop.",
+        "",
+        "#### Special Errors",
+        "- `ZeroTradableAmount` - User provided parameter `amount` is 0.",
+        "- `InvalidSqrtPriceLimitDirection` - User provided parameter `sqrt_price_limit` does not match the direction of the trade.",
+        "- `SqrtPriceOutOfBounds` - User provided parameter `sqrt_price_limit` is over Whirlppool's max/min bounds for sqrt-price.",
+        "- `InvalidTickArraySequence` - User provided tick-arrays are not in sequential order required to proceed in this trade direction.",
+        "- `TickArraySequenceInvalidIndex` - The swap loop attempted to access an invalid array index during the query of the next initialized tick.",
+        "- `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.",
+        "- `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.",
+        "- `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.",
+        "- `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.",
+        "- `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool."
+      ],
+      "accounts": [
+        {
+          "name": "tokenProgramOneA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramOneB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramTwoA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramTwoB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "memoProgram",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "whirlpoolOne",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "whirlpoolTwo",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintOneA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintOneB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountOneA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultOneA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountOneB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultOneB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintTwoA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenMintTwoB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountTwoA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultTwoA",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountTwoB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenVaultTwoB",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArrayOne0",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArrayOne1",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArrayOne2",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArrayTwo0",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArrayTwo1",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tickArrayTwo2",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "oracleOne",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "oracleTwo",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": [
+        {
+          "name": "amount",
+          "type": "u64"
+        },
+        {
+          "name": "otherAmountThreshold",
+          "type": "u64"
+        },
+        {
+          "name": "amountSpecifiedIsInput",
+          "type": "bool"
+        },
+        {
+          "name": "aToBOne",
+          "type": "bool"
+        },
+        {
+          "name": "aToBTwo",
+          "type": "bool"
+        },
+        {
+          "name": "sqrtPriceLimitOne",
+          "type": "u128"
+        },
+        {
+          "name": "sqrtPriceLimitTwo",
+          "type": "u128"
+        }
+      ]
     }
   ],
   "accounts": [
@@ -2520,6 +3482,11 @@
       "code": 6046,
       "name": "PositionBundleNotDeletable",
       "msg": "Unable to delete PositionBundle with open positions"
+    },
+    {
+      "code": 6047,
+      "name": "UnsupportedTokenMint",
+      "msg": "Token mint has unsupported attributes"
     }
   ]
 }

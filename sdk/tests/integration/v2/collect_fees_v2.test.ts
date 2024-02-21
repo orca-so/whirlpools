@@ -17,15 +17,17 @@ import {
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   approveToken,
-  createTokenAccount,
   getTokenBalance,
   TickSpacing,
   transferToken,
   ZERO_BN
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
-import { WhirlpoolTestFixture } from "../../utils/fixture";
-import { initTestPool } from "../../utils/init-utils";
+import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
+import { TokenTrait } from "../../utils/v2/init-utils-v2";
+import { createTokenAccountV2 } from "../../utils/v2/token-2022";
+import { createTokenAccount as createTokenAccountForPosition } from "../../utils/token";
+import { NATIVE_MINT } from "@solana/spl-token";
 
 describe("collect_fees_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -33,13 +35,23 @@ describe("collect_fees_v2", () => {
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
+  const tokenTraitVariations: {tokenTraitA: TokenTrait, tokenTraitB: TokenTrait}[] = [
+    {tokenTraitA: {isToken2022: false}, tokenTraitB: {isToken2022: false} },
+    {tokenTraitA: {isToken2022: true}, tokenTraitB: {isToken2022: false} },
+    {tokenTraitA: {isToken2022: false}, tokenTraitB: {isToken2022: true} },
+    {tokenTraitA: {isToken2022: true}, tokenTraitB: {isToken2022: true} },
+  ];
+  tokenTraitVariations.forEach((tokenTraits) => {
+    describe(`tokenTraitA: ${tokenTraits.tokenTraitA.isToken2022 ? "Token2022" : "Token"}, tokenTraitB: ${tokenTraits.tokenTraitB.isToken2022 ? "Token2022" : "Token"}`, () => {
+
   it("successfully collect fees", async () => {
     // In same tick array - start index 22528
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
 
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [
         { tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
@@ -53,6 +65,8 @@ describe("collect_fees_v2", () => {
         tokenVaultBKeypair,
         tokenMintA,
         tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
       },
       tokenAccountA,
       tokenAccountB,
@@ -69,7 +83,7 @@ describe("collect_fees_v2", () => {
     // Accrue fees in token A
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(4)),
@@ -77,6 +91,10 @@ describe("collect_fees_v2", () => {
         aToB: true,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -91,7 +109,7 @@ describe("collect_fees_v2", () => {
     // Accrue fees in token B
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         amount: new BN(200_000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: MathUtil.toX64(new Decimal(5)),
@@ -99,6 +117,10 @@ describe("collect_fees_v2", () => {
         aToB: false,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -127,8 +149,8 @@ describe("collect_fees_v2", () => {
     assert.ok(positionBeforeCollect.feeOwedA.eq(new BN(581)));
     assert.ok(positionBeforeCollect.feeOwedB.eq(new BN(581)));
 
-    const feeAccountA = await createTokenAccount(provider, tokenMintA, provider.wallet.publicKey);
-    const feeAccountB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);
+    const feeAccountA = await createTokenAccountV2(provider, tokenTraits.tokenTraitA, tokenMintA, provider.wallet.publicKey);
+    const feeAccountB = await createTokenAccountV2(provider, tokenTraits.tokenTraitB, tokenMintB, provider.wallet.publicKey);
 
     // Generate collect fees expectation
     const whirlpoolData = (await fetcher.getPool(whirlpoolPda.publicKey)) as WhirlpoolData;
@@ -145,11 +167,15 @@ describe("collect_fees_v2", () => {
     // Perform collect fees tx
     await toTx(
       ctx,
-      WhirlpoolIx.collectFeesIx(ctx.program, {
+      WhirlpoolIx.collectFeesV2Ix(ctx.program, {
         whirlpool: whirlpoolPda.publicKey,
         positionAuthority: provider.wallet.publicKey,
         position: positions[0].publicKey,
         positionTokenAccount: positions[0].tokenAccount,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
         tokenOwnerAccountA: feeAccountA,
         tokenOwnerAccountB: feeAccountB,
         tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -182,14 +208,23 @@ describe("collect_fees_v2", () => {
 
   it("successfully collect fees with approved delegate", async () => {
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [
         { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
       ],
     });
     const {
-      poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
+      poolInitInfo: {
+        whirlpoolPda,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+      },
       positions,
       tokenAccountA,
       tokenAccountB,
@@ -201,11 +236,15 @@ describe("collect_fees_v2", () => {
 
     await toTx(
       ctx,
-      WhirlpoolIx.collectFeesIx(ctx.program, {
+      WhirlpoolIx.collectFeesV2Ix(ctx.program, {
         whirlpool: whirlpoolPda.publicKey,
         positionAuthority: delegate.publicKey,
         position: position.publicKey,
         positionTokenAccount: position.tokenAccount,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenOwnerAccountB: tokenAccountB,
         tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -218,14 +257,23 @@ describe("collect_fees_v2", () => {
 
   it("successfully collect fees with owner even if there is approved delegate", async () => {
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [
         { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
       ],
     });
     const {
-      poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
+      poolInitInfo: {
+        whirlpoolPda,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+      },
       positions,
       tokenAccountA,
       tokenAccountB,
@@ -237,11 +285,15 @@ describe("collect_fees_v2", () => {
 
     await toTx(
       ctx,
-      WhirlpoolIx.collectFeesIx(ctx.program, {
+      WhirlpoolIx.collectFeesV2Ix(ctx.program, {
         whirlpool: whirlpoolPda.publicKey,
         positionAuthority: provider.wallet.publicKey,
         position: position.publicKey,
         positionTokenAccount: position.tokenAccount,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenOwnerAccountB: tokenAccountB,
         tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -252,14 +304,23 @@ describe("collect_fees_v2", () => {
 
   it("successfully collect fees with transferred position token", async () => {
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [
         { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
       ],
     });
     const {
-      poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
+      poolInitInfo: {
+        whirlpoolPda,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+      },
       positions,
       tokenAccountA,
       tokenAccountB,
@@ -267,7 +328,7 @@ describe("collect_fees_v2", () => {
     const position = positions[0];
 
     const newOwner = anchor.web3.Keypair.generate();
-    const newOwnerPositionTokenAccount = await createTokenAccount(
+    const newOwnerPositionTokenAccount = await createTokenAccountForPosition(
       provider,
       position.mintKeypair.publicKey,
       newOwner.publicKey
@@ -277,11 +338,15 @@ describe("collect_fees_v2", () => {
 
     await toTx(
       ctx,
-      WhirlpoolIx.collectFeesIx(ctx.program, {
+      WhirlpoolIx.collectFeesV2Ix(ctx.program, {
         whirlpool: whirlpoolPda.publicKey,
         positionAuthority: newOwner.publicKey,
         position: position.publicKey,
         positionTokenAccount: newOwnerPositionTokenAccount,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenOwnerAccountB: tokenAccountB,
         tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -297,29 +362,42 @@ describe("collect_fees_v2", () => {
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
-      poolInitInfo: { tokenVaultAKeypair, tokenVaultBKeypair },
+      poolInitInfo: {
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+      },
       tokenAccountA,
       tokenAccountB,
       positions,
     } = fixture.getInfos();
 
-    const {
-      poolInitInfo: { whirlpoolPda: whirlpoolPda2 },
-    } = await initTestPool(ctx, tickSpacing);
+   const anotherFixture = await new WhirlpoolTestFixtureV2(ctx).init({
+    ...tokenTraits,
+    tickSpacing,
+   });
 
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
-          whirlpool: whirlpoolPda2.publicKey,
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+          whirlpool: anotherFixture.getInfos().poolInitInfo.whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -335,18 +413,27 @@ describe("collect_fees_v2", () => {
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
-      poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
+      poolInitInfo: {
+        whirlpoolPda,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+      },
       tokenAccountA,
       tokenAccountB,
       positions,
     } = fixture.getInfos();
 
-    const positionTokenAccount2 = await createTokenAccount(
+    const positionTokenAccount2 = await createTokenAccountForPosition(
       provider,
       positions[0].mintKeypair.publicKey,
       provider.wallet.publicKey
@@ -355,11 +442,15 @@ describe("collect_fees_v2", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: positionTokenAccount2,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -374,11 +465,15 @@ describe("collect_fees_v2", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -394,12 +489,21 @@ describe("collect_fees_v2", () => {
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
-      poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
+      poolInitInfo: {
+        whirlpoolPda,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+      },
       tokenAccountA,
       tokenAccountB,
       positions,
@@ -410,11 +514,15 @@ describe("collect_fees_v2", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -432,12 +540,21 @@ describe("collect_fees_v2", () => {
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
-      poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
+      poolInitInfo: {
+        whirlpoolPda,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+      },
       tokenAccountA,
       tokenAccountB,
       positions,
@@ -449,11 +566,15 @@ describe("collect_fees_v2", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -471,12 +592,21 @@ describe("collect_fees_v2", () => {
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
-      poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
+      poolInitInfo: {
+        whirlpoolPda,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+      },
       tokenAccountA,
       tokenAccountB,
       positions,
@@ -488,11 +618,15 @@ describe("collect_fees_v2", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: delegate.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -508,31 +642,44 @@ describe("collect_fees_v2", () => {
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
     const {
-      poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair, tokenMintA },
+      poolInitInfo: {
+        whirlpoolPda,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        tokenMintA,
+        tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
+      },
       tokenAccountA,
       tokenAccountB,
       positions,
     } = fixture.getInfos();
 
-    const fakePositionTokenAccount = await createTokenAccount(
+    const fakePositionTokenAccount = await createTokenAccountForPosition(
       provider,
-      tokenMintA,
+      NATIVE_MINT,
       provider.wallet.publicKey
     );
 
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: fakePositionTokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -548,7 +695,8 @@ describe("collect_fees_v2", () => {
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
@@ -559,23 +707,29 @@ describe("collect_fees_v2", () => {
         tokenVaultBKeypair,
         tokenMintA,
         tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
       },
       tokenAccountA,
       tokenAccountB,
       positions,
     } = fixture.getInfos();
 
-    const fakeVaultA = await createTokenAccount(provider, tokenMintA, provider.wallet.publicKey);
-    const fakeVaultB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);
+    const fakeVaultA = await createTokenAccountV2(provider, tokenTraits.tokenTraitA, tokenMintA, provider.wallet.publicKey);
+    const fakeVaultB = await createTokenAccountV2(provider, tokenTraits.tokenTraitB, tokenMintB, provider.wallet.publicKey);
 
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: fakeVaultA,
@@ -588,11 +742,15 @@ describe("collect_fees_v2", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -608,7 +766,8 @@ describe("collect_fees_v2", () => {
     const tickLowerIndex = 29440;
     const tickUpperIndex = 33536;
     const tickSpacing = TickSpacing.Standard;
-    const fixture = await new WhirlpoolTestFixture(ctx).init({
+    const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+      ...tokenTraits,
       tickSpacing,
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
     });
@@ -619,19 +778,25 @@ describe("collect_fees_v2", () => {
         tokenVaultBKeypair,
         tokenMintA,
         tokenMintB,
+        tokenProgramA,
+        tokenProgramB,
       },
       tokenAccountA,
       tokenAccountB,
       positions,
     } = fixture.getInfos();
 
-    const invalidOwnerAccountA = await createTokenAccount(
+    const invalidOwnerAccountA = await createTokenAccountV2(
       provider,
+      // invalid token trait & mint
+      tokenTraits.tokenTraitB,
       tokenMintB,
       provider.wallet.publicKey
     );
-    const invalidOwnerAccountB = await createTokenAccount(
+    const invalidOwnerAccountB = await createTokenAccountV2(
       provider,
+      // invalid token trait & mint
+      tokenTraits.tokenTraitA,
       tokenMintA,
       provider.wallet.publicKey
     );
@@ -639,11 +804,15 @@ describe("collect_fees_v2", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: invalidOwnerAccountA,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -656,11 +825,15 @@ describe("collect_fees_v2", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: positions[0].publicKey,
           positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenOwnerAccountB: invalidOwnerAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
@@ -669,5 +842,9 @@ describe("collect_fees_v2", () => {
       ).buildAndExecute(),
       /0x7d3/ // ConstraintRaw
     );
+  });
+
+
+  });
   });
 });

@@ -129,13 +129,14 @@ export async function createAssociatedTokenAccountV2(
   owner: web3.PublicKey,
   payer: web3.PublicKey
 ) {
-  const ataAddress = getAssociatedTokenAddressSync(mint, owner);
+  const tokenProgram = tokenTrait.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID;
+  const ataAddress = getAssociatedTokenAddressSync(mint, owner, undefined, tokenProgram);
   const instr = createAssociatedTokenAccountInstruction(
     payer,
     ataAddress,
     owner,
     mint,
-    tokenTrait.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID,
+    tokenProgram,
   );
   const tx = new web3.Transaction();
   tx.add(instr);

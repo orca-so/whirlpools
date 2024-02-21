@@ -13,8 +13,8 @@ import {
   WhirlpoolContext,
   WhirlpoolData,
   WhirlpoolIx
-} from "../../src";
-import { IGNORE_CACHE } from "../../src/network/public/fetcher";
+} from "../../../src";
+import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   approveToken,
   createTokenAccount,
@@ -22,12 +22,12 @@ import {
   TickSpacing,
   transferToken,
   ZERO_BN
-} from "../utils";
-import { defaultConfirmOptions } from "../utils/const";
-import { WhirlpoolTestFixture } from "../utils/fixture";
-import { initTestPool } from "../utils/init-utils";
+} from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
+import { WhirlpoolTestFixture } from "../../utils/fixture";
+import { initTestPool } from "../../utils/init-utils";
 
-describe("collect_fees", () => {
+describe("collect_fees_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);

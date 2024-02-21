@@ -1,8 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { BN } from "bn.js";
 
 export const TEST_TOKEN_PROGRAM_ID = new anchor.web3.PublicKey(TOKEN_PROGRAM_ID.toString());
+export const TEST_TOKEN_2022_PROGRAM_ID = new anchor.web3.PublicKey(TOKEN_2022_PROGRAM_ID.toString());
 
 export const ZERO_BN = new anchor.BN(0);
 

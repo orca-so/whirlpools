@@ -33,6 +33,7 @@ interface RewardV2Param {
 interface InitializedRewardV2Info {
   rewardMint: PublicKey;
   rewardVaultKeypair: Keypair;
+  tokenProgram: PublicKey;
 }
 
 export class WhirlpoolTestFixtureV2 {

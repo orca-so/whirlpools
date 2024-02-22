@@ -12,13 +12,10 @@ import {
 import {
   InitConfigParams,
   InitPoolV2Params,
-  InitTickArrayParams,
-  InitializeRewardParams,
   InitializeRewardV2Params,
   OpenPositionParams,
   PDAUtil,
   PriceMath,
-  TICK_ARRAY_SIZE,
   TickUtil,
   WhirlpoolContext,
   WhirlpoolIx,
@@ -28,7 +25,6 @@ import { PoolUtil } from "../../../src/utils/public/pool-utils";
 import {
   TestWhirlpoolsConfigKeypairs,
   generateDefaultConfigParams,
-  generateDefaultInitTickArrayParams,
 } from "../test-builders";
 import {
   initFeeTier,
@@ -249,10 +245,12 @@ export async function initializeRewardV2(
   whirlpool: PublicKey,
   rewardIndex: number,
   funder?: Keypair
-): Promise<{ txId: string; params: InitializeRewardParams }> {
+): Promise<{ txId: string; params: InitializeRewardV2Params }> {
   const provider = ctx.provider;
   const rewardMint = await createMintV2(provider, tokenTrait);
   const rewardVaultKeypair = anchor.web3.Keypair.generate();
+
+  const tokenProgram = tokenTrait.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID;
 
   const params: InitializeRewardV2Params = {
     rewardAuthority: rewardAuthorityKeypair.publicKey,
@@ -261,7 +259,7 @@ export async function initializeRewardV2(
     rewardMint,
     rewardVaultKeypair,
     rewardIndex,
-    tokenProgram: tokenTrait.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID,
+    tokenProgram,
   };
 
   const tx = toTx(ctx, WhirlpoolIx.initializeRewardV2Ix(ctx.program, params)).addSigner(
@@ -288,7 +286,7 @@ export async function initRewardAndSetEmissionsV2(
   funder?: Keypair
 ) {
   const {
-    params: { rewardMint, rewardVaultKeypair },
+    params: { rewardMint, rewardVaultKeypair, tokenProgram },
   } = await initializeRewardV2(ctx, tokenTrait, rewardAuthorityKeypair, whirlpool, rewardIndex, funder);
 
   await mintToDestinationV2(ctx.provider, tokenTrait, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
@@ -305,7 +303,7 @@ export async function initRewardAndSetEmissionsV2(
   )
   .addSigner(rewardAuthorityKeypair)
   .buildAndExecute();
-  return { rewardMint, rewardVaultKeypair };
+  return { rewardMint, rewardVaultKeypair, tokenProgram };
 }
 
 

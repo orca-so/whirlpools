@@ -27,6 +27,7 @@ import { TokenTrait } from "./init-utils-v2";
 import { Keypair, TransactionInstruction } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { PoolUtil } from "../../../src";
+import * as assert from "assert";
 
 export async function createMintV2(
   provider: AnchorProvider,
@@ -364,4 +365,29 @@ export async function approveTokenV2(
     )
   );
   return provider.sendAndConfirm(tx, !!owner ? [owner] : [], { commitment: "confirmed" });
+}
+
+export async function asyncAssertTokenVaultV2(
+  provider: AnchorProvider,
+  account: web3.PublicKey,
+  expectedMint: web3.PublicKey,
+  expectedAccountOwner: web3.PublicKey,
+  expectedTokenProgram: web3.PublicKey,
+) {
+  const accountInfo = await provider.connection.getAccountInfo(account);
+  assert.ok(accountInfo);
+  assert.ok(accountInfo.owner.equals(expectedTokenProgram));
+  const parsedAccount = AccountLayout.decode(accountInfo.data);
+  assert.ok(parsedAccount.mint.equals(expectedMint));
+  assert.ok(parsedAccount.owner.equals(expectedAccountOwner));
+}
+
+export async function asyncAssertOwnerProgram(
+  provider: AnchorProvider,
+  account: web3.PublicKey,
+  programId: web3.PublicKey
+) {
+  const accountInfo = await provider.connection.getAccountInfo(account);
+  assert.ok(accountInfo);
+  assert.ok(accountInfo.owner.equals(programId));
 }

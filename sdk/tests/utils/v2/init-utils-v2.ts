@@ -238,6 +238,64 @@ export async function initTestPoolWithLiquidityV2(
   };
 }
 
+export async function initTestPoolV2(
+  ctx: WhirlpoolContext,
+  tokenTraitA: TokenTrait,
+  tokenTraitB: TokenTrait,
+  tickSpacing: number,
+  initSqrtPrice = DEFAULT_SQRT_PRICE,
+  funder?: Keypair,
+) {
+  const poolParams = await buildTestPoolV2Params(
+    ctx,
+    tokenTraitA,
+    tokenTraitB,
+    tickSpacing,
+    3000,
+    initSqrtPrice,
+    funder?.publicKey,
+  );
+
+  return initTestPoolFromParamsV2(ctx, poolParams, funder);
+}
+
+export async function buildTestPoolV2Params(
+  ctx: WhirlpoolContext,
+  tokenTraitA: TokenTrait,
+  tokenTraitB: TokenTrait,
+  tickSpacing: number,
+  defaultFeeRate = 3000,
+  initSqrtPrice = DEFAULT_SQRT_PRICE,
+  funder?: PublicKey,
+) {
+  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+  await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
+
+  const { params: feeTierParams } = await initFeeTier(
+    ctx,
+    configInitInfo,
+    configKeypairs.feeAuthorityKeypair,
+    tickSpacing,
+    defaultFeeRate
+  );
+  const poolInitInfo = await generateDefaultInitPoolV2Params(
+    ctx,
+    configInitInfo.whirlpoolsConfigKeypair.publicKey,
+    feeTierParams.feeTierPda.publicKey,
+    tokenTraitA,
+    tokenTraitB,
+    tickSpacing,
+    initSqrtPrice,
+    funder,
+  );
+  return {
+    configInitInfo,
+    configKeypairs,
+    poolInitInfo,
+    feeTierParams,
+  };
+}
+
 export async function initializeRewardV2(
   ctx: WhirlpoolContext,
   tokenTrait: TokenTrait,
@@ -306,7 +364,6 @@ export async function initRewardAndSetEmissionsV2(
   return { rewardMint, rewardVaultKeypair, tokenProgram };
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // private
 ////////////////////////////////////////////////////////////////////////////////
@@ -345,65 +402,6 @@ async function generateDefaultInitPoolV2Params(
     funder: funder || context.wallet.publicKey,
   };
 };
-
-
-async function initTestPoolV2(
-  ctx: WhirlpoolContext,
-  tokenTraitA: TokenTrait,
-  tokenTraitB: TokenTrait,
-  tickSpacing: number,
-  initSqrtPrice = DEFAULT_SQRT_PRICE,
-  funder?: Keypair,
-) {
-  const poolParams = await buildTestPoolV2Params(
-    ctx,
-    tokenTraitA,
-    tokenTraitB,
-    tickSpacing,
-    3000,
-    initSqrtPrice,
-    funder?.publicKey,
-  );
-
-  return initTestPoolFromParamsV2(ctx, poolParams, funder);
-}
-
-async function buildTestPoolV2Params(
-  ctx: WhirlpoolContext,
-  tokenTraitA: TokenTrait,
-  tokenTraitB: TokenTrait,
-  tickSpacing: number,
-  defaultFeeRate = 3000,
-  initSqrtPrice = DEFAULT_SQRT_PRICE,
-  funder?: PublicKey,
-) {
-  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-  await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
-
-  const { params: feeTierParams } = await initFeeTier(
-    ctx,
-    configInitInfo,
-    configKeypairs.feeAuthorityKeypair,
-    tickSpacing,
-    defaultFeeRate
-  );
-  const poolInitInfo = await generateDefaultInitPoolV2Params(
-    ctx,
-    configInitInfo.whirlpoolsConfigKeypair.publicKey,
-    feeTierParams.feeTierPda.publicKey,
-    tokenTraitA,
-    tokenTraitB,
-    tickSpacing,
-    initSqrtPrice,
-    funder,
-  );
-  return {
-    configInitInfo,
-    configKeypairs,
-    poolInitInfo,
-    feeTierParams,
-  };
-}
 
 async function initTestPoolFromParamsV2(
   ctx: WhirlpoolContext,

@@ -20,6 +20,7 @@ interface InitFixtureV2Params {
   tokenTraitB: TokenTrait;
   tickSpacing: number;
   initialSqrtPrice?: BN;
+  mintAmount?: BN;
   positions?: FundedPositionV2Params[];
   rewards?: RewardV2Param[];
 }
@@ -52,7 +53,7 @@ export class WhirlpoolTestFixtureV2 {
   }
 
   async init(params: InitFixtureV2Params): Promise<WhirlpoolTestFixtureV2> {
-    const { tickSpacing, initialSqrtPrice, positions, rewards, tokenTraitA, tokenTraitB } = params;
+    const { tickSpacing, initialSqrtPrice, positions, rewards, tokenTraitA, tokenTraitB, mintAmount } = params;
 
     const { poolInitInfo, configInitInfo, configKeypairs, tokenAccountA, tokenAccountB } =
       await initTestPoolWithTokensV2(
@@ -61,7 +62,7 @@ export class WhirlpoolTestFixtureV2 {
         tokenTraitB,
         tickSpacing,
         initialSqrtPrice,
-        undefined,
+        mintAmount,
       );
 
     this.poolInitInfo = poolInitInfo;

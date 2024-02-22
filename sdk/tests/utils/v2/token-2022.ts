@@ -341,3 +341,27 @@ export async function createInOrderMintsV2(provider: AnchorProvider, tokenTraitA
     return [NATIVE_MINT, NATIVE_MINT_2022];
   }
 };
+
+export async function approveTokenV2(
+  provider: AnchorProvider,
+  tokenTrait: TokenTrait,
+  tokenAccount: web3.PublicKey,
+  delegate: web3.PublicKey,
+  amount: number | BN,
+  owner?: web3.Keypair
+) {
+  const tx = new web3.Transaction();
+  const tokenProgram = tokenTrait.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID;
+  const amountVal = amount instanceof BN ? BigInt(amount.toString()) : amount;
+  tx.add(
+    createApproveInstruction(
+      tokenAccount,
+      delegate,
+      owner?.publicKey || provider.wallet.publicKey,
+      amountVal,
+      undefined,
+      tokenProgram,
+    )
+  );
+  return provider.sendAndConfirm(tx, !!owner ? [owner] : [], { commitment: "confirmed" });
+}

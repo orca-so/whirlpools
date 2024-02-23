@@ -200,7 +200,7 @@ describe("close_bundled_position", () => {
       tokenMintA: poolInitInfo.tokenMintA,
       tokenMintB: poolInitInfo.tokenMintB,
       sqrtPrice: pool.getData().sqrtPrice,
-      slippageTolerance: Percentage.fromFraction(0, 100),
+      slippage: Percentage.fromFraction(0, 100),
       tickLowerIndex,
       tickUpperIndex,
       tickCurrentIndex: pool.getData().tickCurrentIndex,

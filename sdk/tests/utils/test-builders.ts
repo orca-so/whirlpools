@@ -14,7 +14,7 @@ import {
   PoolUtil,
   PriceMath,
   Whirlpool,
-  increaseLiquidityQuoteByInputToken_PriceSlippage,
+  increaseLiquidityQuoteByInputTokenUsingPriceSlippage,
 } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
 
@@ -215,7 +215,7 @@ export async function initPosition(
     tokenBDecimal,
     tickSpacing
   );
-  const quote = await increaseLiquidityQuoteByInputToken_PriceSlippage(
+  const quote = await increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
     inputTokenMint,
     new Decimal(inputTokenAmount),
     lowerTick,

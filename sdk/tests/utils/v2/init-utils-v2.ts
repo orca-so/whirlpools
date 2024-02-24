@@ -16,6 +16,7 @@ import {
   OpenPositionParams,
   PDAUtil,
   PriceMath,
+  TICK_ARRAY_SIZE,
   TickUtil,
   WhirlpoolContext,
   WhirlpoolIx,
@@ -427,14 +428,20 @@ async function initTestPoolFromParamsV2(
 ////////////////////////////////////////////////////////////////////////////////
 // position related
 ////////////////////////////////////////////////////////////////////////////////
-/*
-export async function withdrawPositions(
+
+export async function withdrawPositionsV2(
   ctx: WhirlpoolContext,
-  positionInfos: FundedPositionInfo[],
+  tokenTraitA: TokenTrait,
+  tokenTraitB: TokenTrait,
+  positionInfos: FundedPositionV2Info[],
   tokenOwnerAccountA: PublicKey,
   tokenOwnerAccountB: PublicKey
 ) {
   const fetcher = ctx.fetcher;
+
+  const tokenProgramA = tokenTraitA.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID;
+  const tokenProgramB = tokenTraitB.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID;
+
   await Promise.all(
     positionInfos.map(async (info) => {
       const pool = await fetcher.getPool(info.initParams.whirlpool);
@@ -477,7 +484,7 @@ export async function withdrawPositions(
 
       await toTx(
         ctx,
-        WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+        WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
           liquidityAmount: position.liquidity,
           tokenMinA: tokenA,
           tokenMinB: tokenB,
@@ -485,6 +492,10 @@ export async function withdrawPositions(
           positionAuthority: ctx.provider.wallet.publicKey,
           position: info.initParams.positionPda.publicKey,
           positionTokenAccount: info.initParams.positionTokenAccount,
+          tokenMintA: pool.tokenMintA,
+          tokenMintB: pool.tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA,
           tokenOwnerAccountB,
           tokenVaultA: pool.tokenVaultA,
@@ -496,11 +507,15 @@ export async function withdrawPositions(
 
       await toTx(
         ctx,
-        WhirlpoolIx.collectFeesIx(ctx.program, {
+        WhirlpoolIx.collectFeesV2Ix(ctx.program, {
           whirlpool: info.initParams.whirlpool,
           positionAuthority: ctx.provider.wallet.publicKey,
           position: info.initParams.positionPda.publicKey,
           positionTokenAccount: info.initParams.positionTokenAccount,
+          tokenMintA: pool.tokenMintA,
+          tokenMintB: pool.tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
           tokenOwnerAccountA,
           tokenOwnerAccountB,
           tokenVaultA: pool.tokenVaultA,
@@ -510,7 +525,7 @@ export async function withdrawPositions(
     })
   );
 }
-*/
+
 
 
 export async function fundPositionsV2(

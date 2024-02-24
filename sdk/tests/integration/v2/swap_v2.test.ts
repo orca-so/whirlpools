@@ -10,42 +10,57 @@ import {
   PDAUtil,
   PriceMath,
   SwapParams,
+  SwapUtils,
+  SwapV2Params,
   TICK_ARRAY_SIZE,
   TickArrayData,
   TickUtil,
   WhirlpoolContext,
+  WhirlpoolData,
   WhirlpoolIx,
   buildWhirlpoolClient,
   swapQuoteByInputToken,
+  swapQuoteWithParams,
   toTx
-} from "../../src";
-import { IGNORE_CACHE } from "../../src/network/public/fetcher";
-import { MAX_U64, TickSpacing, ZERO_BN, getTokenBalance } from "../utils";
-import { defaultConfirmOptions } from "../utils/const";
+} from "../../../src";
+import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
+import { MAX_U64, TickSpacing, ZERO_BN, getTokenBalance } from "../../utils";
+import { defaultConfirmOptions } from "../../utils/const";
 import {
-  FundedPositionParams,
-  fundPositions,
-  initTestPool,
-  initTestPoolWithLiquidity,
-  initTestPoolWithTokens,
+  //FundedPositionParams,
+  //fundPositions,
+  //initTestPool,
+  //initTestPoolWithLiquidity,
+  //initTestPoolWithTokens,
   initTickArrayRange,
-  withdrawPositions
-} from "../utils/init-utils";
+  //withdrawPositions
+} from "../../utils/init-utils";
+import { FundedPositionV2Params, TokenTrait, fundPositionsV2, initTestPoolV2, initTestPoolWithLiquidityV2, initTestPoolWithTokensV2, withdrawPositionsV2 } from "../../utils/v2/init-utils-v2";
 
-describe("swap", () => {
+describe("swap_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
-
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
   const client = buildWhirlpoolClient(ctx);
 
+  const tokenTraitVariations: {tokenTraitA: TokenTrait, tokenTraitB: TokenTrait, tokenTraitR: TokenTrait}[] = [
+    {tokenTraitA: {isToken2022: false}, tokenTraitB: {isToken2022: false}, tokenTraitR: {isToken2022: false} },
+    {tokenTraitA: {isToken2022: true}, tokenTraitB: {isToken2022: false},  tokenTraitR: {isToken2022: false} },
+    {tokenTraitA: {isToken2022: false}, tokenTraitB: {isToken2022: true}, tokenTraitR: {isToken2022: true} },
+    {tokenTraitA: {isToken2022: true}, tokenTraitB: {isToken2022: true}, tokenTraitR: {isToken2022: true} },
+  ];
+  tokenTraitVariations.forEach((tokenTraits) => {
+    describe(`tokenTraitA: ${tokenTraits.tokenTraitA.isToken2022 ? "Token2022" : "Token"}, tokenTraitB: ${tokenTraits.tokenTraitB.isToken2022 ? "Token2022" : "Token"}, tokenTraitR: ${tokenTraits.tokenTraitR.isToken2022 ? "Token2022" : "Token"}`, () => {
+
   it("fail on token vault mint a does not match whirlpool token a", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
-    const { poolInitInfo: anotherPoolInitInfo } = await initTestPoolWithTokens(
+    const { poolInitInfo: anotherPoolInitInfo } = await initTestPoolWithTokensV2(
       ctx,
+      tokenTraits.tokenTraitA,
+      tokenTraits.tokenTraitB,
       TickSpacing.Stable
     );
 
@@ -63,7 +78,7 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
@@ -71,8 +86,12 @@ describe("swap", () => {
           aToB: true,
           whirlpool: whirlpoolPda.publicKey,
           tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
-          tokenVaultA: anotherPoolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenVaultA: anotherPoolInitInfo.tokenVaultAKeypair.publicKey, // invalid
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArray0: tickArrays[0].publicKey,
@@ -87,10 +106,12 @@ describe("swap", () => {
 
   it("fail on token vault mint b does not match whirlpool token b", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
-    const { poolInitInfo: anotherPoolInitInfo } = await initTestPoolWithTokens(
+    const { poolInitInfo: anotherPoolInitInfo } = await initTestPoolWithTokensV2(
       ctx,
+      tokenTraits.tokenTraitA,
+      tokenTraits.tokenTraitB,
       TickSpacing.Stable
     );
 
@@ -108,7 +129,7 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
@@ -116,10 +137,14 @@ describe("swap", () => {
           aToB: true,
           whirlpool: whirlpoolPda.publicKey,
           tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenOwnerAccountB: tokenAccountB,
-          tokenVaultB: anotherPoolInitInfo.tokenVaultBKeypair.publicKey,
+          tokenVaultB: anotherPoolInitInfo.tokenVaultBKeypair.publicKey, // invalid
           tickArray0: tickArrays[0].publicKey,
           tickArray1: tickArrays[0].publicKey,
           tickArray2: tickArrays[0].publicKey,
@@ -131,13 +156,17 @@ describe("swap", () => {
   });
 
   it("fail on token owner account a does not match vault a mint", async () => {
-    const { poolInitInfo, whirlpoolPda, tokenAccountB } = await initTestPoolWithTokens(
+    const { poolInitInfo, whirlpoolPda, tokenAccountB } = await initTestPoolWithTokensV2(
       ctx,
+      tokenTraits.tokenTraitA,
+      tokenTraits.tokenTraitB,
       TickSpacing.Standard
     );
 
-    const { tokenAccountA: anotherTokenAccountA } = await initTestPoolWithTokens(
+    const { tokenAccountA: anotherTokenAccountA } = await initTestPoolWithTokensV2(
       ctx,
+      tokenTraits.tokenTraitA,
+      tokenTraits.tokenTraitB,
       TickSpacing.Stable
     );
 
@@ -155,7 +184,7 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
@@ -163,7 +192,11 @@ describe("swap", () => {
           aToB: true,
           whirlpool: whirlpoolPda.publicKey,
           tokenAuthority: ctx.wallet.publicKey,
-          tokenOwnerAccountA: anotherTokenAccountA,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
+          tokenOwnerAccountA: anotherTokenAccountA, // invalid
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
@@ -178,13 +211,17 @@ describe("swap", () => {
   });
 
   it("fail on token owner account b does not match vault b mint", async () => {
-    const { poolInitInfo, whirlpoolPda, tokenAccountA } = await initTestPoolWithTokens(
+    const { poolInitInfo, whirlpoolPda, tokenAccountA } = await initTestPoolWithTokensV2(
       ctx,
+      tokenTraits.tokenTraitA,
+      tokenTraits.tokenTraitB,
       TickSpacing.Standard
     );
 
-    const { tokenAccountB: anotherTokenAccountB } = await initTestPoolWithTokens(
+    const { tokenAccountB: anotherTokenAccountB } = await initTestPoolWithTokensV2(
       ctx,
+      tokenTraits.tokenTraitA,
+      tokenTraits.tokenTraitB,
       TickSpacing.Stable
     );
 
@@ -202,7 +239,7 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
@@ -210,9 +247,13 @@ describe("swap", () => {
           aToB: true,
           whirlpool: whirlpoolPda.publicKey,
           tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
-          tokenOwnerAccountB: anotherTokenAccountB,
+          tokenOwnerAccountB: anotherTokenAccountB, // invalid
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArray0: tickArrays[0].publicKey,
           tickArray1: tickArrays[0].publicKey,
@@ -226,7 +267,7 @@ describe("swap", () => {
 
   it("fails to swap with incorrect token authority", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
     const tickArrays = await initTickArrayRange(
       ctx,
@@ -244,14 +285,18 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
           aToB: true,
           whirlpool: whirlpoolPda.publicKey,
-          tokenAuthority: otherTokenAuthority.publicKey,
+          tokenAuthority: otherTokenAuthority.publicKey, // invalid
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenOwnerAccountB: tokenAccountB,
@@ -270,8 +315,10 @@ describe("swap", () => {
 
   it("fails on passing in the wrong tick-array", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(
+      await initTestPoolWithTokensV2(
         ctx,
+        tokenTraits.tokenTraitA,
+        tokenTraits.tokenTraitB,
         TickSpacing.Standard,
         MathUtil.toX64(new Decimal(0.0242).sqrt())
       ); // Negative Tick
@@ -290,7 +337,7 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(-50000),
@@ -298,6 +345,10 @@ describe("swap", () => {
           aToB: true,
           whirlpool: whirlpoolPda.publicKey,
           tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenOwnerAccountB: tokenAccountB,
@@ -314,9 +365,9 @@ describe("swap", () => {
 
   it("fails on passing in the wrong whirlpool", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
-    const { poolInitInfo: anotherPoolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
+    const { poolInitInfo: anotherPoolInitInfo } = await initTestPoolV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
     const tickArrays = await initTickArrayRange(
       ctx,
@@ -332,14 +383,18 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
           aToB: true,
-          whirlpool: anotherPoolInitInfo.whirlpoolPda.publicKey,
+          whirlpool: anotherPoolInitInfo.whirlpoolPda.publicKey, // invalid
           tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenOwnerAccountB: tokenAccountB,
@@ -350,15 +405,15 @@ describe("swap", () => {
           oracle: oraclePda.publicKey,
         })
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7dc/ // ConstraintAddress at token_mint_a (V1: 0x7d3 (ConstraaintRaw) at token_owner_account_a)
     );
   });
 
   it("fails on passing in the tick-arrays from another whirlpool", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
-    const { poolInitInfo: anotherPoolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
+    const { poolInitInfo: anotherPoolInitInfo } = await initTestPoolV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
     const tickArrays = await initTickArrayRange(
       ctx,
@@ -374,31 +429,35 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
           amountSpecifiedIsInput: true,
           aToB: true,
-          whirlpool: anotherPoolInitInfo.whirlpoolPda.publicKey,
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
           tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
-          tickArray0: tickArrays[0].publicKey,
+          tickArray0: tickArrays[0].publicKey, // invalid
           tickArray1: tickArrays[0].publicKey,
           tickArray2: tickArrays[0].publicKey,
           oracle: oraclePda.publicKey,
         })
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d1/ // ConstraintHasOne
     );
   });
 
   it("fails on passing in an account of another type for the oracle", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
     const tickArrays = await initTickArrayRange(
       ctx,
@@ -412,7 +471,7 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
@@ -420,6 +479,10 @@ describe("swap", () => {
           aToB: true,
           whirlpool: poolInitInfo.whirlpoolPda.publicKey,
           tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenOwnerAccountB: tokenAccountB,
@@ -427,7 +490,7 @@ describe("swap", () => {
           tickArray0: tickArrays[0].publicKey,
           tickArray1: tickArrays[0].publicKey,
           tickArray2: tickArrays[0].publicKey,
-          oracle: tickArrays[0].publicKey,
+          oracle: tickArrays[0].publicKey, // invalid
         })
       ).buildAndExecute(),
       /0x7d6/ // ConstraintSeeds
@@ -436,9 +499,9 @@ describe("swap", () => {
 
   it("fails on passing in an incorrectly hashed oracle PDA", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
-    const { poolInitInfo: anotherPoolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
+    const { poolInitInfo: anotherPoolInitInfo } = await initTestPoolV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
     const tickArrays = await initTickArrayRange(
       ctx,
@@ -457,7 +520,7 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(10),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
@@ -465,6 +528,10 @@ describe("swap", () => {
           aToB: true,
           whirlpool: poolInitInfo.whirlpoolPda.publicKey,
           tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenOwnerAccountB: tokenAccountB,
@@ -472,7 +539,7 @@ describe("swap", () => {
           tickArray0: tickArrays[0].publicKey,
           tickArray1: tickArrays[0].publicKey,
           tickArray2: tickArrays[0].publicKey,
-          oracle: anotherOraclePda.publicKey,
+          oracle: anotherOraclePda.publicKey, // invalid
         })
       ).buildAndExecute(),
       /0x7d6/ // ConstraintSeeds
@@ -481,7 +548,7 @@ describe("swap", () => {
 
   it("fail on passing in zero tradable amount", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
     const tickArrays = await initTickArrayRange(
       ctx,
@@ -497,7 +564,7 @@ describe("swap", () => {
     await assert.rejects(
       toTx(
         ctx,
-        WhirlpoolIx.swapIx(ctx.program, {
+        WhirlpoolIx.swapV2Ix(ctx.program, {
           amount: new BN(0),
           otherAmountThreshold: ZERO_BN,
           sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
@@ -505,6 +572,10 @@ describe("swap", () => {
           aToB: true,
           whirlpool: whirlpoolPda.publicKey,
           tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
           tokenOwnerAccountA: tokenAccountA,
           tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
           tokenOwnerAccountB: tokenAccountB,
@@ -521,7 +592,7 @@ describe("swap", () => {
 
   it("swaps across one tick array", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
     const aToB = false;
     await initTickArrayRange(
       ctx,
@@ -532,7 +603,7 @@ describe("swap", () => {
       aToB
     );
 
-    const fundParams: FundedPositionParams[] = [
+    const fundParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 29440,
@@ -540,7 +611,7 @@ describe("swap", () => {
       },
     ];
 
-    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
 
     const tokenVaultABefore = new anchor.BN(
       await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey)
@@ -552,8 +623,8 @@ describe("swap", () => {
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
     const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-    const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-    const whirlpoolData = whirlpool.getData();
+    const whirlpoolData = await fetcher.getPool(whirlpoolKey, IGNORE_CACHE) as WhirlpoolData;
+    /* replaceed by swapQuoteWithParams to avoid using whirlpool client
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintB,
@@ -563,13 +634,35 @@ describe("swap", () => {
       fetcher,
       IGNORE_CACHE
     );
+    */
+    const quote = swapQuoteWithParams({
+      amountSpecifiedIsInput: true,
+      aToB: false,
+      tokenAmount: new BN(100000),
+      otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(false),
+      whirlpoolData,
+      tickArrays: await SwapUtils.getTickArrays(
+        whirlpoolData.tickCurrentIndex,
+        whirlpoolData.tickSpacing,
+        false,
+        ctx.program.programId,
+        whirlpoolKey,
+        fetcher,
+        IGNORE_CACHE
+      ),
+    }, Percentage.fromFraction(1, 100));
 
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         ...quote,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -598,7 +691,7 @@ describe("swap", () => {
     const additionalLiquidity = new anchor.BN(2_000_000);
 
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Stable, startSqrtPrice);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Stable, startSqrtPrice);
     await initTickArrayRange(
       ctx,
       whirlpoolPda.publicKey,
@@ -609,7 +702,7 @@ describe("swap", () => {
     );
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
-    const initialParams: FundedPositionParams[] = [
+    const initialParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: initialLiquidity,
         tickLowerIndex: startingTickArrayStartIndex + tickSpacing,
@@ -618,16 +711,15 @@ describe("swap", () => {
       },
     ];
 
-    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, initialParams);
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, initialParams);
 
     const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-    let whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-    let whirlpoolData = whirlpool.getData();
+    let whirlpoolData = await fetcher.getPool(whirlpoolKey, IGNORE_CACHE) as WhirlpoolData;
 
     // Position covers the current price, so liquidity should be equal to the initial funded position
     assert.ok(whirlpoolData.liquidity.eq(new anchor.BN(10_000_000)));
 
-    const nextParams: FundedPositionParams[] = [
+    const nextParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: additionalLiquidity,
         tickLowerIndex: startingTick - tickSpacing * 2,
@@ -635,16 +727,16 @@ describe("swap", () => {
       },
     ];
 
-    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, nextParams);
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, nextParams);
 
-    whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-    whirlpoolData = whirlpool.getData();
+    whirlpoolData = await fetcher.getPool(whirlpoolKey, IGNORE_CACHE) as WhirlpoolData;
     // Whirlpool.currentTick is 91720, so the newly funded position's upper tick is not
     // strictly less than 91720 so the liquidity is not added.
     assert.ok(whirlpoolData.liquidity.eq(initialLiquidity));
     assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
     assert.equal(whirlpoolData.tickCurrentIndex, startingTick);
 
+    /* replaced by swapQuoteWithParams to avoid using whirlpool client
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
@@ -654,13 +746,35 @@ describe("swap", () => {
       fetcher,
       IGNORE_CACHE
     );
+    */
+    const quote = swapQuoteWithParams({
+      amountSpecifiedIsInput: true,
+      aToB: true,
+      tokenAmount: new BN(1),
+      otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(true),
+      whirlpoolData,
+      tickArrays: await SwapUtils.getTickArrays(
+        whirlpoolData.tickCurrentIndex,
+        whirlpoolData.tickSpacing,
+        true,
+        ctx.program.programId,
+        whirlpoolKey,
+        fetcher,
+        IGNORE_CACHE
+      ),
+    }, Percentage.fromFraction(1, 100));
 
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         ...quote,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -669,8 +783,7 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-    whirlpoolData = whirlpool.getData();
+    whirlpoolData = await fetcher.getPool(whirlpoolKey, IGNORE_CACHE) as WhirlpoolData;
 
     // After the above swap, since the amount is so low, it is completely taken by fees
     // thus, the sqrt price will remain the same, the starting tick will decrement since it
@@ -680,6 +793,7 @@ describe("swap", () => {
     assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
     assert.ok(whirlpoolData.liquidity.eq(initialLiquidity.add(additionalLiquidity)));
 
+    /* replaced by swapQuoteWithParams to avoid using whirlpool client
     const quote2 = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
@@ -689,13 +803,35 @@ describe("swap", () => {
       fetcher,
       IGNORE_CACHE
     );
+    */
+    const quote2 = swapQuoteWithParams({
+      amountSpecifiedIsInput: true,
+      aToB: true,
+      tokenAmount: new BN(1),
+      otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(true),
+      whirlpoolData,
+      tickArrays: await SwapUtils.getTickArrays(
+        whirlpoolData.tickCurrentIndex,
+        whirlpoolData.tickSpacing,
+        true,
+        ctx.program.programId,
+        whirlpoolKey,
+        fetcher,
+        IGNORE_CACHE
+      ),
+    }, Percentage.fromFraction(1, 100));
 
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         ...quote2,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -704,8 +840,7 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-    whirlpoolData = whirlpool.getData();
+    whirlpoolData = await fetcher.getPool(whirlpoolKey, IGNORE_CACHE) as WhirlpoolData;
 
     // After the above swap, since the amount is so low, it is completely taken by fees
     // thus, the sqrt price will remaing the same, the starting tick will not decrement
@@ -725,7 +860,7 @@ describe("swap", () => {
     const additionalLiquidity = new anchor.BN(2_000_000);
 
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Stable, startSqrtPrice);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Stable, startSqrtPrice);
     await initTickArrayRange(
       ctx,
       whirlpoolPda.publicKey,
@@ -736,7 +871,7 @@ describe("swap", () => {
     );
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
-    const initialParams: FundedPositionParams[] = [
+    const initialParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: initialLiquidity,
         tickLowerIndex: startingTickArrayStartIndex + tickSpacing,
@@ -745,16 +880,15 @@ describe("swap", () => {
       },
     ];
 
-    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, initialParams);
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, initialParams);
 
     const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-    let whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-    let whirlpoolData = whirlpool.getData();
+    let whirlpoolData = await fetcher.getPool(whirlpoolKey, IGNORE_CACHE) as WhirlpoolData;
 
     // Position covers the current price, so liquidity should be equal to the initial funded position
     assert.ok(whirlpoolData.liquidity.eq(new anchor.BN(10_000_000)));
 
-    const nextParams: FundedPositionParams[] = [
+    const nextParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: additionalLiquidity,
         tickLowerIndex: startingTick - tickSpacing * 3,
@@ -762,16 +896,16 @@ describe("swap", () => {
       },
     ];
 
-    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, nextParams);
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, nextParams);
 
-    whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-    whirlpoolData = whirlpool.getData();
+    whirlpoolData = await fetcher.getPool(whirlpoolKey, IGNORE_CACHE) as WhirlpoolData;
     // Whirlpool.currentTick is 91720, so the newly funded position's upper tick is not
     // strictly less than 91720 so the liquidity is not added.
     assert.ok(whirlpoolData.liquidity.eq(initialLiquidity));
     assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
     assert.equal(whirlpoolData.tickCurrentIndex, startingTick);
 
+    /* replaced by swapQuoteWithParams to avoid using whirlpool client
     const quote = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
@@ -781,13 +915,35 @@ describe("swap", () => {
       fetcher,
       IGNORE_CACHE
     );
+    */
+    const quote = swapQuoteWithParams({
+      amountSpecifiedIsInput: true,
+      aToB: true,
+      tokenAmount: new BN(1),
+      otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(true),
+      whirlpoolData,
+      tickArrays: await SwapUtils.getTickArrays(
+        whirlpoolData.tickCurrentIndex,
+        whirlpoolData.tickSpacing,
+        true,
+        ctx.program.programId,
+        whirlpoolKey,
+        fetcher,
+        IGNORE_CACHE
+      ),
+    }, Percentage.fromFraction(1, 100));
 
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         ...quote,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -796,8 +952,7 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-    whirlpoolData = whirlpool.getData();
+    whirlpoolData = await fetcher.getPool(whirlpoolKey, IGNORE_CACHE) as WhirlpoolData;
 
     // After the above swap, since the amount is so low, it is completely taken by fees
     // thus, the sqrt price will remain the same, the starting tick will stay the same since it
@@ -806,6 +961,7 @@ describe("swap", () => {
     assert.ok(whirlpoolData.sqrtPrice.eq(startSqrtPrice));
     assert.ok(whirlpoolData.liquidity.eq(initialLiquidity));
 
+    /* replaced by swapQuoteWithParams to avoid using whirlpool client
     const quote2 = await swapQuoteByInputToken(
       whirlpool,
       whirlpoolData.tokenMintA,
@@ -815,13 +971,35 @@ describe("swap", () => {
       fetcher,
       IGNORE_CACHE
     );
+    */
+    const quote2 = swapQuoteWithParams({
+      amountSpecifiedIsInput: true,
+      aToB: true,
+      tokenAmount: new BN(43),
+      otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(true),
+      whirlpoolData,
+      tickArrays: await SwapUtils.getTickArrays(
+        whirlpoolData.tickCurrentIndex,
+        whirlpoolData.tickSpacing,
+        true,
+        ctx.program.programId,
+        whirlpoolKey,
+        fetcher,
+        IGNORE_CACHE
+      ),
+    }, Percentage.fromFraction(1, 100));
 
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         ...quote2,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -830,8 +1008,7 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
-    whirlpoolData = whirlpool.getData();
+    whirlpoolData = await fetcher.getPool(whirlpoolKey, IGNORE_CACHE) as WhirlpoolData;
 
     // After the above swap, there will be a small amount remaining that crosses
     // an initialized tick index, but isn't enough to move the sqrt price.
@@ -844,8 +1021,10 @@ describe("swap", () => {
 
   it("swaps across three tick arrays", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(
+      await initTestPoolWithTokensV2(
         ctx,
+        tokenTraits.tokenTraitA,
+        tokenTraits.tokenTraitB,
         TickSpacing.Stable,
         PriceMath.tickIndexToSqrtPriceX64(27500)
       );
@@ -860,7 +1039,7 @@ describe("swap", () => {
       false
     );
 
-    const fundParams: FundedPositionParams[] = [
+    const fundParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: new anchor.BN(100_000_000),
         tickLowerIndex: 27456,
@@ -878,7 +1057,7 @@ describe("swap", () => {
       },
     ];
 
-    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
 
     assert.equal(
       await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
@@ -894,7 +1073,7 @@ describe("swap", () => {
     // Tick
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         amount: new BN(7051000),
         otherAmountThreshold: ZERO_BN,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(28500),
@@ -902,6 +1081,10 @@ describe("swap", () => {
         aToB: aToB,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -927,14 +1110,14 @@ describe("swap", () => {
 
   it("Error on passing in uninitialized tick-array", async () => {
     const { poolInitInfo, tokenAccountA, tokenAccountB, tickArrays } =
-      await initTestPoolWithLiquidity(ctx);
+      await initTestPoolWithLiquidityV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB);
     const whirlpool = poolInitInfo.whirlpoolPda.publicKey;
 
     const uninitializedTickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpool, 0);
 
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, poolInitInfo.whirlpoolPda.publicKey);
 
-    const params: SwapParams = {
+    const params: SwapV2Params = {
       amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: MathUtil.toX64(new Decimal(4294886578)),
@@ -942,6 +1125,10 @@ describe("swap", () => {
       aToB: true,
       whirlpool: whirlpool,
       tokenAuthority: ctx.wallet.publicKey,
+      tokenMintA: poolInitInfo.tokenMintA,
+      tokenMintB: poolInitInfo.tokenMintB,
+      tokenProgramA: poolInitInfo.tokenProgramA,
+      tokenProgramB: poolInitInfo.tokenProgramB,
       tokenOwnerAccountA: tokenAccountA,
       tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
       tokenOwnerAccountB: tokenAccountB,
@@ -953,7 +1140,7 @@ describe("swap", () => {
     };
 
     try {
-      await toTx(ctx, WhirlpoolIx.swapIx(ctx.program, params)).buildAndExecute();
+      await toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params)).buildAndExecute();
       assert.fail("should fail if a tick-array is uninitialized");
     } catch (e) {
       const error = e as Error;
@@ -963,12 +1150,12 @@ describe("swap", () => {
 
   it("Error if sqrt_price_limit exceeds max", async () => {
     const { poolInitInfo, tokenAccountA, tokenAccountB, tickArrays } =
-      await initTestPoolWithLiquidity(ctx);
+      await initTestPoolWithLiquidityV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB);
     const whirlpool = poolInitInfo.whirlpoolPda.publicKey;
 
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, poolInitInfo.whirlpoolPda.publicKey);
 
-    const params: SwapParams = {
+    const params: SwapV2Params = {
       amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: new anchor.BN(MAX_SQRT_PRICE).add(new anchor.BN(1)),
@@ -976,6 +1163,10 @@ describe("swap", () => {
       aToB: true,
       whirlpool: whirlpool,
       tokenAuthority: ctx.wallet.publicKey,
+      tokenMintA: poolInitInfo.tokenMintA,
+      tokenMintB: poolInitInfo.tokenMintB,
+      tokenProgramA: poolInitInfo.tokenProgramA,
+      tokenProgramB: poolInitInfo.tokenProgramB,
       tokenOwnerAccountA: tokenAccountA,
       tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
       tokenOwnerAccountB: tokenAccountB,
@@ -987,7 +1178,7 @@ describe("swap", () => {
     };
 
     try {
-      await toTx(ctx, WhirlpoolIx.swapIx(ctx.program, params)).buildAndExecute();
+      await toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params)).buildAndExecute();
       assert.fail("should fail if sqrt_price exceeds maximum");
     } catch (e) {
       const error = e as Error;
@@ -997,12 +1188,12 @@ describe("swap", () => {
 
   it("Error if sqrt_price_limit subceed min", async () => {
     const { poolInitInfo, tokenAccountA, tokenAccountB, tickArrays } =
-      await initTestPoolWithLiquidity(ctx);
+      await initTestPoolWithLiquidityV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB);
     const whirlpool = poolInitInfo.whirlpoolPda.publicKey;
 
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, poolInitInfo.whirlpoolPda.publicKey);
 
-    const params: SwapParams = {
+    const params: SwapV2Params = {
       amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: new anchor.BN(MIN_SQRT_PRICE).sub(new anchor.BN(1)),
@@ -1010,6 +1201,10 @@ describe("swap", () => {
       aToB: true,
       whirlpool: whirlpool,
       tokenAuthority: ctx.wallet.publicKey,
+      tokenMintA: poolInitInfo.tokenMintA,
+      tokenMintB: poolInitInfo.tokenMintB,
+      tokenProgramA: poolInitInfo.tokenProgramA,
+      tokenProgramB: poolInitInfo.tokenProgramB,
       tokenOwnerAccountA: tokenAccountA,
       tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
       tokenOwnerAccountB: tokenAccountB,
@@ -1021,7 +1216,7 @@ describe("swap", () => {
     };
 
     try {
-      await toTx(ctx, WhirlpoolIx.swapIx(ctx.program, params)).buildAndExecute();
+      await toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params)).buildAndExecute();
       assert.fail("should fail if sqrt_price subceeds minimum");
     } catch (e) {
       const error = e as Error;
@@ -1031,7 +1226,7 @@ describe("swap", () => {
 
   it("Error if a to b swap below minimum output", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
     const tickArrays = await initTickArrayRange(
       ctx,
@@ -1042,7 +1237,7 @@ describe("swap", () => {
       false
     );
 
-    const fundParams: FundedPositionParams[] = [
+    const fundParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: new anchor.BN(100_000),
         tickLowerIndex: 29440,
@@ -1050,7 +1245,7 @@ describe("swap", () => {
       },
     ];
 
-    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
 
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
@@ -1062,6 +1257,10 @@ describe("swap", () => {
       aToB: true,
       whirlpool: whirlpoolPda.publicKey,
       tokenAuthority: ctx.wallet.publicKey,
+      tokenMintA: poolInitInfo.tokenMintA,
+      tokenMintB: poolInitInfo.tokenMintB,
+      tokenProgramA: poolInitInfo.tokenProgramA,
+      tokenProgramB: poolInitInfo.tokenProgramB,
       tokenOwnerAccountA: tokenAccountA,
       tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
       tokenOwnerAccountB: tokenAccountB,
@@ -1073,7 +1272,7 @@ describe("swap", () => {
     };
 
     try {
-      await toTx(ctx, WhirlpoolIx.swapIx(ctx.program, params)).buildAndExecute();
+      await toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params)).buildAndExecute();
       assert.fail("should fail if amount out is below threshold");
     } catch (e) {
       const error = e as Error;
@@ -1083,7 +1282,7 @@ describe("swap", () => {
 
   it("Error if b to a swap below minimum output", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
     const tickArrays = await initTickArrayRange(
       ctx,
@@ -1094,7 +1293,7 @@ describe("swap", () => {
       false
     );
 
-    const fundParams: FundedPositionParams[] = [
+    const fundParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: new anchor.BN(100_000),
         tickLowerIndex: 29440,
@@ -1102,11 +1301,11 @@ describe("swap", () => {
       },
     ];
 
-    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
 
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
-    const params = {
+    const params: SwapV2Params = {
       amount: new BN(10),
       otherAmountThreshold: MAX_U64,
       sqrtPriceLimit: new anchor.BN(MAX_SQRT_PRICE),
@@ -1114,6 +1313,10 @@ describe("swap", () => {
       aToB: false,
       whirlpool: whirlpoolPda.publicKey,
       tokenAuthority: ctx.wallet.publicKey,
+      tokenMintA: poolInitInfo.tokenMintA,
+      tokenMintB: poolInitInfo.tokenMintB,
+      tokenProgramA: poolInitInfo.tokenProgramA,
+      tokenProgramB: poolInitInfo.tokenProgramB,
       tokenOwnerAccountA: tokenAccountA,
       tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
       tokenOwnerAccountB: tokenAccountB,
@@ -1125,7 +1328,7 @@ describe("swap", () => {
     };
 
     try {
-      await toTx(ctx, WhirlpoolIx.swapIx(ctx.program, params)).buildAndExecute();
+      await toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params)).buildAndExecute();
       assert.fail("should fail if amount out is below threshold");
     } catch (e) {
       const error = e as Error;
@@ -1135,7 +1338,7 @@ describe("swap", () => {
 
   it("Error if a to b swap above maximum input", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
     const tickArrays = await initTickArrayRange(
       ctx,
@@ -1146,7 +1349,7 @@ describe("swap", () => {
       false
     );
 
-    const fundParams: FundedPositionParams[] = [
+    const fundParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: new anchor.BN(100_000),
         tickLowerIndex: 29440,
@@ -1154,11 +1357,11 @@ describe("swap", () => {
       },
     ];
 
-    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
 
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
-    const params = {
+    const params: SwapV2Params = {
       amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: new anchor.BN(MIN_SQRT_PRICE),
@@ -1166,6 +1369,10 @@ describe("swap", () => {
       aToB: true,
       whirlpool: whirlpoolPda.publicKey,
       tokenAuthority: ctx.wallet.publicKey,
+      tokenMintA: poolInitInfo.tokenMintA,
+      tokenMintB: poolInitInfo.tokenMintB,
+      tokenProgramA: poolInitInfo.tokenProgramA,
+      tokenProgramB: poolInitInfo.tokenProgramB,
       tokenOwnerAccountA: tokenAccountA,
       tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
       tokenOwnerAccountB: tokenAccountB,
@@ -1177,7 +1384,7 @@ describe("swap", () => {
     };
 
     try {
-      await toTx(ctx, WhirlpoolIx.swapIx(ctx.program, params)).buildAndExecute();
+      await toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params)).buildAndExecute();
       assert.fail("should fail if amount out is below threshold");
     } catch (e) {
       const error = e as Error;
@@ -1187,7 +1394,7 @@ describe("swap", () => {
 
   it("Error if b to a swap below maximum input", async () => {
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+      await initTestPoolWithTokensV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, TickSpacing.Standard);
 
     const tickArrays = await initTickArrayRange(
       ctx,
@@ -1198,7 +1405,7 @@ describe("swap", () => {
       false
     );
 
-    const fundParams: FundedPositionParams[] = [
+    const fundParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: new anchor.BN(100_000),
         tickLowerIndex: 29440,
@@ -1206,11 +1413,11 @@ describe("swap", () => {
       },
     ];
 
-    await fundPositions(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
 
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
 
-    const params = {
+    const params: SwapV2Params = {
       amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
       sqrtPriceLimit: new anchor.BN(MAX_SQRT_PRICE),
@@ -1218,6 +1425,10 @@ describe("swap", () => {
       aToB: false,
       whirlpool: whirlpoolPda.publicKey,
       tokenAuthority: ctx.wallet.publicKey,
+      tokenMintA: poolInitInfo.tokenMintA,
+      tokenMintB: poolInitInfo.tokenMintB,
+      tokenProgramA: poolInitInfo.tokenProgramA,
+      tokenProgramB: poolInitInfo.tokenProgramB,
       tokenOwnerAccountA: tokenAccountA,
       tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
       tokenOwnerAccountB: tokenAccountB,
@@ -1229,7 +1440,7 @@ describe("swap", () => {
     };
 
     try {
-      await toTx(ctx, WhirlpoolIx.swapIx(ctx.program, params)).buildAndExecute();
+      await toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, params)).buildAndExecute();
       assert.fail("should fail if amount out is below threshold");
     } catch (e) {
       const error = e as Error;
@@ -1245,8 +1456,10 @@ describe("swap", () => {
       whirlpoolPda,
       tokenAccountA,
       tokenAccountB,
-    } = await initTestPoolWithTokens(
+    } = await initTestPoolWithTokensV2(
       ctx,
+      tokenTraits.tokenTraitA,
+      tokenTraits.tokenTraitB,
       TickSpacing.Stable,
       PriceMath.tickIndexToSqrtPriceX64(27500)
     );
@@ -1267,7 +1480,7 @@ describe("swap", () => {
     // initialized ticks:
     //   27712, 27736, 27840, 28288, 28296, 28304, 28416, 28576, 28736, 29112, 29120, 29240, 29360
 
-    const fundParams: FundedPositionParams[] = [
+    const fundParams: FundedPositionV2Params[] = [
       {
         liquidityAmount: new anchor.BN(10_000_000),
         tickLowerIndex: 27712,
@@ -1310,7 +1523,7 @@ describe("swap", () => {
       },
     ];
 
-    const positionInfos = await fundPositions(
+    const positionInfos = await fundPositionsV2(
       ctx,
       poolInitInfo,
       tokenAccountA,
@@ -1318,8 +1531,8 @@ describe("swap", () => {
       fundParams
     );
 
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
     (
       await Promise.all(tickArrays.map((tickArray) => fetcher.getTickArray(tickArray.publicKey)))
@@ -1330,11 +1543,13 @@ describe("swap", () => {
           return;
         }
 
+        /*
         console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
         );
+        */
       });
     });
 
@@ -1343,7 +1558,7 @@ describe("swap", () => {
     // Tick
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         amount: new BN(829996),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(29240),
@@ -1351,6 +1566,10 @@ describe("swap", () => {
         aToB,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -1362,8 +1581,8 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
     (
       await Promise.all(tickArrays.map((tickArray) => fetcher.getTickArray(tickArray.publicKey)))
@@ -1374,17 +1593,19 @@ describe("swap", () => {
           return;
         }
 
+        /*
         console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
         );
+        */
       });
     });
 
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         amount: new BN(14538074),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(27712),
@@ -1392,6 +1613,10 @@ describe("swap", () => {
         aToB: true,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -1403,8 +1628,8 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
     (
       await Promise.all(tickArrays.map((tickArray) => fetcher.getTickArray(tickArray.publicKey)))
@@ -1415,17 +1640,19 @@ describe("swap", () => {
           return;
         }
 
+        /*
         console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
         );
+        */
       });
     });
 
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         amount: new BN(829996),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(29240),
@@ -1433,6 +1660,10 @@ describe("swap", () => {
         aToB,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -1444,8 +1675,8 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
     (
       await Promise.all(tickArrays.map((tickArray) => fetcher.getTickArray(tickArray.publicKey)))
@@ -1456,17 +1687,19 @@ describe("swap", () => {
           return;
         }
 
+        /*
         console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
         );
+        */
       });
     });
 
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         amount: new BN(14538074),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(27712),
@@ -1474,6 +1707,10 @@ describe("swap", () => {
         aToB: true,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -1485,8 +1722,8 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
     (
       await Promise.all(tickArrays.map((tickArray) => fetcher.getTickArray(tickArray.publicKey)))
@@ -1497,17 +1734,19 @@ describe("swap", () => {
           return;
         }
 
+        /*
         console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
         );
+        */
       });
     });
 
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         amount: new BN(829996),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(29240),
@@ -1515,6 +1754,10 @@ describe("swap", () => {
         aToB,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -1526,8 +1769,8 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
     (
       await Promise.all(tickArrays.map((tickArray) => fetcher.getTickArray(tickArray.publicKey)))
@@ -1538,17 +1781,19 @@ describe("swap", () => {
           return;
         }
 
+        /*
         console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
         );
+        */
       });
     });
 
     await toTx(
       ctx,
-      WhirlpoolIx.swapIx(ctx.program, {
+      WhirlpoolIx.swapV2Ix(ctx.program, {
         amount: new BN(14538074),
         otherAmountThreshold: MAX_U64,
         sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(27712),
@@ -1556,6 +1801,10 @@ describe("swap", () => {
         aToB: true,
         whirlpool: whirlpoolPda.publicKey,
         tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenOwnerAccountA: tokenAccountA,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenOwnerAccountB: tokenAccountB,
@@ -1567,8 +1816,8 @@ describe("swap", () => {
       })
     ).buildAndExecute();
 
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
     (
       await Promise.all(tickArrays.map((tickArray) => fetcher.getTickArray(tickArray.publicKey)))
@@ -1579,18 +1828,20 @@ describe("swap", () => {
           return;
         }
 
+        /*
         console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
         );
+        */
       });
     });
 
-    await withdrawPositions(ctx, positionInfos, tokenAccountA, tokenAccountB);
+    await withdrawPositionsV2(ctx, tokenTraits.tokenTraitA, tokenTraits.tokenTraitB, positionInfos, tokenAccountA, tokenAccountB);
 
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
     (
       await Promise.all(tickArrays.map((tickArray) => fetcher.getTickArray(tickArray.publicKey)))
@@ -1601,20 +1852,26 @@ describe("swap", () => {
           return;
         }
 
+        /*
         console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
         );
+        */
       });
     });
 
     await toTx(
       ctx,
-      WhirlpoolIx.collectProtocolFeesIx(ctx.program, {
+      WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
         whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
         whirlpool: poolInitInfo.whirlpoolPda.publicKey,
         collectProtocolFeesAuthority: configKeypairs.collectProtocolFeesAuthorityKeypair.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
         tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
         tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
         tokenOwnerAccountA: tokenAccountA,
@@ -1624,7 +1881,12 @@ describe("swap", () => {
       .addSigner(configKeypairs.collectProtocolFeesAuthorityKeypair)
       .buildAndExecute();
 
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-    console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+    //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+  });
+
+
+
+});
   });
 });

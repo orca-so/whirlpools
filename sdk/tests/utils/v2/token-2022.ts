@@ -32,12 +32,13 @@ import * as assert from "assert";
 export async function createMintV2(
   provider: AnchorProvider,
   tokenTrait: TokenTrait,
-  authority?: web3.PublicKey
+  authority?: web3.PublicKey,
+  mintKeypair?: web3.Keypair,
 ): Promise<web3.PublicKey> {
   if (authority === undefined) {
     authority = provider.wallet.publicKey;
   }
-  const mint = web3.Keypair.generate();
+  const mint = mintKeypair ?? web3.Keypair.generate();
   const instructions = await createMintInstructions(provider, tokenTrait, authority, mint.publicKey);
 
   const tx = new web3.Transaction();

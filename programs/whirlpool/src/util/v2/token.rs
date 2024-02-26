@@ -124,3 +124,51 @@ pub fn is_supported_token_mint<'info>(token_mint: &InterfaceAccount<'info, Mint>
 
     return Ok(true);
 }
+
+#[derive(Debug)]
+pub struct AmountWithTransferFee {
+    pub amount: u64,
+    pub transfer_fee: u64,
+}
+
+pub fn calculate_transfer_fee_excluded_amount<'info>(
+    token_mint: &InterfaceAccount<'info, Mint>,
+    transfer_fee_included_amount: u64,
+) -> Result<AmountWithTransferFee> {
+    let token_mint_info = token_mint.to_account_info();
+    if *token_mint_info.owner == Token::id() {
+        return Ok(AmountWithTransferFee { amount: transfer_fee_included_amount, transfer_fee: 0 });
+    }
+
+    let token_mint_data = token_mint_info.try_borrow_data()?;
+    let token_mint_unpacked = StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
+    if let Ok(transfer_fee_config) = token_mint_unpacked.get_extension::<extension::transfer_fee::TransferFeeConfig>() {
+        let epoch = Clock::get()?.epoch;
+        let transfer_fee = transfer_fee_config.calculate_epoch_fee(epoch, transfer_fee_included_amount).unwrap();
+        let transfer_fee_excluded_amount = transfer_fee_included_amount.checked_sub(transfer_fee).unwrap();
+        return Ok(AmountWithTransferFee { amount: transfer_fee_excluded_amount, transfer_fee });            
+    }
+    
+    Ok(AmountWithTransferFee { amount: transfer_fee_included_amount, transfer_fee: 0 })
+} 
+
+pub fn calculate_transfer_fee_included_amount<'info>(
+    token_mint: &InterfaceAccount<'info, Mint>,
+    transfer_fee_excluded_amount: u64,
+) -> Result<AmountWithTransferFee> {
+    let token_mint_info = token_mint.to_account_info();
+    if *token_mint_info.owner == Token::id() {
+        return Ok(AmountWithTransferFee { amount: transfer_fee_excluded_amount, transfer_fee: 0 });
+    }
+
+    let token_mint_data = token_mint_info.try_borrow_data()?;
+    let token_mint_unpacked = StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
+    if let Ok(transfer_fee_config) = token_mint_unpacked.get_extension::<extension::transfer_fee::TransferFeeConfig>() {
+        let epoch = Clock::get()?.epoch;
+        let transfer_fee = transfer_fee_config.calculate_inverse_epoch_fee(epoch, transfer_fee_excluded_amount).unwrap();
+        let transfer_fee_included_amount = transfer_fee_excluded_amount.checked_add(transfer_fee).unwrap();
+        return Ok(AmountWithTransferFee { amount: transfer_fee_included_amount, transfer_fee });
+    }
+
+    Ok(AmountWithTransferFee { amount: transfer_fee_excluded_amount, transfer_fee: 0 })
+}

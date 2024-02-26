@@ -5,6 +5,7 @@ use crate::manager::liquidity_manager::{
     calculate_liquidity_token_deltas, calculate_modify_liquidity, sync_modify_liquidity_values,
 };
 use crate::math::convert_to_liquidity_delta;
+use crate::util::calculate_transfer_fee_excluded_amount;
 use crate::util::{to_timestamp_u64, v2::transfer_from_vault_to_owner_v2, verify_position_authority};
 use crate::constants::transfer_memo;
 
@@ -57,9 +58,20 @@ pub fn handler(
         liquidity_delta,
     )?;
 
-    if delta_a < token_min_a {
+    let transfer_fee_excluded_delta_a = calculate_transfer_fee_excluded_amount(
+        &ctx.accounts.token_mint_a,
+        delta_a
+    )?;
+    let transfer_fee_excluded_delta_b = calculate_transfer_fee_excluded_amount(
+        &ctx.accounts.token_mint_b,
+        delta_b
+    )?;
+
+    // token_min_a and token_min_b should be applied to the transfer fee excluded amount
+    if transfer_fee_excluded_delta_a.amount < token_min_a {
         return Err(ErrorCode::TokenMinSubceeded.into());
-    } else if delta_b < token_min_b {
+    }
+    if transfer_fee_excluded_delta_b.amount < token_min_b {
         return Err(ErrorCode::TokenMinSubceeded.into());
     }
 

@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
+use crate::util::{calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount};
 use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
@@ -69,8 +70,10 @@ pub fn handler(
         ctx.accounts.tick_array_2.load_mut().ok(),
     );
 
-    let swap_update = swap(
+    let swap_update = swap_with_transfer_fee_extension(
         &whirlpool,
+        &ctx.accounts.token_mint_a,
+        &ctx.accounts.token_mint_b,
         &mut swap_tick_sequence,
         amount,
         sqrt_price_limit,
@@ -80,15 +83,27 @@ pub fn handler(
     )?;
 
     if amount_specified_is_input {
-        if (a_to_b && other_amount_threshold > swap_update.amount_b)
-            || (!a_to_b && other_amount_threshold > swap_update.amount_a)
-        {
+        let transfer_fee_excluded_output_amount = if a_to_b {
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_b,
+                swap_update.amount_b
+            )?.amount
+        } else {
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_a,
+                swap_update.amount_a
+            )?.amount
+        };
+        if transfer_fee_excluded_output_amount < other_amount_threshold {
             return Err(ErrorCode::AmountOutBelowMinimum.into());
         }
     } else {
-        if (a_to_b && other_amount_threshold < swap_update.amount_a)
-            || (!a_to_b && other_amount_threshold < swap_update.amount_b)
-        {
+        let transfer_fee_included_input_amount = if a_to_b {
+            swap_update.amount_a
+        } else {
+            swap_update.amount_b
+        };
+        if transfer_fee_included_input_amount > other_amount_threshold {
             return Err(ErrorCode::AmountInAboveMaximum.into());
         }
     }
@@ -110,4 +125,122 @@ pub fn handler(
         timestamp,
         transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
     )
+}
+
+pub fn swap_with_transfer_fee_extension<'info>(
+    whirlpool: &Whirlpool,
+    token_mint_a: &InterfaceAccount<'info, Mint>,
+    token_mint_b: &InterfaceAccount<'info, Mint>,
+    swap_tick_sequence: &mut SwapTickSequence,
+    amount: u64,
+    sqrt_price_limit: u128,
+    amount_specified_is_input: bool,
+    a_to_b: bool,
+    timestamp: u64,
+) -> Result<PostSwapUpdate> {
+    let (input_token_mint, output_token_mint) = if a_to_b {
+        (token_mint_a, token_mint_b)
+    } else {
+        (token_mint_b, token_mint_a)
+    };
+
+    // ExactIn
+    if amount_specified_is_input {
+        let transfer_fee_included_input = amount;
+        let transfer_fee_excluded_input = calculate_transfer_fee_excluded_amount(
+            input_token_mint,
+            transfer_fee_included_input
+        )?.amount;
+
+        let swap_update = swap(
+            whirlpool,
+            swap_tick_sequence,
+            transfer_fee_excluded_input,
+            sqrt_price_limit,
+            amount_specified_is_input,
+            a_to_b,
+            timestamp,
+        )?;
+
+        let (swap_update_amount_input, swap_update_amount_output) = if a_to_b {
+            (swap_update.amount_a, swap_update.amount_b)
+        } else {
+            (swap_update.amount_b, swap_update.amount_a)
+        };
+
+        let fullfilled = swap_update_amount_input == transfer_fee_excluded_input;
+
+        let adjusted_transfer_fee_included_input = if fullfilled {
+            transfer_fee_included_input
+        } else {
+            calculate_transfer_fee_included_amount(
+                input_token_mint,
+                swap_update_amount_input
+            )?.amount
+        };
+
+        let transfer_fee_included_output = swap_update_amount_output;
+
+        let (amount_a, amount_b) = if a_to_b {
+            (adjusted_transfer_fee_included_input, transfer_fee_included_output)
+        } else {
+            (transfer_fee_included_output, adjusted_transfer_fee_included_input)
+        };
+        return Ok(PostSwapUpdate {
+            amount_a, // updated (transfer fee included)
+            amount_b, // updated (transfer fee included)
+            next_liquidity: swap_update.next_liquidity,
+            next_tick_index: swap_update.next_tick_index,
+            next_sqrt_price: swap_update.next_sqrt_price,
+            next_fee_growth_global: swap_update.next_fee_growth_global,
+            next_reward_infos: swap_update.next_reward_infos,
+            next_protocol_fee: swap_update.next_protocol_fee,
+        });
+    }
+
+    // ExactOut
+    let transfer_fee_excluded_output = amount;
+    let transfer_fee_included_output = calculate_transfer_fee_included_amount(
+        output_token_mint,
+        transfer_fee_excluded_output
+    )?.amount;
+
+    let swap_update = swap(
+        whirlpool,
+        swap_tick_sequence,
+        transfer_fee_included_output,
+        sqrt_price_limit,
+        amount_specified_is_input,
+        a_to_b,
+        timestamp,
+    )?;
+
+    let (swap_update_amount_input, swap_update_amount_output) = if a_to_b {
+        (swap_update.amount_a, swap_update.amount_b)
+    } else {
+        (swap_update.amount_b, swap_update.amount_a)
+    };
+
+    let transfer_fee_included_input = calculate_transfer_fee_included_amount(
+        input_token_mint,
+        swap_update_amount_input
+    )?.amount;
+
+    let adjusted_transfer_fee_included_output = swap_update_amount_output;
+
+    let (amount_a, amount_b) = if a_to_b {
+        (transfer_fee_included_input, adjusted_transfer_fee_included_output)
+    } else {
+        (adjusted_transfer_fee_included_output, transfer_fee_included_input)
+    };
+    Ok(PostSwapUpdate {
+        amount_a, // updated (transfer fee included)
+        amount_b, // updated (transfer fee included)
+        next_liquidity: swap_update.next_liquidity,
+        next_tick_index: swap_update.next_tick_index,
+        next_sqrt_price: swap_update.next_sqrt_price,
+        next_fee_growth_global: swap_update.next_fee_growth_global,
+        next_reward_infos: swap_update.next_reward_infos,
+        next_protocol_fee: swap_update.next_protocol_fee,
+    })    
 }

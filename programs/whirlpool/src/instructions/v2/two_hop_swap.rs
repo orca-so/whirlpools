@@ -2,9 +2,10 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
+use crate::swap_with_transfer_fee_extension;
+use crate::util::{calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount};
 use crate::{
     errors::ErrorCode,
-    manager::swap_manager::*,
     state::{TickArray, Whirlpool},
     util::{to_timestamp_u64, v2::update_and_swap_whirlpool_v2, SwapTickSequence},
     constants::transfer_memo,
@@ -139,8 +140,10 @@ pub fn handler(
         // If the amount specified is input, this means we are doing exact-in
         // and the swap calculations occur from Swap 1 => Swap 2
         // and the swaps occur from Swap 1 => Swap 2
-        let swap_calc_one = swap(
+        let swap_calc_one = swap_with_transfer_fee_extension(
             &whirlpool_one,
+            &ctx.accounts.token_mint_one_a,
+            &ctx.accounts.token_mint_one_b,
             &mut swap_tick_sequence_one,
             amount,
             sqrt_price_limit_one,
@@ -151,13 +154,21 @@ pub fn handler(
 
         // Swap two input is the output of swap one
         let swap_two_input_amount = if a_to_b_one {
-            swap_calc_one.amount_b
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_one_b,
+                swap_calc_one.amount_b
+            )?.amount
         } else {
-            swap_calc_one.amount_a
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_one_a,
+                swap_calc_one.amount_a
+            )?.amount
         };
 
-        let swap_calc_two = swap(
+        let swap_calc_two = swap_with_transfer_fee_extension(
             &whirlpool_two,
+            &ctx.accounts.token_mint_two_a,
+            &ctx.accounts.token_mint_two_b,
             &mut swap_tick_sequence_two,
             swap_two_input_amount,
             sqrt_price_limit_two,
@@ -170,8 +181,10 @@ pub fn handler(
         // If the amount specified is output, this means we need to invert the ordering of the calculations
         // and the swap calculations occur from Swap 2 => Swap 1
         // but the actual swaps occur from Swap 1 => Swap 2 (to ensure that the intermediate token exists in the account)
-        let swap_calc_two = swap(
+        let swap_calc_two = swap_with_transfer_fee_extension(
             &whirlpool_two,
+            &ctx.accounts.token_mint_two_a,
+            &ctx.accounts.token_mint_two_b,
             &mut swap_tick_sequence_two,
             amount,
             sqrt_price_limit_two,
@@ -182,13 +195,21 @@ pub fn handler(
 
         // The output of swap 1 is input of swap_calc_two
         let swap_one_output_amount = if a_to_b_two {
-            swap_calc_two.amount_a
+            calculate_transfer_fee_included_amount(
+                &ctx.accounts.token_mint_two_a,
+                swap_calc_two.amount_a
+            )?.amount
         } else {
-            swap_calc_two.amount_b
+            calculate_transfer_fee_included_amount(
+                &ctx.accounts.token_mint_two_b,
+                swap_calc_two.amount_b
+            )?.amount
         };
 
-        let swap_calc_one = swap(
+        let swap_calc_one = swap_with_transfer_fee_extension(
             &whirlpool_one,
+            &ctx.accounts.token_mint_one_a,
+            &ctx.accounts.token_mint_one_b,
             &mut swap_tick_sequence_one,
             swap_one_output_amount,
             sqrt_price_limit_one,
@@ -203,9 +224,15 @@ pub fn handler(
         // If amount_specified_is_input == true, then we have a variable amount of output
         // The slippage we care about is the output of the second swap.
         let output_amount = if a_to_b_two {
-            swap_update_two.amount_b
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_two_b,
+                swap_update_two.amount_b
+            )?.amount
         } else {
-            swap_update_two.amount_a
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_two_a,
+                swap_update_two.amount_a
+            )?.amount
         };
 
         // If we have received less than the minimum out, throw an error

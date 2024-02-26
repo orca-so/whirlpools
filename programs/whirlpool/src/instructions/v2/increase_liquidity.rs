@@ -9,6 +9,7 @@ use crate::manager::liquidity_manager::{
 };
 use crate::math::convert_to_liquidity_delta;
 use crate::state::*;
+use crate::util::calculate_transfer_fee_included_amount;
 use crate::util::{to_timestamp_u64, v2::transfer_from_owner_to_vault_v2, verify_position_authority};
 
 #[derive(Accounts)]
@@ -96,9 +97,20 @@ pub fn handler(
         liquidity_delta,
     )?;
 
-    if delta_a > token_max_a {
+    let transfer_fee_included_delta_a = calculate_transfer_fee_included_amount(
+        &ctx.accounts.token_mint_a,
+        delta_a
+    )?;
+    let transfer_fee_included_delta_b = calculate_transfer_fee_included_amount(
+        &ctx.accounts.token_mint_b,
+        delta_b
+    )?;
+
+    // token_max_a and token_max_b should be applied to the transfer fee included amount
+    if transfer_fee_included_delta_a.amount > token_max_a {
         return Err(ErrorCode::TokenMaxExceeded.into());
-    } else if delta_b > token_max_b {
+    }
+    if transfer_fee_included_delta_b.amount > token_max_b {
         return Err(ErrorCode::TokenMaxExceeded.into());
     }
 

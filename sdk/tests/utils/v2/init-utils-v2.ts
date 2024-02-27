@@ -300,6 +300,7 @@ export async function buildTestPoolV2Params(
 export async function initializeRewardV2(
   ctx: WhirlpoolContext,
   tokenTrait: TokenTrait,
+  whirlpoolsConfig: PublicKey,
   rewardAuthorityKeypair: anchor.web3.Keypair,
   whirlpool: PublicKey,
   rewardIndex: number,
@@ -309,6 +310,12 @@ export async function initializeRewardV2(
   const rewardMint = await createMintV2(provider, tokenTrait);
   const rewardVaultKeypair = anchor.web3.Keypair.generate();
 
+  const rewartTokenBadgePda = PDAUtil.getTokenBadge(
+    ctx.program.programId,
+    whirlpoolsConfig,
+    rewardMint
+  );
+
   const tokenProgram = tokenTrait.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID;
 
   const params: InitializeRewardV2Params = {
@@ -316,6 +323,7 @@ export async function initializeRewardV2(
     funder: funder?.publicKey || ctx.wallet.publicKey,
     whirlpool,
     rewardMint,
+    rewardTokenBadge: rewartTokenBadgePda.publicKey,
     rewardVaultKeypair,
     rewardIndex,
     tokenProgram,
@@ -338,6 +346,7 @@ export async function initRewardAndSetEmissionsV2(
   ctx: WhirlpoolContext,
   tokenTrait: TokenTrait,
   rewardAuthorityKeypair: anchor.web3.Keypair,
+  whirlpoolsConfig: PublicKey,
   whirlpool: PublicKey,
   rewardIndex: number,
   vaultAmount: BN | number,
@@ -346,7 +355,7 @@ export async function initRewardAndSetEmissionsV2(
 ) {
   const {
     params: { rewardMint, rewardVaultKeypair, tokenProgram },
-  } = await initializeRewardV2(ctx, tokenTrait, rewardAuthorityKeypair, whirlpool, rewardIndex, funder);
+  } = await initializeRewardV2(ctx, tokenTrait, whirlpoolsConfig, rewardAuthorityKeypair, whirlpool, rewardIndex, funder);
 
   await mintToDestinationV2(ctx.provider, tokenTrait, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
 
@@ -388,11 +397,16 @@ async function generateDefaultInitPoolV2Params(
     tickSpacing
   );
 
+  const tokenBadgeAPda = PDAUtil.getTokenBadge(context.program.programId, configKey, tokenAMintPubKey);
+  const tokenBadgeBPda = PDAUtil.getTokenBadge(context.program.programId, configKey, tokenBMintPubKey);
+
   return {
     initSqrtPrice,
     whirlpoolsConfig: configKey,
     tokenMintA: tokenAMintPubKey,
     tokenMintB: tokenBMintPubKey,
+    tokenBadgeA: tokenBadgeAPda.publicKey,
+    tokenBadgeB: tokenBadgeBPda.publicKey,
     tokenProgramA: tokenTraitA.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID,
     tokenProgramB: tokenTraitB.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID,
     whirlpoolPda,

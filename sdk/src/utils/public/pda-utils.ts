@@ -13,6 +13,8 @@ const PDA_FEE_TIER_SEED = "fee_tier";
 const PDA_ORACLE_SEED = "oracle";
 const PDA_POSITION_BUNDLE_SEED = "position_bundle";
 const PDA_BUNDLED_POSITION_SEED = "bundled_position";
+const PDA_CONFIG_EXTENSION_SEED = "config_extension";
+const PDA_TOKEN_BADGE_SEED = "token_badge";
 
 /**
  * @category Whirlpool Utils
@@ -219,6 +221,41 @@ export class PDAUtil {
         positionBundleMintKey.toBuffer(),
       ],
       METADATA_PROGRAM_ADDRESS
+    );
+  }
+
+  /**
+   * @category Program Derived Addresses
+   * @param programId
+   * @param whirlpoolsConfigAddress
+   * @returns
+   */
+  public static getConfigExtension(programId: PublicKey, whirlpoolsConfigAddress: PublicKey) {
+    return AddressUtil.findProgramAddress(
+      [Buffer.from(PDA_CONFIG_EXTENSION_SEED), whirlpoolsConfigAddress.toBuffer()],
+      programId
+    );
+  }
+
+  /**
+   * @category Program Derived Addresses
+   * @param programId
+   * @param whirlpoolsConfigAddress
+   * @param tokenMintKey
+   * @returns
+   */
+  public static getTokenBadge(
+    programId: PublicKey,
+    whirlpoolsConfigAddress: PublicKey,
+    tokenMintKey: PublicKey
+  ) {
+    return AddressUtil.findProgramAddress(
+      [
+        Buffer.from(PDA_TOKEN_BADGE_SEED),
+        whirlpoolsConfigAddress.toBuffer(),
+        tokenMintKey.toBuffer(),
+      ],
+      programId
     );
   }
 }

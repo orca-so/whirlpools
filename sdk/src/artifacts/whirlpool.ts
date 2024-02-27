@@ -2308,6 +2308,16 @@ export type Whirlpool = {
           "isSigner": false
         },
         {
+          "name": "tokenBadgeA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenBadgeB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "funder",
           "isMut": true,
           "isSigner": true
@@ -2399,6 +2409,11 @@ export type Whirlpool = {
         },
         {
           "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rewardTokenBadge",
           "isMut": false,
           "isSigner": false
         },
@@ -2805,9 +2820,149 @@ export type Whirlpool = {
           "type": "u128"
         }
       ]
+    },
+    {
+      "name": "initializeConfigExtension",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "configExtension",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "feeAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setTokenBadgeAuthority",
+      "accounts": [
+        {
+          "name": "whirlpoolsConfigExtension",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenBadgeAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "newTokenBadgeAuthority",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initializeTokenBadge",
+      "accounts": [
+        {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whirlpoolsConfigExtension",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenBadgeAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenBadge",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deleteTokenBadge",
+      "accounts": [
+        {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whirlpoolsConfigExtension",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenBadgeAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenBadge",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
+    {
+      "name": "whirlpoolsConfigExtension",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "whirlpoolsConfig",
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenBadgeAuthority",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
     {
       "name": "whirlpoolsConfig",
       "type": {
@@ -2950,6 +3105,22 @@ export type Whirlpool = {
           },
           {
             "name": "whirlpool",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "tokenBadge",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "whirlpoolsConfig",
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenMint",
             "type": "publicKey"
           }
         ]
@@ -5801,6 +5972,16 @@ export const IDL: Whirlpool = {
           "isSigner": false
         },
         {
+          "name": "tokenBadgeA",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenBadgeB",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "funder",
           "isMut": true,
           "isSigner": true
@@ -5892,6 +6073,11 @@ export const IDL: Whirlpool = {
         },
         {
           "name": "rewardMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "rewardTokenBadge",
           "isMut": false,
           "isSigner": false
         },
@@ -6298,9 +6484,149 @@ export const IDL: Whirlpool = {
           "type": "u128"
         }
       ]
+    },
+    {
+      "name": "initializeConfigExtension",
+      "accounts": [
+        {
+          "name": "config",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "configExtension",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "feeAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "setTokenBadgeAuthority",
+      "accounts": [
+        {
+          "name": "whirlpoolsConfigExtension",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenBadgeAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "newTokenBadgeAuthority",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "initializeTokenBadge",
+      "accounts": [
+        {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whirlpoolsConfigExtension",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenBadgeAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenBadge",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "funder",
+          "isMut": true,
+          "isSigner": true
+        },
+        {
+          "name": "systemProgram",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
+      "name": "deleteTokenBadge",
+      "accounts": [
+        {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whirlpoolsConfigExtension",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenBadgeAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "tokenBadge",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "receiver",
+          "isMut": true,
+          "isSigner": false
+        }
+      ],
+      "args": []
     }
   ],
   "accounts": [
+    {
+      "name": "whirlpoolsConfigExtension",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "whirlpoolsConfig",
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenBadgeAuthority",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
     {
       "name": "whirlpoolsConfig",
       "type": {
@@ -6443,6 +6769,22 @@ export const IDL: Whirlpool = {
           },
           {
             "name": "whirlpool",
+            "type": "publicKey"
+          }
+        ]
+      }
+    },
+    {
+      "name": "tokenBadge",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "whirlpoolsConfig",
+            "type": "publicKey"
+          },
+          {
+            "name": "tokenMint",
             "type": "publicKey"
           }
         ]

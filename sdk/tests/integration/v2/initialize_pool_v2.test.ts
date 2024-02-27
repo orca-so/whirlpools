@@ -254,8 +254,10 @@ describe("initialize_pool_v2", () => {
       whirlpoolPda,
       tickSpacing: TickSpacing.Stable,
       tokenMintA: poolInitInfo.tokenMintB,
+      tokenBadgeA: poolInitInfo.tokenBadgeB,
       tokenProgramA: tokenTraits.tokenTraitB.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID,
       tokenMintB: poolInitInfo.tokenMintA,
+      tokenBadgeB: poolInitInfo.tokenBadgeA,
       tokenProgramB: tokenTraits.tokenTraitA.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID,
     };
 
@@ -286,8 +288,8 @@ describe("initialize_pool_v2", () => {
       whirlpoolPda,
       tickSpacing: TickSpacing.Stable,
       tokenMintB: poolInitInfo.tokenMintA,
+      tokenBadgeB: poolInitInfo.tokenBadgeA,
       tokenProgramB: tokenTraits.tokenTraitA.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID,
-
     };
 
     await assert.rejects(

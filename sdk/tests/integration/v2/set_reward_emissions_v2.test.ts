@@ -41,6 +41,7 @@ describe("set_reward_emissions_v2", () => {
     } = await initializeRewardV2(
       ctx,
       tokenTraits.tokenTraitR,
+      poolInitInfo.whirlpoolsConfig,
       configKeypairs.rewardEmissionsSuperAuthorityKeypair,
       poolInitInfo.whirlpoolPda.publicKey,
       rewardIndex
@@ -100,6 +101,7 @@ describe("set_reward_emissions_v2", () => {
     } = await initializeRewardV2(
       ctx,
       tokenTraits.tokenTraitR,
+      poolInitInfo.whirlpoolsConfig,
       configKeypairs.rewardEmissionsSuperAuthorityKeypair,
       poolInitInfo.whirlpoolPda.publicKey,
       rewardIndex
@@ -136,6 +138,7 @@ describe("set_reward_emissions_v2", () => {
     } = await initializeRewardV2(
       ctx,
       tokenTraits.tokenTraitR,
+      poolInitInfo.whirlpoolsConfig,
       configKeypairs.rewardEmissionsSuperAuthorityKeypair,
       poolInitInfo.whirlpoolPda.publicKey,
       rewardIndex
@@ -200,6 +203,7 @@ describe("set_reward_emissions_v2", () => {
     await initializeRewardV2(
       ctx,
       tokenTraits.tokenTraitR,
+      poolInitInfo.whirlpoolsConfig,
       configKeypairs.rewardEmissionsSuperAuthorityKeypair,
       poolInitInfo.whirlpoolPda.publicKey,
       rewardIndex

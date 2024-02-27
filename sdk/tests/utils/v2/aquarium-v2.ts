@@ -203,6 +203,17 @@ export async function buildTestAquariumsV2(
           tickSpacing
         );
 
+        const tokenBadgeAPda = PDAUtil.getTokenBadge(
+          ctx.program.programId,
+          configKey,
+          tokenMintA,
+        );
+        const tokenBadgeBPda = PDAUtil.getTokenBadge(
+          ctx.program.programId,
+          configKey,
+          tokenMintB,
+        );
+
         const tokenProgramA = (await ctx.connection.getAccountInfo(tokenMintA))!.owner;
         const tokenProgramB = (await ctx.connection.getAccountInfo(tokenMintB))!.owner;
 
@@ -211,6 +222,8 @@ export async function buildTestAquariumsV2(
           whirlpoolsConfig: configKey,
           tokenMintA,
           tokenMintB,
+          tokenBadgeA: tokenBadgeAPda.publicKey,
+          tokenBadgeB: tokenBadgeBPda.publicKey,
           tokenProgramA,
           tokenProgramB,
           whirlpoolPda,

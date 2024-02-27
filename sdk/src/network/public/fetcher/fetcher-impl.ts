@@ -19,8 +19,10 @@ import {
   PositionBundleData,
   PositionData,
   TickArrayData,
+  TokenBadgeData,
   WhirlpoolData,
   WhirlpoolsConfigData,
+  WhirlpoolsConfigExtensionData,
 } from "../../../types/public";
 import {
   ParsableFeeTier,
@@ -29,6 +31,8 @@ import {
   ParsableTickArray,
   ParsableWhirlpool,
   ParsableWhirlpoolsConfig,
+  ParsableWhirlpoolsConfigExtension,
+  ParsableTokenBadge,
 } from "../parsing";
 
 /**
@@ -152,6 +156,34 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
   ): Promise<ReadonlyMap<string, PositionBundleData | null>> {
     return this.fetcher.getAccounts(addresses, ParsablePositionBundle, opts);
   }
+
+  getConfigExtension(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<WhirlpoolsConfigExtensionData | null> {
+    return this.fetcher.getAccount(address, ParsableWhirlpoolsConfigExtension, opts);
+  }
+  getConfigExtensions(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<ReadonlyMap<string, WhirlpoolsConfigExtensionData | null>> {
+    return this.fetcher.getAccounts(addresses, ParsableWhirlpoolsConfigExtension, opts);
+  }
+
+  getTokenBadge(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<TokenBadgeData | null> {
+    return this.fetcher.getAccount(address, ParsableTokenBadge, opts);
+  }
+  getTokenBadges(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<ReadonlyMap<string, TokenBadgeData | null>> {
+    return this.fetcher.getAccounts(addresses, ParsableTokenBadge, opts);
+  }
+
+
   populateCache<T extends WhirlpoolSupportedTypes>(
     accounts: ReadonlyMap<string, T>,
     parser: ParsableEntity<T>,

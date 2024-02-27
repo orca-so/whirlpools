@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import { toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../../src";
+import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
@@ -35,6 +35,7 @@ describe("initialize_reward_v2", () => {
     const { params } = await initializeRewardV2(
       ctx,
       tokenTraits.tokenTraitR,
+      poolInitInfo.whirlpoolsConfig,
       configKeypairs.rewardEmissionsSuperAuthorityKeypair,
       poolInitInfo.whirlpoolPda.publicKey,
       0
@@ -52,6 +53,7 @@ describe("initialize_reward_v2", () => {
       initializeRewardV2(
         ctx,
         tokenTraits.tokenTraitR,
+        poolInitInfo.whirlpoolsConfig,
         configKeypairs.rewardEmissionsSuperAuthorityKeypair,
         poolInitInfo.whirlpoolPda.publicKey,
         0
@@ -62,6 +64,7 @@ describe("initialize_reward_v2", () => {
     const { params: params2 } = await initializeRewardV2(
       ctx,
       tokenTraits.tokenTraitR,
+      poolInitInfo.whirlpoolsConfig,
       configKeypairs.rewardEmissionsSuperAuthorityKeypair,
       poolInitInfo.whirlpoolPda.publicKey,
       1
@@ -94,6 +97,7 @@ describe("initialize_reward_v2", () => {
     await initializeRewardV2(
       ctx,
       tokenTraits.tokenTraitR,
+      poolInitInfo.whirlpoolsConfig,
       configKeypairs.rewardEmissionsSuperAuthorityKeypair,
       poolInitInfo.whirlpoolPda.publicKey,
       0,
@@ -113,6 +117,7 @@ describe("initialize_reward_v2", () => {
       initializeRewardV2(
         ctx,
         tokenTraits.tokenTraitR,
+        poolInitInfo.whirlpoolsConfig,
         configKeypairs.rewardEmissionsSuperAuthorityKeypair,
         poolInitInfo.whirlpoolPda.publicKey,
         1
@@ -133,6 +138,7 @@ describe("initialize_reward_v2", () => {
       initializeRewardV2(
         ctx,
         tokenTraits.tokenTraitR,
+        poolInitInfo.whirlpoolsConfig,
         configKeypairs.rewardEmissionsSuperAuthorityKeypair,
         poolInitInfo.whirlpoolPda.publicKey,
         3
@@ -148,6 +154,14 @@ describe("initialize_reward_v2", () => {
       TickSpacing.Standard
     );
 
+    const rewardMint = await createMintV2(provider, tokenTraits.tokenTraitR);
+
+    const rewardTokenBadgePda = PDAUtil.getTokenBadge(
+      ctx.program.programId,
+      poolInitInfo.whirlpoolsConfig,
+      rewardMint,
+    );
+
     await assert.rejects(
       toTx(
         ctx,
@@ -155,7 +169,8 @@ describe("initialize_reward_v2", () => {
           rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
           funder: provider.wallet.publicKey,
           whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-          rewardMint: await createMintV2(provider, tokenTraits.tokenTraitR),
+          rewardMint,
+          rewardTokenBadge: rewardTokenBadgePda.publicKey,
           tokenProgram: tokenTraits.tokenTraitR.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID,
           rewardVaultKeypair: anchor.web3.Keypair.generate(),
           rewardIndex: 0,

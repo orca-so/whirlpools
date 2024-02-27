@@ -8,3 +8,8 @@ export * from "./initialize-reward-ix";
 export * from "./set-reward-emissions-ix";
 export * from "./swap-ix";
 export * from "./two-hop-swap-ix";
+
+export * from "./initialize-config-extension-ix";
+export * from "./set-token-badge-authority-ix";
+export * from "./initialize-token-badge-ix";
+export * from "./delete-token-badge-ix";

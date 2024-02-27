@@ -1,4 +1,4 @@
-use crate::state::Whirlpool;
+use crate::state::{token_badge, Whirlpool};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::spl_token_2022::extension::BaseStateWithExtensions;
 
@@ -6,6 +6,7 @@ use anchor_spl::token::Token;
 use anchor_spl::token_2022::spl_token_2022::{self, extension::{self, StateWithExtensions}};
 use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked};
 use anchor_spl::memo::{self, Memo, BuildMemo};
+use token_badge::TokenBadge;
 
 
 pub fn transfer_from_owner_to_vault_v2<'info>(
@@ -87,12 +88,20 @@ fn is_transfer_memo_required<'info>(token_account: &InterfaceAccount<'info, Toke
     }
 }
 
-pub fn is_supported_token_mint<'info>(token_mint: &InterfaceAccount<'info, Mint>) -> Result<bool> {
+pub fn is_supported_token_mint<'info>(
+    token_mint: &InterfaceAccount<'info, Mint>,
+    is_token_badge_initialized: bool,
+) -> Result<bool> {
+    // if mint has initialized token badge, it is clearly supported
+    if is_token_badge_initialized {
+        return Ok(true);
+    }
+
     let token_mint_info = token_mint.to_account_info();
 
+    // reject if mint has freeze_authority
     if token_mint.freeze_authority.is_some() {
-        // TODO(must): handle FreezeAuthority
-        return Ok(false); // safe guard at the moment
+        return Ok(false);
     }
 
     if *token_mint_info.owner == Token::id() {
@@ -109,10 +118,10 @@ pub fn is_supported_token_mint<'info>(token_mint: &InterfaceAccount<'info, Mint>
             extension::ExtensionType::TransferFeeConfig => {}
             extension::ExtensionType::TokenMetadata => {}
             extension::ExtensionType::MetadataPointer => {}
-            extension::ExtensionType::PermanentDelegate => {
-                // TODO(must): additional check
-                return Ok(false); // safe guard at the moment
-            }
+            // not supported without token badge
+            extension::ExtensionType::PermanentDelegate => { return Ok(false); }
+            extension::ExtensionType::TransferHook => { return Ok(false); }
+            extension::ExtensionType::ConfidentialTransferMint => { return Ok(false); }
             // No possibility to support the following extensions
             extension::ExtensionType::DefaultAccountState => { return Ok(false); }
             extension::ExtensionType::MintCloseAuthority => { return Ok(false); }
@@ -123,6 +132,25 @@ pub fn is_supported_token_mint<'info>(token_mint: &InterfaceAccount<'info, Mint>
     }
 
     return Ok(true);
+}
+
+pub fn is_token_badge_initialized<'info>(
+    whirlpools_config_key: Pubkey,
+    token_mint_key: Pubkey,
+    token_badge: &UncheckedAccount<'info>,
+) -> Result<bool> {
+    if *token_badge.owner != crate::id() {
+        return Ok(false);
+    }
+
+    let token_badge = TokenBadge::try_deserialize(
+        &mut token_badge.data.borrow().as_ref()
+    )?;
+
+    Ok(
+        token_badge.whirlpools_config == whirlpools_config_key &&
+        token_badge.token_mint == token_mint_key
+    )
 }
 
 #[derive(Debug)]

@@ -849,4 +849,19 @@ pub mod whirlpool {
         );
     }
 
+    pub fn initialize_config_extension(ctx: Context<InitializeConfigExtension>) -> Result<()> {
+        return instructions::v2::initialize_config_extension::handler(ctx);
+    }
+
+    pub fn set_token_badge_authority(ctx: Context<SetTokenBadgeAuthority>) -> Result<()> {
+        return instructions::v2::set_token_badge_authority::handler(ctx);
+    }
+
+    pub fn initialize_token_badge(ctx: Context<InitializeTokenBadge>) -> Result<()> {
+        return instructions::v2::initialize_token_badge::handler(ctx);
+    }
+
+    pub fn delete_token_badge(ctx: Context<DeleteTokenBadge>) -> Result<()> {
+        return instructions::v2::delete_token_badge::handler(ctx);
+    }
 }

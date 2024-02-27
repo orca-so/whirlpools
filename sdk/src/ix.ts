@@ -591,4 +591,34 @@ export class WhirlpoolIx {
   ) {
     return ix.twoHopSwapV2Ix(program, params)
   }
+
+  // V2 instructions (TokenBadge related)
+  // TODO: comments
+  public static initializeConfigExtensionIx(
+    program: Program<Whirlpool>,
+    params: ix.InitConfigExtensionParams
+  ) {
+    return ix.initializeConfigExtensionIx(program, params)
+  }
+
+  public static setTokenBadgeAuthorityIx(
+    program: Program<Whirlpool>,
+    params: ix.SetTokenBadgeAuthorityParams
+  ) {
+    return ix.setTokenBadgeAuthorityIx(program, params)
+  }
+
+  public static initializeTokenBadgeIx(
+    program: Program<Whirlpool>,
+    params: ix.InitializeTokenBadgeParams
+  ) {
+    return ix.initializeTokenBadgeIx(program, params)
+  }
+  
+  public static deleteTokenBadgeIx(
+    program: Program<Whirlpool>,
+    params: ix.DeleteTokenBadgeParams
+  ) {
+    return ix.deleteTokenBadgeIx(program, params)
+  }
 }

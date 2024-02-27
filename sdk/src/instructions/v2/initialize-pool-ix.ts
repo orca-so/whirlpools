@@ -12,6 +12,8 @@ import { Whirlpool } from "../../artifacts/whirlpool";
  * @param whirlpoolPda - PDA for the whirlpool account that would be initialized
  * @param tokenMintA - Mint public key for token A
  * @param tokenMintB - Mint public key for token B
+ * @param tokenBadgeA - TokenBadge public key for token A
+ * @param tokenBadgeB - TokenBadge public key for token B
  * @param tokenProgramA - Token program public key for token A
  * @param tokenProgramB - Token program public key for token B
  * @param tokenVaultAKeypair - Keypair of the token A vault for this pool
@@ -26,6 +28,8 @@ export type InitPoolV2Params = {
   whirlpoolPda: PDA;
   tokenMintA: PublicKey;
   tokenMintB: PublicKey;
+  tokenBadgeA: PublicKey;
+  tokenBadgeB: PublicKey;
   tokenProgramA: PublicKey;
   tokenProgramB: PublicKey;
   tokenVaultAKeypair: Keypair;
@@ -52,6 +56,8 @@ export function initializePoolV2Ix(program: Program<Whirlpool>, params: InitPool
     initSqrtPrice,
     tokenMintA,
     tokenMintB,
+    tokenBadgeA,
+    tokenBadgeB,
     tokenProgramA,
     tokenProgramB,
     whirlpoolsConfig,
@@ -68,6 +74,8 @@ export function initializePoolV2Ix(program: Program<Whirlpool>, params: InitPool
       whirlpoolsConfig,
       tokenMintA,
       tokenMintB,
+      tokenBadgeA,
+      tokenBadgeB,
       funder,
       whirlpool: whirlpoolPda.publicKey,
       tokenVaultA: tokenVaultAKeypair.publicKey,

@@ -1,9 +1,10 @@
 import { Program } from "@coral-xyz/anchor";
 import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
+import { AccountMeta, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../../types/public";
+import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
 
 /**
  * Raw parameters and accounts to swap on a Whirlpool
@@ -17,6 +18,8 @@ import { MEMO_PROGRAM_ADDRESS } from "../../types/public";
  * @param tokenOwnerAccountB - PublicKey for the associated token account for tokenB in the collection wallet
  * @param tokenVaultA - PublicKey for the tokenA vault for this whirlpool.
  * @param tokenVaultB - PublicKey for the tokenB vault for this whirlpool.
+ * @param tokenTransferHookAccountsA - Optional array of token transfer hook accounts for token A.
+ * @param tokenTransferHookAccountsB - Optional array of token transfer hook accounts for token B.
  * @param tokenProgramA - PublicKey for the token program for token A.
  * @param tokenProgramB - PublicKey for the token program for token B.
  * @param oracle - PublicKey for the oracle account for this Whirlpool.
@@ -30,6 +33,8 @@ export type SwapV2Params = SwapV2Input & {
   tokenOwnerAccountB: PublicKey;
   tokenVaultA: PublicKey;
   tokenVaultB: PublicKey;
+  tokenTransferHookAccountsA?: AccountMeta[];
+  tokenTransferHookAccountsB?: AccountMeta[];
   tokenProgramA: PublicKey;
   tokenProgramB: PublicKey;
   oracle: PublicKey;
@@ -95,6 +100,8 @@ export function swapV2Ix(program: Program<Whirlpool>, params: SwapV2Params): Ins
     tokenVaultA,
     tokenOwnerAccountB,
     tokenVaultB,
+    tokenTransferHookAccountsA,
+    tokenTransferHookAccountsB,
     tokenProgramA,
     tokenProgramB,
     tickArray0,
@@ -103,12 +110,18 @@ export function swapV2Ix(program: Program<Whirlpool>, params: SwapV2Params): Ins
     oracle,
   } = params;
 
+  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+    .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+    .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+    .build();
+
   const ix = program.instruction.swapV2(
     amount,
     otherAmountThreshold,
     sqrtPriceLimit,
     amountSpecifiedIsInput,
     aToB,
+    remainingAccountsInfo,
     {
       accounts: {
         tokenProgramA,
@@ -127,6 +140,7 @@ export function swapV2Ix(program: Program<Whirlpool>, params: SwapV2Params): Ins
         tickArray2,
         oracle,
       },
+      remainingAccounts,
     }
   );
 

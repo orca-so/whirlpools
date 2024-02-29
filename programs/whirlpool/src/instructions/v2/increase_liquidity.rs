@@ -9,7 +9,7 @@ use crate::manager::liquidity_manager::{
 };
 use crate::math::convert_to_liquidity_delta;
 use crate::state::*;
-use crate::util::calculate_transfer_fee_included_amount;
+use crate::util::{calculate_transfer_fee_included_amount, parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::util::{to_timestamp_u64, v2::transfer_from_owner_to_vault_v2, verify_position_authority};
 
 #[derive(Accounts)]
@@ -53,11 +53,12 @@ pub struct ModifyLiquidityV2<'info> {
     pub tick_array_upper: AccountLoader<'info, TickArray>,
 }
 
-pub fn handler(
-    ctx: Context<ModifyLiquidityV2>,
+pub fn handler<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, ModifyLiquidityV2<'info>>,
     liquidity_amount: u128,
     token_max_a: u64,
     token_max_b: u64,
+    remaining_accounts_info: RemainingAccountsInfo,
 ) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,
@@ -69,6 +70,17 @@ pub fn handler(
     if liquidity_amount == 0 {
         return Err(ErrorCode::LiquidityZero.into());
     }
+
+    // Process remaining accounts
+    let remaining_accounts = parse_remaining_accounts(
+        &ctx.remaining_accounts,
+        &remaining_accounts_info,
+        &[
+            AccountsType::TransferHookA,
+            AccountsType::TransferHookB,
+        ],
+    )?;
+
     let liquidity_delta = convert_to_liquidity_delta(liquidity_amount, true)?;
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
@@ -120,6 +132,7 @@ pub fn handler(
         &ctx.accounts.token_owner_account_a,
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_program_a,
+        &remaining_accounts.transfer_hook_a,
         delta_a,
     )?;
 
@@ -129,6 +142,7 @@ pub fn handler(
         &ctx.accounts.token_owner_account_b,
         &ctx.accounts.token_vault_b,
         &ctx.accounts.token_program_b,
+        &remaining_accounts.transfer_hook_b,
         delta_b,
     )?;
 

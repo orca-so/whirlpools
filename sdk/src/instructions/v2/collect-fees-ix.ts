@@ -1,9 +1,10 @@
 import { Program } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import { AccountMeta, PublicKey } from "@solana/web3.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../..";
 
 import { Instruction } from "@orca-so/common-sdk";
+import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
 
 /**
  * Parameters to collect fees from a position.
@@ -19,6 +20,8 @@ import { Instruction } from "@orca-so/common-sdk";
  * @param tokenOwnerAccountB - PublicKey for the token B account that will be withdrawed from.
  * @param tokenVaultA - PublicKey for the tokenA vault for this whirlpool.
  * @param tokenVaultB - PublicKey for the tokenB vault for this whirlpool.
+ * @param tokenTransferHookAccountsA - Optional array of token transfer hook accounts for token A.
+ * @param tokenTransferHookAccountsB - Optional array of token transfer hook accounts for token B.
  * @param tokenProgramA - PublicKey for the token program for token A.
  * @param tokenProgramB - PublicKey for the token program for token B.
  */
@@ -33,6 +36,8 @@ export type CollectFeesV2Params = {
   tokenOwnerAccountB: PublicKey;
   tokenVaultA: PublicKey;
   tokenVaultB: PublicKey;
+  tokenTransferHookAccountsA?: AccountMeta[];
+  tokenTransferHookAccountsB?: AccountMeta[];
   tokenProgramA: PublicKey;
   tokenProgramB: PublicKey;
 };
@@ -58,11 +63,18 @@ export function collectFeesV2Ix(program: Program<Whirlpool>, params: CollectFees
     tokenOwnerAccountB,
     tokenVaultA,
     tokenVaultB,
+    tokenTransferHookAccountsA,
+    tokenTransferHookAccountsB,
     tokenProgramA,
     tokenProgramB,
   } = params;
 
-  const ix = program.instruction.collectFeesV2({
+  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+    .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+    .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+    .build();
+
+  const ix = program.instruction.collectFeesV2(remainingAccountsInfo, {
     accounts: {
       whirlpool,
       positionAuthority,
@@ -78,6 +90,7 @@ export function collectFeesV2Ix(program: Program<Whirlpool>, params: CollectFees
       tokenProgramB,
       memoProgram: MEMO_PROGRAM_ADDRESS,
     },
+    remainingAccounts,
   });
 
   return {

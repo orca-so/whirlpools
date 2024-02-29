@@ -3,7 +3,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
 use crate::swap_with_transfer_fee_extension;
-use crate::util::{calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount};
+use crate::util::{calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount, parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::{
     errors::ErrorCode,
     state::{TickArray, Whirlpool},
@@ -85,8 +85,8 @@ pub struct TwoHopSwapV2<'info> {
     pub oracle_two: UncheckedAccount<'info>,
 }
 
-pub fn handler(
-    ctx: Context<TwoHopSwapV2>,
+pub fn handler<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, TwoHopSwapV2<'info>>,
     amount: u64,
     other_amount_threshold: u64,
     amount_specified_is_input: bool,
@@ -94,6 +94,7 @@ pub fn handler(
     a_to_b_two: bool,
     sqrt_price_limit_one: u128,
     sqrt_price_limit_two: u128,
+    remaining_accounts_info: RemainingAccountsInfo,
 ) -> Result<()> {
     let clock = Clock::get()?;
     // Update the global reward growth which increases as a function of time.
@@ -121,6 +122,19 @@ pub fn handler(
     if swap_one_output_mint != swap_two_input_mint {
         return Err(ErrorCode::InvalidIntermediaryMint.into());
     }
+
+    // Process remaining accounts
+    let remaining_accounts = parse_remaining_accounts(
+        &ctx.remaining_accounts,
+        &remaining_accounts_info,
+        &[
+            AccountsType::TransferHookOneA,
+            AccountsType::TransferHookOneB,
+            AccountsType::TransferHookTwoA,
+            AccountsType::TransferHookTwoB,
+        ],
+    )?;
+
 
     let mut swap_tick_sequence_one = SwapTickSequence::new(
         ctx.accounts.tick_array_one_0.load_mut().unwrap(),
@@ -261,6 +275,8 @@ pub fn handler(
         &ctx.accounts.token_owner_account_one_b,
         &ctx.accounts.token_vault_one_a,
         &ctx.accounts.token_vault_one_b,
+        &remaining_accounts.transfer_hook_one_a,
+        &remaining_accounts.transfer_hook_one_b,
         &ctx.accounts.token_program_one_a,
         &ctx.accounts.token_program_one_b,
         &ctx.accounts.memo_program,
@@ -279,6 +295,8 @@ pub fn handler(
         &ctx.accounts.token_owner_account_two_b,
         &ctx.accounts.token_vault_two_a,
         &ctx.accounts.token_vault_two_b,
+        &remaining_accounts.transfer_hook_two_a,
+        &remaining_accounts.transfer_hook_two_b,
         &ctx.accounts.token_program_two_a,
         &ctx.accounts.token_program_two_b,
         &ctx.accounts.memo_program,

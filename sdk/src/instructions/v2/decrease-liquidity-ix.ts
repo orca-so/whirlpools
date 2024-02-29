@@ -1,8 +1,9 @@
 import { Program } from "@coral-xyz/anchor";
 import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
+import { AccountMeta, PublicKey } from "@solana/web3.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 import { DecreaseLiquidityInput, MEMO_PROGRAM_ADDRESS } from "../..";
+import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
 
 /**
  * Parameters to remove liquidity from a position.
@@ -21,6 +22,8 @@ import { DecreaseLiquidityInput, MEMO_PROGRAM_ADDRESS } from "../..";
  * @param tokenOwnerAccountB - PublicKey for the token B account that will be withdrawed from.
  * @param tokenVaultA - PublicKey for the tokenA vault for this whirlpool.
  * @param tokenVaultB - PublicKey for the tokenB vault for this whirlpool.
+ * @param tokenTransferHookAccountsA - Optional array of token transfer hook accounts for token A.
+ * @param tokenTransferHookAccountsB - Optional array of token transfer hook accounts for token B.
  * @param tokenProgramA - PublicKey for the token program for token A.
  * @param tokenProgramB - PublicKey for the token program for token B.
  * @param tickArrayLower - PublicKey for the tick-array account that hosts the tick at the lower tick index.
@@ -37,6 +40,8 @@ export type DecreaseLiquidityV2Params = {
   tokenOwnerAccountB: PublicKey;
   tokenVaultA: PublicKey;
   tokenVaultB: PublicKey;
+  tokenTransferHookAccountsA?: AccountMeta[];
+  tokenTransferHookAccountsB?: AccountMeta[];
   tokenProgramA: PublicKey;
   tokenProgramB: PublicKey;
   tickArrayLower: PublicKey;
@@ -74,13 +79,20 @@ export function decreaseLiquidityV2Ix(
     tokenOwnerAccountB,
     tokenVaultA,
     tokenVaultB,
+    tokenTransferHookAccountsA,
+    tokenTransferHookAccountsB,
     tokenProgramA,
     tokenProgramB,
     tickArrayLower,
     tickArrayUpper,
   } = params;
 
-  const ix = program.instruction.decreaseLiquidityV2(liquidityAmount, tokenMinA, tokenMinB, {
+  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+    .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+    .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+    .build();
+
+  const ix = program.instruction.decreaseLiquidityV2(liquidityAmount, tokenMinA, tokenMinB, remainingAccountsInfo, {
     accounts: {
       whirlpool,
       positionAuthority,
@@ -98,6 +110,7 @@ export function decreaseLiquidityV2Ix(
       tickArrayUpper,
       memoProgram: MEMO_PROGRAM_ADDRESS,
     },
+    remainingAccounts,
   });
 
   return {

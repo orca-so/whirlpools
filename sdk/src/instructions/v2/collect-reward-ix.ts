@@ -1,9 +1,9 @@
 import { Program } from "@coral-xyz/anchor";
 import { Instruction } from "@orca-so/common-sdk";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import { AccountMeta, PublicKey } from "@solana/web3.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../..";
+import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
 
 /**
  * Parameters to collect rewards from a reward index in a position.
@@ -17,6 +17,7 @@ import { MEMO_PROGRAM_ADDRESS } from "../..";
  * @param rewardMint - PublicKey for the reward token mint.
  * @param rewardOwnerAccount - PublicKey for the reward token account that the reward will deposit into.
  * @param rewardVault - PublicKey of the vault account that reward will be withdrawn from.
+ * @param rewardTransferHookAccounts - Optional array of token transfer hook accounts for the reward token.
  * @param tokenProgram - PublicKey for the token program.
  */
 export type CollectRewardV2Params = {
@@ -28,6 +29,7 @@ export type CollectRewardV2Params = {
   rewardMint: PublicKey;
   rewardOwnerAccount: PublicKey;
   rewardVault: PublicKey;
+  rewardTransferHookAccounts?: AccountMeta[];
   tokenProgram: PublicKey;
 };
 
@@ -52,11 +54,16 @@ export function collectRewardV2Ix(
     rewardMint,
     rewardOwnerAccount,
     rewardVault,
+    rewardTransferHookAccounts,
     rewardIndex,
     tokenProgram,
   } = params;
 
-  const ix = program.instruction.collectRewardV2(rewardIndex, {
+  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+    .addSlice(RemainingAccountsType.TransferHookReward, rewardTransferHookAccounts)
+    .build();
+
+  const ix = program.instruction.collectRewardV2(rewardIndex, remainingAccountsInfo, {
     accounts: {
       whirlpool,
       positionAuthority,
@@ -68,6 +75,7 @@ export function collectRewardV2Ix(
       tokenProgram,
       memoProgram: MEMO_PROGRAM_ADDRESS,
     },
+    remainingAccounts,
   });
 
   return {

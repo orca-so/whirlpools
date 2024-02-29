@@ -1,10 +1,10 @@
 import { Program } from "@coral-xyz/anchor";
 import { Instruction } from "@orca-so/common-sdk";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import { AccountMeta, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../../types/public";
+import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
 
 /**
  * Parameters to execute a two-hop swap on a Whirlpool.
@@ -24,6 +24,10 @@ import { MEMO_PROGRAM_ADDRESS } from "../../types/public";
  * @param tokenVaultOneB - PublicKey for the tokenB vault for whirlpoolOne.
  * @param tokenVaultTwoA - PublicKey for the tokenA vault for whirlpoolTwo.
  * @param tokenVaultTwoB - PublicKey for the tokenB vault for whirlpoolTwo.
+ * @param tokenTransferHookAccountsOneA - Optional array of token transfer hook accounts for token A in whirlpoolOne.
+ * @param tokenTransferHookAccountsOneB - Optional array of token transfer hook accounts for token B in whirlpoolOne.
+ * @param tokenTransferHookAccountsTwoA - Optional array of token transfer hook accounts for token A in whirlpoolTwo.
+ * @param tokenTransferHookAccountsTwoB - Optional array of token transfer hook accounts for token B in whirlpoolTwo.
  * @param tokenProgramOneA - PublicKey for the token program for token A for whirlpoolOne.
  * @param tokenProgramOneB - PublicKey for the token program for token B for whirlpoolOne.
  * @param tokenProgramTwoA - PublicKey for the token program for token A for whirlpoolTwo.
@@ -48,6 +52,10 @@ export type TwoHopSwapV2Params = TwoHopSwapV2Input & {
   tokenVaultOneB: PublicKey;
   tokenVaultTwoA: PublicKey;
   tokenVaultTwoB: PublicKey;
+  tokenTransferHookAccountsOneA?: AccountMeta[];
+  tokenTransferHookAccountsOneB?: AccountMeta[];
+  tokenTransferHookAccountsTwoA?: AccountMeta[];
+  tokenTransferHookAccountsTwoB?: AccountMeta[];
   tokenProgramOneA: PublicKey;
   tokenProgramOneB: PublicKey;
   tokenProgramTwoA: PublicKey;
@@ -137,6 +145,10 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
     tokenVaultTwoA,
     tokenOwnerAccountTwoB,
     tokenVaultTwoB,
+    tokenTransferHookAccountsOneA,
+    tokenTransferHookAccountsOneB,
+    tokenTransferHookAccountsTwoA,
+    tokenTransferHookAccountsTwoB,
     tokenProgramOneA,
     tokenProgramOneB,
     tokenProgramTwoA,
@@ -150,6 +162,13 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
     oracleOne,
     oracleTwo,
   } = params;
+
+  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+  .addSlice(RemainingAccountsType.TransferHookOneA, tokenTransferHookAccountsOneA)
+  .addSlice(RemainingAccountsType.TransferHookOneB, tokenTransferHookAccountsOneB)
+  .addSlice(RemainingAccountsType.TransferHookTwoA, tokenTransferHookAccountsTwoA)
+  .addSlice(RemainingAccountsType.TransferHookTwoB, tokenTransferHookAccountsTwoB)
+  .build();
 
   const ix = program.instruction.twoHopSwapV2(
     amount,

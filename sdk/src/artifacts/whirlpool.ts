@@ -1919,7 +1919,14 @@ export type Whirlpool = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
+        }
+      ]
     },
     {
       "name": "collectProtocolFeesV2",
@@ -1991,7 +1998,14 @@ export type Whirlpool = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
+        }
+      ]
     },
     {
       "name": "collectRewardV2",
@@ -2052,6 +2066,12 @@ export type Whirlpool = {
         {
           "name": "rewardIndex",
           "type": "u8"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -2162,6 +2182,12 @@ export type Whirlpool = {
         {
           "name": "tokenMinB",
           "type": "u64"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -2272,6 +2298,12 @@ export type Whirlpool = {
         {
           "name": "tokenMaxB",
           "type": "u64"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -2616,6 +2648,12 @@ export type Whirlpool = {
         {
           "name": "aToB",
           "type": "bool"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -2818,6 +2856,12 @@ export type Whirlpool = {
         {
           "name": "sqrtPriceLimitTwo",
           "type": "u128"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -3373,6 +3417,40 @@ export type Whirlpool = {
       }
     },
     {
+      "name": "RemainingAccountsSlice",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "accountsType",
+            "type": {
+              "defined": "AccountsType"
+            }
+          },
+          {
+            "name": "length",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RemainingAccountsInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slices",
+            "type": {
+              "vec": {
+                "defined": "RemainingAccountsSlice"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "CurrIndex",
       "type": {
         "kind": "enum",
@@ -3413,6 +3491,44 @@ export type Whirlpool = {
           },
           {
             "name": "Right"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AccountsType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "TickArray"
+          },
+          {
+            "name": "TickArrayOne"
+          },
+          {
+            "name": "TickArrayTwo"
+          },
+          {
+            "name": "TransferHookA"
+          },
+          {
+            "name": "TransferHookB"
+          },
+          {
+            "name": "TransferHookReward"
+          },
+          {
+            "name": "TransferHookOneA"
+          },
+          {
+            "name": "TransferHookOneB"
+          },
+          {
+            "name": "TransferHookTwoA"
+          },
+          {
+            "name": "TransferHookTwoB"
           }
         ]
       }
@@ -3658,6 +3774,16 @@ export type Whirlpool = {
       "code": 6047,
       "name": "UnsupportedTokenMint",
       "msg": "Token mint has unsupported attributes"
+    },
+    {
+      "code": 6048,
+      "name": "RemainingAccountsInvalidSlice",
+      "msg": "Invalid remaining accounts"
+    },
+    {
+      "code": 6049,
+      "name": "RemainingAccountsInsufficient",
+      "msg": "Insufficient remaining accounts"
     }
   ]
 };
@@ -5583,7 +5709,14 @@ export const IDL: Whirlpool = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
+        }
+      ]
     },
     {
       "name": "collectProtocolFeesV2",
@@ -5655,7 +5788,14 @@ export const IDL: Whirlpool = {
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
+        }
+      ]
     },
     {
       "name": "collectRewardV2",
@@ -5716,6 +5856,12 @@ export const IDL: Whirlpool = {
         {
           "name": "rewardIndex",
           "type": "u8"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -5826,6 +5972,12 @@ export const IDL: Whirlpool = {
         {
           "name": "tokenMinB",
           "type": "u64"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -5936,6 +6088,12 @@ export const IDL: Whirlpool = {
         {
           "name": "tokenMaxB",
           "type": "u64"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -6280,6 +6438,12 @@ export const IDL: Whirlpool = {
         {
           "name": "aToB",
           "type": "bool"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -6482,6 +6646,12 @@ export const IDL: Whirlpool = {
         {
           "name": "sqrtPriceLimitTwo",
           "type": "u128"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -7037,6 +7207,40 @@ export const IDL: Whirlpool = {
       }
     },
     {
+      "name": "RemainingAccountsSlice",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "accountsType",
+            "type": {
+              "defined": "AccountsType"
+            }
+          },
+          {
+            "name": "length",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RemainingAccountsInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slices",
+            "type": {
+              "vec": {
+                "defined": "RemainingAccountsSlice"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "CurrIndex",
       "type": {
         "kind": "enum",
@@ -7077,6 +7281,44 @@ export const IDL: Whirlpool = {
           },
           {
             "name": "Right"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AccountsType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "TickArray"
+          },
+          {
+            "name": "TickArrayOne"
+          },
+          {
+            "name": "TickArrayTwo"
+          },
+          {
+            "name": "TransferHookA"
+          },
+          {
+            "name": "TransferHookB"
+          },
+          {
+            "name": "TransferHookReward"
+          },
+          {
+            "name": "TransferHookOneA"
+          },
+          {
+            "name": "TransferHookOneB"
+          },
+          {
+            "name": "TransferHookTwoA"
+          },
+          {
+            "name": "TransferHookTwoB"
           }
         ]
       }
@@ -7322,6 +7564,16 @@ export const IDL: Whirlpool = {
       "code": 6047,
       "name": "UnsupportedTokenMint",
       "msg": "Token mint has unsupported attributes"
+    },
+    {
+      "code": 6048,
+      "name": "RemainingAccountsInvalidSlice",
+      "msg": "Invalid remaining accounts"
+    },
+    {
+      "code": 6049,
+      "name": "RemainingAccountsInsufficient",
+      "msg": "Insufficient remaining accounts"
     }
   ]
 };

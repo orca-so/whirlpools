@@ -118,6 +118,11 @@ pub enum ErrorCode {
 
     #[msg("Token mint has unsupported attributes")]
     UnsupportedTokenMint, // 0x179f (6047)
+
+    #[msg("Invalid remaining accounts")]
+    RemainingAccountsInvalidSlice, // 0x17a0 (6048)
+    #[msg("Insufficient remaining accounts")]
+    RemainingAccountsInsufficient, // 0x17a1 (6049)
 }
 
 impl From<TryFromIntError> for ErrorCode {

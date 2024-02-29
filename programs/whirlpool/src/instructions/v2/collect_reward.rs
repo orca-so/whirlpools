@@ -3,6 +3,7 @@ use anchor_spl::token;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
+use crate::util::{parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::{
     constants::transfer_memo,
     state::*,
@@ -52,10 +53,23 @@ pub struct CollectRewardV2<'info> {
 /// - `Ok`: Reward tokens at the specified reward index have been successfully harvested
 /// - `Err`: `RewardNotInitialized` if the specified reward has not been initialized
 ///          `InvalidRewardIndex` if the reward index is not 0, 1, or 2
-pub fn handler(ctx: Context<CollectRewardV2>, reward_index: u8) -> Result<()> {
+pub fn handler<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, CollectRewardV2<'info>>,
+    reward_index: u8,
+    remaining_accounts_info: RemainingAccountsInfo
+) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
+    )?;
+
+    // Process remaining accounts
+    let remaining_accounts = parse_remaining_accounts(
+        &ctx.remaining_accounts,
+        &remaining_accounts_info,
+        &[
+            AccountsType::TransferHookReward,
+        ],
     )?;
 
     let index = reward_index as usize;
@@ -75,6 +89,7 @@ pub fn handler(ctx: Context<CollectRewardV2>, reward_index: u8) -> Result<()> {
         &ctx.accounts.reward_owner_account,
         &ctx.accounts.token_program,
         &ctx.accounts.memo_program,
+        &remaining_accounts.transfer_hook_reward,
         transfer_amount,
         transfer_memo::TRANSFER_MEMO_COLLECT_REWARD.as_bytes(),
     )?)

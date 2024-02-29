@@ -1919,7 +1919,14 @@
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
+        }
+      ]
     },
     {
       "name": "collectProtocolFeesV2",
@@ -1991,7 +1998,14 @@
           "isSigner": false
         }
       ],
-      "args": []
+      "args": [
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
+        }
+      ]
     },
     {
       "name": "collectRewardV2",
@@ -2052,6 +2066,12 @@
         {
           "name": "rewardIndex",
           "type": "u8"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -2162,6 +2182,12 @@
         {
           "name": "tokenMinB",
           "type": "u64"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -2272,6 +2298,12 @@
         {
           "name": "tokenMaxB",
           "type": "u64"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -2616,6 +2648,12 @@
         {
           "name": "aToB",
           "type": "bool"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -2818,6 +2856,12 @@
         {
           "name": "sqrtPriceLimitTwo",
           "type": "u128"
+        },
+        {
+          "name": "remainingAccountsInfo",
+          "type": {
+            "defined": "RemainingAccountsInfo"
+          }
         }
       ]
     },
@@ -3373,6 +3417,40 @@
       }
     },
     {
+      "name": "RemainingAccountsSlice",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "accountsType",
+            "type": {
+              "defined": "AccountsType"
+            }
+          },
+          {
+            "name": "length",
+            "type": "u8"
+          }
+        ]
+      }
+    },
+    {
+      "name": "RemainingAccountsInfo",
+      "type": {
+        "kind": "struct",
+        "fields": [
+          {
+            "name": "slices",
+            "type": {
+              "vec": {
+                "defined": "RemainingAccountsSlice"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
       "name": "CurrIndex",
       "type": {
         "kind": "enum",
@@ -3413,6 +3491,44 @@
           },
           {
             "name": "Right"
+          }
+        ]
+      }
+    },
+    {
+      "name": "AccountsType",
+      "type": {
+        "kind": "enum",
+        "variants": [
+          {
+            "name": "TickArray"
+          },
+          {
+            "name": "TickArrayOne"
+          },
+          {
+            "name": "TickArrayTwo"
+          },
+          {
+            "name": "TransferHookA"
+          },
+          {
+            "name": "TransferHookB"
+          },
+          {
+            "name": "TransferHookReward"
+          },
+          {
+            "name": "TransferHookOneA"
+          },
+          {
+            "name": "TransferHookOneB"
+          },
+          {
+            "name": "TransferHookTwoA"
+          },
+          {
+            "name": "TransferHookTwoB"
           }
         ]
       }
@@ -3658,6 +3774,16 @@
       "code": 6047,
       "name": "UnsupportedTokenMint",
       "msg": "Token mint has unsupported attributes"
+    },
+    {
+      "code": 6048,
+      "name": "RemainingAccountsInvalidSlice",
+      "msg": "Invalid remaining accounts"
+    },
+    {
+      "code": 6049,
+      "name": "RemainingAccountsInsufficient",
+      "msg": "Insufficient remaining accounts"
     }
   ]
 }

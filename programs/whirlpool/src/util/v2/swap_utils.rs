@@ -15,6 +15,8 @@ pub fn update_and_swap_whirlpool_v2<'info>(
     token_owner_account_b: &InterfaceAccount<'info, TokenAccount>,
     token_vault_a: &InterfaceAccount<'info, TokenAccount>,
     token_vault_b: &InterfaceAccount<'info, TokenAccount>,
+    transfer_hook_accounts_a: &Option<Vec<AccountInfo<'info>>>,
+    transfer_hook_accounts_b: &Option<Vec<AccountInfo<'info>>>,
     token_program_a: &Interface<'info, TokenInterface>,
     token_program_b: &Interface<'info, TokenInterface>,
     memo_program: &Program<'info, Memo>,
@@ -43,6 +45,8 @@ pub fn update_and_swap_whirlpool_v2<'info>(
         token_owner_account_b,
         token_vault_a,
         token_vault_b,
+        transfer_hook_accounts_a,
+        transfer_hook_accounts_b,
         token_program_a,
         token_program_b,
         memo_program,
@@ -62,6 +66,8 @@ fn perform_swap_v2<'info>(
     token_owner_account_b: &InterfaceAccount<'info, TokenAccount>,
     token_vault_a: &InterfaceAccount<'info, TokenAccount>,
     token_vault_b: &InterfaceAccount<'info, TokenAccount>,
+    transfer_hook_accounts_a: &Option<Vec<AccountInfo<'info>>>,
+    transfer_hook_accounts_b: &Option<Vec<AccountInfo<'info>>>,
     token_program_a: &Interface<'info, TokenInterface>,
     token_program_b: &Interface<'info, TokenInterface>,
     memo_program: &Program<'info, Memo>,
@@ -75,6 +81,7 @@ fn perform_swap_v2<'info>(
     let deposit_mint;
     let deposit_account_user;
     let deposit_account_pool;
+    let deposit_transfer_hook_accounts;
     let deposit_amount;
 
     // Transfer from pool to user
@@ -82,6 +89,7 @@ fn perform_swap_v2<'info>(
     let withdrawal_mint;
     let withdrawal_account_user;
     let withdrawal_account_pool;
+    let withdrawal_transfer_hook_accounts;
     let withdrawal_amount;
 
     if a_to_b {
@@ -89,24 +97,28 @@ fn perform_swap_v2<'info>(
         deposit_mint = token_mint_a;
         deposit_account_user = token_owner_account_a;
         deposit_account_pool = token_vault_a;
+        deposit_transfer_hook_accounts = transfer_hook_accounts_a;
         deposit_amount = amount_a;
 
         withdrawal_token_program = token_program_b;
         withdrawal_mint = token_mint_b;
         withdrawal_account_user = token_owner_account_b;
         withdrawal_account_pool = token_vault_b;
+        withdrawal_transfer_hook_accounts = transfer_hook_accounts_b;
         withdrawal_amount = amount_b;
     } else {
         deposit_token_program = token_program_b;
         deposit_mint = token_mint_b;
         deposit_account_user = token_owner_account_b;
         deposit_account_pool = token_vault_b;
+        deposit_transfer_hook_accounts = transfer_hook_accounts_b;
         deposit_amount = amount_b;
 
         withdrawal_token_program = token_program_a;
         withdrawal_mint = token_mint_a;
         withdrawal_account_user = token_owner_account_a;
         withdrawal_account_pool = token_vault_a;
+        withdrawal_transfer_hook_accounts = transfer_hook_accounts_a;
         withdrawal_amount = amount_a;
     }
 
@@ -116,6 +128,7 @@ fn perform_swap_v2<'info>(
         deposit_account_user,
         deposit_account_pool,
         deposit_token_program,
+        deposit_transfer_hook_accounts,
         deposit_amount,
     )?;
 
@@ -126,6 +139,7 @@ fn perform_swap_v2<'info>(
         withdrawal_account_user,
         withdrawal_token_program,
         memo_program,
+        withdrawal_transfer_hook_accounts,
         withdrawal_amount,
         memo,
     )?;

@@ -1,3 +1,4 @@
+use crate::util::{parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::{constants::transfer_memo, state::*, util::v2::transfer_from_vault_to_owner_v2};
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
@@ -35,8 +36,21 @@ pub struct CollectProtocolFeesV2<'info> {
     pub memo_program: Program<'info, Memo>,
 }
 
-pub fn handler(ctx: Context<CollectProtocolFeesV2>) -> Result<()> {
+pub fn handler<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, CollectProtocolFeesV2<'info>>,
+    remaining_accounts_info: RemainingAccountsInfo
+) -> Result<()> {
     let whirlpool = &ctx.accounts.whirlpool;
+
+    // Process remaining accounts
+    let remaining_accounts = parse_remaining_accounts(
+        &ctx.remaining_accounts,
+        &remaining_accounts_info,
+        &[
+            AccountsType::TransferHookA,
+            AccountsType::TransferHookB,
+        ],
+    )?;
 
     transfer_from_vault_to_owner_v2(
         whirlpool,
@@ -45,6 +59,7 @@ pub fn handler(ctx: Context<CollectProtocolFeesV2>) -> Result<()> {
         &ctx.accounts.token_destination_a,
         &ctx.accounts.token_program_a,
         &ctx.accounts.memo_program,
+        &remaining_accounts.transfer_hook_a,
         whirlpool.protocol_fee_owed_a,
         transfer_memo::TRANSFER_MEMO_COLLECT_PROTOCOL_FEES.as_bytes(),
     )?;
@@ -56,6 +71,7 @@ pub fn handler(ctx: Context<CollectProtocolFeesV2>) -> Result<()> {
         &ctx.accounts.token_destination_b,
         &ctx.accounts.token_program_b,
         &ctx.accounts.memo_program,
+        &remaining_accounts.transfer_hook_b,
         whirlpool.protocol_fee_owed_b,
         transfer_memo::TRANSFER_MEMO_COLLECT_PROTOCOL_FEES.as_bytes(),
     )?;

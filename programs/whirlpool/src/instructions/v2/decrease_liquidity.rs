@@ -5,7 +5,7 @@ use crate::manager::liquidity_manager::{
     calculate_liquidity_token_deltas, calculate_modify_liquidity, sync_modify_liquidity_values,
 };
 use crate::math::convert_to_liquidity_delta;
-use crate::util::calculate_transfer_fee_excluded_amount;
+use crate::util::{calculate_transfer_fee_excluded_amount, parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::util::{to_timestamp_u64, v2::transfer_from_vault_to_owner_v2, verify_position_authority};
 use crate::constants::transfer_memo;
 
@@ -14,11 +14,12 @@ use super::ModifyLiquidityV2;
 /*
   Removes liquidity from an existing Whirlpool Position.
 */
-pub fn handler(
-    ctx: Context<ModifyLiquidityV2>,
+pub fn handler<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, ModifyLiquidityV2<'info>>,
     liquidity_amount: u128,
     token_min_a: u64,
     token_min_b: u64,
+    remaining_accounts_info: RemainingAccountsInfo,
 ) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,
@@ -30,6 +31,17 @@ pub fn handler(
     if liquidity_amount == 0 {
         return Err(ErrorCode::LiquidityZero.into());
     }
+
+    // Process remaining accounts
+    let remaining_accounts = parse_remaining_accounts(
+        &ctx.remaining_accounts,
+        &remaining_accounts_info,
+        &[
+            AccountsType::TransferHookA,
+            AccountsType::TransferHookB,
+        ],
+    )?;
+
     let liquidity_delta = convert_to_liquidity_delta(liquidity_amount, false)?;
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
@@ -82,6 +94,7 @@ pub fn handler(
         &ctx.accounts.token_owner_account_a,
         &ctx.accounts.token_program_a,
         &ctx.accounts.memo_program,
+        &remaining_accounts.transfer_hook_a,
         delta_a,
         transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
     )?;
@@ -93,6 +106,7 @@ pub fn handler(
         &ctx.accounts.token_owner_account_b,
         &ctx.accounts.token_program_b,
         &ctx.accounts.memo_program,
+        &remaining_accounts.transfer_hook_b,
         delta_b,
         transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
     )?;

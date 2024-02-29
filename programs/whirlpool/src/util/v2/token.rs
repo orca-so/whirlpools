@@ -15,6 +15,7 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
     token_owner_account: &InterfaceAccount<'info, TokenAccount>,
     token_vault: &InterfaceAccount<'info, TokenAccount>,
     token_program: &Interface<'info, TokenInterface>,
+    transfer_hook_accounts: &Option<Vec<AccountInfo<'info>>>,
     amount: u64,
 ) -> Result<()> {
     // The vault doesn't have MemoTransfer extension, so we don't need to use memo_program
@@ -28,7 +29,7 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
                 to: token_vault.to_account_info(),
                 authority: position_authority.to_account_info(),
             },
-        ),
+        ).with_remaining_accounts(transfer_hook_accounts.clone().unwrap_or(vec![])),
         amount,
         token_mint.decimals,
     )
@@ -41,6 +42,7 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
     token_owner_account: &InterfaceAccount<'info, TokenAccount>,
     token_program: &Interface<'info, TokenInterface>,
     memo_program: &Program<'info, Memo>,
+    transfer_hook_accounts: &Option<Vec<AccountInfo<'info>>>,
     amount: u64,
     memo: &[u8],
 ) -> Result<()> {
@@ -65,7 +67,7 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
                 authority: whirlpool.to_account_info(),
             },
             &[&whirlpool.seeds()],
-        ),
+        ).with_remaining_accounts(transfer_hook_accounts.clone().unwrap_or(vec![])),
         amount,
         token_mint.decimals,
     )

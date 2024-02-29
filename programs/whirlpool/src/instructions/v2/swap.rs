@@ -2,7 +2,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
-use crate::util::{calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount};
+use crate::util::{calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount, parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
@@ -52,18 +52,30 @@ pub struct SwapV2<'info> {
     pub oracle: UncheckedAccount<'info>,
 }
 
-pub fn handler(
-    ctx: Context<SwapV2>,
+pub fn handler<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, SwapV2<'info>>,
     amount: u64,
     other_amount_threshold: u64,
     sqrt_price_limit: u128,
     amount_specified_is_input: bool,
     a_to_b: bool, // Zero for one
+    remaining_accounts_info: RemainingAccountsInfo,
 ) -> Result<()> {
     let whirlpool = &mut ctx.accounts.whirlpool;
     let clock = Clock::get()?;
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
+
+    // Process remaining accounts
+    let remaining_accounts = parse_remaining_accounts(
+        &ctx.remaining_accounts,
+        &remaining_accounts_info,
+        &[
+            AccountsType::TransferHookA,
+            AccountsType::TransferHookB,
+        ],
+    )?;
+
     let mut swap_tick_sequence = SwapTickSequence::new(
         ctx.accounts.tick_array_0.load_mut().unwrap(),
         ctx.accounts.tick_array_1.load_mut().ok(),
@@ -117,6 +129,8 @@ pub fn handler(
         &ctx.accounts.token_owner_account_b,
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_vault_b,
+        &remaining_accounts.transfer_hook_a,
+        &remaining_accounts.transfer_hook_b,
         &ctx.accounts.token_program_a,
         &ctx.accounts.token_program_b,
         &ctx.accounts.memo_program,

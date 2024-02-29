@@ -21,7 +21,7 @@ spl-token = {version = "4", features = ["no-entrypoint"]}
 solana-program = "1.17"
 thiserror = "1.0"
 uint = {version = "0.9.1", default-features = false}
-borsh = "0.9.1"
+borsh09 = {package = "borsh", version = "0.9.1"}
 
 [dev-dependencies]
 proptest = "1.0"

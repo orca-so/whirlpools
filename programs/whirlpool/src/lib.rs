@@ -20,6 +20,7 @@ pub mod tests;
 pub mod util;
 
 use crate::state::{OpenPositionBumps, OpenPositionWithMetadataBumps, WhirlpoolBumps};
+use crate::util::RemainingAccountsInfo;
 use instructions::*;
 
 #[program]
@@ -617,24 +618,33 @@ pub mod whirlpool {
     ///
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
-    pub fn collect_fees_v2(ctx: Context<CollectFeesV2>) -> Result<()> {
-        return instructions::v2::collect_fees::handler(ctx);
+    pub fn collect_fees_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, CollectFeesV2<'info>>,
+        remaining_accounts_info: RemainingAccountsInfo
+    ) -> Result<()> {
+        return instructions::v2::collect_fees::handler(ctx, remaining_accounts_info);
     }
 
     /// Collect the protocol fees accrued in this Whirlpool
     ///
     /// ### Authority
     /// - `collect_protocol_fees_authority` - assigned authority in the WhirlpoolConfig that can collect protocol fees
-    pub fn collect_protocol_fees_v2(ctx: Context<CollectProtocolFeesV2>) -> Result<()> {
-        return instructions::v2::collect_protocol_fees::handler(ctx);
+    pub fn collect_protocol_fees_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, CollectProtocolFeesV2<'info>>,
+        remaining_accounts_info: RemainingAccountsInfo
+    ) -> Result<()> {
+        return instructions::v2::collect_protocol_fees::handler(ctx, remaining_accounts_info);
     }
 
     /// Collect rewards accrued for this position.
     ///
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
-    pub fn collect_reward_v2(ctx: Context<CollectRewardV2>, reward_index: u8) -> Result<()> {
-        return instructions::v2::collect_reward::handler(ctx, reward_index);
+    pub fn collect_reward_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, CollectRewardV2<'info>>,
+        reward_index: u8, remaining_accounts_info: RemainingAccountsInfo
+    ) -> Result<()> {
+        return instructions::v2::collect_reward::handler(ctx, reward_index, remaining_accounts_info);
     }
 
     /// Withdraw liquidity from a position in the Whirlpool. This call also updates the position's accrued fees and rewards.
@@ -651,17 +661,19 @@ pub mod whirlpool {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
-    pub fn decrease_liquidity_v2(
-        ctx: Context<ModifyLiquidityV2>,
+    pub fn decrease_liquidity_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ModifyLiquidityV2<'info>>,
         liquidity_amount: u128,
         token_min_a: u64,
         token_min_b: u64,
+        remaining_accounts_info: RemainingAccountsInfo,
     ) -> Result<()> {
         return instructions::v2::decrease_liquidity::handler(
             ctx,
             liquidity_amount,
             token_min_a,
             token_min_b,
+            remaining_accounts_info,
         );
     }
 
@@ -679,17 +691,19 @@ pub mod whirlpool {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMaxExceeded` - The required token to perform this operation exceeds the user defined amount.
-    pub fn increase_liquidity_v2(
-        ctx: Context<ModifyLiquidityV2>,
+    pub fn increase_liquidity_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, ModifyLiquidityV2<'info>>,
         liquidity_amount: u128,
         token_max_a: u64,
         token_max_b: u64,
+        remaining_accounts_info: RemainingAccountsInfo,
     ) -> Result<()> {
         return instructions::v2::increase_liquidity::handler(
             ctx,
             liquidity_amount,
             token_max_a,
             token_max_b,
+            remaining_accounts_info,
         );
     }
 
@@ -784,13 +798,14 @@ pub mod whirlpool {
     /// - `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.
     /// - `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.
     /// - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
-    pub fn swap_v2(
-        ctx: Context<SwapV2>,
+    pub fn swap_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, SwapV2<'info>>,
         amount: u64,
         other_amount_threshold: u64,
         sqrt_price_limit: u128,
         amount_specified_is_input: bool,
         a_to_b: bool,
+        remaining_accounts_info: RemainingAccountsInfo,
     ) -> Result<()> {
         return instructions::v2::swap::handler(
             ctx,
@@ -799,6 +814,7 @@ pub mod whirlpool {
             sqrt_price_limit,
             amount_specified_is_input,
             a_to_b,
+            remaining_accounts_info,
         );
     }
 
@@ -827,8 +843,8 @@ pub mod whirlpool {
     /// - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
     /// - `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.
     /// - `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool.
-    pub fn two_hop_swap_v2(
-        ctx: Context<TwoHopSwapV2>,
+    pub fn two_hop_swap_v2<'a, 'b, 'c, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, TwoHopSwapV2<'info>>,
         amount: u64,
         other_amount_threshold: u64,
         amount_specified_is_input: bool,
@@ -836,6 +852,7 @@ pub mod whirlpool {
         a_to_b_two: bool,
         sqrt_price_limit_one: u128,
         sqrt_price_limit_two: u128,
+        remaining_accounts_info: RemainingAccountsInfo,
     ) -> Result<()> {
         return instructions::v2::two_hop_swap::handler(
             ctx,
@@ -846,6 +863,7 @@ pub mod whirlpool {
             a_to_b_two,
             sqrt_price_limit_one,
             sqrt_price_limit_two,
+            remaining_accounts_info,
         );
     }
 

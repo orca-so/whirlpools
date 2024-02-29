@@ -1,8 +1,9 @@
 import { Program } from "@coral-xyz/anchor";
 import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
+import { AccountMeta, PublicKey } from "@solana/web3.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../..";
+import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
 
 /**
  * Parameters to collect protocol fees for a Whirlpool
@@ -17,6 +18,8 @@ import { MEMO_PROGRAM_ADDRESS } from "../..";
  * @param tokenVaultB - PublicKey for the tokenB vault for this whirlpool.
  * @param tokenOwnerAccountA - PublicKey for the associated token account for tokenA in the collection wallet
  * @param tokenOwnerAccountB - PublicKey for the associated token account for tokenA in the collection wallet
+ * @param tokenTransferHookAccountsA - Optional array of token transfer hook accounts for token A.
+ * @param tokenTransferHookAccountsB - Optional array of token transfer hook accounts for token B.
  * @param tokenProgramA - PublicKey for the token program for token A.
  * @param tokenProgramB - PublicKey for the token program for token B.
  */
@@ -30,6 +33,8 @@ export type CollectProtocolFeesV2Params = {
   tokenVaultB: PublicKey;
   tokenOwnerAccountA: PublicKey;
   tokenOwnerAccountB: PublicKey;
+  tokenTransferHookAccountsA?: AccountMeta[];
+  tokenTransferHookAccountsB?: AccountMeta[];
   tokenProgramA: PublicKey;
   tokenProgramB: PublicKey;
 };
@@ -54,13 +59,20 @@ export function collectProtocolFeesV2Ix(
     tokenMintB,
     tokenVaultA,
     tokenVaultB,
+    tokenTransferHookAccountsA,
+    tokenTransferHookAccountsB,
     tokenOwnerAccountA: tokenDestinationA,
     tokenOwnerAccountB: tokenDestinationB,
     tokenProgramA,
     tokenProgramB,
   } = params;
 
-  const ix = program.instruction.collectProtocolFeesV2({
+  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+    .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+    .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+    .build();
+
+  const ix = program.instruction.collectProtocolFeesV2(remainingAccountsInfo, {
     accounts: {
       whirlpoolsConfig,
       whirlpool,
@@ -75,6 +87,7 @@ export function collectProtocolFeesV2Ix(
       tokenProgramB,
       memoProgram: MEMO_PROGRAM_ADDRESS,
     },
+    remainingAccounts,
   });
 
   return {

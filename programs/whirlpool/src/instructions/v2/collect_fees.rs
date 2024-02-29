@@ -3,6 +3,7 @@ use anchor_spl::token;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
+use crate::util::{parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::{
     constants::transfer_memo,
     state::*,
@@ -43,10 +44,23 @@ pub struct CollectFeesV2<'info> {
     pub memo_program: Program<'info, Memo>,
 }
 
-pub fn handler(ctx: Context<CollectFeesV2>) -> Result<()> {
+pub fn handler<'a, 'b, 'c, 'info>(
+    ctx: Context<'a, 'b, 'c, 'info, CollectFeesV2<'info>>,
+    remaining_accounts_info: RemainingAccountsInfo
+) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
+    )?;
+
+    // Process remaining accounts
+    let remaining_accounts = parse_remaining_accounts(
+        &ctx.remaining_accounts,
+        &remaining_accounts_info,
+        &[
+            AccountsType::TransferHookA,
+            AccountsType::TransferHookB,
+        ],
     )?;
 
     let position = &mut ctx.accounts.position;
@@ -64,6 +78,7 @@ pub fn handler(ctx: Context<CollectFeesV2>) -> Result<()> {
         &ctx.accounts.token_owner_account_a,
         &ctx.accounts.token_program_a,
         &ctx.accounts.memo_program,
+        &remaining_accounts.transfer_hook_a,
         fee_owed_a,
         transfer_memo::TRANSFER_MEMO_COLLECT_FEES.as_bytes(),
     )?;
@@ -75,6 +90,7 @@ pub fn handler(ctx: Context<CollectFeesV2>) -> Result<()> {
         &ctx.accounts.token_owner_account_b,
         &ctx.accounts.token_program_b,
         &ctx.accounts.memo_program,
+        &remaining_accounts.transfer_hook_b,
         fee_owed_b,
         transfer_memo::TRANSFER_MEMO_COLLECT_FEES.as_bytes(),
     )?;

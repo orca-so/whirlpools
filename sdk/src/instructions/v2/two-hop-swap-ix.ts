@@ -164,11 +164,11 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
   } = params;
 
   const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
-  .addSlice(RemainingAccountsType.TransferHookOneA, tokenTransferHookAccountsOneA)
-  .addSlice(RemainingAccountsType.TransferHookOneB, tokenTransferHookAccountsOneB)
-  .addSlice(RemainingAccountsType.TransferHookTwoA, tokenTransferHookAccountsTwoA)
-  .addSlice(RemainingAccountsType.TransferHookTwoB, tokenTransferHookAccountsTwoB)
-  .build();
+    .addSlice(RemainingAccountsType.TransferHookOneA, tokenTransferHookAccountsOneA)
+    .addSlice(RemainingAccountsType.TransferHookOneB, tokenTransferHookAccountsOneB)
+    .addSlice(RemainingAccountsType.TransferHookTwoA, tokenTransferHookAccountsTwoA)
+    .addSlice(RemainingAccountsType.TransferHookTwoB, tokenTransferHookAccountsTwoB)
+    .build();
 
   const ix = program.instruction.twoHopSwapV2(
     amount,
@@ -178,6 +178,7 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
     aToBTwo,
     sqrtPriceLimitOne,
     sqrtPriceLimitTwo,
+    remainingAccountsInfo,
     {
       accounts: {
         tokenProgramOneA,
@@ -209,6 +210,7 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
         oracleOne,
         oracleTwo,
       },
+      remainingAccounts,
     }
   );
 

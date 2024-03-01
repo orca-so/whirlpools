@@ -24,3 +24,7 @@ url = "https://api.mainnet-beta.solana.com"
 [[test.genesis]]
 address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 program = "sdk/tests/external_program/mpl_token_metadata.20240214.so"
+
+[[test.genesis]]
+address = "EBZDYx7599krFc4m2govwBdZcicr4GgepqC78m71nsHS"
+program = "sdk/tests/external_program/transfer_hook_counter.so"

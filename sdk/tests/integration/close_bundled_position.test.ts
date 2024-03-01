@@ -9,7 +9,7 @@ import {
   WhirlpoolContext,
   WhirlpoolIx,
   buildWhirlpoolClient,
-  increaseLiquidityQuoteByInputTokenWithParams_PriceSlippage,
+  increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage,
   toTx
 } from "../../src";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
@@ -196,7 +196,7 @@ describe("close_bundled_position", () => {
 
     // deposit
     const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
-    const quote = increaseLiquidityQuoteByInputTokenWithParams_PriceSlippage({
+    const quote = increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage({
       tokenMintA: poolInitInfo.tokenMintA,
       tokenMintB: poolInitInfo.tokenMintB,
       sqrtPrice: pool.getData().sqrtPrice,

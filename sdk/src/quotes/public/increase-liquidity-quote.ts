@@ -79,7 +79,7 @@ export function increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
   const inputMint = AddressUtil.toPubKey(inputTokenMint);
   const inputTokenInfo = inputMint.equals(tokenAInfo.mint) ? tokenAInfo : tokenBInfo;
 
-  return increaseLiquidityQuoteByInputTokenWithParams_PriceSlippage({
+  return increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage({
     inputTokenMint: inputMint,
     inputTokenAmount: DecimalUtil.toBN(inputTokenAmount, inputTokenInfo.decimals),
     tickLowerIndex: TickUtil.getInitializableTickIndex(tickLower, data.tickSpacing),
@@ -97,7 +97,7 @@ export function increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
  * @param param IncreaseLiquidityQuoteParam
  * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
  */
-export function increaseLiquidityQuoteByInputTokenWithParams_PriceSlippage(
+export function increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage(
   param: IncreaseLiquidityQuoteParam
 ): IncreaseLiquidityQuote {
   invariant(TickUtil.checkTickInBounds(param.tickLowerIndex), "tickLowerIndex is out of bounds.");

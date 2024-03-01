@@ -1,28 +1,20 @@
-import * as anchor from "@coral-xyz/anchor";
 import { Percentage, ZERO } from "@orca-so/common-sdk";
 import assert from "assert";
 import BN from "bn.js";
 import {
   PriceMath,
-  WhirlpoolContext,
-  increaseLiquidityQuoteByLiquidityWithParams,
+  increaseLiquidityQuoteByLiquidityWithParams
 } from "../../../../src";
 import {
   getTokenAFromLiquidity,
   getTokenBFromLiquidity,
 } from "../../../../src/utils/position-util";
-import { defaultConfirmOptions } from "../../../utils/const";
 
 const variations = [
   [Percentage.fromFraction(0, 100), new BN(17733543)] as const,
   [Percentage.fromFraction(1, 1000), new BN(17733543)] as const,
   [Percentage.fromFraction(1, 100), new BN(17733543)] as const,
 ];
-
-const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
-
-const program = anchor.workspace.Whirlpool;
-const ctx = WhirlpoolContext.fromWorkspace(provider, program);
 
 variations.forEach(([slippage, liquidity]) => {
   describe("increaseLiquidityQuoteByLiquidity", () => {
@@ -166,7 +158,7 @@ variations.forEach(([slippage, liquidity]) => {
         tickLowerIndex: pTickLowerIndex,
         tickUpperIndex: pTickUpperIndex,
         tickCurrentIndex,
-        slippage: slippage,
+        slippage,
       });
 
       const {

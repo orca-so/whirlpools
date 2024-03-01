@@ -5,7 +5,7 @@ import BN from "bn.js";
 import {
   PriceMath,
   increaseLiquidityQuoteByInputTokenWithParams,
-  increaseLiquidityQuoteByInputTokenWithParams_PriceSlippage,
+  increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage,
   increaseLiquidityQuoteByLiquidityWithParams,
 } from "../../../../src";
 import {
@@ -174,13 +174,12 @@ variations.forEach(([isTokenA, slippage]) => {
     }) {
       const { pTickLowerIndex, pTickUpperIndex, tickCurrentIndex, inputTokenAmount, isTokenA } =
         params;
-      const slippage = Percentage.fromFraction(1, 100);
 
       const sqrtPrice = PriceMath.tickIndexToSqrtPriceX64(tickCurrentIndex);
 
       const inputTokenMint = isTokenA ? tokenMintA : tokenMintB;
 
-      const quote = increaseLiquidityQuoteByInputTokenWithParams_PriceSlippage({
+      const quote = increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage({
         inputTokenAmount,
         inputTokenMint,
         sqrtPrice,
@@ -189,7 +188,7 @@ variations.forEach(([isTokenA, slippage]) => {
         tickLowerIndex: pTickLowerIndex,
         tickUpperIndex: pTickUpperIndex,
         tickCurrentIndex,
-        slippage: Percentage.fromFraction(1, 100),
+        slippage
       });
 
       // Expectations

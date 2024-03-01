@@ -120,10 +120,19 @@ pub fn is_supported_token_mint<'info>(
             extension::ExtensionType::TransferFeeConfig => {}
             extension::ExtensionType::TokenMetadata => {}
             extension::ExtensionType::MetadataPointer => {}
+            // partially supported
+            extension::ExtensionType::ConfidentialTransferMint => {
+                // Supported, but non-confidential transfer only
+                //
+                // WhirlpoolProgram invokes TransferChecked instruction and it supports non-confidential transfer only.
+                //
+                // Because the vault accounts are not configured to support confidential transfer,
+                // it is impossible to send tokens directly to the vault accounts confidentially.
+                // Note: Only the owner (Whirlpool account) can call ConfidentialTransferInstruction::ConfigureAccount.
+            }
             // not supported without token badge
             extension::ExtensionType::PermanentDelegate => { return Ok(false); }
             extension::ExtensionType::TransferHook => { return Ok(false); }
-            extension::ExtensionType::ConfidentialTransferMint => { return Ok(false); }
             // No possibility to support the following extensions
             extension::ExtensionType::DefaultAccountState => { return Ok(false); }
             extension::ExtensionType::MintCloseAuthority => { return Ok(false); }

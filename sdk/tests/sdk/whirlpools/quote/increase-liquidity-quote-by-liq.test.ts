@@ -20,8 +20,8 @@ variations.forEach(([slippage, liquidity]) => {
   describe("increaseLiquidityQuoteByLiquidity", () => {
     it("|[--------P--------]|", async () =>
       testVariation({
-        pTickLowerIndex: -202,
-        pTickUpperIndex: 199,
+        pTickLowerIndex: -101,
+        pTickUpperIndex: 99,
         tickCurrentIndex: 0,
         liquidity,
         slippage,
@@ -39,7 +39,7 @@ variations.forEach(([slippage, liquidity]) => {
 
       it("|--------------[--|--P----]", async () =>
         testVariation({
-          pTickLowerIndex: 100,
+          pTickLowerIndex: 90,
           pTickUpperIndex: 555,
           tickCurrentIndex: 0,
           liquidity,
@@ -48,7 +48,7 @@ variations.forEach(([slippage, liquidity]) => {
 
       it("[|---|---P------]", async () =>
         testVariation({
-          pTickLowerIndex: -202,
+          pTickLowerIndex: -101,
           pTickUpperIndex: 555,
           tickCurrentIndex: 0,
           liquidity,
@@ -57,7 +57,7 @@ variations.forEach(([slippage, liquidity]) => {
 
       it("[--|---|--P-------]", async () =>
         testVariation({
-          pTickLowerIndex: -100,
+          pTickLowerIndex: -50,
           pTickUpperIndex: 555,
           tickCurrentIndex: 0,
           liquidity,
@@ -68,8 +68,8 @@ variations.forEach(([slippage, liquidity]) => {
     describe("Current Price in range", () => {
       it("|-----[---P---]-----|", async () =>
         testVariation({
-          pTickLowerIndex: -100,
-          pTickUpperIndex: 100,
+          pTickLowerIndex: -55,
+          pTickUpperIndex: 55,
           tickCurrentIndex: 0,
           liquidity,
           slippage,
@@ -78,7 +78,7 @@ variations.forEach(([slippage, liquidity]) => {
       it("[--|----P----]-----|", async () =>
         testVariation({
           pTickLowerIndex: -300,
-          pTickUpperIndex: 100,
+          pTickUpperIndex: 55,
           tickCurrentIndex: 0,
           liquidity,
           slippage,
@@ -86,7 +86,7 @@ variations.forEach(([slippage, liquidity]) => {
 
       it("|--[---P---|-----]", async () =>
         testVariation({
-          pTickLowerIndex: -100,
+          pTickLowerIndex: -55,
           pTickUpperIndex: 300,
           tickCurrentIndex: 0,
           liquidity,
@@ -96,7 +96,7 @@ variations.forEach(([slippage, liquidity]) => {
       it("[---|---P---|----]", async () =>
         testVariation({
           pTickLowerIndex: -300,
-          pTickUpperIndex: 300,
+          pTickUpperIndex: 55,
           tickCurrentIndex: 0,
           liquidity,
           slippage,
@@ -116,7 +116,7 @@ variations.forEach(([slippage, liquidity]) => {
       it("[---P--|---]------|", async () =>
         testVariation({
           pTickLowerIndex: -500,
-          pTickUpperIndex: -100,
+          pTickUpperIndex: -55,
           tickCurrentIndex: 0,
           liquidity,
           slippage,
@@ -125,7 +125,7 @@ variations.forEach(([slippage, liquidity]) => {
       it("[-----P--|---|]", async () =>
         testVariation({
           pTickLowerIndex: -500,
-          pTickUpperIndex: 199,
+          pTickUpperIndex: 99,
           tickCurrentIndex: 0,
           liquidity,
           slippage,

@@ -2,7 +2,13 @@ import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { MAX_SQRT_PRICE_BN, MIN_SQRT_PRICE_BN, PriceMath } from "../../../../src";
+import {
+  MAX_SQRT_PRICE_BN,
+  MAX_TICK_INDEX,
+  MIN_SQRT_PRICE_BN,
+  MIN_TICK_INDEX,
+  PriceMath,
+} from "../../../../src";
 
 function toSqrtPrice(n: number) {
   return PriceMath.priceToSqrtPriceX64(new Decimal(n), 6, 6);
@@ -45,22 +51,34 @@ variations.forEach(([sqrtPrice, slippage, ignorePrecisionVerification]) => {
         const price = PriceMath.sqrtPriceX64ToPrice(sqrtPrice, 6, 6);
         const slippageDecimal = slippage.toDecimal();
 
-        const expectedUpperSlippagePrice = toPrecisionLevel(price.mul(slippageDecimal.add(1)))
-        const expectedLowerSlippagePrice = toPrecisionLevel(price.mul(new Decimal(1).sub(slippageDecimal)))
+        const expectedUpperSlippagePrice = toPrecisionLevel(price.mul(slippageDecimal.add(1)));
+        const expectedLowerSlippagePrice = toPrecisionLevel(
+          price.mul(new Decimal(1).sub(slippageDecimal)),
+        );
 
-        const expectedUpperSqrtPrice = BN.min(BN.max(MathUtil.toX64(expectedUpperSlippagePrice.sqrt()), MIN_SQRT_PRICE_BN), MAX_SQRT_PRICE_BN);
-        const expectedLowerSqrtPrice = BN.min(BN.max(MathUtil.toX64(expectedLowerSlippagePrice.sqrt()), MIN_SQRT_PRICE_BN), MAX_SQRT_PRICE_BN);
+        const expectedUpperSqrtPrice = BN.min(
+          BN.max(MathUtil.toX64(expectedUpperSlippagePrice.sqrt()), MIN_SQRT_PRICE_BN),
+          MAX_SQRT_PRICE_BN,
+        );
+        const expectedLowerSqrtPrice = BN.min(
+          BN.max(MathUtil.toX64(expectedLowerSlippagePrice.sqrt()), MIN_SQRT_PRICE_BN),
+          MAX_SQRT_PRICE_BN,
+        );
 
         const expectedUpperTickIndex = PriceMath.sqrtPriceX64ToTickIndex(expectedUpperSqrtPrice);
         const expectedLowerTickIndex = PriceMath.sqrtPriceX64ToTickIndex(expectedLowerSqrtPrice);
 
         const lowerBoundSqrtPrice = lowerBound[0];
         const lowerBoundTickIndex = lowerBound[1];
-        const lowerBoundPrice = toPrecisionLevel(PriceMath.sqrtPriceX64ToPrice(lowerBoundSqrtPrice, 6, 6))
+        const lowerBoundPrice = toPrecisionLevel(
+          PriceMath.sqrtPriceX64ToPrice(lowerBoundSqrtPrice, 6, 6),
+        );
 
         const upperBoundSqrtPrice = upperBound[0];
         const upperBoundTickIndex = upperBound[1];
-        const upperBoundPrice = toPrecisionLevel(PriceMath.sqrtPriceX64ToPrice(upperBoundSqrtPrice, 6, 6));
+        const upperBoundPrice = toPrecisionLevel(
+          PriceMath.sqrtPriceX64ToPrice(upperBoundSqrtPrice, 6, 6),
+        );
 
         // For larger sqrt-price boundary values, it's difficult to verify exactly due to the precision loss.
         // We will only verify that it won't crash and the upper and lower bounds are within the expected range by
@@ -82,8 +100,27 @@ variations.forEach(([sqrtPrice, slippage, ignorePrecisionVerification]) => {
             expectedLowerTickIndex === lowerBoundTickIndex,
             `lower tick index ${lowerBoundTickIndex} should equal ${expectedLowerTickIndex}`,
           );
+        } else {
+          // Verify generally the conditions hold between sqrtPrices and tick indicies
+          assert.ok(
+            lowerBoundSqrtPrice.gte(MIN_SQRT_PRICE_BN) && lowerBoundSqrtPrice.lte(MAX_SQRT_PRICE_BN),
+            `lower bound sqrt price ${lowerBoundSqrtPrice.toString()} should be within bounds of MIN_SQRT_PRICE_BN & MAX_SQRT_PRICE_BN`,
+          );
+          assert.ok(
+            upperBoundSqrtPrice.gte(MIN_SQRT_PRICE_BN) && upperBoundSqrtPrice.lte(MAX_SQRT_PRICE_BN),
+            `lower bound sqrt price ${upperBoundSqrtPrice.toString()} should be within bounds of MIN_SQRT_PRICE_BN & MAX_SQRT_PRICE_BN`,
+          );
+
+          assert.ok(
+            lowerBoundTickIndex >= MIN_TICK_INDEX && lowerBoundTickIndex <= MAX_TICK_INDEX,
+            `lower bound tick index ${lowerBoundTickIndex} should be within bounds of MIN_TICK_INDEX & MAX_TICK_INDEX`,
+          );
+
+          assert.ok(
+            upperBoundTickIndex >= MIN_TICK_INDEX && upperBoundTickIndex <= MAX_TICK_INDEX,
+            `upper bound tick index ${upperBoundTickIndex} should be within bounds of MIN_TICK_INDEX & MAX_TICK_INDEX`,
+          );
         }
       });
   });
 });
-

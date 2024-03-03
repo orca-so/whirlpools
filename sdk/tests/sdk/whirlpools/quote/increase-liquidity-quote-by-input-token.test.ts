@@ -59,10 +59,8 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      }
-      );
+      });
     });
-
 
     it(`|----------------|  [---P---] @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
       const slippageRange = getTestSlippageRange(currentTickIndex, slippage);
@@ -73,7 +71,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`|--------------[--|--P----] @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -85,7 +83,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[|---|---P------] @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -97,7 +95,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[--|---|--P-------] @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -109,7 +107,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`|-----[---P---]-----| @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -121,7 +119,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[--|----P----]-----| @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -133,9 +131,8 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
-
 
     it(`|--[---P---|-----] @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
       const slippageRange = getTestSlippageRange(currentTickIndex, slippage);
@@ -146,9 +143,8 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
-
 
     it(`[---|---P---|----] @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
       const slippageRange = getTestSlippageRange(currentTickIndex, slippage);
@@ -159,7 +155,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[---P---] |---------| @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -171,7 +167,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[---P--|---]------| @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -183,7 +179,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[-----P--|---|] @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -195,7 +191,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[-------P--|---|--] @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -207,7 +203,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         inputTokenAmount: new BN(100000),
         isTokenA,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     function testVariation(params: {
@@ -234,7 +230,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         tickLowerIndex: pTickLowerIndex,
         tickUpperIndex: pTickUpperIndex,
         tickCurrentIndex,
-        slippageTolerance: slippage
+        slippageTolerance: slippage,
       });
 
       // Expectations

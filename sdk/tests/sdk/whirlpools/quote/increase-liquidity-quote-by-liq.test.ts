@@ -1,10 +1,7 @@
 import { Percentage, ZERO } from "@orca-so/common-sdk";
 import assert from "assert";
 import BN from "bn.js";
-import {
-  PriceMath,
-  increaseLiquidityQuoteByLiquidityWithParams
-} from "../../../../src";
+import { PriceMath, increaseLiquidityQuoteByLiquidityWithParams } from "../../../../src";
 import {
   getTokenAFromLiquidity,
   getTokenBFromLiquidity,
@@ -48,10 +45,8 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      }
-      );
+      });
     });
-
 
     it(`|----------------|  [---P---] @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
       const slippageRange = getTestSlipageRange(currentTickIndex, slippage);
@@ -61,7 +56,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`|--------------[--|--P----] @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -72,7 +67,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[|---|---P------] @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -83,7 +78,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[--|---|--P-------] @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -94,7 +89,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`|-----[---P---]-----| @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -105,7 +100,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[--|----P----]-----| @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -116,9 +111,8 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
-
 
     it(`|--[---P---|-----] @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
       const slippageRange = getTestSlipageRange(currentTickIndex, slippage);
@@ -128,9 +122,8 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
-
 
     it(`[---|---P---|----] @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
       const slippageRange = getTestSlipageRange(currentTickIndex, slippage);
@@ -140,7 +133,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[---P---] |---------| @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -151,7 +144,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[---P--|---]------| @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -162,7 +155,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[-----P--|---|] @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -173,7 +166,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     it(`[-------P--|---|--] @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
@@ -184,7 +177,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
-      })
+      });
     });
 
     async function testVariation(params: {
@@ -195,8 +188,6 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
       slippageTolerance: Percentage;
     }) {
       const { pTickLowerIndex, pTickUpperIndex, tickCurrentIndex, liquidity } = params;
-
-
 
       const sqrtPrice = PriceMath.tickIndexToSqrtPriceX64(tickCurrentIndex);
 

@@ -5,6 +5,7 @@ import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
   collectFeesQuote,
+  METADATA_PROGRAM_ADDRESS,
   PDAUtil,
   PositionData,
   TickArrayData,
@@ -15,13 +16,22 @@ import {
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { approveToken, getTokenBalance, TickSpacing, transferToken, ZERO_BN } from "../../utils";
+import {
+  approveToken,
+  getTokenBalance,
+  TEST_TOKEN_2022_PROGRAM_ID,
+  TEST_TOKEN_PROGRAM_ID,
+  TickSpacing,
+  transferToken,
+  ZERO_BN,
+} from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import { TokenTrait } from "../../utils/v2/init-utils-v2";
-import { createTokenAccountV2 } from "../../utils/v2/token-2022";
+import { createMintV2, createTokenAccountV2 } from "../../utils/v2/token-2022";
 import { createTokenAccount as createTokenAccountForPosition } from "../../utils/token";
 import { NATIVE_MINT } from "@solana/spl-token";
+import { RemainingAccountsSliceData } from "../../../src/utils/remaining-accounts-util";
 
 describe("collect_fees_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -910,6 +920,452 @@ describe("collect_fees_v2", () => {
           );
         });
       });
+    });
+  });
+
+  describe("v2 specific accounts", () => {
+    it("fails when passed token_mint_a does not match whirlpool's token_mint_a", async () => {
+      const tickLowerIndex = 29440;
+      const tickUpperIndex = 33536;
+      const tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing,
+        positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      });
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          //tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        tokenAccountA,
+        tokenAccountB,
+        positions,
+      } = fixture.getInfos();
+
+      const otherTokenPublicKey = await createMintV2(provider, { isToken2022: true });
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+            whirlpool: whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            tokenMintA: otherTokenPublicKey, // invalid
+            tokenMintB,
+            tokenProgramA,
+            tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: tokenVaultAKeypair.publicKey,
+            tokenVaultB: tokenVaultBKeypair.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_mint_b does not match whirlpool's token_mint_b", async () => {
+      const tickLowerIndex = 29440;
+      const tickUpperIndex = 33536;
+      const tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing,
+        positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      });
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          //tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        tokenAccountA,
+        tokenAccountB,
+        positions,
+      } = fixture.getInfos();
+
+      const otherTokenPublicKey = await createMintV2(provider, { isToken2022: true });
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+            whirlpool: whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            tokenMintA,
+            tokenMintB: otherTokenPublicKey, // invalid
+            tokenProgramA,
+            tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: tokenVaultAKeypair.publicKey,
+            tokenVaultB: tokenVaultBKeypair.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_program_a is not token program (token-2022 is passed)", async () => {
+      const tickLowerIndex = 29440;
+      const tickUpperIndex = 33536;
+      const tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: false },
+        tokenTraitB: { isToken2022: false },
+        tickSpacing,
+        positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      });
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        tokenAccountA,
+        tokenAccountB,
+        positions,
+      } = fixture.getInfos();
+
+      assert.ok(tokenProgramA.equals(TEST_TOKEN_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+            whirlpool: whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            tokenMintA,
+            tokenMintB,
+            tokenProgramA: TEST_TOKEN_2022_PROGRAM_ID, // invalid
+            tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: tokenVaultAKeypair.publicKey,
+            tokenVaultB: tokenVaultBKeypair.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_program_a is not token-2022 program (token is passed)", async () => {
+      const tickLowerIndex = 29440;
+      const tickUpperIndex = 33536;
+      const tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing,
+        positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      });
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        tokenAccountA,
+        tokenAccountB,
+        positions,
+      } = fixture.getInfos();
+
+      assert.ok(tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+            whirlpool: whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            tokenMintA,
+            tokenMintB,
+            tokenProgramA: TEST_TOKEN_PROGRAM_ID, // invalid
+            tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: tokenVaultAKeypair.publicKey,
+            tokenVaultB: tokenVaultBKeypair.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_program_a is token_metadata", async () => {
+      const tickLowerIndex = 29440;
+      const tickUpperIndex = 33536;
+      const tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing,
+        positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      });
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        tokenAccountA,
+        tokenAccountB,
+        positions,
+      } = fixture.getInfos();
+
+      assert.ok(tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+            whirlpool: whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            tokenMintA,
+            tokenMintB,
+            tokenProgramA: METADATA_PROGRAM_ADDRESS, // invalid
+            tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: tokenVaultAKeypair.publicKey,
+            tokenVaultB: tokenVaultBKeypair.publicKey,
+          })
+        ).buildAndExecute(),
+        /0xbc0/ // InvalidProgramId
+      );
+    });
+
+    it("fails when passed token_program_b is not token program (token-2022 is passed)", async () => {
+      const tickLowerIndex = 29440;
+      const tickUpperIndex = 33536;
+      const tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: false },
+        tokenTraitB: { isToken2022: false },
+        tickSpacing,
+        positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      });
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        tokenAccountA,
+        tokenAccountB,
+        positions,
+      } = fixture.getInfos();
+
+      assert.ok(tokenProgramB.equals(TEST_TOKEN_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+            whirlpool: whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            tokenMintA,
+            tokenMintB,
+            tokenProgramA,
+            tokenProgramB: TEST_TOKEN_2022_PROGRAM_ID, // invalid
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: tokenVaultAKeypair.publicKey,
+            tokenVaultB: tokenVaultBKeypair.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_program_b is not token-2022 program (token is passed)", async () => {
+      const tickLowerIndex = 29440;
+      const tickUpperIndex = 33536;
+      const tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing,
+        positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      });
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        tokenAccountA,
+        tokenAccountB,
+        positions,
+      } = fixture.getInfos();
+
+      assert.ok(tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+            whirlpool: whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            tokenMintA,
+            tokenMintB,
+            tokenProgramA,
+            tokenProgramB: TEST_TOKEN_PROGRAM_ID, // invalid
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: tokenVaultAKeypair.publicKey,
+            tokenVaultB: tokenVaultBKeypair.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_program_b is token_metadata", async () => {
+      const tickLowerIndex = 29440;
+      const tickUpperIndex = 33536;
+      const tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing,
+        positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      });
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        tokenAccountA,
+        tokenAccountB,
+        positions,
+      } = fixture.getInfos();
+
+      assert.ok(tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+            whirlpool: whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            tokenMintA,
+            tokenMintB,
+            tokenProgramA,
+            tokenProgramB: METADATA_PROGRAM_ADDRESS, // invalid
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: tokenVaultAKeypair.publicKey,
+            tokenVaultB: tokenVaultBKeypair.publicKey,
+          })
+        ).buildAndExecute(),
+        /0xbc0/ // InvalidProgramId
+      );
+    });
+
+    it("fails when passed memo_program is token_metadata", async () => {
+      const tickLowerIndex = 29440;
+      const tickUpperIndex = 33536;
+      const tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing,
+        positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      });
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        tokenAccountA,
+        tokenAccountB,
+        positions,
+      } = fixture.getInfos();
+
+      const invalidMemoProgram = METADATA_PROGRAM_ADDRESS;
+
+      await assert.rejects(
+        toTx(ctx, {
+          cleanupInstructions: [],
+          signers: [],
+          instructions: [
+            ctx.program.instruction.collectFeesV2(
+              { slices: [] },
+              {
+                accounts: {
+                  whirlpool: whirlpoolPda.publicKey,
+                  positionAuthority: provider.wallet.publicKey,
+                  position: positions[0].publicKey,
+                  positionTokenAccount: positions[0].tokenAccount,
+                  tokenMintA,
+                  tokenMintB,
+                  tokenOwnerAccountA: tokenAccountA,
+                  tokenOwnerAccountB: tokenAccountB,
+                  tokenVaultA: tokenVaultAKeypair.publicKey,
+                  tokenVaultB: tokenVaultBKeypair.publicKey,
+                  tokenProgramA,
+                  tokenProgramB,
+                  memoProgram: invalidMemoProgram,
+                },
+              }
+            ),
+          ],
+        }).buildAndExecute(),
+        /0xbc0/ // InvalidProgramId
+      );
     });
   });
 });

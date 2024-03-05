@@ -55,7 +55,9 @@ pub struct InitializePoolV2<'info> {
     #[account(has_one = whirlpools_config)]
     pub fee_tier: Account<'info, FeeTier>,
 
+    #[account(address = token_mint_a.to_account_info().owner.clone())]
     pub token_program_a: Interface<'info, TokenInterface>,
+    #[account(address = token_mint_b.to_account_info().owner.clone())]
     pub token_program_b: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,

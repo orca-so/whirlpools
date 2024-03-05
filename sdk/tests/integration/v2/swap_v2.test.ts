@@ -6,6 +6,7 @@ import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import {
   MAX_SQRT_PRICE,
+  METADATA_PROGRAM_ADDRESS,
   MIN_SQRT_PRICE,
   PDAUtil,
   PriceMath,
@@ -22,7 +23,14 @@ import {
   toTx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { MAX_U64, TickSpacing, ZERO_BN, getTokenBalance } from "../../utils";
+import {
+  MAX_U64,
+  TEST_TOKEN_2022_PROGRAM_ID,
+  TEST_TOKEN_PROGRAM_ID,
+  TickSpacing,
+  ZERO_BN,
+  getTokenBalance,
+} from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initTickArrayRange } from "../../utils/init-utils";
 import {
@@ -34,6 +42,7 @@ import {
   initTestPoolWithTokensV2,
   withdrawPositionsV2,
 } from "../../utils/v2/init-utils-v2";
+import { createMintV2 } from "../../utils/v2/token-2022";
 
 describe("swap_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -2068,6 +2077,461 @@ describe("swap_v2", () => {
           //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
         });
       });
+    });
+  });
+
+  describe("v2 specific accounts", () => {
+    it("fails when passed token_mint_a does not match whirlpool's token_mint_a", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: true },
+          { isToken2022: true },
+          TickSpacing.Standard
+        );
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false
+      );
+      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+      const otherTokenPublicKey = await createMintV2(provider, { isToken2022: true });
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.swapV2Ix(ctx.program, {
+            amount: new BN(10),
+            otherAmountThreshold: ZERO_BN,
+            sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+            amountSpecifiedIsInput: true,
+            aToB: true,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: otherTokenPublicKey, // invalid
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArray0: tickArrays[0].publicKey,
+            tickArray1: tickArrays[0].publicKey,
+            tickArray2: tickArrays[0].publicKey,
+            oracle: oraclePda.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_mint_b does not match whirlpool's token_mint_b", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: true },
+          { isToken2022: true },
+          TickSpacing.Standard
+        );
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false
+      );
+      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+      const otherTokenPublicKey = await createMintV2(provider, { isToken2022: true });
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.swapV2Ix(ctx.program, {
+            amount: new BN(10),
+            otherAmountThreshold: ZERO_BN,
+            sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+            amountSpecifiedIsInput: true,
+            aToB: true,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: otherTokenPublicKey, // invalid
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArray0: tickArrays[0].publicKey,
+            tickArray1: tickArrays[0].publicKey,
+            tickArray2: tickArrays[0].publicKey,
+            oracle: oraclePda.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_program_a is not token program (token-2022 is passed)", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: false },
+          { isToken2022: false },
+          TickSpacing.Standard
+        );
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false
+      );
+      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+      assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.swapV2Ix(ctx.program, {
+            amount: new BN(10),
+            otherAmountThreshold: ZERO_BN,
+            sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+            amountSpecifiedIsInput: true,
+            aToB: true,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: TEST_TOKEN_2022_PROGRAM_ID,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArray0: tickArrays[0].publicKey,
+            tickArray1: tickArrays[0].publicKey,
+            tickArray2: tickArrays[0].publicKey,
+            oracle: oraclePda.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_program_a is not token-2022 program (token is passed)", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: true },
+          { isToken2022: true },
+          TickSpacing.Standard
+        );
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false
+      );
+      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+      assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.swapV2Ix(ctx.program, {
+            amount: new BN(10),
+            otherAmountThreshold: ZERO_BN,
+            sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+            amountSpecifiedIsInput: true,
+            aToB: true,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: TEST_TOKEN_PROGRAM_ID,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArray0: tickArrays[0].publicKey,
+            tickArray1: tickArrays[0].publicKey,
+            tickArray2: tickArrays[0].publicKey,
+            oracle: oraclePda.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_program_a is token_metadata", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: true },
+          { isToken2022: true },
+          TickSpacing.Standard
+        );
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false
+      );
+      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+      assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.swapV2Ix(ctx.program, {
+            amount: new BN(10),
+            otherAmountThreshold: ZERO_BN,
+            sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+            amountSpecifiedIsInput: true,
+            aToB: true,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: METADATA_PROGRAM_ADDRESS,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArray0: tickArrays[0].publicKey,
+            tickArray1: tickArrays[0].publicKey,
+            tickArray2: tickArrays[0].publicKey,
+            oracle: oraclePda.publicKey,
+          })
+        ).buildAndExecute(),
+        /0xbc0/ // InvalidProgramId
+      );
+    });
+
+    it("fails when passed token_program_b is not token program (token-2022 is passed)", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: false },
+          { isToken2022: false },
+          TickSpacing.Standard
+        );
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false
+      );
+      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+      assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.swapV2Ix(ctx.program, {
+            amount: new BN(10),
+            otherAmountThreshold: ZERO_BN,
+            sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+            amountSpecifiedIsInput: true,
+            aToB: true,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: TEST_TOKEN_2022_PROGRAM_ID,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArray0: tickArrays[0].publicKey,
+            tickArray1: tickArrays[0].publicKey,
+            tickArray2: tickArrays[0].publicKey,
+            oracle: oraclePda.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_program_b is not token-2022 program (token is passed)", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: true },
+          { isToken2022: true },
+          TickSpacing.Standard
+        );
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false
+      );
+      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+      assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.swapV2Ix(ctx.program, {
+            amount: new BN(10),
+            otherAmountThreshold: ZERO_BN,
+            sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+            amountSpecifiedIsInput: true,
+            aToB: true,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: TEST_TOKEN_PROGRAM_ID,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArray0: tickArrays[0].publicKey,
+            tickArray1: tickArrays[0].publicKey,
+            tickArray2: tickArrays[0].publicKey,
+            oracle: oraclePda.publicKey,
+          })
+        ).buildAndExecute(),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
+    it("fails when passed token_program_b is token_metadata", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: true },
+          { isToken2022: true },
+          TickSpacing.Standard
+        );
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false
+      );
+      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+      assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.swapV2Ix(ctx.program, {
+            amount: new BN(10),
+            otherAmountThreshold: ZERO_BN,
+            sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+            amountSpecifiedIsInput: true,
+            aToB: true,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: METADATA_PROGRAM_ADDRESS,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArray0: tickArrays[0].publicKey,
+            tickArray1: tickArrays[0].publicKey,
+            tickArray2: tickArrays[0].publicKey,
+            oracle: oraclePda.publicKey,
+          })
+        ).buildAndExecute(),
+        /0xbc0/ // InvalidProgramId
+      );
+    });
+
+    it("fails when passed memo_program is token_metadata", async () => {
+      const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: true },
+          { isToken2022: true },
+          TickSpacing.Standard
+        );
+
+      const tickArrays = await initTickArrayRange(
+        ctx,
+        whirlpoolPda.publicKey,
+        22528,
+        3,
+        TickSpacing.Standard,
+        false
+      );
+      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+      const invalidMemoProgram = METADATA_PROGRAM_ADDRESS;
+
+      await assert.rejects(
+        toTx(ctx, {
+          cleanupInstructions: [],
+          signers: [],
+          instructions: [
+            ctx.program.instruction.swapV2(
+              new BN(10), // amount
+              ZERO_BN, // otherAmountThreshold
+              MathUtil.toX64(new Decimal(4.95)), // sqrtPriceLimit
+              true, // amountSpecifiedIsInput
+              true, // aToB
+              { slices: [] },
+              {
+                accounts: {
+                  whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+                  tokenAuthority: ctx.wallet.publicKey,
+                  tokenMintA: poolInitInfo.tokenMintA,
+                  tokenMintB: poolInitInfo.tokenMintB,
+                  tokenProgramA: poolInitInfo.tokenProgramA,
+                  tokenProgramB: poolInitInfo.tokenProgramB,
+                  tokenOwnerAccountA: tokenAccountA,
+                  tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+                  tokenOwnerAccountB: tokenAccountB,
+                  tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+                  tickArray0: tickArrays[0].publicKey,
+                  tickArray1: tickArrays[0].publicKey,
+                  tickArray2: tickArrays[0].publicKey,
+                  oracle: oraclePda.publicKey,
+                  memoProgram: invalidMemoProgram,
+                },
+              }
+            ),
+          ],
+        }).buildAndExecute(),
+        /0xbc0/ // InvalidProgramId
+      );
     });
   });
 });

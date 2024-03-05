@@ -13,7 +13,9 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct SwapV2<'info> {
+    #[account(address = token_mint_a.to_account_info().owner.clone())]
     pub token_program_a: Interface<'info, TokenInterface>,
+    #[account(address = token_mint_b.to_account_info().owner.clone())]
     pub token_program_b: Interface<'info, TokenInterface>,
 
     pub memo_program: Program<'info, Memo>,

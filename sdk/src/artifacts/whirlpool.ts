@@ -2052,7 +2052,7 @@ export type Whirlpool = {
           "isSigner": false
         },
         {
-          "name": "tokenProgram",
+          "name": "rewardTokenProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -2455,7 +2455,7 @@ export type Whirlpool = {
           "isSigner": true
         },
         {
-          "name": "tokenProgram",
+          "name": "rewardTokenProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -5842,7 +5842,7 @@ export const IDL: Whirlpool = {
           "isSigner": false
         },
         {
-          "name": "tokenProgram",
+          "name": "rewardTokenProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -6245,7 +6245,7 @@ export const IDL: Whirlpool = {
           "isSigner": true
         },
         {
-          "name": "tokenProgram",
+          "name": "rewardTokenProgram",
           "isMut": false,
           "isSigner": false
         },

@@ -6,6 +6,7 @@ import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
   collectRewardsQuote,
+  METADATA_PROGRAM_ADDRESS,
   NUM_REWARDS,
   toTx,
   WhirlpoolContext,
@@ -137,7 +138,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
                 rewardMint: rewards[i].rewardMint,
-                tokenProgram: rewards[i].tokenProgram,
+                rewardTokenProgram: rewards[i].tokenProgram,
                 rewardOwnerAccount: rewardOwnerAccount,
                 rewardVault: rewards[i].rewardVaultKeypair.publicKey,
                 rewardIndex: i,
@@ -215,7 +216,7 @@ describe("collect_reward_v2", () => {
               position: positions[0].publicKey,
               positionTokenAccount: positions[0].tokenAccount,
               rewardMint: rewards[0].rewardMint,
-              tokenProgram: rewards[0].tokenProgram,
+              rewardTokenProgram: rewards[0].tokenProgram,
               rewardOwnerAccount,
               rewardVault: rewards[0].rewardVaultKeypair.publicKey,
               rewardIndex: 0,
@@ -289,7 +290,7 @@ describe("collect_reward_v2", () => {
               position: positions[0].publicKey,
               positionTokenAccount: delegatePositionAccount,
               rewardMint: rewards[0].rewardMint,
-              tokenProgram: rewards[0].tokenProgram,
+              rewardTokenProgram: rewards[0].tokenProgram,
               rewardOwnerAccount,
               rewardVault: rewards[0].rewardVaultKeypair.publicKey,
               rewardIndex: 0,
@@ -358,7 +359,7 @@ describe("collect_reward_v2", () => {
               position: positions[0].publicKey,
               positionTokenAccount: positions[0].tokenAccount,
               rewardMint: rewards[0].rewardMint,
-              tokenProgram: rewards[0].tokenProgram,
+              rewardTokenProgram: rewards[0].tokenProgram,
               rewardOwnerAccount,
               rewardVault: rewards[0].rewardVaultKeypair.publicKey,
               rewardIndex: 0,
@@ -405,7 +406,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
                 rewardMint: fakeRewardMint,
-                tokenProgram: tokenTraits.tokenTraitR.isToken2022
+                rewardTokenProgram: tokenTraits.tokenTraitR.isToken2022
                   ? TEST_TOKEN_2022_PROGRAM_ID
                   : TEST_TOKEN_PROGRAM_ID,
                 rewardOwnerAccount,
@@ -464,7 +465,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
                 rewardMint: rewards[0].rewardMint,
-                tokenProgram: rewards[0].tokenProgram,
+                rewardTokenProgram: rewards[0].tokenProgram,
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
@@ -525,7 +526,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
                 rewardMint: rewards[0].rewardMint,
-                tokenProgram: rewards[0].tokenProgram,
+                rewardTokenProgram: rewards[0].tokenProgram,
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
@@ -587,7 +588,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: fakePositionTokenAccount,
                 rewardMint: rewards[0].rewardMint,
-                tokenProgram: rewards[0].tokenProgram,
+                rewardTokenProgram: rewards[0].tokenProgram,
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
@@ -643,7 +644,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
                 rewardMint: rewards[0].rewardMint,
-                tokenProgram: rewards[0].tokenProgram,
+                rewardTokenProgram: rewards[0].tokenProgram,
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
@@ -702,7 +703,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
                 rewardMint: rewards[0].rewardMint,
-                tokenProgram: rewards[0].tokenProgram,
+                rewardTokenProgram: rewards[0].tokenProgram,
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
@@ -761,7 +762,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
                 rewardMint: rewards[0].rewardMint,
-                tokenProgram: rewards[0].tokenProgram,
+                rewardTokenProgram: rewards[0].tokenProgram,
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
@@ -816,7 +817,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
                 rewardMint: rewards[0].rewardMint,
-                tokenProgram: rewards[0].tokenProgram,
+                rewardTokenProgram: rewards[0].tokenProgram,
                 rewardOwnerAccount,
                 rewardVault: rewardOwnerAccount,
                 rewardIndex: 0,
@@ -872,7 +873,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
                 rewardMint: rewards[0].rewardMint,
-                tokenProgram: rewards[0].tokenProgram,
+                rewardTokenProgram: rewards[0].tokenProgram,
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
@@ -927,7 +928,7 @@ describe("collect_reward_v2", () => {
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
                 rewardMint: rewards[0].rewardMint,
-                tokenProgram: rewards[0].tokenProgram,
+                rewardTokenProgram: rewards[0].tokenProgram,
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 4,
@@ -938,5 +939,296 @@ describe("collect_reward_v2", () => {
         });
       });
     });
+  });
+
+  describe("v2 specific accounts", () => {
+    it("fails when passed reward_mint does not match whirlpool's reward_infos", async () => {
+      const tokenTraits: TokenTrait[] = [
+        { isToken2022: true },
+        { isToken2022: false },
+        { isToken2022: true },
+      ];
+
+      const vaultStartBalance = 1_000_000;
+      const lowerTickIndex = -1280,
+        upperTickIndex = 1280,
+        tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing: tickSpacing,
+        initialSqrtPrice: MathUtil.toX64(new Decimal(1)),
+        positions: [
+          {
+            tickLowerIndex: lowerTickIndex,
+            tickUpperIndex: upperTickIndex,
+            liquidityAmount: new anchor.BN(1_000_000),
+          },
+        ],
+        rewards: [
+          {
+            rewardTokenTrait: tokenTraits[0],
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+          {
+            rewardTokenTrait: tokenTraits[1],
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+          {
+            rewardTokenTrait: tokenTraits[2],
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+        ],
+      });
+      const {
+        poolInitInfo: { whirlpoolPda },
+        positions,
+        rewards,
+      } = fixture.getInfos();
+
+      const otherTokenPublicKey = await createMintV2(provider, { isToken2022: true });
+
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        const rewardOwnerAccount = await createTokenAccountV2(
+          provider,
+          tokenTraits[i],
+          rewards[i].rewardMint,
+          provider.wallet.publicKey
+        );
+
+        await assert.rejects(
+          toTx(
+            ctx,
+            WhirlpoolIx.collectRewardV2Ix(ctx.program, {
+              whirlpool: whirlpoolPda.publicKey,
+              positionAuthority: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              rewardMint: otherTokenPublicKey, // invalid
+              rewardTokenProgram: rewards[i].tokenProgram,
+              rewardOwnerAccount: rewardOwnerAccount,
+              rewardVault: rewards[i].rewardVaultKeypair.publicKey,
+              rewardIndex: i,
+            })
+          ).buildAndExecute(),
+          /0x7dc/ // ConstraintAddress
+        );
+      }
+    });
+
+    it("fails when passed token_program is not token program (token-2022 is passed)", async () => {
+      const vaultStartBalance = 1_000_000;
+      const lowerTickIndex = -1280,
+        upperTickIndex = 1280,
+        tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing: tickSpacing,
+        initialSqrtPrice: MathUtil.toX64(new Decimal(1)),
+        positions: [
+          {
+            tickLowerIndex: lowerTickIndex,
+            tickUpperIndex: upperTickIndex,
+            liquidityAmount: new anchor.BN(1_000_000),
+          },
+        ],
+        rewards: [
+          {
+            rewardTokenTrait: { isToken2022: false },
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+          {
+            rewardTokenTrait: { isToken2022: false },
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+          {
+            rewardTokenTrait: { isToken2022: false },
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+        ],
+      });
+      const {
+        poolInitInfo: { whirlpoolPda },
+        positions,
+        rewards,
+      } = fixture.getInfos();
+
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        const rewardOwnerAccount = await createTokenAccountV2(
+          provider,
+          { isToken2022: false },
+          rewards[i].rewardMint,
+          provider.wallet.publicKey
+        );
+
+        assert.ok(rewards[i].tokenProgram.equals(TEST_TOKEN_PROGRAM_ID));
+        await assert.rejects(
+          toTx(
+            ctx,
+            WhirlpoolIx.collectRewardV2Ix(ctx.program, {
+              whirlpool: whirlpoolPda.publicKey,
+              positionAuthority: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              rewardMint: rewards[i].rewardMint,
+              rewardTokenProgram: TEST_TOKEN_2022_PROGRAM_ID, // invalid
+              rewardOwnerAccount: rewardOwnerAccount,
+              rewardVault: rewards[i].rewardVaultKeypair.publicKey,
+              rewardIndex: i,
+            })
+          ).buildAndExecute(),
+          /0x7dc/ // ConstraintAddress
+        );
+      }
+    });
+
+    it("fails when passed token_program is not token-2022 program (token is passed)", async () => {
+      const vaultStartBalance = 1_000_000;
+      const lowerTickIndex = -1280,
+        upperTickIndex = 1280,
+        tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing: tickSpacing,
+        initialSqrtPrice: MathUtil.toX64(new Decimal(1)),
+        positions: [
+          {
+            tickLowerIndex: lowerTickIndex,
+            tickUpperIndex: upperTickIndex,
+            liquidityAmount: new anchor.BN(1_000_000),
+          },
+        ],
+        rewards: [
+          {
+            rewardTokenTrait: { isToken2022: true },
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+          {
+            rewardTokenTrait: { isToken2022: true },
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+          {
+            rewardTokenTrait: { isToken2022: true },
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+        ],
+      });
+      const {
+        poolInitInfo: { whirlpoolPda },
+        positions,
+        rewards,
+      } = fixture.getInfos();
+
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        const rewardOwnerAccount = await createTokenAccountV2(
+          provider,
+          { isToken2022: true },
+          rewards[i].rewardMint,
+          provider.wallet.publicKey
+        );
+
+        assert.ok(rewards[i].tokenProgram.equals(TEST_TOKEN_2022_PROGRAM_ID));
+        await assert.rejects(
+          toTx(
+            ctx,
+            WhirlpoolIx.collectRewardV2Ix(ctx.program, {
+              whirlpool: whirlpoolPda.publicKey,
+              positionAuthority: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              rewardMint: rewards[i].rewardMint,
+              rewardTokenProgram: TEST_TOKEN_PROGRAM_ID, // invalid
+              rewardOwnerAccount: rewardOwnerAccount,
+              rewardVault: rewards[i].rewardVaultKeypair.publicKey,
+              rewardIndex: i,
+            })
+          ).buildAndExecute(),
+          /0x7dc/ // ConstraintAddress
+        );
+      }
+    });
+
+    it("fails when passed token_program is token_metadata", async () => {
+      const vaultStartBalance = 1_000_000;
+      const lowerTickIndex = -1280,
+        upperTickIndex = 1280,
+        tickSpacing = TickSpacing.Standard;
+      const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+        tickSpacing: tickSpacing,
+        initialSqrtPrice: MathUtil.toX64(new Decimal(1)),
+        positions: [
+          {
+            tickLowerIndex: lowerTickIndex,
+            tickUpperIndex: upperTickIndex,
+            liquidityAmount: new anchor.BN(1_000_000),
+          },
+        ],
+        rewards: [
+          {
+            rewardTokenTrait: { isToken2022: true },
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+          {
+            rewardTokenTrait: { isToken2022: true },
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+          {
+            rewardTokenTrait: { isToken2022: true },
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+        ],
+      });
+      const {
+        poolInitInfo: { whirlpoolPda },
+        positions,
+        rewards,
+      } = fixture.getInfos();
+
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        const rewardOwnerAccount = await createTokenAccountV2(
+          provider,
+          { isToken2022: true },
+          rewards[i].rewardMint,
+          provider.wallet.publicKey
+        );
+
+        assert.ok(rewards[i].tokenProgram.equals(TEST_TOKEN_2022_PROGRAM_ID));
+        await assert.rejects(
+          toTx(
+            ctx,
+            WhirlpoolIx.collectRewardV2Ix(ctx.program, {
+              whirlpool: whirlpoolPda.publicKey,
+              positionAuthority: provider.wallet.publicKey,
+              position: positions[0].publicKey,
+              positionTokenAccount: positions[0].tokenAccount,
+              rewardMint: rewards[i].rewardMint,
+              rewardTokenProgram: METADATA_PROGRAM_ADDRESS, // invalid
+              rewardOwnerAccount: rewardOwnerAccount,
+              rewardVault: rewards[i].rewardVaultKeypair.publicKey,
+              rewardIndex: i,
+            })
+          ).buildAndExecute(),
+          /0xbc0/ // InvalidProgramId
+        );
+      }
+    });
+
+    it("fails when passed memo_program is token_metadata", async () => {});
   });
 });

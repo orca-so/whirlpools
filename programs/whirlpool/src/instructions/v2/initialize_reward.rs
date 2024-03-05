@@ -28,13 +28,14 @@ pub struct InitializeRewardV2<'info> {
     #[account(
         init,
         payer = funder,
-        token::token_program = token_program,
+        token::token_program = reward_token_program,
         token::mint = reward_mint,
         token::authority = whirlpool
     )]
     pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    pub token_program: Interface<'info, TokenInterface>,
+    #[account(address = reward_mint.to_account_info().owner.clone())]
+    pub reward_token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
 }

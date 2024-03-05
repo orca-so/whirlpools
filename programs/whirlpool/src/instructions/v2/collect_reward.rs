@@ -36,7 +36,8 @@ pub struct CollectRewardV2<'info> {
     #[account(mut, address = whirlpool.reward_infos[reward_index as usize].vault)]
     pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    pub token_program: Interface<'info, TokenInterface>,
+    #[account(address = reward_mint.to_account_info().owner.clone())]
+    pub reward_token_program: Interface<'info, TokenInterface>,
     pub memo_program: Program<'info, Memo>,
 }
 
@@ -87,7 +88,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &ctx.accounts.reward_mint,
         &ctx.accounts.reward_vault,
         &ctx.accounts.reward_owner_account,
-        &ctx.accounts.token_program,
+        &ctx.accounts.reward_token_program,
         &ctx.accounts.memo_program,
         &remaining_accounts.transfer_hook_reward,
         transfer_amount,

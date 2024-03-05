@@ -326,7 +326,7 @@ export async function initializeRewardV2(
     rewardTokenBadge: rewartTokenBadgePda.publicKey,
     rewardVaultKeypair,
     rewardIndex,
-    tokenProgram,
+    rewardTokenProgram: tokenProgram,
   };
 
   const tx = toTx(ctx, WhirlpoolIx.initializeRewardV2Ix(ctx.program, params)).addSigner(
@@ -354,7 +354,7 @@ export async function initRewardAndSetEmissionsV2(
   funder?: Keypair
 ) {
   const {
-    params: { rewardMint, rewardVaultKeypair, tokenProgram },
+    params: { rewardMint, rewardVaultKeypair, rewardTokenProgram },
   } = await initializeRewardV2(ctx, tokenTrait, whirlpoolsConfig, rewardAuthorityKeypair, whirlpool, rewardIndex, funder);
 
   await mintToDestinationV2(ctx.provider, tokenTrait, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
@@ -371,7 +371,7 @@ export async function initRewardAndSetEmissionsV2(
   )
   .addSigner(rewardAuthorityKeypair)
   .buildAndExecute();
-  return { rewardMint, rewardVaultKeypair, tokenProgram };
+  return { rewardMint, rewardVaultKeypair, tokenProgram: rewardTokenProgram };
 }
 
 ////////////////////////////////////////////////////////////////////////////////

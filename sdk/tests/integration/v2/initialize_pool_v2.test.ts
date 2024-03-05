@@ -5,6 +5,7 @@ import Decimal from "decimal.js";
 import {
   InitPoolV2Params,
   MAX_SQRT_PRICE,
+  METADATA_PROGRAM_ADDRESS,
   MIN_SQRT_PRICE,
   PDAUtil,
   PriceMath,
@@ -418,6 +419,146 @@ describe("initialize_pool_v2", () => {
           assert.notEqual(whirlpool.whirlpoolBump, invalidBump);
         });
       });
+    });
+  });
+
+  describe("v2 specific accounts", () => {
+    it("fails when passed token_program_a is not token program (token-2022 is passed)", async () => {
+      const { poolInitInfo } = await buildTestPoolV2Params(
+        ctx,
+        {isToken2022: false},
+        {isToken2022: false},
+        TickSpacing.Standard
+      );
+
+      assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_PROGRAM_ID));
+      const modifiedPoolInitInfo: InitPoolV2Params = {
+        ...poolInitInfo,
+        tokenProgramA: TEST_TOKEN_2022_PROGRAM_ID,
+      };
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+        ).buildAndExecute(),
+        /incorrect program id for instruction/ // Anchor will try to create vault account
+      );
+    });
+
+    it("fails when passed token_program_a is not token-2022 program (token is passed)", async () => {
+      const { poolInitInfo } = await buildTestPoolV2Params(
+        ctx,
+        {isToken2022: true},
+        {isToken2022: true},
+        TickSpacing.Standard
+      );
+
+      assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      const modifiedPoolInitInfo: InitPoolV2Params = {
+        ...poolInitInfo,
+        tokenProgramA: TEST_TOKEN_PROGRAM_ID,
+      };
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+        ).buildAndExecute(),
+        /incorrect program id for instruction/ // Anchor will try to create vault account
+      );
+    });
+
+    it("fails when passed token_program_a is token_metadata", async () => {
+      const { poolInitInfo } = await buildTestPoolV2Params(
+        ctx,
+        {isToken2022: true},
+        {isToken2022: true},
+        TickSpacing.Standard
+      );
+
+      assert.ok(poolInitInfo.tokenProgramA.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      const modifiedPoolInitInfo: InitPoolV2Params = {
+        ...poolInitInfo,
+        tokenProgramA: METADATA_PROGRAM_ADDRESS,
+      };
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+        ).buildAndExecute(),
+        /0xbc0/ // InvalidProgramId
+      );      
+    });
+
+    it("fails when passed token_program_b is not token program (token-2022 is passed)", async () => {
+      const { poolInitInfo } = await buildTestPoolV2Params(
+        ctx,
+        {isToken2022: false},
+        {isToken2022: false},
+        TickSpacing.Standard
+      );
+
+      assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_PROGRAM_ID));
+      const modifiedPoolInitInfo: InitPoolV2Params = {
+        ...poolInitInfo,
+        tokenProgramB: TEST_TOKEN_2022_PROGRAM_ID,
+      };
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+        ).buildAndExecute(),
+        /incorrect program id for instruction/ // Anchor will try to create vault account
+      );
+    });
+
+    it("fails when passed token_program_b is not token-2022 program (token is passed)", async () => {
+      const { poolInitInfo } = await buildTestPoolV2Params(
+        ctx,
+        {isToken2022: true},
+        {isToken2022: true},
+        TickSpacing.Standard
+      );
+
+      assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      const modifiedPoolInitInfo: InitPoolV2Params = {
+        ...poolInitInfo,
+        tokenProgramB: TEST_TOKEN_PROGRAM_ID,
+      };
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+        ).buildAndExecute(),
+        /incorrect program id for instruction/ // Anchor will try to create vault account
+      );
+    });
+
+    it("fails when passed token_program_b is token_metadata", async () => {
+      const { poolInitInfo } = await buildTestPoolV2Params(
+        ctx,
+        {isToken2022: true},
+        {isToken2022: true},
+        TickSpacing.Standard
+      );
+
+      assert.ok(poolInitInfo.tokenProgramB.equals(TEST_TOKEN_2022_PROGRAM_ID));
+      const modifiedPoolInitInfo: InitPoolV2Params = {
+        ...poolInitInfo,
+        tokenProgramB: METADATA_PROGRAM_ADDRESS,
+      };
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePoolV2Ix(ctx.program, modifiedPoolInitInfo)
+        ).buildAndExecute(),
+        /0xbc0/ // InvalidProgramId
+      );
     });
   });
 });

@@ -17,7 +17,7 @@ import { Instruction } from "@orca-so/common-sdk";
  * @param rewardVaultKeypair - Keypair of the vault for this reward index.
  * @param rewardAuthority - Assigned authority by the reward_super_authority for the specified reward-index in this Whirlpool
  * @param funder - The account that would fund the creation of this account
- * @param tokenProgram - PublicKey for the token program.
+ * @param rewardTokenProgram - PublicKey for the token program.
  */
 export type InitializeRewardV2Params = {
   whirlpool: PublicKey;
@@ -27,7 +27,7 @@ export type InitializeRewardV2Params = {
   rewardVaultKeypair: Keypair;
   rewardAuthority: PublicKey;
   funder: PublicKey;
-  tokenProgram: PublicKey;
+  rewardTokenProgram: PublicKey;
 };
 
 /**
@@ -47,7 +47,7 @@ export function initializeRewardV2Ix(
   program: Program<Whirlpool>,
   params: InitializeRewardV2Params
 ): Instruction {
-  const { rewardAuthority, funder, whirlpool, rewardMint, rewardTokenBadge, rewardVaultKeypair, rewardIndex, tokenProgram } =
+  const { rewardAuthority, funder, whirlpool, rewardMint, rewardTokenBadge, rewardVaultKeypair, rewardIndex, rewardTokenProgram } =
     params;
 
   const ix = program.instruction.initializeRewardV2(rewardIndex, {
@@ -58,7 +58,7 @@ export function initializeRewardV2Ix(
       rewardMint,
       rewardTokenBadge,
       rewardVault: rewardVaultKeypair.publicKey,
-      tokenProgram,
+      rewardTokenProgram,
       systemProgram: SystemProgram.programId,
       rent: anchor.web3.SYSVAR_RENT_PUBKEY,
     },

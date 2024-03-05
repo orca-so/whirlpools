@@ -18,7 +18,7 @@ import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/rem
  * @param rewardOwnerAccount - PublicKey for the reward token account that the reward will deposit into.
  * @param rewardVault - PublicKey of the vault account that reward will be withdrawn from.
  * @param rewardTransferHookAccounts - Optional array of token transfer hook accounts for the reward token.
- * @param tokenProgram - PublicKey for the token program.
+ * @param rewardTokenProgram - PublicKey for the token program.
  */
 export type CollectRewardV2Params = {
   whirlpool: PublicKey;
@@ -30,7 +30,7 @@ export type CollectRewardV2Params = {
   rewardOwnerAccount: PublicKey;
   rewardVault: PublicKey;
   rewardTransferHookAccounts?: AccountMeta[];
-  tokenProgram: PublicKey;
+  rewardTokenProgram: PublicKey;
 };
 
 /**
@@ -56,7 +56,7 @@ export function collectRewardV2Ix(
     rewardVault,
     rewardTransferHookAccounts,
     rewardIndex,
-    tokenProgram,
+    rewardTokenProgram,
   } = params;
 
   const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
@@ -72,7 +72,7 @@ export function collectRewardV2Ix(
       rewardMint,
       rewardOwnerAccount,
       rewardVault,
-      tokenProgram,
+      rewardTokenProgram,
       memoProgram: MEMO_PROGRAM_ADDRESS,
     },
     remainingAccounts,

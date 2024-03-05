@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../../src";
+import { METADATA_PROGRAM_ADDRESS, PDAUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
@@ -181,7 +181,7 @@ describe("initialize_reward_v2", () => {
                 whirlpool: poolInitInfo.whirlpoolPda.publicKey,
                 rewardMint,
                 rewardTokenBadge: rewardTokenBadgePda.publicKey,
-                tokenProgram: tokenTraits.tokenTraitR.isToken2022
+                rewardTokenProgram: tokenTraits.tokenTraitR.isToken2022
                   ? TEST_TOKEN_2022_PROGRAM_ID
                   : TEST_TOKEN_PROGRAM_ID,
                 rewardVaultKeypair: anchor.web3.Keypair.generate(),
@@ -191,6 +191,116 @@ describe("initialize_reward_v2", () => {
           );
         });
       });
+    });
+  });
+
+  describe("v2 specific accounts", () => {
+    it("fails when passed reward_token_program is not token program (token-2022 is passed)", async () => {
+      const { poolInitInfo, configKeypairs } = await initTestPoolV2(
+        ctx,
+        {isToken2022: true},
+        {isToken2022: true},
+        TickSpacing.Standard
+      );
+
+      const rewardMint = await createMintV2(provider, {isToken2022: false});
+
+      const rewardTokenBadgePda = PDAUtil.getTokenBadge(
+        ctx.program.programId,
+        poolInitInfo.whirlpoolsConfig,
+        rewardMint
+      );
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializeRewardV2Ix(ctx.program, {
+            rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+            funder: provider.wallet.publicKey,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            rewardMint,
+            rewardTokenBadge: rewardTokenBadgePda.publicKey,
+            rewardTokenProgram: TEST_TOKEN_2022_PROGRAM_ID,
+            rewardVaultKeypair: anchor.web3.Keypair.generate(),
+            rewardIndex: 0,
+          })
+        )
+        .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
+        .buildAndExecute(),
+        /incorrect program id for instruction/ // Anchor will try to create vault account
+      );
+    });
+
+    it("fails when passed reward_token_program is not token-2022 program (token is passed)", async () => {
+      const { poolInitInfo, configKeypairs } = await initTestPoolV2(
+        ctx,
+        {isToken2022: true},
+        {isToken2022: true},
+        TickSpacing.Standard
+      );
+
+      const rewardMint = await createMintV2(provider, {isToken2022: true});
+
+      const rewardTokenBadgePda = PDAUtil.getTokenBadge(
+        ctx.program.programId,
+        poolInitInfo.whirlpoolsConfig,
+        rewardMint
+      );
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializeRewardV2Ix(ctx.program, {
+            rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+            funder: provider.wallet.publicKey,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            rewardMint,
+            rewardTokenBadge: rewardTokenBadgePda.publicKey,
+            rewardTokenProgram: TEST_TOKEN_PROGRAM_ID,
+            rewardVaultKeypair: anchor.web3.Keypair.generate(),
+            rewardIndex: 0,
+          })
+        )
+        .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
+        .buildAndExecute(),
+        /incorrect program id for instruction/ // Anchor will try to create vault account
+      );
+    });
+
+    it("fails when passed reward_token_program is token_metadata", async () => {
+      const { poolInitInfo, configKeypairs } = await initTestPoolV2(
+        ctx,
+        {isToken2022: true},
+        {isToken2022: true},
+        TickSpacing.Standard
+      );
+
+      const rewardMint = await createMintV2(provider, {isToken2022: true});
+
+      const rewardTokenBadgePda = PDAUtil.getTokenBadge(
+        ctx.program.programId,
+        poolInitInfo.whirlpoolsConfig,
+        rewardMint
+      );
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializeRewardV2Ix(ctx.program, {
+            rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+            funder: provider.wallet.publicKey,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            rewardMint,
+            rewardTokenBadge: rewardTokenBadgePda.publicKey,
+            rewardTokenProgram: METADATA_PROGRAM_ADDRESS,
+            rewardVaultKeypair: anchor.web3.Keypair.generate(),
+            rewardIndex: 0,
+          })
+        )
+        .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
+        .buildAndExecute(),
+        /0xbc0/ // InvalidProgramId
+      );
     });
   });
 });

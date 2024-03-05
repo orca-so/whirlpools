@@ -13,9 +13,13 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct TwoHopSwapV2<'info> {
+    #[account(address = token_mint_one_a.to_account_info().owner.clone())]
     pub token_program_one_a: Interface<'info, TokenInterface>,
+    #[account(address = token_mint_one_b.to_account_info().owner.clone())]
     pub token_program_one_b: Interface<'info, TokenInterface>,
+    #[account(address = token_mint_two_a.to_account_info().owner.clone())]
     pub token_program_two_a: Interface<'info, TokenInterface>,
+    #[account(address = token_mint_two_b.to_account_info().owner.clone())]
     pub token_program_two_b: Interface<'info, TokenInterface>,
 
     pub memo_program: Program<'info, Memo>,

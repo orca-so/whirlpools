@@ -2052,7 +2052,7 @@
           "isSigner": false
         },
         {
-          "name": "tokenProgram",
+          "name": "rewardTokenProgram",
           "isMut": false,
           "isSigner": false
         },
@@ -2455,7 +2455,7 @@
           "isSigner": true
         },
         {
-          "name": "tokenProgram",
+          "name": "rewardTokenProgram",
           "isMut": false,
           "isSigner": false
         },

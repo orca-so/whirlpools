@@ -11,15 +11,22 @@ import {
   createApproveInstruction,
   createAssociatedTokenAccountInstruction,
   createBurnInstruction,
+  createDisableRequiredMemoTransfersInstruction,
+  createEnableRequiredMemoTransfersInstruction,
   createInitializeAccount3Instruction,
   createInitializeMintInstruction,
   createInitializePermanentDelegateInstruction,
   createInitializeTransferFeeConfigInstruction,
   createMintToInstruction,
+  createReallocateInstruction,
   createSetAuthorityInstruction,
   createTransferInstruction,
+  getAccount,
   getAccountLen,
   getAssociatedTokenAddressSync,
+  getExtensionData,
+  getExtensionTypes,
+  getMemoTransfer,
   getMintLen
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID, TEST_TOKEN_2022_PROGRAM_ID } from "../test-consts";
@@ -366,6 +373,63 @@ export async function approveTokenV2(
     )
   );
   return provider.sendAndConfirm(tx, !!owner ? [owner] : [], { commitment: "confirmed" });
+}
+
+export async function enableRequiredMemoTransfers(
+  provider: AnchorProvider,
+  tokenAccount: web3.PublicKey,
+  owner?: web3.Keypair,
+) {
+  const tx = new web3.Transaction();
+  tx.add(
+    createReallocateInstruction(
+      tokenAccount,
+      owner?.publicKey || provider.wallet.publicKey,
+      [ExtensionType.MemoTransfer],
+      owner?.publicKey || provider.wallet.publicKey,
+      undefined,
+      TEST_TOKEN_2022_PROGRAM_ID,
+    )
+  );
+  tx.add(
+    createEnableRequiredMemoTransfersInstruction(
+      tokenAccount,
+      owner?.publicKey || provider.wallet.publicKey,
+      undefined,
+      TEST_TOKEN_2022_PROGRAM_ID
+    )
+  );
+  return provider.sendAndConfirm(tx, !!owner ? [owner] : [], { commitment: "confirmed" });
+}
+
+export async function disableRequiredMemoTransfers(
+  provider: AnchorProvider,
+  tokenAccount: web3.PublicKey,
+  owner?: web3.Keypair,
+) {
+  const tx = new web3.Transaction();
+  tx.add(
+    createDisableRequiredMemoTransfersInstruction(
+      tokenAccount,
+      owner?.publicKey || provider.wallet.publicKey,
+      undefined,
+      TEST_TOKEN_2022_PROGRAM_ID
+    )
+  );
+  return provider.sendAndConfirm(tx, !!owner ? [owner] : [], { commitment: "confirmed" });
+}
+
+export async function isRequiredMemoTransfersEnabled(
+  provider: AnchorProvider,
+  tokenAccount: web3.PublicKey,
+) {
+  const account = await getAccount(provider.connection, tokenAccount, "confirmed", TEST_TOKEN_2022_PROGRAM_ID);
+
+  const extensions = getExtensionTypes(account.tlvData);
+  if (!extensions.includes(ExtensionType.MemoTransfer)) return false;
+
+  const memoTransferData = getMemoTransfer(account);
+  return memoTransferData?.requireIncomingTransferMemos;
 }
 
 export async function asyncAssertTokenVaultV2(

@@ -25,7 +25,8 @@ import {
   getExtensionTypes,
   getMemoTransfer,
   getMint,
-  getMintLen
+  getMintLen,
+  getTypeLen
 } from "@solana/spl-token";
 import { TEST_TOKEN_PROGRAM_ID, TEST_TOKEN_2022_PROGRAM_ID, TEST_TRANSFER_HOOK_PROGRAM_ID } from "../test-consts";
 import { TokenTrait } from "./init-utils-v2";
@@ -35,6 +36,7 @@ import { PoolUtil } from "../../../src";
 import * as assert from "assert";
 import { PublicKey } from "@solana/web3.js";
 import { createInitializeExtraAccountMetaListInstruction } from "./test-transfer-hook-program";
+import { createInitializeConfidentialTransferMintInstruction } from "./confidential-transfer";
 
 export async function createMintV2(
   provider: AnchorProvider,
@@ -120,7 +122,23 @@ async function createMintInstructions(
         mint,
       ));
     }
-    const space = getMintLen(extensionTypes);
+    // [March 6, 2024] getTypeLen(ExtensionType.ConfidentialTransferMint) return 97, but 65 (2 pubkey + 1 bool) is valid
+    // https://github.com/solana-labs/solana-program-library/blob/d72289c79a04411c69a8bf1054f7156b6196f9b3/token/js/src/extensions/extensionType.ts#L74
+    let confidentialTransferMintSizePatch = 0;
+    if (tokenTrait.hasConfidentialTransferExtension) {
+      extensionTypes.push(ExtensionType.ConfidentialTransferMint);
+      confidentialTransferMintSizePatch = (65 - getTypeLen(ExtensionType.ConfidentialTransferMint));
+      extensions.push(
+        createInitializeConfidentialTransferMintInstruction(
+          mint,
+          authority,
+          true, // autoApproveNewAccounts
+          PublicKey.default, // auditorElgamal
+          TEST_TOKEN_2022_PROGRAM_ID,
+        )
+      );
+    }
+    const space = getMintLen(extensionTypes) + confidentialTransferMintSizePatch;
     const instructions = [
       web3.SystemProgram.createAccount({
         fromPubkey: provider.wallet.publicKey,

@@ -49,6 +49,7 @@ export interface TokenTrait {
   hasPermanentDelegate?: boolean;
   hasTransferFeeExtension?: boolean;
   hasTransferHookExtension?: boolean;
+  hasConfidentialTransferExtension?: boolean;
 }
 
 interface TestPoolV2Params {

@@ -18,7 +18,7 @@ import {
   TestConfigParams,
   generateDefaultConfigParams,
 } from "../test-builders";
-import { FundedPositionV2Params, TokenTrait, fundPositionsV2 } from "./init-utils-v2";
+import { FundedPositionV2Params, TokenTrait, fundPositionsV2, generateDefaultConfigExtensionParams, isTokenBadgeRequired } from "./init-utils-v2";
 import { initFeeTier, initTickArrayRange } from "../init-utils";
 import { createAndMintToAssociatedTokenAccountV2, createMintV2 } from "./token-2022";
 import invariant from "tiny-invariant";
@@ -125,6 +125,17 @@ export async function buildTestAquariumsV2(
       WhirlpoolIx.initializeConfigIx(ctx.program, configParams.configInitInfo)
     ).buildAndExecute();
 
+    // initialize ConfigExtension
+    const { configExtensionInitInfo, configExtensionSetTokenBadgeAuthorityInfo, configExtensionKeypairs } = generateDefaultConfigExtensionParams(
+      ctx,
+      configParams.configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      configParams.configKeypairs.feeAuthorityKeypair.publicKey
+    );
+    await toTx(ctx, WhirlpoolIx.initializeConfigExtensionIx(ctx.program, configExtensionInitInfo))
+      .addSigner(configParams.configKeypairs.feeAuthorityKeypair).buildAndExecute();
+    await toTx(ctx, WhirlpoolIx.setTokenBadgeAuthorityIx(ctx.program, configExtensionSetTokenBadgeAuthorityInfo))
+      .addSigner(configParams.configKeypairs.feeAuthorityKeypair).buildAndExecute();
+  
     const {
       initFeeTierParams,
       initMintParams,
@@ -161,6 +172,23 @@ export async function buildTestAquariumsV2(
       await Promise.all(
         initMintParams.map(({ tokenTrait }, i) => createMintV2(ctx.provider, tokenTrait, undefined, mintKeypairs[i]))
       )
+    );
+
+    // create TokenBadge if needed
+    await Promise.all(
+      initMintParams.map(({ tokenTrait }, i) => {
+        if (isTokenBadgeRequired(tokenTrait)) {
+          return toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+            tokenMint: mintKeys[i],
+            tokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
+            tokenBadgePda: PDAUtil.getTokenBadge(ctx.program.programId, configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey, mintKeys[i]),
+            whirlpoolsConfig: configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey,
+            whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtenssionPda.publicKey,
+            funder: ctx.wallet.publicKey,
+          })).addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair).buildAndExecute();
+        }
+        return Promise.resolve();
+      })
     );
 
     const tokenAccounts = await Promise.all(

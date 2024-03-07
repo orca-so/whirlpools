@@ -28,7 +28,7 @@ describe("set_reward_emissions_v2", () => {
         tokenTraits.tokenTraitAB.isToken2022 ? "Token2022" : "Token"
       }, tokenTraitReward: ${tokenTraits.tokenTraitR.isToken2022 ? "Token2022" : "Token"}`, () => {
         it("successfully set_reward_emissions", async () => {
-          const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPoolV2(
+          const { poolInitInfo, configInitInfo, configKeypairs, configExtension } = await initTestPoolV2(
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
@@ -45,7 +45,8 @@ describe("set_reward_emissions_v2", () => {
             poolInitInfo.whirlpoolsConfig,
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
-            rewardIndex
+            rewardIndex,
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           await mintToDestinationV2(
@@ -97,7 +98,7 @@ describe("set_reward_emissions_v2", () => {
         });
 
         it("fails when token vault does not contain at least 1 day of emission runway", async () => {
-          const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPoolV2(
+          const { poolInitInfo, configInitInfo, configKeypairs, configExtension } = await initTestPoolV2(
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
@@ -114,7 +115,8 @@ describe("set_reward_emissions_v2", () => {
             poolInitInfo.whirlpoolsConfig,
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
-            rewardIndex
+            rewardIndex,
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           await assert.rejects(
@@ -135,7 +137,7 @@ describe("set_reward_emissions_v2", () => {
         });
 
         it("fails if provided reward vault does not match whirlpool reward vault", async () => {
-          const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPoolV2(
+          const { poolInitInfo, configInitInfo, configKeypairs, configExtension } = await initTestPoolV2(
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
@@ -151,7 +153,8 @@ describe("set_reward_emissions_v2", () => {
             poolInitInfo.whirlpoolsConfig,
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
-            rewardIndex
+            rewardIndex,
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           const fakeVault = await createAndMintToTokenAccountV2(
@@ -206,7 +209,7 @@ describe("set_reward_emissions_v2", () => {
         });
 
         it("cannot set emission without the authority's signature", async () => {
-          const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPoolV2(
+          const { poolInitInfo, configInitInfo, configKeypairs, configExtension } = await initTestPoolV2(
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
@@ -221,7 +224,8 @@ describe("set_reward_emissions_v2", () => {
             poolInitInfo.whirlpoolsConfig,
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
-            rewardIndex
+            rewardIndex,
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           await assert.rejects(

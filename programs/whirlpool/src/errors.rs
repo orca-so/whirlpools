@@ -123,6 +123,9 @@ pub enum ErrorCode {
     RemainingAccountsInvalidSlice, // 0x17a0 (6048)
     #[msg("Insufficient remaining accounts")]
     RemainingAccountsInsufficient, // 0x17a1 (6049)
+
+    #[msg("Unable to call transfer hook without extra accounts")]
+    NoExtraAccountsForTransferHook, // 0x17a2 (6050)
 }
 
 impl From<TryFromIntError> for ErrorCode {

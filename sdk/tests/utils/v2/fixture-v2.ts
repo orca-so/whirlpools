@@ -55,7 +55,7 @@ export class WhirlpoolTestFixtureV2 {
   async init(params: InitFixtureV2Params): Promise<WhirlpoolTestFixtureV2> {
     const { tickSpacing, initialSqrtPrice, positions, rewards, tokenTraitA, tokenTraitB, mintAmount } = params;
 
-    const { poolInitInfo, configInitInfo, configKeypairs, tokenAccountA, tokenAccountB } =
+    const { poolInitInfo, configInitInfo, configKeypairs, configExtension, tokenAccountA, tokenAccountB } =
       await initTestPoolWithTokensV2(
         this.ctx,
         tokenTraitA,
@@ -96,7 +96,8 @@ export class WhirlpoolTestFixtureV2 {
             poolInitInfo.whirlpoolPda.publicKey,
             i,
             rewards[i].vaultAmount,
-            rewards[i].emissionsPerSecondX64
+            rewards[i].emissionsPerSecondX64,
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           )
         );
       }

@@ -1,16 +1,18 @@
 use crate::state::{token_badge, Whirlpool};
+use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::spl_token_2022::extension::BaseStateWithExtensions;
 
 use anchor_spl::token::Token;
 use anchor_spl::token_2022::spl_token_2022::{self, extension::{self, StateWithExtensions}};
-use anchor_spl::token_interface::{self, Mint, TokenAccount, TokenInterface, TransferChecked};
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::{self, Memo, BuildMemo};
+use spl_transfer_hook_interface;
+
 use token_badge::TokenBadge;
 
-
 pub fn transfer_from_owner_to_vault_v2<'info>(
-    position_authority: &Signer<'info>,
+    authority: &Signer<'info>,
     token_mint: &InterfaceAccount<'info, Mint>,
     token_owner_account: &InterfaceAccount<'info, TokenAccount>,
     token_vault: &InterfaceAccount<'info, TokenAccount>,
@@ -20,19 +22,51 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
 ) -> Result<()> {
     // The vault doesn't have MemoTransfer extension, so we don't need to use memo_program
 
-    token_interface::transfer_checked(
-        CpiContext::new(
-            token_program.to_account_info(),
-            TransferChecked {
-                mint: token_mint.to_account_info(),
-                from: token_owner_account.to_account_info(),
-                to: token_vault.to_account_info(),
-                authority: position_authority.to_account_info(),
-            },
-        ).with_remaining_accounts(transfer_hook_accounts.clone().unwrap_or(vec![])),
+    let mut instruction = spl_token_2022::instruction::transfer_checked(
+        token_program.key,
+        &token_owner_account.key(), // from
+        &token_mint.key(), // mint
+        &token_vault.key(), // to
+        authority.key, // authority
+        &[],
         amount,
         token_mint.decimals,
-    )
+    )?;
+
+    let mut account_infos = vec![
+        token_program.to_account_info(),
+        token_owner_account.to_account_info(),
+        token_mint.to_account_info(),
+        token_vault.to_account_info(),
+        authority.to_account_info(),
+    ];
+
+    // TransferHook extension
+    if let Some(hook_program_id) = get_transfer_hook_program_id(token_mint)? {
+        if transfer_hook_accounts.is_none() {
+            return Err(ErrorCode::NoExtraAccountsForTransferHook.into());
+        }
+
+        spl_transfer_hook_interface::onchain::add_extra_accounts_for_execute_cpi(
+            &mut instruction,
+            &mut account_infos,
+            &hook_program_id,
+            token_owner_account.to_account_info(),
+            token_mint.to_account_info(),
+            token_vault.to_account_info(),
+            authority.to_account_info(),
+            amount,
+            &transfer_hook_accounts.clone().unwrap(),
+        )?;    
+    }
+
+    solana_program::program::invoke_signed(
+        &instruction,
+        &account_infos,
+        &[],
+    )?;
+
+    Ok(())
 }
 
 pub fn transfer_from_vault_to_owner_v2<'info>(
@@ -57,20 +91,64 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
         )?;
     }
 
-    token_interface::transfer_checked(
-        CpiContext::new_with_signer(
-            token_program.to_account_info(),
-            TransferChecked {
-                mint: token_mint.to_account_info(),
-                from: token_vault.to_account_info(),
-                to: token_owner_account.to_account_info(),
-                authority: whirlpool.to_account_info(),
-            },
-            &[&whirlpool.seeds()],
-        ).with_remaining_accounts(transfer_hook_accounts.clone().unwrap_or(vec![])),
+    let mut instruction = spl_token_2022::instruction::transfer_checked(
+        token_program.key,
+        &token_vault.key(), // from
+        &token_mint.key(), // mint
+        &token_owner_account.key(), // to
+        &whirlpool.key(), // authority
+        &[],
         amount,
         token_mint.decimals,
-    )
+    )?;
+
+    let mut account_infos = vec![
+        token_program.to_account_info(),
+        token_vault.to_account_info(),
+        token_mint.to_account_info(),
+        token_owner_account.to_account_info(),
+        whirlpool.to_account_info(),
+    ];
+
+    // TransferHook extension
+    if let Some(hook_program_id) = get_transfer_hook_program_id(token_mint)? {
+        if transfer_hook_accounts.is_none() {
+            return Err(ErrorCode::NoExtraAccountsForTransferHook.into());
+        }
+
+        spl_transfer_hook_interface::onchain::add_extra_accounts_for_execute_cpi(
+            &mut instruction,
+            &mut account_infos,
+            &hook_program_id,
+            token_owner_account.to_account_info(),
+            token_mint.to_account_info(),
+            token_vault.to_account_info(),
+            whirlpool.to_account_info(),
+            amount,
+            &transfer_hook_accounts.clone().unwrap(),
+        )?;    
+    }
+
+    solana_program::program::invoke_signed(
+        &instruction,
+        &account_infos,
+        &[&whirlpool.seeds()],
+    )?;
+
+    Ok(())
+}
+
+fn get_transfer_hook_program_id<'info>(
+    token_mint: &InterfaceAccount<'info, Mint>,
+) -> Result<Option<Pubkey>> {
+    let token_mint_info = token_mint.to_account_info();
+    if *token_mint_info.owner == Token::id() {
+        return Ok(None);
+    }
+
+    let token_mint_data = token_mint_info.try_borrow_data()?;
+    let token_mint_unpacked = StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
+    Ok(extension::transfer_hook::get_program_id(&token_mint_unpacked))
 }
 
 fn is_transfer_memo_required<'info>(token_account: &InterfaceAccount<'info, TokenAccount>) -> Result<bool> {

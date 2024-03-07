@@ -1,40 +1,40 @@
 import { AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
 import { AddressUtil, TokenUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
   AccountLayout,
-  AuthorityType,
   ExtensionType,
   NATIVE_MINT,
   NATIVE_MINT_2022,
-  TOKEN_2022_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
+  addExtraAccountMetasForExecute,
   createApproveInstruction,
   createAssociatedTokenAccountInstruction,
-  createBurnInstruction,
   createDisableRequiredMemoTransfersInstruction,
   createEnableRequiredMemoTransfersInstruction,
   createInitializeAccount3Instruction,
   createInitializeMintInstruction,
   createInitializePermanentDelegateInstruction,
   createInitializeTransferFeeConfigInstruction,
+  createInitializeTransferHookInstruction,
   createMintToInstruction,
   createReallocateInstruction,
-  createSetAuthorityInstruction,
-  createTransferInstruction,
   getAccount,
   getAccountLen,
+  getAccountLenForMint,
   getAssociatedTokenAddressSync,
-  getExtensionData,
   getExtensionTypes,
   getMemoTransfer,
+  getMint,
   getMintLen
 } from "@solana/spl-token";
-import { TEST_TOKEN_PROGRAM_ID, TEST_TOKEN_2022_PROGRAM_ID } from "../test-consts";
+import { TEST_TOKEN_PROGRAM_ID, TEST_TOKEN_2022_PROGRAM_ID, TEST_TRANSFER_HOOK_PROGRAM_ID } from "../test-consts";
 import { TokenTrait } from "./init-utils-v2";
-import { Keypair, TransactionInstruction } from "@solana/web3.js";
+import { Keypair, SystemProgram, TransactionInstruction, AccountMeta } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { PoolUtil } from "../../../src";
 import * as assert from "assert";
+import { PublicKey } from "@solana/web3.js";
+import { createInitializeExtraAccountMetaListInstruction } from "./test-transfer-hook-program";
 
 export async function createMintV2(
   provider: AnchorProvider,
@@ -79,13 +79,14 @@ async function createMintInstructions(
   } else {
     const extensionTypes: ExtensionType[] = [];
     const extensions: TransactionInstruction[] = [];
+    const postInitialization: TransactionInstruction[] = [];
     if (tokenTrait.hasPermanentDelegate) {
       extensionTypes.push(ExtensionType.PermanentDelegate);
       extensions.push(
         createInitializePermanentDelegateInstruction(
           mint,
           authority,
-          TOKEN_2022_PROGRAM_ID
+          TEST_TOKEN_2022_PROGRAM_ID
         )
       );
     }
@@ -98,9 +99,26 @@ async function createMintInstructions(
           authority,
           100,
           100000n,
-          TOKEN_2022_PROGRAM_ID
+          TEST_TOKEN_2022_PROGRAM_ID
         )
       );
+    }
+    if (tokenTrait.hasTransferHookExtension) {
+      extensionTypes.push(ExtensionType.TransferHook);
+      extensions.push(
+        createInitializeTransferHookInstruction(
+          mint,
+          authority,
+          TEST_TRANSFER_HOOK_PROGRAM_ID,
+          TEST_TOKEN_2022_PROGRAM_ID,
+        )
+      );
+
+      // create ExtraAccountMetaList account
+      postInitialization.push(createInitializeExtraAccountMetaListInstruction(
+        provider.wallet.publicKey,
+        mint,
+      ));
     }
     const space = getMintLen(extensionTypes);
     const instructions = [
@@ -112,7 +130,8 @@ async function createMintInstructions(
         programId: TEST_TOKEN_2022_PROGRAM_ID,
       }),
       ...extensions,
-      createInitializeMintInstruction(mint, 0, authority, tokenTrait.hasFreezeAuthority ? authority : null, TEST_TOKEN_2022_PROGRAM_ID)
+      createInitializeMintInstruction(mint, 0, authority, tokenTrait.hasFreezeAuthority ? authority : null, TEST_TOKEN_2022_PROGRAM_ID),
+      ...postInitialization,
     ];
     return instructions;    
   }
@@ -161,7 +180,12 @@ async function createTokenAccountInstructions(
   owner: web3.PublicKey,
   lamports?: number
 ) {
-  if (!tokenTrait.isToken2022) {
+  const mintAccountInfo = await provider.connection.getAccountInfo(mint);
+  const mintData = await getMint(provider.connection, mint, undefined, mintAccountInfo!.owner);
+
+  const isToken2022 = mintAccountInfo!.owner.equals(TEST_TOKEN_2022_PROGRAM_ID);
+
+  if (!isToken2022) {
     if (lamports === undefined) {
       lamports = await provider.connection.getMinimumBalanceForRentExemption(165);
     }
@@ -176,19 +200,15 @@ async function createTokenAccountInstructions(
       createInitializeAccount3Instruction(newAccountPubkey, mint, owner, TEST_TOKEN_PROGRAM_ID)
     ];
   } else {
-    const extensionTypes: ExtensionType[] = [];
-    if (tokenTrait.hasTransferFeeExtension) {
-      extensionTypes.push(ExtensionType.TransferFeeAmount);
-    }
-    const space = getAccountLen(extensionTypes);
+    const accountLen = getAccountLenForMint(mintData);
     if (lamports === undefined) {
-      lamports = await provider.connection.getMinimumBalanceForRentExemption(space);
+      lamports = await provider.connection.getMinimumBalanceForRentExemption(accountLen);
     }
     return [
       web3.SystemProgram.createAccount({
         fromPubkey: provider.wallet.publicKey,
         newAccountPubkey,
-        space,
+        space: accountLen,
         lamports,
         programId: TEST_TOKEN_2022_PROGRAM_ID,
       }),
@@ -455,4 +475,42 @@ export async function asyncAssertOwnerProgram(
   const accountInfo = await provider.connection.getAccountInfo(account);
   assert.ok(accountInfo);
   assert.ok(accountInfo.owner.equals(programId));
+}
+
+export async function getExtraAccountMetasForHookProgram(
+  provider: AnchorProvider,
+  hookProgramId: web3.PublicKey,
+  source: web3.PublicKey,
+  mint: web3.PublicKey,
+  destination: web3.PublicKey,
+  owner: web3.PublicKey,
+  amount: number | bigint,
+): Promise<AccountMeta[] | undefined> {
+  const instruction = new TransactionInstruction({
+    programId: TEST_TOKEN_2022_PROGRAM_ID,
+    keys: [
+      {pubkey: source, isSigner: false, isWritable: false},
+      {pubkey: mint, isSigner: false, isWritable: false},
+      {pubkey: destination, isSigner: false, isWritable: false},
+      {pubkey: owner, isSigner: false, isWritable: false},
+      {pubkey: owner, isSigner: false, isWritable: false},
+    ]
+  });
+
+  await addExtraAccountMetasForExecute(
+    provider.connection,
+    instruction,
+    hookProgramId,
+    source,
+    mint,
+    destination,
+    owner,
+    amount,
+    "confirmed"
+  );
+
+  const extraAccountMetas = instruction.keys.slice(5);
+  return extraAccountMetas.length > 0
+    ? extraAccountMetas
+    : undefined;
 }

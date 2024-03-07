@@ -8,7 +8,7 @@
   "peerDependencies": {
     "@coral-xyz/anchor": "~0.27.0",
     "@orca-so/common-sdk": "^0.4.0",
-    "@solana/spl-token": "^0.3.8",
+    "@solana/spl-token": "^0.4.1",
     "@solana/web3.js": "^1.75.0",
     "decimal.js": "^10.3.1"
   },
@@ -19,7 +19,7 @@
     "@coral-xyz/anchor": "^0.27.0",
     "@metaplex-foundation/mpl-token-metadata": "2.12.0",
     "@orca-so/common-sdk": "^0.4.0",
-    "@solana/spl-token": "^0.3.11",
+    "@solana/spl-token": "^0.4.1",
     "@solana/web3.js": "^1.88.0",
     "@types/bn.js": "~5.1.5",
     "@types/mocha": "^10.0.6",

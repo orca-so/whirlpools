@@ -27,7 +27,7 @@ describe("initialize_reward_v2", () => {
         tokenTraits.tokenTraitAB.isToken2022 ? "Token2022" : "Token"
       }, tokenTraitReward: ${tokenTraits.tokenTraitR.isToken2022 ? "Token2022" : "Token"}`, () => {
         it("successfully initializes reward at index 0", async () => {
-          const { poolInitInfo, configKeypairs } = await initTestPoolV2(
+          const { poolInitInfo, configKeypairs, configExtension } = await initTestPoolV2(
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
@@ -40,7 +40,8 @@ describe("initialize_reward_v2", () => {
             poolInitInfo.whirlpoolsConfig,
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
-            0
+            0,
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           const whirlpool = (await fetcher.getPool(
@@ -58,7 +59,8 @@ describe("initialize_reward_v2", () => {
               poolInitInfo.whirlpoolsConfig,
               configKeypairs.rewardEmissionsSuperAuthorityKeypair,
               poolInitInfo.whirlpoolPda.publicKey,
-              0
+              0,
+              configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
             ),
             /custom program error: 0x178a/ // InvalidRewardIndex
           );
@@ -69,7 +71,8 @@ describe("initialize_reward_v2", () => {
             poolInitInfo.whirlpoolsConfig,
             configKeypairs.rewardEmissionsSuperAuthorityKeypair,
             poolInitInfo.whirlpoolPda.publicKey,
-            1
+            1,
+            configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
           );
 
           const whirlpool2 = (await fetcher.getPool(
@@ -116,7 +119,7 @@ describe("initialize_reward_v2", () => {
         });
 
         it("fails to initialize reward at index 1", async () => {
-          const { poolInitInfo, configKeypairs } = await initTestPoolV2(
+          const { poolInitInfo, configKeypairs, configExtension } = await initTestPoolV2(
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
@@ -130,14 +133,15 @@ describe("initialize_reward_v2", () => {
               poolInitInfo.whirlpoolsConfig,
               configKeypairs.rewardEmissionsSuperAuthorityKeypair,
               poolInitInfo.whirlpoolPda.publicKey,
-              1
+              1,
+              configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
             ),
             /custom program error: 0x178a/ // InvalidRewardIndex
           );
         });
 
         it("fails to initialize reward at out-of-bound index", async () => {
-          const { poolInitInfo, configKeypairs } = await initTestPoolV2(
+          const { poolInitInfo, configKeypairs, configExtension } = await initTestPoolV2(
             ctx,
             tokenTraits.tokenTraitAB,
             tokenTraits.tokenTraitAB,
@@ -151,7 +155,8 @@ describe("initialize_reward_v2", () => {
               poolInitInfo.whirlpoolsConfig,
               configKeypairs.rewardEmissionsSuperAuthorityKeypair,
               poolInitInfo.whirlpoolPda.publicKey,
-              3
+              3,
+              configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
             )
           );
         });

@@ -2732,6 +2732,7 @@ dependencies = [
  "serde_with 1.14.0",
  "solana-program",
  "spl-token",
+ "spl-transfer-hook-interface 0.5.1",
  "thiserror",
  "uint",
 ]

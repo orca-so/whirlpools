@@ -62,8 +62,8 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
     it(`|--------------[--|--P----] @ tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
       const slippageRange = getTestSlipageRange(currentTickIndex, slippage);
       testVariation({
-        pTickLowerIndex: slippageRange.tickUpperIndex - 5,
-        pTickUpperIndex: slippageRange.tickUpperIndex + 200,
+        pTickLowerIndex: slippageRange.tickLowerIndex - 200,
+        pTickUpperIndex: slippageRange.tickLowerIndex + 5,
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
@@ -107,7 +107,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
       const slippageRange = getTestSlipageRange(currentTickIndex, slippage);
       testVariation({
         pTickLowerIndex: slippageRange.tickLowerIndex + 5,
-        pTickUpperIndex: slippageRange.tickCurrentIndex + 5,
+        pTickUpperIndex: slippageRange.tickUpperIndex + 5,
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         liquidity,
         slippageTolerance: slippage,
@@ -205,31 +205,43 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         upperBound: [sUpperSqrtPrice, sUpperIndex],
       } = PriceMath.getSlippageBoundForSqrtPrice(sqrtPrice, slippage);
 
-      const upperQuote = increaseLiquidityQuoteByLiquidityWithParams({
+      const upperTokenEstA = getTokenEstA({
         liquidity,
         sqrtPrice: sUpperSqrtPrice,
-        tickLowerIndex: pTickLowerIndex,
-        tickUpperIndex: pTickUpperIndex,
-        tickCurrentIndex: sUpperIndex,
-        slippageTolerance: Percentage.fromFraction(0, 100),
+        currentTickIndex: sUpperIndex,
+        lowerTickIndex: pTickLowerIndex,
+        upperTickIndex: pTickUpperIndex,
+      });
+      const upperTokenEstB = getTokenEstB({
+        liquidity,
+        sqrtPrice: sUpperSqrtPrice,
+        currentTickIndex: sUpperIndex,
+        lowerTickIndex: pTickLowerIndex,
+        upperTickIndex: pTickUpperIndex,
       });
 
-      const lowerQuote = increaseLiquidityQuoteByLiquidityWithParams({
+      const lowerTokenEstA = getTokenEstA({
         liquidity,
         sqrtPrice: sLowerSqrtPrice,
-        tickLowerIndex: pTickLowerIndex,
-        tickUpperIndex: pTickUpperIndex,
-        tickCurrentIndex: sLowerIndex,
-        slippageTolerance: Percentage.fromFraction(0, 100),
+        currentTickIndex: sLowerIndex,
+        lowerTickIndex: pTickLowerIndex,
+        upperTickIndex: pTickUpperIndex,
+      });
+      const lowerTokenEstB = getTokenEstB({
+        liquidity,
+        sqrtPrice: sLowerSqrtPrice,
+        currentTickIndex: sLowerIndex,
+        lowerTickIndex: pTickLowerIndex,
+        upperTickIndex: pTickUpperIndex,
       });
 
       const expectedTokenMaxA = BN.max(
-        BN.max(quote.tokenEstA, upperQuote.tokenEstA),
-        lowerQuote.tokenEstA,
+        BN.max(quote.tokenEstA, upperTokenEstA),
+        lowerTokenEstA,
       );
       const expectedTokenMaxB = BN.max(
-        BN.max(quote.tokenEstB, upperQuote.tokenEstB),
-        lowerQuote.tokenEstB,
+        BN.max(quote.tokenEstB, upperTokenEstB),
+        lowerTokenEstB,
       );
 
       // Generate expectations for TokenEstA and TokenEstB

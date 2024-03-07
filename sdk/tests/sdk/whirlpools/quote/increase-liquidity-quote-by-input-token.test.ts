@@ -77,8 +77,8 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
     it(`|--------------[--|--P----] @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
       const slippageRange = getTestSlippageRange(currentTickIndex, slippage);
       testVariation({
-        pTickLowerIndex: slippageRange.tickUpperIndex - 5,
-        pTickUpperIndex: slippageRange.tickUpperIndex + 200,
+        pTickLowerIndex: slippageRange.tickLowerIndex - 200,
+        pTickUpperIndex: slippageRange.tickLowerIndex + 5,
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         inputTokenAmount: new BN(100000),
         isTokenA,
@@ -126,7 +126,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
       const slippageRange = getTestSlippageRange(currentTickIndex, slippage);
       testVariation({
         pTickLowerIndex: slippageRange.tickLowerIndex + 5,
-        pTickUpperIndex: slippageRange.tickCurrentIndex + 5,
+        pTickUpperIndex: slippageRange.tickUpperIndex + 5,
         tickCurrentIndex: slippageRange.tickCurrentIndex,
         inputTokenAmount: new BN(100000),
         isTokenA,

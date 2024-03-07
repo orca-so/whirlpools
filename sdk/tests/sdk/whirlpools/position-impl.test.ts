@@ -6,7 +6,7 @@ import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
   decreaseLiquidityQuoteByLiquidity,
-  increaseLiquidityQuoteByInputToken,
+  increaseLiquidityQuoteByInputTokenUsingPriceSlippage,
   PriceMath
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
@@ -71,7 +71,7 @@ describe("position-impl", () => {
     // [Action] Increase liquidity by 70 tokens of tokenB
     const position = await client.getPosition(positionAddress.publicKey, IGNORE_CACHE);
     const preIncreaseData = position.getData();
-    const increase_quote = increaseLiquidityQuoteByInputToken(
+    const increase_quote = increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
       poolInitInfo.tokenMintB,
       new Decimal(70),
       lowerTick,
@@ -155,7 +155,7 @@ describe("position-impl", () => {
     // [Action] Increase liquidity by 70 tokens of tokenB & create the ATA in the new source Wallet
     const position = await client.getPosition(positionAddress.publicKey, IGNORE_CACHE);
     const preIncreaseData = position.getData();
-    const increase_quote = increaseLiquidityQuoteByInputToken(
+    const increase_quote = increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
       poolInitInfo.tokenMintB,
       new Decimal(70),
       lowerTick,
@@ -201,7 +201,7 @@ describe("position-impl", () => {
       10_500_000_000,
       otherWallet.publicKey
     );
-    const increaseQuoteFromOtherWallet = increaseLiquidityQuoteByInputToken(
+    const increaseQuoteFromOtherWallet = increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
       poolInitInfo.tokenMintB,
       new Decimal(80),
       lowerTick,

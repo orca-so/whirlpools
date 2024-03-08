@@ -2900,6 +2900,11 @@
       "name": "setTokenBadgeAuthority",
       "accounts": [
         {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "whirlpoolsConfigExtension",
           "isMut": true,
           "isSigner": false
@@ -2975,6 +2980,11 @@
           "name": "tokenBadgeAuthority",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "tokenBadge",
@@ -3784,6 +3794,11 @@
       "code": 6049,
       "name": "RemainingAccountsInsufficient",
       "msg": "Insufficient remaining accounts"
+    },
+    {
+      "code": 6050,
+      "name": "NoExtraAccountsForTransferHook",
+      "msg": "Unable to call transfer hook without extra accounts"
     }
   ]
 }

@@ -1,10 +1,12 @@
 use anchor_lang::prelude::*;
 
-use crate::state::WhirlpoolsConfigExtension;
+use crate::state::{WhirlpoolsConfig, WhirlpoolsConfigExtension};
 
 #[derive(Accounts)]
 pub struct SetTokenBadgeAuthority<'info> {
-    #[account(mut)]
+    pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
+
+    #[account(mut, has_one = whirlpools_config)]
     pub whirlpools_config_extension: Account<'info, WhirlpoolsConfigExtension>,
 
     #[account(address = whirlpools_config_extension.token_badge_authority)]

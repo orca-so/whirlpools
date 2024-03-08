@@ -183,7 +183,7 @@ export async function buildTestAquariumsV2(
             tokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
             tokenBadgePda: PDAUtil.getTokenBadge(ctx.program.programId, configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey, mintKeys[i]),
             whirlpoolsConfig: configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey,
-            whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtenssionPda.publicKey,
+            whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
             funder: ctx.wallet.publicKey,
           })).addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair).buildAndExecute();
         }

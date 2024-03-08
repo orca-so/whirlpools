@@ -1,5 +1,6 @@
 use crate::state::*;
 use anchor_lang::prelude::*;
+use anchor_spl::token_interface::Mint;
 
 #[derive(Accounts)]
 pub struct DeleteTokenBadge<'info> {
@@ -11,8 +12,16 @@ pub struct DeleteTokenBadge<'info> {
     #[account(address = whirlpools_config_extension.token_badge_authority)]
     pub token_badge_authority: Signer<'info>,
 
+    pub token_mint: InterfaceAccount<'info, Mint>,
+
     #[account(
       mut,
+      seeds = [
+        b"token_badge",
+        whirlpools_config.key().as_ref(),
+        token_mint.key().as_ref(),
+      ],
+      bump,
       has_one = whirlpools_config,
       close = receiver
     )]

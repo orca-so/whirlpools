@@ -7,11 +7,13 @@ import { Whirlpool } from "../../artifacts/whirlpool";
  * Parameters to set the token badge authority in a WhirlpoolsConfigExtension
  *
  * @category Instruction Types
+ * @param whirlpoolsConfig - PublicKey for the whirlpools config account
  * @param whirlpoolsConfigExtension - The public key for the WhirlpoolsConfigExtension
  * @param tokenBadgeAuthority - The current tokenBadgeAuthority in the WhirlpoolsConfigExtension
  * @param newTokenBadgeAuthority - The new tokenBadgeAuthority in the WhirlpoolsConfigExtension
  */
 export type SetTokenBadgeAuthorityParams = {
+  whirlpoolsConfig: PublicKey;
   whirlpoolsConfigExtension: PublicKey;
   tokenBadgeAuthority: PublicKey;
   newTokenBadgeAuthority: PublicKey;
@@ -31,10 +33,11 @@ export function setTokenBadgeAuthorityIx(
   program: Program<Whirlpool>,
   params: SetTokenBadgeAuthorityParams
 ): Instruction {
-  const { whirlpoolsConfigExtension, tokenBadgeAuthority, newTokenBadgeAuthority } = params;
+  const { whirlpoolsConfig, whirlpoolsConfigExtension, tokenBadgeAuthority, newTokenBadgeAuthority } = params;
 
   const ix = program.instruction.setTokenBadgeAuthority({
     accounts: {
+      whirlpoolsConfig,
       whirlpoolsConfigExtension,
       tokenBadgeAuthority,
       newTokenBadgeAuthority,

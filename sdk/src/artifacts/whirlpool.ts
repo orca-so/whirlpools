@@ -2900,6 +2900,11 @@ export type Whirlpool = {
       "name": "setTokenBadgeAuthority",
       "accounts": [
         {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "whirlpoolsConfigExtension",
           "isMut": true,
           "isSigner": false
@@ -2975,6 +2980,11 @@ export type Whirlpool = {
           "name": "tokenBadgeAuthority",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "tokenBadge",
@@ -3784,6 +3794,11 @@ export type Whirlpool = {
       "code": 6049,
       "name": "RemainingAccountsInsufficient",
       "msg": "Insufficient remaining accounts"
+    },
+    {
+      "code": 6050,
+      "name": "NoExtraAccountsForTransferHook",
+      "msg": "Unable to call transfer hook without extra accounts"
     }
   ]
 };
@@ -6690,6 +6705,11 @@ export const IDL: Whirlpool = {
       "name": "setTokenBadgeAuthority",
       "accounts": [
         {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
           "name": "whirlpoolsConfigExtension",
           "isMut": true,
           "isSigner": false
@@ -6765,6 +6785,11 @@ export const IDL: Whirlpool = {
           "name": "tokenBadgeAuthority",
           "isMut": false,
           "isSigner": true
+        },
+        {
+          "name": "tokenMint",
+          "isMut": false,
+          "isSigner": false
         },
         {
           "name": "tokenBadge",
@@ -7574,6 +7599,11 @@ export const IDL: Whirlpool = {
       "code": 6049,
       "name": "RemainingAccountsInsufficient",
       "msg": "Insufficient remaining accounts"
+    },
+    {
+      "code": 6050,
+      "name": "NoExtraAccountsForTransferHook",
+      "msg": "Unable to call transfer hook without extra accounts"
     }
   ]
 };

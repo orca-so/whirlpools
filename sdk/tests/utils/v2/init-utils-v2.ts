@@ -308,7 +308,7 @@ export async function buildTestPoolV2Params(
       tokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
       tokenBadgePda: { publicKey: poolInitInfo.tokenBadgeA, bump: 0/* dummy */ },
       whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
-      whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtenssionPda.publicKey,
+      whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
       funder: funder ?? ctx.wallet.publicKey,
     })).addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair).buildAndExecute();
   }
@@ -319,7 +319,7 @@ export async function buildTestPoolV2Params(
       tokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
       tokenBadgePda: { publicKey: poolInitInfo.tokenBadgeB, bump: 0/* dummy */ },
       whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
-      whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtenssionPda.publicKey,
+      whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
       funder: funder ?? ctx.wallet.publicKey,
     })).addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair).buildAndExecute();
   }
@@ -707,11 +707,12 @@ export const generateDefaultConfigExtensionParams = (
   const configExtensionInitInfo: InitConfigExtensionParams = {
     whirlpoolsConfig,
     feeAuthority,
-    whirlpoolsConfigExtenssionPda: PDAUtil.getConfigExtension(context.program.programId, whirlpoolsConfig),
+    whirlpoolsConfigExtensionPda: PDAUtil.getConfigExtension(context.program.programId, whirlpoolsConfig),
     funder: funder || context.wallet.publicKey,
   };
   const configExtensionSetTokenBadgeAuthorityInfo: SetTokenBadgeAuthorityParams = {
-    whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtenssionPda.publicKey,
+    whirlpoolsConfig,
+    whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
     tokenBadgeAuthority: feeAuthority,
     newTokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
   };

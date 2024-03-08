@@ -1,7 +1,6 @@
-import * as anchor from "@coral-xyz/anchor";
 import { Program } from "@coral-xyz/anchor";
 import { Instruction, PDA } from "@orca-so/common-sdk";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 
 /**
@@ -11,6 +10,7 @@ import { Whirlpool } from "../../artifacts/whirlpool";
  * @param whirlpoolsConfig - PublicKey for the whirlpools config account
  * @param whirlpoolsConfigExtension - PublicKey for the whirlpools config extension account
  * @param tokenBadgeAuthority - PublicKey for the token badge authority
+ * @param tokenMint - Publickey for the mint for which the TokenBadge have been initialized
  * @param tokenBadge - PublicKey for the token badge account to be deleted
  * @param receiver - PublicKey for the account that will receive the rent
  */
@@ -18,6 +18,7 @@ export type DeleteTokenBadgeParams = {
   whirlpoolsConfig: PublicKey;
   whirlpoolsConfigExtension: PublicKey;
   tokenBadgeAuthority: PublicKey;
+  tokenMint: PublicKey;
   tokenBadge: PublicKey;
   receiver: PublicKey;
 };
@@ -38,6 +39,7 @@ export function deleteTokenBadgeIx(
     whirlpoolsConfig,
     whirlpoolsConfigExtension,
     tokenBadgeAuthority,
+    tokenMint,
     tokenBadge,
     receiver,
   } = params;
@@ -47,6 +49,7 @@ export function deleteTokenBadgeIx(
       whirlpoolsConfig,
       whirlpoolsConfigExtension,
       tokenBadgeAuthority,
+      tokenMint,
       tokenBadge,
       receiver,
     },

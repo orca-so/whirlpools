@@ -11,7 +11,7 @@ import { Whirlpool } from "../../artifacts/whirlpool";
  */
 export type InitConfigExtensionParams = {
   whirlpoolsConfig: PublicKey;
-  whirlpoolsConfigExtenssionPda: PDA;
+  whirlpoolsConfigExtensionPda: PDA;
   funder: PublicKey;
   feeAuthority: PublicKey;
 };
@@ -30,7 +30,7 @@ export function initializeConfigExtensionIx(
 ): Instruction {
   const {
     whirlpoolsConfig,
-    whirlpoolsConfigExtenssionPda,
+    whirlpoolsConfigExtensionPda,
     funder,
     feeAuthority,
   } = params;
@@ -39,7 +39,7 @@ export function initializeConfigExtensionIx(
     {
       accounts: {
         config: whirlpoolsConfig,
-        configExtension: whirlpoolsConfigExtenssionPda.publicKey,
+        configExtension: whirlpoolsConfigExtensionPda.publicKey,
         funder,
         feeAuthority,
         systemProgram: SystemProgram.programId,

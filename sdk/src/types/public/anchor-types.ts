@@ -205,6 +205,7 @@ export type PositionBundleData = {
  */
 export type WhirlpoolsConfigExtensionData = {
   whirlpoolsConfig: PublicKey;
+  configExtensionAuthority: PublicKey;
   tokenBadgeAuthority: PublicKey;
 }
 

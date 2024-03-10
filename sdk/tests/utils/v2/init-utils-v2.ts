@@ -713,7 +713,7 @@ export const generateDefaultConfigExtensionParams = (
   const configExtensionSetTokenBadgeAuthorityInfo: SetTokenBadgeAuthorityParams = {
     whirlpoolsConfig,
     whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
-    tokenBadgeAuthority: feeAuthority,
+    configExtensionAuthority: feeAuthority,
     newTokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
   };
   return { configExtensionInitInfo, configExtensionKeypairs, configExtensionSetTokenBadgeAuthorityInfo };

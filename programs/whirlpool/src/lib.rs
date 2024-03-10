@@ -871,6 +871,10 @@ pub mod whirlpool {
         return instructions::v2::initialize_config_extension::handler(ctx);
     }
 
+    pub fn set_config_extension_authority(ctx: Context<SetConfigExtensionAuthority>) -> Result<()> {
+        return instructions::v2::set_config_extension_authority::handler(ctx);
+    }
+
     pub fn set_token_badge_authority(ctx: Context<SetTokenBadgeAuthority>) -> Result<()> {
         return instructions::v2::set_token_badge_authority::handler(ctx);
     }

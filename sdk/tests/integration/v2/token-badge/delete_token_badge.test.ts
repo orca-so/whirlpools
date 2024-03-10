@@ -23,6 +23,7 @@ describe("delete_token_badge", () => {
   const collectProtocolFeesAuthorityKeypair = Keypair.generate();
   const feeAuthorityKeypair = Keypair.generate();
   const rewardEmissionsSuperAuthorityKeypair = Keypair.generate();
+  const initialConfigExtensionAuthorityKeypair = feeAuthorityKeypair;
   const initialTokenBadgeAuthorityKeypair = feeAuthorityKeypair;
   const updatedTokenBadgeAuthorityKeypair = Keypair.generate();
 
@@ -75,7 +76,7 @@ describe("delete_token_badge", () => {
     return toTx(ctx, WhirlpoolIx.setTokenBadgeAuthorityIx(ctx.program, {
       whirlpoolsConfig: config,
       whirlpoolsConfigExtension,
-      tokenBadgeAuthority: authority.publicKey,
+      configExtensionAuthority: authority.publicKey,
       newTokenBadgeAuthority: newAuthority,
     })).addSigner(authority).buildAndExecute();
   }
@@ -270,7 +271,37 @@ describe("delete_token_badge", () => {
         /0x7dc/ // ConstraintAddress
       );
     });
-      
+
+
+    it("should be failed: config_extension_authority is passed as token_badge_authority", async () => {
+      const whirlpoolsConfigKeypair = Keypair.generate();
+      await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
+      const mint = await createMintV2(provider, {isToken2022: true});
+
+      await initializeWhirlpoolsConfigExtension(whirlpoolsConfigKeypair.publicKey);
+      const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(ctx.program.programId, whirlpoolsConfigKeypair.publicKey).publicKey;
+
+      await initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {});
+
+      // update authority from provider.wallet
+      await updateTokenBadgeAuthority(whirlpoolsConfigKeypair.publicKey, initialConfigExtensionAuthorityKeypair, updatedTokenBadgeAuthorityKeypair.publicKey);
+      const extension = await fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE);
+      assert.ok(extension?.tokenBadgeAuthority.equals(updatedTokenBadgeAuthorityKeypair.publicKey));
+
+      const fakeAuthority = initialConfigExtensionAuthorityKeypair;
+      await assert.rejects(
+        deleteTokenBadge(
+          whirlpoolsConfigKeypair.publicKey,
+          mint, {
+            tokenBadgeAuthority: fakeAuthority.publicKey,
+          }, [
+            fakeAuthority,
+          ]
+        ),
+        /0x7dc/ // ConstraintAddress
+      );
+    });
+
     it("should be failed: token_badge_authority is not signer", async () => {
       const whirlpoolsConfigKeypair = Keypair.generate();
       await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
@@ -282,7 +313,7 @@ describe("delete_token_badge", () => {
       const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(ctx.program.programId, whirlpoolsConfigKeypair.publicKey).publicKey;
 
       // update authority from provider.wallet
-      await updateTokenBadgeAuthority(whirlpoolsConfigKeypair.publicKey, initialTokenBadgeAuthorityKeypair, updatedTokenBadgeAuthorityKeypair.publicKey);
+      await updateTokenBadgeAuthority(whirlpoolsConfigKeypair.publicKey, initialConfigExtensionAuthorityKeypair, updatedTokenBadgeAuthorityKeypair.publicKey);
       const extension = await fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE);
       assert.ok(extension?.tokenBadgeAuthority.equals(updatedTokenBadgeAuthorityKeypair.publicKey));
 

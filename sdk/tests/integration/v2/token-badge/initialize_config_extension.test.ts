@@ -66,6 +66,7 @@ describe("initialize_config_extension", () => {
     const configExtension = await fetcher.getConfigExtension(configExtensionPubkey);
     
     assert.ok(configExtension!.whirlpoolsConfig.equals(whirlpoolsConfigKeypair.publicKey));
+    assert.ok(configExtension!.configExtensionAuthority.equals(feeAuthorityKeypair.publicKey));
     assert.ok(configExtension!.tokenBadgeAuthority.equals(feeAuthorityKeypair.publicKey));
   });
 
@@ -96,11 +97,12 @@ describe("initialize_config_extension", () => {
     const configExtension = await fetcher.getConfigExtension(configExtensionPubkey);
     
     assert.ok(configExtension!.whirlpoolsConfig.equals(whirlpoolsConfigKeypair.publicKey));
+    assert.ok(configExtension!.configExtensionAuthority.equals(feeAuthorityKeypair.publicKey));
     assert.ok(configExtension!.tokenBadgeAuthority.equals(feeAuthorityKeypair.publicKey));
   });
 
   it("WhirlpoolsConfigExtension account has reserved space", async () => {
-    const whirlpoolsConfigExtensionAccountSizeIncludingReserve = 8 + 32 + 32 + 512;
+    const whirlpoolsConfigExtensionAccountSizeIncludingReserve = 8 + 32 + 32 + 32 + 512;
 
     const whirlpoolsConfigKeypair = Keypair.generate();
     await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
@@ -128,7 +130,6 @@ describe("initialize_config_extension", () => {
     // initialized
     const configExtension = await fetcher.getConfigExtension(configExtensionPubkey);
     assert.ok(configExtension!.whirlpoolsConfig.equals(whirlpoolsConfigKeypair.publicKey));
-    assert.ok(configExtension!.tokenBadgeAuthority.equals(feeAuthorityKeypair.publicKey));
 
     // re-initialize
     await assert.rejects(

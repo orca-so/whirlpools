@@ -2897,6 +2897,32 @@
       "args": []
     },
     {
+      "name": "setConfigExtensionAuthority",
+      "accounts": [
+        {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whirlpoolsConfigExtension",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "configExtensionAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "newConfigExtensionAuthority",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "setTokenBadgeAuthority",
       "accounts": [
         {
@@ -2910,7 +2936,7 @@
           "isSigner": false
         },
         {
-          "name": "tokenBadgeAuthority",
+          "name": "configExtensionAuthority",
           "isMut": false,
           "isSigner": true
         },
@@ -3008,6 +3034,10 @@
         "fields": [
           {
             "name": "whirlpoolsConfig",
+            "type": "publicKey"
+          },
+          {
+            "name": "configExtensionAuthority",
             "type": "publicKey"
           },
           {

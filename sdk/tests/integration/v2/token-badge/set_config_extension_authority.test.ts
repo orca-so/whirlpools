@@ -9,10 +9,8 @@ import {
   WhirlpoolIx
 } from "../../../../src";
 import { defaultConfirmOptions } from "../../../utils/const";
-import { InitializeTokenBadgeParams } from "../../../../src/instructions";
-import { createMintV2 } from "../../../utils/v2/token-2022";
 
-describe("set_token_badge_authority", () => {
+describe("set_config_extension_authority", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
   const program = anchor.workspace.Whirlpool;
@@ -24,7 +22,7 @@ describe("set_token_badge_authority", () => {
   const rewardEmissionsSuperAuthorityKeypair = Keypair.generate();
   const initialConfigExtensionAuthorityKeypair = feeAuthorityKeypair;
   const initialTokenBadgeAuthorityKeypair = feeAuthorityKeypair;
-  const updatedTokenBadgeAuthorityKeypair = Keypair.generate();
+  const updatedConfigExtensionAuthorityKeypair = Keypair.generate();
 
   async function initializeWhirlpoolsConfig(configKeypair: Keypair) {
     return toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, {
@@ -47,63 +45,46 @@ describe("set_token_badge_authority", () => {
     })).addSigner(feeAuthorityKeypair).buildAndExecute();
   }
 
-  async function initializeTokenBadge(config: PublicKey, mint: PublicKey, overwrite: Partial<InitializeTokenBadgeParams>, signers: Keypair[] = [initialTokenBadgeAuthorityKeypair]) {
+  async function setConfigExtensionAuthority(config: PublicKey, configExtensionAuthority: Keypair, newAuthority: PublicKey) {
     const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(ctx.program.programId, config).publicKey;
-    const tokenBadgePda = PDAUtil.getTokenBadge(ctx.program.programId, config, mint);
-    const tx = toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
-      whirlpoolsConfig: config,
-      whirlpoolsConfigExtension,
-      funder: provider.wallet.publicKey,
-      tokenBadgeAuthority: initialTokenBadgeAuthorityKeypair.publicKey,
-      tokenBadgePda,
-      tokenMint: mint,
-      ...overwrite,
-    }));
-    signers.forEach((signer) => tx.addSigner(signer));
-    return tx.buildAndExecute();    
-  }
-
-  async function setTokenBadgeAuthority(config: PublicKey, configExtensionAuthority: Keypair, newAuthority: PublicKey) {
-    const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(ctx.program.programId, config).publicKey;
-    return toTx(ctx, WhirlpoolIx.setTokenBadgeAuthorityIx(ctx.program, {
+    return toTx(ctx, WhirlpoolIx.setConfigExtensionAuthorityIx(ctx.program, {
       whirlpoolsConfig: config,
       whirlpoolsConfigExtension,
       configExtensionAuthority: configExtensionAuthority.publicKey,
-      newTokenBadgeAuthority: newAuthority,
+      newConfigExtensionAuthority: newAuthority,
     })).addSigner(configExtensionAuthority).buildAndExecute();
   }
 
-  it("successfully set token badge authority and verify updated account contents", async () => {
+  it("successfully set config extension authority and verify updated account contents", async () => {
     const whirlpoolsConfigKeypair = Keypair.generate();
     await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
     await initializeWhirlpoolsConfigExtension(whirlpoolsConfigKeypair.publicKey);
 
     const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(ctx.program.programId, whirlpoolsConfigKeypair.publicKey).publicKey;
     const extensionData = await fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE);
+    assert.ok(extensionData!.configExtensionAuthority.equals(initialConfigExtensionAuthorityKeypair.publicKey));
     assert.ok(extensionData!.tokenBadgeAuthority.equals(initialTokenBadgeAuthorityKeypair.publicKey));
     
-    assert.ok(!initialTokenBadgeAuthorityKeypair.publicKey.equals(updatedTokenBadgeAuthorityKeypair.publicKey));
-    await setTokenBadgeAuthority(
+    assert.ok(!initialConfigExtensionAuthorityKeypair.publicKey.equals(updatedConfigExtensionAuthorityKeypair.publicKey));
+    await setConfigExtensionAuthority(
       whirlpoolsConfigKeypair.publicKey,
       initialConfigExtensionAuthorityKeypair,
-      updatedTokenBadgeAuthorityKeypair.publicKey
+      updatedConfigExtensionAuthorityKeypair.publicKey
     );
 
     const updatedExtensionData = await fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE);
-    assert.ok(updatedExtensionData!.tokenBadgeAuthority.equals(updatedTokenBadgeAuthorityKeypair.publicKey));
+    assert.ok(updatedExtensionData!.configExtensionAuthority.equals(updatedConfigExtensionAuthorityKeypair.publicKey));
+    assert.ok(updatedExtensionData!.tokenBadgeAuthority.equals(initialTokenBadgeAuthorityKeypair.publicKey));
 
-    // initialize TokenBadge with updated authority
-    const mint = await createMintV2(provider, {isToken2022: true});
-    await initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {
-      tokenBadgeAuthority: updatedTokenBadgeAuthorityKeypair.publicKey,
-    }, [
-      updatedTokenBadgeAuthorityKeypair
-    ]);
+    // set back to initialConfigExtension with updateConfigExtensionAuthority
+    await setConfigExtensionAuthority(
+      whirlpoolsConfigKeypair.publicKey,
+      updatedConfigExtensionAuthorityKeypair,
+      initialConfigExtensionAuthorityKeypair.publicKey,
+    );
 
-    const tokenBadgePda = PDAUtil.getTokenBadge(ctx.program.programId, whirlpoolsConfigKeypair.publicKey, mint);
-    const tokenBadgeData = await fetcher.getTokenBadge(tokenBadgePda.publicKey, IGNORE_CACHE);
-    assert.ok(tokenBadgeData!.whirlpoolsConfig.equals(whirlpoolsConfigKeypair.publicKey));
-    assert.ok(tokenBadgeData!.tokenMint.equals(mint));    
+    const backExtensionData = await fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE);
+    assert.ok(backExtensionData!.configExtensionAuthority.equals(initialConfigExtensionAuthorityKeypair.publicKey));
   });
 
   describe("invalid input account", () => {
@@ -116,24 +97,24 @@ describe("set_token_badge_authority", () => {
       // config not initialized
       const anotherWhirlpoolsConfigKeypair = Keypair.generate();
       await assert.rejects(
-        toTx(ctx, WhirlpoolIx.setTokenBadgeAuthorityIx(ctx.program, {
+        toTx(ctx, WhirlpoolIx.setConfigExtensionAuthorityIx(ctx.program, {
           whirlpoolsConfig: anotherWhirlpoolsConfigKeypair.publicKey,
           whirlpoolsConfigExtension,
           configExtensionAuthority: initialConfigExtensionAuthorityKeypair.publicKey,
-          newTokenBadgeAuthority: updatedTokenBadgeAuthorityKeypair.publicKey,
-        })).addSigner(initialTokenBadgeAuthorityKeypair).buildAndExecute(),
+          newConfigExtensionAuthority: updatedConfigExtensionAuthorityKeypair.publicKey,
+        })).addSigner(initialConfigExtensionAuthorityKeypair).buildAndExecute(),
         /0xbc4/ // AccountNotInitialized
       );
 
       // config initialized, but not match to whirlpools_config_extension
       await initializeWhirlpoolsConfig(anotherWhirlpoolsConfigKeypair);
       await assert.rejects(
-        toTx(ctx, WhirlpoolIx.setTokenBadgeAuthorityIx(ctx.program, {
+        toTx(ctx, WhirlpoolIx.setConfigExtensionAuthorityIx(ctx.program, {
           whirlpoolsConfig: anotherWhirlpoolsConfigKeypair.publicKey,
           whirlpoolsConfigExtension,
           configExtensionAuthority: initialConfigExtensionAuthorityKeypair.publicKey,
-          newTokenBadgeAuthority: updatedTokenBadgeAuthorityKeypair.publicKey,
-        })).addSigner(initialTokenBadgeAuthorityKeypair).buildAndExecute(),
+          newConfigExtensionAuthority: updatedConfigExtensionAuthorityKeypair.publicKey,
+        })).addSigner(initialConfigExtensionAuthorityKeypair).buildAndExecute(),
         /0x7d1/ // ConstraintHasOne
       );
     });
@@ -145,12 +126,12 @@ describe("set_token_badge_authority", () => {
       // config_extension not initialized
       const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(ctx.program.programId, whirlpoolsConfigKeypair.publicKey).publicKey;
       await assert.rejects(
-        toTx(ctx, WhirlpoolIx.setTokenBadgeAuthorityIx(ctx.program, {
+        toTx(ctx, WhirlpoolIx.setConfigExtensionAuthorityIx(ctx.program, {
           whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
           whirlpoolsConfigExtension,
           configExtensionAuthority: initialConfigExtensionAuthorityKeypair.publicKey,
-          newTokenBadgeAuthority: updatedTokenBadgeAuthorityKeypair.publicKey,
-        })).addSigner(initialTokenBadgeAuthorityKeypair).buildAndExecute(),
+          newConfigExtensionAuthority: updatedConfigExtensionAuthorityKeypair.publicKey,
+        })).addSigner(initialConfigExtensionAuthorityKeypair).buildAndExecute(),
         /0xbc4/ // AccountNotInitialized
       );
 
@@ -160,12 +141,12 @@ describe("set_token_badge_authority", () => {
       await initializeWhirlpoolsConfigExtension(anotherWhirlpoolsConfigKeypair.publicKey);
       const anotherWhirlpoolsConfigExtension = PDAUtil.getConfigExtension(ctx.program.programId, anotherWhirlpoolsConfigKeypair.publicKey).publicKey;
       await assert.rejects(
-        toTx(ctx, WhirlpoolIx.setTokenBadgeAuthorityIx(ctx.program, {
+        toTx(ctx, WhirlpoolIx.setConfigExtensionAuthorityIx(ctx.program, {
           whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
           whirlpoolsConfigExtension: anotherWhirlpoolsConfigExtension,
           configExtensionAuthority: initialConfigExtensionAuthorityKeypair.publicKey,
-          newTokenBadgeAuthority: updatedTokenBadgeAuthorityKeypair.publicKey,
-        })).addSigner(initialTokenBadgeAuthorityKeypair).buildAndExecute(),
+          newConfigExtensionAuthority: updatedConfigExtensionAuthorityKeypair.publicKey,
+        })).addSigner(initialConfigExtensionAuthorityKeypair).buildAndExecute(),
         /0x7d1/ // ConstraintHasOne
       );
     });
@@ -179,42 +160,12 @@ describe("set_token_badge_authority", () => {
 
       const fakeAuthority = Keypair.generate();
       await assert.rejects(
-        toTx(ctx, WhirlpoolIx.setTokenBadgeAuthorityIx(ctx.program, {
+        toTx(ctx, WhirlpoolIx.setConfigExtensionAuthorityIx(ctx.program, {
           whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
           whirlpoolsConfigExtension,
           configExtensionAuthority: fakeAuthority.publicKey,
-          newTokenBadgeAuthority: updatedTokenBadgeAuthorityKeypair.publicKey,
+          newConfigExtensionAuthority: updatedConfigExtensionAuthorityKeypair.publicKey,
         })).addSigner(fakeAuthority).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
-      );
-    });
-
-    it("should be failed: token_badge_authority != config_extension_authority", async () => {
-      const whirlpoolsConfigKeypair = Keypair.generate();
-      await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
-      await initializeWhirlpoolsConfigExtension(whirlpoolsConfigKeypair.publicKey);
-  
-      const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(ctx.program.programId, whirlpoolsConfigKeypair.publicKey).publicKey;
-      const extensionData = await fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE);
-      assert.ok(extensionData!.tokenBadgeAuthority.equals(initialTokenBadgeAuthorityKeypair.publicKey));
-      
-      assert.ok(!initialTokenBadgeAuthorityKeypair.publicKey.equals(updatedTokenBadgeAuthorityKeypair.publicKey));
-      await setTokenBadgeAuthority(
-        whirlpoolsConfigKeypair.publicKey,
-        initialConfigExtensionAuthorityKeypair,
-        updatedTokenBadgeAuthorityKeypair.publicKey
-      );
-  
-      const updatedExtensionData = await fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE);
-      assert.ok(updatedExtensionData!.tokenBadgeAuthority.equals(updatedTokenBadgeAuthorityKeypair.publicKey));
-
-      assert.ok(!updatedTokenBadgeAuthorityKeypair.publicKey.equals(initialConfigExtensionAuthorityKeypair.publicKey));
-      await assert.rejects(
-        setTokenBadgeAuthority(
-          whirlpoolsConfigKeypair.publicKey,
-          updatedTokenBadgeAuthorityKeypair,
-          Keypair.generate().publicKey,
-        ),
         /0x7dc/ // ConstraintAddress
       );
     });
@@ -227,21 +178,21 @@ describe("set_token_badge_authority", () => {
       const whirlpoolsConfigExtension = PDAUtil.getConfigExtension(ctx.program.programId, whirlpoolsConfigKeypair.publicKey).publicKey;
 
       // update authority from provider.wallet
-      await setTokenBadgeAuthority(whirlpoolsConfigKeypair.publicKey, initialTokenBadgeAuthorityKeypair, updatedTokenBadgeAuthorityKeypair.publicKey);
+      await setConfigExtensionAuthority(whirlpoolsConfigKeypair.publicKey, initialConfigExtensionAuthorityKeypair, updatedConfigExtensionAuthorityKeypair.publicKey);
       const extension = await fetcher.getConfigExtension(whirlpoolsConfigExtension, IGNORE_CACHE);
-      assert.ok(extension?.tokenBadgeAuthority.equals(updatedTokenBadgeAuthorityKeypair.publicKey));
+      assert.ok(extension?.configExtensionAuthority.equals(updatedConfigExtensionAuthorityKeypair.publicKey));
 
-      const ix: TransactionInstruction = program.instruction.setTokenBadgeAuthority({
+      const ix: TransactionInstruction = program.instruction.setConfigExtensionAuthority({
         accounts: {
           whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
           whirlpoolsConfigExtension,
-          configExtensionAuthority: updatedTokenBadgeAuthorityKeypair.publicKey,
-          newTokenBadgeAuthority: Keypair.generate().publicKey,
+          configExtensionAuthority: updatedConfigExtensionAuthorityKeypair.publicKey,
+          newConfigExtensionAuthority: Keypair.generate().publicKey,
         },
       })
 
       assert.equal(ix.keys.length, 4);
-      assert.ok(ix.keys[2].pubkey.equals(updatedTokenBadgeAuthorityKeypair.publicKey));
+      assert.ok(ix.keys[2].pubkey.equals(updatedConfigExtensionAuthorityKeypair.publicKey));
 
       // unset signer flag
       ix.keys[2].isSigner = false;
@@ -249,7 +200,7 @@ describe("set_token_badge_authority", () => {
       const tx = toTx(ctx, {
         instructions: [ix],
         cleanupInstructions: [],
-        signers: [], // no updatedTokenBadgeAuthorityKeypair
+        signers: [], // no updatedConfigExtensionAuthorityKeypair
       })
 
       await assert.rejects(

@@ -2897,6 +2897,32 @@ export type Whirlpool = {
       "args": []
     },
     {
+      "name": "setConfigExtensionAuthority",
+      "accounts": [
+        {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whirlpoolsConfigExtension",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "configExtensionAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "newConfigExtensionAuthority",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "setTokenBadgeAuthority",
       "accounts": [
         {
@@ -2910,7 +2936,7 @@ export type Whirlpool = {
           "isSigner": false
         },
         {
-          "name": "tokenBadgeAuthority",
+          "name": "configExtensionAuthority",
           "isMut": false,
           "isSigner": true
         },
@@ -3008,6 +3034,10 @@ export type Whirlpool = {
         "fields": [
           {
             "name": "whirlpoolsConfig",
+            "type": "publicKey"
+          },
+          {
+            "name": "configExtensionAuthority",
             "type": "publicKey"
           },
           {
@@ -6702,6 +6732,32 @@ export const IDL: Whirlpool = {
       "args": []
     },
     {
+      "name": "setConfigExtensionAuthority",
+      "accounts": [
+        {
+          "name": "whirlpoolsConfig",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "whirlpoolsConfigExtension",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "configExtensionAuthority",
+          "isMut": false,
+          "isSigner": true
+        },
+        {
+          "name": "newConfigExtensionAuthority",
+          "isMut": false,
+          "isSigner": false
+        }
+      ],
+      "args": []
+    },
+    {
       "name": "setTokenBadgeAuthority",
       "accounts": [
         {
@@ -6715,7 +6771,7 @@ export const IDL: Whirlpool = {
           "isSigner": false
         },
         {
-          "name": "tokenBadgeAuthority",
+          "name": "configExtensionAuthority",
           "isMut": false,
           "isSigner": true
         },
@@ -6813,6 +6869,10 @@ export const IDL: Whirlpool = {
         "fields": [
           {
             "name": "whirlpoolsConfig",
+            "type": "publicKey"
+          },
+          {
+            "name": "configExtensionAuthority",
             "type": "publicKey"
           },
           {

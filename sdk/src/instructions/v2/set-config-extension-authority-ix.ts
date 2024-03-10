@@ -10,37 +10,36 @@ import { Whirlpool } from "../../artifacts/whirlpool";
  * @param whirlpoolsConfig - PublicKey for the whirlpools config account
  * @param whirlpoolsConfigExtension - The public key for the WhirlpoolsConfigExtension
  * @param configExtensionAuthority - The current configExtensionAuthority in the WhirlpoolsConfigExtension
- * @param newTokenBadgeAuthority - The new tokenBadgeAuthority in the WhirlpoolsConfigExtension
+ * @param newConfigExtensionAuthority - The new configExtensionAuthority in the WhirlpoolsConfigExtension
  */
-export type SetTokenBadgeAuthorityParams = {
+export type SetConfigExtensionAuthorityParams = {
   whirlpoolsConfig: PublicKey;
   whirlpoolsConfigExtension: PublicKey;
   configExtensionAuthority: PublicKey;
-  newTokenBadgeAuthority: PublicKey;
+  newConfigExtensionAuthority: PublicKey;
 };
 
 /**
- * Sets the token badge authority for a WhirlpoolsConfigExtension.
- * The token badge authority can initialize TokenBadge.
- * Only the config extension authority has permission to invoke this instruction.
+ * Sets the config extension authority for a WhirlpoolsConfigExtension.
+ * Only the current config extension authority has permission to invoke this instruction.
  *
  * @category Instructions
  * @param context - Context object containing services required to generate the instruction
  * @param params - SetTokenBadgeAuthorityParams object
  * @returns - Instruction to perform the action.
  */
-export function setTokenBadgeAuthorityIx(
+export function setConfigExtensionAuthorityIx(
   program: Program<Whirlpool>,
-  params: SetTokenBadgeAuthorityParams
+  params: SetConfigExtensionAuthorityParams
 ): Instruction {
-  const { whirlpoolsConfig, whirlpoolsConfigExtension, configExtensionAuthority, newTokenBadgeAuthority } = params;
+  const { whirlpoolsConfig, whirlpoolsConfigExtension, configExtensionAuthority, newConfigExtensionAuthority } = params;
 
-  const ix = program.instruction.setTokenBadgeAuthority({
+  const ix = program.instruction.setConfigExtensionAuthority({
     accounts: {
       whirlpoolsConfig,
       whirlpoolsConfigExtension,
       configExtensionAuthority,
-      newTokenBadgeAuthority,
+      newConfigExtensionAuthority,
     },
   });
 

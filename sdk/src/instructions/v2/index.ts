@@ -10,6 +10,7 @@ export * from "./swap-ix";
 export * from "./two-hop-swap-ix";
 
 export * from "./initialize-config-extension-ix";
+export * from "./set-config-extension-authority-ix";
 export * from "./set-token-badge-authority-ix";
 export * from "./initialize-token-badge-ix";
 export * from "./delete-token-badge-ix";

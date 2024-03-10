@@ -43,6 +43,10 @@ export {
   SetRewardEmissionsV2Params,
   SwapV2Params,
   TwoHopSwapV2Params,  
+  InitConfigExtensionParams,
+  InitializeTokenBadgeParams,
+  SetConfigExtensionAuthorityParams,
+  SetTokenBadgeAuthorityParams,
 } from "../../instructions/v2/";
 export {
   CollectAllParams,

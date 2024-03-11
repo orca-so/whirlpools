@@ -1215,7 +1215,31 @@ describe("TokenExtension/TransferFee", () => {
           const preOwnerAccountBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
           const preOwnerAccountBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
 
-          const sigAToB = await toTx(
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.swapV2Ix(ctx.program, {
+                ...quoteAToB,
+                amount: inputAmount, // transfer fee included
+                otherAmountThreshold: transferFeeExcludedOutputAmount.amount.addn(1), // transfer fee excluded
+  
+                whirlpool: whirlpoolPda.publicKey,
+                tokenAuthority: ctx.wallet.publicKey,
+                tokenMintA: poolInitInfo.tokenMintA,
+                tokenMintB: poolInitInfo.tokenMintB,
+                tokenProgramA: poolInitInfo.tokenProgramA,
+                tokenProgramB: poolInitInfo.tokenProgramB,
+                tokenOwnerAccountA: tokenAccountA,
+                tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+                tokenOwnerAccountB: tokenAccountB,
+                tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+                oracle: oraclePubkey,
+              }),
+            ).buildAndExecute(),
+            /0x1794/, // AmountOutBelowMinimum
+          );
+    
+          await toTx(
             ctx,
             WhirlpoolIx.swapV2Ix(ctx.program, {
               ...quoteAToB,
@@ -1315,7 +1339,31 @@ describe("TokenExtension/TransferFee", () => {
           const preOwnerAccountBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
           const preOwnerAccountBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
 
-          const sigBToA = await toTx(
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.swapV2Ix(ctx.program, {
+                ...quoteBToA,
+                amount: inputAmount, // transfer fee included
+                otherAmountThreshold: transferFeeExcludedOutputAmount.amount.addn(1), // transfer fee excluded
+  
+                whirlpool: whirlpoolPda.publicKey,
+                tokenAuthority: ctx.wallet.publicKey,
+                tokenMintA: poolInitInfo.tokenMintA,
+                tokenMintB: poolInitInfo.tokenMintB,
+                tokenProgramA: poolInitInfo.tokenProgramA,
+                tokenProgramB: poolInitInfo.tokenProgramB,
+                tokenOwnerAccountA: tokenAccountA,
+                tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+                tokenOwnerAccountB: tokenAccountB,
+                tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+                oracle: oraclePubkey,
+              }),
+            ).buildAndExecute(),
+            /0x1794/, // AmountOutBelowMinimum
+          );
+
+          await toTx(
             ctx,
             WhirlpoolIx.swapV2Ix(ctx.program, {
               ...quoteBToA,
@@ -1415,7 +1463,31 @@ describe("TokenExtension/TransferFee", () => {
           const preOwnerAccountBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
           const preOwnerAccountBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
 
-          const sigAToB = await toTx(
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.swapV2Ix(ctx.program, {
+                ...quoteAToB,
+                amount: outputAmount, // transfer fee excluded
+                otherAmountThreshold: transferFeeIncludedInputAmount.amount.subn(1), // transfer fee included
+  
+                whirlpool: whirlpoolPda.publicKey,
+                tokenAuthority: ctx.wallet.publicKey,
+                tokenMintA: poolInitInfo.tokenMintA,
+                tokenMintB: poolInitInfo.tokenMintB,
+                tokenProgramA: poolInitInfo.tokenProgramA,
+                tokenProgramB: poolInitInfo.tokenProgramB,
+                tokenOwnerAccountA: tokenAccountA,
+                tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+                tokenOwnerAccountB: tokenAccountB,
+                tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+                oracle: oraclePubkey,
+              }),
+            ).buildAndExecute(),
+            /0x1795/, // AmountInAboveMaximum
+          );
+          
+          await toTx(
             ctx,
             WhirlpoolIx.swapV2Ix(ctx.program, {
               ...quoteAToB,
@@ -1515,7 +1587,32 @@ describe("TokenExtension/TransferFee", () => {
           const preOwnerAccountBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
           const preOwnerAccountBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
 
-          const sigAToB = await toTx(
+
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.swapV2Ix(ctx.program, {
+                ...quoteBToA,
+                amount: outputAmount, // transfer fee excluded
+                otherAmountThreshold: transferFeeIncludedInputAmount.amount.subn(1), // transfer fee included
+  
+                whirlpool: whirlpoolPda.publicKey,
+                tokenAuthority: ctx.wallet.publicKey,
+                tokenMintA: poolInitInfo.tokenMintA,
+                tokenMintB: poolInitInfo.tokenMintB,
+                tokenProgramA: poolInitInfo.tokenProgramA,
+                tokenProgramB: poolInitInfo.tokenProgramB,
+                tokenOwnerAccountA: tokenAccountA,
+                tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+                tokenOwnerAccountB: tokenAccountB,
+                tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+                oracle: oraclePubkey,
+              }),
+            ).buildAndExecute(),
+            /0x1795/, // AmountInAboveMaximum
+          );
+
+          await toTx(
             ctx,
             WhirlpoolIx.swapV2Ix(ctx.program, {
               ...quoteBToA,
@@ -1824,7 +1921,18 @@ describe("TokenExtension/TransferFee", () => {
           const preOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
           const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
 
-          const sig = await toTx(
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
+                ...baseIxParams,
+                otherAmountThreshold: baseIxParams.otherAmountThreshold.addn(1),
+              })
+            ).buildAndExecute(),
+            /0x1794/, // AmountOutBelowMinimum
+          );
+
+          await toTx(
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
           ).buildAndExecute();
@@ -1999,7 +2107,18 @@ describe("TokenExtension/TransferFee", () => {
           const preOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
           const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
 
-          const sig = await toTx(
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
+                ...baseIxParams,
+                otherAmountThreshold: baseIxParams.otherAmountThreshold.addn(1),
+              })
+            ).buildAndExecute(),
+            /0x1794/, // AmountOutBelowMinimum
+          );
+
+          await toTx(
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
           ).buildAndExecute();
@@ -2174,7 +2293,18 @@ describe("TokenExtension/TransferFee", () => {
           const preOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
           const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
 
-          const sig = await toTx(
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
+                ...baseIxParams,
+                otherAmountThreshold: baseIxParams.otherAmountThreshold.subn(1),
+              })
+            ).buildAndExecute(),
+            /0x1795/, // AmountInAboveMaximum
+          );
+
+          await toTx(
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
           ).buildAndExecute(undefined, {skipPreflight: true});
@@ -2349,7 +2479,18 @@ describe("TokenExtension/TransferFee", () => {
           const preOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
           const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
 
-          const sig = await toTx(
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
+                ...baseIxParams,
+                otherAmountThreshold: baseIxParams.otherAmountThreshold.subn(1),
+              })
+            ).buildAndExecute(),
+            /0x1795/, // AmountInAboveMaximum
+          );
+
+          await toTx(
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
           ).buildAndExecute(undefined, {skipPreflight: true});

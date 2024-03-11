@@ -4,7 +4,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::spl_token_2022::extension::BaseStateWithExtensions;
 
 use anchor_spl::token::Token;
-use anchor_spl::token_2022::spl_token_2022::{self, extension::{self, StateWithExtensions}};
+use anchor_spl::token_2022::spl_token_2022::{self, extension::{self, StateWithExtensions}, state::AccountState};
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::{self, Memo, BuildMemo};
 use spl_transfer_hook_interface;
@@ -179,13 +179,16 @@ pub fn is_supported_token_mint<'info>(
 
     let token_mint_info = token_mint.to_account_info();
 
-    // reject if mint has freeze_authority
-    if token_mint.freeze_authority.is_some() {
-        return Ok(false);
-    }
-
+    // if mint is owned by Token Program, it is supported (compatible to initialize_pool / initialize_reward)
     if *token_mint_info.owner == Token::id() {
         return Ok(true);
+    }
+
+    // now mint is owned by Token-2022 Program
+
+    // reject if mint has freeze_authority
+    if token_mint.freeze_authority.is_some() && !is_token_badge_initialized {
+        return Ok(false);
     }
 
     let token_mint_data = token_mint_info.try_borrow_data()?;
@@ -209,11 +212,26 @@ pub fn is_supported_token_mint<'info>(
                 // Note: Only the owner (Whirlpool account) can call ConfidentialTransferInstruction::ConfigureAccount.
             }
             // not supported without token badge
-            extension::ExtensionType::PermanentDelegate => { return Ok(false); }
-            extension::ExtensionType::TransferHook => { return Ok(false); }
+            extension::ExtensionType::PermanentDelegate => {
+                if !is_token_badge_initialized { return Ok(false); }
+            }
+            extension::ExtensionType::TransferHook => {
+                if !is_token_badge_initialized { return Ok(false); }
+            }
+            extension::ExtensionType::MintCloseAuthority => {
+                if !is_token_badge_initialized { return Ok(false); }
+            }
+            extension::ExtensionType::DefaultAccountState => {
+                if !is_token_badge_initialized { return Ok(false); }
+
+                // reject if default state is not Initialized even if it has token badge
+                let default_state = token_mint_unpacked.get_extension::<extension::default_account_state::DefaultAccountState>()?;
+                let initialized: u8 = AccountState::Initialized.into();
+                if default_state.state != initialized {
+                    return Ok(false);
+                }
+            }
             // No possibility to support the following extensions
-            extension::ExtensionType::DefaultAccountState => { return Ok(false); }
-            extension::ExtensionType::MintCloseAuthority => { return Ok(false); }
             extension::ExtensionType::NonTransferable => { return Ok(false); }
             // mint has unknown or unsupported extensions
             _ => { return Ok(false); }

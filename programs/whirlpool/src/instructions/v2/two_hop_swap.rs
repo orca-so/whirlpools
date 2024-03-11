@@ -3,7 +3,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
 use crate::swap_with_transfer_fee_extension;
-use crate::util::{calculate_transfer_fee_excluded_amount, calculate_transfer_fee_included_amount, parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
+use crate::util::{calculate_transfer_fee_excluded_amount, parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::{
     errors::ErrorCode,
     state::{TickArray, Whirlpool},
@@ -213,15 +213,9 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
         // The output of swap 1 is input of swap_calc_two
         let swap_one_output_amount = if a_to_b_two {
-            calculate_transfer_fee_included_amount(
-                &ctx.accounts.token_mint_two_a,
-                swap_calc_two.amount_a
-            )?.amount
+            swap_calc_two.amount_a
         } else {
-            calculate_transfer_fee_included_amount(
-                &ctx.accounts.token_mint_two_b,
-                swap_calc_two.amount_b
-            )?.amount
+            swap_calc_two.amount_b
         };
 
         let swap_calc_one = swap_with_transfer_fee_extension(

@@ -1,12 +1,14 @@
 import { AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
-import { AddressUtil, TokenUtil, TransactionBuilder } from "@orca-so/common-sdk";
+import { AddressUtil, TokenUtil, TransactionBuilder, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ID,
   AccountLayout,
   ExtensionType,
   NATIVE_MINT,
   NATIVE_MINT_2022,
+  TransferFee,
   addExtraAccountMetasForExecute,
+  calculateFee,
   createApproveInstruction,
   createAssociatedTokenAccountInstruction,
   createDisableRequiredMemoTransfersInstruction,
@@ -28,7 +30,7 @@ import {
   getMintLen,
   getTypeLen
 } from "@solana/spl-token";
-import { TEST_TOKEN_PROGRAM_ID, TEST_TOKEN_2022_PROGRAM_ID, TEST_TRANSFER_HOOK_PROGRAM_ID } from "../test-consts";
+import { TEST_TOKEN_PROGRAM_ID, TEST_TOKEN_2022_PROGRAM_ID, TEST_TRANSFER_HOOK_PROGRAM_ID, ZERO_BN } from "../test-consts";
 import { TokenTrait } from "./init-utils-v2";
 import { Keypair, SystemProgram, TransactionInstruction, AccountMeta } from "@solana/web3.js";
 import invariant from "tiny-invariant";
@@ -99,8 +101,8 @@ async function createMintInstructions(
           mint,
           authority,
           authority,
-          100,
-          100000n,
+          tokenTrait.transferFeeInitialBps ?? 500, // default: 5%
+          tokenTrait.transferFeeInitialMax ?? BigInt(U64_MAX.toString()), // default: virtually unlimited
           TEST_TOKEN_2022_PROGRAM_ID
         )
       );
@@ -531,4 +533,64 @@ export async function getExtraAccountMetasForHookProgram(
   return extraAccountMetas.length > 0
     ? extraAccountMetas
     : undefined;
+}
+
+function ceil_div_bn(num: BN, denom: BN): BN {
+  return num.add(denom.subn(1)).div(denom);
+}
+
+export function calculateTransferFeeIncludedAmount(
+  transferFee: TransferFee,
+  amount: BN,
+): { amount: BN, fee: BN } {
+  // https://github.com/solana-labs/solana-program-library/blob/master/token/program-2022/src/extension/transfer_fee/mod.rs#L90
+
+  const ONE_IN_BASIS_POINTS = 10_000;
+
+  // edge cases
+
+  if (transferFee.transferFeeBasisPoints === 0) {
+    return {
+      amount,
+      fee: ZERO_BN,
+    };
+  }
+
+  if (transferFee.transferFeeBasisPoints === ONE_IN_BASIS_POINTS || amount.isZero()) {
+    return {
+      amount: ZERO_BN,
+      fee: ZERO_BN,
+    };
+  }
+
+  // normal case
+
+  const num = amount.muln(ONE_IN_BASIS_POINTS);
+  const denom = new BN(ONE_IN_BASIS_POINTS - transferFee.transferFeeBasisPoints);
+  const rawFeeIncludedAmount = ceil_div_bn(num, denom);
+
+  const maxFeeBN = new BN(transferFee.maximumFee.toString());
+  if (rawFeeIncludedAmount.sub(amount).gte(maxFeeBN)) {
+    return {
+      amount: amount.add(maxFeeBN),
+      fee: maxFeeBN,
+    };
+  }
+
+  return {
+    amount: rawFeeIncludedAmount,
+    fee: rawFeeIncludedAmount.sub(amount),
+  };
+}
+
+export function calculateTransferFeeExcludedAmount(
+  transferFee: TransferFee,
+  amount: BN,
+): { amount: BN, fee: BN } {
+  const fee = calculateFee(transferFee, BigInt(amount.toString()));
+  const feeBN = new BN(fee.toString());
+  return {
+    amount: amount.sub(feeBN),
+    fee: feeBN,
+  };
 }

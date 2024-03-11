@@ -135,7 +135,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_program_a,
         &remaining_accounts.transfer_hook_a,
-        delta_a,
+        transfer_fee_included_delta_a.amount,
     )?;
 
     transfer_from_owner_to_vault_v2(
@@ -145,7 +145,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &ctx.accounts.token_vault_b,
         &ctx.accounts.token_program_b,
         &remaining_accounts.transfer_hook_b,
-        delta_b,
+        transfer_fee_included_delta_b.amount,
     )?;
 
     Ok(())

@@ -33,6 +33,7 @@ import {
   initTickArrayRange,
 } from "../init-utils";
 import {
+  calculateTransferFeeIncludedAmount,
   createAndMintToAssociatedTokenAccountV2,
   createInOrderMintsV2,
   createMintV2,
@@ -40,6 +41,7 @@ import {
 } from "./token-2022";
 import { InitConfigExtensionParams, SetTokenBadgeAuthorityParams } from "../../../src/instructions";
 import { getExtraAccountMetasForTestTransferHookProgram } from "./test-transfer-hook-program";
+import { getEpochFee, getMint, getTransferFeeConfig } from "@solana/spl-token";
 
 
 export interface TokenTrait {
@@ -48,6 +50,8 @@ export interface TokenTrait {
   hasFreezeAuthority?: boolean;
   hasPermanentDelegate?: boolean;
   hasTransferFeeExtension?: boolean;
+  transferFeeInitialBps?: number;
+  transferFeeInitialMax?: bigint; // u64
   hasTransferHookExtension?: boolean;
   hasConfidentialTransferExtension?: boolean;
 }
@@ -615,6 +619,12 @@ export async function fundPositionsV2(
     initSqrtPrice,
   } = poolInitInfo;
 
+  const mintA = await getMint(ctx.provider.connection, poolInitInfo.tokenMintA, "confirmed", poolInitInfo.tokenProgramA);
+  const mintB = await getMint(ctx.provider.connection, poolInitInfo.tokenMintB, "confirmed", poolInitInfo.tokenProgramB);
+  const feeConfigA = getTransferFeeConfig(mintA);
+  const feeConfigB = getTransferFeeConfig(mintB);
+  const epoch = await ctx.provider.connection.getEpochInfo("confirmed");
+
   return await Promise.all(
     fundParams.map(async (param): Promise<FundedPositionV2Info> => {
       const { params: positionInfo, mint } = await openPosition(
@@ -645,6 +655,18 @@ export async function fundPositionsV2(
           true
         );
 
+        // transfer fee
+        const transferFeeA = !feeConfigA
+          ? ZERO_BN
+          : calculateTransferFeeIncludedAmount(getEpochFee(feeConfigA, BigInt(epoch.epoch)), tokenA).fee;
+        const transferFeeB = !feeConfigB
+          ? ZERO_BN
+          : calculateTransferFeeIncludedAmount(getEpochFee(feeConfigB, BigInt(epoch.epoch)), tokenB).fee;
+
+        //console.log("transfer feeA", transferFeeA.toString(), "/", tokenA.toString());
+        //console.log("transfer feeB", transferFeeB.toString(), "/", tokenB.toString());
+
+        // transfer hook
         const tokenTransferHookAccountsA = await getExtraAccountMetasForTestTransferHookProgram(ctx.provider, poolInitInfo.tokenMintA);
         const tokenTransferHookAccountsB = await getExtraAccountMetasForTestTransferHookProgram(ctx.provider, poolInitInfo.tokenMintB);
 
@@ -652,8 +674,8 @@ export async function fundPositionsV2(
           ctx,
           WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
             liquidityAmount: param.liquidityAmount,
-            tokenMaxA: tokenA,
-            tokenMaxB: tokenB,
+            tokenMaxA: tokenA.add(transferFeeA),
+            tokenMaxB: tokenB.add(transferFeeB),
             whirlpool: whirlpool,
             positionAuthority: ctx.provider.wallet.publicKey,
             position: positionInfo.positionPda.publicKey,

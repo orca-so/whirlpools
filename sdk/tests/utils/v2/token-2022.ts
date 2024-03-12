@@ -1,11 +1,13 @@
 import { AnchorProvider, BN, web3 } from "@coral-xyz/anchor";
 import { AddressUtil, TokenUtil, TransactionBuilder, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import {
-  ASSOCIATED_TOKEN_PROGRAM_ID,
   AccountLayout,
+  AccountState,
   ExtensionType,
+  LENGTH_SIZE,
   NATIVE_MINT,
   NATIVE_MINT_2022,
+  TYPE_SIZE,
   TransferFee,
   addExtraAccountMetasForExecute,
   calculateFee,
@@ -14,7 +16,14 @@ import {
   createDisableRequiredMemoTransfersInstruction,
   createEnableRequiredMemoTransfersInstruction,
   createInitializeAccount3Instruction,
+  createInitializeDefaultAccountStateInstruction,
+  createInitializeGroupMemberPointerInstruction,
+  createInitializeGroupPointerInstruction,
+  createInitializeInterestBearingMintInstruction,
+  createInitializeMetadataPointerInstruction,
+  createInitializeMintCloseAuthorityInstruction,
   createInitializeMintInstruction,
+  createInitializeNonTransferableMintInstruction,
   createInitializePermanentDelegateInstruction,
   createInitializeTransferFeeConfigInstruction,
   createInitializeTransferHookInstruction,
@@ -30,9 +39,22 @@ import {
   getMintLen,
   getTypeLen
 } from "@solana/spl-token";
+import {
+  TokenMetadata,
+  pack as packTokenMetadata,
+  createInitializeInstruction as createInitializeTokenMetadataInstruction,
+} from "@solana/spl-token-metadata";
+import {
+  createInitializeGroupInstruction,
+  createInitializeMemberInstruction,
+  packTokenGroup,
+  packTokenGroupMember,
+  TokenGroup,
+  TokenGroupMember,
+} from "@solana/spl-token-group";
 import { TEST_TOKEN_PROGRAM_ID, TEST_TOKEN_2022_PROGRAM_ID, TEST_TRANSFER_HOOK_PROGRAM_ID, ZERO_BN } from "../test-consts";
 import { TokenTrait } from "./init-utils-v2";
-import { Keypair, SystemProgram, TransactionInstruction, AccountMeta } from "@solana/web3.js";
+import { Keypair, TransactionInstruction, AccountMeta } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { PoolUtil } from "../../../src";
 import * as assert from "assert";
@@ -81,11 +103,14 @@ async function createMintInstructions(
     ];
     return instructions;
   } else {
-    const extensionTypes: ExtensionType[] = [];
+    const fixedLengthExtensions: ExtensionType[] = [];
+    const rentReservedSpace: number[] = [];
     const extensions: TransactionInstruction[] = [];
     const postInitialization: TransactionInstruction[] = [];
+
+    // PermanentDelegate
     if (tokenTrait.hasPermanentDelegate) {
-      extensionTypes.push(ExtensionType.PermanentDelegate);
+      fixedLengthExtensions.push(ExtensionType.PermanentDelegate);
       extensions.push(
         createInitializePermanentDelegateInstruction(
           mint,
@@ -94,8 +119,10 @@ async function createMintInstructions(
         )
       );
     }
+
+    // TransferFee
     if (tokenTrait.hasTransferFeeExtension) {
-      extensionTypes.push(ExtensionType.TransferFeeConfig);
+      fixedLengthExtensions.push(ExtensionType.TransferFeeConfig);
       extensions.push(
         createInitializeTransferFeeConfigInstruction(
           mint,
@@ -107,8 +134,10 @@ async function createMintInstructions(
         )
       );
     }
+
+    // TransferHook
     if (tokenTrait.hasTransferHookExtension) {
-      extensionTypes.push(ExtensionType.TransferHook);
+      fixedLengthExtensions.push(ExtensionType.TransferHook);
       extensions.push(
         createInitializeTransferHookInstruction(
           mint,
@@ -124,11 +153,13 @@ async function createMintInstructions(
         mint,
       ));
     }
+
+    // ConfidentialTransfer
     // [March 6, 2024] getTypeLen(ExtensionType.ConfidentialTransferMint) return 97, but 65 (2 pubkey + 1 bool) is valid
     // https://github.com/solana-labs/solana-program-library/blob/d72289c79a04411c69a8bf1054f7156b6196f9b3/token/js/src/extensions/extensionType.ts#L74
     let confidentialTransferMintSizePatch = 0;
     if (tokenTrait.hasConfidentialTransferExtension) {
-      extensionTypes.push(ExtensionType.ConfidentialTransferMint);
+      fixedLengthExtensions.push(ExtensionType.ConfidentialTransferMint);
       confidentialTransferMintSizePatch = (65 - getTypeLen(ExtensionType.ConfidentialTransferMint));
       extensions.push(
         createInitializeConfidentialTransferMintInstruction(
@@ -140,13 +171,180 @@ async function createMintInstructions(
         )
       );
     }
-    const space = getMintLen(extensionTypes) + confidentialTransferMintSizePatch;
+
+    // InterestBearing
+    if (tokenTrait.hasInterestBearingExtension) {
+      fixedLengthExtensions.push(ExtensionType.InterestBearingConfig);
+      extensions.push(
+        createInitializeInterestBearingMintInstruction(
+          mint,
+          authority,
+          1,
+          TEST_TOKEN_2022_PROGRAM_ID,
+        )
+      );
+    }
+
+    // CloseMintAuthority
+    if (tokenTrait.hasMintCloseAuthorityExtension) {
+      fixedLengthExtensions.push(ExtensionType.MintCloseAuthority);
+      extensions.push(
+        createInitializeMintCloseAuthorityInstruction(
+          mint,
+          authority,
+          TEST_TOKEN_2022_PROGRAM_ID,
+        )
+      );
+    }
+
+    // DefaultAccountState
+    if (tokenTrait.hasDefaultAccountStateExtension) {
+      fixedLengthExtensions.push(ExtensionType.DefaultAccountState);
+      extensions.push(
+        createInitializeDefaultAccountStateInstruction(
+          mint,
+          tokenTrait.defaultAccountInitialState ?? AccountState.Frozen,
+          TEST_TOKEN_2022_PROGRAM_ID,
+        )
+      );
+    }
+
+    // NonTransferableMint
+    if (tokenTrait.hasNonTransferableExtension) {
+      fixedLengthExtensions.push(ExtensionType.NonTransferable);
+      extensions.push(
+        createInitializeNonTransferableMintInstruction(
+          mint,
+          TEST_TOKEN_2022_PROGRAM_ID,
+        )
+      );
+    }
+
+    // TokenMetadata
+    if (tokenTrait.hasTokenMetadataExtension) {
+      const identifier = mint.toBase58().slice(0, 8);
+      const metadata: TokenMetadata = {
+        mint,
+        updateAuthority: authority,
+        name: `test token ${identifier}`,
+        symbol: identifier,
+        uri: `https://test.orca.so/${identifier}.json`,
+        additionalMetadata: [],
+      };
+
+      const tokenMetadataSize = packTokenMetadata(metadata).length;
+      const tokenMetadataExtensionSize = TYPE_SIZE + LENGTH_SIZE + tokenMetadataSize;
+      rentReservedSpace.push(tokenMetadataExtensionSize);
+      postInitialization.push(
+        createInitializeTokenMetadataInstruction({
+          metadata: mint,
+          mint,
+          mintAuthority: authority,
+          updateAuthority: metadata.updateAuthority!,
+          name: metadata.name,
+          symbol: metadata.symbol,
+          uri: metadata.uri,
+          programId: TEST_TOKEN_2022_PROGRAM_ID,
+        })
+      );
+    }
+    
+    // MetadataPointer
+    if (tokenTrait.hasMetadataPointerExtension) {
+      fixedLengthExtensions.push(ExtensionType.MetadataPointer);
+      extensions.push(
+        createInitializeMetadataPointerInstruction(
+          mint,
+          authority,
+          mint,
+          TEST_TOKEN_2022_PROGRAM_ID,
+        )
+      );
+    }
+
+    // GroupPointer
+    if (tokenTrait.hasGroupPointerExtension) {
+      fixedLengthExtensions.push(ExtensionType.GroupPointer);
+      extensions.push(
+        createInitializeGroupPointerInstruction(
+          mint,
+          authority,
+          mint,
+          TEST_TOKEN_2022_PROGRAM_ID,
+        )
+      );
+    }
+
+    // MemberPointer
+    if (tokenTrait.hasGroupMemberPointerExtension) {
+      fixedLengthExtensions.push(ExtensionType.GroupMemberPointer);
+      extensions.push(
+        createInitializeGroupMemberPointerInstruction(
+          mint,
+          authority,
+          null,
+          TEST_TOKEN_2022_PROGRAM_ID,
+        )
+      );
+    }
+
+    // Group
+    if (tokenTrait.hasGroupExtension) {
+      const groupData: TokenGroup = {
+        mint,
+        updateAuthority: authority,
+        maxSize: 10,
+        size: 10,
+      };
+
+      const tokenGroupSize = packTokenGroup(groupData).length;
+      const tokenGroupExtensionSize = TYPE_SIZE + LENGTH_SIZE + tokenGroupSize;
+      rentReservedSpace.push(tokenGroupExtensionSize);
+      postInitialization.push(
+        createInitializeGroupInstruction({
+          // maybe this data is meaning less, but it is okay, because we use this to test rejecting it.
+          mint: mint,
+          mintAuthority: authority,
+          updateAuthority: PublicKey.default,// groupData.updateAuthority!,
+          group: mint,
+          maxSize: groupData.maxSize,
+          programId: TEST_TOKEN_2022_PROGRAM_ID,
+        })
+      );
+    }
+
+    // Member
+    if (tokenTrait.hasGroupMemberExtension) {
+      const groupMemberData: TokenGroupMember = {
+        mint: mint,
+        group: mint,
+        memberNumber: 10,
+      };
+
+      const tokenGroupMemberSize = packTokenGroupMember(groupMemberData).length;
+      const tokenGroupMemberExtensionSize = TYPE_SIZE + LENGTH_SIZE + tokenGroupMemberSize;
+      rentReservedSpace.push(tokenGroupMemberExtensionSize);
+      postInitialization.push(
+        createInitializeMemberInstruction({
+          // maybe this data is meaning less, but it is okay, because we use this to test rejecting it.
+          group: mint,
+          memberMint: mint,
+          groupUpdateAuthority: authority,
+          member: mint,
+          memberMintAuthority: authority,
+          programId: TEST_TOKEN_2022_PROGRAM_ID,
+        })
+      );
+    }
+
+    const space = getMintLen(fixedLengthExtensions) + confidentialTransferMintSizePatch;
+    const rentOnlySpace = rentReservedSpace.reduce((sum, n) => { return sum + n; }, 0);
     const instructions = [
       web3.SystemProgram.createAccount({
         fromPubkey: provider.wallet.publicKey,
         newAccountPubkey: mint,
         space,
-        lamports: await provider.connection.getMinimumBalanceForRentExemption(space),
+        lamports: await provider.connection.getMinimumBalanceForRentExemption(space + rentOnlySpace) ,
         programId: TEST_TOKEN_2022_PROGRAM_ID,
       }),
       ...extensions,

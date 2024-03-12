@@ -1,5 +1,4 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 import { PDA } from "@orca-so/common-sdk";
 import {
   Account,
@@ -26,12 +25,15 @@ import {
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initializePositionBundleWithMetadata } from "../utils/init-utils";
+import { MetaplexHttpClient } from "../utils/metaplex";
 
 describe("initialize_position_bundle_with_metadata", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+
+  const metaplex = new MetaplexHttpClient();
 
   async function createInitializePositionBundleWithMetadataTx(
     ctx: WhirlpoolContext,
@@ -135,13 +137,16 @@ describe("initialize_position_bundle_with_metadata", () => {
       WPB_METADATA_NAME_PREFIX + " " + mintAddress.slice(0, 4) + "..." + mintAddress.slice(-4);
 
     assert.ok(metadataPda != null);
-    const metadata = await Metadata.fromAccountAddress(provider.connection, metadataPda.publicKey);
+    const metadataAccountInfo = await provider.connection.getAccountInfo(metadataPda.publicKey);
+    assert.ok(metadataAccountInfo !== null);
+    const metadata = metaplex.parseOnChainMetadata(metadataPda.publicKey, metadataAccountInfo!.data);
+    assert.ok(metadata !== null);
     assert.ok(metadata.mint.toBase58() === positionMint.toString());
     assert.ok(metadata.updateAuthority.toBase58() === WHIRLPOOL_NFT_UPDATE_AUTH.toBase58());
     assert.ok(metadata.isMutable);
-    assert.strictEqual(metadata.data.name.replace(/\0/g, ''), nftName);
-    assert.strictEqual(metadata.data.symbol.replace(/\0/g, ''), WPB_METADATA_SYMBOL);
-    assert.strictEqual(metadata.data.uri.replace(/\0/g, ''), WPB_METADATA_URI);
+    assert.strictEqual(metadata.name.replace(/\0/g, ''), nftName);
+    assert.strictEqual(metadata.symbol.replace(/\0/g, ''), WPB_METADATA_SYMBOL);
+    assert.strictEqual(metadata.uri.replace(/\0/g, ''), WPB_METADATA_URI);
   }
 
   async function createOtherWallet(): Promise<Keypair> {

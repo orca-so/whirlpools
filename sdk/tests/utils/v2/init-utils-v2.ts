@@ -41,7 +41,7 @@ import {
 } from "./token-2022";
 import { InitConfigExtensionParams, SetTokenBadgeAuthorityParams } from "../../../src/instructions";
 import { getExtraAccountMetasForTestTransferHookProgram } from "./test-transfer-hook-program";
-import { getEpochFee, getMint, getTransferFeeConfig } from "@solana/spl-token";
+import { AccountState, getEpochFee, getMint, getTransferFeeConfig } from "@solana/spl-token";
 
 
 export interface TokenTrait {
@@ -54,6 +54,18 @@ export interface TokenTrait {
   transferFeeInitialMax?: bigint; // u64
   hasTransferHookExtension?: boolean;
   hasConfidentialTransferExtension?: boolean;
+
+  hasInterestBearingExtension?: boolean;
+  hasMintCloseAuthorityExtension?: boolean;
+  hasDefaultAccountStateExtension?: boolean;
+  defaultAccountInitialState?: AccountState;
+  hasNonTransferableExtension?: boolean;
+  hasTokenMetadataExtension?: boolean;
+  hasMetadataPointerExtension?: boolean;
+  hasGroupExtension?: boolean;
+  hasGroupPointerExtension?: boolean;
+  hasGroupMemberExtension?: boolean;
+  hasGroupMemberPointerExtension?: boolean;
 }
 
 interface TestPoolV2Params {

@@ -172,11 +172,6 @@ pub fn is_supported_token_mint<'info>(
     token_mint: &InterfaceAccount<'info, Mint>,
     is_token_badge_initialized: bool,
 ) -> Result<bool> {
-    // if mint has initialized token badge, it is clearly supported
-    if is_token_badge_initialized {
-        return Ok(true);
-    }
-
     let token_mint_info = token_mint.to_account_info();
 
     // if mint is owned by Token Program, it is supported (compatible to initialize_pool / initialize_reward)
@@ -211,7 +206,7 @@ pub fn is_supported_token_mint<'info>(
                 // it is impossible to send tokens directly to the vault accounts confidentially.
                 // Note: Only the owner (Whirlpool account) can call ConfidentialTransferInstruction::ConfigureAccount.
             }
-            // not supported without token badge
+            // supported if token badge is initialized
             extension::ExtensionType::PermanentDelegate => {
                 if !is_token_badge_initialized { return Ok(false); }
             }

@@ -8,6 +8,7 @@ import { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { initTestPoolV2, initializeRewardV2 } from "../../utils/v2/init-utils-v2";
 import { asyncAssertOwnerProgram, createMintV2 } from "../../utils/v2/token-2022";
 import { TEST_TOKEN_2022_PROGRAM_ID, TEST_TOKEN_PROGRAM_ID } from "../../utils";
+import { AccountState } from "@solana/spl-token";
 
 describe("initialize_reward_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -306,6 +307,327 @@ describe("initialize_reward_v2", () => {
         .buildAndExecute(),
         /0xbc0/ // InvalidProgramId
       );
+    });
+  });
+
+  describe("Supported Tokens", () => {
+    async function runTest(params: {
+      supported: boolean,
+      createTokenBadge: boolean,
+      tokenTrait: TokenTrait,
+      anchorPatch?: boolean,
+    }) {
+      const { poolInitInfo, configKeypairs, configExtension } = await initTestPoolV2(
+        ctx,
+        {isToken2022: true},
+        {isToken2022: true},
+        TickSpacing.Standard
+      );
+      const config = poolInitInfo.whirlpoolsConfig;
+
+      const rewardToken = await createMintV2(provider, params.tokenTrait);
+      const tokenProgram = (await provider.connection.getAccountInfo(rewardToken))!.owner;
+
+      // create token badge if wanted
+      const tokenBadgePda = PDAUtil.getTokenBadge(ctx.program.programId, config, rewardToken);
+      if (params.createTokenBadge) {
+        await toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+          whirlpoolsConfig: config,
+          whirlpoolsConfigExtension: configExtension.configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
+          funder: provider.wallet.publicKey,
+          tokenBadgeAuthority: configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
+          tokenBadgePda,
+          tokenMint: rewardToken,
+        })).addSigner(configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair).buildAndExecute();
+      }
+
+      // try to initialize reward
+      const promise = toTx(
+        ctx,
+        WhirlpoolIx.initializeRewardV2Ix(ctx.program, {
+          rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+          funder: provider.wallet.publicKey,
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          rewardMint: rewardToken,
+          rewardTokenBadge: tokenBadgePda.publicKey,
+          rewardTokenProgram: tokenProgram,
+          rewardVaultKeypair: anchor.web3.Keypair.generate(),
+          rewardIndex: 0,
+        })
+      )
+      .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
+      .buildAndExecute();
+
+      if (params.supported) {
+        await promise;
+        const whirlpoolData = await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+        assert.ok(whirlpoolData!.rewardInfos[0].mint.equals(rewardToken));
+      } else {
+        await assert.rejects(
+          promise,
+          !params.anchorPatch
+            ? /0x179f/ // UnsupportedTokenMint
+            : /invalid account data for instruction/ // Anchor v0.29 doesn't recognize some new extensions (GroupPointer, Group, MemberPointer, Member)
+        );
+      }
+    }
+
+    it("Token: mint without FreezeAuthority", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: false,
+        tokenTrait: {
+            isToken2022: false,
+        }
+      });
+    });
+
+    it("Token: mint with FreezeAuthority", async () => {
+      // not good, but allowed for compatibility to initialize_pool
+      await runTest({
+        supported: true,
+        createTokenBadge: false,
+        tokenTrait: {
+            isToken2022: false,
+            hasFreezeAuthority: true,
+        }
+      });
+    });
+
+    it("Token-2022: with TransferFeeConfig", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasTransferFeeExtension: true,
+        }
+      });
+    });
+
+    it("Token-2022: with MetadataPointer & TokenMetadata", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasTokenMetadataExtension: true,
+          hasMetadataPointerExtension: true,
+        }
+      });
+    });
+
+    it("Token-2022: with ConfidentialTransferMint", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasConfidentialTransferExtension: true,
+        }
+      });
+    });
+
+    it("Token-2022: with TokenBadge with FreezeAuthority", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: true,
+        tokenTrait: {
+          isToken2022: true,
+          hasFreezeAuthority: true,
+        }
+      });
+    });
+
+    it("Token-2022: with TokenBadge with PermanentDelegate", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: true,
+        tokenTrait: {
+          isToken2022: true,
+          hasPermanentDelegate: true,
+        }
+      });
+    });
+
+    it("Token-2022: with TokenBadge with TransferHook", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: true,
+        tokenTrait: {
+          isToken2022: true,
+          hasTransferHookExtension: true,
+        }
+      });
+    });
+
+    it("Token-2022: with TokenBadge with MintCloseAuthority", async () => { 
+      await runTest({
+        supported: true,
+        createTokenBadge: true,
+        tokenTrait: {
+          isToken2022: true,
+          hasMintCloseAuthorityExtension: true,
+        }
+      });
+    });
+
+    it("Token-2022: with TokenBadge with DefaultAccountState(Initialized)", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: true,
+        tokenTrait: {
+          isToken2022: true,
+          hasDefaultAccountStateExtension: true,
+          defaultAccountInitialState: AccountState.Initialized,
+        }
+      });
+    });
+
+    it("Token-2022: [FAIL] with TokenBadge with DefaultAccountState(Frozen)", async () => {
+      await runTest({
+        supported: false,
+        createTokenBadge: true,
+        tokenTrait: {
+          isToken2022: true,
+          hasFreezeAuthority: true, // needed to set initial state to Frozen
+          hasDefaultAccountStateExtension: true,
+          defaultAccountInitialState: AccountState.Frozen,
+        }
+      });
+    });
+
+    it("Token-2022: [FAIL] without TokenBadge with FreezeAuthority", async () => {
+      await runTest({
+        supported: false,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasFreezeAuthority: true,
+        }
+      });  
+    });
+
+    it("Token-2022: [FAIL] without TokenBadge with PermanentDelegate", async () => {
+      await runTest({
+        supported: false,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasPermanentDelegate: true,
+        }
+      });  
+    });
+
+    it("Token-2022: [FAIL] without TokenBadge with TransferHook", async () => {
+      await runTest({
+        supported: false,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasTransferHookExtension: true,
+        }
+      });
+    });
+
+    it("Token-2022: [FAIL] without TokenBadge with MintCloseAuthority", async () => {
+      await runTest({
+        supported: false,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasMintCloseAuthorityExtension: true,
+        }
+      });
+    });
+
+    it("Token-2022: [FAIL] without TokenBadge with DefaultAccountState(Initialized)", async () => {
+      await runTest({
+        supported: false,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasDefaultAccountStateExtension: true,
+          defaultAccountInitialState: AccountState.Initialized,
+        }
+      });      
+    });
+
+    it("Token-2022: [FAIL] without TokenBadge with DefaultAccountState(Frozen)", async () => {
+      await runTest({
+        supported: false,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasFreezeAuthority: true, // needed to set initial state to Frozen
+          hasDefaultAccountStateExtension: true,
+          defaultAccountInitialState: AccountState.Frozen,
+        }
+      });      
+    });
+
+    it("Token-2022: [FAIL] with/without TokenBadge with InterestBearingConfig", async () => {
+      const tokenTrait: TokenTrait = {
+        isToken2022: true,
+        hasInterestBearingExtension: true,
+      };
+      await runTest({ supported: false, createTokenBadge: true, tokenTrait });
+      await runTest({ supported: false, createTokenBadge: false, tokenTrait });
+    });
+
+    it("Token-2022: [FAIL] with/without TokenBadge with Group", async () => {
+      assert.ok(false, "[11 Mar, 2024] NOT IMPLEMENTED / I believe this extension is not stable yet");
+      /*
+      const tokenTrait: TokenTrait = {
+        isToken2022: true,
+        hasGroupExtension: true,
+      };
+      // TODO: remove anchorPatch: v0.29 doesn't recognize Group
+      await runTest({ supported: false, createTokenBadge: true, tokenTrait, anchorPatch: true });
+      await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: true });
+      */
+    });
+
+    it("Token-2022: [FAIL] with/without TokenBadge with GroupPointer" , async () => {
+      const tokenTrait: TokenTrait = {
+        isToken2022: true,
+        hasGroupPointerExtension: true,
+      };
+      // TODO: remove anchorPatch: v0.29 doesn't recognize GroupPointer
+      await runTest({ supported: false, createTokenBadge: true, tokenTrait, anchorPatch: true });
+      await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: true });
+    });
+
+    it("Token-2022: [FAIL] with/without TokenBadge with Member", async () => {
+      assert.ok(false, "[11 Mar, 2024] NOT IMPLEMENTED / I believe this extension is not stable yet");
+      /*
+      const tokenTrait: TokenTrait = {
+        isToken2022: true,
+        hasGroupMemberExtension: true,
+      };
+      // TODO: remove anchorPatch: v0.29 doesn't recognize Member
+      await runTest({ supported: false, createTokenBadge: true, tokenTrait, anchorPatch: true });
+      await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: true });
+      */
+    });
+
+    it("Token-2022: [FAIL] with/without TokenBadge with MemberPointer", async () => {
+      const tokenTrait: TokenTrait = {
+        isToken2022: true,
+        hasGroupMemberPointerExtension: true,
+      };
+      // TODO: remove anchorPatch: v0.29 doesn't recognize MemberPointer
+      await runTest({ supported: false, createTokenBadge: true, tokenTrait, anchorPatch: true });
+      await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: true });
+    });
+    
+    it("Token-2022: [FAIL] with/without TokenBadge with NonTransferable", async () => {
+      const tokenTrait: TokenTrait = {
+        isToken2022: true,
+        hasNonTransferableExtension: true,
+      };
+      await runTest({ supported: false, createTokenBadge: true, tokenTrait });
+      await runTest({ supported: false, createTokenBadge: false, tokenTrait });
     });
   });
 });

@@ -28,9 +28,6 @@ pub struct RemainingAccountsInfo {
 
 #[derive(Default)]
 pub struct ParsedRemainingAccounts<'info> {
-    pub tick_array: Option<Vec<AccountInfo<'info>>>,
-    pub tick_array_one: Option<Vec<AccountInfo<'info>>>,
-    pub tick_array_two: Option<Vec<AccountInfo<'info>>>,
     pub transfer_hook_a: Option<Vec<AccountInfo<'info>>>,
     pub transfer_hook_b: Option<Vec<AccountInfo<'info>>>,
     pub transfer_hook_reward: Option<Vec<AccountInfo<'info>>>,
@@ -38,6 +35,9 @@ pub struct ParsedRemainingAccounts<'info> {
     pub transfer_hook_one_b: Option<Vec<AccountInfo<'info>>>,
     pub transfer_hook_two_a: Option<Vec<AccountInfo<'info>>>,
     pub transfer_hook_two_b: Option<Vec<AccountInfo<'info>>>,
+    //pub tick_array: Option<Vec<AccountInfo<'info>>>,
+    //pub tick_array_one: Option<Vec<AccountInfo<'info>>>,
+    //pub tick_array_two: Option<Vec<AccountInfo<'info>>>,
 }
 
 pub fn parse_remaining_accounts<'info>(

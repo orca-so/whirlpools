@@ -3541,15 +3541,6 @@ export type Whirlpool = {
         "kind": "enum",
         "variants": [
           {
-            "name": "TickArray"
-          },
-          {
-            "name": "TickArrayOne"
-          },
-          {
-            "name": "TickArrayTwo"
-          },
-          {
             "name": "TransferHookA"
           },
           {
@@ -7375,15 +7366,6 @@ export const IDL: Whirlpool = {
       "type": {
         "kind": "enum",
         "variants": [
-          {
-            "name": "TickArray"
-          },
-          {
-            "name": "TickArrayOne"
-          },
-          {
-            "name": "TickArrayTwo"
-          },
           {
             "name": "TransferHookA"
           },

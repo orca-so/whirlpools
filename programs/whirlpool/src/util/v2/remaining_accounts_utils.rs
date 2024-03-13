@@ -3,9 +3,6 @@ use crate::errors::ErrorCode;
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum AccountsType {
-    TickArray,
-    TickArrayOne,
-    TickArrayTwo,
     TransferHookA,
     TransferHookB,
     TransferHookReward,
@@ -13,6 +10,9 @@ pub enum AccountsType {
     TransferHookOneB,
     TransferHookTwoA,
     TransferHookTwoB,
+    //TickArray,
+    //TickArrayOne,
+    //TickArrayTwo,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -66,15 +66,6 @@ pub fn parse_remaining_accounts<'info>(
     }
 
     match slice.accounts_type {
-      AccountsType::TickArray => {
-        parsed_remaining_accounts.tick_array = Some(accounts);
-      }
-      AccountsType::TickArrayOne => {
-        parsed_remaining_accounts.tick_array_one = Some(accounts);
-      }
-      AccountsType::TickArrayTwo => {
-        parsed_remaining_accounts.tick_array_two = Some(accounts);
-      }
       AccountsType::TransferHookA => {
         parsed_remaining_accounts.transfer_hook_a = Some(accounts);
       }
@@ -96,6 +87,17 @@ pub fn parse_remaining_accounts<'info>(
       AccountsType::TransferHookTwoB => {
         parsed_remaining_accounts.transfer_hook_two_b = Some(accounts);
       }
+      /* 
+      AccountsType::TickArray => {
+        parsed_remaining_accounts.tick_array = Some(accounts);
+      }
+      AccountsType::TickArrayOne => {
+        parsed_remaining_accounts.tick_array_one = Some(accounts);
+      }
+      AccountsType::TickArrayTwo => {
+        parsed_remaining_accounts.tick_array_two = Some(accounts);
+      }
+      */
     }
   }
 

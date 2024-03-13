@@ -3541,15 +3541,6 @@
         "kind": "enum",
         "variants": [
           {
-            "name": "TickArray"
-          },
-          {
-            "name": "TickArrayOne"
-          },
-          {
-            "name": "TickArrayTwo"
-          },
-          {
             "name": "TransferHookA"
           },
           {

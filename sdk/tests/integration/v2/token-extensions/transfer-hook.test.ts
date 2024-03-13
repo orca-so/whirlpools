@@ -1865,4 +1865,198 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
   });
+
+  describe("Special Errors", () => {
+    describe("TransferHook program rejects transfer", () => {
+      const TOO_LARGE_THRESHOLD_U64 = new BN(1_000_000_000_000);
+
+      // We know that all transfers are executed 2 functions depending on the direction, so 2 test cases.
+
+      it("[FAIL] owner to vault, amount too large", async () => {
+        // tokenA has transfer hook (so increase liquidity with large tokenB amount will not fail)
+        const mintAmount = TOO_LARGE_THRESHOLD_U64.muln(2);
+
+        const tickSpacing = 1;
+        const rangeLowerTickIndex = -1;
+        const rangeUpperTickIndex = +1;
+        const currentTickIndex = +2;
+        const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
+          currentTickIndex, // price is above range ([-1, +1] p)
+          rangeLowerTickIndex,
+          rangeUpperTickIndex,
+          {
+            tokenA: mintAmount,
+            tokenB: mintAmount,
+          }
+        );
+
+        const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+          // tokenA has transfer hook
+          tokenTraitA: { isToken2022: true, hasTransferHookExtension: true},
+          tokenTraitB: { isToken2022: true, hasTransferHookExtension: false},
+          tickSpacing,
+          positions: [{
+            tickLowerIndex: rangeLowerTickIndex,
+            tickUpperIndex: rangeUpperTickIndex,
+            liquidityAmount: liquidityAmount
+          }],
+          initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currentTickIndex),
+          mintAmount,
+        });
+        const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
+
+        const inputTokenAmount = TOO_LARGE_THRESHOLD_U64.addn(1); // exceed threshold by 1
+        const whirlpoolData = await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE) as WhirlpoolData;
+        const aToB = true;
+        const quote = swapQuoteWithParams(
+          {
+            amountSpecifiedIsInput: true,
+            aToB,
+            tokenAmount: inputTokenAmount,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            whirlpoolData,
+            tickArrays: await SwapUtils.getTickArrays(
+              whirlpoolData.tickCurrentIndex,
+              whirlpoolData.tickSpacing,
+              aToB,
+              ctx.program.programId,
+              poolInitInfo.whirlpoolPda.publicKey,
+              fetcher,
+              IGNORE_CACHE
+            ),
+          },
+          Percentage.fromFraction(1, 100)
+        );
+        assert.ok(quote.estimatedAmountIn.gt(TOO_LARGE_THRESHOLD_U64));
+          
+        // TransferHook
+        const tokenTransferHookAccountsA = await getExtraAccountMetasForTestTransferHookProgram(provider, poolInitInfo.tokenMintA);
+        const tokenTransferHookAccountsB = undefined;
+
+        await assert.rejects(
+          toTx(
+            ctx,
+            WhirlpoolIx.swapV2Ix(ctx.program, {
+              ...quote,
+              whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+              tokenAuthority: ctx.wallet.publicKey,
+              tokenMintA: poolInitInfo.tokenMintA,
+              tokenMintB: poolInitInfo.tokenMintB,
+              tokenProgramA: poolInitInfo.tokenProgramA,
+              tokenProgramB: poolInitInfo.tokenProgramB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+              oracle: PDAUtil.getOracle(ctx.program.programId, poolInitInfo.whirlpoolPda.publicKey).publicKey,
+              tokenTransferHookAccountsA,
+              tokenTransferHookAccountsB,
+            })
+          ).buildAndExecute(),
+          (err) => {
+            // error code is 0x1770 from transfer hook program and it is ambiguous, so use message string
+            return JSON.stringify(err).includes("AmountTooBig");
+          }
+        );  
+      });
+
+      it("[FAIL] vault to owner, amount too large", async () => {
+        // all tokenB is deposited into [-1, +1] (one side)
+        const mintAmount = TOO_LARGE_THRESHOLD_U64.muln(2);
+
+        const tickSpacing = 1;
+        const rangeLowerTickIndex = -1;
+        const rangeUpperTickIndex = +1;
+        const currentTickIndex = +2;
+        const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
+          currentTickIndex, // price is above range ([-1, +1] p)
+          rangeLowerTickIndex,
+          rangeUpperTickIndex,
+          {
+            tokenA: TOO_LARGE_THRESHOLD_U64.muln(3).divn(4), // 3/4 of threshold
+            tokenB: TOO_LARGE_THRESHOLD_U64.muln(3).divn(4), // 3/4 of threshold
+          }
+        );
+
+        const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+          // tokenB has transfer hook
+          tokenTraitA: { isToken2022: true, hasTransferHookExtension: false},
+          tokenTraitB: { isToken2022: true, hasTransferHookExtension: true},
+          tickSpacing,
+          positions: [
+            // to avoid large amount increase liquidity, 2 3/4 deposit will be made.
+            {
+              tickLowerIndex: rangeLowerTickIndex,
+              tickUpperIndex: rangeUpperTickIndex,
+              liquidityAmount: liquidityAmount
+            },
+            {
+              tickLowerIndex: rangeLowerTickIndex,
+              tickUpperIndex: rangeUpperTickIndex,
+              liquidityAmount: liquidityAmount
+            },
+          ],
+          initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currentTickIndex),
+          mintAmount,
+        });
+        const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
+
+        const inputTokenAmount = TOO_LARGE_THRESHOLD_U64.muln(130).divn(100); // 130% of threshold
+        const whirlpoolData = await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE) as WhirlpoolData;
+        const aToB = true;
+        const quote = swapQuoteWithParams(
+          {
+            amountSpecifiedIsInput: true,
+            aToB,
+            tokenAmount: inputTokenAmount,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            whirlpoolData,
+            tickArrays: await SwapUtils.getTickArrays(
+              whirlpoolData.tickCurrentIndex,
+              whirlpoolData.tickSpacing,
+              aToB,
+              ctx.program.programId,
+              poolInitInfo.whirlpoolPda.publicKey,
+              fetcher,
+              IGNORE_CACHE
+            ),
+          },
+          Percentage.fromFraction(1, 100)
+        );
+        assert.ok(quote.estimatedAmountOut.gt(TOO_LARGE_THRESHOLD_U64));
+          
+        // TransferHook
+        const tokenTransferHookAccountsA = undefined;
+        const tokenTransferHookAccountsB = await getExtraAccountMetasForTestTransferHookProgram(provider, poolInitInfo.tokenMintB);
+
+        await assert.rejects(
+          toTx(
+            ctx,
+            WhirlpoolIx.swapV2Ix(ctx.program, {
+              ...quote,
+              whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+              tokenAuthority: ctx.wallet.publicKey,
+              tokenMintA: poolInitInfo.tokenMintA,
+              tokenMintB: poolInitInfo.tokenMintB,
+              tokenProgramA: poolInitInfo.tokenProgramA,
+              tokenProgramB: poolInitInfo.tokenProgramB,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+              oracle: PDAUtil.getOracle(ctx.program.programId, poolInitInfo.whirlpoolPda.publicKey).publicKey,
+              tokenTransferHookAccountsA,
+              tokenTransferHookAccountsB,
+            })
+          ).buildAndExecute(),
+          (err) => {
+            // error code is 0x1770 from transfer hook program and it is ambiguous, so use message string
+            return JSON.stringify(err).includes("AmountTooBig");
+          }
+        );  
+      })
+    })
+  });
 });

@@ -1,13 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil, PDA, Percentage, ZERO } from "@orca-so/common-sdk";
+import { MathUtil, PDA, Percentage, U64_MAX } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
   buildWhirlpoolClient,
   collectRewardsQuote,
-  DecreaseLiquidityQuote,
-  decreaseLiquidityQuoteByLiquidityWithParams,
   DecreaseLiquidityV2Params,
   IncreaseLiquidityV2Params,
   InitPoolV2Params,
@@ -16,7 +14,6 @@ import {
   PoolUtil,
   PositionData,
   PriceMath,
-  SwapQuote,
   swapQuoteWithParams,
   SwapUtils,
   toTokenAmount,
@@ -47,9 +44,6 @@ import {
   calculateTransferFeeExcludedAmount,
   calculateTransferFeeIncludedAmount,
   createTokenAccountV2,
-  disableRequiredMemoTransfers,
-  enableRequiredMemoTransfers,
-  isRequiredMemoTransfersEnabled,
 } from "../../../utils/v2/token-2022";
 import { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../../utils/init-utils";
@@ -62,11 +56,14 @@ import {
 } from "../../../utils/v2/aquarium-v2";
 import {
   TransferFee,
+  TransferFeeConfig,
+  getAccount,
   getEpochFee,
   getMint,
+  getTransferFeeAmount,
   getTransferFeeConfig,
-  transfer,
 } from "@solana/spl-token";
+import { createSetTransferFeeInstruction } from "../../../utils/v2/transfer-fee";
 
 describe("TokenExtension/TransferFee", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -2520,6 +2517,701 @@ describe("TokenExtension/TransferFee", () => {
           //console.log("q1", quote.estimatedAmountIn.toString(), quote.estimatedAmountOut.toString());
         });
       });
+    });
+  });
+
+  describe("Special cases", () => {
+    // We know that all transfers are executed 2 functions depending on the direction, so 2 test cases.
+
+    const WAIT_EPOCH_TIMEOUT_MS = 30 * 1000;
+
+    async function getCurrentEpoch(): Promise<number> {
+      const epochInfo = await provider.connection.getEpochInfo("confirmed");
+      return epochInfo.epoch;
+    }
+
+    async function waitEpoch(waitForEpoch: number) {
+      const current = await getCurrentEpoch();
+      const startWait = Date.now();
+      assert.ok(waitForEpoch > current);
+
+      while (Date.now() - startWait < WAIT_EPOCH_TIMEOUT_MS) {
+        const epoch = await getCurrentEpoch();
+        if (epoch >= waitForEpoch) return;
+        sleep(1000);
+      }
+      throw Error("waitEpoch Timeout, Please set slots_per_epoch smaller in Anchor.toml");
+    }
+
+    async function fetchTransferFeeConfig(mint: PublicKey): Promise<TransferFeeConfig> {
+      const mintData = await getMint(provider.connection, mint, "confirmed", TEST_TOKEN_2022_PROGRAM_ID);
+      const config = getTransferFeeConfig(mintData);
+      assert.ok(config !== null);
+      return config!;
+    }
+
+    async function fetchTransferFeeWithheldAmount(account: PublicKey): Promise<BN> {
+      const accountData = await getAccount(provider.connection, account, "confirmed", TEST_TOKEN_2022_PROGRAM_ID);
+      const amount = getTransferFeeAmount(accountData);
+      assert.ok(amount !== null);
+      return new BN(amount.withheldAmount.toString());
+    }
+
+    let fixture: WhirlpoolTestFixtureV2;
+    beforeEach(async () => {
+      const mintAmount = new BN(2_000_000_000);
+      const tickSpacing = 1;
+      const rangeLowerTickIndex = -64;
+      const rangeUpperTickIndex = +64;
+      const currentTickIndex = 0;
+      const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
+        currentTickIndex,
+        rangeLowerTickIndex,
+        rangeUpperTickIndex,
+        {
+          // half deposit (50:50)
+          tokenA: mintAmount.divn(2),
+          tokenB: mintAmount.divn(2),
+        }
+      );
+
+      fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+        tokenTraitA: { isToken2022: true, hasTransferFeeExtension: true, transferFeeInitialBps: 500, transferFeeInitialMax: 100_000n},
+        tokenTraitB: { isToken2022: true, hasTransferFeeExtension: true, transferFeeInitialBps: 1000, transferFeeInitialMax: 200_000n},
+        tickSpacing,
+        // pool has much liquidity in both direction
+        positions: [{
+          tickLowerIndex: rangeLowerTickIndex,
+          tickUpperIndex: rangeUpperTickIndex,
+          liquidityAmount: liquidityAmount
+        }],
+        initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currentTickIndex),
+        mintAmount,
+      });
+    });
+
+    describe("use current fee rate even if next fee rate exists", () => {
+      it("owner to vault", async () => {
+        // in A to B, owner to vault is input
+
+        const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
+        const tokenA = poolInitInfo.tokenMintA;
+        const tokenB = poolInitInfo.tokenMintB;
+
+        // fee config is initialized with older = newer state
+        const initialFeeConfigA = await fetchTransferFeeConfig(tokenA);
+        assert.equal(initialFeeConfigA.newerTransferFee.transferFeeBasisPoints, 500);
+        assert.equal(initialFeeConfigA.olderTransferFee.transferFeeBasisPoints, 500);
+
+        const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
+
+        let whirlpoolData = (await fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE)) as WhirlpoolData;
+
+        const aToB = true;
+        const inputAmount = new BN(1_000_000);
+        const transferFeeA = getEpochFee(initialFeeConfigA, BigInt(await getCurrentEpoch()));
+        const transferFeeExcludedInputAmount = calculateTransferFeeExcludedAmount(transferFeeA, inputAmount);
+
+        // non zero, but not limited by maximum
+        assert.ok(transferFeeExcludedInputAmount.fee.gtn(0));
+        assert.ok(transferFeeExcludedInputAmount.fee.lt(new BN(transferFeeA.maximumFee.toString())));
+
+        const quote = swapQuoteWithParams(
+          {
+            // A --> B, ExactIn
+            amountSpecifiedIsInput: true,
+            aToB,
+            tokenAmount: transferFeeExcludedInputAmount.amount,
+
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            whirlpoolData,
+            tickArrays: await SwapUtils.getTickArrays(
+              whirlpoolData.tickCurrentIndex,
+              whirlpoolData.tickSpacing,
+              aToB,
+              ctx.program.programId,
+              whirlpoolPubkey,
+              fetcher,
+              IGNORE_CACHE,
+            ),
+          },
+          Percentage.fromFraction(0, 100), // 0% slippage
+        );
+
+        const tx = toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, {
+          ...quote,
+          amount: inputAmount,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true), // not interested in this case
+
+          whirlpool: whirlpoolPubkey,
+          tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          oracle: PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey).publicKey,
+        }));
+
+        // PREPEND setTransferFee ix
+        tx.prependInstruction({
+          cleanupInstructions: [],
+          signers: [], // provider.wallet is authority & payer
+          instructions: [
+            createSetTransferFeeInstruction(
+              tokenA,
+              2000,
+              BigInt(U64_MAX.toString()),
+              provider.wallet.publicKey,
+            )
+          ]
+        });
+
+        const preWithheldAmount = await fetchTransferFeeWithheldAmount(poolInitInfo.tokenVaultAKeypair.publicKey);
+        await tx.buildAndExecute();
+        const postWithheldAmount = await fetchTransferFeeWithheldAmount(poolInitInfo.tokenVaultAKeypair.publicKey);
+
+        // fee is based on the current bps
+        const withheldDelta = postWithheldAmount.sub(preWithheldAmount);
+        assert.ok(withheldDelta.eq(transferFeeExcludedInputAmount.fee));
+
+        // but newer fee bps have been updated
+        const updatedFeeConfigA = await fetchTransferFeeConfig(tokenA);
+        assert.equal(updatedFeeConfigA.newerTransferFee.transferFeeBasisPoints, 2000);
+        assert.equal(updatedFeeConfigA.olderTransferFee.transferFeeBasisPoints, 500);
+      });
+
+      it("vault to owner", async () => {
+        // in A to B, vault to owner is output
+
+        const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
+        const tokenA = poolInitInfo.tokenMintA;
+        const tokenB = poolInitInfo.tokenMintB;
+
+        // fee config is initialized with older = newer state
+        const initialFeeConfigB = await fetchTransferFeeConfig(tokenB);
+        assert.equal(initialFeeConfigB.newerTransferFee.transferFeeBasisPoints, 1000);
+        assert.equal(initialFeeConfigB.olderTransferFee.transferFeeBasisPoints, 1000);
+
+        const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
+
+        let whirlpoolData = (await fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE)) as WhirlpoolData;
+
+        const aToB = true;
+        const inputAmount = new BN(1_000_000);
+        const feeConfigA = await fetchTransferFeeConfig(tokenA);
+        const transferFeeA = getEpochFee(feeConfigA, BigInt(await getCurrentEpoch()));
+        const transferFeeExcludedInputAmount = calculateTransferFeeExcludedAmount(transferFeeA, inputAmount);
+
+        const quote = swapQuoteWithParams(
+          {
+            // A --> B, ExactIn
+            amountSpecifiedIsInput: true,
+            aToB,
+            tokenAmount: transferFeeExcludedInputAmount.amount,
+
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+            whirlpoolData,
+            tickArrays: await SwapUtils.getTickArrays(
+              whirlpoolData.tickCurrentIndex,
+              whirlpoolData.tickSpacing,
+              aToB,
+              ctx.program.programId,
+              whirlpoolPubkey,
+              fetcher,
+              IGNORE_CACHE,
+            ),
+          },
+          Percentage.fromFraction(0, 100), // 0% slippage
+        );
+
+        const transferFeeB = getEpochFee(initialFeeConfigB, BigInt(await getCurrentEpoch()));
+        const transferFeeExcludedOutputAmount = calculateTransferFeeExcludedAmount(transferFeeB, quote.estimatedAmountOut);
+
+        // non zero, but not limited by maximum
+        assert.ok(transferFeeExcludedOutputAmount.fee.gtn(0));
+        assert.ok(transferFeeExcludedOutputAmount.fee.lt(new BN(transferFeeB.maximumFee.toString())));
+
+        const tx = toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, {
+          ...quote,
+          amount: inputAmount,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true), // not interested in this case
+
+          whirlpool: whirlpoolPubkey,
+          tokenAuthority: ctx.wallet.publicKey,
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: poolInitInfo.tokenProgramA,
+          tokenProgramB: poolInitInfo.tokenProgramB,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          oracle: PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey).publicKey,
+        }));
+
+        // PREPEND setTransferFee ix
+        tx.prependInstruction({
+          cleanupInstructions: [],
+          signers: [], // provider.wallet is authority & payer
+          instructions: [
+            createSetTransferFeeInstruction(
+              tokenB,
+              1500,
+              BigInt(U64_MAX.toString()),
+              provider.wallet.publicKey,
+            )
+          ]
+        });
+
+        const preWithheldAmount = await fetchTransferFeeWithheldAmount(tokenAccountB);
+        await tx.buildAndExecute();
+        const postWithheldAmount = await fetchTransferFeeWithheldAmount(tokenAccountB);
+
+        // fee is based on the current bps
+        const withheldDelta = postWithheldAmount.sub(preWithheldAmount);
+        assert.ok(withheldDelta.eq(transferFeeExcludedOutputAmount.fee));
+
+        // but newer fee bps have been updated
+        const updatedFeeConfigB = await fetchTransferFeeConfig(tokenB);
+        assert.equal(updatedFeeConfigB.newerTransferFee.transferFeeBasisPoints, 1500);
+        assert.equal(updatedFeeConfigB.olderTransferFee.transferFeeBasisPoints, 1000);
+      });  
+    });
+
+    describe("use updated fee rate once epoch comes", () => {
+      it("owner to vault", async () => {
+        // in A to B, owner to vault is input
+
+        const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
+        const tokenA = poolInitInfo.tokenMintA;
+        const tokenB = poolInitInfo.tokenMintB;
+
+        // fee config is initialized with older = newer state
+        const initialFeeConfigA = await fetchTransferFeeConfig(tokenA);
+        assert.equal(initialFeeConfigA.newerTransferFee.transferFeeBasisPoints, 500);
+        assert.equal(initialFeeConfigA.olderTransferFee.transferFeeBasisPoints, 500);
+
+        const newBpsList = [2000, 3000];
+        let oldBps = 500;
+        for (let i = 0; i < newBpsList.length; i++) {
+          const newBps = newBpsList[i];
+
+          // update fee config
+          await toTx(ctx, {
+            cleanupInstructions: [],
+            signers: [], // provider.wallet is authority & payer
+            instructions: [
+              createSetTransferFeeInstruction(
+                tokenA,
+                newBps,
+                BigInt(U64_MAX.toString()),
+                provider.wallet.publicKey,
+              )
+            ]
+          }).buildAndExecute();
+
+          const updatedFeeConfigA = await fetchTransferFeeConfig(tokenA);
+          assert.equal(updatedFeeConfigA.newerTransferFee.transferFeeBasisPoints, newBps);
+          assert.equal(updatedFeeConfigA.olderTransferFee.transferFeeBasisPoints, oldBps);
+
+          // wait for epoch to enable updated fee rate
+          await waitEpoch(Number(updatedFeeConfigA.newerTransferFee.epoch));
+          assert.ok((await getCurrentEpoch()) >= updatedFeeConfigA.newerTransferFee.epoch);
+
+          const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
+
+          const whirlpoolData = (await fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE)) as WhirlpoolData;
+
+          const aToB = true;
+          const inputAmount = new BN(1_000_000);
+          const transferFeeA = getEpochFee(updatedFeeConfigA, BigInt(await getCurrentEpoch()));
+          assert.ok(transferFeeA.transferFeeBasisPoints === newBps);
+
+          // non zero, but not limited by maximum
+          const transferFeeExcludedInputAmount = calculateTransferFeeExcludedAmount(transferFeeA, inputAmount);
+          assert.ok(transferFeeExcludedInputAmount.fee.gtn(0));
+          assert.ok(transferFeeExcludedInputAmount.fee.lt(new BN(transferFeeA.maximumFee.toString())));
+
+          const quote = swapQuoteWithParams(
+            {
+              // A --> B, ExactIn
+              amountSpecifiedIsInput: true,
+              aToB,
+              tokenAmount: transferFeeExcludedInputAmount.amount,
+
+              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+              whirlpoolData,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolData.tickCurrentIndex,
+                whirlpoolData.tickSpacing,
+                aToB,
+                ctx.program.programId,
+                whirlpoolPubkey,
+                fetcher,
+                IGNORE_CACHE,
+              ),
+            },
+            Percentage.fromFraction(0, 100), // 0% slippage
+          );
+
+          const tx = toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, {
+            ...quote,
+            amount: inputAmount,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true), // not interested in this case
+
+            whirlpool: whirlpoolPubkey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey).publicKey,
+          }));
+
+          const preWithheldAmount = await fetchTransferFeeWithheldAmount(poolInitInfo.tokenVaultAKeypair.publicKey);
+          await tx.buildAndExecute();
+          const postWithheldAmount = await fetchTransferFeeWithheldAmount(poolInitInfo.tokenVaultAKeypair.publicKey);
+
+          // fee is based on the current bps
+          const withheldDelta = postWithheldAmount.sub(preWithheldAmount);
+          assert.ok(withheldDelta.eq(transferFeeExcludedInputAmount.fee));
+
+          oldBps = newBps;
+        }
+      });
+
+      it("vault to owner", async () => {
+        const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
+        const tokenA = poolInitInfo.tokenMintA;
+        const tokenB = poolInitInfo.tokenMintB;
+
+        // fee config is initialized with older = newer state
+        const initialFeeConfigB = await fetchTransferFeeConfig(tokenB);
+        assert.equal(initialFeeConfigB.newerTransferFee.transferFeeBasisPoints, 1000);
+        assert.equal(initialFeeConfigB.olderTransferFee.transferFeeBasisPoints, 1000);
+
+        const newBpsList = [2000, 3000];
+        let oldBps = 1000;
+        for (let i = 0; i < newBpsList.length; i++) {
+          const newBps = newBpsList[i];
+
+          // update fee config
+          await toTx(ctx, {
+            cleanupInstructions: [],
+            signers: [], // provider.wallet is authority & payer
+            instructions: [
+              createSetTransferFeeInstruction(
+                tokenB,
+                newBps,
+                BigInt(U64_MAX.toString()),
+                provider.wallet.publicKey,
+              )
+            ]
+          }).buildAndExecute();
+
+          const updatedFeeConfigB = await fetchTransferFeeConfig(tokenB);
+          assert.equal(updatedFeeConfigB.newerTransferFee.transferFeeBasisPoints, newBps);
+          assert.equal(updatedFeeConfigB.olderTransferFee.transferFeeBasisPoints, oldBps);
+
+          // wait for epoch to enable updated fee rate
+          await waitEpoch(Number(updatedFeeConfigB.newerTransferFee.epoch));
+          assert.ok((await getCurrentEpoch()) >= updatedFeeConfigB.newerTransferFee.epoch);
+
+          const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
+
+          const whirlpoolData = (await fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE)) as WhirlpoolData;
+
+          const aToB = true;
+          const inputAmount = new BN(1_000_000);
+          const feeConfigA = await fetchTransferFeeConfig(tokenA);
+          const transferFeeA = getEpochFee(feeConfigA, BigInt(await getCurrentEpoch()));
+          const transferFeeExcludedInputAmount = calculateTransferFeeExcludedAmount(transferFeeA, inputAmount);
+  
+          const quote = swapQuoteWithParams(
+            {
+              // A --> B, ExactIn
+              amountSpecifiedIsInput: true,
+              aToB,
+              tokenAmount: transferFeeExcludedInputAmount.amount,
+
+              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+              whirlpoolData,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolData.tickCurrentIndex,
+                whirlpoolData.tickSpacing,
+                aToB,
+                ctx.program.programId,
+                whirlpoolPubkey,
+                fetcher,
+                IGNORE_CACHE,
+              ),
+            },
+            Percentage.fromFraction(0, 100), // 0% slippage
+          );
+
+          const transferFeeB = getEpochFee(updatedFeeConfigB, BigInt(await getCurrentEpoch()));
+          const transferFeeExcludedOutputAmount = calculateTransferFeeExcludedAmount(transferFeeB, quote.estimatedAmountOut);
+  
+          // non zero, but not limited by maximum
+          assert.ok(transferFeeExcludedOutputAmount.fee.gtn(0));
+          assert.ok(transferFeeExcludedOutputAmount.fee.lt(new BN(transferFeeB.maximumFee.toString())));
+  
+          const tx = toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, {
+            ...quote,
+            amount: inputAmount,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true), // not interested in this case
+
+            whirlpool: whirlpoolPubkey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey).publicKey,
+          }));
+
+          const preWithheldAmount = await fetchTransferFeeWithheldAmount(tokenAccountB);
+          await tx.buildAndExecute();
+          const postWithheldAmount = await fetchTransferFeeWithheldAmount(tokenAccountB);
+  
+          // fee is based on the current bps
+          const withheldDelta = postWithheldAmount.sub(preWithheldAmount);
+          assert.ok(withheldDelta.eq(transferFeeExcludedOutputAmount.fee));
+  
+          oldBps = newBps;
+        }
+      });  
+    });
+
+    describe("use maximum limit", () => {
+      it("owner to vault", async () => {
+        // in A to B, owner to vault is input
+
+        const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
+        const tokenA = poolInitInfo.tokenMintA;
+        const tokenB = poolInitInfo.tokenMintB;
+
+        // fee config is initialized with older = newer state
+        const initialFeeConfigA = await fetchTransferFeeConfig(tokenA);
+        assert.equal(initialFeeConfigA.newerTransferFee.maximumFee, 100_000n);
+        assert.equal(initialFeeConfigA.olderTransferFee.maximumFee, 100_000n);
+
+        const newMaximumFeeList = [10_000n, 1_000n];
+        let oldMaximumFee = 100_000n;
+        for (let i = 0; i < newMaximumFeeList.length; i++) {
+          const newMaximumFee = newMaximumFeeList[i];
+
+          // update fee config
+          await toTx(ctx, {
+            cleanupInstructions: [],
+            signers: [], // provider.wallet is authority & payer
+            instructions: [
+              createSetTransferFeeInstruction(
+                tokenA,
+                initialFeeConfigA.newerTransferFee.transferFeeBasisPoints, // no change
+                newMaximumFee,
+                provider.wallet.publicKey,
+              )
+            ]
+          }).buildAndExecute();
+
+          const updatedFeeConfigA = await fetchTransferFeeConfig(tokenA);
+          assert.equal(updatedFeeConfigA.newerTransferFee.maximumFee, newMaximumFee);
+          assert.equal(updatedFeeConfigA.olderTransferFee.maximumFee, oldMaximumFee);
+
+          // wait for epoch to enable updated fee rate
+          await waitEpoch(Number(updatedFeeConfigA.newerTransferFee.epoch));
+          assert.ok((await getCurrentEpoch()) >= updatedFeeConfigA.newerTransferFee.epoch);
+
+          const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
+
+          const whirlpoolData = (await fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE)) as WhirlpoolData;
+
+          const aToB = true;
+          const inputAmount = new BN(1_000_000);
+          const transferFeeA = getEpochFee(updatedFeeConfigA, BigInt(await getCurrentEpoch()));
+          assert.ok(transferFeeA.maximumFee === newMaximumFee);
+
+          // non zero, and limited by maximum
+          const transferFeeExcludedInputAmount = calculateTransferFeeExcludedAmount(transferFeeA, inputAmount);
+          assert.ok(transferFeeExcludedInputAmount.fee.gtn(0));
+          assert.ok(transferFeeExcludedInputAmount.fee.eq(new BN(transferFeeA.maximumFee.toString())));
+
+          const quote = swapQuoteWithParams(
+            {
+              // A --> B, ExactIn
+              amountSpecifiedIsInput: true,
+              aToB,
+              tokenAmount: transferFeeExcludedInputAmount.amount,
+
+              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+              whirlpoolData,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolData.tickCurrentIndex,
+                whirlpoolData.tickSpacing,
+                aToB,
+                ctx.program.programId,
+                whirlpoolPubkey,
+                fetcher,
+                IGNORE_CACHE,
+              ),
+            },
+            Percentage.fromFraction(0, 100), // 0% slippage
+          );
+
+          const tx = toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, {
+            ...quote,
+            amount: inputAmount,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true), // not interested in this case
+
+            whirlpool: whirlpoolPubkey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey).publicKey,
+          }));
+
+          const preWithheldAmount = await fetchTransferFeeWithheldAmount(poolInitInfo.tokenVaultAKeypair.publicKey);
+          await tx.buildAndExecute();
+          const postWithheldAmount = await fetchTransferFeeWithheldAmount(poolInitInfo.tokenVaultAKeypair.publicKey);
+
+          // fee is based on the current maximum
+          const withheldDelta = postWithheldAmount.sub(preWithheldAmount);
+          assert.ok(withheldDelta.eq(transferFeeExcludedInputAmount.fee));
+
+          oldMaximumFee = newMaximumFee;
+        }
+      });
+
+      it("vault to owner", async () => {
+        const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
+        const tokenA = poolInitInfo.tokenMintA;
+        const tokenB = poolInitInfo.tokenMintB;
+
+        // fee config is initialized with older = newer state
+        const initialFeeConfigB = await fetchTransferFeeConfig(tokenB);
+        assert.equal(initialFeeConfigB.newerTransferFee.maximumFee, 200_000n);
+        assert.equal(initialFeeConfigB.olderTransferFee.maximumFee, 200_000n);
+
+        const newMaximumFeeList = [10_000n, 1_000n];
+        let oldMaximumFee = 200_000n;
+        for (let i = 0; i < newMaximumFeeList.length; i++) {
+          const newMaximumFee = newMaximumFeeList[i];
+
+          // update fee config
+          await toTx(ctx, {
+            cleanupInstructions: [],
+            signers: [], // provider.wallet is authority & payer
+            instructions: [
+              createSetTransferFeeInstruction(
+                tokenB,
+                initialFeeConfigB.newerTransferFee.transferFeeBasisPoints, // no change
+                newMaximumFee,
+                provider.wallet.publicKey,
+              )
+            ]
+          }).buildAndExecute();
+
+          const updatedFeeConfigB = await fetchTransferFeeConfig(tokenB);
+          assert.equal(updatedFeeConfigB.newerTransferFee.maximumFee, newMaximumFee);
+          assert.equal(updatedFeeConfigB.olderTransferFee.maximumFee, oldMaximumFee);
+
+          // wait for epoch to enable updated fee rate
+          await waitEpoch(Number(updatedFeeConfigB.newerTransferFee.epoch));
+          assert.ok((await getCurrentEpoch()) >= updatedFeeConfigB.newerTransferFee.epoch);
+
+          const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
+
+          const whirlpoolData = (await fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE)) as WhirlpoolData;
+
+          const aToB = true;
+          const inputAmount = new BN(1_000_000);
+          const feeConfigA = await fetchTransferFeeConfig(tokenA);
+          const transferFeeA = getEpochFee(feeConfigA, BigInt(await getCurrentEpoch()));
+          const transferFeeExcludedInputAmount = calculateTransferFeeExcludedAmount(transferFeeA, inputAmount);
+  
+          const quote = swapQuoteWithParams(
+            {
+              // A --> B, ExactIn
+              amountSpecifiedIsInput: true,
+              aToB,
+              tokenAmount: transferFeeExcludedInputAmount.amount,
+
+              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+              whirlpoolData,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolData.tickCurrentIndex,
+                whirlpoolData.tickSpacing,
+                aToB,
+                ctx.program.programId,
+                whirlpoolPubkey,
+                fetcher,
+                IGNORE_CACHE,
+              ),
+            },
+            Percentage.fromFraction(0, 100), // 0% slippage
+          );
+
+          const transferFeeB = getEpochFee(updatedFeeConfigB, BigInt(await getCurrentEpoch()));
+          const transferFeeExcludedOutputAmount = calculateTransferFeeExcludedAmount(transferFeeB, quote.estimatedAmountOut);
+  
+          // non zero, and limited by maximum
+          assert.ok(transferFeeExcludedOutputAmount.fee.gtn(0));
+          assert.ok(transferFeeExcludedOutputAmount.fee.eq(new BN(transferFeeB.maximumFee.toString())));
+  
+          const tx = toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, {
+            ...quote,
+            amount: inputAmount,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true), // not interested in this case
+
+            whirlpool: whirlpoolPubkey,
+            tokenAuthority: ctx.wallet.publicKey,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            oracle: PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey).publicKey,
+          }));
+
+          const preWithheldAmount = await fetchTransferFeeWithheldAmount(tokenAccountB);
+          await tx.buildAndExecute();
+          const postWithheldAmount = await fetchTransferFeeWithheldAmount(tokenAccountB);
+  
+          // fee is based on the current maximum
+          const withheldDelta = postWithheldAmount.sub(preWithheldAmount);
+          assert.ok(withheldDelta.eq(transferFeeExcludedOutputAmount.fee));
+  
+          oldMaximumFee = newMaximumFee;
+        }
+      });  
     });
   });
 });

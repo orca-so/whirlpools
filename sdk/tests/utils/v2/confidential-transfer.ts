@@ -2,7 +2,7 @@
 
 import { ExtensionType, TOKEN_2022_PROGRAM_ID, TokenInstruction, TokenUnsupportedInstructionError, getExtensionTypes, getMint, programSupportsExtensions } from "@solana/spl-token";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { struct, u8,  } from '@solana/buffer-layout';
+import { struct, u8 } from '@solana/buffer-layout';
 import { publicKey } from '@solana/buffer-layout-utils';
 import { AnchorProvider } from "@coral-xyz/anchor";
 import { TEST_TOKEN_2022_PROGRAM_ID } from "../test-consts";

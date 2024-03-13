@@ -10,8 +10,10 @@ import {
   PositionBundleData,
   PositionData,
   TickArrayData,
+  TokenBadgeData,
   WhirlpoolData,
   WhirlpoolsConfigData,
+  WhirlpoolsConfigExtensionData,
 } from "../../../types/public";
 
 /**
@@ -25,6 +27,8 @@ export type WhirlpoolSupportedTypes =
   | TickArrayData
   | FeeTierData
   | PositionBundleData
+  | WhirlpoolsConfigExtensionData
+  | TokenBadgeData
   | BasicSupportedTypes;
 
 /**
@@ -209,6 +213,46 @@ export interface WhirlpoolAccountFetcherInterface {
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, PositionBundleData | null>>;
+
+  /**
+   * Fetch and cache the account for a given WhirlpoolConfigExtension address
+   * @param address The address of the WhirlpoolConfigExtension account
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getConfigExtension(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<WhirlpoolsConfigExtensionData | null>;
+
+  /**
+   * Fetch and cache the accounts for a given array of WhirlpoolConfigExtension addresses
+   * @param addresses The array of WhirlpoolConfigExtension account addresses
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getConfigExtensions(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<ReadonlyMap<string, WhirlpoolsConfigExtensionData | null>>;
+
+  /**
+   * Fetch and cache the account for a given TokenBadge address
+   * @param address The address of the TokenBadge account
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getTokenBadge(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<TokenBadgeData | null>;
+
+  /**
+   * Fetch and cache the accounts for a given array of TokenBadge addresses
+   * @param addresses The array of TokenBadge account addresses
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getTokenBadges(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<ReadonlyMap<string, TokenBadgeData | null>>;
 
   /**
    * Populate the fetcher's cache with the given {@link WhirlpoolsData} accounts

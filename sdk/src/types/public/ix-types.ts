@@ -33,6 +33,22 @@ export {
   CloseBundledPositionParams,
 } from "../../instructions/";
 export {
+  CollectFeesV2Params,
+  CollectProtocolFeesV2Params,
+  CollectRewardV2Params,
+  DecreaseLiquidityV2Params,
+  IncreaseLiquidityV2Params,
+  InitPoolV2Params,
+  InitializeRewardV2Params,
+  SetRewardEmissionsV2Params,
+  SwapV2Params,
+  TwoHopSwapV2Params,  
+  InitConfigExtensionParams,
+  InitializeTokenBadgeParams,
+  SetConfigExtensionAuthorityParams,
+  SetTokenBadgeAuthorityParams,
+} from "../../instructions/v2/";
+export {
   CollectAllParams,
   CollectAllPositionAddressParams,
   CollectAllPositionParams,

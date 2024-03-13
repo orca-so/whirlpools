@@ -61,3 +61,6 @@ pub use set_reward_emissions_super_authority::*;
 pub use swap::*;
 pub use two_hop_swap::*;
 pub use update_fees_and_rewards::*;
+
+pub mod v2;
+pub use v2::*;

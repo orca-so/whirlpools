@@ -149,7 +149,7 @@ pub fn next_reward_growths_inside(
     tick_upper: &Tick,
     tick_upper_index: i32,
     reward_infos: &[WhirlpoolRewardInfo; NUM_REWARDS],
-) -> ([u128; NUM_REWARDS]) {
+) -> [u128; NUM_REWARDS] {
     let mut reward_growths_inside = [0; NUM_REWARDS];
 
     for i in 0..NUM_REWARDS {

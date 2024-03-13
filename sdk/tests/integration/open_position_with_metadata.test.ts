@@ -1,6 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
-import { Metadata } from "@metaplex-foundation/mpl-token-metadata";
 import { PDA, TransactionBuilder } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID, getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
@@ -31,6 +30,7 @@ import {
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool, openPositionWithMetadata } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
+import { MetaplexHttpClient } from "../utils/metaplex";
 
 describe("open_position_with_metadata", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -38,6 +38,8 @@ describe("open_position_with_metadata", () => {
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
+
+  const metaplex = new MetaplexHttpClient();
 
   let defaultParams: Required<OpenPositionParams & { metadataPda: PDA }>;
   let defaultMint: Keypair;
@@ -66,11 +68,15 @@ describe("open_position_with_metadata", () => {
   async function checkMetadata(metadataPda: PDA | undefined, positionMint: PublicKey) {
     assert.ok(metadataPda != null);
 
-    const metadata = await Metadata.fromAccountAddress(provider.connection, metadataPda.publicKey);
+    const metadataAccountInfo = await provider.connection.getAccountInfo(metadataPda.publicKey);
+    assert.ok(metadataAccountInfo !== null);
+    const metadata = metaplex.parseOnChainMetadata(metadataPda.publicKey, metadataAccountInfo!.data);
+    assert.ok(metadata !== null);
+
     assert.ok(metadata.updateAuthority.toBase58() === "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr");
     assert.ok(metadata.mint.toBase58() === positionMint.toString());
     assert.ok(
-      metadata.data.uri.replace(/\0/g, '') === `https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws`
+      metadata.uri.replace(/\0/g, '') === `https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws`
     );
   }
 
@@ -301,9 +307,9 @@ describe("open_position_with_metadata", () => {
 
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
-        // AddressConstraint
-        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L84
-        /0x7dc/
+        // InvalidProgramId
+        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L180
+        /0xbc0/
       );
     });
 
@@ -316,9 +322,9 @@ describe("open_position_with_metadata", () => {
 
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
-        // AddressConstraint
-        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L84
-        /0x7dc/
+        // InvalidProgramId
+        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L180
+        /0xbc0/
       );
     });
 

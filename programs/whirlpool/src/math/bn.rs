@@ -19,7 +19,7 @@
 /// U256 reference:
 /// https://crates.parity.io/sp_core/struct.U256.html
 ///
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh09::{BorshDeserialize, BorshSerialize};
 use std::borrow::BorrowMut;
 use std::convert::TryInto;
 use std::io::{Error, ErrorKind, Write};

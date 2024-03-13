@@ -1,7 +1,7 @@
 use crate::state::{PositionBundle, Whirlpool};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
-use mpl_token_metadata::instruction::create_metadata_accounts_v3;
+use anchor_spl::metadata::{self, CreateMetadataAccountsV3, mpl_token_metadata::types::DataV2};
 use solana_program::program::invoke_signed;
 use spl_token::instruction::{burn_checked, close_account, mint_to, set_authority, AuthorityType};
 
@@ -120,7 +120,7 @@ pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
     position_metadata_account: &UncheckedAccount<'info>,
     metadata_update_auth: &UncheckedAccount<'info>,
     funder: &Signer<'info>,
-    metadata_program: &UncheckedAccount<'info>,
+    metadata_program: &Program<'info, metadata::Metadata>,
     token_program: &Program<'info, Token>,
     system_program: &Program<'info, System>,
     rent: &Sysvar<'info, Rent>,
@@ -133,36 +133,32 @@ pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
     )?;
 
     let metadata_mint_auth_account = whirlpool;
-    invoke_signed(
-        &create_metadata_accounts_v3(
-            metadata_program.key(),
-            position_metadata_account.key(),
-            position_mint.key(),
-            metadata_mint_auth_account.key(),
-            funder.key(),
-            metadata_update_auth.key(),
-            WP_METADATA_NAME.to_string(),
-            WP_METADATA_SYMBOL.to_string(),
-            WP_METADATA_URI.to_string(),
-            None,
-            0,
-            false,
-            true,
-            None,
-            None,
-            None,
-        ),
-        &[
-            position_metadata_account.to_account_info(),
-            position_mint.to_account_info(),
-            metadata_mint_auth_account.to_account_info(),
-            metadata_update_auth.to_account_info(),
-            funder.to_account_info(),
+    metadata::create_metadata_accounts_v3(
+        CpiContext::new_with_signer(
             metadata_program.to_account_info(),
-            system_program.to_account_info(),
-            rent.to_account_info(),
-        ],
-        &[&metadata_mint_auth_account.seeds()],
+            CreateMetadataAccountsV3 {
+                metadata: position_metadata_account.to_account_info(),
+                mint: position_mint.to_account_info(),
+                mint_authority: metadata_mint_auth_account.to_account_info(),
+                update_authority: metadata_update_auth.to_account_info(),
+                payer: funder.to_account_info(),
+                rent: rent.to_account_info(),
+                system_program: system_program.to_account_info(),
+            },
+            &[&metadata_mint_auth_account.seeds()],
+        ),
+        DataV2 {
+            name: WP_METADATA_NAME.to_string(),
+            symbol: WP_METADATA_SYMBOL.to_string(),
+            uri: WP_METADATA_URI.to_string(),
+            creators: None,
+            seller_fee_basis_points: 0,
+            collection: None,
+            uses: None
+        },
+        true,
+        false,
+        None
     )?;
 
     remove_position_token_mint_authority(whirlpool, position_mint, token_program)
@@ -247,7 +243,7 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     position_bundle_token_account: &Account<'info, TokenAccount>,
     position_bundle_metadata: &UncheckedAccount<'info>,
     metadata_update_auth: &UncheckedAccount<'info>,
-    metadata_program: &UncheckedAccount<'info>,
+    metadata_program: &Program<'info, metadata::Metadata>,
     token_program: &Program<'info, Token>,
     system_program: &Program<'info, System>,
     rent: &Sysvar<'info, Rent>,
@@ -271,36 +267,32 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     nft_name += "...";
     nft_name += &mint_address[mint_address.len() - 4..];
 
-    invoke_signed(
-        &create_metadata_accounts_v3(
-            metadata_program.key(),
-            position_bundle_metadata.key(),
-            position_bundle_mint.key(),
-            position_bundle.key(),
-            funder.key(),
-            metadata_update_auth.key(),
-            nft_name,
-            WPB_METADATA_SYMBOL.to_string(),
-            WPB_METADATA_URI.to_string(),
-            None,
-            0,
-            false,
-            true,
-            None,
-            None,
-            None,
-        ),
-        &[
-            position_bundle.to_account_info(),
-            position_bundle_metadata.to_account_info(),
-            position_bundle_mint.to_account_info(),
-            metadata_update_auth.to_account_info(),
-            funder.to_account_info(),
+    metadata::create_metadata_accounts_v3(
+        CpiContext::new_with_signer(
             metadata_program.to_account_info(),
-            system_program.to_account_info(),
-            rent.to_account_info(),
-        ],
-        &[position_bundle_seeds],
+            CreateMetadataAccountsV3 {
+                metadata: position_bundle_metadata.to_account_info(),
+                mint: position_bundle_mint.to_account_info(),
+                mint_authority: position_bundle.to_account_info(),
+                update_authority: metadata_update_auth.to_account_info(),
+                payer: funder.to_account_info(),
+                rent: rent.to_account_info(),
+                system_program: system_program.to_account_info(),
+            },
+            &[position_bundle_seeds],
+        ),
+        DataV2 {
+            name: nft_name,
+            symbol: WPB_METADATA_SYMBOL.to_string(),
+            uri: WPB_METADATA_URI.to_string(),
+            creators: None,
+            seller_fee_basis_points: 0,
+            collection: None,
+            uses: None
+        },
+        true,
+        false,
+        None
     )?;
 
     remove_position_bundle_token_mint_authority(

@@ -1,13 +1,14 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
+use anchor_spl::metadata::Metadata;
 
 use crate::{state::*, util::mint_position_token_with_metadata_and_remove_authority};
+use crate::state;
 
 use crate::constants::nft::whirlpool_nft_update_auth::ID as WP_NFT_UPDATE_AUTH;
 
 #[derive(Accounts)]
-#[instruction(bumps: OpenPositionWithMetadataBumps)]
 pub struct OpenPositionWithMetadata<'info> {
     #[account(mut)]
     pub funder: Signer<'info>,
@@ -50,9 +51,7 @@ pub struct OpenPositionWithMetadata<'info> {
     pub rent: Sysvar<'info, Rent>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 
-    /// CHECK: checked via account constraints
-    #[account(address = mpl_token_metadata::ID)]
-    pub metadata_program: UncheckedAccount<'info>,
+    pub metadata_program: Program<'info, Metadata>,
 
     /// CHECK: checked via account constraints
     #[account(address = WP_NFT_UPDATE_AUTH)]
@@ -64,7 +63,8 @@ pub struct OpenPositionWithMetadata<'info> {
 */
 pub fn handler(
     ctx: Context<OpenPositionWithMetadata>,
-    _bumps: OpenPositionWithMetadataBumps,
+    // derive(Accounts) generates OpenPositionWithMetadataBumps, so we need to clarify which one we want to use.
+    _bumps: state::OpenPositionWithMetadataBumps,
     tick_lower_index: i32,
     tick_upper_index: i32,
 ) -> Result<()> {

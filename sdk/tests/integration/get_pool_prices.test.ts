@@ -155,10 +155,15 @@ describe("get_pool_prices", () => {
 
   it("successfully calculates the price for one token with multiple pools against a quote token", async () => {
     const aqConfig = getDefaultAquarium();
+
     // Add a third token and account and a second pool
+    aqConfig.initFeeTierParams.push({
+      tickSpacing: TickSpacing.SixtyFour
+    });
     aqConfig.initPoolParams.push({
       mintIndices: [0, 1],
       tickSpacing: TickSpacing.SixtyFour,
+      feeTierIndex: 1,
       initSqrtPrice: MathUtil.toX64(new Decimal(5.2)),
     });
 

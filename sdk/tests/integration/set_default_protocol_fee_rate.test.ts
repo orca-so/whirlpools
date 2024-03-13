@@ -56,7 +56,7 @@ describe("set_default_protocol_fee_rate", () => {
       whirlpoolsConfigKey,
       tokenMintA,
       tokenMintB,
-      TickSpacing.Stable
+      TickSpacing.Standard
     );
     const tokenVaultAKeypair = anchor.web3.Keypair.generate();
     const tokenVaultBKeypair = anchor.web3.Keypair.generate();
@@ -68,7 +68,7 @@ describe("set_default_protocol_fee_rate", () => {
       whirlpoolPda,
       tokenVaultAKeypair,
       tokenVaultBKeypair,
-      tickSpacing: TickSpacing.Stable,
+      tickSpacing: TickSpacing.Standard,
     };
     await toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, newPoolInitInfo)).buildAndExecute();
 

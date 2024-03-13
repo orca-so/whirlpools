@@ -21,6 +21,8 @@ export enum AccountName {
   Whirlpool = "Whirlpool",
   FeeTier = "FeeTier",
   PositionBundle = "PositionBundle",
+  WhirlpoolsConfigExtension = "WhirlpoolsConfigExtension",
+  TokenBadge = "TokenBadge",
 }
 
 export const WHIRLPOOL_IDL = WhirlpoolIDL as Idl;
@@ -53,6 +55,8 @@ const RESERVED_BYTES: ReservedBytes = {
   [AccountName.Whirlpool]: 0,
   [AccountName.FeeTier]: 0,
   [AccountName.PositionBundle]: 64,
+  [AccountName.WhirlpoolsConfigExtension]: 512,
+  [AccountName.TokenBadge]: 128,
 };
 
 type ReservedBytes = {
@@ -195,3 +199,20 @@ export type PositionBundleData = {
   positionBundleMint: PublicKey;
   positionBitmap: number[];
 };
+
+/**
+ * @category Solana Accounts
+ */
+export type WhirlpoolsConfigExtensionData = {
+  whirlpoolsConfig: PublicKey;
+  configExtensionAuthority: PublicKey;
+  tokenBadgeAuthority: PublicKey;
+}
+
+/**
+ * @category Solana Accounts
+ */
+export type TokenBadgeData = {
+  whirlpoolsConfig: PublicKey;
+  tokenMint: PublicKey;
+}

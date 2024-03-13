@@ -11,6 +11,8 @@ describe("anchor-types", () => {
       [AccountName.Whirlpool]: 653,
       [AccountName.FeeTier]: 44,
       [AccountName.PositionBundle]: 136,
+      [AccountName.WhirlpoolsConfigExtension]: 616,
+      [AccountName.TokenBadge]: 200,
     };
     Object.values(AccountName).forEach((name) => {
       try {

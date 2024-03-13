@@ -9,6 +9,7 @@ import { initTestPoolV2, initializeRewardV2 } from "../../utils/v2/init-utils-v2
 import { asyncAssertOwnerProgram, createMintV2 } from "../../utils/v2/token-2022";
 import { TEST_TOKEN_2022_PROGRAM_ID, TEST_TOKEN_PROGRAM_ID } from "../../utils";
 import { AccountState } from "@solana/spl-token";
+import { Keypair } from "@solana/web3.js";
 
 describe("initialize_reward_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -307,6 +308,123 @@ describe("initialize_reward_v2", () => {
         .buildAndExecute(),
         /0xbc0/ // InvalidProgramId
       );
+    });
+
+    describe("invalid badge account", () => {
+      it("fails when reward_token_badge address invalid (uninitialized)", async () => {
+        const { poolInitInfo, configKeypairs } = await initTestPoolV2(
+          ctx,
+          {isToken2022: true},
+          {isToken2022: true},
+          TickSpacing.Standard
+        );
+  
+        const rewardMint = await createMintV2(provider, {isToken2022: true});
+        const fakeAddress = Keypair.generate().publicKey;
+
+        await assert.rejects(
+          toTx(
+            ctx,
+            WhirlpoolIx.initializeRewardV2Ix(ctx.program, {
+              rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+              funder: provider.wallet.publicKey,
+              whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+              rewardMint,
+              rewardTokenBadge: fakeAddress,
+              rewardTokenProgram: TEST_TOKEN_2022_PROGRAM_ID,
+              rewardVaultKeypair: anchor.web3.Keypair.generate(),
+              rewardIndex: 0,
+            })
+          )
+          .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
+          .buildAndExecute(),
+          /custom program error: 0x7d6/ // ConstraintSeeds
+        );
+      });
+  
+      it("fails when reward_token_badge address invalid (initialized, same config / different mint)", async () => {
+        const { poolInitInfo, configKeypairs, configExtension } = await initTestPoolV2(
+          ctx,
+          {isToken2022: true},
+          {isToken2022: true},
+          TickSpacing.Standard
+        );
+
+        const rewardMint = await createMintV2(provider, {isToken2022: true});
+        const anotherMint = await createMintV2(provider, {isToken2022: true});
+
+        // initialize another badge
+        const config = poolInitInfo.whirlpoolsConfig;
+        const configExtensionPda = PDAUtil.getConfigExtension(ctx.program.programId, config);
+        const anotherMintTokenBadgePda = PDAUtil.getTokenBadge(
+          ctx.program.programId,
+          config,
+          anotherMint
+        );
+        const tokenBadgeAuthority = configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair;
+        await toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+          whirlpoolsConfig: config,
+          whirlpoolsConfigExtension: configExtensionPda.publicKey,
+          funder: provider.wallet.publicKey,
+          tokenBadgeAuthority: tokenBadgeAuthority.publicKey,
+          tokenBadgePda: anotherMintTokenBadgePda,
+          tokenMint: anotherMint,
+        })).addSigner(tokenBadgeAuthority).buildAndExecute();
+        const badge = fetcher.getTokenBadge(anotherMintTokenBadgePda.publicKey, IGNORE_CACHE);
+        assert.ok(badge !== null);
+
+        const fakeAddress = anotherMintTokenBadgePda.publicKey;
+
+        await assert.rejects(
+          toTx(
+            ctx,
+            WhirlpoolIx.initializeRewardV2Ix(ctx.program, {
+              rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+              funder: provider.wallet.publicKey,
+              whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+              rewardMint,
+              rewardTokenBadge: fakeAddress,
+              rewardTokenProgram: TEST_TOKEN_2022_PROGRAM_ID,
+              rewardVaultKeypair: anchor.web3.Keypair.generate(),
+              rewardIndex: 0,
+            })
+          )
+          .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
+          .buildAndExecute(),
+          /custom program error: 0x7d6/ // ConstraintSeeds
+        );
+      });
+  
+      it("fails when reward_token_badge address invalid (initialized, account owned by WhirlpoolProgram)", async () => {
+        const { poolInitInfo, configKeypairs } = await initTestPoolV2(
+          ctx,
+          {isToken2022: true},
+          {isToken2022: true},
+          TickSpacing.Standard
+        );
+  
+        const rewardMint = await createMintV2(provider, {isToken2022: true});
+        const fakeAddress = poolInitInfo.whirlpoolPda.publicKey;
+
+        await assert.rejects(
+          toTx(
+            ctx,
+            WhirlpoolIx.initializeRewardV2Ix(ctx.program, {
+              rewardAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+              funder: provider.wallet.publicKey,
+              whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+              rewardMint,
+              rewardTokenBadge: fakeAddress,
+              rewardTokenProgram: TEST_TOKEN_2022_PROGRAM_ID,
+              rewardVaultKeypair: anchor.web3.Keypair.generate(),
+              rewardIndex: 0,
+            })
+          )
+          .addSigner(configKeypairs.rewardEmissionsSuperAuthorityKeypair)
+          .buildAndExecute(),
+          /custom program error: 0x7d6/ // ConstraintSeeds
+        );
+      });
     });
   });
 

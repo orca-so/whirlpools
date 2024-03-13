@@ -633,6 +633,154 @@ describe("initialize_pool_v2", () => {
         /0xbc0/ // InvalidProgramId
       );
     });
+
+    describe("invalid badge account", () => {
+      let baseIxParams: InitPoolV2Params;
+
+      beforeEach(async () => {
+        // create tokens
+        const [tokenAKeypair, tokenBKeypair] = [Keypair.generate(), Keypair.generate()].sort((a, b) => PoolUtil.compareMints(a.publicKey, b.publicKey));
+        await createMintV2(provider, {isToken2022: true}, undefined, tokenAKeypair);
+        await createMintV2(provider, {isToken2022: true}, undefined, tokenBKeypair);
+
+        // create config and feetier
+        const configKeypair = Keypair.generate();
+        await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, {
+          collectProtocolFeesAuthority: provider.wallet.publicKey,
+          feeAuthority: provider.wallet.publicKey,
+          rewardEmissionsSuperAuthority: provider.wallet.publicKey,
+          defaultProtocolFeeRate: 300,
+          funder: provider.wallet.publicKey,
+          whirlpoolsConfigKeypair: configKeypair,
+        })).addSigner(configKeypair).buildAndExecute();  
+
+        const tickSpacing = TickSpacing.SixtyFour;
+        const feeTierPda = PDAUtil.getFeeTier(ctx.program.programId, configKeypair.publicKey, tickSpacing);
+        await toTx(ctx, WhirlpoolIx.initializeFeeTierIx(ctx.program, {
+          defaultFeeRate: 3000,
+          feeAuthority: provider.wallet.publicKey,
+          funder: provider.wallet.publicKey,
+          tickSpacing,
+          whirlpoolsConfig: configKeypair.publicKey,
+          feeTierPda: feeTierPda,
+        })).buildAndExecute();
+
+        // create config extension
+        const configExtensionPda = PDAUtil.getConfigExtension(ctx.program.programId, configKeypair.publicKey);
+        await toTx(ctx, WhirlpoolIx.initializeConfigExtensionIx(ctx.program, {
+          feeAuthority: provider.wallet.publicKey,
+          funder: provider.wallet.publicKey,
+          whirlpoolsConfig: configKeypair.publicKey,
+          whirlpoolsConfigExtensionPda: configExtensionPda,
+        })).buildAndExecute();
+
+        const whirlpoolPda = PDAUtil.getWhirlpool(ctx.program.programId, configKeypair.publicKey, tokenAKeypair.publicKey, tokenBKeypair.publicKey, tickSpacing);
+        baseIxParams = {
+          tokenVaultAKeypair: Keypair.generate(),
+          tokenVaultBKeypair: Keypair.generate(),
+          funder: provider.wallet.publicKey,
+          initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(0),
+          tickSpacing,
+          tokenMintA: tokenAKeypair.publicKey,
+          tokenMintB: tokenBKeypair.publicKey,
+          whirlpoolsConfig: configKeypair.publicKey,
+          feeTierKey: feeTierPda.publicKey,
+          tokenBadgeA: PDAUtil.getTokenBadge(ctx.program.programId, configKeypair.publicKey, tokenAKeypair.publicKey).publicKey,
+          tokenBadgeB: PDAUtil.getTokenBadge(ctx.program.programId, configKeypair.publicKey, tokenBKeypair.publicKey).publicKey,
+          tokenProgramA: TEST_TOKEN_2022_PROGRAM_ID,
+          tokenProgramB: TEST_TOKEN_2022_PROGRAM_ID,
+          whirlpoolPda, 
+        }
+      });
+
+      it("fails when token_badge_a/b address invalid (uninitialized)", async () => {
+        const fakeAddress = Keypair.generate().publicKey;
+        await assert.rejects(
+          toTx(ctx, WhirlpoolIx.initializePoolV2Ix(ctx.program, {
+            ...baseIxParams,
+            tokenBadgeA: fakeAddress,
+          })).buildAndExecute(),
+          /custom program error: 0x7d6/ // ConstraintSeeds    
+        );
+
+        await assert.rejects(
+          toTx(ctx, WhirlpoolIx.initializePoolV2Ix(ctx.program, {
+            ...baseIxParams,
+            tokenBadgeB: fakeAddress,
+          })).buildAndExecute(),
+          /custom program error: 0x7d6/ // ConstraintSeeds    
+        );
+      });
+
+      it("fails when token_badge_a/b address invalid (initialized, same config / different mint)", async () => {
+        const config = baseIxParams.whirlpoolsConfig;
+
+        const anotherTokenKeypair = Keypair.generate();
+        await createMintV2(provider, {isToken2022: true}, undefined, anotherTokenKeypair);
+
+        // initialize another badge
+        const configExtension = PDAUtil.getConfigExtension(ctx.program.programId, config).publicKey;
+        const tokenBadgePda = PDAUtil.getTokenBadge(ctx.program.programId, config, anotherTokenKeypair.publicKey);
+        await toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+          whirlpoolsConfig: config,
+          whirlpoolsConfigExtension: configExtension,
+          funder: provider.wallet.publicKey,
+          tokenBadgeAuthority: provider.wallet.publicKey,
+          tokenBadgePda,
+          tokenMint: anotherTokenKeypair.publicKey,
+        })).buildAndExecute();
+        const badge = fetcher.getTokenBadge(tokenBadgePda.publicKey, IGNORE_CACHE);
+        assert.ok(badge !== null);
+
+        const fakeAddress = tokenBadgePda.publicKey;
+
+        await assert.rejects(
+          toTx(ctx, WhirlpoolIx.initializePoolV2Ix(ctx.program, {
+            ...baseIxParams,
+            tokenBadgeA: fakeAddress,
+          })).buildAndExecute(),
+          /custom program error: 0x7d6/ // ConstraintSeeds    
+        );        
+
+        await assert.rejects(
+          toTx(ctx, WhirlpoolIx.initializePoolV2Ix(ctx.program, {
+            ...baseIxParams,
+            tokenBadgeB: fakeAddress,
+          })).buildAndExecute(),
+          /custom program error: 0x7d6/ // ConstraintSeeds    
+        );        
+      });
+
+      it("fails when token_badge_a/b address invalid (account owned by WhirlpoolProgram)", async () => {
+        // use Whirlpool address
+        const { poolInitInfo } = await initTestPoolV2(
+          ctx,
+          {isToken2022: true},
+          {isToken2022: true},
+          TickSpacing.Standard
+        );
+  
+        const fakeAddress = poolInitInfo.whirlpoolPda.publicKey;
+        const whirlpool = fetcher.getPool(fakeAddress);
+        assert.ok(whirlpool !== null);
+
+        await assert.rejects(
+          toTx(ctx, WhirlpoolIx.initializePoolV2Ix(ctx.program, {
+            ...baseIxParams,
+            tokenBadgeA: fakeAddress,
+          })).buildAndExecute(),
+          /custom program error: 0x7d6/ // ConstraintSeeds
+        );
+
+        await assert.rejects(
+          toTx(ctx, WhirlpoolIx.initializePoolV2Ix(ctx.program, {
+            ...baseIxParams,
+            tokenBadgeB: fakeAddress,
+          })).buildAndExecute(),
+          /custom program error: 0x7d6/ // ConstraintSeeds    
+        );
+      });
+    });
   });
 
   describe("Supported Tokens", () => {

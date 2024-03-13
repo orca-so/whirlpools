@@ -1,6 +1,7 @@
 use crate::state::{token_badge, Whirlpool};
 use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
+use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::TransferFee;
 use anchor_spl::token_interface::spl_token_2022::extension::BaseStateWithExtensions;
 
 use anchor_spl::token::Token;
@@ -17,10 +18,31 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
     token_owner_account: &InterfaceAccount<'info, TokenAccount>,
     token_vault: &InterfaceAccount<'info, TokenAccount>,
     token_program: &Interface<'info, TokenInterface>,
+    memo_program: &Program<'info, Memo>,
     transfer_hook_accounts: &Option<Vec<AccountInfo<'info>>>,
     amount: u64,
 ) -> Result<()> {
-    // The vault doesn't have MemoTransfer extension, so we don't need to use memo_program
+    // TransferFee extension
+    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint)? {
+        // log applied transfer fee
+        // - Not must, but important for ease of investigation and replay when problems occur
+        // - Use Memo because logs risk being truncated
+        let transfer_fee_memo = format!(
+            "TFe: {}, {}",
+            u16::from(epoch_transfer_fee.transfer_fee_basis_points),
+            u64::from(epoch_transfer_fee.maximum_fee),
+        );
+        memo::build_memo(
+            CpiContext::new(
+                memo_program.to_account_info(),
+                BuildMemo {}
+            ),
+            transfer_fee_memo.as_bytes()
+        )?;
+    }
+
+    // MemoTransfer extension
+    // The vault doesn't have MemoTransfer extension, so we don't need to use memo_program here
 
     let mut instruction = spl_token_2022::instruction::transfer_checked(
         token_program.key,
@@ -80,6 +102,25 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
     amount: u64,
     memo: &[u8],
 ) -> Result<()> {
+    // TransferFee extension
+    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint)? {
+        // log applied transfer fee
+        // - Not must, but important for ease of investigation and replay when problems occur
+        // - Use Memo because logs risk being truncated
+        let transfer_fee_memo = format!(
+            "TFe: {}, {}",
+            u16::from(epoch_transfer_fee.transfer_fee_basis_points),
+            u64::from(epoch_transfer_fee.maximum_fee),
+        );
+        memo::build_memo(
+            CpiContext::new(
+                memo_program.to_account_info(),
+                BuildMemo {}
+            ),
+            transfer_fee_memo.as_bytes()
+        )?;
+    }
+
     // MemoTransfer extension
     if is_transfer_memo_required(&token_owner_account)? {
         memo::build_memo(
@@ -265,20 +306,12 @@ pub fn calculate_transfer_fee_excluded_amount<'info>(
     token_mint: &InterfaceAccount<'info, Mint>,
     transfer_fee_included_amount: u64,
 ) -> Result<AmountWithTransferFee> {
-    let token_mint_info = token_mint.to_account_info();
-    if *token_mint_info.owner == Token::id() {
-        return Ok(AmountWithTransferFee { amount: transfer_fee_included_amount, transfer_fee: 0 });
-    }
-
-    let token_mint_data = token_mint_info.try_borrow_data()?;
-    let token_mint_unpacked = StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
-    if let Ok(transfer_fee_config) = token_mint_unpacked.get_extension::<extension::transfer_fee::TransferFeeConfig>() {
-        let epoch = Clock::get()?.epoch;
-        let transfer_fee = transfer_fee_config.calculate_epoch_fee(epoch, transfer_fee_included_amount).unwrap();
+    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint)? {
+        let transfer_fee = epoch_transfer_fee.calculate_fee(transfer_fee_included_amount).unwrap();
         let transfer_fee_excluded_amount = transfer_fee_included_amount.checked_sub(transfer_fee).unwrap();
         return Ok(AmountWithTransferFee { amount: transfer_fee_excluded_amount, transfer_fee });            
     }
-    
+
     Ok(AmountWithTransferFee { amount: transfer_fee_included_amount, transfer_fee: 0 })
 } 
 
@@ -286,19 +319,29 @@ pub fn calculate_transfer_fee_included_amount<'info>(
     token_mint: &InterfaceAccount<'info, Mint>,
     transfer_fee_excluded_amount: u64,
 ) -> Result<AmountWithTransferFee> {
+    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint)? {
+        let transfer_fee = epoch_transfer_fee.calculate_inverse_fee(transfer_fee_excluded_amount).unwrap();
+        let transfer_fee_included_amount = transfer_fee_excluded_amount.checked_add(transfer_fee).unwrap();
+        return Ok(AmountWithTransferFee { amount: transfer_fee_included_amount, transfer_fee });
+    }
+
+    Ok(AmountWithTransferFee { amount: transfer_fee_excluded_amount, transfer_fee: 0 })
+}
+
+pub fn get_epoch_transfer_fee<'info>(
+    token_mint: &InterfaceAccount<'info, Mint>,
+) -> Result<Option<TransferFee>> {
     let token_mint_info = token_mint.to_account_info();
     if *token_mint_info.owner == Token::id() {
-        return Ok(AmountWithTransferFee { amount: transfer_fee_excluded_amount, transfer_fee: 0 });
+        return Ok(None);
     }
 
     let token_mint_data = token_mint_info.try_borrow_data()?;
     let token_mint_unpacked = StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
     if let Ok(transfer_fee_config) = token_mint_unpacked.get_extension::<extension::transfer_fee::TransferFeeConfig>() {
         let epoch = Clock::get()?.epoch;
-        let transfer_fee = transfer_fee_config.calculate_inverse_epoch_fee(epoch, transfer_fee_excluded_amount).unwrap();
-        let transfer_fee_included_amount = transfer_fee_excluded_amount.checked_add(transfer_fee).unwrap();
-        return Ok(AmountWithTransferFee { amount: transfer_fee_included_amount, transfer_fee });
+        return Ok(Some(transfer_fee_config.get_epoch_fee(epoch).clone()));
     }
 
-    Ok(AmountWithTransferFee { amount: transfer_fee_excluded_amount, transfer_fee: 0 })
+    Ok(None)
 }

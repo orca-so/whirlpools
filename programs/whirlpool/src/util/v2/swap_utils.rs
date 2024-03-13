@@ -128,6 +128,7 @@ fn perform_swap_v2<'info>(
         deposit_account_user,
         deposit_account_pool,
         deposit_token_program,
+        memo_program,
         deposit_transfer_hook_accounts,
         deposit_amount,
     )?;

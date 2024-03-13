@@ -9,6 +9,7 @@ import {
   DecreaseLiquidityV2Params,
   IncreaseLiquidityV2Params,
   InitPoolV2Params,
+  MEMO_PROGRAM_ADDRESS,
   NUM_REWARDS,
   PDAUtil,
   PoolUtil,
@@ -39,6 +40,7 @@ import {
   TokenTrait,
   fundPositionsV2,
   initTestPoolWithTokensV2,
+  useMaxCU,
 } from "../../../utils/v2/init-utils-v2";
 import {
   calculateTransferFeeExcludedAmount,
@@ -1925,14 +1927,14 @@ describe("TokenExtension/TransferFee", () => {
                 ...baseIxParams,
                 otherAmountThreshold: baseIxParams.otherAmountThreshold.addn(1),
               })
-            ).buildAndExecute(),
+            ).prependInstruction(useMaxCU()).buildAndExecute(), // add CU
             /0x1794/, // AmountOutBelowMinimum
           );
 
           await toTx(
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
-          ).buildAndExecute();
+          ).prependInstruction(useMaxCU()).buildAndExecute(); // add CU
 
           const postVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
           const postVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
@@ -2111,14 +2113,14 @@ describe("TokenExtension/TransferFee", () => {
                 ...baseIxParams,
                 otherAmountThreshold: baseIxParams.otherAmountThreshold.addn(1),
               })
-            ).buildAndExecute(),
+            ).prependInstruction(useMaxCU()).buildAndExecute(), // add CU
             /0x1794/, // AmountOutBelowMinimum
           );
 
           await toTx(
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
-          ).buildAndExecute();
+          ).prependInstruction(useMaxCU()).buildAndExecute(); // add CU
 
           const postVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
           const postVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
@@ -2297,14 +2299,14 @@ describe("TokenExtension/TransferFee", () => {
                 ...baseIxParams,
                 otherAmountThreshold: baseIxParams.otherAmountThreshold.subn(1),
               })
-            ).buildAndExecute(),
+            ).prependInstruction(useMaxCU()).buildAndExecute(), // add CU
             /0x1795/, // AmountInAboveMaximum
           );
 
           await toTx(
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
-          ).buildAndExecute(undefined, {skipPreflight: true});
+          ).prependInstruction(useMaxCU()).buildAndExecute(); // add CU
 
           const postVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
           const postVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
@@ -2483,14 +2485,14 @@ describe("TokenExtension/TransferFee", () => {
                 ...baseIxParams,
                 otherAmountThreshold: baseIxParams.otherAmountThreshold.subn(1),
               })
-            ).buildAndExecute(),
+            ).prependInstruction(useMaxCU()).buildAndExecute(), // add CU
             /0x1795/, // AmountInAboveMaximum
           );
 
           await toTx(
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
-          ).buildAndExecute(undefined, {skipPreflight: true});
+          ).prependInstruction(useMaxCU()).buildAndExecute(); // add CU
 
           const postVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
           const postVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
@@ -3212,6 +3214,80 @@ describe("TokenExtension/TransferFee", () => {
           oldMaximumFee = newMaximumFee;
         }
       });  
+    });
+
+    it("logging applied TransferFee config info", async () => {
+      const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
+      const tokenA = poolInitInfo.tokenMintA;
+      const tokenB = poolInitInfo.tokenMintB;
+
+      const feeConfigA = await fetchTransferFeeConfig(tokenA);
+      const feeConfigB = await fetchTransferFeeConfig(tokenB);
+      const transferFeeA = getEpochFee(feeConfigA, BigInt(await getCurrentEpoch()));
+      const transferFeeB = getEpochFee(feeConfigB, BigInt(await getCurrentEpoch()));
+
+      const whirlpoolPubkey = poolInitInfo.whirlpoolPda.publicKey;
+
+      let whirlpoolData = (await fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE)) as WhirlpoolData;
+
+      const aToB = true;
+      const inputAmount = new BN(1_000_000);
+      const transferFeeExcludedInputAmount = calculateTransferFeeExcludedAmount(transferFeeA, inputAmount);
+
+      const quote = swapQuoteWithParams(
+        {
+          // A --> B, ExactIn
+          amountSpecifiedIsInput: true,
+          aToB,
+          tokenAmount: transferFeeExcludedInputAmount.amount,
+
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+          whirlpoolData,
+          tickArrays: await SwapUtils.getTickArrays(
+            whirlpoolData.tickCurrentIndex,
+            whirlpoolData.tickSpacing,
+            aToB,
+            ctx.program.programId,
+            whirlpoolPubkey,
+            fetcher,
+            IGNORE_CACHE,
+          ),
+        },
+        Percentage.fromFraction(0, 100), // 0% slippage
+      );
+
+      const sig =  await toTx(ctx, WhirlpoolIx.swapV2Ix(ctx.program, {
+        ...quote,
+        amount: inputAmount,
+        otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true), // not interested in this case
+
+        whirlpool: whirlpoolPubkey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenProgramA: poolInitInfo.tokenProgramA,
+        tokenProgramB: poolInitInfo.tokenProgramB,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey).publicKey,
+      })).buildAndExecute();
+
+      const parsedTx = await provider.connection.getParsedTransaction(
+        sig,
+        {maxSupportedTransactionVersion: 0}
+      );
+
+      assert.ok(parsedTx?.meta?.innerInstructions);
+      assert.ok(parsedTx!.meta!.innerInstructions.length === 1); // twoHopSwap only (top-level ix)
+      const memoLogs = parsedTx!.meta!.innerInstructions[0].instructions
+        .filter((ix) => ix.programId.equals(MEMO_PROGRAM_ADDRESS));
+      
+      assert.ok(memoLogs.length === 2);
+      assert.ok((memoLogs[0] as any).parsed === `TFe: ${transferFeeA.transferFeeBasisPoints}, ${transferFeeA.maximumFee}`);
+      assert.ok((memoLogs[1] as any).parsed === `TFe: ${transferFeeB.transferFeeBasisPoints}, ${transferFeeB.maximumFee}`);
     });
   });
 });

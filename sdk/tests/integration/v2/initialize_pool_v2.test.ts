@@ -34,6 +34,7 @@ import {
 } from "../../utils/v2/token-2022";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { AccountState } from "@solana/spl-token";
+import { initFeeTier } from "../../utils/init-utils";
 
 describe("initialize_pool_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -281,13 +282,13 @@ describe("initialize_pool_v2", () => {
             configInitInfo.whirlpoolsConfigKeypair.publicKey,
             poolInitInfo.tokenMintB,
             poolInitInfo.tokenMintA,
-            TickSpacing.Stable
+            TickSpacing.Standard
           );
 
           const modifiedPoolInitInfo: InitPoolV2Params = {
             ...poolInitInfo,
             whirlpoolPda,
-            tickSpacing: TickSpacing.Stable,
+            tickSpacing: TickSpacing.Standard,
             tokenMintA: poolInitInfo.tokenMintB,
             tokenBadgeA: poolInitInfo.tokenBadgeB,
             tokenProgramA: tokenTraits.tokenTraitB.isToken2022
@@ -322,13 +323,13 @@ describe("initialize_pool_v2", () => {
             configInitInfo.whirlpoolsConfigKeypair.publicKey,
             poolInitInfo.tokenMintA,
             poolInitInfo.tokenMintA,
-            TickSpacing.Stable
+            TickSpacing.Standard
           );
 
           const modifiedPoolInitInfo: InitPoolV2Params = {
             ...poolInitInfo,
             whirlpoolPda,
-            tickSpacing: TickSpacing.Stable,
+            tickSpacing: TickSpacing.Standard,
             tokenMintB: poolInitInfo.tokenMintA,
             tokenBadgeB: poolInitInfo.tokenBadgeA,
             tokenProgramB: tokenTraits.tokenTraitA.isToken2022
@@ -425,6 +426,74 @@ describe("initialize_pool_v2", () => {
       });
     });
   });
+
+  it("fails when FeeTier and tick_spacing passed unmatch", async () => {
+    const { poolInitInfo, configInitInfo, configKeypairs } = await buildTestPoolV2Params(
+      ctx,
+      {isToken2022: true},
+      {isToken2022: true},
+      TickSpacing.Standard
+    );
+
+    // now FeeTier for TickSpacing.Standard is initialized, but not for TickSpacing.Stable
+    const config = poolInitInfo.whirlpoolsConfig;
+    const feeTierStandardPda = PDAUtil.getFeeTier(ctx.program.programId, config, TickSpacing.Standard)
+    const feeTierStablePda = PDAUtil.getFeeTier(ctx.program.programId, config, TickSpacing.Stable);
+
+    const feeTierStandard = await fetcher.getFeeTier(feeTierStandardPda.publicKey, IGNORE_CACHE);
+    const feeTierStable = await fetcher.getFeeTier(feeTierStablePda.publicKey, IGNORE_CACHE);
+    assert.ok(feeTierStandard !== null); // should be initialized
+    assert.ok(feeTierStable === null);  // shoud be NOT initialized
+
+    const whirlpoolWithStableTickSpacing = PDAUtil.getWhirlpool(
+      ctx.program.programId,
+      config,
+      poolInitInfo.tokenMintA,
+      poolInitInfo.tokenMintB,
+      TickSpacing.Stable,
+    );
+
+    await assert.rejects(
+      toTx(
+        ctx,
+        WhirlpoolIx.initializePoolV2Ix(ctx.program, {
+          ...poolInitInfo,
+          whirlpoolPda: whirlpoolWithStableTickSpacing,
+          tickSpacing: TickSpacing.Stable,
+          feeTierKey: feeTierStandardPda.publicKey, // tickSpacing is Stable, but FeeTier is standard    
+        })
+      ).buildAndExecute(),
+      /custom program error: 0x7d3/ // ConstraintRaw
+    );
+
+    await assert.rejects(
+      toTx(
+        ctx,
+        WhirlpoolIx.initializePoolV2Ix(ctx.program, {
+          ...poolInitInfo,
+          whirlpoolPda: whirlpoolWithStableTickSpacing,
+          tickSpacing: TickSpacing.Stable,
+          feeTierKey: feeTierStablePda.publicKey, // FeeTier is stable, but not initialized
+        })
+      ).buildAndExecute(),
+      /custom program error: 0xbc4/ // AccountNotInitialized
+    );
+
+    await initFeeTier(ctx, configInitInfo, configKeypairs.feeAuthorityKeypair, TickSpacing.Stable, 3000);
+    const feeTierStableAfterInit = await fetcher.getFeeTier(feeTierStablePda.publicKey, IGNORE_CACHE);
+    assert.ok(feeTierStableAfterInit !== null);
+
+    // Now it should work because FeeTier for stable have been initialized
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializePoolV2Ix(ctx.program, {
+        ...poolInitInfo,
+        whirlpoolPda: whirlpoolWithStableTickSpacing,
+        tickSpacing: TickSpacing.Stable,
+        feeTierKey: feeTierStablePda.publicKey,
+      })
+    ).buildAndExecute();
+})
 
   describe("v2 specific accounts", () => {
     it("fails when passed token_program_a is not token program (token-2022 is passed)", async () => {

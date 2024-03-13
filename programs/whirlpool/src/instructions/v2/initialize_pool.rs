@@ -52,7 +52,7 @@ pub struct InitializePoolV2<'info> {
       token::authority = whirlpool)]
     pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(has_one = whirlpools_config)]
+    #[account(has_one = whirlpools_config, constraint = fee_tier.tick_spacing == tick_spacing)]
     pub fee_tier: Account<'info, FeeTier>,
 
     #[account(address = token_mint_a.to_account_info().owner.clone())]

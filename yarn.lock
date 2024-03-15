@@ -221,10 +221,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@orca-so/common-sdk@^0.4.0":
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.4.0.tgz#b09e169f23aebcba28ce72c3db35ecff12abe8f2"
-  integrity sha512-ki170oydM+Az1EZznzXfoKx8CEwTXUDl20FfW/vZLaZPuU46T46KQMWDS/u8OYJnUDDqr0dZwY0MugDi/9Py8g==
+"@orca-so/common-sdk@^0.5.2":
+  version "0.5.2"
+  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.5.2.tgz#fd9daf8bee35c02017c1fc6bb9fa0b0fd2bbf353"
+  integrity sha512-bX/v6tFLJQ78jAvNRKmWoRHw+nm4Zh0DTUYrToz4b+TMJegBKMnfRtPeeyp85Z6xCjaaBTx5d83BLX199oObCA==
   dependencies:
     tiny-invariant "^1.3.1"
 

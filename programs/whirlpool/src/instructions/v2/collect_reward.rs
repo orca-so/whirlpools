@@ -39,6 +39,9 @@ pub struct CollectRewardV2<'info> {
     #[account(address = reward_mint.to_account_info().owner.clone())]
     pub reward_token_program: Interface<'info, TokenInterface>,
     pub memo_program: Program<'info, Memo>,
+
+    // remaining accounts
+    // - accounts for transfer hook program of reward_mint
 }
 
 /// Collects all harvestable tokens for a specified reward.

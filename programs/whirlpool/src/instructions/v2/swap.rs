@@ -52,6 +52,10 @@ pub struct SwapV2<'info> {
     #[account(mut, seeds = [b"oracle", whirlpool.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle: UncheckedAccount<'info>,
+
+    // remaining accounts
+    // - accounts for transfer hook program of token_mint_a
+    // - accounts for transfer hook program of token_mint_b
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(

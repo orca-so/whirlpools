@@ -53,6 +53,10 @@ pub struct ModifyLiquidityV2<'info> {
     pub tick_array_lower: AccountLoader<'info, TickArray>,
     #[account(mut, has_one = whirlpool)]
     pub tick_array_upper: AccountLoader<'info, TickArray>,
+
+    // remaining accounts
+    // - accounts for transfer hook program of token_mint_a
+    // - accounts for transfer hook program of token_mint_b
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(

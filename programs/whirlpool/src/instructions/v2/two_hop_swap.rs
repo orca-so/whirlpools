@@ -87,6 +87,12 @@ pub struct TwoHopSwapV2<'info> {
     #[account(mut, seeds = [b"oracle", whirlpool_two.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_two: UncheckedAccount<'info>,
+
+    // remaining accounts
+    // - accounts for transfer hook program of token_mint_one_a
+    // - accounts for transfer hook program of token_mint_one_b
+    // - accounts for transfer hook program of token_mint_two_a
+    // - accounts for transfer hook program of token_mint_two_b
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(

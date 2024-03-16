@@ -36,6 +36,10 @@ pub struct CollectProtocolFeesV2<'info> {
     #[account(address = token_mint_b.to_account_info().owner.clone())]
     pub token_program_b: Interface<'info, TokenInterface>,
     pub memo_program: Program<'info, Memo>,
+
+    // remaining accounts
+    // - accounts for transfer hook program of token_mint_a
+    // - accounts for transfer hook program of token_mint_b
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(

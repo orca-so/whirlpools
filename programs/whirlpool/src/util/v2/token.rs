@@ -222,6 +222,11 @@ pub fn is_supported_token_mint<'info>(
 
     // now mint is owned by Token-2022 Program
 
+    // reject native mint of Token-2022 Program to avoid SOL liquidity fragmentation
+    if spl_token_2022::native_mint::check_id(&token_mint.key()) {
+        return Ok(false);
+    }
+
     // reject if mint has freeze_authority
     if token_mint.freeze_authority.is_some() && !is_token_badge_initialized {
         return Ok(false);

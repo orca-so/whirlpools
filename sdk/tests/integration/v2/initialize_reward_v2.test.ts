@@ -512,6 +512,17 @@ describe("initialize_reward_v2", () => {
       });
     });
 
+    it("Token: native mint (WSOL)", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: false,
+          isNativeMint: true,
+        }
+      });
+    });
+
     it("Token-2022: with TransferFeeConfig", async () => {
       await runTest({
         supported: true,
@@ -682,6 +693,25 @@ describe("initialize_reward_v2", () => {
           defaultAccountInitialState: AccountState.Frozen,
         }
       });      
+    });
+
+    it("Token-2022: [FAIL] with/without TokenBadge, native mint (WSOL-2022)", async () => {
+      await runTest({
+        supported: false,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          isNativeMint: true,
+        }
+      });
+      await runTest({
+        supported: false,
+        createTokenBadge: true,
+        tokenTrait: {
+          isToken2022: true,
+          isNativeMint: true,
+        }
+      });
     });
 
     it("Token-2022: [FAIL] with/without TokenBadge with InterestBearingConfig", async () => {

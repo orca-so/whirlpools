@@ -13,6 +13,7 @@ import {
   calculateFee,
   createApproveInstruction,
   createAssociatedTokenAccountInstruction,
+  createCreateNativeMintInstruction,
   createDisableRequiredMemoTransfersInstruction,
   createEnableRequiredMemoTransfersInstruction,
   createInitializeAccount3Instruction,
@@ -71,6 +72,15 @@ export async function createMintV2(
   if (authority === undefined) {
     authority = provider.wallet.publicKey;
   }
+
+  if (tokenTrait.isNativeMint) {
+    if (tokenTrait.isToken2022) {
+      await initializeNativeMint2022Idempotent(provider);
+      return NATIVE_MINT_2022;
+    }
+    return NATIVE_MINT;
+  }
+
   const mint = mintKeypair ?? web3.Keypair.generate();
   const instructions = await createMintInstructions(provider, tokenTrait, authority, mint.publicKey);
 
@@ -588,6 +598,25 @@ export async function createInOrderMintsV2(provider: AnchorProvider, tokenTraitA
     return [NATIVE_MINT, NATIVE_MINT_2022];
   }
 };
+
+export async function initializeNativeMint2022Idempotent(
+  provider: AnchorProvider,
+) {
+  const accountInfo = await provider.connection.getAccountInfo(NATIVE_MINT_2022, "confirmed");
+
+  // already initialized
+  if (accountInfo !== null) return;
+
+  const ix = createCreateNativeMintInstruction(
+    provider.wallet.publicKey,
+    NATIVE_MINT_2022,
+    TEST_TOKEN_2022_PROGRAM_ID,
+  );
+
+  const txBuilder = new TransactionBuilder(provider.connection, provider.wallet);
+  txBuilder.addInstruction({ instructions: [ix], cleanupInstructions: [], signers: [] });
+  await txBuilder.buildAndExecute();
+}
 
 export async function approveTokenV2(
   provider: AnchorProvider,

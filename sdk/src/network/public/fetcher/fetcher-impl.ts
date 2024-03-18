@@ -5,6 +5,8 @@ import {
   ParsableMintInfo,
   ParsableTokenAccountInfo,
   SimpleAccountFetcher,
+  MintWithTokenProgram,
+  AccountWithTokenProgram as TokenAccountWithTokenProgram,
 } from "@orca-so/common-sdk";
 import { AccountLayout, Mint, Account as TokenAccount } from "@solana/spl-token";
 import { Connection } from "@solana/web3.js";
@@ -114,22 +116,22 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
   getTokenInfo(
     address: Address,
     opts?: WhirlpoolAccountFetchOptions
-  ): Promise<TokenAccount | null> {
+  ): Promise<TokenAccountWithTokenProgram | null> {
     return this.fetcher.getAccount(address, ParsableTokenAccountInfo, opts);
   }
   getTokenInfos(
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
-  ): Promise<ReadonlyMap<string, TokenAccount | null>> {
+  ): Promise<ReadonlyMap<string, TokenAccountWithTokenProgram | null>> {
     return this.fetcher.getAccounts(addresses, ParsableTokenAccountInfo, opts);
   }
-  getMintInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<Mint | null> {
+  getMintInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<MintWithTokenProgram | null> {
     return this.fetcher.getAccount(address, ParsableMintInfo, opts);
   }
   getMintInfos(
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
-  ): Promise<ReadonlyMap<string, Mint | null>> {
+  ): Promise<ReadonlyMap<string, MintWithTokenProgram | null>> {
     return this.fetcher.getAccounts(addresses, ParsableMintInfo, opts);
   }
   getConfig(

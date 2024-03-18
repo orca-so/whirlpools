@@ -7,21 +7,21 @@
   "types": "dist/index.d.ts",
   "peerDependencies": {
     "@coral-xyz/anchor": "~0.29.0",
-    "@orca-so/common-sdk": "^0.4.0",
+    "@orca-so/common-sdk": "0.6.0-alpha.1",
     "@solana/spl-token": "^0.4.1",
-    "@solana/web3.js": "^1.75.0",
-    "decimal.js": "^10.3.1"
+    "@solana/web3.js": "^1.90.0",
+    "decimal.js": "^10.4.3"
   },
   "dependencies": {
     "tiny-invariant": "^1.3.1"
   },
   "devDependencies": {
     "@coral-xyz/anchor": "^0.29.0",
-    "@orca-so/common-sdk": "^0.4.0",
+    "@orca-so/common-sdk": "0.6.0-alpha.1",
     "@solana/spl-token": "^0.4.1",
     "@solana/spl-token-group": "^0.0.1",
     "@solana/spl-token-metadata": "^0.1.2",
-    "@solana/web3.js": "^1.88.0",
+    "@solana/web3.js": "^1.90.0",
     "@types/bn.js": "~5.1.5",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.8",

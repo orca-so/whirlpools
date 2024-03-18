@@ -3,8 +3,9 @@ import {
   BasicSupportedTypes,
   ParsableEntity,
   SimpleAccountFetchOptions,
+  MintWithTokenProgram,
+  AccountWithTokenProgram as TokenAccountWithTokenProgram
 } from "@orca-so/common-sdk";
-import { Mint, Account as TokenAccount } from "@solana/spl-token";
 import {
   FeeTierData,
   PositionBundleData,
@@ -145,7 +146,7 @@ export interface WhirlpoolAccountFetcherInterface {
    * @param address The address of the token account
    * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
-  getTokenInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<TokenAccount | null>;
+  getTokenInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<TokenAccountWithTokenProgram | null>;
 
   /**
    * Fetch and cache the accounts for a given array of TokenAccount addresses
@@ -155,14 +156,14 @@ export interface WhirlpoolAccountFetcherInterface {
   getTokenInfos(
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
-  ): Promise<ReadonlyMap<string, TokenAccount | null>>;
+  ): Promise<ReadonlyMap<string, TokenAccountWithTokenProgram | null>>;
 
   /**
    * Fetch and cache the account for a given Mint address
    * @param address The address of the mint account
    * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
-  getMintInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<Mint | null>;
+  getMintInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<MintWithTokenProgram | null>;
 
   /**
    * Fetch and cache the accounts for a given array of Mint addresses
@@ -172,7 +173,7 @@ export interface WhirlpoolAccountFetcherInterface {
   getMintInfos(
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
-  ): Promise<ReadonlyMap<string, Mint | null>>;
+  ): Promise<ReadonlyMap<string, MintWithTokenProgram | null>>;
 
   /**
    * Fetch and cache the account for a given WhirlpoolConfig address

@@ -156,12 +156,12 @@
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.3.1.tgz#8831ef002114670c603c458ab8b11328406953a9"
   integrity sha512-EbqwksQwz9xDRGfDST86whPBgM65E0OH/pCgqW0GBVzO22bNE+NuIbeTb714+IfSjU3aRk47EUvXIb5bTsenKA==
 
-"@noble/hashes@1.3.3", "@noble/hashes@^1.3.2":
+"@noble/hashes@1.3.3":
   version "1.3.3"
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.3.3.tgz#39908da56a4adc270147bb07968bf3b16cfe1699"
   integrity sha512-V7/fPHgl+jsVPXqqeOzT8egNj2iBIVt+ECeMMG8TdcnTikP3oaBtUVqpT/gYCR68aEBJSF+XbYUxStjbFMqIIA==
 
-"@noble/hashes@^1.3.1":
+"@noble/hashes@^1.3.1", "@noble/hashes@^1.3.3":
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/@noble/hashes/-/hashes-1.4.0.tgz#45814aa329f30e4fe0ba49426f49dfccdd066426"
   integrity sha512-V1JJ1WTRUqHHrOSh597hURcMqVKVGL/ea3kv0gSnEdsEZ0/+VyPghM1lMNGc00z7CIQorSvbKpuJkxvuHbvdbg==
@@ -187,10 +187,10 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@orca-so/common-sdk@^0.4.0":
-  version "0.4.0"
-  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.4.0.tgz#b09e169f23aebcba28ce72c3db35ecff12abe8f2"
-  integrity sha512-ki170oydM+Az1EZznzXfoKx8CEwTXUDl20FfW/vZLaZPuU46T46KQMWDS/u8OYJnUDDqr0dZwY0MugDi/9Py8g==
+"@orca-so/common-sdk@0.6.0-alpha.1":
+  version "0.6.0-alpha.1"
+  resolved "https://registry.yarnpkg.com/@orca-so/common-sdk/-/common-sdk-0.6.0-alpha.1.tgz#9ed814ca4d6e095b2c74ecf1de6eddf6b4bbe556"
+  integrity sha512-G5pVGybh3U5CcxyMSiBqD6qugr3HqsafJXbLn/3/7SLky/YR0I7AvMBF+SiGooHb4ROIZ4jKVXRFXD1/43wKWg==
   dependencies:
     tiny-invariant "^1.3.1"
 
@@ -390,14 +390,14 @@
     rpc-websockets "^7.5.1"
     superstruct "^0.14.2"
 
-"@solana/web3.js@^1.88.0":
-  version "1.88.0"
-  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.88.0.tgz#24e1482f63ac54914430b4ce5ab36eaf433ecdb8"
-  integrity sha512-E4BdfB0HZpb66OPFhIzPApNE2tG75Mc6XKIoeymUkx/IV+USSYuxDX29sjgE/KGNYxggrOf4YuYnRMI6UiPL8w==
+"@solana/web3.js@^1.90.0":
+  version "1.91.1"
+  resolved "https://registry.yarnpkg.com/@solana/web3.js/-/web3.js-1.91.1.tgz#d49d2f982b52070be3b987fd8d892fcbddd064b5"
+  integrity sha512-cPgjZXm688oM9cULvJ8u2VH6Qp5rvptE1N1VODVxn2mAbpZsWrvWNPjmASkMYT/HzyrtqFkPvFdSHg8Xjt7aQA==
   dependencies:
     "@babel/runtime" "^7.23.4"
     "@noble/curves" "^1.2.0"
-    "@noble/hashes" "^1.3.2"
+    "@noble/hashes" "^1.3.3"
     "@solana/buffer-layout" "^4.0.1"
     agentkeepalive "^4.5.0"
     bigint-buffer "^1.1.5"

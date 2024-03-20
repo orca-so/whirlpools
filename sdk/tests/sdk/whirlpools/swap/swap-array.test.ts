@@ -22,6 +22,7 @@ import {
   setupSwapTest
 } from "../../../utils/swap-test-utils";
 import { getTickArrays } from "../../../utils/testDataTypes";
+import { TokenExtensionUtil } from "../../../../src/utils/token-extension-util";
 
 describe("swap arrays test", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -344,6 +345,8 @@ describe("swap arrays test", () => {
       fetcher,
       IGNORE_CACHE
     );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
     assert.throws(
       () =>
         swapQuoteWithParams(
@@ -355,6 +358,7 @@ describe("swap arrays test", () => {
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
+            tokenExtensionCtx,
           },
           slippageTolerance
         ),
@@ -395,6 +399,8 @@ describe("swap arrays test", () => {
       fetcher,
       IGNORE_CACHE
     );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
     assert.throws(
       () =>
         swapQuoteWithParams(
@@ -406,6 +412,7 @@ describe("swap arrays test", () => {
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
+            tokenExtensionCtx,
           },
           slippageTolerance
         ),
@@ -445,6 +452,8 @@ describe("swap arrays test", () => {
       fetcher,
       IGNORE_CACHE
     );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
     assert.throws(
       () =>
         swapQuoteWithParams(
@@ -456,6 +465,7 @@ describe("swap arrays test", () => {
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
+            tokenExtensionCtx,
           },
           slippageTolerance
         ),
@@ -495,6 +505,7 @@ describe("swap arrays test", () => {
       fetcher,
       IGNORE_CACHE
     );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
 
     assert.throws(
       () =>
@@ -507,6 +518,7 @@ describe("swap arrays test", () => {
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
+            tokenExtensionCtx,
           },
           slippageTolerance
         ),
@@ -543,6 +555,8 @@ describe("swap arrays test", () => {
       AddressUtil.toPubKey(whirlpool.getAddress()),
       fetcher
     );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
     assert.throws(
       () =>
         swapQuoteWithParams(
@@ -554,6 +568,7 @@ describe("swap arrays test", () => {
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
+            tokenExtensionCtx,
           },
           slippageTolerance
         ),
@@ -595,6 +610,8 @@ describe("swap arrays test", () => {
       AddressUtil.toPubKey(whirlpool.getAddress()),
       fetcher
     );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
     assert.throws(
       () =>
         swapQuoteWithParams(
@@ -606,6 +623,7 @@ describe("swap arrays test", () => {
             tickArrays,
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             otherAmountThreshold: ZERO,
+            tokenExtensionCtx,
           },
           slippageTolerance
         ),
@@ -650,6 +668,8 @@ describe("swap arrays test", () => {
       AddressUtil.toPubKey(whirlpool.getAddress()),
       fetcher
     );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
     const tradeAmount = new BN("33588");
     const quote = swapQuoteWithParams(
       {
@@ -660,6 +680,7 @@ describe("swap arrays test", () => {
         tickArrays,
         sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
         otherAmountThreshold: ZERO,
+        tokenExtensionCtx,
       },
       slippageTolerance
     );
@@ -708,6 +729,8 @@ describe("swap arrays test", () => {
       AddressUtil.toPubKey(whirlpool.getAddress()),
       fetcher
     );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
     const tradeAmount = new BN("33588");
     const quote = swapQuoteWithParams(
       {
@@ -718,6 +741,7 @@ describe("swap arrays test", () => {
         tickArrays,
         sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
         otherAmountThreshold: ZERO,
+        tokenExtensionCtx,
       },
       slippageTolerance
     );

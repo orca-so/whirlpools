@@ -5,6 +5,7 @@ import { MAX_SQRT_PRICE, MAX_SWAP_TICK_ARRAYS, MIN_SQRT_PRICE } from "../../type
 import { SwapQuote, SwapQuoteParam } from "../public";
 import { computeSwap } from "./swap-manager";
 import { TickArraySequence } from "./tick-array-sequence";
+import { TokenAmountWithFee, TokenExtensionUtil } from "../../utils/token-extension-util";
 
 /**
  * Figure out the quote parameters needed to successfully complete this trade on chain
@@ -21,6 +22,7 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     sqrtPriceLimit,
     otherAmountThreshold,
     amountSpecifiedIsInput,
+    tokenExtensionCtx,
   } = params;
 
   if (sqrtPriceLimit.gt(new BN(MAX_SQRT_PRICE)) || sqrtPriceLimit.lt(new BN(MIN_SQRT_PRICE))) {
@@ -54,41 +56,118 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     );
   }
 
-  const swapResults = computeSwap(
-    whirlpoolData,
-    tickSequence,
-    tokenAmount,
-    sqrtPriceLimit,
-    amountSpecifiedIsInput,
-    aToB
-  );
-
   if (amountSpecifiedIsInput) {
-    if (
-      (aToB && otherAmountThreshold.gt(swapResults.amountB)) ||
-      (!aToB && otherAmountThreshold.gt(swapResults.amountA))
-    ) {
+    // For ExactIn
+
+    // computeSwap should be executed with "tokenAmount - transfer fee".
+    const transferFeeExcludedIn = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+      tokenAmount,
+      aToB ? tokenExtensionCtx.tokenMintWithProgramA : tokenExtensionCtx.tokenMintWithProgramB,
+      tokenExtensionCtx.currentEpoch
+    );
+    
+    if (transferFeeExcludedIn.amount.eq(ZERO)) {
+      throw new WhirlpoolsError("Provided tokenAmount is virtually zero due to transfer fee.", SwapErrorCode.ZeroTradableAmount);
+    }
+  
+    const swapResults = computeSwap(
+      whirlpoolData,
+      tickSequence,
+      transferFeeExcludedIn.amount,
+      sqrtPriceLimit,
+      amountSpecifiedIsInput,
+      aToB
+    );
+
+    // otherAmountThreshold should be applied to transfer fee EXCLUDED output amount.
+    const transferFeeExcludedOut = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+      aToB ? swapResults.amountB : swapResults.amountA,
+      aToB ? tokenExtensionCtx.tokenMintWithProgramB : tokenExtensionCtx.tokenMintWithProgramA,
+      tokenExtensionCtx.currentEpoch
+    );
+
+    if (transferFeeExcludedOut.amount.lt(otherAmountThreshold)) {
       throw new WhirlpoolsError(
         "Quoted amount for the other token is below the otherAmountThreshold.",
         SwapErrorCode.AmountOutBelowMinimum
       );
     }
-  } else {
-    if (
-      (aToB && otherAmountThreshold.lt(swapResults.amountA)) ||
-      (!aToB && otherAmountThreshold.lt(swapResults.amountB))
-    ) {
+    
+    const fullfilled = (aToB ? swapResults.amountA : swapResults.amountB).eq(transferFeeExcludedIn.amount);
+    const transferFeeIncludedIn: TokenAmountWithFee = fullfilled
+      ? { isFeeIncludedAmount: true, amount: tokenAmount, fee: transferFeeExcludedIn.fee }
+      : TokenExtensionUtil.calculateTransferFeeIncludedAmount(
+        aToB ? swapResults.amountA : swapResults.amountB,
+        aToB ? tokenExtensionCtx.tokenMintWithProgramA : tokenExtensionCtx.tokenMintWithProgramB,
+        tokenExtensionCtx.currentEpoch
+      );
+  
+    const numOfTickCrossings = tickSequence.getNumOfTouchedArrays();
+    if (numOfTickCrossings > MAX_SWAP_TICK_ARRAYS) {
       throw new WhirlpoolsError(
-        "Quoted amount for the other token is above the otherAmountThreshold.",
-        SwapErrorCode.AmountInAboveMaximum
+        `Input amount causes the quote to traverse more than the allowable amount of tick-arrays ${numOfTickCrossings}`,
+        SwapErrorCode.TickArrayCrossingAboveMax
       );
     }
+    const touchedArrays = tickSequence.getTouchedArrays(MAX_SWAP_TICK_ARRAYS);
+
+    return {
+      estimatedAmountIn: transferFeeIncludedIn.amount,
+      estimatedAmountOut: transferFeeExcludedOut.amount,
+      estimatedEndTickIndex: swapResults.nextTickIndex,
+      estimatedEndSqrtPrice: swapResults.nextSqrtPrice,
+      estimatedFeeAmount: swapResults.totalFeeAmount,
+      transferFee: {
+        deductingFromEstimatedAmountIn: transferFeeIncludedIn.fee,
+        deductedFromEstimatedAmountOut: transferFeeExcludedOut.fee,
+      },
+      amount: tokenAmount,
+      amountSpecifiedIsInput,
+      aToB,
+      otherAmountThreshold,
+      sqrtPriceLimit,
+      tickArray0: touchedArrays[0],
+      tickArray1: touchedArrays[1],
+      tickArray2: touchedArrays[2],
+    };  
   }
 
-  const { estimatedAmountIn, estimatedAmountOut } = remapAndAdjustTokens(
-    swapResults.amountA,
-    swapResults.amountB,
+  // For ExactOut
+
+  // For ExactOut, computeSwap should be executed with "tokenAmount + transfer fee".
+  const transferFeeIncludedOut = TokenExtensionUtil.calculateTransferFeeIncludedAmount(
+    tokenAmount,
+    aToB ? tokenExtensionCtx.tokenMintWithProgramB : tokenExtensionCtx.tokenMintWithProgramA,
+    tokenExtensionCtx.currentEpoch
+  );
+
+  const swapResults = computeSwap(
+    whirlpoolData,
+    tickSequence,
+    transferFeeIncludedOut.amount,
+    sqrtPriceLimit,
+    amountSpecifiedIsInput,
     aToB
+  );
+
+  // otherAmountThreshold should be applied to transfer fee INCLUDED input amount.
+  const transferFeeIncludedIn = TokenExtensionUtil.calculateTransferFeeIncludedAmount(
+    aToB ? swapResults.amountA : swapResults.amountB,
+    aToB ? tokenExtensionCtx.tokenMintWithProgramA : tokenExtensionCtx.tokenMintWithProgramB,
+    tokenExtensionCtx.currentEpoch
+  );
+
+  if (transferFeeIncludedIn.amount.gt(otherAmountThreshold)) {
+    throw new WhirlpoolsError(
+      "Quoted amount for the other token is above the otherAmountThreshold.",
+      SwapErrorCode.AmountInAboveMaximum
+    );
+  }
+
+  const transferFeeExcludedOut = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+    aToB ? swapResults.amountB : swapResults.amountA,
+    aToB ? tokenExtensionCtx.tokenMintWithProgramB : tokenExtensionCtx.tokenMintWithProgramA,
+    tokenExtensionCtx.currentEpoch    
   );
 
   const numOfTickCrossings = tickSequence.getNumOfTouchedArrays();
@@ -98,15 +177,18 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
       SwapErrorCode.TickArrayCrossingAboveMax
     );
   }
-
   const touchedArrays = tickSequence.getTouchedArrays(MAX_SWAP_TICK_ARRAYS);
 
   return {
-    estimatedAmountIn,
-    estimatedAmountOut,
+    estimatedAmountIn: transferFeeIncludedIn.amount,
+    estimatedAmountOut: transferFeeExcludedOut.amount,
     estimatedEndTickIndex: swapResults.nextTickIndex,
     estimatedEndSqrtPrice: swapResults.nextSqrtPrice,
     estimatedFeeAmount: swapResults.totalFeeAmount,
+    transferFee: {
+      deductingFromEstimatedAmountIn: transferFeeIncludedIn.fee,
+      deductedFromEstimatedAmountOut: transferFeeExcludedOut.fee,
+    },
     amount: tokenAmount,
     amountSpecifiedIsInput,
     aToB,
@@ -115,14 +197,5 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     tickArray0: touchedArrays[0],
     tickArray1: touchedArrays[1],
     tickArray2: touchedArrays[2],
-  };
-}
-
-function remapAndAdjustTokens(amountA: BN, amountB: BN, aToB: boolean) {
-  const estimatedAmountIn = aToB ? amountA : amountB;
-  const estimatedAmountOut = aToB ? amountB : amountA;
-  return {
-    estimatedAmountIn,
-    estimatedAmountOut,
   };
 }

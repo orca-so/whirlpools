@@ -71,6 +71,12 @@ export interface WhirlpoolAccountFetcherInterface {
   getAccountRentExempt(refresh?: boolean): Promise<number>;
 
   /**
+   * Fetch and cache the current epoch info
+   * @param refresh If true, will always fetch from the network
+   */
+  getEpoch(refresh?: boolean): Promise<number>;
+
+  /**
    * Fetch and cache the account for a given Whirlpool addresses
    * @param address The mint address
    * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior

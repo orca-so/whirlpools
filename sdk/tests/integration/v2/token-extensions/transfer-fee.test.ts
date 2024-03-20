@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil, PDA, Percentage, U64_MAX } from "@orca-so/common-sdk";
+import { MathUtil, MintWithTokenProgram, PDA, Percentage, U64_MAX } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -30,6 +30,7 @@ import {
   getTokenBalance,
   sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
+  TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
   ZERO_BN,
 } from "../../../utils";
@@ -66,6 +67,7 @@ import {
   getTransferFeeConfig,
 } from "@solana/spl-token";
 import { createSetTransferFeeInstruction } from "../../../utils/v2/transfer-fee";
+import { TokenExtensionContext, TokenExtensionUtil } from "../../../../src/utils/token-extension-util";
 
 describe("TokenExtension/TransferFee", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -73,6 +75,28 @@ describe("TokenExtension/TransferFee", () => {
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
   const client = buildWhirlpoolClient(ctx);
+
+  const dummyTokenMintWithProgram: MintWithTokenProgram = {
+    address: PublicKey.default,
+    decimals: 0,
+    freezeAuthority: null,
+    isInitialized: true,
+    mintAuthority: null,
+    supply: 1_000_000_000n,
+    tlvData: Buffer.from([]),
+    tokenProgram: TEST_TOKEN_PROGRAM_ID,
+  }
+
+  const withNoExtension: TokenExtensionContext = {
+    currentEpoch: 100,
+    tokenMintWithProgramA: dummyTokenMintWithProgram,
+    tokenMintWithProgramB: dummyTokenMintWithProgram,
+    rewardTokenMintsWithProgram: [
+      dummyTokenMintWithProgram,
+      dummyTokenMintWithProgram,
+      dummyTokenMintWithProgram,
+    ],
+  };
 
   async function getTransferFee(mint: PublicKey): Promise<TransferFee> {
     const mintData = await getMint(
@@ -464,7 +488,7 @@ describe("TokenExtension/TransferFee", () => {
       } = fixture.getInfos();
 
       // accrue rewards
-      await sleep(1200);
+      await sleep(3000);
 
       await toTx(
         ctx,
@@ -487,11 +511,13 @@ describe("TokenExtension/TransferFee", () => {
         tickLower: positionPreCollect.getLowerTickData(),
         tickUpper: positionPreCollect.getUpperTickData(),
         timeStampInSeconds: whirlpoolData.rewardLastUpdatedTimestamp,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
       });
 
       // Check that the expectation is not zero
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(!expectation[i]!.isZero());
+        assert.ok(!expectation.rewardOwed[i]!.isZero());
+        assert.ok(!expectation.transferFee.deductedFromRewardOwed[i]!.isZero());
       }
 
       rewardAccounts = await Promise.all(
@@ -521,6 +547,7 @@ describe("TokenExtension/TransferFee", () => {
         tickLower: positionPreCollect.getLowerTickData(),
         tickUpper: positionPreCollect.getUpperTickData(),
         timeStampInSeconds: whirlpoolData.rewardLastUpdatedTimestamp,
+        tokenExtensionCtx: withNoExtension, // no TransferFee consideration because it is taken into account later
       });
 
       for (let i = 0; i < NUM_REWARDS; i++) {
@@ -530,7 +557,7 @@ describe("TokenExtension/TransferFee", () => {
         // expectation include transfer fee
         const expectedTransferFeeExcludedAmount = calculateTransferFeeExcludedAmount(
           transferFee,
-          expectation[i]!,
+          expectation.rewardOwed[i]!,
         );
         assert.ok(expectedTransferFeeExcludedAmount.fee.gtn(0));
 
@@ -559,7 +586,7 @@ describe("TokenExtension/TransferFee", () => {
           provider,
           rewards[i].rewardVaultKeypair.publicKey,
         );
-        assert.ok(new BN(preVaultBalance).sub(new BN(postVaultBalance)).eq(expectation[i]!));
+        assert.ok(new BN(preVaultBalance).sub(new BN(postVaultBalance)).eq(expectation.rewardOwed[i]!));
 
         // owner received expectation minus transfer fee (transferFeeExcludedAmount)
         const rewardBalance = await getTokenBalance(provider, rewardAccounts[i]);
@@ -575,9 +602,10 @@ describe("TokenExtension/TransferFee", () => {
         tickLower: positionPostCollect.getLowerTickData(),
         tickUpper: positionPostCollect.getUpperTickData(),
         timeStampInSeconds: whirlpoolData.rewardLastUpdatedTimestamp,
+        tokenExtensionCtx: withNoExtension,
       });
 
-      assert.ok(expectationPostCollect.every((n) => n!.isZero()));
+      assert.ok(expectationPostCollect.rewardOwed.every((n) => n!.isZero()));
     });
   });
 
@@ -1188,6 +1216,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -1312,6 +1341,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -1436,6 +1466,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -1560,6 +1591,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -1810,6 +1842,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100),
           );
@@ -1848,6 +1881,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later              
             },
             Percentage.fromFraction(0, 100),
           );
@@ -1996,6 +2030,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100),
           );
@@ -2034,6 +2069,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100),
           );
@@ -2182,6 +2218,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100),
           );
@@ -2220,6 +2257,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100),
           );
@@ -2368,6 +2406,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100),
           );
@@ -2406,6 +2445,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100),
           );
@@ -2637,6 +2677,7 @@ describe("TokenExtension/TransferFee", () => {
               fetcher,
               IGNORE_CACHE,
             ),
+            tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
           },
           Percentage.fromFraction(0, 100), // 0% slippage
         );
@@ -2728,6 +2769,7 @@ describe("TokenExtension/TransferFee", () => {
               fetcher,
               IGNORE_CACHE,
             ),
+            tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
           },
           Percentage.fromFraction(0, 100), // 0% slippage
         );
@@ -2859,6 +2901,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -2959,6 +3002,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -3074,6 +3118,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -3174,6 +3219,7 @@ describe("TokenExtension/TransferFee", () => {
                 fetcher,
                 IGNORE_CACHE,
               ),
+              tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -3253,6 +3299,7 @@ describe("TokenExtension/TransferFee", () => {
             fetcher,
             IGNORE_CACHE,
           ),
+          tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
         },
         Percentage.fromFraction(0, 100), // 0% slippage
       );

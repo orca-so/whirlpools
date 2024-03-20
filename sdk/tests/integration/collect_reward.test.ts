@@ -24,6 +24,7 @@ import {
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
+import { TokenExtensionUtil } from "../../src/utils/token-extension-util";
 
 describe("collect_reward", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -92,12 +93,13 @@ describe("collect_reward", () => {
       position: positionPreCollect.getData(),
       tickLower: positionPreCollect.getLowerTickData(),
       tickUpper: positionPreCollect.getUpperTickData(),
-      timeStampInSeconds: pool.getData().rewardLastUpdatedTimestamp
+      timeStampInSeconds: pool.getData().rewardLastUpdatedTimestamp,
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
     });
 
     // Check that the expectation is not zero
     for (let i = 0; i < NUM_REWARDS; i++) {
-      assert.ok(!expectation[i]!.isZero());
+      assert.ok(!expectation.rewardOwed[i]!.isZero());
     }
 
     // Perform collect rewards tx
@@ -122,7 +124,7 @@ describe("collect_reward", () => {
       ).buildAndExecute();
 
       const collectedBalance = parseInt(await getTokenBalance(provider, rewardOwnerAccount));
-      assert.equal(collectedBalance, expectation[i]?.toNumber());
+      assert.equal(collectedBalance, expectation.rewardOwed[i]?.toNumber());
       const vaultBalance = parseInt(
         await getTokenBalance(provider, rewards[i].rewardVaultKeypair.publicKey)
       );

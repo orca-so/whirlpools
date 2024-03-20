@@ -52,6 +52,7 @@ import {
   getTokenAccsForPoolsV2,
 } from "../../../utils/v2/aquarium-v2";
 import { getExtraAccountMetasForTestTransferHookProgram, getTestTransferHookCounter, updateTransferHookProgram } from "../../../utils/v2/test-transfer-hook-program";
+import { TokenExtensionUtil } from "../../../../src/utils/token-extension-util";
 
 describe("TokenExtension/TransferHook", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -682,7 +683,7 @@ describe("TokenExtension/TransferHook", () => {
       } = fixture.getInfos();
 
       // accrue rewards
-      await sleep(1200);
+      await sleep(3000);
 
       await toTx(
         ctx,
@@ -705,11 +706,12 @@ describe("TokenExtension/TransferHook", () => {
         tickLower: positionPreCollect.getLowerTickData(),
         tickUpper: positionPreCollect.getUpperTickData(),
         timeStampInSeconds: whirlpoolData.rewardLastUpdatedTimestamp,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
       });
 
       // Check that the expectation is not zero
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(!expectation[i]!.isZero());
+        assert.ok(!expectation.rewardOwed[i]!.isZero());
       }
 
       rewardAccounts = await Promise.all(
@@ -1187,6 +1189,7 @@ describe("TokenExtension/TransferHook", () => {
         tickCurrentIndex: poolBefore.tickCurrentIndex,
         tickLowerIndex: tickLower,
         tickUpperIndex: tickUpper,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolBefore, IGNORE_CACHE),
       });
       assert.ok(!removalQuote.tokenEstA.isZero());
       assert.ok(!removalQuote.tokenEstB.isZero());
@@ -1374,6 +1377,7 @@ describe("TokenExtension/TransferHook", () => {
             fetcher,
             IGNORE_CACHE
           ),
+          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
         },
         Percentage.fromFraction(100, 100) // 100% slippage
       );
@@ -1395,6 +1399,7 @@ describe("TokenExtension/TransferHook", () => {
             fetcher,
             IGNORE_CACHE
           ),
+          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
         },
         Percentage.fromFraction(100, 100) // 100% slippage
       );
@@ -1644,6 +1649,7 @@ describe("TokenExtension/TransferHook", () => {
             fetcher,
             IGNORE_CACHE
           ),
+          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
         },
         Percentage.fromFraction(1, 100)
       );
@@ -1666,6 +1672,7 @@ describe("TokenExtension/TransferHook", () => {
             fetcher,
             IGNORE_CACHE
           ),
+          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
         },
         Percentage.fromFraction(1, 100)
       );
@@ -1925,6 +1932,7 @@ describe("TokenExtension/TransferHook", () => {
               fetcher,
               IGNORE_CACHE
             ),
+            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
           },
           Percentage.fromFraction(1, 100)
         );
@@ -2022,6 +2030,7 @@ describe("TokenExtension/TransferHook", () => {
               fetcher,
               IGNORE_CACHE
             ),
+            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
           },
           Percentage.fromFraction(1, 100)
         );

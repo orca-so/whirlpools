@@ -31,6 +31,7 @@ import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
+import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
 
 describe("whirlpool-impl", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -90,7 +91,8 @@ describe("whirlpool-impl", () => {
       tickLower,
       tickUpper,
       Percentage.fromFraction(1, 100),
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolData, IGNORE_CACHE),
     );
 
     // [Action] Initialize Tick Arrays
@@ -199,7 +201,8 @@ describe("whirlpool-impl", () => {
       tickLower,
       tickUpper,
       Percentage.fromFraction(1, 100),
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolData, IGNORE_CACHE),
     );
 
     // [Action] Initialize Tick Arrays
@@ -257,7 +260,8 @@ describe("whirlpool-impl", () => {
       positionData.liquidity,
       Percentage.fromDecimal(new Decimal(0)),
       position,
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolData, IGNORE_CACHE),
     );
 
     const destinationWallet = anchor.web3.Keypair.generate();
@@ -420,7 +424,8 @@ describe("whirlpool-impl", () => {
       position.getData().liquidity,
       Percentage.fromDecimal(new Decimal(0)),
       position,
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolData, IGNORE_CACHE),
     );
 
     const dWalletTokenAAccount = getAssociatedTokenAddressSync(poolData.tokenMintA, otherWallet.publicKey,);
@@ -434,6 +439,7 @@ describe("whirlpool-impl", () => {
       position: positionData,
       tickLower: position.getLowerTickData(),
       tickUpper: position.getUpperTickData(),
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolData, IGNORE_CACHE),
     });
 
     let ataTx: TransactionBuilder | undefined;
@@ -462,6 +468,7 @@ describe("whirlpool-impl", () => {
       position: positionData,
       tickLower: position.getLowerTickData(),
       tickUpper: position.getUpperTickData(),
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolData, IGNORE_CACHE),
       timeStampInSeconds: closeTimestampInSeconds,
     });
 
@@ -475,9 +482,9 @@ describe("whirlpool-impl", () => {
       expectationQuote.tokenMinB.add(feesQuote.feeOwedB).toString()
     );
 
-    assert.equal(await getTokenBalance(ctx.provider, rewardAccount0), rewardsQuote[0]?.toString());
-    assert.equal(await getTokenBalance(ctx.provider, rewardAccount1), rewardsQuote[1]?.toString());
-    assert.equal(await getTokenBalance(ctx.provider, rewardAccount2), rewardsQuote[2]?.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount0), rewardsQuote.rewardOwed[0]?.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount1), rewardsQuote.rewardOwed[1]?.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount2), rewardsQuote.rewardOwed[2]?.toString());
   });
 
   it("open and add liquidity to a position with SOL as token A, trade against it, transfer position to another wallet, then close the tokens to another wallet", async () => {
@@ -593,7 +600,8 @@ describe("whirlpool-impl", () => {
       position.getData().liquidity,
       Percentage.fromDecimal(new Decimal(0)),
       position,
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolData, IGNORE_CACHE),
     );
 
     const feesQuote = collectFeesQuote({
@@ -601,6 +609,7 @@ describe("whirlpool-impl", () => {
       position: positionData,
       tickLower: position.getLowerTickData(),
       tickUpper: position.getUpperTickData(),
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolData, IGNORE_CACHE),
     });
 
     const dWalletTokenBAccount = getAssociatedTokenAddressSync(poolData.tokenMintB, otherWallet.publicKey,);
@@ -645,6 +654,7 @@ describe("whirlpool-impl", () => {
       position: positionData,
       tickLower: position.getLowerTickData(),
       tickUpper: position.getUpperTickData(),
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolData, IGNORE_CACHE),
       timeStampInSeconds: closeTimestampInSeconds,
     });
 
@@ -678,8 +688,8 @@ describe("whirlpool-impl", () => {
       decreaseLiquidityQuote.tokenMinB.add(feesQuote.feeOwedB).toString()
     );
 
-    assert.equal(await getTokenBalance(ctx.provider, rewardAccount0), rewardsQuote[0]?.toString());
-    assert.equal(await getTokenBalance(ctx.provider, rewardAccount1), rewardsQuote[1]?.toString());
-    assert.equal(await getTokenBalance(ctx.provider, rewardAccount2), rewardsQuote[2]?.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount0), rewardsQuote.rewardOwed[0]?.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount1), rewardsQuote.rewardOwed[1]?.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount2), rewardsQuote.rewardOwed[2]?.toString());
   });
 });

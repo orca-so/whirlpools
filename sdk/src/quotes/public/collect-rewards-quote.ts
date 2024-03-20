@@ -1,9 +1,10 @@
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil } from "@orca-so/common-sdk";
+import { MathUtil, MintWithTokenProgram } from "@orca-so/common-sdk";
 import invariant from "tiny-invariant";
 import { NUM_REWARDS, PositionData, TickData, WhirlpoolData } from "../../types/public";
 import { BitMath } from "../../utils/math/bit-math";
 import { PoolUtil } from "../../utils/public/pool-utils";
+import { TokenAmountWithFee, TokenExtensionContextForReward, TokenExtensionUtil } from "../../utils/token-extension-util";
 
 /**
  * Parameters needed to generate a quote on collectible rewards on a position.
@@ -19,6 +20,7 @@ export type CollectRewardsQuoteParam = {
   position: PositionData;
   tickLower: TickData;
   tickUpper: TickData;
+  tokenExtensionCtx: TokenExtensionContextForReward;
   timeStampInSeconds?: BN;
 };
 
@@ -26,7 +28,20 @@ export type CollectRewardsQuoteParam = {
  * An array of reward amounts that is collectible on a position.
  * @category Quotes
  */
-export type CollectRewardsQuote = [BN | undefined, BN | undefined, BN | undefined];
+export type CollectRewardsQuote = {
+  rewardOwed: [
+    BN | undefined,
+    BN | undefined,
+    BN | undefined,
+  ];
+  transferFee: {
+    deductedFromRewardOwed: [
+      BN | undefined,
+      BN | undefined,
+      BN | undefined,
+    ];
+  };
+}
 
 /**
  * Get a quote on the outstanding rewards owed to a position.
@@ -36,7 +51,7 @@ export type CollectRewardsQuote = [BN | undefined, BN | undefined, BN | undefine
  * @returns A quote object containing the rewards owed for each reward in the pool.
  */
 export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRewardsQuote {
-  const { whirlpool, position, tickLower, tickUpper, timeStampInSeconds } = param;
+  const { whirlpool, position, tickLower, tickUpper, timeStampInSeconds, tokenExtensionCtx } = param;
 
   const {
     tickCurrentIndex,
@@ -47,7 +62,8 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
 
   const currTimestampInSeconds = timeStampInSeconds ?? new BN(Date.now()).div(new BN(1000));
   const timestampDelta = currTimestampInSeconds.sub(new BN(rewardLastUpdatedTimestamp));
-  const rewardOwed: CollectRewardsQuote = [undefined, undefined, undefined];
+  const rewardOwed: [BN|undefined,BN|undefined,BN|undefined] = [undefined, undefined, undefined];
+  const transferFee: [BN|undefined,BN|undefined,BN|undefined] = [undefined, undefined, undefined];
 
   for (let i = 0; i < NUM_REWARDS; i++) {
     // Calculate the reward growth on the outside of the position (growth_above, growth_below)
@@ -105,7 +121,7 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
 
     // Knowing the growth of the reward checkpoint for the position, calculate and increment the amount owed for each reward.
     const amountOwedX64 = positionRewardInfo.amountOwed.shln(64);
-    rewardOwed[i] = amountOwedX64
+    const amountOwed = amountOwedX64
       .add(
         MathUtil.subUnderflowU128(
           rewardGrowthInsideX64,
@@ -113,7 +129,21 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
         ).mul(liquidity)
       )
       .shrn(64);
+    
+    const transferFeeExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+      amountOwed,
+      tokenExtensionCtx.rewardTokenMintsWithProgram[i]!,
+      tokenExtensionCtx.currentEpoch
+    );
+
+    rewardOwed[i] = transferFeeExcluded.amount;
+    transferFee[i] = transferFeeExcluded.fee;
   }
 
-  return rewardOwed;
+  return {
+    rewardOwed,
+    transferFee: {
+      deductedFromRewardOwed: transferFee,
+    },
+  };
 }

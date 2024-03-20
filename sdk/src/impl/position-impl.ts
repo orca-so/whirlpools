@@ -15,9 +15,13 @@ import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   collectFeesIx,
+  collectFeesV2Ix,
   collectRewardIx,
+  collectRewardV2Ix,
   decreaseLiquidityIx,
+  decreaseLiquidityV2Ix,
   increaseLiquidityIx,
+  increaseLiquidityV2Ix,
   updateFeesAndRewardsIx,
 } from "../instructions";
 import {
@@ -34,6 +38,7 @@ import {
   resolveAtaForMints,
 } from "../utils/whirlpool-ata-utils";
 import { Position } from "../whirlpool-client";
+import { TokenExtensionUtil } from "../utils/token-extension-util";
 
 export class PositionImpl implements Position {
   private data: PositionData;
@@ -107,6 +112,8 @@ export class PositionImpl implements Position {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
 
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(this.ctx.fetcher, whirlpool, IGNORE_CACHE);
+
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
       this.ctx.provider.wallet,
@@ -140,12 +147,14 @@ export class PositionImpl implements Position {
       tokenOwnerAccountA = getAssociatedTokenAddressSync(
         whirlpool.tokenMintA,
         sourceWalletKey,
-        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
       );
       tokenOwnerAccountB = getAssociatedTokenAddressSync(
         whirlpool.tokenMintB,
         sourceWalletKey,
-        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
       );
     }
     const positionTokenAccount = getAssociatedTokenAddressSync(
@@ -154,7 +163,7 @@ export class PositionImpl implements Position {
       this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
 
-    const increaseIx = increaseLiquidityIx(this.ctx.program, {
+    const baseParams = {
       ...liquidityInput,
       whirlpool: this.data.whirlpool,
       position: this.address,
@@ -174,7 +183,18 @@ export class PositionImpl implements Position {
         TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
       ).publicKey,
       positionAuthority: positionWalletKey,
-    });
+    };
+    // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
+    const increaseIx = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? increaseLiquidityIx(this.ctx.program, baseParams)
+      : increaseLiquidityV2Ix(this.ctx.program, {
+        ...baseParams,
+        tokenMintA: whirlpool.tokenMintA,
+        tokenMintB: whirlpool.tokenMintB,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        // TODO: transfer hook extra accounts
+      });
     txBuilder.addInstruction(increaseIx);
     return txBuilder;
   }
@@ -198,6 +218,8 @@ export class PositionImpl implements Position {
     if (!whirlpool) {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
+
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(this.ctx.fetcher, whirlpool, IGNORE_CACHE);
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -228,16 +250,18 @@ export class PositionImpl implements Position {
       tokenOwnerAccountA = getAssociatedTokenAddressSync(
         whirlpool.tokenMintA,
         sourceWalletKey,
-        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
       );
       tokenOwnerAccountB = getAssociatedTokenAddressSync(
         whirlpool.tokenMintB,
         sourceWalletKey,
-        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
       );
     }
 
-    const decreaseIx = decreaseLiquidityIx(this.ctx.program, {
+    const baseParams = {
       ...liquidityInput,
       whirlpool: this.data.whirlpool,
       position: this.address,
@@ -261,7 +285,18 @@ export class PositionImpl implements Position {
         TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
       ).publicKey,
       positionAuthority: positionWalletKey,
-    });
+    };
+    // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
+    const decreaseIx = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? decreaseLiquidityIx(this.ctx.program, baseParams)
+      : decreaseLiquidityV2Ix(this.ctx.program, {
+        ...baseParams,
+        tokenMintA: whirlpool.tokenMintA,
+        tokenMintB: whirlpool.tokenMintB,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        // TODO: transfer hook extra accounts
+      });
     txBuilder.addInstruction(decreaseIx);
     return txBuilder;
   }
@@ -286,6 +321,8 @@ export class PositionImpl implements Position {
         `Unable to fetch whirlpool (${this.data.whirlpool}) for this position (${this.address}).`
       );
     }
+
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(this.ctx.fetcher, whirlpool, IGNORE_CACHE);
 
     let txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -350,7 +387,7 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(updateIx);
     }
 
-    const ix = collectFeesIx(this.ctx.program, {
+    const baseParams = {
       whirlpool: this.data.whirlpool,
       position: this.address,
       positionTokenAccount,
@@ -359,8 +396,18 @@ export class PositionImpl implements Position {
       tokenVaultA: whirlpool.tokenVaultA,
       tokenVaultB: whirlpool.tokenVaultB,
       positionAuthority: positionWalletKey,
-    });
-
+    };
+    // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
+    const ix = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? collectFeesIx(this.ctx.program, baseParams)
+      : collectFeesV2Ix(this.ctx.program, {
+        ...baseParams,
+        tokenMintA: whirlpool.tokenMintA,
+        tokenMintB: whirlpool.tokenMintB,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        // TODO: transfer hook extra accounts
+      });
     txBuilder.addInstruction(ix);
 
     return txBuilder;
@@ -391,6 +438,8 @@ export class PositionImpl implements Position {
     const initializedRewards = whirlpool.rewardInfos.filter((info) =>
       PoolUtil.isRewardInitialized(info)
     );
+
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(this.ctx.fetcher, whirlpool, IGNORE_CACHE);
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -458,7 +507,7 @@ export class PositionImpl implements Position {
         `No owner token account provided for wallet ${destinationWalletKey.toBase58()} for reward ${index} token ${info.mint.toBase58()} `
       );
 
-      const ix = collectRewardIx(this.ctx.program, {
+      const baseParams = {
         whirlpool: this.data.whirlpool,
         position: this.address,
         positionTokenAccount,
@@ -466,8 +515,16 @@ export class PositionImpl implements Position {
         rewardOwnerAccount: AddressUtil.toPubKey(rewardOwnerAccount),
         rewardVault: info.vault,
         positionAuthority: positionWalletKey,
-      });
-
+      };
+      // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
+      const ix = !TokenExtensionUtil.isV2IxRequiredReward(tokenExtensionCtx, index)
+        ? collectRewardIx(this.ctx.program, baseParams)
+        : collectRewardV2Ix(this.ctx.program, {
+          ...baseParams,
+          rewardMint: info.mint,
+          rewardTokenProgram: tokenExtensionCtx.rewardTokenMintsWithProgram[index]!.tokenProgram,
+          // TODO: transfer hook extension
+        });
       txBuilder.addInstruction(ix);
     });
 

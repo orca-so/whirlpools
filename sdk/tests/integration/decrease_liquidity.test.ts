@@ -27,6 +27,7 @@ import {
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
+import { TokenExtensionUtil } from "../../src/utils/token-extension-util";
 
 describe("decrease_liquidity", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -58,6 +59,7 @@ describe("decrease_liquidity", () => {
       tickCurrentIndex: poolBefore.tickCurrentIndex,
       tickLowerIndex: tickLower,
       tickUpperIndex: tickUpper,
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolBefore, IGNORE_CACHE),
     });
 
     await toTx(
@@ -114,6 +116,7 @@ describe("decrease_liquidity", () => {
       tickCurrentIndex: poolBefore.tickCurrentIndex,
       tickLowerIndex: tickLower,
       tickUpperIndex: tickUpper,
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolBefore, IGNORE_CACHE),
     });
 
     await toTx(

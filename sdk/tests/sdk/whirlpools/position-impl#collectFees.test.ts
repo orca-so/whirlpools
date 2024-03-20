@@ -18,6 +18,7 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
+import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -120,6 +121,7 @@ describe("PositionImpl#collectFees()", () => {
       position: positionData,
       tickLower: tickLowerData,
       tickUpper: tickUpperData,
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, poolData, IGNORE_CACHE),
     });
 
     assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
@@ -158,6 +160,7 @@ describe("PositionImpl#collectFees()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData, IGNORE_CACHE),
       });
 
       assert.notEqual(positionDataBefore, null);
@@ -224,6 +227,7 @@ describe("PositionImpl#collectFees()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData, IGNORE_CACHE),
       });
 
       const solBalanceBefore = await testCtx.provider.connection.getBalance(otherWallet.publicKey);

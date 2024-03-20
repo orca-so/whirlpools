@@ -30,6 +30,7 @@ import { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { createTokenAccountV2, createMintV2 } from "../../utils/v2/token-2022";
 import { createTokenAccount as createTokenAccountForPosition } from "../../utils/token";
 import { NATIVE_MINT } from "@solana/spl-token";
+import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
 
 describe("collect_reward_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -114,11 +115,12 @@ describe("collect_reward_v2", () => {
             tickLower: positionPreCollect.getLowerTickData(),
             tickUpper: positionPreCollect.getUpperTickData(),
             timeStampInSeconds: whirlpoolData.rewardLastUpdatedTimestamp,
+            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
           });
 
           // Check that the expectation is not zero
           for (let i = 0; i < NUM_REWARDS; i++) {
-            assert.ok(!expectation[i]!.isZero());
+            assert.ok(!expectation.rewardOwed[i]!.isZero());
           }
 
           // Perform collect rewards tx
@@ -146,7 +148,7 @@ describe("collect_reward_v2", () => {
             ).buildAndExecute();
 
             const collectedBalance = parseInt(await getTokenBalance(provider, rewardOwnerAccount));
-            assert.equal(collectedBalance, expectation[i]?.toNumber());
+            assert.equal(collectedBalance, expectation.rewardOwed[i]?.toNumber());
             const vaultBalance = parseInt(
               await getTokenBalance(provider, rewards[i].rewardVaultKeypair.publicKey)
             );

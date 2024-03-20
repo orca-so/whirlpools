@@ -37,6 +37,7 @@ import {
   createTokenAccount as createTokenAccountForPosition,
   createAndMintToTokenAccount as createAndMintToTokenAccountForPosition,
 } from "../../utils/token";
+import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
 
 describe("decrease_liquidity_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -73,7 +74,7 @@ describe("decrease_liquidity_v2", () => {
           )) as WhirlpoolData;
 
           // To check if rewardLastUpdatedTimestamp is updated
-          await sleep(1200);
+          await sleep(3000);
 
           const removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
             liquidity: new anchor.BN(1_000_000),
@@ -82,6 +83,7 @@ describe("decrease_liquidity_v2", () => {
             tickCurrentIndex: poolBefore.tickCurrentIndex,
             tickLowerIndex: tickLower,
             tickUpperIndex: tickUpper,
+            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolBefore, IGNORE_CACHE),
           });
 
           await toTx(
@@ -149,6 +151,7 @@ describe("decrease_liquidity_v2", () => {
             tickCurrentIndex: poolBefore.tickCurrentIndex,
             tickLowerIndex: tickLower,
             tickUpperIndex: tickUpper,
+            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolBefore, IGNORE_CACHE),
           });
 
           await toTx(

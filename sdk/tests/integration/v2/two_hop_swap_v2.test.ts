@@ -33,6 +33,7 @@ import {
 } from "../../utils/v2/aquarium-v2";
 import { FundedPositionV2Params, TokenTrait } from "../../utils/v2/init-utils-v2";
 import { asyncAssertOwnerProgram, createMintV2 } from "../../utils/v2/token-2022";
+import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
 
 describe("two_hop_swap_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -215,6 +216,7 @@ describe("two_hop_swap_v2", () => {
                   fetcher,
                   IGNORE_CACHE
                 ),
+                tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
               },
               Percentage.fromFraction(1, 100)
             );
@@ -237,6 +239,7 @@ describe("two_hop_swap_v2", () => {
                   fetcher,
                   IGNORE_CACHE
                 ),
+                tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
               },
               Percentage.fromFraction(1, 100)
             );
@@ -413,6 +416,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -435,6 +439,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -553,6 +558,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -575,6 +581,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -666,6 +673,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -688,6 +696,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -770,6 +779,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -792,6 +802,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -883,6 +894,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -905,6 +917,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -988,6 +1001,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1010,6 +1024,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1088,6 +1103,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1110,6 +1126,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1202,6 +1219,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1224,6 +1242,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1316,6 +1335,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1338,6 +1358,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1424,6 +1445,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1446,6 +1468,7 @@ describe("two_hop_swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1559,6 +1582,7 @@ describe("two_hop_swap_v2", () => {
               fetcher,
               IGNORE_CACHE
             ),
+            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
           },
           Percentage.fromFraction(1, 100)
         );
@@ -1581,6 +1605,7 @@ describe("two_hop_swap_v2", () => {
               fetcher,
               IGNORE_CACHE
             ),
+            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
           },
           Percentage.fromFraction(1, 100)
         );
@@ -1822,6 +1847,7 @@ describe("two_hop_swap_v2", () => {
               fetcher,
               IGNORE_CACHE
             ),
+            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
           },
           Percentage.fromFraction(1, 100)
         );
@@ -1844,6 +1870,7 @@ describe("two_hop_swap_v2", () => {
               fetcher,
               IGNORE_CACHE
             ),
+            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
           },
           Percentage.fromFraction(1, 100)
         );

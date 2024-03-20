@@ -23,6 +23,7 @@ import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { FundedPositionInfo } from "../../utils/init-utils";
+import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -134,6 +135,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData, IGNORE_CACHE),
       });
 
       assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
@@ -300,6 +302,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData!, IGNORE_CACHE),
       });
 
       const rewardQuote = collectRewardsQuote({
@@ -307,14 +310,15 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData!, IGNORE_CACHE),
         timeStampInSeconds: poolData!.rewardLastUpdatedTimestamp,
       });
 
       assert.ok(feeQuote.feeOwedA.gt(ZERO));
       assert.ok(feeQuote.feeOwedB.gt(ZERO));
-      assert.ok(rewardQuote[0]?.gt(ZERO));
-      assert.ok(rewardQuote[1]?.gt(ZERO));
-      assert.ok(rewardQuote[2]?.gt(ZERO));
+      assert.ok(rewardQuote.rewardOwed[0]?.gt(ZERO));
+      assert.ok(rewardQuote.rewardOwed[1]?.gt(ZERO));
+      assert.ok(rewardQuote.rewardOwed[2]?.gt(ZERO));
     }
 
     const txs = await testCtx.whirlpoolClient.collectFeesAndRewardsForPositions(
@@ -356,6 +360,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData!, IGNORE_CACHE),
       });
 
       const rewardQuote = collectRewardsQuote({
@@ -363,14 +368,15 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData!, IGNORE_CACHE),
         timeStampInSeconds: poolData!.rewardLastUpdatedTimestamp,
       });
 
       assert.ok(feeQuote.feeOwedA.eq(ZERO));
       assert.ok(feeQuote.feeOwedB.eq(ZERO));
-      assert.ok(rewardQuote[0]?.eq(ZERO));
-      assert.ok(rewardQuote[1]?.eq(ZERO));
-      assert.ok(rewardQuote[2]?.eq(ZERO));
+      assert.ok(rewardQuote.rewardOwed[0]?.eq(ZERO));
+      assert.ok(rewardQuote.rewardOwed[1]?.eq(ZERO));
+      assert.ok(rewardQuote.rewardOwed[2]?.eq(ZERO));
     }
   }
 

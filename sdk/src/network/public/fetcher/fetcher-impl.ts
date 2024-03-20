@@ -9,7 +9,7 @@ import {
   AccountWithTokenProgram as TokenAccountWithTokenProgram,
 } from "@orca-so/common-sdk";
 import { AccountLayout, Mint, Account as TokenAccount } from "@solana/spl-token";
-import { Connection } from "@solana/web3.js";
+import { Connection, EpochInfo } from "@solana/web3.js";
 import {
   DEFAULT_WHIRLPOOL_RETENTION_POLICY,
   WhirlpoolAccountFetchOptions,
@@ -57,6 +57,8 @@ export const buildDefaultAccountFetcher = (connection: Connection) => {
  */
 export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface {
   private _accountRentExempt: number | undefined;
+  private _epochInfo: EpochInfo | undefined;
+  private _epochInfoNextFetchTime: number = 0;
 
   constructor(
     readonly connection: Connection,
@@ -72,6 +74,21 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
       );
     }
     return this._accountRentExempt;
+  }
+
+  async getEpoch(refresh: boolean = false): Promise<number> {
+    if (!this._epochInfo || Date.now() >= this._epochInfoNextFetchTime || refresh) {
+      const epochInfo = await this.connection.getEpochInfo();
+
+      // In theory, 1 slot per every 400ms.
+      // 320ms is 80% of 400ms.
+      const remainingSlotsInEpoch = Math.max(epochInfo.slotsInEpoch - epochInfo.slotIndex, 0);
+      const nextFetchTime = Date.now() + remainingSlotsInEpoch * 320;
+
+      this._epochInfo = epochInfo;
+      this._epochInfoNextFetchTime = nextFetchTime;
+    }
+    return this._epochInfo.epoch;
   }
 
   getPool(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<WhirlpoolData | null> {

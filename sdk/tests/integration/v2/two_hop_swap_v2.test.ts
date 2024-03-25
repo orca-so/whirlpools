@@ -1160,7 +1160,11 @@ describe("two_hop_swap_v2", () => {
           assert.equal(postWhirlpoolDataOne.sqrtPrice.eq(quote.sqrtPriceLimit), true);
         });
 
-        it("swaps [2] with two-hop swap, amount_specified_is_input=true, second swap price limit", async () => {
+        it("fails: swaps [2] with two-hop swap, amount_specified_is_input=true, second swap price limit", async () => {
+          // ATTENTION: v1 and v2 are different
+          // v2 use vault to vault transfer, so the output of first swap MUST be equal to the input of the second swap.
+          // So not-full-filled swap will be rejected.
+
           const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
           const { tokenAccounts, mintKeys, pools } = aquarium;
 
@@ -1248,7 +1252,7 @@ describe("two_hop_swap_v2", () => {
           );
 
           // Set a price limit that is less than the 1% slippage threshold,
-          // which will allow the swap to go through
+          // which will result non-full-filled second swap
           quote2.sqrtPriceLimit = quote2.estimatedEndSqrtPrice.add(
             whirlpoolDataTwo.sqrtPrice
               .sub(quote2.estimatedEndSqrtPrice)
@@ -1258,22 +1262,104 @@ describe("two_hop_swap_v2", () => {
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
 
-          await toTx(
-            ctx,
-            WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
-              ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
-              tokenAuthority: ctx.wallet.publicKey,
-            })
-          ).buildAndExecute();
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
+                ...twoHopQuote,
+                ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+                tokenAuthority: ctx.wallet.publicKey,
+              })
+            ).buildAndExecute(),
+            /0x17a3/ // IntermediateTokenAmountMismatch
+          );
+        });
 
-          //const postWhirlpoolDataOne = await fetcher.getPool(whirlpoolOneKey, IGNORE_CACHE) as WhirlpoolData;
-          const postWhirlpoolDataTwo = (await fetcher.getPool(
+        it("fails: swaps [2] with two-hop swap, amount_specified_is_input=false, first swap price limit", async () => {
+          // ATTENTION: v1 and v2 are different
+          // v2 use vault to vault transfer, so the output of first swap MUST be equal to the input of the second swap.
+          // So not-full-filled swap will be rejected.
+
+          const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
+          const { tokenAccounts, mintKeys, pools } = aquarium;
+
+          const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+          const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+          const whirlpoolDataOne = (await fetcher.getPool(
+            whirlpoolOneKey,
+            IGNORE_CACHE
+          )) as WhirlpoolData;
+          const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
             IGNORE_CACHE
           )) as WhirlpoolData;
 
-          assert.equal(postWhirlpoolDataTwo.sqrtPrice.eq(quote2.sqrtPriceLimit), true);
+          const [_inputToken, intermediaryToken, outputToken] = mintKeys;
+
+          const aToBTwo = whirlpoolDataTwo.tokenMintB.equals(outputToken);
+          const quote2 = swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: false,
+              aToB: aToBTwo,
+              tokenAmount: new BN(1000),
+              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
+              whirlpoolData: whirlpoolDataTwo,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolDataTwo.tickCurrentIndex,
+                whirlpoolDataTwo.tickSpacing,
+                aToBTwo,
+                ctx.program.programId,
+                whirlpoolTwoKey,
+                fetcher,
+                IGNORE_CACHE
+              ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+            },
+            Percentage.fromFraction(1, 100)
+          );
+
+          const aToBOne = whirlpoolDataOne.tokenMintB.equals(intermediaryToken);
+          const quote = swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: false,
+              aToB: aToBOne,
+              tokenAmount: quote2.estimatedAmountIn,
+              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
+              whirlpoolData: whirlpoolDataOne,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolDataOne.tickCurrentIndex,
+                whirlpoolDataOne.tickSpacing,
+                aToBOne,
+                ctx.program.programId,
+                whirlpoolOneKey,
+                fetcher,
+                IGNORE_CACHE
+              ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+            },
+            Percentage.fromFraction(1, 100)
+          );
+
+          // add sqrtPriceLimit on quote
+          quote.sqrtPriceLimit = aToBOne
+            ? quote.estimatedEndSqrtPrice.addn(1)
+            : quote.estimatedEndSqrtPrice.subn(1);
+
+          const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
+
+          await assert.rejects(
+            toTx(
+              ctx,
+              WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
+                ...twoHopQuote,
+                ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+                tokenAuthority: ctx.wallet.publicKey,
+              })
+            ).buildAndExecute(),
+            /0x17a3/ // IntermediateTokenAmountMismatch
+          );
         });
 
         it("fails swaps [2] with two-hop swap, amount_specified_is_input=true, first swap price limit", async () => {

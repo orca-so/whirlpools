@@ -126,6 +126,9 @@ pub enum ErrorCode {
 
     #[msg("Unable to call transfer hook without extra accounts")]
     NoExtraAccountsForTransferHook, // 0x17a2 (6050)
+    
+    #[msg("Output and input amount mismatch")]
+    IntermediateTokenAmountMismatch, // 0x17a3 (6051)
 }
 
 impl From<TryFromIntError> for ErrorCode {

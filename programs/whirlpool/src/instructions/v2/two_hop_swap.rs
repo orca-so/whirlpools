@@ -177,16 +177,11 @@ pub fn handler<'a, 'b, 'c, 'info>(
         )?;
 
         // Swap two input is the output of swap one
+        // We use vault to vault transfer, so transfer fee will be collected once.
         let swap_two_input_amount = if a_to_b_one {
-            calculate_transfer_fee_excluded_amount(
-                &ctx.accounts.token_mint_one_b,
-                swap_calc_one.amount_b
-            )?.amount
+            swap_calc_one.amount_b
         } else {
-            calculate_transfer_fee_excluded_amount(
-                &ctx.accounts.token_mint_one_a,
-                swap_calc_one.amount_a
-            )?.amount
+            swap_calc_one.amount_a
         };
 
         let swap_calc_two = swap_with_transfer_fee_extension(
@@ -219,9 +214,15 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
         // The output of swap 1 is input of swap_calc_two
         let swap_one_output_amount = if a_to_b_two {
-            swap_calc_two.amount_a
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_two_a,
+                swap_calc_two.amount_a
+            )?.amount
         } else {
-            swap_calc_two.amount_b
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_two_b,
+                swap_calc_two.amount_b
+            )?.amount
         };
 
         let swap_calc_one = swap_with_transfer_fee_extension(
@@ -237,6 +238,13 @@ pub fn handler<'a, 'b, 'c, 'info>(
         )?;
         (swap_calc_one, swap_calc_two)
     };
+
+    // All output token should be consumed by the second swap
+    let swap_calc_one_output = if a_to_b_one { swap_update_one.amount_b } else { swap_update_one.amount_a };
+    let swap_calc_two_input = if a_to_b_two { swap_update_two.amount_a } else { swap_update_two.amount_b };
+    if swap_calc_one_output != swap_calc_two_input {
+        return Err(ErrorCode::IntermediateTokenAmountMismatch.into());
+    }
 
     if amount_specified_is_input {
         // If amount_specified_is_input == true, then we have a variable amount of output

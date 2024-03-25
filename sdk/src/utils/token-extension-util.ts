@@ -1,8 +1,8 @@
-import { TransferFee, calculateFee, getEpochFee, getTransferFeeConfig, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import { TransferFee, calculateFee, getEpochFee, getTransferFeeConfig, TOKEN_2022_PROGRAM_ID, getTransferHook, addExtraAccountMetasForExecute } from "@solana/spl-token";
 import BN from "bn.js";
 import { MintWithTokenProgram, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { IGNORE_CACHE, PoolUtil, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface, WhirlpoolData } from "..";
-import { PublicKey } from "@solana/web3.js";
+import { AccountMeta, Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 
 export type TokenAmountWithFee = {
@@ -49,31 +49,31 @@ export const NO_TOKEN_EXTENSION_CONTEXT: TokenExtensionContext = {
 
 export class TokenExtensionUtil {
   public static calculateTransferFeeIncludedAmount(
-    amount: BN,
+    transferFeeExcludedAmount: BN,
     tokenInfo: MintWithTokenProgram,
     currentEpoch: number,
   ): TokenAmountWithFee {
     const config = getTransferFeeConfig(tokenInfo);
     if (config === null) {
-      return { isFeeIncludedAmount: true, amount, fee: ZERO };
+      return { isFeeIncludedAmount: true, amount: transferFeeExcludedAmount, fee: ZERO };
     }
 
     const transferFee = getEpochFee(config, BigInt(currentEpoch));
-    return calculateTransferFeeIncludedAmount(transferFee, amount);
+    return calculateTransferFeeIncludedAmount(transferFee, transferFeeExcludedAmount);
   }
 
   public static calculateTransferFeeExcludedAmount(
-    amount: BN,
+    transferFeeIncludedAmount: BN,
     tokenInfo: MintWithTokenProgram,
     currentEpoch: number,
   ): TokenAmountWithFee {
     const config = getTransferFeeConfig(tokenInfo);
     if (config === null) {
-      return { isFeeIncludedAmount: false, amount, fee: ZERO };
+      return { isFeeIncludedAmount: false, amount: transferFeeIncludedAmount, fee: ZERO };
     }
 
     const transferFee = getEpochFee(config, BigInt(currentEpoch));
-    return calculateTransferFeeExcludedAmount(transferFee, amount);
+    return calculateTransferFeeExcludedAmount(transferFee, transferFeeIncludedAmount);
   }
 
   public static async buildTokenExtensionContext(
@@ -108,6 +108,46 @@ export class TokenExtensionUtil {
     };
   }
 
+  public static async getExtraAccountMetasForTransferHook(
+    connection: Connection,
+    tokenMintWithProgram: MintWithTokenProgram,
+    source: PublicKey,
+    destination: PublicKey,
+    owner: PublicKey,
+  ): Promise<AccountMeta[] | undefined> {
+    const transferHook = getTransferHook(tokenMintWithProgram);
+
+    if (!transferHook) return undefined;
+
+    const instruction = new TransactionInstruction({
+      programId: TOKEN_2022_PROGRAM_ID,
+      keys: [
+        {pubkey: source, isSigner: false, isWritable: false},
+        {pubkey: tokenMintWithProgram.address, isSigner: false, isWritable: false},
+        {pubkey: destination, isSigner: false, isWritable: false},
+        {pubkey: owner, isSigner: false, isWritable: false},
+        {pubkey: owner, isSigner: false, isWritable: false},
+      ]
+    });
+  
+    await addExtraAccountMetasForExecute(
+      connection,
+      instruction,
+      transferHook.programId,
+      source,
+      tokenMintWithProgram.address,
+      destination,
+      owner,
+      0n, // extra account must not depend on the amount (the acount will be changed due to slippage)
+      "confirmed"
+    );
+  
+    const extraAccountMetas = instruction.keys.slice(5);
+    return extraAccountMetas.length > 0
+      ? extraAccountMetas
+      : undefined;
+  }
+  
   public static isV2IxRequiredPool(
     tokenExtensionCtx: TokenExtensionContextForPool
   ): boolean {

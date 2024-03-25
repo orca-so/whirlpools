@@ -193,7 +193,20 @@ export class PositionImpl implements Position {
         tokenMintB: whirlpool.tokenMintB,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        // TODO: transfer hook extra accounts
+        tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          this.ctx.connection,
+          tokenExtensionCtx.tokenMintWithProgramA,
+          baseParams.tokenOwnerAccountA,
+          baseParams.tokenVaultA,
+          baseParams.positionAuthority,
+        ),
+        tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          this.ctx.connection,
+          tokenExtensionCtx.tokenMintWithProgramB,
+          baseParams.tokenOwnerAccountB,
+          baseParams.tokenVaultB,
+          baseParams.positionAuthority,
+        ),
       });
     txBuilder.addInstruction(increaseIx);
     return txBuilder;
@@ -295,7 +308,20 @@ export class PositionImpl implements Position {
         tokenMintB: whirlpool.tokenMintB,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        // TODO: transfer hook extra accounts
+        tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          this.ctx.connection,
+          tokenExtensionCtx.tokenMintWithProgramA,
+          baseParams.tokenVaultA,
+          baseParams.tokenOwnerAccountA,
+          baseParams.whirlpool, // vault to owner, so pool is authority
+        ),
+        tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          this.ctx.connection,
+          tokenExtensionCtx.tokenMintWithProgramB,
+          baseParams.tokenVaultB,
+          baseParams.tokenOwnerAccountB,
+          baseParams.whirlpool, // vault to owner, so pool is authority
+        ),
       });
     txBuilder.addInstruction(decreaseIx);
     return txBuilder;
@@ -406,7 +432,20 @@ export class PositionImpl implements Position {
         tokenMintB: whirlpool.tokenMintB,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        // TODO: transfer hook extra accounts
+        tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          this.ctx.connection,
+          tokenExtensionCtx.tokenMintWithProgramA,
+          baseParams.tokenVaultA,
+          baseParams.tokenOwnerAccountA,
+          baseParams.whirlpool, // vault to owner, so pool is authority
+        ),
+        tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          this.ctx.connection,
+          tokenExtensionCtx.tokenMintWithProgramB,
+          baseParams.tokenVaultB,
+          baseParams.tokenOwnerAccountB,
+          baseParams.whirlpool, // vault to owner, so pool is authority
+        ),
       });
     txBuilder.addInstruction(ix);
 
@@ -491,14 +530,15 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(updateIx);
     }
 
-    initializedRewards.forEach((info, index) => {
+    for (let index = 0; initializedRewards.length; index++) {
+      const info = initializedRewards[index];
       if (
         rewardsToCollect &&
         !rewardsToCollect.some((r) => r.toString() === info.mint.toBase58())
       ) {
         // If rewardsToCollect is specified and this reward is not in it,
         // don't include collectIX for that in TX
-        return;
+        break;
       }
 
       const rewardOwnerAccount = ataMap[info.mint.toBase58()];
@@ -523,10 +563,16 @@ export class PositionImpl implements Position {
           ...baseParams,
           rewardMint: info.mint,
           rewardTokenProgram: tokenExtensionCtx.rewardTokenMintsWithProgram[index]!.tokenProgram,
-          // TODO: transfer hook extension
+          rewardTransferHookAccounts: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            this.ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramA,
+            baseParams.rewardVault,
+            baseParams.rewardOwnerAccount,
+            baseParams.whirlpool, // vault to owner, so pool is authority
+          ),
         });
       txBuilder.addInstruction(ix);
-    });
+    }
 
     return txBuilder;
   }

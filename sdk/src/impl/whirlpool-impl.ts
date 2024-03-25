@@ -382,7 +382,20 @@ export class WhirlpoolImpl implements Whirlpool {
           tokenMintB: whirlpool.tokenMintB,
           tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
           tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-          // TODO: transfer hook accounts  
+          tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            this.ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramA,
+            baseParams.tokenOwnerAccountA,
+            baseParams.tokenVaultA,
+            baseParams.positionAuthority,
+          ),
+          tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            this.ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramB,
+            baseParams.tokenOwnerAccountB,
+            baseParams.tokenVaultB,
+            baseParams.positionAuthority,
+          ),  
         });
     txBuilder.addInstruction(liquidityIx);
 
@@ -581,7 +594,20 @@ export class WhirlpoolImpl implements Whirlpool {
           tokenMintB: whirlpool.tokenMintB,
           tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
           tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-          // TODO: add hook accounts
+          tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            this.ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramA,
+            baseParams.tokenVaultA,
+            baseParams.tokenOwnerAccountA,
+            baseParams.whirlpool, // vault to owner, so pool is authority
+          ),
+          tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            this.ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramB,
+            baseParams.tokenVaultB,
+            baseParams.tokenOwnerAccountB,
+            baseParams.whirlpool, // vault to owner, so pool is authority
+          ),
         });
       txBuilder.addInstruction(liquidityIx);
     }

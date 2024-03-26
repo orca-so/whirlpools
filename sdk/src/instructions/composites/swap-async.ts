@@ -46,7 +46,7 @@ export async function swapAsync(
     ],
     () => ctx.fetcher.getAccountRentExempt(),
     undefined, // use default
-    undefined, // use default
+    true, // use idempotent to allow multiple simultaneous calls
     ctx.accountResolverOpts.allowPDAOwnerAddress,
     ctx.accountResolverOpts.createWrappedSolAccountMethod
   );

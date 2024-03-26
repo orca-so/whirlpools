@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { createBurnInstruction, createCloseAccountInstruction, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
@@ -13,6 +13,7 @@ import {
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidity,
   increaseLiquidityQuoteByInputTokenUsingPriceSlippage,
+  swapQuoteByInputToken,
   toTx
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
@@ -31,6 +32,7 @@ import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
+import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 
 describe("whirlpool-impl", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -682,4 +684,75 @@ describe("whirlpool-impl", () => {
     assert.equal(await getTokenBalance(ctx.provider, rewardAccount1), rewardsQuote[1]?.toString());
     assert.equal(await getTokenBalance(ctx.provider, rewardAccount2), rewardsQuote[2]?.toString());
   });
+
+  it("swap with idempotent", async () => {
+        // In same tick array - start index 22528
+        const tickLowerIndex = 29440;
+        const tickUpperIndex = 33536;
+        const vaultStartBalance = 1_000_000_000;
+        const tickSpacing = TickSpacing.Standard;
+        const fixture = await new WhirlpoolTestFixture(ctx).init({
+          tickSpacing,
+          positions: [
+            { tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
+            { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(1_000_000) }, // Out of range position
+          ],
+          rewards: [
+            {
+              emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+              vaultAmount: new BN(vaultStartBalance),
+            },
+            {
+              emissionsPerSecondX64: MathUtil.toX64(new Decimal(5)),
+              vaultAmount: new BN(vaultStartBalance),
+            },
+            {
+              emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+              vaultAmount: new BN(vaultStartBalance),
+            },
+          ],
+        });
+        const {
+          poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
+          tokenAccountA,
+          tokenAccountB,
+          positions,
+        } = fixture.getInfos();
+
+        const pool = await client.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
+    
+        // close ATA for token B
+        const balanceB = await getTokenBalance(ctx.provider, tokenAccountB);
+        await toTx(ctx, {
+          instructions: [
+            createBurnInstruction(tokenAccountB, pool.getData().tokenMintB, ctx.wallet.publicKey, BigInt(balanceB.toString())),
+            createCloseAccountInstruction(tokenAccountB, ctx.wallet.publicKey, ctx.wallet.publicKey),
+          ],
+          cleanupInstructions: [],
+          signers: [],
+        }).buildAndExecute();
+        const tokenAccountBData = await ctx.connection.getAccountInfo(tokenAccountB, "confirmed");
+        assert.ok(tokenAccountBData === null);
+
+        const quote = await swapQuoteByInputToken(
+          pool,
+          pool.getData().tokenMintA,
+          new BN(200_000),
+          Percentage.fromFraction(1, 100),
+          ctx.program.programId,
+          ctx.fetcher,
+          IGNORE_CACHE
+        );
+
+        const tx = await pool.swap(quote);
+
+        // check generated instructions
+        const instructions = tx.compressIx(true).instructions;
+        const createIxs = instructions.filter((ix) => ix.programId.equals(ASSOCIATED_PROGRAM_ID));
+        assert.ok(createIxs.length === 1);
+        assert.ok(createIxs[0].keys[1].pubkey.equals(tokenAccountB));
+        assert.ok(createIxs[0].data.length === 1);
+        assert.ok(createIxs[0].data[0] === 1); // Idempotent
+  });
+
 });

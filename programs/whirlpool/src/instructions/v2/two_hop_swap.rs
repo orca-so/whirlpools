@@ -3,7 +3,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
 use crate::swap_with_transfer_fee_extension;
-use crate::util::{calculate_transfer_fee_excluded_amount, parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
+use crate::util::{calculate_transfer_fee_excluded_amount, parse_remaining_accounts, update_and_two_hop_swap_whirlpool_v2, AccountsType, RemainingAccountsInfo};
 use crate::{
     errors::ErrorCode,
     state::{TickArray, Whirlpool},
@@ -278,6 +278,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         }
     }
 
+    /* 
     update_and_swap_whirlpool_v2(
         whirlpool_one,
         &ctx.accounts.token_authority,
@@ -314,6 +315,40 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &ctx.accounts.memo_program,
         swap_update_two,
         a_to_b_two,
+        timestamp,
+        transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
+    )
+    */
+
+    update_and_two_hop_swap_whirlpool_v2(
+        swap_update_one,
+        a_to_b_one,
+        whirlpool_one,
+        &ctx.accounts.token_mint_one_a,
+        &ctx.accounts.token_mint_one_b,
+        &ctx.accounts.token_owner_account_one_a,
+        &ctx.accounts.token_owner_account_one_b,
+        &ctx.accounts.token_vault_one_a,
+        &ctx.accounts.token_vault_one_b,
+        &remaining_accounts.transfer_hook_one_a,
+        &remaining_accounts.transfer_hook_one_b,
+        &ctx.accounts.token_program_one_a,
+        &ctx.accounts.token_program_one_b,
+        swap_update_two,
+        a_to_b_two,
+        whirlpool_two,
+        &ctx.accounts.token_mint_two_a,
+        &ctx.accounts.token_mint_two_b,
+        &ctx.accounts.token_owner_account_two_a,
+        &ctx.accounts.token_owner_account_two_b,
+        &ctx.accounts.token_vault_two_a,
+        &ctx.accounts.token_vault_two_b,
+        &remaining_accounts.transfer_hook_two_a,
+        &remaining_accounts.transfer_hook_two_b,
+        &ctx.accounts.token_program_two_a,
+        &ctx.accounts.token_program_two_b,
+        &ctx.accounts.token_authority,
+        &ctx.accounts.memo_program,
         timestamp,
         transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
     )

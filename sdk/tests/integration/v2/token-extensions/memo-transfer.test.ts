@@ -1290,7 +1290,7 @@ describe("TokenExtension/MemoTransfer", () => {
       assert.ok(postBalanceOut.gt(preBalanceOut));
 
       const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_SWAP);
-      assert.equal(memoCount, 2);
+      assert.equal(memoCount, 1); // mid token uses vault to vault transfer, so no memo
     });
 
     it("two_hop_swap_v2: without memo (has extension, but disabled", async () => {

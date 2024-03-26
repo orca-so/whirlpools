@@ -9,7 +9,7 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "ts-mocha -p sdk/tests/tsconfig.json -t 1000000 sdk/tests/**/token-extensions/*.test.ts"
+test = "ts-mocha -p sdk/tests/tsconfig.json -t 1000000 sdk/tests/**/*.test.ts"
 
 [test.validator]
 slots_per_epoch = "33"

@@ -1847,6 +1847,7 @@ describe("TokenExtension/TransferFee", () => {
             Percentage.fromFraction(0, 100),
           );
 
+          /*
           // vault -> owner
           const transferFeeExcludedMidOutputAmount = transferFeeMid
             ? calculateTransferFeeExcludedAmount(transferFeeMid, quote.estimatedAmountOut)
@@ -1858,6 +1859,14 @@ describe("TokenExtension/TransferFee", () => {
           const transferFeeExcludedMidInputAmount = transferFeeMid
             ? calculateTransferFeeExcludedAmount(transferFeeMid, transferFeeExcludedMidOutputAmount.amount)
             : { amount: transferFeeExcludedMidOutputAmount.amount, fee: ZERO_BN };
+          if (transferFeeMid && transferFeeMid.transferFeeBasisPoints > 0)
+            assert.ok(transferFeeExcludedMidInputAmount.fee.gtn(0));
+          */
+         
+          // vault to vault
+          const transferFeeExcludedMidInputAmount = transferFeeMid
+            ? calculateTransferFeeExcludedAmount(transferFeeMid, quote.estimatedAmountOut)
+            : { amount: quote.estimatedAmountOut, fee: ZERO_BN };
           if (transferFeeMid && transferFeeMid.transferFeeBasisPoints > 0)
             assert.ok(transferFeeExcludedMidInputAmount.fee.gtn(0));
 
@@ -2035,6 +2044,7 @@ describe("TokenExtension/TransferFee", () => {
             Percentage.fromFraction(0, 100),
           );
 
+          /*
           // vault -> owner
           const transferFeeExcludedMidOutputAmount = transferFeeMid
             ? calculateTransferFeeExcludedAmount(transferFeeMid, quote.estimatedAmountOut)
@@ -2046,6 +2056,14 @@ describe("TokenExtension/TransferFee", () => {
           const transferFeeExcludedMidInputAmount = transferFeeMid
             ? calculateTransferFeeExcludedAmount(transferFeeMid, transferFeeExcludedMidOutputAmount.amount)
             : { amount: transferFeeExcludedMidOutputAmount.amount, fee: ZERO_BN };
+          if (transferFeeMid && transferFeeMid.transferFeeBasisPoints > 0)
+            assert.ok(transferFeeExcludedMidInputAmount.fee.gtn(0));
+          */
+
+          // vault to vault
+          const transferFeeExcludedMidInputAmount = transferFeeMid
+            ? calculateTransferFeeExcludedAmount(transferFeeMid, quote.estimatedAmountOut)
+            : { amount: quote.estimatedAmountOut, fee: ZERO_BN };
           if (transferFeeMid && transferFeeMid.transferFeeBasisPoints > 0)
             assert.ok(transferFeeExcludedMidInputAmount.fee.gtn(0));
 
@@ -2223,6 +2241,7 @@ describe("TokenExtension/TransferFee", () => {
             Percentage.fromFraction(0, 100),
           );
 
+          /*
           // owner -> vault
           const transferFeeIncludedMidInputAmount = transferFeeMid
             ? calculateTransferFeeIncludedAmount(transferFeeMid, quote2.estimatedAmountIn)
@@ -2234,6 +2253,14 @@ describe("TokenExtension/TransferFee", () => {
           const transferFeeIncludedMidOutputAmount = transferFeeMid
             ? calculateTransferFeeIncludedAmount(transferFeeMid, transferFeeIncludedMidInputAmount.amount)
             : { amount: transferFeeIncludedMidInputAmount.amount, fee: ZERO_BN };
+          if (transferFeeMid && transferFeeMid.transferFeeBasisPoints > 0)
+            assert.ok(transferFeeIncludedMidOutputAmount.fee.gtn(0));
+          */
+
+          // vault to vault
+          const transferFeeIncludedMidOutputAmount = transferFeeMid
+            ? calculateTransferFeeIncludedAmount(transferFeeMid, quote2.estimatedAmountIn)
+            : { amount: quote2.estimatedAmountIn, fee: ZERO_BN };
           if (transferFeeMid && transferFeeMid.transferFeeBasisPoints > 0)
             assert.ok(transferFeeIncludedMidOutputAmount.fee.gtn(0));
 
@@ -2411,6 +2438,7 @@ describe("TokenExtension/TransferFee", () => {
             Percentage.fromFraction(0, 100),
           );
 
+          /*
           // owner -> vault
           const transferFeeIncludedMidInputAmount = transferFeeMid
             ? calculateTransferFeeIncludedAmount(transferFeeMid, quote2.estimatedAmountIn)
@@ -2422,6 +2450,14 @@ describe("TokenExtension/TransferFee", () => {
           const transferFeeIncludedMidOutputAmount = transferFeeMid
             ? calculateTransferFeeIncludedAmount(transferFeeMid, transferFeeIncludedMidInputAmount.amount)
             : { amount: transferFeeIncludedMidInputAmount.amount, fee: ZERO_BN };
+          if (transferFeeMid && transferFeeMid.transferFeeBasisPoints > 0)
+            assert.ok(transferFeeIncludedMidOutputAmount.fee.gtn(0));
+          */
+
+          // vault to vault
+          const transferFeeIncludedMidOutputAmount = transferFeeMid
+            ? calculateTransferFeeIncludedAmount(transferFeeMid, quote2.estimatedAmountIn)
+            : { amount: quote2.estimatedAmountIn, fee: ZERO_BN };
           if (transferFeeMid && transferFeeMid.transferFeeBasisPoints > 0)
             assert.ok(transferFeeIncludedMidOutputAmount.fee.gtn(0));
 

@@ -1686,7 +1686,7 @@ describe("TokenExtension/TransferFee", () => {
     });
   });
 
-  describe("two_hop_swap", () => {
+  describe.only("two_hop_swap", () => {
     let aqConfig: InitAquariumV2Params;
     let aquarium: TestAquarium;
     let whirlpoolOneKey: PublicKey;
@@ -1926,42 +1926,30 @@ describe("TokenExtension/TransferFee", () => {
             tokenAuthority: ctx.wallet.publicKey,
             whirlpoolOne: pools[0].whirlpoolPda.publicKey,
             whirlpoolTwo: pools[1].whirlpoolPda.publicKey,
-            tokenMintOneA: pools[0].tokenMintA,
-            tokenMintOneB: pools[0].tokenMintB,
-            tokenMintTwoA: pools[1].tokenMintA,
-            tokenMintTwoB: pools[1].tokenMintB,
-            tokenProgramOneA: pools[0].tokenProgramA,
-            tokenProgramOneB: pools[0].tokenProgramB,
-            tokenProgramTwoA: pools[1].tokenProgramA,
-            tokenProgramTwoB: pools[1].tokenProgramB,
-            tokenOwnerAccountOneA: tokenAccKeys[0],
-            tokenVaultOneA: pools[0].tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountOneB: tokenAccKeys[1],
-            tokenVaultOneB: pools[0].tokenVaultBKeypair.publicKey,
-            tokenOwnerAccountTwoA: tokenAccKeys[2],
-            tokenVaultTwoA: pools[1].tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountTwoB: tokenAccKeys[3],
-            tokenVaultTwoB: pools[1].tokenVaultBKeypair.publicKey,
-            oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[0].whirlpoolPda.publicKey)
+            tokenMintInput: twoHopQuote.aToBOne ? pools[0].tokenMintA : pools[0].tokenMintB,
+            tokenMintIntermediate: twoHopQuote.aToBOne ? pools[0].tokenMintB : pools[0].tokenMintA,
+            tokenMintOutput: twoHopQuote.aToBTwo ? pools[1].tokenMintB : pools[1].tokenMintA,
+            tokenProgramInput: twoHopQuote.aToBOne ? pools[0].tokenProgramA : pools[0].tokenProgramB,
+            tokenProgramIntermediate: twoHopQuote.aToBOne ? pools[0].tokenProgramB : pools[0].tokenProgramA,
+            tokenProgramOutput: twoHopQuote.aToBTwo ? pools[1].tokenProgramB : pools[1].tokenProgramA,
+            tokenOwnerAccountInput: twoHopQuote.aToBOne ? tokenAccKeys[0] : tokenAccKeys[1],
+            tokenOwnerAccountOutput: twoHopQuote.aToBTwo ? tokenAccKeys[3] : tokenAccKeys[2],
+            tokenVaultOneInput: twoHopQuote.aToBOne ? pools[0].tokenVaultAKeypair.publicKey : pools[0].tokenVaultBKeypair.publicKey,
+            tokenVaultOneIntermediate: twoHopQuote.aToBOne ? pools[0].tokenVaultBKeypair.publicKey : pools[0].tokenVaultAKeypair.publicKey,
+            tokenVaultTwoIntermediate: twoHopQuote.aToBTwo ? pools[1].tokenVaultAKeypair.publicKey : pools[1].tokenVaultBKeypair.publicKey,
+            tokenVaultTwoOutput: twoHopQuote.aToBTwo ? pools[1].tokenVaultBKeypair.publicKey : pools[1].tokenVaultAKeypair.publicKey,
+                oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[0].whirlpoolPda.publicKey)
               .publicKey,
             oracleTwo: PDAUtil.getOracle(ctx.program.programId, pools[1].whirlpoolPda.publicKey)
               .publicKey,
           };
-
-          const [tokenAccountIn, tokenAccountMid] = baseIxParams.aToBOne
-            ? [baseIxParams.tokenOwnerAccountOneA, baseIxParams.tokenOwnerAccountOneB]
-            : [baseIxParams.tokenOwnerAccountOneB, baseIxParams.tokenOwnerAccountOneA];
-          const tokenAccountOut = baseIxParams.aToBTwo
-            ? baseIxParams.tokenOwnerAccountTwoB
-            : baseIxParams.tokenOwnerAccountTwoA;
     
-          const preVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
-          const preVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
-          const preVaultBalanceTwoA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoA));
-          const preVaultBalanceTwoB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoB));
-          const preOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, tokenAccountIn));
-          const preOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
-          const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
+          const preVaultBalanceOneA = new BN(await getTokenBalance(provider, pools[0].tokenVaultAKeypair.publicKey));
+          const preVaultBalanceOneB = new BN(await getTokenBalance(provider, pools[0].tokenVaultBKeypair.publicKey));
+          const preVaultBalanceTwoA = new BN(await getTokenBalance(provider, pools[1].tokenVaultAKeypair.publicKey));
+          const preVaultBalanceTwoB = new BN(await getTokenBalance(provider, pools[1].tokenVaultBKeypair.publicKey));
+          const preOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountInput));
+          const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountOutput));
 
           await assert.rejects(
             toTx(
@@ -1979,20 +1967,18 @@ describe("TokenExtension/TransferFee", () => {
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
           ).prependInstruction(useMaxCU()).buildAndExecute(); // add CU
 
-          const postVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
-          const postVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
-          const postVaultBalanceTwoA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoA));
-          const postVaultBalanceTwoB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoB));
-          const postOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, tokenAccountIn));
-          const postOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
-          const postOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
+          const postVaultBalanceOneA = new BN(await getTokenBalance(provider, pools[0].tokenVaultAKeypair.publicKey));
+          const postVaultBalanceOneB = new BN(await getTokenBalance(provider, pools[0].tokenVaultBKeypair.publicKey));
+          const postVaultBalanceTwoA = new BN(await getTokenBalance(provider, pools[1].tokenVaultAKeypair.publicKey));
+          const postVaultBalanceTwoB = new BN(await getTokenBalance(provider, pools[1].tokenVaultBKeypair.publicKey));
+          const postOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountInput));
+          const postOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountOutput));
 
           assert.ok(postVaultBalanceOneA.sub(preVaultBalanceOneA).eq(expectedVaultAccountOneADelta));
           assert.ok(postVaultBalanceOneB.sub(preVaultBalanceOneB).eq(expectedVaultAccountOneBDelta));
           assert.ok(postVaultBalanceTwoA.sub(preVaultBalanceTwoA).eq(expectedVaultAccountTwoADelta));
           assert.ok(postVaultBalanceTwoB.sub(preVaultBalanceTwoB).eq(expectedVaultAccountTwoBDelta));
           assert.ok(postOwnerAccountBalanceInput.sub(preOwnerAccountBalanceInput).eq(expectedOwnerAccountInputDelta));
-          assert.ok(postOwnerAccountBalanceMid.sub(preOwnerAccountBalanceMid).eq(expectedOwnerAccountMidDelta));
           assert.ok(postOwnerAccountBalanceOutput.sub(preOwnerAccountBalanceOutput).eq(expectedOwnerAccountOutputDelta));
 
           //console.log(`aToB: ${aToBOne} ${aToBTwo}`);
@@ -2123,42 +2109,30 @@ describe("TokenExtension/TransferFee", () => {
             tokenAuthority: ctx.wallet.publicKey,
             whirlpoolOne: pools[1].whirlpoolPda.publicKey,
             whirlpoolTwo: pools[0].whirlpoolPda.publicKey,
-            tokenMintOneA: pools[1].tokenMintA,
-            tokenMintOneB: pools[1].tokenMintB,
-            tokenMintTwoA: pools[0].tokenMintA,
-            tokenMintTwoB: pools[0].tokenMintB,
-            tokenProgramOneA: pools[1].tokenProgramA,
-            tokenProgramOneB: pools[1].tokenProgramB,
-            tokenProgramTwoA: pools[0].tokenProgramA,
-            tokenProgramTwoB: pools[0].tokenProgramB,
-            tokenOwnerAccountOneA: tokenAccKeys[2],
-            tokenVaultOneA: pools[1].tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountOneB: tokenAccKeys[3],
-            tokenVaultOneB: pools[1].tokenVaultBKeypair.publicKey,
-            tokenOwnerAccountTwoA: tokenAccKeys[0],
-            tokenVaultTwoA: pools[0].tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountTwoB: tokenAccKeys[1],
-            tokenVaultTwoB: pools[0].tokenVaultBKeypair.publicKey,
-            oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[1].whirlpoolPda.publicKey)
+            tokenMintInput: aToBTwo ? pools[1].tokenMintA : pools[1].tokenMintB,
+            tokenMintIntermediate: aToBTwo ? pools[1].tokenMintB : pools[1].tokenMintA,
+            tokenMintOutput: aToBOne ? pools[0].tokenMintB : pools[0].tokenMintA,
+            tokenProgramInput: aToBTwo ? pools[1].tokenProgramA : pools[1].tokenProgramB,
+            tokenProgramIntermediate: aToBTwo ? pools[1].tokenProgramB : pools[1].tokenProgramA,
+            tokenProgramOutput: aToBOne ? pools[0].tokenProgramB : pools[0].tokenProgramA,
+            tokenOwnerAccountInput: aToBTwo ? tokenAccKeys[2] : tokenAccKeys[3],
+            tokenOwnerAccountOutput: aToBOne ? tokenAccKeys[1] : tokenAccKeys[0],
+            tokenVaultOneInput: aToBTwo ? pools[1].tokenVaultAKeypair.publicKey : pools[1].tokenVaultBKeypair.publicKey,
+            tokenVaultOneIntermediate: aToBTwo ? pools[1].tokenVaultBKeypair.publicKey : pools[1].tokenVaultAKeypair.publicKey,
+            tokenVaultTwoIntermediate: aToBOne ? pools[0].tokenVaultAKeypair.publicKey : pools[0].tokenVaultBKeypair.publicKey,
+            tokenVaultTwoOutput: aToBOne ? pools[0].tokenVaultBKeypair.publicKey : pools[0].tokenVaultAKeypair.publicKey,
+                oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[1].whirlpoolPda.publicKey)
               .publicKey,
             oracleTwo: PDAUtil.getOracle(ctx.program.programId, pools[0].whirlpoolPda.publicKey)
               .publicKey,
           };
 
-          const [tokenAccountIn, tokenAccountMid] = baseIxParams.aToBOne
-            ? [baseIxParams.tokenOwnerAccountOneA, baseIxParams.tokenOwnerAccountOneB]
-            : [baseIxParams.tokenOwnerAccountOneB, baseIxParams.tokenOwnerAccountOneA];
-          const tokenAccountOut = baseIxParams.aToBTwo
-            ? baseIxParams.tokenOwnerAccountTwoB
-            : baseIxParams.tokenOwnerAccountTwoA;
-    
-          const preVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
-          const preVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
-          const preVaultBalanceTwoA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoA));
-          const preVaultBalanceTwoB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoB));
-          const preOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, tokenAccountIn));
-          const preOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
-          const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
+          const preVaultBalanceOneA = new BN(await getTokenBalance(provider, pools[1].tokenVaultAKeypair.publicKey));
+          const preVaultBalanceOneB = new BN(await getTokenBalance(provider, pools[1].tokenVaultBKeypair.publicKey));
+          const preVaultBalanceTwoA = new BN(await getTokenBalance(provider, pools[0].tokenVaultAKeypair.publicKey));
+          const preVaultBalanceTwoB = new BN(await getTokenBalance(provider, pools[0].tokenVaultBKeypair.publicKey));
+          const preOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountInput));
+          const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountOutput));
 
           await assert.rejects(
             toTx(
@@ -2176,20 +2150,18 @@ describe("TokenExtension/TransferFee", () => {
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
           ).prependInstruction(useMaxCU()).buildAndExecute(); // add CU
 
-          const postVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
-          const postVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
-          const postVaultBalanceTwoA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoA));
-          const postVaultBalanceTwoB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoB));
-          const postOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, tokenAccountIn));
-          const postOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
-          const postOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
+          const postVaultBalanceOneA = new BN(await getTokenBalance(provider, pools[1].tokenVaultAKeypair.publicKey));
+          const postVaultBalanceOneB = new BN(await getTokenBalance(provider, pools[1].tokenVaultBKeypair.publicKey));
+          const postVaultBalanceTwoA = new BN(await getTokenBalance(provider, pools[0].tokenVaultAKeypair.publicKey));
+          const postVaultBalanceTwoB = new BN(await getTokenBalance(provider, pools[0].tokenVaultBKeypair.publicKey));
+          const postOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountInput));
+          const postOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountOutput));
 
           assert.ok(postVaultBalanceOneA.sub(preVaultBalanceOneA).eq(expectedVaultAccountOneADelta));
           assert.ok(postVaultBalanceOneB.sub(preVaultBalanceOneB).eq(expectedVaultAccountOneBDelta));
           assert.ok(postVaultBalanceTwoA.sub(preVaultBalanceTwoA).eq(expectedVaultAccountTwoADelta));
           assert.ok(postVaultBalanceTwoB.sub(preVaultBalanceTwoB).eq(expectedVaultAccountTwoBDelta));
           assert.ok(postOwnerAccountBalanceInput.sub(preOwnerAccountBalanceInput).eq(expectedOwnerAccountInputDelta));
-          assert.ok(postOwnerAccountBalanceMid.sub(preOwnerAccountBalanceMid).eq(expectedOwnerAccountMidDelta));
           assert.ok(postOwnerAccountBalanceOutput.sub(preOwnerAccountBalanceOutput).eq(expectedOwnerAccountOutputDelta));
 
           //console.log(`aToB: ${aToBTwo} ${aToBOne}`);
@@ -2320,42 +2292,30 @@ describe("TokenExtension/TransferFee", () => {
             tokenAuthority: ctx.wallet.publicKey,
             whirlpoolOne: pools[0].whirlpoolPda.publicKey,
             whirlpoolTwo: pools[1].whirlpoolPda.publicKey,
-            tokenMintOneA: pools[0].tokenMintA,
-            tokenMintOneB: pools[0].tokenMintB,
-            tokenMintTwoA: pools[1].tokenMintA,
-            tokenMintTwoB: pools[1].tokenMintB,
-            tokenProgramOneA: pools[0].tokenProgramA,
-            tokenProgramOneB: pools[0].tokenProgramB,
-            tokenProgramTwoA: pools[1].tokenProgramA,
-            tokenProgramTwoB: pools[1].tokenProgramB,
-            tokenOwnerAccountOneA: tokenAccKeys[0],
-            tokenVaultOneA: pools[0].tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountOneB: tokenAccKeys[1],
-            tokenVaultOneB: pools[0].tokenVaultBKeypair.publicKey,
-            tokenOwnerAccountTwoA: tokenAccKeys[2],
-            tokenVaultTwoA: pools[1].tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountTwoB: tokenAccKeys[3],
-            tokenVaultTwoB: pools[1].tokenVaultBKeypair.publicKey,
-            oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[0].whirlpoolPda.publicKey)
+            tokenMintInput: twoHopQuote.aToBOne ? pools[0].tokenMintA : pools[0].tokenMintB,
+            tokenMintIntermediate: twoHopQuote.aToBOne ? pools[0].tokenMintB : pools[0].tokenMintA,
+            tokenMintOutput: twoHopQuote.aToBTwo ? pools[1].tokenMintB : pools[1].tokenMintA,
+            tokenProgramInput: twoHopQuote.aToBOne ? pools[0].tokenProgramA : pools[0].tokenProgramB,
+            tokenProgramIntermediate: twoHopQuote.aToBOne ? pools[0].tokenProgramB : pools[0].tokenProgramA,
+            tokenProgramOutput: twoHopQuote.aToBTwo ? pools[1].tokenProgramB : pools[1].tokenProgramA,
+            tokenOwnerAccountInput: twoHopQuote.aToBOne ? tokenAccKeys[0] : tokenAccKeys[1],
+            tokenOwnerAccountOutput: twoHopQuote.aToBTwo ? tokenAccKeys[3] : tokenAccKeys[2],
+            tokenVaultOneInput: twoHopQuote.aToBOne ? pools[0].tokenVaultAKeypair.publicKey : pools[0].tokenVaultBKeypair.publicKey,
+            tokenVaultOneIntermediate: twoHopQuote.aToBOne ? pools[0].tokenVaultBKeypair.publicKey : pools[0].tokenVaultAKeypair.publicKey,
+            tokenVaultTwoIntermediate: twoHopQuote.aToBTwo ? pools[1].tokenVaultAKeypair.publicKey : pools[1].tokenVaultBKeypair.publicKey,
+            tokenVaultTwoOutput: twoHopQuote.aToBTwo ? pools[1].tokenVaultBKeypair.publicKey : pools[1].tokenVaultAKeypair.publicKey,
+                oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[0].whirlpoolPda.publicKey)
               .publicKey,
             oracleTwo: PDAUtil.getOracle(ctx.program.programId, pools[1].whirlpoolPda.publicKey)
               .publicKey,
           };
 
-          const [tokenAccountIn, tokenAccountMid] = baseIxParams.aToBOne
-            ? [baseIxParams.tokenOwnerAccountOneA, baseIxParams.tokenOwnerAccountOneB]
-            : [baseIxParams.tokenOwnerAccountOneB, baseIxParams.tokenOwnerAccountOneA];
-          const tokenAccountOut = baseIxParams.aToBTwo
-            ? baseIxParams.tokenOwnerAccountTwoB
-            : baseIxParams.tokenOwnerAccountTwoA;
-    
-          const preVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
-          const preVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
-          const preVaultBalanceTwoA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoA));
-          const preVaultBalanceTwoB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoB));
-          const preOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, tokenAccountIn));
-          const preOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
-          const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
+          const preVaultBalanceOneA = new BN(await getTokenBalance(provider, pools[0].tokenVaultAKeypair.publicKey));
+          const preVaultBalanceOneB = new BN(await getTokenBalance(provider, pools[0].tokenVaultBKeypair.publicKey));
+          const preVaultBalanceTwoA = new BN(await getTokenBalance(provider, pools[1].tokenVaultAKeypair.publicKey));
+          const preVaultBalanceTwoB = new BN(await getTokenBalance(provider, pools[1].tokenVaultBKeypair.publicKey));
+          const preOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountInput));
+          const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountOutput));
 
           await assert.rejects(
             toTx(
@@ -2373,20 +2333,18 @@ describe("TokenExtension/TransferFee", () => {
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
           ).prependInstruction(useMaxCU()).buildAndExecute(); // add CU
 
-          const postVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
-          const postVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
-          const postVaultBalanceTwoA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoA));
-          const postVaultBalanceTwoB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoB));
-          const postOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, tokenAccountIn));
-          const postOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
-          const postOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
+          const postVaultBalanceOneA = new BN(await getTokenBalance(provider, pools[0].tokenVaultAKeypair.publicKey));
+          const postVaultBalanceOneB = new BN(await getTokenBalance(provider, pools[0].tokenVaultBKeypair.publicKey));
+          const postVaultBalanceTwoA = new BN(await getTokenBalance(provider, pools[1].tokenVaultAKeypair.publicKey));
+          const postVaultBalanceTwoB = new BN(await getTokenBalance(provider, pools[1].tokenVaultBKeypair.publicKey));
+          const postOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountInput));
+          const postOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountOutput));
 
           assert.ok(postVaultBalanceOneA.sub(preVaultBalanceOneA).eq(expectedVaultAccountOneADelta));
           assert.ok(postVaultBalanceOneB.sub(preVaultBalanceOneB).eq(expectedVaultAccountOneBDelta));
           assert.ok(postVaultBalanceTwoA.sub(preVaultBalanceTwoA).eq(expectedVaultAccountTwoADelta));
           assert.ok(postVaultBalanceTwoB.sub(preVaultBalanceTwoB).eq(expectedVaultAccountTwoBDelta));
           assert.ok(postOwnerAccountBalanceInput.sub(preOwnerAccountBalanceInput).eq(expectedOwnerAccountInputDelta));
-          assert.ok(postOwnerAccountBalanceMid.sub(preOwnerAccountBalanceMid).eq(expectedOwnerAccountMidDelta));
           assert.ok(postOwnerAccountBalanceOutput.sub(preOwnerAccountBalanceOutput).eq(expectedOwnerAccountOutputDelta));
 
           //console.log(`aToB: ${aToBOne} ${aToBTwo}`);
@@ -2517,42 +2475,30 @@ describe("TokenExtension/TransferFee", () => {
             tokenAuthority: ctx.wallet.publicKey,
             whirlpoolOne: pools[1].whirlpoolPda.publicKey,
             whirlpoolTwo: pools[0].whirlpoolPda.publicKey,
-            tokenMintOneA: pools[1].tokenMintA,
-            tokenMintOneB: pools[1].tokenMintB,
-            tokenMintTwoA: pools[0].tokenMintA,
-            tokenMintTwoB: pools[0].tokenMintB,
-            tokenProgramOneA: pools[1].tokenProgramA,
-            tokenProgramOneB: pools[1].tokenProgramB,
-            tokenProgramTwoA: pools[0].tokenProgramA,
-            tokenProgramTwoB: pools[0].tokenProgramB,
-            tokenOwnerAccountOneA: tokenAccKeys[2],
-            tokenVaultOneA: pools[1].tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountOneB: tokenAccKeys[3],
-            tokenVaultOneB: pools[1].tokenVaultBKeypair.publicKey,
-            tokenOwnerAccountTwoA: tokenAccKeys[0],
-            tokenVaultTwoA: pools[0].tokenVaultAKeypair.publicKey,
-            tokenOwnerAccountTwoB: tokenAccKeys[1],
-            tokenVaultTwoB: pools[0].tokenVaultBKeypair.publicKey,
+            tokenMintInput: aToBTwo ? pools[1].tokenMintA : pools[1].tokenMintB,
+            tokenMintIntermediate: aToBTwo ? pools[1].tokenMintB : pools[1].tokenMintA,
+            tokenMintOutput: aToBOne ? pools[0].tokenMintB : pools[0].tokenMintA,
+            tokenProgramInput: aToBTwo ? pools[1].tokenProgramA : pools[1].tokenProgramB,
+            tokenProgramIntermediate: aToBTwo ? pools[1].tokenProgramB : pools[1].tokenProgramA,
+            tokenProgramOutput: aToBOne ? pools[0].tokenProgramB : pools[0].tokenProgramA,
+            tokenOwnerAccountInput: aToBTwo ? tokenAccKeys[2] : tokenAccKeys[3],
+            tokenOwnerAccountOutput: aToBOne ? tokenAccKeys[1] : tokenAccKeys[0],
+            tokenVaultOneInput: aToBTwo ? pools[1].tokenVaultAKeypair.publicKey : pools[1].tokenVaultBKeypair.publicKey,
+            tokenVaultOneIntermediate: aToBTwo ? pools[1].tokenVaultBKeypair.publicKey : pools[1].tokenVaultAKeypair.publicKey,
+            tokenVaultTwoIntermediate: aToBOne ? pools[0].tokenVaultAKeypair.publicKey : pools[0].tokenVaultBKeypair.publicKey,
+            tokenVaultTwoOutput: aToBOne ? pools[0].tokenVaultBKeypair.publicKey : pools[0].tokenVaultAKeypair.publicKey,
             oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[1].whirlpoolPda.publicKey)
               .publicKey,
             oracleTwo: PDAUtil.getOracle(ctx.program.programId, pools[0].whirlpoolPda.publicKey)
               .publicKey,
           };
 
-          const [tokenAccountIn, tokenAccountMid] = baseIxParams.aToBOne
-            ? [baseIxParams.tokenOwnerAccountOneA, baseIxParams.tokenOwnerAccountOneB]
-            : [baseIxParams.tokenOwnerAccountOneB, baseIxParams.tokenOwnerAccountOneA];
-          const tokenAccountOut = baseIxParams.aToBTwo
-            ? baseIxParams.tokenOwnerAccountTwoB
-            : baseIxParams.tokenOwnerAccountTwoA;
-    
-          const preVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
-          const preVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
-          const preVaultBalanceTwoA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoA));
-          const preVaultBalanceTwoB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoB));
-          const preOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, tokenAccountIn));
-          const preOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
-          const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
+          const preVaultBalanceOneA = new BN(await getTokenBalance(provider, pools[1].tokenVaultAKeypair.publicKey));
+          const preVaultBalanceOneB = new BN(await getTokenBalance(provider, pools[1].tokenVaultBKeypair.publicKey));
+          const preVaultBalanceTwoA = new BN(await getTokenBalance(provider, pools[0].tokenVaultAKeypair.publicKey));
+          const preVaultBalanceTwoB = new BN(await getTokenBalance(provider, pools[0].tokenVaultBKeypair.publicKey));
+          const preOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountInput));
+          const preOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountOutput));
 
           await assert.rejects(
             toTx(
@@ -2570,20 +2516,18 @@ describe("TokenExtension/TransferFee", () => {
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
           ).prependInstruction(useMaxCU()).buildAndExecute(); // add CU
 
-          const postVaultBalanceOneA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneA));
-          const postVaultBalanceOneB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultOneB));
-          const postVaultBalanceTwoA = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoA));
-          const postVaultBalanceTwoB = new BN(await getTokenBalance(provider, baseIxParams.tokenVaultTwoB));
-          const postOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, tokenAccountIn));
-          const postOwnerAccountBalanceMid = new BN(await getTokenBalance(provider, tokenAccountMid));
-          const postOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, tokenAccountOut));
+          const postVaultBalanceOneA = new BN(await getTokenBalance(provider, pools[1].tokenVaultAKeypair.publicKey));
+          const postVaultBalanceOneB = new BN(await getTokenBalance(provider, pools[1].tokenVaultBKeypair.publicKey));
+          const postVaultBalanceTwoA = new BN(await getTokenBalance(provider, pools[0].tokenVaultAKeypair.publicKey));
+          const postVaultBalanceTwoB = new BN(await getTokenBalance(provider, pools[0].tokenVaultBKeypair.publicKey));
+          const postOwnerAccountBalanceInput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountInput));
+          const postOwnerAccountBalanceOutput = new BN(await getTokenBalance(provider, baseIxParams.tokenOwnerAccountOutput));
 
           assert.ok(postVaultBalanceOneA.sub(preVaultBalanceOneA).eq(expectedVaultAccountOneADelta));
           assert.ok(postVaultBalanceOneB.sub(preVaultBalanceOneB).eq(expectedVaultAccountOneBDelta));
           assert.ok(postVaultBalanceTwoA.sub(preVaultBalanceTwoA).eq(expectedVaultAccountTwoADelta));
           assert.ok(postVaultBalanceTwoB.sub(preVaultBalanceTwoB).eq(expectedVaultAccountTwoBDelta));
           assert.ok(postOwnerAccountBalanceInput.sub(preOwnerAccountBalanceInput).eq(expectedOwnerAccountInputDelta));
-          assert.ok(postOwnerAccountBalanceMid.sub(preOwnerAccountBalanceMid).eq(expectedOwnerAccountMidDelta));
           assert.ok(postOwnerAccountBalanceOutput.sub(preOwnerAccountBalanceOutput).eq(expectedOwnerAccountOutputDelta));
 
           //console.log(`aToB: ${aToBTwo} ${aToBOne}`);

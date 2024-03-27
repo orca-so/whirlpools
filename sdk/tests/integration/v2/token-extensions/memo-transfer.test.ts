@@ -1114,7 +1114,6 @@ describe("TokenExtension/MemoTransfer", () => {
     let baseIxParams: TwoHopSwapV2Params;
     let tokenAccountIn: PublicKey;
     let tokenAccountOut: PublicKey;
-    let tokenAccountMid: PublicKey;
 
     beforeEach(async () => {
       aqConfig = getDefaultAquariumV2();
@@ -1219,35 +1218,26 @@ describe("TokenExtension/MemoTransfer", () => {
         tokenAuthority: ctx.wallet.publicKey,
         whirlpoolOne: pools[0].whirlpoolPda.publicKey,
         whirlpoolTwo: pools[1].whirlpoolPda.publicKey,
-        tokenMintOneA: pools[0].tokenMintA,
-        tokenMintOneB: pools[0].tokenMintB,
-        tokenMintTwoA: pools[1].tokenMintA,
-        tokenMintTwoB: pools[1].tokenMintB,
-        tokenProgramOneA: pools[0].tokenProgramA,
-        tokenProgramOneB: pools[0].tokenProgramB,
-        tokenProgramTwoA: pools[1].tokenProgramA,
-        tokenProgramTwoB: pools[1].tokenProgramB,
-        tokenOwnerAccountOneA: tokenAccKeys[0],
-        tokenVaultOneA: pools[0].tokenVaultAKeypair.publicKey,
-        tokenOwnerAccountOneB: tokenAccKeys[1],
-        tokenVaultOneB: pools[0].tokenVaultBKeypair.publicKey,
-        tokenOwnerAccountTwoA: tokenAccKeys[2],
-        tokenVaultTwoA: pools[1].tokenVaultAKeypair.publicKey,
-        tokenOwnerAccountTwoB: tokenAccKeys[3],
-        tokenVaultTwoB: pools[1].tokenVaultBKeypair.publicKey,
+        tokenMintInput: twoHopQuote.aToBOne ? pools[0].tokenMintA : pools[0].tokenMintB,
+        tokenMintIntermediate: twoHopQuote.aToBOne ? pools[0].tokenMintB : pools[0].tokenMintA,
+        tokenMintOutput: twoHopQuote.aToBTwo ? pools[1].tokenMintB : pools[1].tokenMintA,
+        tokenProgramInput: twoHopQuote.aToBOne ? pools[0].tokenProgramA : pools[0].tokenProgramB,
+        tokenProgramIntermediate: twoHopQuote.aToBOne ? pools[0].tokenProgramB : pools[0].tokenProgramA,
+        tokenProgramOutput: twoHopQuote.aToBTwo ? pools[1].tokenProgramB : pools[1].tokenProgramA,
+        tokenOwnerAccountInput: twoHopQuote.aToBOne ? tokenAccKeys[0] : tokenAccKeys[1],
+        tokenOwnerAccountOutput: twoHopQuote.aToBTwo ? tokenAccKeys[3] : tokenAccKeys[2],
+        tokenVaultOneInput: twoHopQuote.aToBOne ? pools[0].tokenVaultAKeypair.publicKey : pools[0].tokenVaultBKeypair.publicKey,
+        tokenVaultOneIntermediate: twoHopQuote.aToBOne ? pools[0].tokenVaultBKeypair.publicKey : pools[0].tokenVaultAKeypair.publicKey,
+        tokenVaultTwoIntermediate: twoHopQuote.aToBTwo ? pools[1].tokenVaultAKeypair.publicKey : pools[1].tokenVaultBKeypair.publicKey,
+        tokenVaultTwoOutput: twoHopQuote.aToBTwo ? pools[1].tokenVaultBKeypair.publicKey : pools[1].tokenVaultAKeypair.publicKey,
         oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[0].whirlpoolPda.publicKey)
           .publicKey,
         oracleTwo: PDAUtil.getOracle(ctx.program.programId, pools[1].whirlpoolPda.publicKey)
           .publicKey,
       };
 
-      [tokenAccountIn, tokenAccountMid] = baseIxParams.aToBOne
-        ? [baseIxParams.tokenOwnerAccountOneA, baseIxParams.tokenOwnerAccountOneB]
-        : [baseIxParams.tokenOwnerAccountOneB, baseIxParams.tokenOwnerAccountOneA];
-
-      tokenAccountOut = baseIxParams.aToBTwo
-        ? baseIxParams.tokenOwnerAccountTwoB
-        : baseIxParams.tokenOwnerAccountTwoA;
+      tokenAccountIn = baseIxParams.tokenOwnerAccountInput;
+      tokenAccountOut = baseIxParams.tokenOwnerAccountOutput;
     });
 
     it("two_hop_swap_v2: without memo", async () => {
@@ -1271,10 +1261,8 @@ describe("TokenExtension/MemoTransfer", () => {
     it("two_hop_swap_v2: with memo", async () => {
       await enableRequiredMemoTransfers(provider, tokenAccountIn);
       await enableRequiredMemoTransfers(provider, tokenAccountOut);
-      await enableRequiredMemoTransfers(provider, tokenAccountMid);
       assert.ok(await isRequiredMemoTransfersEnabled(provider, tokenAccountIn));
       assert.ok(await isRequiredMemoTransfersEnabled(provider, tokenAccountOut));
-      assert.ok(await isRequiredMemoTransfersEnabled(provider, tokenAccountMid));
 
       const preBalanceIn = new BN(await getTokenBalance(provider, tokenAccountIn));
       const preBalanceOut = new BN(await getTokenBalance(provider, tokenAccountOut));
@@ -1296,17 +1284,13 @@ describe("TokenExtension/MemoTransfer", () => {
     it("two_hop_swap_v2: without memo (has extension, but disabled", async () => {
       await enableRequiredMemoTransfers(provider, tokenAccountIn);
       await enableRequiredMemoTransfers(provider, tokenAccountOut);
-      await enableRequiredMemoTransfers(provider, tokenAccountMid);
       assert.ok(await isRequiredMemoTransfersEnabled(provider, tokenAccountIn));
       assert.ok(await isRequiredMemoTransfersEnabled(provider, tokenAccountOut));
-      assert.ok(await isRequiredMemoTransfersEnabled(provider, tokenAccountMid));
 
       await disableRequiredMemoTransfers(provider, tokenAccountIn);
       await disableRequiredMemoTransfers(provider, tokenAccountOut);
-      await disableRequiredMemoTransfers(provider, tokenAccountMid);
       assert.ok(!(await isRequiredMemoTransfersEnabled(provider, tokenAccountIn)));
       assert.ok(!(await isRequiredMemoTransfersEnabled(provider, tokenAccountOut)));
-      assert.ok(!(await isRequiredMemoTransfersEnabled(provider, tokenAccountMid)));
 
       const preBalanceIn = new BN(await getTokenBalance(provider, tokenAccountIn));
       const preBalanceOut = new BN(await getTokenBalance(provider, tokenAccountOut));

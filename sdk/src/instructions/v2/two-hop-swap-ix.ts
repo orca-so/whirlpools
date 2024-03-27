@@ -12,26 +12,18 @@ import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/rem
  * @category Instruction Types
  * @param whirlpoolOne - PublicKey for the whirlpool that the swap-one will occur on
  * @param whirlpoolTwo - PublicKey for the whirlpool that the swap-two will occur on
- * @param tokenMintOneA - PublicKey for the token A mint for whirlpoolOne.
- * @param tokenMintOneB - PublicKey for the token B mint for whirlpoolOne.
- * @param tokenMintTwoA - PublicKey for the token A mint for whirlpoolTwo.
- * @param tokenMintTwoB - PublicKey for the token B mint for whirlpoolTwo.
- * @param tokenOwnerAccountOneA - PublicKey for the associated token account for tokenA in whirlpoolOne in the collection wallet
- * @param tokenOwnerAccountOneB - PublicKey for the associated token account for tokenB in whirlpoolOne in the collection wallet
- * @param tokenOwnerAccountTwoA - PublicKey for the associated token account for tokenA in whirlpoolTwo in the collection wallet
- * @param tokenOwnerAccountTwoB - PublicKey for the associated token account for tokenB in whirlpoolTwo in the collection wallet
- * @param tokenVaultOneA - PublicKey for the tokenA vault for whirlpoolOne.
- * @param tokenVaultOneB - PublicKey for the tokenB vault for whirlpoolOne.
- * @param tokenVaultTwoA - PublicKey for the tokenA vault for whirlpoolTwo.
- * @param tokenVaultTwoB - PublicKey for the tokenB vault for whirlpoolTwo.
- * @param tokenTransferHookAccountsOneA - Optional array of token transfer hook accounts for token A in whirlpoolOne.
- * @param tokenTransferHookAccountsOneB - Optional array of token transfer hook accounts for token B in whirlpoolOne.
- * @param tokenTransferHookAccountsTwoA - Optional array of token transfer hook accounts for token A in whirlpoolTwo.
- * @param tokenTransferHookAccountsTwoB - Optional array of token transfer hook accounts for token B in whirlpoolTwo.
- * @param tokenProgramOneA - PublicKey for the token program for token A for whirlpoolOne.
- * @param tokenProgramOneB - PublicKey for the token program for token B for whirlpoolOne.
- * @param tokenProgramTwoA - PublicKey for the token program for token A for whirlpoolTwo.
- * @param tokenProgramTwoB - PublicKey for the token program for token B for whirlpoolTwo.
+ * @param tokenMintInput - PublicKey for the input token mint.
+ * @param tokenMintIntermediate - PublicKey for the intermediate token mint.
+ * @param tokenMintOutput - PublicKey for the output token mint.
+ * @param tokenOwnerAccountInput - PublicKey for the input token owner account.
+ * @param tokenOwnerAccountOutput - PublicKey for the output token owner account.
+ * @param tokenVaultOneInput - PublicKey for the input token vault of whirlpoolOne.
+ * @param tokenVaultOneIntermediate - PublicKey for the intermediate token vault of whirlpoolOne.
+ * @param tokenVaultTwoIntermediate - PublicKey for the intermediate token vault of whirlpoolTwo.
+ * @param tokenVaultTwoOutput - PublicKey for the output token vault of whirlpoolTwo.
+ * @param tokenTransferHookAccountsInput - AccountMeta[] for the input token transfer hook accounts.
+ * @param tokenTransferHookAccountsIntermediate - AccountMeta[] for the intermediate token transfer hook accounts.
+ * @param tokenTransferHookAccountsOutput - AccountMeta[] for the output token transfer hook accounts.
  * @param oracleOne - PublicKey for the oracle account for this whirlpoolOne.
  * @param oracleTwo - PublicKey for the oracle account for this whirlpoolTwo.
  * @param tokenAuthority - authority to withdraw tokens from the input token account
@@ -40,26 +32,21 @@ import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/rem
 export type TwoHopSwapV2Params = TwoHopSwapV2Input & {
   whirlpoolOne: PublicKey;
   whirlpoolTwo: PublicKey;
-  tokenMintOneA: PublicKey;
-  tokenMintOneB: PublicKey;
-  tokenMintTwoA: PublicKey;
-  tokenMintTwoB: PublicKey;
-  tokenOwnerAccountOneA: PublicKey;
-  tokenOwnerAccountOneB: PublicKey;
-  tokenOwnerAccountTwoA: PublicKey;
-  tokenOwnerAccountTwoB: PublicKey;
-  tokenVaultOneA: PublicKey;
-  tokenVaultOneB: PublicKey;
-  tokenVaultTwoA: PublicKey;
-  tokenVaultTwoB: PublicKey;
-  tokenTransferHookAccountsOneA?: AccountMeta[];
-  tokenTransferHookAccountsOneB?: AccountMeta[];
-  tokenTransferHookAccountsTwoA?: AccountMeta[];
-  tokenTransferHookAccountsTwoB?: AccountMeta[];
-  tokenProgramOneA: PublicKey;
-  tokenProgramOneB: PublicKey;
-  tokenProgramTwoA: PublicKey;
-  tokenProgramTwoB: PublicKey;
+  tokenMintInput: PublicKey;
+  tokenMintIntermediate: PublicKey;
+  tokenMintOutput: PublicKey;
+  tokenOwnerAccountInput: PublicKey;
+  tokenOwnerAccountOutput: PublicKey;
+  tokenVaultOneInput: PublicKey;
+  tokenVaultOneIntermediate: PublicKey;
+  tokenVaultTwoIntermediate: PublicKey;
+  tokenVaultTwoOutput: PublicKey;
+  tokenTransferHookAccountsInput?: AccountMeta[];
+  tokenTransferHookAccountsIntermediate?: AccountMeta[];
+  tokenTransferHookAccountsOutput?: AccountMeta[];
+  tokenProgramInput: PublicKey;
+  tokenProgramIntermediate: PublicKey;
+  tokenProgramOutput: PublicKey;
   oracleOne: PublicKey;
   oracleTwo: PublicKey;
   tokenAuthority: PublicKey;
@@ -132,27 +119,22 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
     sqrtPriceLimitTwo,
     whirlpoolOne,
     whirlpoolTwo,
+    tokenMintInput,
+    tokenMintIntermediate,
+    tokenMintOutput,
+    tokenProgramInput,
+    tokenProgramIntermediate,
+    tokenProgramOutput,
+    tokenVaultOneInput,
+    tokenVaultOneIntermediate,
+    tokenVaultTwoIntermediate,
+    tokenVaultTwoOutput,
     tokenAuthority,
-    tokenMintOneA,
-    tokenMintOneB,
-    tokenMintTwoA,
-    tokenMintTwoB,
-    tokenOwnerAccountOneA,
-    tokenVaultOneA,
-    tokenOwnerAccountOneB,
-    tokenVaultOneB,
-    tokenOwnerAccountTwoA,
-    tokenVaultTwoA,
-    tokenOwnerAccountTwoB,
-    tokenVaultTwoB,
-    tokenTransferHookAccountsOneA,
-    tokenTransferHookAccountsOneB,
-    tokenTransferHookAccountsTwoA,
-    tokenTransferHookAccountsTwoB,
-    tokenProgramOneA,
-    tokenProgramOneB,
-    tokenProgramTwoA,
-    tokenProgramTwoB,
+    tokenTransferHookAccountsInput,
+    tokenTransferHookAccountsIntermediate,
+    tokenTransferHookAccountsOutput,
+    tokenOwnerAccountInput,
+    tokenOwnerAccountOutput,
     tickArrayOne0,
     tickArrayOne1,
     tickArrayOne2,
@@ -164,10 +146,9 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
   } = params;
 
   const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
-    .addSlice(RemainingAccountsType.TransferHookOneA, tokenTransferHookAccountsOneA)
-    .addSlice(RemainingAccountsType.TransferHookOneB, tokenTransferHookAccountsOneB)
-    .addSlice(RemainingAccountsType.TransferHookTwoA, tokenTransferHookAccountsTwoA)
-    .addSlice(RemainingAccountsType.TransferHookTwoB, tokenTransferHookAccountsTwoB)
+    .addSlice(RemainingAccountsType.TransferHookInput, tokenTransferHookAccountsInput)
+    .addSlice(RemainingAccountsType.TransferHookIntermediate, tokenTransferHookAccountsIntermediate)
+    .addSlice(RemainingAccountsType.TransferHookOutput, tokenTransferHookAccountsOutput)
     .build();
 
   const ix = program.instruction.twoHopSwapV2(
@@ -181,26 +162,21 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
     remainingAccountsInfo,
     {
       accounts: {
-        tokenProgramOneA,
-        tokenProgramOneB,
-        tokenProgramTwoA,
-        tokenProgramTwoB,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        tokenAuthority,
         whirlpoolOne,
         whirlpoolTwo,
-        tokenMintOneA,
-        tokenMintOneB,
-        tokenMintTwoA,
-        tokenMintTwoB,
-        tokenOwnerAccountOneA,
-        tokenVaultOneA,
-        tokenOwnerAccountOneB,
-        tokenVaultOneB,
-        tokenOwnerAccountTwoA,
-        tokenVaultTwoA,
-        tokenOwnerAccountTwoB,
-        tokenVaultTwoB,
+        tokenMintInput,
+        tokenMintIntermediate,
+        tokenMintOutput,
+        tokenProgramInput,
+        tokenProgramIntermediate,
+        tokenProgramOutput,
+        tokenOwnerAccountInput,
+        tokenVaultOneInput,
+        tokenVaultOneIntermediate,
+        tokenVaultTwoIntermediate,
+        tokenVaultTwoOutput,
+        tokenOwnerAccountOutput,
+        tokenAuthority,
         tickArrayOne0,
         tickArrayOne1,
         tickArrayOne2,
@@ -209,6 +185,7 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
         tickArrayTwo2,
         oracleOne,
         oracleTwo,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
       },
       remainingAccounts,
     }

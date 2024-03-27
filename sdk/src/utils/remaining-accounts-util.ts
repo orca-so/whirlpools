@@ -4,10 +4,9 @@ export enum RemainingAccountsType {
   TransferHookA = "transferHookA",
   TransferHookB = "transferHookB",
   TransferHookReward = "transferHookReward",
-  TransferHookOneA = "transferHookOneA",
-  TransferHookOneB = "transferHookOneB",
-  TransferHookTwoA = "transferHookTwoA",
-  TransferHookTwoB = "transferHookTwoB",
+  TransferHookInput = "transferHookInput",
+  TransferHookIntermediate = "transferHookIntermediate",
+  TransferHookOutput = "transferHookOutput",
   //TickArray = "tickArray",
   //TickArrayOne = "tickArrayOne",
   //TickArrayTwo = "tickArrayTwo",
@@ -17,10 +16,9 @@ type RemainingAccountsAnchorType =
   { transferHookA: {} } |
   { transferHookB: {} } |
   { transferHookReward: {} } |
-  { transferHookOneA: {} } |
-  { transferHookOneB: {} } |
-  { transferHookTwoA: {} } |
-  { transferHookTwoB: {} };
+  { transferHookInput: {} } |
+  { transferHookIntermediate: {} } |
+  { transferHookOutput: {} }
   //{ tickArray: {} } |
   //{ tickArrayOne: {} } |
   //{ tickArrayTwo: {} } |

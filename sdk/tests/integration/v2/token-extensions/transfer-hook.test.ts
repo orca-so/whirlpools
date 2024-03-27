@@ -1576,10 +1576,9 @@ describe("TokenExtension/TransferHook", () => {
     let tokenMintIn: PublicKey;
     let tokenMintOut: PublicKey;
     let tokenMintMid: PublicKey;
-    let tokenTransferHookAccountsOneA: AccountMeta[] | undefined;
-    let tokenTransferHookAccountsOneB: AccountMeta[] | undefined;
-    let tokenTransferHookAccountsTwoA: AccountMeta[] | undefined;
-    let tokenTransferHookAccountsTwoB: AccountMeta[] | undefined;
+    let tokenTransferHookAccountsInput: AccountMeta[] | undefined;
+    let tokenTransferHookAccountsMid: AccountMeta[] | undefined;
+    let tokenTransferHookAccountsOutput: AccountMeta[] | undefined;
 
     beforeEach(async () => {
       aqConfig = getDefaultAquariumV2();
@@ -1684,22 +1683,18 @@ describe("TokenExtension/TransferHook", () => {
         tokenAuthority: ctx.wallet.publicKey,
         whirlpoolOne: pools[0].whirlpoolPda.publicKey,
         whirlpoolTwo: pools[1].whirlpoolPda.publicKey,
-        tokenMintOneA: pools[0].tokenMintA,
-        tokenMintOneB: pools[0].tokenMintB,
-        tokenMintTwoA: pools[1].tokenMintA,
-        tokenMintTwoB: pools[1].tokenMintB,
-        tokenProgramOneA: pools[0].tokenProgramA,
-        tokenProgramOneB: pools[0].tokenProgramB,
-        tokenProgramTwoA: pools[1].tokenProgramA,
-        tokenProgramTwoB: pools[1].tokenProgramB,
-        tokenOwnerAccountOneA: tokenAccKeys[0],
-        tokenVaultOneA: pools[0].tokenVaultAKeypair.publicKey,
-        tokenOwnerAccountOneB: tokenAccKeys[1],
-        tokenVaultOneB: pools[0].tokenVaultBKeypair.publicKey,
-        tokenOwnerAccountTwoA: tokenAccKeys[2],
-        tokenVaultTwoA: pools[1].tokenVaultAKeypair.publicKey,
-        tokenOwnerAccountTwoB: tokenAccKeys[3],
-        tokenVaultTwoB: pools[1].tokenVaultBKeypair.publicKey,
+        tokenMintInput: twoHopQuote.aToBOne ? pools[0].tokenMintA : pools[0].tokenMintB,
+        tokenMintIntermediate: twoHopQuote.aToBOne ? pools[0].tokenMintB : pools[0].tokenMintA,
+        tokenMintOutput: twoHopQuote.aToBTwo ? pools[1].tokenMintB : pools[1].tokenMintA,
+        tokenProgramInput: twoHopQuote.aToBOne ? pools[0].tokenProgramA : pools[0].tokenProgramB,
+        tokenProgramIntermediate: twoHopQuote.aToBOne ? pools[0].tokenProgramB : pools[0].tokenProgramA,
+        tokenProgramOutput: twoHopQuote.aToBTwo ? pools[1].tokenProgramB : pools[1].tokenProgramA,
+        tokenOwnerAccountInput: twoHopQuote.aToBOne ? tokenAccKeys[0] : tokenAccKeys[1],
+        tokenOwnerAccountOutput: twoHopQuote.aToBTwo ? tokenAccKeys[3] : tokenAccKeys[2],
+        tokenVaultOneInput: twoHopQuote.aToBOne ? pools[0].tokenVaultAKeypair.publicKey : pools[0].tokenVaultBKeypair.publicKey,
+        tokenVaultOneIntermediate: twoHopQuote.aToBOne ? pools[0].tokenVaultBKeypair.publicKey : pools[0].tokenVaultAKeypair.publicKey,
+        tokenVaultTwoIntermediate: twoHopQuote.aToBTwo ? pools[1].tokenVaultAKeypair.publicKey : pools[1].tokenVaultBKeypair.publicKey,
+        tokenVaultTwoOutput: twoHopQuote.aToBTwo ? pools[1].tokenVaultBKeypair.publicKey : pools[1].tokenVaultAKeypair.publicKey,
         oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[0].whirlpoolPda.publicKey)
           .publicKey,
         oracleTwo: PDAUtil.getOracle(ctx.program.programId, pools[1].whirlpoolPda.publicKey)
@@ -1707,13 +1702,12 @@ describe("TokenExtension/TransferHook", () => {
       };
       
       // TransferHook
-      tokenMintIn = baseIxParams.aToBOne ? baseIxParams.tokenMintOneA : baseIxParams.tokenMintOneB;
-      tokenMintOut = baseIxParams.aToBTwo ? baseIxParams.tokenMintTwoB : baseIxParams.tokenMintTwoA;
-      tokenMintMid = baseIxParams.aToBOne ? baseIxParams.tokenMintOneB : baseIxParams.tokenMintOneA;
-      tokenTransferHookAccountsOneA = await getExtraAccountMetasForTestTransferHookProgram(provider, baseIxParams.tokenMintOneA);
-      tokenTransferHookAccountsOneB = await getExtraAccountMetasForTestTransferHookProgram(provider, baseIxParams.tokenMintOneB);
-      tokenTransferHookAccountsTwoA = await getExtraAccountMetasForTestTransferHookProgram(provider, baseIxParams.tokenMintTwoA);
-      tokenTransferHookAccountsTwoB = await getExtraAccountMetasForTestTransferHookProgram(provider, baseIxParams.tokenMintTwoB);
+      tokenMintIn = baseIxParams.tokenMintInput;
+      tokenMintOut = baseIxParams.tokenMintOutput;
+      tokenMintMid = baseIxParams.tokenMintIntermediate;
+      tokenTransferHookAccountsInput = await getExtraAccountMetasForTestTransferHookProgram(provider, baseIxParams.tokenMintInput);
+      tokenTransferHookAccountsMid = await getExtraAccountMetasForTestTransferHookProgram(provider, baseIxParams.tokenMintIntermediate);
+      tokenTransferHookAccountsOutput = await getExtraAccountMetasForTestTransferHookProgram(provider, baseIxParams.tokenMintOutput);
     });
 
     it("two_hop_swap_v2: with transfer hook", async () => {
@@ -1727,10 +1721,9 @@ describe("TokenExtension/TransferHook", () => {
           ctx.program, {
             ...baseIxParams,
             // TransferHook
-            tokenTransferHookAccountsOneA,
-            tokenTransferHookAccountsOneB,
-            tokenTransferHookAccountsTwoA,
-            tokenTransferHookAccountsTwoB,
+            tokenTransferHookAccountsInput,
+            tokenTransferHookAccountsIntermediate: tokenTransferHookAccountsMid,
+            tokenTransferHookAccountsOutput,
           }
         )
       );
@@ -1745,7 +1738,7 @@ describe("TokenExtension/TransferHook", () => {
       const postCounterMid = await getTestTransferHookCounter(provider, tokenMintMid);
       assert.equal(postCounterIn, preCounterIn + 1);
       assert.equal(postCounterOut, preCounterOut + 1);
-      assert.equal(postCounterMid, preCounterMid + 2 /* out from One, in into Two */);
+      assert.equal(postCounterMid, preCounterMid + 1 /* must be 1 (vault to vault) */);
     });
 
     it("two_hop_swap_v2: without transfer hook (has extension, but set null)", async () => {
@@ -1763,10 +1756,9 @@ describe("TokenExtension/TransferHook", () => {
           ctx.program, {
             ...baseIxParams,
             // TransferHook
-            tokenTransferHookAccountsOneA: undefined,
-            tokenTransferHookAccountsOneB: undefined,
-            tokenTransferHookAccountsTwoA: undefined,
-            tokenTransferHookAccountsTwoB: undefined,
+            tokenTransferHookAccountsInput: undefined,
+            tokenTransferHookAccountsIntermediate: undefined,
+            tokenTransferHookAccountsOutput: undefined,
           }
         )
       );
@@ -1792,7 +1784,7 @@ describe("TokenExtension/TransferHook", () => {
       assert.equal(postCounterMid, preCounterMid);
     });
 
-    it("two_hop_swap_v2: [Fail] with transfer hook, but no extra accounts provided for OneA", async () => {
+    it("two_hop_swap_v2: [Fail] with transfer hook, but no extra accounts provided for tokenInput", async () => {
       await assert.rejects(
         toTx(
           ctx,
@@ -1800,10 +1792,9 @@ describe("TokenExtension/TransferHook", () => {
             ctx.program, {
               ...baseIxParams,
               // TransferHook
-              tokenTransferHookAccountsOneA: undefined,
-              tokenTransferHookAccountsOneB,
-              tokenTransferHookAccountsTwoA,
-              tokenTransferHookAccountsTwoB,
+              tokenTransferHookAccountsInput: undefined,
+              tokenTransferHookAccountsIntermediate: tokenTransferHookAccountsMid,
+              tokenTransferHookAccountsOutput,
             }
           )
         // add Compute units (because it calls 4 external hooks)
@@ -1812,7 +1803,7 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
 
-    it("two_hop_swap_v2: [Fail] with transfer hook, but no extra accounts provided for OneB", async () => {
+    it("two_hop_swap_v2: [Fail] with transfer hook, but no extra accounts provided for tokenIntermediate", async () => {
       await assert.rejects(
         toTx(
           ctx,
@@ -1820,10 +1811,9 @@ describe("TokenExtension/TransferHook", () => {
             ctx.program, {
               ...baseIxParams,
               // TransferHook
-              tokenTransferHookAccountsOneA,
-              tokenTransferHookAccountsOneB: undefined,
-              tokenTransferHookAccountsTwoA,
-              tokenTransferHookAccountsTwoB,
+              tokenTransferHookAccountsInput,
+              tokenTransferHookAccountsIntermediate: undefined,
+              tokenTransferHookAccountsOutput,
             }
           )
         // add Compute units (because it calls 4 external hooks)
@@ -1832,7 +1822,7 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
     
-    it("two_hop_swap_v2: [Fail] with transfer hook, but no extra accounts provided for TwoA", async () => {
+    it("two_hop_swap_v2: [Fail] with transfer hook, but no extra accounts provided for tokenOutput", async () => {
       await assert.rejects(
         toTx(
           ctx,
@@ -1840,30 +1830,9 @@ describe("TokenExtension/TransferHook", () => {
             ctx.program, {
               ...baseIxParams,
               // TransferHook
-              tokenTransferHookAccountsOneA,
-              tokenTransferHookAccountsOneB,
-              tokenTransferHookAccountsTwoA: undefined,
-              tokenTransferHookAccountsTwoB,
-            }
-          )
-        // add Compute units (because it calls 4 external hooks)
-        ).prependInstruction(useMaxCU()).buildAndExecute(),
-        /0x17a2/ // NoExtraAccountsForTransferHook
-      );
-    });
-    
-    it("two_hop_swap_v2: [Fail] with transfer hook, but no extra accounts provided for TwoB", async () => {
-      await assert.rejects(
-        toTx(
-          ctx,
-          WhirlpoolIx.twoHopSwapV2Ix(
-            ctx.program, {
-              ...baseIxParams,
-              // TransferHook
-              tokenTransferHookAccountsOneA,
-              tokenTransferHookAccountsOneB,
-              tokenTransferHookAccountsTwoA,
-              tokenTransferHookAccountsTwoB: undefined,
+              tokenTransferHookAccountsInput,
+              tokenTransferHookAccountsIntermediate: tokenTransferHookAccountsMid,
+              tokenTransferHookAccountsOutput: undefined,
             }
           )
         // add Compute units (because it calls 4 external hooks)

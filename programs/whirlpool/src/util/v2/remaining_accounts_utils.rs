@@ -6,10 +6,9 @@ pub enum AccountsType {
     TransferHookA,
     TransferHookB,
     TransferHookReward,
-    TransferHookOneA,
-    TransferHookOneB,
-    TransferHookTwoA,
-    TransferHookTwoB,
+    TransferHookInput,
+    TransferHookIntermediate,
+    TransferHookOutput,
     //TickArray,
     //TickArrayOne,
     //TickArrayTwo,
@@ -31,10 +30,9 @@ pub struct ParsedRemainingAccounts<'info> {
     pub transfer_hook_a: Option<Vec<AccountInfo<'info>>>,
     pub transfer_hook_b: Option<Vec<AccountInfo<'info>>>,
     pub transfer_hook_reward: Option<Vec<AccountInfo<'info>>>,
-    pub transfer_hook_one_a: Option<Vec<AccountInfo<'info>>>,
-    pub transfer_hook_one_b: Option<Vec<AccountInfo<'info>>>,
-    pub transfer_hook_two_a: Option<Vec<AccountInfo<'info>>>,
-    pub transfer_hook_two_b: Option<Vec<AccountInfo<'info>>>,
+    pub transfer_hook_input: Option<Vec<AccountInfo<'info>>>,
+    pub transfer_hook_intermediate: Option<Vec<AccountInfo<'info>>>,
+    pub transfer_hook_output: Option<Vec<AccountInfo<'info>>>,
     //pub tick_array: Option<Vec<AccountInfo<'info>>>,
     //pub tick_array_one: Option<Vec<AccountInfo<'info>>>,
     //pub tick_array_two: Option<Vec<AccountInfo<'info>>>,
@@ -75,17 +73,14 @@ pub fn parse_remaining_accounts<'info>(
       AccountsType::TransferHookReward => {
         parsed_remaining_accounts.transfer_hook_reward = Some(accounts);
       }
-      AccountsType::TransferHookOneA => {
-        parsed_remaining_accounts.transfer_hook_one_a = Some(accounts);
+      AccountsType::TransferHookInput => {
+        parsed_remaining_accounts.transfer_hook_input = Some(accounts);
       }
-      AccountsType::TransferHookOneB => {
-        parsed_remaining_accounts.transfer_hook_one_b = Some(accounts);
+      AccountsType::TransferHookIntermediate => {
+        parsed_remaining_accounts.transfer_hook_intermediate = Some(accounts);
       }
-      AccountsType::TransferHookTwoA => {
-        parsed_remaining_accounts.transfer_hook_two_a = Some(accounts);
-      }
-      AccountsType::TransferHookTwoB => {
-        parsed_remaining_accounts.transfer_hook_two_b = Some(accounts);
+      AccountsType::TransferHookOutput => {
+        parsed_remaining_accounts.transfer_hook_output = Some(accounts);
       }
       /* 
       AccountsType::TickArray => {

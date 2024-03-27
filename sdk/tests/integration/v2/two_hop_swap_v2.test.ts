@@ -247,7 +247,7 @@ describe("two_hop_swap_v2", () => {
             const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
             baseIxParams = {
               ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+              ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
               tokenAuthority: ctx.wallet.publicKey,
             };
           });
@@ -268,7 +268,14 @@ describe("two_hop_swap_v2", () => {
             await rejectParams(
               {
                 ...baseIxParams,
-                tokenOwnerAccountOneA: baseIxParams.tokenOwnerAccountOneB,
+                tokenOwnerAccountInput: baseIxParams.tokenOwnerAccountOutput,
+              },
+              /0x7d3/ // ConstraintRaw
+            );
+            await rejectParams(
+              {
+                ...baseIxParams,
+                tokenOwnerAccountOutput: baseIxParams.tokenOwnerAccountInput,
               },
               /0x7d3/ // ConstraintRaw
             );
@@ -278,7 +285,28 @@ describe("two_hop_swap_v2", () => {
             await rejectParams(
               {
                 ...baseIxParams,
-                tokenVaultOneA: baseIxParams.tokenVaultOneB,
+                tokenVaultOneInput: baseIxParams.tokenVaultOneIntermediate,
+              },
+              /0x7dc/ // ConstraintAddress
+            );
+            await rejectParams(
+              {
+                ...baseIxParams,
+                tokenVaultOneIntermediate: baseIxParams.tokenVaultOneInput,
+              },
+              /0x7dc/ // ConstraintAddress
+            );
+            await rejectParams(
+              {
+                ...baseIxParams,
+                tokenVaultTwoIntermediate: baseIxParams.tokenVaultTwoOutput,
+              },
+              /0x7dc/ // ConstraintAddress
+            );
+            await rejectParams(
+              {
+                ...baseIxParams,
+                tokenVaultTwoOutput: baseIxParams.tokenVaultTwoIntermediate,
               },
               /0x7dc/ // ConstraintAddress
             );
@@ -450,7 +478,7 @@ describe("two_hop_swap_v2", () => {
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
               ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+              ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
               tokenAuthority: ctx.wallet.publicKey,
             })
           ).buildAndExecute();
@@ -592,7 +620,7 @@ describe("two_hop_swap_v2", () => {
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
               ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+              ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
               tokenAuthority: ctx.wallet.publicKey,
             })
           ).buildAndExecute();
@@ -708,7 +736,7 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
                 otherAmountThreshold: new BN(613309),
                 tokenAuthority: ctx.wallet.publicKey,
               })
@@ -813,7 +841,7 @@ describe("two_hop_swap_v2", () => {
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
               ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+              ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
               tokenAuthority: ctx.wallet.publicKey,
             })
           ).buildAndExecute();
@@ -929,7 +957,7 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
                 otherAmountThreshold: new BN(2),
                 tokenAuthority: ctx.wallet.publicKey,
               })
@@ -1036,7 +1064,7 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
                 tokenAuthority: ctx.wallet.publicKey,
               })
             ).buildAndExecute(),
@@ -1146,7 +1174,7 @@ describe("two_hop_swap_v2", () => {
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
               ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+              ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
               tokenAuthority: ctx.wallet.publicKey,
             })
           ).buildAndExecute();
@@ -1267,7 +1295,7 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
                 tokenAuthority: ctx.wallet.publicKey,
               })
             ).buildAndExecute(),
@@ -1354,7 +1382,7 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
                 tokenAuthority: ctx.wallet.publicKey,
               })
             ).buildAndExecute(),
@@ -1465,7 +1493,7 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
                 tokenAuthority: ctx.wallet.publicKey,
               })
             ).buildAndExecute()
@@ -1573,9 +1601,9 @@ describe("two_hop_swap_v2", () => {
           await assert.rejects(
             toTx(
               ctx,
-              WhirlpoolIx.twoHopSwapIx(ctx.program, {
+              WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
                 tokenAuthority: ctx.wallet.publicKey,
               })
             ).buildAndExecute()
@@ -1699,83 +1727,65 @@ describe("two_hop_swap_v2", () => {
         const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
         baseIxParams = {
           ...twoHopQuote,
-          ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+          ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
           tokenAuthority: ctx.wallet.publicKey,
         };
       });
 
-      describe("fails when passed token_mint_*_* does not match whirlpool's token_mint_*_*", () => {
-        it("token_mint_one_a", async () => {
+      describe("fails when passed token_mint_* does not match whirlpool's token_mint_*_*", () => {
+        it("token_mint_input", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenMintOneA: otherTokenPublicKey,
+              tokenMintInput: otherTokenPublicKey,
             },
             /0x7dc/ // ConstraintAddress
           );
         });
-        it("token_mint_one_b", async () => {
+        it("token_mint_intermediate", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenMintOneB: otherTokenPublicKey,
+              tokenMintIntermediate: otherTokenPublicKey,
             },
             /0x7dc/ // ConstraintAddress
           );
         });
-        it("token_mint_two_a", async () => {
+        it("token_mint_output", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenMintTwoA: otherTokenPublicKey,
-            },
-            /0x7dc/ // ConstraintAddress
-          );
-        });
-        it("token_mint_two_b", async () => {
-          await rejectParams(
-            {
-              ...baseIxParams,
-              tokenMintTwoB: otherTokenPublicKey,
+              tokenMintOutput: otherTokenPublicKey,
             },
             /0x7dc/ // ConstraintAddress
           );
         });
       });
 
-      describe("fails when passed token_program_*_* is not token-2022 program (token is passed)", () => {
-        it("token_program_one_a", async () => {
+      describe("fails when passed token_program_* is not token-2022 program (token is passed)", () => {
+        it("token_program_input", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenProgramOneA: TEST_TOKEN_PROGRAM_ID,
+              tokenProgramInput: TEST_TOKEN_PROGRAM_ID,
             },
             /0x7dc/ // ConstraintAddress
           );
         });
-        it("token_program_one_b", async () => {
+        it("token_program_intermediate", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenProgramOneB: TEST_TOKEN_PROGRAM_ID,
+              tokenProgramIntermediate: TEST_TOKEN_PROGRAM_ID,
             },
             /0x7dc/ // ConstraintAddress
           );
         });
-        it("token_program_two_a", async () => {
+        it("token_program_output", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenProgramTwoA: TEST_TOKEN_PROGRAM_ID,
-            },
-            /0x7dc/ // ConstraintAddress
-          );
-        });
-        it("token_program_two_b", async () => {
-          await rejectParams(
-            {
-              ...baseIxParams,
-              tokenProgramTwoB: TEST_TOKEN_PROGRAM_ID,
+              tokenProgramOutput: TEST_TOKEN_PROGRAM_ID,
             },
             /0x7dc/ // ConstraintAddress
           );
@@ -1783,38 +1793,29 @@ describe("two_hop_swap_v2", () => {
       });
 
       describe("fails when passed token_program_*_* is token_metadata", () => {
-        it("token_program_one_a", async () => {
+        it("token_program_input", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenProgramOneA: METADATA_PROGRAM_ADDRESS,
+              tokenProgramInput: METADATA_PROGRAM_ADDRESS,
             },
             /0xbc0/ // InvalidProgramId
           );
         });
-        it("token_program_two_a", async () => {
+        it("token_program_intermediate", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenProgramOneB: METADATA_PROGRAM_ADDRESS,
+              tokenProgramIntermediate: METADATA_PROGRAM_ADDRESS,
             },
             /0xbc0/ // InvalidProgramId
           );
         });
-        it("token_program_one_b", async () => {
+        it("token_program_output", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenProgramTwoA: METADATA_PROGRAM_ADDRESS,
-            },
-            /0xbc0/ // InvalidProgramId
-          );
-        });
-        it("token_program_two_b", async () => {
-          await rejectParams(
-            {
-              ...baseIxParams,
-              tokenProgramTwoB: METADATA_PROGRAM_ADDRESS,
+              tokenProgramOutput: METADATA_PROGRAM_ADDRESS,
             },
             /0xbc0/ // InvalidProgramId
           );
@@ -1964,44 +1965,35 @@ describe("two_hop_swap_v2", () => {
         const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
         baseIxParams = {
           ...twoHopQuote,
-          ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+          ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
           tokenAuthority: ctx.wallet.publicKey,
         };
       });
 
-      describe("fails when passed token_program_*_* is not token program (token-2022 is passed)", () => {
-        it("token_program_one_a", async () => {
+      describe("fails when passed token_program_* is not token program (token-2022 is passed)", () => {
+        it("token_program_input", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenProgramOneA: TEST_TOKEN_2022_PROGRAM_ID,
+              tokenProgramInput: TEST_TOKEN_2022_PROGRAM_ID,
             },
             /0x7dc/ // ConstraintAddress
           );
         });
-        it("token_program_one_b", async () => {
+        it("token_program_intermediate", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenProgramOneB: TEST_TOKEN_2022_PROGRAM_ID,
+              tokenProgramIntermediate: TEST_TOKEN_2022_PROGRAM_ID,
             },
             /0x7dc/ // ConstraintAddress
           );
         });
-        it("token_program_two_a", async () => {
+        it("token_program_output", async () => {
           await rejectParams(
             {
               ...baseIxParams,
-              tokenProgramTwoA: TEST_TOKEN_2022_PROGRAM_ID,
-            },
-            /0x7dc/ // ConstraintAddress
-          );
-        });
-        it("token_program_two_b", async () => {
-          await rejectParams(
-            {
-              ...baseIxParams,
-              tokenProgramTwoB: TEST_TOKEN_2022_PROGRAM_ID,
+              tokenProgramOutput: TEST_TOKEN_2022_PROGRAM_ID,
             },
             /0x7dc/ // ConstraintAddress
           );
@@ -2019,8 +2011,10 @@ describe("two_hop_swap_v2", () => {
 
   function getParamsFromPools(
     pools: [InitPoolV2Params, InitPoolV2Params],
+    aToBs: boolean[],
     tokenAccounts: { mint: PublicKey; account: PublicKey; tokenTrait: TokenTrait }[]
   ) {
+    const [aToBOne, aToBTwo] = aToBs;
     const tokenAccKeys = getTokenAccsForPoolsV2(pools, tokenAccounts);
 
     const whirlpoolOne = pools[0].whirlpoolPda.publicKey;
@@ -2038,24 +2032,23 @@ describe("two_hop_swap_v2", () => {
     return {
       whirlpoolOne: pools[0].whirlpoolPda.publicKey,
       whirlpoolTwo: pools[1].whirlpoolPda.publicKey,
-      tokenMintOneA,
-      tokenMintOneB,
-      tokenMintTwoA,
-      tokenMintTwoB,
-      tokenProgramOneA,
-      tokenProgramOneB,
-      tokenProgramTwoA,
-      tokenProgramTwoB,
-      tokenOwnerAccountOneA: tokenAccKeys[0],
-      tokenVaultOneA: pools[0].tokenVaultAKeypair.publicKey,
-      tokenOwnerAccountOneB: tokenAccKeys[1],
-      tokenVaultOneB: pools[0].tokenVaultBKeypair.publicKey,
-      tokenOwnerAccountTwoA: tokenAccKeys[2],
-      tokenVaultTwoA: pools[1].tokenVaultAKeypair.publicKey,
-      tokenOwnerAccountTwoB: tokenAccKeys[3],
-      tokenVaultTwoB: pools[1].tokenVaultBKeypair.publicKey,
       oracleOne,
       oracleTwo,
+      // mints
+      tokenMintInput: aToBOne ? tokenMintOneA : tokenMintOneB,
+      tokenMintIntermediate: aToBOne ? tokenMintOneB : tokenMintOneA,
+      tokenMintOutput: aToBTwo ? tokenMintTwoB : tokenMintTwoA,
+      // token programs
+      tokenProgramInput: aToBOne ? tokenProgramOneA : tokenProgramOneB,
+      tokenProgramIntermediate: aToBOne ? tokenProgramOneB : tokenProgramOneA,
+      tokenProgramOutput: aToBTwo ? tokenProgramTwoB : tokenProgramTwoA,
+      // accounts
+      tokenOwnerAccountInput: aToBOne ? tokenAccKeys[0] : tokenAccKeys[1],
+      tokenVaultOneInput: aToBOne ? pools[0].tokenVaultAKeypair.publicKey : pools[0].tokenVaultBKeypair.publicKey,
+      tokenVaultOneIntermediate: aToBOne ? pools[0].tokenVaultBKeypair.publicKey : pools[0].tokenVaultAKeypair.publicKey,
+      tokenVaultTwoIntermediate: aToBTwo ? pools[1].tokenVaultAKeypair.publicKey : pools[1].tokenVaultBKeypair.publicKey,
+      tokenVaultTwoOutput: aToBTwo ? pools[1].tokenVaultBKeypair.publicKey : pools[1].tokenVaultAKeypair.publicKey,
+      tokenOwnerAccountOutput: aToBTwo ? tokenAccKeys[3] : tokenAccKeys[2],
     };
   }
 

@@ -2,7 +2,9 @@ import *  as assert from "assert";
 import { PriceMath, increaseLiquidityQuoteByInputTokenWithParams } from "../../../../src";
 import { BN } from "bn.js";
 import { PublicKey } from "@solana/web3.js";
-import { Percentage } from "@orca-so/common-sdk";
+import { MintWithTokenProgram, Percentage } from "@orca-so/common-sdk";
+import { TEST_TOKEN_PROGRAM_ID } from "../../../utils";
+import { NO_TOKEN_EXTENSION_CONTEXT, TokenExtensionContextForPool } from "../../../../src/utils/token-extension-util";
 
 describe("edge cases", () => {
   const tokenMintA = new PublicKey("orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE");
@@ -19,6 +21,7 @@ describe("edge cases", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 0,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.isZero());
@@ -39,6 +42,7 @@ describe("edge cases", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 0,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));
@@ -61,6 +65,7 @@ describe("edge cases", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 0,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));
@@ -83,6 +88,7 @@ describe("edge cases", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 0,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));
@@ -103,6 +109,7 @@ describe("edge cases", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 64,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.isZero());
@@ -123,6 +130,7 @@ describe("edge cases", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 64,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));

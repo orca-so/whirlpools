@@ -91,7 +91,7 @@ describe("increase_liquidity_v2", () => {
           );
 
           // To check if rewardLastUpdatedTimestamp is updated
-          await sleep(1200);
+          await sleep(3000);
 
           await toTx(
             ctx,

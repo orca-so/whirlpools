@@ -16,6 +16,7 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing, sleep } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
+import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -100,18 +101,19 @@ describe("PositionImpl#collectRewards()", () => {
         position: position.getData(),
         tickLower: position.getLowerTickData(),
         tickUpper: position.getUpperTickData(),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
 
       // Check that the expectation is not zero
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(!quote[i]!.isZero());
+        assert.ok(!quote.rewardOwed[i]!.isZero());
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), quote[i]?.toString());
+        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
       }
     });
   });
@@ -169,18 +171,19 @@ describe("PositionImpl#collectRewards()", () => {
         position: position.getData(),
         tickLower: position.getLowerTickData(),
         tickUpper: position.getUpperTickData(),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
 
       // Check that the expectation is not zero
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(!quote[i]!.isZero());
+        assert.ok(!quote.rewardOwed[i]!.isZero());
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), quote[i]?.toString());
+        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
       }
     });
   });

@@ -18,6 +18,7 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing, ZERO_BN, createAssociatedTokenAccount, sleep, transferToken } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
+import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -99,7 +100,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
       position.getData().liquidity,
       Percentage.fromDecimal(new Decimal(0)),
       position,
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
     );
 
     const tx = await position.decreaseLiquidity(liquidityCollectedQuote);
@@ -156,7 +158,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
       position.getData().liquidity,
       Percentage.fromDecimal(new Decimal(0)),
       position,
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, pool.getData(), IGNORE_CACHE),
     );
 
     const feeQuote = collectFeesQuote({
@@ -164,6 +167,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       whirlpool: pool.getData(),
       tickLower: position.getLowerTickData(),
       tickUpper: position.getUpperTickData(),
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, pool.getData(), IGNORE_CACHE),
     });
     const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
     const accountA = (await ctx.fetcher.getTokenInfo(accountAPubkey, IGNORE_CACHE)) as Account;
@@ -207,13 +211,14 @@ describe("WhirlpoolImpl#closePosition()", () => {
       whirlpool: preClosePoolData,
       tickLower: position.getLowerTickData(),
       tickUpper: position.getUpperTickData(),
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, pool.getData(), IGNORE_CACHE),
       timeStampInSeconds: postClosePoolData.rewardLastUpdatedTimestamp,
     });
     for (let i = 0; i < NUM_REWARDS; i++) {
       if (!!rewards[i]) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
         const rewardTokenAccount = await ctx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), rewardQuote[i]?.toString());
+        assert.equal(rewardTokenAccount?.amount.toString(), rewardQuote.rewardOwed[i]?.toString());
       }
     }
   }

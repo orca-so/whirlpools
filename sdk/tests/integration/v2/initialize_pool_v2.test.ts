@@ -31,9 +31,10 @@ import {
   asyncAssertOwnerProgram,
   asyncAssertTokenVaultV2,
   createMintV2,
+  initializeNativeMint2022Idempotent,
 } from "../../utils/v2/token-2022";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { AccountState } from "@solana/spl-token";
+import { AccountState, NATIVE_MINT, NATIVE_MINT_2022 } from "@solana/spl-token";
 import { initFeeTier } from "../../utils/init-utils";
 
 describe("initialize_pool_v2", () => {
@@ -893,6 +894,77 @@ describe("initialize_pool_v2", () => {
       await checkSupported(params.supported, configKeypair.publicKey, tokenTarget.publicKey, tokenB.publicKey, tickSpacing, params.anchorPatch); // as TokenA
     }
 
+    async function runTestWithNativeMint(params: {
+      supported: boolean,
+      createTokenBadge: boolean,
+      isToken2022NativeMint: boolean,
+      anchorPatch?: boolean,
+    }) {
+      // We need to call this to use NATIVE_MINT_2022
+      await initializeNativeMint2022Idempotent(provider);
+
+      // create tokens
+      const nativeMint = params.isToken2022NativeMint ? NATIVE_MINT_2022 : NATIVE_MINT;
+
+      let tokenA = Keypair.generate();
+      while (PoolUtil.compareMints(tokenA.publicKey, nativeMint) >= 0) tokenA = Keypair.generate();
+      let tokenB = Keypair.generate();
+      while (PoolUtil.compareMints(nativeMint, tokenB.publicKey) >= 0) tokenB = Keypair.generate();
+
+      assert.ok(PoolUtil.orderMints(tokenA.publicKey, nativeMint)[1].toString() === nativeMint.toString());
+      assert.ok(PoolUtil.orderMints(nativeMint, tokenB.publicKey)[0].toString() === nativeMint.toString());
+
+      await createMintV2(provider, {isToken2022: false}, undefined, tokenA);
+      await createMintV2(provider, {isToken2022: false}, undefined, tokenB);
+
+      // create config and feetier
+      const configKeypair = Keypair.generate();
+      await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, {
+        collectProtocolFeesAuthority: provider.wallet.publicKey,
+        feeAuthority: provider.wallet.publicKey,
+        rewardEmissionsSuperAuthority: provider.wallet.publicKey,
+        defaultProtocolFeeRate: 300,
+        funder: provider.wallet.publicKey,
+        whirlpoolsConfigKeypair: configKeypair,
+      })).addSigner(configKeypair).buildAndExecute();  
+
+      const tickSpacing = 64;
+      await toTx(ctx, WhirlpoolIx.initializeFeeTierIx(ctx.program, {
+        defaultFeeRate: 3000,
+        feeAuthority: provider.wallet.publicKey,
+        funder: provider.wallet.publicKey,
+        tickSpacing,
+        whirlpoolsConfig: configKeypair.publicKey,
+        feeTierPda: PDAUtil.getFeeTier(ctx.program.programId, configKeypair.publicKey, tickSpacing),
+      })).buildAndExecute();
+
+      // create token badge if wanted
+      if (params.createTokenBadge) {
+        const pda = PDAUtil.getConfigExtension(ctx.program.programId, configKeypair.publicKey);
+        await toTx(ctx, WhirlpoolIx.initializeConfigExtensionIx(ctx.program, {
+          feeAuthority: provider.wallet.publicKey,
+          funder: provider.wallet.publicKey,
+          whirlpoolsConfig: configKeypair.publicKey,
+          whirlpoolsConfigExtensionPda: pda,
+        })).buildAndExecute();
+              
+        const configExtension = PDAUtil.getConfigExtension(ctx.program.programId, configKeypair.publicKey).publicKey;
+        const tokenBadgePda = PDAUtil.getTokenBadge(ctx.program.programId, configKeypair.publicKey, nativeMint);
+        await toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+          whirlpoolsConfig: configKeypair.publicKey,
+          whirlpoolsConfigExtension: configExtension,
+          funder: provider.wallet.publicKey,
+          tokenBadgeAuthority: provider.wallet.publicKey,
+          tokenBadgePda,
+          tokenMint: nativeMint,
+        })).buildAndExecute();      
+      }
+
+      // try to initialize pool
+      await checkSupported(params.supported, configKeypair.publicKey, tokenA.publicKey, nativeMint, tickSpacing, params.anchorPatch); // as TokenB
+      await checkSupported(params.supported, configKeypair.publicKey, nativeMint, tokenB.publicKey, tickSpacing, params.anchorPatch); // as TokenA
+    }
+
     it("Token: mint without FreezeAuthority", async () => {
       await runTest({
         supported: true,
@@ -912,6 +984,14 @@ describe("initialize_pool_v2", () => {
             isToken2022: false,
             hasFreezeAuthority: true,
         }
+      });
+    });
+
+    it("Token: native mint (WSOL)", async () => {
+      await runTestWithNativeMint({
+        supported: true,
+        createTokenBadge: false,
+        isToken2022NativeMint: false,
       });
     });
 
@@ -1085,6 +1165,20 @@ describe("initialize_pool_v2", () => {
           defaultAccountInitialState: AccountState.Frozen,
         }
       });      
+    });
+
+    it("Token-2022: [FAIL] with/without TokenBadge, native mint (WSOL-2022)", async () => {
+      await runTestWithNativeMint({
+        supported: false,
+        createTokenBadge: false,
+        isToken2022NativeMint: true,
+      });
+
+      await runTestWithNativeMint({
+        supported: false,
+        createTokenBadge: true,
+        isToken2022NativeMint: true,
+      });
     });
 
     it("Token-2022: [FAIL] with/without TokenBadge with InterestBearingConfig", async () => {

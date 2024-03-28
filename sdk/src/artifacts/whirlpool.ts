@@ -2688,36 +2688,6 @@ export type Whirlpool = {
       ],
       "accounts": [
         {
-          "name": "tokenProgramOneA",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgramOneB",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgramTwoA",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgramTwoB",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "memoProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenAuthority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
           "name": "whirlpoolOne",
           "isMut": true,
           "isSigner": false
@@ -2728,64 +2698,69 @@ export type Whirlpool = {
           "isSigner": false
         },
         {
-          "name": "tokenMintOneA",
+          "name": "tokenMintInput",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "tokenMintOneB",
+          "name": "tokenMintIntermediate",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "tokenOwnerAccountOneA",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenVaultOneA",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenOwnerAccountOneB",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenVaultOneB",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMintTwoA",
+          "name": "tokenMintOutput",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "tokenMintTwoB",
+          "name": "tokenProgramInput",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "tokenOwnerAccountTwoA",
+          "name": "tokenProgramIntermediate",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramOutput",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountInput",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "tokenVaultTwoA",
+          "name": "tokenVaultOneInput",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "tokenOwnerAccountTwoB",
+          "name": "tokenVaultOneIntermediate",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "tokenVaultTwoB",
+          "name": "tokenVaultTwoIntermediate",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "tokenVaultTwoOutput",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountOutput",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenAuthority",
+          "isMut": false,
+          "isSigner": true
         },
         {
           "name": "tickArrayOne0",
@@ -2825,6 +2800,11 @@ export type Whirlpool = {
         {
           "name": "oracleTwo",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "memoProgram",
+          "isMut": false,
           "isSigner": false
         }
       ],
@@ -3550,16 +3530,13 @@ export type Whirlpool = {
             "name": "TransferHookReward"
           },
           {
-            "name": "TransferHookOneA"
+            "name": "TransferHookInput"
           },
           {
-            "name": "TransferHookOneB"
+            "name": "TransferHookIntermediate"
           },
           {
-            "name": "TransferHookTwoA"
-          },
-          {
-            "name": "TransferHookTwoB"
+            "name": "TransferHookOutput"
           }
         ]
       }
@@ -3820,6 +3797,11 @@ export type Whirlpool = {
       "code": 6050,
       "name": "NoExtraAccountsForTransferHook",
       "msg": "Unable to call transfer hook without extra accounts"
+    },
+    {
+      "code": 6051,
+      "name": "IntermediateTokenAmountMismatch",
+      "msg": "Output and input amount mismatch"
     }
   ]
 };
@@ -6514,36 +6496,6 @@ export const IDL: Whirlpool = {
       ],
       "accounts": [
         {
-          "name": "tokenProgramOneA",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgramOneB",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgramTwoA",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenProgramTwoB",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "memoProgram",
-          "isMut": false,
-          "isSigner": false
-        },
-        {
-          "name": "tokenAuthority",
-          "isMut": false,
-          "isSigner": true
-        },
-        {
           "name": "whirlpoolOne",
           "isMut": true,
           "isSigner": false
@@ -6554,64 +6506,69 @@ export const IDL: Whirlpool = {
           "isSigner": false
         },
         {
-          "name": "tokenMintOneA",
+          "name": "tokenMintInput",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "tokenMintOneB",
+          "name": "tokenMintIntermediate",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "tokenOwnerAccountOneA",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenVaultOneA",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenOwnerAccountOneB",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenVaultOneB",
-          "isMut": true,
-          "isSigner": false
-        },
-        {
-          "name": "tokenMintTwoA",
+          "name": "tokenMintOutput",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "tokenMintTwoB",
+          "name": "tokenProgramInput",
           "isMut": false,
           "isSigner": false
         },
         {
-          "name": "tokenOwnerAccountTwoA",
+          "name": "tokenProgramIntermediate",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenProgramOutput",
+          "isMut": false,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountInput",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "tokenVaultTwoA",
+          "name": "tokenVaultOneInput",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "tokenOwnerAccountTwoB",
+          "name": "tokenVaultOneIntermediate",
           "isMut": true,
           "isSigner": false
         },
         {
-          "name": "tokenVaultTwoB",
+          "name": "tokenVaultTwoIntermediate",
           "isMut": true,
           "isSigner": false
+        },
+        {
+          "name": "tokenVaultTwoOutput",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenOwnerAccountOutput",
+          "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "tokenAuthority",
+          "isMut": false,
+          "isSigner": true
         },
         {
           "name": "tickArrayOne0",
@@ -6651,6 +6608,11 @@ export const IDL: Whirlpool = {
         {
           "name": "oracleTwo",
           "isMut": true,
+          "isSigner": false
+        },
+        {
+          "name": "memoProgram",
+          "isMut": false,
           "isSigner": false
         }
       ],
@@ -7376,16 +7338,13 @@ export const IDL: Whirlpool = {
             "name": "TransferHookReward"
           },
           {
-            "name": "TransferHookOneA"
+            "name": "TransferHookInput"
           },
           {
-            "name": "TransferHookOneB"
+            "name": "TransferHookIntermediate"
           },
           {
-            "name": "TransferHookTwoA"
-          },
-          {
-            "name": "TransferHookTwoB"
+            "name": "TransferHookOutput"
           }
         ]
       }
@@ -7646,6 +7605,11 @@ export const IDL: Whirlpool = {
       "code": 6050,
       "name": "NoExtraAccountsForTransferHook",
       "msg": "Unable to call transfer hook without extra accounts"
+    },
+    {
+      "code": 6051,
+      "name": "IntermediateTokenAmountMismatch",
+      "msg": "Output and input amount mismatch"
     }
   ]
 };

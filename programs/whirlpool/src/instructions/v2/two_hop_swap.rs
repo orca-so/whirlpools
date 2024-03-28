@@ -3,64 +3,60 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
 
 use crate::swap_with_transfer_fee_extension;
-use crate::util::{calculate_transfer_fee_excluded_amount, parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
+use crate::util::{calculate_transfer_fee_excluded_amount, parse_remaining_accounts, update_and_two_hop_swap_whirlpool_v2, AccountsType, RemainingAccountsInfo};
 use crate::{
     errors::ErrorCode,
     state::{TickArray, Whirlpool},
-    util::{to_timestamp_u64, v2::update_and_swap_whirlpool_v2, SwapTickSequence},
+    util::{to_timestamp_u64, SwapTickSequence},
     constants::transfer_memo,
 };
 
 #[derive(Accounts)]
+#[instruction(
+    amount: u64,
+    other_amount_threshold: u64,
+    amount_specified_is_input: bool,
+    a_to_b_one: bool,
+    a_to_b_two: bool,
+)]
 pub struct TwoHopSwapV2<'info> {
-    #[account(address = token_mint_one_a.to_account_info().owner.clone())]
-    pub token_program_one_a: Interface<'info, TokenInterface>,
-    #[account(address = token_mint_one_b.to_account_info().owner.clone())]
-    pub token_program_one_b: Interface<'info, TokenInterface>,
-    #[account(address = token_mint_two_a.to_account_info().owner.clone())]
-    pub token_program_two_a: Interface<'info, TokenInterface>,
-    #[account(address = token_mint_two_b.to_account_info().owner.clone())]
-    pub token_program_two_b: Interface<'info, TokenInterface>,
-
-    pub memo_program: Program<'info, Memo>,
-
-    pub token_authority: Signer<'info>,
-
     #[account(mut)]
     pub whirlpool_one: Box<Account<'info, Whirlpool>>,
-
     #[account(mut)]
     pub whirlpool_two: Box<Account<'info, Whirlpool>>,
 
-    #[account(address = whirlpool_one.token_mint_a)]
-    pub token_mint_one_a: InterfaceAccount<'info, Mint>,
-    #[account(address = whirlpool_one.token_mint_b)]
-    pub token_mint_one_b: InterfaceAccount<'info, Mint>,
+    #[account(address = whirlpool_one.input_token_mint(a_to_b_one))]
+    pub token_mint_input: InterfaceAccount<'info, Mint>,    
+    #[account(
+        address = whirlpool_one.output_token_mint(a_to_b_one),
+        constraint = whirlpool_one.output_token_mint(a_to_b_one) == whirlpool_two.input_token_mint(a_to_b_two)
+    )]
+    pub token_mint_intermediate: InterfaceAccount<'info, Mint>,
+    #[account(address = whirlpool_two.output_token_mint(a_to_b_two))]
+    pub token_mint_output: InterfaceAccount<'info, Mint>,
 
-    #[account(mut, constraint = token_owner_account_one_a.mint == whirlpool_one.token_mint_a)]
-    pub token_owner_account_one_a: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_one.token_vault_a)]
-    pub token_vault_one_a: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(address = token_mint_input.to_account_info().owner.clone())]
+    pub token_program_input: Interface<'info, TokenInterface>,
+    #[account(address = token_mint_intermediate.to_account_info().owner.clone())]
+    pub token_program_intermediate: Interface<'info, TokenInterface>,
+    #[account(address = token_mint_output.to_account_info().owner.clone())]
+    pub token_program_output: Interface<'info, TokenInterface>,
 
-    #[account(mut, constraint = token_owner_account_one_b.mint == whirlpool_one.token_mint_b)]
-    pub token_owner_account_one_b: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_one.token_vault_b)]
-    pub token_vault_one_b: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(mut, constraint = token_owner_account_input.mint == token_mint_input.key())]
+    pub token_owner_account_input: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(mut, address = whirlpool_one.input_token_vault(a_to_b_one))]
+    pub token_vault_one_input: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(mut, address = whirlpool_one.output_token_vault(a_to_b_one))]
+    pub token_vault_one_intermediate: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(address = whirlpool_two.token_mint_a)]
-    pub token_mint_two_a: InterfaceAccount<'info, Mint>,
-    #[account(address = whirlpool_two.token_mint_b)]
-    pub token_mint_two_b: InterfaceAccount<'info, Mint>,
+    #[account(mut, address = whirlpool_two.input_token_vault(a_to_b_two))]
+    pub token_vault_two_intermediate: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(mut, address = whirlpool_two.output_token_vault(a_to_b_two))]
+    pub token_vault_two_output: Box<InterfaceAccount<'info, TokenAccount>>,
+    #[account(mut, constraint = token_owner_account_output.mint == token_mint_output.key())]
+    pub token_owner_account_output: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_two_a.mint == whirlpool_two.token_mint_a)]
-    pub token_owner_account_two_a: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_two.token_vault_a)]
-    pub token_vault_two_a: Box<InterfaceAccount<'info, TokenAccount>>,
-
-    #[account(mut, constraint = token_owner_account_two_b.mint == whirlpool_two.token_mint_b)]
-    pub token_owner_account_two_b: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_two.token_vault_b)]
-    pub token_vault_two_b: Box<InterfaceAccount<'info, TokenAccount>>,
+    pub token_authority: Signer<'info>,
 
     #[account(mut, constraint = tick_array_one_0.load()?.whirlpool == whirlpool_one.key())]
     pub tick_array_one_0: AccountLoader<'info, TickArray>,
@@ -87,6 +83,13 @@ pub struct TwoHopSwapV2<'info> {
     #[account(mut, seeds = [b"oracle", whirlpool_two.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_two: UncheckedAccount<'info>,
+
+    pub memo_program: Program<'info, Memo>,
+
+    // remaining accounts
+    // - accounts for transfer hook program of token_mint_input
+    // - accounts for transfer hook program of token_mint_intermediate
+    // - accounts for transfer hook program of token_mint_output
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(
@@ -132,13 +135,11 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &ctx.remaining_accounts,
         &remaining_accounts_info,
         &[
-            AccountsType::TransferHookOneA,
-            AccountsType::TransferHookOneB,
-            AccountsType::TransferHookTwoA,
-            AccountsType::TransferHookTwoB,
+            AccountsType::TransferHookInput,
+            AccountsType::TransferHookIntermediate,
+            AccountsType::TransferHookOutput,
         ],
     )?;
-
 
     let mut swap_tick_sequence_one = SwapTickSequence::new(
         ctx.accounts.tick_array_one_0.load_mut().unwrap(),
@@ -160,8 +161,8 @@ pub fn handler<'a, 'b, 'c, 'info>(
         // and the swaps occur from Swap 1 => Swap 2
         let swap_calc_one = swap_with_transfer_fee_extension(
             &whirlpool_one,
-            &ctx.accounts.token_mint_one_a,
-            &ctx.accounts.token_mint_one_b,
+            if a_to_b_one { &ctx.accounts.token_mint_input } else { &ctx.accounts.token_mint_intermediate },
+            if a_to_b_one { &ctx.accounts.token_mint_intermediate } else { &ctx.accounts.token_mint_input },
             &mut swap_tick_sequence_one,
             amount,
             sqrt_price_limit_one,
@@ -171,22 +172,17 @@ pub fn handler<'a, 'b, 'c, 'info>(
         )?;
 
         // Swap two input is the output of swap one
+        // We use vault to vault transfer, so transfer fee will be collected once.
         let swap_two_input_amount = if a_to_b_one {
-            calculate_transfer_fee_excluded_amount(
-                &ctx.accounts.token_mint_one_b,
-                swap_calc_one.amount_b
-            )?.amount
+            swap_calc_one.amount_b
         } else {
-            calculate_transfer_fee_excluded_amount(
-                &ctx.accounts.token_mint_one_a,
-                swap_calc_one.amount_a
-            )?.amount
+            swap_calc_one.amount_a
         };
 
         let swap_calc_two = swap_with_transfer_fee_extension(
             &whirlpool_two,
-            &ctx.accounts.token_mint_two_a,
-            &ctx.accounts.token_mint_two_b,
+            if a_to_b_two { &ctx.accounts.token_mint_intermediate } else { &ctx.accounts.token_mint_output },
+            if a_to_b_two { &ctx.accounts.token_mint_output } else { &ctx.accounts.token_mint_intermediate },
             &mut swap_tick_sequence_two,
             swap_two_input_amount,
             sqrt_price_limit_two,
@@ -201,8 +197,8 @@ pub fn handler<'a, 'b, 'c, 'info>(
         // but the actual swaps occur from Swap 1 => Swap 2 (to ensure that the intermediate token exists in the account)
         let swap_calc_two = swap_with_transfer_fee_extension(
             &whirlpool_two,
-            &ctx.accounts.token_mint_two_a,
-            &ctx.accounts.token_mint_two_b,
+            if a_to_b_two { &ctx.accounts.token_mint_intermediate } else { &ctx.accounts.token_mint_output },
+            if a_to_b_two { &ctx.accounts.token_mint_output } else { &ctx.accounts.token_mint_intermediate },
             &mut swap_tick_sequence_two,
             amount,
             sqrt_price_limit_two,
@@ -213,15 +209,21 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
         // The output of swap 1 is input of swap_calc_two
         let swap_one_output_amount = if a_to_b_two {
-            swap_calc_two.amount_a
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_intermediate,
+                swap_calc_two.amount_a
+            )?.amount
         } else {
-            swap_calc_two.amount_b
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_intermediate,
+                swap_calc_two.amount_b
+            )?.amount
         };
 
         let swap_calc_one = swap_with_transfer_fee_extension(
             &whirlpool_one,
-            &ctx.accounts.token_mint_one_a,
-            &ctx.accounts.token_mint_one_b,
+            if a_to_b_one { &ctx.accounts.token_mint_input } else { &ctx.accounts.token_mint_intermediate },
+            if a_to_b_one { &ctx.accounts.token_mint_intermediate } else { &ctx.accounts.token_mint_input },
             &mut swap_tick_sequence_one,
             swap_one_output_amount,
             sqrt_price_limit_one,
@@ -232,23 +234,30 @@ pub fn handler<'a, 'b, 'c, 'info>(
         (swap_calc_one, swap_calc_two)
     };
 
+    // All output token should be consumed by the second swap
+    let swap_calc_one_output = if a_to_b_one { swap_update_one.amount_b } else { swap_update_one.amount_a };
+    let swap_calc_two_input = if a_to_b_two { swap_update_two.amount_a } else { swap_update_two.amount_b };
+    if swap_calc_one_output != swap_calc_two_input {
+        return Err(ErrorCode::IntermediateTokenAmountMismatch.into());
+    }
+
     if amount_specified_is_input {
         // If amount_specified_is_input == true, then we have a variable amount of output
         // The slippage we care about is the output of the second swap.
         let output_amount = if a_to_b_two {
             calculate_transfer_fee_excluded_amount(
-                &ctx.accounts.token_mint_two_b,
+                &ctx.accounts.token_mint_output,
                 swap_update_two.amount_b
             )?.amount
         } else {
             calculate_transfer_fee_excluded_amount(
-                &ctx.accounts.token_mint_two_a,
+                &ctx.accounts.token_mint_output,
                 swap_update_two.amount_a
             )?.amount
         };
 
         // If we have received less than the minimum out, throw an error
-        if other_amount_threshold > output_amount {
+        if output_amount < other_amount_threshold {
             return Err(ErrorCode::AmountOutBelowMinimum.into());
         }
     } else {
@@ -259,11 +268,12 @@ pub fn handler<'a, 'b, 'c, 'info>(
         } else {
             swap_update_one.amount_b
         };
-        if other_amount_threshold < input_amount {
+        if input_amount > other_amount_threshold {
             return Err(ErrorCode::AmountInAboveMaximum.into());
         }
     }
 
+    /* 
     update_and_swap_whirlpool_v2(
         whirlpool_one,
         &ctx.accounts.token_authority,
@@ -300,6 +310,35 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &ctx.accounts.memo_program,
         swap_update_two,
         a_to_b_two,
+        timestamp,
+        transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
+    )
+    */
+
+    update_and_two_hop_swap_whirlpool_v2(
+        swap_update_one,
+        swap_update_two,
+        whirlpool_one,
+        whirlpool_two,
+        a_to_b_one,
+        a_to_b_two,
+        &ctx.accounts.token_mint_input,
+        &ctx.accounts.token_mint_intermediate,
+        &ctx.accounts.token_mint_output,
+        &ctx.accounts.token_program_input,
+        &ctx.accounts.token_program_intermediate,
+        &ctx.accounts.token_program_output,
+        &ctx.accounts.token_owner_account_input,
+        &ctx.accounts.token_vault_one_input,
+        &ctx.accounts.token_vault_one_intermediate,
+        &ctx.accounts.token_vault_two_intermediate,
+        &ctx.accounts.token_vault_two_output,
+        &ctx.accounts.token_owner_account_output,
+        &remaining_accounts.transfer_hook_input,
+        &remaining_accounts.transfer_hook_intermediate,
+        &remaining_accounts.transfer_hook_output,
+        &ctx.accounts.token_authority,
+        &ctx.accounts.memo_program,
         timestamp,
         transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
     )

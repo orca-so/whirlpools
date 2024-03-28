@@ -43,6 +43,7 @@ import {
   withdrawPositionsV2,
 } from "../../utils/v2/init-utils-v2";
 import { createMintV2 } from "../../utils/v2/token-2022";
+import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
 
 describe("swap_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -746,6 +747,7 @@ describe("swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -867,6 +869,7 @@ describe("swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -927,6 +930,7 @@ describe("swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1048,6 +1052,7 @@ describe("swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );
@@ -1107,6 +1112,7 @@ describe("swap_v2", () => {
                 fetcher,
                 IGNORE_CACHE
               ),
+              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
             },
             Percentage.fromFraction(1, 100)
           );

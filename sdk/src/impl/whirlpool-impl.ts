@@ -18,7 +18,9 @@ import {
   SwapInput,
   closePositionIx,
   decreaseLiquidityIx,
+  decreaseLiquidityV2Ix,
   increaseLiquidityIx,
+  increaseLiquidityV2Ix,
   initTickArrayIx,
   openPositionIx,
   openPositionWithMetadataIx,
@@ -32,7 +34,7 @@ import {
 } from "../quotes/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
-import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
+import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import {
   TokenMintTypes,
   getTokenMintsFromWhirlpools,
@@ -42,6 +44,7 @@ import { Whirlpool } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
 import { checkMergedTransactionSizeIsValid } from "../utils/txn-utils";
+import { TokenExtensionUtil } from "../utils/token-extension-util";
 
 export class WhirlpoolImpl implements Whirlpool {
   private data: WhirlpoolData;
@@ -274,6 +277,8 @@ export class WhirlpoolImpl implements Whirlpool {
       throw new Error(`Whirlpool not found: ${translateAddress(this.address).toBase58()}`);
     }
 
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(this.ctx.fetcher, whirlpool, IGNORE_CACHE);
+
     invariant(
       TickUtil.isTickInitializable(tickLower, whirlpool.tickSpacing),
       `lower tick ${tickLower} is not an initializable tick for tick-spacing ${whirlpool.tickSpacing}`
@@ -353,7 +358,7 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.program.programId
     );
 
-    const liquidityIx = increaseLiquidityIx(this.ctx.program, {
+    const baseParams = {
       liquidityAmount: liquidity,
       tokenMaxA,
       tokenMaxB,
@@ -367,7 +372,31 @@ export class WhirlpoolImpl implements Whirlpool {
       tokenVaultB: whirlpool.tokenVaultB,
       tickArrayLower: tickArrayLowerPda.publicKey,
       tickArrayUpper: tickArrayUpperPda.publicKey,
-    });
+    };
+    // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
+    const liquidityIx = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? increaseLiquidityIx(this.ctx.program, baseParams)
+      : increaseLiquidityV2Ix(this.ctx.program, {
+          ...baseParams,
+          tokenMintA: whirlpool.tokenMintA,
+          tokenMintB: whirlpool.tokenMintB,
+          tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+          tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+          tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            this.ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramA,
+            baseParams.tokenOwnerAccountA,
+            baseParams.tokenVaultA,
+            baseParams.positionAuthority,
+          ),
+          tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            this.ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramB,
+            baseParams.tokenOwnerAccountB,
+            baseParams.tokenVaultB,
+            baseParams.positionAuthority,
+          ),  
+        });
     txBuilder.addInstruction(liquidityIx);
 
     return {
@@ -446,6 +475,8 @@ export class WhirlpoolImpl implements Whirlpool {
       `Tick array ${tickArrayUpper} expected to be initialized for whirlpool ${this.address}`
     );
 
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(this.ctx.fetcher, whirlpool, IGNORE_CACHE);
+
     const position = new PositionImpl(
       this.ctx,
       positionAddress,
@@ -463,6 +494,7 @@ export class WhirlpoolImpl implements Whirlpool {
       whirlpool,
       tickLower,
       tickUpper,
+      tokenExtensionCtx,
     });
 
     const rewardsQuote = collectRewardsQuote({
@@ -470,18 +502,25 @@ export class WhirlpoolImpl implements Whirlpool {
       whirlpool,
       tickLower,
       tickUpper,
+      tokenExtensionCtx,
     });
 
     const shouldCollectFees = feesQuote.feeOwedA.gtn(0) || feesQuote.feeOwedB.gtn(0);
     invariant(
-      this.data.rewardInfos.length === rewardsQuote.length,
+      this.data.rewardInfos.length === rewardsQuote.rewardOwed.length,
       "Rewards quote does not match reward infos length"
     );
 
     const shouldDecreaseLiquidity = positionData.liquidity.gtn(0);
 
     const rewardsToCollect = this.data.rewardInfos
-      .filter((_, i) => (rewardsQuote[i] ?? ZERO).gtn(0))
+      .filter((_, i) => {
+        return (
+          (rewardsQuote.rewardOwed[i] ?? ZERO).gtn(0) ||
+          // we need to collect reward even if all reward will be deducted as transfer fee
+          (rewardsQuote.transferFee.deductedFromRewardOwed[i] ?? ZERO).gtn(0)
+        );
+      })
       .map((info) => info.mint);
 
     const shouldCollectRewards = rewardsToCollect.length > 0;
@@ -530,9 +569,10 @@ export class WhirlpoolImpl implements Whirlpool {
         tickCurrentIndex: whirlpool.tickCurrentIndex,
         tickLowerIndex: positionData.tickLowerIndex,
         tickUpperIndex: positionData.tickUpperIndex,
+        tokenExtensionCtx,
       });
 
-      const liquidityIx = decreaseLiquidityIx(this.ctx.program, {
+      const baseParams = {
         ...decreaseLiqQuote,
         whirlpool: positionData.whirlpool,
         positionAuthority: positionWallet,
@@ -544,8 +584,31 @@ export class WhirlpoolImpl implements Whirlpool {
         tokenVaultB: whirlpool.tokenVaultB,
         tickArrayLower,
         tickArrayUpper,
-      });
-
+      };
+      // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
+      const liquidityIx = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+        ? decreaseLiquidityIx(this.ctx.program, baseParams)
+        : decreaseLiquidityV2Ix(this.ctx.program, {
+          ...baseParams,
+          tokenMintA: whirlpool.tokenMintA,
+          tokenMintB: whirlpool.tokenMintB,
+          tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+          tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+          tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            this.ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramA,
+            baseParams.tokenVaultA,
+            baseParams.tokenOwnerAccountA,
+            baseParams.whirlpool, // vault to owner, so pool is authority
+          ),
+          tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            this.ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramB,
+            baseParams.tokenVaultB,
+            baseParams.tokenOwnerAccountB,
+            baseParams.whirlpool, // vault to owner, so pool is authority
+          ),
+        });
       txBuilder.addInstruction(liquidityIx);
     }
 

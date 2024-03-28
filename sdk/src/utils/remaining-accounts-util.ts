@@ -1,29 +1,27 @@
 import { AccountMeta } from "@solana/web3.js";
 
 export enum RemainingAccountsType {
-  TickArray = "tickArray",
-  TickArrayOne = "tickArrayOne",
-  TickArrayTwo = "tickArrayTwo",
   TransferHookA = "transferHookA",
   TransferHookB = "transferHookB",
   TransferHookReward = "transferHookReward",
-  TransferHookOneA = "transferHookOneA",
-  TransferHookOneB = "transferHookOneB",
-  TransferHookTwoA = "transferHookTwoA",
-  TransferHookTwoB = "transferHookTwoB",
+  TransferHookInput = "transferHookInput",
+  TransferHookIntermediate = "transferHookIntermediate",
+  TransferHookOutput = "transferHookOutput",
+  //TickArray = "tickArray",
+  //TickArrayOne = "tickArrayOne",
+  //TickArrayTwo = "tickArrayTwo",
 }
 
 type RemainingAccountsAnchorType = 
-  { tickArray: {} } |
-  { tickArrayOne: {} } |
-  { tickArrayTwo: {} } |
   { transferHookA: {} } |
   { transferHookB: {} } |
   { transferHookReward: {} } |
-  { transferHookOneA: {} } |
-  { transferHookOneB: {} } |
-  { transferHookTwoA: {} } |
-  { transferHookTwoB: {} };
+  { transferHookInput: {} } |
+  { transferHookIntermediate: {} } |
+  { transferHookOutput: {} }
+  //{ tickArray: {} } |
+  //{ tickArrayOne: {} } |
+  //{ tickArrayTwo: {} } |
 
 export type RemainingAccountsSliceData = {
   accountsType: RemainingAccountsAnchorType;

@@ -15,6 +15,7 @@ import { createAssociatedTokenAccount, TickSpacing, transferToken } from "../../
 import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
 import { initPosition, mintTokensToTestAccount } from "../../utils/test-builders";
+import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
 
 describe("position-impl", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -77,7 +78,8 @@ describe("position-impl", () => {
       lowerTick,
       upperTick,
       Percentage.fromFraction(1, 100),
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
     );
 
     await (
@@ -96,7 +98,8 @@ describe("position-impl", () => {
       withdrawHalf,
       Percentage.fromFraction(0, 100),
       position,
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
     );
 
     await (await position.decreaseLiquidity(decrease_quote, false)).buildAndExecute();
@@ -161,7 +164,8 @@ describe("position-impl", () => {
       lowerTick,
       upperTick,
       Percentage.fromFraction(1, 100),
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
     );
 
     await (await position.increaseLiquidity(increase_quote, false)).buildAndExecute();
@@ -178,7 +182,8 @@ describe("position-impl", () => {
       withdrawHalf,
       Percentage.fromFraction(0, 100),
       position,
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
     );
 
     // Transfer the position token to another wallet
@@ -207,7 +212,8 @@ describe("position-impl", () => {
       lowerTick,
       upperTick,
       Percentage.fromFraction(1, 100),
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
     );
     await (
       await position.increaseLiquidity(

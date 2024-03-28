@@ -147,3 +147,104 @@ fn perform_swap_v2<'info>(
 
     Ok(())
 }
+
+pub fn update_and_two_hop_swap_whirlpool_v2<'info>(
+    // update
+    swap_update_one: PostSwapUpdate,
+    swap_update_two: PostSwapUpdate,
+    // whirlpool
+    whirlpool_one: &mut Account<'info, Whirlpool>,
+    whirlpool_two: &mut Account<'info, Whirlpool>,
+    // direction
+    is_token_fee_in_one_a: bool,
+    is_token_fee_in_two_a: bool,
+    // mint
+    token_mint_input: &InterfaceAccount<'info, Mint>,
+    token_mint_intermediate: &InterfaceAccount<'info, Mint>,
+    token_mint_output: &InterfaceAccount<'info, Mint>,
+    // token program
+    token_program_input: &Interface<'info, TokenInterface>,
+    token_program_intermediate: &Interface<'info, TokenInterface>,
+    token_program_output: &Interface<'info, TokenInterface>,
+    // token accounts
+    token_owner_account_input: &InterfaceAccount<'info, TokenAccount>,
+    token_vault_one_input: &InterfaceAccount<'info, TokenAccount>,
+    token_vault_one_intermediate: &InterfaceAccount<'info, TokenAccount>,
+    token_vault_two_intermediate: &InterfaceAccount<'info, TokenAccount>,
+    token_vault_two_output: &InterfaceAccount<'info, TokenAccount>,
+    token_owner_account_output: &InterfaceAccount<'info, TokenAccount>,
+    // hook
+    transfer_hook_accounts_input: &Option<Vec<AccountInfo<'info>>>,
+    transfer_hook_accounts_intermediate: &Option<Vec<AccountInfo<'info>>>,
+    transfer_hook_accounts_output: &Option<Vec<AccountInfo<'info>>>,
+    // common
+    token_authority: &Signer<'info>,
+    memo_program: &Program<'info, Memo>,
+    reward_last_updated_timestamp: u64,
+    memo: &[u8],
+) -> Result<()> {
+    whirlpool_one.update_after_swap(
+        swap_update_one.next_liquidity,
+        swap_update_one.next_tick_index,
+        swap_update_one.next_sqrt_price,
+        swap_update_one.next_fee_growth_global,
+        swap_update_one.next_reward_infos,
+        swap_update_one.next_protocol_fee,
+        is_token_fee_in_one_a,
+        reward_last_updated_timestamp,
+    );
+
+    whirlpool_two.update_after_swap(
+        swap_update_two.next_liquidity,
+        swap_update_two.next_tick_index,
+        swap_update_two.next_sqrt_price,
+        swap_update_two.next_fee_growth_global,
+        swap_update_two.next_reward_infos,
+        swap_update_two.next_protocol_fee,
+        is_token_fee_in_two_a,
+        reward_last_updated_timestamp,
+    );
+
+    // amount
+    let input_amount = if is_token_fee_in_one_a { swap_update_one.amount_a } else { swap_update_one.amount_b };
+    let intermediate_amount = if is_token_fee_in_one_a { swap_update_one.amount_b } else { swap_update_one.amount_a };
+    let output_amount = if is_token_fee_in_two_a { swap_update_two.amount_b } else { swap_update_two.amount_a };
+
+    transfer_from_owner_to_vault_v2(
+        token_authority,
+        token_mint_input,
+        token_owner_account_input,
+        token_vault_one_input,
+        token_program_input,
+        memo_program,
+        transfer_hook_accounts_input,
+        input_amount,
+    )?;
+
+    // Transfer from pool to pool
+    transfer_from_vault_to_owner_v2(
+        whirlpool_one,
+        token_mint_intermediate,
+        token_vault_one_intermediate,
+        token_vault_two_intermediate,
+        token_program_intermediate,
+        memo_program,
+        transfer_hook_accounts_intermediate,
+        intermediate_amount,
+        memo,
+    )?;
+
+    transfer_from_vault_to_owner_v2(
+        whirlpool_two,
+        token_mint_output,
+        token_vault_two_output,
+        token_owner_account_output,
+        token_program_output,
+        memo_program,
+        transfer_hook_accounts_output,
+        output_amount,
+        memo,
+    )?;
+
+    Ok(())
+}

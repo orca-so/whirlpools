@@ -13,6 +13,7 @@ import {
   calculateFee,
   createApproveInstruction,
   createAssociatedTokenAccountInstruction,
+  createCreateNativeMintInstruction,
   createDisableRequiredMemoTransfersInstruction,
   createEnableRequiredMemoTransfersInstruction,
   createInitializeAccount3Instruction,
@@ -71,6 +72,15 @@ export async function createMintV2(
   if (authority === undefined) {
     authority = provider.wallet.publicKey;
   }
+
+  if (tokenTrait.isNativeMint) {
+    if (tokenTrait.isToken2022) {
+      await initializeNativeMint2022Idempotent(provider);
+      return NATIVE_MINT_2022;
+    }
+    return NATIVE_MINT;
+  }
+
   const mint = mintKeypair ?? web3.Keypair.generate();
   const instructions = await createMintInstructions(provider, tokenTrait, authority, mint.publicKey);
 
@@ -589,6 +599,25 @@ export async function createInOrderMintsV2(provider: AnchorProvider, tokenTraitA
   }
 };
 
+export async function initializeNativeMint2022Idempotent(
+  provider: AnchorProvider,
+) {
+  const accountInfo = await provider.connection.getAccountInfo(NATIVE_MINT_2022, "confirmed");
+
+  // already initialized
+  if (accountInfo !== null) return;
+
+  const ix = createCreateNativeMintInstruction(
+    provider.wallet.publicKey,
+    NATIVE_MINT_2022,
+    TEST_TOKEN_2022_PROGRAM_ID,
+  );
+
+  const txBuilder = new TransactionBuilder(provider.connection, provider.wallet);
+  txBuilder.addInstruction({ instructions: [ix], cleanupInstructions: [], signers: [] });
+  await txBuilder.buildAndExecute();
+}
+
 export async function approveTokenV2(
   provider: AnchorProvider,
   tokenTrait: TokenTrait,
@@ -744,6 +773,7 @@ export function calculateTransferFeeIncludedAmount(
   // https://github.com/solana-labs/solana-program-library/blob/master/token/program-2022/src/extension/transfer_fee/mod.rs#L90
 
   const ONE_IN_BASIS_POINTS = 10_000;
+  const maxFeeBN = new BN(transferFee.maximumFee.toString());
 
   // edge cases
 
@@ -754,10 +784,20 @@ export function calculateTransferFeeIncludedAmount(
     };
   }
 
-  if (transferFee.transferFeeBasisPoints === ONE_IN_BASIS_POINTS || amount.isZero()) {
+  if (amount.isZero()) {
     return {
       amount: ZERO_BN,
       fee: ZERO_BN,
+    };
+  }
+
+  if (transferFee.transferFeeBasisPoints === ONE_IN_BASIS_POINTS) {
+    if (amount.add(maxFeeBN).gt(U64_MAX)) {
+      throw new Error("TransferFeeIncludedAmount exceeds U64_MAX");
+    }
+    return {
+      amount: amount.add(maxFeeBN),
+      fee: maxFeeBN,
     };
   }
 
@@ -767,12 +807,19 @@ export function calculateTransferFeeIncludedAmount(
   const denom = new BN(ONE_IN_BASIS_POINTS - transferFee.transferFeeBasisPoints);
   const rawFeeIncludedAmount = ceil_div_bn(num, denom);
 
-  const maxFeeBN = new BN(transferFee.maximumFee.toString());
   if (rawFeeIncludedAmount.sub(amount).gte(maxFeeBN)) {
+    if (amount.add(maxFeeBN).gt(U64_MAX)) {
+      throw new Error("TransferFeeIncludedAmount exceeds U64_MAX");
+    }
+
     return {
       amount: amount.add(maxFeeBN),
       fee: maxFeeBN,
     };
+  }
+
+  if (rawFeeIncludedAmount.gt(U64_MAX)) {
+    throw new Error("TransferFeeIncludedAmount exceeds U64_MAX");
   }
 
   return {

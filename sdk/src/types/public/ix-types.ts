@@ -44,9 +44,10 @@ export {
   SwapV2Params,
   TwoHopSwapV2Params,  
   InitConfigExtensionParams,
-  InitializeTokenBadgeParams,
   SetConfigExtensionAuthorityParams,
   SetTokenBadgeAuthorityParams,
+  InitializeTokenBadgeParams,
+  DeleteTokenBadgeParams,
 } from "../../instructions/v2/";
 export {
   CollectAllParams,

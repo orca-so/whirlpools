@@ -257,7 +257,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         };
 
         // If we have received less than the minimum out, throw an error
-        if other_amount_threshold > output_amount {
+        if output_amount < other_amount_threshold {
             return Err(ErrorCode::AmountOutBelowMinimum.into());
         }
     } else {
@@ -268,7 +268,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         } else {
             swap_update_one.amount_b
         };
-        if other_amount_threshold < input_amount {
+        if input_amount > other_amount_threshold {
             return Err(ErrorCode::AmountInAboveMaximum.into());
         }
     }

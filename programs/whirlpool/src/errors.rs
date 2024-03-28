@@ -129,6 +129,9 @@ pub enum ErrorCode {
     
     #[msg("Output and input amount mismatch")]
     IntermediateTokenAmountMismatch, // 0x17a3 (6051)
+
+    #[msg("Transfer fee calculation failed")]
+    TransferFeeCalculationError, // 0x17a4 (6052)
 }
 
 impl From<TryFromIntError> for ErrorCode {

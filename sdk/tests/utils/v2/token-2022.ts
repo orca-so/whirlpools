@@ -773,6 +773,7 @@ export function calculateTransferFeeIncludedAmount(
   // https://github.com/solana-labs/solana-program-library/blob/master/token/program-2022/src/extension/transfer_fee/mod.rs#L90
 
   const ONE_IN_BASIS_POINTS = 10_000;
+  const maxFeeBN = new BN(transferFee.maximumFee.toString());
 
   // edge cases
 
@@ -783,10 +784,20 @@ export function calculateTransferFeeIncludedAmount(
     };
   }
 
-  if (transferFee.transferFeeBasisPoints === ONE_IN_BASIS_POINTS || amount.isZero()) {
+  if (amount.isZero()) {
     return {
       amount: ZERO_BN,
       fee: ZERO_BN,
+    };
+  }
+
+  if (transferFee.transferFeeBasisPoints === ONE_IN_BASIS_POINTS) {
+    if (amount.add(maxFeeBN).gt(U64_MAX)) {
+      throw new Error("TransferFeeIncludedAmount exceeds U64_MAX");
+    }
+    return {
+      amount: amount.add(maxFeeBN),
+      fee: maxFeeBN,
     };
   }
 
@@ -796,12 +807,19 @@ export function calculateTransferFeeIncludedAmount(
   const denom = new BN(ONE_IN_BASIS_POINTS - transferFee.transferFeeBasisPoints);
   const rawFeeIncludedAmount = ceil_div_bn(num, denom);
 
-  const maxFeeBN = new BN(transferFee.maximumFee.toString());
   if (rawFeeIncludedAmount.sub(amount).gte(maxFeeBN)) {
+    if (amount.add(maxFeeBN).gt(U64_MAX)) {
+      throw new Error("TransferFeeIncludedAmount exceeds U64_MAX");
+    }
+
     return {
       amount: amount.add(maxFeeBN),
       fee: maxFeeBN,
     };
+  }
+
+  if (rawFeeIncludedAmount.gt(U64_MAX)) {
+    throw new Error("TransferFeeIncludedAmount exceeds U64_MAX");
   }
 
   return {

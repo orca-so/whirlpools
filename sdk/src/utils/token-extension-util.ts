@@ -175,12 +175,9 @@ function calculateTransferFeeIncludedAmount(
   // https://github.com/solana-labs/solana-program-library/blob/master/token/program-2022/src/extension/transfer_fee/mod.rs#L90
 
   const ONE_IN_BASIS_POINTS = 10_000;
+  const maxFeeBN = new BN(transferFee.maximumFee.toString());
 
   // edge cases
-
-  if (transferFee.transferFeeBasisPoints === ONE_IN_BASIS_POINTS) {
-    throw new Error("TransferFeeBasisPoints is too high (100%)");
-  }
 
   if (transferFee.transferFeeBasisPoints === 0) {
     return {
@@ -198,13 +195,23 @@ function calculateTransferFeeIncludedAmount(
     };
   }
 
+  if (transferFee.transferFeeBasisPoints === ONE_IN_BASIS_POINTS) {
+    if (amount.add(maxFeeBN).gt(U64_MAX)) {
+      throw new Error("The total amount and fees overflow");
+    }
+    return {
+      isFeeIncludedAmount: true,
+      amount: amount.add(maxFeeBN),
+      fee: maxFeeBN,
+    };
+  }
+
   // normal case
 
   const num = amount.muln(ONE_IN_BASIS_POINTS);
   const denom = new BN(ONE_IN_BASIS_POINTS - transferFee.transferFeeBasisPoints);
   const rawFeeIncludedAmount = ceilDivBN(num, denom);
 
-  const maxFeeBN = new BN(transferFee.maximumFee.toString());
   const result = rawFeeIncludedAmount.sub(amount).gte(maxFeeBN)
     ? { amount: amount.add(maxFeeBN), fee: maxFeeBN }
     : { amount: rawFeeIncludedAmount, fee: rawFeeIncludedAmount.sub(amount) };

@@ -16,7 +16,7 @@ pub struct SetTokenBadgeAuthority<'info> {
     pub new_token_badge_authority: UncheckedAccount<'info>,
 }
 
-/// Set the fee authority. Only the config extension authority has permission to invoke this instruction.
+/// Set the token badge authority. Only the config extension authority has permission to invoke this instruction.
 pub fn handler(ctx: Context<SetTokenBadgeAuthority>) -> Result<()> {
     Ok(ctx
         .accounts

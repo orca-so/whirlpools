@@ -530,7 +530,7 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(updateIx);
     }
 
-    for (let index = 0; initializedRewards.length; index++) {
+    for (let index = 0; index < initializedRewards.length; index++) {
       const info = initializedRewards[index];
       if (
         rewardsToCollect &&

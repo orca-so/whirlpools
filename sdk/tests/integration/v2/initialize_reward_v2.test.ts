@@ -4,8 +4,7 @@ import { METADATA_PROGRAM_ADDRESS, PDAUtil, toTx, WhirlpoolContext, WhirlpoolDat
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
-import { TokenTrait } from "../../utils/v2/init-utils-v2";
-import { initTestPoolV2, initializeRewardV2 } from "../../utils/v2/init-utils-v2";
+import { TokenTrait, initTestPoolV2, initializeRewardV2 } from "../../utils/v2/init-utils-v2";
 import { asyncAssertOwnerProgram, createMintV2 } from "../../utils/v2/token-2022";
 import { TEST_TOKEN_2022_PROGRAM_ID, TEST_TOKEN_PROGRAM_ID } from "../../utils";
 import { AccountState } from "@solana/spl-token";
@@ -319,7 +318,7 @@ describe("initialize_reward_v2", () => {
           TickSpacing.Standard
         );
   
-        const rewardMint = await createMintV2(provider, {isToken2022: true});
+        const rewardMint = await createMintV2(provider, {isToken2022: true, hasPermanentDelegate: true});
         const fakeAddress = Keypair.generate().publicKey;
 
         await assert.rejects(
@@ -350,8 +349,8 @@ describe("initialize_reward_v2", () => {
           TickSpacing.Standard
         );
 
-        const rewardMint = await createMintV2(provider, {isToken2022: true});
-        const anotherMint = await createMintV2(provider, {isToken2022: true});
+        const rewardMint = await createMintV2(provider, {isToken2022: true, hasPermanentDelegate: true});
+        const anotherMint = await createMintV2(provider, {isToken2022: true, hasPermanentDelegate: true});
 
         // initialize another badge
         const config = poolInitInfo.whirlpoolsConfig;
@@ -403,7 +402,7 @@ describe("initialize_reward_v2", () => {
           TickSpacing.Standard
         );
   
-        const rewardMint = await createMintV2(provider, {isToken2022: true});
+        const rewardMint = await createMintV2(provider, {isToken2022: true, hasPermanentDelegate: true});
         const fakeAddress = poolInitInfo.whirlpoolPda.publicKey;
 
         await assert.rejects(

@@ -25,8 +25,7 @@ import {
   systemTransferTx,
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
-import { buildTestPoolV2Params, initTestPoolV2 } from "../../utils/v2/init-utils-v2";
-import { TokenTrait } from "../../utils/v2/init-utils-v2";
+import { TokenTrait, buildTestPoolV2Params, initTestPoolV2 } from "../../utils/v2/init-utils-v2";
 import {
   asyncAssertOwnerProgram,
   asyncAssertTokenVaultV2,
@@ -641,8 +640,8 @@ describe("initialize_pool_v2", () => {
       beforeEach(async () => {
         // create tokens
         const [tokenAKeypair, tokenBKeypair] = [Keypair.generate(), Keypair.generate()].sort((a, b) => PoolUtil.compareMints(a.publicKey, b.publicKey));
-        await createMintV2(provider, {isToken2022: true}, undefined, tokenAKeypair);
-        await createMintV2(provider, {isToken2022: true}, undefined, tokenBKeypair);
+        await createMintV2(provider, {isToken2022: true, hasPermanentDelegate: true}, undefined, tokenAKeypair);
+        await createMintV2(provider, {isToken2022: true, hasPermanentDelegate: true}, undefined, tokenBKeypair);
 
         // create config and feetier
         const configKeypair = Keypair.generate();

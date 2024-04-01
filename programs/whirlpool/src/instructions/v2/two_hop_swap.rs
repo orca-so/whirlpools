@@ -27,10 +27,7 @@ pub struct TwoHopSwapV2<'info> {
 
     #[account(address = whirlpool_one.input_token_mint(a_to_b_one))]
     pub token_mint_input: InterfaceAccount<'info, Mint>,    
-    #[account(
-        address = whirlpool_one.output_token_mint(a_to_b_one),
-        constraint = whirlpool_one.output_token_mint(a_to_b_one) == whirlpool_two.input_token_mint(a_to_b_two)
-    )]
+    #[account(address = whirlpool_one.output_token_mint(a_to_b_one))]
     pub token_mint_intermediate: InterfaceAccount<'info, Mint>,
     #[account(address = whirlpool_two.output_token_mint(a_to_b_two))]
     pub token_mint_output: InterfaceAccount<'info, Mint>,

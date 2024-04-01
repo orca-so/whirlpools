@@ -1,4 +1,4 @@
-use crate::state::{token_badge, Whirlpool};
+use crate::state::{TokenBadge, Whirlpool};
 use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
 use anchor_spl::token_2022::spl_token_2022::extension::transfer_fee::{TransferFee, MAX_FEE_BASIS_POINTS};
@@ -9,8 +9,6 @@ use anchor_spl::token_2022::spl_token_2022::{self, extension::{self, StateWithEx
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::{self, Memo, BuildMemo};
 use spl_transfer_hook_interface;
-
-use token_badge::TokenBadge;
 
 pub fn transfer_from_owner_to_vault_v2<'info>(
     authority: &Signer<'info>,

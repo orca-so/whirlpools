@@ -419,4 +419,35 @@ describe("delete_token_badge", () => {
       );
     });
   });
+
+  describe("lifecycle", () => {
+    it("initialize / delete / (re)initialize / (re)delete", async () => {
+      const whirlpoolsConfigKeypair = Keypair.generate();
+      await initializeWhirlpoolsConfig(whirlpoolsConfigKeypair);
+      await initializeWhirlpoolsConfigExtension(whirlpoolsConfigKeypair.publicKey);
+
+      const mint = await createMintV2(provider, {isToken2022: true});
+      const tokenBadgePda = PDAUtil.getTokenBadge(ctx.program.programId, whirlpoolsConfigKeypair.publicKey, mint);
+
+      await initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {});
+      const tokenBadgeData1 = await fetcher.getTokenBadge(tokenBadgePda.publicKey, IGNORE_CACHE);
+      assert.ok(tokenBadgeData1!.whirlpoolsConfig.equals(whirlpoolsConfigKeypair.publicKey));
+      assert.ok(tokenBadgeData1!.tokenMint.equals(mint));
+
+      await deleteTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {});
+      const tokenBadgeDataRemoved1 = await fetcher.getTokenBadge(tokenBadgePda.publicKey, IGNORE_CACHE);
+      assert.ok(tokenBadgeDataRemoved1 === null);
+
+      // re-initialize
+      await initializeTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {});
+      const tokenBadgeData2 = await fetcher.getTokenBadge(tokenBadgePda.publicKey, IGNORE_CACHE);
+      assert.ok(tokenBadgeData2!.whirlpoolsConfig.equals(whirlpoolsConfigKeypair.publicKey));
+      assert.ok(tokenBadgeData2!.tokenMint.equals(mint));
+
+      // re-delete
+      await deleteTokenBadge(whirlpoolsConfigKeypair.publicKey, mint, {});
+      const tokenBadgeDataRemoved2 = await fetcher.getTokenBadge(tokenBadgePda.publicKey, IGNORE_CACHE);
+      assert.ok(tokenBadgeDataRemoved2 === null);
+    });
+  });
 });

@@ -31,7 +31,7 @@ import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initTestPool } from "../../utils/init-utils";
 import { mintTokensToTestAccount } from "../../utils/test-builders";
-import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 describe("whirlpool-impl", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

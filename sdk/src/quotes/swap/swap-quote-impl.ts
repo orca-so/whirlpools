@@ -5,7 +5,7 @@ import { MAX_SQRT_PRICE, MAX_SWAP_TICK_ARRAYS, MIN_SQRT_PRICE } from "../../type
 import { SwapQuote, SwapQuoteParam } from "../public";
 import { computeSwap } from "./swap-manager";
 import { TickArraySequence } from "./tick-array-sequence";
-import { TokenAmountWithFee, TokenExtensionUtil } from "../../utils/token-extension-util";
+import { TokenAmountWithFee, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * Figure out the quote parameters needed to successfully complete this trade on chain

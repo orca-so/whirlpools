@@ -12,7 +12,7 @@ import { TickSpacing, ZERO_BN, createTokenAccount } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initializePositionBundle, openBundledPosition } from "../../utils/init-utils";
-import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 
 interface SharedTestContext {

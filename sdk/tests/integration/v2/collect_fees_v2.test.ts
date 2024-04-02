@@ -32,7 +32,7 @@ import { createMintV2, createTokenAccountV2 } from "../../utils/v2/token-2022";
 import { createTokenAccount as createTokenAccountForPosition } from "../../utils/token";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { RemainingAccountsSliceData } from "../../../src/utils/remaining-accounts-util";
-import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 describe("collect_fees_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

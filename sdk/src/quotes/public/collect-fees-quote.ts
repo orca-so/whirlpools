@@ -1,7 +1,7 @@
 import { BN } from "@coral-xyz/anchor";
 import { MathUtil, MintWithTokenProgram } from "@orca-so/common-sdk";
 import { PositionData, TickData, WhirlpoolData } from "../../types/public";
-import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/token-extension-util";
+import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * @category Quotes

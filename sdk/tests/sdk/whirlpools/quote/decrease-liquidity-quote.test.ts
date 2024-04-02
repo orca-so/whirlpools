@@ -3,7 +3,7 @@ import { PriceMath, decreaseLiquidityQuoteByLiquidityWithParams } from "../../..
 import { BN } from "bn.js";
 import { PublicKey } from "@solana/web3.js";
 import { MintWithTokenProgram, Percentage } from "@orca-so/common-sdk";
-import { NO_TOKEN_EXTENSION_CONTEXT, TokenExtensionContextForPool } from "../../../../src/utils/token-extension-util";
+import { NO_TOKEN_EXTENSION_CONTEXT, TokenExtensionContextForPool } from "../../../../src/utils/public/token-extension-util";
 import { TEST_TOKEN_PROGRAM_ID } from "../../../utils";
 
 describe("edge cases", () => {

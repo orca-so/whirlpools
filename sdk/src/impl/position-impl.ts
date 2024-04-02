@@ -38,7 +38,7 @@ import {
   resolveAtaForMints,
 } from "../utils/whirlpool-ata-utils";
 import { Position } from "../whirlpool-client";
-import { TokenExtensionUtil } from "../utils/token-extension-util";
+import { TokenExtensionUtil } from "../utils/public/token-extension-util";
 
 export class PositionImpl implements Position {
   private data: PositionData;

@@ -23,7 +23,7 @@ import { TickSpacing, ZERO_BN } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { FundedPositionInfo } from "../../utils/init-utils";
-import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;

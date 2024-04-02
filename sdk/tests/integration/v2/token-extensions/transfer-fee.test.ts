@@ -69,7 +69,7 @@ import {
   getTransferFeeConfig,
 } from "@solana/spl-token";
 import { createSetTransferFeeInstruction } from "../../../utils/v2/transfer-fee";
-import { TokenExtensionContext, TokenExtensionUtil } from "../../../../src/utils/token-extension-util";
+import { TokenExtensionContext, TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("TokenExtension/TransferFee", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

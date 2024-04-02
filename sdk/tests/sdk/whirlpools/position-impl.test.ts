@@ -15,7 +15,7 @@ import { createAssociatedTokenAccount, TickSpacing, transferToken } from "../../
 import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
 import { initPosition, mintTokensToTestAccount } from "../../utils/test-builders";
-import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 describe("position-impl", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

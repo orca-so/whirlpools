@@ -30,7 +30,7 @@ import { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { createTokenAccountV2, createMintV2 } from "../../utils/v2/token-2022";
 import { createTokenAccount as createTokenAccountForPosition } from "../../utils/token";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 describe("collect_reward_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

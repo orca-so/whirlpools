@@ -52,7 +52,7 @@ import {
   getTokenAccsForPoolsV2,
 } from "../../../utils/v2/aquarium-v2";
 import { getExtraAccountMetasForTestTransferHookProgram, getTestTransferHookCounter, updateTransferHookProgram } from "../../../utils/v2/test-transfer-hook-program";
-import { TokenExtensionUtil } from "../../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("TokenExtension/TransferHook", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

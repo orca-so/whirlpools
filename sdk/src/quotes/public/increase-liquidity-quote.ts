@@ -16,7 +16,7 @@ import {
 } from "../../utils/position-util";
 import { PriceMath, TickUtil } from "../../utils/public";
 import { Whirlpool } from "../../whirlpool-client";
-import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/token-extension-util";
+import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * @category Quotes

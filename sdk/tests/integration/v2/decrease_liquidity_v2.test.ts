@@ -37,7 +37,7 @@ import {
   createTokenAccount as createTokenAccountForPosition,
   createAndMintToTokenAccount as createAndMintToTokenAccountForPosition,
 } from "../../utils/token";
-import { TokenExtensionUtil } from "../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 describe("decrease_liquidity_v2", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

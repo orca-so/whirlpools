@@ -1,7 +1,7 @@
 import { TransferFee, calculateFee, getEpochFee, getTransferFeeConfig, TOKEN_2022_PROGRAM_ID, getTransferHook, addExtraAccountMetasForExecute } from "@solana/spl-token";
 import BN from "bn.js";
 import { MintWithTokenProgram, U64_MAX, ZERO } from "@orca-so/common-sdk";
-import { IGNORE_CACHE, PoolUtil, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface, WhirlpoolData } from "..";
+import { PoolUtil, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface, WhirlpoolData } from "../..";
 import { AccountMeta, Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 

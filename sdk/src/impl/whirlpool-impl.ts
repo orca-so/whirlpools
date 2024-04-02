@@ -44,7 +44,7 @@ import { Whirlpool } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
 import { checkMergedTransactionSizeIsValid } from "../utils/txn-utils";
-import { TokenExtensionUtil } from "../utils/token-extension-util";
+import { TokenExtensionUtil } from "../utils/public/token-extension-util";
 
 export class WhirlpoolImpl implements Whirlpool {
   private data: WhirlpoolData;

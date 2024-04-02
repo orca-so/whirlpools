@@ -23,7 +23,7 @@ import {
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool, initializePositionBundle, openBundledPosition, openPosition } from "../utils/init-utils";
 import { mintTokensToTestAccount } from "../utils/test-builders";
-import { TokenExtensionUtil } from "../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../src/utils/public/token-extension-util";
 
 describe("close_bundled_position", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

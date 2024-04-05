@@ -40,6 +40,7 @@ export interface WhirlpoolClient {
    * Get a WhirlpoolRouter to help generate the best prices when transacting across a set of pools.
    * @param poolAddresses the addresses of the Whirlpool account addresses to route through
    * @returns a {@link WhirlpoolRouter} instance
+   * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   getRouter: (poolAddresses: Address[]) => Promise<WhirlpoolRouter>;
 

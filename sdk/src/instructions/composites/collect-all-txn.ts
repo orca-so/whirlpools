@@ -17,6 +17,7 @@ import { PDAUtil, PoolUtil, TickUtil } from "../../utils/public";
 import { checkMergedTransactionSizeIsValid, convertListToMap } from "../../utils/txn-utils";
 import { getTokenMintsFromWhirlpools } from "../../utils/whirlpool-ata-utils";
 import { updateFeesAndRewardsIx } from "../update-fees-and-rewards-ix";
+import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * Parameters to collect all fees and rewards from a list of positions.
@@ -119,6 +120,9 @@ export async function collectAllForPositionsTxns(
   const allMints = getTokenMintsFromWhirlpools(Array.from(whirlpools.values()));
   const accountExemption = await ctx.fetcher.getAccountRentExempt();
 
+  // make cache
+  await ctx.fetcher.getMintInfos(allMints.mintMap);
+
   // resolvedAtas[mint] => Instruction & { address }
   // if already ATA exists, Instruction will be EMPTY_INSTRUCTION
   const resolvedAtas = convertListToMap(
@@ -158,7 +162,7 @@ export async function collectAllForPositionsTxns(
 
     // Build collect instructions
     const [positionAddr, position] = positionList[posIndex];
-    const collectIxForPosition = constructCollectIxForPosition(
+    const collectIxForPosition = await constructCollectIxForPosition(
       ctx,
       new PublicKey(positionAddr),
       position,
@@ -204,7 +208,7 @@ export async function collectAllForPositionsTxns(
 }
 
 // TODO: Once individual collect ix for positions is implemented, maybe migrate over if it can take custom ATA?
-const constructCollectIxForPosition = (
+const constructCollectIxForPosition = async (
   ctx: WhirlpoolContext,
   positionKey: PublicKey,
   position: PositionData,
@@ -212,7 +216,7 @@ const constructCollectIxForPosition = (
   positionOwner: PublicKey,
   positionAuthority: PublicKey,
   resolvedAtas: Record<string, ResolvedTokenAddressInstruction>,
-  touchedMints: Set<string>
+  touchedMints: Set<string>,
 ) => {
   const ixForPosition: Instruction[] = [];
   const {
@@ -233,6 +237,12 @@ const constructCollectIxForPosition = (
   const { tickSpacing } = whirlpool;
   const mintA = whirlpool.tokenMintA.toBase58();
   const mintB = whirlpool.tokenMintB.toBase58();
+
+  const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(
+    ctx.fetcher,
+    whirlpool,
+    PREFER_CACHE,
+  );
 
   const positionTokenAccount = getAssociatedTokenAddressSync(
     positionMint,
@@ -269,22 +279,45 @@ const constructCollectIxForPosition = (
     ixForPosition.push(resolvedAtas[mintB]);
     touchedMints.add(mintB);
   }
+  const collectFeesBaseParams = {
+    whirlpool: whirlpoolKey,
+    position: positionKey,
+    positionAuthority,
+    positionTokenAccount,
+    tokenOwnerAccountA: resolvedAtas[mintA].address,
+    tokenOwnerAccountB: resolvedAtas[mintB].address,
+    tokenVaultA: whirlpool.tokenVaultA,
+    tokenVaultB: whirlpool.tokenVaultB,
+  };
   ixForPosition.push(
-    WhirlpoolIx.collectFeesIx(ctx.program, {
-      whirlpool: whirlpoolKey,
-      position: positionKey,
-      positionAuthority,
-      positionTokenAccount,
-      tokenOwnerAccountA: resolvedAtas[mintA].address,
-      tokenOwnerAccountB: resolvedAtas[mintB].address,
-      tokenVaultA: whirlpool.tokenVaultA,
-      tokenVaultB: whirlpool.tokenVaultB,
-    })
+    !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? WhirlpoolIx.collectFeesIx(ctx.program, collectFeesBaseParams)
+      : WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+        ...collectFeesBaseParams,
+        tokenMintA: tokenExtensionCtx.tokenMintWithProgramA.address,
+        tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          ctx.connection,
+          tokenExtensionCtx.tokenMintWithProgramA,
+          collectFeesBaseParams.tokenVaultA,
+          collectFeesBaseParams.tokenOwnerAccountA,
+          collectFeesBaseParams.whirlpool, // vault to owner, so pool is authority
+        ),
+        tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          ctx.connection,
+          tokenExtensionCtx.tokenMintWithProgramB,
+          collectFeesBaseParams.tokenVaultB,
+          collectFeesBaseParams.tokenOwnerAccountB,
+          collectFeesBaseParams.whirlpool, // vault to owner, so pool is authority
+        ),
+      })
   );
 
   // Collect Rewards
   // TODO: handle empty vault values?
-  positionRewardInfos.forEach((_, index) => {
+  for (let index = 0; index < positionRewardInfos.length; index++) {
     const rewardInfo = whirlpool.rewardInfos[index];
     if (PoolUtil.isRewardInitialized(rewardInfo)) {
       const mintReward = rewardInfo.mint.toBase58();
@@ -292,19 +325,33 @@ const constructCollectIxForPosition = (
         ixForPosition.push(resolvedAtas[mintReward]);
         touchedMints.add(mintReward);
       }
+      const collectRewardBaseParams = {
+        whirlpool: whirlpoolKey,
+        position: positionKey,
+        positionAuthority,
+        positionTokenAccount,
+        rewardIndex: index,
+        rewardOwnerAccount: resolvedAtas[mintReward].address,
+        rewardVault: rewardInfo.vault,
+      };
       ixForPosition.push(
-        WhirlpoolIx.collectRewardIx(ctx.program, {
-          whirlpool: whirlpoolKey,
-          position: positionKey,
-          positionAuthority,
-          positionTokenAccount,
-          rewardIndex: index,
-          rewardOwnerAccount: resolvedAtas[mintReward].address,
-          rewardVault: rewardInfo.vault,
-        })
+        !TokenExtensionUtil.isV2IxRequiredReward(tokenExtensionCtx, index)
+          ? WhirlpoolIx.collectRewardIx(ctx.program, collectRewardBaseParams)
+          : WhirlpoolIx.collectRewardV2Ix(ctx.program, {
+            ...collectRewardBaseParams,
+            rewardMint: tokenExtensionCtx.rewardTokenMintsWithProgram[index]!.address,
+            rewardTokenProgram: tokenExtensionCtx.rewardTokenMintsWithProgram[index]!.tokenProgram,
+            rewardTransferHookAccounts: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+              ctx.connection,
+              tokenExtensionCtx.rewardTokenMintsWithProgram[index]!,
+              collectRewardBaseParams.rewardVault,
+              collectRewardBaseParams.rewardOwnerAccount,
+              collectRewardBaseParams.whirlpool, // vault to owner, so pool is authority
+            ),
+          })
       );
     }
-  });
+  }
 
   return ixForPosition;
 };

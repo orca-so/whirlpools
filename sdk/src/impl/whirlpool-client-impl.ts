@@ -23,6 +23,7 @@ import { Position, Whirlpool, WhirlpoolClient } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./util";
 import { WhirlpoolImpl } from "./whirlpool-impl";
+import { NO_TOKEN_EXTENSION_CONTEXT, TokenExtensionContextForPool, TokenExtensionUtil } from "../utils/public/token-extension-util";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
   constructor(readonly ctx: WhirlpoolContext) {}
@@ -210,6 +211,13 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)"
     );
 
+    const mintInfos = await this.ctx.fetcher.getMintInfos([tokenMintA, tokenMintB], opts);
+    const tokenExtensionCtx: TokenExtensionContextForPool = {
+      ...NO_TOKEN_EXTENSION_CONTEXT,
+      tokenMintWithProgramA: mintInfos.get(tokenMintA.toString())!,
+      tokenMintWithProgramB: mintInfos.get(tokenMintB.toString())!,
+    };
+
     whirlpoolsConfig = AddressUtil.toPubKey(whirlpoolsConfig);
 
     const feeTierKey = PDAUtil.getFeeTier(
@@ -239,7 +247,10 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       this.ctx.txBuilderOpts
     );
 
-    const initPoolIx = WhirlpoolIx.initializePoolIx(this.ctx.program, {
+    const tokenBadgeA = PDAUtil.getTokenBadge(this.ctx.program.programId, whirlpoolsConfig, AddressUtil.toPubKey(tokenMintA)).publicKey;
+    const tokenBadgeB = PDAUtil.getTokenBadge(this.ctx.program.programId, whirlpoolsConfig, AddressUtil.toPubKey(tokenMintB)).publicKey;
+
+    const baseParams = {
       initSqrtPrice,
       whirlpoolsConfig,
       whirlpoolPda,
@@ -250,7 +261,16 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       feeTierKey,
       tickSpacing,
       funder: new PublicKey(funder),
-    });
+    };
+    const initPoolIx = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? WhirlpoolIx.initializePoolIx(this.ctx.program, baseParams)
+      : WhirlpoolIx.initializePoolV2Ix(this.ctx.program, {
+        ...baseParams,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        tokenBadgeA,
+        tokenBadgeB,
+      });
 
     const initialTickArrayStartTick = TickUtil.getStartTickIndex(initialTick, tickSpacing);
     const initialTickArrayPda = PDAUtil.getTickArray(

@@ -3,7 +3,7 @@ import { Instruction } from "@orca-so/common-sdk";
 import { AccountMeta, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
-import { MEMO_PROGRAM_ADDRESS } from "../../types/public";
+import { MEMO_PROGRAM_ADDRESS, SwapInput } from "../../types/public";
 import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
 
 /**
@@ -25,7 +25,7 @@ import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/rem
  * @param oracle - PublicKey for the oracle account for this Whirlpool.
  * @param tokenAuthority - authority to withdraw tokens from the input token account
  */
-export type SwapV2Params = SwapV2Input & {
+export type SwapV2Params = SwapInput & {
   whirlpool: PublicKey;
   tokenMintA: PublicKey;
   tokenMintB: PublicKey;
@@ -39,31 +39,6 @@ export type SwapV2Params = SwapV2Input & {
   tokenProgramB: PublicKey;
   oracle: PublicKey;
   tokenAuthority: PublicKey;
-};
-
-/**
- * Parameters that describe the nature of a swap on a Whirlpool.
- *
- * @category Instruction Types
- * @param aToB - The direction of the swap. True if swapping from A to B. False if swapping from B to A.
- * @param amountSpecifiedIsInput - Specifies the token the parameter `amount`represents. If true, the amount represents
- *                                 the input token of the swap.
- * @param amount - The amount of input or output token to swap from (depending on amountSpecifiedIsInput).
- * @param otherAmountThreshold - The maximum/minimum of input/output token to swap into (depending on amountSpecifiedIsInput).
- * @param sqrtPriceLimit - The maximum/minimum price the swap will swap to.
- * @param tickArray0 - PublicKey of the tick-array where the Whirlpool's currentTickIndex resides in
- * @param tickArray1 - The next tick-array in the swap direction. If the swap will not reach the next tick-aray, input the same array as tickArray0.
- * @param tickArray2 - The next tick-array in the swap direction after tickArray2. If the swap will not reach the next tick-aray, input the same array as tickArray1.
- */
-export type SwapV2Input = {
-  amount: BN;
-  otherAmountThreshold: BN;
-  sqrtPriceLimit: BN;
-  amountSpecifiedIsInput: boolean;
-  aToB: boolean;
-  tickArray0: PublicKey;
-  tickArray1: PublicKey;
-  tickArray2: PublicKey;
 };
 
 /**

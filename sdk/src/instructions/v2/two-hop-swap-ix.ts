@@ -5,6 +5,7 @@ import BN from "bn.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../../types/public";
 import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
+import { TwoHopSwapInput } from "../two-hop-swap-ix";
 
 /**
  * Parameters to execute a two-hop swap on a Whirlpool.
@@ -29,7 +30,7 @@ import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/rem
  * @param tokenAuthority - authority to withdraw tokens from the input token account
  * @param swapInput - Parameters in {@link TwoHopSwapInput}
  */
-export type TwoHopSwapV2Params = TwoHopSwapV2Input & {
+export type TwoHopSwapV2Params = TwoHopSwapInput & {
   whirlpoolOne: PublicKey;
   whirlpoolTwo: PublicKey;
   tokenMintInput: PublicKey;
@@ -50,41 +51,6 @@ export type TwoHopSwapV2Params = TwoHopSwapV2Input & {
   oracleOne: PublicKey;
   oracleTwo: PublicKey;
   tokenAuthority: PublicKey;
-};
-
-/**
- * Parameters that define a two-hop swap on a Whirlpool.
- *
- * @category Instruction Types
- * @param amount - The amount of input or output token to swap from (depending on amountSpecifiedIsInput).
- * @param otherAmountThreshold - The maximum/minimum of input/output token to swap into (depending on amountSpecifiedIsInput).
- * @param amountSpecifiedIsInput - Specifies the token the paramneter `amount`represets. If true, the amount represents
- *                                 the input token of the swap.
- * @param aToBOne - The direction of the swap-one. True if swapping from A to B. False if swapping from B to A.
- * @param aToBTwo - The direction of the swap-two. True if swapping from A to B. False if swapping from B to A.
- * @param sqrtPriceLimitOne - The maximum/minimum price that swap-one will swap to.
- * @param sqrtPriceLimitTwo - The maximum/minimum price that swap-two will swap to.
- * @param tickArrayOne0 - PublicKey of the tick-array of swap-One where the Whirlpool's currentTickIndex resides in
- * @param tickArrayOne1 - The next tick-array in the swap direction of swap-One. If the swap will not reach the next tick-aray, input the same array as tickArray0.
- * @param tickArrayOne2 - The next tick-array in the swap direction after tickArray2 of swap-One. If the swap will not reach the next tick-aray, input the same array as tickArray1.
- * @param tickArrayTwo0 - PublicKey of the tick-array of swap-Two where the Whirlpool's currentTickIndex resides in
- * @param tickArrayTwo1 - The next tick-array in the swap direction of swap-Two. If the swap will not reach the next tick-aray, input the same array as tickArray0.
- * @param tickArrayTwo2 - The next tick-array in the swap direction after tickArray2 of swap-Two. If the swap will not reach the next tick-aray, input the same array as tickArray1.
- */
-export type TwoHopSwapV2Input = {
-  amount: BN;
-  otherAmountThreshold: BN;
-  amountSpecifiedIsInput: boolean;
-  aToBOne: boolean;
-  aToBTwo: boolean;
-  sqrtPriceLimitOne: BN;
-  sqrtPriceLimitTwo: BN;
-  tickArrayOne0: PublicKey;
-  tickArrayOne1: PublicKey;
-  tickArrayOne2: PublicKey;
-  tickArrayTwo0: PublicKey;
-  tickArrayTwo1: PublicKey;
-  tickArrayTwo2: PublicKey;
 };
 
 /**

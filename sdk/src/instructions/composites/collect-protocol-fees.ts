@@ -11,6 +11,8 @@ import {
   resolveAtaForMints,
 } from "../../utils/whirlpool-ata-utils";
 import { collectProtocolFeesIx } from "../collect-protocol-fees-ix";
+import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
+import { collectProtocolFeesV2Ix } from "../v2";
 
 export async function collectProtocolFees(
   ctx: WhirlpoolContext,
@@ -23,9 +25,13 @@ export async function collectProtocolFees(
     (await ctx.fetcher.getPools(poolAddresses, PREFER_CACHE)).values()
   );
 
+  // make cache
+  const mints = getTokenMintsFromWhirlpools(whirlpoolDatas, TokenMintTypes.POOL_ONLY).mintMap;
+  await ctx.fetcher.getMintInfos(mints);
+
   const accountExemption = await ctx.fetcher.getAccountRentExempt();
   const { ataTokenAddresses, resolveAtaIxs } = await resolveAtaForMints(ctx, {
-    mints: getTokenMintsFromWhirlpools(whirlpoolDatas, TokenMintTypes.POOL_ONLY).mintMap,
+    mints: mints,
     accountExemption,
     receiver: receiverKey,
     payer: payerKey,
@@ -69,17 +75,47 @@ export async function collectProtocolFees(
       );
     }
 
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(
+      ctx.fetcher,
+      pool,
+      PREFER_CACHE,
+    );
+
+    const baseParams = {
+      whirlpoolsConfig: pool.whirlpoolsConfig,
+      whirlpool: AddressUtil.toPubKey(poolAddress),
+      tokenVaultA: pool.tokenVaultA,
+      tokenVaultB: pool.tokenVaultB,
+      tokenOwnerAccountA: ataTokenAddresses[pool.tokenMintA.toBase58()],
+      tokenOwnerAccountB: ataTokenAddresses[pool.tokenMintB.toBase58()],
+      collectProtocolFeesAuthority: poolConfig.collectProtocolFeesAuthority,
+    };
+
     // add collect ixn
     instructions.push(
-      collectProtocolFeesIx(ctx.program, {
-        whirlpoolsConfig: pool.whirlpoolsConfig,
-        whirlpool: AddressUtil.toPubKey(poolAddress),
-        tokenVaultA: pool.tokenVaultA,
-        tokenVaultB: pool.tokenVaultB,
-        tokenOwnerAccountA: ataTokenAddresses[pool.tokenMintA.toBase58()],
-        tokenOwnerAccountB: ataTokenAddresses[pool.tokenMintB.toBase58()],
-        collectProtocolFeesAuthority: poolConfig.collectProtocolFeesAuthority,
-      })
+      !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+        ? collectProtocolFeesIx(ctx.program, baseParams)
+        : collectProtocolFeesV2Ix(ctx.program, {
+          ...baseParams,
+          tokenMintA: tokenExtensionCtx.tokenMintWithProgramA.address,
+          tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
+          tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+          tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+          tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramA,
+            baseParams.tokenVaultA,
+            baseParams.tokenOwnerAccountA,
+            baseParams.whirlpool, // vault to protocol, so pool is authority
+          ),
+          tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            ctx.connection,
+            tokenExtensionCtx.tokenMintWithProgramB,
+            baseParams.tokenVaultB,
+            baseParams.tokenOwnerAccountB,
+            baseParams.whirlpool, // vault to protocol, so pool is authority
+          ),
+        })
     );
   }
 

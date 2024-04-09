@@ -290,6 +290,8 @@ export async function buildTestPoolV2Params(
   defaultFeeRate = 3000,
   initSqrtPrice = DEFAULT_SQRT_PRICE,
   funder?: PublicKey,
+  createTokenBadgeIfNeededA: boolean = true,
+  createTokenBadgeIfNeededB: boolean = true,
 ): Promise<TestPoolV2Params> {
   const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
   const { configExtensionInitInfo, configExtensionSetTokenBadgeAuthorityInfo, configExtensionKeypairs } = generateDefaultConfigExtensionParams(ctx, configInitInfo.whirlpoolsConfigKeypair.publicKey, configKeypairs.feeAuthorityKeypair.publicKey);
@@ -318,7 +320,7 @@ export async function buildTestPoolV2Params(
     funder,
   );
 
-  if (isTokenBadgeRequired(tokenTraitA)) {
+  if (isTokenBadgeRequired(tokenTraitA) && createTokenBadgeIfNeededA) {
     await toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
       tokenMint: poolInitInfo.tokenMintA,
       tokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
@@ -329,7 +331,7 @@ export async function buildTestPoolV2Params(
     })).addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair).buildAndExecute();
   }
 
-  if (isTokenBadgeRequired(tokenTraitB)) {
+  if (isTokenBadgeRequired(tokenTraitB) && createTokenBadgeIfNeededB) {
     await toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
       tokenMint: poolInitInfo.tokenMintB,
       tokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,

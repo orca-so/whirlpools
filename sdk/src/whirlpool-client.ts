@@ -260,6 +260,7 @@ export interface Whirlpool {
    * @param destinationWallet - The wallet that the tokens withdrawn and rent lamports will be sent to. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - The wallet that houses the position token that corresponds to this position address. If null, the WhirlpoolContext wallet is used.
    * @param payer - the wallet that will fund the cost needed to initialize the token ATA accounts. If null, the WhirlpoolContext wallet is used.
+   * @return transactions that will close the position. The transactions must be executed serially.
    */
   closePosition: (
     positionAddress: Address,
@@ -410,7 +411,7 @@ export interface Position {
    * @param positionWallet - the wallet to that houses the position token. If null, the WhirlpoolContext wallet is used.
    * @param ataPayer - wallet that will fund the creation of the new associated token accounts
    * @param opts an options object to define fetch and cache options when accessing on-chain accounts
-   * @return the transaction that will collect fees from the position
+   * @return the transactions that will collect rewards from the position. The transactions must be executed serially.
    */
   collectRewards: (
     rewardsToCollect?: Address[],
@@ -420,5 +421,5 @@ export interface Position {
     positionWallet?: Address,
     ataPayer?: Address,
     opts?: WhirlpoolAccountFetchOptions
-  ) => Promise<TransactionBuilder>;
+  ) => Promise<TransactionBuilder[]>;
 }

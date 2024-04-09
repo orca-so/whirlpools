@@ -80,6 +80,20 @@ export async function swapAsync(
         tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          ctx.connection,
+          tokenExtensionCtx.tokenMintWithProgramA,
+          baseParams.aToB ? baseParams.tokenOwnerAccountA : baseParams.tokenVaultA,
+          baseParams.aToB ? baseParams.tokenVaultA : baseParams.tokenOwnerAccountA,
+          baseParams.aToB ? baseParams.tokenAuthority : baseParams.whirlpool,
+        ),
+        tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          ctx.connection,
+          tokenExtensionCtx.tokenMintWithProgramB,
+          baseParams.aToB ? baseParams.tokenVaultB : baseParams.tokenOwnerAccountB,
+          baseParams.aToB ? baseParams.tokenOwnerAccountB : baseParams.tokenVaultB,
+          baseParams.aToB ? baseParams.whirlpool : baseParams.tokenAuthority,
+        ),
       })
   );
 }

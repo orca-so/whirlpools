@@ -53,7 +53,7 @@ import {
 } from "../../../utils/v2/aquarium-v2";
 import { getExtraAccountMetasForTestTransferHookProgram, getTestTransferHookCounter, updateTransferHookProgram } from "../../../utils/v2/test-transfer-hook-program";
 import { hasConfidentialTransferMintExtension } from "../../../utils/v2/confidential-transfer";
-import { TokenExtensionUtil } from "../../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

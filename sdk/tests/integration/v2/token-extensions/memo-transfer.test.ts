@@ -50,7 +50,7 @@ import {
   getDefaultAquariumV2,
   getTokenAccsForPoolsV2,
 } from "../../../utils/v2/aquarium-v2";
-import { TokenExtensionUtil } from "../../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("TokenExtension/MemoTransfer", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

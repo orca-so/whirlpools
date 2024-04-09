@@ -19,7 +19,7 @@ import {
   setupSwapTest
 } from "../../../utils/swap-test-utils";
 import { getVaultAmounts } from "../../../utils/whirlpools-test-utils";
-import { TokenExtensionUtil } from "../../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("swap traversal tests", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

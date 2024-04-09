@@ -839,3 +839,31 @@ export function calculateTransferFeeExcludedAmount(
     fee: feeBN,
   };
 }
+
+export async function mintTokensToTestAccountV2(
+  provider: AnchorProvider,
+  tokenAMint: PublicKey,
+  tokenTraitA: TokenTrait,
+  tokenMintForA: number,
+  tokenBMint: PublicKey,
+  tokenTraitB: TokenTrait,
+  tokenMintForB: number,
+  destinationWallet?: PublicKey
+) {
+  const userTokenAAccount = await createAndMintToAssociatedTokenAccountV2(
+    provider,
+    tokenTraitA,
+    tokenAMint,
+    tokenMintForA,
+    destinationWallet
+  );
+  const userTokenBAccount = await createAndMintToAssociatedTokenAccountV2(
+    provider,
+    tokenTraitB,
+    tokenBMint,
+    tokenMintForB,
+    destinationWallet
+  );
+
+  return [userTokenAAccount, userTokenBAccount];
+}

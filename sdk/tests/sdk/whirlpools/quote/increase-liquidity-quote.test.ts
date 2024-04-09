@@ -4,7 +4,7 @@ import { BN } from "bn.js";
 import { PublicKey } from "@solana/web3.js";
 import { MintWithTokenProgram, Percentage } from "@orca-so/common-sdk";
 import { TEST_TOKEN_PROGRAM_ID } from "../../../utils";
-import { NO_TOKEN_EXTENSION_CONTEXT, TokenExtensionContextForPool } from "../../../../src/utils/token-extension-util";
+import { NO_TOKEN_EXTENSION_CONTEXT, TokenExtensionContextForPool } from "../../../../src/utils/public/token-extension-util";
 
 describe("edge cases", () => {
   const tokenMintA = new PublicKey("orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE");

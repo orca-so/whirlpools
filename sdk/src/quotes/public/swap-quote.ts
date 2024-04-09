@@ -14,7 +14,7 @@ import { SwapUtils } from "../../utils/public/swap-utils";
 import { Whirlpool } from "../../whirlpool-client";
 import { simulateSwap } from "../swap/swap-quote-impl";
 import { DevFeeSwapQuote } from "./dev-fee-swap-quote";
-import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/token-extension-util";
+import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * @category Quotes
@@ -200,6 +200,8 @@ async function swapQuoteByToken(
     opts
   );
 
+  const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
   return {
     whirlpoolData,
     tokenAmount,
@@ -208,6 +210,6 @@ async function swapQuoteByToken(
     sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
     otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
     tickArrays,
-    tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
+    tokenExtensionCtx,
   };
 }

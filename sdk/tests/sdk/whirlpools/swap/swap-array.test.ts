@@ -22,7 +22,7 @@ import {
   setupSwapTest
 } from "../../../utils/swap-test-utils";
 import { getTickArrays } from "../../../utils/testDataTypes";
-import { TokenExtensionUtil } from "../../../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("swap arrays test", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);

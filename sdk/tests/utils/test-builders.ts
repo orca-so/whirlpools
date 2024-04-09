@@ -18,7 +18,7 @@ import {
   increaseLiquidityQuoteByInputToken
 } from "../../src";
 import { WhirlpoolContext } from "../../src/context";
-import { TokenExtensionUtil } from "../../src/utils/token-extension-util";
+import { TokenExtensionUtil } from "../../src/utils/public/token-extension-util";
 
 export interface TestWhirlpoolsConfigKeypairs {
   feeAuthorityKeypair: Keypair;

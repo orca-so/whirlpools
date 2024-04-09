@@ -47,6 +47,7 @@ export type RouteSelectOptions = {
 /**
  * A selection of utility functions for the {@link WhirlpoolRouter}.
  * @category Router
+ * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
  */
 export class RouterUtils {
   /**
@@ -59,6 +60,8 @@ export class RouterUtils {
    * @param opts {@link RouteSelectOptions} to configure the selection of the best route.
    * @returns
    * The best {@link ExecutableRoute} that can be used to execute a swap. If no executable route is found, null is returned.
+   * 
+   * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   static async selectFirstExecutableRoute(
     ctx: WhirlpoolContext,
@@ -145,6 +148,8 @@ export class RouterUtils {
    * @param trade The trade the user used to derive the route.
    * @param route The route to calculate the price impact for.
    * @returns A Decimal object representing the percentage value of the price impact (ex. 3.01%)
+   *
+   * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   static getPriceImpactForRoute(trade: Trade, route: TradeRoute): Decimal {
     const { amountSpecifiedIsInput } = trade;
@@ -198,6 +203,7 @@ export class RouterUtils {
    * Get the tick arrays addresses that are touched by a route.
    * @param route The route to get the tick arrays from.
    * @returns The tick arrays addresses that are touched by the route.
+   * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   static getTouchedTickArraysFromRoute(route: TradeRoute): PublicKey[] {
     const taAddresses = new Set<string>();
@@ -216,6 +222,7 @@ export class RouterUtils {
   /**
    * Get the default options for generating trade routes.
    * @returns Default options for generating trade routes.
+   * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   static getDefaultRouteOptions(): RoutingOptions {
     return {

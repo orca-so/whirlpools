@@ -10,6 +10,7 @@ import {
 import {
   Account,
   NATIVE_MINT,
+  TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
   createCloseAccountInstruction,
   getAssociatedTokenAddressSync,
@@ -377,7 +378,8 @@ async function cachedResolveOrCreateNonNativeATAs(
         signers: [],
       };
     }
-    instructionMap[tokenMintArray[index].toBase58()] = resolvedInstruction;
+    // WhirlpoolRouter does not handle TokenExtension, so token program is always standard TokenProgram.
+    instructionMap[tokenMintArray[index].toBase58()] = { tokenProgram: TOKEN_PROGRAM_ID, ...resolvedInstruction };
   });
 
   return instructionMap;

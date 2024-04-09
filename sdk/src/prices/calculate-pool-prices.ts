@@ -15,7 +15,7 @@ import {
 import { swapQuoteWithParams } from "../quotes/public/swap-quote";
 import { TickArray, WhirlpoolData } from "../types/public";
 import { PoolUtil, PriceMath, SwapUtils } from "../utils/public";
-import { NO_TOKEN_EXTENSION_CONTEXT } from "../utils/token-extension-util";
+import { NO_TOKEN_EXTENSION_CONTEXT } from "../utils/public/token-extension-util";
 
 function checkLiquidity(
   pool: WhirlpoolData,

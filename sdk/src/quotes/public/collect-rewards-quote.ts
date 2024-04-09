@@ -4,7 +4,7 @@ import invariant from "tiny-invariant";
 import { NUM_REWARDS, PositionData, TickData, WhirlpoolData } from "../../types/public";
 import { BitMath } from "../../utils/math/bit-math";
 import { PoolUtil } from "../../utils/public/pool-utils";
-import { TokenAmountWithFee, TokenExtensionContextForReward, TokenExtensionUtil } from "../../utils/token-extension-util";
+import { TokenAmountWithFee, TokenExtensionContextForReward, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * Parameters needed to generate a quote on collectible rewards on a position.

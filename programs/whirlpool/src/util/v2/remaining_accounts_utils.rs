@@ -65,21 +65,39 @@ pub fn parse_remaining_accounts<'info>(
 
     match slice.accounts_type {
       AccountsType::TransferHookA => {
+        if parsed_remaining_accounts.transfer_hook_a.is_some() {
+          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+        }
         parsed_remaining_accounts.transfer_hook_a = Some(accounts);
       }
       AccountsType::TransferHookB => {
+        if parsed_remaining_accounts.transfer_hook_b.is_some() {
+          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+        }
         parsed_remaining_accounts.transfer_hook_b = Some(accounts);
       }
       AccountsType::TransferHookReward => {
+        if parsed_remaining_accounts.transfer_hook_reward.is_some() {
+          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+        }
         parsed_remaining_accounts.transfer_hook_reward = Some(accounts);
       }
       AccountsType::TransferHookInput => {
+        if parsed_remaining_accounts.transfer_hook_input.is_some() {
+          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+        }
         parsed_remaining_accounts.transfer_hook_input = Some(accounts);
       }
       AccountsType::TransferHookIntermediate => {
+        if parsed_remaining_accounts.transfer_hook_intermediate.is_some() {
+          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+        }
         parsed_remaining_accounts.transfer_hook_intermediate = Some(accounts);
       }
       AccountsType::TransferHookOutput => {
+        if parsed_remaining_accounts.transfer_hook_output.is_some() {
+          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+        }
         parsed_remaining_accounts.transfer_hook_output = Some(accounts);
       }
       /* 

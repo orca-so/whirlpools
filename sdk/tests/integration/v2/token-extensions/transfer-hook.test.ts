@@ -9,6 +9,7 @@ import {
   DecreaseLiquidityQuote,
   decreaseLiquidityQuoteByLiquidityWithParams,
   InitPoolV2Params,
+  MEMO_PROGRAM_ADDRESS,
   NUM_REWARDS,
   PDAUtil,
   PoolUtil,
@@ -53,6 +54,7 @@ import {
 } from "../../../utils/v2/aquarium-v2";
 import { getExtraAccountMetasForTestTransferHookProgram, getTestTransferHookCounter, updateTransferHookProgram } from "../../../utils/v2/test-transfer-hook-program";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
+import { RemainingAccountsBuilder, RemainingAccountsType } from "../../../../src/utils/remaining-accounts-util";
 
 describe("TokenExtension/TransferHook", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -506,6 +508,218 @@ describe("TokenExtension/TransferHook", () => {
       );
     });
 
+    it("collect_fees_v2: [Fail] with TransferHookReward", async () => {
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        positions,
+      } = fixture.getInfos();
+
+      const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+      .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+      .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+      // invalid accounts type
+      .addSlice(RemainingAccountsType.TransferHookReward, tokenTransferHookAccountsA)
+      .build();
+  
+      const ix = ctx.program.instruction.collectFeesV2(remainingAccountsInfo, {
+        accounts: {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+          tokenOwnerAccountA: feeAccountA,
+          tokenOwnerAccountB: feeAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+        },
+        remainingAccounts,
+      });
+  
+      await assert.rejects(
+        toTx(
+          ctx,
+          {
+            instructions: [ix],
+            cleanupInstructions: [],
+            signers: [],
+          }
+        ).buildAndExecute(),
+        /0x17a0/ // RemainingAccountsInvalidSlice
+      );
+    });
+
+    it("collect_fees_v2: [Fail] with insufficient remaining accounts", async () => {
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        positions,
+      } = fixture.getInfos();
+
+      const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+      .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+      .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+      .build();
+
+      const missingRemainingAccounts = remainingAccounts!.slice(0, remainingAccounts!.length - 1); // drop last 1 accounts
+
+      const ix = ctx.program.instruction.collectFeesV2(remainingAccountsInfo, {
+        accounts: {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+          tokenOwnerAccountA: feeAccountA,
+          tokenOwnerAccountB: feeAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+        },
+        remainingAccounts: missingRemainingAccounts,
+      });
+  
+      await assert.rejects(
+        toTx(
+          ctx,
+          {
+            instructions: [ix],
+            cleanupInstructions: [],
+            signers: [],
+          }
+        ).buildAndExecute(),
+        /0x17a1/ // RemainingAccountsInsufficient
+      );
+    });
+
+    it("collect_fees_v2: [Fail] with duplicated remaining accounts (TransferHookA)", async () => {
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        positions,
+      } = fixture.getInfos();
+
+      const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+      .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+      .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+      // duplicated
+      .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+      .build();
+
+      const ix = ctx.program.instruction.collectFeesV2(remainingAccountsInfo, {
+        accounts: {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+          tokenOwnerAccountA: feeAccountA,
+          tokenOwnerAccountB: feeAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+        },
+        remainingAccounts,
+      });
+  
+      await assert.rejects(
+        toTx(
+          ctx,
+          {
+            instructions: [ix],
+            cleanupInstructions: [],
+            signers: [],
+          }
+        ).buildAndExecute(),
+        /0x17a5/ // RemainingAccountsDuplicatedAccountsType
+      );
+    });
+
+    it("collect_fees_v2: [Fail] with duplicated remaining accounts (TransferHookB)", async () => {
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        positions,
+      } = fixture.getInfos();
+
+      const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+      .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+      .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+      // duplicated
+      .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+      .build();
+
+      const ix = ctx.program.instruction.collectFeesV2(remainingAccountsInfo, {
+        accounts: {
+          whirlpool: whirlpoolPda.publicKey,
+          positionAuthority: provider.wallet.publicKey,
+          position: positions[0].publicKey,
+          positionTokenAccount: positions[0].tokenAccount,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+          tokenOwnerAccountA: feeAccountA,
+          tokenOwnerAccountB: feeAccountB,
+          tokenVaultA: tokenVaultAKeypair.publicKey,
+          tokenVaultB: tokenVaultBKeypair.publicKey,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+        },
+        remainingAccounts,
+      });
+  
+      await assert.rejects(
+        toTx(
+          ctx,
+          {
+            instructions: [ix],
+            cleanupInstructions: [],
+            signers: [],
+          }
+        ).buildAndExecute(),
+        /0x17a5/ // RemainingAccountsDuplicatedAccountsType
+      );
+    });
+
     it("collect_protocol_fees_v2: with transfer hook", async () => {
       const {
         poolInitInfo: {
@@ -792,6 +1006,49 @@ describe("TokenExtension/TransferHook", () => {
             })
           ).buildAndExecute(),
           /0x17a2/ // NoExtraAccountsForTransferHook
+        );
+      }
+    });
+
+    it("collect_reward_v2: [Fail] with duplicated remaining accounts (TransferHookReward)", async () => {
+      const {
+        poolInitInfo: { whirlpoolPda },
+        positions,
+        rewards,
+      } = fixture.getInfos();
+
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+        .addSlice(RemainingAccountsType.TransferHookReward, tokenTransferHookAccounts[i])
+        // duplicated
+        .addSlice(RemainingAccountsType.TransferHookReward, tokenTransferHookAccounts[i])
+        .build();
+  
+        const ix = ctx.program.instruction.collectRewardV2(i, remainingAccountsInfo, {
+          accounts: {
+            whirlpool: whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            rewardMint: rewards[i].rewardMint,
+            rewardTokenProgram: rewards[i].tokenProgram,
+            rewardOwnerAccount: rewardAccounts[i],
+            rewardVault: rewards[i].rewardVaultKeypair.publicKey,
+            memoProgram: MEMO_PROGRAM_ADDRESS,
+          },
+          remainingAccounts,
+        });
+    
+        await assert.rejects(
+          toTx(
+            ctx,
+            {
+              instructions: [ix],
+              cleanupInstructions: [],
+              signers: [],
+            }
+          ).buildAndExecute(),
+          /0x17a5/ // RemainingAccountsDuplicatedAccountsType
         );
       }
     });
@@ -1838,6 +2095,120 @@ describe("TokenExtension/TransferHook", () => {
         // add Compute units (because it calls 4 external hooks)
         ).prependInstruction(useMaxCU()).buildAndExecute(),
         /0x17a2/ // NoExtraAccountsForTransferHook
+      );
+    });
+
+    it("two_hop_swap_v2: [Fail] with duplicated remaining accounts (TransferHookInput)", async () => {
+      const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+      .addSlice(RemainingAccountsType.TransferHookInput, tokenTransferHookAccountsInput)
+      .addSlice(RemainingAccountsType.TransferHookIntermediate, tokenTransferHookAccountsMid)
+      .addSlice(RemainingAccountsType.TransferHookOutput, tokenTransferHookAccountsOutput)
+      // duplicated
+      .addSlice(RemainingAccountsType.TransferHookInput, tokenTransferHookAccountsInput)
+      .build();
+
+      const ix = ctx.program.instruction.twoHopSwapV2(
+        baseIxParams.amount,
+        baseIxParams.otherAmountThreshold,
+        baseIxParams.amountSpecifiedIsInput,
+        baseIxParams.aToBOne,
+        baseIxParams.aToBTwo,
+        baseIxParams.sqrtPriceLimitOne,
+        baseIxParams.sqrtPriceLimitTwo,
+        remainingAccountsInfo, {
+        accounts: {
+          ...baseIxParams,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+        },
+        remainingAccounts,
+      });
+  
+      await assert.rejects(
+        toTx(
+          ctx,
+          {
+            instructions: [ix],
+            cleanupInstructions: [],
+            signers: [],
+          }
+        ).buildAndExecute(),
+        /0x17a5/ // RemainingAccountsDuplicatedAccountsType
+      );
+    });
+
+    it("two_hop_swap_v2: [Fail] with duplicated remaining accounts (TransferHookIntermediate)", async () => {
+      const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+      .addSlice(RemainingAccountsType.TransferHookInput, tokenTransferHookAccountsInput)
+      .addSlice(RemainingAccountsType.TransferHookIntermediate, tokenTransferHookAccountsMid)
+      .addSlice(RemainingAccountsType.TransferHookOutput, tokenTransferHookAccountsOutput)
+      // duplicated
+      .addSlice(RemainingAccountsType.TransferHookIntermediate, tokenTransferHookAccountsMid)
+      .build();
+
+      const ix = ctx.program.instruction.twoHopSwapV2(
+        baseIxParams.amount,
+        baseIxParams.otherAmountThreshold,
+        baseIxParams.amountSpecifiedIsInput,
+        baseIxParams.aToBOne,
+        baseIxParams.aToBTwo,
+        baseIxParams.sqrtPriceLimitOne,
+        baseIxParams.sqrtPriceLimitTwo,
+        remainingAccountsInfo, {
+        accounts: {
+          ...baseIxParams,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+        },
+        remainingAccounts,
+      });
+  
+      await assert.rejects(
+        toTx(
+          ctx,
+          {
+            instructions: [ix],
+            cleanupInstructions: [],
+            signers: [],
+          }
+        ).buildAndExecute(),
+        /0x17a5/ // RemainingAccountsDuplicatedAccountsType
+      );
+    });
+
+    it("two_hop_swap_v2: [Fail] with duplicated remaining accounts (TransferHookOutput)", async () => {
+      const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+      .addSlice(RemainingAccountsType.TransferHookInput, tokenTransferHookAccountsInput)
+      .addSlice(RemainingAccountsType.TransferHookIntermediate, tokenTransferHookAccountsMid)
+      .addSlice(RemainingAccountsType.TransferHookOutput, tokenTransferHookAccountsOutput)
+      // duplicated
+      .addSlice(RemainingAccountsType.TransferHookOutput, tokenTransferHookAccountsOutput)
+      .build();
+
+      const ix = ctx.program.instruction.twoHopSwapV2(
+        baseIxParams.amount,
+        baseIxParams.otherAmountThreshold,
+        baseIxParams.amountSpecifiedIsInput,
+        baseIxParams.aToBOne,
+        baseIxParams.aToBTwo,
+        baseIxParams.sqrtPriceLimitOne,
+        baseIxParams.sqrtPriceLimitTwo,
+        remainingAccountsInfo, {
+        accounts: {
+          ...baseIxParams,
+          memoProgram: MEMO_PROGRAM_ADDRESS,
+        },
+        remainingAccounts,
+      });
+  
+      await assert.rejects(
+        toTx(
+          ctx,
+          {
+            instructions: [ix],
+            cleanupInstructions: [],
+            signers: [],
+          }
+        ).buildAndExecute(),
+        /0x17a5/ // RemainingAccountsDuplicatedAccountsType
       );
     });
   });

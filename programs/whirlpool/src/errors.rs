@@ -132,6 +132,9 @@ pub enum ErrorCode {
 
     #[msg("Transfer fee calculation failed")]
     TransferFeeCalculationError, // 0x17a4 (6052)
+
+    #[msg("Same accounts type is provided more than once")]
+    RemainingAccountsDuplicatedAccountsType, // 0x17a5 (6053)
 }
 
 impl From<TryFromIntError> for ErrorCode {

@@ -300,7 +300,13 @@ pub fn is_token_badge_initialized<'info>(
 }
 
 #[derive(Debug)]
-pub struct AmountWithTransferFee {
+pub struct TransferFeeIncludedAmount {
+    pub amount: u64,
+    pub transfer_fee: u64,
+}
+
+#[derive(Debug)]
+pub struct TransferFeeExcludedAmount {
     pub amount: u64,
     pub transfer_fee: u64,
 }
@@ -308,22 +314,22 @@ pub struct AmountWithTransferFee {
 pub fn calculate_transfer_fee_excluded_amount<'info>(
     token_mint: &InterfaceAccount<'info, Mint>,
     transfer_fee_included_amount: u64,
-) -> Result<AmountWithTransferFee> {
+) -> Result<TransferFeeExcludedAmount> {
     if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint)? {
         let transfer_fee = epoch_transfer_fee.calculate_fee(transfer_fee_included_amount).unwrap();
         let transfer_fee_excluded_amount = transfer_fee_included_amount.checked_sub(transfer_fee).unwrap();
-        return Ok(AmountWithTransferFee { amount: transfer_fee_excluded_amount, transfer_fee });            
+        return Ok(TransferFeeExcludedAmount { amount: transfer_fee_excluded_amount, transfer_fee });            
     }
 
-    Ok(AmountWithTransferFee { amount: transfer_fee_included_amount, transfer_fee: 0 })
+    Ok(TransferFeeExcludedAmount { amount: transfer_fee_included_amount, transfer_fee: 0 })
 } 
 
 pub fn calculate_transfer_fee_included_amount<'info>(
     token_mint: &InterfaceAccount<'info, Mint>,
     transfer_fee_excluded_amount: u64,
-) -> Result<AmountWithTransferFee> {
+) -> Result<TransferFeeIncludedAmount> {
     if transfer_fee_excluded_amount == 0 {
-        return Ok(AmountWithTransferFee { amount: 0, transfer_fee: 0 });
+        return Ok(TransferFeeIncludedAmount { amount: 0, transfer_fee: 0 });
     }
 
     // now transfer_fee_excluded_amount > 0
@@ -351,10 +357,10 @@ pub fn calculate_transfer_fee_included_amount<'info>(
             return Err(ErrorCode::TransferFeeCalculationError.into());
         }
 
-        return Ok(AmountWithTransferFee { amount: transfer_fee_included_amount, transfer_fee });
+        return Ok(TransferFeeIncludedAmount { amount: transfer_fee_included_amount, transfer_fee });
     }
 
-    Ok(AmountWithTransferFee { amount: transfer_fee_excluded_amount, transfer_fee: 0 })
+    Ok(TransferFeeIncludedAmount { amount: transfer_fee_excluded_amount, transfer_fee: 0 })
 }
 
 pub fn get_epoch_transfer_fee<'info>(

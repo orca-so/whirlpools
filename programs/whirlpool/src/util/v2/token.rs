@@ -380,3 +380,115 @@ pub fn get_epoch_transfer_fee<'info>(
 
     Ok(None)
 }
+
+// special thanks for OtterSec
+#[cfg(test)]
+mod fuzz_tests {
+    use proptest::prelude::*;
+    use super::*;
+
+    struct SyscallStubs {}
+    impl solana_program::program_stubs::SyscallStubs for SyscallStubs {
+        fn sol_get_clock_sysvar(&self, _var_addr: *mut u8) -> u64 {
+            0
+        }
+    }
+
+    #[derive(Default, AnchorSerialize)]
+    struct MintWithTransferFeeConfigLayout {
+        // 82 for Mint
+        pub coption_mint_authority: u32, // 4
+        pub mint_authority: Pubkey, // 32
+        pub supply: u64, // 8
+        pub decimals: u8, // 1
+        pub is_initialized: bool, // 1
+        pub coption_freeze_authority: u32, // 4
+        pub freeze_authority: Pubkey, // 4 + 32
+
+        // 83 for padding
+        pub padding1: [u8; 32],
+        pub padding2: [u8; 32],
+        pub padding3: [u8; 19],
+
+        pub account_type: u8, // 1
+
+        pub extension_type: u16, // 2
+        pub extension_length: u16, // 2
+        // 108 for TransferFeeConfig data
+        pub transfer_fee_config_authority: Pubkey, // 32
+        pub withdraw_withheld_authority: Pubkey, // 32
+        pub withheld_amount: u64, // 8
+        pub older_epoch: u64, // 8
+        pub older_maximum_fee: u64, // 8
+        pub older_transfer_fee_basis_point: u16, // 2
+        pub newer_epoch: u64, // 8
+        pub newer_maximum_fee: u64, // 8
+        pub newer_transfer_fee_basis_point: u16, // 2
+    }
+    impl MintWithTransferFeeConfigLayout {
+        pub const LEN: usize = 82 + 83 + 1 + 2 + 2 + 108;
+    }
+
+    /// Maximum possible fee in basis points is 100%, aka 10_000 basis points
+    const MAX_FEE_BASIS_POINTS: u16 = 10_000;
+    const MAX_FEE: u64 = 1_000_000_000;
+    const MAX_AMOUNT: u64 = 0xFFFFFFFF;
+
+    proptest! {
+        #![proptest_config(ProptestConfig::with_cases(100000))]
+        #[test]
+        fn test_calculate_transfer_fee_included_amount(
+            amount in 0..MAX_AMOUNT,
+            maximum_fee in 0..MAX_FEE,
+            transfer_fee_basis_point in 0..MAX_FEE_BASIS_POINTS
+        ) {
+            // stub Clock
+            solana_program::program_stubs::set_syscall_stubs(Box::new(SyscallStubs {}));
+            assert_eq!(Clock::get().unwrap().epoch, 0);
+
+            let mint_with_transfer_fee_config = MintWithTransferFeeConfigLayout {
+                is_initialized: true,
+                account_type: 1, // Mint
+                extension_type: 1, // TransferFeeConfig
+                extension_length: 108,
+                older_epoch: 0,
+                older_maximum_fee: maximum_fee,
+                older_transfer_fee_basis_point: transfer_fee_basis_point,
+                newer_epoch: 0,
+                newer_maximum_fee: maximum_fee,
+                newer_transfer_fee_basis_point: transfer_fee_basis_point,
+                ..Default::default()
+            };
+
+            let mut data = Vec::<u8>::new();
+            mint_with_transfer_fee_config.serialize(&mut data).unwrap();
+            assert_eq!(data.len(), MintWithTransferFeeConfigLayout::LEN);
+
+            let key = Pubkey::default();
+            let mut lamports = 0u64;
+            let owner = anchor_spl::token_2022::ID;
+            let rent_epoch = 0;
+            let is_signer = false;
+            let is_writable = false;
+            let executable = false;
+            let account_info = AccountInfo::new(
+                &key,
+                is_signer,
+                is_writable,
+                &mut lamports,
+                &mut data,
+                &owner,
+                executable,
+                rent_epoch
+            );
+    
+            let interface_account_mint = InterfaceAccount::<Mint>::try_from(&account_info).unwrap();
+
+            let transfer_fee = get_epoch_transfer_fee(&interface_account_mint).unwrap().unwrap();
+            assert_eq!(u64::from(transfer_fee.maximum_fee), maximum_fee);
+            assert_eq!(u16::from(transfer_fee.transfer_fee_basis_points), transfer_fee_basis_point);
+
+            let _ = calculate_transfer_fee_included_amount(&interface_account_mint, amount)?;
+        }
+    }
+}

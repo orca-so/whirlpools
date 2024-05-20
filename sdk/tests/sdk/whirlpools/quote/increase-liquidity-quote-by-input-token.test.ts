@@ -231,6 +231,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         tickLowerIndex: pTickLowerIndex,
         tickUpperIndex: pTickUpperIndex,
         tickCurrentIndex,
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
         slippageTolerance: slippage,
       });
 
@@ -251,6 +252,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         liquidity,
         sqrtPrice: sqrtPrice,
         slippageTolerance: slippage,
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
       });
 
       const {

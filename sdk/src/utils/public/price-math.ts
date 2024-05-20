@@ -1,7 +1,12 @@
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil } from "@orca-so/common-sdk";
+import { DecimalUtil, MathUtil, Percentage } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";
-import { MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "../../types/public";
+import {
+  MAX_SQRT_PRICE,
+  MAX_SQRT_PRICE_BN,
+  MIN_SQRT_PRICE,
+  MIN_SQRT_PRICE_BN,
+} from "../../types/public";
 import { TickUtil } from "./tick-utils";
 
 const BIT_PRECISION = 14;
@@ -22,7 +27,7 @@ export class PriceMath {
   public static sqrtPriceX64ToPrice(
     sqrtPriceX64: BN,
     decimalsA: number,
-    decimalsB: number
+    decimalsB: number,
   ): Decimal {
     return MathUtil.fromX64(sqrtPriceX64)
       .pow(2)
@@ -78,12 +83,12 @@ export class PriceMath {
     const tickLow = signedShiftRight(
       logbpX64.sub(new BN(LOG_B_P_ERR_MARGIN_LOWER_X64)),
       64,
-      128
+      128,
     ).toNumber();
     const tickHigh = signedShiftRight(
       logbpX64.add(new BN(LOG_B_P_ERR_MARGIN_UPPER_X64)),
       64,
-      128
+      128,
     ).toNumber();
 
     if (tickLow == tickHigh) {
@@ -102,13 +107,13 @@ export class PriceMath {
     return PriceMath.sqrtPriceX64ToPrice(
       PriceMath.tickIndexToSqrtPriceX64(tickIndex),
       decimalsA,
-      decimalsB
+      decimalsB,
     );
   }
 
   public static priceToTickIndex(price: Decimal, decimalsA: number, decimalsB: number): number {
     return PriceMath.sqrtPriceX64ToTickIndex(
-      PriceMath.priceToSqrtPriceX64(price, decimalsA, decimalsB)
+      PriceMath.priceToSqrtPriceX64(price, decimalsA, decimalsB),
     );
   }
 
@@ -116,11 +121,11 @@ export class PriceMath {
     price: Decimal,
     decimalsA: number,
     decimalsB: number,
-    tickSpacing: number
+    tickSpacing: number,
   ): number {
     return TickUtil.getInitializableTickIndex(
       PriceMath.priceToTickIndex(price, decimalsA, decimalsB),
-      tickSpacing
+      tickSpacing,
     );
   }
 
@@ -150,6 +155,48 @@ export class PriceMath {
     const tick = PriceMath.sqrtPriceX64ToTickIndex(sqrtPriceX64);
     const invTick = TickUtil.invertTick(tick);
     return PriceMath.tickIndexToSqrtPriceX64(invTick);
+  }
+
+  /**
+   * Calculate the sqrtPriceX64 & tick index slippage price boundary for a given price and slippage.
+   * Note: This function loses precision
+   *
+   * @param sqrtPriceX64 the sqrtPriceX64 to apply the slippage on
+   * @param slippage the slippage to apply onto the sqrtPriceX64
+   * @returns the sqrtPriceX64 & tick index slippage price boundary
+   */
+  public static getSlippageBoundForSqrtPrice(
+    sqrtPriceX64: BN,
+    slippage: Percentage,
+  ): { lowerBound: [BN, number]; upperBound: [BN, number] } {
+    const sqrtPriceX64Decimal = DecimalUtil.fromBN(sqrtPriceX64);
+    const slippageNumerator = new Decimal(slippage.numerator.toString());
+    const slippageDenominator = new Decimal(slippage.denominator.toString());
+    const lowerBoundSqrtPriceDecimal = sqrtPriceX64Decimal
+      .mul(slippageDenominator.sub(slippageNumerator).sqrt())
+      .div(slippageDenominator.sqrt())
+      .toDecimalPlaces(0);
+    const upperBoundSqrtPriceDecimal = sqrtPriceX64Decimal
+      .mul(slippageDenominator.add(slippageNumerator).sqrt())
+      .div(slippageDenominator.sqrt())
+      .toDecimalPlaces(0);
+
+    const lowerBoundSqrtPrice = BN.min(
+      BN.max(new BN(lowerBoundSqrtPriceDecimal.toString()), MIN_SQRT_PRICE_BN),
+      MAX_SQRT_PRICE_BN,
+    );
+    const upperBoundSqrtPrice = BN.min(
+      BN.max(new BN(upperBoundSqrtPriceDecimal.toString()), MIN_SQRT_PRICE_BN),
+      MAX_SQRT_PRICE_BN,
+    );
+
+    const lowerTickCurrentIndex = PriceMath.sqrtPriceX64ToTickIndex(lowerBoundSqrtPrice);
+    const upperTickCurrentIndex = PriceMath.sqrtPriceX64ToTickIndex(upperBoundSqrtPrice);
+
+    return {
+      lowerBound: [lowerBoundSqrtPrice, lowerTickCurrentIndex],
+      upperBound: [upperBoundSqrtPrice, upperTickCurrentIndex],
+    };
   }
 }
 

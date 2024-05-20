@@ -58,6 +58,18 @@ export const MAX_SQRT_PRICE = "79226673515401279992447579055";
 export const MIN_SQRT_PRICE = "4295048016";
 
 /**
+ * The minimum sqrt-price supported by the Whirlpool program.
+ * @category Constants
+ */
+export const MIN_SQRT_PRICE_BN = new BN(MIN_SQRT_PRICE);
+
+/**
+ * The maximum sqrt-price supported by the Whirlpool program.
+ * @category Constants
+ */
+export const MAX_SQRT_PRICE_BN = new BN(MAX_SQRT_PRICE);
+
+/**
  * The number of initialized ticks that a tick-array account can hold.
  * @category Constants
  */

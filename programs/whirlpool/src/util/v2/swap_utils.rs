@@ -206,8 +206,11 @@ pub fn update_and_two_hop_swap_whirlpool_v2<'info>(
     );
 
     // amount
-    let input_amount = if is_token_fee_in_one_a { swap_update_one.amount_a } else { swap_update_one.amount_b };
-    let intermediate_amount = if is_token_fee_in_one_a { swap_update_one.amount_b } else { swap_update_one.amount_a };
+    let (input_amount, intermediate_amount) = if is_token_fee_in_one_a {
+        (swap_update_one.amount_a, swap_update_one.amount_b)
+    } else {
+        (swap_update_one.amount_b, swap_update_one.amount_a)
+    };
     let output_amount = if is_token_fee_in_two_a { swap_update_two.amount_b } else { swap_update_two.amount_a };
 
     transfer_from_owner_to_vault_v2(

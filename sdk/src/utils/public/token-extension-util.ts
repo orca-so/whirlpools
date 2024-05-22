@@ -151,9 +151,8 @@ export class TokenExtensionUtil {
   public static isV2IxRequiredPool(
     tokenExtensionCtx: TokenExtensionContextForPool
   ): boolean {
-    if (tokenExtensionCtx.tokenMintWithProgramA.tokenProgram.equals(TOKEN_2022_PROGRAM_ID)) return true;
-    if (tokenExtensionCtx.tokenMintWithProgramB.tokenProgram.equals(TOKEN_2022_PROGRAM_ID)) return true;
-    return false;
+    return tokenExtensionCtx.tokenMintWithProgramA.tokenProgram.equals(TOKEN_2022_PROGRAM_ID)
+      || tokenExtensionCtx.tokenMintWithProgramB.tokenProgram.equals(TOKEN_2022_PROGRAM_ID);
   }
 
   public static isV2IxRequiredReward(

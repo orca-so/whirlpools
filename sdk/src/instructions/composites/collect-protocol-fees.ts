@@ -101,16 +101,12 @@ export async function collectProtocolFees(
           tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
           tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
           tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-          tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
             ctx.connection,
-            tokenExtensionCtx.tokenMintWithProgramA,
+            tokenExtensionCtx,
             baseParams.tokenVaultA,
             baseParams.tokenOwnerAccountA,
             baseParams.whirlpool, // vault to protocol, so pool is authority
-          ),
-          tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-            ctx.connection,
-            tokenExtensionCtx.tokenMintWithProgramB,
             baseParams.tokenVaultB,
             baseParams.tokenOwnerAccountB,
             baseParams.whirlpool, // vault to protocol, so pool is authority

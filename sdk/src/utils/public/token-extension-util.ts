@@ -142,7 +142,7 @@ export class TokenExtensionUtil {
       tokenMintWithProgram.address,
       destination,
       owner,
-      0n, // extra account must not depend on the amount (the acount will be changed due to slippage)
+      0n, // extra account must not depend on the amount (the amount will be changed due to slippage)
       "confirmed"
     );
   
@@ -150,6 +150,42 @@ export class TokenExtensionUtil {
     return extraAccountMetas.length > 0
       ? extraAccountMetas
       : undefined;
+  }
+
+  public static async getExtraAccountMetasForTransferHookForPool(
+    connection: Connection,
+    tokenExtensionCtx: TokenExtensionContextForPool,
+    sourceA: PublicKey,
+    destinationA: PublicKey,
+    ownerA: PublicKey,
+    sourceB: PublicKey,
+    destinationB: PublicKey,
+    ownerB: PublicKey,
+  ): Promise<{
+    tokenTransferHookAccountsA: AccountMeta[] | undefined,
+    tokenTransferHookAccountsB: AccountMeta[] | undefined,
+  }> {
+    const [tokenTransferHookAccountsA, tokenTransferHookAccountsB] = await Promise.all([
+      TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+        connection,
+        tokenExtensionCtx.tokenMintWithProgramA,
+        sourceA,
+        destinationA,
+        ownerA,
+      ),
+      TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+        connection,
+        tokenExtensionCtx.tokenMintWithProgramB,
+        sourceB,
+        destinationB,
+        ownerB,
+      ),
+    ]);
+
+    return {
+      tokenTransferHookAccountsA,
+      tokenTransferHookAccountsB,
+    };
   }
   
   public static isV2IxRequiredPool(

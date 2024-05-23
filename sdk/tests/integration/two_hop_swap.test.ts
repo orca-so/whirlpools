@@ -93,7 +93,7 @@ describe("two-hop swap", () => {
       const quote2 = await swapQuoteByInputToken(
         whirlpoolTwo,
         intermediaryToken,
-        quote.estimatedAmountOut.amount,
+        quote.estimatedAmountOut,
         Percentage.fromFraction(1, 100),
         ctx.program.programId,
         fetcher,
@@ -243,7 +243,7 @@ describe("two-hop swap", () => {
     const quote2 = await swapQuoteByInputToken(
       whirlpoolTwo,
       intermediaryToken,
-      quote.estimatedAmountOut.amount,
+      quote.estimatedAmountOut,
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -262,19 +262,19 @@ describe("two-hop swap", () => {
     ).buildAndExecute();
 
     assert.deepEqual(await getTokenBalancesForVaults(pools), [
-      tokenVaultBalances[0].add(quote.estimatedAmountIn.amount),
-      tokenVaultBalances[1].sub(quote.estimatedAmountOut.amount),
-      tokenVaultBalances[2].add(quote2.estimatedAmountIn.amount),
-      tokenVaultBalances[3].sub(quote2.estimatedAmountOut.amount),
+      tokenVaultBalances[0].add(quote.estimatedAmountIn),
+      tokenVaultBalances[1].sub(quote.estimatedAmountOut),
+      tokenVaultBalances[2].add(quote2.estimatedAmountIn),
+      tokenVaultBalances[3].sub(quote2.estimatedAmountOut),
     ]);
 
     const prevTbs = [...tokenBalances];
     tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
 
     assert.deepEqual(tokenBalances, [
-      prevTbs[0].sub(quote.estimatedAmountIn.amount),
+      prevTbs[0].sub(quote.estimatedAmountIn),
       prevTbs[1],
-      prevTbs[2].add(quote2.estimatedAmountOut.amount),
+      prevTbs[2].add(quote2.estimatedAmountOut),
     ]);
 
     whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
@@ -328,7 +328,7 @@ describe("two-hop swap", () => {
     const quote2 = await swapQuoteByInputToken(
       whirlpoolTwo,
       tokenB,
-      quote.estimatedAmountOut.amount,
+      quote.estimatedAmountOut,
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -347,18 +347,18 @@ describe("two-hop swap", () => {
     ).buildAndExecute();
 
     assert.deepEqual(await getTokenBalancesForVaults(pools), [
-      tokenVaultBalances[0].add(quote.estimatedAmountIn.amount),
-      tokenVaultBalances[1].sub(quote.estimatedAmountOut.amount),
-      tokenVaultBalances[2].sub(quote2.estimatedAmountOut.amount),
-      tokenVaultBalances[3].add(quote2.estimatedAmountIn.amount),
+      tokenVaultBalances[0].add(quote.estimatedAmountIn),
+      tokenVaultBalances[1].sub(quote.estimatedAmountOut),
+      tokenVaultBalances[2].sub(quote2.estimatedAmountOut),
+      tokenVaultBalances[3].add(quote2.estimatedAmountIn),
     ]);
 
     const prevTbs = [...tokenBalances];
     tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
 
     assert.deepEqual(tokenBalances, [
-      prevTbs[0].sub(quote.estimatedAmountIn.amount).add(quote2.estimatedAmountOut.amount),
-      prevTbs[1].add(quote.estimatedAmountOut.amount).sub(quote2.estimatedAmountIn.amount),
+      prevTbs[0].sub(quote.estimatedAmountIn).add(quote2.estimatedAmountOut),
+      prevTbs[1].add(quote.estimatedAmountOut).sub(quote2.estimatedAmountIn),
       prevTbs[2],
     ]);
   });
@@ -387,7 +387,7 @@ describe("two-hop swap", () => {
     const quote2 = await swapQuoteByInputToken(
       whirlpoolTwo,
       intermediaryToken,
-      quote.estimatedAmountOut.amount,
+      quote.estimatedAmountOut,
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -437,7 +437,7 @@ describe("two-hop swap", () => {
     const quote = await swapQuoteByOutputToken(
       whirlpoolOne,
       intermediaryToken,
-      quote2.estimatedAmountIn.amount,
+      quote2.estimatedAmountIn,
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -456,16 +456,16 @@ describe("two-hop swap", () => {
     ).buildAndExecute();
 
     assert.deepEqual(await getTokenBalancesForVaults(pools), [
-      tokenVaultBalances[0].add(quote.estimatedAmountIn.amount),
-      tokenVaultBalances[1].sub(quote.estimatedAmountOut.amount),
-      tokenVaultBalances[2].add(quote2.estimatedAmountIn.amount),
-      tokenVaultBalances[3].sub(quote2.estimatedAmountOut.amount),
+      tokenVaultBalances[0].add(quote.estimatedAmountIn),
+      tokenVaultBalances[1].sub(quote.estimatedAmountOut),
+      tokenVaultBalances[2].add(quote2.estimatedAmountIn),
+      tokenVaultBalances[3].sub(quote2.estimatedAmountOut),
     ]);
 
     assert.deepEqual(await getTokenBalances(tokenAccounts.map((acc) => acc.account)), [
-      preSwapBalances[0].sub(quote.estimatedAmountIn.amount),
+      preSwapBalances[0].sub(quote.estimatedAmountIn),
       preSwapBalances[1],
-      preSwapBalances[2].add(quote2.estimatedAmountOut.amount),
+      preSwapBalances[2].add(quote2.estimatedAmountOut),
     ]);
   });
 
@@ -496,7 +496,7 @@ describe("two-hop swap", () => {
     const quote = await swapQuoteByOutputToken(
       whirlpoolOne,
       intermediaryToken,
-      quote2.estimatedAmountIn.amount,
+      quote2.estimatedAmountIn,
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -547,7 +547,7 @@ describe("two-hop swap", () => {
     const quote = await swapQuoteByOutputToken(
       whirlpoolOne,
       intermediaryToken,
-      quote2.estimatedAmountIn.amount,
+      quote2.estimatedAmountIn,
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -593,7 +593,7 @@ describe("two-hop swap", () => {
     const quote2 = await swapQuoteByInputToken(
       whirlpoolTwo,
       intermediaryToken,
-      quote.estimatedAmountOut.amount,
+      quote.estimatedAmountOut,
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -652,7 +652,7 @@ describe("two-hop swap", () => {
     const quote2 = await swapQuoteByInputToken(
       whirlpoolTwo,
       intermediaryToken,
-      quote.estimatedAmountOut.amount,
+      quote.estimatedAmountOut,
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -710,7 +710,7 @@ describe("two-hop swap", () => {
     const quote2 = await swapQuoteByInputToken(
       whirlpoolTwo,
       intermediaryToken,
-      quote.estimatedAmountOut.amount,
+      quote.estimatedAmountOut,
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
@@ -766,7 +766,7 @@ describe("two-hop swap", () => {
     const quote2 = await swapQuoteByInputToken(
       whirlpoolTwo,
       intermediaryToken,
-      quote.estimatedAmountOut.amount,
+      quote.estimatedAmountOut,
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,

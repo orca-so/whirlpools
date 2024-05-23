@@ -231,7 +231,7 @@ export async function initPosition(
   const { positionMint, tx } = await pool.openPosition(
     lowerTick,
     upperTick,
-    { liquidityAmount: quote.liquidityAmount, tokenMaxA: quote.tokenMaxA.amount, tokenMaxB: quote.tokenMaxB.amount },
+    quote,
     sourceWalletKey,
     ctx.wallet.publicKey
   );

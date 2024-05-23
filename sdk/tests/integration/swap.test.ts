@@ -580,11 +580,11 @@ describe("swap", () => {
 
     assert.equal(
       await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
-      tokenVaultABefore.sub(quote.estimatedAmountOut.amount).toString()
+      tokenVaultABefore.sub(quote.estimatedAmountOut).toString()
     );
     assert.equal(
       await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey),
-      tokenVaultBBefore.add(quote.estimatedAmountIn.amount).toString()
+      tokenVaultBBefore.add(quote.estimatedAmountIn).toString()
     );
   });
 

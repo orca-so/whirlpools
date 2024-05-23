@@ -5,8 +5,7 @@ import { MAX_SQRT_PRICE, MAX_SWAP_TICK_ARRAYS, MIN_SQRT_PRICE } from "../../type
 import { SwapQuote, SwapQuoteParam } from "../public";
 import { computeSwap } from "./swap-manager";
 import { TickArraySequence } from "./tick-array-sequence";
-import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
-import { TransferFeeIncludedAmount } from "../../types/public/transfer-fee-types";
+import { TransferFeeIncludedAmount, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * Figure out the quote parameters needed to successfully complete this trade on chain
@@ -113,11 +112,15 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     const touchedArrays = tickSequence.getTouchedArrays(MAX_SWAP_TICK_ARRAYS);
 
     return {
-      estimatedAmountIn: transferFeeIncludedIn,
-      estimatedAmountOut: transferFeeExcludedOut,
+      estimatedAmountIn: transferFeeIncludedIn.amount,
+      estimatedAmountOut: transferFeeExcludedOut.amount,
       estimatedEndTickIndex: swapResults.nextTickIndex,
       estimatedEndSqrtPrice: swapResults.nextSqrtPrice,
       estimatedFeeAmount: swapResults.totalFeeAmount,
+      transferFee: {
+        deductingFromEstimatedAmountIn: transferFeeIncludedIn.fee,
+        deductedFromEstimatedAmountOut: transferFeeExcludedOut.fee,
+      },
       amount: tokenAmount,
       amountSpecifiedIsInput,
       aToB,
@@ -177,11 +180,15 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
   const touchedArrays = tickSequence.getTouchedArrays(MAX_SWAP_TICK_ARRAYS);
 
   return {
-    estimatedAmountIn: transferFeeIncludedIn,
-    estimatedAmountOut: transferFeeExcludedOut,
+    estimatedAmountIn: transferFeeIncludedIn.amount,
+    estimatedAmountOut: transferFeeExcludedOut.amount,
     estimatedEndTickIndex: swapResults.nextTickIndex,
     estimatedEndSqrtPrice: swapResults.nextSqrtPrice,
     estimatedFeeAmount: swapResults.totalFeeAmount,
+    transferFee: {
+      deductingFromEstimatedAmountIn: transferFeeIncludedIn.fee,
+      deductedFromEstimatedAmountOut: transferFeeExcludedOut.fee,
+    },
     amount: tokenAmount,
     amountSpecifiedIsInput,
     aToB,

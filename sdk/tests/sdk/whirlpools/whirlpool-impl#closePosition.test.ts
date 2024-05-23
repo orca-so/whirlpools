@@ -106,11 +106,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
     );
 
-    const tx = await position.decreaseLiquidity({
-      liquidityAmount: liquidityCollectedQuote.liquidityAmount,
-      tokenMinA: liquidityCollectedQuote.tokenMinA.amount,
-      tokenMinB: liquidityCollectedQuote.tokenMinB.amount,
-    });
+    const tx = await position.decreaseLiquidity(liquidityCollectedQuote);
 
     await tx.buildAndExecute();
   }
@@ -182,13 +178,13 @@ describe("WhirlpoolImpl#closePosition()", () => {
     });
     const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey, undefined, tokenExtensionCtx.tokenMintWithProgramA.tokenProgram);
     const accountA = (await ctx.fetcher.getTokenInfo(accountAPubkey, IGNORE_CACHE)) as Account;
-    const expectAmountA = liquidityCollectedQuote.tokenMinA.amount.add(feeQuote.feeOwedA.amount);
+    const expectAmountA = liquidityCollectedQuote.tokenMinA.add(feeQuote.feeOwedA);
     if (isWSOLTest) {
       // If this is a WSOL test, we have to account for account rent retrieval
       const solInOtherWallet = await ctx.connection.getBalance(otherWallet.publicKey);
       const minAccountExempt = await ctx.fetcher.getAccountRentExempt();
-      const expectedReceivedSol = liquidityCollectedQuote.tokenMinA.amount
-        .add(feeQuote.feeOwedA.amount)
+      const expectedReceivedSol = liquidityCollectedQuote.tokenMinA
+        .add(feeQuote.feeOwedA)
         .add(new BN(positionAccountBalance))
         .add(new BN(minAccountExempt))
         .add(new BN(minAccountExempt))
@@ -205,7 +201,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
 
     const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey, undefined, tokenExtensionCtx.tokenMintWithProgramB.tokenProgram);
     const accountB = await ctx.fetcher.getTokenInfo(accountBPubkey, IGNORE_CACHE);
-    const expectAmountB = liquidityCollectedQuote.tokenMinB.amount.add(feeQuote.feeOwedB.amount);
+    const expectAmountB = liquidityCollectedQuote.tokenMinB.add(feeQuote.feeOwedB);
     if (expectAmountB.isZero()) {
       assert.ok(!accountB || accountB.amount === 0n);
     } else {
@@ -229,7 +225,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       if (!!rewards[i]) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey, undefined, tokenExtensionCtx.rewardTokenMintsWithProgram[i]!.tokenProgram);
         const rewardTokenAccount = await ctx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), rewardQuote.rewardOwed[i]?.amount.toString());
+        assert.equal(rewardTokenAccount?.amount.toString(), rewardQuote.rewardOwed[i]?.toString());
       }
     }
   }

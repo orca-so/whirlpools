@@ -65,9 +65,7 @@ describe("decrease_liquidity", () => {
     await toTx(
       ctx,
       WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
-        liquidityAmount: removalQuote.liquidityAmount,
-        tokenMinA: removalQuote.tokenMinA.amount,
-        tokenMinB: removalQuote.tokenMinB.amount,
+        ...removalQuote,
         whirlpool: whirlpoolPda.publicKey,
         positionAuthority: provider.wallet.publicKey,
         position: positions[0].publicKey,
@@ -124,9 +122,7 @@ describe("decrease_liquidity", () => {
     await toTx(
       ctx,
       WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
-        liquidityAmount: removalQuote.liquidityAmount,
-        tokenMinA: removalQuote.tokenMinA.amount,
-        tokenMinB: removalQuote.tokenMinB.amount,
+        ...removalQuote,
         whirlpool: whirlpoolPda.publicKey,
         positionAuthority: provider.wallet.publicKey,
         position: position.publicKey,

@@ -99,7 +99,7 @@ describe("collect_reward", () => {
 
     // Check that the expectation is not zero
     for (let i = 0; i < NUM_REWARDS; i++) {
-      assert.ok(!expectation.rewardOwed[i]!.amount.isZero());
+      assert.ok(!expectation.rewardOwed[i]!.isZero());
     }
 
     // Perform collect rewards tx
@@ -124,7 +124,7 @@ describe("collect_reward", () => {
       ).buildAndExecute();
 
       const collectedBalance = parseInt(await getTokenBalance(provider, rewardOwnerAccount));
-      assert.equal(collectedBalance, expectation.rewardOwed[i]?.amount.toNumber());
+      assert.equal(collectedBalance, expectation.rewardOwed[i]?.toNumber());
       const vaultBalance = parseInt(
         await getTokenBalance(provider, rewards[i].rewardVaultKeypair.publicKey)
       );

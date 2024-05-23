@@ -263,19 +263,19 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
       } = expectedQuote;
 
       assert.ok(
-        quote.tokenEstA.amount.eq(expectedTokenEstA.amount),
+        quote.tokenEstA.eq(expectedTokenEstA),
         `tokenEstA: ${quote.tokenEstA.toString()} !== ${expectedTokenEstA.toString()}`,
       );
       assert.ok(
-        quote.tokenEstB.amount.eq(expectedTokenEstB.amount),
+        quote.tokenEstB.eq(expectedTokenEstB),
         `tokenEstB: ${quote.tokenEstB.toString()} !== ${expectedTokenEstB.toString()}`,
       );
       assert.ok(
-        quote.tokenMaxA.amount.eq(expectedTokenMaxA.amount),
+        quote.tokenMaxA.eq(expectedTokenMaxA),
         `tokenMaxA: ${quote.tokenMaxA.toString()} !== ${expectedTokenMaxA.toString()}`,
       );
       assert.ok(
-        quote.tokenMaxB.amount.eq(expectedTokenMaxB.amount),
+        quote.tokenMaxB.eq(expectedTokenMaxB),
         `tokenMaxB: ${quote.tokenMaxB.toString()} !== ${expectedTokenMaxB.toString()}`,
       );
     }
@@ -301,10 +301,10 @@ describe("edge cases for old slippage", () => {
     });
 
     assert.ok(quote.liquidityAmount.isZero());
-    assert.ok(quote.tokenEstA.amount.isZero());
-    assert.ok(quote.tokenEstB.amount.isZero());
-    assert.ok(quote.tokenMaxA.amount.isZero());
-    assert.ok(quote.tokenMaxB.amount.isZero());
+    assert.ok(quote.tokenEstA.isZero());
+    assert.ok(quote.tokenEstB.isZero());
+    assert.ok(quote.tokenMaxA.isZero());
+    assert.ok(quote.tokenMaxB.isZero());
   });
 
   it("sqrtPrice on lower bound, tokenA input", async () => {
@@ -322,10 +322,10 @@ describe("edge cases for old slippage", () => {
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));
-    assert.ok(quote.tokenEstA.amount.gtn(0));
-    assert.ok(quote.tokenEstB.amount.isZero());
-    assert.ok(quote.tokenMaxA.amount.gtn(0));
-    assert.ok(quote.tokenMaxB.amount.isZero());
+    assert.ok(quote.tokenEstA.gtn(0));
+    assert.ok(quote.tokenEstB.isZero());
+    assert.ok(quote.tokenMaxA.gtn(0));
+    assert.ok(quote.tokenMaxB.isZero());
   });
 
   it("tickCurrentIndex on lower bound but sqrtPrice not on lower bound, tokenA input", async () => {
@@ -347,10 +347,10 @@ describe("edge cases for old slippage", () => {
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));
-    assert.ok(quote.tokenEstA.amount.gtn(0));
-    assert.ok(quote.tokenEstB.amount.gtn(0));
-    assert.ok(quote.tokenMaxA.amount.gtn(0));
-    assert.ok(quote.tokenMaxB.amount.gtn(0));
+    assert.ok(quote.tokenEstA.gtn(0));
+    assert.ok(quote.tokenEstB.gtn(0));
+    assert.ok(quote.tokenMaxA.gtn(0));
+    assert.ok(quote.tokenMaxB.gtn(0));
   });
 
   it("tickCurrentIndex on lower bound but sqrtPrice not on lower bound, tokenB input", async () => {
@@ -372,10 +372,10 @@ describe("edge cases for old slippage", () => {
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));
-    assert.ok(quote.tokenEstA.amount.gtn(0));
-    assert.ok(quote.tokenEstB.amount.gtn(0));
-    assert.ok(quote.tokenMaxA.amount.gtn(0));
-    assert.ok(quote.tokenMaxB.amount.gtn(0));
+    assert.ok(quote.tokenEstA.gtn(0));
+    assert.ok(quote.tokenEstB.gtn(0));
+    assert.ok(quote.tokenMaxA.gtn(0));
+    assert.ok(quote.tokenMaxB.gtn(0));
   });
 
   it("sqrtPrice on upper bound, tokenA input", async () => {
@@ -393,10 +393,10 @@ describe("edge cases for old slippage", () => {
     });
 
     assert.ok(quote.liquidityAmount.isZero());
-    assert.ok(quote.tokenEstA.amount.isZero());
-    assert.ok(quote.tokenEstB.amount.isZero());
-    assert.ok(quote.tokenMaxA.amount.isZero());
-    assert.ok(quote.tokenMaxB.amount.isZero());
+    assert.ok(quote.tokenEstA.isZero());
+    assert.ok(quote.tokenEstB.isZero());
+    assert.ok(quote.tokenMaxA.isZero());
+    assert.ok(quote.tokenMaxB.isZero());
   });
 
   it("sqrtPrice on upper bound, tokenB input", async () => {
@@ -414,10 +414,10 @@ describe("edge cases for old slippage", () => {
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));
-    assert.ok(quote.tokenEstA.amount.isZero());
-    assert.ok(quote.tokenEstB.amount.gtn(0));
-    assert.ok(quote.tokenMaxA.amount.isZero());
-    assert.ok(quote.tokenMaxB.amount.gtn(0));
+    assert.ok(quote.tokenEstA.isZero());
+    assert.ok(quote.tokenEstB.gtn(0));
+    assert.ok(quote.tokenMaxA.isZero());
+    assert.ok(quote.tokenMaxB.gtn(0));
   });
 });
 

@@ -3,7 +3,7 @@ import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { PriceMath, RouterUtils, TRANSFER_FEE_EXCLUDED_ZERO, TRANSFER_FEE_INCLUDED_ZERO } from "../../../src";
+import { PriceMath, RouterUtils } from "../../../src";
 import { U64 } from "../../../src/utils/math/constants";
 
 const maxDecimalAccuracy = 4;
@@ -250,8 +250,8 @@ describe("RouterUtil - Price Impact tests", () => {
                   tickArray0: PublicKey.default,
                   tickArray1: PublicKey.default,
                   tickArray2: PublicKey.default,
-                  estimatedAmountIn: TRANSFER_FEE_INCLUDED_ZERO,
-                  estimatedAmountOut: TRANSFER_FEE_EXCLUDED_ZERO,
+                  estimatedAmountIn: new BN(0),
+                  estimatedAmountOut: new BN(0),
                   estimatedEndTickIndex: 0,
                   estimatedEndSqrtPrice: new BN(0),
                   estimatedFeeAmount: new BN(0),

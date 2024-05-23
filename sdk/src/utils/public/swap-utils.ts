@@ -22,7 +22,6 @@ import { PDAUtil } from "./pda-utils";
 import { PoolUtil } from "./pool-utils";
 import { TickUtil } from "./tick-utils";
 import { SwapDirection, TokenType } from "./types";
-import { WhirlpoolIx } from "../..";
 
 /**
  * A request to fetch the tick-arrays that a swap may traverse across.

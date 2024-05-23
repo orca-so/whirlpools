@@ -238,11 +238,11 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
       });
 
       const expectedTokenMaxA = BN.max(
-        BN.max(quote.tokenEstA.amount, upperTokenEstA),
+        BN.max(quote.tokenEstA, upperTokenEstA),
         lowerTokenEstA,
       );
       const expectedTokenMaxB = BN.max(
-        BN.max(quote.tokenEstB.amount, upperTokenEstB),
+        BN.max(quote.tokenEstB, upperTokenEstB),
         lowerTokenEstB,
       );
 
@@ -263,19 +263,19 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
       });
 
       assert.ok(
-        quote.tokenEstA.amount.eq(expectedTokenEstA),
+        quote.tokenEstA.eq(expectedTokenEstA),
         `tokenEstA: ${quote.tokenEstA.toString()} !== ${expectedTokenEstA.toString()}`,
       );
       assert.ok(
-        quote.tokenEstB.amount.eq(expectedTokenEstB),
+        quote.tokenEstB.eq(expectedTokenEstB),
         `tokenEstB: ${quote.tokenEstB.toString()} !== ${expectedTokenEstB.toString()}`,
       );
       assert.ok(
-        quote.tokenMaxA.amount.eq(expectedTokenMaxA),
+        quote.tokenMaxA.eq(expectedTokenMaxA),
         `tokenMaxA: ${quote.tokenMaxA.toString()} !== ${expectedTokenMaxA.toString()}`,
       );
       assert.ok(
-        quote.tokenMaxB.amount.eq(expectedTokenMaxB),
+        quote.tokenMaxB.eq(expectedTokenMaxB),
         `tokenMaxB: ${quote.tokenMaxB.toString()} !== ${expectedTokenMaxB.toString()}`,
       );
     }

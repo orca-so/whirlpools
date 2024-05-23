@@ -109,13 +109,13 @@ describe("PositionImpl#collectRewards()", () => {
 
       // Check that the expectation is not zero
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(!quote.rewardOwed[i]!.amount.isZero());
+        assert.ok(!quote.rewardOwed[i]!.isZero());
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.amount.toString());
+        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
       }
     });
   });
@@ -180,13 +180,13 @@ describe("PositionImpl#collectRewards()", () => {
 
       // Check that the expectation is not zero
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(!quote.rewardOwed[i]!.amount.isZero());
+        assert.ok(!quote.rewardOwed[i]!.isZero());
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.amount.toString());
+        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
       }
     });
   });
@@ -257,13 +257,13 @@ describe("PositionImpl#collectRewards()", () => {
 
       // Check that the expectation is not zero
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(!quote.rewardOwed[i]!.amount.isZero());
+        assert.ok(!quote.rewardOwed[i]!.isZero());
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey, undefined, TEST_TOKEN_2022_PROGRAM_ID);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.amount.toString());
+        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
       }
     });
   });

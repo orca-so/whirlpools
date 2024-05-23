@@ -1,6 +1,7 @@
 import { BN } from "@coral-xyz/anchor";
-import { Percentage } from "@orca-so/common-sdk";
+import { Percentage, ZERO } from "@orca-so/common-sdk";
 import invariant from "tiny-invariant";
+import { DecreaseLiquidityInput } from "../../instructions";
 import {
   adjustForSlippage,
   getTokenAFromLiquidity,
@@ -11,7 +12,6 @@ import {
 import { PriceMath, TickUtil } from "../../utils/public";
 import { Position, Whirlpool } from "../../whirlpool-client";
 import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
-import { TRANSFER_FEE_EXCLUDED_ZERO, TransferFeeExcludedAmount } from "../../types/public";
 
 /**
  * @category Quotes
@@ -36,12 +36,15 @@ export type DecreaseLiquidityQuoteParam = {
  * Return object from decrease liquidity quote functions.
  * @category Quotes
  */
-export type DecreaseLiquidityQuote = {
-  liquidityAmount: BN;
-  tokenEstA: TransferFeeExcludedAmount;
-  tokenEstB: TransferFeeExcludedAmount;
-  tokenMinA: TransferFeeExcludedAmount;
-  tokenMinB: TransferFeeExcludedAmount;
+export type DecreaseLiquidityQuote = DecreaseLiquidityInput & {
+  tokenEstA: BN;
+  tokenEstB: BN;
+  transferFee: {
+    deductedFromTokenEstA: BN;
+    deductedFromTokenEstB: BN;
+    deductedFromTokenMinA: BN;
+    deductedFromTokenMinB: BN;
+  };
 };
 
 /**
@@ -129,10 +132,16 @@ function quotePositionBelowRange(param: DecreaseLiquidityQuoteParam): DecreaseLi
 
   return {
     liquidityAmount: liquidity,
-    tokenMinA: tokenMinAExcluded,
-    tokenMinB: TRANSFER_FEE_EXCLUDED_ZERO,
-    tokenEstA: tokenEstAExcluded,
-    tokenEstB: TRANSFER_FEE_EXCLUDED_ZERO,
+    tokenMinA: tokenMinAExcluded.amount,
+    tokenMinB: ZERO,
+    tokenEstA: tokenEstAExcluded.amount,
+    tokenEstB: ZERO,
+    transferFee: {
+      deductedFromTokenMinA: tokenMinAExcluded.fee,
+      deductedFromTokenMinB: ZERO,
+      deductedFromTokenEstA: tokenEstAExcluded.fee,
+      deductedFromTokenEstB: ZERO,
+    },
   };
 }
 
@@ -155,10 +164,16 @@ function quotePositionInRange(param: DecreaseLiquidityQuoteParam): DecreaseLiqui
 
   return {
     liquidityAmount: liquidity,
-    tokenMinA: tokenMinAExcluded,
-    tokenMinB: tokenMinBExcluded,
-    tokenEstA: tokenEstAExcluded,
-    tokenEstB: tokenEstBExcluded,
+    tokenMinA: tokenMinAExcluded.amount,
+    tokenMinB: tokenMinBExcluded.amount,
+    tokenEstA: tokenEstAExcluded.amount,
+    tokenEstB: tokenEstBExcluded.amount,
+    transferFee: {
+      deductedFromTokenMinA: tokenMinAExcluded.fee,
+      deductedFromTokenMinB: tokenMinBExcluded.fee,
+      deductedFromTokenEstA: tokenEstAExcluded.fee,
+      deductedFromTokenEstB: tokenEstBExcluded.fee,
+    },
   };
 }
 
@@ -176,9 +191,15 @@ function quotePositionAboveRange(param: DecreaseLiquidityQuoteParam): DecreaseLi
 
   return {
     liquidityAmount: liquidity,
-    tokenMinA: TRANSFER_FEE_EXCLUDED_ZERO,
-    tokenMinB: tokenMinBExcluded,
-    tokenEstA: TRANSFER_FEE_EXCLUDED_ZERO,
-    tokenEstB: tokenEstBExcluded,
+    tokenMinA: ZERO,
+    tokenMinB: tokenMinBExcluded.amount,
+    tokenEstA: ZERO,
+    tokenEstB: tokenEstBExcluded.amount,
+    transferFee: {
+      deductedFromTokenMinA: ZERO,
+      deductedFromTokenMinB: tokenMinBExcluded.fee,
+      deductedFromTokenEstA: ZERO,
+      deductedFromTokenEstB: tokenEstBExcluded.fee,
+    },
   };
 }

@@ -17,6 +17,7 @@ import {
 import { PriceMath, TickUtil } from "../../utils/public";
 import { Whirlpool } from "../../whirlpool-client";
 import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
+import { TRANSFER_FEE_INCLUDED_ZERO, TransferFeeIncludedAmount } from "../../types/public";
 
 
 /*** --------- Quote by Input Token --------- ***/
@@ -50,17 +51,12 @@ export type IncreaseLiquidityQuoteParam = {
  * Return object from increase liquidity quote functions.
  * @category Quotes
  */
-export type IncreaseLiquidityQuote = IncreaseLiquidityInput & IncreaseLiquidityEstimate;
-type IncreaseLiquidityEstimate = {
+export type IncreaseLiquidityQuote = {
   liquidityAmount: BN;
-  tokenEstA: BN;
-  tokenEstB: BN;
-  transferFee: {
-    deductingFromTokenMaxA: BN;
-    deductingFromTokenMaxB: BN;
-    deductingFromTokenEstA: BN;
-    deductingFromTokenEstB: BN;
-  };
+  tokenEstA: TransferFeeIncludedAmount;
+  tokenEstB: TransferFeeIncludedAmount;
+  tokenMaxA: TransferFeeIncludedAmount;
+  tokenMaxB: TransferFeeIncludedAmount;
 };
 
 /**
@@ -126,16 +122,10 @@ export function increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage(
   if (liquidity.eq(ZERO)) {
     return {
       liquidityAmount: ZERO,
-      tokenMaxA: ZERO,
-      tokenMaxB: ZERO,
-      tokenEstA: ZERO,
-      tokenEstB: ZERO,
-      transferFee: {
-        deductingFromTokenMaxA: ZERO,
-        deductingFromTokenMaxB: ZERO,
-        deductingFromTokenEstA: ZERO,
-        deductingFromTokenEstB: ZERO,
-      },
+      tokenMaxA: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenMaxB: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenEstA: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenEstB: TRANSFER_FEE_INCLUDED_ZERO,
     };
   }
 
@@ -234,16 +224,10 @@ export function increaseLiquidityQuoteByLiquidityWithParams(params: IncreaseLiqu
   if (params.liquidity.eq(ZERO)) {
     return {
       liquidityAmount: ZERO,
-      tokenMaxA: ZERO,
-      tokenMaxB: ZERO,
-      tokenEstA: ZERO,
-      tokenEstB: ZERO,
-      transferFee: {
-        deductingFromTokenMaxA: ZERO,
-        deductingFromTokenMaxB: ZERO,
-        deductingFromTokenEstA: ZERO,
-        deductingFromTokenEstB: ZERO,
-      },
+      tokenMaxA: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenMaxB: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenEstA: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenEstB: TRANSFER_FEE_INCLUDED_ZERO,
     };
   }
   const { tokenEstA, tokenEstB } = getTokenEstimatesFromLiquidity(params);
@@ -276,16 +260,10 @@ export function increaseLiquidityQuoteByLiquidityWithParams(params: IncreaseLiqu
 
   return {
     liquidityAmount: params.liquidity,
-    tokenMaxA: tokenMaxAIncluded.amount,
-    tokenMaxB: tokenMaxBIncluded.amount,
-    tokenEstA: tokenEstAIncluded.amount,
-    tokenEstB: tokenEstBIncluded.amount,
-    transferFee: {
-      deductingFromTokenMaxA: tokenMaxAIncluded.fee,
-      deductingFromTokenMaxB: tokenMaxBIncluded.fee,
-      deductingFromTokenEstA: tokenEstAIncluded.fee,
-      deductingFromTokenEstB: tokenEstBIncluded.fee,
-    },
+    tokenMaxA: tokenMaxAIncluded,
+    tokenMaxB: tokenMaxBIncluded,
+    tokenEstA: tokenEstAIncluded,
+    tokenEstB: tokenEstBIncluded,
   };
 }
 
@@ -414,16 +392,10 @@ function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
   if (!tokenMintA.equals(inputTokenMint)) {
     return {
       liquidityAmount: ZERO,
-      tokenMaxA: ZERO,
-      tokenMaxB: ZERO,
-      tokenEstA: ZERO,
-      tokenEstB: ZERO,
-      transferFee: {
-        deductingFromTokenMaxA: ZERO,
-        deductingFromTokenMaxB: ZERO,
-        deductingFromTokenEstA: ZERO,
-        deductingFromTokenEstB: ZERO,
-      },
+      tokenMaxA: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenMaxB: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenEstA: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenEstB: TRANSFER_FEE_INCLUDED_ZERO,
     };
   }
 
@@ -456,16 +428,10 @@ function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
 
   return {
     liquidityAmount,
-    tokenMaxA: tokenMaxAIncluded.amount,
-    tokenMaxB: ZERO,
-    tokenEstA: tokenEstAIncluded.amount,
-    tokenEstB: ZERO,
-    transferFee: {
-      deductingFromTokenMaxA: tokenMaxAIncluded.fee,
-      deductingFromTokenMaxB: ZERO,
-      deductingFromTokenEstA: tokenEstAIncluded.fee,
-      deductingFromTokenEstB: ZERO,
-    },
+    tokenMaxA: tokenMaxAIncluded,
+    tokenMaxB: TRANSFER_FEE_INCLUDED_ZERO,
+    tokenEstA: tokenEstAIncluded,
+    tokenEstB: TRANSFER_FEE_INCLUDED_ZERO,
   };
 }
 
@@ -525,16 +491,10 @@ function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiqui
 
   return {
     liquidityAmount,
-    tokenMaxA: tokenMaxAIncluded.amount,
-    tokenMaxB: tokenMaxBIncluded.amount,
-    tokenEstA: tokenEstAIncluded.amount,
-    tokenEstB: tokenEstBIncluded.amount,
-    transferFee: {
-      deductingFromTokenMaxA: tokenMaxAIncluded.fee,
-      deductingFromTokenMaxB: tokenMaxBIncluded.fee,
-      deductingFromTokenEstA: tokenEstAIncluded.fee,
-      deductingFromTokenEstB: tokenEstBIncluded.fee,
-    },
+    tokenMaxA: tokenMaxAIncluded,
+    tokenMaxB: tokenMaxBIncluded,
+    tokenEstA: tokenEstAIncluded,
+    tokenEstB: tokenEstBIncluded,
   };
 }
 
@@ -555,16 +515,10 @@ function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
   if (!tokenMintB.equals(inputTokenMint)) {
     return {
       liquidityAmount: ZERO,
-      tokenMaxA: ZERO,
-      tokenMaxB: ZERO,
-      tokenEstA: ZERO,
-      tokenEstB: ZERO,
-      transferFee: {
-        deductingFromTokenMaxA: ZERO,
-        deductingFromTokenMaxB: ZERO,
-        deductingFromTokenEstA: ZERO,
-        deductingFromTokenEstB: ZERO,
-      },
+      tokenMaxA: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenMaxB: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenEstA: TRANSFER_FEE_INCLUDED_ZERO,
+      tokenEstB: TRANSFER_FEE_INCLUDED_ZERO,
     };
   }
 
@@ -597,15 +551,9 @@ function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
 
   return {
     liquidityAmount,
-    tokenMaxA: ZERO,
-    tokenMaxB: tokenMaxBIncluded.amount,
-    tokenEstA: ZERO,
-    tokenEstB: tokenEstBIncluded.amount,
-    transferFee: {
-      deductingFromTokenMaxA: ZERO,
-      deductingFromTokenMaxB: tokenMaxBIncluded.fee,
-      deductingFromTokenEstA: ZERO,
-      deductingFromTokenEstB: tokenEstBIncluded.fee,
-    },
+    tokenMaxA: TRANSFER_FEE_INCLUDED_ZERO,
+    tokenMaxB: tokenMaxBIncluded,
+    tokenEstA: TRANSFER_FEE_INCLUDED_ZERO,
+    tokenEstB: tokenEstBIncluded,
   };
 }

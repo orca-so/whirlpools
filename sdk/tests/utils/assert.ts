@@ -18,12 +18,12 @@ export function assertInputOutputQuoteEqual(
   assert.equal(inputTokenQuote.aToB, outputTokenQuote.aToB, "aToB not equal");
   // TODO: Sometimes input & output estimated In is off by 1. Same goes for sqrt-price
   assert.ok(
-    inputTokenQuote.estimatedAmountIn.sub(outputTokenQuote.estimatedAmountIn).abs().lte(ONE),
-    `input estimated In ${inputTokenQuote.estimatedAmountIn} does not equal output estimated in ${outputTokenQuote.estimatedAmountIn}`
+    inputTokenQuote.estimatedAmountIn.amount.sub(outputTokenQuote.estimatedAmountIn.amount).abs().lte(ONE),
+    `input estimated In ${inputTokenQuote.estimatedAmountIn.amount} does not equal output estimated in ${outputTokenQuote.estimatedAmountIn.amount}`
   );
   assert.ok(
-    inputTokenQuote.estimatedAmountOut.sub(outputTokenQuote.estimatedAmountOut).abs().lte(ONE),
-    `input estimated out ${inputTokenQuote.estimatedAmountOut} does not equal output estimated out ${outputTokenQuote.estimatedAmountOut}`
+    inputTokenQuote.estimatedAmountOut.amount.sub(outputTokenQuote.estimatedAmountOut.amount).abs().lte(ONE),
+    `input estimated out ${inputTokenQuote.estimatedAmountOut.amount} does not equal output estimated out ${outputTokenQuote.estimatedAmountOut.amount}`
   );
   assert.equal(
     inputTokenQuote.estimatedEndTickIndex,
@@ -49,18 +49,18 @@ export function assertDevFeeQuotes(
 ) {
   assert.equal(inputQuote.aToB, devFeeQuote.aToB, "aToB not equal");
   assert.ok(
-    devFeeQuote.estimatedAmountIn.eq(inputQuote.estimatedAmountIn),
-    `the devFeeQuote's estimatedAmountIn ${devFeeQuote.estimatedAmountIn} should equal the normal quote's estimatedAmountIn ${inputQuote.estimatedAmountIn}`
+    devFeeQuote.estimatedAmountIn.amount.eq(inputQuote.estimatedAmountIn.amount),
+    `the devFeeQuote's estimatedAmountIn ${devFeeQuote.estimatedAmountIn.amount} should equal the normal quote's estimatedAmountIn ${inputQuote.estimatedAmountIn.amount}`
   );
   assert.ok(
-    devFeeQuote.estimatedAmountIn.eq(
-      postFeeInputQuote.estimatedAmountIn.add(devFeeQuote.devFeeAmount)
+    devFeeQuote.estimatedAmountIn.amount.eq(
+      postFeeInputQuote.estimatedAmountIn.amount.add(devFeeQuote.devFeeAmount)
     ),
-    `the devFeeQuote's estimatedAmountIn ${devFeeQuote.estimatedAmountIn} should equal the post-fee quote's estimatedAmountIn ${inputQuote.estimatedAmountIn} plus devFeeAmount ${devFeeQuote.devFeeAmount}`
+    `the devFeeQuote's estimatedAmountIn ${devFeeQuote.estimatedAmountIn.amount} should equal the post-fee quote's estimatedAmountIn ${inputQuote.estimatedAmountIn.amount} plus devFeeAmount ${devFeeQuote.devFeeAmount}`
   );
   assert.ok(
-    postFeeInputQuote.estimatedAmountOut.sub(devFeeQuote.estimatedAmountOut).abs().lte(ONE),
-    `post-fee input estimatedAmountOut ${inputQuote.estimatedAmountOut} does not equal devFee quote estimatedAmountOut - ${devFeeQuote.estimatedAmountOut}`
+    postFeeInputQuote.estimatedAmountOut.amount.sub(devFeeQuote.estimatedAmountOut.amount).abs().lte(ONE),
+    `post-fee input estimatedAmountOut ${inputQuote.estimatedAmountOut.amount} does not equal devFee quote estimatedAmountOut - ${devFeeQuote.estimatedAmountOut.amount}`
   );
   assert.equal(
     postFeeInputQuote.estimatedEndTickIndex,

@@ -145,7 +145,7 @@ describe("whirlpool-impl", () => {
         const { positionMint, tx: openIx } = await pool.openPosition(
           tickLower,
           tickUpper,
-          quote,
+          { liquidityAmount: quote.liquidityAmount, tokenMaxA: quote.tokenMaxA.amount, tokenMaxB: quote.tokenMaxB.amount },
           ctx.wallet.publicKey,
           funderKeypair.publicKey
         );
@@ -259,7 +259,7 @@ describe("whirlpool-impl", () => {
         const { positionMint, tx: openIx } = await pool.openPosition(
           tickLower,
           tickUpper,
-          quote,
+          { liquidityAmount: quote.liquidityAmount, tokenMaxA: quote.tokenMaxA.amount, tokenMaxB: quote.tokenMaxB.amount },
           ctx.wallet.publicKey,
           funderKeypair.publicKey
         );
@@ -409,7 +409,7 @@ describe("whirlpool-impl", () => {
         const { positionMint, tx: openIx } = await pool.openPosition(
           tickLower,
           tickUpper,
-          quote,
+          { liquidityAmount: quote.liquidityAmount, tokenMaxA: quote.tokenMaxA.amount, tokenMaxB: quote.tokenMaxB.amount },
           ctx.wallet.publicKey,
           funderKeypair.publicKey
         );
@@ -523,7 +523,7 @@ describe("whirlpool-impl", () => {
         const { positionMint, tx: openIx } = await pool.openPosition(
           tickLower,
           tickUpper,
-          quote,
+          { liquidityAmount: quote.liquidityAmount, tokenMaxA: quote.tokenMaxA.amount, tokenMaxB: quote.tokenMaxB.amount },
           ctx.wallet.publicKey,
           funderKeypair.publicKey
         );
@@ -811,17 +811,17 @@ describe("whirlpool-impl", () => {
 
         assert.equal(
           await getTokenBalance(ctx.provider, dWalletTokenAAccount),
-          expectationQuote.tokenMinA.add(feesQuote.feeOwedA).toString()
+          expectationQuote.tokenMinA.amount.add(feesQuote.feeOwedA.amount).toString()
         );
 
         assert.equal(
           await getTokenBalance(ctx.provider, dWalletTokenBAccount),
-          expectationQuote.tokenMinB.add(feesQuote.feeOwedB).toString()
+          expectationQuote.tokenMinB.amount.add(feesQuote.feeOwedB.amount).toString()
         );
 
-        assert.equal(await getTokenBalance(ctx.provider, rewardAccount0), rewardsQuote.rewardOwed[0]?.toString());
-        assert.equal(await getTokenBalance(ctx.provider, rewardAccount1), rewardsQuote.rewardOwed[1]?.toString());
-        assert.equal(await getTokenBalance(ctx.provider, rewardAccount2), rewardsQuote.rewardOwed[2]?.toString());
+        assert.equal(await getTokenBalance(ctx.provider, rewardAccount0), rewardsQuote.rewardOwed[0]?.amount.toString());
+        assert.equal(await getTokenBalance(ctx.provider, rewardAccount1), rewardsQuote.rewardOwed[1]?.amount.toString());
+        assert.equal(await getTokenBalance(ctx.provider, rewardAccount2), rewardsQuote.rewardOwed[2]?.amount.toString());
       });
     });
   });
@@ -1010,8 +1010,8 @@ describe("whirlpool-impl", () => {
      * 1. close_position tx cost
      * 2. ATA account initialization
      */
-    const expectedtokenA = decreaseLiquidityQuote.tokenMinA
-      .add(feesQuote.feeOwedA)
+    const expectedtokenA = decreaseLiquidityQuote.tokenMinA.amount
+      .add(feesQuote.feeOwedA.amount)
       .add(new BN(positionAccountBalance))
       .add(new BN(minAccountExempt))
       .add(new BN(minAccountExempt))
@@ -1020,12 +1020,12 @@ describe("whirlpool-impl", () => {
 
     assert.equal(
       await getTokenBalance(ctx.provider, dWalletTokenBAccount),
-      decreaseLiquidityQuote.tokenMinB.add(feesQuote.feeOwedB).toString()
+      decreaseLiquidityQuote.tokenMinB.amount.add(feesQuote.feeOwedB.amount).toString()
     );
 
-    assert.equal(await getTokenBalance(ctx.provider, rewardAccount0), rewardsQuote.rewardOwed[0]?.toString());
-    assert.equal(await getTokenBalance(ctx.provider, rewardAccount1), rewardsQuote.rewardOwed[1]?.toString());
-    assert.equal(await getTokenBalance(ctx.provider, rewardAccount2), rewardsQuote.rewardOwed[2]?.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount0), rewardsQuote.rewardOwed[0]?.amount.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount1), rewardsQuote.rewardOwed[1]?.amount.toString());
+    assert.equal(await getTokenBalance(ctx.provider, rewardAccount2), rewardsQuote.rewardOwed[2]?.amount.toString());
   });
 
   it("swap with idempotent", async () => {

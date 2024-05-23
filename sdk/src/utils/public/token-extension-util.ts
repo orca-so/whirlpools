@@ -4,16 +4,7 @@ import { MintWithTokenProgram, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { PoolUtil, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface, WhirlpoolData } from "../..";
 import { AccountMeta, Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
-
-export type TransferFeeIncludedAmount = {
-  amount: BN;
-  fee: BN;
-};
-
-export type TransferFeeExcludedAmount = {
-  amount: BN;
-  fee: BN;
-};
+import { TransferFeeIncludedAmount, TransferFeeExcludedAmount } from "../../types/public/transfer-fee-types";
 
 export type TokenExtensionContext = {
   currentEpoch: number;

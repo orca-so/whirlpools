@@ -110,9 +110,9 @@ describe("swap arrays test (v2)", () => {
         );
         assert.equal(
           quote.otherAmountThreshold.toString(),
-          adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+          adjustForSlippage(quote.estimatedAmountOut.amount, slippageTolerance, false).toString()
         );
-        assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+        assert.equal(quote.estimatedAmountIn.amount.toString(), tradeAmount);
         assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
       });
 
@@ -201,9 +201,9 @@ describe("swap arrays test (v2)", () => {
         );
         assert.equal(
           quote.otherAmountThreshold.toString(),
-          adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+          adjustForSlippage(quote.estimatedAmountOut.amount, slippageTolerance, false).toString()
         );
-        assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+        assert.equal(quote.estimatedAmountIn.amount.toString(), tradeAmount);
         assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
       });
 
@@ -292,9 +292,9 @@ describe("swap arrays test (v2)", () => {
         );
         assert.equal(
           quote.otherAmountThreshold.toString(),
-          adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+          adjustForSlippage(quote.estimatedAmountOut.amount, slippageTolerance, false).toString()
         );
-        assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+        assert.equal(quote.estimatedAmountIn.amount.toString(), tradeAmount);
         assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
       });
 
@@ -343,9 +343,9 @@ describe("swap arrays test (v2)", () => {
         );
         assert.equal(
           quote.otherAmountThreshold.toString(),
-          adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+          adjustForSlippage(quote.estimatedAmountOut.amount, slippageTolerance, false).toString()
         );
-        assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+        assert.equal(quote.estimatedAmountIn.amount.toString(), tradeAmount);
         assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
       });
 
@@ -738,9 +738,9 @@ describe("swap arrays test (v2)", () => {
         );
         assert.equal(
           quote.otherAmountThreshold.toString(),
-          adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+          adjustForSlippage(quote.estimatedAmountOut.amount, slippageTolerance, false).toString()
         );
-        assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+        assert.equal(quote.estimatedAmountIn.amount.toString(), tradeAmount);
         assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
       });
 
@@ -800,9 +800,9 @@ describe("swap arrays test (v2)", () => {
         );
         assert.equal(
           quote.otherAmountThreshold.toString(),
-          adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+          adjustForSlippage(quote.estimatedAmountOut.amount, slippageTolerance, false).toString()
         );
-        assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+        assert.equal(quote.estimatedAmountIn.amount.toString(), tradeAmount);
         assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
       });
 

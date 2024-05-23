@@ -8,7 +8,7 @@ import {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
-import { TickArray, WhirlpoolData } from "../../types/public";
+import { TickArray, TransferFeeExcludedAmount, TransferFeeIncludedAmount, WhirlpoolData } from "../../types/public";
 import { PoolUtil, SwapDirection } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";
 import { Whirlpool } from "../../whirlpool-client";
@@ -56,15 +56,11 @@ export type SwapQuote = NormalSwapQuote | DevFeeSwapQuote;
  * @param estimatedFeeAmount - Approximate feeAmount (all fees) charged on this swap
  */
 export type SwapEstimates = {
-  estimatedAmountIn: BN;
-  estimatedAmountOut: BN;
+  estimatedAmountIn: TransferFeeIncludedAmount;
+  estimatedAmountOut: TransferFeeExcludedAmount;
   estimatedEndTickIndex: number;
   estimatedEndSqrtPrice: BN;
   estimatedFeeAmount: BN;
-  transferFee: {
-    deductingFromEstimatedAmountIn: BN;
-    deductedFromEstimatedAmountOut: BN;
-  };
 };
 
 /**
@@ -162,8 +158,8 @@ export function swapQuoteWithParams(
     ...quote,
     ...SwapUtils.calculateSwapAmountsFromQuote(
       quote.amount,
-      quote.estimatedAmountIn,
-      quote.estimatedAmountOut,
+      quote.estimatedAmountIn.amount,
+      quote.estimatedAmountOut.amount,
       slippageTolerance,
       quote.amountSpecifiedIsInput
     ),

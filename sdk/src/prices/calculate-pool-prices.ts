@@ -62,7 +62,7 @@ function checkLiquidity(
 
   const amountOutDecimals = DecimalUtil.fromBN(amountOut, outputDecimals);
 
-  const estimatedAmountInDecimals = DecimalUtil.fromBN(estimatedAmountIn, inputDecimals);
+  const estimatedAmountInDecimals = DecimalUtil.fromBN(estimatedAmountIn.amount, inputDecimals);
 
   const maxAmountInDecimals = amountOutDecimals
     .div(price)

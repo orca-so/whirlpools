@@ -139,7 +139,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData, IGNORE_CACHE),
       });
 
-      assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
+      assert.ok(quote.feeOwedA.amount.gtn(0) || quote.feeOwedB.amount.gtn(0));
     }
   }
 
@@ -317,11 +317,11 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         timeStampInSeconds: poolData!.rewardLastUpdatedTimestamp,
       });
 
-      assert.ok(feeQuote.feeOwedA.gt(ZERO));
-      assert.ok(feeQuote.feeOwedB.gt(ZERO));
-      assert.ok(rewardQuote.rewardOwed[0]?.gt(ZERO));
-      assert.ok(rewardQuote.rewardOwed[1]?.gt(ZERO));
-      assert.ok(rewardQuote.rewardOwed[2]?.gt(ZERO));
+      assert.ok(feeQuote.feeOwedA.amount.gt(ZERO));
+      assert.ok(feeQuote.feeOwedB.amount.gt(ZERO));
+      assert.ok(rewardQuote.rewardOwed[0]?.amount.gt(ZERO));
+      assert.ok(rewardQuote.rewardOwed[1]?.amount.gt(ZERO));
+      assert.ok(rewardQuote.rewardOwed[2]?.amount.gt(ZERO));
     }
 
     const txs = await testCtx.whirlpoolClient.collectFeesAndRewardsForPositions(
@@ -375,11 +375,11 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         timeStampInSeconds: poolData!.rewardLastUpdatedTimestamp,
       });
 
-      assert.ok(feeQuote.feeOwedA.eq(ZERO));
-      assert.ok(feeQuote.feeOwedB.eq(ZERO));
-      assert.ok(rewardQuote.rewardOwed[0]?.eq(ZERO));
-      assert.ok(rewardQuote.rewardOwed[1]?.eq(ZERO));
-      assert.ok(rewardQuote.rewardOwed[2]?.eq(ZERO));
+      assert.ok(feeQuote.feeOwedA.amount.eq(ZERO));
+      assert.ok(feeQuote.feeOwedB.amount.eq(ZERO));
+      assert.ok(rewardQuote.rewardOwed[0]?.amount.eq(ZERO));
+      assert.ok(rewardQuote.rewardOwed[1]?.amount.eq(ZERO));
+      assert.ok(rewardQuote.rewardOwed[2]?.amount.eq(ZERO));
     }
   }
 
@@ -524,7 +524,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
         tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, poolData, IGNORE_CACHE),
       });
 
-      assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
+      assert.ok(quote.feeOwedA.amount.gtn(0) || quote.feeOwedB.amount.gtn(0));
     }
 
     async function stopRewardsEmissionV2(fixture: WhirlpoolTestFixtureV2) {
@@ -620,11 +620,11 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
           timeStampInSeconds: poolData!.rewardLastUpdatedTimestamp,
         });
   
-        assert.ok(feeQuote.feeOwedA.gt(ZERO));
-        assert.ok(feeQuote.feeOwedB.gt(ZERO));
-        assert.ok(rewardQuote.rewardOwed[0]?.gt(ZERO));
-        assert.ok(rewardQuote.rewardOwed[1]?.gt(ZERO));
-        assert.ok(rewardQuote.rewardOwed[2]?.gt(ZERO));
+        assert.ok(feeQuote.feeOwedA.amount.gt(ZERO));
+        assert.ok(feeQuote.feeOwedB.amount.gt(ZERO));
+        assert.ok(rewardQuote.rewardOwed[0]?.amount.gt(ZERO));
+        assert.ok(rewardQuote.rewardOwed[1]?.amount.gt(ZERO));
+        assert.ok(rewardQuote.rewardOwed[2]?.amount.gt(ZERO));
       }
   
       const txs = await testCtx.whirlpoolClient.collectFeesAndRewardsForPositions(
@@ -678,11 +678,11 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
           timeStampInSeconds: poolData!.rewardLastUpdatedTimestamp,
         });
   
-        assert.ok(feeQuote.feeOwedA.eq(ZERO));
-        assert.ok(feeQuote.feeOwedB.eq(ZERO));
-        assert.ok(rewardQuote.rewardOwed[0]?.eq(ZERO));
-        assert.ok(rewardQuote.rewardOwed[1]?.eq(ZERO));
-        assert.ok(rewardQuote.rewardOwed[2]?.eq(ZERO));
+        assert.ok(feeQuote.feeOwedA.amount.eq(ZERO));
+        assert.ok(feeQuote.feeOwedB.amount.eq(ZERO));
+        assert.ok(rewardQuote.rewardOwed[0]?.amount.eq(ZERO));
+        assert.ok(rewardQuote.rewardOwed[1]?.amount.eq(ZERO));
+        assert.ok(rewardQuote.rewardOwed[2]?.amount.eq(ZERO));
       }
     })
   })

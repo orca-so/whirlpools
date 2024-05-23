@@ -3,11 +3,13 @@ import { Percentage } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
 import {
+  PREFER_CACHE,
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
 import { Whirlpool } from "../../whirlpool-client";
 import { NormalSwapQuote, swapQuoteByInputToken } from "./swap-quote";
+import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * A collection of estimated values from quoting a swap that collects a developer-fee.
@@ -75,10 +77,21 @@ export async function swapQuoteByInputTokenWithDevFees(
     opts
   );
 
+  // swapQuoteByInputToken will make cache, so cache is fresh
+  const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpool.getData(), PREFER_CACHE);
+  const transferFeeExcludedDevFee = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+    devFeeAmount,
+    slippageAdjustedQuote.aToB ? tokenExtensionCtx.tokenMintWithProgramA : tokenExtensionCtx.tokenMintWithProgramB,
+    tokenExtensionCtx.currentEpoch
+  );
+
   const devFeeAdjustedQuote: DevFeeSwapQuote = {
     ...slippageAdjustedQuote,
     amountSpecifiedIsInput: true,
-    estimatedAmountIn: slippageAdjustedQuote.estimatedAmountIn.add(devFeeAmount),
+    estimatedAmountIn: {
+      amount: slippageAdjustedQuote.estimatedAmountIn.amount.add(devFeeAmount),
+      fee: slippageAdjustedQuote.estimatedAmountIn.fee.add(transferFeeExcludedDevFee.fee),
+    },
     estimatedFeeAmount: slippageAdjustedQuote.estimatedFeeAmount.add(devFeeAmount),
     estimatedSwapFeeAmount: slippageAdjustedQuote.estimatedFeeAmount,
     devFeeAmount,

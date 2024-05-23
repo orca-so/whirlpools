@@ -125,7 +125,7 @@ describe("PositionImpl#collectFees()", () => {
       tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, poolData, IGNORE_CACHE),
     });
 
-    assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
+    assert.ok(quote.feeOwedA.amount.gtn(0) || quote.feeOwedB.amount.gtn(0));
   }
 
   context("when the whirlpool is SPL-only", () => {
@@ -186,11 +186,11 @@ describe("PositionImpl#collectFees()", () => {
 
       const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
       const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, IGNORE_CACHE);
-      assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA));
+      assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA.amount));
 
       const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
       const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, IGNORE_CACHE);
-      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
+      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB.amount));
     });
   });
 
@@ -256,12 +256,12 @@ describe("PositionImpl#collectFees()", () => {
       const minAccountExempt = await testCtx.whirlpoolCtx.fetcher.getAccountRentExempt();
       assert.equal(
         solBalanceAfter - solBalanceBefore,
-        quote.feeOwedA.toNumber() + minAccountExempt
+        quote.feeOwedA.amount.toNumber() + minAccountExempt
       );
 
       const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
       const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, IGNORE_CACHE);
-      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
+      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB.amount));
     });
   });
 
@@ -377,7 +377,7 @@ describe("PositionImpl#collectFees()", () => {
       tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, poolData, IGNORE_CACHE),
     });
 
-    assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
+    assert.ok(quote.feeOwedA.amount.gtn(0) || quote.feeOwedB.amount.gtn(0));
   }
 
   context("when the whirlpool is SPL-only (TokenExtension)", () => {
@@ -440,11 +440,11 @@ describe("PositionImpl#collectFees()", () => {
 
       const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey, undefined, TEST_TOKEN_2022_PROGRAM_ID);
       const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, IGNORE_CACHE);
-      assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA));
+      assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA.amount));
 
       const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey, undefined, TEST_TOKEN_2022_PROGRAM_ID);
       const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, IGNORE_CACHE);
-      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
+      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB.amount));
     });
   });
 

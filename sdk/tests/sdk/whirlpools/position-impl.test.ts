@@ -13,8 +13,7 @@ import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { createAssociatedTokenAccount, TickSpacing, transferToken } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
-import { initTestPool } from "../../utils/init-utils";
-import { initPosition, mintTokensToTestAccount } from "../../utils/test-builders";
+import { initPosition } from "../../utils/test-builders";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 import { initTestPoolV2, TokenTrait } from "../../utils/v2/init-utils-v2";
 import { mintTokensToTestAccountV2 } from "../../utils/v2/token-2022";
@@ -118,7 +117,11 @@ describe("position-impl", () => {
         );
 
         await (
-          await position.increaseLiquidity(increase_quote, false, ctx.wallet.publicKey)
+          await position.increaseLiquidity({
+            liquidityAmount: increase_quote.liquidityAmount,
+            tokenMaxA: increase_quote.tokenMaxA.amount,
+            tokenMaxB: increase_quote.tokenMaxB.amount,
+          }, false, ctx.wallet.publicKey)
         ).buildAndExecute();
 
         const postIncreaseData = await position.refreshData();
@@ -137,7 +140,11 @@ describe("position-impl", () => {
           await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
         );
 
-        await (await position.decreaseLiquidity(decrease_quote, false)).buildAndExecute();
+        await (await position.decreaseLiquidity({
+          liquidityAmount: decrease_quote.liquidityAmount,
+          tokenMinA: decrease_quote.tokenMinA.amount,
+          tokenMinB: decrease_quote.tokenMinB.amount,
+        }, false)).buildAndExecute();
 
         const postWithdrawData = await position.refreshData();
         const expectedPostWithdrawLiquidity = postIncreaseData.liquidity.sub(
@@ -207,7 +214,11 @@ describe("position-impl", () => {
           await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
         );
 
-        await (await position.increaseLiquidity(increase_quote, false)).buildAndExecute();
+        await (await position.increaseLiquidity({
+          liquidityAmount: increase_quote.liquidityAmount,
+          tokenMaxA: increase_quote.tokenMaxA.amount,
+          tokenMaxB: increase_quote.tokenMaxB.amount,
+        }, false)).buildAndExecute();
 
         const postIncreaseData = await position.refreshData();
         const expectedPostIncreaseLiquidity = preIncreaseData.liquidity.add(
@@ -258,7 +269,11 @@ describe("position-impl", () => {
         );
         await (
           await position.increaseLiquidity(
-            increaseQuoteFromOtherWallet,
+            {
+              liquidityAmount: increaseQuoteFromOtherWallet.liquidityAmount,
+              tokenMaxA: increaseQuoteFromOtherWallet.tokenMaxA.amount,
+              tokenMaxB: increaseQuoteFromOtherWallet.tokenMaxB.amount,
+            },
             true,
             otherWallet.publicKey,
             otherWallet.publicKey
@@ -273,7 +288,11 @@ describe("position-impl", () => {
         const destinationWallet = anchor.web3.Keypair.generate();
         await (
           await position.decreaseLiquidity(
-            decrease_quote,
+            {
+              liquidityAmount: decrease_quote.liquidityAmount,
+              tokenMinA: decrease_quote.tokenMinA.amount,
+              tokenMinB: decrease_quote.tokenMinB.amount,
+            },
             true,
             destinationWallet.publicKey,
             otherWallet.publicKey

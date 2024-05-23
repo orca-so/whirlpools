@@ -32,7 +32,7 @@ import {
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidityWithParams,
 } from "../quotes/public";
-import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
+import { TRANSFER_FEE_EXCLUDED_ZERO, TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import {
@@ -500,7 +500,7 @@ export class WhirlpoolImpl implements Whirlpool {
       tokenExtensionCtx,
     });
 
-    const shouldCollectFees = feesQuote.feeOwedA.gtn(0) || feesQuote.feeOwedB.gtn(0);
+    const shouldCollectFees = feesQuote.feeOwedA.amount.gtn(0) || feesQuote.feeOwedB.amount.gtn(0);
     invariant(
       this.data.rewardInfos.length === rewardsQuote.rewardOwed.length,
       "Rewards quote does not match reward infos length"
@@ -510,11 +510,9 @@ export class WhirlpoolImpl implements Whirlpool {
 
     const rewardsToCollect = this.data.rewardInfos
       .filter((_, i) => {
-        return (
-          (rewardsQuote.rewardOwed[i] ?? ZERO).gtn(0) ||
+        return rewardsQuote.rewardOwed[i]?.amount.gtn(0)
           // we need to collect reward even if all reward will be deducted as transfer fee
-          (rewardsQuote.transferFee.deductedFromRewardOwed[i] ?? ZERO).gtn(0)
-        );
+          || rewardsQuote.rewardOwed[i]?.fee.gtn(0);
       })
       .map((info) => info.mint);
 
@@ -565,7 +563,9 @@ export class WhirlpoolImpl implements Whirlpool {
         });
 
         const baseParams = {
-          ...decreaseLiqQuote,
+          liquidityAmount: decreaseLiqQuote.liquidityAmount,
+          tokenMinA: decreaseLiqQuote.tokenMinA.amount,
+          tokenMinB: decreaseLiqQuote.tokenMinB.amount,
           whirlpool: positionData.whirlpool,
           positionAuthority: positionWallet,
           position: positionAddress,

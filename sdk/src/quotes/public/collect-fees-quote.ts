@@ -1,6 +1,6 @@
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil, MintWithTokenProgram } from "@orca-so/common-sdk";
-import { PositionData, TickData, WhirlpoolData } from "../../types/public";
+import { MathUtil } from "@orca-so/common-sdk";
+import { PositionData, TickData, TransferFeeExcludedAmount, WhirlpoolData } from "../../types/public";
 import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
@@ -18,12 +18,8 @@ export type CollectFeesQuoteParam = {
  * @category Quotes
  */
 export type CollectFeesQuote = {
-  feeOwedA: BN;
-  feeOwedB: BN;
-  transferFee: {
-    deductedFromFeeOwedA: BN;
-    deductedFromFeeOwedB: BN;
-  };
+  feeOwedA: TransferFeeExcludedAmount;
+  feeOwedB: TransferFeeExcludedAmount;
 };
 
 /**
@@ -127,11 +123,7 @@ export function collectFeesQuote(param: CollectFeesQuoteParam): CollectFeesQuote
   );
 
   return {
-    feeOwedA: transferFeeExcludedAmountA.amount,
-    feeOwedB: transferFeeExcludedAmountB.amount,
-    transferFee: {
-      deductedFromFeeOwedA: transferFeeExcludedAmountA.fee,
-      deductedFromFeeOwedB: transferFeeExcludedAmountB.fee,
-    }
+    feeOwedA: transferFeeExcludedAmountA,
+    feeOwedB: transferFeeExcludedAmountB,
   };
 }

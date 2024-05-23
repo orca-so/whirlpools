@@ -1,7 +1,7 @@
 import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import invariant from "tiny-invariant";
-import { NUM_REWARDS, PositionData, TickData, WhirlpoolData } from "../../types/public";
+import { NUM_REWARDS, PositionData, TickData, TransferFeeExcludedAmount, WhirlpoolData } from "../../types/public";
 import { BitMath } from "../../utils/math/bit-math";
 import { PoolUtil } from "../../utils/public/pool-utils";
 import { TokenExtensionContextForReward, TokenExtensionUtil } from "../../utils/public/token-extension-util";
@@ -30,17 +30,10 @@ export type CollectRewardsQuoteParam = {
  */
 export type CollectRewardsQuote = {
   rewardOwed: [
-    BN | undefined,
-    BN | undefined,
-    BN | undefined,
+    TransferFeeExcludedAmount | undefined,
+    TransferFeeExcludedAmount | undefined,
+    TransferFeeExcludedAmount | undefined,
   ];
-  transferFee: {
-    deductedFromRewardOwed: [
-      BN | undefined,
-      BN | undefined,
-      BN | undefined,
-    ];
-  };
 }
 
 /**
@@ -62,8 +55,7 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
 
   const currTimestampInSeconds = timeStampInSeconds ?? new BN(Date.now()).div(new BN(1000));
   const timestampDelta = currTimestampInSeconds.sub(new BN(rewardLastUpdatedTimestamp));
-  const rewardOwed: [BN|undefined,BN|undefined,BN|undefined] = [undefined, undefined, undefined];
-  const transferFee: [BN|undefined,BN|undefined,BN|undefined] = [undefined, undefined, undefined];
+  const rewardOwed: [TransferFeeExcludedAmount|undefined,TransferFeeExcludedAmount|undefined,TransferFeeExcludedAmount|undefined] = [undefined, undefined, undefined];
 
   for (let i = 0; i < NUM_REWARDS; i++) {
     // Calculate the reward growth on the outside of the position (growth_above, growth_below)
@@ -136,14 +128,10 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
       tokenExtensionCtx.currentEpoch
     );
 
-    rewardOwed[i] = transferFeeExcluded.amount;
-    transferFee[i] = transferFeeExcluded.fee;
+    rewardOwed[i] = transferFeeExcluded;
   }
 
   return {
     rewardOwed,
-    transferFee: {
-      deductedFromRewardOwed: transferFee,
-    },
   };
 }

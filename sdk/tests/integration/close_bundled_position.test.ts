@@ -213,14 +213,14 @@ describe("close_bundled_position", () => {
     await mintTokensToTestAccount(
       provider,
       poolInitInfo.tokenMintA,
-      quote.tokenMaxA.toNumber(),
+      quote.tokenMaxA.amount.toNumber(),
       poolInitInfo.tokenMintB,
-      quote.tokenMaxB.toNumber(),
+      quote.tokenMaxB.amount.toNumber(),
       ctx.wallet.publicKey
     );
 
     const position = await client.getPosition(bundledPositionPda.publicKey, IGNORE_CACHE);
-    await (await position.increaseLiquidity(quote)).buildAndExecute();
+    await (await position.increaseLiquidity({ liquidityAmount: quote.liquidityAmount, tokenMaxA: quote.tokenMaxA.amount, tokenMaxB: quote.tokenMaxB.amount })).buildAndExecute();
     assert.ok((await position.refreshData()).liquidity.gtn(0));
 
     // try to close...

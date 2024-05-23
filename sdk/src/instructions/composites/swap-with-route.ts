@@ -101,7 +101,7 @@ export async function getSwapFromRoute(
       );
 
       const inputAmount = quoteOne.amountSpecifiedIsInput
-        ? quoteOne.estimatedAmountIn
+        ? quoteOne.estimatedAmountIn.amount
         : quoteOne.otherAmountThreshold;
       addOrNative(mintOneA.toString(), quoteOne.aToB ? inputAmount : ZERO);
       addOrNative(mintOneB.toString(), !quoteOne.aToB ? inputAmount : ZERO);
@@ -257,8 +257,8 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
             ...hopQuotes[0].quote,
             ...SwapUtils.calculateSwapAmountsFromQuote(
               hopQuotes[0].quote.amount,
-              hopQuotes[0].quote.estimatedAmountIn,
-              hopQuotes[0].quote.estimatedAmountOut,
+              hopQuotes[0].quote.estimatedAmountIn.amount,
+              hopQuotes[0].quote.estimatedAmountOut.amount,
               slippage,
               hopQuotes[0].quote.amountSpecifiedIsInput
             ),
@@ -283,7 +283,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
           quote: {
             ...swapQuoteTwo.quote,
             otherAmountThreshold: adjustForSlippage(
-              swapQuoteTwo.quote.estimatedAmountOut,
+              swapQuoteTwo.quote.estimatedAmountOut.amount,
               slippage,
               false
             ),
@@ -297,7 +297,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
           quote: {
             ...swapQuoteOne.quote,
             otherAmountThreshold: adjustForSlippage(
-              swapQuoteOne.quote.estimatedAmountIn,
+              swapQuoteOne.quote.estimatedAmountIn.amount,
               slippage,
               true
             ),

@@ -114,8 +114,8 @@ function populateQuoteMap(
       const [inputMint, outputMint] = aToB ? [mintA, mintB] : [mintB, mintA];
       path.calculatedEdgeQuotes[edgeIndex] = {
         success: true,
-        amountIn: amountSpecifiedIsInput ? tokenAmount : quote.estimatedAmountIn,
-        amountOut: amountSpecifiedIsInput ? quote.estimatedAmountOut : tokenAmount,
+        amountIn: amountSpecifiedIsInput ? tokenAmount : quote.estimatedAmountIn.amount,
+        amountOut: amountSpecifiedIsInput ? quote.estimatedAmountOut.amount : tokenAmount,
         whirlpool: request.whirlpool,
         inputMint,
         outputMint,

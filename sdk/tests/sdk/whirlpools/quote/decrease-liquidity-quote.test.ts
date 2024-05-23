@@ -21,10 +21,10 @@ describe("edge cases", () => {
       tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
-    assert.ok(quote.tokenEstA.gtn(0));
-    assert.ok(quote.tokenEstB.isZero());
-    assert.ok(quote.tokenMinA.gtn(0));
-    assert.ok(quote.tokenMinB.isZero());
+    assert.ok(quote.tokenEstA.amount.gtn(0));
+    assert.ok(quote.tokenEstB.amount.isZero());
+    assert.ok(quote.tokenMinA.amount.gtn(0));
+    assert.ok(quote.tokenMinB.amount.isZero());
   });
 
   it("tickCurrentIndex on lower bound but sqrtPrice not on lower bound", async () => {
@@ -40,10 +40,10 @@ describe("edge cases", () => {
       tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
-    assert.ok(quote.tokenEstA.gtn(0));
-    assert.ok(quote.tokenEstB.gtn(0));
-    assert.ok(quote.tokenMinA.gtn(0));
-    assert.ok(quote.tokenMinB.gtn(0));
+    assert.ok(quote.tokenEstA.amount.gtn(0));
+    assert.ok(quote.tokenEstB.amount.gtn(0));
+    assert.ok(quote.tokenMinA.amount.gtn(0));
+    assert.ok(quote.tokenMinB.amount.gtn(0));
   });
 
   it("sqrtPrice on upper bound", async () => {
@@ -57,10 +57,10 @@ describe("edge cases", () => {
       tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
-    assert.ok(quote.tokenEstA.isZero());
-    assert.ok(quote.tokenEstB.gtn(0));
-    assert.ok(quote.tokenMinA.isZero());
-    assert.ok(quote.tokenMinB.gtn(0));
+    assert.ok(quote.tokenEstA.amount.isZero());
+    assert.ok(quote.tokenEstB.amount.gtn(0));
+    assert.ok(quote.tokenMinA.amount.isZero());
+    assert.ok(quote.tokenMinB.amount.gtn(0));
   });
 
 });

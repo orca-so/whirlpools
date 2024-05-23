@@ -5,8 +5,12 @@ import { PoolUtil, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterfac
 import { AccountMeta, Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 
-export type TokenAmountWithFee = {
-  isFeeIncludedAmount: boolean;
+export type TransferFeeIncludedAmount = {
+  amount: BN;
+  fee: BN;
+};
+
+export type TransferFeeExcludedAmount = {
   amount: BN;
   fee: BN;
 };
@@ -52,10 +56,10 @@ export class TokenExtensionUtil {
     transferFeeExcludedAmount: BN,
     tokenInfo: MintWithTokenProgram,
     currentEpoch: number,
-  ): TokenAmountWithFee {
+  ): TransferFeeIncludedAmount {
     const config = getTransferFeeConfig(tokenInfo);
     if (config === null) {
-      return { isFeeIncludedAmount: true, amount: transferFeeExcludedAmount, fee: ZERO };
+      return { amount: transferFeeExcludedAmount, fee: ZERO };
     }
 
     const transferFee = getEpochFee(config, BigInt(currentEpoch));
@@ -66,10 +70,10 @@ export class TokenExtensionUtil {
     transferFeeIncludedAmount: BN,
     tokenInfo: MintWithTokenProgram,
     currentEpoch: number,
-  ): TokenAmountWithFee {
+  ): TransferFeeExcludedAmount {
     const config = getTransferFeeConfig(tokenInfo);
     if (config === null) {
-      return { isFeeIncludedAmount: false, amount: transferFeeIncludedAmount, fee: ZERO };
+      return { amount: transferFeeIncludedAmount, fee: ZERO };
     }
 
     const transferFee = getEpochFee(config, BigInt(currentEpoch));
@@ -170,7 +174,7 @@ function ceilDivBN(num: BN, denom: BN): BN {
 function calculateTransferFeeIncludedAmount(
   transferFee: TransferFee,
   amount: BN,
-): TokenAmountWithFee {
+): TransferFeeIncludedAmount {
   // https://github.com/solana-labs/solana-program-library/blob/master/token/program-2022/src/extension/transfer_fee/mod.rs#L90
 
   const ONE_IN_BASIS_POINTS = 10_000;
@@ -180,7 +184,6 @@ function calculateTransferFeeIncludedAmount(
 
   if (transferFee.transferFeeBasisPoints === 0) {
     return {
-      isFeeIncludedAmount: true,
       amount,
       fee: ZERO,
     };
@@ -188,7 +191,6 @@ function calculateTransferFeeIncludedAmount(
   
   if (amount.isZero()) {
     return {
-      isFeeIncludedAmount: true,
       amount,
       fee: ZERO,
     };
@@ -199,7 +201,6 @@ function calculateTransferFeeIncludedAmount(
       throw new Error("The total amount and fees overflow");
     }
     return {
-      isFeeIncludedAmount: true,
       amount: amount.add(maxFeeBN),
       fee: maxFeeBN,
     };
@@ -219,17 +220,16 @@ function calculateTransferFeeIncludedAmount(
     throw new Error("The total amount and fees overflow");
   }
 
-  return { ...result, isFeeIncludedAmount: true };
+  return { ...result };
 }
 
 function calculateTransferFeeExcludedAmount(
   transferFee: TransferFee,
   amount: BN,
-): TokenAmountWithFee {
+): TransferFeeExcludedAmount {
   const fee = calculateFee(transferFee, BigInt(amount.toString()));
   const feeBN = new BN(fee.toString());
   return {
-    isFeeIncludedAmount: false,
     amount: amount.sub(feeBN),
     fee: feeBN,
   };

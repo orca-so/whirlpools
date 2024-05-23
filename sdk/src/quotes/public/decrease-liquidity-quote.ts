@@ -1,5 +1,5 @@
 import { BN } from "@coral-xyz/anchor";
-import { MintWithTokenProgram, Percentage, ZERO } from "@orca-so/common-sdk";
+import { Percentage, ZERO } from "@orca-so/common-sdk";
 import invariant from "tiny-invariant";
 import { DecreaseLiquidityInput } from "../../instructions";
 import {
@@ -11,7 +11,7 @@ import {
 } from "../../utils/position-util";
 import { PriceMath, TickUtil } from "../../utils/public";
 import { Position, Whirlpool } from "../../whirlpool-client";
-import { TokenAmountWithFee, TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
+import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * @category Quotes

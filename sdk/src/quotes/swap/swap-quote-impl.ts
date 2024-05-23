@@ -5,7 +5,7 @@ import { MAX_SQRT_PRICE, MAX_SWAP_TICK_ARRAYS, MIN_SQRT_PRICE } from "../../type
 import { SwapQuote, SwapQuoteParam } from "../public";
 import { computeSwap } from "./swap-manager";
 import { TickArraySequence } from "./tick-array-sequence";
-import { TokenAmountWithFee, TokenExtensionUtil } from "../../utils/public/token-extension-util";
+import { TransferFeeIncludedAmount, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * Figure out the quote parameters needed to successfully complete this trade on chain
@@ -94,8 +94,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     }
     
     const fullfilled = (aToB ? swapResults.amountA : swapResults.amountB).eq(transferFeeExcludedIn.amount);
-    const transferFeeIncludedIn: TokenAmountWithFee = fullfilled
-      ? { isFeeIncludedAmount: true, amount: tokenAmount, fee: transferFeeExcludedIn.fee }
+    const transferFeeIncludedIn: TransferFeeIncludedAmount = fullfilled
+      ? { amount: tokenAmount, fee: transferFeeExcludedIn.fee }
       : TokenExtensionUtil.calculateTransferFeeIncludedAmount(
         aToB ? swapResults.amountA : swapResults.amountB,
         aToB ? tokenExtensionCtx.tokenMintWithProgramA : tokenExtensionCtx.tokenMintWithProgramB,

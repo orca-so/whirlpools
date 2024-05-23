@@ -6,6 +6,7 @@ import {
   getTokenAFromLiquidity,
   getTokenBFromLiquidity,
 } from "../../../../src/utils/position-util";
+import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../../src/utils/public/token-extension-util";
 
 const variations = [
   [0, Percentage.fromFraction(1, 1000), new BN(17733543)] as const,
@@ -198,6 +199,7 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
         tickUpperIndex: pTickUpperIndex,
         tickCurrentIndex,
         slippageTolerance: params.slippageTolerance,
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
       });
 
       const {

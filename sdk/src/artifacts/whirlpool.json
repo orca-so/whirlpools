@@ -1923,7 +1923,9 @@
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2002,7 +2004,9 @@
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2070,7 +2074,9 @@
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2186,7 +2192,9 @@
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2302,7 +2310,9 @@
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2652,7 +2662,9 @@
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2840,7 +2852,9 @@
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -3802,6 +3816,16 @@
       "code": 6051,
       "name": "IntermediateTokenAmountMismatch",
       "msg": "Output and input amount mismatch"
+    },
+    {
+      "code": 6052,
+      "name": "TransferFeeCalculationError",
+      "msg": "Transfer fee calculation failed"
+    },
+    {
+      "code": 6053,
+      "name": "RemainingAccountsDuplicatedAccountsType",
+      "msg": "Same accounts type is provided more than once"
     }
   ]
 }

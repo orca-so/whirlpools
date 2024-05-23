@@ -40,11 +40,17 @@ pub struct ParsedRemainingAccounts<'info> {
 
 pub fn parse_remaining_accounts<'info>(
   remaining_accounts: &[AccountInfo<'info>],
-  remaining_accounts_info: &RemainingAccountsInfo,
+  remaining_accounts_info: &Option<RemainingAccountsInfo>,
   valid_accounts_type_list: &[AccountsType],
 ) -> Result<ParsedRemainingAccounts<'info>> {
   let mut remaining_accounts_iter = remaining_accounts.iter();
   let mut parsed_remaining_accounts = ParsedRemainingAccounts::default();
+
+  if remaining_accounts_info.is_none() {
+    return Ok(parsed_remaining_accounts);
+  }
+
+  let remaining_accounts_info = remaining_accounts_info.as_ref().unwrap();
 
   for slice in remaining_accounts_info.slices.iter() {
     if !valid_accounts_type_list.contains(&slice.accounts_type) {

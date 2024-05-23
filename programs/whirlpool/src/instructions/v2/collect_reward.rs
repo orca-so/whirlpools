@@ -60,7 +60,7 @@ pub struct CollectRewardV2<'info> {
 pub fn handler<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CollectRewardV2<'info>>,
     reward_index: u8,
-    remaining_accounts_info: RemainingAccountsInfo
+    remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,

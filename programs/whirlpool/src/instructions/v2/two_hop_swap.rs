@@ -98,7 +98,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
     a_to_b_two: bool,
     sqrt_price_limit_one: u128,
     sqrt_price_limit_two: u128,
-    remaining_accounts_info: RemainingAccountsInfo,
+    remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
     let clock = Clock::get()?;
     // Update the global reward growth which increases as a function of time.

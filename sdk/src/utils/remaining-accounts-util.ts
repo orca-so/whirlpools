@@ -31,7 +31,11 @@ export type RemainingAccountsSliceData = {
 export type RemainingAccountsInfoData = {
   slices: RemainingAccountsSliceData[];
 };
-  
+
+// Option<RemainingAccountsInfoData> on Rust
+// null is treated as None in Rust. undefined doesn't work.
+export type OptionRemainingAccountsInfoData = RemainingAccountsInfoData | null;
+
 export class RemainingAccountsBuilder {
   private remainingAccounts: AccountMeta[] = [];
   private slices: RemainingAccountsSliceData[] = [];
@@ -50,10 +54,9 @@ export class RemainingAccountsBuilder {
     return this;
   }
 
-  build(): [RemainingAccountsInfoData, AccountMeta[]|undefined] {
-    return [
-      { slices: this.slices },
-      this.remainingAccounts.length > 0 ? this.remainingAccounts : undefined,
-    ];
+  build(): [OptionRemainingAccountsInfoData, AccountMeta[]|undefined] {
+    return this.slices.length === 0
+      ? [null, undefined]
+      : [{ slices: this.slices }, this.remainingAccounts];
   }
 }

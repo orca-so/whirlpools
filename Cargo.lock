@@ -2731,6 +2731,7 @@ dependencies = [
  "serde_json",
  "serde_with 1.14.0",
  "solana-program",
+ "solana-security-txt",
  "spl-token",
  "spl-transfer-hook-interface 0.5.1",
  "thiserror",

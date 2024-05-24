@@ -18,6 +18,8 @@ pub mod state;
 pub mod tests;
 #[doc(hidden)]
 pub mod util;
+#[doc(hidden)]
+pub mod security;
 
 use crate::state::{OpenPositionBumps, OpenPositionWithMetadataBumps, WhirlpoolBumps};
 use crate::util::RemainingAccountsInfo;

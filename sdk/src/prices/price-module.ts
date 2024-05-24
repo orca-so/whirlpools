@@ -25,6 +25,8 @@ import { calculatePricesForQuoteToken, convertAmount, isSubset } from "./calcula
  * token prices for a set of pools or mints.
  *
  * @category PriceModule
+ * 
+ * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
  */
 export class PriceModule {
   /**
@@ -38,6 +40,8 @@ export class PriceModule {
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @param availableData - Data that is already available to avoid redundant fetches.
    * @returns A map of token addresses to prices.
+   * 
+   * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static async fetchTokenPricesByMints(
     fetcher: WhirlpoolAccountFetcherInterface,
@@ -78,6 +82,8 @@ export class PriceModule {
    * @param thresholdConfig The threshold configuration for the price calculation.
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A map of token addresses to prices
+   * 
+   * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static async fetchTokenPricesByPools(
     fetcher: WhirlpoolAccountFetcherInterface,
@@ -135,6 +141,8 @@ export class PriceModule {
    * @param config The configuration for the price calculation.
    * @param thresholdConfig The threshold configuration for the price calculation.
    * @returns A map of token addresses to prices.
+   * 
+   * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static calculateTokenPrices(
     mints: Address[],
@@ -225,6 +233,8 @@ export class PriceModule {
 /**
  * A list of utility functions for the price module.
  * @category PriceModule
+ *
+ * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
  */
 export class PriceModuleUtils {
   /**
@@ -236,6 +246,8 @@ export class PriceModuleUtils {
    * @param config The configuration for the price calculation.
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A {@link PoolMap} of pool addresses to pool data.
+   * 
+   * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static async fetchPoolDataFromMints(
     fetcher: WhirlpoolAccountFetcherInterface,
@@ -277,6 +289,8 @@ export class PriceModuleUtils {
    * @param config The configuration for the price calculation.
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A {@link TickArrayMap} of tick-array addresses to tick-array data.
+   * 
+   * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static async fetchTickArraysForPools(
     fetcher: WhirlpoolAccountFetcherInterface,
@@ -332,6 +346,8 @@ export class PriceModuleUtils {
    * @param mints The mints to fetch decimals for.
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A {@link DecimalsMap} of mint addresses to decimals.
+   * 
+   * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static async fetchDecimalsForMints(
     fetcher: WhirlpoolAccountFetcherInterface,

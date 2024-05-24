@@ -1,19 +1,19 @@
-import { Account, Mint } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { TickArrayData, WhirlpoolRewardInfoData } from "./anchor-types";
+import { AccountWithTokenProgram, MintWithTokenProgram } from "@orca-so/common-sdk";
 
 /**
  * Extended Mint type to host token info.
  * @category WhirlpoolClient
  */
-export type TokenInfo = Mint & { mint: PublicKey };
+export type TokenInfo = MintWithTokenProgram & { mint: PublicKey };
 
 /**
  * Extended (token) Account type to host account info for a Token.
  * @category WhirlpoolClient
  */
-export type TokenAccountInfo = Account;
+export type TokenAccountInfo = AccountWithTokenProgram;
 
 /**
  * Type to represent a reward for a reward index on a Whirlpool.

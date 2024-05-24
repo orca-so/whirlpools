@@ -1,6 +1,7 @@
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil } from "@orca-so/common-sdk";
+import { MathUtil, MintWithTokenProgram } from "@orca-so/common-sdk";
 import { PositionData, TickData, WhirlpoolData } from "../../types/public";
+import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * @category Quotes
@@ -10,6 +11,7 @@ export type CollectFeesQuoteParam = {
   position: PositionData;
   tickLower: TickData;
   tickUpper: TickData;
+  tokenExtensionCtx: TokenExtensionContextForPool;
 };
 
 /**
@@ -18,6 +20,10 @@ export type CollectFeesQuoteParam = {
 export type CollectFeesQuote = {
   feeOwedA: BN;
   feeOwedB: BN;
+  transferFee: {
+    deductedFromFeeOwedA: BN;
+    deductedFromFeeOwedB: BN;
+  };
 };
 
 /**
@@ -28,7 +34,7 @@ export type CollectFeesQuote = {
  * @returns A quote object containing the fees owed for each token in the pool.
  */
 export function collectFeesQuote(param: CollectFeesQuoteParam): CollectFeesQuote {
-  const { whirlpool, position, tickLower, tickUpper } = param;
+  const { whirlpool, position, tickLower, tickUpper, tokenExtensionCtx } = param;
 
   const {
     tickCurrentIndex,
@@ -107,10 +113,25 @@ export function collectFeesQuote(param: CollectFeesQuoteParam): CollectFeesQuote
     .shrn(64);
 
   const updatedFeeOwedA = feeOwedA.add(feeOwedADelta);
+  const transferFeeExcludedAmountA = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+    updatedFeeOwedA,
+    tokenExtensionCtx.tokenMintWithProgramA,
+    tokenExtensionCtx.currentEpoch,
+  );
+
   const updatedFeeOwedB = feeOwedB.add(feeOwedBDelta);
+  const transferFeeExcludedAmountB = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+    updatedFeeOwedB,
+    tokenExtensionCtx.tokenMintWithProgramB,
+    tokenExtensionCtx.currentEpoch,
+  );
 
   return {
-    feeOwedA: updatedFeeOwedA,
-    feeOwedB: updatedFeeOwedB,
+    feeOwedA: transferFeeExcludedAmountA.amount,
+    feeOwedB: transferFeeExcludedAmountB.amount,
+    transferFee: {
+      deductedFromFeeOwedA: transferFeeExcludedAmountA.fee,
+      deductedFromFeeOwedB: transferFeeExcludedAmountB.fee,
+    }
   };
 }

@@ -18,6 +18,9 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing, ZERO_BN, createAssociatedTokenAccount, sleep, transferToken } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
+import { TokenTrait } from "../../utils/v2/init-utils-v2";
+import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -50,7 +53,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
     };
   });
 
-  async function accrueFeesAndRewards(fixture: WhirlpoolTestFixture) {
+  async function accrueFeesAndRewards(fixture: WhirlpoolTestFixture | WhirlpoolTestFixtureV2) {
     const ctx = testCtx.whirlpoolCtx;
     const { poolInitInfo } = fixture.getInfos();
     const { whirlpoolClient } = testCtx;
@@ -67,7 +70,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       aToB: true,
       tickArray0: tickArrayPda.publicKey,
       tickArray1: tickArrayPda.publicKey,
-      tickArray2: tickArrayPda.publicKey,
+      tickArray2: tickArrayPda.publicKey, 
     })).buildAndExecute()
 
     // Accrue fees in token B
@@ -86,7 +89,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
     await sleep(1200);
   }
 
-  async function removeLiquidity(fixture: WhirlpoolTestFixture) {
+  async function removeLiquidity(fixture: WhirlpoolTestFixture | WhirlpoolTestFixtureV2) {
     const {
       poolInitInfo,
       positions: [positionInfo],
@@ -99,7 +102,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
       position.getData().liquidity,
       Percentage.fromDecimal(new Decimal(0)),
       position,
-      pool
+      pool,
+      await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
     );
 
     const tx = await position.decreaseLiquidity(liquidityCollectedQuote);
@@ -107,7 +111,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
     await tx.buildAndExecute();
   }
 
-  async function collectFees(fixture: WhirlpoolTestFixture) {
+  async function collectFees(fixture: WhirlpoolTestFixture | WhirlpoolTestFixtureV2) {
     const { positions } = fixture.getInfos();
     const { whirlpoolClient } = testCtx;
     const position = await whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
@@ -115,14 +119,17 @@ describe("WhirlpoolImpl#closePosition()", () => {
     await (await position.collectFees(hasL)).buildAndExecute();
   }
 
-  async function collectRewards(fixture: WhirlpoolTestFixture) {
+  async function collectRewards(fixture: WhirlpoolTestFixture | WhirlpoolTestFixtureV2) {
     const { positions } = fixture.getInfos();
     const { whirlpoolClient } = testCtx;
     const position = await whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
-    await (await position.collectRewards(undefined, true)).buildAndExecute();
+    const txs = await position.collectRewards(undefined, true);
+    for (const tx of txs) {
+      await tx.buildAndExecute();
+    }
   }
 
-  async function testClosePosition(fixture: WhirlpoolTestFixture, isWSOLTest = false) {
+  async function testClosePosition(fixture: WhirlpoolTestFixture | WhirlpoolTestFixtureV2, isWSOLTest = false) {
     const { positions, poolInitInfo, rewards } = fixture.getInfos();
     const { whirlpoolClient } = testCtx;
     const ctx = whirlpoolClient.getContext();
@@ -144,19 +151,22 @@ describe("WhirlpoolImpl#closePosition()", () => {
     // TODO: Our createWSOLAccountInstructions ignores payer and requires destinationWallet to sign
     // We can remove this once we move to syncNative and wSOL becomes another ATA to handle.
     if (isWSOLTest) {
-      txs[txs.length - 1].addSigner(otherWallet)
+      txs[0].addSigner(otherWallet)
     }
 
     for (const tx of txs) {
       await tx.buildAndExecute();
     }
 
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, pool.getData(), IGNORE_CACHE);
+
     // Verify liquidity and fees collected
     const liquidityCollectedQuote = decreaseLiquidityQuoteByLiquidity(
       position.getData().liquidity,
       Percentage.fromDecimal(new Decimal(0)),
       position,
-      pool
+      pool,
+      tokenExtensionCtx,
     );
 
     const feeQuote = collectFeesQuote({
@@ -164,8 +174,9 @@ describe("WhirlpoolImpl#closePosition()", () => {
       whirlpool: pool.getData(),
       tickLower: position.getLowerTickData(),
       tickUpper: position.getUpperTickData(),
+      tokenExtensionCtx,
     });
-    const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
+    const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey, undefined, tokenExtensionCtx.tokenMintWithProgramA.tokenProgram);
     const accountA = (await ctx.fetcher.getTokenInfo(accountAPubkey, IGNORE_CACHE)) as Account;
     const expectAmountA = liquidityCollectedQuote.tokenMinA.add(feeQuote.feeOwedA);
     if (isWSOLTest) {
@@ -188,7 +199,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
       );
     }
 
-    const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
+    const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey, undefined, tokenExtensionCtx.tokenMintWithProgramB.tokenProgram);
     const accountB = await ctx.fetcher.getTokenInfo(accountBPubkey, IGNORE_CACHE);
     const expectAmountB = liquidityCollectedQuote.tokenMinB.add(feeQuote.feeOwedB);
     if (expectAmountB.isZero()) {
@@ -207,253 +218,313 @@ describe("WhirlpoolImpl#closePosition()", () => {
       whirlpool: preClosePoolData,
       tickLower: position.getLowerTickData(),
       tickUpper: position.getUpperTickData(),
+      tokenExtensionCtx,
       timeStampInSeconds: postClosePoolData.rewardLastUpdatedTimestamp,
     });
     for (let i = 0; i < NUM_REWARDS; i++) {
       if (!!rewards[i]) {
-        const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
+        const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey, undefined, tokenExtensionCtx.rewardTokenMintsWithProgram[i]!.tokenProgram);
         const rewardTokenAccount = await ctx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), rewardQuote[i]?.toString());
+        assert.equal(rewardTokenAccount?.amount.toString(), rewardQuote.rewardOwed[i]?.toString());
       }
     }
   }
 
   context("when the whirlpool is SPL-only", () => {
-    it("should close a position with no liquidity, fees, or rewards", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
+    const tokenTraitVariations: {
+      tokenTraitA: TokenTrait;
+      tokenTraitB: TokenTrait;
+      tokenTraitR: TokenTrait;
+    }[] = [
+      {
+        tokenTraitA: { isToken2022: false },
+        tokenTraitB: { isToken2022: false },
+        tokenTraitR: { isToken2022: false },
+      },
+      {
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: false },
+        tokenTraitR: { isToken2022: false },
+      },
+      {
+        tokenTraitA: { isToken2022: false },
+        tokenTraitB: { isToken2022: true },
+        tokenTraitR: { isToken2022: false },
+      },
+      {
+        // TransferHook is most difficult extension in transaction size
+        tokenTraitA: { isToken2022: true, hasTransferHookExtension: true },
+        tokenTraitB: { isToken2022: true, hasTransferHookExtension: true },
+        tokenTraitR: { isToken2022: true, hasTransferHookExtension: true },
+      },
+    ];
+    tokenTraitVariations.forEach((tokenTraits) => {
+      describe(`tokenTraitA: ${
+        tokenTraits.tokenTraitA.isToken2022 ? "Token2022" : "Token"
+      }, tokenTraitB: ${
+        tokenTraits.tokenTraitB.isToken2022 ? "Token2022" : "Token"
+      }`, () => {
+  
+        it("should close a position with no liquidity, fees, or rewards", async () => {
+          const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+            ],
+          });
+
+          await removeLiquidity(fixture);
+          await testClosePosition(fixture);
+        });
+
+        it("should close a position with only liquidity", async () => {
+          const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+            ],
+          });
+
+          await testClosePosition(fixture);
+        });
+
+        it("should close a position with only fees", async () => {
+          const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+            ],
+          });
+
+          await accrueFeesAndRewards(fixture);
+          await removeLiquidity(fixture);
+          await testClosePosition(fixture);
+        });
+
+        it("should close a position with only rewards", async () => {
+          const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+            ],
+            rewards: [
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+            ],
+          });
+
+          // accrue rewards
+          // closePosition does not attempt to create an ATA unless reward has accumulated.
+          await sleep(1200);
+
+          await removeLiquidity(fixture);
+          await collectFees(fixture);
+          await testClosePosition(fixture);
+        });
+
+        it("should close a position with only liquidity and fees", async () => {
+          const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+            ],
+          });
+
+          await accrueFeesAndRewards(fixture);
+          await testClosePosition(fixture);
+        });
+
+        it("should close a position with only liquidity and rewards", async () => {
+          const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+            ],
+            rewards: [
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+            ],
+          });
+
+          // accrue rewards
+          // closePosition does not attempt to create an ATA unless reward has accumulated.
+          await sleep(1200);
+
+          await testClosePosition(fixture);
+        });
+
+        it("should close a position with only fees and rewards", async () => {
+          const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+            ],
+            rewards: [
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+            ],
+          });
+
+          await accrueFeesAndRewards(fixture);
+          await removeLiquidity(fixture);
+          await testClosePosition(fixture);
+        });
+
+        it("should close a position with liquidity, fees, and rewards", async () => {
+          const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+            ],
+            rewards: [
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+            ],
+          });
+
+          await accrueFeesAndRewards(fixture);
+          await testClosePosition(fixture);
+        });
+
+        it("should close a position with liquidity, fees, and rewards (no ATAs)", async () => {
+          const ctx = testCtx.whirlpoolCtx;
+          const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
+            ...tokenTraits,
+            tickSpacing,
+            positions: [
+              { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+            ],
+            rewards: [
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+              {
+                rewardTokenTrait: tokenTraits.tokenTraitR,
+                emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+                vaultAmount: new BN(vaultStartBalance),
+              },
+            ],
+          });
+
+          const otherWallet = anchor.web3.Keypair.generate();
+          const positionData = fixture.getInfos().positions[0];
+
+          const position = await testCtx.whirlpoolClient.getPosition(positionData.publicKey, IGNORE_CACHE);
+
+          const walletPositionTokenAccount = getAssociatedTokenAddressSync(
+            positionData.mintKeypair.publicKey,
+            testCtx.whirlpoolCtx.wallet.publicKey,
+          );
+
+          const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
+            ctx.provider,
+            positionData.mintKeypair.publicKey,
+            otherWallet.publicKey,
+            ctx.wallet.publicKey
+          );
+
+          await accrueFeesAndRewards(fixture);
+          await transferToken(testCtx.provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+
+          const { poolInitInfo } = fixture.getInfos();
+
+          const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
+
+          const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
+            position.getAddress(),
+            IGNORE_CACHE
+          );
+
+          assert.notEqual(positionDataBefore, null);
+
+          const txs = await pool.closePosition(
+            position.getAddress(),
+            Percentage.fromFraction(10, 100),
+            otherWallet.publicKey,
+            otherWallet.publicKey,
+            ctx.wallet.publicKey
+          );
+
+          for (const tx of txs) {
+            await tx.addSigner(otherWallet).buildAndExecute();
+          }
+
+          const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
+            position.getAddress(),
+            IGNORE_CACHE
+          );
+
+          assert.equal(positionDataAfter, null);
+        });
+
       });
-
-      await removeLiquidity(fixture);
-      await testClosePosition(fixture);
-    });
-
-    it("should close a position with only liquidity", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-      });
-
-      await testClosePosition(fixture);
-    });
-
-    it("should close a position with only fees", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-      });
-
-      await accrueFeesAndRewards(fixture);
-      await removeLiquidity(fixture);
-      await testClosePosition(fixture);
-    });
-
-    it("should close a position with only rewards", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-        rewards: [
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-        ],
-      });
-
-      // accrue rewards
-      // closePosition does not attempt to create an ATA unless reward has accumulated.
-      await sleep(1200);
-
-      await removeLiquidity(fixture);
-      await collectFees(fixture);
-      await testClosePosition(fixture);
-    });
-
-    it("should close a position with only liquidity and fees", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-      });
-
-      await accrueFeesAndRewards(fixture);
-      await testClosePosition(fixture);
-    });
-
-    it("should close a position with only liquidity and rewards", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-        rewards: [
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-        ],
-      });
-
-      // accrue rewards
-      // closePosition does not attempt to create an ATA unless reward has accumulated.
-      await sleep(1200);
-
-      await testClosePosition(fixture);
-    });
-
-    it("should close a position with only fees and rewards", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-        rewards: [
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-        ],
-      });
-
-      await accrueFeesAndRewards(fixture);
-      await removeLiquidity(fixture);
-      await testClosePosition(fixture);
-    });
-
-    it("should close a position with liquidity, fees, and rewards", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-        rewards: [
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-        ],
-      });
-
-      await accrueFeesAndRewards(fixture);
-      await testClosePosition(fixture);
-    });
-
-    it("should close a position with liquidity, fees, and rewards (no ATAs)", async () => {
-      const ctx = testCtx.whirlpoolCtx;
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-        rewards: [
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-        ],
-      });
-
-      const otherWallet = anchor.web3.Keypair.generate();
-      const positionData = fixture.getInfos().positions[0];
-
-      const position = await testCtx.whirlpoolClient.getPosition(positionData.publicKey, IGNORE_CACHE);
-
-      const walletPositionTokenAccount = getAssociatedTokenAddressSync(
-        positionData.mintKeypair.publicKey,
-        testCtx.whirlpoolCtx.wallet.publicKey,
-      );
-
-      const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
-        ctx.provider,
-        positionData.mintKeypair.publicKey,
-        otherWallet.publicKey,
-        ctx.wallet.publicKey
-      );
-
-      await accrueFeesAndRewards(fixture);
-      await transferToken(testCtx.provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
-
-      const { poolInitInfo } = fixture.getInfos();
-
-      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
-
-      const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
-        position.getAddress(),
-        IGNORE_CACHE
-      );
-
-      assert.notEqual(positionDataBefore, null);
-
-      const txs = await pool.closePosition(
-        position.getAddress(),
-        Percentage.fromFraction(10, 100),
-        otherWallet.publicKey,
-        otherWallet.publicKey,
-        ctx.wallet.publicKey
-      );
-
-      txs[txs.length - 1].addSigner(otherWallet)
-
-      for (const tx of txs) {
-        await tx.buildAndExecute();
-      }
-
-      const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
-        position.getAddress(),
-        IGNORE_CACHE
-      );
-
-      assert.equal(positionDataAfter, null);
     });
   });
 
@@ -548,10 +619,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
         ctx.wallet.publicKey
       );
 
-      txs[txs.length - 1].addSigner(otherWallet)
-
       for (const tx of txs) {
-        await tx.buildAndExecute();
+        await tx.addSigner(otherWallet).buildAndExecute();
       }
 
       const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(

@@ -8,8 +8,10 @@ import {
   PositionBundleData,
   PositionData,
   TickArrayData,
+  TokenBadgeData,
   WhirlpoolData,
   WhirlpoolsConfigData,
+  WhirlpoolsConfigExtensionData,
 } from "../../types/public";
 
 /**
@@ -151,6 +153,54 @@ export class ParsablePositionBundle {
       return parseAnchorAccount(AccountName.PositionBundle, accountData);
     } catch (e) {
       console.error(`error while parsing PositionBundle: ${e}`);
+      return null;
+    }
+  }
+}
+
+/**
+ * @category Network
+ */
+@staticImplements<ParsableEntity<WhirlpoolsConfigExtensionData>>()
+export class ParsableWhirlpoolsConfigExtension {
+  private constructor() {}
+
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): WhirlpoolsConfigExtensionData | null {
+    if (!accountData?.data) {
+      return null;
+    }
+
+    try {
+      return parseAnchorAccount(AccountName.WhirlpoolsConfigExtension, accountData);
+    } catch (e) {
+      console.error(`error while parsing WhirlpoolsConfigExtension: ${e}`);
+      return null;
+    }
+  }
+}
+
+/**
+ * @category Network
+ */
+@staticImplements<ParsableEntity<TokenBadgeData>>()
+export class ParsableTokenBadge {
+  private constructor() {}
+
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null
+  ): TokenBadgeData | null {
+    if (!accountData?.data) {
+      return null;
+    }
+
+    try {
+      return parseAnchorAccount(AccountName.TokenBadge, accountData);
+    } catch (e) {
+      console.error(`error while parsing TokenBadge: ${e}`);
       return null;
     }
   }

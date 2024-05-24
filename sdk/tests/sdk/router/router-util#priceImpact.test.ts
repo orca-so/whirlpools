@@ -255,6 +255,10 @@ describe("RouterUtil - Price Impact tests", () => {
                   estimatedEndTickIndex: 0,
                   estimatedEndSqrtPrice: new BN(0),
                   estimatedFeeAmount: new BN(0),
+                  transferFee: {
+                    deductingFromEstimatedAmountIn: new BN(0),
+                    deductedFromEstimatedAmountOut: new BN(0),
+                  },                
                 },
                 snapshot: {
                   aToB: hopParam.aToB,

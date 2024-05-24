@@ -1,6 +1,6 @@
 [package]
 name = "whirlpool"
-version = "0.2.0"
+version = "0.3.0"
 description = "Created with Anchor"
 edition = "2018"
 
@@ -15,14 +15,14 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = "0.26"
-anchor-spl = "0.26"
-spl-token = {version = "3.3", features = ["no-entrypoint"]}
-solana-program = "1.14.12"
+anchor-lang = "0.29"
+anchor-spl = {version = "0.29", features = ["metadata", "memo"]}
+spl-token = {version = "4", features = ["no-entrypoint"]}
+spl-transfer-hook-interface = "0.5.1"
+solana-program = "1.17"
 thiserror = "1.0"
 uint = {version = "0.9.1", default-features = false}
-borsh = "0.9.1"
-mpl-token-metadata = { version = "1.7", features = ["no-entrypoint"] }
+borsh09 = {package = "borsh", version = "0.9.1"}
 solana-security-txt = { version = "=1.1.1" }
 
 [dev-dependencies]

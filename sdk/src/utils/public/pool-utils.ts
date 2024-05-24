@@ -7,6 +7,9 @@ import { WhirlpoolData, WhirlpoolRewardInfoData } from "../../types/public";
 import { TOKEN_MINTS } from "../constants";
 import { PriceMath } from "./price-math";
 import { TokenType } from "./types";
+import { PDAUtil, WhirlpoolContext } from "../..";
+import invariant from "tiny-invariant";
+import { AccountState, ExtensionType, NATIVE_MINT_2022, TOKEN_PROGRAM_ID, getDefaultAccountState, getExtensionTypes } from "@solana/spl-token";
 
 /**
  * @category Whirlpool Utils
@@ -181,6 +184,75 @@ export class PoolUtil {
   ): [PublicKey, PublicKey] {
     const pair: [PublicKey, PublicKey] = [tokenMintAKey, tokenMintBKey];
     return pair.sort(sortByQuotePriority);
+  }
+
+  public static async isSupportedToken(
+    ctx: WhirlpoolContext,
+    whirlpoolsConfig: PublicKey,
+    tokenMintKey: PublicKey,
+  ) {
+    // sync with is_supported_token (programs/whirlpool/src/util/v2/token.rs)
+
+    const mintWithTokenProgram = await ctx.fetcher.getMintInfo(tokenMintKey);
+    invariant(mintWithTokenProgram, "Mint not found");
+
+    if (mintWithTokenProgram.tokenProgram.equals(TOKEN_PROGRAM_ID)) {
+      return true;
+    }
+
+    if (mintWithTokenProgram.address.equals(NATIVE_MINT_2022)) {
+      return false;
+    }
+
+    if (mintWithTokenProgram.freezeAuthority !== null) {
+      return false;
+    }
+
+    const tokenBadgePda = PDAUtil.getTokenBadge(ctx.program.programId, whirlpoolsConfig, tokenMintKey);
+    const tokenBadge = await ctx.fetcher.getTokenBadge(tokenBadgePda.publicKey);
+    const isTokenBadgeInitialized = tokenBadge !== null;
+
+    const extensions = getExtensionTypes(mintWithTokenProgram.tlvData);
+    for (const extension of extensions) {
+      switch (extension) {
+        // supported
+        case ExtensionType.TransferFeeConfig:
+        case ExtensionType.TokenMetadata:
+        case ExtensionType.MetadataPointer:
+        case ExtensionType.ConfidentialTransferMint:
+          continue;
+
+        // supported if TokenBadge is initialized
+        case ExtensionType.PermanentDelegate:
+        case ExtensionType.TransferHook:
+        case ExtensionType.MintCloseAuthority:
+          if (!isTokenBadgeInitialized) {
+            return false;
+          }
+          continue;
+        case ExtensionType.DefaultAccountState:
+          if (!isTokenBadgeInitialized) {
+            return false;
+          }
+
+          const defaultAccountState = getDefaultAccountState(mintWithTokenProgram)!;
+          if (defaultAccountState.state !== AccountState.Initialized) {
+            return false;
+          }
+
+          continue;
+
+        // not supported
+        case ExtensionType.NonTransferable:
+          return false;
+        
+        // not supported yet or unknown extension
+        default:
+          return false;
+      }
+    }
+
+    return true;
   }
 }
 

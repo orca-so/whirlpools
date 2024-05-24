@@ -12,6 +12,7 @@ import {
   getLiquidityFromTokenA,
   getLiquidityFromTokenB,
 } from "../../../../src/utils/position-util";
+import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../../src/utils/public/token-extension-util";
 
 function getTestSlippageRange(currIndex: number, slippage: Percentage) {
   const sqrtPrice = PriceMath.tickIndexToSqrtPriceX64(currIndex);
@@ -230,6 +231,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         tickLowerIndex: pTickLowerIndex,
         tickUpperIndex: pTickUpperIndex,
         tickCurrentIndex,
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
         slippageTolerance: slippage,
       });
 
@@ -250,6 +252,7 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
         liquidity,
         sqrtPrice: sqrtPrice,
         slippageTolerance: slippage,
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
       });
 
       const {
@@ -294,6 +297,7 @@ describe("edge cases for old slippage", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 0,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.isZero());
@@ -314,6 +318,7 @@ describe("edge cases for old slippage", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 0,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));
@@ -338,6 +343,7 @@ describe("edge cases for old slippage", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 0,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));
@@ -362,6 +368,7 @@ describe("edge cases for old slippage", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 0,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));
@@ -382,6 +389,7 @@ describe("edge cases for old slippage", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 64,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.isZero());
@@ -402,6 +410,7 @@ describe("edge cases for old slippage", () => {
       tickUpperIndex: 64,
       tickCurrentIndex: 64,
       slippageTolerance: Percentage.fromFraction(0, 100),
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
     });
 
     assert.ok(quote.liquidityAmount.gtn(0));

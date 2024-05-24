@@ -65,7 +65,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
     sqrt_price_limit: u128,
     amount_specified_is_input: bool,
     a_to_b: bool, // Zero for one
-    remaining_accounts_info: RemainingAccountsInfo,
+    remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
     let whirlpool = &mut ctx.accounts.whirlpool;
     let clock = Clock::get()?;

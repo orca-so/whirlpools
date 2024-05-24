@@ -52,7 +52,7 @@ pub struct CollectFeesV2<'info> {
 
 pub fn handler<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CollectFeesV2<'info>>,
-    remaining_accounts_info: RemainingAccountsInfo
+    remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,

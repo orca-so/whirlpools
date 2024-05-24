@@ -1,10 +1,10 @@
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil, MintWithTokenProgram } from "@orca-so/common-sdk";
+import { MathUtil } from "@orca-so/common-sdk";
 import invariant from "tiny-invariant";
 import { NUM_REWARDS, PositionData, TickData, WhirlpoolData } from "../../types/public";
 import { BitMath } from "../../utils/math/bit-math";
 import { PoolUtil } from "../../utils/public/pool-utils";
-import { TokenAmountWithFee, TokenExtensionContextForReward, TokenExtensionUtil } from "../../utils/public/token-extension-util";
+import { TokenExtensionContextForReward, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * Parameters needed to generate a quote on collectible rewards on a position.

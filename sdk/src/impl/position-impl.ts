@@ -195,16 +195,12 @@ export class PositionImpl implements Position {
         tokenMintB: whirlpool.tokenMintB,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
           this.ctx.connection,
-          tokenExtensionCtx.tokenMintWithProgramA,
+          tokenExtensionCtx,
           baseParams.tokenOwnerAccountA,
           baseParams.tokenVaultA,
           baseParams.positionAuthority,
-        ),
-        tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-          this.ctx.connection,
-          tokenExtensionCtx.tokenMintWithProgramB,
           baseParams.tokenOwnerAccountB,
           baseParams.tokenVaultB,
           baseParams.positionAuthority,
@@ -310,16 +306,12 @@ export class PositionImpl implements Position {
         tokenMintB: whirlpool.tokenMintB,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
           this.ctx.connection,
-          tokenExtensionCtx.tokenMintWithProgramA,
+          tokenExtensionCtx,
           baseParams.tokenVaultA,
           baseParams.tokenOwnerAccountA,
           baseParams.whirlpool, // vault to owner, so pool is authority
-        ),
-        tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-          this.ctx.connection,
-          tokenExtensionCtx.tokenMintWithProgramB,
           baseParams.tokenVaultB,
           baseParams.tokenOwnerAccountB,
           baseParams.whirlpool, // vault to owner, so pool is authority
@@ -434,16 +426,12 @@ export class PositionImpl implements Position {
         tokenMintB: whirlpool.tokenMintB,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
           this.ctx.connection,
-          tokenExtensionCtx.tokenMintWithProgramA,
+          tokenExtensionCtx,
           baseParams.tokenVaultA,
           baseParams.tokenOwnerAccountA,
           baseParams.whirlpool, // vault to owner, so pool is authority
-        ),
-        tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-          this.ctx.connection,
-          tokenExtensionCtx.tokenMintWithProgramB,
           baseParams.tokenVaultB,
           baseParams.tokenOwnerAccountB,
           baseParams.whirlpool, // vault to owner, so pool is authority

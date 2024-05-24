@@ -16,7 +16,7 @@ pub struct SetConfigExtensionAuthority<'info> {
     pub new_config_extension_authority: UncheckedAccount<'info>,
 }
 
-/// Set the fee authority. Only the current config extension has permission to invoke this instruction.
+/// Set the config extension authority. Only the current config extension authority has permission to invoke this instruction.
 pub fn handler(ctx: Context<SetConfigExtensionAuthority>) -> Result<()> {
     Ok(ctx
         .accounts

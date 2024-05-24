@@ -307,16 +307,12 @@ describe("PositionImpl#collectFees()", () => {
         tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
           ctx.connection,
-          tokenExtensionCtx.tokenMintWithProgramA,
+          tokenExtensionCtx,
           tokenAccountA,
           tokenVaultAKeypair.publicKey,
           ctx.wallet.publicKey,
-        ),
-        tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-          ctx.connection,
-          tokenExtensionCtx.tokenMintWithProgramB,
           tokenVaultBKeypair.publicKey,
           tokenAccountB,
           whirlpoolPda.publicKey,
@@ -347,16 +343,12 @@ describe("PositionImpl#collectFees()", () => {
         tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
           ctx.connection,
-          tokenExtensionCtx.tokenMintWithProgramA,
+          tokenExtensionCtx,
           tokenVaultAKeypair.publicKey,
           tokenAccountA,
           whirlpoolPda.publicKey,
-        ),
-        tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-          ctx.connection,
-          tokenExtensionCtx.tokenMintWithProgramB,
           tokenAccountB,
           tokenVaultBKeypair.publicKey,
           ctx.wallet.publicKey,

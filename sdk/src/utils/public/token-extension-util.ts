@@ -5,8 +5,12 @@ import { PoolUtil, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterfac
 import { AccountMeta, Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
 import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 
-export type TokenAmountWithFee = {
-  isFeeIncludedAmount: boolean;
+export type TransferFeeIncludedAmount = {
+  amount: BN;
+  fee: BN;
+};
+
+export type TransferFeeExcludedAmount = {
   amount: BN;
   fee: BN;
 };
@@ -52,10 +56,10 @@ export class TokenExtensionUtil {
     transferFeeExcludedAmount: BN,
     tokenInfo: MintWithTokenProgram,
     currentEpoch: number,
-  ): TokenAmountWithFee {
+  ): TransferFeeIncludedAmount {
     const config = getTransferFeeConfig(tokenInfo);
     if (config === null) {
-      return { isFeeIncludedAmount: true, amount: transferFeeExcludedAmount, fee: ZERO };
+      return { amount: transferFeeExcludedAmount, fee: ZERO };
     }
 
     const transferFee = getEpochFee(config, BigInt(currentEpoch));
@@ -66,10 +70,10 @@ export class TokenExtensionUtil {
     transferFeeIncludedAmount: BN,
     tokenInfo: MintWithTokenProgram,
     currentEpoch: number,
-  ): TokenAmountWithFee {
+  ): TransferFeeExcludedAmount {
     const config = getTransferFeeConfig(tokenInfo);
     if (config === null) {
-      return { isFeeIncludedAmount: false, amount: transferFeeIncludedAmount, fee: ZERO };
+      return { amount: transferFeeIncludedAmount, fee: ZERO };
     }
 
     const transferFee = getEpochFee(config, BigInt(currentEpoch));
@@ -138,7 +142,7 @@ export class TokenExtensionUtil {
       tokenMintWithProgram.address,
       destination,
       owner,
-      0n, // extra account must not depend on the amount (the acount will be changed due to slippage)
+      0n, // extra account must not depend on the amount (the amount will be changed due to slippage)
       "confirmed"
     );
   
@@ -147,13 +151,48 @@ export class TokenExtensionUtil {
       ? extraAccountMetas
       : undefined;
   }
+
+  public static async getExtraAccountMetasForTransferHookForPool(
+    connection: Connection,
+    tokenExtensionCtx: TokenExtensionContextForPool,
+    sourceA: PublicKey,
+    destinationA: PublicKey,
+    ownerA: PublicKey,
+    sourceB: PublicKey,
+    destinationB: PublicKey,
+    ownerB: PublicKey,
+  ): Promise<{
+    tokenTransferHookAccountsA: AccountMeta[] | undefined,
+    tokenTransferHookAccountsB: AccountMeta[] | undefined,
+  }> {
+    const [tokenTransferHookAccountsA, tokenTransferHookAccountsB] = await Promise.all([
+      TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+        connection,
+        tokenExtensionCtx.tokenMintWithProgramA,
+        sourceA,
+        destinationA,
+        ownerA,
+      ),
+      TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+        connection,
+        tokenExtensionCtx.tokenMintWithProgramB,
+        sourceB,
+        destinationB,
+        ownerB,
+      ),
+    ]);
+
+    return {
+      tokenTransferHookAccountsA,
+      tokenTransferHookAccountsB,
+    };
+  }
   
   public static isV2IxRequiredPool(
     tokenExtensionCtx: TokenExtensionContextForPool
   ): boolean {
-    if (tokenExtensionCtx.tokenMintWithProgramA.tokenProgram.equals(TOKEN_2022_PROGRAM_ID)) return true;
-    if (tokenExtensionCtx.tokenMintWithProgramB.tokenProgram.equals(TOKEN_2022_PROGRAM_ID)) return true;
-    return false;
+    return tokenExtensionCtx.tokenMintWithProgramA.tokenProgram.equals(TOKEN_2022_PROGRAM_ID)
+      || tokenExtensionCtx.tokenMintWithProgramB.tokenProgram.equals(TOKEN_2022_PROGRAM_ID);
   }
 
   public static isV2IxRequiredReward(
@@ -171,7 +210,7 @@ function ceilDivBN(num: BN, denom: BN): BN {
 function calculateTransferFeeIncludedAmount(
   transferFee: TransferFee,
   amount: BN,
-): TokenAmountWithFee {
+): TransferFeeIncludedAmount {
   // https://github.com/solana-labs/solana-program-library/blob/master/token/program-2022/src/extension/transfer_fee/mod.rs#L90
 
   const ONE_IN_BASIS_POINTS = 10_000;
@@ -181,7 +220,6 @@ function calculateTransferFeeIncludedAmount(
 
   if (transferFee.transferFeeBasisPoints === 0) {
     return {
-      isFeeIncludedAmount: true,
       amount,
       fee: ZERO,
     };
@@ -189,7 +227,6 @@ function calculateTransferFeeIncludedAmount(
   
   if (amount.isZero()) {
     return {
-      isFeeIncludedAmount: true,
       amount,
       fee: ZERO,
     };
@@ -200,7 +237,6 @@ function calculateTransferFeeIncludedAmount(
       throw new Error("The total amount and fees overflow");
     }
     return {
-      isFeeIncludedAmount: true,
       amount: amount.add(maxFeeBN),
       fee: maxFeeBN,
     };
@@ -220,17 +256,16 @@ function calculateTransferFeeIncludedAmount(
     throw new Error("The total amount and fees overflow");
   }
 
-  return { ...result, isFeeIncludedAmount: true };
+  return { ...result };
 }
 
 function calculateTransferFeeExcludedAmount(
   transferFee: TransferFee,
   amount: BN,
-): TokenAmountWithFee {
+): TransferFeeExcludedAmount {
   const fee = calculateFee(transferFee, BigInt(amount.toString()));
   const feeBN = new BN(fee.toString());
   return {
-    isFeeIncludedAmount: false,
     amount: amount.sub(feeBN),
     fee: feeBN,
   };

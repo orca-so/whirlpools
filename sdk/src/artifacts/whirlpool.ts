@@ -1923,7 +1923,9 @@ export type Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2002,7 +2004,9 @@ export type Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2070,7 +2074,9 @@ export type Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2186,7 +2192,9 @@ export type Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2302,7 +2310,9 @@ export type Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2652,7 +2662,9 @@ export type Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -2840,7 +2852,9 @@ export type Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -3802,6 +3816,16 @@ export type Whirlpool = {
       "code": 6051,
       "name": "IntermediateTokenAmountMismatch",
       "msg": "Output and input amount mismatch"
+    },
+    {
+      "code": 6052,
+      "name": "TransferFeeCalculationError",
+      "msg": "Transfer fee calculation failed"
+    },
+    {
+      "code": 6053,
+      "name": "RemainingAccountsDuplicatedAccountsType",
+      "msg": "Same accounts type is provided more than once"
     }
   ]
 };
@@ -5731,7 +5755,9 @@ export const IDL: Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -5810,7 +5836,9 @@ export const IDL: Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -5878,7 +5906,9 @@ export const IDL: Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -5994,7 +6024,9 @@ export const IDL: Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -6110,7 +6142,9 @@ export const IDL: Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -6460,7 +6494,9 @@ export const IDL: Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -6648,7 +6684,9 @@ export const IDL: Whirlpool = {
         {
           "name": "remainingAccountsInfo",
           "type": {
-            "defined": "RemainingAccountsInfo"
+            "option": {
+              "defined": "RemainingAccountsInfo"
+            }
           }
         }
       ]
@@ -7610,6 +7648,16 @@ export const IDL: Whirlpool = {
       "code": 6051,
       "name": "IntermediateTokenAmountMismatch",
       "msg": "Output and input amount mismatch"
+    },
+    {
+      "code": 6052,
+      "name": "TransferFeeCalculationError",
+      "msg": "Transfer fee calculation failed"
+    },
+    {
+      "code": 6053,
+      "name": "RemainingAccountsDuplicatedAccountsType",
+      "msg": "Same accounts type is provided more than once"
     }
   ]
 };

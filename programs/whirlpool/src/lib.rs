@@ -620,7 +620,7 @@ pub mod whirlpool {
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
     pub fn collect_fees_v2<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CollectFeesV2<'info>>,
-        remaining_accounts_info: RemainingAccountsInfo
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
         return instructions::v2::collect_fees::handler(ctx, remaining_accounts_info);
     }
@@ -631,7 +631,7 @@ pub mod whirlpool {
     /// - `collect_protocol_fees_authority` - assigned authority in the WhirlpoolConfig that can collect protocol fees
     pub fn collect_protocol_fees_v2<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CollectProtocolFeesV2<'info>>,
-        remaining_accounts_info: RemainingAccountsInfo
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
         return instructions::v2::collect_protocol_fees::handler(ctx, remaining_accounts_info);
     }
@@ -642,7 +642,8 @@ pub mod whirlpool {
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
     pub fn collect_reward_v2<'a, 'b, 'c, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CollectRewardV2<'info>>,
-        reward_index: u8, remaining_accounts_info: RemainingAccountsInfo
+        reward_index: u8,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
         return instructions::v2::collect_reward::handler(ctx, reward_index, remaining_accounts_info);
     }
@@ -666,7 +667,7 @@ pub mod whirlpool {
         liquidity_amount: u128,
         token_min_a: u64,
         token_min_b: u64,
-        remaining_accounts_info: RemainingAccountsInfo,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
         return instructions::v2::decrease_liquidity::handler(
             ctx,
@@ -696,7 +697,7 @@ pub mod whirlpool {
         liquidity_amount: u128,
         token_max_a: u64,
         token_max_b: u64,
-        remaining_accounts_info: RemainingAccountsInfo,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
         return instructions::v2::increase_liquidity::handler(
             ctx,
@@ -805,7 +806,7 @@ pub mod whirlpool {
         sqrt_price_limit: u128,
         amount_specified_is_input: bool,
         a_to_b: bool,
-        remaining_accounts_info: RemainingAccountsInfo,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
         return instructions::v2::swap::handler(
             ctx,
@@ -852,7 +853,7 @@ pub mod whirlpool {
         a_to_b_two: bool,
         sqrt_price_limit_one: u128,
         sqrt_price_limit_two: u128,
-        remaining_accounts_info: RemainingAccountsInfo,
+        remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
         return instructions::v2::two_hop_swap::handler(
             ctx,

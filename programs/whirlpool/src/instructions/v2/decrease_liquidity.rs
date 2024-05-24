@@ -19,7 +19,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
     liquidity_amount: u128,
     token_min_a: u64,
     token_min_b: u64,
-    remaining_accounts_info: RemainingAccountsInfo,
+    remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
     verify_position_authority(
         &ctx.accounts.position_token_account,

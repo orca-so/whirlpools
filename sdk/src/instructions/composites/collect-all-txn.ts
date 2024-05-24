@@ -346,16 +346,12 @@ const constructCollectIxForPosition = async (
           tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
           tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
           tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-          tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
             ctx.connection,
-            tokenExtensionCtx.tokenMintWithProgramA,
+            tokenExtensionCtx,
             collectFeesBaseParams.tokenVaultA,
             collectFeesBaseParams.tokenOwnerAccountA,
             collectFeesBaseParams.whirlpool, // vault to owner, so pool is authority
-          ),
-          tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-            ctx.connection,
-            tokenExtensionCtx.tokenMintWithProgramB,
             collectFeesBaseParams.tokenVaultB,
             collectFeesBaseParams.tokenOwnerAccountB,
             collectFeesBaseParams.whirlpool, // vault to owner, so pool is authority

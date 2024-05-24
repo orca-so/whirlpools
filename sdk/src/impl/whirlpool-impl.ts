@@ -383,16 +383,12 @@ export class WhirlpoolImpl implements Whirlpool {
           tokenMintB: whirlpool.tokenMintB,
           tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
           tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-          tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+          ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
             this.ctx.connection,
-            tokenExtensionCtx.tokenMintWithProgramA,
+            tokenExtensionCtx,
             baseParams.tokenOwnerAccountA,
             baseParams.tokenVaultA,
             baseParams.positionAuthority,
-          ),
-          tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-            this.ctx.connection,
-            tokenExtensionCtx.tokenMintWithProgramB,
             baseParams.tokenOwnerAccountB,
             baseParams.tokenVaultB,
             baseParams.positionAuthority,
@@ -587,16 +583,12 @@ export class WhirlpoolImpl implements Whirlpool {
             tokenMintB: whirlpool.tokenMintB,
             tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
             tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-            tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
               this.ctx.connection,
-              tokenExtensionCtx.tokenMintWithProgramA,
+              tokenExtensionCtx,
               baseParams.tokenVaultA,
               baseParams.tokenOwnerAccountA,
               baseParams.whirlpool, // vault to owner, so pool is authority
-            ),
-            tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-              this.ctx.connection,
-              tokenExtensionCtx.tokenMintWithProgramB,
               baseParams.tokenVaultB,
               baseParams.tokenOwnerAccountB,
               baseParams.whirlpool, // vault to owner, so pool is authority
@@ -631,16 +623,12 @@ export class WhirlpoolImpl implements Whirlpool {
             tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
             tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
             tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-            tokenTransferHookAccountsA: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+            ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
               this.ctx.connection,
-              tokenExtensionCtx.tokenMintWithProgramA,
+              tokenExtensionCtx,
               collectFeesBaseParams.tokenVaultA,
               collectFeesBaseParams.tokenOwnerAccountA,
               collectFeesBaseParams.whirlpool, // vault to owner, so pool is authority
-            ),
-            tokenTransferHookAccountsB: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-              this.ctx.connection,
-              tokenExtensionCtx.tokenMintWithProgramB,
               collectFeesBaseParams.tokenVaultB,
               collectFeesBaseParams.tokenOwnerAccountB,
               collectFeesBaseParams.whirlpool, // vault to owner, so pool is authority

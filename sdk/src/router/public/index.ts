@@ -133,6 +133,8 @@ export type ExecutableRoute = readonly [TradeRoute, AddressLookupTableAccount[] 
  * between the same token.
  *
  * @category Router
+ *
+ * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
  */
 export interface WhirlpoolRouter {
   /**
@@ -148,6 +150,8 @@ export interface WhirlpoolRouter {
    * @param fetchOpts
    * {@link WhirlpoolAccountFetchOptions} to configure the fetching of on-chain data.
    * @return A list of {@link TradeRoute} that can be used to execute a swap, ordered by the best other token amount.
+   *
+   * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   findAllRoutes(
     trade: Trade,
@@ -171,6 +175,8 @@ export interface WhirlpoolRouter {
    * {@link WhirlpoolAccountFetchOptions} to configure the fetching of on-chain data.
    * @returns
    * The best {@link ExecutableRoute} that can be used to execute a swap. If no executable route is found, null is returned.
+   * 
+   * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   findBestRoute(
     trade: Trade,
@@ -190,6 +196,8 @@ export interface WhirlpoolRouter {
    * A {@link TransactionBuilder}that can be used to execute the trade.
    * If provvided from {@link ExecutableRoute}, plug the {@link AddressLookupTableAccount}s
    * into builder to lower the transaction size.
+   * 
+   * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   swap(
     trade: TradeRoute,

@@ -1,5 +1,5 @@
 import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, DecimalUtil, Percentage, ZERO } from "@orca-so/common-sdk";
+import { AddressUtil, DecimalUtil, MintWithTokenProgram, Percentage, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
@@ -16,6 +16,7 @@ import {
 } from "../../utils/position-util";
 import { PriceMath, TickUtil } from "../../utils/public";
 import { Whirlpool } from "../../whirlpool-client";
+import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 
 /*** --------- Quote by Input Token --------- ***/
@@ -41,6 +42,7 @@ export type IncreaseLiquidityQuoteParam = {
   sqrtPrice: BN;
   tickLowerIndex: number;
   tickUpperIndex: number;
+  tokenExtensionCtx: TokenExtensionContextForPool;
   slippageTolerance: Percentage;
 };
 
@@ -49,7 +51,17 @@ export type IncreaseLiquidityQuoteParam = {
  * @category Quotes
  */
 export type IncreaseLiquidityQuote = IncreaseLiquidityInput & IncreaseLiquidityEstimate;
-type IncreaseLiquidityEstimate = { liquidityAmount: BN; tokenEstA: BN; tokenEstB: BN };
+type IncreaseLiquidityEstimate = {
+  liquidityAmount: BN;
+  tokenEstA: BN;
+  tokenEstB: BN;
+  transferFee: {
+    deductingFromTokenMaxA: BN;
+    deductingFromTokenMaxB: BN;
+    deductingFromTokenEstA: BN;
+    deductingFromTokenEstB: BN;
+  };
+};
 
 /**
  * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
@@ -70,7 +82,8 @@ export function increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
   tickLower: number,
   tickUpper: number,
   slippageTolerance: Percentage,
-  whirlpool: Whirlpool
+  whirlpool: Whirlpool,
+  tokenExtensionCtx: TokenExtensionContextForPool,
 ) {
   const data = whirlpool.getData();
   const tokenAInfo = whirlpool.getTokenAInfo();
@@ -85,6 +98,7 @@ export function increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
     tickLowerIndex: TickUtil.getInitializableTickIndex(tickLower, data.tickSpacing),
     tickUpperIndex: TickUtil.getInitializableTickIndex(tickUpper, data.tickSpacing),
     slippageTolerance,
+    tokenExtensionCtx,
     ...data,
   });
 }
@@ -111,11 +125,17 @@ export function increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage(
 
   if (liquidity.eq(ZERO)) {
     return {
+      liquidityAmount: ZERO,
       tokenMaxA: ZERO,
       tokenMaxB: ZERO,
-      liquidityAmount: ZERO,
       tokenEstA: ZERO,
       tokenEstB: ZERO,
+      transferFee: {
+        deductingFromTokenMaxA: ZERO,
+        deductingFromTokenMaxB: ZERO,
+        deductingFromTokenEstA: ZERO,
+        deductingFromTokenEstB: ZERO,
+      },
     };
   }
 
@@ -126,11 +146,12 @@ export function increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage(
     tickLowerIndex: param.tickLowerIndex,
     tickUpperIndex: param.tickUpperIndex,
     slippageTolerance: param.slippageTolerance,
+    tokenExtensionCtx: param.tokenExtensionCtx,
   });
 }
 
 function getLiquidityFromInputToken(params: IncreaseLiquidityQuoteParam) {
-  const { inputTokenMint, inputTokenAmount, tickLowerIndex, tickUpperIndex, tickCurrentIndex, sqrtPrice } = params;
+  const { inputTokenMint, inputTokenAmount, tickLowerIndex, tickUpperIndex, sqrtPrice, tokenExtensionCtx } = params;
   invariant(tickLowerIndex < tickUpperIndex, `tickLowerIndex(${tickLowerIndex}) must be less than tickUpperIndex(${tickUpperIndex})`);
 
   if (inputTokenAmount.eq(ZERO)) {
@@ -144,16 +165,46 @@ function getLiquidityFromInputToken(params: IncreaseLiquidityQuoteParam) {
   const positionStatus = PositionUtil.getStrictPositionStatus(sqrtPrice, tickLowerIndex, tickUpperIndex);
 
   if (positionStatus === PositionStatus.BelowRange) {
-    return isTokenA ? getLiquidityFromTokenA(inputTokenAmount, sqrtPriceLowerX64, sqrtPriceUpperX64, false) : ZERO;
+    if (!isTokenA) {
+      return ZERO;
+    }
+
+    const transferFeeExcludedInputTokenAmount = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+      inputTokenAmount,
+      tokenExtensionCtx.tokenMintWithProgramA,
+      tokenExtensionCtx.currentEpoch,
+    );
+    return getLiquidityFromTokenA(transferFeeExcludedInputTokenAmount.amount, sqrtPriceLowerX64, sqrtPriceUpperX64, false);
   }
 
   if (positionStatus === PositionStatus.AboveRange) {
-    return isTokenA ? ZERO : getLiquidityFromTokenB(inputTokenAmount, sqrtPriceLowerX64, sqrtPriceUpperX64, false);
+    if (isTokenA) {
+      return ZERO;
+    }
+
+    const transferFeeExcludedInputTokenAmount = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+      inputTokenAmount,
+      tokenExtensionCtx.tokenMintWithProgramB,
+      tokenExtensionCtx.currentEpoch,
+    );
+    return getLiquidityFromTokenB(transferFeeExcludedInputTokenAmount.amount, sqrtPriceLowerX64, sqrtPriceUpperX64, false);
   }
 
-  return isTokenA
-    ? getLiquidityFromTokenA(inputTokenAmount, sqrtPrice, sqrtPriceUpperX64, false)
-    : getLiquidityFromTokenB(inputTokenAmount, sqrtPriceLowerX64, sqrtPrice, false);
+  if (isTokenA) {
+    const transferFeeExcludedInputTokenAmount = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+      inputTokenAmount,
+      tokenExtensionCtx.tokenMintWithProgramA,
+      tokenExtensionCtx.currentEpoch,
+    );
+    return getLiquidityFromTokenA(transferFeeExcludedInputTokenAmount.amount, sqrtPrice, sqrtPriceUpperX64, false)
+  } else {
+    const transferFeeExcludedInputTokenAmount = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+      inputTokenAmount,
+      tokenExtensionCtx.tokenMintWithProgramB,
+      tokenExtensionCtx.currentEpoch,
+    );
+    return getLiquidityFromTokenB(transferFeeExcludedInputTokenAmount.amount, sqrtPriceLowerX64, sqrtPrice, false);
+  }
 }
 
 /*** --------- Quote by Liquidity --------- ***/
@@ -175,17 +226,24 @@ export type IncreaseLiquidityQuoteByLiquidityParam = {
   sqrtPrice: BN;
   tickLowerIndex: number;
   tickUpperIndex: number;
+  tokenExtensionCtx: TokenExtensionContextForPool;
   slippageTolerance: Percentage;
 };
 
 export function increaseLiquidityQuoteByLiquidityWithParams(params: IncreaseLiquidityQuoteByLiquidityParam): IncreaseLiquidityQuote {
   if (params.liquidity.eq(ZERO)) {
     return {
+      liquidityAmount: ZERO,
       tokenMaxA: ZERO,
       tokenMaxB: ZERO,
-      liquidityAmount: ZERO,
       tokenEstA: ZERO,
       tokenEstB: ZERO,
+      transferFee: {
+        deductingFromTokenMaxA: ZERO,
+        deductingFromTokenMaxB: ZERO,
+        deductingFromTokenEstA: ZERO,
+        deductingFromTokenEstB: ZERO,
+      },
     };
   }
   const { tokenEstA, tokenEstB } = getTokenEstimatesFromLiquidity(params);
@@ -210,12 +268,24 @@ export function increaseLiquidityQuoteByLiquidityWithParams(params: IncreaseLiqu
   const tokenMaxA = BN.max(BN.max(tokenEstA, tokenEstALower), tokenEstAUpper);
   const tokenMaxB = BN.max(BN.max(tokenEstB, tokenEstBLower), tokenEstBUpper);
 
+  const tokenExtensionCtx = params.tokenExtensionCtx;
+  const tokenMaxAIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenMaxA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+  const tokenEstAIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenEstA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+  const tokenMaxBIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenMaxB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
+  const tokenEstBIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenEstB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
+
   return {
-    tokenMaxA,
-    tokenMaxB,
-    tokenEstA,
-    tokenEstB,
     liquidityAmount: params.liquidity,
+    tokenMaxA: tokenMaxAIncluded.amount,
+    tokenMaxB: tokenMaxBIncluded.amount,
+    tokenEstA: tokenEstAIncluded.amount,
+    tokenEstB: tokenEstBIncluded.amount,
+    transferFee: {
+      deductingFromTokenMaxA: tokenMaxAIncluded.fee,
+      deductingFromTokenMaxB: tokenMaxBIncluded.fee,
+      deductingFromTokenEstA: tokenEstAIncluded.fee,
+      deductingFromTokenEstB: tokenEstBIncluded.fee,
+    },
   };
 }
 
@@ -270,7 +340,8 @@ export function increaseLiquidityQuoteByInputToken(
   tickLower: number,
   tickUpper: number,
   slippageTolerance: Percentage,
-  whirlpool: Whirlpool
+  whirlpool: Whirlpool,
+  tokenExtensionCtx: TokenExtensionContextForPool,
 ) {
   const data = whirlpool.getData();
   const tokenAInfo = whirlpool.getTokenAInfo();
@@ -284,7 +355,8 @@ export function increaseLiquidityQuoteByInputToken(
     inputTokenAmount: DecimalUtil.toBN(inputTokenAmount, inputTokenInfo.decimals),
     tickLowerIndex: TickUtil.getInitializableTickIndex(tickLower, data.tickSpacing),
     tickUpperIndex: TickUtil.getInitializableTickIndex(tickUpper, data.tickSpacing),
-    slippageTolerance: slippageTolerance,
+    slippageTolerance,
+    tokenExtensionCtx,
     ...data,
   });
 }
@@ -335,24 +407,37 @@ function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
     inputTokenAmount,
     tickLowerIndex,
     tickUpperIndex,
+    tokenExtensionCtx,
     slippageTolerance,
   } = param;
 
   if (!tokenMintA.equals(inputTokenMint)) {
     return {
+      liquidityAmount: ZERO,
       tokenMaxA: ZERO,
       tokenMaxB: ZERO,
       tokenEstA: ZERO,
       tokenEstB: ZERO,
-      liquidityAmount: ZERO,
+      transferFee: {
+        deductingFromTokenMaxA: ZERO,
+        deductingFromTokenMaxB: ZERO,
+        deductingFromTokenEstA: ZERO,
+        deductingFromTokenEstB: ZERO,
+      },
     };
   }
 
   const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
   const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
 
-  const liquidityAmount = getLiquidityFromTokenA(
+  const transferFeeExcludedInputTokenAmount = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
     inputTokenAmount,
+    tokenExtensionCtx.tokenMintWithProgramA,
+    tokenExtensionCtx.currentEpoch,
+  );
+
+  const liquidityAmount = getLiquidityFromTokenA(
+    transferFeeExcludedInputTokenAmount.amount,
     sqrtPriceLowerX64,
     sqrtPriceUpperX64,
     false
@@ -366,12 +451,21 @@ function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
   );
   const tokenMaxA = adjustForSlippage(tokenEstA, slippageTolerance, true);
 
+  const tokenMaxAIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenMaxA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+  const tokenEstAIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenEstA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+
   return {
-    tokenMaxA,
-    tokenMaxB: ZERO,
-    tokenEstA,
-    tokenEstB: ZERO,
     liquidityAmount,
+    tokenMaxA: tokenMaxAIncluded.amount,
+    tokenMaxB: ZERO,
+    tokenEstA: tokenEstAIncluded.amount,
+    tokenEstB: ZERO,
+    transferFee: {
+      deductingFromTokenMaxA: tokenMaxAIncluded.fee,
+      deductingFromTokenMaxB: ZERO,
+      deductingFromTokenEstA: tokenEstAIncluded.fee,
+      deductingFromTokenEstB: ZERO,
+    },
   };
 }
 
@@ -381,11 +475,13 @@ function quotePositionBelowRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
 function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiquidityQuote {
   const {
     tokenMintA,
+    tokenMintB,
     sqrtPrice,
     inputTokenMint,
     inputTokenAmount,
     tickLowerIndex,
     tickUpperIndex,
+    tokenExtensionCtx,
     slippageTolerance,
   } = param;
 
@@ -393,18 +489,26 @@ function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiqui
   const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
   const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
 
-  let [tokenEstA, tokenEstB] = tokenMintA.equals(inputTokenMint)
-    ? [inputTokenAmount, undefined]
-    : [undefined, inputTokenAmount];
-
+  let tokenEstA: BN;
+  let tokenEstB: BN;
   let liquidityAmount: BN;
 
-  if (tokenEstA) {
-    liquidityAmount = getLiquidityFromTokenA(tokenEstA, sqrtPriceX64, sqrtPriceUpperX64, false);
+  if (tokenMintA.equals(inputTokenMint)) {
+    const transferFeeExcludedInputTokenAmount = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+      inputTokenAmount,
+      tokenExtensionCtx.tokenMintWithProgramA,
+      tokenExtensionCtx.currentEpoch,
+    );
+    liquidityAmount = getLiquidityFromTokenA(transferFeeExcludedInputTokenAmount.amount, sqrtPriceX64, sqrtPriceUpperX64, false);
     tokenEstA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceX64, sqrtPriceUpperX64, true);
     tokenEstB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceX64, true);
-  } else if (tokenEstB) {
-    liquidityAmount = getLiquidityFromTokenB(tokenEstB, sqrtPriceLowerX64, sqrtPriceX64, false);
+  } else if (tokenMintB.equals(inputTokenMint)) {
+    const transferFeeExcludedInputTokenAmount = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+      inputTokenAmount,
+      tokenExtensionCtx.tokenMintWithProgramB,
+      tokenExtensionCtx.currentEpoch,
+    );
+    liquidityAmount = getLiquidityFromTokenB(transferFeeExcludedInputTokenAmount.amount, sqrtPriceLowerX64, sqrtPriceX64, false);
     tokenEstA = getTokenAFromLiquidity(liquidityAmount, sqrtPriceX64, sqrtPriceUpperX64, true);
     tokenEstB = getTokenBFromLiquidity(liquidityAmount, sqrtPriceLowerX64, sqrtPriceX64, true);
   } else {
@@ -414,12 +518,23 @@ function quotePositionInRange(param: IncreaseLiquidityQuoteParam): IncreaseLiqui
   const tokenMaxA = adjustForSlippage(tokenEstA, slippageTolerance, true);
   const tokenMaxB = adjustForSlippage(tokenEstB, slippageTolerance, true);
 
+  const tokenMaxAIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenMaxA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+  const tokenEstAIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenEstA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+  const tokenMaxBIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenMaxB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
+  const tokenEstBIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenEstB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
+
   return {
-    tokenMaxA,
-    tokenMaxB,
-    tokenEstA: tokenEstA!,
-    tokenEstB: tokenEstB!,
     liquidityAmount,
+    tokenMaxA: tokenMaxAIncluded.amount,
+    tokenMaxB: tokenMaxBIncluded.amount,
+    tokenEstA: tokenEstAIncluded.amount,
+    tokenEstB: tokenEstBIncluded.amount,
+    transferFee: {
+      deductingFromTokenMaxA: tokenMaxAIncluded.fee,
+      deductingFromTokenMaxB: tokenMaxBIncluded.fee,
+      deductingFromTokenEstA: tokenEstAIncluded.fee,
+      deductingFromTokenEstB: tokenEstBIncluded.fee,
+    },
   };
 }
 
@@ -433,23 +548,37 @@ function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
     inputTokenAmount,
     tickLowerIndex,
     tickUpperIndex,
+    tokenExtensionCtx,
     slippageTolerance,
   } = param;
 
   if (!tokenMintB.equals(inputTokenMint)) {
     return {
+      liquidityAmount: ZERO,
       tokenMaxA: ZERO,
       tokenMaxB: ZERO,
       tokenEstA: ZERO,
       tokenEstB: ZERO,
-      liquidityAmount: ZERO,
+      transferFee: {
+        deductingFromTokenMaxA: ZERO,
+        deductingFromTokenMaxB: ZERO,
+        deductingFromTokenEstA: ZERO,
+        deductingFromTokenEstB: ZERO,
+      },
     };
   }
 
   const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
   const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
-  const liquidityAmount = getLiquidityFromTokenB(
+
+  const transferFeeExcludedInputTokenAmount = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
     inputTokenAmount,
+    tokenExtensionCtx.tokenMintWithProgramB,
+    tokenExtensionCtx.currentEpoch,
+  );
+
+  const liquidityAmount = getLiquidityFromTokenB(
+    transferFeeExcludedInputTokenAmount.amount,
     sqrtPriceLowerX64,
     sqrtPriceUpperX64,
     false
@@ -463,11 +592,20 @@ function quotePositionAboveRange(param: IncreaseLiquidityQuoteParam): IncreaseLi
   );
   const tokenMaxB = adjustForSlippage(tokenEstB, slippageTolerance, true);
 
+  const tokenMaxBIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenMaxB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
+  const tokenEstBIncluded = TokenExtensionUtil.calculateTransferFeeIncludedAmount(tokenEstB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
+
   return {
-    tokenMaxA: ZERO,
-    tokenMaxB,
-    tokenEstA: ZERO,
-    tokenEstB,
     liquidityAmount,
+    tokenMaxA: ZERO,
+    tokenMaxB: tokenMaxBIncluded.amount,
+    tokenEstA: ZERO,
+    tokenEstB: tokenEstBIncluded.amount,
+    transferFee: {
+      deductingFromTokenMaxA: ZERO,
+      deductingFromTokenMaxB: tokenMaxBIncluded.fee,
+      deductingFromTokenEstA: ZERO,
+      deductingFromTokenEstB: tokenEstBIncluded.fee,
+    },
   };
 }

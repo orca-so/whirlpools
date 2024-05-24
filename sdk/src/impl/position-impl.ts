@@ -2,6 +2,7 @@ import { Address } from "@coral-xyz/anchor";
 import {
   AddressUtil,
   Instruction,
+  ResolvedTokenAddressInstruction,
   TokenUtil,
   TransactionBuilder,
   ZERO,
@@ -15,9 +16,13 @@ import {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   collectFeesIx,
+  collectFeesV2Ix,
   collectRewardIx,
+  collectRewardV2Ix,
   decreaseLiquidityIx,
+  decreaseLiquidityV2Ix,
   increaseLiquidityIx,
+  increaseLiquidityV2Ix,
   updateFeesAndRewardsIx,
 } from "../instructions";
 import {
@@ -34,6 +39,8 @@ import {
   resolveAtaForMints,
 } from "../utils/whirlpool-ata-utils";
 import { Position } from "../whirlpool-client";
+import { TokenExtensionUtil } from "../utils/public/token-extension-util";
+import { MultipleTransactionBuilderFactoryWithAccountResolver, convertListToMap } from "../utils/txn-utils";
 
 export class PositionImpl implements Position {
   private data: PositionData;
@@ -107,6 +114,8 @@ export class PositionImpl implements Position {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
 
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(this.ctx.fetcher, whirlpool, IGNORE_CACHE);
+
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
       this.ctx.provider.wallet,
@@ -140,12 +149,14 @@ export class PositionImpl implements Position {
       tokenOwnerAccountA = getAssociatedTokenAddressSync(
         whirlpool.tokenMintA,
         sourceWalletKey,
-        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
       );
       tokenOwnerAccountB = getAssociatedTokenAddressSync(
         whirlpool.tokenMintB,
         sourceWalletKey,
-        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
       );
     }
     const positionTokenAccount = getAssociatedTokenAddressSync(
@@ -154,7 +165,7 @@ export class PositionImpl implements Position {
       this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
 
-    const increaseIx = increaseLiquidityIx(this.ctx.program, {
+    const baseParams = {
       ...liquidityInput,
       whirlpool: this.data.whirlpool,
       position: this.address,
@@ -174,7 +185,27 @@ export class PositionImpl implements Position {
         TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
       ).publicKey,
       positionAuthority: positionWalletKey,
-    });
+    };
+    // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
+    const increaseIx = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? increaseLiquidityIx(this.ctx.program, baseParams)
+      : increaseLiquidityV2Ix(this.ctx.program, {
+        ...baseParams,
+        tokenMintA: whirlpool.tokenMintA,
+        tokenMintB: whirlpool.tokenMintB,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+          this.ctx.connection,
+          tokenExtensionCtx,
+          baseParams.tokenOwnerAccountA,
+          baseParams.tokenVaultA,
+          baseParams.positionAuthority,
+          baseParams.tokenOwnerAccountB,
+          baseParams.tokenVaultB,
+          baseParams.positionAuthority,
+        ),
+      });
     txBuilder.addInstruction(increaseIx);
     return txBuilder;
   }
@@ -198,6 +229,8 @@ export class PositionImpl implements Position {
     if (!whirlpool) {
       throw new Error("Unable to fetch whirlpool for this position.");
     }
+
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(this.ctx.fetcher, whirlpool, IGNORE_CACHE);
 
     const txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -228,16 +261,18 @@ export class PositionImpl implements Position {
       tokenOwnerAccountA = getAssociatedTokenAddressSync(
         whirlpool.tokenMintA,
         sourceWalletKey,
-        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
       );
       tokenOwnerAccountB = getAssociatedTokenAddressSync(
         whirlpool.tokenMintB,
         sourceWalletKey,
-        this.ctx.accountResolverOpts.allowPDAOwnerAddress
+        this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
       );
     }
 
-    const decreaseIx = decreaseLiquidityIx(this.ctx.program, {
+    const baseParams = {
       ...liquidityInput,
       whirlpool: this.data.whirlpool,
       position: this.address,
@@ -261,7 +296,27 @@ export class PositionImpl implements Position {
         TickUtil.getStartTickIndex(this.data.tickUpperIndex, whirlpool.tickSpacing)
       ).publicKey,
       positionAuthority: positionWalletKey,
-    });
+    };
+    // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
+    const decreaseIx = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? decreaseLiquidityIx(this.ctx.program, baseParams)
+      : decreaseLiquidityV2Ix(this.ctx.program, {
+        ...baseParams,
+        tokenMintA: whirlpool.tokenMintA,
+        tokenMintB: whirlpool.tokenMintB,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+          this.ctx.connection,
+          tokenExtensionCtx,
+          baseParams.tokenVaultA,
+          baseParams.tokenOwnerAccountA,
+          baseParams.whirlpool, // vault to owner, so pool is authority
+          baseParams.tokenVaultB,
+          baseParams.tokenOwnerAccountB,
+          baseParams.whirlpool, // vault to owner, so pool is authority
+        ),
+      });
     txBuilder.addInstruction(decreaseIx);
     return txBuilder;
   }
@@ -286,6 +341,8 @@ export class PositionImpl implements Position {
         `Unable to fetch whirlpool (${this.data.whirlpool}) for this position (${this.address}).`
       );
     }
+
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(this.ctx.fetcher, whirlpool, IGNORE_CACHE);
 
     let txBuilder = new TransactionBuilder(
       this.ctx.provider.connection,
@@ -350,7 +407,7 @@ export class PositionImpl implements Position {
       txBuilder.addInstruction(updateIx);
     }
 
-    const ix = collectFeesIx(this.ctx.program, {
+    const baseParams = {
       whirlpool: this.data.whirlpool,
       position: this.address,
       positionTokenAccount,
@@ -359,8 +416,27 @@ export class PositionImpl implements Position {
       tokenVaultA: whirlpool.tokenVaultA,
       tokenVaultB: whirlpool.tokenVaultB,
       positionAuthority: positionWalletKey,
-    });
-
+    };
+    // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
+    const ix = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? collectFeesIx(this.ctx.program, baseParams)
+      : collectFeesV2Ix(this.ctx.program, {
+        ...baseParams,
+        tokenMintA: whirlpool.tokenMintA,
+        tokenMintB: whirlpool.tokenMintB,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+          this.ctx.connection,
+          tokenExtensionCtx,
+          baseParams.tokenVaultA,
+          baseParams.tokenOwnerAccountA,
+          baseParams.whirlpool, // vault to owner, so pool is authority
+          baseParams.tokenVaultB,
+          baseParams.tokenOwnerAccountB,
+          baseParams.whirlpool, // vault to owner, so pool is authority
+        ),
+      });
     txBuilder.addInstruction(ix);
 
     return txBuilder;
@@ -374,7 +450,7 @@ export class PositionImpl implements Position {
     positionWallet?: Address,
     ataPayer?: Address,
     opts: WhirlpoolAccountFetchOptions = IGNORE_CACHE
-  ): Promise<TransactionBuilder> {
+  ): Promise<TransactionBuilder[]> {
     const [destinationWalletKey, positionWalletKey, ataPayerKey] = AddressUtil.toPubKeys([
       destinationWallet ?? this.ctx.wallet.publicKey,
       positionWallet ?? this.ctx.wallet.publicKey,
@@ -392,86 +468,107 @@ export class PositionImpl implements Position {
       PoolUtil.isRewardInitialized(info)
     );
 
-    const txBuilder = new TransactionBuilder(
-      this.ctx.provider.connection,
-      this.ctx.provider.wallet,
-      this.ctx.txBuilderOpts
-    );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(this.ctx.fetcher, whirlpool, IGNORE_CACHE);
 
-    const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
+    let resolvedAtas: Record<string, ResolvedTokenAddressInstruction>;
+    if (ownerTokenAccountMap) {
+      resolvedAtas = {};
+      Object.entries(ownerTokenAccountMap).forEach(([mint, address]) => {
+        if (!address) return;
 
-    let ataMap = { ...ownerTokenAccountMap };
-    if (!ownerTokenAccountMap) {
-      const rewardMints = getTokenMintsFromWhirlpools([whirlpool], TokenMintTypes.REWARD_ONLY);
-      const { ataTokenAddresses: affliatedTokenAtaMap, resolveAtaIxs } = await resolveAtaForMints(
-        this.ctx,
-        {
-          mints: rewardMints.mintMap,
-          accountExemption,
-          receiver: destinationWalletKey,
-          payer: ataPayerKey,
+        resolvedAtas[mint] = {
+          address: AddressUtil.toPubKey(address),
+          instructions: [],
+          cleanupInstructions: [],
+          signers: [],
+          tokenProgram: PublicKey.default, // unused (dummy)
         }
+      });
+    } else {
+      const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
+      const rewardMints = getTokenMintsFromWhirlpools([whirlpool], TokenMintTypes.REWARD_ONLY);
+      resolvedAtas = convertListToMap(
+        await resolveOrCreateATAs(
+          this.ctx.connection,
+          destinationWalletKey,
+          rewardMints.mintMap.map((tokenMint) => ({ tokenMint })),
+          async () => accountExemption,
+          ataPayerKey,
+          true, // CreateIdempotent
+          this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        ),
+        rewardMints.mintMap.map((mint) => mint.toBase58())
       );
-
-      if (rewardMints.hasNativeMint) {
-        let { address: wSOLAta, ...resolveWSolIx } =
-          TokenUtil.createWrappedNativeAccountInstruction(
-            destinationWalletKey,
-            ZERO,
-            accountExemption,
-            ataPayerKey,
-            destinationWalletKey,
-            this.ctx.accountResolverOpts.createWrappedSolAccountMethod
-          );
-        affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
-        txBuilder.addInstruction(resolveWSolIx);
-      }
-
-      txBuilder.addInstructions(resolveAtaIxs);
-
-      ataMap = { ...affliatedTokenAtaMap };
     }
+
+    const builder = new MultipleTransactionBuilderFactoryWithAccountResolver(
+      this.ctx,
+      resolvedAtas,
+      destinationWalletKey,
+      ataPayerKey
+    );
 
     const positionTokenAccount = getAssociatedTokenAddressSync(
       this.data.positionMint,
       positionWalletKey,
       this.ctx.accountResolverOpts.allowPDAOwnerAddress
     );
+
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
-      const updateIx = await this.updateFeesAndRewards();
-      txBuilder.addInstruction(updateIx);
+      await builder.addInstructions(async () => {
+        const updateIx = await this.updateFeesAndRewards();
+        return [updateIx];
+      });
     }
 
-    initializedRewards.forEach((info, index) => {
+    for (let index = 0; index < initializedRewards.length; index++) {
+      const info = initializedRewards[index];
       if (
         rewardsToCollect &&
         !rewardsToCollect.some((r) => r.toString() === info.mint.toBase58())
       ) {
         // If rewardsToCollect is specified and this reward is not in it,
         // don't include collectIX for that in TX
-        return;
+        break;
       }
 
-      const rewardOwnerAccount = ataMap[info.mint.toBase58()];
-      invariant(
-        !!rewardOwnerAccount,
-        `No owner token account provided for wallet ${destinationWalletKey.toBase58()} for reward ${index} token ${info.mint.toBase58()} `
-      );
+      await builder.addInstructions(async (resolve) => {
+        const rewardOwnerAccount = resolve(info.mint.toBase58());
+        invariant(
+          !!rewardOwnerAccount,
+          `No owner token account provided for wallet ${destinationWalletKey.toBase58()} for reward ${index} token ${info.mint.toBase58()} `
+        );
 
-      const ix = collectRewardIx(this.ctx.program, {
-        whirlpool: this.data.whirlpool,
-        position: this.address,
-        positionTokenAccount,
-        rewardIndex: index,
-        rewardOwnerAccount: AddressUtil.toPubKey(rewardOwnerAccount),
-        rewardVault: info.vault,
-        positionAuthority: positionWalletKey,
+        const baseParams = {
+          whirlpool: this.data.whirlpool,
+          position: this.address,
+          positionTokenAccount,
+          rewardIndex: index,
+          rewardOwnerAccount: AddressUtil.toPubKey(rewardOwnerAccount),
+          rewardVault: info.vault,
+          positionAuthority: positionWalletKey,
+        };
+        // V2 can handle TokenProgram/TokenProgram pool, but it increases the size of transaction, so V1 is prefer if possible.
+        const ix = !TokenExtensionUtil.isV2IxRequiredReward(tokenExtensionCtx, index)
+          ? collectRewardIx(this.ctx.program, baseParams)
+          : collectRewardV2Ix(this.ctx.program, {
+            ...baseParams,
+            rewardMint: info.mint,
+            rewardTokenProgram: tokenExtensionCtx.rewardTokenMintsWithProgram[index]!.tokenProgram,
+            rewardTransferHookAccounts: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+              this.ctx.connection,
+              tokenExtensionCtx.rewardTokenMintsWithProgram[index]!,
+              baseParams.rewardVault,
+              baseParams.rewardOwnerAccount,
+              baseParams.whirlpool, // vault to owner, so pool is authority
+            ),
+          });
+        
+        return [ix];
       });
+    }
 
-      txBuilder.addInstruction(ix);
-    });
-
-    return txBuilder;
+    return builder.build();
   }
 
   private async refresh() {

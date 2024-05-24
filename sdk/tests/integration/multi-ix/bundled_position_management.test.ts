@@ -12,6 +12,7 @@ import { TickSpacing, ZERO_BN, createTokenAccount } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { initializePositionBundle, openBundledPosition } from "../../utils/init-utils";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 
 interface SharedTestContext {
@@ -147,6 +148,7 @@ describe("bundled position management tests", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, poolData, IGNORE_CACHE),
       });
 
       assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));

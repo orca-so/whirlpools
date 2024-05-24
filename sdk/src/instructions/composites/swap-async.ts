@@ -3,6 +3,8 @@ import { PublicKey } from "@solana/web3.js";
 import { SwapUtils, TickArrayUtil, Whirlpool, WhirlpoolContext } from "../..";
 import { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
 import { SwapInput, swapIx } from "../swap-ix";
+import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
+import { swapV2Ix } from "../v2";
 
 export type SwapAsyncParams = {
   swapInput: SwapInput;
@@ -56,17 +58,38 @@ export async function swapAsync(
   const inputTokenAccount = aToB ? ataAKey : ataBKey;
   const outputTokenAccount = aToB ? ataBKey : ataAKey;
 
+  const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(
+    ctx.fetcher,
+    data,
+  );
+
+  const baseParams = SwapUtils.getSwapParamsFromQuote(
+    swapInput,
+    ctx,
+    whirlpool,
+    inputTokenAccount,
+    outputTokenAccount,
+    wallet
+  );
   return txBuilder.addInstruction(
-    swapIx(
-      ctx.program,
-      SwapUtils.getSwapParamsFromQuote(
-        swapInput,
-        ctx,
-        whirlpool,
-        inputTokenAccount,
-        outputTokenAccount,
-        wallet
-      )
-    )
+    !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? swapIx(ctx.program, baseParams)
+      : swapV2Ix(ctx.program, {
+        ...baseParams,
+        tokenMintA: tokenExtensionCtx.tokenMintWithProgramA.address,
+        tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+          ctx.connection,
+          tokenExtensionCtx,
+          baseParams.aToB ? baseParams.tokenOwnerAccountA : baseParams.tokenVaultA,
+          baseParams.aToB ? baseParams.tokenVaultA : baseParams.tokenOwnerAccountA,
+          baseParams.aToB ? baseParams.tokenAuthority : baseParams.whirlpool,
+          baseParams.aToB ? baseParams.tokenVaultB : baseParams.tokenOwnerAccountB,
+          baseParams.aToB ? baseParams.tokenOwnerAccountB : baseParams.tokenVaultB,
+          baseParams.aToB ? baseParams.whirlpool : baseParams.tokenAuthority,
+        ),
+      })
   );
 }

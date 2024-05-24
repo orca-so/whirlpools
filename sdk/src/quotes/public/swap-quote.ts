@@ -1,9 +1,10 @@
 import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, Percentage } from "@orca-so/common-sdk";
+import { AddressUtil, MintWithTokenProgram, Percentage } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import invariant from "tiny-invariant";
 import { SwapInput } from "../../instructions";
 import {
+  IGNORE_CACHE,
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
@@ -13,6 +14,7 @@ import { SwapUtils } from "../../utils/public/swap-utils";
 import { Whirlpool } from "../../whirlpool-client";
 import { simulateSwap } from "../swap/swap-quote-impl";
 import { DevFeeSwapQuote } from "./dev-fee-swap-quote";
+import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * @category Quotes
@@ -33,6 +35,7 @@ export type SwapQuoteParam = {
   aToB: boolean;
   amountSpecifiedIsInput: boolean;
   tickArrays: TickArray[];
+  tokenExtensionCtx: TokenExtensionContextForPool;
 };
 
 /**
@@ -58,6 +61,10 @@ export type SwapEstimates = {
   estimatedEndTickIndex: number;
   estimatedEndSqrtPrice: BN;
   estimatedFeeAmount: BN;
+  transferFee: {
+    deductingFromEstimatedAmountIn: BN;
+    deductedFromEstimatedAmountOut: BN;
+  };
 };
 
 /**
@@ -193,6 +200,8 @@ async function swapQuoteByToken(
     opts
   );
 
+  const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
   return {
     whirlpoolData,
     tokenAmount,
@@ -201,5 +210,6 @@ async function swapQuoteByToken(
     sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
     otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
     tickArrays,
+    tokenExtensionCtx,
   };
 }

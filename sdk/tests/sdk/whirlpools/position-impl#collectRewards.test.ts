@@ -13,9 +13,11 @@ import {
   collectRewardsQuote
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { TickSpacing, sleep } from "../../utils";
+import { TEST_TOKEN_2022_PROGRAM_ID, TickSpacing, sleep } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
+import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
+import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -79,19 +81,20 @@ describe("PositionImpl#collectRewards()", () => {
       const preCollectPoolData = pool.getData();
 
       // accrue rewards
-      await sleep(1200);
+      await sleep(2000);
 
-      await (
-        await position.collectRewards(
-          rewards.map((r) => r.rewardMint),
-          true,
-          undefined,
-          otherWallet.publicKey,
-          testCtx.provider.wallet.publicKey,
-          testCtx.provider.wallet.publicKey,
-          IGNORE_CACHE
-        )
-      ).buildAndExecute();
+      const txs = await position.collectRewards(
+        rewards.map((r) => r.rewardMint),
+        true,
+        undefined,
+        otherWallet.publicKey,
+        testCtx.provider.wallet.publicKey,
+        testCtx.provider.wallet.publicKey,
+        IGNORE_CACHE
+      );
+      for (const tx of txs) {
+        await tx.buildAndExecute();
+      }
 
       // Verify the results fetched is the same as SDK estimate if the timestamp is the same
       const postCollectPoolData = await pool.refreshData();
@@ -100,18 +103,19 @@ describe("PositionImpl#collectRewards()", () => {
         position: position.getData(),
         tickLower: position.getLowerTickData(),
         tickUpper: position.getUpperTickData(),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
 
       // Check that the expectation is not zero
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(!quote[i]!.isZero());
+        assert.ok(!quote.rewardOwed[i]!.isZero());
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), quote[i]?.toString());
+        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
       }
     });
   });
@@ -148,19 +152,20 @@ describe("PositionImpl#collectRewards()", () => {
       const preCollectPoolData = pool.getData();
 
       // accrue rewards
-      await sleep(1200);
+      await sleep(2000);
 
-      await (
-        await position.collectRewards(
-          rewards.map((r) => r.rewardMint),
-          true,
-          undefined,
-          otherWallet.publicKey,
-          testCtx.provider.wallet.publicKey,
-          testCtx.provider.wallet.publicKey,
-          IGNORE_CACHE
-        )
-      ).buildAndExecute();
+      const txs = await position.collectRewards(
+        rewards.map((r) => r.rewardMint),
+        true,
+        undefined,
+        otherWallet.publicKey,
+        testCtx.provider.wallet.publicKey,
+        testCtx.provider.wallet.publicKey,
+        IGNORE_CACHE
+      );
+      for (const tx of txs) {
+        await tx.buildAndExecute();
+      }
 
       // Verify the results fetched is the same as SDK estimate if the timestamp is the same
       const postCollectPoolData = await pool.refreshData();
@@ -169,19 +174,98 @@ describe("PositionImpl#collectRewards()", () => {
         position: position.getData(),
         tickLower: position.getLowerTickData(),
         tickUpper: position.getUpperTickData(),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
 
       // Check that the expectation is not zero
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(!quote[i]!.isZero());
+        assert.ok(!quote.rewardOwed[i]!.isZero());
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
         const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), quote[i]?.toString());
+        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
       }
     });
   });
+
+
+  context("when the whirlpool is SPL-only (TokenExtension)", () => {
+    it("should collect rewards", async () => {
+      const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
+        tokenTraitA: {isToken2022: true},
+        tokenTraitB: {isToken2022: true},
+        tickSpacing,
+        positions: [
+          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+        ],
+        rewards: [
+          {
+            rewardTokenTrait: {isToken2022:true, hasTransferHookExtension: true},
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+          {
+            rewardTokenTrait: {isToken2022:true, hasTransferHookExtension: true},
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+          {
+            rewardTokenTrait: {isToken2022:true, hasTransferHookExtension: true},
+            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+            vaultAmount: new BN(vaultStartBalance),
+          },
+        ],
+      });
+
+      const { positions, poolInitInfo, rewards } = fixture.getInfos();
+
+      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
+
+      const otherWallet = anchor.web3.Keypair.generate();
+      const preCollectPoolData = pool.getData();
+
+      // accrue rewards
+      await sleep(2000);
+
+      const txs = await position.collectRewards(
+        rewards.map((r) => r.rewardMint),
+        true,
+        undefined,
+        otherWallet.publicKey,
+        testCtx.provider.wallet.publicKey,
+        testCtx.provider.wallet.publicKey,
+        IGNORE_CACHE
+      );
+      for (const tx of txs) {
+        await tx.buildAndExecute();
+      }
+      
+      // Verify the results fetched is the same as SDK estimate if the timestamp is the same
+      const postCollectPoolData = await pool.refreshData();
+      const quote = collectRewardsQuote({
+        whirlpool: preCollectPoolData,
+        position: position.getData(),
+        tickLower: position.getLowerTickData(),
+        tickUpper: position.getUpperTickData(),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
+        timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
+      });
+
+      // Check that the expectation is not zero
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        assert.ok(!quote.rewardOwed[i]!.isZero());
+      }
+
+      for (let i = 0; i < NUM_REWARDS; i++) {
+        const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey, undefined, TEST_TOKEN_2022_PROGRAM_ID);
+        const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
+        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
+      }
+    });
+  });
+
 });

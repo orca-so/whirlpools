@@ -19,6 +19,7 @@ import {
   setupSwapTest
 } from "../../../utils/swap-test-utils";
 import { getVaultAmounts } from "../../../utils/whirlpools-test-utils";
+import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("swap traversal tests", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -1364,6 +1365,8 @@ describe("swap traversal tests", () => {
       fetcher,
       IGNORE_CACHE
     );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
     assert.throws(
       () =>
         swapQuoteWithParams(
@@ -1375,6 +1378,7 @@ describe("swap traversal tests", () => {
             tickArrays,
             sqrtPriceLimit: new BN(MIN_SQRT_PRICE).subn(1),
             otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+            tokenExtensionCtx,
           },
           slippageTolerance
         ),
@@ -1416,6 +1420,8 @@ describe("swap traversal tests", () => {
       fetcher,
       IGNORE_CACHE
     );
+    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+
     assert.throws(
       () =>
         swapQuoteWithParams(
@@ -1427,6 +1433,7 @@ describe("swap traversal tests", () => {
             tickArrays,
             sqrtPriceLimit: new BN(MAX_SQRT_PRICE).addn(1),
             otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+            tokenExtensionCtx,
           },
           slippageTolerance
         ),

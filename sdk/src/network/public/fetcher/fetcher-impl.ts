@@ -5,9 +5,11 @@ import {
   ParsableMintInfo,
   ParsableTokenAccountInfo,
   SimpleAccountFetcher,
+  MintWithTokenProgram,
+  AccountWithTokenProgram as TokenAccountWithTokenProgram,
 } from "@orca-so/common-sdk";
 import { AccountLayout, Mint, Account as TokenAccount } from "@solana/spl-token";
-import { Connection } from "@solana/web3.js";
+import { Connection, EpochInfo } from "@solana/web3.js";
 import {
   DEFAULT_WHIRLPOOL_RETENTION_POLICY,
   WhirlpoolAccountFetchOptions,
@@ -19,8 +21,10 @@ import {
   PositionBundleData,
   PositionData,
   TickArrayData,
+  TokenBadgeData,
   WhirlpoolData,
   WhirlpoolsConfigData,
+  WhirlpoolsConfigExtensionData,
 } from "../../../types/public";
 import {
   ParsableFeeTier,
@@ -29,6 +33,8 @@ import {
   ParsableTickArray,
   ParsableWhirlpool,
   ParsableWhirlpoolsConfig,
+  ParsableWhirlpoolsConfigExtension,
+  ParsableTokenBadge,
 } from "../parsing";
 
 /**
@@ -51,6 +57,8 @@ export const buildDefaultAccountFetcher = (connection: Connection) => {
  */
 export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface {
   private _accountRentExempt: number | undefined;
+  private _epochInfo: EpochInfo | undefined;
+  private _epochInfoNextFetchTime: number = 0;
 
   constructor(
     readonly connection: Connection,
@@ -66,6 +74,21 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
       );
     }
     return this._accountRentExempt;
+  }
+
+  async getEpoch(refresh: boolean = false): Promise<number> {
+    if (!this._epochInfo || Date.now() >= this._epochInfoNextFetchTime || refresh) {
+      const epochInfo = await this.connection.getEpochInfo();
+
+      // In theory, 1 slot per every 400ms.
+      // 320ms is 80% of 400ms.
+      const remainingSlotsInEpoch = Math.max(epochInfo.slotsInEpoch - epochInfo.slotIndex, 0);
+      const nextFetchTime = Date.now() + remainingSlotsInEpoch * 320;
+
+      this._epochInfo = epochInfo;
+      this._epochInfoNextFetchTime = nextFetchTime;
+    }
+    return this._epochInfo.epoch;
   }
 
   getPool(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<WhirlpoolData | null> {
@@ -110,22 +133,22 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
   getTokenInfo(
     address: Address,
     opts?: WhirlpoolAccountFetchOptions
-  ): Promise<TokenAccount | null> {
+  ): Promise<TokenAccountWithTokenProgram | null> {
     return this.fetcher.getAccount(address, ParsableTokenAccountInfo, opts);
   }
   getTokenInfos(
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
-  ): Promise<ReadonlyMap<string, TokenAccount | null>> {
+  ): Promise<ReadonlyMap<string, TokenAccountWithTokenProgram | null>> {
     return this.fetcher.getAccounts(addresses, ParsableTokenAccountInfo, opts);
   }
-  getMintInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<Mint | null> {
+  getMintInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<MintWithTokenProgram | null> {
     return this.fetcher.getAccount(address, ParsableMintInfo, opts);
   }
   getMintInfos(
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
-  ): Promise<ReadonlyMap<string, Mint | null>> {
+  ): Promise<ReadonlyMap<string, MintWithTokenProgram | null>> {
     return this.fetcher.getAccounts(addresses, ParsableMintInfo, opts);
   }
   getConfig(
@@ -152,6 +175,34 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
   ): Promise<ReadonlyMap<string, PositionBundleData | null>> {
     return this.fetcher.getAccounts(addresses, ParsablePositionBundle, opts);
   }
+
+  getConfigExtension(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<WhirlpoolsConfigExtensionData | null> {
+    return this.fetcher.getAccount(address, ParsableWhirlpoolsConfigExtension, opts);
+  }
+  getConfigExtensions(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<ReadonlyMap<string, WhirlpoolsConfigExtensionData | null>> {
+    return this.fetcher.getAccounts(addresses, ParsableWhirlpoolsConfigExtension, opts);
+  }
+
+  getTokenBadge(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<TokenBadgeData | null> {
+    return this.fetcher.getAccount(address, ParsableTokenBadge, opts);
+  }
+  getTokenBadges(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<ReadonlyMap<string, TokenBadgeData | null>> {
+    return this.fetcher.getAccounts(addresses, ParsableTokenBadge, opts);
+  }
+
+
   populateCache<T extends WhirlpoolSupportedTypes>(
     accounts: ReadonlyMap<string, T>,
     parser: ParsableEntity<T>,

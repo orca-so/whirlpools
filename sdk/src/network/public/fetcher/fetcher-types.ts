@@ -3,15 +3,18 @@ import {
   BasicSupportedTypes,
   ParsableEntity,
   SimpleAccountFetchOptions,
+  MintWithTokenProgram,
+  AccountWithTokenProgram as TokenAccountWithTokenProgram
 } from "@orca-so/common-sdk";
-import { Mint, Account as TokenAccount } from "@solana/spl-token";
 import {
   FeeTierData,
   PositionBundleData,
   PositionData,
   TickArrayData,
+  TokenBadgeData,
   WhirlpoolData,
   WhirlpoolsConfigData,
+  WhirlpoolsConfigExtensionData,
 } from "../../../types/public";
 
 /**
@@ -25,6 +28,8 @@ export type WhirlpoolSupportedTypes =
   | TickArrayData
   | FeeTierData
   | PositionBundleData
+  | WhirlpoolsConfigExtensionData
+  | TokenBadgeData
   | BasicSupportedTypes;
 
 /**
@@ -64,6 +69,12 @@ export interface WhirlpoolAccountFetcherInterface {
    * @param refresh If true, will always fetch from the network
    */
   getAccountRentExempt(refresh?: boolean): Promise<number>;
+
+  /**
+   * Fetch and cache the current epoch info
+   * @param refresh If true, will always fetch from the network
+   */
+  getEpoch(refresh?: boolean): Promise<number>;
 
   /**
    * Fetch and cache the account for a given Whirlpool addresses
@@ -141,7 +152,7 @@ export interface WhirlpoolAccountFetcherInterface {
    * @param address The address of the token account
    * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
-  getTokenInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<TokenAccount | null>;
+  getTokenInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<TokenAccountWithTokenProgram | null>;
 
   /**
    * Fetch and cache the accounts for a given array of TokenAccount addresses
@@ -151,14 +162,14 @@ export interface WhirlpoolAccountFetcherInterface {
   getTokenInfos(
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
-  ): Promise<ReadonlyMap<string, TokenAccount | null>>;
+  ): Promise<ReadonlyMap<string, TokenAccountWithTokenProgram | null>>;
 
   /**
    * Fetch and cache the account for a given Mint address
    * @param address The address of the mint account
    * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
-  getMintInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<Mint | null>;
+  getMintInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<MintWithTokenProgram | null>;
 
   /**
    * Fetch and cache the accounts for a given array of Mint addresses
@@ -168,7 +179,7 @@ export interface WhirlpoolAccountFetcherInterface {
   getMintInfos(
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
-  ): Promise<ReadonlyMap<string, Mint | null>>;
+  ): Promise<ReadonlyMap<string, MintWithTokenProgram | null>>;
 
   /**
    * Fetch and cache the account for a given WhirlpoolConfig address
@@ -209,6 +220,46 @@ export interface WhirlpoolAccountFetcherInterface {
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<ReadonlyMap<string, PositionBundleData | null>>;
+
+  /**
+   * Fetch and cache the account for a given WhirlpoolConfigExtension address
+   * @param address The address of the WhirlpoolConfigExtension account
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getConfigExtension(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<WhirlpoolsConfigExtensionData | null>;
+
+  /**
+   * Fetch and cache the accounts for a given array of WhirlpoolConfigExtension addresses
+   * @param addresses The array of WhirlpoolConfigExtension account addresses
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getConfigExtensions(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<ReadonlyMap<string, WhirlpoolsConfigExtensionData | null>>;
+
+  /**
+   * Fetch and cache the account for a given TokenBadge address
+   * @param address The address of the TokenBadge account
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getTokenBadge(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<TokenBadgeData | null>;
+
+  /**
+   * Fetch and cache the accounts for a given array of TokenBadge addresses
+   * @param addresses The array of TokenBadge account addresses
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getTokenBadges(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions
+  ): Promise<ReadonlyMap<string, TokenBadgeData | null>>;
 
   /**
    * Populate the fetcher's cache with the given {@link WhirlpoolsData} accounts

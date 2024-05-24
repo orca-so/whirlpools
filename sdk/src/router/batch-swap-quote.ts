@@ -8,6 +8,7 @@ import {
 } from "../network/public/fetcher";
 import { SwapQuoteParam } from "../quotes/public";
 import { PoolUtil, SwapDirection, SwapUtils } from "../utils/public";
+import { NO_TOKEN_EXTENSION_CONTEXT } from "../utils/public/token-extension-util";
 
 export interface SwapQuoteRequest {
   whirlpool: Address;
@@ -60,6 +61,7 @@ export async function batchBuildSwapQuoteParams(
       sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
       otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
       tickArrays: tickArrays[index],
+      tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // WhirlpoolRouter does not support token extensions
     };
   });
 }

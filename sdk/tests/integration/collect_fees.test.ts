@@ -26,6 +26,7 @@ import {
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
+import { TokenExtensionUtil } from "../../src/utils/public/token-extension-util";
 
 describe("collect_fees", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -140,6 +141,7 @@ describe("collect_fees", () => {
       position: positionBeforeCollect,
       tickLower: lowerTick,
       tickUpper: upperTick,
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
     });
 
     // Perform collect fees tx

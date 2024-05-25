@@ -250,6 +250,11 @@ pub fn is_supported_token_mint<'info>(
                 // it is impossible to send tokens directly to the vault accounts confidentially.
                 // Note: Only the owner (Whirlpool account) can call ConfidentialTransferInstruction::ConfigureAccount.
             }
+            extension::ExtensionType::ConfidentialTransferFeeConfig => {
+                // Supported, but non-confidential transfer only
+                // When both TransferFeeConfig and ConfidentialTransferMint are initialized,
+                // ConfidentialTransferFeeConfig is also initialized to store encrypted transfer fee amount.
+            }
             // supported if token badge is initialized
             extension::ExtensionType::PermanentDelegate => {
                 if !is_token_badge_initialized { return Ok(false); }

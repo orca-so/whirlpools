@@ -888,6 +888,9 @@ describe("initialize_pool_v2", () => {
         })).buildAndExecute();      
       }
 
+      const isSupportedToken = await PoolUtil.isSupportedToken(ctx, configKeypair.publicKey, tokenTarget.publicKey);
+      assert.equal(isSupportedToken, params.supported);
+
       // try to initialize pool
       await checkSupported(params.supported, configKeypair.publicKey, tokenA.publicKey, tokenTarget.publicKey, tickSpacing, params.anchorPatch); // as TokenB
       await checkSupported(params.supported, configKeypair.publicKey, tokenTarget.publicKey, tokenB.publicKey, tickSpacing, params.anchorPatch); // as TokenA
@@ -1024,6 +1027,19 @@ describe("initialize_pool_v2", () => {
         tokenTrait: {
           isToken2022: true,
           hasConfidentialTransferExtension: true,
+        }
+      });
+    });
+
+    it("Token-2022: with ConfidentialTransferMint & TransferFeeConfig (& ConfidentialTransferFeeConfig)", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasTransferFeeExtension: true,
+          hasConfidentialTransferExtension: true,
+          // test util will automatically initialize ConfidentialTransferFeeConfig
         }
       });
     });

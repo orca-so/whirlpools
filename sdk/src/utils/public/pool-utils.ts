@@ -204,13 +204,16 @@ export class PoolUtil {
       return false;
     }
 
-    if (mintWithTokenProgram.freezeAuthority !== null) {
-      return false;
-    }
-
     const tokenBadgePda = PDAUtil.getTokenBadge(ctx.program.programId, whirlpoolsConfig, tokenMintKey);
     const tokenBadge = await ctx.fetcher.getTokenBadge(tokenBadgePda.publicKey);
     const isTokenBadgeInitialized = tokenBadge !== null;
+
+    if (mintWithTokenProgram.freezeAuthority !== null && !isTokenBadgeInitialized) {
+      return false;
+    }
+
+    // HACK: spl-token doesn't support ExtensionType.ConfidentialTransferFeeConfig yet
+    const EXTENSION_TYPE_CONFIDENTIAL_TRANSFER_FEE_CONFIG = 16 as ExtensionType;
 
     const extensions = getExtensionTypes(mintWithTokenProgram.tlvData);
     for (const extension of extensions) {
@@ -220,6 +223,7 @@ export class PoolUtil {
         case ExtensionType.TokenMetadata:
         case ExtensionType.MetadataPointer:
         case ExtensionType.ConfidentialTransferMint:
+        case EXTENSION_TYPE_CONFIDENTIAL_TRANSFER_FEE_CONFIG:
           continue;
 
         // supported if TokenBadge is initialized

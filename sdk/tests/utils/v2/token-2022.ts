@@ -5,6 +5,7 @@ import {
   AccountState,
   ExtensionType,
   LENGTH_SIZE,
+  Mint,
   NATIVE_MINT,
   NATIVE_MINT_2022,
   TYPE_SIZE,
@@ -61,7 +62,7 @@ import { PoolUtil } from "../../../src";
 import * as assert from "assert";
 import { PublicKey } from "@solana/web3.js";
 import { createInitializeExtraAccountMetaListInstruction } from "./test-transfer-hook-program";
-import { createInitializeConfidentialTransferMintInstruction } from "./confidential-transfer";
+import { createInitializeConfidentialTransferFeeConfigInstruction, createInitializeConfidentialTransferMintInstruction } from "./confidential-transfer";
 
 export async function createMintV2(
   provider: AnchorProvider,
@@ -178,6 +179,28 @@ async function createMintInstructions(
           true, // autoApproveNewAccounts
           PublicKey.default, // auditorElgamal
           TEST_TOKEN_2022_PROGRAM_ID,
+        )
+      );
+    }
+
+    // ConfidentialTransferFeeConfig
+    // When both TransferFeeConfig and ConfidentialTransferMint are enabled, ConfidentialTransferFeeConfig is also required
+    let confidentialTransferFeeConfigSizePatch = 0;
+    if (tokenTrait.hasTransferFeeExtension && tokenTrait.hasConfidentialTransferExtension) {
+      // fixedLengthExtensions.push(ExtensionType.ConfidentialTransferFeeConfig);
+      // [May 25, 2024] ExtensionType.ConfidentialTransferFeeConfig is not yet supported in spl-token
+      // ConfidentialTransferFeeConfig struct fields:
+      //   - authority: OptionalNonZeroPubkey (32 bytes)
+      //   - withdraw_withheld_authority_elgamal_pubkey: ElGamalPubkey (32 bytes)
+      //   - harvest_to_mint_enabled: bool (1 byte)
+      //   - withheld_amount: EncryptedWithheldAmount (64 bytes)
+      confidentialTransferFeeConfigSizePatch = 2 + 2 + 129; // type + length + data
+      extensions.push(
+        createInitializeConfidentialTransferFeeConfigInstruction(
+          mint,
+          authority,
+          authority,
+          TEST_TOKEN_2022_PROGRAM_ID
         )
       );
     }
@@ -347,7 +370,7 @@ async function createMintInstructions(
       );
     }
 
-    const space = getMintLen(fixedLengthExtensions) + confidentialTransferMintSizePatch;
+    const space = getMintLen(fixedLengthExtensions) + confidentialTransferMintSizePatch + confidentialTransferFeeConfigSizePatch;
     const rentOnlySpace = rentReservedSpace.reduce((sum, n) => { return sum + n; }, 0);
     const instructions = [
       web3.SystemProgram.createAccount({
@@ -428,7 +451,7 @@ async function createTokenAccountInstructions(
       createInitializeAccount3Instruction(newAccountPubkey, mint, owner, TEST_TOKEN_PROGRAM_ID)
     ];
   } else {
-    const accountLen = getAccountLenForMint(mintData);
+    const accountLen = getAccountLenForMintHack(mintData);
     if (lamports === undefined) {
       lamports = await provider.connection.getMinimumBalanceForRentExemption(accountLen);
     }
@@ -866,4 +889,19 @@ export async function mintTokensToTestAccountV2(
   );
 
   return [userTokenAAccount, userTokenBAccount];
+}
+
+function getAccountLenForMintHack(mintData: Mint): number {
+  const extensionTypes = getExtensionTypes(mintData.tlvData);
+
+  // spl-token cannot handle ConfidentialTransferFeeConfig yet, so we need to patch...
+  // 16: ConfidentialTransferFeeConfig
+  if (!extensionTypes.includes(16 as ExtensionType)) {
+    return getAccountLen(extensionTypes);
+  }
+
+  const confidentialTransferFeeAmountLen = 2 + 2 + 64;
+  return getAccountLen(
+    extensionTypes.filter((type) => type !== 16 as ExtensionType)
+  ) + confidentialTransferFeeAmountLen;
 }

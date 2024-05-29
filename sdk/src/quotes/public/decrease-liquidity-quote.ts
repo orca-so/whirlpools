@@ -3,15 +3,15 @@ import { Percentage, ZERO } from "@orca-so/common-sdk";
 import invariant from "tiny-invariant";
 import { DecreaseLiquidityInput } from "../../instructions";
 import {
+  PositionStatus,
+  PositionUtil,
   adjustForSlippage,
   getTokenAFromLiquidity,
   getTokenBFromLiquidity,
-  PositionStatus,
-  PositionUtil,
 } from "../../utils/position-util";
 import { PriceMath, TickUtil } from "../../utils/public";
-import { Position, Whirlpool } from "../../whirlpool-client";
 import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
+import { Position, Whirlpool } from "../../whirlpool-client";
 
 /**
  * @category Quotes
@@ -91,115 +91,142 @@ export function decreaseLiquidityQuoteByLiquidity(
  * @returns An DecreaseLiquidityInput object detailing the tokenMin & liquidity values to use when calling decrease-liquidity-ix.
  */
 export function decreaseLiquidityQuoteByLiquidityWithParams(
-  param: DecreaseLiquidityQuoteParam
+  params: DecreaseLiquidityQuoteParam
 ): DecreaseLiquidityQuote {
-  invariant(TickUtil.checkTickInBounds(param.tickLowerIndex), "tickLowerIndex is out of bounds.");
-  invariant(TickUtil.checkTickInBounds(param.tickUpperIndex), "tickUpperIndex is out of bounds.");
+  invariant(TickUtil.checkTickInBounds(params.tickLowerIndex), "tickLowerIndex is out of bounds.");
+  invariant(TickUtil.checkTickInBounds(params.tickUpperIndex), "tickUpperIndex is out of bounds.");
   invariant(
-    TickUtil.checkTickInBounds(param.tickCurrentIndex),
+    TickUtil.checkTickInBounds(params.tickCurrentIndex),
     "tickCurrentIndex is out of bounds."
   );
 
-  const positionStatus = PositionUtil.getStrictPositionStatus(
-    param.sqrtPrice,
-    param.tickLowerIndex,
-    param.tickUpperIndex
-  );
+  if (params.liquidity.eq(ZERO)) {
+    return {
+      tokenMinA: ZERO,
+      tokenMinB: ZERO,
+      liquidityAmount: ZERO,
+      tokenEstA: ZERO,
+      tokenEstB: ZERO,
+      transferFee: {
+        deductedFromTokenMinA: ZERO,
+        deductedFromTokenMinB: ZERO,
+        deductedFromTokenEstA: ZERO,
+        deductedFromTokenEstB: ZERO,
+      },
+    };
+  }
 
-  switch (positionStatus) {
-    case PositionStatus.BelowRange:
-      return quotePositionBelowRange(param);
-    case PositionStatus.InRange:
-      return quotePositionInRange(param);
-    case PositionStatus.AboveRange:
-      return quotePositionAboveRange(param);
-    default:
-      throw new Error(`type ${positionStatus} is an unknown PositionStatus`);
+  const { tokenExtensionCtx } = params;
+  const { tokenEstA, tokenEstB } = getTokenEstimatesFromLiquidity(params);
+  const [tokenMinA, tokenMinB] = [tokenEstA, tokenEstB].map((tokenEst) => adjustForSlippage(tokenEst, params.slippageTolerance, false));
+
+  const tokenMinAExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenMinA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+  const tokenEstAExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenEstA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+  const tokenMinBExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenMinB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
+  const tokenEstBExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenEstB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
+
+  return {
+    tokenMinA: tokenMinAExcluded.amount,
+    tokenMinB: tokenMinBExcluded.amount,
+    tokenEstA: tokenEstAExcluded.amount,
+    tokenEstB: tokenEstBExcluded.amount,
+    liquidityAmount: params.liquidity,
+    transferFee: {
+      deductedFromTokenMinA: tokenMinAExcluded.fee,
+      deductedFromTokenMinB: tokenMinBExcluded.fee,
+      deductedFromTokenEstA: tokenEstAExcluded.fee,
+      deductedFromTokenEstB: tokenEstBExcluded.fee,
+    },
+  };
+}
+
+/**
+ * Get an estimated quote on the minimum tokens receivable based on the desired withdraw liquidity value.
+ * This version calculates slippage based on price percentage movement, rather than setting the percentage threshold based on token estimates.
+ * @param params DecreaseLiquidityQuoteParam
+ * @returns A DecreaseLiquidityQuote object detailing the tokenMin & liquidity values to use when calling decrease-liquidity-ix.
+ */
+export function decreaseLiquidityQuoteByLiquidityWithParamsUsingPriceSlippage(params: DecreaseLiquidityQuoteParam): DecreaseLiquidityQuote {
+  const { tokenExtensionCtx } = params;
+  if (params.liquidity.eq(ZERO)) {
+    return {
+      tokenMinA: ZERO,
+      tokenMinB: ZERO,
+      liquidityAmount: ZERO,
+      tokenEstA: ZERO,
+      tokenEstB: ZERO,
+      transferFee: {
+        deductedFromTokenMinA: ZERO,
+        deductedFromTokenMinB: ZERO,
+        deductedFromTokenEstA: ZERO,
+        deductedFromTokenEstB: ZERO,
+      },
+    };
+  }
+
+  const { tokenEstA, tokenEstB } = getTokenEstimatesFromLiquidity(params);
+
+  const {
+    lowerBound: [sLowerSqrtPrice, sLowerIndex],
+    upperBound: [sUpperSqrtPrice, sUpperIndex],
+  } = PriceMath.getSlippageBoundForSqrtPrice(params.sqrtPrice, params.slippageTolerance);
+
+  const { tokenEstA: tokenEstALower, tokenEstB: tokenEstBLower } = getTokenEstimatesFromLiquidity({
+    ...params,
+    sqrtPrice: sLowerSqrtPrice,
+    tickCurrentIndex: sLowerIndex,
+  });
+
+  const { tokenEstA: tokenEstAUpper, tokenEstB: tokenEstBUpper } = getTokenEstimatesFromLiquidity({
+    ...params,
+    sqrtPrice: sUpperSqrtPrice,
+    tickCurrentIndex: sUpperIndex,
+  });
+
+  const tokenMinA = BN.min(BN.min(tokenEstA, tokenEstALower), tokenEstAUpper);
+  const tokenMinB = BN.min(BN.min(tokenEstB, tokenEstBLower), tokenEstBUpper);
+
+  const tokenMinAExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenMinA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+  const tokenEstAExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenEstA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+  const tokenMinBExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenMinB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
+  const tokenEstBExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenEstB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
+
+  return {
+    tokenMinA: tokenMinAExcluded.amount,
+    tokenMinB: tokenMinBExcluded.amount,
+    tokenEstA: tokenEstAExcluded.amount,
+    tokenEstB: tokenEstBExcluded.amount,
+    liquidityAmount: params.liquidity,
+    transferFee: {
+      deductedFromTokenMinA: tokenMinAExcluded.fee,
+      deductedFromTokenMinB: tokenMinBExcluded.fee,
+      deductedFromTokenEstA: tokenEstAExcluded.fee,
+      deductedFromTokenEstB: tokenEstBExcluded.fee,
+    },
   }
 }
 
-function quotePositionBelowRange(param: DecreaseLiquidityQuoteParam): DecreaseLiquidityQuote {
-  const { tickLowerIndex, tickUpperIndex, liquidity, slippageTolerance, tokenExtensionCtx } = param;
+function getTokenEstimatesFromLiquidity(params: DecreaseLiquidityQuoteParam) {
+  const { liquidity, tickLowerIndex, tickUpperIndex, sqrtPrice } = params;
 
-  const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
-  const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
+  if (liquidity.eq(ZERO)) {
+    throw new Error("liquidity must be greater than 0");
+  }
 
-  const tokenEstA = getTokenAFromLiquidity(liquidity, sqrtPriceLowerX64, sqrtPriceUpperX64, false);
-  const tokenMinA = adjustForSlippage(tokenEstA, slippageTolerance, false);
+  let tokenEstA = ZERO;
+  let tokenEstB = ZERO;
 
-  const tokenMinAExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenMinA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
-  const tokenEstAExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenEstA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
+  const lowerSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
+  const upperSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
+  const positionStatus = PositionUtil.getStrictPositionStatus(sqrtPrice, tickLowerIndex, tickUpperIndex);
 
-  return {
-    liquidityAmount: liquidity,
-    tokenMinA: tokenMinAExcluded.amount,
-    tokenMinB: ZERO,
-    tokenEstA: tokenEstAExcluded.amount,
-    tokenEstB: ZERO,
-    transferFee: {
-      deductedFromTokenMinA: tokenMinAExcluded.fee,
-      deductedFromTokenMinB: ZERO,
-      deductedFromTokenEstA: tokenEstAExcluded.fee,
-      deductedFromTokenEstB: ZERO,
-    },
-  };
-}
-
-function quotePositionInRange(param: DecreaseLiquidityQuoteParam): DecreaseLiquidityQuote {
-  const { sqrtPrice, tickLowerIndex, tickUpperIndex, liquidity, slippageTolerance, tokenExtensionCtx } = param;
-
-  const sqrtPriceX64 = sqrtPrice;
-  const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
-  const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
-
-  const tokenEstA = getTokenAFromLiquidity(liquidity, sqrtPriceX64, sqrtPriceUpperX64, false);
-  const tokenMinA = adjustForSlippage(tokenEstA, slippageTolerance, false);
-  const tokenEstB = getTokenBFromLiquidity(liquidity, sqrtPriceLowerX64, sqrtPriceX64, false);
-  const tokenMinB = adjustForSlippage(tokenEstB, slippageTolerance, false);
-
-  const tokenMinAExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenMinA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
-  const tokenEstAExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenEstA, tokenExtensionCtx.tokenMintWithProgramA, tokenExtensionCtx.currentEpoch);
-  const tokenMinBExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenMinB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
-  const tokenEstBExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenEstB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
-
-  return {
-    liquidityAmount: liquidity,
-    tokenMinA: tokenMinAExcluded.amount,
-    tokenMinB: tokenMinBExcluded.amount,
-    tokenEstA: tokenEstAExcluded.amount,
-    tokenEstB: tokenEstBExcluded.amount,
-    transferFee: {
-      deductedFromTokenMinA: tokenMinAExcluded.fee,
-      deductedFromTokenMinB: tokenMinBExcluded.fee,
-      deductedFromTokenEstA: tokenEstAExcluded.fee,
-      deductedFromTokenEstB: tokenEstBExcluded.fee,
-    },
-  };
-}
-
-function quotePositionAboveRange(param: DecreaseLiquidityQuoteParam): DecreaseLiquidityQuote {
-  const { tickLowerIndex, tickUpperIndex, liquidity, slippageTolerance: slippageTolerance, tokenExtensionCtx } = param;
-
-  const sqrtPriceLowerX64 = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
-  const sqrtPriceUpperX64 = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
-
-  const tokenEstB = getTokenBFromLiquidity(liquidity, sqrtPriceLowerX64, sqrtPriceUpperX64, false);
-  const tokenMinB = adjustForSlippage(tokenEstB, slippageTolerance, false);
-
-  const tokenMinBExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenMinB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
-  const tokenEstBExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenEstB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
-
-  return {
-    liquidityAmount: liquidity,
-    tokenMinA: ZERO,
-    tokenMinB: tokenMinBExcluded.amount,
-    tokenEstA: ZERO,
-    tokenEstB: tokenEstBExcluded.amount,
-    transferFee: {
-      deductedFromTokenMinA: ZERO,
-      deductedFromTokenMinB: tokenMinBExcluded.fee,
-      deductedFromTokenEstA: ZERO,
-      deductedFromTokenEstB: tokenEstBExcluded.fee,
-    },
-  };
+  if (positionStatus === PositionStatus.BelowRange) {
+    tokenEstA = getTokenAFromLiquidity(liquidity, lowerSqrtPrice, upperSqrtPrice, false);
+  } else if (positionStatus === PositionStatus.InRange) {
+    tokenEstA = getTokenAFromLiquidity(liquidity, sqrtPrice, upperSqrtPrice, false);
+    tokenEstB = getTokenBFromLiquidity(liquidity, lowerSqrtPrice, sqrtPrice, false);
+  } else {
+    tokenEstB = getTokenBFromLiquidity(liquidity, lowerSqrtPrice, upperSqrtPrice, false);
+  }
+  return { tokenEstA, tokenEstB };
 }

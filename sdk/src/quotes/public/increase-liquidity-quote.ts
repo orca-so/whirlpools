@@ -319,8 +319,6 @@ function getTokenEstimatesFromLiquidity(params: IncreaseLiquidityQuoteByLiquidit
   return { tokenEstA, tokenEstB };
 }
 
-/*** --------- Deprecated --------- ***/
-
 /**
  * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
  *
@@ -332,7 +330,6 @@ function getTokenEstimatesFromLiquidity(params: IncreaseLiquidityQuoteByLiquidit
  * @param slippageTolerance - The maximum slippage allowed when calculating the minimum tokens received.
  * @param whirlpool - A Whirlpool helper class to help interact with the Whirlpool account.
  * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
- * @deprecated Use increaseLiquidityQuoteByInputTokenUsingPriceSlippage instead.
  */
 export function increaseLiquidityQuoteByInputToken(
   inputTokenMint: Address,
@@ -367,7 +364,6 @@ export function increaseLiquidityQuoteByInputToken(
  * @category Quotes
  * @param param IncreaseLiquidityQuoteParam
  * @returns An IncreaseLiquidityInput object detailing the required token amounts & liquidity values to use when calling increase-liquidity-ix.
- * @deprecated Use increaseLiquidityQuoteByInputTokenWithParams_PriceSlippage instead.
  */
 export function increaseLiquidityQuoteByInputTokenWithParams(
   param: IncreaseLiquidityQuoteParam

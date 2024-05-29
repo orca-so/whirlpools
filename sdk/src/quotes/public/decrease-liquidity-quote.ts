@@ -100,6 +100,22 @@ export function decreaseLiquidityQuoteByLiquidityWithParams(
     "tickCurrentIndex is out of bounds."
   );
 
+  if (params.liquidity.eq(ZERO)) {
+    return {
+      tokenMinA: ZERO,
+      tokenMinB: ZERO,
+      liquidityAmount: ZERO,
+      tokenEstA: ZERO,
+      tokenEstB: ZERO,
+      transferFee: {
+        deductedFromTokenMinA: ZERO,
+        deductedFromTokenMinB: ZERO,
+        deductedFromTokenEstA: ZERO,
+        deductedFromTokenEstB: ZERO,
+      },
+    };
+  }
+
   const { tokenExtensionCtx } = params;
   const { tokenEstA, tokenEstB } = getTokenEstimatesFromLiquidity(params);
   const [tokenMinA, tokenMinB] = [tokenEstA, tokenEstB].map((tokenEst) => adjustForSlippage(tokenEst, params.slippageTolerance, false));
@@ -110,10 +126,10 @@ export function decreaseLiquidityQuoteByLiquidityWithParams(
   const tokenEstBExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenEstB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
 
   return {
-    tokenMinA,
-    tokenMinB,
-    tokenEstA,
-    tokenEstB,
+    tokenMinA: tokenMinAExcluded.amount,
+    tokenMinB: tokenMinBExcluded.amount,
+    tokenEstA: tokenEstAExcluded.amount,
+    tokenEstB: tokenEstBExcluded.amount,
     liquidityAmount: params.liquidity,
     transferFee: {
       deductedFromTokenMinA: tokenMinAExcluded.fee,
@@ -176,10 +192,10 @@ export function decreaseLiquidityQuoteByLiquidityWithParamsUsingPriceSlippage(pa
   const tokenEstBExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(tokenEstB, tokenExtensionCtx.tokenMintWithProgramB, tokenExtensionCtx.currentEpoch);
 
   return {
-    tokenMinA,
-    tokenMinB,
-    tokenEstA,
-    tokenEstB,
+    tokenMinA: tokenMinAExcluded.amount,
+    tokenMinB: tokenMinBExcluded.amount,
+    tokenEstA: tokenEstAExcluded.amount,
+    tokenEstB: tokenEstBExcluded.amount,
     liquidityAmount: params.liquidity,
     transferFee: {
       deductedFromTokenMinA: tokenMinAExcluded.fee,

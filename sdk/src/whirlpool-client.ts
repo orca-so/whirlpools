@@ -260,6 +260,7 @@ export interface Whirlpool {
    * @param destinationWallet - The wallet that the tokens withdrawn and rent lamports will be sent to. If null, the WhirlpoolContext wallet is used.
    * @param positionWallet - The wallet that houses the position token that corresponds to this position address. If null, the WhirlpoolContext wallet is used.
    * @param payer - the wallet that will fund the cost needed to initialize the token ATA accounts. If null, the WhirlpoolContext wallet is used.
+   * @param usePriceSlippage - if true, use the price slippage to calculate the minimum tokens to receive. If false, use the token slippage.
    * @return transactions that will close the position. The transactions must be executed serially.
    */
   closePosition: (
@@ -267,7 +268,8 @@ export interface Whirlpool {
     slippageTolerance: Percentage,
     destinationWallet?: Address,
     positionWallet?: Address,
-    payer?: Address
+    payer?: Address,
+    usePriceSlippage?: boolean
   ) => Promise<TransactionBuilder[]>;
 
   /**

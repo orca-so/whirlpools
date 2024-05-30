@@ -1,14 +1,13 @@
 import { Address, BN, translateAddress } from "@coral-xyz/anchor";
 import {
   AddressUtil,
-  MEASUREMENT_BLOCKHASH,
   Percentage,
   TokenUtil,
   TransactionBuilder,
   ZERO,
-  resolveOrCreateATAs,
+  resolveOrCreateATAs
 } from "@orca-so/common-sdk";
-import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { WhirlpoolContext } from "../context";
@@ -17,35 +16,33 @@ import {
   IncreaseLiquidityInput,
   SwapInput,
   closePositionIx,
-  decreaseLiquidityIx,
-  decreaseLiquidityV2Ix,
   increaseLiquidityIx,
   increaseLiquidityV2Ix,
   initTickArrayIx,
   openPositionIx,
   openPositionWithMetadataIx,
-  swapAsync,
+  swapAsync
 } from "../instructions";
+import { WhirlpoolIx } from "../ix";
 import { IGNORE_CACHE, PREFER_CACHE } from "../network/public/fetcher";
 import {
   collectFeesQuote,
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidityWithParams,
+  decreaseLiquidityQuoteByLiquidityWithParamsUsingPriceSlippage,
 } from "../quotes/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolData, WhirlpoolRewardInfo } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
-import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
+import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
+import { TokenExtensionUtil } from "../utils/public/token-extension-util";
+import { MultipleTransactionBuilderFactoryWithAccountResolver, convertListToMap } from "../utils/txn-utils";
 import {
   TokenMintTypes,
-  getTokenMintsFromWhirlpools,
-  resolveAtaForMints,
+  getTokenMintsFromWhirlpools
 } from "../utils/whirlpool-ata-utils";
 import { Whirlpool } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
-import { MultipleTransactionBuilderFactoryWithAccountResolver, convertListToMap } from "../utils/txn-utils";
-import { TokenExtensionUtil } from "../utils/public/token-extension-util";
-import { WhirlpoolIx } from "../ix";
 
 export class WhirlpoolImpl implements Whirlpool {
   private data: WhirlpoolData;
@@ -172,7 +169,8 @@ export class WhirlpoolImpl implements Whirlpool {
     slippageTolerance: Percentage,
     destinationWallet?: Address,
     positionWallet?: Address,
-    payer?: Address
+    payer?: Address,
+    usePriceSlippage = false
   ) {
     await this.refresh();
     const positionWalletKey = positionWallet
@@ -187,7 +185,8 @@ export class WhirlpoolImpl implements Whirlpool {
       slippageTolerance,
       destinationWalletKey,
       positionWalletKey,
-      payerKey
+      payerKey,
+      usePriceSlippage
     );
   }
 
@@ -323,7 +322,7 @@ export class WhirlpoolImpl implements Whirlpool {
       }
     );
     txBuilder.addInstruction(positionIx);
-    if(positionMint === undefined) {
+    if (positionMint === undefined) {
       txBuilder.addSigner(positionMintKeypair);
     }
 
@@ -378,22 +377,22 @@ export class WhirlpoolImpl implements Whirlpool {
     const liquidityIx = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
       ? increaseLiquidityIx(this.ctx.program, baseParams)
       : increaseLiquidityV2Ix(this.ctx.program, {
-          ...baseParams,
-          tokenMintA: whirlpool.tokenMintA,
-          tokenMintB: whirlpool.tokenMintB,
-          tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
-          tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-          ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
-            this.ctx.connection,
-            tokenExtensionCtx,
-            baseParams.tokenOwnerAccountA,
-            baseParams.tokenVaultA,
-            baseParams.positionAuthority,
-            baseParams.tokenOwnerAccountB,
-            baseParams.tokenVaultB,
-            baseParams.positionAuthority,
-          ),  
-        });
+        ...baseParams,
+        tokenMintA: whirlpool.tokenMintA,
+        tokenMintB: whirlpool.tokenMintB,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+          this.ctx.connection,
+          tokenExtensionCtx,
+          baseParams.tokenOwnerAccountA,
+          baseParams.tokenVaultA,
+          baseParams.positionAuthority,
+          baseParams.tokenOwnerAccountB,
+          baseParams.tokenVaultB,
+          baseParams.positionAuthority,
+        ),
+      });
     txBuilder.addInstruction(liquidityIx);
 
     return {
@@ -407,7 +406,8 @@ export class WhirlpoolImpl implements Whirlpool {
     slippageTolerance: Percentage,
     destinationWallet: PublicKey,
     positionWallet: PublicKey,
-    payerKey: PublicKey
+    payerKey: PublicKey,
+    usePriceSlippage = false
   ): Promise<TransactionBuilder[]> {
     const positionData = await this.ctx.fetcher.getPosition(positionAddress, IGNORE_CACHE);
     if (!positionData) {
@@ -550,7 +550,7 @@ export class WhirlpoolImpl implements Whirlpool {
         const tokenOwnerAccountA = resolveTokenAccount(whirlpool.tokenMintA.toBase58());
         const tokenOwnerAccountB = resolveTokenAccount(whirlpool.tokenMintB.toBase58());
 
-        const decreaseLiqQuote = decreaseLiquidityQuoteByLiquidityWithParams({
+        const params = {
           liquidity: positionData.liquidity,
           slippageTolerance,
           sqrtPrice: whirlpool.sqrtPrice,
@@ -558,7 +558,8 @@ export class WhirlpoolImpl implements Whirlpool {
           tickLowerIndex: positionData.tickLowerIndex,
           tickUpperIndex: positionData.tickUpperIndex,
           tokenExtensionCtx,
-        });
+        }
+        const decreaseLiqQuote = usePriceSlippage ? decreaseLiquidityQuoteByLiquidityWithParamsUsingPriceSlippage(params) : decreaseLiquidityQuoteByLiquidityWithParams(params);
 
         const baseParams = {
           ...decreaseLiqQuote,
@@ -653,25 +654,25 @@ export class WhirlpoolImpl implements Whirlpool {
             rewardOwnerAccount,
             rewardVault: whirlpool.rewardInfos[rewardIndex].vault,
           };
-      
-  
+
+
           const ix = !TokenExtensionUtil.isV2IxRequiredReward(tokenExtensionCtx, rewardIndex)
             ? WhirlpoolIx.collectRewardIx(this.ctx.program, collectRewardBaseParams)
             : WhirlpoolIx.collectRewardV2Ix(this.ctx.program, {
-            ...collectRewardBaseParams,
-            rewardMint: tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!.address,
-            rewardTokenProgram: tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!.tokenProgram,
-            rewardTransferHookAccounts: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-              this.ctx.connection,
-              tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!,
-              collectRewardBaseParams.rewardVault,
-              collectRewardBaseParams.rewardOwnerAccount,
-              collectRewardBaseParams.whirlpool, // vault to owner, so pool is authority
-            ),
-          });
-    
+              ...collectRewardBaseParams,
+              rewardMint: tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!.address,
+              rewardTokenProgram: tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!.tokenProgram,
+              rewardTransferHookAccounts: await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+                this.ctx.connection,
+                tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!,
+                collectRewardBaseParams.rewardVault,
+                collectRewardBaseParams.rewardOwnerAccount,
+                collectRewardBaseParams.whirlpool, // vault to owner, so pool is authority
+              ),
+            });
+
           return [ix];
-        });  
+        });
       }
     }
 
@@ -684,7 +685,7 @@ export class WhirlpoolImpl implements Whirlpool {
         position: positionAddress,
         positionMint: positionData.positionMint,
       });
-  
+
       return [ix];
     });
 

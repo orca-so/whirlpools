@@ -1,9 +1,8 @@
-import { TransferFee, calculateFee, getEpochFee, getTransferFeeConfig, TOKEN_2022_PROGRAM_ID, getTransferHook, addExtraAccountMetasForExecute } from "@solana/spl-token";
+import { TransferFee, calculateFee, getEpochFee, getTransferFeeConfig, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID, getTransferHook, addExtraAccountMetasForExecute } from "@solana/spl-token";
 import BN from "bn.js";
 import { MintWithTokenProgram, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { PoolUtil, WhirlpoolAccountFetchOptions, WhirlpoolAccountFetcherInterface, WhirlpoolData } from "../..";
 import { AccountMeta, Connection, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { TOKEN_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
 
 export type TransferFeeIncludedAmount = {
   amount: BN;
@@ -108,6 +107,29 @@ export class TokenExtensionUtil {
         PoolUtil.isRewardInitialized(rewards[1]) ? get(rewards[1].mint) : null,
         PoolUtil.isRewardInitialized(rewards[2]) ? get(rewards[2].mint) : null,
       ],
+      currentEpoch,
+    };
+  }
+
+  public static async buildTokenExtensionContextForPool(
+    fetcher: WhirlpoolAccountFetcherInterface,
+    tokenMintA: PublicKey,
+    tokenMintB: PublicKey,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<TokenExtensionContextForPool> {
+    const [tokenMintWithProgram, currentEpoch] = await Promise.all([
+      fetcher.getMintInfos([
+        tokenMintA,
+        tokenMintB,
+      ], opts),
+      fetcher.getEpoch()
+    ]);
+
+    const get = (mint: PublicKey) => tokenMintWithProgram.get(mint.toBase58())!;
+
+    return {
+      tokenMintWithProgramA: get(tokenMintA),
+      tokenMintWithProgramB: get(tokenMintB),
       currentEpoch,
     };
   }

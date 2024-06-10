@@ -323,8 +323,8 @@ function getTokenEstimatesFromLiquidity(params: IncreaseLiquidityQuoteByLiquidit
  * Get an estimated quote on the maximum tokens required to deposit based on a specified input token amount.
  *
  * @category Quotes
- * @param inputTokenAmount - The amount of input tokens to deposit.
  * @param inputTokenMint - The mint of the input token the user would like to deposit.
+ * @param inputTokenAmount - The amount of input tokens to deposit.
  * @param tickLower - The lower index of the position that we are withdrawing from.
  * @param tickUpper - The upper index of the position that we are withdrawing from.
  * @param slippageTolerance - The maximum slippage allowed when calculating the minimum tokens received.

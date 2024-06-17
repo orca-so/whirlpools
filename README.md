@@ -11,9 +11,9 @@ The contract has been deployed using verifiable build, so that you can ensure th
 
 ## Requirements
 
-- Anchor 0.26.0
-- Solana 1.14.12
-- Rust 1.60.0
+- Anchor 0.29.0
+- Solana 1.17.22
+- Rust 1.68.0
 
 ## Setup
 
@@ -49,7 +49,10 @@ In your package, run:
 
 ```
 yarn add "@orca-so/whirlpools-sdk"
-yarn add "@coral-xyz/anchor"
+yarn add "@orca-so/common-sdk"
+yarn add "@coral-xyz/anchor@0.29.0"
+yarn add "@solana/web3.js"
+yarn add "@solana/spl-token"
 yarn add "decimal.js"
 ```
 

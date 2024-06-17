@@ -1,13 +1,13 @@
 {
   "name": "@orca-so/whirlpools-sdk",
-  "version": "0.13.0-alpha.4",
+  "version": "0.13.0",
   "description": "Typescript SDK to interact with Orca's Whirlpool program.",
   "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "peerDependencies": {
     "@coral-xyz/anchor": "~0.29.0",
-    "@orca-so/common-sdk": "0.6.0-alpha.3",
+    "@orca-so/common-sdk": "0.6.0",
     "@solana/spl-token": "^0.4.1",
     "@solana/web3.js": "^1.90.0",
     "decimal.js": "^10.4.3"
@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@coral-xyz/anchor": "^0.29.0",
-    "@orca-so/common-sdk": "0.6.0-alpha.3",
+    "@orca-so/common-sdk": "0.6.0",
     "@solana/spl-token": "^0.4.1",
     "@solana/spl-token-group": "^0.0.1",
     "@solana/spl-token-metadata": "^0.1.2",

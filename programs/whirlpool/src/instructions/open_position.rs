@@ -5,7 +5,6 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use crate::{state::*, util::mint_position_token_and_remove_authority};
 
 #[derive(Accounts)]
-#[instruction(bumps: OpenPositionBumps)]
 pub struct OpenPosition<'info> {
     #[account(mut)]
     pub funder: Signer<'info>,
@@ -49,7 +48,6 @@ pub struct OpenPosition<'info> {
 */
 pub fn handler(
     ctx: Context<OpenPosition>,
-    _bumps: OpenPositionBumps,
     tick_lower_index: i32,
     tick_upper_index: i32,
 ) -> Result<()> {

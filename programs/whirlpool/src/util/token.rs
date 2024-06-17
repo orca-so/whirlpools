@@ -1,7 +1,6 @@
 use crate::state::{PositionBundle, Whirlpool};
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
-use token_metadata::instruction::create_metadata_accounts_v3;
 use solana_program::program::invoke_signed;
 use spl_token::instruction::{burn_checked, close_account, mint_to, set_authority, AuthorityType};
 
@@ -113,60 +112,7 @@ pub fn mint_position_token_and_remove_authority<'info>(
     remove_position_token_mint_authority(whirlpool, position_mint, token_program)
 }
 
-pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
-    whirlpool: &Account<'info, Whirlpool>,
-    position_mint: &Account<'info, Mint>,
-    position_token_account: &Account<'info, TokenAccount>,
-    position_metadata_account: &UncheckedAccount<'info>,
-    metadata_update_auth: &UncheckedAccount<'info>,
-    funder: &Signer<'info>,
-    metadata_program: &UncheckedAccount<'info>,
-    token_program: &Program<'info, Token>,
-    system_program: &Program<'info, System>,
-    rent: &Sysvar<'info, Rent>,
-) -> Result<()> {
-    mint_position_token(
-        whirlpool,
-        position_mint,
-        position_token_account,
-        token_program,
-    )?;
 
-    let metadata_mint_auth_account = whirlpool;
-    invoke_signed(
-        &create_metadata_accounts_v3(
-            metadata_program.key(),
-            position_metadata_account.key(),
-            position_mint.key(),
-            metadata_mint_auth_account.key(),
-            funder.key(),
-            metadata_update_auth.key(),
-            WP_METADATA_NAME.to_string(),
-            WP_METADATA_SYMBOL.to_string(),
-            WP_METADATA_URI.to_string(),
-            None,
-            0,
-            false,
-            true,
-            None,
-            None,
-            None,
-        ),
-        &[
-            position_metadata_account.to_account_info(),
-            position_mint.to_account_info(),
-            metadata_mint_auth_account.to_account_info(),
-            metadata_update_auth.to_account_info(),
-            funder.to_account_info(),
-            metadata_program.to_account_info(),
-            system_program.to_account_info(),
-            rent.to_account_info(),
-        ],
-        &[&metadata_mint_auth_account.seeds()],
-    )?;
-
-    remove_position_token_mint_authority(whirlpool, position_mint, token_program)
-}
 
 fn mint_position_token<'info>(
     whirlpool: &Account<'info, Whirlpool>,
@@ -240,76 +186,6 @@ pub fn mint_position_bundle_token_and_remove_authority<'info>(
     )
 }
 
-pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
-    funder: &Signer<'info>,
-    position_bundle: &Account<'info, PositionBundle>,
-    position_bundle_mint: &Account<'info, Mint>,
-    position_bundle_token_account: &Account<'info, TokenAccount>,
-    position_bundle_metadata: &UncheckedAccount<'info>,
-    metadata_update_auth: &UncheckedAccount<'info>,
-    metadata_program: &UncheckedAccount<'info>,
-    token_program: &Program<'info, Token>,
-    system_program: &Program<'info, System>,
-    rent: &Sysvar<'info, Rent>,
-    position_bundle_seeds: &[&[u8]],
-) -> Result<()> {
-    mint_position_bundle_token(
-        position_bundle,
-        position_bundle_mint,
-        position_bundle_token_account,
-        token_program,
-        position_bundle_seeds,
-    )?;
-
-    // Create Metadata
-    // Orca Position Bundle xxxx...yyyy
-    // xxxx and yyyy are the first and last 4 chars of mint address
-    let mint_address = position_bundle_mint.key().to_string();
-    let mut nft_name = String::from(WPB_METADATA_NAME_PREFIX);
-    nft_name += " ";
-    nft_name += &mint_address[0..4];
-    nft_name += "...";
-    nft_name += &mint_address[mint_address.len() - 4..];
-
-    invoke_signed(
-        &create_metadata_accounts_v3(
-            metadata_program.key(),
-            position_bundle_metadata.key(),
-            position_bundle_mint.key(),
-            position_bundle.key(),
-            funder.key(),
-            metadata_update_auth.key(),
-            nft_name,
-            WPB_METADATA_SYMBOL.to_string(),
-            WPB_METADATA_URI.to_string(),
-            None,
-            0,
-            false,
-            true,
-            None,
-            None,
-            None,
-        ),
-        &[
-            position_bundle.to_account_info(),
-            position_bundle_metadata.to_account_info(),
-            position_bundle_mint.to_account_info(),
-            metadata_update_auth.to_account_info(),
-            funder.to_account_info(),
-            metadata_program.to_account_info(),
-            system_program.to_account_info(),
-            rent.to_account_info(),
-        ],
-        &[position_bundle_seeds],
-    )?;
-
-    remove_position_bundle_token_mint_authority(
-        position_bundle,
-        position_bundle_mint,
-        token_program,
-        position_bundle_seeds,
-    )
-}
 
 fn mint_position_bundle_token<'info>(
     position_bundle: &Account<'info, PositionBundle>,

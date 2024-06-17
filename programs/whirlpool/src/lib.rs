@@ -169,13 +169,11 @@ pub mod whirlpool {
     ///                        the tick-spacing in this pool.
     pub fn open_position(
         ctx: Context<OpenPosition>,
-        bumps: OpenPositionBumps,
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
         return instructions::open_position::handler(
             ctx,
-            bumps,
             tick_lower_index,
             tick_upper_index,
         );
@@ -192,19 +190,19 @@ pub mod whirlpool {
     /// #### Special Errors
     /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
     ///                        the tick-spacing in this pool.
-    pub fn open_position_with_metadata(
-        ctx: Context<OpenPositionWithMetadata>,
-        bumps: OpenPositionWithMetadataBumps,
-        tick_lower_index: i32,
-        tick_upper_index: i32,
-    ) -> Result<()> {
-        return instructions::open_position_with_metadata::handler(
-            ctx,
-            bumps,
-            tick_lower_index,
-            tick_upper_index,
-        );
-    }
+    // pub fn open_position_with_metadata(
+    //     ctx: Context<OpenPositionWithMetadata>,
+    //     bumps: OpenPositionWithMetadataBumps,
+    //     tick_lower_index: i32,
+    //     tick_upper_index: i32,
+    // ) -> Result<()> {
+    //     return instructions::open_position_with_metadata::handler(
+    //         ctx,
+    //         bumps,
+    //         tick_lower_index,
+    //         tick_upper_index,
+    //     );
+    // }
 
     /// Add liquidity to a position in the Whirlpool. This call also updates the position's accrued fees and rewards.
     ///
@@ -542,11 +540,11 @@ pub mod whirlpool {
     /// Initializes a PositionBundle account that bundles several positions.
     /// A unique token will be minted to represent the position bundle in the users wallet.
     /// Additional Metaplex metadata is appended to identify the token.
-    pub fn initialize_position_bundle_with_metadata(
-        ctx: Context<InitializePositionBundleWithMetadata>,
-    ) -> Result<()> {
-        return instructions::initialize_position_bundle_with_metadata::handler(ctx);
-    }
+    // pub fn initialize_position_bundle_with_metadata(
+    //     ctx: Context<InitializePositionBundleWithMetadata>,
+    // ) -> Result<()> {
+    //     return instructions::initialize_position_bundle_with_metadata::handler(ctx);
+    // }
 
     /// Delete a PositionBundle account. Burns the position bundle token in the owner's wallet.
     ///

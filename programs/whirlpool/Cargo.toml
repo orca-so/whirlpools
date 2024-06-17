@@ -15,14 +15,14 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = "0.28"
-anchor-spl = "0.28"
-spl-token = {version = "3.3", features = ["no-entrypoint"]}
-solana-program = "1.14.12"
+anchor-lang = "0.30.0"
+anchor-spl = "0.30.0"
+spl-token = {version = "~3.5.0", features = ["no-entrypoint"]}
+solana-program = "=1.18.11"
 thiserror = "1.0"
 uint = {version = "0.9.1", default-features = false}
 borsh = "0.9.3"
-token_metadata = { git = "https://github.com/metaplex-foundation/mpl-token-metadata", features = ["no-entrypoint"] }
+mpl-token-metadata = { version = "=4.1.1", features=["serde"]}
 
 [dev-dependencies]
 proptest = "1.0"

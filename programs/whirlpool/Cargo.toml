@@ -2,7 +2,7 @@
 name = "whirlpool"
 version = "0.3.0"
 description = "Created with Anchor"
-edition = "2018"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
@@ -15,11 +15,11 @@ cpi = ["no-entrypoint"]
 default = []
 
 [dependencies]
-anchor-lang = "0.29"
-anchor-spl = {version = "0.29", features = ["metadata", "memo"]}
+anchor-lang = "0.30.1"
+anchor-spl = {version = "0.30.1", features = ["metadata", "memo"]}
 spl-token = {version = "4", features = ["no-entrypoint"]}
 spl-transfer-hook-interface = "0.5.1"
-solana-program = "1.17"
+solana-program = "1.18.17"
 thiserror = "1.0"
 uint = {version = "0.9.1", default-features = false}
 borsh09 = {package = "borsh", version = "0.9.1"}

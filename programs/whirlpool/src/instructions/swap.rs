@@ -65,7 +65,7 @@ pub fn handler(
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
-    let mut virtual_zero_tick_arrays: [Option<Box<RefCell<TickArray>>>; 3] = [None, None, None];
+    let mut virtual_zero_tick_arrays: Vec<Option<Box<RefCell<TickArray>>>> = vec![];
     let provided_tick_array_accounts = vec![
         ctx.accounts.tick_array_0.to_account_info(),
         ctx.accounts.tick_array_1.to_account_info(),
@@ -127,7 +127,7 @@ pub fn handler(
 fn build_swap_tick_sequence<'a, 't, 'info>(
     whirlpool: &'t Account<'info, Whirlpool>,
     a_to_b: bool,
-    virtual_zero_tick_arrays: &'a mut [Option<Box<RefCell<TickArray>>>; 3],
+    virtual_zero_tick_arrays: &'a mut Vec<Option<Box<RefCell<TickArray>>>>,
     provided_tick_array_account_refs: &'a mut Vec<&'a AccountInfo<'info>>,
 ) -> Result<SwapTickSequence<'a>> {
     // dedup by key
@@ -191,6 +191,7 @@ fn build_swap_tick_sequence<'a, 't, 'info>(
     msg!("start_tick_indexes: {:?}", start_tick_indexes);
 
     // to make virtual
+    virtual_zero_tick_arrays.resize(start_tick_indexes.len(), None);
     for (i, start_tick_index) in start_tick_indexes.iter().enumerate() {
         // find from initialized tick arrays
         if let Some(pos) = initialized.iter().position(|tick_array| tick_array.start_tick_index == *start_tick_index) {

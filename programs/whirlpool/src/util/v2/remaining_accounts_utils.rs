@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 use crate::errors::ErrorCode;
 
+pub const MAX_ADDITIONAL_TICK_ARRAYS_LEN: usize = 3;
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, PartialEq, Eq)]
 pub enum AccountsType {
     TransferHookA,
@@ -9,7 +11,7 @@ pub enum AccountsType {
     TransferHookInput,
     TransferHookIntermediate,
     TransferHookOutput,
-    //TickArray,
+    AdditionalTickArrays,
     //TickArrayOne,
     //TickArrayTwo,
 }
@@ -33,7 +35,7 @@ pub struct ParsedRemainingAccounts<'info> {
     pub transfer_hook_input: Option<Vec<AccountInfo<'info>>>,
     pub transfer_hook_intermediate: Option<Vec<AccountInfo<'info>>>,
     pub transfer_hook_output: Option<Vec<AccountInfo<'info>>>,
-    //pub tick_array: Option<Vec<AccountInfo<'info>>>,
+    pub additional_tick_arrays: Option<Vec<AccountInfo<'info>>>,
     //pub tick_array_one: Option<Vec<AccountInfo<'info>>>,
     //pub tick_array_two: Option<Vec<AccountInfo<'info>>>,
 }
@@ -106,10 +108,16 @@ pub fn parse_remaining_accounts<'info>(
         }
         parsed_remaining_accounts.transfer_hook_output = Some(accounts);
       }
-      /* 
-      AccountsType::TickArray => {
-        parsed_remaining_accounts.tick_array = Some(accounts);
+      AccountsType::AdditionalTickArrays => {
+        if parsed_remaining_accounts.additional_tick_arrays.is_some() {
+          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+        }
+        if accounts.len() > MAX_ADDITIONAL_TICK_ARRAYS_LEN {
+          return Err(ErrorCode::TooManyAdditionalTickArrays.into());
+        }
+        parsed_remaining_accounts.additional_tick_arrays = Some(accounts);
       }
+      /* 
       AccountsType::TickArrayOne => {
         parsed_remaining_accounts.tick_array_one = Some(accounts);
       }

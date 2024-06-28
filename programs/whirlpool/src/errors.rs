@@ -135,6 +135,11 @@ pub enum ErrorCode {
 
     #[msg("Same accounts type is provided more than once")]
     RemainingAccountsDuplicatedAccountsType, // 0x17a5 (6053)
+
+    #[msg("Too many additional tick arrays provided")]
+    TooManyAdditionalTickArrays, // 0x17a6 (6054)
+    #[msg("TickArray account for different whirlpool provided")]
+    DifferentWhirlpoolTickArrayAccount, // 0x17a7 (6055)
 }
 
 impl From<TryFromIntError> for ErrorCode {

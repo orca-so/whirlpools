@@ -58,15 +58,15 @@ pub fn handler(
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
-    let tick_array_account_infos = vec![
-        ctx.accounts.tick_array_0.to_account_info(),
-        ctx.accounts.tick_array_1.to_account_info(),
-        ctx.accounts.tick_array_2.to_account_info(),
-    ];
     let builder = SparseSwapTickSequenceBuilder::try_from(
         whirlpool,
         a_to_b,
-        tick_array_account_infos
+        vec![
+            ctx.accounts.tick_array_0.to_account_info(),
+            ctx.accounts.tick_array_1.to_account_info(),
+            ctx.accounts.tick_array_2.to_account_info(),
+        ],
+        None,
     )?;
     let mut swap_tick_sequence = builder.build()?;
     

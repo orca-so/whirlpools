@@ -11,12 +11,16 @@ use crate::{
 };
 
 enum TickArrayAccount<'info> {
-    // owned by this whirlpool program and its discriminator is valid and writable
-    // but not sure if this TickArray is valid for this whirlpool (maybe for another whirlpool)
-    Initialized(Pubkey, i32, AccountInfo<'info>),
-    // owned by system program and its data size is zero and writable
-    // but not sure if this key is valid PDA for TickArray
-    Uninitialized(Pubkey, AccountInfo<'info>, Option<Box<RefCell<TickArray>>>),
+    Initialized {
+        tick_array_whirlpool: Pubkey,
+        start_tick_index: i32,
+        account_info: AccountInfo<'info>,
+    },
+    Uninitialized {
+        pubkey: Pubkey,
+        account_info: AccountInfo<'info>,
+        zeroed: Option<Box<RefCell<TickArray>>>,
+    },
 }
 
 pub struct SparseSwapTickSequenceBuilder<'info> {
@@ -45,26 +49,39 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
             let state = peek_tick_array(account_info)?;
 
             match &state {
-                TickArrayAccount::Initialized(tick_array_whirlpool, start_tick_index, ..) => {
+                TickArrayAccount::Initialized {
+                    tick_array_whirlpool,
+                    start_tick_index,
+                    ..
+                } => {
                     // has_one constraint equivalent check
                     if *tick_array_whirlpool != whirlpool.key() {
                         return Err(ErrorCode::DifferentWhirlpoolTickArrayAccount.into());
                     }
+
+                    // TickArray accounts in initialized have been verified as:
+                    //   - Owned by this program
+                    //   - Initialized as TickArray account
+                    //   - Writable account
+                    //   - TickArray account for this whirlpool
+                    // So we can safely use these accounts.
                     initialized.push((*start_tick_index, state));
                 }
-                TickArrayAccount::Uninitialized(pubkey, ..) => {
-                    uninitialized.push((*pubkey, state));
+                TickArrayAccount::Uninitialized {
+                    pubkey: account_address,
+                    ..
+                } => {
+                    // TickArray accounts in uninitialized have been verified as:
+                    //   - Owned by System program
+                    //   - Data size is zero
+                    //   - Writable account
+                    // But we are not sure if these accounts are valid TickArray PDA for this whirlpool,
+                    // so we need to check it later.
+                    uninitialized.push((*account_address, state));
                 }
             }
         }
 
-        ////////////////////////////////////////////////////////////////////////
-        // Now successfully loaded tick arrays have been verified as:
-        // - Owned by Whirlpool Program
-        // - Initialized as TickArray account
-        // - And has_one constraint is satisfied (i.e. belongs to trading whirlpool)
-        // - Writable
-        ////////////////////////////////////////////////////////////////////////
         let start_tick_indexes = get_start_tick_indexes(whirlpool, a_to_b);
 
         let mut tick_array_accounts: Vec<TickArrayAccount> = vec![];
@@ -80,18 +97,23 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
             let tick_array_pda = derive_tick_array_pda(&whirlpool, *start_tick_index);
             if let Some(pos) = uninitialized.iter().position(|t| t.0 == tick_array_pda) {
                 let state = uninitialized.remove(pos).1;
-                if let TickArrayAccount::Uninitialized(pubkey, account_info, ..) = state {
+                if let TickArrayAccount::Uninitialized {
+                    pubkey,
+                    account_info,
+                    ..
+                } = state
+                {
                     // create zeroed TickArray data
                     let zeroed = Box::new(RefCell::new(TickArray::default()));
                     zeroed
                         .borrow_mut()
                         .initialize(whirlpool, *start_tick_index)?;
 
-                    tick_array_accounts.push(TickArrayAccount::Uninitialized(
+                    tick_array_accounts.push(TickArrayAccount::Uninitialized {
                         pubkey,
                         account_info,
-                        Some(zeroed),
-                    ));
+                        zeroed: Some(zeroed),
+                    });
                 } else {
                     unreachable!("state in uninitialized must be Uninitialized");
                 }
@@ -111,7 +133,7 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
         let mut tick_array_refmuts = VecDeque::with_capacity(3);
         for tick_array_account in self.tick_array_accounts.iter() {
             match tick_array_account {
-                TickArrayAccount::Initialized(_, _, account_info) => {
+                TickArrayAccount::Initialized { account_info, .. } => {
                     use std::ops::DerefMut;
 
                     let data = account_info.try_borrow_mut_data()?;
@@ -122,8 +144,8 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
                     });
                     tick_array_refmuts.push_back(tick_array_refmut);
                 }
-                TickArrayAccount::Uninitialized(_, _, tick_array) => {
-                    let tick_array_refmut = tick_array.as_ref().unwrap().borrow_mut();
+                TickArrayAccount::Uninitialized { zeroed, .. } => {
+                    let tick_array_refmut = zeroed.as_ref().unwrap().borrow_mut();
                     tick_array_refmuts.push_back(tick_array_refmut);
                 }
             }
@@ -152,11 +174,11 @@ fn peek_tick_array<'info>(account_info: AccountInfo<'info>) -> Result<TickArrayA
 
     // uninitialized writable account (owned by system program and its data size is zero)
     if account_info.owner == &System::id() && account_info.data_is_empty() {
-        return Ok(TickArrayAccount::Uninitialized(
-            *account_info.key,
+        return Ok(TickArrayAccount::Uninitialized {
+            pubkey: *account_info.key,
             account_info,
-            None,
-        ));
+            zeroed: None,
+        });
     }
 
     // owner program check
@@ -185,11 +207,11 @@ fn peek_tick_array<'info>(account_info: AccountInfo<'info>) -> Result<TickArrayA
     let whirlpool = tick_array.whirlpool;
     drop(tick_array);
 
-    Ok(TickArrayAccount::Initialized(
-        whirlpool,
+    Ok(TickArrayAccount::Initialized {
+        tick_array_whirlpool: whirlpool,
         start_tick_index,
         account_info,
-    ))
+    })
 }
 
 fn get_start_tick_indexes(whirlpool: &Account<Whirlpool>, a_to_b: bool) -> Vec<i32> {

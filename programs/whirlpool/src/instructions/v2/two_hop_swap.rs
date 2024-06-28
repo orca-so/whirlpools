@@ -6,8 +6,8 @@ use crate::swap_with_transfer_fee_extension;
 use crate::util::{calculate_transfer_fee_excluded_amount, parse_remaining_accounts, update_and_two_hop_swap_whirlpool_v2, AccountsType, RemainingAccountsInfo};
 use crate::{
     errors::ErrorCode,
-    state::{TickArray, Whirlpool},
-    util::{to_timestamp_u64, SwapTickSequence},
+    state::Whirlpool,
+    util::{to_timestamp_u64, SparseSwapTickSequenceBuilder},
     constants::transfer_memo,
 };
 
@@ -55,23 +55,29 @@ pub struct TwoHopSwapV2<'info> {
 
     pub token_authority: Signer<'info>,
 
-    #[account(mut, constraint = tick_array_one_0.load()?.whirlpool == whirlpool_one.key())]
-    pub tick_array_one_0: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_one_0: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = tick_array_one_1.load()?.whirlpool == whirlpool_one.key())]
-    pub tick_array_one_1: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_one_1: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = tick_array_one_2.load()?.whirlpool == whirlpool_one.key())]
-    pub tick_array_one_2: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_one_2: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = tick_array_two_0.load()?.whirlpool == whirlpool_two.key())]
-    pub tick_array_two_0: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_two_0: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = tick_array_two_1.load()?.whirlpool == whirlpool_two.key())]
-    pub tick_array_two_1: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_two_1: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = tick_array_two_2.load()?.whirlpool == whirlpool_two.key())]
-    pub tick_array_two_2: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_two_2: UncheckedAccount<'info>,
 
     #[account(mut, seeds = [b"oracle", whirlpool_one.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
@@ -87,6 +93,8 @@ pub struct TwoHopSwapV2<'info> {
     // - accounts for transfer hook program of token_mint_input
     // - accounts for transfer hook program of token_mint_intermediate
     // - accounts for transfer hook program of token_mint_output
+    // - additional TickArray accounts for whirlpool_one
+    // - additional TickArray accounts for whirlpool_two
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(
@@ -135,20 +143,34 @@ pub fn handler<'a, 'b, 'c, 'info>(
             AccountsType::TransferHookInput,
             AccountsType::TransferHookIntermediate,
             AccountsType::TransferHookOutput,
+            AccountsType::AdditionalTickArraysOne,
+            AccountsType::AdditionalTickArraysTwo,
         ],
     )?;
 
-    let mut swap_tick_sequence_one = SwapTickSequence::new(
-        ctx.accounts.tick_array_one_0.load_mut().unwrap(),
-        ctx.accounts.tick_array_one_1.load_mut().ok(),
-        ctx.accounts.tick_array_one_2.load_mut().ok(),
-    );
+    let builder_one = SparseSwapTickSequenceBuilder::try_from(
+        whirlpool_one,
+        a_to_b_one,
+        vec![
+            ctx.accounts.tick_array_one_0.to_account_info(),
+            ctx.accounts.tick_array_one_1.to_account_info(),
+            ctx.accounts.tick_array_one_2.to_account_info(),
+        ],
+        remaining_accounts.additional_tick_arrays_one,
+    )?;
+    let mut swap_tick_sequence_one = builder_one.build()?;
 
-    let mut swap_tick_sequence_two = SwapTickSequence::new(
-        ctx.accounts.tick_array_two_0.load_mut().unwrap(),
-        ctx.accounts.tick_array_two_1.load_mut().ok(),
-        ctx.accounts.tick_array_two_2.load_mut().ok(),
-    );
+    let builder_two = SparseSwapTickSequenceBuilder::try_from(
+        whirlpool_two,
+        a_to_b_two,
+        vec![
+            ctx.accounts.tick_array_two_0.to_account_info(),
+            ctx.accounts.tick_array_two_1.to_account_info(),
+            ctx.accounts.tick_array_two_2.to_account_info(),
+        ],
+        remaining_accounts.additional_tick_arrays_two,
+    )?;
+    let mut swap_tick_sequence_two = builder_two.build()?;
 
     // TODO: WLOG, we could extend this to N-swaps, but the account inputs to the instruction would
     // need to be jankier and we may need to programatically map/verify rather than using anchor constraints

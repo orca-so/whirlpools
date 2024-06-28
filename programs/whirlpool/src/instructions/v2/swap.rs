@@ -59,6 +59,7 @@ pub struct SwapV2<'info> {
     // remaining accounts
     // - accounts for transfer hook program of token_mint_a
     // - accounts for transfer hook program of token_mint_b
+    // - additional TickArray accounts
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(
@@ -82,6 +83,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &[
             AccountsType::TransferHookA,
             AccountsType::TransferHookB,
+            AccountsType::AdditionalTickArrays,
         ],
     )?;
 

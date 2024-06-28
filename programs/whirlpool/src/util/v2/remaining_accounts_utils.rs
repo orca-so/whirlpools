@@ -12,8 +12,8 @@ pub enum AccountsType {
     TransferHookIntermediate,
     TransferHookOutput,
     AdditionalTickArrays,
-    //TickArrayOne,
-    //TickArrayTwo,
+    AdditionalTickArraysOne,
+    AdditionalTickArraysTwo,
 }
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone)]
@@ -36,8 +36,8 @@ pub struct ParsedRemainingAccounts<'info> {
     pub transfer_hook_intermediate: Option<Vec<AccountInfo<'info>>>,
     pub transfer_hook_output: Option<Vec<AccountInfo<'info>>>,
     pub additional_tick_arrays: Option<Vec<AccountInfo<'info>>>,
-    //pub tick_array_one: Option<Vec<AccountInfo<'info>>>,
-    //pub tick_array_two: Option<Vec<AccountInfo<'info>>>,
+    pub additional_tick_arrays_one: Option<Vec<AccountInfo<'info>>>,
+    pub additional_tick_arrays_two: Option<Vec<AccountInfo<'info>>>,
 }
 
 pub fn parse_remaining_accounts<'info>(
@@ -109,22 +109,35 @@ pub fn parse_remaining_accounts<'info>(
         parsed_remaining_accounts.transfer_hook_output = Some(accounts);
       }
       AccountsType::AdditionalTickArrays => {
-        if parsed_remaining_accounts.additional_tick_arrays.is_some() {
-          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
-        }
         if accounts.len() > MAX_ADDITIONAL_TICK_ARRAYS_LEN {
           return Err(ErrorCode::TooManyAdditionalTickArrays.into());
         }
+
+        if parsed_remaining_accounts.additional_tick_arrays.is_some() {
+          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+        }
         parsed_remaining_accounts.additional_tick_arrays = Some(accounts);
       }
-      /* 
-      AccountsType::TickArrayOne => {
-        parsed_remaining_accounts.tick_array_one = Some(accounts);
+      AccountsType::AdditionalTickArraysOne => {
+        if accounts.len() > MAX_ADDITIONAL_TICK_ARRAYS_LEN {
+          return Err(ErrorCode::TooManyAdditionalTickArrays.into());
+        }
+
+        if parsed_remaining_accounts.additional_tick_arrays_one.is_some() {
+          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+        }
+        parsed_remaining_accounts.additional_tick_arrays_one = Some(accounts);
       }
-      AccountsType::TickArrayTwo => {
-        parsed_remaining_accounts.tick_array_two = Some(accounts);
+      AccountsType::AdditionalTickArraysTwo => {
+        if accounts.len() > MAX_ADDITIONAL_TICK_ARRAYS_LEN {
+          return Err(ErrorCode::TooManyAdditionalTickArrays.into());
+        }
+
+        if parsed_remaining_accounts.additional_tick_arrays_two.is_some() {
+          return Err(ErrorCode::RemainingAccountsDuplicatedAccountsType.into());
+        }
+        parsed_remaining_accounts.additional_tick_arrays_two = Some(accounts);
       }
-      */
     }
   }
 

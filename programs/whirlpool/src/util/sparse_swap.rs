@@ -22,7 +22,7 @@ pub struct SparseSwapTickSequenceBuilder<'info> {
 
 impl<'info> SparseSwapTickSequenceBuilder<'info> {
   pub fn try_from(
-      whirlpool: Box<Account<'info, Whirlpool>>,
+      whirlpool: &Account<'info, Whirlpool>,
       a_to_b: bool,
       mut tick_array_account_infos: Vec<AccountInfo<'info>>,
   ) -> Result<Self> {
@@ -57,7 +57,7 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
       // - And has_one constraint is satisfied (i.e. belongs to trading whirlpool)
       // - Writable
       ////////////////////////////////////////////////////////////////////////
-      let start_tick_indexes = get_start_tick_indexes(&whirlpool, a_to_b);
+      let start_tick_indexes = get_start_tick_indexes(whirlpool, a_to_b);
   
       let mut tick_array_accounts: Vec<TickArrayAccount> = vec![];
       for start_tick_index in start_tick_indexes.iter() {
@@ -75,7 +75,7 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
               if let TickArrayAccount::Uninitialized(pubkey, account_info, ..) = state {
                   // create zeroed TickArray data
                   let zeroed = Box::new(RefCell::new(TickArray::default()));
-                  zeroed.borrow_mut().initialize(&whirlpool, *start_tick_index)?;
+                  zeroed.borrow_mut().initialize(whirlpool, *start_tick_index)?;
 
                   tick_array_accounts.push(TickArrayAccount::Uninitialized(
                       pubkey,

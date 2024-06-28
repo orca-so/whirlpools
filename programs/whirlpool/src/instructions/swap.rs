@@ -64,7 +64,7 @@ pub fn handler(
         ctx.accounts.tick_array_2.to_account_info(),
     ];
     let builder = SparseSwapTickSequenceBuilder::try_from(
-        whirlpool.clone(),
+        whirlpool,
         a_to_b,
         tick_array_account_infos
     )?;

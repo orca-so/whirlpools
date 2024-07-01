@@ -16,16 +16,16 @@ pub struct Swap<'info> {
     pub token_authority: Signer<'info>,
 
     #[account(mut)]
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
-    #[account(mut, constraint = token_owner_account_a.mint == whirlpool.token_mint_a)]
+    #[account(mut, constraint = token_owner_account_a.mint == whirlpool.load()?.token_mint_a)]
     pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool.token_vault_a)]
+    #[account(mut, address = whirlpool.load()?.token_vault_a)]
     pub token_vault_a: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_b.mint == whirlpool.token_mint_b)]
+    #[account(mut, constraint = token_owner_account_b.mint == whirlpool.load()?.token_mint_b)]
     pub token_owner_account_b: Box<Account<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool.token_vault_b)]
+    #[account(mut, address = whirlpool.load()?.token_vault_b)]
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
 
     #[account(mut, has_one = whirlpool)]
@@ -61,7 +61,7 @@ pub fn handler(
     );
 
     let swap_update = swap(
-        &whirlpool,
+        &*whirlpool.load()?,
         &mut swap_tick_sequence,
         amount,
         sqrt_price_limit,

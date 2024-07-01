@@ -8,7 +8,7 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct CollectFees<'info> {
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     pub position_authority: Signer<'info>,
 
@@ -20,14 +20,14 @@ pub struct CollectFees<'info> {
     )]
     pub position_token_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_a.mint == whirlpool.token_mint_a)]
+    #[account(mut, constraint = token_owner_account_a.mint == whirlpool.load()?.token_mint_a)]
     pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool.token_vault_a)]
+    #[account(mut, address = whirlpool.load()?.token_vault_a)]
     pub token_vault_a: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_b.mint == whirlpool.token_mint_b)]
+    #[account(mut, constraint = token_owner_account_b.mint == whirlpool.load()?.token_mint_b)]
     pub token_owner_account_b: Box<Account<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool.token_vault_b)]
+    #[account(mut, address = whirlpool.load()?.token_vault_b)]
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
 
     #[account(address = token::ID)]

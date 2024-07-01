@@ -9,7 +9,7 @@ use crate::{
 #[derive(Accounts)]
 #[instruction(reward_index: u8)]
 pub struct CollectReward<'info> {
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     pub position_authority: Signer<'info>,
 
@@ -22,11 +22,11 @@ pub struct CollectReward<'info> {
     pub position_token_account: Box<Account<'info, TokenAccount>>,
 
     #[account(mut,
-        constraint = reward_owner_account.mint == whirlpool.reward_infos[reward_index as usize].mint
+        constraint = reward_owner_account.mint == whirlpool.load()?.reward_infos[reward_index as usize].mint
     )]
     pub reward_owner_account: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, address = whirlpool.reward_infos[reward_index as usize].vault)]
+    #[account(mut, address = whirlpool.load()?.reward_infos[reward_index as usize].vault)]
     pub reward_vault: Box<Account<'info, TokenAccount>>,
 
     #[account(address = token::ID)]

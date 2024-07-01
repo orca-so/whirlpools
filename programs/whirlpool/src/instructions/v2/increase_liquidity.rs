@@ -15,7 +15,7 @@ use crate::util::{to_timestamp_u64, v2::transfer_from_owner_to_vault_v2, verify_
 #[derive(Accounts)]
 pub struct ModifyLiquidityV2<'info> {
     #[account(mut)]
-    pub whirlpool: Account<'info, Whirlpool>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     #[account(address = token_mint_a.to_account_info().owner.clone())]
     pub token_program_a: Interface<'info, TokenInterface>,
@@ -34,19 +34,19 @@ pub struct ModifyLiquidityV2<'info> {
     )]
     pub position_token_account: Box<Account<'info, token::TokenAccount>>,
 
-    #[account(address = whirlpool.token_mint_a)]
+    #[account(address = whirlpool.load()?.token_mint_a)]
     pub token_mint_a: InterfaceAccount<'info, Mint>,
-    #[account(address = whirlpool.token_mint_b)]
+    #[account(address = whirlpool.load()?.token_mint_b)]
     pub token_mint_b: InterfaceAccount<'info, Mint>,
 
-    #[account(mut, constraint = token_owner_account_a.mint == whirlpool.token_mint_a)]
+    #[account(mut, constraint = token_owner_account_a.mint == whirlpool.load()?.token_mint_a)]
     pub token_owner_account_a: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, constraint = token_owner_account_b.mint == whirlpool.token_mint_b)]
+    #[account(mut, constraint = token_owner_account_b.mint == whirlpool.load()?.token_mint_b)]
     pub token_owner_account_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_vault_a.key() == whirlpool.token_vault_a)]
+    #[account(mut, constraint = token_vault_a.key() == whirlpool.load()?.token_vault_a)]
     pub token_vault_a: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, constraint = token_vault_b.key() == whirlpool.token_vault_b)]
+    #[account(mut, constraint = token_vault_b.key() == whirlpool.load()?.token_vault_b)]
     pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut, has_one = whirlpool)]
@@ -89,9 +89,10 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
     let liquidity_delta = convert_to_liquidity_delta(liquidity_amount, true)?;
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
+    let whirlpool = &mut *ctx.accounts.whirlpool.load_mut()?;
 
     let update = calculate_modify_liquidity(
-        &ctx.accounts.whirlpool,
+        whirlpool,
         &ctx.accounts.position,
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
@@ -100,7 +101,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
     )?;
 
     sync_modify_liquidity_values(
-        &mut ctx.accounts.whirlpool,
+        whirlpool,
         &mut ctx.accounts.position,
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
@@ -109,8 +110,8 @@ pub fn handler<'a, 'b, 'c, 'info>(
     )?;
 
     let (delta_a, delta_b) = calculate_liquidity_token_deltas(
-        ctx.accounts.whirlpool.tick_current_index,
-        ctx.accounts.whirlpool.sqrt_price,
+        whirlpool.tick_current_index,
+        whirlpool.sqrt_price,
         &ctx.accounts.position,
         liquidity_delta,
     )?;

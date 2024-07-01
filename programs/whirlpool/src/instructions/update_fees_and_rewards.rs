@@ -7,7 +7,7 @@ use crate::{
 #[derive(Accounts)]
 pub struct UpdateFeesAndRewards<'info> {
     #[account(mut)]
-    pub whirlpool: Account<'info, Whirlpool>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     #[account(mut, has_one = whirlpool)]
     pub position: Account<'info, Position>,
@@ -25,14 +25,14 @@ pub fn handler(ctx: Context<UpdateFeesAndRewards>) -> Result<()> {
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
     let (position_update, reward_infos) = calculate_fee_and_reward_growths(
-        whirlpool,
+        &*whirlpool.load()?,
         position,
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
         timestamp,
     )?;
 
-    whirlpool.update_rewards(reward_infos, timestamp);
+    whirlpool.load_mut()?.update_rewards(reward_infos, timestamp);
     position.update(&position_update);
 
     Ok(())

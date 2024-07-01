@@ -13,21 +13,21 @@ const DAY_IN_SECONDS: u128 = 60 * 60 * 24;
 #[instruction(reward_index: u8)]
 pub struct SetRewardEmissions<'info> {
     #[account(mut)]
-    pub whirlpool: Account<'info, Whirlpool>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
-    #[account(address = whirlpool.reward_infos[reward_index as usize].authority)]
+    #[account(address = whirlpool.load()?.reward_infos[reward_index as usize].authority)]
     pub reward_authority: Signer<'info>,
 
-    #[account(address = whirlpool.reward_infos[reward_index as usize].vault)]
+    #[account(address = whirlpool.load()?.reward_infos[reward_index as usize].vault)]
     pub reward_vault: Account<'info, TokenAccount>,
 }
 
-pub fn handler(
-    ctx: Context<SetRewardEmissions>,
+pub fn handler<'a, 'b, 'c: 'd, 'd>(
+    ctx: Context<'a, 'b, 'c, 'd, SetRewardEmissions<'d>>,
     reward_index: u8,
     emissions_per_second_x64: u128,
 ) -> Result<()> {
-    let whirlpool = &ctx.accounts.whirlpool;
+    let mut whirlpool = *ctx.accounts.whirlpool.load_mut()?;
     let reward_vault = &ctx.accounts.reward_vault;
 
     let emissions_per_day = checked_mul_shift_right(DAY_IN_SECONDS, emissions_per_second_x64)?;
@@ -37,9 +37,9 @@ pub fn handler(
 
     let clock = Clock::get()?;
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
-    let next_reward_infos = next_whirlpool_reward_infos(whirlpool, timestamp)?;
+    let next_reward_infos = next_whirlpool_reward_infos(&whirlpool, timestamp)?;
 
-    Ok(ctx.accounts.whirlpool.update_emissions(
+    Ok(whirlpool.update_emissions(
         reward_index as usize,
         next_reward_infos,
         timestamp,

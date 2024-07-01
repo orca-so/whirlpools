@@ -7,7 +7,7 @@ use crate::{manager::swap_manager::PostSwapUpdate, state::Whirlpool};
 use super::{transfer_from_owner_to_vault_v2, transfer_from_vault_to_owner_v2};
 
 pub fn update_and_swap_whirlpool_v2<'info>(
-    whirlpool: &mut Account<'info, Whirlpool>,
+    whirlpool: &mut AccountLoader<'info, Whirlpool>,
     token_authority: &Signer<'info>,
     token_mint_a: &InterfaceAccount<'info, Mint>,
     token_mint_b: &InterfaceAccount<'info, Mint>,
@@ -25,7 +25,7 @@ pub fn update_and_swap_whirlpool_v2<'info>(
     reward_last_updated_timestamp: u64,
     memo: &[u8],
 ) -> Result<()> {
-    whirlpool.update_after_swap(
+    whirlpool.load_mut()?.update_after_swap(
         swap_update.next_liquidity,
         swap_update.next_tick_index,
         swap_update.next_sqrt_price,
@@ -58,7 +58,7 @@ pub fn update_and_swap_whirlpool_v2<'info>(
 }
 
 fn perform_swap_v2<'info>(
-    whirlpool: &Account<'info, Whirlpool>,
+    whirlpool: &AccountLoader<'info, Whirlpool>,
     token_authority: &Signer<'info>,
     token_mint_a: &InterfaceAccount<'info, Mint>,
     token_mint_b: &InterfaceAccount<'info, Mint>,
@@ -153,8 +153,8 @@ pub fn update_and_two_hop_swap_whirlpool_v2<'info>(
     swap_update_one: PostSwapUpdate,
     swap_update_two: PostSwapUpdate,
     // whirlpool
-    whirlpool_one: &mut Account<'info, Whirlpool>,
-    whirlpool_two: &mut Account<'info, Whirlpool>,
+    whirlpool_one: &mut AccountLoader<'info, Whirlpool>,
+    whirlpool_two: &mut AccountLoader<'info, Whirlpool>,
     // direction
     is_token_fee_in_one_a: bool,
     is_token_fee_in_two_a: bool,
@@ -183,7 +183,7 @@ pub fn update_and_two_hop_swap_whirlpool_v2<'info>(
     reward_last_updated_timestamp: u64,
     memo: &[u8],
 ) -> Result<()> {
-    whirlpool_one.update_after_swap(
+    whirlpool_one.load_mut()?.update_after_swap(
         swap_update_one.next_liquidity,
         swap_update_one.next_tick_index,
         swap_update_one.next_sqrt_price,
@@ -194,7 +194,7 @@ pub fn update_and_two_hop_swap_whirlpool_v2<'info>(
         reward_last_updated_timestamp,
     );
 
-    whirlpool_two.update_after_swap(
+    whirlpool_two.load_mut()?.update_after_swap(
         swap_update_two.next_liquidity,
         swap_update_two.next_tick_index,
         swap_update_two.next_sqrt_price,

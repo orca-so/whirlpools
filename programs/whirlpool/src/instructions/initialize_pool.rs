@@ -25,7 +25,7 @@ pub struct InitializePool<'info> {
       bump,
       payer = funder,
       space = Whirlpool::LEN)]
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     #[account(init,
       payer = funder,
@@ -40,7 +40,7 @@ pub struct InitializePool<'info> {
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
 
     #[account(has_one = whirlpools_config, constraint = fee_tier.tick_spacing == tick_spacing)]
-    pub fee_tier: Account<'info, FeeTier>,
+    pub fee_tier: Box<Account<'info, FeeTier>>,
 
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
@@ -57,7 +57,7 @@ pub fn handler(
     let token_mint_a = ctx.accounts.token_mint_a.key();
     let token_mint_b = ctx.accounts.token_mint_b.key();
 
-    let whirlpool = &mut ctx.accounts.whirlpool;
+    let whirlpool = &mut ctx.accounts.whirlpool.load_mut()?;
     let whirlpools_config = &ctx.accounts.whirlpools_config;
 
     let default_fee_rate = ctx.accounts.fee_tier.default_fee_rate;

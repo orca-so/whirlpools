@@ -14,7 +14,7 @@ use super::ModifyLiquidityV2;
 /*
   Removes liquidity from an existing Whirlpool Position.
 */
-pub fn handler<'a, 'b, 'c, 'info>(
+pub fn handler<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, ModifyLiquidityV2<'info>>,
     liquidity_amount: u128,
     token_min_a: u64,
@@ -46,7 +46,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
     let update = calculate_modify_liquidity(
-        &ctx.accounts.whirlpool,
+        &mut *ctx.accounts.whirlpool.load_mut()?,
         &ctx.accounts.position,
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
@@ -55,7 +55,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
     )?;
 
     sync_modify_liquidity_values(
-        &mut ctx.accounts.whirlpool,
+        &mut *ctx.accounts.whirlpool.load_mut()?,
         &mut ctx.accounts.position,
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
@@ -64,8 +64,8 @@ pub fn handler<'a, 'b, 'c, 'info>(
     )?;
 
     let (delta_a, delta_b) = calculate_liquidity_token_deltas(
-        ctx.accounts.whirlpool.tick_current_index,
-        ctx.accounts.whirlpool.sqrt_price,
+        ctx.accounts.whirlpool.load()?.tick_current_index,
+        ctx.accounts.whirlpool.load()?.sqrt_price,
         &ctx.accounts.position,
         liquidity_delta,
     )?;

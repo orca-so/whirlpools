@@ -31,7 +31,7 @@ pub fn transfer_from_owner_to_vault<'info>(
 }
 
 pub fn transfer_from_vault_to_owner<'info>(
-    whirlpool: &Account<'info, Whirlpool>,
+    whirlpool: &AccountLoader<'info, Whirlpool>,
     token_vault: &Account<'info, TokenAccount>,
     token_owner_account: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
@@ -45,7 +45,7 @@ pub fn transfer_from_vault_to_owner<'info>(
                 to: token_owner_account.to_account_info(),
                 authority: whirlpool.to_account_info(),
             },
-            &[&whirlpool.seeds()],
+            &[&whirlpool.load()?.seeds()],
         ),
         amount,
     )
@@ -99,7 +99,7 @@ pub fn burn_and_close_user_position_token<'info>(
 }
 
 pub fn mint_position_token_and_remove_authority<'info>(
-    whirlpool: &Account<'info, Whirlpool>,
+    whirlpool: &AccountLoader<'info, Whirlpool>,
     position_mint: &Account<'info, Mint>,
     position_token_account: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
@@ -114,7 +114,7 @@ pub fn mint_position_token_and_remove_authority<'info>(
 }
 
 pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
-    whirlpool: &Account<'info, Whirlpool>,
+    whirlpool: &AccountLoader<'info, Whirlpool>,
     position_mint: &Account<'info, Mint>,
     position_token_account: &Account<'info, TokenAccount>,
     position_metadata_account: &UncheckedAccount<'info>,
@@ -145,7 +145,7 @@ pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
                 rent: rent.to_account_info(),
                 system_program: system_program.to_account_info(),
             },
-            &[&metadata_mint_auth_account.seeds()],
+            &[&metadata_mint_auth_account.load()?.seeds()],
         ),
         DataV2 {
             name: WP_METADATA_NAME.to_string(),
@@ -165,7 +165,7 @@ pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
 }
 
 fn mint_position_token<'info>(
-    whirlpool: &Account<'info, Whirlpool>,
+    whirlpool: &AccountLoader<'info, Whirlpool>,
     position_mint: &Account<'info, Mint>,
     position_token_account: &Account<'info, TokenAccount>,
     token_program: &Program<'info, Token>,
@@ -185,13 +185,13 @@ fn mint_position_token<'info>(
             whirlpool.to_account_info(),
             token_program.to_account_info(),
         ],
-        &[&whirlpool.seeds()],
+        &[&whirlpool.load()?.seeds()],
     )?;
     Ok(())
 }
 
 fn remove_position_token_mint_authority<'info>(
-    whirlpool: &Account<'info, Whirlpool>,
+    whirlpool: &AccountLoader<'info, Whirlpool>,
     position_mint: &Account<'info, Mint>,
     token_program: &Program<'info, Token>,
 ) -> Result<()> {
@@ -209,7 +209,7 @@ fn remove_position_token_mint_authority<'info>(
             whirlpool.to_account_info(),
             token_program.to_account_info(),
         ],
-        &[&whirlpool.seeds()],
+        &[&whirlpool.load()?.seeds()],
     )?;
     Ok(())
 }

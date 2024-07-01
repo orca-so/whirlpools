@@ -57,13 +57,13 @@ impl Position {
 
     pub fn open_position(
         &mut self,
-        whirlpool: &Account<Whirlpool>,
+        whirlpool: &AccountLoader<Whirlpool>,
         position_mint: Pubkey,
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
-        if !Tick::check_is_usable_tick(tick_lower_index, whirlpool.tick_spacing)
-            || !Tick::check_is_usable_tick(tick_upper_index, whirlpool.tick_spacing)
+        if !Tick::check_is_usable_tick(tick_lower_index, whirlpool.load()?.tick_spacing)
+            || !Tick::check_is_usable_tick(tick_upper_index, whirlpool.load()?.tick_spacing)
             || tick_lower_index >= tick_upper_index
         {
             return Err(ErrorCode::InvalidTickIndex.into());

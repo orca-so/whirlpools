@@ -6,14 +6,14 @@ use crate::state::Whirlpool;
 #[derive(Accounts)]
 #[instruction(reward_index: u8)]
 pub struct InitializeReward<'info> {
-    #[account(address = whirlpool.reward_infos[reward_index as usize].authority)]
+    #[account(address = whirlpool.load()?.reward_infos[reward_index as usize].authority)]
     pub reward_authority: Signer<'info>,
 
     #[account(mut)]
     pub funder: Signer<'info>,
 
     #[account(mut)]
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     pub reward_mint: Box<Account<'info, Mint>>,
 
@@ -32,7 +32,7 @@ pub struct InitializeReward<'info> {
 }
 
 pub fn handler(ctx: Context<InitializeReward>, reward_index: u8) -> Result<()> {
-    let whirlpool = &mut ctx.accounts.whirlpool;
+    let whirlpool = &mut *ctx.accounts.whirlpool.load_mut()?;
 
     Ok(whirlpool.initialize_reward(
         reward_index as usize,

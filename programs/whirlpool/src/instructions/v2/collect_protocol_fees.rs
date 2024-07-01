@@ -9,26 +9,26 @@ pub struct CollectProtocolFeesV2<'info> {
     pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
 
     #[account(mut, has_one = whirlpools_config)]
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     #[account(address = whirlpools_config.collect_protocol_fees_authority)]
     pub collect_protocol_fees_authority: Signer<'info>,
 
-    #[account(address = whirlpool.token_mint_a)]
+    #[account(address = whirlpool.load()?.token_mint_a)]
     pub token_mint_a: InterfaceAccount<'info, Mint>,
-    #[account(address = whirlpool.token_mint_b)]
+    #[account(address = whirlpool.load()?.token_mint_b)]
     pub token_mint_b: InterfaceAccount<'info, Mint>,
 
-    #[account(mut, address = whirlpool.token_vault_a)]
+    #[account(mut, address = whirlpool.load()?.token_vault_a)]
     pub token_vault_a: InterfaceAccount<'info, TokenAccount>,
 
-    #[account(mut, address = whirlpool.token_vault_b)]
+    #[account(mut, address = whirlpool.load()?.token_vault_b)]
     pub token_vault_b: InterfaceAccount<'info, TokenAccount>,
 
-    #[account(mut, constraint = token_destination_a.mint == whirlpool.token_mint_a)]
+    #[account(mut, constraint = token_destination_a.mint == whirlpool.load()?.token_mint_a)]
     pub token_destination_a: InterfaceAccount<'info, TokenAccount>,
 
-    #[account(mut, constraint = token_destination_b.mint == whirlpool.token_mint_b)]
+    #[account(mut, constraint = token_destination_b.mint == whirlpool.load()?.token_mint_b)]
     pub token_destination_b: InterfaceAccount<'info, TokenAccount>,
 
     #[account(address = token_mint_a.to_account_info().owner.clone())]
@@ -42,13 +42,10 @@ pub struct CollectProtocolFeesV2<'info> {
     // - accounts for transfer hook program of token_mint_b
 }
 
-pub fn handler<'a, 'b, 'c, 'info>(
+pub fn handler<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CollectProtocolFeesV2<'info>>,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
-    let whirlpool = &ctx.accounts.whirlpool;
-
-    // Process remaining accounts
     let remaining_accounts = parse_remaining_accounts(
         &ctx.remaining_accounts,
         &remaining_accounts_info,
@@ -58,8 +55,10 @@ pub fn handler<'a, 'b, 'c, 'info>(
         ],
     )?;
 
+    let whirlpool = ctx.accounts.whirlpool.load_mut()?;
+
     transfer_from_vault_to_owner_v2(
-        whirlpool,
+        &ctx.accounts.whirlpool,
         &ctx.accounts.token_mint_a,
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_destination_a,
@@ -71,7 +70,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
     )?;
 
     transfer_from_vault_to_owner_v2(
-        whirlpool,
+        &ctx.accounts.whirlpool,
         &ctx.accounts.token_mint_b,
         &ctx.accounts.token_vault_b,
         &ctx.accounts.token_destination_b,
@@ -82,5 +81,5 @@ pub fn handler<'a, 'b, 'c, 'info>(
         transfer_memo::TRANSFER_MEMO_COLLECT_PROTOCOL_FEES.as_bytes(),
     )?;
 
-    Ok(ctx.accounts.whirlpool.reset_protocol_fees_owed())
+    Ok(ctx.accounts.whirlpool.load_mut()?.reset_protocol_fees_owed())
 }

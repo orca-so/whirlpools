@@ -1,3 +1,5 @@
+use std::cell::RefCell;
+
 use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
@@ -21,15 +23,15 @@ use crate::{
 )]
 pub struct TwoHopSwapV2<'info> {
     #[account(mut)]
-    pub whirlpool_one: Box<Account<'info, Whirlpool>>,
+    pub whirlpool_one: AccountLoader<'info, Whirlpool>,
     #[account(mut)]
-    pub whirlpool_two: Box<Account<'info, Whirlpool>>,
+    pub whirlpool_two: AccountLoader<'info, Whirlpool>,
 
-    #[account(address = whirlpool_one.input_token_mint(a_to_b_one))]
+    #[account(address = whirlpool_one.load()?.input_token_mint(a_to_b_one))]
     pub token_mint_input: InterfaceAccount<'info, Mint>,    
-    #[account(address = whirlpool_one.output_token_mint(a_to_b_one))]
+    #[account(address = whirlpool_one.load()?.output_token_mint(a_to_b_one))]
     pub token_mint_intermediate: InterfaceAccount<'info, Mint>,
-    #[account(address = whirlpool_two.output_token_mint(a_to_b_two))]
+    #[account(address = whirlpool_two.load()?.output_token_mint(a_to_b_two))]
     pub token_mint_output: InterfaceAccount<'info, Mint>,
 
     #[account(address = token_mint_input.to_account_info().owner.clone())]
@@ -41,14 +43,14 @@ pub struct TwoHopSwapV2<'info> {
 
     #[account(mut, constraint = token_owner_account_input.mint == token_mint_input.key())]
     pub token_owner_account_input: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_one.input_token_vault(a_to_b_one))]
+    #[account(mut, address = whirlpool_one.load()?.input_token_vault(a_to_b_one))]
     pub token_vault_one_input: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_one.output_token_vault(a_to_b_one))]
+    #[account(mut, address = whirlpool_one.load()?.output_token_vault(a_to_b_one))]
     pub token_vault_one_intermediate: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(mut, address = whirlpool_two.input_token_vault(a_to_b_two))]
+    #[account(mut, address = whirlpool_two.load()?.input_token_vault(a_to_b_two))]
     pub token_vault_two_intermediate: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_two.output_token_vault(a_to_b_two))]
+    #[account(mut, address = whirlpool_two.load()?.output_token_vault(a_to_b_two))]
     pub token_vault_two_output: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(mut, constraint = token_owner_account_output.mint == token_mint_output.key())]
     pub token_owner_account_output: Box<InterfaceAccount<'info, TokenAccount>>,
@@ -89,7 +91,7 @@ pub struct TwoHopSwapV2<'info> {
     // - accounts for transfer hook program of token_mint_output
 }
 
-pub fn handler<'a, 'b, 'c, 'info>(
+pub fn handler<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, TwoHopSwapV2<'info>>,
     amount: u64,
     other_amount_threshold: u64,
@@ -113,15 +115,15 @@ pub fn handler<'a, 'b, 'c, 'info>(
     }
 
     let swap_one_output_mint = if a_to_b_one {
-        whirlpool_one.token_mint_b
+        whirlpool_one.load()?.token_mint_b
     } else {
-        whirlpool_one.token_mint_a
+        whirlpool_one.load()?.token_mint_a
     };
 
     let swap_two_input_mint = if a_to_b_two {
-        whirlpool_two.token_mint_a
+        whirlpool_two.load()?.token_mint_a
     } else {
-        whirlpool_two.token_mint_b
+        whirlpool_two.load()?.token_mint_b
     };
     if swap_one_output_mint != swap_two_input_mint {
         return Err(ErrorCode::InvalidIntermediaryMint.into());

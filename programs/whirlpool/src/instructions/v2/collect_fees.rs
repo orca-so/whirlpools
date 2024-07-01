@@ -12,7 +12,7 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct CollectFeesV2<'info> {
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     pub position_authority: Signer<'info>,
 
@@ -24,19 +24,19 @@ pub struct CollectFeesV2<'info> {
     )]
     pub position_token_account: Box<Account<'info, token::TokenAccount>>,
 
-    #[account(address = whirlpool.token_mint_a)]
+    #[account(address = whirlpool.load()?.token_mint_a)]
     pub token_mint_a: InterfaceAccount<'info, Mint>,
-    #[account(address = whirlpool.token_mint_b)]
+    #[account(address = whirlpool.load()?.token_mint_b)]
     pub token_mint_b: InterfaceAccount<'info, Mint>,
 
-    #[account(mut, constraint = token_owner_account_a.mint == whirlpool.token_mint_a)]
+    #[account(mut, constraint = token_owner_account_a.mint == whirlpool.load()?.token_mint_a)]
     pub token_owner_account_a: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool.token_vault_a)]
+    #[account(mut, address = whirlpool.load()?.token_vault_a)]
     pub token_vault_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_b.mint == whirlpool.token_mint_b)]
+    #[account(mut, constraint = token_owner_account_b.mint == whirlpool.load()?.token_mint_b)]
     pub token_owner_account_b: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool.token_vault_b)]
+    #[account(mut, address = whirlpool.load()?.token_vault_b)]
     pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(address = token_mint_a.to_account_info().owner.clone())]
@@ -50,7 +50,7 @@ pub struct CollectFeesV2<'info> {
     // - accounts for transfer hook program of token_mint_b
 }
 
-pub fn handler<'a, 'b, 'c, 'info>(
+pub fn handler<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CollectFeesV2<'info>>,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {

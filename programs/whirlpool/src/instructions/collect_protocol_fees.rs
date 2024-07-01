@@ -7,21 +7,21 @@ pub struct CollectProtocolFees<'info> {
     pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
 
     #[account(mut, has_one = whirlpools_config)]
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     #[account(address = whirlpools_config.collect_protocol_fees_authority)]
     pub collect_protocol_fees_authority: Signer<'info>,
 
-    #[account(mut, address = whirlpool.token_vault_a)]
+    #[account(mut, address = whirlpool.load()?.token_vault_a)]
     pub token_vault_a: Account<'info, TokenAccount>,
 
-    #[account(mut, address = whirlpool.token_vault_b)]
+    #[account(mut, address = whirlpool.load()?.token_vault_b)]
     pub token_vault_b: Account<'info, TokenAccount>,
 
-    #[account(mut, constraint = token_destination_a.mint == whirlpool.token_mint_a)]
+    #[account(mut, constraint = token_destination_a.mint == whirlpool.load()?.token_mint_a)]
     pub token_destination_a: Account<'info, TokenAccount>,
 
-    #[account(mut, constraint = token_destination_b.mint == whirlpool.token_mint_b)]
+    #[account(mut, constraint = token_destination_b.mint == whirlpool.load()?.token_mint_b)]
     pub token_destination_b: Account<'info, TokenAccount>,
 
     #[account(address = token::ID)]
@@ -29,10 +29,10 @@ pub struct CollectProtocolFees<'info> {
 }
 
 pub fn handler(ctx: Context<CollectProtocolFees>) -> Result<()> {
-    let whirlpool = &ctx.accounts.whirlpool;
+    let whirlpool = &mut *ctx.accounts.whirlpool.load_mut()?;
 
     transfer_from_vault_to_owner(
-        whirlpool,
+        &ctx.accounts.whirlpool,
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_destination_a,
         &ctx.accounts.token_program,
@@ -40,12 +40,12 @@ pub fn handler(ctx: Context<CollectProtocolFees>) -> Result<()> {
     )?;
 
     transfer_from_vault_to_owner(
-        whirlpool,
+        &ctx.accounts.whirlpool,
         &ctx.accounts.token_vault_b,
         &ctx.accounts.token_destination_b,
         &ctx.accounts.token_program,
         whirlpool.protocol_fee_owed_b,
     )?;
 
-    Ok(ctx.accounts.whirlpool.reset_protocol_fees_owed())
+    Ok(whirlpool.reset_protocol_fees_owed())
 }

@@ -36,8 +36,8 @@ pub mod whirlpool {
     /// - `fee_authority` - Authority authorized to initialize fee-tiers and set customs fees.
     /// - `collect_protocol_fees_authority` - Authority authorized to collect protocol fees.
     /// - `reward_emissions_super_authority` - Authority authorized to set reward authorities in pools.
-    pub fn initialize_config(
-        ctx: Context<InitializeConfig>,
+    pub fn initialize_config<'a, 'b, 'c: 'd, 'd>(
+        ctx: Context<'a, 'b, 'c, 'd, InitializeConfig<'d>>,
         fee_authority: Pubkey,
         collect_protocol_fees_authority: Pubkey,
         reward_emissions_super_authority: Pubkey,
@@ -148,8 +148,8 @@ pub mod whirlpool {
     /// - `InvalidRewardIndex` - If the provided reward index doesn't match the lowest uninitialized
     ///                          index in this pool, or exceeds NUM_REWARDS, or
     ///                          all reward slots for this pool has been initialized.
-    pub fn set_reward_emissions(
-        ctx: Context<SetRewardEmissions>,
+    pub fn set_reward_emissions<'a, 'b, 'c: 'info, 'info>(
+        ctx: Context<'a, 'b, 'c, 'info, SetRewardEmissions<'info>>,
         reward_index: u8,
         emissions_per_second_x64: u128,
     ) -> Result<()> {
@@ -620,7 +620,7 @@ pub mod whirlpool {
     ///
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
-    pub fn collect_fees_v2<'a, 'b, 'c, 'info>(
+    pub fn collect_fees_v2<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CollectFeesV2<'info>>,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
@@ -631,7 +631,7 @@ pub mod whirlpool {
     ///
     /// ### Authority
     /// - `collect_protocol_fees_authority` - assigned authority in the WhirlpoolConfig that can collect protocol fees
-    pub fn collect_protocol_fees_v2<'a, 'b, 'c, 'info>(
+    pub fn collect_protocol_fees_v2<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CollectProtocolFeesV2<'info>>,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
     ) -> Result<()> {
@@ -642,7 +642,7 @@ pub mod whirlpool {
     ///
     /// ### Authority
     /// - `position_authority` - authority that owns the token corresponding to this desired position.
-    pub fn collect_reward_v2<'a, 'b, 'c, 'info>(
+    pub fn collect_reward_v2<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, CollectRewardV2<'info>>,
         reward_index: u8,
         remaining_accounts_info: Option<RemainingAccountsInfo>,
@@ -664,7 +664,7 @@ pub mod whirlpool {
     /// - `LiquidityZero` - Provided liquidity amount is zero.
     /// - `LiquidityTooHigh` - Provided liquidity exceeds u128::max.
     /// - `TokenMinSubceeded` - The required token to perform this operation subceeds the user defined amount.
-    pub fn decrease_liquidity_v2<'a, 'b, 'c, 'info>(
+    pub fn decrease_liquidity_v2<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, ModifyLiquidityV2<'info>>,
         liquidity_amount: u128,
         token_min_a: u64,
@@ -801,7 +801,7 @@ pub mod whirlpool {
     /// - `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.
     /// - `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.
     /// - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
-    pub fn swap_v2<'a, 'b, 'c, 'info>(
+    pub fn swap_v2<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, SwapV2<'info>>,
         amount: u64,
         other_amount_threshold: u64,
@@ -846,7 +846,7 @@ pub mod whirlpool {
     /// - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
     /// - `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.
     /// - `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool.
-    pub fn two_hop_swap_v2<'a, 'b, 'c, 'info>(
+    pub fn two_hop_swap_v2<'a, 'b, 'c: 'info, 'info>(
         ctx: Context<'a, 'b, 'c, 'info, TwoHopSwapV2<'info>>,
         amount: u64,
         other_amount_threshold: u64,

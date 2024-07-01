@@ -23,21 +23,21 @@ pub struct SwapV2<'info> {
     pub token_authority: Signer<'info>,
 
     #[account(mut)]
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
-    #[account(address = whirlpool.token_mint_a)]
+    #[account(address = whirlpool.load()?.token_mint_a)]
     pub token_mint_a: InterfaceAccount<'info, Mint>,
-    #[account(address = whirlpool.token_mint_b)]
+    #[account(address = whirlpool.load()?.token_mint_b)]
     pub token_mint_b: InterfaceAccount<'info, Mint>,
     
-    #[account(mut, constraint = token_owner_account_a.mint == whirlpool.token_mint_a)]
+    #[account(mut, constraint = token_owner_account_a.mint == whirlpool.load()?.token_mint_a)]
     pub token_owner_account_a: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool.token_vault_a)]
+    #[account(mut, address = whirlpool.load()?.token_vault_a)]
     pub token_vault_a: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_b.mint == whirlpool.token_mint_b)]
+    #[account(mut, constraint = token_owner_account_b.mint == whirlpool.load()?.token_mint_b)]
     pub token_owner_account_b: Box<InterfaceAccount<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool.token_vault_b)]
+    #[account(mut, address = whirlpool.load()?.token_vault_b)]
     pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(mut, has_one = whirlpool)]
@@ -58,7 +58,7 @@ pub struct SwapV2<'info> {
     // - accounts for transfer hook program of token_mint_b
 }
 
-pub fn handler<'a, 'b, 'c, 'info>(
+pub fn handler<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, SwapV2<'info>>,
     amount: u64,
     other_amount_threshold: u64,
@@ -148,7 +148,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
 }
 
 pub fn swap_with_transfer_fee_extension<'info>(
-    whirlpool: &Whirlpool,
+    whirlpool: &AccountLoader<'info, Whirlpool>,
     token_mint_a: &InterfaceAccount<'info, Mint>,
     token_mint_b: &InterfaceAccount<'info, Mint>,
     swap_tick_sequence: &mut SwapTickSequence,
@@ -173,7 +173,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
         )?.amount;
 
         let swap_update = swap(
-            whirlpool,
+            &*whirlpool.load()?,
             swap_tick_sequence,
             transfer_fee_excluded_input,
             sqrt_price_limit,
@@ -226,7 +226,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
     )?.amount;
 
     let swap_update = swap(
-        whirlpool,
+        &*whirlpool.load()?,
         swap_tick_sequence,
         transfer_fee_included_output,
         sqrt_price_limit,

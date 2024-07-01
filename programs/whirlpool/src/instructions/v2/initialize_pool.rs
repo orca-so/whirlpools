@@ -36,7 +36,7 @@ pub struct InitializePoolV2<'info> {
       bump,
       payer = funder,
       space = Whirlpool::LEN)]
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     #[account(init,
       payer = funder,
@@ -100,7 +100,7 @@ pub fn handler(
       return Err(ErrorCode::UnsupportedTokenMint.into());
     }
 
-    Ok(whirlpool.initialize(
+    Ok(whirlpool.load_mut()?.initialize(
         whirlpools_config,
         bump,
         tick_spacing,

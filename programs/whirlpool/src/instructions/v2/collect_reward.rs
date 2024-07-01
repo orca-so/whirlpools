@@ -13,7 +13,7 @@ use crate::{
 #[derive(Accounts)]
 #[instruction(reward_index: u8)]
 pub struct CollectRewardV2<'info> {
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     pub position_authority: Signer<'info>,
 
@@ -26,14 +26,14 @@ pub struct CollectRewardV2<'info> {
     pub position_token_account: Box<Account<'info, token::TokenAccount>>,
 
     #[account(mut,
-        constraint = reward_owner_account.mint == whirlpool.reward_infos[reward_index as usize].mint
+        constraint = reward_owner_account.mint == whirlpool.load()?.reward_infos[reward_index as usize].mint
     )]
     pub reward_owner_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(address = whirlpool.reward_infos[reward_index as usize].mint)]
+    #[account(address = whirlpool.load()?.reward_infos[reward_index as usize].mint)]
     pub reward_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(mut, address = whirlpool.reward_infos[reward_index as usize].vault)]
+    #[account(mut, address = whirlpool.load()?.reward_infos[reward_index as usize].vault)]
     pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(address = reward_mint.to_account_info().owner.clone())]
@@ -57,7 +57,7 @@ pub struct CollectRewardV2<'info> {
 /// - `Ok`: Reward tokens at the specified reward index have been successfully harvested
 /// - `Err`: `RewardNotInitialized` if the specified reward has not been initialized
 ///          `InvalidRewardIndex` if the reward index is not 0, 1, or 2
-pub fn handler<'a, 'b, 'c, 'info>(
+pub fn handler<'a, 'b, 'c: 'info, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CollectRewardV2<'info>>,
     reward_index: u8,
     remaining_accounts_info: Option<RemainingAccountsInfo>,

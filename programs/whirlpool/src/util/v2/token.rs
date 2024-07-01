@@ -90,7 +90,7 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
 }
 
 pub fn transfer_from_vault_to_owner_v2<'info>(
-    whirlpool: &Account<'info, Whirlpool>,
+    whirlpool: &AccountLoader<'info, Whirlpool>,
     token_mint: &InterfaceAccount<'info, Mint>,
     token_vault: &InterfaceAccount<'info, TokenAccount>,
     token_owner_account: &InterfaceAccount<'info, TokenAccount>,
@@ -171,7 +171,7 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
     solana_program::program::invoke_signed(
         &instruction,
         &account_infos,
-        &[&whirlpool.seeds()],
+        &[&whirlpool.load()?.seeds()],
     )?;
 
     Ok(())

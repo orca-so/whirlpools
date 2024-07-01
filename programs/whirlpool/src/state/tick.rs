@@ -222,10 +222,10 @@ impl TickArray {
     /// - `InvalidStartTick`: - The provided start-tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
     pub fn initialize(
         &mut self,
-        whirlpool: &Account<Whirlpool>,
+        whirlpool: &AccountLoader<Whirlpool>,
         start_tick_index: i32,
     ) -> Result<()> {
-        if !Tick::check_is_valid_start_tick(start_tick_index, whirlpool.tick_spacing) {
+        if !Tick::check_is_valid_start_tick(start_tick_index, whirlpool.load()?.tick_spacing) {
             return Err(ErrorCode::InvalidStartTick.into());
         }
 

@@ -32,7 +32,7 @@ pub fn handler(
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
     let update = calculate_modify_liquidity(
-        &ctx.accounts.whirlpool,
+        &*ctx.accounts.whirlpool.load()?,
         &ctx.accounts.position,
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
@@ -41,7 +41,7 @@ pub fn handler(
     )?;
 
     sync_modify_liquidity_values(
-        &mut ctx.accounts.whirlpool,
+        &mut *ctx.accounts.whirlpool.load_mut()?,
         &mut ctx.accounts.position,
         &ctx.accounts.tick_array_lower,
         &ctx.accounts.tick_array_upper,
@@ -50,8 +50,8 @@ pub fn handler(
     )?;
 
     let (delta_a, delta_b) = calculate_liquidity_token_deltas(
-        ctx.accounts.whirlpool.tick_current_index,
-        ctx.accounts.whirlpool.sqrt_price,
+        ctx.accounts.whirlpool.load()?.tick_current_index,
+        ctx.accounts.whirlpool.load()?.sqrt_price,
         &ctx.accounts.position,
         liquidity_delta,
     )?;

@@ -10,18 +10,18 @@ use crate::{
 #[derive(Accounts)]
 #[instruction(reward_index: u8)]
 pub struct InitializeRewardV2<'info> {
-    #[account(address = whirlpool.reward_infos[reward_index as usize].authority)]
+    #[account(address = whirlpool.load()?.reward_infos[reward_index as usize].authority)]
     pub reward_authority: Signer<'info>,
 
     #[account(mut)]
     pub funder: Signer<'info>,
 
     #[account(mut)]
-    pub whirlpool: Box<Account<'info, Whirlpool>>,
+    pub whirlpool: AccountLoader<'info, Whirlpool>,
 
     pub reward_mint: Box<InterfaceAccount<'info, Mint>>,
 
-    #[account(seeds = [b"token_badge", whirlpool.whirlpools_config.as_ref(), reward_mint.key().as_ref()], bump)]
+    #[account(seeds = [b"token_badge", whirlpool.load()?.whirlpools_config.as_ref(), reward_mint.key().as_ref()], bump)]
     /// CHECK: checked in the handler
     pub reward_token_badge: UncheckedAccount<'info>,
 
@@ -41,7 +41,7 @@ pub struct InitializeRewardV2<'info> {
 }
 
 pub fn handler(ctx: Context<InitializeRewardV2>, reward_index: u8) -> Result<()> {
-    let whirlpool = &mut ctx.accounts.whirlpool;
+    let whirlpool = &mut *ctx.accounts.whirlpool.load_mut()?;
 
     // Don't allow initializing a reward with an unsupported token mint
     let is_token_badge_initialized = is_token_badge_initialized(

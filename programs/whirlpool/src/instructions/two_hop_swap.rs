@@ -1,3 +1,5 @@
+use std::borrow::{Borrow, BorrowMut};
+
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount};
 
@@ -16,29 +18,29 @@ pub struct TwoHopSwap<'info> {
     pub token_authority: Signer<'info>,
 
     #[account(mut)]
-    pub whirlpool_one: Box<Account<'info, Whirlpool>>,
+    pub whirlpool_one: AccountLoader<'info, Whirlpool>,
 
     #[account(mut)]
-    pub whirlpool_two: Box<Account<'info, Whirlpool>>,
+    pub whirlpool_two: AccountLoader<'info, Whirlpool>,
 
-    #[account(mut, constraint = token_owner_account_one_a.mint == whirlpool_one.token_mint_a)]
+    #[account(mut, constraint = token_owner_account_one_a.mint == whirlpool_one.load()?.token_mint_a)]
     pub token_owner_account_one_a: Box<Account<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_one.token_vault_a)]
+    #[account(mut, address = whirlpool_one.load()?.token_vault_a)]
     pub token_vault_one_a: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_one_b.mint == whirlpool_one.token_mint_b)]
+    #[account(mut, constraint = token_owner_account_one_b.mint == whirlpool_one.load()?.token_mint_b)]
     pub token_owner_account_one_b: Box<Account<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_one.token_vault_b)]
+    #[account(mut, address = whirlpool_one.load()?.token_vault_b)]
     pub token_vault_one_b: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_two_a.mint == whirlpool_two.token_mint_a)]
+    #[account(mut, constraint = token_owner_account_two_a.mint == whirlpool_two.load()?.token_mint_a)]
     pub token_owner_account_two_a: Box<Account<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_two.token_vault_a)]
+    #[account(mut, address = whirlpool_two.load()?.token_vault_a)]
     pub token_vault_two_a: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = token_owner_account_two_b.mint == whirlpool_two.token_mint_b)]
+    #[account(mut, constraint = token_owner_account_two_b.mint == whirlpool_two.load()?.token_mint_b)]
     pub token_owner_account_two_b: Box<Account<'info, TokenAccount>>,
-    #[account(mut, address = whirlpool_two.token_vault_b)]
+    #[account(mut, address = whirlpool_two.load()?.token_vault_b)]
     pub token_vault_two_b: Box<Account<'info, TokenAccount>>,
 
     #[account(mut, constraint = tick_array_one_0.load()?.whirlpool == whirlpool_one.key())]
@@ -82,24 +84,21 @@ pub fn handler(
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
 
-    let whirlpool_one = &mut ctx.accounts.whirlpool_one;
-    let whirlpool_two = &mut ctx.accounts.whirlpool_two;
-
     // Don't allow swaps on the same whirlpool
-    if whirlpool_one.key() == whirlpool_two.key() {
+    if ctx.accounts.whirlpool_one.key() == ctx.accounts.whirlpool_two.key() {
         return Err(ErrorCode::DuplicateTwoHopPool.into());
     }
 
     let swap_one_output_mint = if a_to_b_one {
-        whirlpool_one.token_mint_b
+        ctx.accounts.whirlpool_one.load()?.token_mint_b
     } else {
-        whirlpool_one.token_mint_a
+        ctx.accounts.whirlpool_one.load()?.token_mint_a
     };
 
     let swap_two_input_mint = if a_to_b_two {
-        whirlpool_two.token_mint_a
+        ctx.accounts.whirlpool_two.load()?.token_mint_a
     } else {
-        whirlpool_two.token_mint_b
+        ctx.accounts.whirlpool_two.load()?.token_mint_b
     };
     if swap_one_output_mint != swap_two_input_mint {
         return Err(ErrorCode::InvalidIntermediaryMint.into());
@@ -124,7 +123,7 @@ pub fn handler(
         // and the swap calculations occur from Swap 1 => Swap 2
         // and the swaps occur from Swap 1 => Swap 2
         let swap_calc_one = swap(
-            &whirlpool_one,
+            ctx.accounts.whirlpool_one.load()?.borrow(),
             &mut swap_tick_sequence_one,
             amount,
             sqrt_price_limit_one,
@@ -141,7 +140,7 @@ pub fn handler(
         };
 
         let swap_calc_two = swap(
-            &whirlpool_two,
+            ctx.accounts.whirlpool_two.load()?.borrow(),
             &mut swap_tick_sequence_two,
             swap_two_input_amount,
             sqrt_price_limit_two,
@@ -155,7 +154,7 @@ pub fn handler(
         // and the swap calculations occur from Swap 2 => Swap 1
         // but the actual swaps occur from Swap 1 => Swap 2 (to ensure that the intermediate token exists in the account)
         let swap_calc_two = swap(
-            &whirlpool_two,
+            ctx.accounts.whirlpool_two.load()?.borrow(),
             &mut swap_tick_sequence_two,
             amount,
             sqrt_price_limit_two,
@@ -172,7 +171,7 @@ pub fn handler(
         };
 
         let swap_calc_one = swap(
-            &whirlpool_one,
+            ctx.accounts.whirlpool_one.load()?.borrow(),
             &mut swap_tick_sequence_one,
             swap_one_output_amount,
             sqrt_price_limit_one,
@@ -210,7 +209,7 @@ pub fn handler(
     }
 
     update_and_swap_whirlpool(
-        whirlpool_one,
+        ctx.accounts.whirlpool_one.borrow_mut(),
         &ctx.accounts.token_authority,
         &ctx.accounts.token_owner_account_one_a,
         &ctx.accounts.token_owner_account_one_b,
@@ -223,7 +222,7 @@ pub fn handler(
     )?;
 
     update_and_swap_whirlpool(
-        whirlpool_two,
+        ctx.accounts.whirlpool_two.borrow_mut(),
         &ctx.accounts.token_authority,
         &ctx.accounts.token_owner_account_two_a,
         &ctx.accounts.token_owner_account_two_b,

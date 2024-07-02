@@ -297,13 +297,7 @@ impl TickArray {
     /// For b_to_a swaps, this tick-array's left-most ticks can be the 'next' usable tick-index of the previous tick-array.
     /// The right-most ticks also points towards the next tick-array. The search range is therefore shifted by 1 tick-spacing.
     pub fn in_search_range(&self, tick_index: i32, tick_spacing: u16, shifted: bool) -> bool {
-        let mut lower = self.start_tick_index;
-        let mut upper = self.start_tick_index + TICK_ARRAY_SIZE * tick_spacing as i32;
-        if shifted {
-            lower = lower - tick_spacing as i32;
-            upper = upper - tick_spacing as i32;
-        }
-        tick_index >= lower && tick_index < upper
+        in_search_range(self.start_tick_index, tick_index, tick_spacing, shifted)
     }
 
     pub fn check_in_array_bounds(&self, tick_index: i32, tick_spacing: u16) -> bool {
@@ -311,11 +305,11 @@ impl TickArray {
     }
 
     pub fn is_min_tick_array(&self) -> bool {
-        self.start_tick_index <= MIN_TICK_INDEX
+        is_min_tick_array(self.start_tick_index)
     }
 
     pub fn is_max_tick_array(&self, tick_spacing: u16) -> bool {
-        self.start_tick_index + TICK_ARRAY_SIZE * (tick_spacing as i32) > MAX_TICK_INDEX
+        is_max_tick_array(self.start_tick_index, tick_spacing)
     }
 
     // Calculates an offset from a tick index that can be used to access the tick data
@@ -340,6 +334,93 @@ fn get_offset(tick_index: i32, start_tick_index: i32, tick_spacing: u16) -> isiz
         d
     };
     return o as isize;
+}
+
+fn in_search_range(start_tick_index: i32, tick_index: i32, tick_spacing: u16, shifted: bool) -> bool {
+    let mut lower = start_tick_index;
+    let mut upper = start_tick_index + TICK_ARRAY_SIZE * tick_spacing as i32;
+    if shifted {
+        lower = lower - tick_spacing as i32;
+        upper = upper - tick_spacing as i32;
+    }
+    tick_index >= lower && tick_index < upper
+}
+
+fn is_min_tick_array(start_tick_index: i32) -> bool {
+    start_tick_index <= MIN_TICK_INDEX
+}
+
+fn is_max_tick_array(start_tick_index: i32, tick_spacing: u16) -> bool {
+    start_tick_index + TICK_ARRAY_SIZE * (tick_spacing as i32) > MAX_TICK_INDEX
+}
+
+pub(crate) struct ZeroedTickArray {
+    pub start_tick_index: i32,
+    zeroed_tick: Tick,
+}
+
+impl ZeroedTickArray {
+    pub fn new(start_tick_index: i32) -> Self {
+        ZeroedTickArray {
+            start_tick_index,
+            zeroed_tick: Tick::default(),
+        }
+    }
+
+    pub fn get_next_init_tick_index(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+        a_to_b: bool,
+    ) -> Result<Option<i32>> {
+        if !self.in_search_range(tick_index, tick_spacing, !a_to_b) {
+            return Err(ErrorCode::InvalidTickArraySequence.into());
+        }
+
+        self.tick_offset(tick_index, tick_spacing)?;
+
+        // no initialized tick
+        Ok(None)
+    }
+
+    pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
+        if !self.check_in_array_bounds(tick_index, tick_spacing)
+            || !Tick::check_is_usable_tick(tick_index, tick_spacing)
+        {
+            return Err(ErrorCode::TickNotFound.into());
+        }
+        let offset = self.tick_offset(tick_index, tick_spacing)?;
+        if offset < 0 {
+            return Err(ErrorCode::TickNotFound.into());
+        }
+
+        // always return the zeroed tick
+        Ok(&self.zeroed_tick)
+    }
+
+    pub fn in_search_range(&self, tick_index: i32, tick_spacing: u16, shifted: bool) -> bool {
+        in_search_range(self.start_tick_index, tick_index, tick_spacing, shifted)
+    }
+
+    pub fn check_in_array_bounds(&self, tick_index: i32, tick_spacing: u16) -> bool {
+        self.in_search_range(tick_index, tick_spacing, false)
+    }
+
+    pub fn is_min_tick_array(&self) -> bool {
+        is_min_tick_array(self.start_tick_index)
+    }
+
+    pub fn is_max_tick_array(&self, tick_spacing: u16) -> bool {
+        is_max_tick_array(self.start_tick_index, tick_spacing)
+    }
+
+    pub fn tick_offset(&self, tick_index: i32, tick_spacing: u16) -> Result<isize> {
+        if tick_spacing == 0 {
+            return Err(ErrorCode::InvalidTickSpacing.into());
+        }
+
+        Ok(get_offset(tick_index, self.start_tick_index, tick_spacing))
+    }
 }
 
 #[cfg(test)]

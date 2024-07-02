@@ -2725,7 +2725,9 @@ version = "0.3.0"
 dependencies = [
  "anchor-lang",
  "anchor-spl",
+ "arrayref",
  "borsh 0.9.3",
+ "bytemuck",
  "proptest",
  "serde",
  "serde_json",

@@ -1,14 +1,116 @@
 use anchor_lang::prelude::*;
 use std::{
-    cell::{Ref, RefCell, RefMut},
+    cell::{Ref, RefMut},
     collections::VecDeque,
 };
 
 use crate::{
     errors::ErrorCode,
-    state::{TickArray, Whirlpool, MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_SIZE},
+    state::{Tick, TickArray, TickUpdate, Whirlpool, ZeroedTickArray, MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_SIZE},
     util::SwapTickSequence,
 };
+
+pub(crate) enum ProxiedTickArray<'a> {
+    Initialized(RefMut<'a, TickArray>),
+    Uninitialized(ZeroedTickArray),
+}
+
+impl<'a> ProxiedTickArray<'a> {
+    pub fn new_initialized(refmut: RefMut<'a, TickArray>) -> Self {
+        ProxiedTickArray::Initialized(refmut)
+    }
+
+    pub fn new_uninitialized(start_tick_index: i32) -> Self {
+        ProxiedTickArray::Uninitialized(ZeroedTickArray::new(start_tick_index))
+    }
+
+    pub fn start_tick_index(&self) -> i32 {
+        match self {
+            ProxiedTickArray::Initialized(refmut) => {
+                refmut.start_tick_index
+            }
+            ProxiedTickArray::Uninitialized(zeroed) => {
+                zeroed.start_tick_index
+            }
+        }
+    }
+
+    pub fn get_next_init_tick_index(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+        a_to_b: bool,
+    ) -> Result<Option<i32>> {
+        match self {
+            ProxiedTickArray::Initialized(refmut) => {
+                refmut.get_next_init_tick_index(tick_index, tick_spacing, a_to_b)
+            }
+            ProxiedTickArray::Uninitialized(zeroed) => {
+                zeroed.get_next_init_tick_index(tick_index, tick_spacing, a_to_b)
+            }
+        }
+    }
+
+    pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
+        match self {
+            ProxiedTickArray::Initialized(refmut) => {
+                refmut.get_tick(tick_index, tick_spacing)
+            }
+            ProxiedTickArray::Uninitialized(zeroed) => {
+                zeroed.get_tick(tick_index, tick_spacing)
+            }
+        }
+    }
+
+    pub fn update_tick(
+        &mut self,
+        tick_index: i32,
+        tick_spacing: u16,
+        update: &TickUpdate,
+    ) -> Result<()> {
+        match self {
+            ProxiedTickArray::Initialized(refmut) => {
+                refmut.update_tick(tick_index, tick_spacing, update)
+            }
+            ProxiedTickArray::Uninitialized(..) => {
+                panic!("Uninitialized TickArray must not be updated");
+            }
+        }
+    }
+
+    pub fn is_min_tick_array(&self) -> bool {
+        match self {
+            ProxiedTickArray::Initialized(refmut) => {
+                refmut.is_min_tick_array()
+            }
+            ProxiedTickArray::Uninitialized(zeroed) => {
+                zeroed.is_min_tick_array()
+            }
+        }
+    }
+
+    pub fn is_max_tick_array(&self, tick_spacing: u16) -> bool {
+        match self {
+            ProxiedTickArray::Initialized(refmut) => {
+                refmut.is_max_tick_array(tick_spacing)
+            }
+            ProxiedTickArray::Uninitialized(zeroed) => {
+                zeroed.is_max_tick_array(tick_spacing)
+            }
+        }
+    }
+
+    pub fn tick_offset(&self, tick_index: i32, tick_spacing: u16) -> Result<isize> {
+        match self {
+            ProxiedTickArray::Initialized(refmut) => {
+                refmut.tick_offset(tick_index, tick_spacing)
+            }
+            ProxiedTickArray::Uninitialized(zeroed) => {
+                zeroed.tick_offset(tick_index, tick_spacing)
+            }
+        }
+    }
+}
 
 enum TickArrayAccount<'info> {
     Initialized {
@@ -19,7 +121,7 @@ enum TickArrayAccount<'info> {
     Uninitialized {
         pubkey: Pubkey,
         account_info: AccountInfo<'info>,
-        zeroed: Option<Box<RefCell<TickArray>>>,
+        start_tick_index: Option<i32>,
     },
 }
 
@@ -103,16 +205,10 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
                     ..
                 } = state
                 {
-                    // create zeroed TickArray data
-                    let zeroed = Box::new(RefCell::new(TickArray::default()));
-                    zeroed
-                        .borrow_mut()
-                        .initialize(whirlpool, *start_tick_index)?;
-
                     tick_array_accounts.push(TickArrayAccount::Uninitialized {
                         pubkey,
                         account_info,
-                        zeroed: Some(zeroed),
+                        start_tick_index: Some(*start_tick_index),
                     });
                 } else {
                     unreachable!("state in uninitialized must be Uninitialized");
@@ -146,11 +242,10 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
                             &mut data.deref_mut()[8..std::mem::size_of::<TickArray>() + 8],
                         )
                     });
-                    tick_array_refmuts.push_back(tick_array_refmut);
+                    tick_array_refmuts.push_back(ProxiedTickArray::new_initialized(tick_array_refmut));
                 }
-                TickArrayAccount::Uninitialized { zeroed, .. } => {
-                    let tick_array_refmut = zeroed.as_ref().unwrap().borrow_mut();
-                    tick_array_refmuts.push_back(tick_array_refmut);
+                TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                    tick_array_refmuts.push_back(ProxiedTickArray::new_uninitialized(start_tick_index.unwrap()));
                 }
             }
         }
@@ -177,7 +272,7 @@ fn peek_tick_array<'info>(account_info: AccountInfo<'info>) -> Result<TickArrayA
         return Ok(TickArrayAccount::Uninitialized {
             pubkey: *account_info.key,
             account_info,
-            zeroed: None,
+            start_tick_index: None,
         });
     }
 

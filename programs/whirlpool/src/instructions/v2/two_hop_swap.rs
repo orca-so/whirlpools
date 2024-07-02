@@ -93,8 +93,8 @@ pub struct TwoHopSwapV2<'info> {
     // - accounts for transfer hook program of token_mint_input
     // - accounts for transfer hook program of token_mint_intermediate
     // - accounts for transfer hook program of token_mint_output
-    // - additional TickArray accounts for whirlpool_one
-    // - additional TickArray accounts for whirlpool_two
+    // - supplemental TickArray accounts for whirlpool_one
+    // - supplemental TickArray accounts for whirlpool_two
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(
@@ -143,8 +143,8 @@ pub fn handler<'a, 'b, 'c, 'info>(
             AccountsType::TransferHookInput,
             AccountsType::TransferHookIntermediate,
             AccountsType::TransferHookOutput,
-            AccountsType::AdditionalTickArraysOne,
-            AccountsType::AdditionalTickArraysTwo,
+            AccountsType::SupplementalTickArraysOne,
+            AccountsType::SupplementalTickArraysTwo,
         ],
     )?;
 
@@ -156,7 +156,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
             ctx.accounts.tick_array_one_1.to_account_info(),
             ctx.accounts.tick_array_one_2.to_account_info(),
         ],
-        remaining_accounts.additional_tick_arrays_one,
+        remaining_accounts.supplemental_tick_arrays_one,
     )?;
     let mut swap_tick_sequence_one = builder_one.build()?;
 
@@ -168,7 +168,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
             ctx.accounts.tick_array_two_1.to_account_info(),
             ctx.accounts.tick_array_two_2.to_account_info(),
         ],
-        remaining_accounts.additional_tick_arrays_two,
+        remaining_accounts.supplemental_tick_arrays_two,
     )?;
     let mut swap_tick_sequence_two = builder_two.build()?;
 

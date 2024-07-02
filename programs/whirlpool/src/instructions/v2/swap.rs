@@ -59,7 +59,7 @@ pub struct SwapV2<'info> {
     // remaining accounts
     // - accounts for transfer hook program of token_mint_a
     // - accounts for transfer hook program of token_mint_b
-    // - additional TickArray accounts
+    // - supplemental TickArray accounts
 }
 
 pub fn handler<'a, 'b, 'c, 'info>(
@@ -83,7 +83,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &[
             AccountsType::TransferHookA,
             AccountsType::TransferHookB,
-            AccountsType::AdditionalTickArrays,
+            AccountsType::SupplementalTickArrays,
         ],
     )?;
 
@@ -95,7 +95,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
             ctx.accounts.tick_array_1.to_account_info(),
             ctx.accounts.tick_array_2.to_account_info(),
         ],
-        remaining_accounts.additional_tick_arrays,
+        remaining_accounts.supplemental_tick_arrays,
     )?;
     let mut swap_tick_sequence = builder.build()?;
 

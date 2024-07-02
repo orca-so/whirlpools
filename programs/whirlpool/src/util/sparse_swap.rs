@@ -136,11 +136,11 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
         whirlpool: &Account<'info, Whirlpool>,
         a_to_b: bool,
         static_tick_array_account_infos: Vec<AccountInfo<'info>>,
-        additional_tick_array_account_infos: Option<Vec<AccountInfo<'info>>>,
+        supplemental_tick_array_account_infos: Option<Vec<AccountInfo<'info>>>,
     ) -> Result<Self> {
         let mut tick_array_account_infos = static_tick_array_account_infos;
-        if let Some(additional_tick_array_account_infos) = additional_tick_array_account_infos {
-            tick_array_account_infos.extend(additional_tick_array_account_infos);
+        if let Some(supplemental_tick_array_account_infos) = supplemental_tick_array_account_infos {
+            tick_array_account_infos.extend(supplemental_tick_array_account_infos);
         }
 
         // dedup by key

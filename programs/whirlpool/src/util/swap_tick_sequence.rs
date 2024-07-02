@@ -2,13 +2,26 @@ use crate::errors::ErrorCode;
 use crate::state::*;
 use crate::util::ProxiedTickArray;
 use anchor_lang::prelude::*;
+use std::cell::RefMut;
 
 pub struct SwapTickSequence<'info> {
     arrays: Vec<ProxiedTickArray<'info>>,
 }
 
 impl<'info> SwapTickSequence<'info> {
-    pub(crate) fn new(
+    pub fn new(
+        ta0: RefMut<'info, TickArray>,
+        ta1: Option<RefMut<'info, TickArray>>,
+        ta2: Option<RefMut<'info, TickArray>>,
+    ) -> Self {
+        Self::new_with_proxy(
+            ProxiedTickArray::new_initialized(ta0),
+            ta1.map(|refmut| ProxiedTickArray::new_initialized(refmut)),
+            ta2.map(|refmut| ProxiedTickArray::new_initialized(refmut)),
+        )
+    }
+
+    pub(crate) fn new_with_proxy(
         ta0: ProxiedTickArray<'info>,
         ta1: Option<ProxiedTickArray<'info>>,
         ta2: Option<ProxiedTickArray<'info>>,

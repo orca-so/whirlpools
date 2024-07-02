@@ -10,6 +10,8 @@ use crate::{
     util::SwapTickSequence,
 };
 
+// In the case of an uninitialized TickArray, ZeroedTickArray is used to substitute TickArray behavior.
+// Since all Tick are not initialized, it can be substituted by returning Tick::default().
 pub(crate) enum ProxiedTickArray<'a> {
     Initialized(RefMut<'a, TickArray>),
     Uninitialized(ZeroedTickArray),
@@ -250,7 +252,7 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
             }
         }
 
-        Ok(SwapTickSequence::<'a>::new(
+        Ok(SwapTickSequence::<'a>::new_with_proxy(
             tick_array_refmuts.pop_front().unwrap(),
             tick_array_refmuts.pop_front(),
             tick_array_refmuts.pop_front(),
@@ -369,10 +371,10 @@ fn derive_tick_array_pda(whirlpool: &Account<Whirlpool>, start_tick_index: i32) 
 
 #[cfg(test)]
 mod sparse_swap_tick_sequence_tests {
-    use anchor_lang::Discriminator;
-
     use super::*;
+    use std::cell::RefCell;
     use anchor_lang::solana_program::pubkey;
+    use anchor_lang::Discriminator;
 
     struct AccountInfoMock {
         pub key: Pubkey,
@@ -418,12 +420,6 @@ mod sparse_swap_tick_sequence_tests {
             start_tick_index: i32,
             owner: Option<Pubkey>,
         ) -> Self {
-            let tick_array = TickArray {
-                whirlpool,
-                start_tick_index,
-                ..TickArray::default()
-            };
-
             let mut data = vec![0u8; TickArray::LEN];
             data[0..8].copy_from_slice(&TickArray::discriminator());
             data[8..12].copy_from_slice(&start_tick_index.to_le_bytes());
@@ -765,10 +761,10 @@ mod sparse_swap_tick_sequence_tests {
             let result = peek_tick_array(account_info);
             assert!(result.is_ok());
             match result.unwrap() {
-                TickArrayAccount::Uninitialized { pubkey, account_info, zeroed } => {
+                TickArrayAccount::Uninitialized { pubkey, account_info, start_tick_index } => {
                     assert_eq!(pubkey, account_address);
                     assert_eq!(account_info.key(), account_address);
-                    assert!(zeroed.is_none());
+                    assert!(start_tick_index.is_none());
                 }
                 _ => panic!("unexpected state"),
             }
@@ -885,39 +881,10 @@ mod sparse_swap_tick_sequence_tests {
                 TickArrayAccount::Initialized { .. } => {
                     panic!("unexpected state");
                 }
-                TickArrayAccount::Uninitialized { zeroed, .. } => {
-                    assert!(zeroed.is_some());
-                    let ta = zeroed.as_ref().unwrap().borrow();
-
-                    // .start_tick_index
-                    let start_tick_index = ta.start_tick_index;
-                    assert_eq!(start_tick_index, 5632);
-
-                    // .whirlpool
-                    assert_eq!(ta.whirlpool, whirlpool_address);
-
-                    // .ticks
-                    assert_eq!(ta.ticks.len(), TICK_ARRAY_SIZE_USIZE);
-                    for i in 0..TICK_ARRAY_SIZE_USIZE {
-                        let tick = ta.ticks[i];
-                    
-                        let initialized = tick.initialized;
-                        assert_eq!(initialized, false);
-                        let liquidity_net = tick.liquidity_net;
-                        assert_eq!(liquidity_net, 0);
-                        let liquidity_gross = tick.liquidity_gross;
-                        assert_eq!(liquidity_gross, 0);
-                        let fee_growth_outside_a = tick.fee_growth_outside_a;
-                        assert_eq!(fee_growth_outside_a, 0);
-                        let fee_growth_outside_b = tick.fee_growth_outside_b;
-                        assert_eq!(fee_growth_outside_b, 0);
-                        let reward_growth_outside_r0 = tick.reward_growths_outside[0];
-                        assert_eq!(reward_growth_outside_r0, 0);
-                        let reward_growth_outside_r1 = tick.reward_growths_outside[1];
-                        assert_eq!(reward_growth_outside_r1, 0);
-                        let reward_growth_outside_r2 = tick.reward_growths_outside[2];
-                        assert_eq!(reward_growth_outside_r2, 0);
-                    }
+                TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                    assert!(start_tick_index.is_some());
+                    let start_tick_index = start_tick_index.as_ref().unwrap();
+                    assert_eq!(*start_tick_index, 5632);
                 }
             }
 
@@ -1007,11 +974,10 @@ mod sparse_swap_tick_sequence_tests {
                     TickArrayAccount::Initialized { start_tick_index: actual, .. } => {
                         assert_eq!(*actual, expected);
                     }
-                    TickArrayAccount::Uninitialized { zeroed, .. } => {
-                        assert!(zeroed.is_some());
-                        let ta = zeroed.as_ref().unwrap().borrow();
-                        let start_tick_index = ta.start_tick_index;
-                        assert_eq!(start_tick_index, expected);
+                    TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                        assert!(start_tick_index.is_some());
+                        let start_tick_index = start_tick_index.as_ref().unwrap();
+                        assert_eq!(*start_tick_index, expected);
                     }
                 }
             });
@@ -1246,11 +1212,10 @@ mod sparse_swap_tick_sequence_tests {
                     TickArrayAccount::Initialized { start_tick_index: actual, .. } => {
                         assert_eq!(*actual, expected);
                     }
-                    TickArrayAccount::Uninitialized { zeroed, .. } => {
-                        assert!(zeroed.is_some());
-                        let ta = zeroed.as_ref().unwrap().borrow();
-                        let start_tick_index = ta.start_tick_index;
-                        assert_eq!(start_tick_index, expected);
+                    TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                        assert!(start_tick_index.is_some());
+                        let start_tick_index = start_tick_index.as_ref().unwrap();
+                        assert_eq!(*start_tick_index, expected);
                     }
                 }
             });
@@ -1285,7 +1250,7 @@ mod sparse_swap_tick_sequence_tests {
                 vec![],
                 System::id(),
             );
-            let ta1 = ta1_mock.to_account_info(true);
+            let _ta1 = ta1_mock.to_account_info(true);
 
             // initialized
             let ta2_address = derive_tick_array_pda(&whirlpool, 11264);
@@ -1327,11 +1292,10 @@ mod sparse_swap_tick_sequence_tests {
                     TickArrayAccount::Initialized { start_tick_index: actual, .. } => {
                         assert_eq!(*actual, expected);
                     }
-                    TickArrayAccount::Uninitialized { zeroed, .. } => {
-                        assert!(zeroed.is_some());
-                        let ta = zeroed.as_ref().unwrap().borrow();
-                        let start_tick_index = ta.start_tick_index;
-                        assert_eq!(start_tick_index, expected);
+                    TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                        assert!(start_tick_index.is_some());
+                        let start_tick_index = start_tick_index.as_ref().unwrap();
+                        assert_eq!(*start_tick_index, expected);
                     }
                 }
             });
@@ -1405,11 +1369,10 @@ mod sparse_swap_tick_sequence_tests {
                     TickArrayAccount::Initialized { .. } => {
                         panic!("unexpected state");
                     }
-                    TickArrayAccount::Uninitialized { zeroed, .. } => {
-                        assert!(zeroed.is_some());
-                        let ta = zeroed.as_ref().unwrap().borrow();
-                        let start_tick_index = ta.start_tick_index;
-                        assert_eq!(start_tick_index, expected);
+                    TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                        assert!(start_tick_index.is_some());
+                        let start_tick_index = start_tick_index.as_ref().unwrap();
+                        assert_eq!(*start_tick_index, expected);
                     }
                 }
             });
@@ -1569,6 +1532,215 @@ mod sparse_swap_tick_sequence_tests {
             );
             assert!(result.is_err());
             assert!(result.err().unwrap().to_string().contains("AccountDiscriminatorMismatch"));
+        }
+    }
+
+    mod test_proxied_tick_array {
+        use crate::state::TICK_ARRAY_SIZE_USIZE;
+
+        use super::*;
+
+        fn to_proxied_tick_array_initialized<'a>(account_info: &'a AccountInfo<'a>) -> ProxiedTickArray<'a> {
+            use std::ops::DerefMut;
+
+            let data = account_info.try_borrow_mut_data().unwrap();
+            let tick_array_refmut = RefMut::map(data, |data| {
+                bytemuck::from_bytes_mut(
+                    &mut data.deref_mut()[8..std::mem::size_of::<TickArray>() + 8],
+                )
+            });
+            ProxiedTickArray::new_initialized(tick_array_refmut)
+        }
+
+        #[test]
+        fn initialized_start_tick_index() {
+            let mut start_28160 = AccountInfoMock::new_tick_array(
+                Pubkey::new_unique(),
+                Pubkey::new_unique(),
+                28160,
+                None
+            );
+            let start_28160 = start_28160.to_account_info(true);
+            let proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
+            assert_eq!(proxied_28160.start_tick_index(), 28160);
+        }
+
+        #[test]
+        fn uninitialized_start_tick_index() {
+            let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
+            assert_eq!(proxied_56320.start_tick_index(), 56320);
+        }
+
+        #[test]
+        fn initialized_get_and_update_tick() {
+            let mut start_28160 = AccountInfoMock::new_tick_array(
+                Pubkey::new_unique(),
+                Pubkey::new_unique(),
+                28160,
+                None
+            );
+            let start_28160 = start_28160.to_account_info(true);
+            let mut proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
+
+            let tick = proxied_28160.get_tick(28160 + 64, 64).unwrap();
+            assert_eq!(tick.initialized, false);
+
+            proxied_28160.update_tick(
+                28160 + 64,
+                64,
+                &TickUpdate {
+                    initialized: true,
+                    ..Default::default()
+                }
+            ).unwrap();
+
+            let tick = proxied_28160.get_tick(28160 + 64, 64).unwrap();
+            assert_eq!(tick.initialized, true);
+        }
+
+        #[test]
+        fn uninitialized_get_tick() {
+            let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
+            for i in 0..TICK_ARRAY_SIZE_USIZE {
+                let tick = proxied_56320.get_tick(56320 + (i as i32) * 64, 64).unwrap();
+                assert_eq!(tick.initialized, false);
+            }
+        }
+
+        #[test]
+        #[should_panic]
+        fn panic_uninitialized_update_tick() {
+            let mut proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
+
+            // uninitialized tick must not be updated, so updating ProxiedTickArray::Uninitialized should panic
+            proxied_56320.update_tick(
+                56320 + 64,
+                64,
+                &TickUpdate {
+                    initialized: true,
+                    ..Default::default()
+                }
+            ).unwrap();
+        }
+
+        #[test]
+        fn initialized_is_min_tick_array() {
+            let mut start_28160 = AccountInfoMock::new_tick_array(
+                Pubkey::new_unique(),
+                Pubkey::new_unique(),
+                28160,
+                None
+            );
+            let start_28160 = start_28160.to_account_info(true);
+            let proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
+            assert_eq!(proxied_28160.is_min_tick_array(), false);
+
+            let mut start_neg_444928 = AccountInfoMock::new_tick_array(
+                Pubkey::new_unique(),
+                Pubkey::new_unique(),
+                -444928,
+                None
+            );
+            let start_neg_444928 = start_neg_444928.to_account_info(true);
+            let proxied_neg_444928 = to_proxied_tick_array_initialized(&start_neg_444928);
+            assert_eq!(proxied_neg_444928.is_min_tick_array(), true);
+        }
+
+        #[test]
+        fn uninitialized_is_min_tick_array() {
+            let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
+            assert_eq!(proxied_56320.is_min_tick_array(), false);
+
+            let proxied_neg_444928 = ProxiedTickArray::new_uninitialized(-444928);
+            assert_eq!(proxied_neg_444928.is_min_tick_array(), true);
+        }
+
+        #[test]
+        fn initialized_is_max_tick_array() {
+            let mut start_28160 = AccountInfoMock::new_tick_array(
+                Pubkey::new_unique(),
+                Pubkey::new_unique(),
+                28160,
+                None
+            );
+            let start_28160 = start_28160.to_account_info(true);
+            let proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
+            assert_eq!(proxied_28160.is_max_tick_array(64), false);
+
+            let mut start_439296 = AccountInfoMock::new_tick_array(
+                Pubkey::new_unique(),
+                Pubkey::new_unique(),
+                439296,
+                None
+            );
+            let start_439296 = start_439296.to_account_info(true);
+            let proxied_439296 = to_proxied_tick_array_initialized(&start_439296);
+            assert_eq!(proxied_439296.is_max_tick_array(64), true);
+        }
+
+        #[test]
+        fn uninitialized_is_max_tick_array() {
+            let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
+            assert_eq!(proxied_56320.is_max_tick_array(64), false);
+
+            let proxied_439296 = ProxiedTickArray::new_uninitialized(439296);
+            assert_eq!(proxied_439296.is_max_tick_array(64), true);
+        }
+
+        #[test]
+        fn initialized_tick_offset() {
+            let mut start_28160 = AccountInfoMock::new_tick_array(
+                Pubkey::new_unique(),
+                Pubkey::new_unique(),
+                28160,
+                None
+            );
+            let start_28160 = start_28160.to_account_info(true);
+            let proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
+            for i in 0..TICK_ARRAY_SIZE_USIZE {
+                let offset = proxied_28160.tick_offset(28160 + 64 * (i as i32), 64).unwrap();
+                assert_eq!(offset, i as isize) ;
+            }
+        }
+
+        #[test]
+        fn uninitialized_tick_offset() {
+            let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
+            for i in 0..TICK_ARRAY_SIZE_USIZE {
+                let offset = proxied_56320.tick_offset(56320 + 64 * (i as i32), 64).unwrap();
+                assert_eq!(offset, i as isize);
+            }
+        }
+
+        #[test]
+        fn initialized_get_next_init_tick_index() {
+            let mut start_28160 = AccountInfoMock::new_tick_array(
+                Pubkey::new_unique(),
+                Pubkey::new_unique(),
+                28160,
+                None
+            );
+            let start_28160 = start_28160.to_account_info(true);
+            let mut proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
+
+            proxied_28160.update_tick(
+                28160 + 64 * 16,
+                64,
+                &TickUpdate {
+                    initialized: true,
+                    ..Default::default()
+                }
+            ).unwrap();
+
+            let next_initialized_tick_index = proxied_28160.get_next_init_tick_index(28160, 64, false).unwrap().unwrap();
+            assert_eq!(next_initialized_tick_index, 28160 + 64 * 16);
+        }
+
+        #[test]
+        fn uninitialized_get_next_init_tick_index() {
+            let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
+            let next_initialized_tick_index = proxied_56320.get_next_init_tick_index(56320, 64, false).unwrap();
+            assert!(next_initialized_tick_index.is_none());
         }
     }
 }

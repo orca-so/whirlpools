@@ -1,11 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import { DecimalUtil, MathUtil, Percentage, TransactionBuilder, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { Keypair, SystemProgram } from "@solana/web3.js";
+import { AccountMeta, Keypair, SystemProgram } from "@solana/web3.js";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
-import { NUM_REWARDS, PDAUtil, POSITION_BUNDLE_SIZE, PoolUtil, PositionBundleData, PriceMath, SwapQuote, SwapUtils, TickUtil, TwoHopSwapV2Params, Whirlpool, WhirlpoolClient, WhirlpoolData, WhirlpoolIx, buildWhirlpoolClient, collectFeesQuote, increaseLiquidityQuoteByInputToken, swapQuoteByInputToken, swapQuoteByOutputToken, swapQuoteWithParams, toTx } from "../../../src";
+import { MEMO_PROGRAM_ADDRESS, NUM_REWARDS, PDAUtil, POSITION_BUNDLE_SIZE, PoolUtil, PositionBundleData, PriceMath, SwapQuote, SwapUtils, TickUtil, TwoHopSwapV2Params, Whirlpool, WhirlpoolClient, WhirlpoolData, WhirlpoolIx, buildWhirlpoolClient, collectFeesQuote, increaseLiquidityQuoteByInputToken, swapQuoteByInputToken, swapQuoteByOutputToken, swapQuoteWithParams, toTx } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TickSpacing, ZERO_BN, createTokenAccount } from "../../utils";
@@ -14,12 +14,12 @@ import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { buildTestAquariums, getDefaultAquarium, initTestPoolWithTokens, initTickArrayRange, initializePositionBundle, openBundledPosition } from "../../utils/init-utils";
 import { NO_TOKEN_EXTENSION_CONTEXT, TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 import { buildTickArrayData } from "../../utils/testDataTypes";
-import { TwoHopSwapParams } from "../../../src/instructions";
+import { SwapV2Params, TwoHopSwapParams } from "../../../src/instructions";
+import { RemainingAccountsBuilder, RemainingAccountsType, toSupplementalTickArrayAccountMetas } from "../../../src/utils/remaining-accounts-util";
 
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
-  program: Whirlpool;
   whirlpoolCtx: WhirlpoolContext;
   whirlpoolClient: WhirlpoolClient;
 }
@@ -38,7 +38,6 @@ describe("sparse swap tests", () => {
 
     testCtx = {
       provider,
-      program,
       whirlpoolCtx,
       whirlpoolClient,
     };
@@ -1344,6 +1343,747 @@ describe("sparse swap tests", () => {
           }
         }
       }  
+    });
+  });
+
+  describe("supplemental TickArrays (v2 only)", () => {
+    describe("swapV2", () => {
+      async function buildTestEnvironment() {
+        const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokens(
+          testCtx.whirlpoolCtx,
+          tickSpacing64,
+          PriceMath.tickIndexToSqrtPriceX64(3000), // tickCurrentIndex = 3000
+          new BN(1_000_000)
+        );
+
+        const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
+
+        // [-11264  ][-5632   ][0       ]
+        await (await pool.initTickArrayForTicks([-11264, -5632, 0]))!.buildAndExecute();
+
+        // deposit [-9984, 2944], 100_000_000
+        const depositQuote = increaseLiquidityQuoteByInputToken(
+          poolInitInfo.tokenMintB,
+          DecimalUtil.fromBN(new BN(100_000), 0),
+          -9984,
+          2944,
+          Percentage.fromFraction(0, 100),
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
+        await (await pool.openPosition(-9984, 2944, depositQuote)).tx.buildAndExecute();
+
+        return { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB };
+      }
+
+      it("using 3 supplemental tick arrays", async () => {
+        const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } = await buildTestEnvironment();
+        const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
+
+        const swapQuote = await swapQuoteByOutputToken(
+          pool,
+          poolInitInfo.tokenMintB,
+          new BN(99_000),
+          Percentage.fromFraction(0, 100),
+          testCtx.whirlpoolCtx.program.programId,
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+
+        const taStart5632 = PDAUtil.getTickArray(testCtx.whirlpoolCtx.program.programId, pool.getAddress(), 5632).publicKey;
+        const taStart0 = PDAUtil.getTickArray(testCtx.whirlpoolCtx.program.programId, pool.getAddress(), 0).publicKey;
+        const taStartNeg5632 = PDAUtil.getTickArray(testCtx.whirlpoolCtx.program.programId, pool.getAddress(), -5632).publicKey;
+        const taStartNeg11264 = PDAUtil.getTickArray(testCtx.whirlpoolCtx.program.programId, pool.getAddress(), -11264).publicKey;
+
+        const paramsWithoutSupplemental = {
+          ...SwapUtils.getSwapParamsFromQuote(
+            swapQuote,
+            testCtx.whirlpoolCtx,
+            pool,
+            tokenAccountA,
+            tokenAccountB,
+            testCtx.provider.wallet.publicKey
+          ),
+          // v2 required
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: TOKEN_PROGRAM_ID,
+          tokenProgramB: TOKEN_PROGRAM_ID,
+          // TA starting with 5632 will not be used...
+          tickArray0: taStart5632,
+          tickArray1: taStart5632,
+          tickArray2: taStart5632,
+        };
+
+        assert.ok((await pool.refreshData()).tickCurrentIndex >= 2944);
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, paramsWithoutSupplemental)
+          ).buildAndExecute(),
+          /0x1787/ // InvalidTickArraySequence
+        );
+
+        const paramsWithSupplemental = {
+          ...paramsWithoutSupplemental,
+          supplementalTickArrays: [
+            // should be adjusted at the program side
+            taStartNeg11264,
+            taStart0,
+            taStartNeg5632,
+          ],
+        };
+
+        assert.ok((await pool.refreshData()).tickCurrentIndex >= 2944);
+        await toTx(
+          testCtx.whirlpoolCtx,
+          WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, paramsWithSupplemental)
+        ).buildAndExecute(undefined, {skipPreflight: true});
+
+        // 3000 --> less than -5632
+        assert.ok((await pool.refreshData()).tickCurrentIndex < -5632);
+      });
+
+      it("fail: 4 supplemental tick arrays (too many)", async () => {
+        const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } = await buildTestEnvironment();
+        const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
+
+        const swapQuote = await swapQuoteByOutputToken(
+          pool,
+          poolInitInfo.tokenMintB,
+          new BN(99_000),
+          Percentage.fromFraction(0, 100),
+          testCtx.whirlpoolCtx.program.programId,
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+
+        const taStart5632 = PDAUtil.getTickArray(testCtx.whirlpoolCtx.program.programId, pool.getAddress(), 5632).publicKey;
+        const supplementalTickArrays = [
+          taStart5632,
+          taStart5632,
+          taStart5632,
+          taStart5632,
+        ];
+        const params: SwapV2Params = {
+          ...SwapUtils.getSwapParamsFromQuote(
+            swapQuote,
+            testCtx.whirlpoolCtx,
+            pool,
+            tokenAccountA,
+            tokenAccountB,
+            testCtx.provider.wallet.publicKey
+          ),
+          // v2 required
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: TOKEN_PROGRAM_ID,
+          tokenProgramB: TOKEN_PROGRAM_ID,
+          // too many
+          supplementalTickArrays,
+        };
+
+        assert.throws(
+          () => WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, params),
+          /Too many supplemental tick arrays provided/ // SDK error
+        );
+
+        // bypass SDK
+        const supplementalTickArrayAccountMetas: AccountMeta[] = supplementalTickArrays
+          .map((pubkey) => ({ pubkey, isSigner: false, isWritable: true }));
+        const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
+          .addSlice(RemainingAccountsType.SupplementalTickArrays, supplementalTickArrayAccountMetas)
+          .build();
+
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            cleanupInstructions: [],
+            signers: [],
+            instructions: [
+              testCtx.whirlpoolCtx.program.instruction.swapV2(
+                params.amount,
+                params.otherAmountThreshold,
+                params.sqrtPriceLimit,
+                params.amountSpecifiedIsInput,
+                params.aToB,
+                remainingAccountsInfo,
+                {
+                  accounts: {
+                    ...params,
+                    memoProgram: MEMO_PROGRAM_ADDRESS,
+                  },
+                  remainingAccounts,
+                }
+              ),
+            ],
+          }).buildAndExecute(),
+          /0x17a6/ // TooManySupplementalTickArrays
+        );
+      });
+
+      it("go back to the previous tick array", async () => {
+        const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokens(
+          testCtx.whirlpoolCtx,
+          tickSpacing64,
+          PriceMath.tickIndexToSqrtPriceX64(-128), // tickCurrentIndex = -128
+          new BN(1_000_000)
+        );
+
+        const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
+
+        // [-11264  ][-5632   ][0       ]
+        await (await pool.initTickArrayForTicks([-11264, -5632, 0]))!.buildAndExecute();
+
+        // deposit [-9984, 2944], 100_000
+        const depositQuote = increaseLiquidityQuoteByInputToken(
+          poolInitInfo.tokenMintB,
+          DecimalUtil.fromBN(new BN(100_000), 0),
+          -9984,
+          2944,
+          Percentage.fromFraction(0, 100),
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
+        await (await pool.openPosition(-9984, 2944, depositQuote)).tx.buildAndExecute();
+
+        await pool.refreshData();
+        const swapQuote = await swapQuoteByOutputToken(
+          pool,
+          poolInitInfo.tokenMintB,
+          new BN(80_000),
+          Percentage.fromFraction(0, 100),
+          testCtx.whirlpoolCtx.program.programId,
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+
+        const taStart0 = PDAUtil.getTickArray(testCtx.whirlpoolCtx.program.programId, pool.getAddress(), 0).publicKey;
+        const taStartNeg5632 = PDAUtil.getTickArray(testCtx.whirlpoolCtx.program.programId, pool.getAddress(), -5632).publicKey;
+
+        const paramsWithoutSupplemental = {
+          ...SwapUtils.getSwapParamsFromQuote(
+            swapQuote,
+            testCtx.whirlpoolCtx,
+            pool,
+            tokenAccountA,
+            tokenAccountB,
+            testCtx.provider.wallet.publicKey
+          ),
+          // v2 required
+          tokenMintA: poolInitInfo.tokenMintA,
+          tokenMintB: poolInitInfo.tokenMintB,
+          tokenProgramA: TOKEN_PROGRAM_ID,
+          tokenProgramB: TOKEN_PROGRAM_ID,
+        };
+
+        // it should start from TA with startTickIndex -5632
+        assert.ok(pool.getData().tickCurrentIndex == -128);
+        assert.ok(paramsWithoutSupplemental.tickArray0.equals(taStartNeg5632));
+
+        // another swap to push tickCurrentIndex to > 0
+        const anotherSwapQuote = await swapQuoteByInputToken(
+          pool,
+          poolInitInfo.tokenMintB,
+          new BN(10_000),
+          Percentage.fromFraction(0, 100),
+          testCtx.whirlpoolCtx.program.programId,
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+
+        assert.ok(anotherSwapQuote.estimatedEndTickIndex > 128);
+
+        await (await pool.swap(anotherSwapQuote)).buildAndExecute();
+
+        await pool.refreshData();
+        assert.ok(pool.getData().tickCurrentIndex > 128);
+
+        // now tickCurrentIndex was push backed to > 128, so TickArray with startTickIndex 0 should be used as the first one
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, paramsWithoutSupplemental)
+          ).buildAndExecute(),
+          /0x1787/ // InvalidTickArraySequence
+        );
+        
+        // If TickArray with startTickIndex 0 is included in supplementalTickArrays, it should work.
+        const paramsWithSupplemental = {
+          ...paramsWithoutSupplemental,
+          supplementalTickArrays: [
+            taStart0,
+          ],
+        };
+        await toTx(
+          testCtx.whirlpoolCtx,
+          WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, paramsWithSupplemental)
+        ).buildAndExecute(undefined, {skipPreflight: true});
+
+        assert.ok((await pool.refreshData()).tickCurrentIndex < 0);
+      });
+    });
+
+    describe.only("twoHopSwapV2", () => {
+      it("using 3 supplemental tick arrays", async () => {
+        const aToB = false;
+        const initialTickIndex = 2816;
+        const targetTickIndex = 2816 + tickSpacing64 * 88 * 2; // --> 2 tick arrays
+        const targetSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(targetTickIndex);
+  
+        const aqConfig = getDefaultAquarium();
+
+        // Add a third token and account and a second pool
+        aqConfig.initFeeTierParams = [{ tickSpacing: tickSpacing64 }];
+        aqConfig.initMintParams.push({});
+        aqConfig.initTokenAccParams.push({ mintIndex: 2 });
+        aqConfig.initPoolParams = [
+          { mintIndices: [0, 1], tickSpacing: tickSpacing64, initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(2816) },
+          { mintIndices: [1, 2], tickSpacing: tickSpacing64, initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(2816) },
+        ];
+  
+        // Add tick arrays and positions
+        aqConfig.initTickArrayRangeParams.push({
+          poolIndex: 0,
+          startTickIndex: -444928,
+          arrayCount: 1,
+          aToB,
+        });
+        aqConfig.initTickArrayRangeParams.push({
+          poolIndex: 0,
+          startTickIndex: 439296,
+          arrayCount: 1,
+          aToB,
+        });
+        aqConfig.initTickArrayRangeParams.push({
+          poolIndex: 1,
+          startTickIndex: -444928,
+          arrayCount: 1,
+          aToB,
+        });
+        aqConfig.initTickArrayRangeParams.push({
+          poolIndex: 1,
+          startTickIndex: 439296,
+          arrayCount: 1,
+          aToB,
+        });
+  
+        // pool1(b(2) -> a(1)) --> pool0(b(1) -> a(0)) (so pool0 has smaller liquidity)
+        aqConfig.initPositionParams.push({ poolIndex: 0, fundParams: [
+          {
+            liquidityAmount: new anchor.BN(4_100_000),
+            tickLowerIndex: -443584,
+            tickUpperIndex: 443584,
+          },
+        ]});
+        aqConfig.initPositionParams.push({ poolIndex: 1, fundParams: [
+          {
+            liquidityAmount: new anchor.BN(10_000_000),
+            tickLowerIndex: -443584,
+            tickUpperIndex: 443584,
+          },
+        ]});
+        const aquarium = (await buildTestAquariums(testCtx.whirlpoolCtx, [aqConfig]))[0];
+
+        const startTickIndexes = [0, 5632, 11264];
+
+        const poolInit0 = aquarium.pools[0];
+        const poolInit1 = aquarium.pools[1];
+
+        const pool0 = await testCtx.whirlpoolClient.getPool(poolInit0.whirlpoolPda.publicKey, IGNORE_CACHE);
+        const pool1 = await testCtx.whirlpoolClient.getPool(poolInit1.whirlpoolPda.publicKey, IGNORE_CACHE);
+
+        // init tick arrays
+        await (await pool0.initTickArrayForTicks(startTickIndexes))!.buildAndExecute();
+        await (await pool1.initTickArrayForTicks(startTickIndexes))!.buildAndExecute();
+
+        // fetch tick arrays
+        const tickArrays0 = await SwapUtils.getTickArrays(
+          pool0.getData().tickCurrentIndex,
+          pool0.getData().tickSpacing,
+          aToB,
+          testCtx.whirlpoolCtx.program.programId,
+          pool0.getAddress(),
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+        const tickArrays1 = await SwapUtils.getTickArrays(
+          pool1.getData().tickCurrentIndex,
+          pool1.getData().tickSpacing,
+          aToB,
+          testCtx.whirlpoolCtx.program.programId,
+          pool1.getAddress(),
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+
+        const quote1 = swapQuoteWithParams({
+          whirlpoolData: pool1.getData(),
+          amountSpecifiedIsInput: true,
+          aToB,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          tokenAmount: U64_MAX,
+          sqrtPriceLimit: targetSqrtPrice,
+          tickArrays: tickArrays1,
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        }, Percentage.fromFraction(0, 100));
+
+        const quote0 = swapQuoteWithParams({
+          whirlpoolData: pool0.getData(),
+          amountSpecifiedIsInput: true,
+          aToB,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          tokenAmount: quote1.estimatedAmountOut,
+          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+          tickArrays: tickArrays0,
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        }, Percentage.fromFraction(0, 100));
+
+        assert.ok(quote0.estimatedAmountIn.gtn(0));
+        assert.ok(quote0.estimatedAmountOut.gtn(0));
+        assert.ok(quote1.estimatedAmountIn.gtn(0));
+        assert.ok(quote1.estimatedAmountOut.gtn(0));
+
+        const wrongAddress = Keypair.generate().publicKey;
+        const paramsWithoutSupplemental = {
+          amount: quote1.estimatedAmountIn,
+          amountSpecifiedIsInput: true,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          aToBOne: aToB,
+          aToBTwo: aToB,
+          oracleOne: PDAUtil.getOracle(testCtx.whirlpoolCtx.program.programId, pool1.getAddress()).publicKey,
+          oracleTwo: PDAUtil.getOracle(testCtx.whirlpoolCtx.program.programId, pool0.getAddress()).publicKey,
+          sqrtPriceLimitOne: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+          sqrtPriceLimitTwo: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+          tickArrayOne0: wrongAddress,
+          tickArrayOne1: wrongAddress,
+          tickArrayOne2: wrongAddress,
+          tickArrayTwo0: wrongAddress,
+          tickArrayTwo1: wrongAddress,
+          tickArrayTwo2: wrongAddress,
+          tokenAuthority: testCtx.provider.wallet.publicKey,
+          whirlpoolOne: pool1.getAddress(),
+          whirlpoolTwo: pool0.getAddress(),
+          // v1 specific
+          tokenOwnerAccountOneA: aquarium.tokenAccounts[1].account,
+          tokenOwnerAccountOneB: aquarium.tokenAccounts[2].account,
+          tokenOwnerAccountTwoA: aquarium.tokenAccounts[0].account,
+          tokenOwnerAccountTwoB: aquarium.tokenAccounts[1].account,
+          tokenVaultOneA: pool1.getData().tokenVaultA,
+          tokenVaultOneB: pool1.getData().tokenVaultB,
+          tokenVaultTwoA: pool0.getData().tokenVaultA,
+          tokenVaultTwoB: pool0.getData().tokenVaultB,
+          // v2 specific
+          tokenOwnerAccountInput: aquarium.tokenAccounts[2].account,
+          tokenOwnerAccountOutput: aquarium.tokenAccounts[0].account,
+          tokenVaultOneInput: pool1.getData().tokenVaultB,
+          tokenVaultOneIntermediate: pool1.getData().tokenVaultA,
+          tokenVaultTwoIntermediate: pool0.getData().tokenVaultB,
+          tokenVaultTwoOutput: pool0.getData().tokenVaultA,
+          tokenMintInput: pool1.getData().tokenMintB,
+          tokenMintIntermediate: pool1.getData().tokenMintA,
+          tokenMintOutput: pool0.getData().tokenMintA,
+          tokenProgramInput: TOKEN_PROGRAM_ID,
+          tokenProgramIntermediate: TOKEN_PROGRAM_ID,
+          tokenProgramOutput: TOKEN_PROGRAM_ID,
+        };
+
+        const supplementalTickArraysOne = [
+          // should be adjusted at the program side
+          tickArrays1[2].address,
+          tickArrays1[0].address,
+          tickArrays1[1].address,
+        ];
+        const supplementalTickArraysTwo = [
+          // should be adjusted at the program side
+          tickArrays0[2].address,
+          tickArrays0[0].address,
+          tickArrays0[1].address,
+        ];
+
+        assert.ok((await pool0.refreshData()).tickCurrentIndex === initialTickIndex);
+        assert.ok((await pool1.refreshData()).tickCurrentIndex === initialTickIndex);
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, paramsWithoutSupplemental)
+          ).buildAndExecute(),
+          /0x1787/ // InvalidTickArraySequence
+        );
+
+        const paramsWithSupplemental: TwoHopSwapV2Params = {
+          ...paramsWithoutSupplemental,
+          supplementalTickArraysOne,
+          supplementalTickArraysTwo,
+        };
+
+        assert.ok((await pool0.refreshData()).tickCurrentIndex === initialTickIndex);
+        assert.ok((await pool1.refreshData()).tickCurrentIndex === initialTickIndex);
+        await toTx(
+          testCtx.whirlpoolCtx,
+          WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, paramsWithSupplemental)
+        ).buildAndExecute(),
+        assert.ok((await pool0.refreshData()).tickCurrentIndex >= targetTickIndex);
+        assert.ok((await pool1.refreshData()).tickCurrentIndex >= targetTickIndex);  
+      });
+
+      it("fail: 4 supplemental tick arrays (too many)", async () => {
+        const aToB = false;
+        const initialTickIndex = 2816;
+        const targetTickIndex = 2816 + tickSpacing64 * 88 * 2; // --> 2 tick arrays
+        const targetSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(targetTickIndex);
+  
+        const aqConfig = getDefaultAquarium();
+
+        // Add a third token and account and a second pool
+        aqConfig.initFeeTierParams = [{ tickSpacing: tickSpacing64 }];
+        aqConfig.initMintParams.push({});
+        aqConfig.initTokenAccParams.push({ mintIndex: 2 });
+        aqConfig.initPoolParams = [
+          { mintIndices: [0, 1], tickSpacing: tickSpacing64, initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(2816) },
+          { mintIndices: [1, 2], tickSpacing: tickSpacing64, initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(2816) },
+        ];
+  
+        // Add tick arrays and positions
+        aqConfig.initTickArrayRangeParams.push({
+          poolIndex: 0,
+          startTickIndex: -444928,
+          arrayCount: 1,
+          aToB,
+        });
+        aqConfig.initTickArrayRangeParams.push({
+          poolIndex: 0,
+          startTickIndex: 439296,
+          arrayCount: 1,
+          aToB,
+        });
+        aqConfig.initTickArrayRangeParams.push({
+          poolIndex: 1,
+          startTickIndex: -444928,
+          arrayCount: 1,
+          aToB,
+        });
+        aqConfig.initTickArrayRangeParams.push({
+          poolIndex: 1,
+          startTickIndex: 439296,
+          arrayCount: 1,
+          aToB,
+        });
+  
+        // pool1(b(2) -> a(1)) --> pool0(b(1) -> a(0)) (so pool0 has smaller liquidity)
+        aqConfig.initPositionParams.push({ poolIndex: 0, fundParams: [
+          {
+            liquidityAmount: new anchor.BN(4_100_000),
+            tickLowerIndex: -443584,
+            tickUpperIndex: 443584,
+          },
+        ]});
+        aqConfig.initPositionParams.push({ poolIndex: 1, fundParams: [
+          {
+            liquidityAmount: new anchor.BN(10_000_000),
+            tickLowerIndex: -443584,
+            tickUpperIndex: 443584,
+          },
+        ]});
+        const aquarium = (await buildTestAquariums(testCtx.whirlpoolCtx, [aqConfig]))[0];
+
+        const startTickIndexes = [0, 5632, 11264];
+
+        const poolInit0 = aquarium.pools[0];
+        const poolInit1 = aquarium.pools[1];
+
+        const pool0 = await testCtx.whirlpoolClient.getPool(poolInit0.whirlpoolPda.publicKey, IGNORE_CACHE);
+        const pool1 = await testCtx.whirlpoolClient.getPool(poolInit1.whirlpoolPda.publicKey, IGNORE_CACHE);
+
+        // init tick arrays
+        await (await pool0.initTickArrayForTicks(startTickIndexes))!.buildAndExecute();
+        await (await pool1.initTickArrayForTicks(startTickIndexes))!.buildAndExecute();
+
+        // fetch tick arrays
+        const tickArrays0 = await SwapUtils.getTickArrays(
+          pool0.getData().tickCurrentIndex,
+          pool0.getData().tickSpacing,
+          aToB,
+          testCtx.whirlpoolCtx.program.programId,
+          pool0.getAddress(),
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+        const tickArrays1 = await SwapUtils.getTickArrays(
+          pool1.getData().tickCurrentIndex,
+          pool1.getData().tickSpacing,
+          aToB,
+          testCtx.whirlpoolCtx.program.programId,
+          pool1.getAddress(),
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+
+        const quote1 = swapQuoteWithParams({
+          whirlpoolData: pool1.getData(),
+          amountSpecifiedIsInput: true,
+          aToB,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          tokenAmount: U64_MAX,
+          sqrtPriceLimit: targetSqrtPrice,
+          tickArrays: tickArrays1,
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        }, Percentage.fromFraction(0, 100));
+
+        const quote0 = swapQuoteWithParams({
+          whirlpoolData: pool0.getData(),
+          amountSpecifiedIsInput: true,
+          aToB,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          tokenAmount: quote1.estimatedAmountOut,
+          sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+          tickArrays: tickArrays0,
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        }, Percentage.fromFraction(0, 100));
+
+        assert.ok(quote0.estimatedAmountIn.gtn(0));
+        assert.ok(quote0.estimatedAmountOut.gtn(0));
+        assert.ok(quote1.estimatedAmountIn.gtn(0));
+        assert.ok(quote1.estimatedAmountOut.gtn(0));
+
+        const wrongAddress = Keypair.generate().publicKey;
+        const supplementalTickArraysOne = [
+          wrongAddress,
+          wrongAddress,
+          wrongAddress,
+          wrongAddress,
+        ];
+        const supplementalTickArraysTwo = [
+          wrongAddress,
+          wrongAddress,
+          wrongAddress,
+          wrongAddress,
+        ];
+
+        const params = {
+          amount: quote1.estimatedAmountIn,
+          amountSpecifiedIsInput: true,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+          aToBOne: aToB,
+          aToBTwo: aToB,
+          oracleOne: PDAUtil.getOracle(testCtx.whirlpoolCtx.program.programId, pool1.getAddress()).publicKey,
+          oracleTwo: PDAUtil.getOracle(testCtx.whirlpoolCtx.program.programId, pool0.getAddress()).publicKey,
+          sqrtPriceLimitOne: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+          sqrtPriceLimitTwo: SwapUtils.getDefaultSqrtPriceLimit(aToB),
+          tickArrayOne0: wrongAddress,
+          tickArrayOne1: wrongAddress,
+          tickArrayOne2: wrongAddress,
+          tickArrayTwo0: wrongAddress,
+          tickArrayTwo1: wrongAddress,
+          tickArrayTwo2: wrongAddress,
+          tokenAuthority: testCtx.provider.wallet.publicKey,
+          whirlpoolOne: pool1.getAddress(),
+          whirlpoolTwo: pool0.getAddress(),
+          // v1 specific
+          tokenOwnerAccountOneA: aquarium.tokenAccounts[1].account,
+          tokenOwnerAccountOneB: aquarium.tokenAccounts[2].account,
+          tokenOwnerAccountTwoA: aquarium.tokenAccounts[0].account,
+          tokenOwnerAccountTwoB: aquarium.tokenAccounts[1].account,
+          tokenVaultOneA: pool1.getData().tokenVaultA,
+          tokenVaultOneB: pool1.getData().tokenVaultB,
+          tokenVaultTwoA: pool0.getData().tokenVaultA,
+          tokenVaultTwoB: pool0.getData().tokenVaultB,
+          // v2 specific
+          tokenOwnerAccountInput: aquarium.tokenAccounts[2].account,
+          tokenOwnerAccountOutput: aquarium.tokenAccounts[0].account,
+          tokenVaultOneInput: pool1.getData().tokenVaultB,
+          tokenVaultOneIntermediate: pool1.getData().tokenVaultA,
+          tokenVaultTwoIntermediate: pool0.getData().tokenVaultB,
+          tokenVaultTwoOutput: pool0.getData().tokenVaultA,
+          tokenMintInput: pool1.getData().tokenMintB,
+          tokenMintIntermediate: pool1.getData().tokenMintA,
+          tokenMintOutput: pool0.getData().tokenMintA,
+          tokenProgramInput: TOKEN_PROGRAM_ID,
+          tokenProgramIntermediate: TOKEN_PROGRAM_ID,
+          tokenProgramOutput: TOKEN_PROGRAM_ID,
+          // too many
+          supplementalTickArraysOne,
+          supplementalTickArraysTwo,
+        };
+
+        assert.throws(
+          () => WhirlpoolIx.twoHopSwapV2Ix(testCtx.whirlpoolCtx.program, params),
+          /Too many supplemental tick arrays provided/ // SDK error
+        );
+
+        // bypass SDK
+        const supplementalTickArrayOneAccountMetas: AccountMeta[] = supplementalTickArraysOne
+          .map((pubkey) => ({ pubkey, isSigner: false, isWritable: true }));
+        const [remainingAccountsInfoOne, remainingAccountsOne] = new RemainingAccountsBuilder()
+          .addSlice(RemainingAccountsType.SupplementalTickArraysOne, supplementalTickArrayOneAccountMetas)
+          .build();
+
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            cleanupInstructions: [],
+            signers: [],
+            instructions: [
+              testCtx.whirlpoolCtx.program.instruction.twoHopSwapV2(
+                params.amount,
+                params.otherAmountThreshold,
+                params.amountSpecifiedIsInput,
+                params.aToBOne,
+                params.aToBTwo,
+                params.sqrtPriceLimitOne,
+                params.sqrtPriceLimitTwo,
+                remainingAccountsInfoOne,
+                {
+                  accounts: {
+                    ...params,
+                    memoProgram: MEMO_PROGRAM_ADDRESS,
+                  },
+                  remainingAccounts: remainingAccountsOne,
+                }
+              ),
+            ],
+          }).buildAndExecute(),
+          /0x17a6/ // TooManySupplementalTickArrays
+        );
+
+        // bypass SDK
+        const supplementalTickArrayTwoAccountMetas: AccountMeta[] = supplementalTickArraysTwo
+          .map((pubkey) => ({ pubkey, isSigner: false, isWritable: true }));
+        const [remainingAccountsInfoTwo, remainingAccountsTwo] = new RemainingAccountsBuilder()
+          .addSlice(RemainingAccountsType.SupplementalTickArraysTwo, supplementalTickArrayTwoAccountMetas)
+          .build();
+
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            cleanupInstructions: [],
+            signers: [],
+            instructions: [
+              testCtx.whirlpoolCtx.program.instruction.twoHopSwapV2(
+                params.amount,
+                params.otherAmountThreshold,
+                params.amountSpecifiedIsInput,
+                params.aToBOne,
+                params.aToBTwo,
+                params.sqrtPriceLimitOne,
+                params.sqrtPriceLimitTwo,
+                remainingAccountsInfoTwo,
+                {
+                  accounts: {
+                    ...params,
+                    memoProgram: MEMO_PROGRAM_ADDRESS,
+                  },
+                  remainingAccounts: remainingAccountsTwo,
+                }
+              ),
+            ],
+          }).buildAndExecute(),
+          /0x17a6/ // TooManySupplementalTickArrays
+        );
+      });
+
+      it("go back to the previous tick array", async () => {
+
+      });
     });
   });
 });

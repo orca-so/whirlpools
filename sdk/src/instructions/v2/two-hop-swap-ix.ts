@@ -4,7 +4,7 @@ import { AccountMeta, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../../types/public";
-import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
+import { RemainingAccountsBuilder, RemainingAccountsType, toSupplementalTickArrayAccountMetas } from "../../utils/remaining-accounts-util";
 import { TwoHopSwapInput } from "../two-hop-swap-ix";
 
 /**
@@ -28,6 +28,8 @@ import { TwoHopSwapInput } from "../two-hop-swap-ix";
  * @param oracleOne - PublicKey for the oracle account for this whirlpoolOne.
  * @param oracleTwo - PublicKey for the oracle account for this whirlpoolTwo.
  * @param tokenAuthority - authority to withdraw tokens from the input token account
+ * @param supplementalTickArraysOne - Optional array of PublicKey for supplemental tick arrays of whirlpoolOne.
+ * @param supplementalTickArraysTwo - Optional array of PublicKey for supplemental tick arrays of whirlpoolTwo.
  * @param swapInput - Parameters in {@link TwoHopSwapInput}
  */
 export type TwoHopSwapV2Params = TwoHopSwapInput & {
@@ -51,6 +53,8 @@ export type TwoHopSwapV2Params = TwoHopSwapInput & {
   oracleOne: PublicKey;
   oracleTwo: PublicKey;
   tokenAuthority: PublicKey;
+  supplementalTickArraysOne?: PublicKey[];
+  supplementalTickArraysTwo?: PublicKey[];
 };
 
 /**
@@ -109,12 +113,16 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
     tickArrayTwo2,
     oracleOne,
     oracleTwo,
+    supplementalTickArraysOne,
+    supplementalTickArraysTwo,
   } = params;
 
   const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
     .addSlice(RemainingAccountsType.TransferHookInput, tokenTransferHookAccountsInput)
     .addSlice(RemainingAccountsType.TransferHookIntermediate, tokenTransferHookAccountsIntermediate)
     .addSlice(RemainingAccountsType.TransferHookOutput, tokenTransferHookAccountsOutput)
+    .addSlice(RemainingAccountsType.SupplementalTickArraysOne, toSupplementalTickArrayAccountMetas(supplementalTickArraysOne))
+    .addSlice(RemainingAccountsType.SupplementalTickArraysTwo, toSupplementalTickArrayAccountMetas(supplementalTickArraysTwo))
     .build();
 
   const ix = program.instruction.twoHopSwapV2(

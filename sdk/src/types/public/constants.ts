@@ -25,7 +25,7 @@ export const ORCA_WHIRLPOOLS_CONFIG_EXTENSION = new PublicKey("777H5H3Tp9U11uRVR
  * Orca's supported tick spacings.
  * @category Constants
  */
-export const ORCA_SUPPORTED_TICK_SPACINGS = [1, 2, 4, 8, 16, 64, 128, 256];
+export const ORCA_SUPPORTED_TICK_SPACINGS = [1, 2, 4, 8, 16, 64, 96, 128, 256];
 
 /**
  * The number of rewards supported by this whirlpool.
@@ -100,6 +100,12 @@ export const MEMO_PROGRAM_ADDRESS = new PublicKey(
  * @category Constants
  */
 export const MAX_SWAP_TICK_ARRAYS = 3;
+
+/**
+ * The maximum number of supplemental tick-arrays that can be provided in a swap.
+ * @category Constants
+ */
+export const MAX_SUPPLEMENTAL_TICK_ARRAYS = 3;
 
 /**
  * The denominator which the protocol fee rate is divided on.

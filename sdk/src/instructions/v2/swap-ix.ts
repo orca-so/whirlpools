@@ -4,7 +4,7 @@ import { AccountMeta, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS, SwapInput } from "../../types/public";
-import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
+import { RemainingAccountsBuilder, RemainingAccountsType, toSupplementalTickArrayAccountMetas } from "../../utils/remaining-accounts-util";
 
 /**
  * Raw parameters and accounts to swap on a Whirlpool
@@ -24,6 +24,7 @@ import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/rem
  * @param tokenProgramB - PublicKey for the token program for token B.
  * @param oracle - PublicKey for the oracle account for this Whirlpool.
  * @param tokenAuthority - authority to withdraw tokens from the input token account
+ * @param supplementalTickArrays - Optional array of PublicKey for supplemental tick arrays of this whirlpool.
  */
 export type SwapV2Params = SwapInput & {
   whirlpool: PublicKey;
@@ -39,6 +40,7 @@ export type SwapV2Params = SwapInput & {
   tokenProgramB: PublicKey;
   oracle: PublicKey;
   tokenAuthority: PublicKey;
+  supplementalTickArrays?: PublicKey[];
 };
 
 /**
@@ -83,11 +85,13 @@ export function swapV2Ix(program: Program<Whirlpool>, params: SwapV2Params): Ins
     tickArray1,
     tickArray2,
     oracle,
+    supplementalTickArrays,
   } = params;
 
   const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
     .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
     .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+    .addSlice(RemainingAccountsType.SupplementalTickArrays, toSupplementalTickArrayAccountMetas(supplementalTickArrays))
     .build();
 
   const ix = program.instruction.swapV2(

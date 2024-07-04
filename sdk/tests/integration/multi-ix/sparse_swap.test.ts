@@ -580,6 +580,360 @@ describe("sparse swap tests", () => {
         }),
       ).buildAndExecute();
     });
+
+    describe("failures", () => {
+      async function buildTestEnvironment() {
+        const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        await initTestPoolWithTokens(
+          testCtx.whirlpoolCtx,
+          tickSpacing64,
+          PriceMath.tickIndexToSqrtPriceX64(3000), // tickCurrentIndex = 3000
+          new BN(1_000_000)
+        );
+
+        const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
+
+        // [-11264  ][-5632   ][0       ]
+        await (await pool.initTickArrayForTicks([-11264, -5632, 0]))!.buildAndExecute();
+
+        // deposit [-9984, 2944], 100_000
+        const depositQuote = increaseLiquidityQuoteByInputToken(
+          poolInitInfo.tokenMintB,
+          DecimalUtil.fromBN(new BN(100_000), 0),
+          -9984,
+          2944,
+          Percentage.fromFraction(0, 100),
+          pool,
+          NO_TOKEN_EXTENSION_CONTEXT,
+        );
+        await (await pool.openPosition(-9984, 2944, depositQuote)).tx.buildAndExecute();
+
+        await pool.refreshData();
+        const swapQuote = await swapQuoteByOutputToken(
+          pool,
+          poolInitInfo.tokenMintB,
+          new BN(99_000),
+          Percentage.fromFraction(0, 100),
+          testCtx.whirlpoolCtx.program.programId,
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+
+        const params = SwapUtils.getSwapParamsFromQuote(
+          swapQuote,
+          testCtx.whirlpoolCtx,
+          pool,
+          tokenAccountA,
+          tokenAccountB,
+          testCtx.provider.wallet.publicKey
+        );
+
+        assert.ok((await pool.refreshData()).tickCurrentIndex >= 2944);
+
+        return { poolInitInfo, params };
+      }
+
+      it("fail: invalid tick array (owned by other program)", async () => {
+        const { poolInitInfo, params } = await buildTestEnvironment();
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              tickArray0: params.tokenVaultA, // owned by TokenProgram
+              tickArray1: params.tickArray1,
+              tickArray2: params.tickArray2,
+            })
+          ).buildAndExecute(),
+          /0xbbf/ // AccountOwnedByWrongProgram
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              tickArray0: params.tickArray0,
+              tickArray1: params.tokenVaultA, // owned by TokenProgram
+              tickArray2: params.tickArray2,
+            })
+          ).buildAndExecute(),
+          /0xbbf/ // AccountOwnedByWrongProgram
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              tickArray0: params.tickArray0,
+              tickArray1: params.tickArray1,
+              tickArray2: params.tokenVaultA, // owned by TokenProgram
+            })
+          ).buildAndExecute(),
+          /0xbbf/ // AccountOwnedByWrongProgram
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
+              ...params,
+              // v2 specific
+              tokenMintA: poolInitInfo.tokenMintA,
+              tokenMintB: poolInitInfo.tokenMintB,
+              tokenProgramA: TOKEN_PROGRAM_ID,
+              tokenProgramB: TOKEN_PROGRAM_ID,
+              // supplemental
+              supplementalTickArrays: [
+                params.tokenVaultA,
+              ],
+            })
+          ).buildAndExecute(),
+          /0xbbf/ // AccountOwnedByWrongProgram
+        );
+      });
+
+      it("fail: invalid tick array (owned by Whirlpool program, but not TickArray account)", async () => {
+        const { poolInitInfo, params } = await buildTestEnvironment();
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              tickArray0: params.whirlpool, // owned by Whirlpool program, but Whirlpool account
+              tickArray1: params.tickArray1,
+              tickArray2: params.tickArray2,
+            })
+          ).buildAndExecute(),
+          /0xbba/ // AccountDiscriminatorMismatch
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              tickArray0: params.tickArray0,
+              tickArray1: params.whirlpool, // owned by Whirlpool program, but Whirlpool account
+              tickArray2: params.tickArray2,
+            })
+          ).buildAndExecute(),
+          /0xbba/ // AccountDiscriminatorMismatch
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              tickArray0: params.tickArray0,
+              tickArray1: params.tickArray1,
+              tickArray2: params.whirlpool, // owned by Whirlpool program, but Whirlpool account
+            })
+          ).buildAndExecute(),
+          /0xbba/ // AccountDiscriminatorMismatch
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
+              ...params,
+              // v2 specific
+              tokenMintA: poolInitInfo.tokenMintA,
+              tokenMintB: poolInitInfo.tokenMintB,
+              tokenProgramA: TOKEN_PROGRAM_ID,
+              tokenProgramB: TOKEN_PROGRAM_ID,
+              // supplemental
+              supplementalTickArrays: [
+                params.whirlpool, // owned by Whirlpool program, but Whirlpool account
+              ],
+            })
+          ).buildAndExecute(),
+          /0xbba/ // AccountDiscriminatorMismatch
+        );
+      });
+
+      it("fail: invalid tick array (initialized TickArray account, but for other whirlpool)", async () => {
+        const { poolInitInfo, params } = await buildTestEnvironment();
+
+        const { whirlpoolPda: anotherWhirlpoolPda } =
+          await initTestPoolWithTokens(
+            testCtx.whirlpoolCtx,
+            tickSpacing64,
+            PriceMath.tickIndexToSqrtPriceX64(3000), // tickCurrentIndex = 3000
+            new BN(1_000_000)
+          );
+
+        const anotherPool = await testCtx.whirlpoolClient.getPool(anotherWhirlpoolPda.publicKey);
+        await (await anotherPool.initTickArrayForTicks([-11264, -5632, 0]))!.buildAndExecute();
+
+        const anotherWhirlpoolTickArray0 = PDAUtil.getTickArray(
+          testCtx.whirlpoolCtx.program.programId,
+          anotherWhirlpoolPda.publicKey,
+          0
+        ).publicKey;
+        const fetched = await testCtx.whirlpoolCtx.fetcher.getTickArray(anotherWhirlpoolTickArray0, IGNORE_CACHE);
+        assert.ok(fetched !== null);
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              tickArray0: anotherWhirlpoolTickArray0, // for another Whirlpool
+              tickArray1: params.tickArray1,
+              tickArray2: params.tickArray2,
+            })
+          ).buildAndExecute(),
+          /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              tickArray0: params.tickArray0,
+              tickArray1: anotherWhirlpoolTickArray0, // for another Whirlpool
+              tickArray2: params.tickArray2,
+            })
+          ).buildAndExecute(),
+          /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              tickArray0: params.tickArray0,
+              tickArray1: params.tickArray1,
+              tickArray2: anotherWhirlpoolTickArray0, // for another Whirlpool
+            })
+          ).buildAndExecute(),
+          /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
+              ...params,
+              // v2 specific
+              tokenMintA: poolInitInfo.tokenMintA,
+              tokenMintB: poolInitInfo.tokenMintB,
+              tokenProgramA: TOKEN_PROGRAM_ID,
+              tokenProgramB: TOKEN_PROGRAM_ID,
+              // supplemental
+              supplementalTickArrays: [
+                anotherWhirlpoolTickArray0, // for another Whirlpool
+              ],
+            })
+          ).buildAndExecute(),
+          /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+        );
+      });
+
+      it("fail: no appropriate tick array (initialized TickArray, but start_tick_index mismatch)", async () => {
+        const { poolInitInfo, params } = await buildTestEnvironment();
+
+        const tickArrayNeg5632 = PDAUtil.getTickArray(
+          testCtx.whirlpoolCtx.program.programId,
+          poolInitInfo.whirlpoolPda.publicKey,
+          -5632,
+        ).publicKey;
+        const fetched = await testCtx.whirlpoolCtx.fetcher.getTickArray(tickArrayNeg5632, IGNORE_CACHE);
+        assert.ok(fetched !== null);
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              // expected first tick array should start from 0
+              tickArray0: tickArrayNeg5632,
+              tickArray1: tickArrayNeg5632,
+              tickArray2: tickArrayNeg5632,
+            })
+          ).buildAndExecute(),
+          /0x1787/ // InvalidTickArraySequence
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
+              ...params,
+              // v2 specific
+              tokenMintA: poolInitInfo.tokenMintA,
+              tokenMintB: poolInitInfo.tokenMintB,
+              tokenProgramA: TOKEN_PROGRAM_ID,
+              tokenProgramB: TOKEN_PROGRAM_ID,
+              // expected first tick array should start from 0
+              tickArray0: tickArrayNeg5632,
+              tickArray1: tickArrayNeg5632,
+              tickArray2: tickArrayNeg5632,
+              // supplemental
+              supplementalTickArrays: [
+                tickArrayNeg5632,
+                tickArrayNeg5632,
+                tickArrayNeg5632,
+              ],
+            })
+          ).buildAndExecute(),
+          /0x1787/ // InvalidTickArraySequence
+        );
+      });
+
+      it("fail: no appropriate tick array (uninitialized TickArray, and PDA mismatch)", async () => {
+        const { poolInitInfo, params } = await buildTestEnvironment();
+
+        const uninitializedRandomAddress = Keypair.generate().publicKey;
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+              ...params,
+              // expected first tick array should start from 0
+              tickArray0: uninitializedRandomAddress,
+              tickArray1: uninitializedRandomAddress,
+              tickArray2: uninitializedRandomAddress,
+            })
+          ).buildAndExecute(),
+          /0x1787/ // InvalidTickArraySequence
+        );
+
+        await assert.rejects(
+          toTx(
+            testCtx.whirlpoolCtx,
+            WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
+              ...params,
+              // v2 specific
+              tokenMintA: poolInitInfo.tokenMintA,
+              tokenMintB: poolInitInfo.tokenMintB,
+              tokenProgramA: TOKEN_PROGRAM_ID,
+              tokenProgramB: TOKEN_PROGRAM_ID,
+              // expected first tick array should start from 0
+              tickArray0: uninitializedRandomAddress,
+              tickArray1: uninitializedRandomAddress,
+              tickArray2: uninitializedRandomAddress,
+              // supplemental
+              supplementalTickArrays: [
+                uninitializedRandomAddress,
+                uninitializedRandomAddress,
+                uninitializedRandomAddress,
+              ],
+            })
+          ).buildAndExecute(),
+          /0x1787/ // InvalidTickArraySequence
+        );
+      });
+    });
   });
 
   describe("swap through uninitialized TickArrays(*: init, -: uninit, S: start, T: end)", () => {

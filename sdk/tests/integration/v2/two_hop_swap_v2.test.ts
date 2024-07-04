@@ -336,21 +336,23 @@ describe("two_hop_swap_v2", () => {
             await rejectParams(
               {
                 ...baseIxParams,
-                tickArrayOne0: PublicKey.unique(),
+                // sparse-swap can accept completely uninitialized account as candidate for uninitialized tick arrays.
+                // so now we use token account as clearly invalid account.
+                tickArrayOne0: baseIxParams.tokenVaultOneInput,
               },
               /0xbbf/ // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
-                tickArrayOne1: PublicKey.unique(),
+                tickArrayOne1: baseIxParams.tokenVaultOneInput,
               },
               /0xbbf/ // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
-                tickArrayOne2: PublicKey.unique(),
+                tickArrayOne2: baseIxParams.tokenVaultOneInput,
               },
               /0xbbf/ // AccountOwnedByWrongProgram
             );
@@ -360,21 +362,23 @@ describe("two_hop_swap_v2", () => {
             await rejectParams(
               {
                 ...baseIxParams,
-                tickArrayTwo0: PublicKey.unique(),
+                // sparse-swap can accept completely uninitialized account as candidate for uninitialized tick arrays.
+                // so now we use token account as clearly invalid account.
+                tickArrayTwo0: baseIxParams.tokenVaultTwoOutput,
               },
               /0xbbf/ // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
-                tickArrayTwo1: PublicKey.unique(),
+                tickArrayTwo1: baseIxParams.tokenVaultTwoOutput,
               },
               /0xbbf/ // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
-                tickArrayTwo2: PublicKey.unique(),
+                tickArrayTwo2: baseIxParams.tokenVaultTwoOutput,
               },
               /0xbbf/ // AccountOwnedByWrongProgram
             );

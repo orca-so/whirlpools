@@ -122,16 +122,38 @@ enum TickArrayAccount<'info> {
     },
     Uninitialized {
         pubkey: Pubkey,
-        account_info: AccountInfo<'info>,
         start_tick_index: Option<i32>,
     },
 }
 
 pub struct SparseSwapTickSequenceBuilder<'info> {
+    // AccountInfo ownership must be kept while using RefMut.
+    // This is why try_from and build are separated and SparseSwapTickSequenceBuilder struct is used.
     tick_array_accounts: Vec<TickArrayAccount<'info>>,
 }
 
 impl<'info> SparseSwapTickSequenceBuilder<'info> {
+    /// Create a new SparseSwapTickSequenceBuilder from the given tick array accounts.
+    ///
+    /// static_tick_array_account_infos and supplemental_tick_array_account_infos will be merged,
+    /// and deduplicated by key. TickArray accounts can be provided in any order.
+    /// 
+    /// Even if over three tick arrays are provided, only three tick arrays are used in the single swap.
+    /// The extra TickArray acts as a fallback in case the current price moves.
+    /// 
+    /// # Parameters
+    /// - `whirlpool` - Whirlpool account
+    /// - `a_to_b` - Direction of the swap
+    /// - `static_tick_array_account_infos` - TickArray accounts provided through required accounts
+    /// - `supplemental_tick_array_account_infos` - TickArray accounts provided through remaining accounts
+    /// 
+    /// # Errors
+    /// - `DifferentWhirlpoolTickArrayAccount` - If the provided TickArray account is not for the whirlpool
+    /// - `InvalidTickArraySequence` - If no valid TickArray account for the swap is found
+    /// - `AccountNotMutable` - If the provided TickArray account is not mutable
+    /// - `AccountOwnedByWrongProgram` - If the provided initialized TickArray account is not owned by this program
+    /// - `AccountDiscriminatorNotFound` - If the provided TickArray account does not have a discriminator
+    /// - `AccountDiscriminatorMismatch` - If the provided TickArray account has a mismatched discriminator
     pub fn try_from(
         whirlpool: &Account<'info, Whirlpool>,
         a_to_b: bool,
@@ -190,6 +212,9 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
 
         let mut tick_array_accounts: Vec<TickArrayAccount> = vec![];
         for start_tick_index in start_tick_indexes.iter() {
+            // PDA calculation is expensive (3000 CU ~ / PDA),
+            // so PDA is calculated only if not found in start_tick_index comparison.
+
             // find from initialized tick arrays
             if let Some(pos) = initialized.iter().position(|t| t.0 == *start_tick_index) {
                 let state = initialized.remove(pos).1;
@@ -201,15 +226,9 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
             let tick_array_pda = derive_tick_array_pda(&whirlpool, *start_tick_index);
             if let Some(pos) = uninitialized.iter().position(|t| t.0 == tick_array_pda) {
                 let state = uninitialized.remove(pos).1;
-                if let TickArrayAccount::Uninitialized {
-                    pubkey,
-                    account_info,
-                    ..
-                } = state
-                {
+                if let TickArrayAccount::Uninitialized { pubkey, .. } = state {
                     tick_array_accounts.push(TickArrayAccount::Uninitialized {
                         pubkey,
-                        account_info,
                         start_tick_index: Some(*start_tick_index),
                     });
                 } else {
@@ -232,7 +251,7 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
     }
 
     pub fn build<'a>(&'a self) -> Result<SwapTickSequence<'a>> {
-        let mut tick_array_refmuts = VecDeque::with_capacity(3);
+        let mut proxied_tick_arrays = VecDeque::with_capacity(3);
         for tick_array_account in self.tick_array_accounts.iter() {
             match tick_array_account {
                 TickArrayAccount::Initialized { account_info, .. } => {
@@ -244,18 +263,18 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
                             &mut data.deref_mut()[8..std::mem::size_of::<TickArray>() + 8],
                         )
                     });
-                    tick_array_refmuts.push_back(ProxiedTickArray::new_initialized(tick_array_refmut));
+                    proxied_tick_arrays.push_back(ProxiedTickArray::new_initialized(tick_array_refmut));
                 }
                 TickArrayAccount::Uninitialized { start_tick_index, .. } => {
-                    tick_array_refmuts.push_back(ProxiedTickArray::new_uninitialized(start_tick_index.unwrap()));
+                    proxied_tick_arrays.push_back(ProxiedTickArray::new_uninitialized(start_tick_index.unwrap()));
                 }
             }
         }
 
         Ok(SwapTickSequence::<'a>::new_with_proxy(
-            tick_array_refmuts.pop_front().unwrap(),
-            tick_array_refmuts.pop_front(),
-            tick_array_refmuts.pop_front(),
+            proxied_tick_arrays.pop_front().unwrap(),
+            proxied_tick_arrays.pop_front(),
+            proxied_tick_arrays.pop_front(),
         ))
     }
 }
@@ -264,7 +283,10 @@ fn peek_tick_array<'info>(account_info: AccountInfo<'info>) -> Result<TickArrayA
     use anchor_lang::Discriminator;
 
     // following process is ported from anchor-lang's AccountLoader::try_from and AccountLoader::load_mut
+    // AccountLoader can handle initialized account and partially initialized (owner program changed) account only.
+    // So we need to handle uninitialized account manually.
 
+    // account must be writable
     if !account_info.is_writable {
         return Err(anchor_lang::error::ErrorCode::AccountNotMutable.into());
     }
@@ -273,10 +295,12 @@ fn peek_tick_array<'info>(account_info: AccountInfo<'info>) -> Result<TickArrayA
     if account_info.owner == &System::id() && account_info.data_is_empty() {
         return Ok(TickArrayAccount::Uninitialized {
             pubkey: *account_info.key,
-            account_info,
             start_tick_index: None,
         });
     }
+
+    // To avoid problems with the lifetime of the reference requested by AccountLoader (&'info AccountInfo<'info>),
+    // AccountLoader is not used even after the account is found to be initialized.
 
     // owner program check
     if account_info.owner != &TickArray::owner() {
@@ -761,9 +785,8 @@ mod sparse_swap_tick_sequence_tests {
             let result = peek_tick_array(account_info);
             assert!(result.is_ok());
             match result.unwrap() {
-                TickArrayAccount::Uninitialized { pubkey, account_info, start_tick_index } => {
+                TickArrayAccount::Uninitialized { pubkey, start_tick_index } => {
                     assert_eq!(pubkey, account_address);
-                    assert_eq!(account_info.key(), account_address);
                     assert!(start_tick_index.is_none());
                 }
                 _ => panic!("unexpected state"),

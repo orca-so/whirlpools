@@ -6,7 +6,7 @@ use std::{
 
 use crate::{
     errors::ErrorCode,
-    state::{Tick, TickArray, TickUpdate, Whirlpool, ZeroedTickArray, MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_SIZE},
+    state::{Tick, TickArray, TickArrayType, TickUpdate, Whirlpool, ZeroedTickArray, TICK_ARRAY_SIZE},
     util::SwapTickSequence,
 };
 
@@ -27,14 +27,7 @@ impl<'a> ProxiedTickArray<'a> {
     }
 
     pub fn start_tick_index(&self) -> i32 {
-        match self {
-            ProxiedTickArray::Initialized(refmut) => {
-                refmut.start_tick_index
-            }
-            ProxiedTickArray::Uninitialized(zeroed) => {
-                zeroed.start_tick_index
-            }
-        }
+        self.as_ref().start_tick_index()
     }
 
     pub fn get_next_init_tick_index(
@@ -43,25 +36,11 @@ impl<'a> ProxiedTickArray<'a> {
         tick_spacing: u16,
         a_to_b: bool,
     ) -> Result<Option<i32>> {
-        match self {
-            ProxiedTickArray::Initialized(refmut) => {
-                refmut.get_next_init_tick_index(tick_index, tick_spacing, a_to_b)
-            }
-            ProxiedTickArray::Uninitialized(zeroed) => {
-                zeroed.get_next_init_tick_index(tick_index, tick_spacing, a_to_b)
-            }
-        }
+        self.as_ref().get_next_init_tick_index(tick_index, tick_spacing, a_to_b)
     }
 
     pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
-        match self {
-            ProxiedTickArray::Initialized(refmut) => {
-                refmut.get_tick(tick_index, tick_spacing)
-            }
-            ProxiedTickArray::Uninitialized(zeroed) => {
-                zeroed.get_tick(tick_index, tick_spacing)
-            }
-        }
+        self.as_ref().get_tick(tick_index, tick_spacing)
     }
 
     pub fn update_tick(
@@ -70,46 +49,36 @@ impl<'a> ProxiedTickArray<'a> {
         tick_spacing: u16,
         update: &TickUpdate,
     ) -> Result<()> {
-        match self {
-            ProxiedTickArray::Initialized(refmut) => {
-                refmut.update_tick(tick_index, tick_spacing, update)
-            }
-            ProxiedTickArray::Uninitialized(..) => {
-                panic!("Uninitialized TickArray must not be updated");
-            }
-        }
+        self.as_mut().update_tick(tick_index, tick_spacing, update)
     }
 
     pub fn is_min_tick_array(&self) -> bool {
-        match self {
-            ProxiedTickArray::Initialized(refmut) => {
-                refmut.is_min_tick_array()
-            }
-            ProxiedTickArray::Uninitialized(zeroed) => {
-                zeroed.is_min_tick_array()
-            }
-        }
+        self.as_ref().is_min_tick_array()
     }
 
     pub fn is_max_tick_array(&self, tick_spacing: u16) -> bool {
-        match self {
-            ProxiedTickArray::Initialized(refmut) => {
-                refmut.is_max_tick_array(tick_spacing)
-            }
-            ProxiedTickArray::Uninitialized(zeroed) => {
-                zeroed.is_max_tick_array(tick_spacing)
-            }
-        }
+        self.as_ref().is_max_tick_array(tick_spacing)
     }
 
     pub fn tick_offset(&self, tick_index: i32, tick_spacing: u16) -> Result<isize> {
+        self.as_ref().tick_offset(tick_index, tick_spacing)
+    }
+}
+
+impl<'a> AsRef<dyn TickArrayType + 'a> for ProxiedTickArray<'a> {
+    fn as_ref(&self) -> &(dyn TickArrayType + 'a) {
         match self {
-            ProxiedTickArray::Initialized(refmut) => {
-                refmut.tick_offset(tick_index, tick_spacing)
-            }
-            ProxiedTickArray::Uninitialized(zeroed) => {
-                zeroed.tick_offset(tick_index, tick_spacing)
-            }
+            ProxiedTickArray::Initialized(ref array) => &**array,
+            ProxiedTickArray::Uninitialized(ref array) => array,
+        }
+    }
+}
+
+impl<'a> AsMut<dyn TickArrayType + 'a> for ProxiedTickArray<'a> {
+    fn as_mut(&mut self) -> &mut (dyn TickArrayType + 'a) {
+        match self {
+            ProxiedTickArray::Initialized(ref mut array) => &mut **array,
+            ProxiedTickArray::Uninitialized(ref mut array) => array,
         }
     }
 }
@@ -337,14 +306,15 @@ fn peek_tick_array<'info>(account_info: AccountInfo<'info>) -> Result<TickArrayA
 
 fn get_start_tick_indexes(whirlpool: &Account<Whirlpool>, a_to_b: bool) -> Vec<i32> {
     let tick_current_index = whirlpool.tick_current_index;
-    let tick_spacing = whirlpool.tick_spacing as i32;
-    let ticks_in_array = TICK_ARRAY_SIZE * tick_spacing;
+    let tick_spacing_u16 = whirlpool.tick_spacing;
+    let tick_spacing_i32 = whirlpool.tick_spacing as i32;
+    let ticks_in_array = TICK_ARRAY_SIZE * tick_spacing_i32;
 
     let start_tick_index_base = floor_division(tick_current_index, ticks_in_array) * ticks_in_array;
     let offset = if a_to_b {
         [0, -1, -2]
     } else {
-        let shifted = tick_current_index + tick_spacing >= start_tick_index_base + ticks_in_array;
+        let shifted = tick_current_index + tick_spacing_i32 >= start_tick_index_base + ticks_in_array;
         if shifted {
             [1, 2, 3]
         } else {
@@ -356,7 +326,7 @@ fn get_start_tick_indexes(whirlpool: &Account<Whirlpool>, a_to_b: bool) -> Vec<i
         .iter()
         .filter_map(|&o| {
             let start_tick_index = start_tick_index_base + o * ticks_in_array;
-            if is_valid_start_tick_index(start_tick_index, ticks_in_array) {
+            if Tick::check_is_valid_start_tick(start_tick_index, tick_spacing_u16) {
                 Some(start_tick_index)
             } else {
                 None
@@ -365,11 +335,6 @@ fn get_start_tick_indexes(whirlpool: &Account<Whirlpool>, a_to_b: bool) -> Vec<i
         .collect::<Vec<i32>>();
 
     start_tick_indexes
-}
-
-fn is_valid_start_tick_index(start_tick_index: i32, ticks_in_array: i32) -> bool {
-    // caller must assure that start_tick_index is multiple of ticks_in_array
-    start_tick_index + ticks_in_array > MIN_TICK_INDEX && start_tick_index < MAX_TICK_INDEX
 }
 
 fn floor_division(dividend: i32, divisor: i32) -> i32 {
@@ -524,71 +489,6 @@ mod sparse_swap_tick_sequence_tests {
         assert_eq!(floor_division(-127, 64), -2);
         assert_eq!(floor_division(-128, 64), -2);
         assert_eq!(floor_division(-129, 64), -3);
-    }
-
-    mod test_is_valid_start_tick_index {
-        use super::*;
-
-        // valid tick range: -443636 ~ +443636
-
-        fn get_ticks_in_array(tick_spacing: i32) -> i32 {
-            TICK_ARRAY_SIZE * tick_spacing
-        }
-
-        #[test]
-        fn tick_spacing_1() {
-            let ticks_in_array = get_ticks_in_array(1);
-            assert_eq!(is_valid_start_tick_index(-443784, ticks_in_array), false);
-            assert_eq!(is_valid_start_tick_index(-443696, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(-443608, ticks_in_array), true); 
-            assert_eq!(is_valid_start_tick_index(-88, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(0, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(88, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(443608, ticks_in_array), true); 
-            assert_eq!(is_valid_start_tick_index(443696, ticks_in_array), false); 
-        }
-
-        #[test]
-        fn tick_spacing_64() {
-            let ticks_in_array = get_ticks_in_array(64);
-            assert_eq!(is_valid_start_tick_index(-450560, ticks_in_array), false);
-            assert_eq!(is_valid_start_tick_index(-444928, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(-439296, ticks_in_array), true); 
-            assert_eq!(is_valid_start_tick_index(-5632, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(0, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(5632, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(439296, ticks_in_array), true); 
-            assert_eq!(is_valid_start_tick_index(444928, ticks_in_array), false); 
-        }
-
-        #[test]
-        fn tick_spacing_4096() {
-            let ticks_in_array = get_ticks_in_array(4096);
-            assert_eq!(is_valid_start_tick_index(-1081344, ticks_in_array), false);
-            assert_eq!(is_valid_start_tick_index(-720896, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(-360448, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(0, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(360448, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(720896, ticks_in_array), false);
-        }
-
-        #[test]
-        fn tick_spacing_8192() {
-            let ticks_in_array = get_ticks_in_array(8192);
-            assert_eq!(is_valid_start_tick_index(-1441792, ticks_in_array), false);
-            assert_eq!(is_valid_start_tick_index(-720896, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(0, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(720896, ticks_in_array), false);
-        }
-
-        #[test]
-        fn tick_spacing_32768() {
-            let ticks_in_array = get_ticks_in_array(32768);
-            assert_eq!(is_valid_start_tick_index(-5767168, ticks_in_array), false);
-            assert_eq!(is_valid_start_tick_index(-2883584, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(0, ticks_in_array), true);
-            assert_eq!(is_valid_start_tick_index(2883584, ticks_in_array), false);
-        }
     }
 
     mod test_get_start_tick_indexes {

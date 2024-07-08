@@ -1,8 +1,8 @@
 use anchor_lang::prelude::*;
 
-use crate::{errors::ErrorCode, state::NUM_REWARDS};
+use crate::{errors::ErrorCode, math::INFINITY_POOL_SPACING_FLAG, state::NUM_REWARDS};
 
-use super::{Tick, Whirlpool, MAX_TICK_INDEX, MIN_TICK_INDEX};
+use super::{Tick, Whirlpool};
 
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default, Copy)]
 pub struct OpenPositionBumps {
@@ -70,12 +70,14 @@ impl Position {
         }
 
         // On tick spacing >= 2^15, should only be able to open full range positions (infinity pool)
-        if whirlpool.tick_spacing >= 2u16.pow(15) {
+        if whirlpool.tick_spacing >= INFINITY_POOL_SPACING_FLAG {
+            let (full_range_lower_index, full_range_upper_index) = Tick::full_range_indexes(whirlpool.tick_spacing);
+            // let full_range_lower_index = Tick
             // Use gt or lt here instead of neq since indexes still need to be on tick spacing
-            if tick_lower_index < MIN_TICK_INDEX
-                || tick_upper_index > MAX_TICK_INDEX
+            if tick_lower_index != full_range_lower_index
+                || tick_upper_index != full_range_upper_index
             {
-                return Err(ErrorCode::InvalidTickIndex.into());
+                return Err(ErrorCode::NonFullRangePositionDisallowed.into());
             }
         }
 

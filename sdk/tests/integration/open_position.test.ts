@@ -39,7 +39,7 @@ describe("open_position", () => {
   let defaultParams: OpenPositionParams;
   let defaultMint: Keypair;
   const tickLowerIndex = 0;
-  const tickUpperIndex = 128;
+  const tickUpperIndex = 32768;
   let poolInitInfo: InitPoolParams;
   let whirlpoolPda: PDA;
   let infinityPoolInitInfo: InitPoolParams;
@@ -56,8 +56,8 @@ describe("open_position", () => {
     const { params, mint } = await generateDefaultOpenPositionParams(
       ctx,
       whirlpoolPda.publicKey,
-      0,
-      128,
+      tickLowerIndex,
+      tickUpperIndex,
       provider.wallet.publicKey
     );
     defaultParams = params;
@@ -252,7 +252,7 @@ describe("open_position", () => {
         provider.wallet.publicKey,
         funderKeypair
       ),
-      /0x177a/ // InvalidTickIndex
+      /0x17a6/ // NonFullRangePositionDisallowed
     );
   });
 });

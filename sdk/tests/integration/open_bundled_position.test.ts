@@ -38,7 +38,7 @@ describe("open_bundled_position", () => {
   const fetcher = ctx.fetcher;
 
   const tickLowerIndex = 0;
-  const tickUpperIndex = 128;
+  const tickUpperIndex = 32768;
   let poolInitInfo: InitPoolParams;
   let whirlpoolPda: PDA;
   let infinityPoolInitInfo: InitPoolParams;
@@ -645,7 +645,7 @@ describe("open_bundled_position", () => {
         tickLowerIndex,
         tickUpperIndex
       ),
-      /0x177a/ // InvalidTickIndex
+      /0x17a6/ // NonFullRangePositionDisallowed
     );
   });
 

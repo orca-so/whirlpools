@@ -126,7 +126,7 @@ pub enum ErrorCode {
 
     #[msg("Unable to call transfer hook without extra accounts")]
     NoExtraAccountsForTransferHook, // 0x17a2 (6050)
-    
+
     #[msg("Output and input amount mismatch")]
     IntermediateTokenAmountMismatch, // 0x17a3 (6051)
 
@@ -135,6 +135,9 @@ pub enum ErrorCode {
 
     #[msg("Same accounts type is provided more than once")]
     RemainingAccountsDuplicatedAccountsType, // 0x17a5 (6053)
+
+    #[msg("This whirlpool does not support non-full range positions")]
+    NonFullRangePositionDisallowed, // 0x17a6 (6054)
 }
 
 impl From<TryFromIntError> for ErrorCode {

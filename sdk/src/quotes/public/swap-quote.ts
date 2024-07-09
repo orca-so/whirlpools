@@ -100,10 +100,10 @@ export type NormalSwapQuote = SwapInput & SwapEstimates;
  * @param inputTokenMint - PublicKey for the input token mint to swap with
  * @param tokenAmount - The amount of input token to swap from
  * @param slippageTolerance - The amount of slippage to account for in this quote
- * @param useFallbackTickArray - An enum to specify when to use fallback tick arrays in a swap quote.
-* @param programId - PublicKey for the Whirlpool ProgramId
+ * @param programId - PublicKey for the Whirlpool ProgramId
  * @param cache - WhirlpoolAccountCacheInterface instance object to fetch solana accounts
  * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
+ * @param useFallbackTickArray - An enum to specify when to use fallback tick arrays in a swap quote.
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByInputToken(
@@ -111,10 +111,10 @@ export async function swapQuoteByInputToken(
   inputTokenMint: Address,
   tokenAmount: BN,
   slippageTolerance: Percentage,
-  useFallbackTickArray: UseFallbackTickArray,
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
-  opts?: WhirlpoolAccountFetchOptions
+  opts?: WhirlpoolAccountFetchOptions,
+  useFallbackTickArray: UseFallbackTickArray = UseFallbackTickArray.Never,
 ): Promise<SwapQuote> {
   const params = await swapQuoteByToken(
     whirlpool,
@@ -140,10 +140,10 @@ export async function swapQuoteByInputToken(
  * @param outputTokenMint - PublicKey for the output token mint to swap into
  * @param tokenAmount - The maximum amount of output token to receive in this swap.
  * @param slippageTolerance - The amount of slippage to account for in this quote
- * @param useFallbackTickArray - An enum to specify when to use fallback tick arrays in a swap quote.
  * @param programId - PublicKey for the Whirlpool ProgramId
  * @param cache - WhirlpoolAccountCacheInterface instance to fetch solana accounts
  * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
+ * @param useFallbackTickArray - An enum to specify when to use fallback tick arrays in a swap quote.
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByOutputToken(
@@ -151,10 +151,10 @@ export async function swapQuoteByOutputToken(
   outputTokenMint: Address,
   tokenAmount: BN,
   slippageTolerance: Percentage,
-  useFallbackTickArray: UseFallbackTickArray,
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
-  opts?: WhirlpoolAccountFetchOptions
+  opts?: WhirlpoolAccountFetchOptions,
+  useFallbackTickArray: UseFallbackTickArray = UseFallbackTickArray.Never,
 ): Promise<SwapQuote> {
   const params = await swapQuoteByToken(
     whirlpool,

@@ -1,3 +1,7 @@
+[workspace]
+members = ["programs/*"]
+resolver = "2"
+
 [programs.localnet]
 whirlpool = "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
 

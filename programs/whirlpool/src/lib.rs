@@ -19,7 +19,7 @@ pub mod tests;
 #[doc(hidden)]
 pub mod util;
 
-use crate::state::{OpenPositionBumps, OpenPositionWithMetadataBumps, WhirlpoolBumps};
+use crate::state::WhirlpoolBumps;
 use instructions::*;
 
 #[program]
@@ -172,11 +172,7 @@ pub mod whirlpool {
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
-        return instructions::open_position::handler(
-            ctx,
-            tick_lower_index,
-            tick_upper_index,
-        );
+        return instructions::open_position::handler(ctx, tick_lower_index, tick_upper_index);
     }
 
     /// Open a position in a Whirlpool. A unique token will be minted to represent the position

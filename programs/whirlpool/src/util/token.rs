@@ -4,10 +4,6 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
 use solana_program::program::invoke_signed;
 use spl_token::instruction::{burn_checked, close_account, mint_to, set_authority, AuthorityType};
 
-use crate::constants::nft::{
-    WPB_METADATA_NAME_PREFIX, WPB_METADATA_SYMBOL, WPB_METADATA_URI, WP_METADATA_NAME,
-    WP_METADATA_SYMBOL, WP_METADATA_URI,
-};
 
 pub fn transfer_from_owner_to_vault<'info>(
     position_authority: &Signer<'info>,
@@ -112,8 +108,6 @@ pub fn mint_position_token_and_remove_authority<'info>(
     remove_position_token_mint_authority(whirlpool, position_mint, token_program)
 }
 
-
-
 fn mint_position_token<'info>(
     whirlpool: &Account<'info, Whirlpool>,
     position_mint: &Account<'info, Mint>,
@@ -185,7 +179,6 @@ pub fn mint_position_bundle_token_and_remove_authority<'info>(
         position_bundle_seeds,
     )
 }
-
 
 fn mint_position_bundle_token<'info>(
     position_bundle: &Account<'info, PositionBundle>,

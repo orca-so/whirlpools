@@ -2,14 +2,13 @@ import { Address } from "@coral-xyz/anchor";
 import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { WhirlpoolContext } from "../..";
+import { TickUtil, WhirlpoolContext } from "../..";
 import {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
 import {
   MAX_SQRT_PRICE,
-  MAX_SWAP_TICK_ARRAYS,
   MIN_SQRT_PRICE,
   SwapInput,
   SwapParams,
@@ -20,8 +19,8 @@ import { Whirlpool } from "../../whirlpool-client";
 import { adjustForSlippage } from "../math/token-math";
 import { PDAUtil } from "./pda-utils";
 import { PoolUtil } from "./pool-utils";
-import { TickUtil } from "./tick-utils";
 import { SwapDirection, TokenType } from "./types";
+import { TickArrayAddress, buildZeroedTickArray, getTickArrayPublicKeysWithStartTickIndex } from "../swap-utils";
 
 /**
  * A request to fetch the tick-arrays that a swap may traverse across.
@@ -96,25 +95,45 @@ export class SwapUtils {
     aToB: boolean,
     programId: PublicKey,
     whirlpoolAddress: PublicKey
-  ) {
-    const shift = aToB ? 0 : tickSpacing;
+  ): PublicKey[] {
+    return getTickArrayPublicKeysWithStartTickIndex(
+      tickCurrentIndex,
+      tickSpacing,
+      aToB,
+      programId,
+      whirlpoolAddress
+    ).map((p) => p.pubkey);
+  }
 
-    let offset = 0;
-    let tickArrayAddresses: PublicKey[] = [];
-    for (let i = 0; i < MAX_SWAP_TICK_ARRAYS; i++) {
-      let startIndex: number;
-      try {
-        startIndex = TickUtil.getStartTickIndex(tickCurrentIndex + shift, tickSpacing, offset);
-      } catch {
-        return tickArrayAddresses;
-      }
-
-      const pda = PDAUtil.getTickArray(programId, whirlpoolAddress, startIndex);
-      tickArrayAddresses.push(pda.publicKey);
-      offset = aToB ? offset - 1 : offset + 1;
+  /**
+   * Given the tickArrays, return the fallback tickArray account that this swap may traverse across.
+   *
+   * @category Whirlpool Utils
+   * @param tickArrays - An array of tickArrays to be used in the swap.
+   * @param tickSpacing - The tickSpacing for the Whirlpool.
+   * @param aToB - The direction of the trade.
+   * @param programId - The Whirlpool programId which the Whirlpool lives on.
+   * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
+   * @returns A PublicKey for the fallback tickArray account that this swap may traverse across. If the fallback tickArray does not exist, return undefined.
+   */
+  public static getFallbackTickArrayPublicKey(
+    tickArrays: TickArray[],
+    tickSpacing: number,
+    aToB: boolean,
+    programId: PublicKey,
+    whirlpoolAddress: PublicKey,
+  ): PublicKey | undefined {
+    try {
+      const fallbackStartTickIndex = TickUtil.getStartTickIndex(
+        tickArrays[0].startTickIndex,
+        tickSpacing,
+        aToB ? 1 : -1,
+      );
+      const pda = PDAUtil.getTickArray(programId, whirlpoolAddress, fallbackStartTickIndex);
+      return pda.publicKey;
+    } catch {
+      return undefined;
     }
-
-    return tickArrayAddresses;
   }
 
   /**
@@ -162,14 +181,14 @@ export class SwapUtils {
     tickArrayRequests: TickArrayRequest[],
     opts?: WhirlpoolAccountFetchOptions
   ): Promise<TickArray[][]> {
-    let addresses: PublicKey[] = [];
+    let addresses: TickArrayAddress[] = [];
     let requestToIndices = [];
 
     // Each individual tick array request may correspond to more than one tick array
     // so we map each request to a slice of the batch request
     for (let i = 0; i < tickArrayRequests.length; i++) {
       const { tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress } = tickArrayRequests[i];
-      const requestAddresses = SwapUtils.getTickArrayPublicKeys(
+      const requestAddresses = getTickArrayPublicKeysWithStartTickIndex(
         tickCurrentIndex,
         tickSpacing,
         aToB,
@@ -179,7 +198,7 @@ export class SwapUtils {
       requestToIndices.push([addresses.length, addresses.length + requestAddresses.length]);
       addresses.push(...requestAddresses);
     }
-    const data = await fetcher.getTickArrays(addresses, opts);
+    const data = await fetcher.getTickArrays(addresses.map((a) => a.pubkey), opts);
 
     // Re-map from flattened batch data to TickArray[] for request
     return requestToIndices.map((indices) => {
@@ -187,10 +206,29 @@ export class SwapUtils {
       const addressSlice = addresses.slice(start, end);
       const dataSlice = data.slice(start, end);
       return addressSlice.map((addr, index) => ({
-        address: addr,
+        address: addr.pubkey,
+        startTickIndex: addr.startTickIndex,
         data: dataSlice[index],
       }));
     });
+  }
+
+  /**
+   * Given a set of tickArrays, interpolate the tickArrays with zeroed tick data if they are not initialized.
+   * 
+   * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
+   * @param tickArrays - Fetched tickArrays to interpolate.
+   * @returns An array of TickArray objects with zeroed tick data if they are not initialized.
+   */
+  public static interporateUninitializedTickArrays(
+    whirlpoolAddress: PublicKey,
+    tickArrays: TickArray[],
+  ): TickArray[] {
+    return tickArrays.map((tickArray) => ({
+      address: tickArray.address,
+      startTickIndex: tickArray.startTickIndex,
+      data: tickArray.data ?? buildZeroedTickArray(whirlpoolAddress, tickArray.startTickIndex),
+    }));
   }
 
   /**

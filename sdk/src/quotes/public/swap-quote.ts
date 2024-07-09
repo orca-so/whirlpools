@@ -8,13 +8,27 @@ import {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
-import { TickArray, WhirlpoolData } from "../../types/public";
+import { TICK_ARRAY_SIZE, TickArray, WhirlpoolData } from "../../types/public";
 import { PoolUtil, SwapDirection } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";
 import { Whirlpool } from "../../whirlpool-client";
 import { simulateSwap } from "../swap/swap-quote-impl";
 import { DevFeeSwapQuote } from "./dev-fee-swap-quote";
 import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
+import { PublicKey } from "@solana/web3.js";
+
+/**
+ * An enum to specify when to use fallback tick arrays in a swap quote.
+ * @category Quotes
+ */
+export enum UseFallbackTickArray {
+  // Always try to include fallback tick array in the swap quote
+  Always = "Always",
+  // Never include fallback tick array in the swap quote
+  Never = "Never",
+  // Use fallback tick array only when tickCurrentIndex is the edge (last quoter) of the first tick array
+  Situational = "Situational",
+}
 
 /**
  * @category Quotes
@@ -26,6 +40,8 @@ import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/pu
  * @param amountSpecifiedIsInput - Specifies the token the parameter `amount`represents. If true, the amount represents
  *                                 the input token of the swap.
  * @param tickArrays - An sequential array of tick-array objects in the direction of the trade to swap on
+ * @param tokenExtensionCtx - TokenExtensions info for the whirlpool
+ * @param fallbackTickArray - Optional. A reserve in case prices move in the opposite direction
  */
 export type SwapQuoteParam = {
   whirlpoolData: WhirlpoolData;
@@ -36,6 +52,7 @@ export type SwapQuoteParam = {
   amountSpecifiedIsInput: boolean;
   tickArrays: TickArray[];
   tokenExtensionCtx: TokenExtensionContextForPool;
+  fallbackTickArray?: PublicKey;
 };
 
 /**
@@ -54,6 +71,7 @@ export type SwapQuote = NormalSwapQuote | DevFeeSwapQuote;
  * @param estimatedEndTickIndex - Approximate tick-index the Whirlpool will land on after this swap
  * @param estimatedEndSqrtPrice - Approximate sqrtPrice the Whirlpool will land on after this swap
  * @param estimatedFeeAmount - Approximate feeAmount (all fees) charged on this swap
+ * @param fallbackTickArray - Optional. A reserve in case prices move in the opposite direction
  */
 export type SwapEstimates = {
   estimatedAmountIn: BN;
@@ -65,6 +83,7 @@ export type SwapEstimates = {
     deductingFromEstimatedAmountIn: BN;
     deductedFromEstimatedAmountOut: BN;
   };
+  fallbackTickArray?: PublicKey;
 };
 
 /**
@@ -81,7 +100,8 @@ export type NormalSwapQuote = SwapInput & SwapEstimates;
  * @param inputTokenMint - PublicKey for the input token mint to swap with
  * @param tokenAmount - The amount of input token to swap from
  * @param slippageTolerance - The amount of slippage to account for in this quote
- * @param programId - PublicKey for the Whirlpool ProgramId
+ * @param useFallbackTickArray - An enum to specify when to use fallback tick arrays in a swap quote.
+* @param programId - PublicKey for the Whirlpool ProgramId
  * @param cache - WhirlpoolAccountCacheInterface instance object to fetch solana accounts
  * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
@@ -91,6 +111,7 @@ export async function swapQuoteByInputToken(
   inputTokenMint: Address,
   tokenAmount: BN,
   slippageTolerance: Percentage,
+  useFallbackTickArray: UseFallbackTickArray,
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions
@@ -100,6 +121,7 @@ export async function swapQuoteByInputToken(
     inputTokenMint,
     tokenAmount,
     true,
+    useFallbackTickArray,
     programId,
     fetcher,
     opts
@@ -118,6 +140,7 @@ export async function swapQuoteByInputToken(
  * @param outputTokenMint - PublicKey for the output token mint to swap into
  * @param tokenAmount - The maximum amount of output token to receive in this swap.
  * @param slippageTolerance - The amount of slippage to account for in this quote
+ * @param useFallbackTickArray - An enum to specify when to use fallback tick arrays in a swap quote.
  * @param programId - PublicKey for the Whirlpool ProgramId
  * @param cache - WhirlpoolAccountCacheInterface instance to fetch solana accounts
  * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
@@ -128,6 +151,7 @@ export async function swapQuoteByOutputToken(
   outputTokenMint: Address,
   tokenAmount: BN,
   slippageTolerance: Percentage,
+  useFallbackTickArray: UseFallbackTickArray,
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions
@@ -137,6 +161,7 @@ export async function swapQuoteByOutputToken(
     outputTokenMint,
     tokenAmount,
     false,
+    useFallbackTickArray,
     programId,
     fetcher,
     opts
@@ -156,7 +181,20 @@ export function swapQuoteWithParams(
   params: SwapQuoteParam,
   slippageTolerance: Percentage
 ): SwapQuote {
-  const quote = simulateSwap(params);
+  const quote = simulateSwap({
+    ...params,
+    tickArrays: SwapUtils.interporateUninitializedTickArrays(PublicKey.default, params.tickArrays),  
+  });
+
+  if (params.fallbackTickArray) {
+    if (!quote.tickArray2.equals(quote.tickArray1)) {
+      // both V1 and V2 can use this fallback
+      quote.tickArray2 = params.fallbackTickArray;
+    } else {
+      // no obvious room for fallback, but V2 can use this field
+      quote.fallbackTickArray = params.fallbackTickArray;
+    }
+  }
 
   const slippageAdjustedQuote: SwapQuote = {
     ...quote,
@@ -177,6 +215,7 @@ async function swapQuoteByToken(
   inputTokenMint: Address,
   tokenAmount: BN,
   amountSpecifiedIsInput: boolean,
+  useFallbackTickArray: UseFallbackTickArray,
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions
@@ -200,6 +239,14 @@ async function swapQuoteByToken(
     opts
   );
 
+  const fallbackTickArray = getFallbackTickArray(
+    useFallbackTickArray,
+    tickArrays,
+    aToB,
+    whirlpool,
+    programId,
+  );
+
   const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
 
   return {
@@ -211,5 +258,49 @@ async function swapQuoteByToken(
     otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
     tickArrays,
     tokenExtensionCtx,
+    fallbackTickArray,
   };
+}
+
+function getFallbackTickArray(
+  useFallbackTickArray: UseFallbackTickArray,
+  tickArrays: TickArray[],
+  aToB: boolean,
+  whirlpool: Whirlpool,
+  programId: Address,
+): PublicKey | undefined {
+  if (useFallbackTickArray === UseFallbackTickArray.Never) {
+    return undefined;
+  }
+
+  const fallbackTickArray = SwapUtils.getFallbackTickArrayPublicKey(
+    tickArrays,
+    whirlpool.getData().tickSpacing,
+    aToB,
+    AddressUtil.toPubKey(programId),
+    whirlpool.getAddress(),
+  );
+
+  if (useFallbackTickArray === UseFallbackTickArray.Always || !fallbackTickArray) {
+    return fallbackTickArray;
+  }
+
+  invariant(
+    useFallbackTickArray === UseFallbackTickArray.Situational,
+    `Unexpected UseFallbackTickArray value: ${useFallbackTickArray}`
+  );
+
+  const ticksInArray = whirlpool.getData().tickSpacing * TICK_ARRAY_SIZE;
+  const tickCurrentIndex = whirlpool.getData().tickCurrentIndex;
+  if (aToB) {
+    // A to B (direction is right to left): [    ta2     ][    ta1     ][    ta0  ===]
+    // if tickCurrentIndex is within the rightmost quarter of ta0, use fallbackTickArray
+    const threshold = tickArrays[0].startTickIndex + ticksInArray / 4 * 3;
+    return tickCurrentIndex >= threshold ? fallbackTickArray : undefined;
+  } else {
+    // B to A (direction is left to right): [=== ta0     ][    ta1     ][    ta2     ]
+    // if tickCurrentIndex is within the leftmost quarter of ta0, use fallbackTickArray
+    const threshold = tickArrays[0].startTickIndex + ticksInArray / 4;
+    return tickCurrentIndex <= threshold ? fallbackTickArray : undefined;
+  }
 }

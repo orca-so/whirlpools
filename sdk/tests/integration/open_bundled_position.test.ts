@@ -41,16 +41,16 @@ describe("open_bundled_position", () => {
   const tickUpperIndex = 32768;
   let poolInitInfo: InitPoolParams;
   let whirlpoolPda: PDA;
-  let infinityPoolInitInfo: InitPoolParams;
-  let infinityWhirlpoolPda: PDA;
+  let fullRangeOnlyPoolInitInfo: InitPoolParams;
+  let fullRangeOnlyWhirlpoolPda: PDA;
   const funderKeypair = anchor.web3.Keypair.generate();
 
   before(async () => {
     poolInitInfo = (await initTestPool(ctx, TickSpacing.Standard)).poolInitInfo;
     whirlpoolPda = poolInitInfo.whirlpoolPda;
 
-    infinityPoolInitInfo = (await initTestPool(ctx, TickSpacing.Infinity)).poolInitInfo;
-    infinityWhirlpoolPda = infinityPoolInitInfo.whirlpoolPda;
+    fullRangeOnlyPoolInitInfo = (await initTestPool(ctx, TickSpacing.FullRangeOnly)).poolInitInfo;
+    fullRangeOnlyWhirlpoolPda = fullRangeOnlyPoolInitInfo.whirlpoolPda;
 
     await systemTransferTx(provider, funderKeypair.publicKey, ONE_SOL).buildAndExecute();
   });
@@ -211,15 +211,15 @@ describe("open_bundled_position", () => {
     checkBitmap(positionBundle, bundleIndexes);
   });
 
-  it("successfully opens bundled position for infinity pool", async () => {
+  it("successfully opens bundled position for full-range only pool", async () => {
     const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
 
-    const [lowerTickIndex, upperTickIndex] = TickUtil.getFullRangeTickIndex(TickSpacing.Infinity);
+    const [lowerTickIndex, upperTickIndex] = TickUtil.getFullRangeTickIndex(TickSpacing.FullRangeOnly);
 
     const bundleIndex = 0;
     const positionInitInfo = await openBundledPosition(
       ctx,
-      infinityWhirlpoolPda.publicKey,
+      fullRangeOnlyWhirlpoolPda.publicKey,
       positionBundleInfo.positionBundleMintKeypair.publicKey,
       bundleIndex,
       lowerTickIndex,
@@ -633,7 +633,7 @@ describe("open_bundled_position", () => {
     });
   });
 
-  it("fail when opening a non-full range position in an infinity pool", async () => {
+  it("fail when opening a non-full range position in an full-range only pool", async () => {
     const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
     const bundleIndex = 0;
     await assert.rejects(
@@ -645,7 +645,7 @@ describe("open_bundled_position", () => {
         tickLowerIndex,
         tickUpperIndex
       ),
-      /0x17a6/ // NonFullRangePositionDisallowed
+      /0x17a6/ // FullRangeOnlyPool
     );
   });
 

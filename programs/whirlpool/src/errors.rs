@@ -136,8 +136,8 @@ pub enum ErrorCode {
     #[msg("Same accounts type is provided more than once")]
     RemainingAccountsDuplicatedAccountsType, // 0x17a5 (6053)
 
-    #[msg("This whirlpool does not support non-full range positions")]
-    NonFullRangePositionDisallowed, // 0x17a6 (6054)
+    #[msg("This whirlpool only supports full-range pools")]
+    FullRangeOnlyPool, // 0x17a6 (6054)
 }
 
 impl From<TryFromIntError> for ErrorCode {

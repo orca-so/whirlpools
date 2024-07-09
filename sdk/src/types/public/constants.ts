@@ -120,3 +120,9 @@ export const FEE_RATE_MUL_VALUE = new BN(1_000_000);
 export const WHIRLPOOL_NFT_UPDATE_AUTH = new PublicKey(
   "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr"
 );
+
+/**
+ * The tick spacing (inclusive) at which a whirlpool only supports full-range positions.
+ * @category Constants
+ */
+export const FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD = 32768;

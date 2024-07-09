@@ -584,12 +584,12 @@ mod check_is_out_of_bounds_tests {
 
 #[cfg(test)]
 mod full_range_indexes_tests {
-    use crate::math::INFINITY_POOL_SPACING_FLAG;
+    use crate::math::FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD;
 
     use super::*;
 
     #[test]
-    fn test_zero_tick_spacing() {
+    fn test_min_tick_spacing() {
         assert_eq!(
             Tick::full_range_indexes(1),
             (MIN_TICK_INDEX, MAX_TICK_INDEX)
@@ -605,10 +605,18 @@ mod full_range_indexes_tests {
     }
 
     #[test]
-    fn test_infinity_tick_spacing() {
+    fn test_full_range_only_tick_spacing() {
         assert_eq!(
-            Tick::full_range_indexes(INFINITY_POOL_SPACING_FLAG),
+            Tick::full_range_indexes(FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD),
             (-425984, 425984)
+        );
+    }
+
+    #[test]
+    fn test_max_tick_spacing() {
+        assert_eq!(
+            Tick::full_range_indexes(u16::MAX),
+            (-393210, 393210)
         );
     }
 }

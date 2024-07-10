@@ -1,9 +1,8 @@
 import { TICK_ARRAY_SIZE } from "../../../../src";
 import * as assert from "assert";
 import { TickArraySequence } from "../../../../src/quotes/swap/tick-array-sequence";
-import { buildTickArrayData, testEmptyTickArrray } from "../../../utils/testDataTypes";
+import { buildTickArrayData } from "../../../utils/testDataTypes";
 import { TickArrayIndex } from "../../../../src/quotes/swap/tick-array-index";
-import { Whirlpool } from "../../../../src/artifacts/whirlpool";
 import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
 
 describe("TickArray Sequence tests", () => {

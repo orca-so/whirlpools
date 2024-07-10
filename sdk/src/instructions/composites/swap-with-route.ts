@@ -111,14 +111,7 @@ export async function getSwapFromRoute(
     }
   }
 
-  let uninitializedArrays = await TickArrayUtil.getUninitializedArraysString(
-    requiredTickArrays,
-    ctx.fetcher,
-    opts
-  );
-  if (uninitializedArrays) {
-    throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
-  }
+  // No need to check if TickArrays are initialized after SparseSwap implementation
 
   // Handle non-native mints only first
   requiredAtas.delete(NATIVE_MINT.toBase58());

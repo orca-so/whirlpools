@@ -60,11 +60,6 @@ export const testTickArrayData: TickArrayData = {
   whirlpool: PublicKey.default,
 };
 
-export const testEmptyTickArrray: TickArray = {
-  address: PublicKey.default,
-  data: null,
-};
-
 export const buildTickArrayData = (startTick: number, initializedOffsets: number[]): TickArray => {
   const result = {
     ticks: Array(TICK_ARRAY_SIZE).fill(testUninitializedTickData),
@@ -79,7 +74,7 @@ export const buildTickArrayData = (startTick: number, initializedOffsets: number
     result.ticks[offset] = testInitializedTickData;
   });
   const randomAddr = Keypair.generate().publicKey;
-  return { address: randomAddr, data: result };
+  return { address: randomAddr, startTickIndex: startTick, data: result };
 };
 
 export async function getTickArrays(
@@ -87,8 +82,8 @@ export async function getTickArrays(
   ctx: WhirlpoolContext,
   whirlpoolKey: PublicKey,
   fetcher: WhirlpoolAccountFetcherInterface
-) {
-  const tickArrayPdas = await startIndices.map((value) =>
+): Promise<TickArray[]> {
+  const tickArrayPdas = startIndices.map((value) =>
     PDAUtil.getTickArray(ctx.program.programId, whirlpoolKey, value)
   );
   const tickArrayAddresses = tickArrayPdas.map((pda) => pda.publicKey);
@@ -96,6 +91,7 @@ export async function getTickArrays(
   return tickArrayAddresses.map((addr, index) => {
     return {
       address: addr,
+      startTickIndex: startIndices[index],
       data: tickArrays[index],
     };
   });

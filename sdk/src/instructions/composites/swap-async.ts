@@ -27,16 +27,8 @@ export async function swapAsync(
   const { wallet, whirlpool, swapInput } = params;
   const { aToB, amount } = swapInput;
   const txBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
-  const tickArrayAddresses = [swapInput.tickArray0, swapInput.tickArray1, swapInput.tickArray2];
 
-  let uninitializedArrays = await TickArrayUtil.getUninitializedArraysString(
-    tickArrayAddresses,
-    ctx.fetcher,
-    opts
-  );
-  if (uninitializedArrays) {
-    throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
-  }
+  // No need to check if TickArrays are initialized after SparseSwap implementation
 
   const data = whirlpool.getData();
   const [resolvedAtaA, resolvedAtaB] = await resolveOrCreateATAs(

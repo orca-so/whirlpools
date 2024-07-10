@@ -1,6 +1,6 @@
 import { resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { SwapUtils, TickArrayUtil, Whirlpool, WhirlpoolContext } from "../..";
+import { SwapUtils, Whirlpool, WhirlpoolContext } from "../..";
 import { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
 import { SwapInput, swapIx } from "../swap-ix";
 import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
@@ -64,7 +64,7 @@ export async function swapAsync(
     wallet
   );
   return txBuilder.addInstruction(
-    !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+    (!TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx) && !params.swapInput.supplementalTickArrays)
       ? swapIx(ctx.program, baseParams)
       : swapV2Ix(ctx.program, {
         ...baseParams,
@@ -82,6 +82,7 @@ export async function swapAsync(
           baseParams.aToB ? baseParams.tokenOwnerAccountB : baseParams.tokenVaultB,
           baseParams.aToB ? baseParams.whirlpool : baseParams.tokenAuthority,
         ),
+        supplementalTickArrays: params.swapInput.supplementalTickArrays,
       })
   );
 }

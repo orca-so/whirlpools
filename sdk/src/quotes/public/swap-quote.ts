@@ -1,5 +1,5 @@
 import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, MintWithTokenProgram, Percentage } from "@orca-so/common-sdk";
+import { AddressUtil, Percentage } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import invariant from "tiny-invariant";
 import { SwapInput } from "../../instructions";
@@ -71,7 +71,6 @@ export type SwapQuote = NormalSwapQuote | DevFeeSwapQuote;
  * @param estimatedEndTickIndex - Approximate tick-index the Whirlpool will land on after this swap
  * @param estimatedEndSqrtPrice - Approximate sqrtPrice the Whirlpool will land on after this swap
  * @param estimatedFeeAmount - Approximate feeAmount (all fees) charged on this swap
- * @param fallbackTickArray - Optional. A reserve in case prices move in the opposite direction
  */
 export type SwapEstimates = {
   estimatedAmountIn: BN;
@@ -83,7 +82,6 @@ export type SwapEstimates = {
     deductingFromEstimatedAmountIn: BN;
     deductedFromEstimatedAmountOut: BN;
   };
-  fallbackTickArray?: PublicKey;
 };
 
 /**
@@ -192,7 +190,7 @@ export function swapQuoteWithParams(
       quote.tickArray2 = params.fallbackTickArray;
     } else {
       // no obvious room for fallback, but V2 can use this field
-      quote.fallbackTickArray = params.fallbackTickArray;
+      quote.supplementalTickArrays = [params.fallbackTickArray];
     }
   }
 

@@ -103,6 +103,12 @@ impl Tick {
         tick_index % tick_spacing as i32 == 0
     }
 
+    pub fn full_range_indexes(tick_spacing: u16) -> (i32, i32) {
+        let lower_index = MIN_TICK_INDEX / tick_spacing as i32 * tick_spacing as i32;
+        let upper_index = MAX_TICK_INDEX / tick_spacing as i32 * tick_spacing as i32;
+        (lower_index, upper_index)
+    }
+
     /// Bound a tick-index value to the max & min index value for this protocol
     ///
     /// # Parameters
@@ -573,6 +579,45 @@ mod check_is_out_of_bounds_tests {
     #[test]
     fn test_max_tick_index_add_1() {
         assert_eq!(Tick::check_is_out_of_bounds(MAX_TICK_INDEX + 1), true);
+    }
+}
+
+#[cfg(test)]
+mod full_range_indexes_tests {
+    use crate::math::FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD;
+
+    use super::*;
+
+    #[test]
+    fn test_min_tick_spacing() {
+        assert_eq!(
+            Tick::full_range_indexes(1),
+            (MIN_TICK_INDEX, MAX_TICK_INDEX)
+        );
+    }
+
+    #[test]
+    fn test_standard_tick_spacing() {
+        assert_eq!(
+            Tick::full_range_indexes(128),
+            (-443520, 443520)
+        );
+    }
+
+    #[test]
+    fn test_full_range_only_tick_spacing() {
+        assert_eq!(
+            Tick::full_range_indexes(FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD),
+            (-425984, 425984)
+        );
+    }
+
+    #[test]
+    fn test_max_tick_spacing() {
+        assert_eq!(
+            Tick::full_range_indexes(u16::MAX),
+            (-393210, 393210)
+        );
     }
 }
 

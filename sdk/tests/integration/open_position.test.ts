@@ -11,6 +11,7 @@ import {
   OpenPositionParams,
   PDAUtil,
   PositionData,
+  TickUtil,
   WhirlpoolContext,
   WhirlpoolIx,
   toTx
@@ -38,20 +39,25 @@ describe("open_position", () => {
   let defaultParams: OpenPositionParams;
   let defaultMint: Keypair;
   const tickLowerIndex = 0;
-  const tickUpperIndex = 128;
+  const tickUpperIndex = 32768;
   let poolInitInfo: InitPoolParams;
   let whirlpoolPda: PDA;
+  let fullRangeOnlyPoolInitInfo: InitPoolParams;
+  let fullRangeOnlyWhirlpoolPda: PDA;
   const funderKeypair = anchor.web3.Keypair.generate();
 
   before(async () => {
     poolInitInfo = (await initTestPool(ctx, TickSpacing.Standard)).poolInitInfo;
     whirlpoolPda = poolInitInfo.whirlpoolPda;
 
+    fullRangeOnlyPoolInitInfo = (await initTestPool(ctx, TickSpacing.FullRangeOnly)).poolInitInfo;
+    fullRangeOnlyWhirlpoolPda = fullRangeOnlyPoolInitInfo.whirlpoolPda;
+
     const { params, mint } = await generateDefaultOpenPositionParams(
       ctx,
       whirlpoolPda.publicKey,
-      0,
-      128,
+      tickLowerIndex,
+      tickUpperIndex,
       provider.wallet.publicKey
     );
     defaultParams = params;
@@ -81,6 +87,30 @@ describe("open_position", () => {
     assert.ok(position.feeOwedB.eq(ZERO_BN));
 
     // TODO: Add tests for rewards
+  });
+
+  it("successfully open position and verify position address contents for full-range only pool", async () => {
+    const [lowerTickIndex, upperTickIndex] = TickUtil.getFullRangeTickIndex(TickSpacing.FullRangeOnly);
+
+    const positionInitInfo = await openPosition(
+      ctx,
+      fullRangeOnlyWhirlpoolPda.publicKey,
+      lowerTickIndex,
+      upperTickIndex
+    );
+    const { positionPda, positionMintAddress } = positionInitInfo.params;
+
+    const position = (await fetcher.getPosition(positionPda.publicKey)) as PositionData;
+
+    assert.strictEqual(position.tickLowerIndex, lowerTickIndex);
+    assert.strictEqual(position.tickUpperIndex, upperTickIndex);
+    assert.ok(position.whirlpool.equals(fullRangeOnlyPoolInitInfo.whirlpoolPda.publicKey));
+    assert.ok(position.positionMint.equals(positionMintAddress));
+    assert.ok(position.liquidity.eq(ZERO_BN));
+    assert.ok(position.feeGrowthCheckpointA.eq(ZERO_BN));
+    assert.ok(position.feeGrowthCheckpointB.eq(ZERO_BN));
+    assert.ok(position.feeOwedA.eq(ZERO_BN));
+    assert.ok(position.feeOwedB.eq(ZERO_BN));
   });
 
   it("succeeds when funder is different than account paying for transaction fee", async () => {
@@ -209,6 +239,20 @@ describe("open_position", () => {
         .addSigner(positionMintKeypair)
         .buildAndExecute(),
       /0x0/
+    );
+  });
+
+  it("fail when opening a non-full range position in an full-range only pool", async () => {
+    await assert.rejects(
+      openPosition(
+        ctx,
+        fullRangeOnlyWhirlpoolPda.publicKey,
+        tickLowerIndex,
+        tickUpperIndex,
+        provider.wallet.publicKey,
+        funderKeypair
+      ),
+      /0x17a6/ // FullRangeOnlyPool
     );
   });
 });

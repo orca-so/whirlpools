@@ -7,6 +7,7 @@ import {
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
 import {
+  FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD,
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
   TICK_ARRAY_SIZE,
@@ -173,7 +174,7 @@ export class TickUtil {
 
   /**
    * Get the minimum and maximum tick index that can be initialized.
-   * 
+   *
    * @param tickSpacing The tickSpacing for the Whirlpool
    * @returns An array of numbers where the first element is the minimum tick index and the second element is the maximum tick index.
    */
@@ -194,6 +195,15 @@ export class TickUtil {
   public static isFullRange(tickSpacing: number, tickLowerIndex: number, tickUpperIndex: number): boolean {
     const [min, max] = TickUtil.getFullRangeTickIndex(tickSpacing);
     return tickLowerIndex === min && tickUpperIndex === max;
+  }
+
+  /**
+   * Check if a whirlpool is a full-range only pool.
+   * @param tickSpacing The tickSpacing for the Whirlpool
+   * @returns true if the whirlpool is a full-range only pool, false otherwise.
+   */
+  public static isFullRangeOnly(tickSpacing: number): boolean {
+    return tickSpacing >= FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD;
   }
 }
 

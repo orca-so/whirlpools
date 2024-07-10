@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
 
-use crate::{errors::ErrorCode, state::NUM_REWARDS};
+use crate::{errors::ErrorCode, math::FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, state::NUM_REWARDS};
 
 use super::{Tick, Whirlpool};
 
@@ -67,6 +67,16 @@ impl Position {
             || tick_lower_index >= tick_upper_index
         {
             return Err(ErrorCode::InvalidTickIndex.into());
+        }
+
+        // On tick spacing >= 2^15, should only be able to open full range positions
+        if whirlpool.tick_spacing >= FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD {
+            let (full_range_lower_index, full_range_upper_index) = Tick::full_range_indexes(whirlpool.tick_spacing);
+            if tick_lower_index != full_range_lower_index
+                || tick_upper_index != full_range_upper_index
+            {
+                return Err(ErrorCode::FullRangeOnlyPool.into());
+            }
         }
 
         self.whirlpool = whirlpool.key();

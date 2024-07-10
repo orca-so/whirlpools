@@ -136,7 +136,7 @@ pub enum ErrorCode {
     #[msg("Same accounts type is provided more than once")]
     RemainingAccountsDuplicatedAccountsType, // 0x17a5 (6053)
 
-    #[msg("This whirlpool only supports full-range pools")]
+    #[msg("This whirlpool only supports full-range positions")]
     FullRangeOnlyPool, // 0x17a6 (6054)
 }
 

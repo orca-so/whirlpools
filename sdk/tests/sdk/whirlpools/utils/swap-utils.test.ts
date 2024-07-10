@@ -1,10 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
-import { PDAUtil, SwapDirection, SwapUtils, TICK_ARRAY_SIZE } from "../../../../src";
+import { ORCA_WHIRLPOOLS_CONFIG, ORCA_WHIRLPOOL_PROGRAM_ID, PDAUtil, SwapDirection, SwapUtils, TICK_ARRAY_SIZE, TickArray, TickArrayData, TickData } from "../../../../src";
 import { WhirlpoolContext } from "../../../../src/context";
 import { defaultConfirmOptions } from "../../../utils/const";
 import { testWhirlpoolData } from "../../../utils/testDataTypes";
+import { BN } from "bn.js";
+import { TickSpacing } from "../../../utils";
 
 describe("SwapUtils tests", () => {
   const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
@@ -220,4 +222,226 @@ describe("SwapUtils tests", () => {
     });
   });
 
+  describe("interporateUninitializedTickArrays", () => {
+    const whirlpoolAddress = Keypair.generate().publicKey;
+    const tickSpacing = TickSpacing.Standard;
+    const initializedTick: TickData = {
+      initialized: true,
+      liquidityNet: new BN(100),
+      liquidityGross: new BN(100),
+      feeGrowthOutsideA: new BN(100),
+      feeGrowthOutsideB: new BN(100),
+      rewardGrowthsOutside: [new BN(100), new BN(100), new BN(100)],
+    };
+    const initializedTickArrayData: TickArrayData = {
+      startTickIndex: 0,
+      ticks: Array(TICK_ARRAY_SIZE).fill(initializedTick),
+      whirlpool: whirlpoolAddress,
+    };
+
+    it("no uninitialized tick arrays", async () => {
+      const tickArrays: TickArray[] = [
+        { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 0, data: initializedTickArrayData },
+        { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 1, data: initializedTickArrayData },
+        { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 2, data: initializedTickArrayData },
+      ];
+      const result = SwapUtils.interporateUninitializedTickArrays(whirlpoolAddress, tickArrays);
+
+      // no change
+      assert.ok(result[0].data === initializedTickArrayData);
+      assert.ok(result[1].data === initializedTickArrayData);
+      assert.ok(result[2].data === initializedTickArrayData);
+    });
+
+    it("1 uninitialized tick arrays", async () => {
+      const tickArrays: TickArray[] = [
+        { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 0, data: initializedTickArrayData },
+        { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 1, data: null },
+        { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 2, data: initializedTickArrayData },
+      ];
+      const result = SwapUtils.interporateUninitializedTickArrays(whirlpoolAddress, tickArrays);
+
+      // no change
+      assert.ok(result[0].data === initializedTickArrayData);
+      assert.ok(result[1].data !== null && result[1].data.startTickIndex === result[1].startTickIndex);
+      for (let i = 0; i < TICK_ARRAY_SIZE; i++) {
+        const tick = result[1].data.ticks[i];
+        assert.ok(tick.initialized === false);
+        assert.ok(tick.liquidityNet.eqn(0));
+        assert.ok(tick.liquidityGross.eqn(0));
+        assert.ok(tick.feeGrowthOutsideA.eqn(0));
+        assert.ok(tick.feeGrowthOutsideB.eqn(0));
+        assert.ok(tick.rewardGrowthsOutside[0].eqn(0));
+        assert.ok(tick.rewardGrowthsOutside[1].eqn(0));
+        assert.ok(tick.rewardGrowthsOutside[2].eqn(0));
+      }
+      assert.ok(result[2].data === initializedTickArrayData);
+    });
+
+    it("3 uninitialized tick arrays", async () => {
+      const tickArrays: TickArray[] = [
+        { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 0, data: null },
+        { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 1, data: null },
+        { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 2, data: null },
+      ];
+      const result = SwapUtils.interporateUninitializedTickArrays(whirlpoolAddress, tickArrays);
+
+      for (let i = 0; i < 3; i++) {
+        assert.ok(result[i].data !== null && result[i].data!.startTickIndex === result[i].startTickIndex);
+        for (let j = 0; j < TICK_ARRAY_SIZE; j++) {
+          const tick = result[i].data!.ticks[j];
+          assert.ok(tick.initialized === false);
+          assert.ok(tick.liquidityNet.eqn(0));
+          assert.ok(tick.liquidityGross.eqn(0));
+          assert.ok(tick.feeGrowthOutsideA.eqn(0));
+          assert.ok(tick.feeGrowthOutsideB.eqn(0));
+          assert.ok(tick.rewardGrowthsOutside[0].eqn(0));
+          assert.ok(tick.rewardGrowthsOutside[1].eqn(0));
+          assert.ok(tick.rewardGrowthsOutside[2].eqn(0));
+        }
+      }
+    });
+  });
+
+  describe("getFallbackTickArrayPublicKey", () => {
+    const whirlpoolAddress = Keypair.generate().publicKey;
+  
+    it("ts = 64, a --> b, normal range", async () => {
+      const tickSpacing = 64;
+      const aToB = true;
+
+      // [ta2: -11264 ][ta1: -5632  ][ta0: 0      ][fallback: 5632 ]
+      const tickArrays = await SwapUtils.getTickArrays(128, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, ctx.fetcher);
+      assert.equal(tickArrays[0].startTickIndex, 0);
+      assert.equal(tickArrays[1].startTickIndex, -5632);
+      assert.equal(tickArrays[2].startTickIndex, -11264);
+
+      const result = SwapUtils.getFallbackTickArrayPublicKey(tickArrays, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress);
+
+      const expected = PDAUtil.getTickArray(ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, 5632);
+      assert.ok(result?.toBase58() === expected.publicKey.toBase58());
+    });
+
+    it("ts = 64, a --> b, right most", async () => {
+      const tickSpacing = 64;
+      const aToB = true;
+
+      // [ta2: 428032 ][ta1: 433664 ][ta0: 439296 ] (no fallback)
+      const tickArrays = await SwapUtils.getTickArrays(439296+128, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, ctx.fetcher);
+      assert.equal(tickArrays[0].startTickIndex, 439296);
+      assert.equal(tickArrays[1].startTickIndex, 433664);
+      assert.equal(tickArrays[2].startTickIndex, 428032);
+
+      const result = SwapUtils.getFallbackTickArrayPublicKey(tickArrays, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress);
+
+      assert.ok(result === undefined);
+    });
+
+    it("ts = 64, a <-- b, normal range", async () => {
+      const tickSpacing = 64;
+      const aToB = false;
+
+      // [fallback: -5632 ][ta0: 0      ][ta1: 5632   ][ta2: 11264  ]
+      const tickArrays = await SwapUtils.getTickArrays(128, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, ctx.fetcher);
+      assert.equal(tickArrays[0].startTickIndex, 0);
+      assert.equal(tickArrays[1].startTickIndex, 5632);
+      assert.equal(tickArrays[2].startTickIndex, 11264);
+
+      const result = SwapUtils.getFallbackTickArrayPublicKey(tickArrays, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress);
+
+      const expected = PDAUtil.getTickArray(ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, -5632);
+      assert.ok(result?.toBase58() === expected.publicKey.toBase58());
+    });
+
+    it("ts = 64, a <-- b, left most", async () => {
+      const tickSpacing = 64;
+      const aToB = false;
+
+      // (no fallback) [ta0: -444928][ta1: -439296][ta2: -433664]
+      const tickArrays = await SwapUtils.getTickArrays(-439296 - 128, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, ctx.fetcher);
+      assert.equal(tickArrays[0].startTickIndex, -444928);
+      assert.equal(tickArrays[1].startTickIndex, -439296);
+      assert.equal(tickArrays[2].startTickIndex, -433664);
+
+      const result = SwapUtils.getFallbackTickArrayPublicKey(tickArrays, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress);
+
+      assert.ok(result === undefined);
+    });
+
+    it("ts = 64, a <-- b, shifted", async () => {
+      const tickSpacing = 64;
+      const aToB = false;
+
+      // [fallback: -444928][ta0: -439296][ta1: -433664][ta2: -428032]
+      const tickArrays = await SwapUtils.getTickArrays(-439296 - 32, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, ctx.fetcher);
+      assert.equal(tickArrays[0].startTickIndex, -439296);
+      assert.equal(tickArrays[1].startTickIndex, -433664);
+      assert.equal(tickArrays[2].startTickIndex, -428032);
+
+      const result = SwapUtils.getFallbackTickArrayPublicKey(tickArrays, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress);
+
+      const expected = PDAUtil.getTickArray(ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, -444928);
+      assert.ok(result?.toBase58() === expected.publicKey.toBase58());
+    });
+
+    it("ts = 32768, a --> b", async () => {
+      const tickSpacing = 32768;
+      const aToB = true;
+
+      // [ta0: -2883584][fallback: 0 ]
+      const tickArrays = await SwapUtils.getTickArrays(-128, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, ctx.fetcher);
+      assert.equal(tickArrays[0].startTickIndex, -2883584);
+      assert.equal(tickArrays.length, 1);
+
+      const result = SwapUtils.getFallbackTickArrayPublicKey(tickArrays, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress);
+
+      const expected = PDAUtil.getTickArray(ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, 0);
+      assert.ok(result?.toBase58() === expected.publicKey.toBase58());
+    });
+
+    it("ts = 32768, a --> b, rightmost", async () => {
+      const tickSpacing = 32768;
+      const aToB = true;
+
+      // [ta1: -2883584][ta0: 0      ] (no fallback)
+      const tickArrays = await SwapUtils.getTickArrays(128, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, ctx.fetcher);
+      assert.equal(tickArrays[0].startTickIndex, 0);
+      assert.equal(tickArrays[1].startTickIndex, -2883584);
+      assert.equal(tickArrays.length, 2);
+
+      const result = SwapUtils.getFallbackTickArrayPublicKey(tickArrays, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress);
+
+      assert.ok(result === undefined);
+    });
+
+    it("ts = 32768, a <-- b", async () => {
+      const tickSpacing = 32768;
+      const aToB = false;
+
+      // [fallback: -2883584][ta0: 0       ]
+      const tickArrays = await SwapUtils.getTickArrays(128, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, ctx.fetcher);
+      assert.equal(tickArrays[0].startTickIndex, 0);
+      assert.equal(tickArrays.length, 1);
+
+      const result = SwapUtils.getFallbackTickArrayPublicKey(tickArrays, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress);
+
+      const expected = PDAUtil.getTickArray(ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, -2883584);
+      assert.ok(result?.toBase58() === expected.publicKey.toBase58());
+    });
+
+    it("ts = 32768, a <-- b, leftmost", async () => {
+      const tickSpacing = 32768;
+      const aToB = false;
+
+      // (no fallback) [ta0: -2883584][ta1: 0      ]
+      const tickArrays = await SwapUtils.getTickArrays(-65536, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress, ctx.fetcher);
+      assert.equal(tickArrays[0].startTickIndex, -2883584);
+      assert.equal(tickArrays[1].startTickIndex, 0);
+      assert.equal(tickArrays.length, 2);
+
+      const result = SwapUtils.getFallbackTickArrayPublicKey(tickArrays, tickSpacing, aToB, ORCA_WHIRLPOOL_PROGRAM_ID, whirlpoolAddress);
+
+      assert.ok(result === undefined);
+    });
+  });
 });

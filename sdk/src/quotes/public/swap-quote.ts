@@ -18,7 +18,7 @@ import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/pu
 import { PublicKey } from "@solana/web3.js";
 
 /**
- * An enum to specify when to use fallback tick arrays in a swap quote.
+ * An enum to specify when to use fallback tick array in a swap quote.
  * @category Quotes
  */
 export enum UseFallbackTickArray {
@@ -101,7 +101,7 @@ export type NormalSwapQuote = SwapInput & SwapEstimates;
  * @param programId - PublicKey for the Whirlpool ProgramId
  * @param cache - WhirlpoolAccountCacheInterface instance object to fetch solana accounts
  * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
- * @param useFallbackTickArray - An enum to specify when to use fallback tick arrays in a swap quote.
+ * @param useFallbackTickArray - An enum to specify when to use fallback tick array in a swap quote.
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByInputToken(
@@ -141,7 +141,7 @@ export async function swapQuoteByInputToken(
  * @param programId - PublicKey for the Whirlpool ProgramId
  * @param cache - WhirlpoolAccountCacheInterface instance to fetch solana accounts
  * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
- * @param useFallbackTickArray - An enum to specify when to use fallback tick arrays in a swap quote.
+ * @param useFallbackTickArray - An enum to specify when to use fallback tick array in a swap quote.
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByOutputToken(

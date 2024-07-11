@@ -519,7 +519,7 @@ describe("swap_v2", () => {
               })
             ).buildAndExecute(),
             // sparse-swap changes error code (has_one constraint -> check in the handler)
-            /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+            /0x17a8/ // DifferentWhirlpoolTickArrayAccount
           );
         });
 

@@ -11,6 +11,7 @@ import {
   POSITION_BUNDLE_SIZE,
   PositionBundleData,
   PositionData,
+  TickUtil,
   toTx,
   WhirlpoolContext,
   WhirlpoolIx
@@ -37,14 +38,20 @@ describe("open_bundled_position", () => {
   const fetcher = ctx.fetcher;
 
   const tickLowerIndex = 0;
-  const tickUpperIndex = 128;
+  const tickUpperIndex = 32768;
   let poolInitInfo: InitPoolParams;
   let whirlpoolPda: PDA;
+  let fullRangeOnlyPoolInitInfo: InitPoolParams;
+  let fullRangeOnlyWhirlpoolPda: PDA;
   const funderKeypair = anchor.web3.Keypair.generate();
 
   before(async () => {
     poolInitInfo = (await initTestPool(ctx, TickSpacing.Standard)).poolInitInfo;
     whirlpoolPda = poolInitInfo.whirlpoolPda;
+
+    fullRangeOnlyPoolInitInfo = (await initTestPool(ctx, TickSpacing.FullRangeOnly)).poolInitInfo;
+    fullRangeOnlyWhirlpoolPda = fullRangeOnlyPoolInitInfo.whirlpoolPda;
+
     await systemTransferTx(provider, funderKeypair.publicKey, ONE_SOL).buildAndExecute();
   });
 
@@ -85,9 +92,9 @@ describe("open_bundled_position", () => {
     });
   }
 
-  function checkPositionAccountContents(position: PositionData, mint: PublicKey) {
-    assert.strictEqual(position.tickLowerIndex, tickLowerIndex);
-    assert.strictEqual(position.tickUpperIndex, tickUpperIndex);
+  function checkPositionAccountContents(position: PositionData, mint: PublicKey, lowerTick: number = tickLowerIndex, upperTick: number = tickUpperIndex) {
+    assert.strictEqual(position.tickLowerIndex, lowerTick);
+    assert.strictEqual(position.tickUpperIndex, upperTick);
     assert.ok(position.whirlpool.equals(poolInitInfo.whirlpoolPda.publicKey));
     assert.ok(position.positionMint.equals(mint));
     assert.ok(position.liquidity.eq(ZERO_BN));
@@ -202,6 +209,29 @@ describe("open_bundled_position", () => {
 
     const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE)) as PositionBundleData;
     checkBitmap(positionBundle, bundleIndexes);
+  });
+
+  it("successfully opens bundled position for full-range only pool", async () => {
+    const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
+
+    const [lowerTickIndex, upperTickIndex] = TickUtil.getFullRangeTickIndex(TickSpacing.FullRangeOnly);
+
+    const bundleIndex = 0;
+    const positionInitInfo = await openBundledPosition(
+      ctx,
+      fullRangeOnlyWhirlpoolPda.publicKey,
+      positionBundleInfo.positionBundleMintKeypair.publicKey,
+      bundleIndex,
+      lowerTickIndex,
+      upperTickIndex
+    );
+    const { bundledPositionPda } = positionInitInfo.params;
+
+    const position = (await fetcher.getPosition(bundledPositionPda.publicKey)) as PositionData;
+    checkPositionAccountContents(position, positionBundleInfo.positionBundleMintKeypair.publicKey, lowerTickIndex, upperTickIndex);
+
+    const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE)) as PositionBundleData;
+    checkBitmap(positionBundle, [bundleIndex]);
   });
 
   describe("invalid bundle index", () => {
@@ -601,6 +631,22 @@ describe("open_bundled_position", () => {
       const positionBundle = await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE);
       checkBitmapIsOpened(positionBundle!, 0);
     });
+  });
+
+  it("fail when opening a non-full range position in an full-range only pool", async () => {
+    const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
+    const bundleIndex = 0;
+    await assert.rejects(
+      openBundledPosition(
+        ctx,
+        whirlpoolPda.publicKey,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        bundleIndex,
+        tickLowerIndex,
+        tickUpperIndex
+      ),
+      /0x17a6/ // FullRangeOnlyPool
+    );
   });
 
 });

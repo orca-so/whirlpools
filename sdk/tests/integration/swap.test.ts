@@ -446,7 +446,7 @@ describe("swap", () => {
         })
       ).buildAndExecute(),
       // sparse-swap changes error code (has_one constraint -> check in the handler)
-      /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+      /0x17a8/ // DifferentWhirlpoolTickArrayAccount
     );
 
     // invalid tickArrays[1]
@@ -471,7 +471,7 @@ describe("swap", () => {
           oracle: oraclePda.publicKey,
         })
       ).buildAndExecute(),
-      /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+      /0x17a8/ // DifferentWhirlpoolTickArrayAccount
     );
 
     // invalid tickArrays[2]
@@ -496,7 +496,7 @@ describe("swap", () => {
           oracle: oraclePda.publicKey,
         })
       ).buildAndExecute(),
-      /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+      /0x17a8/ // DifferentWhirlpoolTickArrayAccount
     );    
   });
 

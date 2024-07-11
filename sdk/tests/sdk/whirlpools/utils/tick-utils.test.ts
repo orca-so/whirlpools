@@ -58,4 +58,18 @@ describe("TickUtil tests", () => {
       }
     });
   });
+
+  describe("isFullRangeOnly", () => {
+    it("returns true for tickSpacing = 32768", async () => {
+      assert.strictEqual(TickUtil.isFullRangeOnly(32768), true);
+    });
+
+    it("returns true for tickSpacing > 32768", async () => {
+      assert.strictEqual(TickUtil.isFullRangeOnly(32769), true);
+    });
+
+    it("returns false for tickSpacing < 32768", async () => {
+      assert.strictEqual(TickUtil.isFullRangeOnly(32767), false);
+    });
+  });
 });

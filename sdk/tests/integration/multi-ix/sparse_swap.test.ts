@@ -789,7 +789,7 @@ describe("sparse swap tests", () => {
               tickArray2: params.tickArray2,
             })
           ).buildAndExecute(),
-          /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+          /0x17a8/ // DifferentWhirlpoolTickArrayAccount
         );
 
         await assert.rejects(
@@ -802,7 +802,7 @@ describe("sparse swap tests", () => {
               tickArray2: params.tickArray2,
             })
           ).buildAndExecute(),
-          /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+          /0x17a8/ // DifferentWhirlpoolTickArrayAccount
         );
 
         await assert.rejects(
@@ -815,7 +815,7 @@ describe("sparse swap tests", () => {
               tickArray2: anotherWhirlpoolTickArray0, // for another Whirlpool
             })
           ).buildAndExecute(),
-          /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+          /0x17a8/ // DifferentWhirlpoolTickArrayAccount
         );
 
         await assert.rejects(
@@ -834,7 +834,7 @@ describe("sparse swap tests", () => {
               ],
             })
           ).buildAndExecute(),
-          /0x17a7/ // DifferentWhirlpoolTickArrayAccount
+          /0x17a8/ // DifferentWhirlpoolTickArrayAccount
         );
       });
 
@@ -1867,7 +1867,7 @@ describe("sparse swap tests", () => {
               ),
             ],
           }).buildAndExecute(),
-          /0x17a6/ // TooManySupplementalTickArrays
+          /0x17a7/ // TooManySupplementalTickArrays
         );
       });
 
@@ -2399,7 +2399,7 @@ describe("sparse swap tests", () => {
               ),
             ],
           }).buildAndExecute(),
-          /0x17a6/ // TooManySupplementalTickArrays
+          /0x17a7/ // TooManySupplementalTickArrays
         );
 
         // bypass SDK
@@ -2433,7 +2433,7 @@ describe("sparse swap tests", () => {
               ),
             ],
           }).buildAndExecute(),
-          /0x17a6/ // TooManySupplementalTickArrays
+          /0x17a7/ // TooManySupplementalTickArrays
         );
       });
 

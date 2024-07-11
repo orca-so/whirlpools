@@ -9,4 +9,5 @@ export enum TickSpacing {
   ThirtyTwo = 32,
   SixtyFour = 64,
   Standard = 128,
+  FullRangeOnly = 32768,
 }

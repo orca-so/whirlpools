@@ -126,7 +126,7 @@ pub enum ErrorCode {
 
     #[msg("Unable to call transfer hook without extra accounts")]
     NoExtraAccountsForTransferHook, // 0x17a2 (6050)
-    
+
     #[msg("Output and input amount mismatch")]
     IntermediateTokenAmountMismatch, // 0x17a3 (6051)
 
@@ -136,10 +136,13 @@ pub enum ErrorCode {
     #[msg("Same accounts type is provided more than once")]
     RemainingAccountsDuplicatedAccountsType, // 0x17a5 (6053)
 
+    #[msg("This whirlpool only supports full-range positions")]
+    FullRangeOnlyPool, // 0x17a6 (6054)
+
     #[msg("Too many supplemental tick arrays provided")]
-    TooManySupplementalTickArrays, // 0x17a6 (6054)
+    TooManySupplementalTickArrays, // 0x17a7 (6055)
     #[msg("TickArray account for different whirlpool provided")]
-    DifferentWhirlpoolTickArrayAccount, // 0x17a7 (6055)
+    DifferentWhirlpoolTickArrayAccount, // 0x17a8 (6056)
 }
 
 impl From<TryFromIntError> for ErrorCode {

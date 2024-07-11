@@ -22,7 +22,6 @@ import {
   PDAUtil,
   SubTradeRoute,
   SwapUtils,
-  TickArrayUtil,
   TradeRoute,
   WhirlpoolContext,
   twoHopSwapQuoteFromSwapQuotes,

@@ -24,7 +24,6 @@ import { RemainingAccountsBuilder, RemainingAccountsType, toSupplementalTickArra
  * @param tokenProgramB - PublicKey for the token program for token B.
  * @param oracle - PublicKey for the oracle account for this Whirlpool.
  * @param tokenAuthority - authority to withdraw tokens from the input token account
- * @param supplementalTickArrays - Optional array of PublicKey for supplemental tick arrays of this whirlpool.
  */
 export type SwapV2Params = SwapInput & {
   whirlpool: PublicKey;
@@ -40,7 +39,6 @@ export type SwapV2Params = SwapInput & {
   tokenProgramB: PublicKey;
   oracle: PublicKey;
   tokenAuthority: PublicKey;
-  supplementalTickArrays?: PublicKey[];
 };
 
 /**

@@ -185,7 +185,7 @@ export function swapQuoteWithParams(
   });
 
   if (params.fallbackTickArray) {
-    if (!quote.tickArray2.equals(quote.tickArray1)) {
+    if (quote.tickArray2.equals(quote.tickArray1)) {
       // both V1 and V2 can use this fallback
       quote.tickArray2 = params.fallbackTickArray;
     } else {

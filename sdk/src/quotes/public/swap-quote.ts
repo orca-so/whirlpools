@@ -181,7 +181,7 @@ export function swapQuoteWithParams(
 ): SwapQuote {
   const quote = simulateSwap({
     ...params,
-    tickArrays: SwapUtils.interporateUninitializedTickArrays(PublicKey.default, params.tickArrays),  
+    tickArrays: SwapUtils.interpolateUninitializedTickArrays(PublicKey.default, params.tickArrays),  
   });
 
   if (params.fallbackTickArray) {

@@ -222,7 +222,7 @@ describe("SwapUtils tests", () => {
     });
   });
 
-  describe("interporateUninitializedTickArrays", () => {
+  describe("interpolateUninitializedTickArrays", () => {
     const whirlpoolAddress = Keypair.generate().publicKey;
     const tickSpacing = TickSpacing.Standard;
     const initializedTick: TickData = {
@@ -245,7 +245,7 @@ describe("SwapUtils tests", () => {
         { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 1, data: initializedTickArrayData },
         { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 2, data: initializedTickArrayData },
       ];
-      const result = SwapUtils.interporateUninitializedTickArrays(whirlpoolAddress, tickArrays);
+      const result = SwapUtils.interpolateUninitializedTickArrays(whirlpoolAddress, tickArrays);
 
       // no change
       assert.ok(result[0].data === initializedTickArrayData);
@@ -259,7 +259,7 @@ describe("SwapUtils tests", () => {
         { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 1, data: null },
         { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 2, data: initializedTickArrayData },
       ];
-      const result = SwapUtils.interporateUninitializedTickArrays(whirlpoolAddress, tickArrays);
+      const result = SwapUtils.interpolateUninitializedTickArrays(whirlpoolAddress, tickArrays);
 
       // no change
       assert.ok(result[0].data === initializedTickArrayData);
@@ -284,7 +284,7 @@ describe("SwapUtils tests", () => {
         { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 1, data: null },
         { address: whirlpoolAddress, startTickIndex: tickSpacing * TICK_ARRAY_SIZE * 2, data: null },
       ];
-      const result = SwapUtils.interporateUninitializedTickArrays(whirlpoolAddress, tickArrays);
+      const result = SwapUtils.interpolateUninitializedTickArrays(whirlpoolAddress, tickArrays);
 
       for (let i = 0; i < 3; i++) {
         assert.ok(result[i].data !== null && result[i].data!.startTickIndex === result[i].startTickIndex);

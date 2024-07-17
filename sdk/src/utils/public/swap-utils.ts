@@ -220,7 +220,7 @@ export class SwapUtils {
    * @param tickArrays - Fetched tickArrays to interpolate.
    * @returns An array of TickArray objects with zeroed tick data if they are not initialized.
    */
-  public static interporateUninitializedTickArrays(
+  public static interpolateUninitializedTickArrays(
     whirlpoolAddress: PublicKey,
     tickArrays: TickArray[],
   ): TickArray[] {

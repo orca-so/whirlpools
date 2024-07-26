@@ -62,6 +62,8 @@ pub fn handler<'a, 'b, 'c, 'info>(
     reward_index: u8,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
+    let clock: Clock = Clock::get()?;
+
     verify_position_authority(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
@@ -96,6 +98,8 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &remaining_accounts.transfer_hook_reward,
         transfer_amount,
         transfer_memo::TRANSFER_MEMO_COLLECT_REWARD.as_bytes(),
+        clock.epoch
+        
     )?)
 }
 

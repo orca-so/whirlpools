@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
+use anchor_spl::memo::Memo;
 use anchor_spl::token;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
-use anchor_spl::memo::Memo;
 
 use crate::util::{parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::{
@@ -44,7 +44,6 @@ pub struct CollectFeesV2<'info> {
     #[account(address = token_mint_b.to_account_info().owner.clone())]
     pub token_program_b: Interface<'info, TokenInterface>,
     pub memo_program: Program<'info, Memo>,
-
     // remaining accounts
     // - accounts for transfer hook program of token_mint_a
     // - accounts for transfer hook program of token_mint_b
@@ -54,6 +53,8 @@ pub fn handler<'a, 'b, 'c, 'info>(
     ctx: Context<'a, 'b, 'c, 'info, CollectFeesV2<'info>>,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
+    let clock: Clock = Clock::get()?;
+
     verify_position_authority(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
@@ -63,10 +64,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
     let remaining_accounts = parse_remaining_accounts(
         &ctx.remaining_accounts,
         &remaining_accounts_info,
-        &[
-            AccountsType::TransferHookA,
-            AccountsType::TransferHookB,
-        ],
+        &[AccountsType::TransferHookA, AccountsType::TransferHookB],
     )?;
 
     let position = &mut ctx.accounts.position;
@@ -87,6 +85,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &remaining_accounts.transfer_hook_a,
         fee_owed_a,
         transfer_memo::TRANSFER_MEMO_COLLECT_FEES.as_bytes(),
+        clock.epoch,
     )?;
 
     transfer_from_vault_to_owner_v2(
@@ -99,6 +98,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &remaining_accounts.transfer_hook_b,
         fee_owed_b,
         transfer_memo::TRANSFER_MEMO_COLLECT_FEES.as_bytes(),
+        clock.epoch,
     )?;
 
     Ok(())

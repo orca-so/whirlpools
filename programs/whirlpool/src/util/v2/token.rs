@@ -18,9 +18,11 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
     memo_program: &Program<'info, Memo>,
     transfer_hook_accounts: &Option<Vec<AccountInfo<'info>>>,
     amount: u64,
+    epoch:u64
+
 ) -> Result<()> {
     // TransferFee extension
-    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint)? {
+    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint, epoch)? {
         // log applied transfer fee
         // - Not must, but important for ease of investigation and replay when problems occur
         // - Use Memo because logs risk being truncated
@@ -99,9 +101,11 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
     transfer_hook_accounts: &Option<Vec<AccountInfo<'info>>>,
     amount: u64,
     memo: &[u8],
+    epoch:u64
+
 ) -> Result<()> {
     // TransferFee extension
-    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint)? {
+    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint, epoch)? {
         // log applied transfer fee
         // - Not must, but important for ease of investigation and replay when problems occur
         // - Use Memo because logs risk being truncated
@@ -320,8 +324,10 @@ pub struct TransferFeeExcludedAmount {
 pub fn calculate_transfer_fee_excluded_amount<'info>(
     token_mint: &InterfaceAccount<'info, Mint>,
     transfer_fee_included_amount: u64,
+    epoch:u64
+
 ) -> Result<TransferFeeExcludedAmount> {
-    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint)? {
+    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint, epoch)? {
         let transfer_fee = epoch_transfer_fee.calculate_fee(transfer_fee_included_amount).unwrap();
         let transfer_fee_excluded_amount = transfer_fee_included_amount.checked_sub(transfer_fee).unwrap();
         return Ok(TransferFeeExcludedAmount { amount: transfer_fee_excluded_amount, transfer_fee });            
@@ -333,6 +339,8 @@ pub fn calculate_transfer_fee_excluded_amount<'info>(
 pub fn calculate_transfer_fee_included_amount<'info>(
     token_mint: &InterfaceAccount<'info, Mint>,
     transfer_fee_excluded_amount: u64,
+    epoch:u64
+
 ) -> Result<TransferFeeIncludedAmount> {
     if transfer_fee_excluded_amount == 0 {
         return Ok(TransferFeeIncludedAmount { amount: 0, transfer_fee: 0 });
@@ -340,7 +348,7 @@ pub fn calculate_transfer_fee_included_amount<'info>(
 
     // now transfer_fee_excluded_amount > 0
 
-    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint)? {
+    if let Some(epoch_transfer_fee) = get_epoch_transfer_fee(token_mint, epoch)? {
         let transfer_fee: u64 = if u16::from(epoch_transfer_fee.transfer_fee_basis_points) == MAX_FEE_BASIS_POINTS {
             // edge-case: if transfer fee rate is 100%, current SPL implementation returns 0 as inverse fee.
             // https://github.com/solana-labs/solana-program-library/blob/fe1ac9a2c4e5d85962b78c3fc6aaf028461e9026/token/program-2022/src/extension/transfer_fee/mod.rs#L95
@@ -371,6 +379,7 @@ pub fn calculate_transfer_fee_included_amount<'info>(
 
 pub fn get_epoch_transfer_fee<'info>(
     token_mint: &InterfaceAccount<'info, Mint>,
+    epoch:u64
 ) -> Result<Option<TransferFee>> {
     let token_mint_info = token_mint.to_account_info();
     if *token_mint_info.owner == Token::id() {
@@ -380,7 +389,6 @@ pub fn get_epoch_transfer_fee<'info>(
     let token_mint_data = token_mint_info.try_borrow_data()?;
     let token_mint_unpacked = StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
     if let Ok(transfer_fee_config) = token_mint_unpacked.get_extension::<extension::transfer_fee::TransferFeeConfig>() {
-        let epoch = Clock::get()?.epoch;
         return Ok(Some(transfer_fee_config.get_epoch_fee(epoch).clone()));
     }
 
@@ -490,11 +498,11 @@ mod fuzz_tests {
     
             let interface_account_mint = InterfaceAccount::<Mint>::try_from(&account_info).unwrap();
 
-            let transfer_fee = get_epoch_transfer_fee(&interface_account_mint).unwrap().unwrap();
+            let transfer_fee = get_epoch_transfer_fee(&interface_account_mint, 0).unwrap().unwrap();
             assert_eq!(u64::from(transfer_fee.maximum_fee), maximum_fee);
             assert_eq!(u16::from(transfer_fee.transfer_fee_basis_points), transfer_fee_basis_point);
 
-            let _ = calculate_transfer_fee_included_amount(&interface_account_mint, amount)?;
+            let _ = calculate_transfer_fee_included_amount(&interface_account_mint, amount,0)?;
         }
     }
 }

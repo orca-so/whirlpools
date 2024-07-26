@@ -98,18 +98,21 @@ pub fn handler<'a, 'b, 'c, 'info>(
         amount_specified_is_input,
         a_to_b,
         timestamp,
+        clock.epoch
     )?;
 
     if amount_specified_is_input {
         let transfer_fee_excluded_output_amount = if a_to_b {
             calculate_transfer_fee_excluded_amount(
                 &ctx.accounts.token_mint_b,
-                swap_update.amount_b
+                swap_update.amount_b,
+                clock.epoch
             )?.amount
         } else {
             calculate_transfer_fee_excluded_amount(
                 &ctx.accounts.token_mint_a,
-                swap_update.amount_a
+                swap_update.amount_a,
+                clock.epoch
             )?.amount
         };
         if transfer_fee_excluded_output_amount < other_amount_threshold {
@@ -144,6 +147,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         a_to_b,
         timestamp,
         transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
+        clock.epoch
     )
 }
 
@@ -157,6 +161,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
     amount_specified_is_input: bool,
     a_to_b: bool,
     timestamp: u64,
+    epoch:u64
 ) -> Result<PostSwapUpdate> {
     let (input_token_mint, output_token_mint) = if a_to_b {
         (token_mint_a, token_mint_b)
@@ -169,7 +174,8 @@ pub fn swap_with_transfer_fee_extension<'info>(
         let transfer_fee_included_input = amount;
         let transfer_fee_excluded_input = calculate_transfer_fee_excluded_amount(
             input_token_mint,
-            transfer_fee_included_input
+            transfer_fee_included_input,
+            epoch
         )?.amount;
 
         let swap_update = swap(
@@ -195,7 +201,8 @@ pub fn swap_with_transfer_fee_extension<'info>(
         } else {
             calculate_transfer_fee_included_amount(
                 input_token_mint,
-                swap_update_amount_input
+                swap_update_amount_input,
+                epoch
             )?.amount
         };
 
@@ -222,7 +229,8 @@ pub fn swap_with_transfer_fee_extension<'info>(
     let transfer_fee_excluded_output = amount;
     let transfer_fee_included_output = calculate_transfer_fee_included_amount(
         output_token_mint,
-        transfer_fee_excluded_output
+        transfer_fee_excluded_output,
+        epoch
     )?.amount;
 
     let swap_update = swap(
@@ -243,7 +251,8 @@ pub fn swap_with_transfer_fee_extension<'info>(
 
     let transfer_fee_included_input = calculate_transfer_fee_included_amount(
         input_token_mint,
-        swap_update_amount_input
+        swap_update_amount_input,
+        epoch
     )?.amount;
 
     let adjusted_transfer_fee_included_output = swap_update_amount_output;

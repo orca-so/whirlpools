@@ -117,11 +117,13 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
     let transfer_fee_included_delta_a = calculate_transfer_fee_included_amount(
         &ctx.accounts.token_mint_a,
-        delta_a
+        delta_a,
+        clock.epoch
     )?;
     let transfer_fee_included_delta_b = calculate_transfer_fee_included_amount(
         &ctx.accounts.token_mint_b,
-        delta_b
+        delta_b,
+        clock.epoch
     )?;
 
     // token_max_a and token_max_b should be applied to the transfer fee included amount
@@ -141,6 +143,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &ctx.accounts.memo_program,
         &remaining_accounts.transfer_hook_a,
         transfer_fee_included_delta_a.amount,
+        clock.epoch
     )?;
 
     transfer_from_owner_to_vault_v2(
@@ -152,6 +155,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &ctx.accounts.memo_program,
         &remaining_accounts.transfer_hook_b,
         transfer_fee_included_delta_b.amount,
+        clock.epoch
     )?;
 
     Ok(())

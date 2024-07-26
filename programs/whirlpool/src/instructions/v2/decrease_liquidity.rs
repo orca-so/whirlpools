@@ -26,7 +26,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &ctx.accounts.position_authority,
     )?;
 
-    let clock = Clock::get()?;
+    let clock: Clock = Clock::get()?;
 
     if liquidity_amount == 0 {
         return Err(ErrorCode::LiquidityZero.into());
@@ -72,11 +72,13 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
     let transfer_fee_excluded_delta_a = calculate_transfer_fee_excluded_amount(
         &ctx.accounts.token_mint_a,
-        delta_a
+        delta_a,
+        clock.epoch
     )?;
     let transfer_fee_excluded_delta_b = calculate_transfer_fee_excluded_amount(
         &ctx.accounts.token_mint_b,
-        delta_b
+        delta_b,
+        clock.epoch
     )?;
 
     // token_min_a and token_min_b should be applied to the transfer fee excluded amount
@@ -97,6 +99,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &remaining_accounts.transfer_hook_a,
         delta_a,
         transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
+        clock.epoch
     )?;
 
     transfer_from_vault_to_owner_v2(
@@ -109,6 +112,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &remaining_accounts.transfer_hook_b,
         delta_b,
         transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
+        clock.epoch
     )?;
 
     Ok(())

@@ -25,7 +25,7 @@ export const ORCA_WHIRLPOOLS_CONFIG_EXTENSION = new PublicKey("777H5H3Tp9U11uRVR
  * Orca's supported tick spacings.
  * @category Constants
  */
-export const ORCA_SUPPORTED_TICK_SPACINGS = [1, 2, 4, 8, 16, 64, 128, 256, 32896];
+export const ORCA_SUPPORTED_TICK_SPACINGS = [1, 2, 4, 8, 16, 64, 96, 128, 256, 32896];
 
 /**
  * The number of rewards supported by this whirlpool.

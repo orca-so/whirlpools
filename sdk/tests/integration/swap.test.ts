@@ -392,8 +392,112 @@ describe("swap", () => {
           oracle: oraclePda.publicKey,
         })
       ).buildAndExecute(),
+      // This test case violates the constraint on vault (before tickarray)
       /0x7d3/ // ConstraintRaw
     );
+  });
+
+  it("fails on passing in the tick-arrays from another whirlpool (tickarray only)", async () => {
+    const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+
+    const { poolInitInfo: anotherPoolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
+
+    const tickArrays = await initTickArrayRange(
+      ctx,
+      poolInitInfo.whirlpoolPda.publicKey,
+      22528,
+      3,
+      TickSpacing.Standard,
+      false
+    );
+
+    const anotherTickArrays = await initTickArrayRange(
+      ctx,
+      anotherPoolInitInfo.whirlpoolPda.publicKey,
+      22528,
+      3,
+      TickSpacing.Standard,
+      false
+    );
+
+    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+
+    // invalid tickArrays[0]
+    await assert.rejects(
+      toTx(
+        ctx,
+        WhirlpoolIx.swapIx(ctx.program, {
+          amount: new BN(10),
+          otherAmountThreshold: ZERO_BN,
+          sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+          amountSpecifiedIsInput: true,
+          aToB: true,
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          tokenAuthority: ctx.wallet.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArray0: anotherTickArrays[0].publicKey, // invalid
+          tickArray1: tickArrays[0].publicKey,
+          tickArray2: tickArrays[0].publicKey,
+          oracle: oraclePda.publicKey,
+        })
+      ).buildAndExecute(),
+      // sparse-swap changes error code (has_one constraint -> check in the handler)
+      /0x17a8/ // DifferentWhirlpoolTickArrayAccount
+    );
+
+    // invalid tickArrays[1]
+    await assert.rejects(
+      toTx(
+        ctx,
+        WhirlpoolIx.swapIx(ctx.program, {
+          amount: new BN(10),
+          otherAmountThreshold: ZERO_BN,
+          sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+          amountSpecifiedIsInput: true,
+          aToB: true,
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          tokenAuthority: ctx.wallet.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArray0: tickArrays[0].publicKey,
+          tickArray1: anotherTickArrays[1].publicKey,
+          tickArray2: tickArrays[0].publicKey,
+          oracle: oraclePda.publicKey,
+        })
+      ).buildAndExecute(),
+      /0x17a8/ // DifferentWhirlpoolTickArrayAccount
+    );
+
+    // invalid tickArrays[2]
+    await assert.rejects(
+      toTx(
+        ctx,
+        WhirlpoolIx.swapIx(ctx.program, {
+          amount: new BN(10),
+          otherAmountThreshold: ZERO_BN,
+          sqrtPriceLimit: MathUtil.toX64(new Decimal(4.95)),
+          amountSpecifiedIsInput: true,
+          aToB: true,
+          whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+          tokenAuthority: ctx.wallet.publicKey,
+          tokenOwnerAccountA: tokenAccountA,
+          tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenOwnerAccountB: tokenAccountB,
+          tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+          tickArray0: tickArrays[0].publicKey,
+          tickArray1: tickArrays[1].publicKey,
+          tickArray2: anotherTickArrays[2].publicKey, // invalid
+          oracle: oraclePda.publicKey,
+        })
+      ).buildAndExecute(),
+      /0x17a8/ // DifferentWhirlpoolTickArrayAccount
+    );    
   });
 
   it("fails on passing in an account of another type for the oracle", async () => {
@@ -486,10 +590,13 @@ describe("swap", () => {
     const tickArrays = await initTickArrayRange(
       ctx,
       whirlpoolPda.publicKey,
-      33792,
+      // sparse-swap: We didn't provide valid initialized tick arrays.
+      // The current pool tick index is 32190, so we need to provide tick array with start_tick_index 22528.
+      // Using sparse-swap, the validity of provided tick arrays will be evaluated before evaluating trade amount.
+      22528,
       3,
       TickSpacing.Standard,
-      false
+      true,
     );
 
     const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
@@ -925,6 +1032,8 @@ describe("swap", () => {
     // TODO: Verify fees and other whirlpool params
   });
 
+  /* using sparse-swap, we can handle uninitialized tick-array. so this test is no longer needed.
+
   it("Error on passing in uninitialized tick-array", async () => {
     const { poolInitInfo, tokenAccountA, tokenAccountB, tickArrays } =
       await initTestPoolWithLiquidity(ctx);
@@ -937,7 +1046,7 @@ describe("swap", () => {
     const params: SwapParams = {
       amount: new BN(10),
       otherAmountThreshold: ZERO_BN,
-      sqrtPriceLimit: MathUtil.toX64(new Decimal(4294886578)),
+      sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(true),
       amountSpecifiedIsInput: true,
       aToB: true,
       whirlpool: whirlpool,
@@ -960,6 +1069,7 @@ describe("swap", () => {
       assert.match(error.message, /0xbbf/); // AccountOwnedByWrongProgram
     }
   });
+  */
 
   it("Error if sqrt_price_limit exceeds max", async () => {
     const { poolInitInfo, tokenAccountA, tokenAccountB, tickArrays } =

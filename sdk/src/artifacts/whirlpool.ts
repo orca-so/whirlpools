@@ -3551,6 +3551,15 @@ export type Whirlpool = {
           },
           {
             "name": "TransferHookOutput"
+          },
+          {
+            "name": "SupplementalTickArrays"
+          },
+          {
+            "name": "SupplementalTickArraysOne"
+          },
+          {
+            "name": "SupplementalTickArraysTwo"
           }
         ]
       }
@@ -3826,6 +3835,16 @@ export type Whirlpool = {
       "code": 6053,
       "name": "RemainingAccountsDuplicatedAccountsType",
       "msg": "Same accounts type is provided more than once"
+    },
+    {
+      "code": 6054,
+      "name": "TooManySupplementalTickArrays",
+      "msg": "Too many supplemental tick arrays provided"
+    },
+    {
+      "code": 6055,
+      "name": "DifferentWhirlpoolTickArrayAccount",
+      "msg": "TickArray account for different whirlpool provided"
     }
   ]
 };
@@ -7383,6 +7402,15 @@ export const IDL: Whirlpool = {
           },
           {
             "name": "TransferHookOutput"
+          },
+          {
+            "name": "SupplementalTickArrays"
+          },
+          {
+            "name": "SupplementalTickArraysOne"
+          },
+          {
+            "name": "SupplementalTickArraysTwo"
           }
         ]
       }
@@ -7658,6 +7686,16 @@ export const IDL: Whirlpool = {
       "code": 6053,
       "name": "RemainingAccountsDuplicatedAccountsType",
       "msg": "Same accounts type is provided more than once"
+    },
+    {
+      "code": 6054,
+      "name": "TooManySupplementalTickArrays",
+      "msg": "Too many supplemental tick arrays provided"
+    },
+    {
+      "code": 6055,
+      "name": "DifferentWhirlpoolTickArrayAccount",
+      "msg": "TickArray account for different whirlpool provided"
     }
   ]
 };

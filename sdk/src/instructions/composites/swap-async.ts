@@ -1,6 +1,6 @@
 import { resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import { SwapUtils, TickArrayUtil, Whirlpool, WhirlpoolContext } from "../..";
+import { SwapUtils, Whirlpool, WhirlpoolContext } from "../..";
 import { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
 import { SwapInput, swapIx } from "../swap-ix";
 import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
@@ -27,16 +27,8 @@ export async function swapAsync(
   const { wallet, whirlpool, swapInput } = params;
   const { aToB, amount } = swapInput;
   const txBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
-  const tickArrayAddresses = [swapInput.tickArray0, swapInput.tickArray1, swapInput.tickArray2];
 
-  let uninitializedArrays = await TickArrayUtil.getUninitializedArraysString(
-    tickArrayAddresses,
-    ctx.fetcher,
-    opts
-  );
-  if (uninitializedArrays) {
-    throw new Error(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`);
-  }
+  // No need to check if TickArrays are initialized after SparseSwap implementation
 
   const data = whirlpool.getData();
   const [resolvedAtaA, resolvedAtaB] = await resolveOrCreateATAs(
@@ -72,7 +64,7 @@ export async function swapAsync(
     wallet
   );
   return txBuilder.addInstruction(
-    !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+    (!TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx) && !params.swapInput.supplementalTickArrays)
       ? swapIx(ctx.program, baseParams)
       : swapV2Ix(ctx.program, {
         ...baseParams,
@@ -90,6 +82,7 @@ export async function swapAsync(
           baseParams.aToB ? baseParams.tokenOwnerAccountB : baseParams.tokenVaultB,
           baseParams.aToB ? baseParams.whirlpool : baseParams.tokenAuthority,
         ),
+        supplementalTickArrays: params.swapInput.supplementalTickArrays,
       })
   );
 }

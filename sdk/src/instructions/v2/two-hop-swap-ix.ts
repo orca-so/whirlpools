@@ -4,7 +4,7 @@ import { AccountMeta, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../../types/public";
-import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
+import { RemainingAccountsBuilder, RemainingAccountsType, toSupplementalTickArrayAccountMetas } from "../../utils/remaining-accounts-util";
 import { TwoHopSwapInput } from "../two-hop-swap-ix";
 
 /**
@@ -109,12 +109,16 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
     tickArrayTwo2,
     oracleOne,
     oracleTwo,
+    supplementalTickArraysOne,
+    supplementalTickArraysTwo,
   } = params;
 
   const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
     .addSlice(RemainingAccountsType.TransferHookInput, tokenTransferHookAccountsInput)
     .addSlice(RemainingAccountsType.TransferHookIntermediate, tokenTransferHookAccountsIntermediate)
     .addSlice(RemainingAccountsType.TransferHookOutput, tokenTransferHookAccountsOutput)
+    .addSlice(RemainingAccountsType.SupplementalTickArraysOne, toSupplementalTickArrayAccountMetas(supplementalTickArraysOne))
+    .addSlice(RemainingAccountsType.SupplementalTickArraysTwo, toSupplementalTickArrayAccountMetas(supplementalTickArraysTwo))
     .build();
 
   const ix = program.instruction.twoHopSwapV2(

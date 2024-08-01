@@ -1,10 +1,11 @@
 use crate::errors::ErrorCode;
 use crate::state::*;
+use crate::util::ProxiedTickArray;
 use anchor_lang::prelude::*;
 use std::cell::RefMut;
 
 pub struct SwapTickSequence<'info> {
-    arrays: Vec<RefMut<'info, TickArray>>,
+    arrays: Vec<ProxiedTickArray<'info>>,
 }
 
 impl<'info> SwapTickSequence<'info> {
@@ -12,6 +13,18 @@ impl<'info> SwapTickSequence<'info> {
         ta0: RefMut<'info, TickArray>,
         ta1: Option<RefMut<'info, TickArray>>,
         ta2: Option<RefMut<'info, TickArray>>,
+    ) -> Self {
+        Self::new_with_proxy(
+            ProxiedTickArray::new_initialized(ta0),
+            ta1.map(|refmut| ProxiedTickArray::new_initialized(refmut)),
+            ta2.map(|refmut| ProxiedTickArray::new_initialized(refmut)),
+        )
+    }
+
+    pub(crate) fn new_with_proxy(
+        ta0: ProxiedTickArray<'info>,
+        ta1: Option<ProxiedTickArray<'info>>,
+        ta2: Option<ProxiedTickArray<'info>>,
     ) -> Self {
         let mut vec = Vec::with_capacity(3);
         vec.push(ta0);
@@ -140,9 +153,9 @@ impl<'info> SwapTickSequence<'info> {
                     // If we are at the last tick array in the sequencer, return the last tick
                     if array_index + 1 == self.arrays.len() {
                         if a_to_b {
-                            return Ok((array_index, next_array.start_tick_index));
+                            return Ok((array_index, next_array.start_tick_index()));
                         } else {
-                            let last_tick = next_array.start_tick_index + ticks_in_array - 1;
+                            let last_tick = next_array.start_tick_index() + ticks_in_array - 1;
                             return Ok((array_index, last_tick));
                         }
                     }
@@ -150,9 +163,9 @@ impl<'info> SwapTickSequence<'info> {
                     // No initialized index found. Move the search-index to the 1st search position
                     // of the next array in sequence.
                     search_index = if a_to_b {
-                        next_array.start_tick_index - 1
+                        next_array.start_tick_index() - 1
                     } else {
-                        next_array.start_tick_index + ticks_in_array - 1
+                        next_array.start_tick_index() + ticks_in_array - 1
                     };
 
                     array_index += 1;

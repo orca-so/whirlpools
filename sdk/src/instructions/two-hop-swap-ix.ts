@@ -58,7 +58,9 @@ export type TwoHopSwapParams = TwoHopSwapInput & {
  * @param tickArrayTwo0 - PublicKey of the tick-array of swap-Two where the Whirlpool's currentTickIndex resides in
  * @param tickArrayTwo1 - The next tick-array in the swap direction of swap-Two. If the swap will not reach the next tick-aray, input the same array as tickArray0.
  * @param tickArrayTwo2 - The next tick-array in the swap direction after tickArray2 of swap-Two. If the swap will not reach the next tick-aray, input the same array as tickArray1.
- */
+ * @param supplementalTickArraysOne - (V2 only) Optional array of PublicKey for supplemental tick arrays of whirlpoolOne. twoHopSwap instruction will ignore this parameter.
+ * @param supplementalTickArraysTwo - (V2 only) Optional array of PublicKey for supplemental tick arrays of whirlpoolTwo. twoHopSwap instruction will ignore this parameter.
+*/
 export type TwoHopSwapInput = {
   amount: BN;
   otherAmountThreshold: BN;
@@ -73,6 +75,8 @@ export type TwoHopSwapInput = {
   tickArrayTwo0: PublicKey;
   tickArrayTwo1: PublicKey;
   tickArrayTwo2: PublicKey;
+  supplementalTickArraysOne?: PublicKey[];
+  supplementalTickArraysTwo?: PublicKey[];
 };
 
 /**

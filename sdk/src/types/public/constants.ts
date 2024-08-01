@@ -102,6 +102,12 @@ export const MEMO_PROGRAM_ADDRESS = new PublicKey(
 export const MAX_SWAP_TICK_ARRAYS = 3;
 
 /**
+ * The maximum number of supplemental tick-arrays that can be provided in a swap.
+ * @category Constants
+ */
+export const MAX_SUPPLEMENTAL_TICK_ARRAYS = 3;
+
+/**
  * The denominator which the protocol fee rate is divided on.
  * @category Constants
  */

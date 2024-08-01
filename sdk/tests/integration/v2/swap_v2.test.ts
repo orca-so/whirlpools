@@ -518,7 +518,8 @@ describe("swap_v2", () => {
                 oracle: oraclePda.publicKey,
               })
             ).buildAndExecute(),
-            /0x7d1/ // ConstraintHasOne
+            // sparse-swap changes error code (has_one constraint -> check in the handler)
+            /0x17a8/ // DifferentWhirlpoolTickArrayAccount
           );
         });
 
@@ -640,10 +641,13 @@ describe("swap_v2", () => {
           const tickArrays = await initTickArrayRange(
             ctx,
             whirlpoolPda.publicKey,
-            33792,
+            // sparse-swap: We didn't provide valid initialized tick arrays.
+            // The current pool tick index is 32190, so we need to provide tick array with start_tick_index 22528.
+            // Using sparse-swap, the validity of provided tick arrays will be evaluated before evaluating trade amount.
+            22528,
             3,
             TickSpacing.Standard,
-            false
+            true,
           );
 
           const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
@@ -1237,6 +1241,8 @@ describe("swap_v2", () => {
           // TODO: Verify fees and other whirlpool params
         });
 
+        /* using sparse-swap, we can handle uninitialized tick-array. so this test is no longer needed.
+
         it("Error on passing in uninitialized tick-array", async () => {
           const { poolInitInfo, tokenAccountA, tokenAccountB, tickArrays } =
             await initTestPoolWithLiquidityV2(
@@ -1260,7 +1266,7 @@ describe("swap_v2", () => {
           const params: SwapV2Params = {
             amount: new BN(10),
             otherAmountThreshold: ZERO_BN,
-            sqrtPriceLimit: MathUtil.toX64(new Decimal(4294886578)),
+            sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(true),
             amountSpecifiedIsInput: true,
             aToB: true,
             whirlpool: whirlpool,
@@ -1287,6 +1293,7 @@ describe("swap_v2", () => {
             assert.match(error.message, /0xbbf/); // AccountOwnedByWrongProgram
           }
         });
+        */
 
         it("Error if sqrt_price_limit exceeds max", async () => {
           const { poolInitInfo, tokenAccountA, tokenAccountB, tickArrays } =

@@ -30,5 +30,6 @@ export type WhirlpoolRewardInfo = WhirlpoolRewardInfoData & {
  */
 export type TickArray = {
   address: PublicKey;
+  startTickIndex: number;
   data: TickArrayData | null;
 };

@@ -144,6 +144,82 @@ impl TickUpdate {
     }
 }
 
+pub trait TickArrayType {
+    fn start_tick_index(&self) -> i32;
+
+    fn get_next_init_tick_index(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+        a_to_b: bool,
+    ) -> Result<Option<i32>>;
+
+    fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick>;
+    
+    fn update_tick(
+        &mut self,
+        tick_index: i32,
+        tick_spacing: u16,
+        update: &TickUpdate,
+    ) -> Result<()>;
+
+    /// Checks that this array holds the next tick index for the current tick index, given the pool's tick spacing & search direction.
+    ///
+    /// unshifted checks on [start, start + TICK_ARRAY_SIZE * tick_spacing)
+    /// shifted checks on [start - tick_spacing, start + (TICK_ARRAY_SIZE - 1) * tick_spacing) (adjusting range by -tick_spacing)
+    ///
+    /// shifted == !a_to_b
+    ///
+    /// For a_to_b swaps, price moves left. All searchable ticks in this tick-array's range will end up in this tick's usable ticks.
+    /// The search range is therefore the range of the tick-array.
+    ///
+    /// For b_to_a swaps, this tick-array's left-most ticks can be the 'next' usable tick-index of the previous tick-array.
+    /// The right-most ticks also points towards the next tick-array. The search range is therefore shifted by 1 tick-spacing.
+    fn in_search_range(&self, tick_index: i32, tick_spacing: u16, shifted: bool) -> bool {
+        let mut lower = self.start_tick_index();
+        let mut upper = self.start_tick_index() + TICK_ARRAY_SIZE * tick_spacing as i32;
+        if shifted {
+            lower = lower - tick_spacing as i32;
+            upper = upper - tick_spacing as i32;
+        }
+        tick_index >= lower && tick_index < upper    
+    }
+
+    fn check_in_array_bounds(&self, tick_index: i32, tick_spacing: u16) -> bool {
+        self.in_search_range(tick_index, tick_spacing, false)
+    }
+
+    fn is_min_tick_array(&self) -> bool {
+        self.start_tick_index() <= MIN_TICK_INDEX
+    }
+
+    fn is_max_tick_array(&self, tick_spacing: u16) -> bool {
+        self.start_tick_index() + TICK_ARRAY_SIZE * (tick_spacing as i32) > MAX_TICK_INDEX
+    }
+
+    fn tick_offset(&self, tick_index: i32, tick_spacing: u16) -> Result<isize> {
+        if tick_spacing == 0 {
+            return Err(ErrorCode::InvalidTickSpacing.into());
+        }
+
+        Ok(get_offset(tick_index, self.start_tick_index(), tick_spacing))
+    }    
+}
+
+fn get_offset(tick_index: i32, start_tick_index: i32, tick_spacing: u16) -> isize {
+    // TODO: replace with i32.div_floor once not experimental
+    let lhs = tick_index - start_tick_index;
+    let rhs = tick_spacing as i32;
+    let d = lhs / rhs;
+    let r = lhs % rhs;
+    let o = if (r > 0 && rhs < 0) || (r < 0 && rhs > 0) {
+        d - 1
+    } else {
+        d
+    };
+    return o as isize;
+}
+
 #[account(zero_copy(unsafe))]
 #[repr(packed)]
 pub struct TickArray {
@@ -166,6 +242,34 @@ impl Default for TickArray {
 impl TickArray {
     pub const LEN: usize = 8 + 36 + (Tick::LEN * TICK_ARRAY_SIZE_USIZE);
 
+    /// Initialize the TickArray object
+    ///
+    /// # Parameters
+    /// - `whirlpool` - the tick index the desired Tick object is stored in
+    /// - `start_tick_index` - A u8 integer of the tick spacing for this whirlpool
+    ///
+    /// # Errors
+    /// - `InvalidStartTick`: - The provided start-tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
+    pub fn initialize(
+        &mut self,
+        whirlpool: &Account<Whirlpool>,
+        start_tick_index: i32,
+    ) -> Result<()> {
+        if !Tick::check_is_valid_start_tick(start_tick_index, whirlpool.tick_spacing) {
+            return Err(ErrorCode::InvalidStartTick.into());
+        }
+
+        self.whirlpool = whirlpool.key();
+        self.start_tick_index = start_tick_index;
+        Ok(())
+    }
+}
+
+impl TickArrayType for TickArray {
+    fn start_tick_index(&self) -> i32 {
+        self.start_tick_index
+    }
+
     /// Search for the next initialized tick in this array.
     ///
     /// # Parameters
@@ -179,7 +283,7 @@ impl TickArray {
     /// - `None`: An initialized tick index was not found in this array
     /// - `InvalidTickArraySequence` - error if `tick_index` is not a valid search tick for the array
     /// - `InvalidTickSpacing` - error if the provided tick spacing is 0
-    pub fn get_next_init_tick_index(
+    fn get_next_init_tick_index(
         &self,
         tick_index: i32,
         tick_spacing: u16,
@@ -218,28 +322,6 @@ impl TickArray {
         Ok(None)
     }
 
-    /// Initialize the TickArray object
-    ///
-    /// # Parameters
-    /// - `whirlpool` - the tick index the desired Tick object is stored in
-    /// - `start_tick_index` - A u8 integer of the tick spacing for this whirlpool
-    ///
-    /// # Errors
-    /// - `InvalidStartTick`: - The provided start-tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
-    pub fn initialize(
-        &mut self,
-        whirlpool: &Account<Whirlpool>,
-        start_tick_index: i32,
-    ) -> Result<()> {
-        if !Tick::check_is_valid_start_tick(start_tick_index, whirlpool.tick_spacing) {
-            return Err(ErrorCode::InvalidStartTick.into());
-        }
-
-        self.whirlpool = whirlpool.key();
-        self.start_tick_index = start_tick_index;
-        Ok(())
-    }
-
     /// Get the Tick object at the given tick-index & tick-spacing
     ///
     /// # Parameters
@@ -249,7 +331,7 @@ impl TickArray {
     /// # Returns
     /// - `&Tick`: A reference to the desired Tick object
     /// - `TickNotFound`: - The provided tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
-    pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
+    fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
         if !self.check_in_array_bounds(tick_index, tick_spacing)
             || !Tick::check_is_usable_tick(tick_index, tick_spacing)
         {
@@ -271,7 +353,7 @@ impl TickArray {
     ///
     /// # Errors
     /// - `TickNotFound`: - The provided tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
-    pub fn update_tick(
+    fn update_tick(
         &mut self,
         tick_index: i32,
         tick_spacing: u16,
@@ -289,63 +371,66 @@ impl TickArray {
         self.ticks.get_mut(offset as usize).unwrap().update(update);
         Ok(())
     }
+}
 
-    /// Checks that this array holds the next tick index for the current tick index, given the pool's tick spacing & search direction.
-    ///
-    /// unshifted checks on [start, start + TICK_ARRAY_SIZE * tick_spacing)
-    /// shifted checks on [start - tick_spacing, start + (TICK_ARRAY_SIZE - 1) * tick_spacing) (adjusting range by -tick_spacing)
-    ///
-    /// shifted == !a_to_b
-    ///
-    /// For a_to_b swaps, price moves left. All searchable ticks in this tick-array's range will end up in this tick's usable ticks.
-    /// The search range is therefore the range of the tick-array.
-    ///
-    /// For b_to_a swaps, this tick-array's left-most ticks can be the 'next' usable tick-index of the previous tick-array.
-    /// The right-most ticks also points towards the next tick-array. The search range is therefore shifted by 1 tick-spacing.
-    pub fn in_search_range(&self, tick_index: i32, tick_spacing: u16, shifted: bool) -> bool {
-        let mut lower = self.start_tick_index;
-        let mut upper = self.start_tick_index + TICK_ARRAY_SIZE * tick_spacing as i32;
-        if shifted {
-            lower = lower - tick_spacing as i32;
-            upper = upper - tick_spacing as i32;
+pub(crate) struct ZeroedTickArray {
+    pub start_tick_index: i32,
+    zeroed_tick: Tick,
+}
+
+impl ZeroedTickArray {
+    pub fn new(start_tick_index: i32) -> Self {
+        ZeroedTickArray {
+            start_tick_index,
+            zeroed_tick: Tick::default(),
         }
-        tick_index >= lower && tick_index < upper
-    }
-
-    pub fn check_in_array_bounds(&self, tick_index: i32, tick_spacing: u16) -> bool {
-        self.in_search_range(tick_index, tick_spacing, false)
-    }
-
-    pub fn is_min_tick_array(&self) -> bool {
-        self.start_tick_index <= MIN_TICK_INDEX
-    }
-
-    pub fn is_max_tick_array(&self, tick_spacing: u16) -> bool {
-        self.start_tick_index + TICK_ARRAY_SIZE * (tick_spacing as i32) > MAX_TICK_INDEX
-    }
-
-    // Calculates an offset from a tick index that can be used to access the tick data
-    pub fn tick_offset(&self, tick_index: i32, tick_spacing: u16) -> Result<isize> {
-        if tick_spacing == 0 {
-            return Err(ErrorCode::InvalidTickSpacing.into());
-        }
-
-        Ok(get_offset(tick_index, self.start_tick_index, tick_spacing))
     }
 }
 
-fn get_offset(tick_index: i32, start_tick_index: i32, tick_spacing: u16) -> isize {
-    // TODO: replace with i32.div_floor once not experimental
-    let lhs = tick_index - start_tick_index;
-    let rhs = tick_spacing as i32;
-    let d = lhs / rhs;
-    let r = lhs % rhs;
-    let o = if (r > 0 && rhs < 0) || (r < 0 && rhs > 0) {
-        d - 1
-    } else {
-        d
-    };
-    return o as isize;
+impl TickArrayType for ZeroedTickArray {
+    fn start_tick_index(&self) -> i32 {
+        self.start_tick_index
+    }
+
+    fn get_next_init_tick_index(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+        a_to_b: bool,
+    ) -> Result<Option<i32>> {
+        if !self.in_search_range(tick_index, tick_spacing, !a_to_b) {
+            return Err(ErrorCode::InvalidTickArraySequence.into());
+        }
+
+        self.tick_offset(tick_index, tick_spacing)?;
+
+        // no initialized tick
+        Ok(None)
+    }
+
+    fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
+        if !self.check_in_array_bounds(tick_index, tick_spacing)
+            || !Tick::check_is_usable_tick(tick_index, tick_spacing)
+        {
+            return Err(ErrorCode::TickNotFound.into());
+        }
+        let offset = self.tick_offset(tick_index, tick_spacing)?;
+        if offset < 0 {
+            return Err(ErrorCode::TickNotFound.into());
+        }
+
+        // always return the zeroed tick
+        Ok(&self.zeroed_tick)
+    }
+
+    fn update_tick(
+        &mut self,
+        _tick_index: i32,
+        _tick_spacing: u16,
+        _update: &TickUpdate,
+    ) -> Result<()> {
+        panic!("ZeroedTickArray must not be updated");
+    }
 }
 
 #[cfg(test)]

@@ -1,4 +1,6 @@
-import { AccountMeta } from "@solana/web3.js";
+import { AccountMeta, PublicKey } from "@solana/web3.js";
+import invariant from "tiny-invariant";
+import { MAX_SUPPLEMENTAL_TICK_ARRAYS } from "../types/public";
 
 export enum RemainingAccountsType {
   TransferHookA = "transferHookA",
@@ -7,9 +9,9 @@ export enum RemainingAccountsType {
   TransferHookInput = "transferHookInput",
   TransferHookIntermediate = "transferHookIntermediate",
   TransferHookOutput = "transferHookOutput",
-  //TickArray = "tickArray",
-  //TickArrayOne = "tickArrayOne",
-  //TickArrayTwo = "tickArrayTwo",
+  SupplementalTickArrays = "supplementalTickArrays",
+  SupplementalTickArraysOne = "supplementalTickArraysOne",
+  SupplementalTickArraysTwo = "supplementalTickArraysTwo",
 }
 
 type RemainingAccountsAnchorType = 
@@ -18,10 +20,10 @@ type RemainingAccountsAnchorType =
   { transferHookReward: {} } |
   { transferHookInput: {} } |
   { transferHookIntermediate: {} } |
-  { transferHookOutput: {} }
-  //{ tickArray: {} } |
-  //{ tickArrayOne: {} } |
-  //{ tickArrayTwo: {} } |
+  { transferHookOutput: {} } |
+  { supplementalTickArrays: {} } |
+  { supplementalTickArraysOne: {} } |
+  { supplementalTickArraysTwo: {} };
 
 export type RemainingAccountsSliceData = {
   accountsType: RemainingAccountsAnchorType;
@@ -59,4 +61,17 @@ export class RemainingAccountsBuilder {
       ? [null, undefined]
       : [{ slices: this.slices }, this.remainingAccounts];
   }
+}
+
+export function toSupplementalTickArrayAccountMetas(
+  tickArrayPubkeys: PublicKey[] | undefined
+): AccountMeta[] | undefined {
+  if (!tickArrayPubkeys) return undefined;
+
+  invariant(tickArrayPubkeys.length <= MAX_SUPPLEMENTAL_TICK_ARRAYS, "Too many supplemental tick arrays provided");
+  return tickArrayPubkeys.map((pubkey) => ({
+    pubkey,
+    isWritable: true,
+    isSigner: false
+  }));
 }

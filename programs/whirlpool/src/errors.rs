@@ -138,6 +138,11 @@ pub enum ErrorCode {
 
     #[msg("This whirlpool only supports full-range positions")]
     FullRangeOnlyPool, // 0x17a6 (6054)
+
+    #[msg("Too many supplemental tick arrays provided")]
+    TooManySupplementalTickArrays, // 0x17a7 (6055)
+    #[msg("TickArray account for different whirlpool provided")]
+    DifferentWhirlpoolTickArrayAccount, // 0x17a8 (6056)
 }
 
 impl From<TryFromIntError> for ErrorCode {

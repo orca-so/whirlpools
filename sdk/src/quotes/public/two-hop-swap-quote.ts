@@ -51,6 +51,8 @@ export function twoHopSwapQuoteFromSwapQuotes(
     tickArrayTwo0: swapQuoteTwo.tickArray0,
     tickArrayTwo1: swapQuoteTwo.tickArray1,
     tickArrayTwo2: swapQuoteTwo.tickArray2,
+    supplementalTickArraysOne: swapQuoteOne.supplementalTickArrays,
+    supplementalTickArraysTwo: swapQuoteTwo.supplementalTickArrays,
     swapOneEstimates: { ...swapQuoteOne },
     swapTwoEstimates: { ...swapQuoteTwo },
   };

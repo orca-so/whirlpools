@@ -16,6 +16,7 @@ import { swapQuoteWithParams } from "../quotes/public/swap-quote";
 import { TickArray, WhirlpoolData } from "../types/public";
 import { PoolUtil, PriceMath, SwapUtils } from "../utils/public";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../utils/public/token-extension-util";
+import { getTickArrayPublicKeysWithStartTickIndex } from "../utils/swap-utils";
 
 function checkLiquidity(
   pool: WhirlpoolData,
@@ -155,7 +156,7 @@ function getTickArrays(
   config = defaultGetPricesConfig
 ): TickArray[] {
   const { programId } = config;
-  const tickArrayPublicKeys = SwapUtils.getTickArrayPublicKeys(
+  const tickArrayAddresses = getTickArrayPublicKeysWithStartTickIndex(
     pool.tickCurrentIndex,
     pool.tickSpacing,
     aToB,
@@ -163,8 +164,8 @@ function getTickArrays(
     address
   );
 
-  return tickArrayPublicKeys.map((tickArrayPublicKey) => {
-    return { address: tickArrayPublicKey, data: tickArrayMap[tickArrayPublicKey.toBase58()] };
+  return tickArrayAddresses.map((a) => {
+    return { address: a.pubkey, startTickIndex: a.startTickIndex, data: tickArrayMap[a.pubkey.toBase58()] };
   });
 }
 

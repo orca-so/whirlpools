@@ -81,7 +81,7 @@ describe("swap arrays test", () => {
       adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
     );
     assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
-    assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
   });
 
   /**
@@ -106,21 +106,153 @@ describe("swap arrays test", () => {
       ],
     });
 
-    // estimatedEndTickIndex is 4091 (arrayIndex: 0 (not initialized))
+    // SparseSwap makes it possible to execute this swap.
+
     const whirlpoolData = await whirlpool.refreshData();
-    const expectedError = "Swap input value traversed too many arrays.";
-    await assert.rejects(
-      swapQuoteByInputToken(
-        whirlpool,
-        whirlpoolData.tokenMintA,
-        new BN(40_000_000),
-        slippageTolerance,
-        ctx.program.programId,
-        fetcher,
-        IGNORE_CACHE
-      ),
-      (err: Error) => err.message.indexOf(expectedError) != -1
+    const tradeAmount = new BN(40_000_000);
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      tradeAmount,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE
     );
+
+    // Verify with an actual swap.
+    // estimatedEndTickIndex is 4091 (arrayIndex: 0 (not initialized))
+    assert.equal(quote.aToB, true);
+    assert.equal(quote.amountSpecifiedIsInput, true);
+    assert.equal(
+      quote.sqrtPriceLimit.toString(),
+      SwapUtils.getDefaultSqrtPriceLimit(true).toString()
+    );
+
+    assert.equal(quote.estimatedEndTickIndex, 4091);
+    assert.equal(
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+    );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    const updatedWhirlpoolData = await whirlpool.refreshData();
+    assert.equal(updatedWhirlpoolData.tickCurrentIndex, quote.estimatedEndTickIndex);
+  });
+
+  /**
+   * |xxxxxxxxxxxxxc2xx|xxxxxxxxxxxxxxxxx|------c1-----------|
+   */
+  it("3 sequential arrays, 2nd and 3rd array not initialized, a->b", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: 1, offsetIndex: 44 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, 5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 44 },
+          { arrayIndex: 2, offsetIndex: 44 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    // SparseSwap makes it possible to execute this swap.
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const tradeAmount = new BN(150_000_000);
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      tradeAmount,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE
+    );
+
+    // Verify with an actual swap.
+    // estimatedEndTickIndex is -4522 (arrayIndex: -1 (not initialized))
+    assert.equal(quote.aToB, true);
+    assert.equal(quote.amountSpecifiedIsInput, true);
+    assert.equal(
+      quote.sqrtPriceLimit.toString(),
+      SwapUtils.getDefaultSqrtPriceLimit(true).toString()
+    );
+
+    assert.equal(quote.estimatedEndTickIndex, -4522);
+    assert.equal(
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+    );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    const updatedWhirlpoolData = await whirlpool.refreshData();
+    assert.equal(updatedWhirlpoolData.tickCurrentIndex, quote.estimatedEndTickIndex);
+  });
+
+  /**
+   * |xxxxxxxxxxxxxc2xx|xxxxxxxxxxxxxxxxx|xxxxxxc1xxxxxxxxxxx|
+   */
+  it("3 sequential arrays, all array not initialized, a->b", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: 1, offsetIndex: 44 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 44 },
+          { arrayIndex: 2, offsetIndex: 44 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    // SparseSwap makes it possible to execute this swap.
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const tradeAmount = new BN(150_000_000);
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintA,
+      tradeAmount,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE
+    );
+
+    // Verify with an actual swap.
+    // estimatedEndTickIndex is -4522 (arrayIndex: -1 (not initialized))
+    assert.equal(quote.aToB, true);
+    assert.equal(quote.amountSpecifiedIsInput, true);
+    assert.equal(
+      quote.sqrtPriceLimit.toString(),
+      SwapUtils.getDefaultSqrtPriceLimit(true).toString()
+    );
+
+    assert.equal(quote.estimatedEndTickIndex, -4522);
+    assert.equal(
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+    );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    const updatedWhirlpoolData = await whirlpool.refreshData();
+    assert.equal(updatedWhirlpoolData.tickCurrentIndex, quote.estimatedEndTickIndex);
   });
 
   /**
@@ -170,7 +302,7 @@ describe("swap arrays test", () => {
       adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
     );
     assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
-    assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
   });
 
   /**
@@ -195,23 +327,155 @@ describe("swap arrays test", () => {
       ],
     });
 
-    // estimatedEndTickIndex is 556 (arrayIndex: 0 (not initialized))
+    // SparseSwap makes it possible to execute this swap.
+
     const whirlpoolData = await whirlpool.refreshData();
-    const expectedError = "Swap input value traversed too many arrays.";
-    await assert.rejects(
-      swapQuoteByInputToken(
-        whirlpool,
-        whirlpoolData.tokenMintB,
-        new BN(40_000_000),
-        slippageTolerance,
-        ctx.program.programId,
-        fetcher,
-        IGNORE_CACHE
-      ),
-      (err: Error) => err.message.indexOf(expectedError) != -1
+    const tradeAmount = new BN(40_000_000);
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      tradeAmount,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE
     );
+
+    // Verify with an actual swap.
+    // estimatedEndTickIndex is 556 (arrayIndex: 0 (not initialized))
+    assert.equal(quote.aToB, false);
+    assert.equal(quote.amountSpecifiedIsInput, true);
+    assert.equal(
+      quote.sqrtPriceLimit.toString(),
+      SwapUtils.getDefaultSqrtPriceLimit(false).toString()
+    );
+
+    assert.equal(quote.estimatedEndTickIndex, 556);
+    assert.equal(
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+    );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    const updatedWhirlpoolData = await whirlpool.refreshData();
+    assert.equal(updatedWhirlpoolData.tickCurrentIndex, quote.estimatedEndTickIndex);
   });
 
+  /**
+   * |-------------c1-----|xxxxxxxxxxxxxxxxx|xxc2xxxxxxxxxxxxx|
+   */
+  it("3 sequential arrays, 2nd and 3rd array not initialized, b->a", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 44 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, -5632, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 44 },
+          { arrayIndex: 2, offsetIndex: 44 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    // SparseSwap makes it possible to execute this swap.
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const tradeAmount = new BN(150_000_000);
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      tradeAmount,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE
+    );
+
+    // Verify with an actual swap.
+    // estimatedEndTickIndex is 7662 (arrayIndex: 1 (not initialized))
+    assert.equal(quote.aToB, false);
+    assert.equal(quote.amountSpecifiedIsInput, true);
+    assert.equal(
+      quote.sqrtPriceLimit.toString(),
+      SwapUtils.getDefaultSqrtPriceLimit(false).toString()
+    );
+
+    assert.equal(quote.estimatedEndTickIndex, 7662);
+    assert.equal(
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+    );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    const updatedWhirlpoolData = await whirlpool.refreshData();
+    assert.equal(updatedWhirlpoolData.tickCurrentIndex, quote.estimatedEndTickIndex);
+  });
+
+  /**
+   * |xxxxxxxxxxxxxc1xxxxx|xxxxxxxxxxxxxxxxx|xxc2xxxxxxxxxxxxx|
+   */
+  it("3 sequential arrays, all array not initialized, b->a", async () => {
+    const currIndex = arrayTickIndexToTickIndex({ arrayIndex: -1, offsetIndex: 44 }, tickSpacing);
+    const whirlpool = await setupSwapTest({
+      ctx,
+      client,
+      tickSpacing,
+      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currIndex),
+      initArrayStartTicks: [-11264, 11264],
+      fundedPositions: [
+        buildPosition(
+          // a
+          { arrayIndex: -2, offsetIndex: 44 },
+          { arrayIndex: 2, offsetIndex: 44 },
+          tickSpacing,
+          new BN(250_000_000)
+        ),
+      ],
+    });
+
+    // SparseSwap makes it possible to execute this swap.
+
+    const whirlpoolData = await whirlpool.refreshData();
+    const tradeAmount = new BN(150_000_000);
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      tradeAmount,
+      slippageTolerance,
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE
+    );
+
+    // Verify with an actual swap.
+    // estimatedEndTickIndex is 7662 (arrayIndex: 1 (not initialized))
+    assert.equal(quote.aToB, false);
+    assert.equal(quote.amountSpecifiedIsInput, true);
+    assert.equal(
+      quote.sqrtPriceLimit.toString(),
+      SwapUtils.getDefaultSqrtPriceLimit(false).toString()
+    );
+
+    assert.equal(quote.estimatedEndTickIndex, 7662);
+    assert.equal(
+      quote.otherAmountThreshold.toString(),
+      adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
+    );
+    assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
+
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    const updatedWhirlpoolData = await whirlpool.refreshData();
+    assert.equal(updatedWhirlpoolData.tickCurrentIndex, quote.estimatedEndTickIndex);
+  });
+  
   /**
    * |xxxxxxxxxxxxxxxxxxxx|xxxxxxxxxxxxxxxxx|-c2---c1-----------|
    */
@@ -259,7 +523,7 @@ describe("swap arrays test", () => {
       adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
     );
     assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
-    assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
   });
 
   /**
@@ -309,7 +573,7 @@ describe("swap arrays test", () => {
       adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
     );
     assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
-    assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
   });
 
   /**
@@ -697,7 +961,7 @@ describe("swap arrays test", () => {
       adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
     );
     assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
-    assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
   });
 
   /**
@@ -758,7 +1022,7 @@ describe("swap arrays test", () => {
       adjustForSlippage(quote.estimatedAmountOut, slippageTolerance, false).toString()
     );
     assert.equal(quote.estimatedAmountIn.toString(), tradeAmount);
-    assert.doesNotThrow(async () => await (await whirlpool.swap(quote)).buildAndExecute());
+    await assert.doesNotReject(async () => await (await whirlpool.swap(quote)).buildAndExecute());
   });
 
   /**
@@ -794,7 +1058,8 @@ describe("swap arrays test", () => {
       whirlpool.getAddress()
     );
 
-    await assert.rejects(
+    // SparseSwap makes it possible to execute this swap.
+    await assert.doesNotReject(
       whirlpool.swap({
         amount: tradeAmount,
         amountSpecifiedIsInput: true,
@@ -802,13 +1067,9 @@ describe("swap arrays test", () => {
         otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
         sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
         tickArray0: tickArrays[0],
-        tickArray1: tickArrays[1],
-        tickArray2: tickArrays[2],
-      }),
-      (err: Error) => {
-        const uninitializedArrays = [tickArrays[1].toBase58(), tickArrays[2].toBase58()].join(", ");
-        return err.message.indexOf(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`) >= 0;
-      }
+        tickArray1: tickArrays[1], // uninitialized TickArray is acceptable
+        tickArray2: tickArrays[2], // uninitialized TickArray is acceptable
+      })
     );
   });
 
@@ -845,7 +1106,8 @@ describe("swap arrays test", () => {
       whirlpool.getAddress()
     );
 
-    await assert.rejects(
+    // SparseSwap makes it possible to execute this swap.
+    await assert.doesNotReject(
       whirlpool.swap({
         amount: tradeAmount,
         amountSpecifiedIsInput: true,
@@ -853,13 +1115,9 @@ describe("swap arrays test", () => {
         otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
         sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
         tickArray0: tickArrays[0],
-        tickArray1: tickArrays[1],
-        tickArray2: tickArrays[2],
-      }),
-      (err: Error) => {
-        const uninitializedArrays = [tickArrays[1].toBase58(), tickArrays[2].toBase58()].join(", ");
-        return err.message.indexOf(`TickArray addresses - [${uninitializedArrays}] need to be initialized.`) >= 0;
-      }
+        tickArray1: tickArrays[1], // uninitialized TickArray is acceptable
+        tickArray2: tickArrays[2], // uninitialized TickArray is acceptable
+      })
     );
   });
 });

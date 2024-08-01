@@ -41,6 +41,7 @@ export class TickArraySequence {
       }
       this.sequence.push({
         address: tickArray.address,
+        startTickIndex: tickArray.data.startTickIndex,
         data: tickArray.data,
       });
     }

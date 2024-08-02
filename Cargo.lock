@@ -1323,7 +1323,7 @@ version = "3.2.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "ba8ee05284d79b367ae8966d558e1a305a781fc80c9df51f37775169117ba64f"
 dependencies = [
- "borsh 0.9.3",
+ "borsh 0.10.3",
  "num-derive 0.3.3",
  "num-traits",
  "solana-program",
@@ -2168,9 +2168,9 @@ dependencies = [
 
 [[package]]
 name = "spl-associated-token-account"
-version = "2.3.1"
+version = "2.3.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "4414117bead33f2a5cf059cefac0685592bdd36f31f3caac49b89bff7f6bbf32"
+checksum = "992d9c64c2564cc8f63a4b508bf3ebcdf2254b0429b13cd1d31adb6162432a5f"
 dependencies = [
  "assert_matches",
  "borsh 0.10.3",
@@ -2178,7 +2178,7 @@ dependencies = [
  "num-traits",
  "solana-program",
  "spl-token",
- "spl-token-2022 2.0.1",
+ "spl-token-2022 1.0.0",
  "thiserror",
 ]
 
@@ -2331,9 +2331,9 @@ dependencies = [
 
 [[package]]
 name = "spl-token-2022"
-version = "2.0.1"
+version = "1.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b9fec83597cf7be923c5c3bdfd2fcc08cdfacd2eeb6c4e413da06b6916f50827"
+checksum = "d697fac19fd74ff472dfcc13f0b442dd71403178ce1de7b5d16f83a33561c059"
 dependencies = [
  "arrayref",
  "bytemuck",
@@ -2348,7 +2348,7 @@ dependencies = [
  "spl-token",
  "spl-token-group-interface",
  "spl-token-metadata-interface",
- "spl-transfer-hook-interface 0.5.1",
+ "spl-transfer-hook-interface 0.4.1",
  "spl-type-length-value",
  "thiserror",
 ]
@@ -2398,9 +2398,25 @@ dependencies = [
 
 [[package]]
 name = "spl-transfer-hook-interface"
-version = "0.5.1"
+version = "0.4.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "5f6dfe329fcff44cbe2eea994bd8f737f0b0a69faed39e56f9b6ee03badf7e14"
+checksum = "7aabdb7c471566f6ddcee724beb8618449ea24b399e58d464d6b5bc7db550259"
+dependencies = [
+ "arrayref",
+ "bytemuck",
+ "solana-program",
+ "spl-discriminator",
+ "spl-pod",
+ "spl-program-error",
+ "spl-tlv-account-resolution 0.5.2",
+ "spl-type-length-value",
+]
+
+[[package]]
+name = "spl-transfer-hook-interface"
+version = "0.5.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "825a69d531baa1ff261a29b98fcf08e134249e624052a6b60183bb2eab2fa8ae"
 dependencies = [
  "arrayref",
  "bytemuck",
@@ -2735,7 +2751,7 @@ dependencies = [
  "solana-program",
  "solana-security-txt",
  "spl-token",
- "spl-transfer-hook-interface 0.5.1",
+ "spl-transfer-hook-interface 0.5.0",
  "thiserror",
  "uint",
 ]

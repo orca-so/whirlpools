@@ -73,6 +73,7 @@ This repository is split up into sevaral parts. The following is a (non-exhausti
 * **`/programs/*`** - Rust programs that are deployed on Solana.
 * **`/typescript/*`** (WIP) - Typescript SDKs for interacting with the programs.
 * **`/rust/*`** (WIP) - Rust SDKs for interacting with the programs.
+* **`/docs/*`** (WIP) - Documentation for the programs and SDKs.
 * **`/legacy/*`** - Legacy Typescript SDKs and integration tests.
 
 ### Commands

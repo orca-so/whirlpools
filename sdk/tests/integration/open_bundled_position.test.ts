@@ -92,10 +92,16 @@ describe("open_bundled_position", () => {
     });
   }
 
-  function checkPositionAccountContents(position: PositionData, mint: PublicKey, lowerTick: number = tickLowerIndex, upperTick: number = tickUpperIndex) {
+  function checkPositionAccountContents(
+    position: PositionData,
+    mint: PublicKey,
+    whirlpool: PublicKey = poolInitInfo.whirlpoolPda.publicKey,
+    lowerTick: number = tickLowerIndex,
+    upperTick: number = tickUpperIndex
+  ) {
     assert.strictEqual(position.tickLowerIndex, lowerTick);
     assert.strictEqual(position.tickUpperIndex, upperTick);
-    assert.ok(position.whirlpool.equals(poolInitInfo.whirlpoolPda.publicKey));
+    assert.ok(position.whirlpool.equals(whirlpool));
     assert.ok(position.positionMint.equals(mint));
     assert.ok(position.liquidity.eq(ZERO_BN));
     assert.ok(position.feeGrowthCheckpointA.eq(ZERO_BN));
@@ -228,7 +234,13 @@ describe("open_bundled_position", () => {
     const { bundledPositionPda } = positionInitInfo.params;
 
     const position = (await fetcher.getPosition(bundledPositionPda.publicKey)) as PositionData;
-    checkPositionAccountContents(position, positionBundleInfo.positionBundleMintKeypair.publicKey, lowerTickIndex, upperTickIndex);
+    checkPositionAccountContents(
+      position,
+      positionBundleInfo.positionBundleMintKeypair.publicKey,
+      fullRangeOnlyWhirlpoolPda.publicKey,
+      lowerTickIndex,
+      upperTickIndex
+    );
 
     const positionBundle = (await fetcher.getPositionBundle(positionBundleInfo.positionBundlePda.publicKey, IGNORE_CACHE)) as PositionBundleData;
     checkBitmap(positionBundle, [bundleIndex]);
@@ -634,12 +646,17 @@ describe("open_bundled_position", () => {
   });
 
   it("fail when opening a non-full range position in an full-range only pool", async () => {
+    const [fullRangeTickLowerIndex, fullRangeTickUpperIndex] = TickUtil.getFullRangeTickIndex(fullRangeOnlyPoolInitInfo.tickSpacing);
+
+    assert.notEqual(fullRangeTickLowerIndex, tickLowerIndex);
+    assert.notEqual(fullRangeTickUpperIndex, tickUpperIndex);
+
     const positionBundleInfo = await initializePositionBundle(ctx, ctx.wallet.publicKey);
     const bundleIndex = 0;
     await assert.rejects(
       openBundledPosition(
         ctx,
-        whirlpoolPda.publicKey,
+        fullRangeOnlyWhirlpoolPda.publicKey,
         positionBundleInfo.positionBundleMintKeypair.publicKey,
         bundleIndex,
         tickLowerIndex,

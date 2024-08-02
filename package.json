@@ -21,9 +21,8 @@
     "rimraf": "^5.0.5"
   },
   "workspaces": [
-    "legacy",
-    "programs",
-    "scripts"
+    "legacy/*",
+    "programs/*"
   ],
   "lint-staged": {
     "*": "yarn format"

@@ -31,7 +31,7 @@ export type {
   DeletePositionBundleParams,
   OpenBundledPositionParams,
   CloseBundledPositionParams,
-} from "../../instructions/";
+} from "../../instructions";
 export type {
   CollectFeesV2Params,
   CollectProtocolFeesV2Params,
@@ -48,7 +48,7 @@ export type {
   SetTokenBadgeAuthorityParams,
   InitializeTokenBadgeParams,
   DeleteTokenBadgeParams,
-} from "../../instructions/v2/";
+} from "../../instructions/v2";
 export type {
   CollectAllParams,
   CollectAllPositionAddressParams,

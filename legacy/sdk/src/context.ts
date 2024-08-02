@@ -9,7 +9,7 @@ import {
 import { Commitment, Connection, PublicKey, SendOptions } from "@solana/web3.js";
 import { Whirlpool } from "./artifacts/whirlpool";
 import WhirlpoolIDL from "./artifacts/whirlpool.json";
-import { WhirlpoolAccountFetcherInterface, buildDefaultAccountFetcher } from "./network/public/";
+import { WhirlpoolAccountFetcherInterface, buildDefaultAccountFetcher } from "./network/public";
 import { contextOptionsToBuilderOptions } from "./utils/txn-utils";
 
 /**

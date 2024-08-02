@@ -1,5 +1,5 @@
 import { TwoHopSwapInput } from "../../instructions";
-import { SwapEstimates, SwapQuote } from "../public/swap-quote";
+import { SwapEstimates, SwapQuote } from "./swap-quote";
 
 /**
  * A collection of estimated values from quoting a swap.

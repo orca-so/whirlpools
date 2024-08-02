@@ -2,7 +2,7 @@ import { Program } from "@coral-xyz/anchor";
 import { Instruction, PDA } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import { METADATA_PROGRAM_ADDRESS, WHIRLPOOL_NFT_UPDATE_AUTH } from "..";
-import { Whirlpool } from ".././artifacts/whirlpool";
+import { Whirlpool } from "../artifacts/whirlpool";
 import {
   OpenPositionBumpsData,
   OpenPositionWithMetadataBumpsData,

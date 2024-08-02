@@ -10,9 +10,11 @@
     "@types/mocha": "^9.0.0",
     "@types/mz": "^2.7.3",
     "mz": "^2.7.0",
-    "ts-node": "^10.9.2"
+    "typescript": "^5.3.3"
   },
   "scripts": {
-    "format": "prettier --config ../.prettierrc './**/*.ts' --write"
+    "build": "tsc",
+    "format": "prettier --config ../.prettierrc './**/*.ts' --write",
+    "clean": "rimraf dist"
   }
 }

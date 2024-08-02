@@ -33,50 +33,23 @@ $ echo $NODE_PATH
 
 Instructions on how to interact with the Whirlpools contract is documented in the [Orca Developer Portal](https://orca-so.gitbook.io/orca-developer-portal/orca/welcome).
 
-## Tests
+## Local Development
 
-- Run "cargo test --lib" to run Rust unit tests
+This repository uses NX to manage the Rust and Typescript codebases. This allows us to have a monorepo with multiple packages and share code between them. Dependencies between packages are automatically resolved by NX, so you don't have to worry about managing that yourself.
 
----
+### Commands
 
-# Whirlpool SDK
+All commands should be run from the root of the repository. The commands will try to run a command with the same name for each individual component, skipping the component if that specific command does not exist.
 
-Use the SDK to interact with a deployed Whirlpools program via Typescript.
+Below is a (non-exhaustive) list of available commands:
+* **`yarn build`** - compile the components for deployment or serving.
+* **`yarn clean`** - clean up all local build products, useful for when builds are failing.
+* **`yarn test`** - run the tests for all components.
+* **`yarn format`** - run formatter to format code.
 
-## Installation
+If you look closely, the commands just call individual commands specified in the component's `package.json` file. These commands should not be run by themselves as it will not resolve the right dependencies and will not execute the prerequisites. Instead you can specify which package to run with `yarn build program`, `yarn test integration`, etc.
 
-In your package, run:
-
-```
-yarn add "@orca-so/whirlpools-sdk"
-yarn add "@orca-so/common-sdk"
-yarn add "@coral-xyz/anchor@0.29.0"
-yarn add "@solana/web3.js"
-yarn add "@solana/spl-token"
-yarn add "decimal.js"
-```
-
-## Usage
-
-Read instructions on how to use the SDK on the [Orca Developer Portal](https://orca-so.gitbook.io/orca-developer-portal/orca/welcome).
-
-## Run Typescript tests via local validator
-
-In the whirlpools/sdk folder, run:
-
-```
-anchor test
-```
-
-## Generate TypeDoc
-
-In the `sdk` folder, run `yarn run docs`
-
-You can also see the generated [TypeDoc](https://orca-so.github.io/whirlpools/).
-
-## Sample Codes
-
-You can find sample code covering basic operations [here](https://github.com/everlastingsong/tour-de-whirlpool/tree/main/src/EN).
+If you want to stream the logs of a specific command you can add the `--output-style stream` flag to the command. This allows you to view the logs of the command as they are being produced which can be useful for longer running tasks like tests.
 
 ---
 

@@ -1,0 +1,4 @@
+*               @yugure-orca @wjthieme
+*.{rs,toml}     @yugure-orca @philcchen
+*.{ts,js}       @wjthieme @odcheung
+

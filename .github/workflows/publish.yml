@@ -1,0 +1,75 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - 'v[0-9]+.[0-9]+.[0-9]+'
+
+jobs:
+
+  npm:
+    strategy:
+      matrix:
+        package: []
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Deploy npm
+      uses: ./.github/actions/anchor
+      with:
+        run: |
+          export RUST_LOG=
+          # TODO: Copy over keys from root package.json
+          cd ${{ matrix.package }} && yarn version $(basename ${{ github.ref }})
+          yarn install
+          yarn build ${{ matrix.package }} --output-style static
+          cd ${{ matrix.package }} && npm publish --access public
+      env:
+        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  cargo:
+    strategy:
+      matrix:
+        package: []
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Deploy cargo
+      uses: ./.github/actions/anchor
+      with:
+        run: |
+          export RUST_LOG=
+          # deploy cargo
+
+  verifiable:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Deploy cargo
+      uses: ./.github/actions/anchor
+      with:
+        run: |
+          export RUST_LOG=
+          # verifiable build and add to release
+
+  release:
+    needs: [npm, cargo, verifiable]
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+    - name: Create Release
+      uses: ncipollo/release-action@v1
+      with:
+        generateReleaseNotes: true
+        allowUpdates: true

@@ -1,11 +1,49 @@
 {
-  "name": "orca-whirlpools",
+  "name": "@orca-so/whirlpools",
   "private": true,
+  "license": "Apache-2.0",
+  "packageManager": "yarn@4.3.1",
+  "scripts": {
+    "build": "nx run-many --target build --projects",
+    "test": "nx run-many --target test --projects",
+    "format": "nx run-many --target format --projects",
+    "clean": "nx reset && nx run-many --target clean --projects",
+    "prepare": "husky install"
+  },
+  "devDependencies": {
+    "@types/bn.js": "~5.1.5",
+    "@types/mocha": "^10.0.6",
+    "@types/node": "^20.10.8",
+    "husky": "^8.0.3",
+    "lint-staged": "^15.2.0",
+    "nx": "^19.4.2",
+    "prettier": "^3.1.1",
+    "rimraf": "^5.0.5"
+  },
   "workspaces": [
-    "sdk",
+    "legacy",
+    "programs",
     "scripts"
   ],
-  "scripts": {
-    "idl": "anchor build -i $INIT_CWD/sdk/src/artifacts -t $INIT_CWD/sdk/src/artifacts"
-  }
+  "lint-staged": {
+    "*": "yarn format"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orca-so/whirlpools.git"
+  },
+  "keywords": [
+    "orca_so",
+    "orca",
+    "solana",
+    "typescript",
+    "sdk",
+    "crypto",
+    "dex"
+  ],
+  "author": "team@orca.so",
+  "bugs": {
+    "url": "https://github.com/orca-so/whirlpools/issues"
+  },
+  "homepage": "https://www.orca.so"
 }

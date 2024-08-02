@@ -1,0 +1,12 @@
+{
+  "name": "@orca-so/whirlpools-program",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "anchor build",
+    "test": "cargo test --lib",
+    "format": "cargo fmt",
+    "idl": "anchor build -i $INIT_CWD/src/artifacts -t $INIT_CWD/src/artifacts",
+    "clean": "anchor clean"
+  }
+}

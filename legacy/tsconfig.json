@@ -1,0 +1,11 @@
+{
+  "extends": "../tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist",
+  },
+  "include": ["./src/**/*.ts", "./src/artifacts/whirlpool.json"],
+  "typedocOptions": {
+    "entryPoints": ["index.ts"],
+    "out": "../../docs"
+  }
+}

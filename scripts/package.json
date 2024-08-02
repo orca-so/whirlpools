@@ -1,5 +1,6 @@
 {
-  "name": "scripts",
+  "name": "@orca-so/whirlpools-scripts",
+  "private": true,
   "version": "1.0.0",
   "dependencies": {
     "@project-serum/anchor": "~0.25.0",
@@ -8,8 +9,10 @@
   "devDependencies": {
     "@types/mocha": "^9.0.0",
     "@types/mz": "^2.7.3",
-    "chai": "^4.3.4",
-    "mocha": "^9.0.3",
-    "mz": "^2.7.0"
+    "mz": "^2.7.0",
+    "ts-node": "^10.9.2"
+  },
+  "scripts": {
+    "format": "prettier --config ../.prettierrc './**/*.ts' --write"
   }
 }

@@ -10,3 +10,13 @@ sdk/node_modules
 .vscode/
 **/.yalc/
 **/yalc.lock
+dist
+artifacts
+generated
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/sdks
+!.yarn/versions
+.nx

@@ -28,4 +28,4 @@ jobs:
       with:
         run: |
           export RUST_LOG=
-          yarn test --exclude legacy --output-style static
+          yarn test --exclude legacy/sdk --output-style static

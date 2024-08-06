@@ -8,8 +8,8 @@ use anchor_spl::token::{self, Mint, Token, TokenAccount};
 pub struct InitializePool<'info> {
     pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
 
-    pub token_mint_a: Account<'info, Mint>,
-    pub token_mint_b: Account<'info, Mint>,
+    pub token_mint_a: Box<Account<'info, Mint>>,
+    pub token_mint_b: Box<Account<'info, Mint>>,
 
     #[account(mut)]
     pub funder: Signer<'info>,
@@ -40,7 +40,7 @@ pub struct InitializePool<'info> {
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
 
     #[account(has_one = whirlpools_config, constraint = fee_tier.tick_spacing == tick_spacing)]
-    pub fee_tier: Account<'info, FeeTier>,
+    pub fee_tier: Box<Account<'info, FeeTier>>,
 
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,

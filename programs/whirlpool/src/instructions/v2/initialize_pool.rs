@@ -12,8 +12,8 @@ use crate::{
 pub struct InitializePoolV2<'info> {
     pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
 
-    pub token_mint_a: InterfaceAccount<'info, Mint>,
-    pub token_mint_b: InterfaceAccount<'info, Mint>,
+    pub token_mint_a: Box<InterfaceAccount<'info, Mint>>,
+    pub token_mint_b: Box<InterfaceAccount<'info, Mint>>,
 
     #[account(seeds = [b"token_badge", whirlpools_config.key().as_ref(), token_mint_a.key().as_ref()], bump)]
     /// CHECK: checked in the handler
@@ -53,7 +53,7 @@ pub struct InitializePoolV2<'info> {
     pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(has_one = whirlpools_config, constraint = fee_tier.tick_spacing == tick_spacing)]
-    pub fee_tier: Account<'info, FeeTier>,
+    pub fee_tier: Box<Account<'info, FeeTier>>,
 
     #[account(address = token_mint_a.to_account_info().owner.clone())]
     pub token_program_a: Interface<'info, TokenInterface>,

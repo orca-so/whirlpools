@@ -55,9 +55,9 @@ pub struct InitializePoolV2<'info> {
     #[account(has_one = whirlpools_config, constraint = fee_tier.tick_spacing == tick_spacing)]
     pub fee_tier: Box<Account<'info, FeeTier>>,
 
-    #[account(address = token_mint_a.to_account_info().owner.clone())]
+    #[account(constraint = token_program_a.key() == token_mint_a.to_account_info().owner.clone())]
     pub token_program_a: Interface<'info, TokenInterface>,
-    #[account(address = token_mint_b.to_account_info().owner.clone())]
+    #[account(constraint = token_program_b.key() == token_mint_b.to_account_info().owner.clone())]
     pub token_program_b: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,

@@ -1,31 +1,30 @@
 [package]
 name = "whirlpool"
-version = "0.3.0"
-description = "Created with Anchor"
-edition = "2018"
+version = "0.3.1"
+edition = "2021"
 
 [lib]
 crate-type = ["cdylib", "lib"]
-name = "whirlpool"
 
 [features]
 no-entrypoint = []
 no-idl = []
 cpi = ["no-entrypoint"]
 default = []
+idl-build = ["anchor-lang/idl-build", "anchor-spl/idl-build"]
 
 [dependencies]
-anchor-lang = "0.29"
-anchor-spl = {version = "0.29", features = ["metadata", "memo"]}
-spl-token = {version = "4", features = ["no-entrypoint"]}
-spl-transfer-hook-interface = "0.5.0"
-solana-program = "1.17"
-thiserror = "1.0"
-uint = {version = "0.9.1", default-features = false}
-borsh09 = {package = "borsh", version = "0.9.1"}
-arrayref = "0.3.7"
-bytemuck = "1.14.3"
+anchor-lang = { version = "=0.30.1" }
+anchor-spl = { version = "=0.30.1", features = ["metadata", "memo"] }
+spl-token = { version = "=4.0.3", features = ["no-entrypoint"] }
+spl-transfer-hook-interface = { version = "=0.6.5" }
+solana-program = { version = "=1.18.21" }
+thiserror = { version = "=1.0.63" }
+uint = { version = "=0.9.5", default-features = false }
+arrayref = { version = "=0.3.7" }
+borsh09 = { package = "borsh", version = "=0.9.3" }
 solana-security-txt = { version = "=1.1.1" }
+bytemuck = { version = "=1.16.3", features = ["derive", "min_const_generics"] }
 
 [dev-dependencies]
 proptest = "1.0"

@@ -55,7 +55,7 @@ export class WhirlpoolContext {
   public static from(
     connection: Connection,
     wallet: Wallet,
-    programId: PublicKey,
+    _programId: PublicKey,
     fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
@@ -64,7 +64,7 @@ export class WhirlpoolContext {
       commitment: opts.userDefaultConfirmCommitment || "confirmed",
       preflightCommitment: opts.userDefaultConfirmCommitment || "confirmed",
     });
-    const program = new Program(WhirlpoolIDL as Idl, programId, anchorProvider);
+    const program = new Program(WhirlpoolIDL as Idl, anchorProvider);
     return new WhirlpoolContext(
       anchorProvider,
       anchorProvider.wallet,
@@ -94,12 +94,12 @@ export class WhirlpoolContext {
 
   public static withProvider(
     provider: AnchorProvider,
-    programId: PublicKey,
+    _programId: PublicKey,
     fetcher: WhirlpoolAccountFetcherInterface = buildDefaultAccountFetcher(provider.connection),
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
-    const program = new Program(WhirlpoolIDL as Idl, programId, provider);
+    const program = new Program(WhirlpoolIDL as Idl, provider);
     return new WhirlpoolContext(
       provider,
       provider.wallet,

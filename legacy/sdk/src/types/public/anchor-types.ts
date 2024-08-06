@@ -40,7 +40,7 @@ export const WHIRLPOOL_CODER = new BorshAccountsCoder(WHIRLPOOL_IDL);
  */
 export function getAccountSize(accountName: AccountName) {
   const size = WHIRLPOOL_CODER.size(
-    WHIRLPOOL_IDL.accounts!.find((account) => account.name === accountName)!
+    WHIRLPOOL_IDL.accounts!.find((account) => account.name === accountName)!.name
   );
   return size + RESERVED_BYTES[accountName];
 }

@@ -722,9 +722,8 @@ describe("initialize_reward_v2", () => {
       await runTest({ supported: false, createTokenBadge: false, tokenTrait });
     });
 
-    it("Token-2022: [FAIL] with/without TokenBadge with Group", async () => {
-      assert.ok(false, "[11 Mar, 2024] NOT IMPLEMENTED / I believe this extension is not stable yet");
-      /*
+    // [11 Mar, 2024] NOT IMPLEMENTED / I believe this extension is not stable yet
+    it.skip("Token-2022: [FAIL] with/without TokenBadge with Group", async () => {
       const tokenTrait: TokenTrait = {
         isToken2022: true,
         hasGroupExtension: true,
@@ -745,9 +744,8 @@ describe("initialize_reward_v2", () => {
       await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: true });
     });
 
-    it("Token-2022: [FAIL] with/without TokenBadge with Member", async () => {
-      assert.ok(false, "[11 Mar, 2024] NOT IMPLEMENTED / I believe this extension is not stable yet");
-      /*
+    //[11 Mar, 2024] NOT IMPLEMENTED / I believe this extension is not stable yet
+    it.skip("Token-2022: [FAIL] with/without TokenBadge with Member", async () => {
       const tokenTrait: TokenTrait = {
         isToken2022: true,
         hasGroupMemberExtension: true,

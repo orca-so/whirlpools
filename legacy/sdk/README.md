@@ -16,7 +16,7 @@ In your package, run:
 ```
 yarn add "@orca-so/whirlpools-sdk"
 yarn add "@orca-so/common-sdk"
-yarn add "@coral-xyz/anchor@0.29.0"
+yarn add "@coral-xyz/anchor@0.30.0"
 yarn add "@solana/web3.js"
 yarn add "@solana/spl-token"
 yarn add "decimal.js"

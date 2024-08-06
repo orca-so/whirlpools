@@ -14,11 +14,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@coral-xyz/anchor@npm:~0.29.0":
-  version: 0.29.0
-  resolution: "@coral-xyz/anchor@npm:0.29.0"
+"@coral-xyz/anchor-errors@npm:^0.30.1":
+  version: 0.30.1
+  resolution: "@coral-xyz/anchor-errors@npm:0.30.1"
+  checksum: 10c0/cb6749b68c12df54041d1be47df7a7b7f1d4ad2c54759bca7964c22a5dd892de0deb004100ac81cf70278e373d228a99d648013225613b5de85854530c41f501
+  languageName: node
+  linkType: hard
+
+"@coral-xyz/anchor@npm:~0.30.0":
+  version: 0.30.1
+  resolution: "@coral-xyz/anchor@npm:0.30.1"
   dependencies:
-    "@coral-xyz/borsh": "npm:^0.29.0"
+    "@coral-xyz/anchor-errors": "npm:^0.30.1"
+    "@coral-xyz/borsh": "npm:^0.30.1"
     "@noble/hashes": "npm:^1.3.1"
     "@solana/web3.js": "npm:^1.68.0"
     bn.js: "npm:^5.1.2"
@@ -32,19 +40,19 @@ __metadata:
     snake-case: "npm:^3.0.4"
     superstruct: "npm:^0.15.4"
     toml: "npm:^3.0.0"
-  checksum: 10c0/cc863ab22b23c126e83b0804a43d45fdb7836659b917db0a8895146ec8d48637db034a7ae7dbd55d5ec7a058a266dd06878e1f921950df1e899369e49fb36c93
+  checksum: 10c0/ed0e5903e72d11884015bd8c21199604f56c20a4570972323133011172677b7dcfa8c7054055d827f914b61ad5b70378343809a83a06f3f6010e9d08707fd4c5
   languageName: node
   linkType: hard
 
-"@coral-xyz/borsh@npm:^0.29.0":
-  version: 0.29.0
-  resolution: "@coral-xyz/borsh@npm:0.29.0"
+"@coral-xyz/borsh@npm:^0.30.1":
+  version: 0.30.1
+  resolution: "@coral-xyz/borsh@npm:0.30.1"
   dependencies:
     bn.js: "npm:^5.1.2"
     buffer-layout: "npm:^1.2.0"
   peerDependencies:
     "@solana/web3.js": ^1.68.0
-  checksum: 10c0/25afec48714d9f0c95a02d04215803181f7da0aad85fdd1b076d9f37ef54586342e01e24fc1b2128aba0b5155e970afd6a2c6f8b0343699d8733c0703655ce39
+  checksum: 10c0/eaad9c59647ba58faecc408a30416f17b0cab56bce907cc54654f7a0b151526954c71cedadce7ed38830b731244d918e87b7c3fb19c56a26c2b140c5ccef27dd
   languageName: node
   linkType: hard
 
@@ -266,7 +274,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-sdk@workspace:legacy/sdk"
   dependencies:
-    "@coral-xyz/anchor": "npm:~0.29.0"
+    "@coral-xyz/anchor": "npm:~0.30.0"
     "@orca-so/common-sdk": "npm:0.6.0"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/spl-token": "npm:^0.4.1"
@@ -277,7 +285,7 @@ __metadata:
     ts-mocha: "npm:^10.0.0"
     typescript: "npm:^5.3.3"
   peerDependencies:
-    "@coral-xyz/anchor": ~0.29.0
+    "@coral-xyz/anchor": ~0.30.0
     "@orca-so/common-sdk": 0.6.0
     "@solana/spl-token": ^0.4.1
     "@solana/web3.js": ^1.90.0

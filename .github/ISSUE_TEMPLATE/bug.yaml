@@ -27,11 +27,3 @@ body:
     placeholder: The following things were supposed to happen.
   validations:
     required: true
-  - type: input
-  id: browser
-  attributes:
-    label: Browser
-    description: The browser that this issue occurs on.
-    placeholder: Safari
-  validations:
-    required: true

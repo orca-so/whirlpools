@@ -2,6 +2,7 @@
   "name": "@orca-so/whirlpools-sdk",
   "version": "0.13.3",
   "description": "Typescript SDK to interact with Orca's Whirlpool program.",
+  "license": "Apache-2.0",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "peerDependencies": {
@@ -34,5 +35,23 @@
   "files": [
     "dist",
     "README.md"
-  ]
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orca-so/whirlpools.git"
+  },
+  "keywords": [
+    "orca_so",
+    "orca",
+    "solana",
+    "typescript",
+    "sdk",
+    "crypto",
+    "dex"
+  ],
+  "author": "team@orca.so",
+  "bugs": {
+    "url": "https://github.com/orca-so/whirlpools/issues"
+  },
+  "homepage": "https://www.orca.so"
 }

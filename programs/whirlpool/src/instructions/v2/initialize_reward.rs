@@ -37,7 +37,8 @@ pub struct InitializeRewardV2<'info> {
     #[account(constraint = reward_token_program.key() == reward_mint.to_account_info().owner.clone())]
     pub reward_token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
+    /// CHECK: no longer used anywhere
+    pub rent: UncheckedAccount<'info>,
 }
 
 pub fn handler(ctx: Context<InitializeRewardV2>, reward_index: u8) -> Result<()> {

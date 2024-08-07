@@ -60,7 +60,8 @@ pub struct InitializePoolV2<'info> {
     #[account(constraint = token_program_b.key() == token_mint_b.to_account_info().owner.clone())]
     pub token_program_b: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
+    /// CHECK: no longer used anywhere
+    pub rent: UncheckedAccount<'info>,
 }
 
 pub fn handler(

@@ -1547,7 +1547,7 @@ describe("increase_liquidity_v2", () => {
             tickArrayUpper: positionInitInfo.tickArrayUpper,
           })
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7d3/ // ConstraintRaw
       );
     });
 
@@ -1598,7 +1598,7 @@ describe("increase_liquidity_v2", () => {
             tickArrayUpper: positionInitInfo.tickArrayUpper,
           })
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7d3/ // ConstraintRaw
       );
     });
 
@@ -1700,7 +1700,7 @@ describe("increase_liquidity_v2", () => {
             tickArrayUpper: positionInitInfo.tickArrayUpper,
           })
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7d3/ // ConstraintRaw
       );
     });
 
@@ -1751,7 +1751,7 @@ describe("increase_liquidity_v2", () => {
             tickArrayUpper: positionInitInfo.tickArrayUpper,
           })
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7d3/ // ConstraintRaw
       );
     });
 

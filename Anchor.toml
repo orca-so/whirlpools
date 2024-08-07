@@ -9,17 +9,12 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "ts-mocha -t 1000000 legacy/sdk/tests/**/*.test.ts"
+test = "yarn ts-mocha --timeout 1000000 legacy/sdk/**/*.test.ts"
 
 [test.validator]
 slots_per_epoch = "33"
 ticks_per_slot = 7
 url = "https://api.mainnet-beta.solana.com"
-
-# In v0.30, this doesn't work because ProgramData account is cloned with executable = false (anchor bug ?)
-# So we need to use test.genesis config.
-# [[test.validator.clone]]
-# address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
 
 [[test.genesis]]
 address = "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"

@@ -258,9 +258,7 @@ describe("two_hop_swap_v2", () => {
                 ...baseIxParams,
                 whirlpoolOne: baseIxParams.whirlpoolTwo,
               },
-              ///0x7d3/ // ConstraintRaw
-              // V2 has token_mint_one_a and it has address constraint
-              /0x7dc/ // ConstraintAddress
+              /0x7d3/ // ConstraintRaw
             );
           });
 
@@ -287,28 +285,28 @@ describe("two_hop_swap_v2", () => {
                 ...baseIxParams,
                 tokenVaultOneInput: baseIxParams.tokenVaultOneIntermediate,
               },
-              /0x7dc/ // ConstraintAddress
+              /0x7d3/ // ConstraintRaw
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenVaultOneIntermediate: baseIxParams.tokenVaultOneInput,
               },
-              /0x7dc/ // ConstraintAddress
+              /0x7d3/ // ConstraintRaw
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenVaultTwoIntermediate: baseIxParams.tokenVaultTwoOutput,
               },
-              /0x7dc/ // ConstraintAddress
+              /0x7d3/ // ConstraintRaw
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenVaultTwoOutput: baseIxParams.tokenVaultTwoIntermediate,
               },
-              /0x7dc/ // ConstraintAddress
+              /0x7d3/ // ConstraintRaw
             );
           });
 
@@ -1743,7 +1741,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenMintInput: otherTokenPublicKey,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7d3/ // ConstraintRaw
           );
         });
         it("token_mint_intermediate", async () => {
@@ -1752,7 +1750,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenMintIntermediate: otherTokenPublicKey,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7d3/ // ConstraintRaw
           );
         });
         it("token_mint_output", async () => {
@@ -1761,7 +1759,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenMintOutput: otherTokenPublicKey,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7d3/ // ConstraintRaw
           );
         });
       });
@@ -1773,7 +1771,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramInput: TEST_TOKEN_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7d3/ // ConstraintRaw
           );
         });
         it("token_program_intermediate", async () => {
@@ -1782,7 +1780,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramIntermediate: TEST_TOKEN_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7d3/ // ConstraintRaw
           );
         });
         it("token_program_output", async () => {
@@ -1791,7 +1789,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramOutput: TEST_TOKEN_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7d3/ // ConstraintRaw
           );
         });
       });
@@ -1852,7 +1850,7 @@ describe("two_hop_swap_v2", () => {
           }).buildAndExecute(),
           /0xbc0/ // InvalidProgramId
         );
-  
+
       });
     });
 
@@ -1981,7 +1979,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramInput: TEST_TOKEN_2022_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7d3/ // ConstraintRaw
           );
         });
         it("token_program_intermediate", async () => {
@@ -1990,7 +1988,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramIntermediate: TEST_TOKEN_2022_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7d3/ // ConstraintRaw
           );
         });
         it("token_program_output", async () => {
@@ -1999,7 +1997,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramOutput: TEST_TOKEN_2022_PROGRAM_ID,
             },
-            /0x7dc/ // ConstraintAddress
+            /0x7d3/ // ConstraintRaw
           );
         });
       });

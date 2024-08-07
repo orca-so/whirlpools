@@ -731,7 +731,6 @@ describe("initialize_reward_v2", () => {
       // TODO: remove anchorPatch: v0.29 doesn't recognize Group
       await runTest({ supported: false, createTokenBadge: true, tokenTrait, anchorPatch: true });
       await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: true });
-      */
     });
 
     it("Token-2022: [FAIL] with/without TokenBadge with GroupPointer" , async () => {
@@ -753,7 +752,6 @@ describe("initialize_reward_v2", () => {
       // TODO: remove anchorPatch: v0.29 doesn't recognize Member
       await runTest({ supported: false, createTokenBadge: true, tokenTrait, anchorPatch: true });
       await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: true });
-      */
     });
 
     it("Token-2022: [FAIL] with/without TokenBadge with MemberPointer", async () => {

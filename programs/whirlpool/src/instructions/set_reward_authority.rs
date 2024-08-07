@@ -16,8 +16,8 @@ pub struct SetRewardAuthority<'info> {
 }
 
 pub fn handler(ctx: Context<SetRewardAuthority>, reward_index: u8) -> Result<()> {
-    Ok(ctx.accounts.whirlpool.update_reward_authority(
+    ctx.accounts.whirlpool.update_reward_authority(
         reward_index as usize,
         ctx.accounts.new_reward_authority.key(),
-    )?)
+    )
 }

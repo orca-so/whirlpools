@@ -101,6 +101,7 @@ impl Whirlpool {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
         whirlpools_config: &Account<WhirlpoolsConfig>,
@@ -117,7 +118,7 @@ impl Whirlpool {
             return Err(ErrorCode::InvalidTokenMintOrder.into());
         }
 
-        if sqrt_price < MIN_SQRT_PRICE_X64 || sqrt_price > MAX_SQRT_PRICE_X64 {
+        if !(MIN_SQRT_PRICE_X64..=MAX_SQRT_PRICE_X64).contains(&sqrt_price) {
             return Err(ErrorCode::SqrtPriceOutOfBounds.into());
         }
 
@@ -222,6 +223,7 @@ impl Whirlpool {
         Ok(())
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn update_after_swap(
         &mut self,
         liquidity: u128,
@@ -327,14 +329,14 @@ pub struct WhirlpoolBumps {
 #[test]
 fn test_whirlpool_reward_info_not_initialized() {
     let reward_info = WhirlpoolRewardInfo::default();
-    assert_eq!(reward_info.initialized(), false);
+    assert!(!reward_info.initialized());
 }
 
 #[test]
 fn test_whirlpool_reward_info_initialized() {
     let reward_info = &mut WhirlpoolRewardInfo::default();
     reward_info.mint = Pubkey::new_unique();
-    assert_eq!(reward_info.initialized(), true);
+    assert!(reward_info.initialized());
 }
 
 #[cfg(test)]

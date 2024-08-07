@@ -8,7 +8,6 @@ use serde::Deserialize;
 use serde_json;
 use serde_with::{serde_as, DisplayFromStr};
 use solana_program::msg;
-use std::cmp::{max, min};
 use std::fs;
 
 #[serde_as]
@@ -263,7 +262,7 @@ fn derive_error(expected_err: &String) -> Option<ErrorCode> {
             return Some(possible_error.1);
         }
     }
-    return None;
+    None
 }
 
 /// Given a tick & tick-spacing, derive the start tick of the tick-array that this tick would reside in
@@ -285,5 +284,5 @@ fn derive_last_tick_in_seq(start_tick: i32, tick_spacing: u16, a_to_b: bool) -> 
     } else {
         start_tick + (3 * num_of_ticks_in_array) - 1
     };
-    max(min(potential_last, MAX_TICK_INDEX), MIN_TICK_INDEX)
+    potential_last.clamp(MIN_TICK_INDEX, MAX_TICK_INDEX)
 }

@@ -1,22 +1,24 @@
-import { Address } from "@coral-xyz/anchor";
-import {
+import type { Address } from "@coral-xyz/anchor";
+import type {
   AccountFetcher,
   ParsableEntity,
-  ParsableMintInfo,
-  ParsableTokenAccountInfo,
-  SimpleAccountFetcher,
   MintWithTokenProgram,
   AccountWithTokenProgram as TokenAccountWithTokenProgram,
 } from "@orca-so/common-sdk";
-import { AccountLayout, Mint, Account as TokenAccount } from "@solana/spl-token";
-import { Connection, EpochInfo } from "@solana/web3.js";
 import {
-  DEFAULT_WHIRLPOOL_RETENTION_POLICY,
+  ParsableMintInfo,
+  ParsableTokenAccountInfo,
+  SimpleAccountFetcher,
+} from "@orca-so/common-sdk";
+import { AccountLayout } from "@solana/spl-token";
+import type { Connection, EpochInfo } from "@solana/web3.js";
+import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
   WhirlpoolSupportedTypes,
 } from "..";
-import {
+import { DEFAULT_WHIRLPOOL_RETENTION_POLICY } from "..";
+import type {
   FeeTierData,
   PositionBundleData,
   PositionData,
@@ -46,7 +48,7 @@ import {
 export const buildDefaultAccountFetcher = (connection: Connection) => {
   return new WhirlpoolAccountFetcher(
     connection,
-    new SimpleAccountFetcher(connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY)
+    new SimpleAccountFetcher(connection, DEFAULT_WHIRLPOOL_RETENTION_POLICY),
   );
 };
 
@@ -55,34 +57,47 @@ export const buildDefaultAccountFetcher = (connection: Connection) => {
  * Default implementation for {@link WhirlpoolAccountFetcherInterface}
  * @category Network
  */
-export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface {
+export class WhirlpoolAccountFetcher
+  implements WhirlpoolAccountFetcherInterface
+{
   private _accountRentExempt: number | undefined;
   private _epochInfo: EpochInfo | undefined;
   private _epochInfoNextFetchTime: number = 0;
 
   constructor(
     readonly connection: Connection,
-    readonly fetcher: AccountFetcher<WhirlpoolSupportedTypes, WhirlpoolAccountFetchOptions>
+    readonly fetcher: AccountFetcher<
+      WhirlpoolSupportedTypes,
+      WhirlpoolAccountFetchOptions
+    >,
   ) {}
 
   async getAccountRentExempt(refresh: boolean = false): Promise<number> {
     // This value should be relatively static or at least not break according to spec
     // https://docs.solana.com/developing/programming-model/accounts#rent-exemption
     if (!this._accountRentExempt || refresh) {
-      this._accountRentExempt = await this.connection.getMinimumBalanceForRentExemption(
-        AccountLayout.span
-      );
+      this._accountRentExempt =
+        await this.connection.getMinimumBalanceForRentExemption(
+          AccountLayout.span,
+        );
     }
     return this._accountRentExempt;
   }
 
   async getEpoch(refresh: boolean = false): Promise<number> {
-    if (!this._epochInfo || Date.now() >= this._epochInfoNextFetchTime || refresh) {
+    if (
+      !this._epochInfo ||
+      Date.now() >= this._epochInfoNextFetchTime ||
+      refresh
+    ) {
       const epochInfo = await this.connection.getEpochInfo();
 
       // In theory, 1 slot per every 400ms.
       // 320ms is 80% of 400ms.
-      const remainingSlotsInEpoch = Math.max(epochInfo.slotsInEpoch - epochInfo.slotIndex, 0);
+      const remainingSlotsInEpoch = Math.max(
+        epochInfo.slotsInEpoch - epochInfo.slotIndex,
+        0,
+      );
       const nextFetchTime = Date.now() + remainingSlotsInEpoch * 320;
 
       this._epochInfo = epochInfo;
@@ -91,122 +106,141 @@ export class WhirlpoolAccountFetcher implements WhirlpoolAccountFetcherInterface
     return this._epochInfo.epoch;
   }
 
-  getPool(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<WhirlpoolData | null> {
+  getPool(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<WhirlpoolData | null> {
     return this.fetcher.getAccount(address, ParsableWhirlpool, opts);
   }
   getPools(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, WhirlpoolData | null>> {
     return this.fetcher.getAccounts(addresses, ParsableWhirlpool, opts);
   }
-  getPosition(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<PositionData | null> {
+  getPosition(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<PositionData | null> {
     return this.fetcher.getAccount(address, ParsablePosition, opts);
   }
   getPositions(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, PositionData | null>> {
     return this.fetcher.getAccounts(addresses, ParsablePosition, opts);
   }
   getTickArray(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<TickArrayData | null> {
     return this.fetcher.getAccount(address, ParsableTickArray, opts);
   }
   getTickArrays(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyArray<TickArrayData | null>> {
     return this.fetcher.getAccountsAsArray(addresses, ParsableTickArray, opts);
   }
-  getFeeTier(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<FeeTierData | null> {
+  getFeeTier(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<FeeTierData | null> {
     return this.fetcher.getAccount(address, ParsableFeeTier, opts);
   }
   getFeeTiers(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, FeeTierData | null>> {
     return this.fetcher.getAccounts(addresses, ParsableFeeTier, opts);
   }
   getTokenInfo(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<TokenAccountWithTokenProgram | null> {
     return this.fetcher.getAccount(address, ParsableTokenAccountInfo, opts);
   }
   getTokenInfos(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, TokenAccountWithTokenProgram | null>> {
     return this.fetcher.getAccounts(addresses, ParsableTokenAccountInfo, opts);
   }
-  getMintInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<MintWithTokenProgram | null> {
+  getMintInfo(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<MintWithTokenProgram | null> {
     return this.fetcher.getAccount(address, ParsableMintInfo, opts);
   }
   getMintInfos(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, MintWithTokenProgram | null>> {
     return this.fetcher.getAccounts(addresses, ParsableMintInfo, opts);
   }
   getConfig(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<WhirlpoolsConfigData | null> {
     return this.fetcher.getAccount(address, ParsableWhirlpoolsConfig, opts);
   }
   getConfigs(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, WhirlpoolsConfigData | null>> {
     return this.fetcher.getAccounts(addresses, ParsableWhirlpoolsConfig, opts);
   }
   getPositionBundle(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<PositionBundleData | null> {
     return this.fetcher.getAccount(address, ParsablePositionBundle, opts);
   }
   getPositionBundles(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, PositionBundleData | null>> {
     return this.fetcher.getAccounts(addresses, ParsablePositionBundle, opts);
   }
 
   getConfigExtension(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<WhirlpoolsConfigExtensionData | null> {
-    return this.fetcher.getAccount(address, ParsableWhirlpoolsConfigExtension, opts);
+    return this.fetcher.getAccount(
+      address,
+      ParsableWhirlpoolsConfigExtension,
+      opts,
+    );
   }
   getConfigExtensions(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, WhirlpoolsConfigExtensionData | null>> {
-    return this.fetcher.getAccounts(addresses, ParsableWhirlpoolsConfigExtension, opts);
+    return this.fetcher.getAccounts(
+      addresses,
+      ParsableWhirlpoolsConfigExtension,
+      opts,
+    );
   }
 
   getTokenBadge(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<TokenBadgeData | null> {
     return this.fetcher.getAccount(address, ParsableTokenBadge, opts);
   }
   getTokenBadges(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, TokenBadgeData | null>> {
     return this.fetcher.getAccounts(addresses, ParsableTokenBadge, opts);
   }
 
-
   populateCache<T extends WhirlpoolSupportedTypes>(
     accounts: ReadonlyMap<string, T>,
     parser: ParsableEntity<T>,
-    now = Date.now()
+    now = Date.now(),
   ): void {
     this.fetcher.populateAccounts(accounts, parser, now);
   }

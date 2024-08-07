@@ -1,4 +1,4 @@
-import { Address } from "@coral-xyz/anchor";
+import type { Address } from "@coral-xyz/anchor";
 
 /**
  * An object containing the token pairs of a Whirlpool.
@@ -72,7 +72,11 @@ export type PoolGraph = {
    * @param options Options for finding a path
    * @returns A list of path between the two tokens. If no path are found, it will be an empty array.
    */
-  getPath: (startMint: Address, endMint: Address, options?: PathSearchOptions) => Path[];
+  getPath: (
+    startMint: Address,
+    endMint: Address,
+    options?: PathSearchOptions,
+  ) => Path[];
 
   /**
    * Get a map of paths from a list of token pairs for this pool graph.
@@ -87,7 +91,7 @@ export type PoolGraph = {
    */
   getPathsForPairs(
     searchTokenPairs: [Address, Address][],
-    options?: PathSearchOptions
+    options?: PathSearchOptions,
   ): PathSearchEntries;
 
   /**

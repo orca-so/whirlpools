@@ -1,10 +1,10 @@
-import { Program } from "@coral-xyz/anchor";
+import type { Program } from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { PublicKey } from "@solana/web3.js";
+import type BN from "bn.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
-import { Instruction } from "@orca-so/common-sdk";
+import type { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to increase liquidity for a position.
@@ -69,7 +69,7 @@ export type IncreaseLiquidityInput = {
  */
 export function increaseLiquidityIx(
   program: Program<Whirlpool>,
-  params: IncreaseLiquidityParams
+  params: IncreaseLiquidityParams,
 ): Instruction {
   const {
     liquidityAmount,
@@ -87,21 +87,26 @@ export function increaseLiquidityIx(
     tickArrayUpper,
   } = params;
 
-  const ix = program.instruction.increaseLiquidity(liquidityAmount, tokenMaxA, tokenMaxB, {
-    accounts: {
-      whirlpool,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      positionAuthority,
-      position,
-      positionTokenAccount,
-      tokenOwnerAccountA,
-      tokenOwnerAccountB,
-      tokenVaultA,
-      tokenVaultB,
-      tickArrayLower,
-      tickArrayUpper,
+  const ix = program.instruction.increaseLiquidity(
+    liquidityAmount,
+    tokenMaxA,
+    tokenMaxB,
+    {
+      accounts: {
+        whirlpool,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        positionAuthority,
+        position,
+        positionTokenAccount,
+        tokenOwnerAccountA,
+        tokenOwnerAccountB,
+        tokenVaultA,
+        tokenVaultB,
+        tickArrayLower,
+        tickArrayUpper,
+      },
     },
-  });
+  );
 
   return {
     instructions: [ix],

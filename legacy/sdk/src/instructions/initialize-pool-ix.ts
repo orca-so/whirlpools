@@ -1,9 +1,10 @@
-import { BN, Program } from "@coral-xyz/anchor";
-import { Instruction, PDA } from "@orca-so/common-sdk";
+import type { BN, Program } from "@coral-xyz/anchor";
+import type { Instruction, PDA } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
-import { WhirlpoolBumpsData } from "../types/public/anchor-types";
+import type { Keypair, PublicKey } from "@solana/web3.js";
+import { SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
+import type { WhirlpoolBumpsData } from "../types/public/anchor-types";
 
 /**
  * Parameters to initialize a Whirlpool account.
@@ -45,7 +46,10 @@ export type InitPoolParams = {
  * @param params - InitPoolParams object
  * @returns - Instruction to perform the action.
  */
-export function initializePoolIx(program: Program<Whirlpool>, params: InitPoolParams): Instruction {
+export function initializePoolIx(
+  program: Program<Whirlpool>,
+  params: InitPoolParams,
+): Instruction {
   const {
     initSqrtPrice,
     tokenMintA,
@@ -63,21 +67,26 @@ export function initializePoolIx(program: Program<Whirlpool>, params: InitPoolPa
     whirlpoolBump: whirlpoolPda.bump,
   };
 
-  const ix = program.instruction.initializePool(whirlpoolBumps, tickSpacing, initSqrtPrice, {
-    accounts: {
-      whirlpoolsConfig,
-      tokenMintA,
-      tokenMintB,
-      funder,
-      whirlpool: whirlpoolPda.publicKey,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-      feeTier: feeTierKey,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      systemProgram: SystemProgram.programId,
-      rent: SYSVAR_RENT_PUBKEY,
+  const ix = program.instruction.initializePool(
+    whirlpoolBumps,
+    tickSpacing,
+    initSqrtPrice,
+    {
+      accounts: {
+        whirlpoolsConfig,
+        tokenMintA,
+        tokenMintB,
+        funder,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        feeTier: feeTierKey,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        systemProgram: SystemProgram.programId,
+        rent: SYSVAR_RENT_PUBKEY,
+      },
     },
-  });
+  );
 
   return {
     instructions: [ix],

@@ -1,8 +1,8 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to collect protocol fees for a Whirlpool
@@ -36,7 +36,7 @@ export type CollectProtocolFeesParams = {
  */
 export function collectProtocolFeesIx(
   program: Program<Whirlpool>,
-  params: CollectProtocolFeesParams
+  params: CollectProtocolFeesParams,
 ): Instruction {
   const {
     whirlpoolsConfig,

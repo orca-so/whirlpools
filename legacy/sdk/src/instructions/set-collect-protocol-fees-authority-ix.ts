@@ -1,7 +1,7 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to set the collect fee authority in a WhirlpoolsConfig
@@ -28,10 +28,13 @@ export type SetCollectProtocolFeesAuthorityParams = {
  */
 export function setCollectProtocolFeesAuthorityIx(
   program: Program<Whirlpool>,
-  params: SetCollectProtocolFeesAuthorityParams
+  params: SetCollectProtocolFeesAuthorityParams,
 ): Instruction {
-  const { whirlpoolsConfig, collectProtocolFeesAuthority, newCollectProtocolFeesAuthority } =
-    params;
+  const {
+    whirlpoolsConfig,
+    collectProtocolFeesAuthority,
+    newCollectProtocolFeesAuthority,
+  } = params;
 
   const ix = program.instruction.setCollectProtocolFeesAuthority({
     accounts: {

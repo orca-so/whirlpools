@@ -1,14 +1,18 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
-use crate::swap_with_transfer_fee_extension;
-use crate::util::{calculate_transfer_fee_excluded_amount, parse_remaining_accounts, update_and_two_hop_swap_whirlpool_v2, AccountsType, RemainingAccountsInfo};
+use super::swap::swap_with_transfer_fee_extension;
+
+use crate::util::{
+    calculate_transfer_fee_excluded_amount, parse_remaining_accounts,
+    update_and_two_hop_swap_whirlpool_v2, AccountsType, RemainingAccountsInfo,
+};
 use crate::{
+    constants::transfer_memo,
     errors::ErrorCode,
     state::Whirlpool,
     util::{to_timestamp_u64, SparseSwapTickSequenceBuilder},
-    constants::transfer_memo,
 };
 
 #[derive(Accounts)]
@@ -32,11 +36,11 @@ pub struct TwoHopSwapV2<'info> {
     #[account(constraint = token_mint_output.key() == whirlpool_two.output_token_mint(a_to_b_two))]
     pub token_mint_output: InterfaceAccount<'info, Mint>,
 
-    #[account(constraint = token_program_input.key() == token_mint_input.to_account_info().owner.clone())]
+    #[account(constraint = token_program_input.key() == *token_mint_input.to_account_info().owner)]
     pub token_program_input: Interface<'info, TokenInterface>,
-    #[account(constraint = token_program_intermediate.key() == token_mint_intermediate.to_account_info().owner.clone())]
+    #[account(constraint = token_program_intermediate.key() == *token_mint_intermediate.to_account_info().owner)]
     pub token_program_intermediate: Interface<'info, TokenInterface>,
-    #[account(constraint = token_program_output.key() == token_mint_output.to_account_info().owner.clone())]
+    #[account(constraint = token_program_output.key() == *token_mint_output.to_account_info().owner)]
     pub token_program_output: Interface<'info, TokenInterface>,
 
     #[account(mut, constraint = token_owner_account_input.mint == token_mint_input.key())]
@@ -88,7 +92,6 @@ pub struct TwoHopSwapV2<'info> {
     pub oracle_two: UncheckedAccount<'info>,
 
     pub memo_program: Program<'info, Memo>,
-
     // remaining accounts
     // - accounts for transfer hook program of token_mint_input
     // - accounts for transfer hook program of token_mint_intermediate
@@ -97,8 +100,9 @@ pub struct TwoHopSwapV2<'info> {
     // - supplemental TickArray accounts for whirlpool_two
 }
 
-pub fn handler<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, TwoHopSwapV2<'info>>,
+#[allow(clippy::too_many_arguments)]
+pub fn handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, TwoHopSwapV2<'info>>,
     amount: u64,
     other_amount_threshold: u64,
     amount_specified_is_input: bool,
@@ -137,7 +141,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
     // Process remaining accounts
     let remaining_accounts = parse_remaining_accounts(
-        &ctx.remaining_accounts,
+        ctx.remaining_accounts,
         &remaining_accounts_info,
         &[
             AccountsType::TransferHookInput,
@@ -179,9 +183,17 @@ pub fn handler<'a, 'b, 'c, 'info>(
         // and the swap calculations occur from Swap 1 => Swap 2
         // and the swaps occur from Swap 1 => Swap 2
         let swap_calc_one = swap_with_transfer_fee_extension(
-            &whirlpool_one,
-            if a_to_b_one { &ctx.accounts.token_mint_input } else { &ctx.accounts.token_mint_intermediate },
-            if a_to_b_one { &ctx.accounts.token_mint_intermediate } else { &ctx.accounts.token_mint_input },
+            whirlpool_one,
+            if a_to_b_one {
+                &ctx.accounts.token_mint_input
+            } else {
+                &ctx.accounts.token_mint_intermediate
+            },
+            if a_to_b_one {
+                &ctx.accounts.token_mint_intermediate
+            } else {
+                &ctx.accounts.token_mint_input
+            },
             &mut swap_tick_sequence_one,
             amount,
             sqrt_price_limit_one,
@@ -199,9 +211,17 @@ pub fn handler<'a, 'b, 'c, 'info>(
         };
 
         let swap_calc_two = swap_with_transfer_fee_extension(
-            &whirlpool_two,
-            if a_to_b_two { &ctx.accounts.token_mint_intermediate } else { &ctx.accounts.token_mint_output },
-            if a_to_b_two { &ctx.accounts.token_mint_output } else { &ctx.accounts.token_mint_intermediate },
+            whirlpool_two,
+            if a_to_b_two {
+                &ctx.accounts.token_mint_intermediate
+            } else {
+                &ctx.accounts.token_mint_output
+            },
+            if a_to_b_two {
+                &ctx.accounts.token_mint_output
+            } else {
+                &ctx.accounts.token_mint_intermediate
+            },
             &mut swap_tick_sequence_two,
             swap_two_input_amount,
             sqrt_price_limit_two,
@@ -215,9 +235,17 @@ pub fn handler<'a, 'b, 'c, 'info>(
         // and the swap calculations occur from Swap 2 => Swap 1
         // but the actual swaps occur from Swap 1 => Swap 2 (to ensure that the intermediate token exists in the account)
         let swap_calc_two = swap_with_transfer_fee_extension(
-            &whirlpool_two,
-            if a_to_b_two { &ctx.accounts.token_mint_intermediate } else { &ctx.accounts.token_mint_output },
-            if a_to_b_two { &ctx.accounts.token_mint_output } else { &ctx.accounts.token_mint_intermediate },
+            whirlpool_two,
+            if a_to_b_two {
+                &ctx.accounts.token_mint_intermediate
+            } else {
+                &ctx.accounts.token_mint_output
+            },
+            if a_to_b_two {
+                &ctx.accounts.token_mint_output
+            } else {
+                &ctx.accounts.token_mint_intermediate
+            },
             &mut swap_tick_sequence_two,
             amount,
             sqrt_price_limit_two,
@@ -230,19 +258,29 @@ pub fn handler<'a, 'b, 'c, 'info>(
         let swap_one_output_amount = if a_to_b_two {
             calculate_transfer_fee_excluded_amount(
                 &ctx.accounts.token_mint_intermediate,
-                swap_calc_two.amount_a
-            )?.amount
+                swap_calc_two.amount_a,
+            )?
+            .amount
         } else {
             calculate_transfer_fee_excluded_amount(
                 &ctx.accounts.token_mint_intermediate,
-                swap_calc_two.amount_b
-            )?.amount
+                swap_calc_two.amount_b,
+            )?
+            .amount
         };
 
         let swap_calc_one = swap_with_transfer_fee_extension(
-            &whirlpool_one,
-            if a_to_b_one { &ctx.accounts.token_mint_input } else { &ctx.accounts.token_mint_intermediate },
-            if a_to_b_one { &ctx.accounts.token_mint_intermediate } else { &ctx.accounts.token_mint_input },
+            whirlpool_one,
+            if a_to_b_one {
+                &ctx.accounts.token_mint_input
+            } else {
+                &ctx.accounts.token_mint_intermediate
+            },
+            if a_to_b_one {
+                &ctx.accounts.token_mint_intermediate
+            } else {
+                &ctx.accounts.token_mint_input
+            },
             &mut swap_tick_sequence_one,
             swap_one_output_amount,
             sqrt_price_limit_one,
@@ -254,8 +292,16 @@ pub fn handler<'a, 'b, 'c, 'info>(
     };
 
     // All output token should be consumed by the second swap
-    let swap_calc_one_output = if a_to_b_one { swap_update_one.amount_b } else { swap_update_one.amount_a };
-    let swap_calc_two_input = if a_to_b_two { swap_update_two.amount_a } else { swap_update_two.amount_b };
+    let swap_calc_one_output = if a_to_b_one {
+        swap_update_one.amount_b
+    } else {
+        swap_update_one.amount_a
+    };
+    let swap_calc_two_input = if a_to_b_two {
+        swap_update_two.amount_a
+    } else {
+        swap_update_two.amount_b
+    };
     if swap_calc_one_output != swap_calc_two_input {
         return Err(ErrorCode::IntermediateTokenAmountMismatch.into());
     }
@@ -266,13 +312,15 @@ pub fn handler<'a, 'b, 'c, 'info>(
         let output_amount = if a_to_b_two {
             calculate_transfer_fee_excluded_amount(
                 &ctx.accounts.token_mint_output,
-                swap_update_two.amount_b
-            )?.amount
+                swap_update_two.amount_b,
+            )?
+            .amount
         } else {
             calculate_transfer_fee_excluded_amount(
                 &ctx.accounts.token_mint_output,
-                swap_update_two.amount_a
-            )?.amount
+                swap_update_two.amount_a,
+            )?
+            .amount
         };
 
         // If we have received less than the minimum out, throw an error

@@ -29,9 +29,10 @@ describe("RouterUtil - Price Impact tests", () => {
       ],
     };
     const { trade, routes } = buildRouteTest(params);
-    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(
-      maxDecimalAccuracy
-    );
+    const impact = RouterUtils.getPriceImpactForRoute(
+      trade,
+      routes,
+    ).toDecimalPlaces(maxDecimalAccuracy);
     const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy);
     assert.equal(impact.toString(), expect.toString());
   });
@@ -57,9 +58,10 @@ describe("RouterUtil - Price Impact tests", () => {
       ],
     };
     const { trade, routes } = buildRouteTest(params);
-    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(
-      maxDecimalAccuracy
-    );
+    const impact = RouterUtils.getPriceImpactForRoute(
+      trade,
+      routes,
+    ).toDecimalPlaces(maxDecimalAccuracy);
     const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy);
     assert.equal(impact.toString(), expect.toString());
   });
@@ -103,9 +105,10 @@ describe("RouterUtil - Price Impact tests", () => {
       ],
     };
     const { trade, routes } = buildRouteTest(params);
-    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(
-      maxDecimalAccuracy
-    );
+    const impact = RouterUtils.getPriceImpactForRoute(
+      trade,
+      routes,
+    ).toDecimalPlaces(maxDecimalAccuracy);
     const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy);
     assert.equal(impact.toString(), expect.toString());
   });
@@ -149,9 +152,10 @@ describe("RouterUtil - Price Impact tests", () => {
       ],
     };
     const { trade, routes } = buildRouteTest(params);
-    const impact = RouterUtils.getPriceImpactForRoute(trade, routes).toDecimalPlaces(
-      maxDecimalAccuracy
-    );
+    const impact = RouterUtils.getPriceImpactForRoute(
+      trade,
+      routes,
+    ).toDecimalPlaces(maxDecimalAccuracy);
     const expect = calculateImpact(params).toDecimalPlaces(maxDecimalAccuracy);
     assert.equal(impact.toString(), expect.toString());
   });
@@ -163,7 +167,9 @@ describe("RouterUtil - Price Impact tests", () => {
     const finalBaseValue = params.subRouteParams
       .map((subRoute) => {
         const { hops } = subRoute;
-        const directionalHops = amountSpecifiedIsInput ? hops : hops.slice().reverse();
+        const directionalHops = amountSpecifiedIsInput
+          ? hops
+          : hops.slice().reverse();
         const hopResults: Decimal[] = new Array(hops.length);
         directionalHops.forEach((hop, index) => {
           const { aToB, feeRate, sqrtPrice, amountIn, amountOut } = hop;
@@ -176,14 +182,18 @@ describe("RouterUtil - Price Impact tests", () => {
             .div(U64.toString());
           if (amountSpecifiedIsInput) {
             const amountInDec =
-              index === 0 ? new Decimal(amountIn.toString()) : hopResults[index - 1];
+              index === 0
+                ? new Decimal(amountIn.toString())
+                : hopResults[index - 1];
             const amountOutDec = amountInDec
               .times(new Decimal(1).sub(feeRate.toDecimal()))
               .times(directionalPrice);
             hopResults[index] = amountOutDec.round();
           } else {
             const amountOutDec =
-              index === 0 ? new Decimal(amountOut.toString()) : hopResults[index - 1];
+              index === 0
+                ? new Decimal(amountOut.toString())
+                : hopResults[index - 1];
             const amountInDec = amountOutDec
               .div(new Decimal(1).sub(feeRate.toDecimal()))
               .div(directionalPrice);
@@ -199,7 +209,10 @@ describe("RouterUtil - Price Impact tests", () => {
       return finalBaseValue.sub(totalAmountOutDec).div(finalBaseValue).mul(100);
     } else {
       const totalAmountInDec = new Decimal(totalAmountIn.toString());
-      return totalAmountInDec.sub(finalBaseValue).div(totalAmountInDec).mul(100);
+      return totalAmountInDec
+        .sub(finalBaseValue)
+        .div(totalAmountInDec)
+        .mul(100);
     }
   }
 
@@ -258,7 +271,7 @@ describe("RouterUtil - Price Impact tests", () => {
                   transferFee: {
                     deductingFromEstimatedAmountIn: new BN(0),
                     deductedFromEstimatedAmountOut: new BN(0),
-                  },                
+                  },
                 },
                 snapshot: {
                   aToB: hopParam.aToB,

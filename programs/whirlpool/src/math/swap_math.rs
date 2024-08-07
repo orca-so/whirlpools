@@ -20,8 +20,6 @@ pub fn compute_swap(
     amount_specified_is_input: bool,
     a_to_b: bool,
 ) -> Result<SwapStepComputation, ErrorCode> {
-    let fee_amount;
-
     let mut amount_fixed_delta = get_amount_fixed_delta(
         sqrt_price_current,
         sqrt_price_target,
@@ -84,16 +82,16 @@ pub fn compute_swap(
         amount_out = amount_remaining;
     }
 
-    if amount_specified_is_input && !is_max_swap {
-        fee_amount = amount_remaining - amount_in;
+    let fee_amount = if amount_specified_is_input && !is_max_swap {
+        amount_remaining - amount_in
     } else {
-        fee_amount = checked_mul_div_round_up(
+        checked_mul_div_round_up(
             amount_in as u128,
             fee_rate as u128,
             FEE_RATE_MUL_VALUE - fee_rate as u128,
         )?
-        .try_into()?;
-    }
+        .try_into()?
+    };
 
     Ok(SwapStepComputation {
         amount_in,
@@ -569,7 +567,7 @@ mod unit_tests {
             let price_limit = 4;
 
             // Calculate fee given fee percentage
-            let fee_amount = div_round_up((amount * u128::from(TWO_PCT)).into(), 1_000_000)
+            let fee_amount = div_round_up(amount * u128::from(TWO_PCT), 1_000_000)
                 .ok()
                 .unwrap();
 
@@ -592,8 +590,8 @@ mod unit_tests {
             let amount_out = init_b - div_round_up(init_liq * init_liq, new_a).ok().unwrap();
             test_swap(
                 100,
-                TWO_PCT,                      // 2 % fee
-                init_liq.try_into().unwrap(), // sqrt(ab)
+                TWO_PCT,  // 2 % fee
+                init_liq, // sqrt(ab)
                 // Current
                 // b = 1296 * 9 => 11664
                 // a = 1296 / 9 => 144
@@ -918,6 +916,7 @@ mod unit_tests {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn test_swap(
         amount_remaining: u64,
         fee_rate: u16,

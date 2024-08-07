@@ -58,7 +58,7 @@ pub fn tick_index_from_sqrt_price(sqrt_price_x64: &u128) -> i32 {
 
     while bit > 0 && precision < BIT_PRECISION {
         r *= r;
-        let is_r_more_than_two = r >> 127 as u32;
+        let is_r_more_than_two = r >> 127_u32;
         r >>= 63 + is_r_more_than_two;
         log2p_fraction_x64 += bit * is_r_more_than_two as i128;
         bit >>= 1;
@@ -79,7 +79,7 @@ pub fn tick_index_from_sqrt_price(sqrt_price_x64: &u128) -> i32 {
         .try_into()
         .unwrap();
 
-    let result_tick = if tick_low == tick_high {
+    if tick_low == tick_high {
         tick_low
     } else {
         // If our estimation for tick_high returns a lower sqrt_price than the input
@@ -92,9 +92,7 @@ pub fn tick_index_from_sqrt_price(sqrt_price_x64: &u128) -> i32 {
         } else {
             tick_low
         }
-    };
-
-    result_tick
+    }
 }
 
 fn mul_shift_96(n0: u128, n1: u128) -> u128 {
@@ -265,7 +263,7 @@ mod fuzz_tests {
 
         // Calculate number of error bits
         let error_bits = 128 - error.leading_zeros();
-        return precision - error_bits >= 32;
+        precision - error_bits >= 32
     }
 
     proptest! {
@@ -362,7 +360,7 @@ mod test_tick_index_from_sqrt_price {
         let tick_from_max = tick_index_from_sqrt_price(&sqrt_price_x64_max);
 
         // We don't care about accuracy over the limit. We just care about it's equality properties.
-        assert_eq!(tick_from_max_add_one >= tick_from_max, true);
+        assert!(tick_from_max_add_one >= tick_from_max);
     }
 
     #[test]
@@ -387,7 +385,7 @@ mod test_tick_index_from_sqrt_price {
         let tick_from_min = tick_index_from_sqrt_price(&sqrt_price_x64_min);
 
         // We don't care about accuracy over the limit. We just care about it's equality properties.
-        assert_eq!(tick_from_min_sub_one < tick_from_min, true);
+        assert!(tick_from_min_sub_one < tick_from_min);
     }
 
     #[test]
@@ -423,20 +421,14 @@ mod sqrt_price_from_tick_index_tests {
     fn test_tick_exceed_max() {
         let sqrt_price_from_max_tick_add_one = sqrt_price_from_tick_index(MAX_TICK_INDEX + 1);
         let sqrt_price_from_max_tick = sqrt_price_from_tick_index(MAX_TICK_INDEX);
-        assert_eq!(
-            sqrt_price_from_max_tick_add_one > sqrt_price_from_max_tick,
-            true
-        );
+        assert!(sqrt_price_from_max_tick_add_one > sqrt_price_from_max_tick);
     }
 
     #[test]
     fn test_tick_below_min() {
         let sqrt_price_from_min_tick_sub_one = sqrt_price_from_tick_index(MIN_TICK_INDEX - 1);
         let sqrt_price_from_min_tick = sqrt_price_from_tick_index(MIN_TICK_INDEX);
-        assert_eq!(
-            sqrt_price_from_min_tick_sub_one < sqrt_price_from_min_tick,
-            true
-        );
+        assert!(sqrt_price_from_min_tick_sub_one < sqrt_price_from_min_tick);
     }
 
     #[test]

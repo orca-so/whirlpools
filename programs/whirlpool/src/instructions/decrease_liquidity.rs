@@ -7,7 +7,7 @@ use crate::manager::liquidity_manager::{
 use crate::math::convert_to_liquidity_delta;
 use crate::util::{to_timestamp_u64, transfer_from_vault_to_owner, verify_position_authority};
 
-use super::ModifyLiquidity;
+use super::increase_liquidity::ModifyLiquidity;
 
 /*
   Removes liquidity from an existing Whirlpool Position.
@@ -56,9 +56,7 @@ pub fn handler(
         liquidity_delta,
     )?;
 
-    if delta_a < token_min_a {
-        return Err(ErrorCode::TokenMinSubceeded.into());
-    } else if delta_b < token_min_b {
+    if delta_a < token_min_a || delta_b < token_min_b {
         return Err(ErrorCode::TokenMinSubceeded.into());
     }
 

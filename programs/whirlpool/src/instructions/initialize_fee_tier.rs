@@ -28,8 +28,7 @@ pub fn handler(
     tick_spacing: u16,
     default_fee_rate: u16,
 ) -> Result<()> {
-    Ok(ctx
-        .accounts
+    ctx.accounts
         .fee_tier
-        .initialize(&ctx.accounts.config, tick_spacing, default_fee_rate)?)
+        .initialize(&ctx.accounts.config, tick_spacing, default_fee_rate)
 }

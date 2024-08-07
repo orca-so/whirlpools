@@ -3,10 +3,13 @@
   "private": true,
   "license": "Apache-2.0",
   "packageManager": "yarn@4.3.1",
+  "type": "module",
   "scripts": {
     "build": "nx run-many --target build --projects",
     "test": "nx run-many --target test --projects",
-    "format": "nx run-many --target format --projects",
+    "format": "cargo fmt --all && prettier './**/*.ts' --write",
+    "lint": "cargo clippy -- -D clippy::all && eslint",
+    "lint:fix": "cargo clippy --fix --allow-dirty --allow-staged -- -D clippy::all && eslint --fix",
     "clean": "nx reset && nx run-many --target clean --projects",
     "prepare": "husky install"
   },
@@ -14,13 +17,15 @@
     "@types/bn.js": "~5.1.5",
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.8",
+    "eslint": "^9.8.0",
     "husky": "^8.0.3",
     "lint-staged": "^15.2.0",
     "mocha": "^10.2.0",
     "nx": "^19.4.2",
     "prettier": "^3.1.1",
     "rimraf": "^5.0.5",
-    "ts-mocha": "^10.0.0"
+    "ts-mocha": "^10.0.0",
+    "typescript-eslint": "^8.0.1"
   },
   "workspaces": [
     "programs/*",
@@ -29,7 +34,12 @@
     "legacy/*"
   ],
   "lint-staged": {
-    "*": "yarn format"
+    "**/*.{js,ts,json}": [
+      "yarn prettier './**/*.ts' --write"
+    ],
+    "**/*.{rs}": [
+      "cargo fmt --all --"
+    ]
   },
   "repository": {
     "type": "git",

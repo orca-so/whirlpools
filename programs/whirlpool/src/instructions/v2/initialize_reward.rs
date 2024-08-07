@@ -4,7 +4,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use crate::{
     errors::ErrorCode,
     state::Whirlpool,
-    util::{is_token_badge_initialized, v2::is_supported_token_mint}
+    util::{is_token_badge_initialized, v2::is_supported_token_mint},
 };
 
 #[derive(Accounts)]
@@ -34,7 +34,7 @@ pub struct InitializeRewardV2<'info> {
     )]
     pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(constraint = reward_token_program.key() == reward_mint.to_account_info().owner.clone())]
+    #[account(constraint = reward_token_program.key() == *reward_mint.to_account_info().owner)]
     pub reward_token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
     /// CHECK: no longer used anywhere
@@ -55,9 +55,9 @@ pub fn handler(ctx: Context<InitializeRewardV2>, reward_index: u8) -> Result<()>
         return Err(ErrorCode::UnsupportedTokenMint.into());
     }
 
-    Ok(whirlpool.initialize_reward(
+    whirlpool.initialize_reward(
         reward_index as usize,
         ctx.accounts.reward_mint.key(),
         ctx.accounts.reward_vault.key(),
-    )?)
+    )
 }

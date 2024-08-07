@@ -1,9 +1,9 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { PublicKey } from "@solana/web3.js";
+import type BN from "bn.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to execute a two-hop swap on a Whirlpool.
@@ -60,7 +60,7 @@ export type TwoHopSwapParams = TwoHopSwapInput & {
  * @param tickArrayTwo2 - The next tick-array in the swap direction after tickArray2 of swap-Two. If the swap will not reach the next tick-aray, input the same array as tickArray1.
  * @param supplementalTickArraysOne - (V2 only) Optional array of PublicKey for supplemental tick arrays of whirlpoolOne. twoHopSwap instruction will ignore this parameter.
  * @param supplementalTickArraysTwo - (V2 only) Optional array of PublicKey for supplemental tick arrays of whirlpoolTwo. twoHopSwap instruction will ignore this parameter.
-*/
+ */
 export type TwoHopSwapInput = {
   amount: BN;
   otherAmountThreshold: BN;
@@ -100,7 +100,10 @@ export type TwoHopSwapInput = {
  * @param params - {@link TwoHopSwapParams} object
  * @returns - Instruction to perform the action.
  */
-export function twoHopSwapIx(program: Program<Whirlpool>, params: TwoHopSwapParams): Instruction {
+export function twoHopSwapIx(
+  program: Program<Whirlpool>,
+  params: TwoHopSwapParams,
+): Instruction {
   const {
     amount,
     otherAmountThreshold,
@@ -161,7 +164,7 @@ export function twoHopSwapIx(program: Program<Whirlpool>, params: TwoHopSwapPara
         oracleOne,
         oracleTwo,
       },
-    }
+    },
   );
 
   return {

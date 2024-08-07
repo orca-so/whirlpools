@@ -40,7 +40,7 @@ pub fn calculate_modify_liquidity<'info>(
     let tick_upper =
         tick_array_upper.get_tick(position.tick_upper_index, whirlpool.tick_spacing)?;
 
-    Ok(_calculate_modify_liquidity(
+    _calculate_modify_liquidity(
         whirlpool,
         position,
         tick_lower,
@@ -49,7 +49,7 @@ pub fn calculate_modify_liquidity<'info>(
         position.tick_upper_index,
         liquidity_delta,
         timestamp,
-    )?)
+    )
 }
 
 pub fn calculate_fee_and_reward_growths<'info>(
@@ -83,6 +83,7 @@ pub fn calculate_fee_and_reward_growths<'info>(
 }
 
 // Calculates the state changes after modifying liquidity of a whirlpool position.
+#[allow(clippy::too_many_arguments)]
 fn _calculate_modify_liquidity(
     whirlpool: &Whirlpool,
     position: &Position,
@@ -178,7 +179,7 @@ pub fn calculate_liquidity_token_deltas(
     let mut delta_a: u64 = 0;
     let mut delta_b: u64 = 0;
 
-    let liquidity: u128 = liquidity_delta.abs() as u128;
+    let liquidity: u128 = liquidity_delta.unsigned_abs();
     let round_up = liquidity_delta > 0;
 
     let lower_price = sqrt_price_from_tick_index(position.tick_lower_index);
@@ -1203,7 +1204,6 @@ mod calculate_modify_liquidity_unit_tests {
                         fee_growth_outside_b: to_x64(20),
                         // 2 = (1 + (100/100)) - 0
                         reward_growths_outside: create_reward_growths(to_x64(2)),
-                        ..Default::default()
                     }
                 );
 

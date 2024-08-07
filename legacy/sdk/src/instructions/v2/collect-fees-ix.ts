@@ -1,10 +1,13 @@
-import { Program } from "@coral-xyz/anchor";
-import { AccountMeta, PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { AccountMeta, PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../..";
 
-import { Instruction } from "@orca-so/common-sdk";
-import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
+import type { Instruction } from "@orca-so/common-sdk";
+import {
+  RemainingAccountsBuilder,
+  RemainingAccountsType,
+} from "../../utils/remaining-accounts-util";
 
 /**
  * Parameters to collect fees from a position.
@@ -51,7 +54,10 @@ export type CollectFeesV2Params = {
  * @param params - CollectFeesV2Params object
  * @returns - Instruction to perform the action.
  */
-export function collectFeesV2Ix(program: Program<Whirlpool>, params: CollectFeesV2Params): Instruction {
+export function collectFeesV2Ix(
+  program: Program<Whirlpool>,
+  params: CollectFeesV2Params,
+): Instruction {
   const {
     whirlpool,
     positionAuthority,
@@ -69,10 +75,11 @@ export function collectFeesV2Ix(program: Program<Whirlpool>, params: CollectFees
     tokenProgramB,
   } = params;
 
-  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
-    .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
-    .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
-    .build();
+  const [remainingAccountsInfo, remainingAccounts] =
+    new RemainingAccountsBuilder()
+      .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+      .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+      .build();
 
   const ix = program.instruction.collectFeesV2(remainingAccountsInfo, {
     accounts: {

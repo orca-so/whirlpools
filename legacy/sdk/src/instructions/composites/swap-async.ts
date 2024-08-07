@@ -1,8 +1,14 @@
-import { resolveOrCreateATAs, TransactionBuilder, ZERO } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { SwapUtils, Whirlpool, WhirlpoolContext } from "../..";
-import { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
-import { SwapInput, swapIx } from "../swap-ix";
+import {
+  resolveOrCreateATAs,
+  TransactionBuilder,
+  ZERO,
+} from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool, WhirlpoolContext } from "../..";
+import { SwapUtils } from "../..";
+import type { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
+import type { SwapInput } from "../swap-ix";
+import { swapIx } from "../swap-ix";
 import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
 import { swapV2Ix } from "../v2";
 
@@ -22,11 +28,15 @@ export type SwapAsyncParams = {
 export async function swapAsync(
   ctx: WhirlpoolContext,
   params: SwapAsyncParams,
-  opts: WhirlpoolAccountFetchOptions
+  _opts: WhirlpoolAccountFetchOptions,
 ): Promise<TransactionBuilder> {
   const { wallet, whirlpool, swapInput } = params;
   const { aToB, amount } = swapInput;
-  const txBuilder = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
+  const txBuilder = new TransactionBuilder(
+    ctx.connection,
+    ctx.wallet,
+    ctx.txBuilderOpts,
+  );
 
   // No need to check if TickArrays are initialized after SparseSwap implementation
 
@@ -42,7 +52,7 @@ export async function swapAsync(
     undefined, // use default
     true, // use idempotent to allow multiple simultaneous calls
     ctx.accountResolverOpts.allowPDAOwnerAddress,
-    ctx.accountResolverOpts.createWrappedSolAccountMethod
+    ctx.accountResolverOpts.createWrappedSolAccountMethod,
   );
   const { address: ataAKey, ...tokenOwnerAccountAIx } = resolvedAtaA;
   const { address: ataBKey, ...tokenOwnerAccountBIx } = resolvedAtaB;
@@ -61,28 +71,37 @@ export async function swapAsync(
     whirlpool,
     inputTokenAccount,
     outputTokenAccount,
-    wallet
+    wallet,
   );
   return txBuilder.addInstruction(
-    (!TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx) && !params.swapInput.supplementalTickArrays)
+    !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx) &&
+      !params.swapInput.supplementalTickArrays
       ? swapIx(ctx.program, baseParams)
       : swapV2Ix(ctx.program, {
-        ...baseParams,
-        tokenMintA: tokenExtensionCtx.tokenMintWithProgramA.address,
-        tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
-        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
-        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
-          ctx.connection,
-          tokenExtensionCtx,
-          baseParams.aToB ? baseParams.tokenOwnerAccountA : baseParams.tokenVaultA,
-          baseParams.aToB ? baseParams.tokenVaultA : baseParams.tokenOwnerAccountA,
-          baseParams.aToB ? baseParams.tokenAuthority : baseParams.whirlpool,
-          baseParams.aToB ? baseParams.tokenVaultB : baseParams.tokenOwnerAccountB,
-          baseParams.aToB ? baseParams.tokenOwnerAccountB : baseParams.tokenVaultB,
-          baseParams.aToB ? baseParams.whirlpool : baseParams.tokenAuthority,
-        ),
-        supplementalTickArrays: params.swapInput.supplementalTickArrays,
-      })
+          ...baseParams,
+          tokenMintA: tokenExtensionCtx.tokenMintWithProgramA.address,
+          tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
+          tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+          tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+          ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+            ctx.connection,
+            tokenExtensionCtx,
+            baseParams.aToB
+              ? baseParams.tokenOwnerAccountA
+              : baseParams.tokenVaultA,
+            baseParams.aToB
+              ? baseParams.tokenVaultA
+              : baseParams.tokenOwnerAccountA,
+            baseParams.aToB ? baseParams.tokenAuthority : baseParams.whirlpool,
+            baseParams.aToB
+              ? baseParams.tokenVaultB
+              : baseParams.tokenOwnerAccountB,
+            baseParams.aToB
+              ? baseParams.tokenOwnerAccountB
+              : baseParams.tokenVaultB,
+            baseParams.aToB ? baseParams.whirlpool : baseParams.tokenAuthority,
+          )),
+          supplementalTickArrays: params.swapInput.supplementalTickArrays,
+        }),
   );
 }

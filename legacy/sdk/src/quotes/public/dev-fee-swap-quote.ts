@@ -1,13 +1,14 @@
-import { Address } from "@coral-xyz/anchor";
-import { Percentage } from "@orca-so/common-sdk";
-import BN from "bn.js";
+import type { Address } from "@coral-xyz/anchor";
+import type { Percentage } from "@orca-so/common-sdk";
+import type BN from "bn.js";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
-import {
+import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
-import { Whirlpool } from "../../whirlpool-client";
-import { NormalSwapQuote, swapQuoteByInputToken } from "./swap-quote";
+import type { Whirlpool } from "../../whirlpool-client";
+import type { NormalSwapQuote } from "./swap-quote";
+import { swapQuoteByInputToken } from "./swap-quote";
 
 /**
  * A collection of estimated values from quoting a swap that collects a developer-fee.
@@ -52,12 +53,12 @@ export async function swapQuoteByInputTokenWithDevFees(
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
   devFeePercentage: Percentage,
-  opts?: WhirlpoolAccountFetchOptions
+  opts?: WhirlpoolAccountFetchOptions,
 ): Promise<DevFeeSwapQuote> {
   if (devFeePercentage.toDecimal().greaterThanOrEqualTo(1)) {
     throw new WhirlpoolsError(
       "Provided devFeePercentage must be less than 100%",
-      SwapErrorCode.InvalidDevFeePercentage
+      SwapErrorCode.InvalidDevFeePercentage,
     );
   }
 
@@ -72,14 +73,16 @@ export async function swapQuoteByInputTokenWithDevFees(
     slippageTolerance,
     programId,
     fetcher,
-    opts
+    opts,
   );
 
   const devFeeAdjustedQuote: DevFeeSwapQuote = {
     ...slippageAdjustedQuote,
     amountSpecifiedIsInput: true,
-    estimatedAmountIn: slippageAdjustedQuote.estimatedAmountIn.add(devFeeAmount),
-    estimatedFeeAmount: slippageAdjustedQuote.estimatedFeeAmount.add(devFeeAmount),
+    estimatedAmountIn:
+      slippageAdjustedQuote.estimatedAmountIn.add(devFeeAmount),
+    estimatedFeeAmount:
+      slippageAdjustedQuote.estimatedFeeAmount.add(devFeeAmount),
     estimatedSwapFeeAmount: slippageAdjustedQuote.estimatedFeeAmount,
     devFeeAmount,
   };

@@ -1,14 +1,9 @@
-const { createFromRoot } = require("kinobi");
-const { renderVisitor } = require("@kinobi-so/renderers-js");
-const { rootNodeFromAnchor } = require("@kinobi-so/nodes-from-anchor");
+import { createFromRoot } from "kinobi";
+import { renderVisitor } from "@kinobi-so/renderers-js";
+import { rootNodeFromAnchor } from "@kinobi-so/nodes-from-anchor";
+import idl from "../../target/idl/whirlpool.json" with { type: "json" };
 
-const node = rootNodeFromAnchor(
-  require("../../target/idl/whirlpool.json"),
-);
-
+const node = rootNodeFromAnchor(idl);
+const visitor = renderVisitor("./src/generated");
 const kinobi = createFromRoot(node);
-
-kinobi.accept(
-  renderVisitor("./src/generated"),
-);
-
+kinobi.accept(visitor);

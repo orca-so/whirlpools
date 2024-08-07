@@ -1,18 +1,18 @@
-import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, PDA } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
+import type { Address } from "@coral-xyz/anchor";
+import type { PDA } from "@orca-so/common-sdk";
+import { AddressUtil } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
-import {
+import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
+import type { TickArrayData, TickData } from "../../types/public";
 import {
   FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD,
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
   TICK_ARRAY_SIZE,
-  TickArrayData,
-  TickData,
 } from "../../types/public";
 import { PDAUtil } from "./pda-utils";
 
@@ -26,8 +26,6 @@ enum TickSearchDirection {
  * @category Whirlpool Utils
  */
 export class TickUtil {
-  private constructor() {}
-
   /**
    * Get the offset index to access a tick at a given tick-index in a tick-array
    *
@@ -36,7 +34,11 @@ export class TickUtil {
    * @param tickSpacing The tickSpacing for the Whirlpool that this tickArray belongs to
    * @returns The offset index that can access the desired tick at the given tick-array
    */
-  public static getOffsetIndex(tickIndex: number, arrayStartIndex: number, tickSpacing: number) {
+  public static getOffsetIndex(
+    tickIndex: number,
+    arrayStartIndex: number,
+    tickSpacing: number,
+  ) {
     return Math.floor((tickIndex - arrayStartIndex) / tickSpacing);
   }
 
@@ -48,14 +50,25 @@ export class TickUtil {
    * @param offset can be used to get neighboring tick array startIndex.
    * @returns
    */
-  public static getStartTickIndex(tickIndex: number, tickSpacing: number, offset = 0): number {
+  public static getStartTickIndex(
+    tickIndex: number,
+    tickSpacing: number,
+    offset = 0,
+  ): number {
     const realIndex = Math.floor(tickIndex / tickSpacing / TICK_ARRAY_SIZE);
     const startTickIndex = (realIndex + offset) * tickSpacing * TICK_ARRAY_SIZE;
 
     const ticksInArray = TICK_ARRAY_SIZE * tickSpacing;
-    const minTickIndex = MIN_TICK_INDEX - ((MIN_TICK_INDEX % ticksInArray) + ticksInArray);
-    invariant(startTickIndex >= minTickIndex, `startTickIndex is too small - - ${startTickIndex}`);
-    invariant(startTickIndex <= MAX_TICK_INDEX, `startTickIndex is too large - ${startTickIndex}`);
+    const minTickIndex =
+      MIN_TICK_INDEX - ((MIN_TICK_INDEX % ticksInArray) + ticksInArray);
+    invariant(
+      startTickIndex >= minTickIndex,
+      `startTickIndex is too small - - ${startTickIndex}`,
+    );
+    invariant(
+      startTickIndex <= MAX_TICK_INDEX,
+      `startTickIndex is too large - ${startTickIndex}`,
+    );
     return startTickIndex;
   }
 
@@ -63,16 +76,29 @@ export class TickUtil {
    * Get the nearest (rounding down) valid tick index from the tickIndex.
    * A valid tick index is a point on the tick spacing grid line.
    */
-  public static getInitializableTickIndex(tickIndex: number, tickSpacing: number): number {
+  public static getInitializableTickIndex(
+    tickIndex: number,
+    tickSpacing: number,
+  ): number {
     return tickIndex - (tickIndex % tickSpacing);
   }
 
-  public static getNextInitializableTickIndex(tickIndex: number, tickSpacing: number) {
-    return TickUtil.getInitializableTickIndex(tickIndex, tickSpacing) + tickSpacing;
+  public static getNextInitializableTickIndex(
+    tickIndex: number,
+    tickSpacing: number,
+  ) {
+    return (
+      TickUtil.getInitializableTickIndex(tickIndex, tickSpacing) + tickSpacing
+    );
   }
 
-  public static getPrevInitializableTickIndex(tickIndex: number, tickSpacing: number) {
-    return TickUtil.getInitializableTickIndex(tickIndex, tickSpacing) - tickSpacing;
+  public static getPrevInitializableTickIndex(
+    tickIndex: number,
+    tickSpacing: number,
+  ) {
+    return (
+      TickUtil.getInitializableTickIndex(tickIndex, tickSpacing) - tickSpacing
+    );
   }
 
   /**
@@ -86,13 +112,13 @@ export class TickUtil {
   public static findPreviousInitializedTickIndex(
     account: TickArrayData,
     currentTickIndex: number,
-    tickSpacing: number
+    tickSpacing: number,
   ): number | null {
     return TickUtil.findInitializedTick(
       account,
       currentTickIndex,
       tickSpacing,
-      TickSearchDirection.Left
+      TickSearchDirection.Left,
     );
   }
 
@@ -106,13 +132,13 @@ export class TickUtil {
   public static findNextInitializedTickIndex(
     account: TickArrayData,
     currentTickIndex: number,
-    tickSpacing: number
+    tickSpacing: number,
   ): number | null {
     return TickUtil.findInitializedTick(
       account,
       currentTickIndex,
       tickSpacing,
-      TickSearchDirection.Right
+      TickSearchDirection.Right,
     );
   }
 
@@ -120,12 +146,12 @@ export class TickUtil {
     account: TickArrayData,
     currentTickIndex: number,
     tickSpacing: number,
-    searchDirection: TickSearchDirection
+    searchDirection: TickSearchDirection,
   ): number | null {
     const currentTickArrayIndex = tickIndexToInnerIndex(
       account.startTickIndex,
       currentTickIndex,
-      tickSpacing
+      tickSpacing,
     );
 
     const increment = searchDirection === TickSearchDirection.Right ? 1 : -1;
@@ -142,7 +168,7 @@ export class TickUtil {
         return innerIndexToTickIndex(
           account.startTickIndex,
           stepInitializedTickArrayIndex,
-          tickSpacing
+          tickSpacing,
         );
       }
 
@@ -192,7 +218,11 @@ export class TickUtil {
    * @param tickUpperIndex The upper tick index of the range
    * @returns true if the range is the full range of the Whirlpool, false otherwise.
    */
-  public static isFullRange(tickSpacing: number, tickLowerIndex: number, tickUpperIndex: number): boolean {
+  public static isFullRange(
+    tickSpacing: number,
+    tickLowerIndex: number,
+    tickUpperIndex: number,
+  ): boolean {
     const [min, max] = TickUtil.getFullRangeTickIndex(tickSpacing);
     return tickLowerIndex === min && tickUpperIndex === max;
   }
@@ -218,13 +248,17 @@ export class TickArrayUtil {
   public static getTickFromArray(
     tickArray: TickArrayData,
     tickIndex: number,
-    tickSpacing: number
+    tickSpacing: number,
   ): TickData {
-    const realIndex = tickIndexToInnerIndex(tickArray.startTickIndex, tickIndex, tickSpacing);
+    const realIndex = tickIndexToInnerIndex(
+      tickArray.startTickIndex,
+      tickIndex,
+      tickSpacing,
+    );
     const tick = tickArray.ticks[realIndex];
     invariant(
       !!tick,
-      `tick realIndex out of range - start - ${tickArray.startTickIndex} index - ${tickIndex}, realIndex - ${realIndex}`
+      `tick realIndex out of range - start - ${tickArray.startTickIndex} index - ${tickIndex}, realIndex - ${realIndex}`,
     );
     return tick;
   }
@@ -244,7 +278,7 @@ export class TickArrayUtil {
     numOfTickArrays: number,
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
-    aToB: boolean
+    aToB: boolean,
   ): PDA[] {
     let arrayIndexList = [...Array(numOfTickArrays).keys()];
     if (aToB) {
@@ -268,14 +302,15 @@ export class TickArrayUtil {
   public static async getUninitializedArraysString(
     tickArrayAddrs: Address[],
     fetcher: WhirlpoolAccountFetcherInterface,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ) {
     const taAddrs = AddressUtil.toPubKeys(tickArrayAddrs);
     const tickArrayData = await fetcher.getTickArrays(taAddrs, opts);
 
     // Verify tick arrays are initialized if the user provided them.
     if (tickArrayData) {
-      const uninitializedIndices = TickArrayUtil.getUninitializedArrays(tickArrayData);
+      const uninitializedIndices =
+        TickArrayUtil.getUninitializedArrays(tickArrayData);
       if (uninitializedIndices.length > 0) {
         const uninitializedArrays = uninitializedIndices
           .map((index) => taAddrs[index].toBase58())
@@ -294,18 +329,21 @@ export class TickArrayUtil {
     whirlpoolAddress: PublicKey,
     tickSpacing: number,
     fetcher: WhirlpoolAccountFetcherInterface,
-    opts: WhirlpoolAccountFetchOptions
+    opts: WhirlpoolAccountFetchOptions,
   ) {
-    const startTicks = ticks.map((tick) => TickUtil.getStartTickIndex(tick, tickSpacing));
+    const startTicks = ticks.map((tick) =>
+      TickUtil.getStartTickIndex(tick, tickSpacing),
+    );
     const removeDupeTicks = [...new Set(startTicks)];
     const tickArrayPDAs = removeDupeTicks.map((tick) =>
-      PDAUtil.getTickArray(programId, whirlpoolAddress, tick)
+      PDAUtil.getTickArray(programId, whirlpoolAddress, tick),
     );
     const fetchedArrays = await fetcher.getTickArrays(
       tickArrayPDAs.map((pda) => pda.publicKey),
-      opts
+      opts,
     );
-    const uninitializedIndices = TickArrayUtil.getUninitializedArrays(fetchedArrays);
+    const uninitializedIndices =
+      TickArrayUtil.getUninitializedArrays(fetchedArrays);
     return uninitializedIndices.map((index) => {
       return {
         startIndex: removeDupeTicks[index],
@@ -319,7 +357,9 @@ export class TickArrayUtil {
    * @param tickArrays - a list of TickArrayData or null objects from WhirlpoolAccountCacheInterface.getTickArrays
    * @returns an array of array-index for the input tickArrays that requires initialization.
    */
-  public static getUninitializedArrays(tickArrays: readonly (TickArrayData | null)[]): number[] {
+  public static getUninitializedArrays(
+    tickArrays: readonly (TickArrayData | null)[],
+  ): number[] {
     return tickArrays
       .map((value, index) => {
         if (!value) {
@@ -334,7 +374,7 @@ export class TickArrayUtil {
 function tickIndexToInnerIndex(
   startTickIndex: number,
   tickIndex: number,
-  tickSpacing: number
+  tickSpacing: number,
 ): number {
   return Math.floor((tickIndex - startTickIndex) / tickSpacing);
 }
@@ -342,7 +382,7 @@ function tickIndexToInnerIndex(
 function innerIndexToTickIndex(
   startTickIndex: number,
   tickArrayIndex: number,
-  tickSpacing: number
+  tickSpacing: number,
 ): number {
   return startTickIndex + tickArrayIndex * tickSpacing;
 }

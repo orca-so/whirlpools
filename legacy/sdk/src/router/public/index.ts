@@ -1,11 +1,11 @@
-import { Address } from "@coral-xyz/anchor";
-import { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import { AddressLookupTableAccount } from "@solana/web3.js";
-import BN from "bn.js";
-import { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
-import { SwapQuote } from "../../quotes/public";
-import { Path } from "../../utils/public";
-import { AtaAccountInfo, RouteSelectOptions } from "./router-utils";
+import type { Address } from "@coral-xyz/anchor";
+import type { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
+import type { AddressLookupTableAccount } from "@solana/web3.js";
+import type BN from "bn.js";
+import type { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
+import type { SwapQuote } from "../../quotes/public";
+import type { Path } from "../../utils/public";
+import type { AtaAccountInfo, RouteSelectOptions } from "./router-utils";
 
 export * from "./router-builder";
 export * from "./router-utils";
@@ -125,7 +125,10 @@ export type TradeHopSnapshot = {
  *
  * @category Router
  */
-export type ExecutableRoute = readonly [TradeRoute, AddressLookupTableAccount[] | undefined];
+export type ExecutableRoute = readonly [
+  TradeRoute,
+  AddressLookupTableAccount[] | undefined,
+];
 
 /**
  * Convienience class to find routes through a set of Whirlpools and execute a swap across them.
@@ -156,7 +159,7 @@ export interface WhirlpoolRouter {
   findAllRoutes(
     trade: Trade,
     opts?: Partial<RoutingOptions>,
-    fetchOpts?: WhirlpoolAccountFetchOptions
+    fetchOpts?: WhirlpoolAccountFetchOptions,
   ): Promise<TradeRoute[]>;
 
   /**
@@ -175,14 +178,14 @@ export interface WhirlpoolRouter {
    * {@link WhirlpoolAccountFetchOptions} to configure the fetching of on-chain data.
    * @returns
    * The best {@link ExecutableRoute} that can be used to execute a swap. If no executable route is found, null is returned.
-   * 
+   *
    * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   findBestRoute(
     trade: Trade,
     opts?: Partial<RoutingOptions>,
     selectionOpts?: Partial<RouteSelectOptions>,
-    fetchOpts?: WhirlpoolAccountFetchOptions
+    fetchOpts?: WhirlpoolAccountFetchOptions,
   ): Promise<ExecutableRoute | null>;
 
   /**
@@ -196,12 +199,12 @@ export interface WhirlpoolRouter {
    * A {@link TransactionBuilder}that can be used to execute the trade.
    * If provvided from {@link ExecutableRoute}, plug the {@link AddressLookupTableAccount}s
    * into builder to lower the transaction size.
-   * 
+   *
    * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   swap(
     trade: TradeRoute,
     slippage: Percentage,
-    resolvedAtas: AtaAccountInfo[] | null
+    resolvedAtas: AtaAccountInfo[] | null,
   ): Promise<TransactionBuilder>;
 }

@@ -1,11 +1,12 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use anchor_spl::memo::Memo;
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::{manager::swap_manager::PostSwapUpdate, state::Whirlpool};
 
 use super::{transfer_from_owner_to_vault_v2, transfer_from_vault_to_owner_v2};
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_and_swap_whirlpool_v2<'info>(
     whirlpool: &mut Account<'info, Whirlpool>,
     token_authority: &Signer<'info>,
@@ -57,6 +58,7 @@ pub fn update_and_swap_whirlpool_v2<'info>(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 fn perform_swap_v2<'info>(
     whirlpool: &Account<'info, Whirlpool>,
     token_authority: &Signer<'info>,
@@ -148,6 +150,7 @@ fn perform_swap_v2<'info>(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn update_and_two_hop_swap_whirlpool_v2<'info>(
     // update
     swap_update_one: PostSwapUpdate,
@@ -211,7 +214,11 @@ pub fn update_and_two_hop_swap_whirlpool_v2<'info>(
     } else {
         (swap_update_one.amount_b, swap_update_one.amount_a)
     };
-    let output_amount = if is_token_fee_in_two_a { swap_update_two.amount_b } else { swap_update_two.amount_a };
+    let output_amount = if is_token_fee_in_two_a {
+        swap_update_two.amount_b
+    } else {
+        swap_update_two.amount_a
+    };
 
     transfer_from_owner_to_vault_v2(
         token_authority,

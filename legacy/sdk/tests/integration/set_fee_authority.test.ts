@@ -1,11 +1,15 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import { toTx, WhirlpoolContext, WhirlpoolIx, WhirlpoolsConfigData } from "../../src";
+import type { WhirlpoolsConfigData } from "../../src";
+import { toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
 import { defaultConfirmOptions } from "../utils/const";
 import { generateDefaultConfigParams } from "../utils/test-builders";
 
 describe("set_fee_authority", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -16,7 +20,10 @@ describe("set_fee_authority", () => {
       configInitInfo,
       configKeypairs: { feeAuthorityKeypair },
     } = generateDefaultConfigParams(ctx);
-    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
     const newAuthorityKeypair = anchor.web3.Keypair.generate();
     await toTx(
       ctx,
@@ -24,12 +31,12 @@ describe("set_fee_authority", () => {
         whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
         feeAuthority: feeAuthorityKeypair.publicKey,
         newFeeAuthority: newAuthorityKeypair.publicKey,
-      })
+      }),
     )
       .addSigner(feeAuthorityKeypair)
       .buildAndExecute();
     const config = (await fetcher.getConfig(
-      configInitInfo.whirlpoolsConfigKeypair.publicKey
+      configInitInfo.whirlpoolsConfigKeypair.publicKey,
     )) as WhirlpoolsConfigData;
     assert.ok(config.feeAuthority.equals(newAuthorityKeypair.publicKey));
   });
@@ -39,7 +46,10 @@ describe("set_fee_authority", () => {
       configInitInfo,
       configKeypairs: { feeAuthorityKeypair },
     } = generateDefaultConfigParams(ctx);
-    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
 
     await assert.rejects(
       toTx(
@@ -48,15 +58,18 @@ describe("set_fee_authority", () => {
           whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
           feeAuthority: feeAuthorityKeypair.publicKey,
           newFeeAuthority: provider.wallet.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i
+      /.*signature verification fail.*/i,
     );
   });
 
   it("fails if invalid fee_authority provided", async () => {
     const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
 
     await assert.rejects(
       toTx(
@@ -65,9 +78,9 @@ describe("set_fee_authority", () => {
           whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
           feeAuthority: provider.wallet.publicKey,
           newFeeAuthority: provider.wallet.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7dc/ // An address constraint was violated
+      /0x7dc/, // An address constraint was violated
     );
   });
 });

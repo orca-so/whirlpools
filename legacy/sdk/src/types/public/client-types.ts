@@ -1,7 +1,10 @@
-import { PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
-import { TickArrayData, WhirlpoolRewardInfoData } from "./anchor-types";
-import { AccountWithTokenProgram, MintWithTokenProgram } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type BN from "bn.js";
+import type { TickArrayData, WhirlpoolRewardInfoData } from "./anchor-types";
+import type {
+  AccountWithTokenProgram,
+  MintWithTokenProgram,
+} from "@orca-so/common-sdk";
 
 /**
  * Extended Mint type to host token info.

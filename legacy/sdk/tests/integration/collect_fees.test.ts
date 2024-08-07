@@ -3,16 +3,14 @@ import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
+import type { PositionData, TickArrayData, WhirlpoolData } from "../../src";
 import {
   collectFeesQuote,
   PDAUtil,
-  PositionData,
-  TickArrayData,
   TickArrayUtil,
   toTx,
   WhirlpoolContext,
-  WhirlpoolData,
-  WhirlpoolIx
+  WhirlpoolIx,
 } from "../../src";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import {
@@ -21,7 +19,7 @@ import {
   getTokenBalance,
   TickSpacing,
   transferToken,
-  ZERO_BN
+  ZERO_BN,
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
@@ -29,7 +27,10 @@ import { initTestPool } from "../utils/init-utils";
 import { TokenExtensionUtil } from "../../src/utils/public/token-extension-util";
 
 describe("collect_fees", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -43,8 +44,16 @@ describe("collect_fees", () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
       positions: [
-        { tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
-        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(1_000_000) }, // Out of range position
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(10_000_000),
+        }, // In range position
+        {
+          tickLowerIndex: 0,
+          tickUpperIndex: 128,
+          liquidityAmount: new anchor.BN(1_000_000),
+        }, // Out of range position
       ],
     });
     const {
@@ -60,12 +69,21 @@ describe("collect_fees", () => {
       positions,
     } = fixture.getInfos();
 
-    const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 22528);
-    const positionBeforeSwap = (await fetcher.getPosition(positions[0].publicKey)) as PositionData;
+    const tickArrayPda = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+      22528,
+    );
+    const positionBeforeSwap = (await fetcher.getPosition(
+      positions[0].publicKey,
+    )) as PositionData;
     assert.ok(positionBeforeSwap.feeOwedA.eq(ZERO_BN));
     assert.ok(positionBeforeSwap.feeOwedB.eq(ZERO_BN));
 
-    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
 
     // Accrue fees in token A
     await toTx(
@@ -86,7 +104,7 @@ describe("collect_fees", () => {
         tickArray1: tickArrayPda.publicKey,
         tickArray2: tickArrayPda.publicKey,
         oracle: oraclePda.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     // Accrue fees in token B
@@ -108,7 +126,7 @@ describe("collect_fees", () => {
         tickArray1: tickArrayPda.publicKey,
         tickArray2: tickArrayPda.publicKey,
         oracle: oraclePda.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     await toTx(
@@ -118,30 +136,54 @@ describe("collect_fees", () => {
         position: positions[0].publicKey,
         tickArrayLower: tickArrayPda.publicKey,
         tickArrayUpper: tickArrayPda.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     const positionBeforeCollect = (await fetcher.getPosition(
       positions[0].publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionData;
     assert.ok(positionBeforeCollect.feeOwedA.eq(new BN(581)));
     assert.ok(positionBeforeCollect.feeOwedB.eq(new BN(581)));
 
-    const feeAccountA = await createTokenAccount(provider, tokenMintA, provider.wallet.publicKey);
-    const feeAccountB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);
+    const feeAccountA = await createTokenAccount(
+      provider,
+      tokenMintA,
+      provider.wallet.publicKey,
+    );
+    const feeAccountB = await createTokenAccount(
+      provider,
+      tokenMintB,
+      provider.wallet.publicKey,
+    );
 
     // Generate collect fees expectation
-    const whirlpoolData = (await fetcher.getPool(whirlpoolPda.publicKey)) as WhirlpoolData;
-    const tickArrayData = (await fetcher.getTickArray(tickArrayPda.publicKey)) as TickArrayData;
-    const lowerTick = TickArrayUtil.getTickFromArray(tickArrayData, tickLowerIndex, tickSpacing);
-    const upperTick = TickArrayUtil.getTickFromArray(tickArrayData, tickUpperIndex, tickSpacing);
+    const whirlpoolData = (await fetcher.getPool(
+      whirlpoolPda.publicKey,
+    )) as WhirlpoolData;
+    const tickArrayData = (await fetcher.getTickArray(
+      tickArrayPda.publicKey,
+    )) as TickArrayData;
+    const lowerTick = TickArrayUtil.getTickFromArray(
+      tickArrayData,
+      tickLowerIndex,
+      tickSpacing,
+    );
+    const upperTick = TickArrayUtil.getTickFromArray(
+      tickArrayData,
+      tickUpperIndex,
+      tickSpacing,
+    );
     const expectation = collectFeesQuote({
       whirlpool: whirlpoolData,
       position: positionBeforeCollect,
       tickLower: lowerTick,
       tickUpper: upperTick,
-      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+        fetcher,
+        whirlpoolData,
+        IGNORE_CACHE,
+      ),
     });
 
     // Perform collect fees tx
@@ -156,9 +198,12 @@ describe("collect_fees", () => {
         tokenOwnerAccountB: feeAccountB,
         tokenVaultA: tokenVaultAKeypair.publicKey,
         tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
+      }),
     ).buildAndExecute();
-    const positionAfter = (await fetcher.getPosition(positions[0].publicKey, IGNORE_CACHE)) as PositionData;
+    const positionAfter = (await fetcher.getPosition(
+      positions[0].publicKey,
+      IGNORE_CACHE,
+    )) as PositionData;
     const feeBalanceA = await getTokenBalance(provider, feeAccountA);
     const feeBalanceB = await getTokenBalance(provider, feeAccountB);
 
@@ -175,9 +220,12 @@ describe("collect_fees", () => {
         position: positions[1].publicKey,
         tickArrayLower: positions[1].tickArrayLower,
         tickArrayUpper: positions[1].tickArrayUpper,
-      })
+      }),
     ).buildAndExecute();
-    const outOfRangePosition = await fetcher.getPosition(positions[1].publicKey, IGNORE_CACHE);
+    const outOfRangePosition = await fetcher.getPosition(
+      positions[1].publicKey,
+      IGNORE_CACHE,
+    );
     assert.ok(outOfRangePosition?.feeOwedA.eq(ZERO_BN));
     assert.ok(outOfRangePosition?.feeOwedB.eq(ZERO_BN));
   });
@@ -187,7 +235,11 @@ describe("collect_fees", () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
       positions: [
-        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
+        {
+          tickLowerIndex: 0,
+          tickUpperIndex: 128,
+          liquidityAmount: new anchor.BN(10_000_000),
+        }, // In range position
       ],
     });
     const {
@@ -212,7 +264,7 @@ describe("collect_fees", () => {
         tokenOwnerAccountB: tokenAccountB,
         tokenVaultA: tokenVaultAKeypair.publicKey,
         tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
+      }),
     )
       .addSigner(delegate)
       .buildAndExecute();
@@ -223,7 +275,11 @@ describe("collect_fees", () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
       positions: [
-        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
+        {
+          tickLowerIndex: 0,
+          tickUpperIndex: 128,
+          liquidityAmount: new anchor.BN(10_000_000),
+        }, // In range position
       ],
     });
     const {
@@ -248,7 +304,7 @@ describe("collect_fees", () => {
         tokenOwnerAccountB: tokenAccountB,
         tokenVaultA: tokenVaultAKeypair.publicKey,
         tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
+      }),
     ).buildAndExecute();
   });
 
@@ -257,7 +313,11 @@ describe("collect_fees", () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
       positions: [
-        { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
+        {
+          tickLowerIndex: 0,
+          tickUpperIndex: 128,
+          liquidityAmount: new anchor.BN(10_000_000),
+        }, // In range position
       ],
     });
     const {
@@ -272,10 +332,15 @@ describe("collect_fees", () => {
     const newOwnerPositionTokenAccount = await createTokenAccount(
       provider,
       position.mintKeypair.publicKey,
-      newOwner.publicKey
+      newOwner.publicKey,
     );
 
-    await transferToken(provider, position.tokenAccount, newOwnerPositionTokenAccount, 1);
+    await transferToken(
+      provider,
+      position.tokenAccount,
+      newOwnerPositionTokenAccount,
+      1,
+    );
 
     await toTx(
       ctx,
@@ -288,7 +353,7 @@ describe("collect_fees", () => {
         tokenOwnerAccountB: tokenAccountB,
         tokenVaultA: tokenVaultAKeypair.publicKey,
         tokenVaultB: tokenVaultBKeypair.publicKey,
-      })
+      }),
     )
       .addSigner(newOwner)
       .buildAndExecute();
@@ -301,7 +366,13 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(10_000_000),
+        },
+      ],
     });
     const {
       poolInitInfo: { tokenVaultAKeypair, tokenVaultBKeypair },
@@ -326,9 +397,9 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d1/ // ConstraintHasOne
+      /0x7d1/, // ConstraintHasOne
     );
   });
 
@@ -339,7 +410,13 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(10_000_000),
+        },
+      ],
     });
     const {
       poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
@@ -351,7 +428,7 @@ describe("collect_fees", () => {
     const positionTokenAccount2 = await createTokenAccount(
       provider,
       positions[0].mintKeypair.publicKey,
-      provider.wallet.publicKey
+      provider.wallet.publicKey,
     );
 
     await assert.rejects(
@@ -366,12 +443,17 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
 
-    await transferToken(provider, positions[0].tokenAccount, positionTokenAccount2, 1);
+    await transferToken(
+      provider,
+      positions[0].tokenAccount,
+      positionTokenAccount2,
+      1,
+    );
 
     await assert.rejects(
       toTx(
@@ -385,9 +467,9 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
   });
 
@@ -398,7 +480,13 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(10_000_000),
+        },
+      ],
     });
     const {
       poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
@@ -421,11 +509,11 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       )
         .addSigner(delegate)
         .buildAndExecute(),
-      /0x1783/ // MissingOrInvalidDelegate
+      /0x1783/, // MissingOrInvalidDelegate
     );
   });
 
@@ -436,7 +524,13 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(10_000_000),
+        },
+      ],
     });
     const {
       poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
@@ -446,7 +540,12 @@ describe("collect_fees", () => {
     } = fixture.getInfos();
 
     const delegate = anchor.web3.Keypair.generate();
-    await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 2);
+    await approveToken(
+      provider,
+      positions[0].tokenAccount,
+      delegate.publicKey,
+      2,
+    );
 
     await assert.rejects(
       toTx(
@@ -460,11 +559,11 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       )
         .addSigner(delegate)
         .buildAndExecute(),
-      /0x1784/ // InvalidPositionTokenAmount
+      /0x1784/, // InvalidPositionTokenAmount
     );
   });
 
@@ -475,7 +574,13 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(10_000_000),
+        },
+      ],
     });
     const {
       poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair },
@@ -485,7 +590,12 @@ describe("collect_fees", () => {
     } = fixture.getInfos();
 
     const delegate = anchor.web3.Keypair.generate();
-    await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 1);
+    await approveToken(
+      provider,
+      positions[0].tokenAccount,
+      delegate.publicKey,
+      1,
+    );
 
     await assert.rejects(
       toTx(
@@ -499,9 +609,9 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i
+      /.*signature verification fail.*/i,
     );
   });
 
@@ -512,10 +622,21 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(10_000_000),
+        },
+      ],
     });
     const {
-      poolInitInfo: { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair, tokenMintA },
+      poolInitInfo: {
+        whirlpoolPda,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        tokenMintA,
+      },
       tokenAccountA,
       tokenAccountB,
       positions,
@@ -524,7 +645,7 @@ describe("collect_fees", () => {
     const fakePositionTokenAccount = await createTokenAccount(
       provider,
       tokenMintA,
-      provider.wallet.publicKey
+      provider.wallet.publicKey,
     );
 
     await assert.rejects(
@@ -539,9 +660,9 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
   });
 
@@ -552,7 +673,13 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(10_000_000),
+        },
+      ],
     });
     const {
       poolInitInfo: {
@@ -567,8 +694,16 @@ describe("collect_fees", () => {
       positions,
     } = fixture.getInfos();
 
-    const fakeVaultA = await createTokenAccount(provider, tokenMintA, provider.wallet.publicKey);
-    const fakeVaultB = await createTokenAccount(provider, tokenMintB, provider.wallet.publicKey);
+    const fakeVaultA = await createTokenAccount(
+      provider,
+      tokenMintA,
+      provider.wallet.publicKey,
+    );
+    const fakeVaultB = await createTokenAccount(
+      provider,
+      tokenMintB,
+      provider.wallet.publicKey,
+    );
 
     await assert.rejects(
       toTx(
@@ -582,9 +717,9 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: fakeVaultA,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7dc/ // ConstraintAddress
+      /0x7dc/, // ConstraintAddress
     );
 
     await assert.rejects(
@@ -599,9 +734,9 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: fakeVaultB,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7dc/ // ConstraintAddress
+      /0x7dc/, // ConstraintAddress
     );
   });
 
@@ -612,7 +747,13 @@ describe("collect_fees", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(10_000_000),
+        },
+      ],
     });
     const {
       poolInitInfo: {
@@ -630,12 +771,12 @@ describe("collect_fees", () => {
     const invalidOwnerAccountA = await createTokenAccount(
       provider,
       tokenMintB,
-      provider.wallet.publicKey
+      provider.wallet.publicKey,
     );
     const invalidOwnerAccountB = await createTokenAccount(
       provider,
       tokenMintA,
-      provider.wallet.publicKey
+      provider.wallet.publicKey,
     );
 
     await assert.rejects(
@@ -650,9 +791,9 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
 
     await assert.rejects(
@@ -667,9 +808,9 @@ describe("collect_fees", () => {
           tokenOwnerAccountB: invalidOwnerAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
   });
 });

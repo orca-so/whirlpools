@@ -71,7 +71,7 @@ impl<'info> Default for SwapTestFixtureInfo<'info> {
             ],
             fee_growth_global_a: 0,
             fee_growth_global_b: 0,
-            array_1_ticks: &NO_TICKS_VEC,
+            array_1_ticks: NO_TICKS_VEC,
             array_2_ticks: None,
             array_3_ticks: None,
             fee_rate: 0,
@@ -119,7 +119,7 @@ pub fn build_filled_tick_array(start_index: i32, tick_spacing: u16) -> Vec<TestT
     let mut array_ticks: Vec<TestTickInfo> = vec![];
     for n in 0..TICK_ARRAY_SIZE {
         let index = start_index + n * tick_spacing as i32;
-        if index >= MIN_TICK_INDEX && index < MAX_TICK_INDEX {
+        if (MIN_TICK_INDEX..MAX_TICK_INDEX).contains(&index) {
             array_ticks.push(TestTickInfo {
                 index,
                 liquidity_net: -5,
@@ -131,7 +131,7 @@ pub fn build_filled_tick_array(start_index: i32, tick_spacing: u16) -> Vec<TestT
 }
 
 impl SwapTestFixture {
-    pub fn new<'info>(info: SwapTestFixtureInfo) -> SwapTestFixture {
+    pub fn new(info: SwapTestFixtureInfo) -> SwapTestFixture {
         let whirlpool = WhirlpoolBuilder::new()
             .liquidity(info.liquidity)
             .sqrt_price(sqrt_price_from_tick_index(info.curr_tick_index))
@@ -146,19 +146,18 @@ impl SwapTestFixture {
             .build();
 
         let array_ticks: Vec<Option<&Vec<TestTickInfo>>> = vec![
-            Some(&info.array_1_ticks),
+            Some(info.array_1_ticks),
             info.array_2_ticks,
             info.array_3_ticks,
         ];
 
         let mut ref_mut_tick_arrays = Vec::with_capacity(3);
         let direction: i32 = if info.a_to_b { -1 } else { 1 };
-        let mut array_index = 0;
 
-        for array in array_ticks.iter() {
+        for (i, array) in array_ticks.iter().enumerate() {
+            let array_index = <i32>::from(i as u16);
             let array_start_tick_index = info.start_tick_index
                 + info.tick_spacing as i32 * TICK_ARRAY_SIZE * array_index * direction;
-            array_index += 1;
 
             let mut new_ta = TickArray {
                 start_tick_index: array_start_tick_index,

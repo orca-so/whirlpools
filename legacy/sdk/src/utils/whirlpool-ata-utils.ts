@@ -1,15 +1,14 @@
-import {
+import type {
   Instruction,
-  TokenUtil,
   TransactionBuilder,
-  ZERO,
-  resolveOrCreateATAs,
   WrappedSolAccountCreateMethod,
 } from "@orca-so/common-sdk";
+import { TokenUtil, ZERO, resolveOrCreateATAs } from "@orca-so/common-sdk";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PublicKey } from "@solana/web3.js";
-import { PoolUtil, WhirlpoolContext } from "..";
-import { WhirlpoolData } from "../types/public";
+import type { WhirlpoolContext } from "..";
+import { PoolUtil } from "..";
+import type { WhirlpoolData } from "../types/public";
 import { convertListToMap } from "./txn-utils";
 
 export enum TokenMintTypes {
@@ -33,13 +32,16 @@ export type WhirlpoolsTokenMints = {
  */
 export function getTokenMintsFromWhirlpools(
   whirlpoolDatas: (WhirlpoolData | null)[],
-  mintTypes = TokenMintTypes.ALL
+  mintTypes = TokenMintTypes.ALL,
 ): WhirlpoolsTokenMints {
   let hasNativeMint = false;
   const mints = Array.from(
     whirlpoolDatas.reduce<Set<string>>((accu, whirlpoolData) => {
       if (whirlpoolData) {
-        if (mintTypes === TokenMintTypes.ALL || mintTypes === TokenMintTypes.POOL_ONLY) {
+        if (
+          mintTypes === TokenMintTypes.ALL ||
+          mintTypes === TokenMintTypes.POOL_ONLY
+        ) {
           const { tokenMintA, tokenMintB } = whirlpoolData;
           // TODO: Once we move to sync-native for wSOL wrapping, we can simplify and use wSOL ATA instead of a custom token account.
           if (!TokenUtil.isNativeMint(tokenMintA)) {
@@ -55,7 +57,10 @@ export function getTokenMintsFromWhirlpools(
           }
         }
 
-        if (mintTypes === TokenMintTypes.ALL || mintTypes === TokenMintTypes.REWARD_ONLY) {
+        if (
+          mintTypes === TokenMintTypes.ALL ||
+          mintTypes === TokenMintTypes.REWARD_ONLY
+        ) {
           const rewardInfos = whirlpoolData.rewardInfos;
           rewardInfos.forEach((reward) => {
             if (TokenUtil.isNativeMint(reward.mint)) {
@@ -68,7 +73,7 @@ export function getTokenMintsFromWhirlpools(
         }
       }
       return accu;
-    }, new Set<string>())
+    }, new Set<string>()),
   ).map((mint) => new PublicKey(mint));
 
   return {
@@ -115,7 +120,7 @@ export type ResolvedATAInstructionSet = {
  */
 export async function resolveAtaForMints(
   ctx: WhirlpoolContext,
-  params: ResolveAtaInstructionParams
+  params: ResolveAtaInstructionParams,
 ): Promise<ResolvedATAInstructionSet> {
   const { mints, receiver, payer, accountExemption } = params;
   const receiverKey = receiver ?? ctx.wallet.publicKey;
@@ -131,7 +136,7 @@ export async function resolveAtaForMints(
     payerKey,
     undefined, // use default
     ctx.accountResolverOpts.allowPDAOwnerAddress,
-    ctx.accountResolverOpts.createWrappedSolAccountMethod
+    ctx.accountResolverOpts.createWrappedSolAccountMethod,
   );
 
   // Convert the results back into the specified format
@@ -149,12 +154,12 @@ export async function resolveAtaForMints(
       }
       return accu;
     },
-    { resolvedAtas: [], resolveAtaIxs: [] }
+    { resolvedAtas: [], resolveAtaIxs: [] },
   );
 
   const affliatedTokenAtaMap = convertListToMap(
     resolvedAtas,
-    mints.map((mint) => mint.toBase58())
+    mints.map((mint) => mint.toBase58()),
   );
   return {
     ataTokenAddresses: affliatedTokenAtaMap,
@@ -170,16 +175,17 @@ export function addNativeMintHandlingIx(
   affliatedTokenAtaMap: Record<string, PublicKey>,
   destinationWallet: PublicKey,
   accountExemption: number,
-  createAccountMethod: WrappedSolAccountCreateMethod
+  createAccountMethod: WrappedSolAccountCreateMethod,
 ) {
-  let { address: wSOLAta, ...resolveWSolIx } = TokenUtil.createWrappedNativeAccountInstruction(
-    destinationWallet,
-    ZERO,
-    accountExemption,
-    undefined, // use default
-    undefined, // use default
-    createAccountMethod
-  );
+  let { address: wSOLAta, ...resolveWSolIx } =
+    TokenUtil.createWrappedNativeAccountInstruction(
+      destinationWallet,
+      ZERO,
+      accountExemption,
+      undefined, // use default
+      undefined, // use default
+      createAccountMethod,
+    );
   affliatedTokenAtaMap[NATIVE_MINT.toBase58()] = wSOLAta;
   txBuilder.prependInstruction(resolveWSolIx);
 }

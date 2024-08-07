@@ -1,7 +1,8 @@
-import { BN, Program } from "@coral-xyz/anchor";
-import { Instruction, PDA } from "@orca-so/common-sdk";
-import { Keypair, PublicKey, SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
-import { Whirlpool } from "../../artifacts/whirlpool";
+import type { BN, Program } from "@coral-xyz/anchor";
+import type { Instruction, PDA } from "@orca-so/common-sdk";
+import type { Keypair, PublicKey } from "@solana/web3.js";
+import { SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
+import type { Whirlpool } from "../../artifacts/whirlpool";
 
 /**
  * Parameters to initialize a Whirlpool account.
@@ -51,7 +52,10 @@ export type InitPoolV2Params = {
  * @param params - InitPoolV2Params object
  * @returns - Instruction to perform the action.
  */
-export function initializePoolV2Ix(program: Program<Whirlpool>, params: InitPoolV2Params): Instruction {
+export function initializePoolV2Ix(
+  program: Program<Whirlpool>,
+  params: InitPoolV2Params,
+): Instruction {
   const {
     initSqrtPrice,
     tokenMintA,

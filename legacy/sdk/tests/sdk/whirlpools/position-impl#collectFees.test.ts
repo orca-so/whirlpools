@@ -4,15 +4,14 @@ import { MathUtil } from "@orca-so/common-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
+import type { Whirlpool, WhirlpoolClient } from "../../../src";
 import {
   PDAUtil,
-  Whirlpool,
-  WhirlpoolClient,
   WhirlpoolContext,
   WhirlpoolIx,
   buildWhirlpoolClient,
   collectFeesQuote,
-  toTx
+  toTx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TEST_TOKEN_2022_PROGRAM_ID, TickSpacing, ZERO_BN } from "../../utils";
@@ -36,7 +35,10 @@ describe("PositionImpl#collectFees()", () => {
   const liquidityAmount = new BN(10_000_000);
 
   before(() => {
-    const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+    const provider = anchor.AnchorProvider.local(
+      undefined,
+      defaultConfirmOptions,
+    );
 
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;
@@ -60,13 +62,23 @@ describe("PositionImpl#collectFees()", () => {
       tokenAccountB,
     } = fixture.getInfos();
 
-    const { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair } = poolInitInfo;
+    const { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair } =
+      poolInitInfo;
 
-    const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 22528);
-    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+    const tickArrayPda = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+      22528,
+    );
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
 
     const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
-    const position = await testCtx.whirlpoolClient.getPosition(positionInfo.publicKey);
+    const position = await testCtx.whirlpoolClient.getPosition(
+      positionInfo.publicKey,
+    );
 
     // Accrue fees in token A
     await toTx(
@@ -87,7 +99,7 @@ describe("PositionImpl#collectFees()", () => {
         tickArray1: tickArrayPda.publicKey,
         tickArray2: tickArrayPda.publicKey,
         oracle: oraclePda.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     // Accrue fees in token B
@@ -109,7 +121,7 @@ describe("PositionImpl#collectFees()", () => {
         tickArray1: tickArrayPda.publicKey,
         tickArray2: tickArrayPda.publicKey,
         oracle: oraclePda.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     const poolData = await pool.refreshData();
@@ -122,7 +134,11 @@ describe("PositionImpl#collectFees()", () => {
       position: positionData,
       tickLower: tickLowerData,
       tickUpper: tickUpperData,
-      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, poolData, IGNORE_CACHE),
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+        ctx.fetcher,
+        poolData,
+        IGNORE_CACHE,
+      ),
     });
 
     assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
@@ -130,23 +146,29 @@ describe("PositionImpl#collectFees()", () => {
 
   context("when the whirlpool is SPL-only", () => {
     it("should collect fees", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-      });
+      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init(
+        {
+          tickSpacing,
+          positions: [
+            { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+          ],
+        },
+      );
 
       await accrueFees(fixture);
 
       const { positions, poolInitInfo } = fixture.getInfos();
 
-      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
-      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey);
+      const pool = await testCtx.whirlpoolClient.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+      );
+      const position = await testCtx.whirlpoolClient.getPosition(
+        positions[0].publicKey,
+      );
 
       const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const otherWallet = anchor.web3.Keypair.generate();
@@ -161,7 +183,11 @@ describe("PositionImpl#collectFees()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData, IGNORE_CACHE),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          testCtx.whirlpoolCtx.fetcher,
+          poolData,
+          IGNORE_CACHE,
+        ),
       });
 
       assert.notEqual(positionDataBefore, null);
@@ -172,48 +198,70 @@ describe("PositionImpl#collectFees()", () => {
         otherWallet.publicKey,
         testCtx.provider.wallet.publicKey,
         testCtx.provider.wallet.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       await tx.buildAndExecute();
 
       const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       assert.notEqual(positionDataAfter, null);
 
-      const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey);
-      const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, IGNORE_CACHE);
-      assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA));
+      const accountAPubkey = getAssociatedTokenAddressSync(
+        poolInitInfo.tokenMintA,
+        otherWallet.publicKey,
+      );
+      const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+        accountAPubkey,
+        IGNORE_CACHE,
+      );
+      assert.ok(
+        accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA),
+      );
 
-      const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
-      const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, IGNORE_CACHE);
-      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
+      const accountBPubkey = getAssociatedTokenAddressSync(
+        poolInitInfo.tokenMintB,
+        otherWallet.publicKey,
+      );
+      const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+        accountBPubkey,
+        IGNORE_CACHE,
+      );
+      assert.ok(
+        accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB),
+      );
     });
   });
 
   context("when the whirlpool is SOL-SPL", () => {
     it("should collect fees", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-        tokenAIsNative: true,
-      });
+      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init(
+        {
+          tickSpacing,
+          positions: [
+            { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+          ],
+          tokenAIsNative: true,
+        },
+      );
 
       await accrueFees(fixture);
 
       const { positions, poolInitInfo } = fixture.getInfos();
 
-      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
-      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey);
+      const pool = await testCtx.whirlpoolClient.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+      );
+      const position = await testCtx.whirlpoolClient.getPosition(
+        positions[0].publicKey,
+      );
 
       const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const otherWallet = anchor.web3.Keypair.generate();
@@ -228,10 +276,16 @@ describe("PositionImpl#collectFees()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData, IGNORE_CACHE),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          testCtx.whirlpoolCtx.fetcher,
+          poolData,
+          IGNORE_CACHE,
+        ),
       });
 
-      const solBalanceBefore = await testCtx.provider.connection.getBalance(otherWallet.publicKey);
+      const solBalanceBefore = await testCtx.provider.connection.getBalance(
+        otherWallet.publicKey,
+      );
       assert.notEqual(positionDataBefore, null);
 
       const tx = await position.collectFees(
@@ -240,28 +294,39 @@ describe("PositionImpl#collectFees()", () => {
         otherWallet.publicKey,
         testCtx.provider.wallet.publicKey,
         testCtx.provider.wallet.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       await tx.addSigner(otherWallet).buildAndExecute();
 
       const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       assert.notEqual(positionDataAfter, null);
 
-      const solBalanceAfter = await testCtx.provider.connection.getBalance(otherWallet.publicKey);
-      const minAccountExempt = await testCtx.whirlpoolCtx.fetcher.getAccountRentExempt();
+      const solBalanceAfter = await testCtx.provider.connection.getBalance(
+        otherWallet.publicKey,
+      );
+      const minAccountExempt =
+        await testCtx.whirlpoolCtx.fetcher.getAccountRentExempt();
       assert.equal(
         solBalanceAfter - solBalanceBefore,
-        quote.feeOwedA.toNumber() + minAccountExempt
+        quote.feeOwedA.toNumber() + minAccountExempt,
       );
 
-      const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey);
-      const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, IGNORE_CACHE);
-      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
+      const accountBPubkey = getAssociatedTokenAddressSync(
+        poolInitInfo.tokenMintB,
+        otherWallet.publicKey,
+      );
+      const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+        accountBPubkey,
+        IGNORE_CACHE,
+      );
+      assert.ok(
+        accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB),
+      );
     });
   });
 
@@ -274,15 +339,30 @@ describe("PositionImpl#collectFees()", () => {
       tokenAccountB,
     } = fixture.getInfos();
 
-    const { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair } = poolInitInfo;
+    const { whirlpoolPda, tokenVaultAKeypair, tokenVaultBKeypair } =
+      poolInitInfo;
 
-    const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 22528);
-    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+    const tickArrayPda = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+      22528,
+    );
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
 
     const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
-    const position = await testCtx.whirlpoolClient.getPosition(positionInfo.publicKey);
+    const position = await testCtx.whirlpoolClient.getPosition(
+      positionInfo.publicKey,
+    );
 
-    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, pool.getData(), IGNORE_CACHE);
+    const tokenExtensionCtx =
+      await TokenExtensionUtil.buildTokenExtensionContext(
+        ctx.fetcher,
+        pool.getData(),
+        IGNORE_CACHE,
+      );
 
     // Accrue fees in token A
     await toTx(
@@ -307,7 +387,7 @@ describe("PositionImpl#collectFees()", () => {
         tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+        ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
           ctx.connection,
           tokenExtensionCtx,
           tokenAccountA,
@@ -316,8 +396,8 @@ describe("PositionImpl#collectFees()", () => {
           tokenVaultBKeypair.publicKey,
           tokenAccountB,
           whirlpoolPda.publicKey,
-        ),
-      })
+        )),
+      }),
     ).buildAndExecute();
 
     // Accrue fees in token B
@@ -343,7 +423,7 @@ describe("PositionImpl#collectFees()", () => {
         tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
         tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
         tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-        ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+        ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
           ctx.connection,
           tokenExtensionCtx,
           tokenVaultAKeypair.publicKey,
@@ -352,8 +432,8 @@ describe("PositionImpl#collectFees()", () => {
           tokenAccountB,
           tokenVaultBKeypair.publicKey,
           ctx.wallet.publicKey,
-        ),
-      })
+        )),
+      }),
     ).buildAndExecute();
 
     const poolData = await pool.refreshData();
@@ -366,7 +446,11 @@ describe("PositionImpl#collectFees()", () => {
       position: positionData,
       tickLower: tickLowerData,
       tickUpper: tickUpperData,
-      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, poolData, IGNORE_CACHE),
+      tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+        ctx.fetcher,
+        poolData,
+        IGNORE_CACHE,
+      ),
     });
 
     assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
@@ -374,9 +458,11 @@ describe("PositionImpl#collectFees()", () => {
 
   context("when the whirlpool is SPL-only (TokenExtension)", () => {
     it("should collect fees", async () => {
-      const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
-        tokenTraitA: {isToken2022: true, hasTransferHookExtension: true},
-        tokenTraitB: {isToken2022: true, hasTransferHookExtension: true},
+      const fixture = await new WhirlpoolTestFixtureV2(
+        testCtx.whirlpoolCtx,
+      ).init({
+        tokenTraitA: { isToken2022: true, hasTransferHookExtension: true },
+        tokenTraitB: { isToken2022: true, hasTransferHookExtension: true },
         tickSpacing,
         positions: [
           { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
@@ -387,12 +473,16 @@ describe("PositionImpl#collectFees()", () => {
 
       const { positions, poolInitInfo } = fixture.getInfos();
 
-      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey);
-      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey);
+      const pool = await testCtx.whirlpoolClient.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+      );
+      const position = await testCtx.whirlpoolClient.getPosition(
+        positions[0].publicKey,
+      );
 
       const positionDataBefore = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const otherWallet = anchor.web3.Keypair.generate();
@@ -407,7 +497,11 @@ describe("PositionImpl#collectFees()", () => {
         position: positionData,
         tickLower: tickLowerData,
         tickUpper: tickUpperData,
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, poolData, IGNORE_CACHE),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          testCtx.whirlpoolCtx.fetcher,
+          poolData,
+          IGNORE_CACHE,
+        ),
       });
 
       assert.notEqual(positionDataBefore, null);
@@ -418,26 +512,45 @@ describe("PositionImpl#collectFees()", () => {
         otherWallet.publicKey,
         testCtx.provider.wallet.publicKey,
         testCtx.provider.wallet.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       await tx.buildAndExecute();
 
       const positionDataAfter = await testCtx.whirlpoolCtx.fetcher.getPosition(
         position.getAddress(),
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       assert.notEqual(positionDataAfter, null);
 
-      const accountAPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintA, otherWallet.publicKey, undefined, TEST_TOKEN_2022_PROGRAM_ID);
-      const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountAPubkey, IGNORE_CACHE);
-      assert.ok(accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA));
+      const accountAPubkey = getAssociatedTokenAddressSync(
+        poolInitInfo.tokenMintA,
+        otherWallet.publicKey,
+        undefined,
+        TEST_TOKEN_2022_PROGRAM_ID,
+      );
+      const accountA = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+        accountAPubkey,
+        IGNORE_CACHE,
+      );
+      assert.ok(
+        accountA && new BN(accountA.amount.toString()).eq(quote.feeOwedA),
+      );
 
-      const accountBPubkey = getAssociatedTokenAddressSync(poolInitInfo.tokenMintB, otherWallet.publicKey, undefined, TEST_TOKEN_2022_PROGRAM_ID);
-      const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(accountBPubkey, IGNORE_CACHE);
-      assert.ok(accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB));
+      const accountBPubkey = getAssociatedTokenAddressSync(
+        poolInitInfo.tokenMintB,
+        otherWallet.publicKey,
+        undefined,
+        TEST_TOKEN_2022_PROGRAM_ID,
+      );
+      const accountB = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+        accountBPubkey,
+        IGNORE_CACHE,
+      );
+      assert.ok(
+        accountB && new BN(accountB.amount.toString()).eq(quote.feeOwedB),
+      );
     });
   });
-
 });

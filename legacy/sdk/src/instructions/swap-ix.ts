@@ -1,9 +1,9 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { PublicKey } from "@solana/web3.js";
+import type BN from "bn.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Raw parameters and accounts to swap on a Whirlpool
@@ -85,7 +85,10 @@ export type DevFeeSwapInput = SwapInput & {
  * @param params - {@link SwapParams}
  * @returns - Instruction to perform the action.
  */
-export function swapIx(program: Program<Whirlpool>, params: SwapParams): Instruction {
+export function swapIx(
+  program: Program<Whirlpool>,
+  params: SwapParams,
+): Instruction {
   const {
     amount,
     otherAmountThreshold,
@@ -124,7 +127,7 @@ export function swapIx(program: Program<Whirlpool>, params: SwapParams): Instruc
         tickArray2,
         oracle,
       },
-    }
+    },
   );
 
   return {

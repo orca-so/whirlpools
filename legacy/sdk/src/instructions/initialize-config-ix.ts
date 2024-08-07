@@ -1,8 +1,9 @@
-import { Program } from "@coral-xyz/anchor";
-import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Keypair, PublicKey } from "@solana/web3.js";
+import { SystemProgram } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
-import { Instruction } from "@orca-so/common-sdk";
+import type { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to initialize a WhirlpoolsConfig account.
@@ -35,7 +36,7 @@ export type InitConfigParams = {
  */
 export function initializeConfigIx(
   program: Program<Whirlpool>,
-  params: InitConfigParams
+  params: InitConfigParams,
 ): Instruction {
   const {
     feeAuthority,
@@ -56,7 +57,7 @@ export function initializeConfigIx(
         funder,
         systemProgram: SystemProgram.programId,
       },
-    }
+    },
   );
 
   return {

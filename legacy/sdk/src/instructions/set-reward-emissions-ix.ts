@@ -1,7 +1,7 @@
-import { BN, Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { BN, Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to set rewards emissions for a reward in a Whirlpool
@@ -37,7 +37,7 @@ export type SetRewardEmissionsParams = {
  */
 export function setRewardEmissionsIx(
   program: Program<Whirlpool>,
-  params: SetRewardEmissionsParams
+  params: SetRewardEmissionsParams,
 ): Instruction {
   const {
     rewardAuthority,
@@ -47,13 +47,17 @@ export function setRewardEmissionsIx(
     emissionsPerSecondX64,
   } = params;
 
-  const ix = program.instruction.setRewardEmissions(rewardIndex, emissionsPerSecondX64, {
-    accounts: {
-      rewardAuthority,
-      whirlpool,
-      rewardVault,
+  const ix = program.instruction.setRewardEmissions(
+    rewardIndex,
+    emissionsPerSecondX64,
+    {
+      accounts: {
+        rewardAuthority,
+        whirlpool,
+        rewardVault,
+      },
     },
-  });
+  );
 
   return {
     instructions: [ix],

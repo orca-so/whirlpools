@@ -32,8 +32,6 @@ pub struct DeleteTokenBadge<'info> {
     pub receiver: UncheckedAccount<'info>,
 }
 
-pub fn handler(
-    _ctx: Context<DeleteTokenBadge>,
-) -> Result<()> {
+pub fn handler(_ctx: Context<DeleteTokenBadge>) -> Result<()> {
     Ok(())
 }

@@ -2,10 +2,9 @@ import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
-import { BN } from "bn.js";
+import BN from "bn.js";
+import type { InitPoolParams, WhirlpoolData } from "../../../src";
 import {
-  buildWhirlpoolClient,
-  InitPoolParams,
   METADATA_PROGRAM_ADDRESS,
   PDAUtil,
   swapQuoteWithParams,
@@ -13,10 +12,12 @@ import {
   toTx,
   twoHopSwapQuoteFromSwapQuotes,
   WhirlpoolContext,
-  WhirlpoolData,
   WhirlpoolIx,
 } from "../../../src";
-import { InitPoolV2Params, TwoHopSwapV2Params } from "../../../src/instructions";
+import type {
+  InitPoolV2Params,
+  TwoHopSwapV2Params,
+} from "../../../src/instructions";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   getTokenBalance,
@@ -25,22 +26,30 @@ import {
   TickSpacing,
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
+import type { InitAquariumV2Params } from "../../utils/v2/aquarium-v2";
 import {
   buildTestAquariumsV2,
   getDefaultAquariumV2,
   getTokenAccsForPoolsV2,
-  InitAquariumV2Params,
 } from "../../utils/v2/aquarium-v2";
-import { FundedPositionV2Params, TokenTrait } from "../../utils/v2/init-utils-v2";
-import { asyncAssertOwnerProgram, createMintV2 } from "../../utils/v2/token-2022";
+import type {
+  FundedPositionV2Params,
+  TokenTrait,
+} from "../../utils/v2/init-utils-v2";
+import {
+  asyncAssertOwnerProgram,
+  createMintV2,
+} from "../../utils/v2/token-2022";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 describe("two_hop_swap_v2", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
 
   describe("v1 parity", () => {
     // 8 patterns for tokenTraitA, tokenTraitB, tokenTraitC
@@ -106,7 +115,10 @@ describe("two_hop_swap_v2", () => {
             { tokenTrait: tokenTraits.tokenTraitC },
           ];
           aqConfig.initTokenAccParams.push({ mintIndex: 2 });
-          aqConfig.initPoolParams.push({ mintIndices: [1, 2], tickSpacing: TickSpacing.Standard });
+          aqConfig.initPoolParams.push({
+            mintIndices: [1, 2],
+            tickSpacing: TickSpacing.Standard,
+          });
 
           // Add tick arrays and positions
           const aToB = false;
@@ -144,21 +156,21 @@ describe("two_hop_swap_v2", () => {
               mintKeys[0],
               tokenTraits.tokenTraitA.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID
+                : TEST_TOKEN_PROGRAM_ID,
             );
             await asyncAssertOwnerProgram(
               ctx.provider,
               mintKeys[1],
               tokenTraits.tokenTraitB.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID
+                : TEST_TOKEN_PROGRAM_ID,
             );
             await asyncAssertOwnerProgram(
               ctx.provider,
               mintKeys[2],
               tokenTraits.tokenTraitC.isToken2022
                 ? TEST_TOKEN_2022_PROGRAM_ID
-                : TEST_TOKEN_PROGRAM_ID
+                : TEST_TOKEN_PROGRAM_ID,
             );
 
             const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
@@ -167,11 +179,11 @@ describe("two_hop_swap_v2", () => {
             //const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
             const whirlpoolDataOne = (await fetcher.getPool(
               whirlpoolOneKey,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as WhirlpoolData;
             const whirlpoolDataTwo = (await fetcher.getPool(
               whirlpoolTwoKey,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             )) as WhirlpoolData;
 
             const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -204,7 +216,8 @@ describe("two_hop_swap_v2", () => {
                 amountSpecifiedIsInput: true,
                 aToB: aToBOne,
                 tokenAmount: new BN(1000),
-                otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+                otherAmountThreshold:
+                  SwapUtils.getDefaultOtherAmountThreshold(true),
                 sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
                 whirlpoolData: whirlpoolDataOne,
                 tickArrays: await SwapUtils.getTickArrays(
@@ -214,20 +227,27 @@ describe("two_hop_swap_v2", () => {
                   ctx.program.programId,
                   whirlpoolOneKey,
                   fetcher,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
-                tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+                tokenExtensionCtx:
+                  await TokenExtensionUtil.buildTokenExtensionContext(
+                    fetcher,
+                    whirlpoolDataOne,
+                    IGNORE_CACHE,
+                  ),
               },
-              Percentage.fromFraction(1, 100)
+              Percentage.fromFraction(1, 100),
             );
 
-            const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
+            const aToBTwo =
+              whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
             const quote2 = swapQuoteWithParams(
               {
                 amountSpecifiedIsInput: true,
                 aToB: aToBTwo,
                 tokenAmount: quote.estimatedAmountOut,
-                otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+                otherAmountThreshold:
+                  SwapUtils.getDefaultOtherAmountThreshold(true),
                 sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
                 whirlpoolData: whirlpoolDataTwo,
                 tickArrays: await SwapUtils.getTickArrays(
@@ -237,17 +257,26 @@ describe("two_hop_swap_v2", () => {
                   ctx.program.programId,
                   whirlpoolTwoKey,
                   fetcher,
-                  IGNORE_CACHE
+                  IGNORE_CACHE,
                 ),
-                tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+                tokenExtensionCtx:
+                  await TokenExtensionUtil.buildTokenExtensionContext(
+                    fetcher,
+                    whirlpoolDataTwo,
+                    IGNORE_CACHE,
+                  ),
               },
-              Percentage.fromFraction(1, 100)
+              Percentage.fromFraction(1, 100),
             );
 
             const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
             baseIxParams = {
               ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+              ...getParamsFromPools(
+                [pools[0], pools[1]],
+                [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                tokenAccounts,
+              ),
               tokenAuthority: ctx.wallet.publicKey,
             };
           });
@@ -258,7 +287,7 @@ describe("two_hop_swap_v2", () => {
                 ...baseIxParams,
                 whirlpoolOne: baseIxParams.whirlpoolTwo,
               },
-              /0x7d3/ // ConstraintRaw
+              /0x7d3/, // ConstraintRaw
             );
           });
 
@@ -268,14 +297,14 @@ describe("two_hop_swap_v2", () => {
                 ...baseIxParams,
                 tokenOwnerAccountInput: baseIxParams.tokenOwnerAccountOutput,
               },
-              /0x7d3/ // ConstraintRaw
+              /0x7d3/, // ConstraintRaw
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenOwnerAccountOutput: baseIxParams.tokenOwnerAccountInput,
               },
-              /0x7d3/ // ConstraintRaw
+              /0x7d3/, // ConstraintRaw
             );
           });
 
@@ -285,28 +314,28 @@ describe("two_hop_swap_v2", () => {
                 ...baseIxParams,
                 tokenVaultOneInput: baseIxParams.tokenVaultOneIntermediate,
               },
-              /0x7d3/ // ConstraintRaw
+              /0x7d3/, // ConstraintRaw
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenVaultOneIntermediate: baseIxParams.tokenVaultOneInput,
               },
-              /0x7d3/ // ConstraintRaw
+              /0x7d3/, // ConstraintRaw
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenVaultTwoIntermediate: baseIxParams.tokenVaultTwoOutput,
               },
-              /0x7d3/ // ConstraintRaw
+              /0x7d3/, // ConstraintRaw
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tokenVaultTwoOutput: baseIxParams.tokenVaultTwoIntermediate,
               },
-              /0x7d3/ // ConstraintRaw
+              /0x7d3/, // ConstraintRaw
             );
           });
 
@@ -316,7 +345,7 @@ describe("two_hop_swap_v2", () => {
                 ...baseIxParams,
                 oracleOne: PublicKey.unique(),
               },
-              /0x7d6/ // Constraint Seeds
+              /0x7d6/, // Constraint Seeds
             );
           });
 
@@ -326,7 +355,7 @@ describe("two_hop_swap_v2", () => {
                 ...baseIxParams,
                 oracleTwo: PublicKey.unique(),
               },
-              /0x7d6/ // Constraint Seeds
+              /0x7d6/, // Constraint Seeds
             );
           });
 
@@ -338,21 +367,21 @@ describe("two_hop_swap_v2", () => {
                 // so now we use token account as clearly invalid account.
                 tickArrayOne0: baseIxParams.tokenVaultOneInput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tickArrayOne1: baseIxParams.tokenVaultOneInput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tickArrayOne2: baseIxParams.tokenVaultOneInput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
           });
 
@@ -364,21 +393,21 @@ describe("two_hop_swap_v2", () => {
                 // so now we use token account as clearly invalid account.
                 tickArrayTwo0: baseIxParams.tokenVaultTwoOutput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tickArrayTwo1: baseIxParams.tokenVaultTwoOutput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
             await rejectParams(
               {
                 ...baseIxParams,
                 tickArrayTwo2: baseIxParams.tokenVaultTwoOutput,
               },
-              /0xbbf/ // AccountOwnedByWrongProgram
+              /0xbbf/, // AccountOwnedByWrongProgram
             );
           });
         });
@@ -387,7 +416,9 @@ describe("two_hop_swap_v2", () => {
           const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
           const { tokenAccounts, mintKeys, pools } = aquarium;
 
-          let tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+          let tokenBalances = await getTokenBalances(
+            tokenAccounts.map((acc) => acc.account),
+          );
 
           const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
@@ -397,11 +428,11 @@ describe("two_hop_swap_v2", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -434,7 +465,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBOne,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -444,11 +476,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -457,7 +494,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBTwo,
               tokenAmount: quote.estimatedAmountOut,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -467,11 +505,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -480,9 +523,13 @@ describe("two_hop_swap_v2", () => {
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
               ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+              ...getParamsFromPools(
+                [pools[0], pools[1]],
+                [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                tokenAccounts,
+              ),
               tokenAuthority: ctx.wallet.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           assert.deepEqual(await getTokenBalancesForVaults(pools), [
@@ -493,7 +540,9 @@ describe("two_hop_swap_v2", () => {
           ]);
 
           const prevTbs = [...tokenBalances];
-          tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+          tokenBalances = await getTokenBalances(
+            tokenAccounts.map((acc) => acc.account),
+          );
 
           assert.deepEqual(tokenBalances, [
             prevTbs[0].sub(quote.estimatedAmountIn),
@@ -507,7 +556,9 @@ describe("two_hop_swap_v2", () => {
 
         it("swaps [2] with two-hop swap, amountSpecifiedIsInput=true, A->B->A", async () => {
           // Add another mint and update pool so there is no overlapping mint
-          aqConfig.initFeeTierParams.push({ tickSpacing: TickSpacing.ThirtyTwo });
+          aqConfig.initFeeTierParams.push({
+            tickSpacing: TickSpacing.ThirtyTwo,
+          });
           aqConfig.initPoolParams[1] = {
             mintIndices: [0, 1],
             tickSpacing: TickSpacing.ThirtyTwo,
@@ -529,7 +580,9 @@ describe("two_hop_swap_v2", () => {
           const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
           const { tokenAccounts, mintKeys, pools } = aquarium;
 
-          let tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+          let tokenBalances = await getTokenBalances(
+            tokenAccounts.map((acc) => acc.account),
+          );
 
           const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
@@ -539,11 +592,11 @@ describe("two_hop_swap_v2", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [tokenA, tokenB, _outputToken] = mintKeys;
@@ -576,7 +629,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBOne,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -586,11 +640,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(tokenB);
@@ -599,7 +658,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBTwo,
               tokenAmount: quote.estimatedAmountOut,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -609,11 +669,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -622,9 +687,13 @@ describe("two_hop_swap_v2", () => {
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
               ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+              ...getParamsFromPools(
+                [pools[0], pools[1]],
+                [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                tokenAccounts,
+              ),
               tokenAuthority: ctx.wallet.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           assert.deepEqual(await getTokenBalancesForVaults(pools), [
@@ -635,11 +704,17 @@ describe("two_hop_swap_v2", () => {
           ]);
 
           const prevTbs = [...tokenBalances];
-          tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+          tokenBalances = await getTokenBalances(
+            tokenAccounts.map((acc) => acc.account),
+          );
 
           assert.deepEqual(tokenBalances, [
-            prevTbs[0].sub(quote.estimatedAmountIn).add(quote2.estimatedAmountOut),
-            prevTbs[1].add(quote.estimatedAmountOut).sub(quote2.estimatedAmountIn),
+            prevTbs[0]
+              .sub(quote.estimatedAmountIn)
+              .add(quote2.estimatedAmountOut),
+            prevTbs[1]
+              .add(quote.estimatedAmountOut)
+              .sub(quote2.estimatedAmountIn),
             prevTbs[2],
           ]);
         });
@@ -654,11 +729,11 @@ describe("two_hop_swap_v2", () => {
           //const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -691,7 +766,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBOne,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -701,11 +777,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -714,7 +795,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBTwo,
               tokenAmount: quote.estimatedAmountOut,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -724,11 +806,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -738,12 +825,16 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+                ...getParamsFromPools(
+                  [pools[0], pools[1]],
+                  [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                  tokenAccounts,
+                ),
                 otherAmountThreshold: new BN(613309),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x1794/ // Above Out Below Minimum
+            /0x1794/, // Above Out Below Minimum
           );
         });
 
@@ -751,7 +842,9 @@ describe("two_hop_swap_v2", () => {
           const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
           const { tokenAccounts, mintKeys, pools } = aquarium;
 
-          const preSwapBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+          const preSwapBalances = await getTokenBalances(
+            tokenAccounts.map((acc) => acc.account),
+          );
           const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
           const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
@@ -760,11 +853,11 @@ describe("two_hop_swap_v2", () => {
           //const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [_inputToken, intermediaryToken, outputToken] = mintKeys;
@@ -797,7 +890,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: false,
               aToB: aToBTwo,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(false),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -807,11 +901,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBOne = whirlpoolDataOne.tokenMintB.equals(intermediaryToken);
@@ -820,7 +919,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: false,
               aToB: aToBOne,
               tokenAmount: quote2.estimatedAmountIn,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(false),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -830,11 +930,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -843,9 +948,13 @@ describe("two_hop_swap_v2", () => {
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
               ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+              ...getParamsFromPools(
+                [pools[0], pools[1]],
+                [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                tokenAccounts,
+              ),
               tokenAuthority: ctx.wallet.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           assert.deepEqual(await getTokenBalancesForVaults(pools), [
@@ -855,19 +964,19 @@ describe("two_hop_swap_v2", () => {
             tokenVaultBalances[3].sub(quote2.estimatedAmountOut),
           ]);
 
-          assert.deepEqual(await getTokenBalances(tokenAccounts.map((acc) => acc.account)), [
-            preSwapBalances[0].sub(quote.estimatedAmountIn),
-            preSwapBalances[1],
-            preSwapBalances[2].add(quote2.estimatedAmountOut),
-          ]);
+          assert.deepEqual(
+            await getTokenBalances(tokenAccounts.map((acc) => acc.account)),
+            [
+              preSwapBalances[0].sub(quote.estimatedAmountIn),
+              preSwapBalances[1],
+              preSwapBalances[2].add(quote2.estimatedAmountOut),
+            ],
+          );
         });
 
         it("fails swaps [2] with two-hop swap, amountSpecifiedIsInput=false slippage", async () => {
           const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
           const { tokenAccounts, mintKeys, pools } = aquarium;
-
-          const preSwapBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
-          const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
           const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
           const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
@@ -875,11 +984,11 @@ describe("two_hop_swap_v2", () => {
           //const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [_inputToken, intermediaryToken, outputToken] = mintKeys;
@@ -912,7 +1021,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: false,
               aToB: aToBTwo,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(false),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -922,11 +1032,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBOne = whirlpoolDataOne.tokenMintB.equals(intermediaryToken);
@@ -935,7 +1050,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: false,
               aToB: aToBOne,
               tokenAmount: quote2.estimatedAmountIn,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(false),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -945,11 +1061,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -959,12 +1080,16 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+                ...getParamsFromPools(
+                  [pools[0], pools[1]],
+                  [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                  tokenAccounts,
+                ),
                 otherAmountThreshold: new BN(2),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x1795/ // Above In Above Maximum
+            /0x1795/, // Above In Above Maximum
           );
         });
 
@@ -982,11 +1107,11 @@ describe("two_hop_swap_v2", () => {
           //const whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [_inputToken, intermediaryToken, outputToken] = mintKeys;
@@ -1019,7 +1144,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: false,
               aToB: aToBTwo,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(false),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1029,11 +1155,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBOne = whirlpoolDataOne.tokenMintB.equals(intermediaryToken);
@@ -1042,7 +1173,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: false,
               aToB: aToBOne,
               tokenAmount: quote2.estimatedAmountIn,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(false),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1052,11 +1184,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1066,11 +1203,15 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+                ...getParamsFromPools(
+                  [pools[0], pools[1]],
+                  [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                  tokenAccounts,
+                ),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x1799/ // Invalid intermediary mint
+            /0x1799/, // Invalid intermediary mint
           );
         });
 
@@ -1084,11 +1225,11 @@ describe("two_hop_swap_v2", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1121,7 +1262,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBOne,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1131,11 +1273,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -1144,7 +1291,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBTwo,
               tokenAmount: quote.estimatedAmountOut,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1154,11 +1302,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           // Set a price limit that is less than the 1% slippage threshold,
@@ -1167,7 +1320,7 @@ describe("two_hop_swap_v2", () => {
             whirlpoolDataOne.sqrtPrice
               .sub(quote.estimatedEndSqrtPrice)
               .mul(new anchor.BN("5"))
-              .div(new anchor.BN("1000"))
+              .div(new anchor.BN("1000")),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1176,18 +1329,25 @@ describe("two_hop_swap_v2", () => {
             ctx,
             WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
               ...twoHopQuote,
-              ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+              ...getParamsFromPools(
+                [pools[0], pools[1]],
+                [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                tokenAccounts,
+              ),
               tokenAuthority: ctx.wallet.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           const postWhirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           //const postWhirlpoolDataTwo = await fetcher.getPool(whirlpoolTwoKey, IGNORE_CACHE) as WhirlpoolData;
 
-          assert.equal(postWhirlpoolDataOne.sqrtPrice.eq(quote.sqrtPriceLimit), true);
+          assert.equal(
+            postWhirlpoolDataOne.sqrtPrice.eq(quote.sqrtPriceLimit),
+            true,
+          );
         });
 
         it("fails: swaps [2] with two-hop swap, amount_specified_is_input=true, second swap price limit", async () => {
@@ -1204,11 +1364,11 @@ describe("two_hop_swap_v2", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1241,7 +1401,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBOne,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1251,11 +1412,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -1264,7 +1430,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBTwo,
               tokenAmount: quote.estimatedAmountOut,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1274,11 +1441,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           // Set a price limit that is less than the 1% slippage threshold,
@@ -1287,7 +1459,7 @@ describe("two_hop_swap_v2", () => {
             whirlpoolDataTwo.sqrtPrice
               .sub(quote2.estimatedEndSqrtPrice)
               .mul(new anchor.BN("5"))
-              .div(new anchor.BN("1000"))
+              .div(new anchor.BN("1000")),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1297,11 +1469,15 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+                ...getParamsFromPools(
+                  [pools[0], pools[1]],
+                  [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                  tokenAccounts,
+                ),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x17a3/ // IntermediateTokenAmountMismatch
+            /0x17a3/, // IntermediateTokenAmountMismatch
           );
         });
 
@@ -1317,11 +1493,11 @@ describe("two_hop_swap_v2", () => {
           const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [_inputToken, intermediaryToken, outputToken] = mintKeys;
@@ -1332,7 +1508,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: false,
               aToB: aToBTwo,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(false),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1342,11 +1519,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBOne = whirlpoolDataOne.tokenMintB.equals(intermediaryToken);
@@ -1355,7 +1537,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: false,
               aToB: aToBOne,
               tokenAmount: quote2.estimatedAmountIn,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(false),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(false),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1365,11 +1548,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           // add sqrtPriceLimit on quote
@@ -1384,11 +1572,15 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+                ...getParamsFromPools(
+                  [pools[0], pools[1]],
+                  [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                  tokenAccounts,
+                ),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
+              }),
             ).buildAndExecute(),
-            /0x17a3/ // IntermediateTokenAmountMismatch
+            /0x17a3/, // IntermediateTokenAmountMismatch
           );
         });
 
@@ -1402,11 +1594,11 @@ describe("two_hop_swap_v2", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1439,7 +1631,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBOne,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1449,11 +1642,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -1462,7 +1660,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBTwo,
               tokenAmount: quote.estimatedAmountOut,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1472,11 +1671,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           // Set a price limit that is less than the 1% slippage threshold,
@@ -1485,7 +1689,7 @@ describe("two_hop_swap_v2", () => {
             whirlpoolDataOne.sqrtPrice
               .sub(quote.estimatedEndSqrtPrice)
               .mul(new anchor.BN("15"))
-              .div(new anchor.BN("1000"))
+              .div(new anchor.BN("1000")),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1495,10 +1699,14 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+                ...getParamsFromPools(
+                  [pools[0], pools[1]],
+                  [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                  tokenAccounts,
+                ),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
-            ).buildAndExecute()
+              }),
+            ).buildAndExecute(),
           );
         });
 
@@ -1512,11 +1720,11 @@ describe("two_hop_swap_v2", () => {
           //let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
           const whirlpoolDataOne = (await fetcher.getPool(
             whirlpoolOneKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           const whirlpoolDataTwo = (await fetcher.getPool(
             whirlpoolTwoKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
 
           const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1549,7 +1757,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBOne,
               tokenAmount: new BN(1000),
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
               whirlpoolData: whirlpoolDataOne,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1559,11 +1768,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolOneKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -1572,7 +1786,8 @@ describe("two_hop_swap_v2", () => {
               amountSpecifiedIsInput: true,
               aToB: aToBTwo,
               tokenAmount: quote.estimatedAmountOut,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
               sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
               whirlpoolData: whirlpoolDataTwo,
               tickArrays: await SwapUtils.getTickArrays(
@@ -1582,11 +1797,16 @@ describe("two_hop_swap_v2", () => {
                 ctx.program.programId,
                 whirlpoolTwoKey,
                 fetcher,
-                IGNORE_CACHE
+                IGNORE_CACHE,
               ),
-              tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
             },
-            Percentage.fromFraction(1, 100)
+            Percentage.fromFraction(1, 100),
           );
 
           // Set a price limit that is greater than the 1% slippage threshold,
@@ -1595,7 +1815,7 @@ describe("two_hop_swap_v2", () => {
             whirlpoolDataTwo.sqrtPrice
               .sub(quote2.estimatedEndSqrtPrice)
               .mul(new anchor.BN("15"))
-              .div(new anchor.BN("1000"))
+              .div(new anchor.BN("1000")),
           );
 
           const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -1605,10 +1825,14 @@ describe("two_hop_swap_v2", () => {
               ctx,
               WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
                 ...twoHopQuote,
-                ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+                ...getParamsFromPools(
+                  [pools[0], pools[1]],
+                  [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                  tokenAccounts,
+                ),
                 tokenAuthority: ctx.wallet.publicKey,
-              })
-            ).buildAndExecute()
+              }),
+            ).buildAndExecute(),
           );
         });
       });
@@ -1628,7 +1852,9 @@ describe("two_hop_swap_v2", () => {
       let otherTokenPublicKey: PublicKey;
 
       beforeEach(async () => {
-        otherTokenPublicKey = await createMintV2(provider, { isToken2022: true });
+        otherTokenPublicKey = await createMintV2(provider, {
+          isToken2022: true,
+        });
 
         aqConfig = getDefaultAquariumV2();
         // Add a third token and account and a second pool
@@ -1638,7 +1864,10 @@ describe("two_hop_swap_v2", () => {
           { tokenTrait: tokenTraits.tokenTraitC },
         ];
         aqConfig.initTokenAccParams.push({ mintIndex: 2 });
-        aqConfig.initPoolParams.push({ mintIndices: [1, 2], tickSpacing: TickSpacing.Standard });
+        aqConfig.initPoolParams.push({
+          mintIndices: [1, 2],
+          tickSpacing: TickSpacing.Standard,
+        });
 
         // Add tick arrays and positions
         const aToB = false;
@@ -1671,11 +1900,11 @@ describe("two_hop_swap_v2", () => {
         const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
         const whirlpoolDataOne = (await fetcher.getPool(
           whirlpoolOneKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         )) as WhirlpoolData;
         const whirlpoolDataTwo = (await fetcher.getPool(
           whirlpoolTwoKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         )) as WhirlpoolData;
 
         const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1686,7 +1915,8 @@ describe("two_hop_swap_v2", () => {
             amountSpecifiedIsInput: true,
             aToB: aToBOne,
             tokenAmount: new BN(1000),
-            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+            otherAmountThreshold:
+              SwapUtils.getDefaultOtherAmountThreshold(true),
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
             whirlpoolData: whirlpoolDataOne,
             tickArrays: await SwapUtils.getTickArrays(
@@ -1696,11 +1926,16 @@ describe("two_hop_swap_v2", () => {
               ctx.program.programId,
               whirlpoolOneKey,
               fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
-            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+            tokenExtensionCtx:
+              await TokenExtensionUtil.buildTokenExtensionContext(
+                fetcher,
+                whirlpoolDataOne,
+                IGNORE_CACHE,
+              ),
           },
-          Percentage.fromFraction(1, 100)
+          Percentage.fromFraction(1, 100),
         );
 
         const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -1709,7 +1944,8 @@ describe("two_hop_swap_v2", () => {
             amountSpecifiedIsInput: true,
             aToB: aToBTwo,
             tokenAmount: quote.estimatedAmountOut,
-            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+            otherAmountThreshold:
+              SwapUtils.getDefaultOtherAmountThreshold(true),
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
             whirlpoolData: whirlpoolDataTwo,
             tickArrays: await SwapUtils.getTickArrays(
@@ -1719,17 +1955,26 @@ describe("two_hop_swap_v2", () => {
               ctx.program.programId,
               whirlpoolTwoKey,
               fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
-            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+            tokenExtensionCtx:
+              await TokenExtensionUtil.buildTokenExtensionContext(
+                fetcher,
+                whirlpoolDataTwo,
+                IGNORE_CACHE,
+              ),
           },
-          Percentage.fromFraction(1, 100)
+          Percentage.fromFraction(1, 100),
         );
 
         const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
         baseIxParams = {
           ...twoHopQuote,
-          ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+          ...getParamsFromPools(
+            [pools[0], pools[1]],
+            [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+            tokenAccounts,
+          ),
           tokenAuthority: ctx.wallet.publicKey,
         };
       });
@@ -1741,7 +1986,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenMintInput: otherTokenPublicKey,
             },
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
         it("token_mint_intermediate", async () => {
@@ -1750,7 +1995,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenMintIntermediate: otherTokenPublicKey,
             },
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
         it("token_mint_output", async () => {
@@ -1759,7 +2004,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenMintOutput: otherTokenPublicKey,
             },
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
       });
@@ -1771,7 +2016,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramInput: TEST_TOKEN_PROGRAM_ID,
             },
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
         it("token_program_intermediate", async () => {
@@ -1780,7 +2025,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramIntermediate: TEST_TOKEN_PROGRAM_ID,
             },
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
         it("token_program_output", async () => {
@@ -1789,7 +2034,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramOutput: TEST_TOKEN_PROGRAM_ID,
             },
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
       });
@@ -1801,7 +2046,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramInput: METADATA_PROGRAM_ADDRESS,
             },
-            /0xbc0/ // InvalidProgramId
+            /0xbc0/, // InvalidProgramId
           );
         });
         it("token_program_intermediate", async () => {
@@ -1810,7 +2055,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramIntermediate: METADATA_PROGRAM_ADDRESS,
             },
-            /0xbc0/ // InvalidProgramId
+            /0xbc0/, // InvalidProgramId
           );
         });
         it("token_program_output", async () => {
@@ -1819,7 +2064,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramOutput: METADATA_PROGRAM_ADDRESS,
             },
-            /0xbc0/ // InvalidProgramId
+            /0xbc0/, // InvalidProgramId
           );
         });
       });
@@ -1844,13 +2089,12 @@ describe("two_hop_swap_v2", () => {
                     ...baseIxParams,
                     memoProgram: METADATA_PROGRAM_ADDRESS,
                   },
-                }
+                },
               ),
             ],
           }).buildAndExecute(),
-          /0xbc0/ // InvalidProgramId
+          /0xbc0/, // InvalidProgramId
         );
-
       });
     });
 
@@ -1863,10 +2107,11 @@ describe("two_hop_swap_v2", () => {
 
       let aqConfig: InitAquariumV2Params;
       let baseIxParams: TwoHopSwapV2Params;
-      let otherTokenPublicKey: PublicKey;
 
       beforeEach(async () => {
-        otherTokenPublicKey = await createMintV2(provider, { isToken2022: false });
+        await createMintV2(provider, {
+          isToken2022: false,
+        });
 
         aqConfig = getDefaultAquariumV2();
         // Add a third token and account and a second pool
@@ -1876,7 +2121,10 @@ describe("two_hop_swap_v2", () => {
           { tokenTrait: tokenTraits.tokenTraitC },
         ];
         aqConfig.initTokenAccParams.push({ mintIndex: 2 });
-        aqConfig.initPoolParams.push({ mintIndices: [1, 2], tickSpacing: TickSpacing.Standard });
+        aqConfig.initPoolParams.push({
+          mintIndices: [1, 2],
+          tickSpacing: TickSpacing.Standard,
+        });
 
         // Add tick arrays and positions
         const aToB = false;
@@ -1909,11 +2157,11 @@ describe("two_hop_swap_v2", () => {
         const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
         const whirlpoolDataOne = (await fetcher.getPool(
           whirlpoolOneKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         )) as WhirlpoolData;
         const whirlpoolDataTwo = (await fetcher.getPool(
           whirlpoolTwoKey,
-          IGNORE_CACHE
+          IGNORE_CACHE,
         )) as WhirlpoolData;
 
         const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1924,7 +2172,8 @@ describe("two_hop_swap_v2", () => {
             amountSpecifiedIsInput: true,
             aToB: aToBOne,
             tokenAmount: new BN(1000),
-            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+            otherAmountThreshold:
+              SwapUtils.getDefaultOtherAmountThreshold(true),
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
             whirlpoolData: whirlpoolDataOne,
             tickArrays: await SwapUtils.getTickArrays(
@@ -1934,11 +2183,16 @@ describe("two_hop_swap_v2", () => {
               ctx.program.programId,
               whirlpoolOneKey,
               fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
-            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+            tokenExtensionCtx:
+              await TokenExtensionUtil.buildTokenExtensionContext(
+                fetcher,
+                whirlpoolDataOne,
+                IGNORE_CACHE,
+              ),
           },
-          Percentage.fromFraction(1, 100)
+          Percentage.fromFraction(1, 100),
         );
 
         const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -1947,7 +2201,8 @@ describe("two_hop_swap_v2", () => {
             amountSpecifiedIsInput: true,
             aToB: aToBTwo,
             tokenAmount: quote.estimatedAmountOut,
-            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
+            otherAmountThreshold:
+              SwapUtils.getDefaultOtherAmountThreshold(true),
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
             whirlpoolData: whirlpoolDataTwo,
             tickArrays: await SwapUtils.getTickArrays(
@@ -1957,17 +2212,26 @@ describe("two_hop_swap_v2", () => {
               ctx.program.programId,
               whirlpoolTwoKey,
               fetcher,
-              IGNORE_CACHE
+              IGNORE_CACHE,
             ),
-            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+            tokenExtensionCtx:
+              await TokenExtensionUtil.buildTokenExtensionContext(
+                fetcher,
+                whirlpoolDataTwo,
+                IGNORE_CACHE,
+              ),
           },
-          Percentage.fromFraction(1, 100)
+          Percentage.fromFraction(1, 100),
         );
 
         const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
         baseIxParams = {
           ...twoHopQuote,
-          ...getParamsFromPools([pools[0], pools[1]], [twoHopQuote.aToBOne, twoHopQuote.aToBTwo], tokenAccounts),
+          ...getParamsFromPools(
+            [pools[0], pools[1]],
+            [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+            tokenAccounts,
+          ),
           tokenAuthority: ctx.wallet.publicKey,
         };
       });
@@ -1979,7 +2243,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramInput: TEST_TOKEN_2022_PROGRAM_ID,
             },
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
         it("token_program_intermediate", async () => {
@@ -1988,7 +2252,7 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramIntermediate: TEST_TOKEN_2022_PROGRAM_ID,
             },
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
         it("token_program_output", async () => {
@@ -1997,24 +2261,34 @@ describe("two_hop_swap_v2", () => {
               ...baseIxParams,
               tokenProgramOutput: TEST_TOKEN_2022_PROGRAM_ID,
             },
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
       });
     });
   });
 
-  async function rejectParams(params: TwoHopSwapV2Params, error: assert.AssertPredicate) {
+  async function rejectParams(
+    params: TwoHopSwapV2Params,
+    error: assert.AssertPredicate,
+  ) {
     await assert.rejects(
-      toTx(ctx, WhirlpoolIx.twoHopSwapV2Ix(ctx.program, params)).buildAndExecute(),
-      error
+      toTx(
+        ctx,
+        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, params),
+      ).buildAndExecute(),
+      error,
     );
   }
 
   function getParamsFromPools(
     pools: [InitPoolV2Params, InitPoolV2Params],
     aToBs: boolean[],
-    tokenAccounts: { mint: PublicKey; account: PublicKey; tokenTrait: TokenTrait }[]
+    tokenAccounts: {
+      mint: PublicKey;
+      account: PublicKey;
+      tokenTrait: TokenTrait;
+    }[],
   ) {
     const [aToBOne, aToBTwo] = aToBs;
     const tokenAccKeys = getTokenAccsForPoolsV2(pools, tokenAccounts);
@@ -2029,8 +2303,14 @@ describe("two_hop_swap_v2", () => {
     const tokenProgramOneB = pools[0].tokenProgramB;
     const tokenProgramTwoA = pools[1].tokenProgramA;
     const tokenProgramTwoB = pools[1].tokenProgramB;
-    const oracleOne = PDAUtil.getOracle(ctx.program.programId, whirlpoolOne).publicKey;
-    const oracleTwo = PDAUtil.getOracle(ctx.program.programId, whirlpoolTwo).publicKey;
+    const oracleOne = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolOne,
+    ).publicKey;
+    const oracleTwo = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolTwo,
+    ).publicKey;
     return {
       whirlpoolOne: pools[0].whirlpoolPda.publicKey,
       whirlpoolTwo: pools[1].whirlpoolPda.publicKey,
@@ -2046,10 +2326,18 @@ describe("two_hop_swap_v2", () => {
       tokenProgramOutput: aToBTwo ? tokenProgramTwoB : tokenProgramTwoA,
       // accounts
       tokenOwnerAccountInput: aToBOne ? tokenAccKeys[0] : tokenAccKeys[1],
-      tokenVaultOneInput: aToBOne ? pools[0].tokenVaultAKeypair.publicKey : pools[0].tokenVaultBKeypair.publicKey,
-      tokenVaultOneIntermediate: aToBOne ? pools[0].tokenVaultBKeypair.publicKey : pools[0].tokenVaultAKeypair.publicKey,
-      tokenVaultTwoIntermediate: aToBTwo ? pools[1].tokenVaultAKeypair.publicKey : pools[1].tokenVaultBKeypair.publicKey,
-      tokenVaultTwoOutput: aToBTwo ? pools[1].tokenVaultBKeypair.publicKey : pools[1].tokenVaultAKeypair.publicKey,
+      tokenVaultOneInput: aToBOne
+        ? pools[0].tokenVaultAKeypair.publicKey
+        : pools[0].tokenVaultBKeypair.publicKey,
+      tokenVaultOneIntermediate: aToBOne
+        ? pools[0].tokenVaultBKeypair.publicKey
+        : pools[0].tokenVaultAKeypair.publicKey,
+      tokenVaultTwoIntermediate: aToBTwo
+        ? pools[1].tokenVaultAKeypair.publicKey
+        : pools[1].tokenVaultBKeypair.publicKey,
+      tokenVaultTwoOutput: aToBTwo
+        ? pools[1].tokenVaultBKeypair.publicKey
+        : pools[1].tokenVaultAKeypair.publicKey,
       tokenOwnerAccountOutput: aToBTwo ? tokenAccKeys[3] : tokenAccKeys[2],
     };
   }
@@ -2065,7 +2353,9 @@ describe("two_hop_swap_v2", () => {
 
   async function getTokenBalances(keys: PublicKey[]) {
     return Promise.all(
-      keys.map(async (key) => new anchor.BN(await getTokenBalance(provider, key)))
+      keys.map(
+        async (key) => new anchor.BN(await getTokenBalance(provider, key)),
+      ),
     );
   }
 });

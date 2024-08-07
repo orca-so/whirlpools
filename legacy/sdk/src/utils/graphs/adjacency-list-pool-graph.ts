@@ -1,6 +1,6 @@
-import { Address } from "@coral-xyz/anchor";
+import type { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import {
+import type {
   Edge,
   Path,
   PathSearchEntries,
@@ -28,34 +28,49 @@ export class AdjacencyListPoolGraph implements PoolGraph {
     this.tokens = Array.from(insertedTokens);
   }
 
-  getPath(startMint: Address, endMint: Address, options?: PathSearchOptions): Path[] {
+  getPath(
+    startMint: Address,
+    endMint: Address,
+    options?: PathSearchOptions,
+  ): Path[] {
     const results = this.getPathsForPairs([[startMint, endMint]], options);
     return results[0][1];
   }
 
   getPathsForPairs(
     searchTokenPairs: [Address, Address][],
-    options?: PathSearchOptions
+    options?: PathSearchOptions,
   ): PathSearchEntries {
-    const searchTokenPairsInString = searchTokenPairs.map(([startMint, endMint]) => {
-      return [AddressUtil.toString(startMint), AddressUtil.toString(endMint)] as const;
-    });
+    const searchTokenPairsInString = searchTokenPairs.map(
+      ([startMint, endMint]) => {
+        return [
+          AddressUtil.toString(startMint),
+          AddressUtil.toString(endMint),
+        ] as const;
+      },
+    );
 
-    const searchTokenPairsToFind = searchTokenPairsInString.filter(([startMint, endMint]) => {
-      return startMint !== endMint;
-    });
+    const searchTokenPairsToFind = searchTokenPairsInString.filter(
+      ([startMint, endMint]) => {
+        return startMint !== endMint;
+      },
+    );
 
     const walkMap = findWalks(
       searchTokenPairsToFind,
       this.graph,
-      options?.intermediateTokens.map((token) => AddressUtil.toString(token))
+      options?.intermediateTokens.map((token) => AddressUtil.toString(token)),
     );
 
     const results = searchTokenPairsInString.map(([startMint, endMint]) => {
       const searchRouteId = PoolGraphUtils.getSearchPathId(startMint, endMint);
 
       const [internalStartMint, internalEndMint] = [startMint, endMint].sort();
-      const internalRouteId = getInternalRouteId(internalStartMint, internalEndMint, false);
+      const internalRouteId = getInternalRouteId(
+        internalStartMint,
+        internalEndMint,
+        false,
+      );
       const reversed = internalStartMint !== startMint;
       const pathsForSearchPair = walkMap[internalRouteId];
 
@@ -75,26 +90,36 @@ export class AdjacencyListPoolGraph implements PoolGraph {
   }
 
   getAllPaths(options?: PathSearchOptions | undefined): PathSearchEntries {
-    const tokenPairCombinations = combinations2(this.tokens) as [string, string][];
-    const searchTokenPairsInString = tokenPairCombinations.map(([startMint, endMint]) => {
-      return [startMint, endMint] as const;
-    });
+    const tokenPairCombinations = combinations2(this.tokens) as [
+      string,
+      string,
+    ][];
+    const searchTokenPairsInString = tokenPairCombinations.map(
+      ([startMint, endMint]) => {
+        return [startMint, endMint] as const;
+      },
+    );
 
-    const searchTokenPairsToFind = searchTokenPairsInString.filter(([startMint, endMint]) => {
-      return startMint !== endMint;
-    });
+    const searchTokenPairsToFind = searchTokenPairsInString.filter(
+      ([startMint, endMint]) => {
+        return startMint !== endMint;
+      },
+    );
 
     const walkMap = findWalks(
       searchTokenPairsToFind,
       this.graph,
-      options?.intermediateTokens.map((token) => AddressUtil.toString(token))
+      options?.intermediateTokens.map((token) => AddressUtil.toString(token)),
     );
 
     // TODO: The token pairs are is in 1 direction only, we have to reverse them to get the other direction.
     // this is actually pretty slow.consider removing reversal optimization in findWalks
     const results = searchTokenPairsInString.reduce<PathSearchEntries>(
       (acc, [startMint, endMint]) => {
-        const searchRouteId = PoolGraphUtils.getSearchPathId(startMint, endMint);
+        const searchRouteId = PoolGraphUtils.getSearchPathId(
+          startMint,
+          endMint,
+        );
 
         // We do not support routes that routes between identical tokens
         if (startMint === endMint) {
@@ -102,8 +127,15 @@ export class AdjacencyListPoolGraph implements PoolGraph {
           return acc;
         }
 
-        const [internalStartMint, internalEndMint] = [startMint, endMint].sort();
-        const internalRouteId = getInternalRouteId(internalStartMint, internalEndMint, false);
+        const [internalStartMint, internalEndMint] = [
+          startMint,
+          endMint,
+        ].sort();
+        const internalRouteId = getInternalRouteId(
+          internalStartMint,
+          internalEndMint,
+          false,
+        );
         const reversed = internalStartMint !== startMint;
         const pathsForSearchPair = walkMap[internalRouteId];
 
@@ -119,7 +151,10 @@ export class AdjacencyListPoolGraph implements PoolGraph {
 
         acc.push([searchRouteId, paths]);
 
-        const reversedSearchRouteId = PoolGraphUtils.getSearchPathId(endMint, startMint);
+        const reversedSearchRouteId = PoolGraphUtils.getSearchPathId(
+          endMint,
+          startMint,
+        );
         const reversedPaths = pathsForSearchPair
           ? pathsForSearchPair.map<Path>((path) => {
               return {
@@ -133,7 +168,7 @@ export class AdjacencyListPoolGraph implements PoolGraph {
         acc.push([reversedSearchRouteId, reversedPaths]);
         return acc;
       },
-      []
+      [],
     );
 
     return results;
@@ -159,44 +194,51 @@ type PoolGraphEdge = {
 type PoolWalks = Record<string, string[][]>;
 
 function buildPoolGraph(
-  pools: PoolTokenPair[]
+  pools: PoolTokenPair[],
 ): readonly [Readonly<AdjacencyPoolGraphMap>, Set<string>] {
   const insertedPoolCache: Record<string, Set<string>> = {};
   const insertedTokens = new Set<string>();
-  const poolGraphSet = pools.reduce((poolGraph: Record<string, PoolGraphEdge[]>, pool) => {
-    const { address, tokenMintA, tokenMintB } = pool;
-    const [addr, mintA, mintB] = AddressUtil.toStrings([address, tokenMintA, tokenMintB]);
+  const poolGraphSet = pools.reduce(
+    (poolGraph: Record<string, PoolGraphEdge[]>, pool) => {
+      const { address, tokenMintA, tokenMintB } = pool;
+      const [addr, mintA, mintB] = AddressUtil.toStrings([
+        address,
+        tokenMintA,
+        tokenMintB,
+      ]);
 
-    insertedTokens.add(mintA);
-    insertedTokens.add(mintB);
+      insertedTokens.add(mintA);
+      insertedTokens.add(mintB);
 
-    if (poolGraph[mintA] === undefined) {
-      poolGraph[mintA] = [];
-      insertedPoolCache[mintA] = new Set<string>();
-    }
+      if (poolGraph[mintA] === undefined) {
+        poolGraph[mintA] = [];
+        insertedPoolCache[mintA] = new Set<string>();
+      }
 
-    if (poolGraph[mintB] === undefined) {
-      poolGraph[mintB] = [];
-      insertedPoolCache[mintB] = new Set<string>();
-    }
+      if (poolGraph[mintB] === undefined) {
+        poolGraph[mintB] = [];
+        insertedPoolCache[mintB] = new Set<string>();
+      }
 
-    const [insertedPoolsForA, insertedPoolsForB] = [
-      insertedPoolCache[mintA],
-      insertedPoolCache[mintB],
-    ];
+      const [insertedPoolsForA, insertedPoolsForB] = [
+        insertedPoolCache[mintA],
+        insertedPoolCache[mintB],
+      ];
 
-    if (!insertedPoolsForA.has(addr)) {
-      poolGraph[mintA].push({ address: addr, otherToken: mintB });
-      insertedPoolsForA.add(addr);
-    }
+      if (!insertedPoolsForA.has(addr)) {
+        poolGraph[mintA].push({ address: addr, otherToken: mintB });
+        insertedPoolsForA.add(addr);
+      }
 
-    if (!insertedPoolsForB.has(addr)) {
-      poolGraph[mintB].push({ address: addr, otherToken: mintA });
-      insertedPoolsForB.add(addr);
-    }
+      if (!insertedPoolsForB.has(addr)) {
+        poolGraph[mintB].push({ address: addr, otherToken: mintA });
+        insertedPoolsForB.add(addr);
+      }
 
-    return poolGraph;
-  }, {});
+      return poolGraph;
+    },
+    {},
+  );
 
   return [poolGraphSet, insertedTokens] as const;
 }
@@ -207,7 +249,7 @@ function buildPoolGraph(
 function findWalks(
   tokenPairs: (readonly [string, string])[],
   poolGraph: AdjacencyPoolGraphMap,
-  intermediateTokens?: string[]
+  intermediateTokens?: string[],
 ) {
   const walks: PoolWalks = {};
 
@@ -215,8 +257,15 @@ function findWalks(
     let paths = [];
 
     // Adjust walk's from & to token based of of internal path id.
-    const [internalTokenMintFrom, internalTokenMintTo] = [tokenMintFrom, tokenMintTo].sort();
-    const internalPathId = getInternalRouteId(internalTokenMintFrom, internalTokenMintTo, false);
+    const [internalTokenMintFrom, internalTokenMintTo] = [
+      tokenMintFrom,
+      tokenMintTo,
+    ].sort();
+    const internalPathId = getInternalRouteId(
+      internalTokenMintFrom,
+      internalTokenMintTo,
+      false,
+    );
 
     const poolsForTokenFrom = poolGraph[internalTokenMintFrom] || [];
     const poolsForTokenTo = poolGraph[internalTokenMintTo] || [];
@@ -229,20 +278,25 @@ function findWalks(
 
     // Find all direct pool paths, i.e. all edges shared between tokenA and tokenB
     const singleHop = poolsForTokenFrom
-      .filter(({ address }) => poolsForTokenTo.some((p) => p.address === address))
+      .filter(({ address }) =>
+        poolsForTokenTo.some((p) => p.address === address),
+      )
       .map((op) => [op.address]);
     paths.push(...singleHop);
 
     // Remove all direct edges from poolA to poolB
     const firstHop = poolsForTokenFrom.filter(
-      ({ address }) => !poolsForTokenTo.some((p) => p.address === address)
+      ({ address }) => !poolsForTokenTo.some((p) => p.address === address),
     );
 
     // Find all edges/nodes from neighbors of A that connect to B to create paths of length 2
     // tokenA --> tokenX --> tokenB
     firstHop.forEach((firstPool) => {
       const intermediateToken = firstPool.otherToken;
-      if (!intermediateTokens || intermediateTokens.indexOf(intermediateToken) > -1) {
+      if (
+        !intermediateTokens ||
+        intermediateTokens.indexOf(intermediateToken) > -1
+      ) {
         const secondHops = poolsForTokenTo
           .filter((secondPool) => secondPool.otherToken === intermediateToken)
           .map((secondPool) => [firstPool.address, secondPool.address]);
@@ -258,7 +312,11 @@ function findWalks(
   return walks;
 }
 
-function getInternalRouteId(tokenA: Address, tokenB: Address, sort = true): string {
+function getInternalRouteId(
+  tokenA: Address,
+  tokenB: Address,
+  sort = true,
+): string {
   const mints = [AddressUtil.toString(tokenA), AddressUtil.toString(tokenB)];
   const sortedMints = sort ? mints.sort() : mints;
   return `${sortedMints[0]}${PoolGraphUtils.PATH_ID_DELIMITER}${sortedMints[1]}`;
@@ -269,7 +327,7 @@ function combinations2<T>(array: Readonly<T[]>): [T, T][] {
   const result: [T, T][] = [];
 
   for (let i = 0; i < array.length - 1; i++) {
-    for (let j = i+1; j < array.length; j++) {
+    for (let j = i + 1; j < array.length; j++) {
       result.push([array[i], array[j]]);
     }
   }

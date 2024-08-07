@@ -51,7 +51,7 @@ These instructions are for setting up a development environment on a Mac. If you
 * Add the Solana CLI to your path using `export PATH="/Users/$(whoami)/.local/share/solana/install/active_release/bin:$PATH"`.
 * Install Anchor version manager using `cargo install --git https://github.com/coral-xyz/anchor avm --locked --force`.
 * Install the latest Anchor version using `avm install 0.30.1 && avm use 0.30.1`.
-* Clone this repository using `git clone https://github.com/jewl-app/.github`.
+* Clone this repository using `git clone https://github.com/orca-so/whirlpools`.
 * Install the dependencies using `yarn`.
 * Set up a Solana wallet if you don't have one already (see below).
 * Run one of the commands below to get started such as `yarn build`.

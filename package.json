@@ -1,5 +1,5 @@
 {
-  "name": "@orca-so/whirlpools",
+  "name": "@orca-so/whirlpools-monorepo",
   "private": true,
   "license": "Apache-2.0",
   "packageManager": "yarn@4.3.1",
@@ -23,8 +23,10 @@
     "ts-mocha": "^10.0.0"
   },
   "workspaces": [
-    "legacy/*",
-    "programs/*"
+    "programs/*",
+    "rust/*",
+    "typescript/*",
+    "legacy/*"
   ],
   "lint-staged": {
     "*": "yarn format"

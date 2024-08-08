@@ -5,7 +5,7 @@ __metadata:
   version: 8
   cacheKey: 10c0
 
-"@babel/runtime@npm:^7.10.5, @babel/runtime@npm:^7.24.8":
+"@babel/runtime@npm:^7.24.8":
   version: 7.25.0
   resolution: "@babel/runtime@npm:7.25.0"
   dependencies:
@@ -266,7 +266,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-scripts@workspace:legacy-sdk/scripts"
   dependencies:
     "@project-serum/anchor": "npm:~0.26.0"
-    "@solana/spl-token": "npm:^0.1.8"
+    "@solana/spl-token": "npm:^0.4.8"
     "@types/mocha": "npm:^9.0.0"
     "@types/mz": "npm:^2.7.3"
     mz: "npm:^2.7.0"
@@ -281,7 +281,7 @@ __metadata:
     "@coral-xyz/anchor": "npm:~0.29.0"
     "@orca-so/common-sdk": "npm:0.6.0"
     "@orca-so/whirlpools-program": "npm:*"
-    "@solana/spl-token": "npm:^0.4.1"
+    "@solana/spl-token": "npm:^0.4.8"
     "@solana/web3.js": "npm:^1.90.0"
     decimal.js: "npm:^10.4.3"
     mocha: "npm:^10.2.0"
@@ -291,7 +291,7 @@ __metadata:
   peerDependencies:
     "@coral-xyz/anchor": ~0.29.0
     "@orca-so/common-sdk": 0.6.0
-    "@solana/spl-token": ^0.4.1
+    "@solana/spl-token": ^0.4.8
     "@solana/web3.js": ^1.90.0
     decimal.js: ^10.4.3
   languageName: unknown
@@ -566,21 +566,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/spl-token@npm:^0.1.8":
-  version: 0.1.8
-  resolution: "@solana/spl-token@npm:0.1.8"
-  dependencies:
-    "@babel/runtime": "npm:^7.10.5"
-    "@solana/web3.js": "npm:^1.21.0"
-    bn.js: "npm:^5.1.0"
-    buffer: "npm:6.0.3"
-    buffer-layout: "npm:^1.2.0"
-    dotenv: "npm:10.0.0"
-  checksum: 10c0/adae2cc9bb24054be183faa2bc95de70c00b34f048dc60b51ea20ece53712365233cff1710d9f78e017bb013121c29be26780c4a3672dff7582227cffff1301f
-  languageName: node
-  linkType: hard
-
-"@solana/spl-token@npm:^0.4.1":
+"@solana/spl-token@npm:^0.4.8":
   version: 0.4.8
   resolution: "@solana/spl-token@npm:0.4.8"
   dependencies:
@@ -604,7 +590,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/web3.js@npm:^1.21.0, @solana/web3.js@npm:^1.32.0, @solana/web3.js@npm:^1.68.0, @solana/web3.js@npm:^1.90.0":
+"@solana/web3.js@npm:^1.32.0, @solana/web3.js@npm:^1.68.0, @solana/web3.js@npm:^1.90.0":
   version: 1.95.2
   resolution: "@solana/web3.js@npm:1.95.2"
   dependencies:
@@ -996,7 +982,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bn.js@npm:^5.1.0, bn.js@npm:^5.1.2, bn.js@npm:^5.2.0, bn.js@npm:^5.2.1":
+"bn.js@npm:^5.1.2, bn.js@npm:^5.2.0, bn.js@npm:^5.2.1":
   version: 5.2.1
   resolution: "bn.js@npm:5.2.1"
   checksum: 10c0/bed3d8bd34ec89dbcf9f20f88bd7d4a49c160fda3b561c7bb227501f974d3e435a48fb9b61bc3de304acab9215a3bda0803f7017ffb4d0016a0c3a740a283caa
@@ -1406,13 +1392,6 @@ __metadata:
   dependencies:
     dotenv: "npm:^16.4.4"
   checksum: 10c0/e22891ec72cb926d46d9a26290ef77f9cc9ddcba92d2f83d5e6f3a803d1590887be68e25b559415d080053000441b6f63f5b36093a565bb8c5c994b992ae49f2
-  languageName: node
-  linkType: hard
-
-"dotenv@npm:10.0.0":
-  version: 10.0.0
-  resolution: "dotenv@npm:10.0.0"
-  checksum: 10c0/2d8d4ba64bfaff7931402aa5e8cbb8eba0acbc99fe9ae442300199af021079eafa7171ce90e150821a5cb3d74f0057721fbe7ec201a6044b68c8a7615f8c123f
   languageName: node
   linkType: hard
 

@@ -257,9 +257,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-scripts@workspace:legacy/scripts":
+"@orca-so/whirlpools-scripts@workspace:legacy-sdk/scripts":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-scripts@workspace:legacy/scripts"
+  resolution: "@orca-so/whirlpools-scripts@workspace:legacy-sdk/scripts"
   dependencies:
     "@project-serum/anchor": "npm:~0.25.0"
     "@solana/spl-token": "npm:^0.1.8"
@@ -270,9 +270,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-sdk@workspace:legacy/sdk":
+"@orca-so/whirlpools-sdk@workspace:legacy-sdk/whirlpool":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-sdk@workspace:legacy/sdk"
+  resolution: "@orca-so/whirlpools-sdk@workspace:legacy-sdk/whirlpool"
   dependencies:
     "@coral-xyz/anchor": "npm:~0.30.0"
     "@orca-so/common-sdk": "npm:0.6.0"

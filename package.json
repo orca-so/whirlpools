@@ -21,7 +21,7 @@
     "rimraf": "^5.0.5"
   },
   "workspaces": [
-    "legacy/*",
+    "legacy-sdk/*",
     "programs/*"
   ],
   "lint-staged": {

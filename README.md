@@ -71,10 +71,10 @@ This repository uses NX to manage the Rust and Typescript codebases. This allows
 This repository is split up into sevaral parts. The following is a (non-exhaustive) list of the components and their purpose.
 
 * **`/programs/*`** - Rust programs that are deployed on Solana.
-* **`/typescript/*`** (WIP) - Typescript SDKs for interacting with the programs.
-* **`/rust/*`** (WIP) - Rust SDKs for interacting with the programs.
+* **`/ts-sdk/*`** (WIP) - Typescript SDKs for interacting with the programs.
+* **`/rust-sdk/*`** (WIP) - Rust SDKs for interacting with the programs.
 * **`/docs/*`** (WIP) - Documentation for the programs and SDKs.
-* **`/legacy/*`** - Legacy Typescript SDKs and integration tests.
+* **`/legacy-sdk/*`** - Legacy Typescript SDKs and integration tests.
 
 ### Commands
 
@@ -86,7 +86,7 @@ Below is a (non-exhaustive) list of available commands:
 * **`yarn test`** - run the tests for all components.
 * **`yarn format`** - run formatter to format code.
 
-If you look closely, the commands just call individual commands specified in the component's `package.json` file. These commands should not be run by themselves as it will not resolve the right dependencies and will not execute the prerequisites. Instead you can specify which package to run with `yarn build programs/whirlpool`, `yarn test legacy/sdk`, etc.
+If you look closely, the commands just call individual commands specified in the component's `package.json` file. These commands should not be run by themselves as it will not resolve the right dependencies and will not execute the prerequisites. Instead you can specify which package to run with `yarn build programs/whirlpool`, `yarn test legacy-sdk/whirlpool`, etc.
 
 If you want to stream the logs of a specific command you can add the `--output-style stream` flag to the command. This allows you to view the logs of the command as they are being produced which can be useful for longer running tasks like integration tests.
 

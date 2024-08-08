@@ -1,0 +1,57 @@
+{
+  "name": "@orca-so/whirlpools-sdk",
+  "version": "0.13.3",
+  "description": "Typescript SDK to interact with Orca's Whirlpool program.",
+  "license": "Apache-2.0",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "@coral-xyz/anchor": "~0.29.0",
+    "@orca-so/common-sdk": "0.6.0",
+    "@solana/spl-token": "^0.4.1",
+    "@solana/web3.js": "^1.90.0",
+    "decimal.js": "^10.4.3"
+  },
+  "dependencies": {
+    "tiny-invariant": "^1.3.1"
+  },
+  "devDependencies": {
+    "@coral-xyz/anchor": "~0.29.0",
+    "@orca-so/common-sdk": "0.6.0",
+    "@orca-so/whirlpools-program": "*",
+    "@solana/spl-token": "^0.4.1",
+    "@solana/web3.js": "^1.90.0",
+    "decimal.js": "^10.4.3",
+    "mocha": "^10.2.0",
+    "ts-mocha": "^10.0.0",
+    "typescript": "^5.3.3"
+  },
+  "scripts": {
+    "build": "mkdir -p ./src/artifacts && cp -f ../../target/idl/whirlpool.json ./src/artifacts/whirlpool.json && cp -f ../../target/types/whirlpool.ts ./src/artifacts/whirlpool.ts && tsc",
+    "clean": "rimraf dist",
+    "format": "prettier --config ../.prettierrc './**/*.ts' --write",
+    "test": "anchor test --skip-build"
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orca-so/whirlpools.git"
+  },
+  "keywords": [
+    "orca_so",
+    "orca",
+    "solana",
+    "typescript",
+    "sdk",
+    "crypto",
+    "dex"
+  ],
+  "author": "team@orca.so",
+  "bugs": {
+    "url": "https://github.com/orca-so/whirlpools/issues"
+  },
+  "homepage": "https://www.orca.so"
+}

@@ -1,0 +1,20 @@
+{
+  "name": "@orca-so/whirlpools-scripts",
+  "private": true,
+  "version": "1.0.0",
+  "dependencies": {
+    "@project-serum/anchor": "~0.25.0",
+    "@solana/spl-token": "^0.1.8"
+  },
+  "devDependencies": {
+    "@types/mocha": "^9.0.0",
+    "@types/mz": "^2.7.3",
+    "mz": "^2.7.0",
+    "typescript": "^5.3.3"
+  },
+  "scripts": {
+    "build": "tsc",
+    "format": "prettier --config ../.prettierrc './**/*.ts' --write",
+    "clean": "rimraf dist"
+  }
+}

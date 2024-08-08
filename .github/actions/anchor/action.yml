@@ -1,0 +1,73 @@
+name: 'Setup Anchor Development Environment'
+description: 'Sets up the solana sdk using the specified version'
+
+branding:
+  icon: anchor
+  color: blue
+
+inputs:
+  anchor-version:
+    description: 'The version of anchor to use.'
+    required: false
+    default: 'v0.29.0'
+  solana-key:
+    description: 'The private key to use for the solana sdk.'
+    required: false
+  solana-cluster:
+    description: 'The cluster to use for the solana sdk.'
+    required: false
+    default: 'devnet'
+  run:
+    description: 'The command(s) to run.'
+
+runs:
+  using: "composite"
+  steps:
+    - name: Shell Setup
+      run: |
+        touch run
+        chmod +x run
+        echo "#!/bin/bash" >> run
+        echo "set -xeo pipefail" >> run
+      shell: bash
+    - name: Install Dependencies
+      run: |
+        echo "yarn" >> run
+      shell: bash
+    - name: Configure Solana
+      run: |
+        echo "solana config set --url ${{ inputs.solana-cluster }}" >> run
+      shell: bash
+    - name: Configure Solana Key
+      if: ${{ !inputs.solana-key }}
+      run: |
+        echo "solana-keygen new --no-bip39-passphrase" >> run
+      shell: bash
+    - name: Configure Solana Key
+      if: ${{ inputs.solana-key }}
+      run: |
+        echo "echo \"${{ inputs.solana-key }}\" > ~/.config/solana/id.json" >> run
+      shell: bash
+    - name: Airdrop Solana
+      if: ${{ inputs.solana-key && inputs.solana-cluster == 'devnet' }}
+      run: |
+        echo "solana airdrop 1 || true" >> run
+      shell: bash
+    - name: Run Commands
+      run: |
+        echo "${{ inputs.run }}" >> run
+      shell: bash
+    - name: Log Commands
+      run: |
+        echo "---"
+        cat run
+        echo "---"
+      shell: bash
+    - name: Run Docker
+      run: |
+        docker run \
+          --entrypoint '/workdir/run' \
+          -v "$(pwd)":/workdir \
+          backpackapp/build:${{ inputs.anchor-version }}
+      shell: bash
+

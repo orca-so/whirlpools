@@ -1,0 +1,31 @@
+name: Checks
+
+on:
+  pull_request:
+    branches: [main]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Build Packages
+      uses: ./.github/actions/anchor
+      with:
+        run: |
+          export RUST_LOG=
+          yarn build --output-style static
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Run Tests
+      uses: ./.github/actions/anchor
+      with:
+        run: |
+          export RUST_LOG=
+          yarn test --exclude legacy-sdk/whirlpool --output-style static

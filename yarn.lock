@@ -304,7 +304,7 @@ __metadata:
     "@types/bn.js": "npm:~5.1.5"
     "@types/mocha": "npm:^10.0.6"
     "@types/node": "npm:^20.10.8"
-    husky: "npm:^8.0.3"
+    husky: "npm:^9.1.4"
     lint-staged: "npm:^15.2.0"
     nx: "npm:^19.4.2"
     prettier: "npm:^3.1.1"
@@ -1892,12 +1892,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"husky@npm:^8.0.3":
-  version: 8.0.3
-  resolution: "husky@npm:8.0.3"
+"husky@npm:^9.1.4":
+  version: 9.1.4
+  resolution: "husky@npm:9.1.4"
   bin:
-    husky: lib/bin.js
-  checksum: 10c0/6722591771c657b91a1abb082e07f6547eca79144d678e586828ae806499d90dce2a6aee08b66183fd8b085f19d20e0990a2ad396961746b4c8bd5bdb619d668
+    husky: bin.js
+  checksum: 10c0/f5185003bef9ad9ec3f40e821963e4c12409b993fdcab89e3d660bed7d8c9d8bfd399f05222e27e0ead6589601fb1bb08d1a589c51751a4ab0547ead3429b8de
   languageName: node
   linkType: hard
 

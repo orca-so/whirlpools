@@ -24,9 +24,9 @@
   },
   "workspaces": [
     "programs/*",
-    "rust/*",
-    "typescript/*",
-    "legacy/*"
+    "rust-sdk/*",
+    "ts-sdk/*",
+    "legacy-sdk/*"
   ],
   "lint-staged": {
     "*": "yarn format"

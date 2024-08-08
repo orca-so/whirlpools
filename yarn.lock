@@ -442,9 +442,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@orca-so/whirlpools-client@npm:*, @orca-so/whirlpools-client@workspace:typescript/client":
+"@orca-so/whirlpools-client@npm:*, @orca-so/whirlpools-client@workspace:ts-sdk/client":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-client@workspace:typescript/client"
+  resolution: "@orca-so/whirlpools-client@workspace:ts-sdk/client"
   dependencies:
     "@kinobi-so/nodes-from-anchor": "npm:^0.20.6"
     "@kinobi-so/renderers-js": "npm:^0.20.9"
@@ -480,9 +480,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-rust-client@npm:*, @orca-so/whirlpools-rust-client@workspace:rust/client":
+"@orca-so/whirlpools-rust-client@npm:*, @orca-so/whirlpools-rust-client@workspace:rust-sdk/client":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-rust-client@workspace:rust/client"
+  resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
     "@kinobi-so/nodes-from-anchor": "npm:^0.20.6"
     "@kinobi-so/renderers-rust": "npm:^0.21.1"
@@ -490,17 +490,17 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-rust@workspace:rust/sdk":
+"@orca-so/whirlpools-rust@workspace:rust-sdk/whirlpool":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-rust@workspace:rust/sdk"
+  resolution: "@orca-so/whirlpools-rust@workspace:rust-sdk/whirlpool"
   dependencies:
     "@orca-so/whirlpools-rust-client": "npm:*"
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-scripts@workspace:legacy/scripts":
+"@orca-so/whirlpools-scripts@workspace:legacy-sdk/scripts":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-scripts@workspace:legacy/scripts"
+  resolution: "@orca-so/whirlpools-scripts@workspace:legacy-sdk/scripts"
   dependencies:
     "@project-serum/anchor": "npm:~0.25.0"
     "@solana/spl-token": "npm:^0.1.8"
@@ -511,9 +511,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-sdk@workspace:legacy/sdk":
+"@orca-so/whirlpools-sdk@workspace:legacy-sdk/whirlpool":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-sdk@workspace:legacy/sdk"
+  resolution: "@orca-so/whirlpools-sdk@workspace:legacy-sdk/whirlpool"
   dependencies:
     "@coral-xyz/anchor": "npm:~0.30.0"
     "@orca-so/common-sdk": "npm:0.6.0"
@@ -532,9 +532,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools@workspace:typescript/sdk":
+"@orca-so/whirlpools@workspace:ts-sdk/whirlpool":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools@workspace:typescript/sdk"
+  resolution: "@orca-so/whirlpools@workspace:ts-sdk/whirlpool"
   dependencies:
     "@orca-so/whirlpools-client": "npm:*"
     typescript: "npm:^5.5.4"

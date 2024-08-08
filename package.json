@@ -15,7 +15,7 @@
     "@types/mocha": "^10.0.6",
     "@types/node": "^20.10.8",
     "husky": "^9.1.4",
-    "lint-staged": "^15.2.0",
+    "lint-staged": "^15.2.8",
     "nx": "^19.4.2",
     "prettier": "^3.1.1",
     "rimraf": "^6.0.1"

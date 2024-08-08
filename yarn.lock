@@ -36,6 +36,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@coral-xyz/borsh@npm:^0.26.0":
+  version: 0.26.0
+  resolution: "@coral-xyz/borsh@npm:0.26.0"
+  dependencies:
+    bn.js: "npm:^5.1.2"
+    buffer-layout: "npm:^1.2.0"
+  peerDependencies:
+    "@solana/web3.js": ^1.68.0
+  checksum: 10c0/537510e181f0caff81125d55729e69361a20dd5f6417a9962c3ad7fa6b482b58df5867dbd6311bf240358d53737b92b8b9d0b1b76fc780a19d4ff3ee2227ef4a
+  languageName: node
+  linkType: hard
+
 "@coral-xyz/borsh@npm:^0.29.0":
   version: 0.29.0
   resolution: "@coral-xyz/borsh@npm:0.29.0"
@@ -253,7 +265,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-scripts@workspace:legacy-sdk/scripts"
   dependencies:
-    "@project-serum/anchor": "npm:~0.25.0"
+    "@project-serum/anchor": "npm:~0.26.0"
     "@solana/spl-token": "npm:^0.1.8"
     "@types/mocha": "npm:^9.0.0"
     "@types/mz": "npm:^2.7.3"
@@ -307,17 +319,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@project-serum/anchor@npm:~0.25.0":
-  version: 0.25.0
-  resolution: "@project-serum/anchor@npm:0.25.0"
+"@project-serum/anchor@npm:~0.26.0":
+  version: 0.26.0
+  resolution: "@project-serum/anchor@npm:0.26.0"
   dependencies:
-    "@project-serum/borsh": "npm:^0.2.5"
-    "@solana/web3.js": "npm:^1.36.0"
+    "@coral-xyz/borsh": "npm:^0.26.0"
+    "@solana/web3.js": "npm:^1.68.0"
     base64-js: "npm:^1.5.1"
     bn.js: "npm:^5.1.2"
     bs58: "npm:^4.0.1"
     buffer-layout: "npm:^1.2.2"
-    camelcase: "npm:^5.3.1"
+    camelcase: "npm:^6.3.0"
     cross-fetch: "npm:^3.1.5"
     crypto-hash: "npm:^1.3.0"
     eventemitter3: "npm:^4.0.7"
@@ -326,19 +338,7 @@ __metadata:
     snake-case: "npm:^3.0.4"
     superstruct: "npm:^0.15.4"
     toml: "npm:^3.0.0"
-  checksum: 10c0/b823742214872be771ce05a927e4a0dc38178c209c4e7d65d8c71b8e27aba80941220dac705c7a3f72b8f767a1ec199230f83fe65d1b8f40973d2a61b2f3593e
-  languageName: node
-  linkType: hard
-
-"@project-serum/borsh@npm:^0.2.5":
-  version: 0.2.5
-  resolution: "@project-serum/borsh@npm:0.2.5"
-  dependencies:
-    bn.js: "npm:^5.1.2"
-    buffer-layout: "npm:^1.2.0"
-  peerDependencies:
-    "@solana/web3.js": ^1.2.0
-  checksum: 10c0/84fb4d5384807359f7de2ce17165bc28b3e6f51193ed8699734fa90212693822c5d02ecb6a602287cbc71f540a938c13a7f6ce50d5b9d57318adb01fca5e0804
+  checksum: 10c0/1d2dffd56eef215d8f8f9481c51c2de5db2869ddb21d54cda687f51a8c4ac7fd2662acab0edb5bce55c4527680a741c3c16631d60753aff9b2fe8295bad6c26b
   languageName: node
   linkType: hard
 
@@ -604,7 +604,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/web3.js@npm:^1.21.0, @solana/web3.js@npm:^1.32.0, @solana/web3.js@npm:^1.36.0, @solana/web3.js@npm:^1.68.0, @solana/web3.js@npm:^1.90.0":
+"@solana/web3.js@npm:^1.21.0, @solana/web3.js@npm:^1.32.0, @solana/web3.js@npm:^1.68.0, @solana/web3.js@npm:^1.90.0":
   version: 1.95.2
   resolution: "@solana/web3.js@npm:1.95.2"
   dependencies:
@@ -1109,13 +1109,6 @@ __metadata:
     tar: "npm:^6.1.11"
     unique-filename: "npm:^3.0.0"
   checksum: 10c0/6c055bafed9de4f3dcc64ac3dc7dd24e863210902b7c470eb9ce55a806309b3efff78033e3d8b4f7dcc5d467f2db43c6a2857aaaf26f0094b8a351d44c42179f
-  languageName: node
-  linkType: hard
-
-"camelcase@npm:^5.3.1":
-  version: 5.3.1
-  resolution: "camelcase@npm:5.3.1"
-  checksum: 10c0/92ff9b443bfe8abb15f2b1513ca182d16126359ad4f955ebc83dc4ddcc4ef3fdd2c078bc223f2673dc223488e75c99b16cc4d056624374b799e6a1555cf61b23
   languageName: node
   linkType: hard
 

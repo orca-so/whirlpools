@@ -29,15 +29,15 @@
   },
   "workspaces": [
     "programs/*",
-    "rust/*",
-    "typescript/*",
-    "legacy/*"
+    "rust-sdk/*",
+    "ts-sdk/*",
+    "legacy-sdk/*"
   ],
   "lint-staged": {
     "**/*.{js,ts,json}": [
       "yarn prettier './**/*.ts' --write"
     ],
-    "**/*.{rs}": [
+    "**/*.rs": [
       "cargo fmt --all --"
     ]
   },

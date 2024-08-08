@@ -1,32 +1,34 @@
+import type {
+  Percentage,
+  ResolvedTokenAddressInstruction,
+} from "@orca-so/common-sdk";
 import {
   AddressUtil,
   EMPTY_INSTRUCTION,
-  Percentage,
-  ResolvedTokenAddressInstruction,
   TokenUtil,
   TransactionBuilder,
   ZERO,
 } from "@orca-so/common-sdk";
+import type { Account } from "@solana/spl-token";
 import {
-  Account,
   NATIVE_MINT,
   TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
   createCloseAccountInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import type { TransactionInstruction } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import {
+import type {
   AtaAccountInfo,
-  PDAUtil,
   SubTradeRoute,
-  SwapUtils,
   TradeRoute,
   WhirlpoolContext,
-  twoHopSwapQuoteFromSwapQuotes,
 } from "../..";
-import { PREFER_CACHE, WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
+import { PDAUtil, SwapUtils, twoHopSwapQuoteFromSwapQuotes } from "../..";
+import type { WhirlpoolAccountFetchOptions } from "../../network/public/fetcher";
+import { PREFER_CACHE } from "../../network/public/fetcher";
 import { adjustForSlippage } from "../../utils/position-util";
 import { contextOptionsToBuilderOptions } from "../../utils/txn-utils";
 import { swapIx } from "../swap-ix";
@@ -46,8 +48,8 @@ export async function getSwapFromRoute(
   txBuilder: TransactionBuilder = new TransactionBuilder(
     ctx.connection,
     ctx.wallet,
-    contextOptionsToBuilderOptions(ctx.opts)
-  )
+    contextOptionsToBuilderOptions(ctx.opts),
+  ),
 ) {
   const { route, wallet, resolvedAtaAccounts, slippage } = params;
   const requiredAtas = new Set<string>();
@@ -66,13 +68,20 @@ export async function getSwapFromRoute(
   }
   for (let i = 0; i < route.subRoutes.length; i++) {
     const routeFragment = route.subRoutes[i];
-    const slippageAdjustedRoute = adjustQuoteForSlippage(routeFragment, slippage);
+    const slippageAdjustedRoute = adjustQuoteForSlippage(
+      routeFragment,
+      slippage,
+    );
     if (slippageAdjustedRoute.hopQuotes.length == 1) {
       const { quote, mintA, mintB } = slippageAdjustedRoute.hopQuotes[0];
 
-      requiredTickArrays.push(...[quote.tickArray0, quote.tickArray1, quote.tickArray2]);
+      requiredTickArrays.push(
+        ...[quote.tickArray0, quote.tickArray1, quote.tickArray2],
+      );
 
-      const inputAmount = quote.amountSpecifiedIsInput ? quote.amount : quote.otherAmountThreshold;
+      const inputAmount = quote.amountSpecifiedIsInput
+        ? quote.amount
+        : quote.otherAmountThreshold;
       addOrNative(mintA.toString(), quote.aToB ? inputAmount : ZERO);
       addOrNative(mintB.toString(), !quote.aToB ? inputAmount : ZERO);
     } else if (slippageAdjustedRoute.hopQuotes.length == 2) {
@@ -96,7 +105,7 @@ export async function getSwapFromRoute(
           twoHopQuote.tickArrayTwo0,
           twoHopQuote.tickArrayTwo1,
           twoHopQuote.tickArrayTwo2,
-        ]
+        ],
       );
 
       const inputAmount = quoteOne.amountSpecifiedIsInput
@@ -106,7 +115,9 @@ export async function getSwapFromRoute(
       addOrNative(mintOneB.toString(), !quoteOne.aToB ? inputAmount : ZERO);
       addOrNative(mintTwoA.toString(), ZERO);
       addOrNative(mintTwoB.toString(), ZERO);
-      requiredIntermediateAtas.add(quoteOne.aToB ? mintOneB.toString() : mintOneA.toString());
+      requiredIntermediateAtas.add(
+        quoteOne.aToB ? mintOneB.toString() : mintOneA.toString(),
+      );
     }
   }
 
@@ -125,15 +136,19 @@ export async function getSwapFromRoute(
       if (resolvedAtaAccounts != null) {
         return Promise.resolve(
           keys.map((key) =>
-            resolvedAtaAccounts.find((ata) => ata.address?.toBase58() === key.toBase58())
-          ) as Account[]
+            resolvedAtaAccounts.find(
+              (ata) => ata.address?.toBase58() === key.toBase58(),
+            ),
+          ) as Account[],
         );
       } else {
-        return ctx.fetcher.getTokenInfos(keys, opts).then((result) => Array.from(result.values()));
+        return ctx.fetcher
+          .getTokenInfos(keys, opts)
+          .then((result) => Array.from(result.values()));
       }
     },
     undefined, // use default
-    ctx.accountResolverOpts.allowPDAOwnerAddress
+    ctx.accountResolverOpts.allowPDAOwnerAddress,
   );
 
   const ataIxes = Object.values(ataInstructionMap);
@@ -145,7 +160,7 @@ export async function getSwapFromRoute(
       await ctx.fetcher.getAccountRentExempt(),
       undefined, // use default
       undefined, // use default
-      ctx.accountResolverOpts.createWrappedSolAccountMethod
+      ctx.accountResolverOpts.createWrappedSolAccountMethod,
     );
     txBuilder.addInstruction(solIx);
     ataInstructionMap[NATIVE_MINT.toBase58()] = solIx;
@@ -155,14 +170,19 @@ export async function getSwapFromRoute(
 
   // Slippage adjustment
   const slippageAdjustedQuotes = route.subRoutes.map((quote) =>
-    adjustQuoteForSlippage(quote, slippage)
+    adjustQuoteForSlippage(quote, slippage),
   );
 
   for (let i = 0; i < slippageAdjustedQuotes.length; i++) {
     const routeFragment = slippageAdjustedQuotes[i];
     if (routeFragment.hopQuotes.length == 1) {
-      const { quote, whirlpool, mintA, mintB, vaultA, vaultB } = routeFragment.hopQuotes[0];
-      const [wp, tokenVaultA, tokenVaultB] = AddressUtil.toPubKeys([whirlpool, vaultA, vaultB]);
+      const { quote, whirlpool, mintA, mintB, vaultA, vaultB } =
+        routeFragment.hopQuotes[0];
+      const [wp, tokenVaultA, tokenVaultB] = AddressUtil.toPubKeys([
+        whirlpool,
+        vaultA,
+        vaultB,
+      ]);
       const accA = ataInstructionMap[mintA.toString()].address;
       const accB = ataInstructionMap[mintB.toString()].address;
       const oraclePda = PDAUtil.getOracle(ctx.program.programId, wp);
@@ -176,7 +196,7 @@ export async function getSwapFromRoute(
           oracle: oraclePda.publicKey,
           tokenAuthority: wallet,
           ...quote,
-        })
+        }),
       );
     } else if (routeFragment.hopQuotes.length == 2) {
       const {
@@ -196,24 +216,40 @@ export async function getSwapFromRoute(
         vaultB: vaultTwoB,
       } = routeFragment.hopQuotes[1];
 
-      const [wpOne, wpTwo, tokenVaultOneA, tokenVaultOneB, tokenVaultTwoA, tokenVaultTwoB] =
-        AddressUtil.toPubKeys([
-          whirlpoolOne,
-          whirlpoolTwo,
-          vaultOneA,
-          vaultOneB,
-          vaultTwoA,
-          vaultTwoB,
-        ]);
+      const [
+        wpOne,
+        wpTwo,
+        tokenVaultOneA,
+        tokenVaultOneB,
+        tokenVaultTwoA,
+        tokenVaultTwoB,
+      ] = AddressUtil.toPubKeys([
+        whirlpoolOne,
+        whirlpoolTwo,
+        vaultOneA,
+        vaultOneB,
+        vaultTwoA,
+        vaultTwoB,
+      ]);
       const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quoteOne, quoteTwo);
 
-      const oracleOne = PDAUtil.getOracle(ctx.program.programId, wpOne).publicKey;
-      const oracleTwo = PDAUtil.getOracle(ctx.program.programId, wpTwo).publicKey;
+      const oracleOne = PDAUtil.getOracle(
+        ctx.program.programId,
+        wpOne,
+      ).publicKey;
+      const oracleTwo = PDAUtil.getOracle(
+        ctx.program.programId,
+        wpTwo,
+      ).publicKey;
 
-      const tokenOwnerAccountOneA = ataInstructionMap[mintOneA.toString()].address;
-      const tokenOwnerAccountOneB = ataInstructionMap[mintOneB.toString()].address;
-      const tokenOwnerAccountTwoA = ataInstructionMap[mintTwoA.toString()].address;
-      const tokenOwnerAccountTwoB = ataInstructionMap[mintTwoB.toString()].address;
+      const tokenOwnerAccountOneA =
+        ataInstructionMap[mintOneA.toString()].address;
+      const tokenOwnerAccountOneB =
+        ataInstructionMap[mintOneB.toString()].address;
+      const tokenOwnerAccountTwoA =
+        ataInstructionMap[mintTwoA.toString()].address;
+      const tokenOwnerAccountTwoB =
+        ataInstructionMap[mintTwoB.toString()].address;
       txBuilder.addInstruction(
         twoHopSwapIx(ctx.program, {
           ...twoHopQuote,
@@ -230,14 +266,17 @@ export async function getSwapFromRoute(
           oracleOne,
           oracleTwo,
           tokenAuthority: wallet,
-        })
+        }),
       );
     }
   }
   return txBuilder;
 }
 
-function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): SubTradeRoute {
+function adjustQuoteForSlippage(
+  quote: SubTradeRoute,
+  slippage: Percentage,
+): SubTradeRoute {
   const { hopQuotes } = quote;
   if (hopQuotes.length === 1) {
     return {
@@ -252,7 +291,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
               hopQuotes[0].quote.estimatedAmountIn,
               hopQuotes[0].quote.estimatedAmountOut,
               slippage,
-              hopQuotes[0].quote.amountSpecifiedIsInput
+              hopQuotes[0].quote.amountSpecifiedIsInput,
             ),
           },
         },
@@ -277,7 +316,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
             otherAmountThreshold: adjustForSlippage(
               swapQuoteTwo.quote.estimatedAmountOut,
               slippage,
-              false
+              false,
             ),
           },
         },
@@ -291,7 +330,7 @@ function adjustQuoteForSlippage(quote: SubTradeRoute, slippage: Percentage): Sub
             otherAmountThreshold: adjustForSlippage(
               swapQuoteOne.quote.estimatedAmountIn,
               slippage,
-              true
+              true,
             ),
           },
         },
@@ -324,14 +363,18 @@ async function cachedResolveOrCreateNonNativeATAs(
   ownerAddress: PublicKey,
   tokenMints: Set<string>,
   intermediateTokenMints: Set<string>,
-  getTokenAccounts: (keys: PublicKey[]) => Promise<Array<AtaAccountInfo | null>>,
+  getTokenAccounts: (
+    keys: PublicKey[],
+  ) => Promise<Array<AtaAccountInfo | null>>,
   payer = ownerAddress,
-  allowPDAOwnerAddress: boolean = false
+  allowPDAOwnerAddress: boolean = false,
 ): Promise<{ [tokenMint: string]: ResolvedTokenAddressInstruction }> {
-  const instructionMap: { [tokenMint: string]: ResolvedTokenAddressInstruction } = {};
+  const instructionMap: {
+    [tokenMint: string]: ResolvedTokenAddressInstruction;
+  } = {};
   const tokenMintArray = Array.from(tokenMints).map((tm) => new PublicKey(tm));
   const tokenAtas = tokenMintArray.map((tm) =>
-    getAssociatedTokenAddressSync(tm, ownerAddress, allowPDAOwnerAddress)
+    getAssociatedTokenAddressSync(tm, ownerAddress, allowPDAOwnerAddress),
   );
   const tokenAccounts = await getTokenAccounts(tokenAtas);
   tokenAccounts.forEach((tokenAccount, index) => {
@@ -341,26 +384,28 @@ async function cachedResolveOrCreateNonNativeATAs(
       // ATA whose owner has been changed is abnormal entity.
       // To prevent to send swap/withdraw/collect output to the ATA, an error should be thrown.
       if (!tokenAccount.owner.equals(ownerAddress)) {
-        throw new Error(`ATA with change of ownership detected: ${ataAddress.toBase58()}`);
+        throw new Error(
+          `ATA with change of ownership detected: ${ataAddress.toBase58()}`,
+        );
       }
 
       resolvedInstruction = { address: ataAddress, ...EMPTY_INSTRUCTION };
     } else {
       const tokenMint = tokenMintArray[index];
-      const createAtaInstructions = [createAssociatedTokenAccountInstruction(
-        payer,
-        ataAddress,
-        ownerAddress,
-        tokenMint
-      )];
+      const createAtaInstructions = [
+        createAssociatedTokenAccountInstruction(
+          payer,
+          ataAddress,
+          ownerAddress,
+          tokenMint,
+        ),
+      ];
 
       let cleanupInstructions: TransactionInstruction[] = [];
       if (intermediateTokenMints.has(tokenMint.toBase58())) {
-        cleanupInstructions = [createCloseAccountInstruction(
-          ataAddress,
-          ownerAddress,
-          ownerAddress
-        )];
+        cleanupInstructions = [
+          createCloseAccountInstruction(ataAddress, ownerAddress, ownerAddress),
+        ];
       }
 
       resolvedInstruction = {
@@ -371,7 +416,10 @@ async function cachedResolveOrCreateNonNativeATAs(
       };
     }
     // WhirlpoolRouter does not handle TokenExtension, so token program is always standard TokenProgram.
-    instructionMap[tokenMintArray[index].toBase58()] = { tokenProgram: TOKEN_PROGRAM_ID, ...resolvedInstruction };
+    instructionMap[tokenMintArray[index].toBase58()] = {
+      tokenProgram: TOKEN_PROGRAM_ID,
+      ...resolvedInstruction,
+    };
   });
 
   return instructionMap;

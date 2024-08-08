@@ -1,20 +1,22 @@
 import * as anchor from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
-import { PDA } from "@orca-so/common-sdk";
+import type { PDA } from "@orca-so/common-sdk";
 import { getAccount, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { Keypair } from "@solana/web3.js";
+import type { Keypair } from "@solana/web3.js";
 import * as assert from "assert";
-import {
+import type {
   InitPoolParams,
+  OpenPositionParams,
+  PositionData,
+} from "../../src";
+import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
-  OpenPositionParams,
   PDAUtil,
-  PositionData,
   TickUtil,
   WhirlpoolContext,
   WhirlpoolIx,
-  toTx
+  toTx,
 } from "../../src";
 import {
   ONE_SOL,
@@ -23,14 +25,17 @@ import {
   createMint,
   createMintInstructions,
   mintToDestination,
-  systemTransferTx
+  systemTransferTx,
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool, openPosition } from "../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../utils/test-builders";
 
 describe("open_position", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -50,7 +55,9 @@ describe("open_position", () => {
     poolInitInfo = (await initTestPool(ctx, TickSpacing.Standard)).poolInitInfo;
     whirlpoolPda = poolInitInfo.whirlpoolPda;
 
-    fullRangeOnlyPoolInitInfo = (await initTestPool(ctx, TickSpacing.FullRangeOnly)).poolInitInfo;
+    fullRangeOnlyPoolInitInfo = (
+      await initTestPool(ctx, TickSpacing.FullRangeOnly)
+    ).poolInitInfo;
     fullRangeOnlyWhirlpoolPda = fullRangeOnlyPoolInitInfo.whirlpoolPda;
 
     const { params, mint } = await generateDefaultOpenPositionParams(
@@ -58,11 +65,15 @@ describe("open_position", () => {
       whirlpoolPda.publicKey,
       tickLowerIndex,
       tickUpperIndex,
-      provider.wallet.publicKey
+      provider.wallet.publicKey,
     );
     defaultParams = params;
     defaultMint = mint;
-    await systemTransferTx(provider, funderKeypair.publicKey, ONE_SOL).buildAndExecute();
+    await systemTransferTx(
+      provider,
+      funderKeypair.publicKey,
+      ONE_SOL,
+    ).buildAndExecute();
   });
 
   it("successfully opens position and verify position address contents", async () => {
@@ -70,11 +81,13 @@ describe("open_position", () => {
       ctx,
       whirlpoolPda.publicKey,
       tickLowerIndex,
-      tickUpperIndex
+      tickUpperIndex,
     );
     const { positionPda, positionMintAddress } = positionInitInfo.params;
 
-    const position = (await fetcher.getPosition(positionPda.publicKey)) as PositionData;
+    const position = (await fetcher.getPosition(
+      positionPda.publicKey,
+    )) as PositionData;
 
     assert.strictEqual(position.tickLowerIndex, tickLowerIndex);
     assert.strictEqual(position.tickUpperIndex, tickUpperIndex);
@@ -90,21 +103,29 @@ describe("open_position", () => {
   });
 
   it("successfully open position and verify position address contents for full-range only pool", async () => {
-    const [lowerTickIndex, upperTickIndex] = TickUtil.getFullRangeTickIndex(TickSpacing.FullRangeOnly);
+    const [lowerTickIndex, upperTickIndex] = TickUtil.getFullRangeTickIndex(
+      TickSpacing.FullRangeOnly,
+    );
 
     const positionInitInfo = await openPosition(
       ctx,
       fullRangeOnlyWhirlpoolPda.publicKey,
       lowerTickIndex,
-      upperTickIndex
+      upperTickIndex,
     );
     const { positionPda, positionMintAddress } = positionInitInfo.params;
 
-    const position = (await fetcher.getPosition(positionPda.publicKey)) as PositionData;
+    const position = (await fetcher.getPosition(
+      positionPda.publicKey,
+    )) as PositionData;
 
     assert.strictEqual(position.tickLowerIndex, lowerTickIndex);
     assert.strictEqual(position.tickUpperIndex, upperTickIndex);
-    assert.ok(position.whirlpool.equals(fullRangeOnlyPoolInitInfo.whirlpoolPda.publicKey));
+    assert.ok(
+      position.whirlpool.equals(
+        fullRangeOnlyPoolInitInfo.whirlpoolPda.publicKey,
+      ),
+    );
     assert.ok(position.positionMint.equals(positionMintAddress));
     assert.ok(position.liquidity.eq(ZERO_BN));
     assert.ok(position.feeGrowthCheckpointA.eq(ZERO_BN));
@@ -120,7 +141,7 @@ describe("open_position", () => {
       tickLowerIndex,
       tickUpperIndex,
       provider.wallet.publicKey,
-      funderKeypair
+      funderKeypair,
     );
   });
 
@@ -132,24 +153,40 @@ describe("open_position", () => {
       whirlpoolPda.publicKey,
       tickLowerIndex,
       tickUpperIndex,
-      newOwner.publicKey
+      newOwner.publicKey,
     );
-    const { positionMintAddress, positionTokenAccount: positionTokenAccountAddress } =
-      positionInitInfo.params;
+    const {
+      positionMintAddress,
+      positionTokenAccount: positionTokenAccountAddress,
+    } = positionInitInfo.params;
 
-    const userTokenAccount = await getAccount(ctx.connection, positionTokenAccountAddress);
+    const userTokenAccount = await getAccount(
+      ctx.connection,
+      positionTokenAccountAddress,
+    );
     assert.ok(userTokenAccount.amount === 1n);
     assert.ok(userTokenAccount.owner.equals(newOwner.publicKey));
 
     await assert.rejects(
-      mintToDestination(provider, positionMintAddress, positionTokenAccountAddress, 1),
-      /0x5/ // the total supply of this token is fixed
+      mintToDestination(
+        provider,
+        positionMintAddress,
+        positionTokenAccountAddress,
+        1,
+      ),
+      /0x5/, // the total supply of this token is fixed
     );
   });
 
   it("user must pass the valid token ATA account", async () => {
-    const anotherMintKey = await createMint(provider, provider.wallet.publicKey);
-    const positionTokenAccountAddress = getAssociatedTokenAddressSync(anotherMintKey, provider.wallet.publicKey)
+    const anotherMintKey = await createMint(
+      provider,
+      provider.wallet.publicKey,
+    );
+    const positionTokenAccountAddress = getAssociatedTokenAddressSync(
+      anotherMintKey,
+      provider.wallet.publicKey,
+    );
 
     await assert.rejects(
       toTx(
@@ -157,11 +194,11 @@ describe("open_position", () => {
         WhirlpoolIx.openPositionIx(ctx.program, {
           ...defaultParams,
           positionTokenAccount: positionTokenAccountAddress,
-        })
+        }),
       )
         .addSigner(defaultMint)
         .buildAndExecute(),
-      /An account required by the instruction is missing/
+      /An account required by the instruction is missing/,
     );
   });
 
@@ -174,9 +211,9 @@ describe("open_position", () => {
           lowerTick,
           upperTick,
           provider.wallet.publicKey,
-          funderKeypair
+          funderKeypair,
         ),
-        /0x177a/ // InvalidTickIndex
+        /0x177a/, // InvalidTickIndex
       );
     }
 
@@ -207,20 +244,28 @@ describe("open_position", () => {
 
   it("fail when position mint already exists", async () => {
     const positionMintKeypair = anchor.web3.Keypair.generate();
-    const positionPda = PDAUtil.getPosition(ctx.program.programId, positionMintKeypair.publicKey);
+    const positionPda = PDAUtil.getPosition(
+      ctx.program.programId,
+      positionMintKeypair.publicKey,
+    );
 
-    const positionTokenAccountAddress = getAssociatedTokenAddressSync(positionMintKeypair.publicKey, provider.wallet.publicKey)
+    const positionTokenAccountAddress = getAssociatedTokenAddressSync(
+      positionMintKeypair.publicKey,
+      provider.wallet.publicKey,
+    );
 
     const tx = new web3.Transaction();
     tx.add(
       ...(await createMintInstructions(
         provider,
         provider.wallet.publicKey,
-        positionMintKeypair.publicKey
-      ))
+        positionMintKeypair.publicKey,
+      )),
     );
 
-    await provider.sendAndConfirm(tx, [positionMintKeypair], { commitment: "confirmed" });
+    await provider.sendAndConfirm(tx, [positionMintKeypair], {
+      commitment: "confirmed",
+    });
 
     await assert.rejects(
       toTx(
@@ -234,11 +279,11 @@ describe("open_position", () => {
           whirlpool: whirlpoolPda.publicKey,
           tickLowerIndex: 0,
           tickUpperIndex: 128,
-        })
+        }),
       )
         .addSigner(positionMintKeypair)
         .buildAndExecute(),
-      /0x0/
+      /0x0/,
     );
   });
 
@@ -250,9 +295,9 @@ describe("open_position", () => {
         tickLowerIndex,
         tickUpperIndex,
         provider.wallet.publicKey,
-        funderKeypair
+        funderKeypair,
       ),
-      /0x17a6/ // FullRangeOnlyPool
+      /0x17a6/, // FullRangeOnlyPool
     );
   });
 });

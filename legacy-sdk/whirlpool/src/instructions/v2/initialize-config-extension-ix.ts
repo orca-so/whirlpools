@@ -1,7 +1,8 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction, PDA } from "@orca-so/common-sdk";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
-import { Whirlpool } from "../../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction, PDA } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import { SystemProgram } from "@solana/web3.js";
+import type { Whirlpool } from "../../artifacts/whirlpool";
 
 /**
  * Parameters to initialize a WhirlpoolsConfigExtension account.
@@ -26,7 +27,7 @@ export type InitConfigExtensionParams = {
  */
 export function initializeConfigExtensionIx(
   program: Program<Whirlpool>,
-  params: InitConfigExtensionParams
+  params: InitConfigExtensionParams,
 ): Instruction {
   const {
     whirlpoolsConfig,
@@ -35,17 +36,15 @@ export function initializeConfigExtensionIx(
     feeAuthority,
   } = params;
 
-  const ix = program.instruction.initializeConfigExtension(
-    {
-      accounts: {
-        config: whirlpoolsConfig,
-        configExtension: whirlpoolsConfigExtensionPda.publicKey,
-        funder,
-        feeAuthority,
-        systemProgram: SystemProgram.programId,
-      },
-    }
-  );
+  const ix = program.instruction.initializeConfigExtension({
+    accounts: {
+      config: whirlpoolsConfig,
+      configExtension: whirlpoolsConfigExtensionPda.publicKey,
+      funder,
+      feeAuthority,
+      systemProgram: SystemProgram.programId,
+    },
+  });
 
   return {
     instructions: [ix],

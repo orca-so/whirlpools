@@ -1,38 +1,36 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil, PDA, Percentage } from "@orca-so/common-sdk";
+import type { PDA } from "@orca-so/common-sdk";
+import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
+import type {
+  DecreaseLiquidityQuote,
+  InitPoolV2Params,
+  PositionData,
+  SwapQuote,
+  TwoHopSwapV2Params,
+  WhirlpoolData,
+} from "../../../../src";
 import {
   buildWhirlpoolClient,
   collectRewardsQuote,
-  DecreaseLiquidityQuote,
   decreaseLiquidityQuoteByLiquidityWithParams,
-  InitPoolV2Params,
   NUM_REWARDS,
   PDAUtil,
-  PositionData,
-  SwapQuote,
   swapQuoteWithParams,
   SwapUtils,
   toTx,
   twoHopSwapQuoteFromSwapQuotes,
-  TwoHopSwapV2Params,
   WhirlpoolContext,
-  WhirlpoolData,
   WhirlpoolIx,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
-import {
-  getTokenBalance,
-  sleep,
-  TickSpacing,
-  ZERO_BN,
-} from "../../../utils";
+import { getTokenBalance, sleep, TickSpacing, ZERO_BN } from "../../../utils";
 import { defaultConfirmOptions } from "../../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
+import type { FundedPositionV2Params } from "../../../utils/v2/init-utils-v2";
 import {
-  FundedPositionV2Params,
   fundPositionsV2,
   initTestPoolWithTokensV2,
 } from "../../../utils/v2/init-utils-v2";
@@ -42,10 +40,10 @@ import {
   enableRequiredMemoTransfers,
   isRequiredMemoTransfersEnabled,
 } from "../../../utils/v2/token-2022";
-import { PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../../utils/init-utils";
+import type { InitAquariumV2Params } from "../../../utils/v2/aquarium-v2";
 import {
-  InitAquariumV2Params,
   buildTestAquariumsV2,
   getDefaultAquariumV2,
   getTokenAccsForPoolsV2,
@@ -53,7 +51,10 @@ import {
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("TokenExtension/MemoTransfer", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -81,8 +82,16 @@ describe("TokenExtension/MemoTransfer", () => {
         tokenTraitB: { isToken2022: true },
         tickSpacing,
         positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
-          { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(1_000_000) }, // Out of range position
+          {
+            tickLowerIndex,
+            tickUpperIndex,
+            liquidityAmount: new anchor.BN(10_000_000),
+          }, // In range position
+          {
+            tickLowerIndex: 0,
+            tickUpperIndex: 128,
+            liquidityAmount: new anchor.BN(1_000_000),
+          }, // Out of range position
         ],
       });
       const {
@@ -103,9 +112,12 @@ describe("TokenExtension/MemoTransfer", () => {
       const tickArrayPda = PDAUtil.getTickArray(
         ctx.program.programId,
         whirlpoolPda.publicKey,
-        22528
+        22528,
       );
-      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+      const oraclePda = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      );
 
       // Accrue fees in token A
       await toTx(
@@ -130,7 +142,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tickArray1: tickArrayPda.publicKey,
           tickArray2: tickArrayPda.publicKey,
           oracle: oraclePda.publicKey,
-        })
+        }),
       ).buildAndExecute();
 
       // Accrue fees in token B
@@ -156,7 +168,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tickArray1: tickArrayPda.publicKey,
           tickArray2: tickArrayPda.publicKey,
           oracle: oraclePda.publicKey,
-        })
+        }),
       ).buildAndExecute();
 
       await toTx(
@@ -166,16 +178,19 @@ describe("TokenExtension/MemoTransfer", () => {
           position: positions[0].publicKey,
           tickArrayLower: tickArrayPda.publicKey,
           tickArrayUpper: tickArrayPda.publicKey,
-        })
+        }),
       ).buildAndExecute();
 
-      const whirlpoolData = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE))!;
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      ))!;
       assert.ok(!whirlpoolData.protocolFeeOwedA.isZero());
       assert.ok(!whirlpoolData.protocolFeeOwedB.isZero());
 
       const positionBeforeCollect = (await fetcher.getPosition(
         positions[0].publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       )) as PositionData;
       assert.ok(!positionBeforeCollect.feeOwedA.isZero());
       assert.ok(!positionBeforeCollect.feeOwedB.isZero());
@@ -184,13 +199,13 @@ describe("TokenExtension/MemoTransfer", () => {
         provider,
         { isToken2022: true },
         tokenMintA,
-        provider.wallet.publicKey
+        provider.wallet.publicKey,
       );
       feeAccountB = await createTokenAccountV2(
         provider,
         { isToken2022: true },
         tokenMintB,
-        provider.wallet.publicKey
+        provider.wallet.publicKey,
       );
     });
 
@@ -226,14 +241,18 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenOwnerAccountB: feeAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute();
       const feeBalanceA = await getTokenBalance(provider, feeAccountA);
       const feeBalanceB = await getTokenBalance(provider, feeAccountB);
       assert.ok(new BN(feeBalanceA).gtn(0));
       assert.ok(new BN(feeBalanceB).gtn(0));
 
-      const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_COLLECT_FEES);
+      const memoCount = await countMemoLog(
+        provider,
+        sig,
+        MEMO_TRANSFER_COLLECT_FEES,
+      );
       assert.equal(memoCount, 0);
     });
 
@@ -272,14 +291,18 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenOwnerAccountB: feeAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute();
       const feeBalanceA = await getTokenBalance(provider, feeAccountA);
       const feeBalanceB = await getTokenBalance(provider, feeAccountB);
       assert.ok(new BN(feeBalanceA).gtn(0));
       assert.ok(new BN(feeBalanceB).gtn(0));
 
-      const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_COLLECT_FEES);
+      const memoCount = await countMemoLog(
+        provider,
+        sig,
+        MEMO_TRANSFER_COLLECT_FEES,
+      );
       assert.equal(memoCount, 2);
     });
 
@@ -322,14 +345,18 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenOwnerAccountB: feeAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute();
       const feeBalanceA = await getTokenBalance(provider, feeAccountA);
       const feeBalanceB = await getTokenBalance(provider, feeAccountB);
       assert.ok(new BN(feeBalanceA).gtn(0));
       assert.ok(new BN(feeBalanceB).gtn(0));
 
-      const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_COLLECT_FEES);
+      const memoCount = await countMemoLog(
+        provider,
+        sig,
+        MEMO_TRANSFER_COLLECT_FEES,
+      );
       assert.equal(memoCount, 0);
     });
 
@@ -356,7 +383,8 @@ describe("TokenExtension/MemoTransfer", () => {
         WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
           whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
           whirlpool: whirlpoolPda.publicKey,
-          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          collectProtocolFeesAuthority:
+            collectProtocolFeesAuthorityKeypair.publicKey,
           tokenMintA,
           tokenMintB,
           tokenProgramA,
@@ -365,7 +393,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenVaultB: tokenVaultBKeypair.publicKey,
           tokenOwnerAccountA: feeAccountA,
           tokenOwnerAccountB: feeAccountB,
-        })
+        }),
       )
         .addSigner(collectProtocolFeesAuthorityKeypair)
         .buildAndExecute();
@@ -374,7 +402,11 @@ describe("TokenExtension/MemoTransfer", () => {
       assert.ok(new BN(feeBalanceA).gtn(0));
       assert.ok(new BN(feeBalanceB).gtn(0));
 
-      const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_COLLECT_PROTOCOL_FEES);
+      const memoCount = await countMemoLog(
+        provider,
+        sig,
+        MEMO_TRANSFER_COLLECT_PROTOCOL_FEES,
+      );
       assert.equal(memoCount, 0);
     });
 
@@ -404,7 +436,8 @@ describe("TokenExtension/MemoTransfer", () => {
         WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
           whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
           whirlpool: whirlpoolPda.publicKey,
-          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          collectProtocolFeesAuthority:
+            collectProtocolFeesAuthorityKeypair.publicKey,
           tokenMintA,
           tokenMintB,
           tokenProgramA,
@@ -413,7 +446,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenVaultB: tokenVaultBKeypair.publicKey,
           tokenOwnerAccountA: feeAccountA,
           tokenOwnerAccountB: feeAccountB,
-        })
+        }),
       )
         .addSigner(collectProtocolFeesAuthorityKeypair)
         .buildAndExecute();
@@ -422,7 +455,11 @@ describe("TokenExtension/MemoTransfer", () => {
       assert.ok(new BN(feeBalanceA).gtn(0));
       assert.ok(new BN(feeBalanceB).gtn(0));
 
-      const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_COLLECT_PROTOCOL_FEES);
+      const memoCount = await countMemoLog(
+        provider,
+        sig,
+        MEMO_TRANSFER_COLLECT_PROTOCOL_FEES,
+      );
       assert.equal(memoCount, 2);
     });
 
@@ -456,7 +493,8 @@ describe("TokenExtension/MemoTransfer", () => {
         WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
           whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
           whirlpool: whirlpoolPda.publicKey,
-          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          collectProtocolFeesAuthority:
+            collectProtocolFeesAuthorityKeypair.publicKey,
           tokenMintA,
           tokenMintB,
           tokenProgramA,
@@ -465,7 +503,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenVaultB: tokenVaultBKeypair.publicKey,
           tokenOwnerAccountA: feeAccountA,
           tokenOwnerAccountB: feeAccountB,
-        })
+        }),
       )
         .addSigner(collectProtocolFeesAuthorityKeypair)
         .buildAndExecute();
@@ -474,7 +512,11 @@ describe("TokenExtension/MemoTransfer", () => {
       assert.ok(new BN(feeBalanceA).gtn(0));
       assert.ok(new BN(feeBalanceB).gtn(0));
 
-      const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_COLLECT_PROTOCOL_FEES);
+      const memoCount = await countMemoLog(
+        provider,
+        sig,
+        MEMO_TRANSFER_COLLECT_PROTOCOL_FEES,
+      );
       assert.equal(memoCount, 0);
     });
   });
@@ -534,12 +576,17 @@ describe("TokenExtension/MemoTransfer", () => {
           position: positions[0].publicKey,
           tickArrayLower: positions[0].tickArrayLower,
           tickArrayUpper: positions[0].tickArrayUpper,
-        })
+        }),
       ).buildAndExecute();
 
       // Generate collect reward expectation
-      const whirlpoolData = (await fetcher.getPool(whirlpoolPda.publicKey)) as WhirlpoolData;
-      const positionPreCollect = await client.getPosition(positions[0].publicKey, IGNORE_CACHE);
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+      )) as WhirlpoolData;
+      const positionPreCollect = await client.getPosition(
+        positions[0].publicKey,
+        IGNORE_CACHE,
+      );
 
       // Lock the collectRewards quote to the last time we called updateFeesAndRewards
       const expectation = collectRewardsQuote({
@@ -548,7 +595,11 @@ describe("TokenExtension/MemoTransfer", () => {
         tickLower: positionPreCollect.getLowerTickData(),
         tickUpper: positionPreCollect.getUpperTickData(),
         timeStampInSeconds: whirlpoolData.rewardLastUpdatedTimestamp,
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          fetcher,
+          whirlpoolData,
+          IGNORE_CACHE,
+        ),
       });
 
       // Check that the expectation is not zero
@@ -562,9 +613,9 @@ describe("TokenExtension/MemoTransfer", () => {
             provider,
             { isToken2022: true },
             reward.rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
-        })
+        }),
       );
     });
 
@@ -576,7 +627,9 @@ describe("TokenExtension/MemoTransfer", () => {
       } = fixture.getInfos();
 
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(!(await isRequiredMemoTransfersEnabled(provider, rewardAccounts[i])));
+        assert.ok(
+          !(await isRequiredMemoTransfersEnabled(provider, rewardAccounts[i])),
+        );
 
         const sig = await toTx(
           ctx,
@@ -590,12 +643,19 @@ describe("TokenExtension/MemoTransfer", () => {
             rewardOwnerAccount: rewardAccounts[i],
             rewardVault: rewards[i].rewardVaultKeypair.publicKey,
             rewardIndex: i,
-          })
+          }),
         ).buildAndExecute();
-        const rewardBalance = await getTokenBalance(provider, rewardAccounts[i]);
+        const rewardBalance = await getTokenBalance(
+          provider,
+          rewardAccounts[i],
+        );
         assert.ok(new BN(rewardBalance).gtn(0));
 
-        const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_COLLECT_REWARD);
+        const memoCount = await countMemoLog(
+          provider,
+          sig,
+          MEMO_TRANSFER_COLLECT_REWARD,
+        );
         assert.equal(memoCount, 0);
       }
     });
@@ -609,7 +669,9 @@ describe("TokenExtension/MemoTransfer", () => {
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         await enableRequiredMemoTransfers(provider, rewardAccounts[i]);
-        assert.ok(await isRequiredMemoTransfersEnabled(provider, rewardAccounts[i]));
+        assert.ok(
+          await isRequiredMemoTransfersEnabled(provider, rewardAccounts[i]),
+        );
 
         const sig = await toTx(
           ctx,
@@ -623,12 +685,19 @@ describe("TokenExtension/MemoTransfer", () => {
             rewardOwnerAccount: rewardAccounts[i],
             rewardVault: rewards[i].rewardVaultKeypair.publicKey,
             rewardIndex: i,
-          })
+          }),
         ).buildAndExecute();
-        const rewardBalance = await getTokenBalance(provider, rewardAccounts[i]);
+        const rewardBalance = await getTokenBalance(
+          provider,
+          rewardAccounts[i],
+        );
         assert.ok(new BN(rewardBalance).gtn(0));
 
-        const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_COLLECT_REWARD);
+        const memoCount = await countMemoLog(
+          provider,
+          sig,
+          MEMO_TRANSFER_COLLECT_REWARD,
+        );
         assert.equal(memoCount, 1);
       }
     });
@@ -642,9 +711,13 @@ describe("TokenExtension/MemoTransfer", () => {
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         await enableRequiredMemoTransfers(provider, rewardAccounts[i]);
-        assert.ok(await isRequiredMemoTransfersEnabled(provider, rewardAccounts[i]));
+        assert.ok(
+          await isRequiredMemoTransfersEnabled(provider, rewardAccounts[i]),
+        );
         await disableRequiredMemoTransfers(provider, rewardAccounts[i]);
-        assert.ok(!(await isRequiredMemoTransfersEnabled(provider, rewardAccounts[i])));
+        assert.ok(
+          !(await isRequiredMemoTransfersEnabled(provider, rewardAccounts[i])),
+        );
 
         const sig = await toTx(
           ctx,
@@ -658,12 +731,19 @@ describe("TokenExtension/MemoTransfer", () => {
             rewardOwnerAccount: rewardAccounts[i],
             rewardVault: rewards[i].rewardVaultKeypair.publicKey,
             rewardIndex: i,
-          })
+          }),
         ).buildAndExecute();
-        const rewardBalance = await getTokenBalance(provider, rewardAccounts[i]);
+        const rewardBalance = await getTokenBalance(
+          provider,
+          rewardAccounts[i],
+        );
         assert.ok(new BN(rewardBalance).gtn(0));
 
-        const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_COLLECT_REWARD);
+        const memoCount = await countMemoLog(
+          provider,
+          sig,
+          MEMO_TRANSFER_COLLECT_REWARD,
+        );
         assert.equal(memoCount, 0);
       }
     });
@@ -684,13 +764,19 @@ describe("TokenExtension/MemoTransfer", () => {
         tokenTraitB: { isToken2022: true },
         tickSpacing: TickSpacing.Standard,
         initialSqrtPrice: MathUtil.toX64(new Decimal(1.48)),
-        positions: [{ tickLowerIndex: tickLower, tickUpperIndex: tickUpper, liquidityAmount }],
+        positions: [
+          {
+            tickLowerIndex: tickLower,
+            tickUpperIndex: tickUpper,
+            liquidityAmount,
+          },
+        ],
       });
       const { poolInitInfo } = fixture.getInfos();
       const { whirlpoolPda } = poolInitInfo;
       const poolBefore = (await fetcher.getPool(
         whirlpoolPda.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       )) as WhirlpoolData;
 
       removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
@@ -700,7 +786,11 @@ describe("TokenExtension/MemoTransfer", () => {
         tickCurrentIndex: poolBefore.tickCurrentIndex,
         tickLowerIndex: tickLower,
         tickUpperIndex: tickUpper,
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolBefore, IGNORE_CACHE),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          fetcher,
+          poolBefore,
+          IGNORE_CACHE,
+        ),
       });
       assert.ok(!removalQuote.tokenEstA.isZero());
       assert.ok(!removalQuote.tokenEstB.isZero());
@@ -709,13 +799,13 @@ describe("TokenExtension/MemoTransfer", () => {
         provider,
         { isToken2022: true },
         poolInitInfo.tokenMintA,
-        provider.wallet.publicKey
+        provider.wallet.publicKey,
       );
       destAccountB = await createTokenAccountV2(
         provider,
         { isToken2022: true },
         poolInitInfo.tokenMintB,
-        provider.wallet.publicKey
+        provider.wallet.publicKey,
       );
     });
 
@@ -740,14 +830,18 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positions[0].tickArrayLower,
           tickArrayUpper: positions[0].tickArrayUpper,
-        })
+        }),
       ).buildAndExecute();
       const destBalanceA = await getTokenBalance(provider, destAccountA);
       const destBalanceB = await getTokenBalance(provider, destAccountB);
       assert.ok(new BN(destBalanceA).gtn(0));
       assert.ok(new BN(destBalanceB).gtn(0));
 
-      const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_DECREASE_LIQUIDITY);
+      const memoCount = await countMemoLog(
+        provider,
+        sig,
+        MEMO_TRANSFER_DECREASE_LIQUIDITY,
+      );
       assert.equal(memoCount, 0);
     });
 
@@ -777,14 +871,18 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positions[0].tickArrayLower,
           tickArrayUpper: positions[0].tickArrayUpper,
-        })
+        }),
       ).buildAndExecute();
       const destBalanceA = await getTokenBalance(provider, destAccountA);
       const destBalanceB = await getTokenBalance(provider, destAccountB);
       assert.ok(new BN(destBalanceA).gtn(0));
       assert.ok(new BN(destBalanceB).gtn(0));
 
-      const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_DECREASE_LIQUIDITY);
+      const memoCount = await countMemoLog(
+        provider,
+        sig,
+        MEMO_TRANSFER_DECREASE_LIQUIDITY,
+      );
       assert.equal(memoCount, 2);
     });
 
@@ -798,8 +896,12 @@ describe("TokenExtension/MemoTransfer", () => {
 
       await disableRequiredMemoTransfers(provider, destAccountA);
       await disableRequiredMemoTransfers(provider, destAccountB);
-      assert.ok(!(await isRequiredMemoTransfersEnabled(provider, destAccountA)));
-      assert.ok(!(await isRequiredMemoTransfersEnabled(provider, destAccountB)));
+      assert.ok(
+        !(await isRequiredMemoTransfersEnabled(provider, destAccountA)),
+      );
+      assert.ok(
+        !(await isRequiredMemoTransfersEnabled(provider, destAccountB)),
+      );
 
       const sig = await toTx(
         ctx,
@@ -819,14 +921,18 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positions[0].tickArrayLower,
           tickArrayUpper: positions[0].tickArrayUpper,
-        })
+        }),
       ).buildAndExecute();
       const destBalanceA = await getTokenBalance(provider, destAccountA);
       const destBalanceB = await getTokenBalance(provider, destAccountB);
       assert.ok(new BN(destBalanceA).gtn(0));
       assert.ok(new BN(destBalanceB).gtn(0));
 
-      const memoCount = await countMemoLog(provider, sig, MEMO_TRANSFER_DECREASE_LIQUIDITY);
+      const memoCount = await countMemoLog(
+        provider,
+        sig,
+        MEMO_TRANSFER_DECREASE_LIQUIDITY,
+      );
       assert.equal(memoCount, 0);
     });
   });
@@ -845,7 +951,7 @@ describe("TokenExtension/MemoTransfer", () => {
         ctx,
         { isToken2022: true },
         { isToken2022: true },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
       poolInitInfo = init.poolInitInfo;
       whirlpoolPda = init.whirlpoolPda;
@@ -859,7 +965,7 @@ describe("TokenExtension/MemoTransfer", () => {
         22528, // to 33792
         3,
         TickSpacing.Standard,
-        aToB
+        aToB,
       );
 
       const fundParams: FundedPositionV2Params[] = [
@@ -870,12 +976,24 @@ describe("TokenExtension/MemoTransfer", () => {
         },
       ];
 
-      await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
+      await fundPositionsV2(
+        ctx,
+        poolInitInfo,
+        tokenAccountA,
+        tokenAccountB,
+        fundParams,
+      );
 
-      oraclePubkey = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey).publicKey;
+      oraclePubkey = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      ).publicKey;
 
       const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-      const whirlpoolData = (await fetcher.getPool(whirlpoolKey, IGNORE_CACHE)) as WhirlpoolData;
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpoolKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
 
       quoteAToB = swapQuoteWithParams(
         {
@@ -892,11 +1010,16 @@ describe("TokenExtension/MemoTransfer", () => {
             ctx.program.programId,
             whirlpoolKey,
             fetcher,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
-          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
+          tokenExtensionCtx:
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              whirlpoolData,
+              IGNORE_CACHE,
+            ),
         },
-        Percentage.fromFraction(100, 100) // 100% slippage
+        Percentage.fromFraction(100, 100), // 100% slippage
       );
 
       quoteBToA = swapQuoteWithParams(
@@ -914,11 +1037,16 @@ describe("TokenExtension/MemoTransfer", () => {
             ctx.program.programId,
             whirlpoolKey,
             fetcher,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
-          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
+          tokenExtensionCtx:
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              whirlpoolData,
+              IGNORE_CACHE,
+            ),
         },
-        Percentage.fromFraction(100, 100) // 100% slippage
+        Percentage.fromFraction(100, 100), // 100% slippage
       );
     });
 
@@ -941,7 +1069,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePubkey,
-        })
+        }),
       ).buildAndExecute();
 
       const balanceA1 = new BN(await getTokenBalance(provider, tokenAccountA));
@@ -949,7 +1077,11 @@ describe("TokenExtension/MemoTransfer", () => {
       assert.ok(balanceB1.lt(balanceB0));
       assert.ok(balanceA1.gt(balanceA0));
 
-      const memoCountBToA = await countMemoLog(provider, sigBToA, MEMO_TRANSFER_SWAP);
+      const memoCountBToA = await countMemoLog(
+        provider,
+        sigBToA,
+        MEMO_TRANSFER_SWAP,
+      );
       assert.equal(memoCountBToA, 0);
 
       const sigAToB = await toTx(
@@ -967,7 +1099,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePubkey,
-        })
+        }),
       ).buildAndExecute();
 
       const balanceA2 = new BN(await getTokenBalance(provider, tokenAccountA));
@@ -975,7 +1107,11 @@ describe("TokenExtension/MemoTransfer", () => {
       assert.ok(balanceA2.lt(balanceA1));
       assert.ok(balanceB2.gt(balanceB1));
 
-      const memoCountAToB = await countMemoLog(provider, sigAToB, MEMO_TRANSFER_SWAP);
+      const memoCountAToB = await countMemoLog(
+        provider,
+        sigAToB,
+        MEMO_TRANSFER_SWAP,
+      );
       assert.equal(memoCountAToB, 0);
     });
 
@@ -1003,7 +1139,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePubkey,
-        })
+        }),
       ).buildAndExecute();
 
       const balanceA1 = new BN(await getTokenBalance(provider, tokenAccountA));
@@ -1011,7 +1147,11 @@ describe("TokenExtension/MemoTransfer", () => {
       assert.ok(balanceB1.lt(balanceB0));
       assert.ok(balanceA1.gt(balanceA0));
 
-      const memoCountBToA = await countMemoLog(provider, sigBToA, MEMO_TRANSFER_SWAP);
+      const memoCountBToA = await countMemoLog(
+        provider,
+        sigBToA,
+        MEMO_TRANSFER_SWAP,
+      );
       assert.equal(memoCountBToA, 1);
 
       const sigAToB = await toTx(
@@ -1029,7 +1169,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePubkey,
-        })
+        }),
       ).buildAndExecute();
 
       const balanceA2 = new BN(await getTokenBalance(provider, tokenAccountA));
@@ -1037,7 +1177,11 @@ describe("TokenExtension/MemoTransfer", () => {
       assert.ok(balanceA2.lt(balanceA1));
       assert.ok(balanceB2.gt(balanceB1));
 
-      const memoCountAToB = await countMemoLog(provider, sigAToB, MEMO_TRANSFER_SWAP);
+      const memoCountAToB = await countMemoLog(
+        provider,
+        sigAToB,
+        MEMO_TRANSFER_SWAP,
+      );
       assert.equal(memoCountAToB, 1);
     });
 
@@ -1049,8 +1193,12 @@ describe("TokenExtension/MemoTransfer", () => {
 
       await disableRequiredMemoTransfers(provider, tokenAccountA);
       await disableRequiredMemoTransfers(provider, tokenAccountB);
-      assert.ok(!(await isRequiredMemoTransfersEnabled(provider, tokenAccountA)));
-      assert.ok(!(await isRequiredMemoTransfersEnabled(provider, tokenAccountB)));
+      assert.ok(
+        !(await isRequiredMemoTransfersEnabled(provider, tokenAccountA)),
+      );
+      assert.ok(
+        !(await isRequiredMemoTransfersEnabled(provider, tokenAccountB)),
+      );
 
       const balanceA0 = new BN(await getTokenBalance(provider, tokenAccountA));
       const balanceB0 = new BN(await getTokenBalance(provider, tokenAccountB));
@@ -1070,7 +1218,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePubkey,
-        })
+        }),
       ).buildAndExecute();
 
       const balanceA1 = new BN(await getTokenBalance(provider, tokenAccountA));
@@ -1078,7 +1226,11 @@ describe("TokenExtension/MemoTransfer", () => {
       assert.ok(balanceB1.lt(balanceB0));
       assert.ok(balanceA1.gt(balanceA0));
 
-      const memoCountBToA = await countMemoLog(provider, sigBToA, MEMO_TRANSFER_SWAP);
+      const memoCountBToA = await countMemoLog(
+        provider,
+        sigBToA,
+        MEMO_TRANSFER_SWAP,
+      );
       assert.equal(memoCountBToA, 0);
 
       const sigAToB = await toTx(
@@ -1096,7 +1248,7 @@ describe("TokenExtension/MemoTransfer", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePubkey,
-        })
+        }),
       ).buildAndExecute();
 
       const balanceA2 = new BN(await getTokenBalance(provider, tokenAccountA));
@@ -1104,7 +1256,11 @@ describe("TokenExtension/MemoTransfer", () => {
       assert.ok(balanceA2.lt(balanceA1));
       assert.ok(balanceB2.gt(balanceB1));
 
-      const memoCountAToB = await countMemoLog(provider, sigAToB, MEMO_TRANSFER_SWAP);
+      const memoCountAToB = await countMemoLog(
+        provider,
+        sigAToB,
+        MEMO_TRANSFER_SWAP,
+      );
       assert.equal(memoCountAToB, 0);
     });
   });
@@ -1124,7 +1280,10 @@ describe("TokenExtension/MemoTransfer", () => {
         { tokenTrait: { isToken2022: true } },
       ];
       aqConfig.initTokenAccParams.push({ mintIndex: 2 });
-      aqConfig.initPoolParams.push({ mintIndices: [1, 2], tickSpacing: TickSpacing.Standard });
+      aqConfig.initPoolParams.push({
+        mintIndices: [1, 2],
+        tickSpacing: TickSpacing.Standard,
+      });
 
       // Add tick arrays and positions
       const aToB = false;
@@ -1157,11 +1316,11 @@ describe("TokenExtension/MemoTransfer", () => {
       const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
       const whirlpoolDataOne = (await fetcher.getPool(
         whirlpoolOneKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       )) as WhirlpoolData;
       const whirlpoolDataTwo = (await fetcher.getPool(
         whirlpoolTwoKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       )) as WhirlpoolData;
 
       const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -1181,11 +1340,16 @@ describe("TokenExtension/MemoTransfer", () => {
             ctx.program.programId,
             whirlpoolOneKey,
             fetcher,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
-          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+          tokenExtensionCtx:
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              whirlpoolDataOne,
+              IGNORE_CACHE,
+            ),
         },
-        Percentage.fromFraction(1, 100)
+        Percentage.fromFraction(1, 100),
       );
 
       const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -1204,11 +1368,16 @@ describe("TokenExtension/MemoTransfer", () => {
             ctx.program.programId,
             whirlpoolTwoKey,
             fetcher,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
-          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+          tokenExtensionCtx:
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              whirlpoolDataTwo,
+              IGNORE_CACHE,
+            ),
         },
-        Percentage.fromFraction(1, 100)
+        Percentage.fromFraction(1, 100),
       );
 
       const tokenAccKeys = getTokenAccsForPoolsV2(pools, tokenAccounts);
@@ -1218,22 +1387,50 @@ describe("TokenExtension/MemoTransfer", () => {
         tokenAuthority: ctx.wallet.publicKey,
         whirlpoolOne: pools[0].whirlpoolPda.publicKey,
         whirlpoolTwo: pools[1].whirlpoolPda.publicKey,
-        tokenMintInput: twoHopQuote.aToBOne ? pools[0].tokenMintA : pools[0].tokenMintB,
-        tokenMintIntermediate: twoHopQuote.aToBOne ? pools[0].tokenMintB : pools[0].tokenMintA,
-        tokenMintOutput: twoHopQuote.aToBTwo ? pools[1].tokenMintB : pools[1].tokenMintA,
-        tokenProgramInput: twoHopQuote.aToBOne ? pools[0].tokenProgramA : pools[0].tokenProgramB,
-        tokenProgramIntermediate: twoHopQuote.aToBOne ? pools[0].tokenProgramB : pools[0].tokenProgramA,
-        tokenProgramOutput: twoHopQuote.aToBTwo ? pools[1].tokenProgramB : pools[1].tokenProgramA,
-        tokenOwnerAccountInput: twoHopQuote.aToBOne ? tokenAccKeys[0] : tokenAccKeys[1],
-        tokenOwnerAccountOutput: twoHopQuote.aToBTwo ? tokenAccKeys[3] : tokenAccKeys[2],
-        tokenVaultOneInput: twoHopQuote.aToBOne ? pools[0].tokenVaultAKeypair.publicKey : pools[0].tokenVaultBKeypair.publicKey,
-        tokenVaultOneIntermediate: twoHopQuote.aToBOne ? pools[0].tokenVaultBKeypair.publicKey : pools[0].tokenVaultAKeypair.publicKey,
-        tokenVaultTwoIntermediate: twoHopQuote.aToBTwo ? pools[1].tokenVaultAKeypair.publicKey : pools[1].tokenVaultBKeypair.publicKey,
-        tokenVaultTwoOutput: twoHopQuote.aToBTwo ? pools[1].tokenVaultBKeypair.publicKey : pools[1].tokenVaultAKeypair.publicKey,
-        oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[0].whirlpoolPda.publicKey)
-          .publicKey,
-        oracleTwo: PDAUtil.getOracle(ctx.program.programId, pools[1].whirlpoolPda.publicKey)
-          .publicKey,
+        tokenMintInput: twoHopQuote.aToBOne
+          ? pools[0].tokenMintA
+          : pools[0].tokenMintB,
+        tokenMintIntermediate: twoHopQuote.aToBOne
+          ? pools[0].tokenMintB
+          : pools[0].tokenMintA,
+        tokenMintOutput: twoHopQuote.aToBTwo
+          ? pools[1].tokenMintB
+          : pools[1].tokenMintA,
+        tokenProgramInput: twoHopQuote.aToBOne
+          ? pools[0].tokenProgramA
+          : pools[0].tokenProgramB,
+        tokenProgramIntermediate: twoHopQuote.aToBOne
+          ? pools[0].tokenProgramB
+          : pools[0].tokenProgramA,
+        tokenProgramOutput: twoHopQuote.aToBTwo
+          ? pools[1].tokenProgramB
+          : pools[1].tokenProgramA,
+        tokenOwnerAccountInput: twoHopQuote.aToBOne
+          ? tokenAccKeys[0]
+          : tokenAccKeys[1],
+        tokenOwnerAccountOutput: twoHopQuote.aToBTwo
+          ? tokenAccKeys[3]
+          : tokenAccKeys[2],
+        tokenVaultOneInput: twoHopQuote.aToBOne
+          ? pools[0].tokenVaultAKeypair.publicKey
+          : pools[0].tokenVaultBKeypair.publicKey,
+        tokenVaultOneIntermediate: twoHopQuote.aToBOne
+          ? pools[0].tokenVaultBKeypair.publicKey
+          : pools[0].tokenVaultAKeypair.publicKey,
+        tokenVaultTwoIntermediate: twoHopQuote.aToBTwo
+          ? pools[1].tokenVaultAKeypair.publicKey
+          : pools[1].tokenVaultBKeypair.publicKey,
+        tokenVaultTwoOutput: twoHopQuote.aToBTwo
+          ? pools[1].tokenVaultBKeypair.publicKey
+          : pools[1].tokenVaultAKeypair.publicKey,
+        oracleOne: PDAUtil.getOracle(
+          ctx.program.programId,
+          pools[0].whirlpoolPda.publicKey,
+        ).publicKey,
+        oracleTwo: PDAUtil.getOracle(
+          ctx.program.programId,
+          pools[1].whirlpoolPda.publicKey,
+        ).publicKey,
       };
 
       tokenAccountIn = baseIxParams.tokenOwnerAccountInput;
@@ -1241,16 +1438,24 @@ describe("TokenExtension/MemoTransfer", () => {
     });
 
     it("two_hop_swap_v2: without memo", async () => {
-      const preBalanceIn = new BN(await getTokenBalance(provider, tokenAccountIn));
-      const preBalanceOut = new BN(await getTokenBalance(provider, tokenAccountOut));
+      const preBalanceIn = new BN(
+        await getTokenBalance(provider, tokenAccountIn),
+      );
+      const preBalanceOut = new BN(
+        await getTokenBalance(provider, tokenAccountOut),
+      );
 
       const sig = await toTx(
         ctx,
-        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
+        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams),
       ).buildAndExecute();
 
-      const postBalanceIn = new BN(await getTokenBalance(provider, tokenAccountIn));
-      const postBalanceOut = new BN(await getTokenBalance(provider, tokenAccountOut));
+      const postBalanceIn = new BN(
+        await getTokenBalance(provider, tokenAccountIn),
+      );
+      const postBalanceOut = new BN(
+        await getTokenBalance(provider, tokenAccountOut),
+      );
       assert.ok(postBalanceIn.lt(preBalanceIn));
       assert.ok(postBalanceOut.gt(preBalanceOut));
 
@@ -1262,18 +1467,28 @@ describe("TokenExtension/MemoTransfer", () => {
       await enableRequiredMemoTransfers(provider, tokenAccountIn);
       await enableRequiredMemoTransfers(provider, tokenAccountOut);
       assert.ok(await isRequiredMemoTransfersEnabled(provider, tokenAccountIn));
-      assert.ok(await isRequiredMemoTransfersEnabled(provider, tokenAccountOut));
+      assert.ok(
+        await isRequiredMemoTransfersEnabled(provider, tokenAccountOut),
+      );
 
-      const preBalanceIn = new BN(await getTokenBalance(provider, tokenAccountIn));
-      const preBalanceOut = new BN(await getTokenBalance(provider, tokenAccountOut));
+      const preBalanceIn = new BN(
+        await getTokenBalance(provider, tokenAccountIn),
+      );
+      const preBalanceOut = new BN(
+        await getTokenBalance(provider, tokenAccountOut),
+      );
 
       const sig = await toTx(
         ctx,
-        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
+        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams),
       ).buildAndExecute();
 
-      const postBalanceIn = new BN(await getTokenBalance(provider, tokenAccountIn));
-      const postBalanceOut = new BN(await getTokenBalance(provider, tokenAccountOut));
+      const postBalanceIn = new BN(
+        await getTokenBalance(provider, tokenAccountIn),
+      );
+      const postBalanceOut = new BN(
+        await getTokenBalance(provider, tokenAccountOut),
+      );
       assert.ok(postBalanceIn.lt(preBalanceIn));
       assert.ok(postBalanceOut.gt(preBalanceOut));
 
@@ -1285,23 +1500,37 @@ describe("TokenExtension/MemoTransfer", () => {
       await enableRequiredMemoTransfers(provider, tokenAccountIn);
       await enableRequiredMemoTransfers(provider, tokenAccountOut);
       assert.ok(await isRequiredMemoTransfersEnabled(provider, tokenAccountIn));
-      assert.ok(await isRequiredMemoTransfersEnabled(provider, tokenAccountOut));
+      assert.ok(
+        await isRequiredMemoTransfersEnabled(provider, tokenAccountOut),
+      );
 
       await disableRequiredMemoTransfers(provider, tokenAccountIn);
       await disableRequiredMemoTransfers(provider, tokenAccountOut);
-      assert.ok(!(await isRequiredMemoTransfersEnabled(provider, tokenAccountIn)));
-      assert.ok(!(await isRequiredMemoTransfersEnabled(provider, tokenAccountOut)));
+      assert.ok(
+        !(await isRequiredMemoTransfersEnabled(provider, tokenAccountIn)),
+      );
+      assert.ok(
+        !(await isRequiredMemoTransfersEnabled(provider, tokenAccountOut)),
+      );
 
-      const preBalanceIn = new BN(await getTokenBalance(provider, tokenAccountIn));
-      const preBalanceOut = new BN(await getTokenBalance(provider, tokenAccountOut));
+      const preBalanceIn = new BN(
+        await getTokenBalance(provider, tokenAccountIn),
+      );
+      const preBalanceOut = new BN(
+        await getTokenBalance(provider, tokenAccountOut),
+      );
 
       const sig = await toTx(
         ctx,
-        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
+        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams),
       ).buildAndExecute();
 
-      const postBalanceIn = new BN(await getTokenBalance(provider, tokenAccountIn));
-      const postBalanceOut = new BN(await getTokenBalance(provider, tokenAccountOut));
+      const postBalanceIn = new BN(
+        await getTokenBalance(provider, tokenAccountIn),
+      );
+      const postBalanceOut = new BN(
+        await getTokenBalance(provider, tokenAccountOut),
+      );
       assert.ok(postBalanceIn.lt(preBalanceIn));
       assert.ok(postBalanceOut.gt(preBalanceOut));
 
@@ -1314,7 +1543,7 @@ describe("TokenExtension/MemoTransfer", () => {
 async function countMemoLog(
   provider: anchor.AnchorProvider,
   signature: string,
-  logMessage: string
+  logMessage: string,
 ): Promise<number> {
   const logLen = logMessage.length;
   const logFormat = `Program log: Memo (len ${logLen}): "${logMessage}"`;

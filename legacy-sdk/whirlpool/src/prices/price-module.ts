@@ -1,31 +1,33 @@
-import { Address } from "@coral-xyz/anchor";
+import type { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import {
+import type {
   DecimalsMap,
   PoolMap,
   PriceCalculationData,
   PriceMap,
   TickArrayMap,
-  defaultGetPricesConfig,
-  defaultGetPricesThresholdConfig,
 } from ".";
-import {
-  IGNORE_CACHE,
-  PREFER_CACHE,
+import { defaultGetPricesConfig, defaultGetPricesThresholdConfig } from ".";
+import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/fetcher";
+import { IGNORE_CACHE, PREFER_CACHE } from "../network/public/fetcher";
 import { PDAUtil, PoolUtil, SwapUtils } from "../utils/public";
 import { convertListToMap, filterNullObjects } from "../utils/txn-utils";
-import { calculatePricesForQuoteToken, convertAmount, isSubset } from "./calculate-pool-prices";
+import {
+  calculatePricesForQuoteToken,
+  convertAmount,
+  isSubset,
+} from "./calculate-pool-prices";
 
 /**
  * PriceModule is a static class that provides functions for fetching and calculating
  * token prices for a set of pools or mints.
  *
  * @category PriceModule
- * 
+ *
  * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
  */
 export class PriceModule {
@@ -40,7 +42,7 @@ export class PriceModule {
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @param availableData - Data that is already available to avoid redundant fetches.
    * @returns A map of token addresses to prices.
-   * 
+   *
    * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static async fetchTokenPricesByMints(
@@ -49,17 +51,31 @@ export class PriceModule {
     config = defaultGetPricesConfig,
     thresholdConfig = defaultGetPricesThresholdConfig,
     opts = IGNORE_CACHE,
-    availableData: Partial<PriceCalculationData> = {}
+    availableData: Partial<PriceCalculationData> = {},
   ): Promise<PriceMap> {
     const poolMap = availableData?.poolMap
       ? availableData?.poolMap
-      : await PriceModuleUtils.fetchPoolDataFromMints(fetcher, mints, config, opts);
+      : await PriceModuleUtils.fetchPoolDataFromMints(
+          fetcher,
+          mints,
+          config,
+          opts,
+        );
     const tickArrayMap = availableData?.tickArrayMap
       ? availableData.tickArrayMap
-      : await PriceModuleUtils.fetchTickArraysForPools(fetcher, poolMap, config, opts);
+      : await PriceModuleUtils.fetchTickArraysForPools(
+          fetcher,
+          poolMap,
+          config,
+          opts,
+        );
     const decimalsMap = availableData?.decimalsMap
       ? availableData.decimalsMap
-      : await PriceModuleUtils.fetchDecimalsForMints(fetcher, mints, PREFER_CACHE);
+      : await PriceModuleUtils.fetchDecimalsForMints(
+          fetcher,
+          mints,
+          PREFER_CACHE,
+        );
 
     return PriceModule.calculateTokenPrices(
       mints,
@@ -69,7 +85,7 @@ export class PriceModule {
         decimalsMap,
       },
       config,
-      thresholdConfig
+      thresholdConfig,
     );
   }
 
@@ -82,7 +98,7 @@ export class PriceModule {
    * @param thresholdConfig The threshold configuration for the price calculation.
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A map of token addresses to prices
-   * 
+   *
    * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static async fetchTokenPricesByPools(
@@ -90,29 +106,38 @@ export class PriceModule {
     pools: Address[],
     config = defaultGetPricesConfig,
     thresholdConfig = defaultGetPricesThresholdConfig,
-    opts: WhirlpoolAccountFetchOptions = IGNORE_CACHE
+    opts: WhirlpoolAccountFetchOptions = IGNORE_CACHE,
   ): Promise<PriceMap> {
-    const poolDatas = Array.from((await fetcher.getPools(pools, opts)).values());
-    const [filteredPoolDatas, filteredPoolAddresses] = filterNullObjects(poolDatas, pools);
+    const poolDatas = Array.from(
+      (await fetcher.getPools(pools, opts)).values(),
+    );
+    const [filteredPoolDatas, filteredPoolAddresses] = filterNullObjects(
+      poolDatas,
+      pools,
+    );
     const poolMap = convertListToMap(
       filteredPoolDatas,
-      AddressUtil.toStrings(filteredPoolAddresses)
+      AddressUtil.toStrings(filteredPoolAddresses),
     );
 
     const tickArrayMap = await PriceModuleUtils.fetchTickArraysForPools(
       fetcher,
       poolMap,
       config,
-      opts
+      opts,
     );
     const mints = Array.from(
       Object.values(poolMap).reduce((acc, pool) => {
         acc.add(pool.tokenMintA.toBase58());
         acc.add(pool.tokenMintB.toBase58());
         return acc;
-      }, new Set<string>())
+      }, new Set<string>()),
     );
-    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(fetcher, mints, PREFER_CACHE);
+    const decimalsMap = await PriceModuleUtils.fetchDecimalsForMints(
+      fetcher,
+      mints,
+      PREFER_CACHE,
+    );
 
     return PriceModule.calculateTokenPrices(
       mints,
@@ -122,7 +147,7 @@ export class PriceModule {
         decimalsMap,
       },
       config,
-      thresholdConfig
+      thresholdConfig,
     );
   }
 
@@ -141,14 +166,14 @@ export class PriceModule {
    * @param config The configuration for the price calculation.
    * @param thresholdConfig The threshold configuration for the price calculation.
    * @returns A map of token addresses to prices.
-   * 
+   *
    * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static calculateTokenPrices(
     mints: Address[],
     priceCalcData: PriceCalculationData,
     config = defaultGetPricesConfig,
-    thresholdConfig = defaultGetPricesThresholdConfig
+    thresholdConfig = defaultGetPricesThresholdConfig,
   ): PriceMap {
     const { poolMap, decimalsMap, tickArrayMap } = priceCalcData;
     const mintStrings = AddressUtil.toStrings(mints);
@@ -156,13 +181,15 @@ export class PriceModule {
     if (
       !isSubset(
         config.quoteTokens.map((mint) => AddressUtil.toString(mint)),
-        mintStrings.map((mint) => mint)
+        mintStrings.map((mint) => mint),
       )
     ) {
       throw new Error("Quote tokens must be in mints array");
     }
 
-    const results: PriceMap = Object.fromEntries(mintStrings.map((mint) => [mint, null]));
+    const results: PriceMap = Object.fromEntries(
+      mintStrings.map((mint) => [mint, null]),
+    );
 
     const remainingQuoteTokens = config.quoteTokens.slice();
     let remainingMints = mints.slice();
@@ -185,7 +212,7 @@ export class PriceModule {
         const quoteTokenPrice = results[quoteTokenStr];
         if (!quoteTokenPrice) {
           throw new Error(
-            `Quote token - ${quoteTokenStr} must have a price against the first quote token`
+            `Quote token - ${quoteTokenStr} must have a price against the first quote token`,
           );
         }
 
@@ -193,7 +220,7 @@ export class PriceModule {
           thresholdConfig.amountOut,
           quoteTokenPrice,
           decimalsMap[config.quoteTokens[0].toBase58()],
-          decimalsMap[quoteTokenStr]
+          decimalsMap[quoteTokenStr],
         );
       }
 
@@ -207,10 +234,11 @@ export class PriceModule {
         {
           amountOut: amountOutThresholdAgainstFirstQuoteToken,
           priceImpactThreshold: thresholdConfig.priceImpactThreshold,
-        }
+        },
       );
 
-      const quoteTokenPrice = results[quoteToken.toBase58()] || prices[quoteToken.toBase58()];
+      const quoteTokenPrice =
+        results[quoteToken.toBase58()] || prices[quoteToken.toBase58()];
 
       // Populate the results map with the calculated prices.
       // Ensure that the price is quoted against the first quote token and not the current quote token.
@@ -223,7 +251,9 @@ export class PriceModule {
       });
 
       // Filter out any mints that do not have a price
-      remainingMints = remainingMints.filter((mint) => results[AddressUtil.toString(mint)] == null);
+      remainingMints = remainingMints.filter(
+        (mint) => results[AddressUtil.toString(mint)] == null,
+      );
     }
 
     return results;
@@ -246,14 +276,14 @@ export class PriceModuleUtils {
    * @param config The configuration for the price calculation.
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A {@link PoolMap} of pool addresses to pool data.
-   * 
+   *
    * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static async fetchPoolDataFromMints(
     fetcher: WhirlpoolAccountFetcherInterface,
     mints: Address[],
     config = defaultGetPricesConfig,
-    opts = IGNORE_CACHE
+    opts = IGNORE_CACHE,
   ): Promise<PoolMap> {
     const { quoteTokens, tickSpacings, programId, whirlpoolsConfig } = config;
     const poolAddresses: string[] = mints
@@ -267,17 +297,22 @@ export class PriceModuleUtils {
                 whirlpoolsConfig,
                 AddressUtil.toPubKey(mintA),
                 AddressUtil.toPubKey(mintB),
-                tickSpacing
+                tickSpacing,
               ).publicKey.toBase58();
             });
           })
-          .flat()
+          .flat(),
       )
       .flat();
 
-    const poolDatas = Array.from((await fetcher.getPools(poolAddresses, opts)).values());
+    const poolDatas = Array.from(
+      (await fetcher.getPools(poolAddresses, opts)).values(),
+    );
 
-    const [filteredPoolDatas, filteredPoolAddresses] = filterNullObjects(poolDatas, poolAddresses);
+    const [filteredPoolDatas, filteredPoolAddresses] = filterNullObjects(
+      poolDatas,
+      poolAddresses,
+    );
     return convertListToMap(filteredPoolDatas, filteredPoolAddresses);
   }
 
@@ -289,19 +324,21 @@ export class PriceModuleUtils {
    * @param config The configuration for the price calculation.
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A {@link TickArrayMap} of tick-array addresses to tick-array data.
-   * 
+   *
    * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static async fetchTickArraysForPools(
     fetcher: WhirlpoolAccountFetcherInterface,
     pools: PoolMap,
     config = defaultGetPricesConfig,
-    opts: WhirlpoolAccountFetchOptions = IGNORE_CACHE
+    opts: WhirlpoolAccountFetchOptions = IGNORE_CACHE,
   ): Promise<TickArrayMap> {
     const { programId } = config;
 
     const getQuoteTokenOrder = (mint: PublicKey) => {
-      const index = config.quoteTokens.findIndex((quoteToken) => quoteToken.equals(mint));
+      const index = config.quoteTokens.findIndex((quoteToken) =>
+        quoteToken.equals(mint),
+      );
       return index === -1 ? config.quoteTokens.length : index;
     };
 
@@ -325,7 +362,7 @@ export class PriceModuleUtils {
         pool.tickSpacing,
         aToB,
         programId,
-        new PublicKey(address)
+        new PublicKey(address),
       );
       tickArrayPubkeys.forEach((p) => tickArrayAddressSet.add(p.toBase58()));
     });
@@ -335,7 +372,7 @@ export class PriceModuleUtils {
 
     const [filteredTickArrays, filteredTickArrayAddresses] = filterNullObjects(
       tickArrays,
-      tickArrayAddresses
+      tickArrayAddresses,
     );
     return convertListToMap(filteredTickArrays, filteredTickArrayAddresses);
   }
@@ -346,15 +383,17 @@ export class PriceModuleUtils {
    * @param mints The mints to fetch decimals for.
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
    * @returns A {@link DecimalsMap} of mint addresses to decimals.
-   * 
+   *
    * @deprecated PriceModule will be removed in the future release. Please use endpoint which provides prices.
    */
   static async fetchDecimalsForMints(
     fetcher: WhirlpoolAccountFetcherInterface,
     mints: Address[],
-    opts = IGNORE_CACHE
+    opts = IGNORE_CACHE,
   ): Promise<DecimalsMap> {
-    const mintInfos = Array.from((await fetcher.getMintInfos(mints, opts)).values());
+    const mintInfos = Array.from(
+      (await fetcher.getMintInfos(mints, opts)).values(),
+    );
 
     return mintInfos.reduce((acc, mintInfo, index) => {
       const mint = AddressUtil.toString(mints[index]);

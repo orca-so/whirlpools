@@ -1,26 +1,26 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil, MintWithTokenProgram } from "@orca-so/common-sdk";
+import type { MintWithTokenProgram } from "@orca-so/common-sdk";
+import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
-  buildWhirlpoolClient,
   IGNORE_CACHE,
   TokenExtensionUtil,
   WhirlpoolContext,
 } from "../../../../src";
-import {
-  TickSpacing,
-} from "../../../utils";
+import { TickSpacing } from "../../../utils";
 import { defaultConfirmOptions } from "../../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
 
 describe("TokenExtensionUtil tests", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
 
   let fixture: WhirlpoolTestFixtureV2;
 
@@ -54,17 +54,26 @@ describe("TokenExtensionUtil tests", () => {
       ],
       rewards: [
         {
-          rewardTokenTrait: { isToken2022: true, hasConfidentialTransferExtension: true },
+          rewardTokenTrait: {
+            isToken2022: true,
+            hasConfidentialTransferExtension: true,
+          },
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
           vaultAmount: new BN(vaultStartBalance),
         },
         {
-          rewardTokenTrait: { isToken2022: true, hasConfidentialTransferExtension: true },
+          rewardTokenTrait: {
+            isToken2022: true,
+            hasConfidentialTransferExtension: true,
+          },
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
           vaultAmount: new BN(vaultStartBalance),
         },
         {
-          rewardTokenTrait: { isToken2022: true, hasConfidentialTransferExtension: true },
+          rewardTokenTrait: {
+            isToken2022: true,
+            hasConfidentialTransferExtension: true,
+          },
           emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
           vaultAmount: new BN(vaultStartBalance),
         },
@@ -76,28 +85,35 @@ describe("TokenExtensionUtil tests", () => {
     const poolInitInfo = fixture.getInfos().poolInitInfo;
     const { tokenMintA, tokenMintB } = poolInitInfo;
 
-    const whirlpoolData = await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey);
-
-    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(
-      fetcher,
-      whirlpoolData!,
-      IGNORE_CACHE,
-    )
-    const tokenExtensionCtxForPool = await TokenExtensionUtil.buildTokenExtensionContextForPool(
-      fetcher,
-      tokenMintA,
-      tokenMintB,
-      IGNORE_CACHE,
+    const whirlpoolData = await fetcher.getPool(
+      poolInitInfo.whirlpoolPda.publicKey,
     );
 
-    assert.ok(partialEqualsTokenMintWithPrograml(
-      tokenExtensionCtx.tokenMintWithProgramA,
-      tokenExtensionCtxForPool.tokenMintWithProgramA,
-    ));
-    assert.ok(partialEqualsTokenMintWithPrograml(
-      tokenExtensionCtx.tokenMintWithProgramB,
-      tokenExtensionCtxForPool.tokenMintWithProgramB,
-    ));
-  });
+    const tokenExtensionCtx =
+      await TokenExtensionUtil.buildTokenExtensionContext(
+        fetcher,
+        whirlpoolData!,
+        IGNORE_CACHE,
+      );
+    const tokenExtensionCtxForPool =
+      await TokenExtensionUtil.buildTokenExtensionContextForPool(
+        fetcher,
+        tokenMintA,
+        tokenMintB,
+        IGNORE_CACHE,
+      );
 
+    assert.ok(
+      partialEqualsTokenMintWithPrograml(
+        tokenExtensionCtx.tokenMintWithProgramA,
+        tokenExtensionCtxForPool.tokenMintWithProgramA,
+      ),
+    );
+    assert.ok(
+      partialEqualsTokenMintWithPrograml(
+        tokenExtensionCtx.tokenMintWithProgramB,
+        tokenExtensionCtxForPool.tokenMintWithProgramB,
+      ),
+    );
+  });
 });

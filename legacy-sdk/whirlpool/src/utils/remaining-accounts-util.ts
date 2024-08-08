@@ -1,4 +1,4 @@
-import { AccountMeta, PublicKey } from "@solana/web3.js";
+import type { AccountMeta, PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import { MAX_SUPPLEMENTAL_TICK_ARRAYS } from "../types/public";
 
@@ -14,16 +14,16 @@ export enum RemainingAccountsType {
   SupplementalTickArraysTwo = "supplementalTickArraysTwo",
 }
 
-type RemainingAccountsAnchorType = 
-  { transferHookA: {} } |
-  { transferHookB: {} } |
-  { transferHookReward: {} } |
-  { transferHookInput: {} } |
-  { transferHookIntermediate: {} } |
-  { transferHookOutput: {} } |
-  { supplementalTickArrays: {} } |
-  { supplementalTickArraysOne: {} } |
-  { supplementalTickArraysTwo: {} };
+type RemainingAccountsAnchorType =
+  | { transferHookA: object }
+  | { transferHookB: object }
+  | { transferHookReward: object }
+  | { transferHookInput: object }
+  | { transferHookIntermediate: object }
+  | { transferHookOutput: object }
+  | { supplementalTickArrays: object }
+  | { supplementalTickArraysOne: object }
+  | { supplementalTickArraysTwo: object };
 
 export type RemainingAccountsSliceData = {
   accountsType: RemainingAccountsAnchorType;
@@ -42,9 +42,10 @@ export class RemainingAccountsBuilder {
   private remainingAccounts: AccountMeta[] = [];
   private slices: RemainingAccountsSliceData[] = [];
 
-  constructor() {}
-
-  addSlice(accountsType: RemainingAccountsType, accounts?: AccountMeta[]): this {
+  addSlice(
+    accountsType: RemainingAccountsType,
+    accounts?: AccountMeta[],
+  ): this {
     if (!accounts || accounts.length === 0) return this;
 
     this.slices.push({
@@ -56,7 +57,7 @@ export class RemainingAccountsBuilder {
     return this;
   }
 
-  build(): [OptionRemainingAccountsInfoData, AccountMeta[]|undefined] {
+  build(): [OptionRemainingAccountsInfoData, AccountMeta[] | undefined] {
     return this.slices.length === 0
       ? [null, undefined]
       : [{ slices: this.slices }, this.remainingAccounts];
@@ -64,14 +65,17 @@ export class RemainingAccountsBuilder {
 }
 
 export function toSupplementalTickArrayAccountMetas(
-  tickArrayPubkeys: PublicKey[] | undefined
+  tickArrayPubkeys: PublicKey[] | undefined,
 ): AccountMeta[] | undefined {
   if (!tickArrayPubkeys) return undefined;
 
-  invariant(tickArrayPubkeys.length <= MAX_SUPPLEMENTAL_TICK_ARRAYS, "Too many supplemental tick arrays provided");
+  invariant(
+    tickArrayPubkeys.length <= MAX_SUPPLEMENTAL_TICK_ARRAYS,
+    "Too many supplemental tick arrays provided",
+  );
   return tickArrayPubkeys.map((pubkey) => ({
     pubkey,
     isWritable: true,
-    isSigner: false
+    isSigner: false,
   }));
 }

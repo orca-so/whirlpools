@@ -1,25 +1,37 @@
-import { Address } from "@coral-xyz/anchor";
+import type { Address } from "@coral-xyz/anchor";
 import { AddressUtil, MathUtil, Percentage } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { WhirlpoolData, WhirlpoolRewardInfoData } from "../../types/public";
+import type {
+  WhirlpoolData,
+  WhirlpoolRewardInfoData,
+} from "../../types/public";
 import { TOKEN_MINTS } from "../constants";
 import { PriceMath } from "./price-math";
 import { TokenType } from "./types";
-import { PDAUtil, WhirlpoolContext } from "../..";
+import type { WhirlpoolContext } from "../..";
+import { PDAUtil } from "../..";
 import invariant from "tiny-invariant";
-import { AccountState, ExtensionType, NATIVE_MINT_2022, TOKEN_PROGRAM_ID, getDefaultAccountState, getExtensionTypes } from "@solana/spl-token";
+import {
+  AccountState,
+  ExtensionType,
+  NATIVE_MINT_2022,
+  TOKEN_PROGRAM_ID,
+  getDefaultAccountState,
+  getExtensionTypes,
+} from "@solana/spl-token";
 
 /**
  * @category Whirlpool Utils
  */
 export class PoolUtil {
-  private constructor() {}
-
-  public static isRewardInitialized(rewardInfo: WhirlpoolRewardInfoData): boolean {
+  public static isRewardInitialized(
+    rewardInfo: WhirlpoolRewardInfoData,
+  ): boolean {
     return (
-      !PublicKey.default.equals(rewardInfo.mint) && !PublicKey.default.equals(rewardInfo.vault)
+      !PublicKey.default.equals(rewardInfo.mint) &&
+      !PublicKey.default.equals(rewardInfo.vault)
     );
   }
 
@@ -30,7 +42,10 @@ export class PoolUtil {
    * @param mint The token mint PublicKey
    * @returns The match result in the form of TokenType enum. undefined if the token mint is not part of the trade pair of the pool.
    */
-  public static getTokenType(pool: WhirlpoolData, mint: PublicKey): TokenType | undefined {
+  public static getTokenType(
+    pool: WhirlpoolData,
+    mint: PublicKey,
+  ): TokenType | undefined {
     if (pool.tokenMintA.equals(mint)) {
       return TokenType.TokenA;
     } else if (pool.tokenMintB.equals(mint)) {
@@ -59,13 +74,15 @@ export class PoolUtil {
   }
 
   public static orderMints(mintX: Address, mintY: Address): [Address, Address] {
-    return this.compareMints(mintX, mintY) < 0 ? [mintX, mintY] : [mintY, mintX];
+    return this.compareMints(mintX, mintY) < 0
+      ? [mintX, mintY]
+      : [mintY, mintX];
   }
 
   public static compareMints(mintX: Address, mintY: Address): number {
     return Buffer.compare(
       AddressUtil.toPubKey(mintX).toBuffer(),
-      AddressUtil.toPubKey(mintY).toBuffer()
+      AddressUtil.toPubKey(mintY).toBuffer(),
     );
   }
 
@@ -83,7 +100,7 @@ export class PoolUtil {
     currentSqrtPrice: BN,
     lowerSqrtPrice: BN,
     upperSqrtPrice: BN,
-    round_up: boolean
+    round_up: boolean,
   ): TokenAmounts {
     const _liquidity = new Decimal(liquidity.toString());
     const _currentPrice = new Decimal(currentSqrtPrice.toString());
@@ -102,11 +119,15 @@ export class PoolUtil {
       tokenA = MathUtil.toX64_Decimal(_liquidity)
         .mul(_upperPrice.sub(_currentPrice))
         .div(_currentPrice.mul(_upperPrice));
-      tokenB = MathUtil.fromX64_Decimal(_liquidity.mul(_currentPrice.sub(_lowerPrice)));
+      tokenB = MathUtil.fromX64_Decimal(
+        _liquidity.mul(_currentPrice.sub(_lowerPrice)),
+      );
     } else {
       // y = L * (pb - pa)
       tokenA = new Decimal(0);
-      tokenB = MathUtil.fromX64_Decimal(_liquidity.mul(_upperPrice.sub(_lowerPrice)));
+      tokenB = MathUtil.fromX64_Decimal(
+        _liquidity.mul(_upperPrice.sub(_lowerPrice)),
+      );
     }
 
     // TODO: round up
@@ -139,7 +160,7 @@ export class PoolUtil {
     currTick: number,
     lowerTick: number,
     upperTick: number,
-    tokenAmount: TokenAmounts
+    tokenAmount: TokenAmounts,
   ): BN {
     if (upperTick < lowerTick) {
       throw new Error("upper tick cannot be lower than the lower tick");
@@ -150,19 +171,27 @@ export class PoolUtil {
     const upperSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(upperTick);
 
     if (currTick >= upperTick) {
-      return estLiquidityForTokenB(upperSqrtPrice, lowerSqrtPrice, tokenAmount.tokenB);
+      return estLiquidityForTokenB(
+        upperSqrtPrice,
+        lowerSqrtPrice,
+        tokenAmount.tokenB,
+      );
     } else if (currTick < lowerTick) {
-      return estLiquidityForTokenA(lowerSqrtPrice, upperSqrtPrice, tokenAmount.tokenA);
+      return estLiquidityForTokenA(
+        lowerSqrtPrice,
+        upperSqrtPrice,
+        tokenAmount.tokenA,
+      );
     } else {
       const estLiquidityAmountA = estLiquidityForTokenA(
         currSqrtPrice,
         upperSqrtPrice,
-        tokenAmount.tokenA
+        tokenAmount.tokenA,
       );
       const estLiquidityAmountB = estLiquidityForTokenB(
         currSqrtPrice,
         lowerSqrtPrice,
-        tokenAmount.tokenB
+        tokenAmount.tokenB,
       );
       return BN.min(estLiquidityAmountA, estLiquidityAmountB);
     }
@@ -180,7 +209,7 @@ export class PoolUtil {
    */
   public static toBaseQuoteOrder(
     tokenMintAKey: PublicKey,
-    tokenMintBKey: PublicKey
+    tokenMintBKey: PublicKey,
   ): [PublicKey, PublicKey] {
     const pair: [PublicKey, PublicKey] = [tokenMintAKey, tokenMintBKey];
     return pair.sort(sortByQuotePriority);
@@ -204,11 +233,18 @@ export class PoolUtil {
       return false;
     }
 
-    const tokenBadgePda = PDAUtil.getTokenBadge(ctx.program.programId, whirlpoolsConfig, tokenMintKey);
+    const tokenBadgePda = PDAUtil.getTokenBadge(
+      ctx.program.programId,
+      whirlpoolsConfig,
+      tokenMintKey,
+    );
     const tokenBadge = await ctx.fetcher.getTokenBadge(tokenBadgePda.publicKey);
     const isTokenBadgeInitialized = tokenBadge !== null;
 
-    if (mintWithTokenProgram.freezeAuthority !== null && !isTokenBadgeInitialized) {
+    if (
+      mintWithTokenProgram.freezeAuthority !== null &&
+      !isTokenBadgeInitialized
+    ) {
       return false;
     }
 
@@ -239,7 +275,8 @@ export class PoolUtil {
             return false;
           }
 
-          const defaultAccountState = getDefaultAccountState(mintWithTokenProgram)!;
+          const defaultAccountState =
+            getDefaultAccountState(mintWithTokenProgram)!;
           if (defaultAccountState.state !== AccountState.Initialized) {
             return false;
           }
@@ -249,7 +286,7 @@ export class PoolUtil {
         // not supported
         case ExtensionType.NonTransferable:
           return false;
-        
+
         // not supported yet or unknown extension
         default:
           return false;
@@ -300,23 +337,39 @@ function getQuoteTokenPriority(mint: string): number {
   return DEFAULT_QUOTE_PRIORITY;
 }
 
-function sortByQuotePriority(mintLeft: PublicKey, mintRight: PublicKey): number {
-  return getQuoteTokenPriority(mintLeft.toString()) - getQuoteTokenPriority(mintRight.toString());
+function sortByQuotePriority(
+  mintLeft: PublicKey,
+  mintRight: PublicKey,
+): number {
+  return (
+    getQuoteTokenPriority(mintLeft.toString()) -
+    getQuoteTokenPriority(mintRight.toString())
+  );
 }
 
 // Convert this function based on Delta A = Delta L * (1/sqrt(lower) - 1/sqrt(upper))
-function estLiquidityForTokenA(sqrtPrice1: BN, sqrtPrice2: BN, tokenAmount: BN) {
+function estLiquidityForTokenA(
+  sqrtPrice1: BN,
+  sqrtPrice2: BN,
+  tokenAmount: BN,
+) {
   const lowerSqrtPriceX64 = BN.min(sqrtPrice1, sqrtPrice2);
   const upperSqrtPriceX64 = BN.max(sqrtPrice1, sqrtPrice2);
 
-  const num = MathUtil.fromX64_BN(tokenAmount.mul(upperSqrtPriceX64).mul(lowerSqrtPriceX64));
+  const num = MathUtil.fromX64_BN(
+    tokenAmount.mul(upperSqrtPriceX64).mul(lowerSqrtPriceX64),
+  );
   const dem = upperSqrtPriceX64.sub(lowerSqrtPriceX64);
 
   return num.div(dem);
 }
 
 // Convert this function based on Delta B = Delta L * (sqrt_price(upper) - sqrt_price(lower))
-function estLiquidityForTokenB(sqrtPrice1: BN, sqrtPrice2: BN, tokenAmount: BN) {
+function estLiquidityForTokenB(
+  sqrtPrice1: BN,
+  sqrtPrice2: BN,
+  tokenAmount: BN,
+) {
   const lowerSqrtPriceX64 = BN.min(sqrtPrice1, sqrtPrice2);
   const upperSqrtPriceX64 = BN.max(sqrtPrice1, sqrtPrice2);
 

@@ -1,12 +1,16 @@
-import { AnchorProvider, web3 } from "@coral-xyz/anchor";
+import type { AnchorProvider } from "@coral-xyz/anchor";
+import { web3 } from "@coral-xyz/anchor";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 
 export function systemTransferTx(
   provider: AnchorProvider,
   toPubkey: web3.PublicKey,
-  lamports: number
+  lamports: number,
 ): TransactionBuilder {
-  return new TransactionBuilder(provider.connection, provider.wallet).addInstruction({
+  return new TransactionBuilder(
+    provider.connection,
+    provider.wallet,
+  ).addInstruction({
     instructions: [
       web3.SystemProgram.transfer({
         fromPubkey: provider.wallet.publicKey,

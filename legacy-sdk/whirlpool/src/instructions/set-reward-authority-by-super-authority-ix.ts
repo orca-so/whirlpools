@@ -1,7 +1,7 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to update the reward authority at a particular rewardIndex on a Whirlpool.
@@ -36,7 +36,7 @@ export type SetRewardAuthorityBySuperAuthorityParams = {
  */
 export function setRewardAuthorityBySuperAuthorityIx(
   program: Program<Whirlpool>,
-  params: SetRewardAuthorityBySuperAuthorityParams
+  params: SetRewardAuthorityBySuperAuthorityParams,
 ): Instruction {
   const {
     whirlpoolsConfig,
@@ -46,14 +46,17 @@ export function setRewardAuthorityBySuperAuthorityIx(
     rewardIndex,
   } = params;
 
-  const ix = program.instruction.setRewardAuthorityBySuperAuthority(rewardIndex, {
-    accounts: {
-      whirlpoolsConfig,
-      whirlpool,
-      rewardEmissionsSuperAuthority,
-      newRewardAuthority,
+  const ix = program.instruction.setRewardAuthorityBySuperAuthority(
+    rewardIndex,
+    {
+      accounts: {
+        whirlpoolsConfig,
+        whirlpool,
+        rewardEmissionsSuperAuthority,
+        newRewardAuthority,
+      },
     },
-  });
+  );
 
   return {
     instructions: [ix],

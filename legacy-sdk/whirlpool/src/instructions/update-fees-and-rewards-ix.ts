@@ -1,8 +1,8 @@
-import { Program } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
-import { Instruction } from "@orca-so/common-sdk";
+import type { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to update fees and reward values for a position.
@@ -34,7 +34,7 @@ export type UpdateFeesAndRewardsParams = {
  */
 export function updateFeesAndRewardsIx(
   program: Program<Whirlpool>,
-  params: UpdateFeesAndRewardsParams
+  params: UpdateFeesAndRewardsParams,
 ): Instruction {
   const { whirlpool, position, tickArrayLower, tickArrayUpper } = params;
 

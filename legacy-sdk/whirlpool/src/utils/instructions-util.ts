@@ -1,7 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
 import { SystemProgram } from "@solana/web3.js";
-import { OpenPositionParams } from "../instructions";
+import type { OpenPositionParams } from "../instructions";
 
 export function openPositionAccounts(params: OpenPositionParams) {
   const {

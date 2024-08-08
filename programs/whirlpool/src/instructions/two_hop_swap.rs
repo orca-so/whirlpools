@@ -74,6 +74,7 @@ pub struct TwoHopSwap<'info> {
     pub oracle_two: UncheckedAccount<'info>,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn handler(
     ctx: Context<TwoHopSwap>,
     amount: u64,
@@ -142,7 +143,7 @@ pub fn handler(
         // and the swap calculations occur from Swap 1 => Swap 2
         // and the swaps occur from Swap 1 => Swap 2
         let swap_calc_one = swap(
-            &whirlpool_one,
+            whirlpool_one,
             &mut swap_tick_sequence_one,
             amount,
             sqrt_price_limit_one,
@@ -159,7 +160,7 @@ pub fn handler(
         };
 
         let swap_calc_two = swap(
-            &whirlpool_two,
+            whirlpool_two,
             &mut swap_tick_sequence_two,
             swap_two_input_amount,
             sqrt_price_limit_two,
@@ -173,7 +174,7 @@ pub fn handler(
         // and the swap calculations occur from Swap 2 => Swap 1
         // but the actual swaps occur from Swap 1 => Swap 2 (to ensure that the intermediate token exists in the account)
         let swap_calc_two = swap(
-            &whirlpool_two,
+            whirlpool_two,
             &mut swap_tick_sequence_two,
             amount,
             sqrt_price_limit_two,
@@ -190,7 +191,7 @@ pub fn handler(
         };
 
         let swap_calc_one = swap(
-            &whirlpool_one,
+            whirlpool_one,
             &mut swap_tick_sequence_one,
             swap_one_output_amount,
             sqrt_price_limit_one,

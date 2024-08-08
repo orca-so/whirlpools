@@ -7,20 +7,27 @@ import {
   buildWhirlpoolClient,
   decreaseLiquidityQuoteByLiquidity,
   increaseLiquidityQuoteByInputTokenUsingPriceSlippage,
-  PriceMath
+  PriceMath,
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { createAssociatedTokenAccount, TickSpacing, transferToken } from "../../utils";
+import {
+  createAssociatedTokenAccount,
+  TickSpacing,
+  transferToken,
+} from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
-import { initTestPool } from "../../utils/init-utils";
-import { initPosition, mintTokensToTestAccount } from "../../utils/test-builders";
+import { initPosition } from "../../utils/test-builders";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
-import { initTestPoolV2, TokenTrait } from "../../utils/v2/init-utils-v2";
+import type { TokenTrait } from "../../utils/v2/init-utils-v2";
+import { initTestPoolV2 } from "../../utils/v2/init-utils-v2";
 import { mintTokensToTestAccountV2 } from "../../utils/v2/token-2022";
 
 describe("position-impl", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -55,14 +62,13 @@ describe("position-impl", () => {
     }, tokenTraitB: ${
       tokenTraits.tokenTraitB.isToken2022 ? "Token2022" : "Token"
     }`, () => {
-
       it("increase and decrease liquidity on position", async () => {
         const { poolInitInfo } = await initTestPoolV2(
           ctx,
           tokenTraits.tokenTraitA,
           tokenTraits.tokenTraitB,
           TickSpacing.Standard,
-          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6)
+          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
         );
 
         // Create and mint tokens in this wallet
@@ -73,23 +79,26 @@ describe("position-impl", () => {
           10_500_000_000,
           poolInitInfo.tokenMintB,
           tokenTraits.tokenTraitB,
-          10_500_000_000
+          10_500_000_000,
         );
 
         const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey);
         const lowerTick = PriceMath.priceToTickIndex(
           new Decimal(89),
           pool.getTokenAInfo().decimals,
-          pool.getTokenBInfo().decimals
+          pool.getTokenBInfo().decimals,
         );
         const upperTick = PriceMath.priceToTickIndex(
           new Decimal(120),
           pool.getTokenAInfo().decimals,
-          pool.getTokenBInfo().decimals
+          pool.getTokenBInfo().decimals,
         );
 
         // [Action] Initialize Tick Arrays
-        const initTickArrayTx = (await pool.initTickArrayForTicks([lowerTick, upperTick]))!;
+        const initTickArrayTx = (await pool.initTickArrayForTicks([
+          lowerTick,
+          upperTick,
+        ]))!;
         await initTickArrayTx.buildAndExecute();
 
         // [Action] Create a position at price 89, 120 with 50 token A
@@ -101,31 +110,46 @@ describe("position-impl", () => {
           lowerPrice,
           upperPrice,
           poolInitInfo.tokenMintA,
-          50
+          50,
         );
 
         // [Action] Increase liquidity by 70 tokens of tokenB
-        const position = await client.getPosition(positionAddress.publicKey, IGNORE_CACHE);
-        const preIncreaseData = position.getData();
-        const increase_quote = increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
-          poolInitInfo.tokenMintB,
-          new Decimal(70),
-          lowerTick,
-          upperTick,
-          Percentage.fromFraction(1, 100),
-          pool,
-          await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
+        const position = await client.getPosition(
+          positionAddress.publicKey,
+          IGNORE_CACHE,
         );
+        const preIncreaseData = position.getData();
+        const increase_quote =
+          increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
+            poolInitInfo.tokenMintB,
+            new Decimal(70),
+            lowerTick,
+            upperTick,
+            Percentage.fromFraction(1, 100),
+            pool,
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              pool.getData(),
+              IGNORE_CACHE,
+            ),
+          );
 
         await (
-          await position.increaseLiquidity(increase_quote, false, ctx.wallet.publicKey)
+          await position.increaseLiquidity(
+            increase_quote,
+            false,
+            ctx.wallet.publicKey,
+          )
         ).buildAndExecute();
 
         const postIncreaseData = await position.refreshData();
         const expectedPostIncreaseLiquidity = preIncreaseData.liquidity.add(
-          increase_quote.liquidityAmount
+          increase_quote.liquidityAmount,
         );
-        assert.equal(postIncreaseData.liquidity.toString(), expectedPostIncreaseLiquidity.toString());
+        assert.equal(
+          postIncreaseData.liquidity.toString(),
+          expectedPostIncreaseLiquidity.toString(),
+        );
 
         // [Action] Withdraw half of the liquidity away from the position and verify
         const withdrawHalf = postIncreaseData.liquidity.div(new anchor.BN(2));
@@ -134,16 +158,25 @@ describe("position-impl", () => {
           Percentage.fromFraction(0, 100),
           position,
           pool,
-          await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
+          await TokenExtensionUtil.buildTokenExtensionContext(
+            fetcher,
+            pool.getData(),
+            IGNORE_CACHE,
+          ),
         );
 
-        await (await position.decreaseLiquidity(decrease_quote, false)).buildAndExecute();
+        await (
+          await position.decreaseLiquidity(decrease_quote, false)
+        ).buildAndExecute();
 
         const postWithdrawData = await position.refreshData();
         const expectedPostWithdrawLiquidity = postIncreaseData.liquidity.sub(
-          decrease_quote.liquidityAmount
+          decrease_quote.liquidityAmount,
         );
-        assert.equal(postWithdrawData.liquidity.toString(), expectedPostWithdrawLiquidity.toString());
+        assert.equal(
+          postWithdrawData.liquidity.toString(),
+          expectedPostWithdrawLiquidity.toString(),
+        );
       });
 
       it("increase & decrease liquidity on position with a different destination, position wallet", async () => {
@@ -152,7 +185,7 @@ describe("position-impl", () => {
           tokenTraits.tokenTraitA,
           tokenTraits.tokenTraitB,
           TickSpacing.Standard,
-          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6)
+          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
         );
 
         // Create and mint tokens in this wallet
@@ -163,23 +196,26 @@ describe("position-impl", () => {
           10_500_000_000,
           poolInitInfo.tokenMintB,
           tokenTraits.tokenTraitB,
-          10_500_000_000
+          10_500_000_000,
         );
 
         const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey);
         const lowerTick = PriceMath.priceToTickIndex(
           new Decimal(89),
           pool.getTokenAInfo().decimals,
-          pool.getTokenBInfo().decimals
+          pool.getTokenBInfo().decimals,
         );
         const upperTick = PriceMath.priceToTickIndex(
           new Decimal(120),
           pool.getTokenAInfo().decimals,
-          pool.getTokenBInfo().decimals
+          pool.getTokenBInfo().decimals,
         );
 
         // [Action] Initialize Tick Arrays
-        const initTickArrayTx = (await pool.initTickArrayForTicks([lowerTick, upperTick]))!;
+        const initTickArrayTx = (await pool.initTickArrayForTicks([
+          lowerTick,
+          upperTick,
+        ]))!;
         await initTickArrayTx.buildAndExecute();
 
         // [Action] Create a position at price 89, 120 with 50 token A
@@ -191,29 +227,42 @@ describe("position-impl", () => {
           lowerPrice,
           upperPrice,
           poolInitInfo.tokenMintA,
-          50
+          50,
         );
 
         // [Action] Increase liquidity by 70 tokens of tokenB & create the ATA in the new source Wallet
-        const position = await client.getPosition(positionAddress.publicKey, IGNORE_CACHE);
-        const preIncreaseData = position.getData();
-        const increase_quote = increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
-          poolInitInfo.tokenMintB,
-          new Decimal(70),
-          lowerTick,
-          upperTick,
-          Percentage.fromFraction(1, 100),
-          pool,
-          await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
+        const position = await client.getPosition(
+          positionAddress.publicKey,
+          IGNORE_CACHE,
         );
+        const preIncreaseData = position.getData();
+        const increase_quote =
+          increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
+            poolInitInfo.tokenMintB,
+            new Decimal(70),
+            lowerTick,
+            upperTick,
+            Percentage.fromFraction(1, 100),
+            pool,
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              pool.getData(),
+              IGNORE_CACHE,
+            ),
+          );
 
-        await (await position.increaseLiquidity(increase_quote, false)).buildAndExecute();
+        await (
+          await position.increaseLiquidity(increase_quote, false)
+        ).buildAndExecute();
 
         const postIncreaseData = await position.refreshData();
         const expectedPostIncreaseLiquidity = preIncreaseData.liquidity.add(
-          increase_quote.liquidityAmount
+          increase_quote.liquidityAmount,
         );
-        assert.equal(postIncreaseData.liquidity.toString(), expectedPostIncreaseLiquidity.toString());
+        assert.equal(
+          postIncreaseData.liquidity.toString(),
+          expectedPostIncreaseLiquidity.toString(),
+        );
 
         // [Action] Withdraw half of the liquidity away from the position and verify
         const withdrawHalf = postIncreaseData.liquidity.div(new anchor.BN(2));
@@ -222,19 +271,31 @@ describe("position-impl", () => {
           Percentage.fromFraction(0, 100),
           position,
           pool,
-          await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
+          await TokenExtensionUtil.buildTokenExtensionContext(
+            fetcher,
+            pool.getData(),
+            IGNORE_CACHE,
+          ),
         );
 
         // Transfer the position token to another wallet
         const otherWallet = anchor.web3.Keypair.generate();
-        const walletPositionTokenAccount = getAssociatedTokenAddressSync(positionMint, ctx.wallet.publicKey);
+        const walletPositionTokenAccount = getAssociatedTokenAddressSync(
+          positionMint,
+          ctx.wallet.publicKey,
+        );
         const newOwnerPositionTokenAccount = await createAssociatedTokenAccount(
           ctx.provider,
           positionMint,
           otherWallet.publicKey,
-          ctx.wallet.publicKey
+          ctx.wallet.publicKey,
         );
-        await transferToken(provider, walletPositionTokenAccount, newOwnerPositionTokenAccount, 1);
+        await transferToken(
+          provider,
+          walletPositionTokenAccount,
+          newOwnerPositionTokenAccount,
+          1,
+        );
 
         // Mint to this other wallet and increase more tokens
         await mintTokensToTestAccountV2(
@@ -245,23 +306,28 @@ describe("position-impl", () => {
           poolInitInfo.tokenMintB,
           tokenTraits.tokenTraitB,
           10_500_000_000,
-          otherWallet.publicKey
+          otherWallet.publicKey,
         );
-        const increaseQuoteFromOtherWallet = increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
-          poolInitInfo.tokenMintB,
-          new Decimal(80),
-          lowerTick,
-          upperTick,
-          Percentage.fromFraction(1, 100),
-          pool,
-          await TokenExtensionUtil.buildTokenExtensionContext(fetcher, pool.getData(), IGNORE_CACHE),
-        );
+        const increaseQuoteFromOtherWallet =
+          increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
+            poolInitInfo.tokenMintB,
+            new Decimal(80),
+            lowerTick,
+            upperTick,
+            Percentage.fromFraction(1, 100),
+            pool,
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              pool.getData(),
+              IGNORE_CACHE,
+            ),
+          );
         await (
           await position.increaseLiquidity(
             increaseQuoteFromOtherWallet,
             true,
             otherWallet.publicKey,
-            otherWallet.publicKey
+            otherWallet.publicKey,
           )
         )
           .addSigner(otherWallet)
@@ -276,19 +342,20 @@ describe("position-impl", () => {
             decrease_quote,
             true,
             destinationWallet.publicKey,
-            otherWallet.publicKey
+            otherWallet.publicKey,
           )
         )
           .addSigner(otherWallet)
           .buildAndExecute();
 
         const postWithdrawData = await position.refreshData();
-        const expectedPostWithdrawLiquidity = postSecondIncreaseData.liquidity.sub(
-          decrease_quote.liquidityAmount
+        const expectedPostWithdrawLiquidity =
+          postSecondIncreaseData.liquidity.sub(decrease_quote.liquidityAmount);
+        assert.equal(
+          postWithdrawData.liquidity.toString(),
+          expectedPostWithdrawLiquidity.toString(),
         );
-        assert.equal(postWithdrawData.liquidity.toString(), expectedPostWithdrawLiquidity.toString());
       });
-
     });
   });
 });

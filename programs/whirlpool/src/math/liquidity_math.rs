@@ -12,7 +12,7 @@ pub fn add_liquidity_delta(liquidity: u128, delta: i128) -> Result<u128, ErrorCo
             .ok_or(ErrorCode::LiquidityOverflow)
     } else {
         liquidity
-            .checked_sub(delta.abs() as u128)
+            .checked_sub(delta.unsigned_abs())
             .ok_or(ErrorCode::LiquidityUnderflow)
     }
 }
@@ -26,7 +26,7 @@ pub fn convert_to_liquidity_delta(
         // The liquidity_amount is converted to a liquidity_delta that is represented as an i128
         // By doing this conversion we lose the most significant bit in the u128
         // Here we enforce a max value of i128::MAX on the u128 to prevent loss of data.
-        return Err(ErrorCode::LiquidityTooHigh.into());
+        return Err(ErrorCode::LiquidityTooHigh);
     }
     Ok(if positive {
         liquidity_amount as i128

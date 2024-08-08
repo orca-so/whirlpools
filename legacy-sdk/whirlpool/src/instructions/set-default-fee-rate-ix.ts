@@ -1,7 +1,7 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 import { PDAUtil } from "../utils/public";
 
@@ -35,11 +35,16 @@ export type SetDefaultFeeRateParams = {
  */
 export function setDefaultFeeRateIx(
   program: Program<Whirlpool>,
-  params: SetDefaultFeeRateParams
+  params: SetDefaultFeeRateParams,
 ): Instruction {
-  const { whirlpoolsConfig, feeAuthority, tickSpacing, defaultFeeRate } = params;
+  const { whirlpoolsConfig, feeAuthority, tickSpacing, defaultFeeRate } =
+    params;
 
-  const feeTierPda = PDAUtil.getFeeTier(program.programId, whirlpoolsConfig, tickSpacing);
+  const feeTierPda = PDAUtil.getFeeTier(
+    program.programId,
+    whirlpoolsConfig,
+    tickSpacing,
+  );
 
   const ix = program.instruction.setDefaultFeeRate(defaultFeeRate, {
     accounts: {

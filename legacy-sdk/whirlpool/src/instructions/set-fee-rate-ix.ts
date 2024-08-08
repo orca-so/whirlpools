@@ -1,7 +1,7 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to set fee rate for a Whirlpool.
@@ -31,7 +31,10 @@ export type SetFeeRateParams = {
  * @param params - SetFeeRateParams object
  * @returns - Instruction to perform the action.
  */
-export function setFeeRateIx(program: Program<Whirlpool>, params: SetFeeRateParams): Instruction {
+export function setFeeRateIx(
+  program: Program<Whirlpool>,
+  params: SetFeeRateParams,
+): Instruction {
   const { whirlpoolsConfig, whirlpool, feeAuthority, feeRate } = params;
 
   const ix = program.instruction.setFeeRate(feeRate, {

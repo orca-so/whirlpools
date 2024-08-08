@@ -1,10 +1,14 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
-import { Instruction, PDA } from "@orca-so/common-sdk";
-import { ASSOCIATED_TOKEN_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction, PDA } from "@orca-so/common-sdk";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import type { Keypair, PublicKey } from "@solana/web3.js";
+import { SystemProgram } from "@solana/web3.js";
 import { METADATA_PROGRAM_ADDRESS, WHIRLPOOL_NFT_UPDATE_AUTH } from "..";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to initialize a PositionBundle account.
@@ -34,7 +38,7 @@ export type InitializePositionBundleParams = {
  */
 export function initializePositionBundleIx(
   program: Program<Whirlpool>,
-  params: InitializePositionBundleParams
+  params: InitializePositionBundleParams,
 ): Instruction {
   const {
     owner,
@@ -76,7 +80,7 @@ export function initializePositionBundleIx(
  */
 export function initializePositionBundleWithMetadataIx(
   program: Program<Whirlpool>,
-  params: InitializePositionBundleParams & { positionBundleMetadataPda: PDA }
+  params: InitializePositionBundleParams & { positionBundleMetadataPda: PDA },
 ): Instruction {
   const {
     owner,

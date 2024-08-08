@@ -1,5 +1,5 @@
-import { Address } from "@coral-xyz/anchor";
-import { PoolTokenPair } from "../../src";
+import type { Address } from "@coral-xyz/anchor";
+import type { PoolTokenPair } from "../../src";
 
 export const solConnectedPools: PoolTokenPair[] = [
   {
@@ -47,7 +47,10 @@ export const usdcConnectedPools: PoolTokenPair[] = [
   },
 ];
 
-export const oneRouteTwoHopsThroughSOL: [Address, Address] = ["EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v", "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj"];
+export const oneRouteTwoHopsThroughSOL: [Address, Address] = [
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  "7dHbWXmci3dT8UFYWYZweBLXgycu7Y3iL6trKn1Y7ARj",
+];
 
 export const feeTierPoolsGraphData: PoolTokenPair[] = [
   {
@@ -67,7 +70,10 @@ export const feeTierPoolsGraphData: PoolTokenPair[] = [
   },
 ];
 
-export const oneRouteTwoHopsThroughmSOL: [Address, Address] = ["So11111111111111111111111111111111111111112", "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v"];
+export const oneRouteTwoHopsThroughmSOL: [Address, Address] = [
+  "So11111111111111111111111111111111111111112",
+  "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+];
 
 export const uniqueTokenMintsGraphData: PoolTokenPair[] = [
   {

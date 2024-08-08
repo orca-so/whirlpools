@@ -1,9 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import { BN } from "bn.js";
+import BN from "bn.js";
 import Decimal from "decimal.js";
-import { PDAUtil, PositionData, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
+import type { PositionData } from "../../src";
+import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { sleep, TickSpacing, ZERO_BN } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -11,7 +12,10 @@ import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool } from "../utils/init-utils";
 
 describe("update_fees_and_rewards", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -25,9 +29,18 @@ describe("update_fees_and_rewards", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(1_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(1_000_000),
+        },
+      ],
       rewards: [
-        { emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)), vaultAmount: new BN(1_000_000) },
+        {
+          emissionsPerSecondX64: MathUtil.toX64(new Decimal(2)),
+          vaultAmount: new BN(1_000_000),
+        },
       ],
     });
     const {
@@ -37,18 +50,25 @@ describe("update_fees_and_rewards", () => {
       positions,
     } = fixture.getInfos();
 
-    const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 22528);
+    const tickArrayPda = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+      22528,
+    );
 
     const positionBefore = (await fetcher.getPosition(
       positions[0].publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionData;
     assert.ok(positionBefore.feeGrowthCheckpointA.eq(ZERO_BN));
     assert.ok(positionBefore.feeGrowthCheckpointB.eq(ZERO_BN));
     assert.ok(positionBefore.rewardInfos[0].amountOwed.eq(ZERO_BN));
     assert.ok(positionBefore.rewardInfos[0].growthInsideCheckpoint.eq(ZERO_BN));
 
-    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
 
     await toTx(
       ctx,
@@ -68,7 +88,7 @@ describe("update_fees_and_rewards", () => {
         tickArray1: tickArrayPda.publicKey,
         tickArray2: tickArrayPda.publicKey,
         oracle: oraclePda.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     await sleep(1_000);
@@ -80,18 +100,33 @@ describe("update_fees_and_rewards", () => {
         position: positions[0].publicKey,
         tickArrayLower: tickArrayPda.publicKey,
         tickArrayUpper: tickArrayPda.publicKey,
-      })
+      }),
     ).buildAndExecute();
-    const positionAfter = (await fetcher.getPosition(positions[0].publicKey, IGNORE_CACHE)) as PositionData;
+    const positionAfter = (await fetcher.getPosition(
+      positions[0].publicKey,
+      IGNORE_CACHE,
+    )) as PositionData;
     assert.ok(positionAfter.feeOwedA.gt(positionBefore.feeOwedA));
     assert.ok(positionAfter.feeOwedB.eq(ZERO_BN));
-    assert.ok(positionAfter.feeGrowthCheckpointA.gt(positionBefore.feeGrowthCheckpointA));
-    assert.ok(positionAfter.feeGrowthCheckpointB.eq(positionBefore.feeGrowthCheckpointB));
-    assert.ok(positionAfter.rewardInfos[0].amountOwed.gt(positionBefore.rewardInfos[0].amountOwed));
+    assert.ok(
+      positionAfter.feeGrowthCheckpointA.gt(
+        positionBefore.feeGrowthCheckpointA,
+      ),
+    );
+    assert.ok(
+      positionAfter.feeGrowthCheckpointB.eq(
+        positionBefore.feeGrowthCheckpointB,
+      ),
+    );
+    assert.ok(
+      positionAfter.rewardInfos[0].amountOwed.gt(
+        positionBefore.rewardInfos[0].amountOwed,
+      ),
+    );
     assert.ok(
       positionAfter.rewardInfos[0].growthInsideCheckpoint.gt(
-        positionBefore.rewardInfos[0].growthInsideCheckpoint
-      )
+        positionBefore.rewardInfos[0].growthInsideCheckpoint,
+      ),
     );
     assert.ok(positionAfter.liquidity.eq(positionBefore.liquidity));
   });
@@ -111,7 +146,11 @@ describe("update_fees_and_rewards", () => {
       positions,
     } = fixture.getInfos();
 
-    const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 22528);
+    const tickArrayPda = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+      22528,
+    );
 
     await assert.rejects(
       toTx(
@@ -121,9 +160,9 @@ describe("update_fees_and_rewards", () => {
           position: positions[0].publicKey,
           tickArrayLower: tickArrayPda.publicKey,
           tickArrayUpper: tickArrayPda.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x177c/ // LiquidityZero
+      /0x177c/, // LiquidityZero
     );
   });
 
@@ -135,11 +174,21 @@ describe("update_fees_and_rewards", () => {
     const {
       poolInitInfo: { whirlpoolPda },
     } = await initTestPool(ctx, tickSpacing);
-    const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 22528);
+    const tickArrayPda = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+      22528,
+    );
 
     const other = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(1_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(1_000_000),
+        },
+      ],
     });
     const { positions: otherPositions } = other.getInfos();
 
@@ -151,9 +200,9 @@ describe("update_fees_and_rewards", () => {
           position: otherPositions[0].publicKey,
           tickArrayLower: tickArrayPda.publicKey,
           tickArrayUpper: tickArrayPda.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0xbbf/ // AccountOwnedByWrongProgram
+      /0xbbf/, // AccountOwnedByWrongProgram
     );
   });
 
@@ -165,14 +214,24 @@ describe("update_fees_and_rewards", () => {
     const tickSpacing = TickSpacing.Standard;
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing,
-      positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(1_000_000) }],
+      positions: [
+        {
+          tickLowerIndex,
+          tickUpperIndex,
+          liquidityAmount: new anchor.BN(1_000_000),
+        },
+      ],
     });
     const {
       poolInitInfo: { whirlpoolPda },
       positions,
     } = fixture.getInfos();
 
-    const tickArrayPda = PDAUtil.getTickArray(ctx.program.programId, whirlpoolPda.publicKey, 0);
+    const tickArrayPda = PDAUtil.getTickArray(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+      0,
+    );
 
     await assert.rejects(
       toTx(
@@ -182,9 +241,9 @@ describe("update_fees_and_rewards", () => {
           position: positions[0].publicKey,
           tickArrayLower: tickArrayPda.publicKey,
           tickArrayUpper: tickArrayPda.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0xbbf/ // AccountOwnedByWrongProgram
+      /0xbbf/, // AccountOwnedByWrongProgram
     );
   });
 
@@ -210,7 +269,7 @@ describe("update_fees_and_rewards", () => {
     const tickArrayPda = PDAUtil.getTickArray(
       ctx.program.programId,
       otherWhirlpoolPda.publicKey,
-      22528
+      22528,
     );
 
     await assert.rejects(
@@ -221,9 +280,9 @@ describe("update_fees_and_rewards", () => {
           position: positions[0].publicKey,
           tickArrayLower: tickArrayPda.publicKey,
           tickArrayUpper: tickArrayPda.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0xbbf/ // AccountOwnedByWrongProgram
+      /0xbbf/, // AccountOwnedByWrongProgram
     );
   });
 });

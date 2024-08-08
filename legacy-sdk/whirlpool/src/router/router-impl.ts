@@ -1,35 +1,43 @@
-import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import { Account } from "@solana/spl-token";
-import { WhirlpoolContext } from "..";
-import { RouteQueryErrorCode, SwapErrorCode, WhirlpoolsError } from "../errors/errors";
-import { getSwapFromRoute } from "../instructions/composites/swap-with-route";
+import type { Address } from "@coral-xyz/anchor";
+import type { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
+import { AddressUtil } from "@orca-so/common-sdk";
+import type { Account } from "@solana/spl-token";
+import type { WhirlpoolContext } from "..";
 import {
-  IGNORE_CACHE,
-  PREFER_CACHE,
+  RouteQueryErrorCode,
+  SwapErrorCode,
+  WhirlpoolsError,
+} from "../errors/errors";
+import { getSwapFromRoute } from "../instructions/composites/swap-with-route";
+import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/fetcher";
-import { Path, PoolGraph, SwapUtils } from "../utils/public";
+import { IGNORE_CACHE, PREFER_CACHE } from "../network/public/fetcher";
+import type { Path, PoolGraph } from "../utils/public";
+import { SwapUtils } from "../utils/public";
 import { getBestRoutesFromQuoteMap } from "./convert-quote-map";
-import {
+import type {
   ExecutableRoute,
   RouteSelectOptions,
-  RouterUtils,
   RoutingOptions,
   Trade,
   TradeRoute,
   WhirlpoolRouter,
 } from "./public";
+import { RouterUtils } from "./public";
 import { getQuoteMap } from "./quote-map";
 
 export class WhirlpoolRouterImpl implements WhirlpoolRouter {
-  constructor(readonly ctx: WhirlpoolContext, readonly poolGraph: PoolGraph) {}
+  constructor(
+    readonly ctx: WhirlpoolContext,
+    readonly poolGraph: PoolGraph,
+  ) {}
 
   async findAllRoutes(
     trade: Trade,
     opts?: Partial<RoutingOptions>,
-    fetchOpts?: WhirlpoolAccountFetchOptions
+    fetchOpts?: WhirlpoolAccountFetchOptions,
   ): Promise<TradeRoute[]> {
     const { tokenIn, tokenOut, tradeAmount, amountSpecifiedIsInput } = trade;
     const paths = this.poolGraph.getPath(tokenIn, tokenOut);
@@ -38,8 +46,8 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
       return Promise.reject(
         new WhirlpoolsError(
           `Could not find route for ${tokenIn} -> ${tokenOut}`,
-          RouteQueryErrorCode.RouteDoesNotExist
-        )
+          RouteQueryErrorCode.RouteDoesNotExist,
+        ),
       );
     }
 
@@ -47,8 +55,8 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
       return Promise.reject(
         new WhirlpoolsError(
           `findBestRoutes error - input amount is zero.`,
-          RouteQueryErrorCode.ZeroInputAmount
-        )
+          RouteQueryErrorCode.ZeroInputAmount,
+        ),
       );
     }
 
@@ -65,12 +73,12 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
         amountSpecifiedIsInput,
         programId,
         fetcher,
-        routingOptions
+        routingOptions,
       );
       const bestRoutes = getBestRoutesFromQuoteMap(
         quoteMap,
         amountSpecifiedIsInput,
-        routingOptions
+        routingOptions,
       );
 
       // TODO: Rudementary implementation to determine error. Find a better solution
@@ -80,20 +88,20 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
           return Promise.reject(
             new WhirlpoolsError(
               `All swap quote generation failed on amount too high.`,
-              RouteQueryErrorCode.TradeAmountTooHigh
-            )
+              RouteQueryErrorCode.TradeAmountTooHigh,
+            ),
           );
         }
       }
 
       return bestRoutes;
-    } catch (e: any) {
+    } catch (e) {
       return Promise.reject(
         new WhirlpoolsError(
           `Stack error received on quote generation.`,
           RouteQueryErrorCode.General,
-          e.stack
-        )
+          e instanceof Error ? e.stack : "",
+        ),
       );
     }
   }
@@ -102,17 +110,24 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
     trade: Trade,
     routingOpts?: Partial<RoutingOptions>,
     selectionOpts?: Partial<RouteSelectOptions>,
-    fetchOpts?: WhirlpoolAccountFetchOptions
+    fetchOpts?: WhirlpoolAccountFetchOptions,
   ): Promise<ExecutableRoute | null> {
     const allRoutes = await this.findAllRoutes(trade, routingOpts, fetchOpts);
-    const selectOpts = { ...RouterUtils.getDefaultSelectOptions(), ...selectionOpts };
-    return await RouterUtils.selectFirstExecutableRoute(this.ctx, allRoutes, selectOpts);
+    const selectOpts = {
+      ...RouterUtils.getDefaultSelectOptions(),
+      ...selectionOpts,
+    };
+    return await RouterUtils.selectFirstExecutableRoute(
+      this.ctx,
+      allRoutes,
+      selectOpts,
+    );
   }
 
   async swap(
     trade: TradeRoute,
     slippage: Percentage,
-    resolvedAtas: Account[] | null
+    resolvedAtas: Account[] | null,
   ): Promise<TransactionBuilder> {
     const txBuilder = await getSwapFromRoute(
       this.ctx,
@@ -122,7 +137,7 @@ export class WhirlpoolRouterImpl implements WhirlpoolRouter {
         resolvedAtaAccounts: resolvedAtas,
         wallet: this.ctx.wallet.publicKey,
       },
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
     return txBuilder;
   }
@@ -133,7 +148,7 @@ async function prefetchRoutes(
   paths: Path[],
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
-  opts: WhirlpoolAccountFetchOptions = PREFER_CACHE
+  opts: WhirlpoolAccountFetchOptions = PREFER_CACHE,
 ): Promise<void> {
   const poolSet = new Set<string>();
   for (let i = 0; i < paths.length; i++) {
@@ -156,14 +171,14 @@ async function prefetchRoutes(
       wp.tickSpacing,
       true,
       AddressUtil.toPubKey(programId),
-      AddressUtil.toPubKey(key)
+      AddressUtil.toPubKey(key),
     );
     const addr2 = SwapUtils.getTickArrayPublicKeys(
       wp.tickCurrentIndex,
       wp.tickSpacing,
       false,
       AddressUtil.toPubKey(programId),
-      AddressUtil.toPubKey(key)
+      AddressUtil.toPubKey(key),
     );
     const allAddrs = [...addr1, ...addr2].map((k) => k.toBase58());
     const unique = Array.from(new Set(allAddrs));

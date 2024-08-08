@@ -1,8 +1,8 @@
-import { BN, Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
+import type { BN, Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to remove liquidity from a position.
@@ -59,7 +59,7 @@ export type DecreaseLiquidityInput = {
  */
 export function decreaseLiquidityIx(
   program: Program<Whirlpool>,
-  params: DecreaseLiquidityParams
+  params: DecreaseLiquidityParams,
 ): Instruction {
   const {
     liquidityAmount,
@@ -77,21 +77,26 @@ export function decreaseLiquidityIx(
     tickArrayUpper,
   } = params;
 
-  const ix = program.instruction.decreaseLiquidity(liquidityAmount, tokenMinA, tokenMinB, {
-    accounts: {
-      whirlpool,
-      tokenProgram: TOKEN_PROGRAM_ID,
-      positionAuthority,
-      position,
-      positionTokenAccount,
-      tokenOwnerAccountA,
-      tokenOwnerAccountB,
-      tokenVaultA,
-      tokenVaultB,
-      tickArrayLower,
-      tickArrayUpper,
+  const ix = program.instruction.decreaseLiquidity(
+    liquidityAmount,
+    tokenMinA,
+    tokenMinB,
+    {
+      accounts: {
+        whirlpool,
+        tokenProgram: TOKEN_PROGRAM_ID,
+        positionAuthority,
+        position,
+        positionTokenAccount,
+        tokenOwnerAccountA,
+        tokenOwnerAccountB,
+        tokenVaultA,
+        tokenVaultB,
+        tickArrayLower,
+        tickArrayUpper,
+      },
     },
-  });
+  );
 
   return {
     instructions: [ix],

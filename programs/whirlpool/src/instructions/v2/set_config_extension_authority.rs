@@ -18,8 +18,8 @@ pub struct SetConfigExtensionAuthority<'info> {
 
 /// Set the config extension authority. Only the current config extension authority has permission to invoke this instruction.
 pub fn handler(ctx: Context<SetConfigExtensionAuthority>) -> Result<()> {
-    Ok(ctx
-        .accounts
+    ctx.accounts
         .whirlpools_config_extension
-        .update_config_extension_authority(ctx.accounts.new_config_extension_authority.key()))
+        .update_config_extension_authority(ctx.accounts.new_config_extension_authority.key());
+    Ok(())
 }

@@ -1,6 +1,11 @@
-import { Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
+import type { Percentage } from "@orca-so/common-sdk";
+import { U64_MAX, ZERO } from "@orca-so/common-sdk";
 import BN from "bn.js";
-import { MathErrorCode, TokenErrorCode, WhirlpoolsError } from "../../errors/errors";
+import {
+  MathErrorCode,
+  TokenErrorCode,
+  WhirlpoolsError,
+} from "../../errors/errors";
 import { MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "../../types/public";
 import { BitMath } from "./bit-math";
 
@@ -8,9 +13,12 @@ export function getAmountDeltaA(
   currSqrtPrice: BN,
   targetSqrtPrice: BN,
   currLiquidity: BN,
-  roundUp: boolean
+  roundUp: boolean,
 ): BN {
-  let [sqrtPriceLower, sqrtPriceUpper] = toIncreasingPriceOrder(currSqrtPrice, targetSqrtPrice);
+  let [sqrtPriceLower, sqrtPriceUpper] = toIncreasingPriceOrder(
+    currSqrtPrice,
+    targetSqrtPrice,
+  );
   let sqrtPriceDiff = sqrtPriceUpper.sub(sqrtPriceLower);
 
   let numerator = currLiquidity.mul(sqrtPriceDiff).shln(64);
@@ -19,10 +27,14 @@ export function getAmountDeltaA(
   let quotient = numerator.div(denominator);
   let remainder = numerator.mod(denominator);
 
-  let result = roundUp && !remainder.eq(ZERO) ? quotient.add(new BN(1)) : quotient;
+  let result =
+    roundUp && !remainder.eq(ZERO) ? quotient.add(new BN(1)) : quotient;
 
   if (result.gt(U64_MAX)) {
-    throw new WhirlpoolsError("Results larger than U64", TokenErrorCode.TokenMaxExceeded);
+    throw new WhirlpoolsError(
+      "Results larger than U64",
+      TokenErrorCode.TokenMaxExceeded,
+    );
   }
 
   return result;
@@ -32,11 +44,19 @@ export function getAmountDeltaB(
   currSqrtPrice: BN,
   targetSqrtPrice: BN,
   currLiquidity: BN,
-  roundUp: boolean
+  roundUp: boolean,
 ): BN {
-  let [sqrtPriceLower, sqrtPriceUpper] = toIncreasingPriceOrder(currSqrtPrice, targetSqrtPrice);
+  let [sqrtPriceLower, sqrtPriceUpper] = toIncreasingPriceOrder(
+    currSqrtPrice,
+    targetSqrtPrice,
+  );
   let sqrtPriceDiff = sqrtPriceUpper.sub(sqrtPriceLower);
-  return BitMath.checked_mul_shift_right_round_up_if(currLiquidity, sqrtPriceDiff, roundUp, 128);
+  return BitMath.checked_mul_shift_right_round_up_if(
+    currLiquidity,
+    sqrtPriceDiff,
+    roundUp,
+    128,
+  );
 }
 
 export function getNextSqrtPrice(
@@ -44,19 +64,29 @@ export function getNextSqrtPrice(
   currLiquidity: BN,
   amount: BN,
   amountSpecifiedIsInput: boolean,
-  aToB: boolean
+  aToB: boolean,
 ) {
   if (amountSpecifiedIsInput === aToB) {
-    return getNextSqrtPriceFromARoundUp(sqrtPrice, currLiquidity, amount, amountSpecifiedIsInput);
+    return getNextSqrtPriceFromARoundUp(
+      sqrtPrice,
+      currLiquidity,
+      amount,
+      amountSpecifiedIsInput,
+    );
   } else {
-    return getNextSqrtPriceFromBRoundDown(sqrtPrice, currLiquidity, amount, amountSpecifiedIsInput);
+    return getNextSqrtPriceFromBRoundDown(
+      sqrtPrice,
+      currLiquidity,
+      amount,
+      amountSpecifiedIsInput,
+    );
   }
 }
 
 export function adjustForSlippage(
   n: BN,
   { numerator, denominator }: Percentage,
-  adjustUp: boolean
+  adjustUp: boolean,
 ): BN {
   if (adjustUp) {
     return n.mul(denominator.add(numerator)).div(denominator);
@@ -77,7 +107,7 @@ function getNextSqrtPriceFromARoundUp(
   sqrtPrice: BN,
   currLiquidity: BN,
   amount: BN,
-  amountSpecifiedIsInput: boolean
+  amountSpecifiedIsInput: boolean,
 ) {
   if (amount.eq(ZERO)) {
     return sqrtPrice;
@@ -88,7 +118,7 @@ function getNextSqrtPriceFromARoundUp(
   if (BitMath.isOverLimit(numerator, 256)) {
     throw new WhirlpoolsError(
       "getNextSqrtPriceFromARoundUp - numerator overflow u256",
-      MathErrorCode.MultiplicationOverflow
+      MathErrorCode.MultiplicationOverflow,
     );
   }
 
@@ -96,7 +126,7 @@ function getNextSqrtPriceFromARoundUp(
   if (!amountSpecifiedIsInput && currLiquidityShiftLeft.lte(p)) {
     throw new WhirlpoolsError(
       "getNextSqrtPriceFromARoundUp - Unable to divide currLiquidityX64 by product",
-      MathErrorCode.DivideByZero
+      MathErrorCode.DivideByZero,
     );
   }
 
@@ -109,12 +139,12 @@ function getNextSqrtPriceFromARoundUp(
   if (price.lt(new BN(MIN_SQRT_PRICE))) {
     throw new WhirlpoolsError(
       "getNextSqrtPriceFromARoundUp - price less than min sqrt price",
-      TokenErrorCode.TokenMinSubceeded
+      TokenErrorCode.TokenMinSubceeded,
     );
   } else if (price.gt(new BN(MAX_SQRT_PRICE))) {
     throw new WhirlpoolsError(
       "getNextSqrtPriceFromARoundUp - price less than max sqrt price",
-      TokenErrorCode.TokenMaxExceeded
+      TokenErrorCode.TokenMaxExceeded,
     );
   }
 
@@ -125,11 +155,15 @@ function getNextSqrtPriceFromBRoundDown(
   sqrtPrice: BN,
   currLiquidity: BN,
   amount: BN,
-  amountSpecifiedIsInput: boolean
+  amountSpecifiedIsInput: boolean,
 ) {
   let amountX64 = amount.shln(64);
 
-  let delta = BitMath.divRoundUpIf(amountX64, currLiquidity, !amountSpecifiedIsInput);
+  let delta = BitMath.divRoundUpIf(
+    amountX64,
+    currLiquidity,
+    !amountSpecifiedIsInput,
+  );
 
   if (amountSpecifiedIsInput) {
     sqrtPrice = sqrtPrice.add(delta);

@@ -1,14 +1,12 @@
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
+import type { TickArray, TickArrayData, TickData } from "../../types/public";
 import {
   MAX_TICK_INDEX,
   MIN_TICK_INDEX,
-  TickArray,
-  TickArrayData,
-  TickData,
   TICK_ARRAY_SIZE,
 } from "../../types/public";
 import { TickArrayIndex } from "./tick-array-index";
-import { PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 
 type InitializedTickArray = TickArray & {
   // override
@@ -27,7 +25,7 @@ export class TickArraySequence {
   constructor(
     tickArrays: Readonly<TickArray[]>,
     readonly tickSpacing: number,
-    readonly aToB: boolean
+    readonly aToB: boolean,
   ) {
     if (!tickArrays[0] || !tickArrays[0].data) {
       throw new Error("TickArray index 0 must be initialized");
@@ -49,14 +47,17 @@ export class TickArraySequence {
     this.touchedArrays = [...Array<boolean>(this.sequence.length).fill(false)];
     this.startArrayIndex = TickArrayIndex.fromTickIndex(
       this.sequence[0].data.startTickIndex,
-      this.tickSpacing
+      this.tickSpacing,
     ).arrayIndex;
   }
 
   isValidTickArray0(tickCurrentIndex: number) {
     const shift = this.aToB ? 0 : this.tickSpacing;
     const tickArray = this.sequence[0].data;
-    return this.checkIfIndexIsInTickArrayRange(tickArray.startTickIndex, tickCurrentIndex + shift);
+    return this.checkIfIndexIsInTickArrayRange(
+      tickArray.startTickIndex,
+      tickCurrentIndex + shift,
+    );
   }
 
   getNumOfTouchedArrays() {
@@ -91,10 +92,15 @@ export class TickArraySequence {
     const targetTaIndex = TickArrayIndex.fromTickIndex(index, this.tickSpacing);
 
     if (!this.isArrayIndexInBounds(targetTaIndex, this.aToB)) {
-      throw new Error("Provided tick index is out of bounds for this sequence.");
+      throw new Error(
+        "Provided tick index is out of bounds for this sequence.",
+      );
     }
 
-    const localArrayIndex = this.getLocalArrayIndex(targetTaIndex.arrayIndex, this.aToB);
+    const localArrayIndex = this.getLocalArrayIndex(
+      targetTaIndex.arrayIndex,
+      this.aToB,
+    );
     const tickArray = this.sequence[localArrayIndex].data;
 
     this.touchedArrays[localArrayIndex] = true;
@@ -102,14 +108,14 @@ export class TickArraySequence {
     if (!tickArray) {
       throw new WhirlpoolsError(
         `TickArray at index ${localArrayIndex} is not initialized.`,
-        SwapErrorCode.TickArrayIndexNotInitialized
+        SwapErrorCode.TickArrayIndexNotInitialized,
       );
     }
 
     if (!this.checkIfIndexIsInTickArrayRange(tickArray.startTickIndex, index)) {
       throw new WhirlpoolsError(
         `TickArray at index ${localArrayIndex} is unexpected for this sequence.`,
-        SwapErrorCode.TickArraySequenceInvalid
+        SwapErrorCode.TickArraySequenceInvalid,
       );
     }
 
@@ -123,20 +129,26 @@ export class TickArraySequence {
    */
   findNextInitializedTickIndex(currIndex: number) {
     const searchIndex = this.aToB ? currIndex : currIndex + this.tickSpacing;
-    let currTaIndex = TickArrayIndex.fromTickIndex(searchIndex, this.tickSpacing);
+    let currTaIndex = TickArrayIndex.fromTickIndex(
+      searchIndex,
+      this.tickSpacing,
+    );
 
     // Throw error if the search attempted to search for an index out of bounds
     if (!this.isArrayIndexInBounds(currTaIndex, this.aToB)) {
       throw new WhirlpoolsError(
         `Swap input value traversed too many arrays. Out of bounds at attempt to traverse tick index - ${currTaIndex.toTickIndex()}.`,
-        SwapErrorCode.TickArraySequenceInvalid
+        SwapErrorCode.TickArraySequenceInvalid,
       );
     }
 
     while (this.isArrayIndexInBounds(currTaIndex, this.aToB)) {
       const currTickData = this.getTick(currTaIndex.toTickIndex());
       if (currTickData.initialized) {
-        return { nextIndex: currTaIndex.toTickIndex(), nextTickData: currTickData };
+        return {
+          nextIndex: currTaIndex.toTickIndex(),
+          nextTickData: currTickData,
+        };
       }
       currTaIndex = this.aToB
         ? currTaIndex.toPrevInitializableTickIndex()
@@ -145,17 +157,21 @@ export class TickArraySequence {
 
     const lastIndexInArray = Math.max(
       Math.min(
-        this.aToB ? currTaIndex.toTickIndex() + this.tickSpacing : currTaIndex.toTickIndex() - 1,
-        MAX_TICK_INDEX
+        this.aToB
+          ? currTaIndex.toTickIndex() + this.tickSpacing
+          : currTaIndex.toTickIndex() - 1,
+        MAX_TICK_INDEX,
       ),
-      MIN_TICK_INDEX
+      MIN_TICK_INDEX,
     );
 
     return { nextIndex: lastIndexInArray, nextTickData: null };
   }
 
   private getLocalArrayIndex(arrayIndex: number, aToB: boolean) {
-    return aToB ? this.startArrayIndex - arrayIndex : arrayIndex - this.startArrayIndex;
+    return aToB
+      ? this.startArrayIndex - arrayIndex
+      : arrayIndex - this.startArrayIndex;
   }
 
   /**

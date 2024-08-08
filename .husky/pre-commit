@@ -1,5 +1,4 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# TODO: enable linting on pre-commit
-# yarn lint-staged
+yarn lint-staged

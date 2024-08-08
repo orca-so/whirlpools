@@ -1,18 +1,16 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, TransactionBuilder } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import { BN } from "bn.js";
+import BN from "bn.js";
 import Decimal from "decimal.js";
+import type { PositionData, TickArrayData, WhirlpoolData } from "../../src";
 import {
   PDAUtil,
-  PositionData,
   PriceMath,
-  TickArrayData,
   TickUtil,
   WhirlpoolContext,
-  WhirlpoolData,
   WhirlpoolIx,
-  toTx
+  toTx,
 } from "../../src";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { PoolUtil, toTokenAmount } from "../../src/utils/public/pool-utils";
@@ -27,18 +25,21 @@ import {
   createTokenAccount,
   getTokenBalance,
   sleep,
-  transferToken
+  transferToken,
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { WhirlpoolTestFixture } from "../utils/fixture";
 import { initTestPool, initTickArray, openPosition } from "../utils/init-utils";
 import {
   generateDefaultInitTickArrayParams,
-  generateDefaultOpenPositionParams
+  generateDefaultOpenPositionParams,
 } from "../utils/test-builders";
 
 describe("increase_liquidity", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -53,17 +54,21 @@ describe("increase_liquidity", () => {
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: ZERO_BN }],
       initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(
+      whirlpoolPda.publicKey,
+      IGNORE_CACHE,
+    )) as WhirlpoolData;
     const tokenAmount = toTokenAmount(167_000, 167_000);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
       currTick,
       tickLowerIndex,
       tickUpperIndex,
-      tokenAmount
+      tokenAmount,
     );
 
     // To check if rewardLastUpdatedTimestamp is updated
@@ -85,34 +90,60 @@ describe("increase_liquidity", () => {
         tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
         tickArrayLower: positionInitInfo.tickArrayLower,
         tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
+      }),
     ).buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionInitInfo.publicKey, IGNORE_CACHE)) as PositionData;
+    const position = (await fetcher.getPosition(
+      positionInitInfo.publicKey,
+      IGNORE_CACHE,
+    )) as PositionData;
     assert.ok(position.liquidity.eq(liquidityAmount));
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
-    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gt(poolBefore.rewardLastUpdatedTimestamp));
-    assert.equal(
-      await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
-      tokenAmount.tokenA.toString()
+    const poolAfter = (await fetcher.getPool(
+      whirlpoolPda.publicKey,
+      IGNORE_CACHE,
+    )) as WhirlpoolData;
+    assert.ok(
+      poolAfter.rewardLastUpdatedTimestamp.gt(
+        poolBefore.rewardLastUpdatedTimestamp,
+      ),
     );
     assert.equal(
-      await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey),
-      tokenAmount.tokenB.toString()
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultAKeypair.publicKey,
+      ),
+      tokenAmount.tokenA.toString(),
+    );
+    assert.equal(
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultBKeypair.publicKey,
+      ),
+      tokenAmount.tokenB.toString(),
     );
     assert.ok(poolAfter.liquidity.eq(new anchor.BN(liquidityAmount)));
 
     const tickArrayLower = (await fetcher.getTickArray(
       positionInitInfo.tickArrayLower,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
-    assertTick(tickArrayLower.ticks[78], true, liquidityAmount, liquidityAmount);
+    assertTick(
+      tickArrayLower.ticks[78],
+      true,
+      liquidityAmount,
+      liquidityAmount,
+    );
     const tickArrayUpper = (await fetcher.getTickArray(
       positionInitInfo.tickArrayUpper,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
-    assertTick(tickArrayUpper.ticks[10], true, liquidityAmount, liquidityAmount.neg());
+    assertTick(
+      tickArrayUpper.ticks[10],
+      true,
+      liquidityAmount,
+      liquidityAmount.neg(),
+    );
   });
 
   it("increase liquidity of a position contained in one tick array", async () => {
@@ -124,17 +155,21 @@ describe("increase_liquidity", () => {
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: ZERO_BN }],
       initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(
+      whirlpoolPda.publicKey,
+      IGNORE_CACHE,
+    )) as WhirlpoolData;
 
     const tokenAmount = toTokenAmount(1_000_000, 0);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
       currTick,
       tickLowerIndex,
       tickUpperIndex,
-      tokenAmount
+      tokenAmount,
     );
 
     await toTx(
@@ -153,33 +188,54 @@ describe("increase_liquidity", () => {
         tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
         tickArrayLower: positionInitInfo.tickArrayLower,
         tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
+      }),
     ).buildAndExecute();
 
     assert.equal(
-      await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
-      tokenAmount.tokenA.toString()
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultAKeypair.publicKey,
+      ),
+      tokenAmount.tokenA.toString(),
     );
 
     assert.equal(
-      await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey),
-      tokenAmount.tokenB.toString()
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultBKeypair.publicKey,
+      ),
+      tokenAmount.tokenB.toString(),
     );
 
     const expectedLiquidity = new anchor.BN(liquidityAmount);
-    const position = (await fetcher.getPosition(positionInitInfo.publicKey, IGNORE_CACHE)) as PositionData;
+    const position = (await fetcher.getPosition(
+      positionInitInfo.publicKey,
+      IGNORE_CACHE,
+    )) as PositionData;
     assert.ok(position.liquidity.eq(expectedLiquidity));
 
     const tickArray = (await fetcher.getTickArray(
       positionInitInfo.tickArrayLower,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
 
     assertTick(tickArray.ticks[56], true, expectedLiquidity, expectedLiquidity);
-    assertTick(tickArray.ticks[70], true, expectedLiquidity, expectedLiquidity.neg());
+    assertTick(
+      tickArray.ticks[70],
+      true,
+      expectedLiquidity,
+      expectedLiquidity.neg(),
+    );
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
-    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
+    const poolAfter = (await fetcher.getPool(
+      whirlpoolPda.publicKey,
+      IGNORE_CACHE,
+    )) as WhirlpoolData;
+    assert.ok(
+      poolAfter.rewardLastUpdatedTimestamp.gte(
+        poolBefore.rewardLastUpdatedTimestamp,
+      ),
+    );
     assert.equal(poolAfter.liquidity, 0);
   });
 
@@ -193,14 +249,17 @@ describe("increase_liquidity", () => {
     });
     const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
     const { whirlpoolPda, tickSpacing } = poolInitInfo;
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(
+      whirlpoolPda.publicKey,
+      IGNORE_CACHE,
+    )) as WhirlpoolData;
 
     const tokenAmount = toTokenAmount(1_000_000, 0);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
       currTick,
       tickLowerIndex,
       tickUpperIndex,
-      tokenAmount
+      tokenAmount,
     );
 
     const { params, mint } = await generateDefaultOpenPositionParams(
@@ -208,22 +267,26 @@ describe("increase_liquidity", () => {
       whirlpoolPda.publicKey,
       tickLowerIndex,
       tickUpperIndex,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
 
     const tickArrayLower = PDAUtil.getTickArray(
       ctx.program.programId,
       whirlpoolPda.publicKey,
-      TickUtil.getStartTickIndex(tickLowerIndex, tickSpacing)
+      TickUtil.getStartTickIndex(tickLowerIndex, tickSpacing),
     ).publicKey;
 
     const tickArrayUpper = PDAUtil.getTickArray(
       ctx.program.programId,
       whirlpoolPda.publicKey,
-      TickUtil.getStartTickIndex(tickUpperIndex, tickSpacing)
+      TickUtil.getStartTickIndex(tickUpperIndex, tickSpacing),
     ).publicKey;
 
-    await new TransactionBuilder(ctx.provider.connection, ctx.provider.wallet, ctx.txBuilderOpts)
+    await new TransactionBuilder(
+      ctx.provider.connection,
+      ctx.provider.wallet,
+      ctx.txBuilderOpts,
+    )
       // TODO: create a ComputeBudgetInstruction to request more compute
       .addInstruction(
         WhirlpoolIx.initTickArrayIx(
@@ -231,9 +294,9 @@ describe("increase_liquidity", () => {
           generateDefaultInitTickArrayParams(
             ctx,
             whirlpoolPda.publicKey,
-            TickUtil.getStartTickIndex(tickLowerIndex, tickSpacing)
-          )
-        )
+            TickUtil.getStartTickIndex(tickLowerIndex, tickSpacing),
+          ),
+        ),
       )
       // .addInstruction(
       //   buildtoTx(ctx, WhirlpoolIx.initTickArrayIx(generateDefaultInitTickArrayParams(
@@ -262,34 +325,55 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: tickArrayLower,
           tickArrayUpper: tickArrayUpper,
-        })
+        }),
       )
       .buildAndExecute();
 
     assert.equal(
-      await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
-      tokenAmount.tokenA.toString()
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultAKeypair.publicKey,
+      ),
+      tokenAmount.tokenA.toString(),
     );
 
     assert.equal(
-      await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey),
-      tokenAmount.tokenB.toString()
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultBKeypair.publicKey,
+      ),
+      tokenAmount.tokenB.toString(),
     );
 
     const expectedLiquidity = new anchor.BN(liquidityAmount);
     const position = (await fetcher.getPosition(
       params.positionPda.publicKey,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as PositionData;
     assert.ok(position.liquidity.eq(expectedLiquidity));
 
-    const tickArray = (await fetcher.getTickArray(tickArrayLower, IGNORE_CACHE)) as TickArrayData;
+    const tickArray = (await fetcher.getTickArray(
+      tickArrayLower,
+      IGNORE_CACHE,
+    )) as TickArrayData;
 
     assertTick(tickArray.ticks[56], true, expectedLiquidity, expectedLiquidity);
-    assertTick(tickArray.ticks[70], true, expectedLiquidity, expectedLiquidity.neg());
+    assertTick(
+      tickArray.ticks[70],
+      true,
+      expectedLiquidity,
+      expectedLiquidity.neg(),
+    );
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
-    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
+    const poolAfter = (await fetcher.getPool(
+      whirlpoolPda.publicKey,
+      IGNORE_CACHE,
+    )) as WhirlpoolData;
+    assert.ok(
+      poolAfter.rewardLastUpdatedTimestamp.gte(
+        poolBefore.rewardLastUpdatedTimestamp,
+      ),
+    );
     assert.equal(poolAfter.liquidity, 0);
   });
 
@@ -302,21 +386,30 @@ describe("increase_liquidity", () => {
       positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: ZERO_BN }],
       initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
-    const poolBefore = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
+    const poolBefore = (await fetcher.getPool(
+      whirlpoolPda.publicKey,
+      IGNORE_CACHE,
+    )) as WhirlpoolData;
     const tokenAmount = toTokenAmount(0, 167_000);
     const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
       currTick,
       tickLowerIndex,
       tickUpperIndex,
-      tokenAmount
+      tokenAmount,
     );
 
     const delegate = anchor.web3.Keypair.generate();
-    await approveToken(provider, positionInitInfo.tokenAccount, delegate.publicKey, 1);
+    await approveToken(
+      provider,
+      positionInitInfo.tokenAccount,
+      delegate.publicKey,
+      1,
+    );
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
@@ -336,36 +429,62 @@ describe("increase_liquidity", () => {
         tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
         tickArrayLower: positionInitInfo.tickArrayLower,
         tickArrayUpper: positionInitInfo.tickArrayUpper,
-      })
+      }),
     )
       .addSigner(delegate)
       .buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionInitInfo.publicKey, IGNORE_CACHE)) as PositionData;
+    const position = (await fetcher.getPosition(
+      positionInitInfo.publicKey,
+      IGNORE_CACHE,
+    )) as PositionData;
     assert.ok(position.liquidity.eq(liquidityAmount));
 
-    const poolAfter = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE)) as WhirlpoolData;
-    assert.ok(poolAfter.rewardLastUpdatedTimestamp.gte(poolBefore.rewardLastUpdatedTimestamp));
-    assert.equal(
-      await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
-      tokenAmount.tokenA.toString()
+    const poolAfter = (await fetcher.getPool(
+      whirlpoolPda.publicKey,
+      IGNORE_CACHE,
+    )) as WhirlpoolData;
+    assert.ok(
+      poolAfter.rewardLastUpdatedTimestamp.gte(
+        poolBefore.rewardLastUpdatedTimestamp,
+      ),
     );
     assert.equal(
-      await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey),
-      tokenAmount.tokenB.toString()
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultAKeypair.publicKey,
+      ),
+      tokenAmount.tokenA.toString(),
+    );
+    assert.equal(
+      await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultBKeypair.publicKey,
+      ),
+      tokenAmount.tokenB.toString(),
     );
     assert.equal(poolAfter.liquidity, 0);
 
     const tickArrayLower = (await fetcher.getTickArray(
       positionInitInfo.tickArrayLower,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
-    assertTick(tickArrayLower.ticks[78], true, liquidityAmount, liquidityAmount);
+    assertTick(
+      tickArrayLower.ticks[78],
+      true,
+      liquidityAmount,
+      liquidityAmount,
+    );
     const tickArrayUpper = (await fetcher.getTickArray(
       positionInitInfo.tickArrayUpper,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     )) as TickArrayData;
-    assertTick(tickArrayUpper.ticks[10], true, liquidityAmount, liquidityAmount.neg());
+    assertTick(
+      tickArrayUpper.ticks[10],
+      true,
+      liquidityAmount,
+      liquidityAmount.neg(),
+    );
   });
 
   it("add maximum amount of liquidity near minimum price", async () => {
@@ -373,12 +492,20 @@ describe("increase_liquidity", () => {
     const { poolInitInfo } = await initTestPool(
       ctx,
       TickSpacing.Stable,
-      PriceMath.tickIndexToSqrtPriceX64(currTick)
+      PriceMath.tickIndexToSqrtPriceX64(currTick),
     );
 
     const { tokenMintA, tokenMintB, whirlpoolPda } = poolInitInfo;
-    const tokenAccountA = await createAndMintToTokenAccount(provider, tokenMintA, MAX_U64);
-    const tokenAccountB = await createAndMintToTokenAccount(provider, tokenMintB, MAX_U64);
+    const tokenAccountA = await createAndMintToTokenAccount(
+      provider,
+      tokenMintA,
+      MAX_U64,
+    );
+    const tokenAccountB = await createAndMintToTokenAccount(
+      provider,
+      tokenMintB,
+      MAX_U64,
+    );
 
     const {
       params: { tickArrayPda },
@@ -390,9 +517,10 @@ describe("increase_liquidity", () => {
       ctx,
       whirlpoolPda.publicKey,
       tickLowerIndex,
-      tickUpperIndex
+      tickUpperIndex,
     );
-    const { positionPda, positionTokenAccount: positionTokenAccountAddress } = positionInfo.params;
+    const { positionPda, positionTokenAccount: positionTokenAccountAddress } =
+      positionInfo.params;
 
     const tokenAmount = {
       tokenA: new BN(0),
@@ -402,7 +530,7 @@ describe("increase_liquidity", () => {
       currTick,
       tickLowerIndex,
       tickUpperIndex,
-      tokenAmount
+      tokenAmount,
     );
 
     await toTx(
@@ -421,10 +549,13 @@ describe("increase_liquidity", () => {
         tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
         tickArrayLower: tickArrayPda.publicKey,
         tickArrayUpper: tickArrayPda.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionPda.publicKey, IGNORE_CACHE)) as PositionData;
+    const position = (await fetcher.getPosition(
+      positionPda.publicKey,
+      IGNORE_CACHE,
+    )) as PositionData;
     assert.ok(position.liquidity.eq(estLiquidityAmount));
   });
 
@@ -433,12 +564,20 @@ describe("increase_liquidity", () => {
     const { poolInitInfo } = await initTestPool(
       ctx,
       TickSpacing.Stable,
-      PriceMath.tickIndexToSqrtPriceX64(currTick)
+      PriceMath.tickIndexToSqrtPriceX64(currTick),
     );
 
     const { tokenMintA, tokenMintB, whirlpoolPda } = poolInitInfo;
-    const tokenAccountA = await createAndMintToTokenAccount(provider, tokenMintA, MAX_U64);
-    const tokenAccountB = await createAndMintToTokenAccount(provider, tokenMintB, MAX_U64);
+    const tokenAccountA = await createAndMintToTokenAccount(
+      provider,
+      tokenMintA,
+      MAX_U64,
+    );
+    const tokenAccountB = await createAndMintToTokenAccount(
+      provider,
+      tokenMintB,
+      MAX_U64,
+    );
 
     const {
       params: { tickArrayPda },
@@ -450,9 +589,10 @@ describe("increase_liquidity", () => {
       ctx,
       whirlpoolPda.publicKey,
       tickLowerIndex,
-      tickUpperIndex
+      tickUpperIndex,
     );
-    const { positionPda, positionTokenAccount: positionTokenAccountAddress } = positionInfo.params;
+    const { positionPda, positionTokenAccount: positionTokenAccountAddress } =
+      positionInfo.params;
 
     const tokenAmount = {
       tokenA: new BN(0),
@@ -462,7 +602,7 @@ describe("increase_liquidity", () => {
       currTick,
       tickLowerIndex,
       tickUpperIndex,
-      tokenAmount
+      tokenAmount,
     );
 
     await toTx(
@@ -481,19 +621,29 @@ describe("increase_liquidity", () => {
         tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
         tickArrayLower: tickArrayPda.publicKey,
         tickArrayUpper: tickArrayPda.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
-    const position = (await fetcher.getPosition(positionPda.publicKey, IGNORE_CACHE)) as PositionData;
+    const position = (await fetcher.getPosition(
+      positionPda.publicKey,
+      IGNORE_CACHE,
+    )) as PositionData;
     assert.ok(position.liquidity.eq(estLiquidityAmount));
   });
 
   it("fails with zero liquidity amount", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: 7168, tickUpperIndex: 8960, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: 7168,
+          tickUpperIndex: 8960,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
@@ -514,9 +664,9 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x177c/ // LiquidityZero
+      /0x177c/, // LiquidityZero
     );
   });
 
@@ -524,9 +674,16 @@ describe("increase_liquidity", () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
       initialSqrtPrice: MathUtil.toX64(new Decimal(1)),
-      positions: [{ tickLowerIndex: 7168, tickUpperIndex: 8960, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: 7168,
+          tickUpperIndex: 8960,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
@@ -549,18 +706,25 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x1781/ // TokenMaxExceeded
+      /0x1781/, // TokenMaxExceeded
     );
   });
 
   it("fails when token max b exceeded", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: 7168, tickUpperIndex: 8960, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: 7168,
+          tickUpperIndex: 8960,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
@@ -583,18 +747,25 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x1781/ // TokenMaxExceeded
+      /0x1781/, // TokenMaxExceeded
     );
   });
 
   it("fails when position account does not have exactly 1 token", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: 7168, tickUpperIndex: 8960, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: 7168,
+          tickUpperIndex: 8960,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
@@ -602,7 +773,7 @@ describe("increase_liquidity", () => {
     const newPositionTokenAccount = await createTokenAccount(
       provider,
       positionInitInfo.mintKeypair.publicKey,
-      provider.wallet.publicKey
+      provider.wallet.publicKey,
     );
 
     const liquidityAmount = new anchor.BN(6_500_000);
@@ -624,13 +795,18 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
 
     // Send position token to other position token account
-    await transferToken(provider, positionInitInfo.tokenAccount, newPositionTokenAccount, 1);
+    await transferToken(
+      provider,
+      positionInitInfo.tokenAccount,
+      newPositionTokenAccount,
+      1,
+    );
 
     await assert.rejects(
       toTx(
@@ -649,23 +825,34 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
   });
 
   it("fails when position token account mint does not match position mint", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: 7168, tickUpperIndex: 8960, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: 7168,
+          tickUpperIndex: 8960,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda, tokenMintA } = poolInitInfo;
     const positionInitInfo = positions[0];
 
     // Create a position token account that contains 0 tokens
-    const invalidPositionTokenAccount = await createAndMintToTokenAccount(provider, tokenMintA, 1);
+    const invalidPositionTokenAccount = await createAndMintToTokenAccount(
+      provider,
+      tokenMintA,
+      1,
+    );
 
     const liquidityAmount = new anchor.BN(6_500_000);
 
@@ -686,9 +873,9 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // A raw constraint was violated
+      /0x7d3/, // A raw constraint was violated
     );
   });
 
@@ -702,12 +889,15 @@ describe("increase_liquidity", () => {
     const { poolInitInfo, tokenAccountA, tokenAccountB } = fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
 
-    const { poolInitInfo: poolInitInfo2 } = await initTestPool(ctx, TickSpacing.Standard);
+    const { poolInitInfo: poolInitInfo2 } = await initTestPool(
+      ctx,
+      TickSpacing.Standard,
+    );
     const positionInitInfo = await openPosition(
       ctx,
       poolInitInfo2.whirlpoolPda.publicKey,
       tickLowerIndex,
-      tickUpperIndex
+      tickUpperIndex,
     );
     const { positionPda, positionTokenAccount: positionTokenAccountAddress } =
       positionInitInfo.params;
@@ -735,24 +925,39 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: tickArrayPda.publicKey,
           tickArrayUpper: tickArrayPda.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d1/ // A has_one constraint was violated
+      /0x7d1/, // A has_one constraint was violated
     );
   });
 
   it("fails when token vaults do not match whirlpool vaults", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: 7168, tickUpperIndex: 8960, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: 7168,
+          tickUpperIndex: 8960,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda, tokenMintA, tokenMintB } = poolInitInfo;
     const positionInitInfo = positions[0];
     const liquidityAmount = new anchor.BN(6_500_000);
 
-    const fakeVaultA = await createAndMintToTokenAccount(provider, tokenMintA, 1_000);
-    const fakeVaultB = await createAndMintToTokenAccount(provider, tokenMintB, 1_000);
+    const fakeVaultA = await createAndMintToTokenAccount(
+      provider,
+      tokenMintA,
+      1_000,
+    );
+    const fakeVaultB = await createAndMintToTokenAccount(
+      provider,
+      tokenMintB,
+      1_000,
+    );
 
     await assert.rejects(
       toTx(
@@ -771,9 +976,9 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
 
     await assert.rejects(
@@ -793,24 +998,35 @@ describe("increase_liquidity", () => {
           tokenVaultB: fakeVaultB,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
   });
 
   it("fails when owner token account mint does not match whirlpool token mint", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: 7168, tickUpperIndex: 8960, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: 7168,
+          tickUpperIndex: 8960,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
     const liquidityAmount = new anchor.BN(6_500_000);
 
     const invalidMint = await createMint(provider);
-    const invalidTokenAccount = await createAndMintToTokenAccount(provider, invalidMint, 1_000_000);
+    const invalidTokenAccount = await createAndMintToTokenAccount(
+      provider,
+      invalidMint,
+      1_000_000,
+    );
 
     await assert.rejects(
       toTx(
@@ -829,9 +1045,9 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
 
     await assert.rejects(
@@ -851,18 +1067,25 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d3/ // ConstraintRaw
+      /0x7d3/, // ConstraintRaw
     );
   });
 
   it("fails when position authority is not approved delegate for position token account", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: -1280,
+          tickUpperIndex: 1280,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
@@ -890,20 +1113,27 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       )
         .addSigner(delegate)
         .buildAndExecute(),
-      /0x1783/ // MissingOrInvalidDelegate
+      /0x1783/, // MissingOrInvalidDelegate
     );
   });
 
   it("fails when position authority is not authorized for exactly 1 token", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: -1280,
+          tickUpperIndex: 1280,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
@@ -911,7 +1141,12 @@ describe("increase_liquidity", () => {
 
     const liquidityAmount = new anchor.BN(1_250_000);
 
-    await approveToken(provider, positionInitInfo.tokenAccount, delegate.publicKey, 0);
+    await approveToken(
+      provider,
+      positionInitInfo.tokenAccount,
+      delegate.publicKey,
+      0,
+    );
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
@@ -932,20 +1167,27 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       )
         .addSigner(delegate)
         .buildAndExecute(),
-      /0x1784/ // InvalidPositionTokenAmount
+      /0x1784/, // InvalidPositionTokenAmount
     );
   });
 
   it("fails when position authority was not a signer", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: -1280,
+          tickUpperIndex: 1280,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
@@ -953,7 +1195,12 @@ describe("increase_liquidity", () => {
 
     const liquidityAmount = new anchor.BN(1_250_000);
 
-    await approveToken(provider, positionInitInfo.tokenAccount, delegate.publicKey, 1);
+    await approveToken(
+      provider,
+      positionInitInfo.tokenAccount,
+      delegate.publicKey,
+      1,
+    );
     await approveToken(provider, tokenAccountA, delegate.publicKey, 1_000_000);
     await approveToken(provider, tokenAccountB, delegate.publicKey, 1_000_000);
 
@@ -974,18 +1221,25 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute(),
-      /.*signature verification fail.*/i
+      /.*signature verification fail.*/i,
     );
   });
 
   it("fails when position authority is not approved for token owner accounts", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: -1280,
+          tickUpperIndex: 1280,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
@@ -993,7 +1247,12 @@ describe("increase_liquidity", () => {
 
     const liquidityAmount = new anchor.BN(1_250_000);
 
-    await approveToken(provider, positionInitInfo.tokenAccount, delegate.publicKey, 1);
+    await approveToken(
+      provider,
+      positionInitInfo.tokenAccount,
+      delegate.publicKey,
+      1,
+    );
 
     await assert.rejects(
       toTx(
@@ -1012,20 +1271,27 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       )
         .addSigner(delegate)
         .buildAndExecute(),
-      /0x4/ // owner does not match
+      /0x4/, // owner does not match
     );
   });
 
   it("fails when tick arrays do not match the position", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: -1280,
+          tickUpperIndex: 1280,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
@@ -1056,22 +1322,32 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: tickArrayLowerPda.publicKey,
           tickArrayUpper: tickArrayUpperPda.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x1779/ // TicKNotFound
+      /0x1779/, // TicKNotFound
     );
   });
 
   it("fails when the tick arrays are for a different whirlpool", async () => {
     const fixture = await new WhirlpoolTestFixture(ctx).init({
       tickSpacing: TickSpacing.Standard,
-      positions: [{ tickLowerIndex: -1280, tickUpperIndex: 1280, liquidityAmount: ZERO_BN }],
+      positions: [
+        {
+          tickLowerIndex: -1280,
+          tickUpperIndex: 1280,
+          liquidityAmount: ZERO_BN,
+        },
+      ],
     });
-    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+    const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+      fixture.getInfos();
     const { whirlpoolPda } = poolInitInfo;
     const positionInitInfo = positions[0];
 
-    const { poolInitInfo: poolInitInfo2 } = await initTestPool(ctx, TickSpacing.Standard);
+    const { poolInitInfo: poolInitInfo2 } = await initTestPool(
+      ctx,
+      TickSpacing.Standard,
+    );
 
     const {
       params: { tickArrayPda: tickArrayLowerPda },
@@ -1100,9 +1376,9 @@ describe("increase_liquidity", () => {
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: tickArrayLowerPda.publicKey,
           tickArrayUpper: tickArrayUpperPda.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x7d1/ // A has one constraint was violated
+      /0x7d1/, // A has one constraint was violated
     );
   });
 });

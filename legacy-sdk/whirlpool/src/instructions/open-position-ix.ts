@@ -1,9 +1,9 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction, PDA } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction, PDA } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
 import { METADATA_PROGRAM_ADDRESS, WHIRLPOOL_NFT_UPDATE_AUTH } from "..";
-import { Whirlpool } from "../artifacts/whirlpool";
-import {
+import type { Whirlpool } from "../artifacts/whirlpool";
+import type {
   OpenPositionBumpsData,
   OpenPositionWithMetadataBumpsData,
 } from "../types/public/anchor-types";
@@ -47,7 +47,7 @@ export type OpenPositionParams = {
  */
 export function openPositionIx(
   program: Program<Whirlpool>,
-  params: OpenPositionParams
+  params: OpenPositionParams,
 ): Instruction {
   const { positionPda, tickLowerIndex, tickUpperIndex } = params;
 
@@ -55,9 +55,14 @@ export function openPositionIx(
     positionBump: positionPda.bump,
   };
 
-  const ix = program.instruction.openPosition(bumps, tickLowerIndex, tickUpperIndex, {
-    accounts: openPositionAccounts(params),
-  });
+  const ix = program.instruction.openPosition(
+    bumps,
+    tickLowerIndex,
+    tickUpperIndex,
+    {
+      accounts: openPositionAccounts(params),
+    },
+  );
 
   // TODO: Require Keypair and auto sign this ix
   return {
@@ -82,7 +87,7 @@ export function openPositionIx(
  */
 export function openPositionWithMetadataIx(
   program: Program<Whirlpool>,
-  params: OpenPositionParams & { metadataPda: PDA }
+  params: OpenPositionParams & { metadataPda: PDA },
 ): Instruction {
   const { positionPda, metadataPda, tickLowerIndex, tickUpperIndex } = params;
 
@@ -91,14 +96,19 @@ export function openPositionWithMetadataIx(
     metadataBump: metadataPda.bump,
   };
 
-  const ix = program.instruction.openPositionWithMetadata(bumps, tickLowerIndex, tickUpperIndex, {
-    accounts: {
-      ...openPositionAccounts(params),
-      positionMetadataAccount: metadataPda.publicKey,
-      metadataProgram: METADATA_PROGRAM_ADDRESS,
-      metadataUpdateAuth: WHIRLPOOL_NFT_UPDATE_AUTH,
+  const ix = program.instruction.openPositionWithMetadata(
+    bumps,
+    tickLowerIndex,
+    tickUpperIndex,
+    {
+      accounts: {
+        ...openPositionAccounts(params),
+        positionMetadataAccount: metadataPda.publicKey,
+        metadataProgram: METADATA_PROGRAM_ADDRESS,
+        metadataUpdateAuth: WHIRLPOOL_NFT_UPDATE_AUTH,
+      },
     },
-  });
+  );
 
   // TODO: Require Keypair and auto sign this ix
   return {

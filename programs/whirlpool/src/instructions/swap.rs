@@ -69,9 +69,9 @@ pub fn handler(
         None,
     )?;
     let mut swap_tick_sequence = builder.build()?;
-    
+
     let swap_update = swap(
-        &whirlpool,
+        whirlpool,
         &mut swap_tick_sequence,
         amount,
         sqrt_price_limit,
@@ -86,12 +86,10 @@ pub fn handler(
         {
             return Err(ErrorCode::AmountOutBelowMinimum.into());
         }
-    } else {
-        if (a_to_b && other_amount_threshold < swap_update.amount_a)
-            || (!a_to_b && other_amount_threshold < swap_update.amount_b)
-        {
-            return Err(ErrorCode::AmountInAboveMaximum.into());
-        }
+    } else if (a_to_b && other_amount_threshold < swap_update.amount_a)
+        || (!a_to_b && other_amount_threshold < swap_update.amount_b)
+    {
+        return Err(ErrorCode::AmountInAboveMaximum.into());
     }
 
     update_and_swap_whirlpool(

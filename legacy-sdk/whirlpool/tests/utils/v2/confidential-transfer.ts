@@ -1,10 +1,18 @@
 // [Mar 6, 2024] ConfidentialTransfer is not supported in @solana/spl-token, so we need to build instructions manually...
 
-import { ExtensionType, TOKEN_2022_PROGRAM_ID, TokenInstruction, TokenUnsupportedInstructionError, getExtensionTypes, getMint, programSupportsExtensions } from "@solana/spl-token";
+import {
+  ExtensionType,
+  TOKEN_2022_PROGRAM_ID,
+  TokenInstruction,
+  TokenUnsupportedInstructionError,
+  getExtensionTypes,
+  getMint,
+  programSupportsExtensions,
+} from "@solana/spl-token";
 import { PublicKey, TransactionInstruction } from "@solana/web3.js";
-import { struct, u8 } from '@solana/buffer-layout';
-import { publicKey } from '@solana/buffer-layout-utils';
-import { AnchorProvider } from "@coral-xyz/anchor";
+import { struct, u8 } from "@solana/buffer-layout";
+import { publicKey } from "@solana/buffer-layout-utils";
+import type { AnchorProvider } from "@coral-xyz/anchor";
 import { TEST_TOKEN_2022_PROGRAM_ID } from "../test-consts";
 
 enum ConfidentialTransferInstruction {
@@ -41,13 +49,14 @@ data length: 67 bytes
   32: elgamal
 
 */
-const initializeConfidentialTransferMintInstructionData = struct<InitializeConfidentialTransferMintInstructionData>([
-  u8('instruction'),
-  u8('confidentialTransferInstruction'),
-  publicKey('authority'),
-  u8('autoApproveNewAccounts'),
-  publicKey('auditorElgamalPubkey'),
-]);
+const initializeConfidentialTransferMintInstructionData =
+  struct<InitializeConfidentialTransferMintInstructionData>([
+    u8("instruction"),
+    u8("confidentialTransferInstruction"),
+    publicKey("authority"),
+    u8("autoApproveNewAccounts"),
+    publicKey("auditorElgamalPubkey"),
+  ]);
 
 export function createInitializeConfidentialTransferMintInstruction(
   mint: PublicKey,
@@ -61,16 +70,19 @@ export function createInitializeConfidentialTransferMintInstruction(
   }
 
   const keys = [{ pubkey: mint, isSigner: false, isWritable: true }];
-  const data = Buffer.alloc(initializeConfidentialTransferMintInstructionData.span);
+  const data = Buffer.alloc(
+    initializeConfidentialTransferMintInstructionData.span,
+  );
   initializeConfidentialTransferMintInstructionData.encode(
     {
-        instruction: TokenInstruction.ConfidentialTransferExtension,
-        confidentialTransferInstruction: ConfidentialTransferInstruction.InitializeMint,
-        authority,
-        auditorElgamalPubkey,
-        autoApproveNewAccounts,
+      instruction: TokenInstruction.ConfidentialTransferExtension,
+      confidentialTransferInstruction:
+        ConfidentialTransferInstruction.InitializeMint,
+      authority,
+      auditorElgamalPubkey,
+      autoApproveNewAccounts,
     },
-    data
+    data,
   );
 
   return new TransactionInstruction({ keys, programId, data });
@@ -80,7 +92,12 @@ export async function hasConfidentialTransferMintExtension(
   provider: AnchorProvider,
   mint: PublicKey,
 ): Promise<boolean> {
-  const account = await getMint(provider.connection, mint, "confirmed", TEST_TOKEN_2022_PROGRAM_ID);
+  const account = await getMint(
+    provider.connection,
+    mint,
+    "confirmed",
+    TEST_TOKEN_2022_PROGRAM_ID,
+  );
 
   const extensions = getExtensionTypes(account.tlvData);
   return extensions.includes(ExtensionType.ConfidentialTransferMint);
@@ -123,12 +140,13 @@ data length: 67 bytes
   32: withdraw withheld authority elgamal pubkey
 
 */
-const initializeConfidentialTransferFeeConfigInstructionData = struct<InitializeConfidentialTransferFeeConfigInstructionData>([
-  u8('instruction'),
-  u8('confidentialTransferFeeInstruction'),
-  publicKey('authority'),
-  publicKey('withdrawWithheldAuthorityElgamalPubkey'),
-]);
+const initializeConfidentialTransferFeeConfigInstructionData =
+  struct<InitializeConfidentialTransferFeeConfigInstructionData>([
+    u8("instruction"),
+    u8("confidentialTransferFeeInstruction"),
+    publicKey("authority"),
+    publicKey("withdrawWithheldAuthorityElgamalPubkey"),
+  ]);
 
 export function createInitializeConfidentialTransferFeeConfigInstruction(
   mint: PublicKey,
@@ -141,15 +159,18 @@ export function createInitializeConfidentialTransferFeeConfigInstruction(
   }
 
   const keys = [{ pubkey: mint, isSigner: false, isWritable: true }];
-  const data = Buffer.alloc(initializeConfidentialTransferFeeConfigInstructionData.span);
+  const data = Buffer.alloc(
+    initializeConfidentialTransferFeeConfigInstructionData.span,
+  );
   initializeConfidentialTransferFeeConfigInstructionData.encode(
     {
-        instruction: TOKEN_INSTRUCTION_CONFIDENTIAL_TRANSFER_FEE_CONFIG_EXTENSION,
-        confidentialTransferFeeInstruction: ConfidentialTransferFeeInstruction.InitializeConfidentialTransferFeeConfig,
-        authority,
-        withdrawWithheldAuthorityElgamalPubkey,
+      instruction: TOKEN_INSTRUCTION_CONFIDENTIAL_TRANSFER_FEE_CONFIG_EXTENSION,
+      confidentialTransferFeeInstruction:
+        ConfidentialTransferFeeInstruction.InitializeConfidentialTransferFeeConfig,
+      authority,
+      withdrawWithheldAuthorityElgamalPubkey,
     },
-    data
+    data,
   );
 
   return new TransactionInstruction({ keys, programId, data });
@@ -159,7 +180,12 @@ export async function hasConfidentialTransferFeeConfigExtension(
   provider: AnchorProvider,
   mint: PublicKey,
 ): Promise<boolean> {
-  const account = await getMint(provider.connection, mint, "confirmed", TEST_TOKEN_2022_PROGRAM_ID);
+  const account = await getMint(
+    provider.connection,
+    mint,
+    "confirmed",
+    TEST_TOKEN_2022_PROGRAM_ID,
+  );
 
   const extensions = getExtensionTypes(account.tlvData);
   return extensions.includes(EXTENSION_TYPE_CONFIDENTIAL_TRANSFER_FEE_CONFIG);

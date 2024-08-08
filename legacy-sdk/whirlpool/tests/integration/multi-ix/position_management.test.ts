@@ -8,16 +8,23 @@ import { initTestPool, openPosition } from "../../utils/init-utils";
 import { generateDefaultOpenPositionParams } from "../../utils/test-builders";
 
 describe("position management tests", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
-  const fetcher = ctx.fetcher;
 
   it("successfully closes and opens a position in one transaction", async () => {
     const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
 
-    const { params } = await openPosition(ctx, poolInitInfo.whirlpoolPda.publicKey, 0, 128);
+    const { params } = await openPosition(
+      ctx,
+      poolInitInfo.whirlpoolPda.publicKey,
+      0,
+      128,
+    );
     const receiverKeypair = anchor.web3.Keypair.generate();
 
     const { params: newParams, mint } = await generateDefaultOpenPositionParams(
@@ -26,7 +33,7 @@ describe("position management tests", () => {
       0,
       128,
       ctx.wallet.publicKey,
-      ctx.wallet.publicKey
+      ctx.wallet.publicKey,
     );
 
     await toTx(
@@ -37,15 +44,19 @@ describe("position management tests", () => {
         position: params.positionPda.publicKey,
         positionMint: params.positionMintAddress,
         positionTokenAccount: params.positionTokenAccount,
-      })
+      }),
     )
       .addInstruction(WhirlpoolIx.openPositionIx(ctx.program, newParams))
       .addSigner(mint)
       .buildAndExecute();
 
-    const closedResponse = await provider.connection.getTokenSupply(params.positionMintAddress);
+    const closedResponse = await provider.connection.getTokenSupply(
+      params.positionMintAddress,
+    );
     assert.equal(closedResponse.value.uiAmount, 0);
-    const openResponse = await provider.connection.getTokenSupply(newParams.positionMintAddress);
+    const openResponse = await provider.connection.getTokenSupply(
+      newParams.positionMintAddress,
+    );
     assert.equal(openResponse.value.uiAmount, 1);
   });
 });

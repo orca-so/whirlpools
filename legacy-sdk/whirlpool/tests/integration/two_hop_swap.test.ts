@@ -2,32 +2,37 @@ import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
-import { BN } from "bn.js";
+import BN from "bn.js";
+import type { InitPoolParams } from "../../src";
 import {
   buildWhirlpoolClient,
-  InitPoolParams,
   PDAUtil,
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
   toTx,
   twoHopSwapQuoteFromSwapQuotes,
   WhirlpoolContext,
-  WhirlpoolIx
+  WhirlpoolIx,
 } from "../../src";
-import { TwoHopSwapParams } from "../../src/instructions";
+import type { TwoHopSwapParams } from "../../src/instructions";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { getTokenBalance, TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
+import type {
+  FundedPositionParams,
+  InitAquariumParams,
+} from "../utils/init-utils";
 import {
   buildTestAquariums,
-  FundedPositionParams,
   getDefaultAquarium,
   getTokenAccsForPools,
-  InitAquariumParams
 } from "../utils/init-utils";
 
 describe("two-hop swap", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -40,7 +45,10 @@ describe("two-hop swap", () => {
     // Add a third token and account and a second pool
     aqConfig.initMintParams.push({});
     aqConfig.initTokenAccParams.push({ mintIndex: 2 });
-    aqConfig.initPoolParams.push({ mintIndices: [1, 2], tickSpacing: TickSpacing.Standard });
+    aqConfig.initPoolParams.push({
+      mintIndices: [1, 2],
+      tickSpacing: TickSpacing.Standard,
+    });
 
     // Add tick arrays and positions
     const aToB = false;
@@ -87,7 +95,7 @@ describe("two-hop swap", () => {
         Percentage.fromFraction(1, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const quote2 = await swapQuoteByInputToken(
@@ -97,7 +105,7 @@ describe("two-hop swap", () => {
         Percentage.fromFraction(1, 100),
         ctx.program.programId,
         fetcher,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
 
       const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -114,7 +122,7 @@ describe("two-hop swap", () => {
           ...baseIxParams,
           whirlpoolOne: baseIxParams.whirlpoolTwo,
         },
-        /0x7d3/ // ConstraintRaw
+        /0x7d3/, // ConstraintRaw
       );
     });
 
@@ -124,7 +132,7 @@ describe("two-hop swap", () => {
           ...baseIxParams,
           tokenOwnerAccountOneA: baseIxParams.tokenOwnerAccountOneB,
         },
-        /0x7d3/ // ConstraintRaw
+        /0x7d3/, // ConstraintRaw
       );
     });
 
@@ -134,7 +142,7 @@ describe("two-hop swap", () => {
           ...baseIxParams,
           tokenVaultOneA: baseIxParams.tokenVaultOneB,
         },
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -144,7 +152,7 @@ describe("two-hop swap", () => {
           ...baseIxParams,
           oracleOne: PublicKey.unique(),
         },
-        /0x7d6/ // Constraint Seeds
+        /0x7d6/, // Constraint Seeds
       );
     });
 
@@ -154,7 +162,7 @@ describe("two-hop swap", () => {
           ...baseIxParams,
           oracleTwo: PublicKey.unique(),
         },
-        /0x7d6/ // Constraint Seeds
+        /0x7d6/, // Constraint Seeds
       );
     });
 
@@ -166,21 +174,21 @@ describe("two-hop swap", () => {
           // so now we use token account as clearly invalid account.
           tickArrayOne0: baseIxParams.tokenVaultOneA,
         },
-        /0xbbf/ // AccountOwnedByWrongProgram
+        /0xbbf/, // AccountOwnedByWrongProgram
       );
       await rejectParams(
         {
           ...baseIxParams,
           tickArrayOne1: baseIxParams.tokenVaultOneA,
         },
-        /0xbbf/ // AccountOwnedByWrongProgram
+        /0xbbf/, // AccountOwnedByWrongProgram
       );
       await rejectParams(
         {
           ...baseIxParams,
           tickArrayOne2: baseIxParams.tokenVaultOneA,
         },
-        /0xbbf/ // AccountOwnedByWrongProgram
+        /0xbbf/, // AccountOwnedByWrongProgram
       );
     });
 
@@ -192,38 +200,45 @@ describe("two-hop swap", () => {
           // so now we use token account as clearly invalid account.
           tickArrayTwo0: baseIxParams.tokenVaultTwoA,
         },
-        /0xbbf/ // AccountOwnedByWrongProgram
+        /0xbbf/, // AccountOwnedByWrongProgram
       );
       await rejectParams(
         {
           ...baseIxParams,
           tickArrayTwo1: baseIxParams.tokenVaultTwoA,
         },
-        /0xbbf/ // AccountOwnedByWrongProgram
+        /0xbbf/, // AccountOwnedByWrongProgram
       );
       await rejectParams(
         {
           ...baseIxParams,
           tickArrayTwo2: baseIxParams.tokenVaultTwoA,
         },
-        /0xbbf/ // AccountOwnedByWrongProgram
+        /0xbbf/, // AccountOwnedByWrongProgram
       );
     });
 
-    async function rejectParams(params: TwoHopSwapParams, error: assert.AssertPredicate) {
+    async function rejectParams(
+      params: TwoHopSwapParams,
+      error: assert.AssertPredicate,
+    ) {
       await assert.rejects(
-        toTx(ctx, WhirlpoolIx.twoHopSwapIx(ctx.program, params)).buildAndExecute(),
+        toTx(
+          ctx,
+          WhirlpoolIx.twoHopSwapIx(ctx.program, params),
+        ).buildAndExecute(),
         error,
       );
     }
-
   });
 
   it("swaps [2] with two-hop swap, amountSpecifiedIsInput=true", async () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;
 
-    let tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+    let tokenBalances = await getTokenBalances(
+      tokenAccounts.map((acc) => acc.account),
+    );
 
     const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
@@ -241,7 +256,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -251,7 +266,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -262,7 +277,7 @@ describe("two-hop swap", () => {
         ...twoHopQuote,
         ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
         tokenAuthority: ctx.wallet.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     assert.deepEqual(await getTokenBalancesForVaults(pools), [
@@ -273,7 +288,9 @@ describe("two-hop swap", () => {
     ]);
 
     const prevTbs = [...tokenBalances];
-    tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+    tokenBalances = await getTokenBalances(
+      tokenAccounts.map((acc) => acc.account),
+    );
 
     assert.deepEqual(tokenBalances, [
       prevTbs[0].sub(quote.estimatedAmountIn),
@@ -285,11 +302,14 @@ describe("two-hop swap", () => {
     whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
   });
 
-
   it("swaps [2] with two-hop swap, amountSpecifiedIsInput=true, A->B->A", async () => {
     // Add another mint and update pool so there is no overlapping mint
     aqConfig.initFeeTierParams.push({ tickSpacing: TickSpacing.ThirtyTwo });
-    aqConfig.initPoolParams[1] = { mintIndices: [0, 1], tickSpacing: TickSpacing.ThirtyTwo, feeTierIndex: 1 };
+    aqConfig.initPoolParams[1] = {
+      mintIndices: [0, 1],
+      tickSpacing: TickSpacing.ThirtyTwo,
+      feeTierIndex: 1,
+    };
     aqConfig.initTickArrayRangeParams.push({
       poolIndex: 1,
       startTickIndex: 22528,
@@ -303,14 +323,14 @@ describe("two-hop swap", () => {
       aToB: false,
     });
 
-
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;
 
-    let tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+    let tokenBalances = await getTokenBalances(
+      tokenAccounts.map((acc) => acc.account),
+    );
 
     const tokenVaultBalances = await getTokenBalancesForVaults(pools);
-
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
@@ -326,7 +346,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -336,7 +356,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -347,7 +367,7 @@ describe("two-hop swap", () => {
         ...twoHopQuote,
         ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
         tokenAuthority: ctx.wallet.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     assert.deepEqual(await getTokenBalancesForVaults(pools), [
@@ -358,7 +378,9 @@ describe("two-hop swap", () => {
     ]);
 
     const prevTbs = [...tokenBalances];
-    tokenBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+    tokenBalances = await getTokenBalances(
+      tokenAccounts.map((acc) => acc.account),
+    );
 
     assert.deepEqual(tokenBalances, [
       prevTbs[0].sub(quote.estimatedAmountIn).add(quote2.estimatedAmountOut),
@@ -385,7 +407,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -395,7 +417,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -408,9 +430,9 @@ describe("two-hop swap", () => {
           ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
           otherAmountThreshold: new BN(613309),
           tokenAuthority: ctx.wallet.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x1794/ // Above Out Below Minimum
+      /0x1794/, // Above Out Below Minimum
     );
   });
 
@@ -418,7 +440,9 @@ describe("two-hop swap", () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;
 
-    const preSwapBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
+    const preSwapBalances = await getTokenBalances(
+      tokenAccounts.map((acc) => acc.account),
+    );
     const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
@@ -435,7 +459,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const quote = await swapQuoteByOutputToken(
@@ -445,7 +469,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -456,7 +480,7 @@ describe("two-hop swap", () => {
         ...twoHopQuote,
         ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
         tokenAuthority: ctx.wallet.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     assert.deepEqual(await getTokenBalancesForVaults(pools), [
@@ -466,19 +490,19 @@ describe("two-hop swap", () => {
       tokenVaultBalances[3].sub(quote2.estimatedAmountOut),
     ]);
 
-    assert.deepEqual(await getTokenBalances(tokenAccounts.map((acc) => acc.account)), [
-      preSwapBalances[0].sub(quote.estimatedAmountIn),
-      preSwapBalances[1],
-      preSwapBalances[2].add(quote2.estimatedAmountOut),
-    ]);
+    assert.deepEqual(
+      await getTokenBalances(tokenAccounts.map((acc) => acc.account)),
+      [
+        preSwapBalances[0].sub(quote.estimatedAmountIn),
+        preSwapBalances[1],
+        preSwapBalances[2].add(quote2.estimatedAmountOut),
+      ],
+    );
   });
 
   it("fails swaps [2] with two-hop swap, amountSpecifiedIsInput=false slippage", async () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;
-
-    const preSwapBalances = await getTokenBalances(tokenAccounts.map((acc) => acc.account));
-    const tokenVaultBalances = await getTokenBalancesForVaults(pools);
 
     const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
@@ -494,7 +518,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const quote = await swapQuoteByOutputToken(
@@ -504,7 +528,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -517,9 +541,9 @@ describe("two-hop swap", () => {
           ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
           otherAmountThreshold: new BN(2),
           tokenAuthority: ctx.wallet.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x1795/ // Above In Above Maximum
+      /0x1795/, // Above In Above Maximum
     );
   });
 
@@ -545,7 +569,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const quote = await swapQuoteByOutputToken(
@@ -555,7 +579,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -567,9 +591,9 @@ describe("two-hop swap", () => {
           ...twoHopQuote,
           ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
           tokenAuthority: ctx.wallet.publicKey,
-        })
+        }),
       ).buildAndExecute(),
-      /0x1799/ // Invalid intermediary mint
+      /0x1799/, // Invalid intermediary mint
     );
   });
 
@@ -591,7 +615,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -601,7 +625,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     // Set a price limit that is less than the 1% slippage threshold,
@@ -611,7 +635,7 @@ describe("two-hop swap", () => {
         .getData()
         .sqrtPrice.sub(quote.estimatedEndSqrtPrice)
         .mul(new anchor.BN("5"))
-        .div(new anchor.BN("1000"))
+        .div(new anchor.BN("1000")),
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -622,15 +646,17 @@ describe("two-hop swap", () => {
         ...twoHopQuote,
         ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
         tokenAuthority: ctx.wallet.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
     whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
-    assert.equal(whirlpoolOne.getData().sqrtPrice.eq(quote.sqrtPriceLimit), true);
+    assert.equal(
+      whirlpoolOne.getData().sqrtPrice.eq(quote.sqrtPriceLimit),
+      true,
+    );
   });
-
 
   it("swaps [2] with two-hop swap, amount_specified_is_input=true, second swap price limit", async () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
@@ -650,7 +676,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -660,7 +686,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     // Set a price limit that is less than the 1% slippage threshold,
@@ -670,7 +696,7 @@ describe("two-hop swap", () => {
         .getData()
         .sqrtPrice.sub(quote2.estimatedEndSqrtPrice)
         .mul(new anchor.BN("5"))
-        .div(new anchor.BN("1000"))
+        .div(new anchor.BN("1000")),
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -681,13 +707,16 @@ describe("two-hop swap", () => {
         ...twoHopQuote,
         ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
         tokenAuthority: ctx.wallet.publicKey,
-      })
+      }),
     ).buildAndExecute();
 
     whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
     whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
-    assert.equal(whirlpoolTwo.getData().sqrtPrice.eq(quote2.sqrtPriceLimit), true);
+    assert.equal(
+      whirlpoolTwo.getData().sqrtPrice.eq(quote2.sqrtPriceLimit),
+      true,
+    );
   });
 
   it("fails swaps [2] with two-hop swap, amount_specified_is_input=true, first swap price limit", async () => {
@@ -708,7 +737,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -718,7 +747,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     // Set a price limit that is less than the 1% slippage threshold,
@@ -728,7 +757,7 @@ describe("two-hop swap", () => {
         .getData()
         .sqrtPrice.sub(quote.estimatedEndSqrtPrice)
         .mul(new anchor.BN("15"))
-        .div(new anchor.BN("1000"))
+        .div(new anchor.BN("1000")),
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -740,11 +769,10 @@ describe("two-hop swap", () => {
           ...twoHopQuote,
           ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
           tokenAuthority: ctx.wallet.publicKey,
-        })
-      ).buildAndExecute()
+        }),
+      ).buildAndExecute(),
     );
   });
-
 
   it("fails swaps [2] with two-hop swap, amount_specified_is_input=true, second swap price limit", async () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
@@ -764,7 +792,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(0, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     const quote2 = await swapQuoteByInputToken(
@@ -774,7 +802,7 @@ describe("two-hop swap", () => {
       Percentage.fromFraction(1, 100),
       ctx.program.programId,
       fetcher,
-      IGNORE_CACHE
+      IGNORE_CACHE,
     );
 
     // Set a price limit that is greater than the 1% slippage threshold,
@@ -784,7 +812,7 @@ describe("two-hop swap", () => {
         .getData()
         .sqrtPrice.sub(quote2.estimatedEndSqrtPrice)
         .mul(new anchor.BN("15"))
-        .div(new anchor.BN("1000"))
+        .div(new anchor.BN("1000")),
     );
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
@@ -796,21 +824,27 @@ describe("two-hop swap", () => {
           ...twoHopQuote,
           ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
           tokenAuthority: ctx.wallet.publicKey,
-        })
-      ).buildAndExecute()
+        }),
+      ).buildAndExecute(),
     );
   });
 
   function getParamsFromPools(
     pools: [InitPoolParams, InitPoolParams],
-    tokenAccounts: { mint: PublicKey; account: PublicKey }[]
+    tokenAccounts: { mint: PublicKey; account: PublicKey }[],
   ) {
     const tokenAccKeys = getTokenAccsForPools(pools, tokenAccounts);
 
     const whirlpoolOne = pools[0].whirlpoolPda.publicKey;
     const whirlpoolTwo = pools[1].whirlpoolPda.publicKey;
-    const oracleOne = PDAUtil.getOracle(ctx.program.programId, whirlpoolOne).publicKey;
-    const oracleTwo = PDAUtil.getOracle(ctx.program.programId, whirlpoolTwo).publicKey;
+    const oracleOne = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolOne,
+    ).publicKey;
+    const oracleTwo = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolTwo,
+    ).publicKey;
     return {
       whirlpoolOne: pools[0].whirlpoolPda.publicKey,
       whirlpoolTwo: pools[1].whirlpoolPda.publicKey,
@@ -828,7 +862,7 @@ describe("two-hop swap", () => {
   }
 
   async function getTokenBalancesForVaults(pools: InitPoolParams[]) {
-    const accs = [];
+    const accs: PublicKey[] = [];
     for (const pool of pools) {
       accs.push(pool.tokenVaultAKeypair.publicKey);
       accs.push(pool.tokenVaultBKeypair.publicKey);
@@ -838,7 +872,9 @@ describe("two-hop swap", () => {
 
   async function getTokenBalances(keys: PublicKey[]) {
     return Promise.all(
-      keys.map(async (key) => new anchor.BN(await getTokenBalance(provider, key)))
+      keys.map(
+        async (key) => new anchor.BN(await getTokenBalance(provider, key)),
+      ),
     );
   }
 });

@@ -1,7 +1,7 @@
 use anchor_lang::prelude::*;
+use anchor_spl::memo::Memo;
 use anchor_spl::token;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
-use anchor_spl::memo::Memo;
 
 use crate::util::{parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::{
@@ -36,10 +36,9 @@ pub struct CollectRewardV2<'info> {
     #[account(mut, address = whirlpool.reward_infos[reward_index as usize].vault)]
     pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(constraint = reward_token_program.key() == reward_mint.to_account_info().owner.clone())]
+    #[account(constraint = reward_token_program.key() == *reward_mint.to_account_info().owner)]
     pub reward_token_program: Interface<'info, TokenInterface>,
     pub memo_program: Program<'info, Memo>,
-
     // remaining accounts
     // - accounts for transfer hook program of reward_mint
 }
@@ -57,8 +56,8 @@ pub struct CollectRewardV2<'info> {
 /// - `Ok`: Reward tokens at the specified reward index have been successfully harvested
 /// - `Err`: `RewardNotInitialized` if the specified reward has not been initialized
 ///          `InvalidRewardIndex` if the reward index is not 0, 1, or 2
-pub fn handler<'a, 'b, 'c, 'info>(
-    ctx: Context<'a, 'b, 'c, 'info, CollectRewardV2<'info>>,
+pub fn handler<'info>(
+    ctx: Context<'_, '_, '_, 'info, CollectRewardV2<'info>>,
     reward_index: u8,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
@@ -69,11 +68,9 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
     // Process remaining accounts
     let remaining_accounts = parse_remaining_accounts(
-        &ctx.remaining_accounts,
+        ctx.remaining_accounts,
         &remaining_accounts_info,
-        &[
-            AccountsType::TransferHookReward,
-        ],
+        &[AccountsType::TransferHookReward],
     )?;
 
     let index = reward_index as usize;
@@ -86,7 +83,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
 
     position.update_reward_owed(index, updated_amount_owed);
 
-    Ok(transfer_from_vault_to_owner_v2(
+    transfer_from_vault_to_owner_v2(
         &ctx.accounts.whirlpool,
         &ctx.accounts.reward_mint,
         &ctx.accounts.reward_vault,
@@ -96,7 +93,7 @@ pub fn handler<'a, 'b, 'c, 'info>(
         &remaining_accounts.transfer_hook_reward,
         transfer_amount,
         transfer_memo::TRANSFER_MEMO_COLLECT_REWARD.as_bytes(),
-    )?)
+    )
 }
 
 // TODO: refactor (remove (dup))

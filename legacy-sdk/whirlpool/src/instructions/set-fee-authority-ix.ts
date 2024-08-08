@@ -1,7 +1,7 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to set the fee authority in a WhirlpoolsConfig
@@ -29,7 +29,7 @@ export type SetFeeAuthorityParams = {
  */
 export function setFeeAuthorityIx(
   program: Program<Whirlpool>,
-  params: SetFeeAuthorityParams
+  params: SetFeeAuthorityParams,
 ): Instruction {
   const { whirlpoolsConfig, feeAuthority, newFeeAuthority } = params;
 

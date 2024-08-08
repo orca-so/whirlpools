@@ -1,10 +1,11 @@
 import BN from "bn.js";
-import { PoolUtil, TokenInfo } from "..";
-import {
+import type { TokenInfo } from "..";
+import { PoolUtil } from "..";
+import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/fetcher";
-import {
+import type {
   TokenAccountInfo,
   WhirlpoolData,
   WhirlpoolRewardInfo,
@@ -14,7 +15,7 @@ import {
 export async function getTokenMintInfos(
   fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
-  opts?: WhirlpoolAccountFetchOptions
+  opts?: WhirlpoolAccountFetchOptions,
 ): Promise<TokenInfo[]> {
   const mintA = data.tokenMintA;
   const infoA = await fetcher.getMintInfo(mintA, opts);
@@ -35,7 +36,7 @@ export async function getTokenMintInfos(
 export async function getRewardInfos(
   fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
-  opts?: WhirlpoolAccountFetchOptions
+  opts?: WhirlpoolAccountFetchOptions,
 ): Promise<WhirlpoolRewardInfo[]> {
   const rewardInfos: WhirlpoolRewardInfo[] = [];
   for (const rewardInfo of data.rewardInfos) {
@@ -47,13 +48,15 @@ export async function getRewardInfos(
 async function getRewardInfo(
   fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolRewardInfoData,
-  opts?: WhirlpoolAccountFetchOptions
+  opts?: WhirlpoolAccountFetchOptions,
 ): Promise<WhirlpoolRewardInfo> {
   const rewardInfo = { ...data, initialized: false, vaultAmount: new BN(0) };
   if (PoolUtil.isRewardInitialized(data)) {
     const vaultInfo = await fetcher.getTokenInfo(data.vault, opts);
     if (!vaultInfo) {
-      throw new Error(`Unable to fetch TokenAccountInfo for vault - ${data.vault}`);
+      throw new Error(
+        `Unable to fetch TokenAccountInfo for vault - ${data.vault}`,
+      );
     }
     rewardInfo.initialized = true;
     rewardInfo.vaultAmount = new BN(vaultInfo.amount.toString());
@@ -64,7 +67,7 @@ async function getRewardInfo(
 export async function getTokenVaultAccountInfos(
   fetcher: WhirlpoolAccountFetcherInterface,
   data: WhirlpoolData,
-  opts?: WhirlpoolAccountFetchOptions
+  opts?: WhirlpoolAccountFetchOptions,
 ): Promise<TokenAccountInfo[]> {
   const vaultA = data.tokenVaultA;
   const vaultInfoA = await fetcher.getTokenInfo(vaultA, opts);

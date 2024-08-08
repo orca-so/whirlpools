@@ -31,14 +31,9 @@ pub struct InitializeTokenBadge<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(
-    ctx: Context<InitializeTokenBadge>,
-) -> Result<()> {
-    Ok(ctx
-        .accounts
-        .token_badge
-        .initialize(
-            ctx.accounts.whirlpools_config.key(),
-            ctx.accounts.token_mint.key(),
-        )?)
+pub fn handler(ctx: Context<InitializeTokenBadge>) -> Result<()> {
+    ctx.accounts.token_badge.initialize(
+        ctx.accounts.whirlpools_config.key(),
+        ctx.accounts.token_mint.key(),
+    )
 }

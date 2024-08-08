@@ -4,6 +4,7 @@
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
+  "type": "module",
   "files": [
     "dist",
     "LICENSE"

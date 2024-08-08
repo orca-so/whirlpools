@@ -14,8 +14,7 @@ pub struct SetProtocolFeeRate<'info> {
 }
 
 pub fn handler(ctx: Context<SetProtocolFeeRate>, protocol_fee_rate: u16) -> Result<()> {
-    Ok(ctx
-        .accounts
+    ctx.accounts
         .whirlpool
-        .update_protocol_fee_rate(protocol_fee_rate)?)
+        .update_protocol_fee_rate(protocol_fee_rate)
 }

@@ -5,7 +5,6 @@
   "scripts": {
     "build": "anchor build -p whirlpool",
     "test": "cargo test -p whirlpool --lib",
-    "format": "cargo fmt -p whirlpool",
     "clean": "anchor clean"
   }
 }

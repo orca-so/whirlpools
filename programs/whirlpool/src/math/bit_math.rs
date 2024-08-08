@@ -87,7 +87,7 @@ pub fn div_round_up_if_u256(
         quotient
     };
 
-    Ok(result.try_into_u128()?)
+    result.try_into_u128()
 }
 
 #[cfg(test)]
@@ -151,9 +151,7 @@ mod fuzz_tests {
         fn test_checked_mul_div_round_up_if(n0 in 0..u128::MAX, n1 in 0..u128::MAX, d in 0..u128::MAX) {
             let result = checked_mul_div_round_up_if(n0, n1, d, true);
 
-            if d == 0 {
-                assert!(result.is_err());
-            } else if n0.checked_mul(n1).is_none() {
+            if d == 0 || n0.checked_mul(n1).is_none() {
                 assert!(result.is_err());
             } else {
                 let other_n0 = U256::from(n0);

@@ -1,23 +1,28 @@
-import { AnchorProvider } from "@coral-xyz/anchor";
-import { AddressUtil, MathUtil, PDA, Percentage } from "@orca-so/common-sdk";
-import {
-  getAssociatedTokenAddressSync
-} from "@solana/spl-token";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import type { AnchorProvider } from "@coral-xyz/anchor";
+import type { PDA } from "@orca-so/common-sdk";
+import { AddressUtil, MathUtil, Percentage } from "@orca-so/common-sdk";
+import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import type { PublicKey } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import Decimal from "decimal.js";
 import { createAndMintToAssociatedTokenAccount, createMint } from ".";
-import {
-  IGNORE_CACHE,
+import type {
   InitConfigParams,
   InitFeeTierParams,
   InitPoolParams,
-  InitTickArrayParams, OpenBundledPositionParams, OpenPositionParams, PDAUtil,
+  InitTickArrayParams,
+  OpenBundledPositionParams,
+  OpenPositionParams,
+  Whirlpool,
+} from "../../src";
+import {
+  IGNORE_CACHE,
+  PDAUtil,
   PoolUtil,
   PriceMath,
-  Whirlpool,
   increaseLiquidityQuoteByInputTokenUsingPriceSlippage,
 } from "../../src";
-import { WhirlpoolContext } from "../../src/context";
+import type { WhirlpoolContext } from "../../src/context";
 import { TokenExtensionUtil } from "../../src/utils/public/token-extension-util";
 
 export interface TestWhirlpoolsConfigKeypairs {
@@ -33,7 +38,7 @@ export interface TestConfigParams {
 
 export const generateDefaultConfigParams = (
   context: WhirlpoolContext,
-  funder?: PublicKey
+  funder?: PublicKey,
 ): TestConfigParams => {
   const configKeypairs: TestWhirlpoolsConfigKeypairs = {
     feeAuthorityKeypair: Keypair.generate(),
@@ -43,15 +48,20 @@ export const generateDefaultConfigParams = (
   const configInitInfo = {
     whirlpoolsConfigKeypair: Keypair.generate(),
     feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
-    collectProtocolFeesAuthority: configKeypairs.collectProtocolFeesAuthorityKeypair.publicKey,
-    rewardEmissionsSuperAuthority: configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
+    collectProtocolFeesAuthority:
+      configKeypairs.collectProtocolFeesAuthorityKeypair.publicKey,
+    rewardEmissionsSuperAuthority:
+      configKeypairs.rewardEmissionsSuperAuthorityKeypair.publicKey,
     defaultProtocolFeeRate: 300,
     funder: funder || context.wallet.publicKey,
   };
   return { configInitInfo, configKeypairs };
 };
 
-export const createInOrderMints = async (context: WhirlpoolContext, reuseTokenA?: PublicKey) => {
+export const createInOrderMints = async (
+  context: WhirlpoolContext,
+  reuseTokenA?: PublicKey,
+) => {
   const provider = context.provider;
   const tokenXMintPubKey = reuseTokenA ?? (await createMint(provider));
 
@@ -59,7 +69,9 @@ export const createInOrderMints = async (context: WhirlpoolContext, reuseTokenA?
   let ordered;
   do {
     const tokenYMintPubKey = await createMint(provider);
-    ordered = PoolUtil.orderMints(tokenXMintPubKey, tokenYMintPubKey).map(AddressUtil.toPubKey);
+    ordered = PoolUtil.orderMints(tokenXMintPubKey, tokenYMintPubKey).map(
+      AddressUtil.toPubKey,
+    );
   } while (!!reuseTokenA && !ordered[0].equals(reuseTokenA));
   return ordered;
 };
@@ -71,16 +83,19 @@ export const generateDefaultInitPoolParams = async (
   tickSpacing: number,
   initSqrtPrice = MathUtil.toX64(new Decimal(5)),
   funder?: PublicKey,
-  reuseTokenA?: PublicKey
+  reuseTokenA?: PublicKey,
 ): Promise<InitPoolParams> => {
-  const [tokenAMintPubKey, tokenBMintPubKey] = await createInOrderMints(context, reuseTokenA);
+  const [tokenAMintPubKey, tokenBMintPubKey] = await createInOrderMints(
+    context,
+    reuseTokenA,
+  );
 
   const whirlpoolPda = PDAUtil.getWhirlpool(
     context.program.programId,
     configKey,
     tokenAMintPubKey,
     tokenBMintPubKey,
-    tickSpacing
+    tickSpacing,
   );
 
   return {
@@ -103,12 +118,12 @@ export const generateDefaultInitFeeTierParams = (
   whirlpoolFeeAuthority: PublicKey,
   tickSpacing: number,
   defaultFeeRate: number,
-  funder?: PublicKey
+  funder?: PublicKey,
 ): InitFeeTierParams => {
   const feeTierPda = PDAUtil.getFeeTier(
     context.program.programId,
     whirlpoolsConfigKey,
-    tickSpacing
+    tickSpacing,
   );
   return {
     feeTierPda,
@@ -124,9 +139,13 @@ export const generateDefaultInitTickArrayParams = (
   context: WhirlpoolContext,
   whirlpool: PublicKey,
   startTick: number,
-  funder?: PublicKey
+  funder?: PublicKey,
 ): InitTickArrayParams => {
-  const tickArrayPda = PDAUtil.getTickArray(context.program.programId, whirlpool, startTick);
+  const tickArrayPda = PDAUtil.getTickArray(
+    context.program.programId,
+    whirlpool,
+    startTick,
+  );
 
   return {
     whirlpool,
@@ -142,14 +161,25 @@ export async function generateDefaultOpenPositionParams(
   tickLowerIndex: number,
   tickUpperIndex: number,
   owner: PublicKey,
-  funder?: PublicKey
-): Promise<{ params: Required<OpenPositionParams & { metadataPda: PDA }>; mint: Keypair }> {
+  funder?: PublicKey,
+): Promise<{
+  params: Required<OpenPositionParams & { metadataPda: PDA }>;
+  mint: Keypair;
+}> {
   const positionMintKeypair = Keypair.generate();
-  const positionPda = PDAUtil.getPosition(context.program.programId, positionMintKeypair.publicKey);
+  const positionPda = PDAUtil.getPosition(
+    context.program.programId,
+    positionMintKeypair.publicKey,
+  );
 
-  const metadataPda = PDAUtil.getPositionMetadata(positionMintKeypair.publicKey);
+  const metadataPda = PDAUtil.getPositionMetadata(
+    positionMintKeypair.publicKey,
+  );
 
-  const positionTokenAccountAddress = getAssociatedTokenAddressSync(positionMintKeypair.publicKey, owner)
+  const positionTokenAccountAddress = getAssociatedTokenAddressSync(
+    positionMintKeypair.publicKey,
+    owner,
+  );
 
   const params: Required<OpenPositionParams & { metadataPda: PDA }> = {
     funder: funder || context.wallet.publicKey,
@@ -174,19 +204,19 @@ export async function mintTokensToTestAccount(
   tokenMintForA: number,
   tokenBMint: PublicKey,
   tokenMintForB: number,
-  destinationWallet?: PublicKey
+  destinationWallet?: PublicKey,
 ) {
   const userTokenAAccount = await createAndMintToAssociatedTokenAccount(
     provider,
     tokenAMint,
     tokenMintForA,
-    destinationWallet
+    destinationWallet,
   );
   const userTokenBAccount = await createAndMintToAssociatedTokenAccount(
     provider,
     tokenBMint,
     tokenMintForB,
-    destinationWallet
+    destinationWallet,
   );
 
   return [userTokenAAccount, userTokenBAccount];
@@ -199,9 +229,11 @@ export async function initPosition(
   upperPrice: Decimal,
   inputTokenMint: PublicKey,
   inputTokenAmount: number,
-  sourceWallet?: Keypair
+  sourceWallet?: Keypair,
 ) {
-  const sourceWalletKey = sourceWallet ? sourceWallet.publicKey : ctx.wallet.publicKey;
+  const sourceWalletKey = sourceWallet
+    ? sourceWallet.publicKey
+    : ctx.wallet.publicKey;
   const tokenADecimal = pool.getTokenAInfo().decimals;
   const tokenBDecimal = pool.getTokenBInfo().decimals;
   const tickSpacing = pool.getData().tickSpacing;
@@ -209,13 +241,13 @@ export async function initPosition(
     lowerPrice,
     tokenADecimal,
     tokenBDecimal,
-    tickSpacing
+    tickSpacing,
   );
   const upperTick = PriceMath.priceToInitializableTickIndex(
     upperPrice,
     tokenADecimal,
     tokenBDecimal,
-    tickSpacing
+    tickSpacing,
   );
   const quote = await increaseLiquidityQuoteByInputTokenUsingPriceSlippage(
     inputTokenMint,
@@ -224,7 +256,11 @@ export async function initPosition(
     upperTick,
     Percentage.fromFraction(1, 100),
     pool,
-    await TokenExtensionUtil.buildTokenExtensionContext(ctx.fetcher, pool.getData(), IGNORE_CACHE),
+    await TokenExtensionUtil.buildTokenExtensionContext(
+      ctx.fetcher,
+      pool.getData(),
+      IGNORE_CACHE,
+    ),
   );
 
   // [Action] Open Position (and increase L)
@@ -233,7 +269,7 @@ export async function initPosition(
     upperTick,
     quote,
     sourceWalletKey,
-    ctx.wallet.publicKey
+    ctx.wallet.publicKey,
   );
 
   if (sourceWallet) {
@@ -256,12 +292,22 @@ export async function generateDefaultOpenBundledPositionParams(
   tickLowerIndex: number,
   tickUpperIndex: number,
   owner: PublicKey,
-  funder?: PublicKey
+  funder?: PublicKey,
 ): Promise<{ params: Required<OpenBundledPositionParams> }> {
-  const bundledPositionPda = PDAUtil.getBundledPosition(context.program.programId, positionBundleMint, bundleIndex);
-  const positionBundle = PDAUtil.getPositionBundle(context.program.programId, positionBundleMint).publicKey;
+  const bundledPositionPda = PDAUtil.getBundledPosition(
+    context.program.programId,
+    positionBundleMint,
+    bundleIndex,
+  );
+  const positionBundle = PDAUtil.getPositionBundle(
+    context.program.programId,
+    positionBundleMint,
+  ).publicKey;
 
-  const positionBundleTokenAccount = getAssociatedTokenAddressSync(positionBundleMint, owner);
+  const positionBundleTokenAccount = getAssociatedTokenAddressSync(
+    positionBundleMint,
+    owner,
+  );
 
   const params: Required<OpenBundledPositionParams> = {
     bundleIndex,

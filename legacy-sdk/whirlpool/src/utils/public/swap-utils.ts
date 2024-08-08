@@ -1,26 +1,31 @@
-import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
+import type { Address } from "@coral-xyz/anchor";
+import type { Percentage } from "@orca-so/common-sdk";
+import { AddressUtil, U64_MAX, ZERO } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { TickUtil, WhirlpoolContext } from "../..";
-import {
+import type { WhirlpoolContext } from "../..";
+import { TickUtil } from "../..";
+import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
-import {
-  MAX_SQRT_PRICE,
-  MIN_SQRT_PRICE,
+import type {
   SwapInput,
   SwapParams,
   TickArray,
   WhirlpoolData,
 } from "../../types/public";
-import { Whirlpool } from "../../whirlpool-client";
+import { MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "../../types/public";
+import type { Whirlpool } from "../../whirlpool-client";
 import { adjustForSlippage } from "../math/token-math";
 import { PDAUtil } from "./pda-utils";
 import { PoolUtil } from "./pool-utils";
 import { SwapDirection, TokenType } from "./types";
-import { TickArrayAddress, buildZeroedTickArray, getTickArrayPublicKeysWithStartTickIndex } from "../swap-utils";
+import type { TickArrayAddress } from "../swap-utils";
+import {
+  buildZeroedTickArray,
+  getTickArrayPublicKeysWithStartTickIndex,
+} from "../swap-utils";
 
 /**
  * A request to fetch the tick-arrays that a swap may traverse across.
@@ -51,7 +56,9 @@ export class SwapUtils {
    * @param amountSpecifiedIsInput - The direction of a swap
    * @returns The default values for the otherAmountThreshold parameter in a swap.
    */
-  public static getDefaultOtherAmountThreshold(amountSpecifiedIsInput: boolean) {
+  public static getDefaultOtherAmountThreshold(
+    amountSpecifiedIsInput: boolean,
+  ) {
     return amountSpecifiedIsInput ? ZERO : U64_MAX;
   }
 
@@ -65,7 +72,7 @@ export class SwapUtils {
   public static getSwapDirection(
     pool: WhirlpoolData,
     swapTokenMint: PublicKey,
-    swapTokenIsInput: boolean
+    swapTokenIsInput: boolean,
   ): SwapDirection | undefined {
     const tokenType = PoolUtil.getTokenType(pool, swapTokenMint);
     if (!tokenType) {
@@ -94,14 +101,14 @@ export class SwapUtils {
     tickSpacing: number,
     aToB: boolean,
     programId: PublicKey,
-    whirlpoolAddress: PublicKey
+    whirlpoolAddress: PublicKey,
   ): PublicKey[] {
     return getTickArrayPublicKeysWithStartTickIndex(
       tickCurrentIndex,
       tickSpacing,
       aToB,
       programId,
-      whirlpoolAddress
+      whirlpoolAddress,
     ).map((p) => p.pubkey);
   }
 
@@ -129,7 +136,11 @@ export class SwapUtils {
         tickSpacing,
         aToB ? 1 : -1,
       );
-      const pda = PDAUtil.getTickArray(programId, whirlpoolAddress, fallbackStartTickIndex);
+      const pda = PDAUtil.getTickArray(
+        programId,
+        whirlpoolAddress,
+        fallbackStartTickIndex,
+      );
       return pda.publicKey;
     } catch {
       return undefined;
@@ -156,13 +167,13 @@ export class SwapUtils {
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
     fetcher: WhirlpoolAccountFetcherInterface,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<TickArray[]> {
     const data = await this.getBatchTickArrays(
       programId,
       fetcher,
       [{ tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress }],
-      opts
+      opts,
     );
     return data[0];
   }
@@ -179,7 +190,7 @@ export class SwapUtils {
     programId: PublicKey,
     fetcher: WhirlpoolAccountFetcherInterface,
     tickArrayRequests: TickArrayRequest[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<TickArray[][]> {
     let addresses: TickArrayAddress[] = [];
     let requestToIndices = [];
@@ -187,18 +198,25 @@ export class SwapUtils {
     // Each individual tick array request may correspond to more than one tick array
     // so we map each request to a slice of the batch request
     for (let i = 0; i < tickArrayRequests.length; i++) {
-      const { tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress } = tickArrayRequests[i];
+      const { tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress } =
+        tickArrayRequests[i];
       const requestAddresses = getTickArrayPublicKeysWithStartTickIndex(
         tickCurrentIndex,
         tickSpacing,
         aToB,
         programId,
-        whirlpoolAddress
+        whirlpoolAddress,
       );
-      requestToIndices.push([addresses.length, addresses.length + requestAddresses.length]);
+      requestToIndices.push([
+        addresses.length,
+        addresses.length + requestAddresses.length,
+      ]);
       addresses.push(...requestAddresses);
     }
-    const data = await fetcher.getTickArrays(addresses.map((a) => a.pubkey), opts);
+    const data = await fetcher.getTickArrays(
+      addresses.map((a) => a.pubkey),
+      opts,
+    );
 
     // Re-map from flattened batch data to TickArray[] for request
     return requestToIndices.map((indices) => {
@@ -215,7 +233,7 @@ export class SwapUtils {
 
   /**
    * Given a set of tickArrays, interpolate the tickArrays with zeroed tick data if they are not initialized.
-   * 
+   *
    * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
    * @param tickArrays - Fetched tickArrays to interpolate.
    * @returns An array of TickArray objects with zeroed tick data if they are not initialized.
@@ -227,7 +245,9 @@ export class SwapUtils {
     return tickArrays.map((tickArray) => ({
       address: tickArray.address,
       startTickIndex: tickArray.startTickIndex,
-      data: tickArray.data ?? buildZeroedTickArray(whirlpoolAddress, tickArray.startTickIndex),
+      data:
+        tickArray.data ??
+        buildZeroedTickArray(whirlpoolAddress, tickArray.startTickIndex),
     }));
   }
 
@@ -246,17 +266,25 @@ export class SwapUtils {
     estAmountIn: BN,
     estAmountOut: BN,
     slippageTolerance: Percentage,
-    amountSpecifiedIsInput: boolean
+    amountSpecifiedIsInput: boolean,
   ): Pick<SwapInput, "amount" | "otherAmountThreshold"> {
     if (amountSpecifiedIsInput) {
       return {
         amount,
-        otherAmountThreshold: adjustForSlippage(estAmountOut, slippageTolerance, false),
+        otherAmountThreshold: adjustForSlippage(
+          estAmountOut,
+          slippageTolerance,
+          false,
+        ),
       };
     } else {
       return {
         amount,
-        otherAmountThreshold: adjustForSlippage(estAmountIn, slippageTolerance, true),
+        otherAmountThreshold: adjustForSlippage(
+          estAmountIn,
+          slippageTolerance,
+          true,
+        ),
       };
     }
   }
@@ -279,7 +307,7 @@ export class SwapUtils {
     whirlpool: Whirlpool,
     inputTokenAssociatedAddress: Address,
     outputTokenAssociatedAddress: Address,
-    wallet: PublicKey
+    wallet: PublicKey,
   ) {
     const data = whirlpool.getData();
     return this.getSwapParamsFromQuoteKeys(
@@ -290,7 +318,7 @@ export class SwapUtils {
       data.tokenVaultB,
       inputTokenAssociatedAddress,
       outputTokenAssociatedAddress,
-      wallet
+      wallet,
     );
   }
 
@@ -302,7 +330,7 @@ export class SwapUtils {
     tokenVaultB: PublicKey,
     inputTokenAssociatedAddress: Address,
     outputTokenAssociatedAddress: Address,
-    wallet: PublicKey
+    wallet: PublicKey,
   ) {
     const aToB = quote.aToB;
     const [inputTokenATA, outputTokenATA] = AddressUtil.toPubKeys([

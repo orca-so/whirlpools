@@ -1,5 +1,5 @@
-import { TwoHopSwapInput } from "../../instructions";
-import { SwapEstimates, SwapQuote } from "./swap-quote";
+import type { TwoHopSwapInput } from "../../instructions";
+import type { SwapEstimates, SwapQuote } from "./swap-quote";
 
 /**
  * A collection of estimated values from quoting a swap.
@@ -28,7 +28,7 @@ export type NormalTwoHopSwapQuote = {
  */
 export function twoHopSwapQuoteFromSwapQuotes(
   swapQuoteOne: SwapQuote,
-  swapQuoteTwo: SwapQuote
+  swapQuoteTwo: SwapQuote,
 ): TwoHopSwapQuote {
   const amountSpecifiedIsInput = swapQuoteOne.amountSpecifiedIsInput;
   // If amount specified is input, then we care about input of the first swap

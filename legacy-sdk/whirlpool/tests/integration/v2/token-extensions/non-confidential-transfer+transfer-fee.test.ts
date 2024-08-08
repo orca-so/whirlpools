@@ -1,16 +1,14 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import * as assert from "assert";
+import type { PositionData, WhirlpoolData } from "../../../../src";
 import {
-  buildWhirlpoolClient,
   PoolUtil,
-  PositionData,
   PriceMath,
   TickUtil,
   toTokenAmount,
   toTx,
   WhirlpoolContext,
-  WhirlpoolData,
   WhirlpoolIx,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
@@ -27,16 +25,22 @@ import {
   calculateTransferFeeIncludedAmount,
   createTokenAccountV2,
 } from "../../../utils/v2/token-2022";
-import { PublicKey } from "@solana/web3.js";
-import { hasConfidentialTransferFeeConfigExtension, hasConfidentialTransferMintExtension } from "../../../utils/v2/confidential-transfer";
-import { TransferFee, getEpochFee, getMint, getTransferFeeConfig } from "@solana/spl-token";
+import type { PublicKey } from "@solana/web3.js";
+import {
+  hasConfidentialTransferFeeConfigExtension,
+  hasConfidentialTransferMintExtension,
+} from "../../../utils/v2/confidential-transfer";
+import type { TransferFee } from "@solana/spl-token";
+import { getEpochFee, getMint, getTransferFeeConfig } from "@solana/spl-token";
 
 describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) + TransferFee", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
 
   // ConfidentialTransfer + TransferFee is combination test
   // We'll test owner to vault transfer by increase liquidity, vault to owner transfer by decrease liquidity
@@ -61,10 +65,16 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
     const tickUpperIndex = 8960;
     const currTick = Math.round((tickLowerIndex + tickUpperIndex) / 2);
 
-    const aboveLowerIndex = TickUtil.getNextInitializableTickIndex(currTick + 1, TickSpacing.Standard);
+    const aboveLowerIndex = TickUtil.getNextInitializableTickIndex(
+      currTick + 1,
+      TickSpacing.Standard,
+    );
     const aboveUpperIndex = tickUpperIndex;
     const belowLowerIndex = tickLowerIndex;
-    const belowUpperIndex = TickUtil.getPrevInitializableTickIndex(currTick - 1, TickSpacing.Standard);
+    const belowUpperIndex = TickUtil.getPrevInitializableTickIndex(
+      currTick - 1,
+      TickSpacing.Standard,
+    );
 
     let fixture: WhirlpoolTestFixtureV2;
 
@@ -85,15 +95,24 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
         tickSpacing: TickSpacing.Standard,
         positions: [
           { tickLowerIndex, tickUpperIndex, liquidityAmount: ZERO_BN },
-          { tickLowerIndex: aboveLowerIndex, tickUpperIndex: aboveUpperIndex, liquidityAmount: ZERO_BN },
-          { tickLowerIndex: belowLowerIndex, tickUpperIndex: belowUpperIndex, liquidityAmount: ZERO_BN },
+          {
+            tickLowerIndex: aboveLowerIndex,
+            tickUpperIndex: aboveUpperIndex,
+            liquidityAmount: ZERO_BN,
+          },
+          {
+            tickLowerIndex: belowLowerIndex,
+            tickUpperIndex: belowUpperIndex,
+            liquidityAmount: ZERO_BN,
+          },
         ],
         initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
       });
     });
 
     it("increase_liquidity_v2: with transfer fee", async () => {
-      const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+      const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+        fixture.getInfos();
       const positionInitInfo = positions[0];
 
       // transfer fee
@@ -103,11 +122,35 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
       assert.equal(transferFeeB.transferFeeBasisPoints, 1000); // 10%
 
       // confidential transfer
-      assert.equal(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintA), true);
-      assert.equal(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintB), true);
+      assert.equal(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintA,
+        ),
+        true,
+      );
+      assert.equal(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintB,
+        ),
+        true,
+      );
       // confidential transfer fee config
-      assert.equal(await hasConfidentialTransferFeeConfigExtension(provider, poolInitInfo.tokenMintA), true);
-      assert.equal(await hasConfidentialTransferFeeConfigExtension(provider, poolInitInfo.tokenMintB), true);
+      assert.equal(
+        await hasConfidentialTransferFeeConfigExtension(
+          provider,
+          poolInitInfo.tokenMintA,
+        ),
+        true,
+      );
+      assert.equal(
+        await hasConfidentialTransferFeeConfigExtension(
+          provider,
+          poolInitInfo.tokenMintB,
+        ),
+        true,
+      );
 
       const tokenAmount = toTokenAmount(1_000_000 * 0.8, 1_000_000 * 0.8);
       const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
@@ -127,25 +170,37 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
       // transfer fee should be non zero
       assert.ok(requiredAmountDelta.tokenA.gtn(0));
       assert.ok(requiredAmountDelta.tokenB.gtn(0));
-      const expectedTransferFeeIncludedAmountA = calculateTransferFeeIncludedAmount(
-        transferFeeA,
-        requiredAmountDelta.tokenA,
-      );
-      const expectedTransferFeeIncludedAmountB = calculateTransferFeeIncludedAmount(
-        transferFeeB,
-        requiredAmountDelta.tokenB,
-      );
+      const expectedTransferFeeIncludedAmountA =
+        calculateTransferFeeIncludedAmount(
+          transferFeeA,
+          requiredAmountDelta.tokenA,
+        );
+      const expectedTransferFeeIncludedAmountB =
+        calculateTransferFeeIncludedAmount(
+          transferFeeB,
+          requiredAmountDelta.tokenB,
+        );
       assert.ok(expectedTransferFeeIncludedAmountA.fee.gtn(0));
       assert.ok(expectedTransferFeeIncludedAmountB.fee.gtn(0));
 
       const preVaultBalanceA = new BN(
-        await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultAKeypair.publicKey,
+        ),
       );
       const preVaultBalanceB = new BN(
-        await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey),
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultBKeypair.publicKey,
+        ),
       );
-      const preOwnerAccountBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
-      const preOwnerAccountBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
+      const preOwnerAccountBalanceA = new BN(
+        await getTokenBalance(provider, tokenAccountA),
+      );
+      const preOwnerAccountBalanceB = new BN(
+        await getTokenBalance(provider, tokenAccountB),
+      );
 
       await toTx(
         ctx,
@@ -171,13 +226,23 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
       ).buildAndExecute();
 
       const postVaultBalanceA = new BN(
-        await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey),
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultAKeypair.publicKey,
+        ),
       );
       const postVaultBalanceB = new BN(
-        await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey),
+        await getTokenBalance(
+          provider,
+          poolInitInfo.tokenVaultBKeypair.publicKey,
+        ),
       );
-      const postOwnerAccountBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
-      const postOwnerAccountBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
+      const postOwnerAccountBalanceA = new BN(
+        await getTokenBalance(provider, tokenAccountA),
+      );
+      const postOwnerAccountBalanceB = new BN(
+        await getTokenBalance(provider, tokenAccountB),
+      );
 
       // owner sent requiredAmountDelta plus transfer fees
       assert.ok(
@@ -191,10 +256,13 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
           .eq(expectedTransferFeeIncludedAmountB.amount),
       );
       // vault received requiredAmountDelta
-      assert.ok(postVaultBalanceA.sub(preVaultBalanceA).eq(requiredAmountDelta.tokenA));
-      assert.ok(postVaultBalanceB.sub(preVaultBalanceB).eq(requiredAmountDelta.tokenB));
+      assert.ok(
+        postVaultBalanceA.sub(preVaultBalanceA).eq(requiredAmountDelta.tokenA),
+      );
+      assert.ok(
+        postVaultBalanceB.sub(preVaultBalanceB).eq(requiredAmountDelta.tokenB),
+      );
     });
-
   });
 
   describe("decrease_liquidity_v2", () => {
@@ -206,10 +274,16 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
     const tickUpperIndex = 8960;
     const currTick = Math.round((tickLowerIndex + tickUpperIndex) / 2);
 
-    const aboveLowerIndex = TickUtil.getNextInitializableTickIndex(currTick + 1, TickSpacing.Standard);
+    const aboveLowerIndex = TickUtil.getNextInitializableTickIndex(
+      currTick + 1,
+      TickSpacing.Standard,
+    );
     const aboveUpperIndex = tickUpperIndex;
     const belowLowerIndex = tickLowerIndex;
-    const belowUpperIndex = TickUtil.getPrevInitializableTickIndex(currTick - 1, TickSpacing.Standard);
+    const belowUpperIndex = TickUtil.getPrevInitializableTickIndex(
+      currTick - 1,
+      TickSpacing.Standard,
+    );
 
     beforeEach(async () => {
       const liquidityAmount = new anchor.BN(1_250_000);
@@ -230,8 +304,16 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
         initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
         positions: [
           { tickLowerIndex, tickUpperIndex, liquidityAmount },
-          { tickLowerIndex: aboveLowerIndex, tickUpperIndex: aboveUpperIndex, liquidityAmount },
-          { tickLowerIndex: belowLowerIndex, tickUpperIndex: belowUpperIndex, liquidityAmount },
+          {
+            tickLowerIndex: aboveLowerIndex,
+            tickUpperIndex: aboveUpperIndex,
+            liquidityAmount,
+          },
+          {
+            tickLowerIndex: belowLowerIndex,
+            tickUpperIndex: belowUpperIndex,
+            liquidityAmount,
+          },
         ],
       });
       const { poolInitInfo } = fixture.getInfos();
@@ -260,11 +342,35 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
       assert.equal(transferFeeB.transferFeeBasisPoints, 1000); // 10%
 
       // confidential transfer
-      assert.equal(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintA), true);
-      assert.equal(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintB), true);
+      assert.equal(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintA,
+        ),
+        true,
+      );
+      assert.equal(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintB,
+        ),
+        true,
+      );
       // confidential transfer fee config
-      assert.equal(await hasConfidentialTransferFeeConfigExtension(provider, poolInitInfo.tokenMintA), true);
-      assert.equal(await hasConfidentialTransferFeeConfigExtension(provider, poolInitInfo.tokenMintB), true);
+      assert.equal(
+        await hasConfidentialTransferFeeConfigExtension(
+          provider,
+          poolInitInfo.tokenMintA,
+        ),
+        true,
+      );
+      assert.equal(
+        await hasConfidentialTransferFeeConfigExtension(
+          provider,
+          poolInitInfo.tokenMintB,
+        ),
+        true,
+      );
 
       const position = positions[0];
       const positionData = (await fetcher.getPosition(
@@ -286,14 +392,10 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
       // transfer fee should be non zero
       assert.ok(expectedAmount.tokenA.gtn(0));
       assert.ok(expectedAmount.tokenB.gtn(0));
-      const expectedTransferFeeExcludedAmountA = calculateTransferFeeExcludedAmount(
-        transferFeeA,
-        expectedAmount.tokenA,
-      );
-      const expectedTransferFeeExcludedAmountB = calculateTransferFeeExcludedAmount(
-        transferFeeB,
-        expectedAmount.tokenB,
-      );
+      const expectedTransferFeeExcludedAmountA =
+        calculateTransferFeeExcludedAmount(transferFeeA, expectedAmount.tokenA);
+      const expectedTransferFeeExcludedAmountB =
+        calculateTransferFeeExcludedAmount(transferFeeB, expectedAmount.tokenB);
       assert.ok(expectedTransferFeeExcludedAmountA.fee.gtn(0));
       assert.ok(expectedTransferFeeExcludedAmountB.fee.gtn(0));
 
@@ -306,12 +408,16 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
         poolInitInfo.tokenVaultBKeypair.publicKey,
       );
 
-      const sig = await toTx(
+      await toTx(
         ctx,
         WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
           liquidityAmount: positionData.liquidity,
-          tokenMinA: expectedAmount.tokenA.sub(expectedTransferFeeExcludedAmountA.fee),
-          tokenMinB: expectedAmount.tokenB.sub(expectedTransferFeeExcludedAmountB.fee),
+          tokenMinA: expectedAmount.tokenA.sub(
+            expectedTransferFeeExcludedAmountA.fee,
+          ),
+          tokenMinB: expectedAmount.tokenB.sub(
+            expectedTransferFeeExcludedAmountB.fee,
+          ),
           whirlpool: poolInitInfo.whirlpoolPda.publicKey,
           positionAuthority: provider.wallet.publicKey,
           position: position.publicKey,
@@ -337,17 +443,29 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
         provider,
         poolInitInfo.tokenVaultBKeypair.publicKey,
       );
-      assert.ok(new BN(preVaultBalanceA).sub(new BN(postVaultBalanceA)).eq(expectedAmount.tokenA));
-      assert.ok(new BN(preVaultBalanceB).sub(new BN(postVaultBalanceB)).eq(expectedAmount.tokenB));
+      assert.ok(
+        new BN(preVaultBalanceA)
+          .sub(new BN(postVaultBalanceA))
+          .eq(expectedAmount.tokenA),
+      );
+      assert.ok(
+        new BN(preVaultBalanceB)
+          .sub(new BN(postVaultBalanceB))
+          .eq(expectedAmount.tokenB),
+      );
 
       // owner received withdrawable amount minus transfer fee (transferFeeExcludedAmount)
       const destBalanceA = await getTokenBalance(provider, destAccountA);
       const destBalanceB = await getTokenBalance(provider, destAccountB);
-      //console.log("A", destBalanceA.toString(), expectedTransferFeeExcludedAmountA.amount.toString(), expectedTransferFeeExcludedAmountA.fee.toString());
-      //console.log("B", destBalanceB.toString(), expectedTransferFeeExcludedAmountB.amount.toString(), expectedTransferFeeExcludedAmountB.fee.toString());
+      //console.info("A", destBalanceA.toString(), expectedTransferFeeExcludedAmountA.amount.toString(), expectedTransferFeeExcludedAmountA.fee.toString());
+      //console.info("B", destBalanceB.toString(), expectedTransferFeeExcludedAmountB.amount.toString(), expectedTransferFeeExcludedAmountB.fee.toString());
 
-      assert.ok(new BN(destBalanceA).eq(expectedTransferFeeExcludedAmountA.amount));
-      assert.ok(new BN(destBalanceB).eq(expectedTransferFeeExcludedAmountB.amount));
+      assert.ok(
+        new BN(destBalanceA).eq(expectedTransferFeeExcludedAmountA.amount),
+      );
+      assert.ok(
+        new BN(destBalanceB).eq(expectedTransferFeeExcludedAmountB.amount),
+      );
 
       // all liquidity have been decreased
       const positionDataAfterWithdraw = (await fetcher.getPosition(
@@ -357,5 +475,4 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only) +
       assert.ok(positionDataAfterWithdraw.liquidity.isZero());
     });
   });
-
 });

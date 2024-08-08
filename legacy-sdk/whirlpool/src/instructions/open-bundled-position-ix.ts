@@ -1,8 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
-import { Instruction, PDA } from "@orca-so/common-sdk";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction, PDA } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import { SystemProgram } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to open a bundled position in a Whirlpool.
@@ -46,7 +47,7 @@ export type OpenBundledPositionParams = {
  */
 export function openBundledPositionIx(
   program: Program<Whirlpool>,
-  params: OpenBundledPositionParams
+  params: OpenBundledPositionParams,
 ): Instruction {
   const {
     whirlpool,
@@ -60,18 +61,23 @@ export function openBundledPositionIx(
     funder,
   } = params;
 
-  const ix = program.instruction.openBundledPosition(bundleIndex, tickLowerIndex, tickUpperIndex, {
-    accounts: {
-      bundledPosition: bundledPositionPda.publicKey,
-      positionBundle,
-      positionBundleTokenAccount,
-      positionBundleAuthority,
-      whirlpool,
-      funder,
-      systemProgram: SystemProgram.programId,
-      rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+  const ix = program.instruction.openBundledPosition(
+    bundleIndex,
+    tickLowerIndex,
+    tickUpperIndex,
+    {
+      accounts: {
+        bundledPosition: bundledPositionPda.publicKey,
+        positionBundle,
+        positionBundleTokenAccount,
+        positionBundleAuthority,
+        whirlpool,
+        funder,
+        systemProgram: SystemProgram.programId,
+        rent: anchor.web3.SYSVAR_RENT_PUBKEY,
+      },
     },
-  });
+  );
 
   return {
     instructions: [ix],

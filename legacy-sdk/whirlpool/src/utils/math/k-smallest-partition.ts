@@ -19,7 +19,7 @@ export function kSmallestPartition<T>(
   k: number,
   left: number = 0,
   right: number = array.length - 1,
-  compare: (a: T, b: T) => number = defaultCompare
+  compare: (a: T, b: T) => number = defaultCompare,
 ) {
   while (right > left) {
     // Recursive sampling and partition of the set
@@ -28,7 +28,8 @@ export function kSmallestPartition<T>(
       const i = k - left + 1;
       const z = Math.log(n);
       const s = 0.5 * Math.exp((2 * z) / 3);
-      const sd = 0.5 * Math.sqrt((z * s * (n - s)) / n) * (i - n / 2 < 0 ? -1 : 1);
+      const sd =
+        0.5 * Math.sqrt((z * s * (n - s)) / n) * (i - n / 2 < 0 ? -1 : 1);
       const newLeft = Math.max(left, Math.floor(k - (i * s) / n + sd));
       const newRight = Math.min(right, Math.floor(k + ((n - i) * s) / n + sd));
       kSmallestPartition(array, k, newLeft, newRight, compare);

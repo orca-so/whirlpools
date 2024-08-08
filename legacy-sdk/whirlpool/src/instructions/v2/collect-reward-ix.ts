@@ -1,9 +1,12 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { AccountMeta, PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { AccountMeta, PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../..";
-import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
+import {
+  RemainingAccountsBuilder,
+  RemainingAccountsType,
+} from "../../utils/remaining-accounts-util";
 
 /**
  * Parameters to collect rewards from a reward index in a position.
@@ -44,7 +47,7 @@ export type CollectRewardV2Params = {
  */
 export function collectRewardV2Ix(
   program: Program<Whirlpool>,
-  params: CollectRewardV2Params
+  params: CollectRewardV2Params,
 ): Instruction {
   const {
     whirlpool,
@@ -59,24 +62,32 @@ export function collectRewardV2Ix(
     rewardTokenProgram,
   } = params;
 
-  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
-    .addSlice(RemainingAccountsType.TransferHookReward, rewardTransferHookAccounts)
-    .build();
+  const [remainingAccountsInfo, remainingAccounts] =
+    new RemainingAccountsBuilder()
+      .addSlice(
+        RemainingAccountsType.TransferHookReward,
+        rewardTransferHookAccounts,
+      )
+      .build();
 
-  const ix = program.instruction.collectRewardV2(rewardIndex, remainingAccountsInfo, {
-    accounts: {
-      whirlpool,
-      positionAuthority,
-      position,
-      positionTokenAccount,
-      rewardMint,
-      rewardOwnerAccount,
-      rewardVault,
-      rewardTokenProgram,
-      memoProgram: MEMO_PROGRAM_ADDRESS,
+  const ix = program.instruction.collectRewardV2(
+    rewardIndex,
+    remainingAccountsInfo,
+    {
+      accounts: {
+        whirlpool,
+        positionAuthority,
+        position,
+        positionTokenAccount,
+        rewardMint,
+        rewardOwnerAccount,
+        rewardVault,
+        rewardTokenProgram,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+      },
+      remainingAccounts,
     },
-    remainingAccounts,
-  });
+  );
 
   return {
     instructions: [ix],

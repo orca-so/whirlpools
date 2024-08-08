@@ -1,22 +1,26 @@
-import { Address } from "@coral-xyz/anchor";
-import { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { WhirlpoolContext } from "./context";
+import type { Address } from "@coral-xyz/anchor";
+import type { Percentage, TransactionBuilder } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type { WhirlpoolContext } from "./context";
 import { WhirlpoolClientImpl } from "./impl/whirlpool-client-impl";
-import { DevFeeSwapInput, SwapInput } from "./instructions";
-import {
+import type { DevFeeSwapInput, SwapInput } from "./instructions";
+import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "./network/public/fetcher";
-import { WhirlpoolRouter } from "./router/public";
-import {
+import type { WhirlpoolRouter } from "./router/public";
+import type {
   DecreaseLiquidityInput,
   IncreaseLiquidityInput,
   PositionData,
   TickData,
   WhirlpoolData,
 } from "./types/public";
-import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
+import type {
+  TokenAccountInfo,
+  TokenInfo,
+  WhirlpoolRewardInfo,
+} from "./types/public/client-types";
 
 /**
  * Helper class to help interact with Whirlpool Accounts with a simpler interface.
@@ -50,7 +54,10 @@ export interface WhirlpoolClient {
    * @param opts an options object to define fetch and cache options when accessing on-chain accounts
    * @return a Whirlpool object to interact with
    */
-  getPool: (poolAddress: Address, opts?: WhirlpoolAccountFetchOptions) => Promise<Whirlpool>;
+  getPool: (
+    poolAddress: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ) => Promise<Whirlpool>;
 
   /**
    * Get a list of Whirlpool objects matching the provided list of addresses.
@@ -58,7 +65,10 @@ export interface WhirlpoolClient {
    * @param opts an options object to define fetch and cache options when accessing on-chain accounts
    * @return a list of Whirlpool objects to interact with
    */
-  getPools: (poolAddresses: Address[], opts?: WhirlpoolAccountFetchOptions) => Promise<Whirlpool[]>;
+  getPools: (
+    poolAddresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions,
+  ) => Promise<Whirlpool[]>;
 
   /**
    * Get a Position object to interact with the Position account at the given address.
@@ -67,7 +77,10 @@ export interface WhirlpoolClient {
    * @return a Position object to interact with.
    * @throws error when address does not return a Position account.
    */
-  getPosition: (positionAddress: Address, opts?: WhirlpoolAccountFetchOptions) => Promise<Position>;
+  getPosition: (
+    positionAddress: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ) => Promise<Position>;
 
   /**
    * Get a list of Position objects to interact with the Position account at the given addresses.
@@ -77,7 +90,7 @@ export interface WhirlpoolClient {
    */
   getPositions: (
     positionAddresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ) => Promise<Record<string, Position | null>>;
 
   /**
@@ -89,7 +102,7 @@ export interface WhirlpoolClient {
    */
   collectFeesAndRewardsForPositions: (
     positionAddresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ) => Promise<TransactionBuilder[]>;
 
   /**
@@ -109,7 +122,7 @@ export interface WhirlpoolClient {
     tokenMintB: Address,
     tickSpacing: number,
     initialTick: number,
-    funder: Address
+    funder: Address,
   ) => Promise<{ poolKey: PublicKey; tx: TransactionBuilder }>;
 
   /**
@@ -117,7 +130,9 @@ export interface WhirlpoolClient {
    * @param poolAddresses the addresses of the Whirlpool accounts to collect protocol fees from
    * @returns A transaction builder to resolve ATA for tokenA and tokenB if needed, and collect protocol fees for all pools
    */
-  collectProtocolFeesForPools: (poolAddresses: Address[]) => Promise<TransactionBuilder>;
+  collectProtocolFeesForPools: (
+    poolAddresses: Address[],
+  ) => Promise<TransactionBuilder>;
 }
 
 /**
@@ -197,7 +212,7 @@ export interface Whirlpool {
   initTickArrayForTicks: (
     ticks: number[],
     funder?: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ) => Promise<TransactionBuilder | null>;
 
   /**
@@ -221,7 +236,7 @@ export interface Whirlpool {
     liquidityInput: IncreaseLiquidityInput,
     wallet?: Address,
     funder?: Address,
-    positionMint?: PublicKey
+    positionMint?: PublicKey,
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
   /**
@@ -245,7 +260,7 @@ export interface Whirlpool {
     liquidityInput: IncreaseLiquidityInput,
     wallet?: Address,
     funder?: Address,
-    positionMint?: PublicKey
+    positionMint?: PublicKey,
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
   /**
@@ -269,7 +284,7 @@ export interface Whirlpool {
     destinationWallet?: Address,
     positionWallet?: Address,
     payer?: Address,
-    usePriceSlippage?: boolean
+    usePriceSlippage?: boolean,
   ) => Promise<TransactionBuilder[]>;
 
   /**
@@ -294,7 +309,7 @@ export interface Whirlpool {
     input: DevFeeSwapInput,
     devFeeWallet: PublicKey,
     wallet?: PublicKey,
-    payer?: PublicKey
+    payer?: PublicKey,
   ) => Promise<TransactionBuilder>;
 }
 
@@ -356,7 +371,7 @@ export interface Position {
     resolveATA?: boolean,
     wallet?: Address,
     positionWallet?: Address,
-    ataPayer?: Address
+    ataPayer?: Address,
   ) => Promise<TransactionBuilder>;
 
   /**
@@ -376,7 +391,7 @@ export interface Position {
     resolveATA?: boolean,
     destinationWallet?: Address,
     positionWallet?: Address,
-    ataPayer?: Address
+    ataPayer?: Address,
   ) => Promise<TransactionBuilder>;
 
   /**
@@ -398,7 +413,7 @@ export interface Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ) => Promise<TransactionBuilder>;
 
   /**
@@ -422,6 +437,6 @@ export interface Position {
     destinationWallet?: Address,
     positionWallet?: Address,
     ataPayer?: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ) => Promise<TransactionBuilder[]>;
 }

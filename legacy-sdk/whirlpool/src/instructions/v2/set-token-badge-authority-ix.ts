@@ -1,7 +1,7 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../../artifacts/whirlpool";
 
 /**
  * Parameters to set the token badge authority in a WhirlpoolsConfigExtension
@@ -31,9 +31,14 @@ export type SetTokenBadgeAuthorityParams = {
  */
 export function setTokenBadgeAuthorityIx(
   program: Program<Whirlpool>,
-  params: SetTokenBadgeAuthorityParams
+  params: SetTokenBadgeAuthorityParams,
 ): Instruction {
-  const { whirlpoolsConfig, whirlpoolsConfigExtension, configExtensionAuthority, newTokenBadgeAuthority } = params;
+  const {
+    whirlpoolsConfig,
+    whirlpoolsConfigExtension,
+    configExtensionAuthority,
+    newTokenBadgeAuthority,
+  } = params;
 
   const ix = program.instruction.setTokenBadgeAuthority({
     accounts: {

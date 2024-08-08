@@ -6,26 +6,32 @@ import { PublicKey } from "@solana/web3.js";
  * @category Constants
  */
 export const ORCA_WHIRLPOOL_PROGRAM_ID = new PublicKey(
-  "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+  "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
 );
 
 /**
  * Orca's WhirlpoolsConfig PublicKey.
  * @category Constants
  */
-export const ORCA_WHIRLPOOLS_CONFIG = new PublicKey("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ");
+export const ORCA_WHIRLPOOLS_CONFIG = new PublicKey(
+  "2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ",
+);
 
 /**
  * Orca's WhirlpoolsConfig PublicKey.
  * @category Constants
  */
-export const ORCA_WHIRLPOOLS_CONFIG_EXTENSION = new PublicKey("777H5H3Tp9U11uRVRzFwM8BinfiakbaLT8vQpeuhvEiH");
+export const ORCA_WHIRLPOOLS_CONFIG_EXTENSION = new PublicKey(
+  "777H5H3Tp9U11uRVRzFwM8BinfiakbaLT8vQpeuhvEiH",
+);
 
 /**
  * Orca's supported tick spacings.
  * @category Constants
  */
-export const ORCA_SUPPORTED_TICK_SPACINGS = [1, 2, 4, 8, 16, 64, 96, 128, 256, 32896];
+export const ORCA_SUPPORTED_TICK_SPACINGS = [
+  1, 2, 4, 8, 16, 64, 96, 128, 256, 32896,
+];
 
 /**
  * The number of rewards supported by this whirlpool.
@@ -85,14 +91,14 @@ export const POSITION_BUNDLE_SIZE = 256;
  * @category Constants
  */
 export const METADATA_PROGRAM_ADDRESS = new PublicKey(
-  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s"
+  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
 );
 
 /**
  * @category Constants
  */
 export const MEMO_PROGRAM_ADDRESS = new PublicKey(
-  "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr"
+  "MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr",
 );
 
 /**
@@ -124,7 +130,7 @@ export const FEE_RATE_MUL_VALUE = new BN(1_000_000);
  * @category Constants
  */
 export const WHIRLPOOL_NFT_UPDATE_AUTH = new PublicKey(
-  "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr"
+  "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
 );
 
 /**

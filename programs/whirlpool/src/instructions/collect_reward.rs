@@ -62,13 +62,13 @@ pub fn handler(ctx: Context<CollectReward>, reward_index: u8) -> Result<()> {
 
     position.update_reward_owed(index, updated_amount_owed);
 
-    Ok(transfer_from_vault_to_owner(
+    transfer_from_vault_to_owner(
         &ctx.accounts.whirlpool,
         &ctx.accounts.reward_vault,
         &ctx.accounts.reward_owner_account,
         &ctx.accounts.token_program,
         transfer_amount,
-    )?)
+    )
 }
 
 fn calculate_collect_reward(position_reward: PositionRewardInfo, vault_amount: u64) -> (u64, u64) {

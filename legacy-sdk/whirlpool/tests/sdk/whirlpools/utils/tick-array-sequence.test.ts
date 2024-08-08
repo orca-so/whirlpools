@@ -3,7 +3,8 @@ import * as assert from "assert";
 import { TickArraySequence } from "../../../../src/quotes/swap/tick-array-sequence";
 import { buildTickArrayData } from "../../../utils/testDataTypes";
 import { TickArrayIndex } from "../../../../src/quotes/swap/tick-array-index";
-import { SwapErrorCode, WhirlpoolsError } from "../../../../src/errors/errors";
+import type { WhirlpoolsError } from "../../../../src/errors/errors";
+import { SwapErrorCode } from "../../../../src/errors/errors";
 
 describe("TickArray Sequence tests", () => {
   const ts64 = 64;
@@ -115,7 +116,6 @@ describe("TickArray Sequence tests", () => {
       const ta1 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * -1, [0, 50]);
       const ta2 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * -2, [25, 50]);
       const seq = new TickArraySequence([ta0, ta1, ta2], ts64, true);
-      let i = 0;
       let searchIndex = new TickArrayIndex(-2, 12, ts64).toTickIndex();
 
       // First traversal brings swap to the left most edge
@@ -128,7 +128,7 @@ describe("TickArray Sequence tests", () => {
         (err) => {
           const whirlErr = err as WhirlpoolsError;
           return whirlErr.errorCode === SwapErrorCode.TickArraySequenceInvalid;
-        }
+        },
       );
     });
 
@@ -137,12 +137,14 @@ describe("TickArray Sequence tests", () => {
       const ta1 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * -1, [0, 50]);
       const ta2 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * -2, [25, 50]);
       const seq = new TickArraySequence([ta2, ta1, ta0], ts64, false);
-      let i = 0;
       let searchIndex = new TickArrayIndex(0, 33, ts64).toTickIndex();
 
       // First traversal brings swap to the right most edge
       const { nextIndex } = seq.findNextInitializedTickIndex(searchIndex);
-      assert.equal(nextIndex, ta0.data!.startTickIndex + TICK_ARRAY_SIZE * ts64 - 1);
+      assert.equal(
+        nextIndex,
+        ta0.data!.startTickIndex + TICK_ARRAY_SIZE * ts64 - 1,
+      );
 
       // The next one will throw an error
       assert.throws(
@@ -150,7 +152,7 @@ describe("TickArray Sequence tests", () => {
         (err) => {
           const whirlErr = err as WhirlpoolsError;
           return whirlErr.errorCode === SwapErrorCode.TickArraySequenceInvalid;
-        }
+        },
       );
     });
 
@@ -159,7 +161,6 @@ describe("TickArray Sequence tests", () => {
       const ta1 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * -1, [0, 50]);
       const ta2 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * -2, [25, 50]);
       const seq = new TickArraySequence([ta0, ta1, ta2], ts64, true);
-      let i = 0;
       let searchIndex = new TickArrayIndex(0, 32, ts64).toTickIndex();
       const expectedIndicies = [
         new TickArrayIndex(0, 32, ts64).toTickIndex(),
@@ -172,7 +173,8 @@ describe("TickArray Sequence tests", () => {
       ];
 
       expectedIndicies.forEach((expectedIndex, expectedResultIndex) => {
-        const { nextIndex, nextTickData } = seq.findNextInitializedTickIndex(searchIndex)!;
+        const { nextIndex, nextTickData } =
+          seq.findNextInitializedTickIndex(searchIndex)!;
         if (expectedResultIndex === expectedIndicies.length - 1) {
           assert.equal(nextIndex, expectedIndex);
           assert.ok(nextTickData === null);
@@ -189,7 +191,6 @@ describe("TickArray Sequence tests", () => {
       const ta1 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * -1, [0, 50]);
       const ta2 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * -2, [25, 50]);
       const seq = new TickArraySequence([ta0, ta1, ta2], ts64, true);
-      let i = 0;
       let searchIndex = new TickArrayIndex(0, 32, ts64).toTickIndex();
       const expectedIndicies = [
         new TickArrayIndex(0, 32, ts64).toTickIndex(),
@@ -202,7 +203,8 @@ describe("TickArray Sequence tests", () => {
       ];
 
       expectedIndicies.forEach((expectedIndex, expectedResultIndex) => {
-        const { nextIndex, nextTickData } = seq.findNextInitializedTickIndex(searchIndex)!;
+        const { nextIndex, nextTickData } =
+          seq.findNextInitializedTickIndex(searchIndex)!;
         if (expectedResultIndex === expectedIndicies.length - 1) {
           assert.equal(nextIndex, expectedIndex);
           assert.ok(nextTickData === null);
@@ -219,7 +221,6 @@ describe("TickArray Sequence tests", () => {
       const ta1 = buildTickArrayData(ts128 * TICK_ARRAY_SIZE, [0, 50]);
       const ta2 = buildTickArrayData(ts128 * TICK_ARRAY_SIZE * 2, [25, 50]);
       const seq = new TickArraySequence([ta0, ta1, ta2], ts128, false);
-      let i = 0;
       let searchIndex = new TickArrayIndex(0, 25, ts128).toTickIndex() + 64;
       const expectedIndicies = [
         new TickArrayIndex(0, 32, ts128).toTickIndex(),
@@ -232,7 +233,8 @@ describe("TickArray Sequence tests", () => {
       ];
 
       expectedIndicies.forEach((expectedIndex, expectedResultIndex) => {
-        const { nextIndex, nextTickData } = seq.findNextInitializedTickIndex(searchIndex)!;
+        const { nextIndex, nextTickData } =
+          seq.findNextInitializedTickIndex(searchIndex)!;
         if (expectedResultIndex === expectedIndicies.length - 1) {
           assert.equal(nextIndex, expectedIndex);
           assert.ok(nextTickData === null);
@@ -249,7 +251,6 @@ describe("TickArray Sequence tests", () => {
       const ta1 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE, [0, 50]);
       const ta2 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * 2, [25, 50]);
       const seq = new TickArraySequence([ta0, ta1, ta2], ts64, false);
-      let i = 0;
       let searchIndex = new TickArrayIndex(0, 25, ts64).toTickIndex();
       const expectedIndicies = [
         new TickArrayIndex(0, 32, ts64).toTickIndex(),
@@ -262,7 +263,8 @@ describe("TickArray Sequence tests", () => {
       ];
 
       expectedIndicies.forEach((expectedIndex, expectedResultIndex) => {
-        const { nextIndex, nextTickData } = seq.findNextInitializedTickIndex(searchIndex)!;
+        const { nextIndex, nextTickData } =
+          seq.findNextInitializedTickIndex(searchIndex)!;
         if (expectedResultIndex === expectedIndicies.length - 1) {
           assert.equal(nextIndex, expectedIndex);
           assert.ok(nextTickData === null);
@@ -279,7 +281,6 @@ describe("TickArray Sequence tests", () => {
       const ta1 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE, [0, 50]);
       const ta2 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * 2, [25, 50]);
       const seq = new TickArraySequence([ta0, ta1, ta2], ts64, false);
-      let i = 0;
       let searchIndex = -1 * ts64;
       const expectedIndicies = [
         new TickArrayIndex(0, 0, ts64).toTickIndex(),
@@ -293,7 +294,8 @@ describe("TickArray Sequence tests", () => {
       ];
 
       expectedIndicies.forEach((expectedIndex, expectedResultIndex) => {
-        const { nextIndex, nextTickData } = seq.findNextInitializedTickIndex(searchIndex)!;
+        const { nextIndex, nextTickData } =
+          seq.findNextInitializedTickIndex(searchIndex)!;
         if (expectedResultIndex === expectedIndicies.length - 1) {
           assert.equal(nextIndex, expectedIndex);
           assert.ok(nextTickData === null);
@@ -310,7 +312,6 @@ describe("TickArray Sequence tests", () => {
       const ta1 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE, [0, 50]);
       const ta2 = buildTickArrayData(ts64 * TICK_ARRAY_SIZE * 2, [25, 50]);
       const seq = new TickArraySequence([ta0, ta1, ta2], ts64, false);
-      let i = 0;
       let searchIndex = -1;
       const expectedIndicies = [
         new TickArrayIndex(0, 0, ts64).toTickIndex(),
@@ -324,7 +325,8 @@ describe("TickArray Sequence tests", () => {
       ];
 
       expectedIndicies.forEach((expectedIndex, expectedResultIndex) => {
-        const { nextIndex, nextTickData } = seq.findNextInitializedTickIndex(searchIndex)!;
+        const { nextIndex, nextTickData } =
+          seq.findNextInitializedTickIndex(searchIndex)!;
         if (expectedResultIndex === expectedIndicies.length - 1) {
           assert.equal(nextIndex, expectedIndex);
           assert.ok(nextTickData === null);

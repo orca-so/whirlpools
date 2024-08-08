@@ -1,4 +1,4 @@
-import { Address } from "@coral-xyz/anchor";
+import type { Address } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
 
 /**

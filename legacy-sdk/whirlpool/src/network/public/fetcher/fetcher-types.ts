@@ -1,12 +1,12 @@
-import { Address } from "@coral-xyz/anchor";
-import {
+import type { Address } from "@coral-xyz/anchor";
+import type {
   BasicSupportedTypes,
   ParsableEntity,
   SimpleAccountFetchOptions,
   MintWithTokenProgram,
-  AccountWithTokenProgram as TokenAccountWithTokenProgram
+  AccountWithTokenProgram as TokenAccountWithTokenProgram,
 } from "@orca-so/common-sdk";
-import {
+import type {
   FeeTierData,
   PositionBundleData,
   PositionData,
@@ -57,7 +57,9 @@ export const IGNORE_CACHE: WhirlpoolAccountFetchOptions = { maxAge: 0 };
  * Default fetch option for always using the cached value for an account request to the {@link WhirlpoolAccountFetcherInterface}
  * @category Network
  */
-export const PREFER_CACHE: WhirlpoolAccountFetchOptions = { maxAge: Number.POSITIVE_INFINITY };
+export const PREFER_CACHE: WhirlpoolAccountFetchOptions = {
+  maxAge: Number.POSITIVE_INFINITY,
+};
 
 /**
  * Fetcher interface for fetching {@link WhirlpoolSupportedTypes} from the network
@@ -81,7 +83,10 @@ export interface WhirlpoolAccountFetcherInterface {
    * @param address The mint address
    * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
-  getPool(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<WhirlpoolData | null>;
+  getPool(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<WhirlpoolData | null>;
 
   /**
    * Fetch and cache the accounts for a given array of Whirlpool addresses
@@ -90,7 +95,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getPools(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, WhirlpoolData | null>>;
 
   /**
@@ -98,7 +103,10 @@ export interface WhirlpoolAccountFetcherInterface {
    * @param address The address of the position account
    * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
-  getPosition(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<PositionData | null>;
+  getPosition(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<PositionData | null>;
 
   /**
    * Fetch and cache the accounts for a given array of Position addresses
@@ -107,7 +115,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getPositions(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, PositionData | null>>;
 
   /**
@@ -117,7 +125,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getTickArray(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<TickArrayData | null>;
 
   /**
@@ -127,7 +135,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getTickArrays(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyArray<TickArrayData | null>>;
 
   /**
@@ -135,7 +143,10 @@ export interface WhirlpoolAccountFetcherInterface {
    * @param address The address of the fee tier account
    * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
-  getFeeTier(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<FeeTierData | null>;
+  getFeeTier(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<FeeTierData | null>;
 
   /**
    * Fetch and cache the accounts for a given array of FeeTier addresses
@@ -144,7 +155,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getFeeTiers(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, FeeTierData | null>>;
 
   /**
@@ -152,7 +163,10 @@ export interface WhirlpoolAccountFetcherInterface {
    * @param address The address of the token account
    * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
-  getTokenInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<TokenAccountWithTokenProgram | null>;
+  getTokenInfo(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<TokenAccountWithTokenProgram | null>;
 
   /**
    * Fetch and cache the accounts for a given array of TokenAccount addresses
@@ -161,7 +175,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getTokenInfos(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, TokenAccountWithTokenProgram | null>>;
 
   /**
@@ -169,7 +183,10 @@ export interface WhirlpoolAccountFetcherInterface {
    * @param address The address of the mint account
    * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
    */
-  getMintInfo(address: Address, opts?: WhirlpoolAccountFetchOptions): Promise<MintWithTokenProgram | null>;
+  getMintInfo(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<MintWithTokenProgram | null>;
 
   /**
    * Fetch and cache the accounts for a given array of Mint addresses
@@ -178,7 +195,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getMintInfos(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, MintWithTokenProgram | null>>;
 
   /**
@@ -188,7 +205,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getConfig(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<WhirlpoolsConfigData | null>;
 
   /**
@@ -198,7 +215,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getConfigs(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, WhirlpoolsConfigData | null>>;
 
   /**
@@ -208,7 +225,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getPositionBundle(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<PositionBundleData | null>;
 
   /**
@@ -218,7 +235,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getPositionBundles(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, PositionBundleData | null>>;
 
   /**
@@ -228,7 +245,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getConfigExtension(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<WhirlpoolsConfigExtensionData | null>;
 
   /**
@@ -238,7 +255,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getConfigExtensions(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, WhirlpoolsConfigExtensionData | null>>;
 
   /**
@@ -248,7 +265,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getTokenBadge(
     address: Address,
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<TokenBadgeData | null>;
 
   /**
@@ -258,7 +275,7 @@ export interface WhirlpoolAccountFetcherInterface {
    */
   getTokenBadges(
     addresses: Address[],
-    opts?: WhirlpoolAccountFetchOptions
+    opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, TokenBadgeData | null>>;
 
   /**
@@ -270,6 +287,6 @@ export interface WhirlpoolAccountFetcherInterface {
   populateCache<T extends WhirlpoolSupportedTypes>(
     accounts: ReadonlyMap<string, T>,
     parser: ParsableEntity<T>,
-    now: number
+    now: number,
   ): void;
 }

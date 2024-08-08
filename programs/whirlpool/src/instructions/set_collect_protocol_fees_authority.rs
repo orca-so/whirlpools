@@ -15,10 +15,10 @@ pub struct SetCollectProtocolFeesAuthority<'info> {
 }
 
 pub fn handler(ctx: Context<SetCollectProtocolFeesAuthority>) -> Result<()> {
-    Ok(ctx
-        .accounts
+    ctx.accounts
         .whirlpools_config
         .update_collect_protocol_fees_authority(
             ctx.accounts.new_collect_protocol_fees_authority.key(),
-        ))
+        );
+    Ok(())
 }

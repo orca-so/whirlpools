@@ -1,7 +1,7 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
 /**
  * Parameters to close a bundled position in a Whirlpool.
@@ -37,7 +37,7 @@ export type CloseBundledPositionParams = {
  */
 export function closeBundledPositionIx(
   program: Program<Whirlpool>,
-  params: CloseBundledPositionParams
+  params: CloseBundledPositionParams,
 ): Instruction {
   const {
     bundledPosition,

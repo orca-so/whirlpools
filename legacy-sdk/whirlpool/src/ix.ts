@@ -1,6 +1,6 @@
-import { Program } from "@coral-xyz/anchor";
-import { PDA } from "@orca-so/common-sdk";
-import { Whirlpool } from "./artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { PDA } from "@orca-so/common-sdk";
+import type { Whirlpool } from "./artifacts/whirlpool";
 import * as ix from "./instructions";
 
 /**
@@ -17,7 +17,10 @@ export class WhirlpoolIx {
    * @param params - InitConfigParams object
    * @returns - Instruction to perform the action.
    */
-  public static initializeConfigIx(program: Program<Whirlpool>, params: ix.InitConfigParams) {
+  public static initializeConfigIx(
+    program: Program<Whirlpool>,
+    params: ix.InitConfigParams,
+  ) {
     return ix.initializeConfigIx(program, params);
   }
 
@@ -31,7 +34,10 @@ export class WhirlpoolIx {
    * @param params - InitFeeTierParams object
    * @returns - Instruction to perform the action.
    */
-  public static initializeFeeTierIx(program: Program<Whirlpool>, params: ix.InitFeeTierParams) {
+  public static initializeFeeTierIx(
+    program: Program<Whirlpool>,
+    params: ix.InitFeeTierParams,
+  ) {
     return ix.initializeFeeTierIx(program, params);
   }
 
@@ -46,7 +52,10 @@ export class WhirlpoolIx {
    * @param params - InitPoolParams object
    * @returns - Instruction to perform the action.
    */
-  public static initializePoolIx(program: Program<Whirlpool>, params: ix.InitPoolParams) {
+  public static initializePoolIx(
+    program: Program<Whirlpool>,
+    params: ix.InitPoolParams,
+  ) {
     return ix.initializePoolIx(program, params);
   }
 
@@ -62,7 +71,10 @@ export class WhirlpoolIx {
    * @param params - InitializeRewardParams object
    * @returns - Instruction to perform the action.
    */
-  public static initializeRewardIx(program: Program<Whirlpool>, params: ix.InitializeRewardParams) {
+  public static initializeRewardIx(
+    program: Program<Whirlpool>,
+    params: ix.InitializeRewardParams,
+  ) {
     return ix.initializeRewardIx(program, params);
   }
 
@@ -76,7 +88,10 @@ export class WhirlpoolIx {
    * @param params - InitTickArrayParams object
    * @returns - Instruction to perform the action.
    */
-  public static initTickArrayIx(program: Program<Whirlpool>, params: ix.InitTickArrayParams) {
+  public static initTickArrayIx(
+    program: Program<Whirlpool>,
+    params: ix.InitTickArrayParams,
+  ) {
     return ix.initTickArrayIx(program, params);
   }
 
@@ -91,7 +106,10 @@ export class WhirlpoolIx {
    * @param params - OpenPositionParams object
    * @returns - Instruction to perform the action.
    */
-  public static openPositionIx(program: Program<Whirlpool>, params: ix.OpenPositionParams) {
+  public static openPositionIx(
+    program: Program<Whirlpool>,
+    params: ix.OpenPositionParams,
+  ) {
     return ix.openPositionIx(program, params);
   }
 
@@ -109,7 +127,7 @@ export class WhirlpoolIx {
    */
   public static openPositionWithMetadataIx(
     program: Program<Whirlpool>,
-    params: ix.OpenPositionParams & { metadataPda: PDA }
+    params: ix.OpenPositionParams & { metadataPda: PDA },
   ) {
     return ix.openPositionWithMetadataIx(program, params);
   }
@@ -128,7 +146,7 @@ export class WhirlpoolIx {
    */
   public static increaseLiquidityIx(
     program: Program<Whirlpool>,
-    params: ix.IncreaseLiquidityParams
+    params: ix.IncreaseLiquidityParams,
   ) {
     return ix.increaseLiquidityIx(program, params);
   }
@@ -147,7 +165,7 @@ export class WhirlpoolIx {
    */
   public static decreaseLiquidityIx(
     program: Program<Whirlpool>,
-    params: ix.DecreaseLiquidityParams
+    params: ix.DecreaseLiquidityParams,
   ) {
     return ix.decreaseLiquidityIx(program, params);
   }
@@ -159,7 +177,10 @@ export class WhirlpoolIx {
    * @param params - ClosePositionParams object
    * @returns - Instruction to perform the action.
    */
-  public static closePositionIx(program: Program<Whirlpool>, params: ix.ClosePositionParams) {
+  public static closePositionIx(
+    program: Program<Whirlpool>,
+    params: ix.ClosePositionParams,
+  ) {
     return ix.closePositionIx(program, params);
   }
 
@@ -205,7 +226,10 @@ export class WhirlpoolIx {
    * @param params - TwoHopSwapParams object
    * @returns - Instruction to perform the action.
    */
-  public static twoHopSwapIx(program: Program<Whirlpool>, params: ix.TwoHopSwapParams) {
+  public static twoHopSwapIx(
+    program: Program<Whirlpool>,
+    params: ix.TwoHopSwapParams,
+  ) {
     return ix.twoHopSwapIx(program, params);
   }
 
@@ -222,7 +246,7 @@ export class WhirlpoolIx {
    */
   public static updateFeesAndRewardsIx(
     program: Program<Whirlpool>,
-    params: ix.UpdateFeesAndRewardsParams
+    params: ix.UpdateFeesAndRewardsParams,
   ) {
     return ix.updateFeesAndRewardsIx(program, params);
   }
@@ -235,7 +259,10 @@ export class WhirlpoolIx {
    * @param params - CollectFeesParams object
    * @returns - Instruction to perform the action.
    */
-  public static collectFeesIx(program: Program<Whirlpool>, params: ix.CollectFeesParams) {
+  public static collectFeesIx(
+    program: Program<Whirlpool>,
+    params: ix.CollectFeesParams,
+  ) {
     return ix.collectFeesIx(program, params);
   }
 
@@ -248,7 +275,7 @@ export class WhirlpoolIx {
    */
   public static collectProtocolFeesIx(
     program: Program<Whirlpool>,
-    params: ix.CollectProtocolFeesParams
+    params: ix.CollectProtocolFeesParams,
   ) {
     return ix.collectProtocolFeesIx(program, params);
   }
@@ -261,7 +288,10 @@ export class WhirlpoolIx {
    * @param params - CollectRewardParams object
    * @returns - Instruction to perform the action.
    */
-  public static collectRewardIx(program: Program<Whirlpool>, params: ix.CollectRewardParams) {
+  public static collectRewardIx(
+    program: Program<Whirlpool>,
+    params: ix.CollectRewardParams,
+  ) {
     return ix.collectRewardIx(program, params);
   }
 
@@ -275,7 +305,7 @@ export class WhirlpoolIx {
    */
   public static setCollectProtocolFeesAuthorityIx(
     program: Program<Whirlpool>,
-    params: ix.SetCollectProtocolFeesAuthorityParams
+    params: ix.SetCollectProtocolFeesAuthorityParams,
   ) {
     return ix.setCollectProtocolFeesAuthorityIx(program, params);
   }
@@ -293,7 +323,7 @@ export class WhirlpoolIx {
    */
   public static setDefaultFeeRateIx(
     program: Program<Whirlpool>,
-    params: ix.SetDefaultFeeRateParams
+    params: ix.SetDefaultFeeRateParams,
   ) {
     return ix.setDefaultFeeRateIx(program, params);
   }
@@ -311,7 +341,7 @@ export class WhirlpoolIx {
    */
   public static setDefaultProtocolFeeRateIx(
     program: Program<Whirlpool>,
-    params: ix.SetDefaultProtocolFeeRateParams
+    params: ix.SetDefaultProtocolFeeRateParams,
   ) {
     return ix.setDefaultProtocolFeeRateIx(program, params);
   }
@@ -325,7 +355,10 @@ export class WhirlpoolIx {
    * @param params - SetFeeAuthorityParams object
    * @returns - Instruction to perform the action.
    */
-  public static setFeeAuthorityIx(program: Program<Whirlpool>, params: ix.SetFeeAuthorityParams) {
+  public static setFeeAuthorityIx(
+    program: Program<Whirlpool>,
+    params: ix.SetFeeAuthorityParams,
+  ) {
     return ix.setFeeAuthorityIx(program, params);
   }
 
@@ -340,7 +373,10 @@ export class WhirlpoolIx {
    * @param params - SetFeeRateParams object
    * @returns - Instruction to perform the action.
    */
-  public static setFeeRateIx(program: Program<Whirlpool>, params: ix.SetFeeRateParams) {
+  public static setFeeRateIx(
+    program: Program<Whirlpool>,
+    params: ix.SetFeeRateParams,
+  ) {
     return ix.setFeeRateIx(program, params);
   }
 
@@ -357,7 +393,7 @@ export class WhirlpoolIx {
    */
   public static setProtocolFeeRateIx(
     program: Program<Whirlpool>,
-    params: ix.SetProtocolFeeRateParams
+    params: ix.SetProtocolFeeRateParams,
   ) {
     return ix.setProtocolFeeRateIx(program, params);
   }
@@ -376,7 +412,7 @@ export class WhirlpoolIx {
    */
   public static setRewardAuthorityBySuperAuthorityIx(
     program: Program<Whirlpool>,
-    params: ix.SetRewardAuthorityBySuperAuthorityParams
+    params: ix.SetRewardAuthorityBySuperAuthorityParams,
   ) {
     return ix.setRewardAuthorityBySuperAuthorityIx(program, params);
   }
@@ -395,7 +431,7 @@ export class WhirlpoolIx {
    */
   public static setRewardAuthorityIx(
     program: Program<Whirlpool>,
-    params: ix.SetRewardAuthorityParams
+    params: ix.SetRewardAuthorityParams,
   ) {
     return ix.setRewardAuthorityIx(program, params);
   }
@@ -415,7 +451,7 @@ export class WhirlpoolIx {
    */
   public static setRewardEmissionsIx(
     program: Program<Whirlpool>,
-    params: ix.SetRewardEmissionsParams
+    params: ix.SetRewardEmissionsParams,
   ) {
     return ix.setRewardEmissionsIx(program, params);
   }
@@ -431,7 +467,7 @@ export class WhirlpoolIx {
    */
   public static setRewardEmissionsSuperAuthorityIx(
     program: Program<Whirlpool>,
-    params: ix.SetRewardEmissionsSuperAuthorityParams
+    params: ix.SetRewardEmissionsSuperAuthorityParams,
   ) {
     return ix.setRewardEmissionsSuperAuthorityIx(program, params);
   }
@@ -445,7 +481,7 @@ export class WhirlpoolIx {
    */
   public static initializePositionBundleIx(
     program: Program<Whirlpool>,
-    params: ix.InitializePositionBundleParams
+    params: ix.InitializePositionBundleParams,
   ) {
     return ix.initializePositionBundleIx(program, params);
   }
@@ -460,7 +496,9 @@ export class WhirlpoolIx {
    */
   public static initializePositionBundleWithMetadataIx(
     program: Program<Whirlpool>,
-    params: ix.InitializePositionBundleParams & { positionBundleMetadataPda: PDA }
+    params: ix.InitializePositionBundleParams & {
+      positionBundleMetadataPda: PDA;
+    },
   ) {
     return ix.initializePositionBundleWithMetadataIx(program, params);
   }
@@ -477,7 +515,7 @@ export class WhirlpoolIx {
    */
   public static deletePositionBundleIx(
     program: Program<Whirlpool>,
-    params: ix.DeletePositionBundleParams
+    params: ix.DeletePositionBundleParams,
   ) {
     return ix.deletePositionBundleIx(program, params);
   }
@@ -497,7 +535,7 @@ export class WhirlpoolIx {
    */
   public static openBundledPositionIx(
     program: Program<Whirlpool>,
-    params: ix.OpenBundledPositionParams
+    params: ix.OpenBundledPositionParams,
   ) {
     return ix.openBundledPositionIx(program, params);
   }
@@ -515,7 +553,7 @@ export class WhirlpoolIx {
    */
   public static closeBundledPositionIx(
     program: Program<Whirlpool>,
-    params: ix.CloseBundledPositionParams
+    params: ix.CloseBundledPositionParams,
   ) {
     return ix.closeBundledPositionIx(program, params);
   }
@@ -524,70 +562,67 @@ export class WhirlpoolIx {
   // TODO: comments
   public static collectFeesV2Ix(
     program: Program<Whirlpool>,
-    params: ix.CollectFeesV2Params
+    params: ix.CollectFeesV2Params,
   ) {
     return ix.collectFeesV2Ix(program, params);
   }
 
   public static collectProtocolFeesV2Ix(
     program: Program<Whirlpool>,
-    params: ix.CollectProtocolFeesV2Params
+    params: ix.CollectProtocolFeesV2Params,
   ) {
     return ix.collectProtocolFeesV2Ix(program, params);
   }
 
   public static collectRewardV2Ix(
     program: Program<Whirlpool>,
-    params: ix.CollectRewardV2Params
+    params: ix.CollectRewardV2Params,
   ) {
     return ix.collectRewardV2Ix(program, params);
   }
 
   public static decreaseLiquidityV2Ix(
     program: Program<Whirlpool>,
-    params: ix.DecreaseLiquidityV2Params
+    params: ix.DecreaseLiquidityV2Params,
   ) {
     return ix.decreaseLiquidityV2Ix(program, params);
   }
 
   public static increaseLiquidityV2Ix(
     program: Program<Whirlpool>,
-    params: ix.IncreaseLiquidityV2Params
+    params: ix.IncreaseLiquidityV2Params,
   ) {
     return ix.increaseLiquidityV2Ix(program, params);
   }
-  
+
   public static initializePoolV2Ix(
     program: Program<Whirlpool>,
-    params: ix.InitPoolV2Params
+    params: ix.InitPoolV2Params,
   ) {
     return ix.initializePoolV2Ix(program, params);
   }
-  
+
   public static initializeRewardV2Ix(
     program: Program<Whirlpool>,
-    params: ix.InitializeRewardV2Params
+    params: ix.InitializeRewardV2Params,
   ) {
     return ix.initializeRewardV2Ix(program, params);
   }
-  
+
   public static setRewardEmissionsV2Ix(
     program: Program<Whirlpool>,
-    params: ix.SetRewardEmissionsV2Params
+    params: ix.SetRewardEmissionsV2Params,
   ) {
     return ix.setRewardEmissionsV2Ix(program, params);
   }
-  
-  public static swapV2Ix(
-    program: Program<Whirlpool>,
-    params: ix.SwapV2Params
-  ) {
+
+  public static swapV2Ix(program: Program<Whirlpool>, params: ix.SwapV2Params) {
     return ix.swapV2Ix(program, params);
   }
-  
+
   public static twoHopSwapV2Ix(
     program: Program<Whirlpool>,
-    params: ix.TwoHopSwapV2Params
+    params: ix.TwoHopSwapV2Params,
   ) {
     return ix.twoHopSwapV2Ix(program, params);
   }
@@ -596,35 +631,35 @@ export class WhirlpoolIx {
   // TODO: comments
   public static initializeConfigExtensionIx(
     program: Program<Whirlpool>,
-    params: ix.InitConfigExtensionParams
+    params: ix.InitConfigExtensionParams,
   ) {
     return ix.initializeConfigExtensionIx(program, params);
   }
 
   public static setConfigExtensionAuthorityIx(
     program: Program<Whirlpool>,
-    params: ix.SetConfigExtensionAuthorityParams    
+    params: ix.SetConfigExtensionAuthorityParams,
   ) {
     return ix.setConfigExtensionAuthorityIx(program, params);
   }
 
   public static setTokenBadgeAuthorityIx(
     program: Program<Whirlpool>,
-    params: ix.SetTokenBadgeAuthorityParams
+    params: ix.SetTokenBadgeAuthorityParams,
   ) {
     return ix.setTokenBadgeAuthorityIx(program, params);
   }
 
   public static initializeTokenBadgeIx(
     program: Program<Whirlpool>,
-    params: ix.InitializeTokenBadgeParams
+    params: ix.InitializeTokenBadgeParams,
   ) {
     return ix.initializeTokenBadgeIx(program, params);
   }
-  
+
   public static deleteTokenBadgeIx(
     program: Program<Whirlpool>,
-    params: ix.DeleteTokenBadgeParams
+    params: ix.DeleteTokenBadgeParams,
   ) {
     return ix.deleteTokenBadgeIx(program, params);
   }

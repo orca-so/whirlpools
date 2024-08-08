@@ -1,7 +1,11 @@
 import BN from "bn.js";
 import { FEE_RATE_MUL_VALUE } from "../../types/public";
 import { BitMath } from "./bit-math";
-import { getAmountDeltaA, getAmountDeltaB, getNextSqrtPrice } from "./token-math";
+import {
+  getAmountDeltaA,
+  getAmountDeltaB,
+  getNextSqrtPrice,
+} from "./token-math";
 
 export type SwapStep = {
   amountIn: BN;
@@ -17,14 +21,14 @@ export function computeSwapStep(
   currSqrtPrice: BN,
   targetSqrtPrice: BN,
   amountSpecifiedIsInput: boolean,
-  aToB: boolean
+  aToB: boolean,
 ): SwapStep {
   let amountFixedDelta = getAmountFixedDelta(
     currSqrtPrice,
     targetSqrtPrice,
     currLiquidity,
     amountSpecifiedIsInput,
-    aToB
+    aToB,
   );
 
   let amountCalc = amountRemaining;
@@ -33,14 +37,20 @@ export function computeSwapStep(
       amountRemaining,
       FEE_RATE_MUL_VALUE.sub(new BN(feeRate)),
       FEE_RATE_MUL_VALUE,
-      128
+      128,
     );
     amountCalc = result;
   }
 
   let nextSqrtPrice = amountCalc.gte(amountFixedDelta)
     ? targetSqrtPrice
-    : getNextSqrtPrice(currSqrtPrice, currLiquidity, amountCalc, amountSpecifiedIsInput, aToB);
+    : getNextSqrtPrice(
+        currSqrtPrice,
+        currLiquidity,
+        amountCalc,
+        amountSpecifiedIsInput,
+        aToB,
+      );
 
   let isMaxSwap = nextSqrtPrice.eq(targetSqrtPrice);
 
@@ -49,7 +59,7 @@ export function computeSwapStep(
     nextSqrtPrice,
     currLiquidity,
     amountSpecifiedIsInput,
-    aToB
+    aToB,
   );
 
   if (!isMaxSwap) {
@@ -58,12 +68,14 @@ export function computeSwapStep(
       nextSqrtPrice,
       currLiquidity,
       amountSpecifiedIsInput,
-      aToB
+      aToB,
     );
   }
 
   let amountIn = amountSpecifiedIsInput ? amountFixedDelta : amountUnfixedDelta;
-  let amountOut = amountSpecifiedIsInput ? amountUnfixedDelta : amountFixedDelta;
+  let amountOut = amountSpecifiedIsInput
+    ? amountUnfixedDelta
+    : amountFixedDelta;
 
   if (!amountSpecifiedIsInput && amountOut.gt(amountRemaining)) {
     amountOut = amountRemaining;
@@ -74,7 +86,12 @@ export function computeSwapStep(
     feeAmount = amountRemaining.sub(amountIn);
   } else {
     const feeRateBN = new BN(feeRate);
-    feeAmount = BitMath.mulDivRoundUp(amountIn, feeRateBN, FEE_RATE_MUL_VALUE.sub(feeRateBN), 128);
+    feeAmount = BitMath.mulDivRoundUp(
+      amountIn,
+      feeRateBN,
+      FEE_RATE_MUL_VALUE.sub(feeRateBN),
+      128,
+    );
   }
 
   return {
@@ -90,12 +107,22 @@ function getAmountFixedDelta(
   targetSqrtPrice: BN,
   currLiquidity: BN,
   amountSpecifiedIsInput: boolean,
-  aToB: boolean
+  aToB: boolean,
 ) {
   if (aToB === amountSpecifiedIsInput) {
-    return getAmountDeltaA(currSqrtPrice, targetSqrtPrice, currLiquidity, amountSpecifiedIsInput);
+    return getAmountDeltaA(
+      currSqrtPrice,
+      targetSqrtPrice,
+      currLiquidity,
+      amountSpecifiedIsInput,
+    );
   } else {
-    return getAmountDeltaB(currSqrtPrice, targetSqrtPrice, currLiquidity, amountSpecifiedIsInput);
+    return getAmountDeltaB(
+      currSqrtPrice,
+      targetSqrtPrice,
+      currLiquidity,
+      amountSpecifiedIsInput,
+    );
   }
 }
 
@@ -104,11 +131,21 @@ function getAmountUnfixedDelta(
   targetSqrtPrice: BN,
   currLiquidity: BN,
   amountSpecifiedIsInput: boolean,
-  aToB: boolean
+  aToB: boolean,
 ) {
   if (aToB === amountSpecifiedIsInput) {
-    return getAmountDeltaB(currSqrtPrice, targetSqrtPrice, currLiquidity, !amountSpecifiedIsInput);
+    return getAmountDeltaB(
+      currSqrtPrice,
+      targetSqrtPrice,
+      currLiquidity,
+      !amountSpecifiedIsInput,
+    );
   } else {
-    return getAmountDeltaA(currSqrtPrice, targetSqrtPrice, currLiquidity, !amountSpecifiedIsInput);
+    return getAmountDeltaA(
+      currSqrtPrice,
+      targetSqrtPrice,
+      currLiquidity,
+      !amountSpecifiedIsInput,
+    );
   }
 }

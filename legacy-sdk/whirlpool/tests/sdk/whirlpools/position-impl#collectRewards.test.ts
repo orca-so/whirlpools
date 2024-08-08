@@ -2,15 +2,14 @@ import * as anchor from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 import * as assert from "assert";
-import { BN } from "bn.js";
+import BN from "bn.js";
 import Decimal from "decimal.js";
+import type { Whirlpool, WhirlpoolClient } from "../../../src";
 import {
   NUM_REWARDS,
-  Whirlpool,
-  WhirlpoolClient,
   WhirlpoolContext,
   buildWhirlpoolClient,
-  collectRewardsQuote
+  collectRewardsQuote,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { TEST_TOKEN_2022_PROGRAM_ID, TickSpacing, sleep } from "../../utils";
@@ -35,7 +34,10 @@ describe("PositionImpl#collectRewards()", () => {
   const liquidityAmount = new BN(10_000_000);
 
   before(() => {
-    const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+    const provider = anchor.AnchorProvider.local(
+      undefined,
+      defaultConfirmOptions,
+    );
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -51,31 +53,39 @@ describe("PositionImpl#collectRewards()", () => {
 
   context("when the whirlpool is SPL-only", () => {
     it("should collect rewards", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-        rewards: [
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-        ],
-      });
+      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init(
+        {
+          tickSpacing,
+          positions: [
+            { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+          ],
+          rewards: [
+            {
+              emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+              vaultAmount: new BN(vaultStartBalance),
+            },
+            {
+              emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+              vaultAmount: new BN(vaultStartBalance),
+            },
+            {
+              emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+              vaultAmount: new BN(vaultStartBalance),
+            },
+          ],
+        },
+      );
 
       const { positions, poolInitInfo, rewards } = fixture.getInfos();
 
-      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
-      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
+      const pool = await testCtx.whirlpoolClient.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      const position = await testCtx.whirlpoolClient.getPosition(
+        positions[0].publicKey,
+        IGNORE_CACHE,
+      );
 
       const otherWallet = anchor.web3.Keypair.generate();
       const preCollectPoolData = pool.getData();
@@ -90,7 +100,7 @@ describe("PositionImpl#collectRewards()", () => {
         otherWallet.publicKey,
         testCtx.provider.wallet.publicKey,
         testCtx.provider.wallet.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
       for (const tx of txs) {
         await tx.buildAndExecute();
@@ -103,7 +113,11 @@ describe("PositionImpl#collectRewards()", () => {
         position: position.getData(),
         tickLower: position.getLowerTickData(),
         tickUpper: position.getUpperTickData(),
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          testCtx.whirlpoolCtx.fetcher,
+          pool.getData(),
+          IGNORE_CACHE,
+        ),
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
 
@@ -113,41 +127,59 @@ describe("PositionImpl#collectRewards()", () => {
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
-        const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
-        const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
+        const rewardATA = getAssociatedTokenAddressSync(
+          rewards[i].rewardMint,
+          otherWallet.publicKey,
+        );
+        const rewardTokenAccount =
+          await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+            rewardATA,
+            IGNORE_CACHE,
+          );
+        assert.equal(
+          rewardTokenAccount?.amount.toString(),
+          quote.rewardOwed[i]?.toString(),
+        );
       }
     });
   });
 
   context("when the whirlpool is SOL-SPL", () => {
     it("should collect rewards", async () => {
-      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init({
-        tickSpacing,
-        positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-        ],
-        rewards: [
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-          {
-            emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
-            vaultAmount: new BN(vaultStartBalance),
-          },
-        ],
-        tokenAIsNative: true,
-      });
+      const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init(
+        {
+          tickSpacing,
+          positions: [
+            { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+          ],
+          rewards: [
+            {
+              emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+              vaultAmount: new BN(vaultStartBalance),
+            },
+            {
+              emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+              vaultAmount: new BN(vaultStartBalance),
+            },
+            {
+              emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
+              vaultAmount: new BN(vaultStartBalance),
+            },
+          ],
+          tokenAIsNative: true,
+        },
+      );
 
       const { positions, poolInitInfo, rewards } = fixture.getInfos();
 
-      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
-      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
+      const pool = await testCtx.whirlpoolClient.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      const position = await testCtx.whirlpoolClient.getPosition(
+        positions[0].publicKey,
+        IGNORE_CACHE,
+      );
       const otherWallet = anchor.web3.Keypair.generate();
       const preCollectPoolData = pool.getData();
 
@@ -161,7 +193,7 @@ describe("PositionImpl#collectRewards()", () => {
         otherWallet.publicKey,
         testCtx.provider.wallet.publicKey,
         testCtx.provider.wallet.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
       for (const tx of txs) {
         await tx.buildAndExecute();
@@ -174,7 +206,11 @@ describe("PositionImpl#collectRewards()", () => {
         position: position.getData(),
         tickLower: position.getLowerTickData(),
         tickUpper: position.getUpperTickData(),
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          testCtx.whirlpoolCtx.fetcher,
+          pool.getData(),
+          IGNORE_CACHE,
+        ),
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
 
@@ -184,36 +220,56 @@ describe("PositionImpl#collectRewards()", () => {
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
-        const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey);
-        const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
+        const rewardATA = getAssociatedTokenAddressSync(
+          rewards[i].rewardMint,
+          otherWallet.publicKey,
+        );
+        const rewardTokenAccount =
+          await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+            rewardATA,
+            IGNORE_CACHE,
+          );
+        assert.equal(
+          rewardTokenAccount?.amount.toString(),
+          quote.rewardOwed[i]?.toString(),
+        );
       }
     });
   });
-
 
   context("when the whirlpool is SPL-only (TokenExtension)", () => {
     it("should collect rewards", async () => {
-      const fixture = await new WhirlpoolTestFixtureV2(testCtx.whirlpoolCtx).init({
-        tokenTraitA: {isToken2022: true},
-        tokenTraitB: {isToken2022: true},
+      const fixture = await new WhirlpoolTestFixtureV2(
+        testCtx.whirlpoolCtx,
+      ).init({
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
         tickSpacing,
         positions: [
           { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
         ],
         rewards: [
           {
-            rewardTokenTrait: {isToken2022:true, hasTransferHookExtension: true},
+            rewardTokenTrait: {
+              isToken2022: true,
+              hasTransferHookExtension: true,
+            },
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
             vaultAmount: new BN(vaultStartBalance),
           },
           {
-            rewardTokenTrait: {isToken2022:true, hasTransferHookExtension: true},
+            rewardTokenTrait: {
+              isToken2022: true,
+              hasTransferHookExtension: true,
+            },
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
             vaultAmount: new BN(vaultStartBalance),
           },
           {
-            rewardTokenTrait: {isToken2022:true, hasTransferHookExtension: true},
+            rewardTokenTrait: {
+              isToken2022: true,
+              hasTransferHookExtension: true,
+            },
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
             vaultAmount: new BN(vaultStartBalance),
           },
@@ -222,8 +278,14 @@ describe("PositionImpl#collectRewards()", () => {
 
       const { positions, poolInitInfo, rewards } = fixture.getInfos();
 
-      const pool = await testCtx.whirlpoolClient.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
-      const position = await testCtx.whirlpoolClient.getPosition(positions[0].publicKey, IGNORE_CACHE);
+      const pool = await testCtx.whirlpoolClient.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      const position = await testCtx.whirlpoolClient.getPosition(
+        positions[0].publicKey,
+        IGNORE_CACHE,
+      );
 
       const otherWallet = anchor.web3.Keypair.generate();
       const preCollectPoolData = pool.getData();
@@ -238,12 +300,12 @@ describe("PositionImpl#collectRewards()", () => {
         otherWallet.publicKey,
         testCtx.provider.wallet.publicKey,
         testCtx.provider.wallet.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       );
       for (const tx of txs) {
         await tx.buildAndExecute();
       }
-      
+
       // Verify the results fetched is the same as SDK estimate if the timestamp is the same
       const postCollectPoolData = await pool.refreshData();
       const quote = collectRewardsQuote({
@@ -251,7 +313,11 @@ describe("PositionImpl#collectRewards()", () => {
         position: position.getData(),
         tickLower: position.getLowerTickData(),
         tickUpper: position.getUpperTickData(),
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(testCtx.whirlpoolCtx.fetcher, pool.getData(), IGNORE_CACHE),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          testCtx.whirlpoolCtx.fetcher,
+          pool.getData(),
+          IGNORE_CACHE,
+        ),
         timeStampInSeconds: postCollectPoolData.rewardLastUpdatedTimestamp,
       });
 
@@ -261,11 +327,22 @@ describe("PositionImpl#collectRewards()", () => {
       }
 
       for (let i = 0; i < NUM_REWARDS; i++) {
-        const rewardATA = getAssociatedTokenAddressSync(rewards[i].rewardMint, otherWallet.publicKey, undefined, TEST_TOKEN_2022_PROGRAM_ID);
-        const rewardTokenAccount = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(rewardATA, IGNORE_CACHE);
-        assert.equal(rewardTokenAccount?.amount.toString(), quote.rewardOwed[i]?.toString());
+        const rewardATA = getAssociatedTokenAddressSync(
+          rewards[i].rewardMint,
+          otherWallet.publicKey,
+          undefined,
+          TEST_TOKEN_2022_PROGRAM_ID,
+        );
+        const rewardTokenAccount =
+          await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+            rewardATA,
+            IGNORE_CACHE,
+          );
+        assert.equal(
+          rewardTokenAccount?.amount.toString(),
+          quote.rewardOwed[i]?.toString(),
+        );
       }
     });
   });
-
 });

@@ -96,7 +96,7 @@ impl U256Muldiv {
                 | result.items[i - 1] >> (U64_RESOLUTION - shift_amount);
         }
 
-        result.items[0] = result.items[0] << shift_amount;
+        result.items[0] <<= shift_amount;
 
         result
     }
@@ -135,11 +135,12 @@ impl U256Muldiv {
                 | result.items[i + 1] << (U64_RESOLUTION - shift_amount);
         }
 
-        result.items[3] = result.items[3] >> shift_amount;
+        result.items[3] >>= shift_amount;
 
         result
     }
 
+    #[allow(clippy::should_implement_trait)]
     pub fn eq(&self, other: U256Muldiv) -> bool {
         for i in 0..self.items.len() {
             if self.items[i] != other.items[i] {
@@ -385,9 +386,9 @@ impl U256Muldiv {
 
         if return_remainder {
             dividend = dividend.shift_right(s);
-            return (quotient, dividend);
+            (quotient, dividend)
         } else {
-            return (quotient, U256Muldiv::new(0, 0));
+            (quotient, U256Muldiv::new(0, 0))
         }
     }
 }
@@ -649,7 +650,7 @@ mod fuzz_tests {
             let other_result = other_n0 >= other_n1;
 
             // Should always be >= to itself
-            assert_eq!(n0.gte(n0), true);
+            assert!(n0.gte(n0));
 
             // Should be equivalent to u256 operation
             assert_eq!(result, other_result);
@@ -670,7 +671,7 @@ mod fuzz_tests {
             let other_result = other_n0 == other_n1;
 
             // Should always be = to itself
-            assert_eq!(result_self, true);
+            assert!(result_self);
 
             // Should be equivalent to using u256 space
             assert_eq!(result, other_result);

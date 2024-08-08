@@ -8,7 +8,7 @@ export class BitMath {
     if (this.isOverLimit(result, limit)) {
       throw new WhirlpoolsError(
         `Mul result higher than u${limit}`,
-        MathErrorCode.MultiplicationOverflow
+        MathErrorCode.MultiplicationOverflow,
       );
     }
     return result;
@@ -22,9 +22,18 @@ export class BitMath {
     return this.mulDivRoundUpIf(n0, n1, d, true, limit);
   }
 
-  static mulDivRoundUpIf(n0: BN, n1: BN, d: BN, roundUp: boolean, limit: number): BN {
+  static mulDivRoundUpIf(
+    n0: BN,
+    n1: BN,
+    d: BN,
+    roundUp: boolean,
+    limit: number,
+  ): BN {
     if (d.eq(ZERO)) {
-      throw new WhirlpoolsError("mulDiv denominator is zero", MathErrorCode.DivideByZero);
+      throw new WhirlpoolsError(
+        "mulDiv denominator is zero",
+        MathErrorCode.DivideByZero,
+      );
     }
 
     const p = this.mul(n0, n1, limit);
@@ -37,7 +46,12 @@ export class BitMath {
     return this.checked_mul_shift_right_round_up_if(n0, n1, false, limit);
   }
 
-  static checked_mul_shift_right_round_up_if(n0: BN, n1: BN, roundUp: boolean, limit: number) {
+  static checked_mul_shift_right_round_up_if(
+    n0: BN,
+    n1: BN,
+    roundUp: boolean,
+    limit: number,
+  ) {
     if (n0.eq(ZERO) || n1.eq(ZERO)) {
       return ZERO;
     }
@@ -46,7 +60,7 @@ export class BitMath {
     if (this.isOverLimit(p, limit)) {
       throw new WhirlpoolsError(
         `MulShiftRight overflowed u${limit}.`,
-        MathErrorCode.MultiplicationShiftRightOverflow
+        MathErrorCode.MultiplicationShiftRightOverflow,
       );
     }
     const result = MathUtil.fromX64_BN(p);
@@ -54,7 +68,7 @@ export class BitMath {
     if (shouldRound && result.eq(U64_MAX)) {
       throw new WhirlpoolsError(
         `MulShiftRight overflowed u${limit}.`,
-        MathErrorCode.MultiplicationOverflow
+        MathErrorCode.MultiplicationOverflow,
       );
     }
 
@@ -72,7 +86,10 @@ export class BitMath {
 
   static divRoundUpIf(n: BN, d: BN, roundUp: boolean) {
     if (d.eq(ZERO)) {
-      throw new WhirlpoolsError("divRoundUpIf - divide by zero", MathErrorCode.DivideByZero);
+      throw new WhirlpoolsError(
+        "divRoundUpIf - divide by zero",
+        MathErrorCode.DivideByZero,
+      );
     }
 
     let q = n.div(d);

@@ -1,8 +1,13 @@
-import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, Instruction, TokenUtil, TransactionBuilder } from "@orca-so/common-sdk";
+import type { Address } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import {
+  AddressUtil,
+  TokenUtil,
+  TransactionBuilder,
+} from "@orca-so/common-sdk";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { PACKET_DATA_SIZE } from "@solana/web3.js";
-import { WhirlpoolContext } from "../..";
+import type { WhirlpoolContext } from "../..";
 import { PREFER_CACHE } from "../../network/public/fetcher";
 import {
   TokenMintTypes,
@@ -16,17 +21,20 @@ import { collectProtocolFeesV2Ix } from "../v2";
 
 export async function collectProtocolFees(
   ctx: WhirlpoolContext,
-  poolAddresses: Address[]
+  poolAddresses: Address[],
 ): Promise<TransactionBuilder> {
   const receiverKey = ctx.wallet.publicKey;
   const payerKey = ctx.wallet.publicKey;
 
   const whirlpoolDatas = Array.from(
-    (await ctx.fetcher.getPools(poolAddresses, PREFER_CACHE)).values()
+    (await ctx.fetcher.getPools(poolAddresses, PREFER_CACHE)).values(),
   );
 
   // make cache
-  const mints = getTokenMintsFromWhirlpools(whirlpoolDatas, TokenMintTypes.POOL_ONLY).mintMap;
+  const mints = getTokenMintsFromWhirlpools(
+    whirlpoolDatas,
+    TokenMintTypes.POOL_ONLY,
+  ).mintMap;
   await ctx.fetcher.getMintInfos(mints);
 
   const accountExemption = await ctx.fetcher.getAccountRentExempt();
@@ -41,7 +49,7 @@ export async function collectProtocolFees(
   let txBuilder = new TransactionBuilder(
     ctx.connection,
     ctx.wallet,
-    ctx.txBuilderOpts
+    ctx.txBuilderOpts,
   ).addInstructions(resolveAtaIxs);
 
   const instructions: Instruction[] = [];
@@ -57,12 +65,16 @@ export async function collectProtocolFees(
       throw new Error(`Config not found: ${pool.whirlpoolsConfig}`);
     }
 
-    if (poolConfig.collectProtocolFeesAuthority.toBase58() !== ctx.wallet.publicKey.toBase58()) {
+    if (
+      poolConfig.collectProtocolFeesAuthority.toBase58() !==
+      ctx.wallet.publicKey.toBase58()
+    ) {
       throw new Error(`Wallet is not the collectProtocolFeesAuthority`);
     }
 
     const poolHandlesNativeMint =
-      TokenUtil.isNativeMint(pool.tokenMintA) || TokenUtil.isNativeMint(pool.tokenMintB);
+      TokenUtil.isNativeMint(pool.tokenMintA) ||
+      TokenUtil.isNativeMint(pool.tokenMintB);
     const txBuilderHasNativeMint = !!ataTokenAddresses[NATIVE_MINT.toBase58()];
 
     if (poolHandlesNativeMint && !txBuilderHasNativeMint) {
@@ -71,15 +83,16 @@ export async function collectProtocolFees(
         ataTokenAddresses,
         receiverKey,
         accountExemption,
-        ctx.accountResolverOpts.createWrappedSolAccountMethod
+        ctx.accountResolverOpts.createWrappedSolAccountMethod,
       );
     }
 
-    const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(
-      ctx.fetcher,
-      pool,
-      PREFER_CACHE,
-    );
+    const tokenExtensionCtx =
+      await TokenExtensionUtil.buildTokenExtensionContext(
+        ctx.fetcher,
+        pool,
+        PREFER_CACHE,
+      );
 
     const baseParams = {
       whirlpoolsConfig: pool.whirlpoolsConfig,
@@ -96,22 +109,22 @@ export async function collectProtocolFees(
       !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
         ? collectProtocolFeesIx(ctx.program, baseParams)
         : collectProtocolFeesV2Ix(ctx.program, {
-          ...baseParams,
-          tokenMintA: tokenExtensionCtx.tokenMintWithProgramA.address,
-          tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
-          tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
-          tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-          ...await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
-            ctx.connection,
-            tokenExtensionCtx,
-            baseParams.tokenVaultA,
-            baseParams.tokenOwnerAccountA,
-            baseParams.whirlpool, // vault to protocol, so pool is authority
-            baseParams.tokenVaultB,
-            baseParams.tokenOwnerAccountB,
-            baseParams.whirlpool, // vault to protocol, so pool is authority
-          ),
-        })
+            ...baseParams,
+            tokenMintA: tokenExtensionCtx.tokenMintWithProgramA.address,
+            tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
+            tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+            tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+            ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+              ctx.connection,
+              tokenExtensionCtx,
+              baseParams.tokenVaultA,
+              baseParams.tokenOwnerAccountA,
+              baseParams.whirlpool, // vault to protocol, so pool is authority
+              baseParams.tokenVaultB,
+              baseParams.tokenOwnerAccountB,
+              baseParams.whirlpool, // vault to protocol, so pool is authority
+            )),
+          }),
     );
   }
 

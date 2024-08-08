@@ -22,15 +22,15 @@ async function getKeyPair(keyPath: string): Promise<Keypair> {
 async function run() {
   // https://api.mainnet-beta.solana.com
   const wallet = new anchor.Wallet(
-    await getKeyPair("/Users/ottocheung/dev/solana/pub.json")
+    await getKeyPair("/Users/ottocheung/dev/solana/pub.json"),
   );
   const connection = new anchor.web3.Connection(
-    "https://api.mainnet-beta.solana.com"
+    "https://api.mainnet-beta.solana.com",
   );
   const provider = new anchor.AnchorProvider(
     connection,
     wallet,
-    anchor.AnchorProvider.defaultOptions()
+    anchor.AnchorProvider.defaultOptions(),
   );
 
   const sizeInBytes = [
@@ -38,14 +38,13 @@ async function run() {
   ];
   const solPrice = 160;
   sizeInBytes.forEach(async (size) => {
-    const result = await provider.connection.getMinimumBalanceForRentExemption(
-      size
-    );
+    const result =
+      await provider.connection.getMinimumBalanceForRentExemption(size);
     const sol = new Decimal(result).mul(0.000000001);
-    console.log(
+    console.info(
       `size - ${size} lamports - ${result} SOL- ${sol} price - ${sol.mul(
-        solPrice
-      )}`
+        solPrice,
+      )}`,
     );
   });
 }

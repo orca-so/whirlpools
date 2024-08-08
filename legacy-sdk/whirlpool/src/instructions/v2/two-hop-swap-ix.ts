@@ -1,11 +1,14 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { AccountMeta, PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
-import { Whirlpool } from "../../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { AccountMeta, PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../../artifacts/whirlpool";
 import { MEMO_PROGRAM_ADDRESS } from "../../types/public";
-import { RemainingAccountsBuilder, RemainingAccountsType, toSupplementalTickArrayAccountMetas } from "../../utils/remaining-accounts-util";
-import { TwoHopSwapInput } from "../two-hop-swap-ix";
+import {
+  RemainingAccountsBuilder,
+  RemainingAccountsType,
+  toSupplementalTickArrayAccountMetas,
+} from "../../utils/remaining-accounts-util";
+import type { TwoHopSwapInput } from "../two-hop-swap-ix";
 
 /**
  * Parameters to execute a two-hop swap on a Whirlpool.
@@ -74,7 +77,10 @@ export type TwoHopSwapV2Params = TwoHopSwapInput & {
  * @param params - {@link TwoHopSwapV2Params} object
  * @returns - Instruction to perform the action.
  */
-export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2Params): Instruction {
+export function twoHopSwapV2Ix(
+  program: Program<Whirlpool>,
+  params: TwoHopSwapV2Params,
+): Instruction {
   const {
     amount,
     otherAmountThreshold,
@@ -113,13 +119,29 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
     supplementalTickArraysTwo,
   } = params;
 
-  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
-    .addSlice(RemainingAccountsType.TransferHookInput, tokenTransferHookAccountsInput)
-    .addSlice(RemainingAccountsType.TransferHookIntermediate, tokenTransferHookAccountsIntermediate)
-    .addSlice(RemainingAccountsType.TransferHookOutput, tokenTransferHookAccountsOutput)
-    .addSlice(RemainingAccountsType.SupplementalTickArraysOne, toSupplementalTickArrayAccountMetas(supplementalTickArraysOne))
-    .addSlice(RemainingAccountsType.SupplementalTickArraysTwo, toSupplementalTickArrayAccountMetas(supplementalTickArraysTwo))
-    .build();
+  const [remainingAccountsInfo, remainingAccounts] =
+    new RemainingAccountsBuilder()
+      .addSlice(
+        RemainingAccountsType.TransferHookInput,
+        tokenTransferHookAccountsInput,
+      )
+      .addSlice(
+        RemainingAccountsType.TransferHookIntermediate,
+        tokenTransferHookAccountsIntermediate,
+      )
+      .addSlice(
+        RemainingAccountsType.TransferHookOutput,
+        tokenTransferHookAccountsOutput,
+      )
+      .addSlice(
+        RemainingAccountsType.SupplementalTickArraysOne,
+        toSupplementalTickArrayAccountMetas(supplementalTickArraysOne),
+      )
+      .addSlice(
+        RemainingAccountsType.SupplementalTickArraysTwo,
+        toSupplementalTickArrayAccountMetas(supplementalTickArraysTwo),
+      )
+      .build();
 
   const ix = program.instruction.twoHopSwapV2(
     amount,
@@ -158,7 +180,7 @@ export function twoHopSwapV2Ix(program: Program<Whirlpool>, params: TwoHopSwapV2
         memoProgram: MEMO_PROGRAM_ADDRESS,
       },
       remainingAccounts,
-    }
+    },
   );
 
   return {

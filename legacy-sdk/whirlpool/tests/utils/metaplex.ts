@@ -4,7 +4,9 @@
 import { PublicKey } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 
-const METADATA_PROGRAM_ID = new PublicKey("metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s");
+const METADATA_PROGRAM_ID = new PublicKey(
+  "metaqbxxUerdq28cj1RbAWkYQm3ybzjb6a8bt518x1s",
+);
 
 // Metadata should be a just tiny JSON file, 2000ms should be sufficient for most cases
 const DEFAULT_GET_OFF_CHAIN_METADATA_TIMEOUT_MS = 2000;
@@ -22,8 +24,8 @@ interface Collection {
 
 interface Uses {
   useMethod: number;
-  remaining: BigInt;
-  total: BigInt;
+  remaining: bigint;
+  total: bigint;
 }
 
 interface OnChainMetadataPrefix {
@@ -49,7 +51,9 @@ interface OnChainMetadataSuffix {
   uses: Uses | null;
 }
 
-export type OnChainMetadata = OnChainMetadataPrefix & OnChainMetadataCreators & OnChainMetadataSuffix
+export type OnChainMetadata = OnChainMetadataPrefix &
+  OnChainMetadataCreators &
+  OnChainMetadataSuffix;
 
 export interface OffChainMetadata {
   name?: string;
@@ -60,45 +64,71 @@ export interface OffChainMetadata {
 
 export interface MetaplexClient {
   getMetadataAddress(mint: PublicKey): PublicKey;
-  parseOnChainMetadata(mint: PublicKey, buffer: Buffer | Uint8Array): OnChainMetadata | null;
-  getOffChainMetadata(metadata: OnChainMetadata, timeoutMs?: number): Promise<OffChainMetadata | null>;
+  parseOnChainMetadata(
+    mint: PublicKey,
+    buffer: Buffer | Uint8Array,
+  ): OnChainMetadata | null;
+  getOffChainMetadata(
+    metadata: OnChainMetadata,
+    timeoutMs?: number,
+  ): Promise<OffChainMetadata | null>;
 }
 
 export class MetaplexHttpClient implements MetaplexClient {
-
   getMetadataAddress(mint: PublicKey): PublicKey {
-    const seeds = [Buffer.from("metadata"), METADATA_PROGRAM_ID.toBuffer(), mint.toBuffer()];
+    const seeds = [
+      Buffer.from("metadata"),
+      METADATA_PROGRAM_ID.toBuffer(),
+      mint.toBuffer(),
+    ];
     return PublicKey.findProgramAddressSync(seeds, METADATA_PROGRAM_ID)[0];
   }
 
-  parseOnChainMetadata(mint: PublicKey, data: Uint8Array | Buffer): OnChainMetadata | null {
+  parseOnChainMetadata(
+    mint: PublicKey,
+    data: Uint8Array | Buffer,
+  ): OnChainMetadata | null {
     try {
       const buffer = Buffer.from(data);
       const [prefix, creatorsOffset] = parseOnChainMetadataPrefix(buffer, 0);
-      const [creators, suffixOffset] = parseOnChainMetadataCreators(buffer, creatorsOffset);
+      const [creators, suffixOffset] = parseOnChainMetadataCreators(
+        buffer,
+        creatorsOffset,
+      );
       const [suffix] = parseOnChainMetadataSuffix(buffer, suffixOffset);
       return { ...prefix, ...creators, ...suffix };
     } catch {
-      console.error(`Failed to parse onchain metadata for ${mint}`)
+      console.error(`Failed to parse onchain metadata for ${mint}`);
       return null;
     }
   }
 
-  async getOffChainMetadata(metadata: OnChainMetadata, timeoutMs: number = DEFAULT_GET_OFF_CHAIN_METADATA_TIMEOUT_MS): Promise<OffChainMetadata | null> {
+  async getOffChainMetadata(
+    metadata: OnChainMetadata,
+    timeoutMs: number = DEFAULT_GET_OFF_CHAIN_METADATA_TIMEOUT_MS,
+  ): Promise<OffChainMetadata | null> {
     try {
       if (metadata.uri === "") {
         return null;
       }
-      const response = await fetch(metadata.uri, { signal: AbortSignal.timeout(timeoutMs) });
+      const response = await fetch(metadata.uri, {
+        signal: AbortSignal.timeout(timeoutMs),
+      });
       if (response.status === 404) {
         return null;
       }
-      invariant(response.ok, `Unexpected status code fetching ${metadata.uri}: ${response.status}`);
+      invariant(
+        response.ok,
+        `Unexpected status code fetching ${metadata.uri}: ${response.status}`,
+      );
       const json = await response.json();
-      invariant(isMetadataResponse(json), "Unexpected offchain metadata response type");
+      invariant(
+        isMetadataResponse(json),
+        "Unexpected offchain metadata response type",
+      );
       return json;
     } catch {
-      console.error(`Failed to fetch offchain metadata for ${metadata.mint}`)
+      console.error(`Failed to fetch offchain metadata for ${metadata.mint}`);
       return null;
     }
   }
@@ -108,10 +138,15 @@ function readString(buffer: Buffer, offset: number): string {
   const readLength = buffer.readUInt32LE(offset);
   const bytes = buffer.subarray(offset + 4, offset + 4 + readLength);
   const nullIndex = bytes.indexOf(0);
-  return new TextDecoder().decode(bytes.subarray(0, nullIndex === -1 ? undefined : nullIndex));
+  return new TextDecoder().decode(
+    bytes.subarray(0, nullIndex === -1 ? undefined : nullIndex),
+  );
 }
 
-function parseOnChainMetadataPrefix(buffer: Buffer, offset: number): [OnChainMetadataPrefix, number] {
+function parseOnChainMetadataPrefix(
+  buffer: Buffer,
+  offset: number,
+): [OnChainMetadataPrefix, number] {
   const key = buffer.readUInt8(offset);
   offset += 1;
   const updateAuthority = new PublicKey(buffer.subarray(offset, offset + 32));
@@ -128,11 +163,14 @@ function parseOnChainMetadataPrefix(buffer: Buffer, offset: number): [OnChainMet
   offset += 2;
   return [
     { key, updateAuthority, mint, name, symbol, uri, sellerFeeBasisPoints },
-    offset
+    offset,
   ];
 }
 
-function parseOnChainMetadataCreators(buffer: Buffer, offset: number): [OnChainMetadataCreators, number] {
+function parseOnChainMetadataCreators(
+  buffer: Buffer,
+  offset: number,
+): [OnChainMetadataCreators, number] {
   const creatorsPresent = !!buffer.readUInt8(offset);
   offset += 1;
   if (!creatorsPresent) {
@@ -150,10 +188,13 @@ function parseOnChainMetadataCreators(buffer: Buffer, offset: number): [OnChainM
     offset += 1;
     creators.push({ address, verified, share });
   }
-  return [{ creators }, offset] ;
+  return [{ creators }, offset];
 }
 
-function parseOnChainMetadataSuffix(buffer: Buffer, offset: number): [OnChainMetadataSuffix, number] {
+function parseOnChainMetadataSuffix(
+  buffer: Buffer,
+  offset: number,
+): [OnChainMetadataSuffix, number] {
   const primarySaleHappened = !!buffer.readUInt8(offset);
   offset += 1;
   const isMutable = !!buffer.readUInt8(offset);
@@ -178,9 +219,11 @@ function parseOnChainMetadataSuffix(buffer: Buffer, offset: number): [OnChainMet
   if (collectionPresent) {
     const collectionVerified = !!buffer.readUInt8(offset);
     offset += 1;
-    const collectionKey =  new PublicKey(buffer.subarray(offset, offset + 32));
+    const collectionKey = new PublicKey(buffer.subarray(offset, offset + 32));
     offset += 32;
-    collection = collectionPresent ? { verified: collectionVerified, key: collectionKey } : null;
+    collection = collectionPresent
+      ? { verified: collectionVerified, key: collectionKey }
+      : null;
   }
   const usesPresent = !!buffer.readUInt8(offset);
   offset += 1;
@@ -195,25 +238,32 @@ function parseOnChainMetadataSuffix(buffer: Buffer, offset: number): [OnChainMet
     uses = usesPresent ? { useMethod, remaining, total } : null;
   }
   return [
-    { primarySaleHappened, isMutable, editionNonce, tokenStandard, collection, uses },
-    offset
+    {
+      primarySaleHappened,
+      isMutable,
+      editionNonce,
+      tokenStandard,
+      collection,
+      uses,
+    },
+    offset,
   ];
 }
 
-function isMetadataResponse(value: any): value is OffChainMetadata {
+function isMetadataResponse(value: unknown): value is OffChainMetadata {
   if (!value || typeof value !== "object") {
     return false;
   }
-  if (value.name && typeof value.name !== "string") {
+  if ("name" in value && typeof value.name !== "string") {
     return false;
   }
-  if (value.image && typeof value.image !== "string") {
+  if ("image" in value && typeof value.image !== "string") {
     return false;
   }
-  if (value.description && typeof value.description !== "string") {
+  if ("description" in value && typeof value.description !== "string") {
     return false;
   }
-  if (value.symbol && typeof value.symbol !== "string") {
+  if ("symbol" in value && typeof value.symbol !== "string") {
     return false;
   }
   return true;

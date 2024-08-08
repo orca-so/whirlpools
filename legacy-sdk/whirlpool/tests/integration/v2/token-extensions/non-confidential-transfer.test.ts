@@ -1,62 +1,60 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import { MathUtil, PDA, Percentage } from "@orca-so/common-sdk";
+import type { PDA } from "@orca-so/common-sdk";
+import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
+import type {
+  DecreaseLiquidityQuote,
+  InitPoolV2Params,
+  PositionData,
+  SwapQuote,
+  TwoHopSwapV2Params,
+  WhirlpoolData,
+} from "../../../../src";
 import {
   buildWhirlpoolClient,
   collectRewardsQuote,
-  DecreaseLiquidityQuote,
   decreaseLiquidityQuoteByLiquidityWithParams,
-  InitPoolV2Params,
   NUM_REWARDS,
   PDAUtil,
   PoolUtil,
-  PositionData,
   PriceMath,
-  SwapQuote,
   swapQuoteWithParams,
   SwapUtils,
   toTokenAmount,
   toTx,
   twoHopSwapQuoteFromSwapQuotes,
-  TwoHopSwapV2Params,
   WhirlpoolContext,
-  WhirlpoolData,
   WhirlpoolIx,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
-import {
-  getTokenBalance,
-  sleep,
-  TickSpacing,
-  ZERO_BN,
-} from "../../../utils";
+import { getTokenBalance, sleep, TickSpacing, ZERO_BN } from "../../../utils";
 import { defaultConfirmOptions } from "../../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
+import type { FundedPositionV2Params } from "../../../utils/v2/init-utils-v2";
 import {
-  FundedPositionV2Params,
   fundPositionsV2,
   initTestPoolWithTokensV2,
   useMaxCU,
 } from "../../../utils/v2/init-utils-v2";
-import {
-  createTokenAccountV2,
-} from "../../../utils/v2/token-2022";
-import { AccountMeta, ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
+import { createTokenAccountV2 } from "../../../utils/v2/token-2022";
+import type { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../../utils/init-utils";
+import type { InitAquariumV2Params } from "../../../utils/v2/aquarium-v2";
 import {
-  InitAquariumV2Params,
   buildTestAquariumsV2,
   getDefaultAquariumV2,
   getTokenAccsForPoolsV2,
 } from "../../../utils/v2/aquarium-v2";
-import { getExtraAccountMetasForTestTransferHookProgram, getTestTransferHookCounter, updateTransferHookProgram } from "../../../utils/v2/test-transfer-hook-program";
 import { hasConfidentialTransferMintExtension } from "../../../utils/v2/confidential-transfer";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 
 describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
@@ -74,12 +72,26 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
 
       const tickSpacing = TickSpacing.Standard;
       fixture = await new WhirlpoolTestFixtureV2(ctx).init({
-        tokenTraitA: { isToken2022: true, hasConfidentialTransferExtension: true },
-        tokenTraitB: { isToken2022: true, hasConfidentialTransferExtension: true },
+        tokenTraitA: {
+          isToken2022: true,
+          hasConfidentialTransferExtension: true,
+        },
+        tokenTraitB: {
+          isToken2022: true,
+          hasConfidentialTransferExtension: true,
+        },
         tickSpacing,
         positions: [
-          { tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) }, // In range position
-          { tickLowerIndex: 0, tickUpperIndex: 128, liquidityAmount: new anchor.BN(1_000_000) }, // Out of range position
+          {
+            tickLowerIndex,
+            tickUpperIndex,
+            liquidityAmount: new anchor.BN(10_000_000),
+          }, // In range position
+          {
+            tickLowerIndex: 0,
+            tickUpperIndex: 128,
+            liquidityAmount: new anchor.BN(1_000_000),
+          }, // Out of range position
         ],
       });
       const {
@@ -100,9 +112,12 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
       const tickArrayPda = PDAUtil.getTickArray(
         ctx.program.programId,
         whirlpoolPda.publicKey,
-        22528
+        22528,
       );
-      const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+      const oraclePda = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      );
 
       // Accrue fees in token A
       await toTx(
@@ -127,8 +142,10 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
           tickArray1: tickArrayPda.publicKey,
           tickArray2: tickArrayPda.publicKey,
           oracle: oraclePda.publicKey,
-        })
-      ).prependInstruction(useMaxCU()).buildAndExecute();
+        }),
+      )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute();
 
       // Accrue fees in token B
       await toTx(
@@ -153,8 +170,10 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
           tickArray1: tickArrayPda.publicKey,
           tickArray2: tickArrayPda.publicKey,
           oracle: oraclePda.publicKey,
-        })
-      ).prependInstruction(useMaxCU()).buildAndExecute();
+        }),
+      )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute();
 
       await toTx(
         ctx,
@@ -163,16 +182,19 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
           position: positions[0].publicKey,
           tickArrayLower: tickArrayPda.publicKey,
           tickArrayUpper: tickArrayPda.publicKey,
-        })
+        }),
       ).buildAndExecute();
 
-      const whirlpoolData = (await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE))!;
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      ))!;
       assert.ok(!whirlpoolData.protocolFeeOwedA.isZero());
       assert.ok(!whirlpoolData.protocolFeeOwedB.isZero());
 
       const positionBeforeCollect = (await fetcher.getPosition(
         positions[0].publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       )) as PositionData;
       assert.ok(!positionBeforeCollect.feeOwedA.isZero());
       assert.ok(!positionBeforeCollect.feeOwedB.isZero());
@@ -181,13 +203,13 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         provider,
         { isToken2022: true },
         tokenMintA,
-        provider.wallet.publicKey
+        provider.wallet.publicKey,
       );
       feeAccountB = await createTokenAccountV2(
         provider,
         { isToken2022: true },
         tokenMintB,
-        provider.wallet.publicKey
+        provider.wallet.publicKey,
       );
     });
 
@@ -205,8 +227,12 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         positions,
       } = fixture.getInfos();
 
-      assert.ok(await hasConfidentialTransferMintExtension(provider, tokenMintA));
-      assert.ok(await hasConfidentialTransferMintExtension(provider, tokenMintB));
+      assert.ok(
+        await hasConfidentialTransferMintExtension(provider, tokenMintA),
+      );
+      assert.ok(
+        await hasConfidentialTransferMintExtension(provider, tokenMintB),
+      );
 
       await toTx(
         ctx,
@@ -223,7 +249,7 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
           tokenOwnerAccountB: feeAccountB,
           tokenVaultA: tokenVaultAKeypair.publicKey,
           tokenVaultB: tokenVaultBKeypair.publicKey,
-        })
+        }),
       ).buildAndExecute();
 
       const feeBalanceA = await getTokenBalance(provider, feeAccountA);
@@ -247,15 +273,20 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         configInitInfo: { whirlpoolsConfigKeypair: whirlpoolsConfigKeypair },
       } = fixture.getInfos();
 
-      assert.ok(await hasConfidentialTransferMintExtension(provider, tokenMintA));
-      assert.ok(await hasConfidentialTransferMintExtension(provider, tokenMintB));
+      assert.ok(
+        await hasConfidentialTransferMintExtension(provider, tokenMintA),
+      );
+      assert.ok(
+        await hasConfidentialTransferMintExtension(provider, tokenMintB),
+      );
 
       await toTx(
         ctx,
         WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
           whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
           whirlpool: whirlpoolPda.publicKey,
-          collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+          collectProtocolFeesAuthority:
+            collectProtocolFeesAuthorityKeypair.publicKey,
           tokenMintA,
           tokenMintB,
           tokenProgramA,
@@ -264,7 +295,7 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
           tokenVaultB: tokenVaultBKeypair.publicKey,
           tokenOwnerAccountA: feeAccountA,
           tokenOwnerAccountB: feeAccountB,
-        })
+        }),
       )
         .addSigner(collectProtocolFeesAuthorityKeypair)
         .buildAndExecute();
@@ -298,17 +329,26 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         ],
         rewards: [
           {
-            rewardTokenTrait: { isToken2022: true, hasConfidentialTransferExtension: true },
+            rewardTokenTrait: {
+              isToken2022: true,
+              hasConfidentialTransferExtension: true,
+            },
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
             vaultAmount: new BN(vaultStartBalance),
           },
           {
-            rewardTokenTrait: { isToken2022: true, hasConfidentialTransferExtension: true },
+            rewardTokenTrait: {
+              isToken2022: true,
+              hasConfidentialTransferExtension: true,
+            },
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
             vaultAmount: new BN(vaultStartBalance),
           },
           {
-            rewardTokenTrait: { isToken2022: true, hasConfidentialTransferExtension: true },
+            rewardTokenTrait: {
+              isToken2022: true,
+              hasConfidentialTransferExtension: true,
+            },
             emissionsPerSecondX64: MathUtil.toX64(new Decimal(10)),
             vaultAmount: new BN(vaultStartBalance),
           },
@@ -330,12 +370,17 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
           position: positions[0].publicKey,
           tickArrayLower: positions[0].tickArrayLower,
           tickArrayUpper: positions[0].tickArrayUpper,
-        })
+        }),
       ).buildAndExecute();
 
       // Generate collect reward expectation
-      const whirlpoolData = (await fetcher.getPool(whirlpoolPda.publicKey)) as WhirlpoolData;
-      const positionPreCollect = await client.getPosition(positions[0].publicKey, IGNORE_CACHE);
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpoolPda.publicKey,
+      )) as WhirlpoolData;
+      const positionPreCollect = await client.getPosition(
+        positions[0].publicKey,
+        IGNORE_CACHE,
+      );
 
       // Lock the collectRewards quote to the last time we called updateFeesAndRewards
       const expectation = collectRewardsQuote({
@@ -344,7 +389,11 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         tickLower: positionPreCollect.getLowerTickData(),
         tickUpper: positionPreCollect.getUpperTickData(),
         timeStampInSeconds: whirlpoolData.rewardLastUpdatedTimestamp,
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          fetcher,
+          whirlpoolData,
+          IGNORE_CACHE,
+        ),
       });
 
       // Check that the expectation is not zero
@@ -358,9 +407,9 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
             provider,
             { isToken2022: true },
             reward.rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
-        })
+        }),
       );
     });
 
@@ -372,7 +421,9 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
       } = fixture.getInfos();
 
       for (let i = 0; i < NUM_REWARDS; i++) {
-        assert.ok(hasConfidentialTransferMintExtension(provider, rewards[i].rewardMint));
+        assert.ok(
+          hasConfidentialTransferMintExtension(provider, rewards[i].rewardMint),
+        );
 
         await toTx(
           ctx,
@@ -386,9 +437,12 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
             rewardOwnerAccount: rewardAccounts[i],
             rewardVault: rewards[i].rewardVaultKeypair.publicKey,
             rewardIndex: i,
-          })
+          }),
         ).buildAndExecute();
-        const rewardBalance = await getTokenBalance(provider, rewardAccounts[i]);
+        const rewardBalance = await getTokenBalance(
+          provider,
+          rewardAccounts[i],
+        );
         assert.ok(new BN(rewardBalance).gtn(0));
       }
     });
@@ -403,16 +457,25 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
 
     beforeEach(async () => {
       fixture = await new WhirlpoolTestFixtureV2(ctx).init({
-        tokenTraitA: { isToken2022: true, hasConfidentialTransferExtension: true},
-        tokenTraitB: { isToken2022: true, hasConfidentialTransferExtension: true},
+        tokenTraitA: {
+          isToken2022: true,
+          hasConfidentialTransferExtension: true,
+        },
+        tokenTraitB: {
+          isToken2022: true,
+          hasConfidentialTransferExtension: true,
+        },
         tickSpacing: TickSpacing.Standard,
-        positions: [{ tickLowerIndex, tickUpperIndex, liquidityAmount: ZERO_BN }],
+        positions: [
+          { tickLowerIndex, tickUpperIndex, liquidityAmount: ZERO_BN },
+        ],
         initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
       });
     });
 
     it("increase_liquidity_v2: non confidential transfer", async () => {
-      const { poolInitInfo, positions, tokenAccountA, tokenAccountB } = fixture.getInfos();
+      const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+        fixture.getInfos();
       const positionInitInfo = positions[0];
 
       const tokenAmount = toTokenAmount(1_000_000, 1_000_000);
@@ -420,14 +483,30 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         currTick,
         tickLowerIndex,
         tickUpperIndex,
-        tokenAmount
+        tokenAmount,
       );
 
-      assert.ok(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintA));
-      assert.ok(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintB));
+      assert.ok(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintA,
+        ),
+      );
+      assert.ok(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintB,
+        ),
+      );
 
-      const preVaultBalanceA = await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey);
-      const preVaultBalanceB = await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey);
+      const preVaultBalanceA = await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultAKeypair.publicKey,
+      );
+      const preVaultBalanceB = await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultBKeypair.publicKey,
+      );
 
       await toTx(
         ctx,
@@ -449,11 +528,17 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positionInitInfo.tickArrayLower,
           tickArrayUpper: positionInitInfo.tickArrayUpper,
-        })
+        }),
       ).buildAndExecute();
 
-      const postVaultBalanceA = await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey);
-      const postVaultBalanceB = await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey);
+      const postVaultBalanceA = await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultAKeypair.publicKey,
+      );
+      const postVaultBalanceB = await getTokenBalance(
+        provider,
+        poolInitInfo.tokenVaultBKeypair.publicKey,
+      );
       assert.ok(new BN(postVaultBalanceA).gt(new BN(preVaultBalanceA)));
       assert.ok(new BN(postVaultBalanceB).gt(new BN(preVaultBalanceB)));
     });
@@ -470,17 +555,29 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
       const tickLower = 7168,
         tickUpper = 8960;
       fixture = await new WhirlpoolTestFixtureV2(ctx).init({
-        tokenTraitA: { isToken2022: true, hasConfidentialTransferExtension: true },
-        tokenTraitB: { isToken2022: true, hasConfidentialTransferExtension: true },
+        tokenTraitA: {
+          isToken2022: true,
+          hasConfidentialTransferExtension: true,
+        },
+        tokenTraitB: {
+          isToken2022: true,
+          hasConfidentialTransferExtension: true,
+        },
         tickSpacing: TickSpacing.Standard,
         initialSqrtPrice: MathUtil.toX64(new Decimal(1.48)),
-        positions: [{ tickLowerIndex: tickLower, tickUpperIndex: tickUpper, liquidityAmount }],
+        positions: [
+          {
+            tickLowerIndex: tickLower,
+            tickUpperIndex: tickUpper,
+            liquidityAmount,
+          },
+        ],
       });
       const { poolInitInfo } = fixture.getInfos();
       const { whirlpoolPda } = poolInitInfo;
       const poolBefore = (await fetcher.getPool(
         whirlpoolPda.publicKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       )) as WhirlpoolData;
 
       removalQuote = decreaseLiquidityQuoteByLiquidityWithParams({
@@ -490,7 +587,11 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         tickCurrentIndex: poolBefore.tickCurrentIndex,
         tickLowerIndex: tickLower,
         tickUpperIndex: tickUpper,
-        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, poolBefore, IGNORE_CACHE),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          fetcher,
+          poolBefore,
+          IGNORE_CACHE,
+        ),
       });
       assert.ok(!removalQuote.tokenEstA.isZero());
       assert.ok(!removalQuote.tokenEstB.isZero());
@@ -499,21 +600,31 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         provider,
         { isToken2022: true },
         poolInitInfo.tokenMintA,
-        provider.wallet.publicKey
+        provider.wallet.publicKey,
       );
       destAccountB = await createTokenAccountV2(
         provider,
         { isToken2022: true },
         poolInitInfo.tokenMintB,
-        provider.wallet.publicKey
+        provider.wallet.publicKey,
       );
     });
 
     it("decrease_liquidity_v2: non confidential transfer", async () => {
       const { poolInitInfo, positions } = fixture.getInfos();
 
-      assert.ok(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintA));
-      assert.ok(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintB));
+      assert.ok(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintA,
+        ),
+      );
+      assert.ok(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintB,
+        ),
+      );
 
       await toTx(
         ctx,
@@ -533,7 +644,7 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           tickArrayLower: positions[0].tickArrayLower,
           tickArrayUpper: positions[0].tickArrayUpper,
-        })
+        }),
       ).buildAndExecute();
       const destBalanceA = await getTokenBalance(provider, destAccountA);
       const destBalanceB = await getTokenBalance(provider, destAccountB);
@@ -556,7 +667,7 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         ctx,
         { isToken2022: true, hasConfidentialTransferExtension: true },
         { isToken2022: true, hasConfidentialTransferExtension: true },
-        TickSpacing.Standard
+        TickSpacing.Standard,
       );
       poolInitInfo = init.poolInitInfo;
       whirlpoolPda = init.whirlpoolPda;
@@ -570,7 +681,7 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         22528, // to 33792
         3,
         TickSpacing.Standard,
-        aToB
+        aToB,
       );
 
       const fundParams: FundedPositionV2Params[] = [
@@ -581,12 +692,24 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         },
       ];
 
-      await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, fundParams);
+      await fundPositionsV2(
+        ctx,
+        poolInitInfo,
+        tokenAccountA,
+        tokenAccountB,
+        fundParams,
+      );
 
-      oraclePubkey = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey).publicKey;
+      oraclePubkey = PDAUtil.getOracle(
+        ctx.program.programId,
+        whirlpoolPda.publicKey,
+      ).publicKey;
 
       const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-      const whirlpoolData = (await fetcher.getPool(whirlpoolKey, IGNORE_CACHE)) as WhirlpoolData;
+      const whirlpoolData = (await fetcher.getPool(
+        whirlpoolKey,
+        IGNORE_CACHE,
+      )) as WhirlpoolData;
 
       quoteAToB = swapQuoteWithParams(
         {
@@ -603,11 +726,16 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
             ctx.program.programId,
             whirlpoolKey,
             fetcher,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
-          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
+          tokenExtensionCtx:
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              whirlpoolData,
+              IGNORE_CACHE,
+            ),
         },
-        Percentage.fromFraction(100, 100) // 100% slippage
+        Percentage.fromFraction(100, 100), // 100% slippage
       );
 
       quoteBToA = swapQuoteWithParams(
@@ -625,20 +753,39 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
             ctx.program.programId,
             whirlpoolKey,
             fetcher,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
-          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
+          tokenExtensionCtx:
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              whirlpoolData,
+              IGNORE_CACHE,
+            ),
         },
-        Percentage.fromFraction(100, 100) // 100% slippage
+        Percentage.fromFraction(100, 100), // 100% slippage
       );
     });
 
     it("swap_v2: non confidential transfer, a to b", async () => {
-      assert.ok(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintA));
-      assert.ok(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintB));
+      assert.ok(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintA,
+        ),
+      );
+      assert.ok(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintB,
+        ),
+      );
 
-      const preBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
-      const preBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
+      const preBalanceA = new BN(
+        await getTokenBalance(provider, tokenAccountA),
+      );
+      const preBalanceB = new BN(
+        await getTokenBalance(provider, tokenAccountB),
+      );
 
       await toTx(
         ctx,
@@ -655,21 +802,39 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePubkey,
-        })
+        }),
       ).buildAndExecute();
 
-      const postBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
-      const postBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
+      const postBalanceA = new BN(
+        await getTokenBalance(provider, tokenAccountA),
+      );
+      const postBalanceB = new BN(
+        await getTokenBalance(provider, tokenAccountB),
+      );
       assert.ok(postBalanceA.lt(preBalanceA));
       assert.ok(postBalanceB.gt(preBalanceB));
     });
 
     it("swap_v2: non confidential transfer, b to a", async () => {
-      assert.ok(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintA));
-      assert.ok(await hasConfidentialTransferMintExtension(provider, poolInitInfo.tokenMintB));
+      assert.ok(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintA,
+        ),
+      );
+      assert.ok(
+        await hasConfidentialTransferMintExtension(
+          provider,
+          poolInitInfo.tokenMintB,
+        ),
+      );
 
-      const preBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
-      const preBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
+      const preBalanceA = new BN(
+        await getTokenBalance(provider, tokenAccountA),
+      );
+      const preBalanceB = new BN(
+        await getTokenBalance(provider, tokenAccountB),
+      );
 
       await toTx(
         ctx,
@@ -686,11 +851,15 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePubkey,
-        })
+        }),
       ).buildAndExecute();
 
-      const postBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
-      const postBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
+      const postBalanceA = new BN(
+        await getTokenBalance(provider, tokenAccountA),
+      );
+      const postBalanceB = new BN(
+        await getTokenBalance(provider, tokenAccountB),
+      );
       assert.ok(postBalanceA.gt(preBalanceA));
       assert.ok(postBalanceB.lt(preBalanceB));
     });
@@ -706,12 +875,30 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
       aqConfig = getDefaultAquariumV2();
       // Add a third token and account and a second pool
       aqConfig.initMintParams = [
-        { tokenTrait: { isToken2022: true, hasConfidentialTransferExtension: true } },
-        { tokenTrait: { isToken2022: true, hasConfidentialTransferExtension: true } },
-        { tokenTrait: { isToken2022: true, hasConfidentialTransferExtension: true } },
+        {
+          tokenTrait: {
+            isToken2022: true,
+            hasConfidentialTransferExtension: true,
+          },
+        },
+        {
+          tokenTrait: {
+            isToken2022: true,
+            hasConfidentialTransferExtension: true,
+          },
+        },
+        {
+          tokenTrait: {
+            isToken2022: true,
+            hasConfidentialTransferExtension: true,
+          },
+        },
       ];
       aqConfig.initTokenAccParams.push({ mintIndex: 2 });
-      aqConfig.initPoolParams.push({ mintIndices: [1, 2], tickSpacing: TickSpacing.Standard });
+      aqConfig.initPoolParams.push({
+        mintIndices: [1, 2],
+        tickSpacing: TickSpacing.Standard,
+      });
 
       // Add tick arrays and positions
       const aToB = false;
@@ -744,11 +931,11 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
       const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
       const whirlpoolDataOne = (await fetcher.getPool(
         whirlpoolOneKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       )) as WhirlpoolData;
       const whirlpoolDataTwo = (await fetcher.getPool(
         whirlpoolTwoKey,
-        IGNORE_CACHE
+        IGNORE_CACHE,
       )) as WhirlpoolData;
 
       const [inputToken, intermediaryToken, _outputToken] = mintKeys;
@@ -768,11 +955,16 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
             ctx.program.programId,
             whirlpoolOneKey,
             fetcher,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
-          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataOne, IGNORE_CACHE),
+          tokenExtensionCtx:
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              whirlpoolDataOne,
+              IGNORE_CACHE,
+            ),
         },
-        Percentage.fromFraction(1, 100)
+        Percentage.fromFraction(1, 100),
       );
 
       const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
@@ -791,11 +983,16 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
             ctx.program.programId,
             whirlpoolTwoKey,
             fetcher,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           ),
-          tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolDataTwo, IGNORE_CACHE),
+          tokenExtensionCtx:
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              whirlpoolDataTwo,
+              IGNORE_CACHE,
+            ),
         },
-        Percentage.fromFraction(1, 100)
+        Percentage.fromFraction(1, 100),
       );
 
       const tokenAccKeys = getTokenAccsForPoolsV2(pools, tokenAccounts);
@@ -805,42 +1002,77 @@ describe("TokenExtension/ConfidentialTransfer (NON confidential transfer only)",
         tokenAuthority: ctx.wallet.publicKey,
         whirlpoolOne: pools[0].whirlpoolPda.publicKey,
         whirlpoolTwo: pools[1].whirlpoolPda.publicKey,
-        tokenMintInput: twoHopQuote.aToBOne ? pools[0].tokenMintA : pools[0].tokenMintB,
-        tokenMintIntermediate: twoHopQuote.aToBOne ? pools[0].tokenMintB : pools[0].tokenMintA,
-        tokenMintOutput: twoHopQuote.aToBTwo ? pools[1].tokenMintB : pools[1].tokenMintA,
-        tokenProgramInput: twoHopQuote.aToBOne ? pools[0].tokenProgramA : pools[0].tokenProgramB,
-        tokenProgramIntermediate: twoHopQuote.aToBOne ? pools[0].tokenProgramB : pools[0].tokenProgramA,
-        tokenProgramOutput: twoHopQuote.aToBTwo ? pools[1].tokenProgramB : pools[1].tokenProgramA,
-        tokenOwnerAccountInput: twoHopQuote.aToBOne ? tokenAccKeys[0] : tokenAccKeys[1],
-        tokenOwnerAccountOutput: twoHopQuote.aToBTwo ? tokenAccKeys[3] : tokenAccKeys[2],
-        tokenVaultOneInput: twoHopQuote.aToBOne ? pools[0].tokenVaultAKeypair.publicKey : pools[0].tokenVaultBKeypair.publicKey,
-        tokenVaultOneIntermediate: twoHopQuote.aToBOne ? pools[0].tokenVaultBKeypair.publicKey : pools[0].tokenVaultAKeypair.publicKey,
-        tokenVaultTwoIntermediate: twoHopQuote.aToBTwo ? pools[1].tokenVaultAKeypair.publicKey : pools[1].tokenVaultBKeypair.publicKey,
-        tokenVaultTwoOutput: twoHopQuote.aToBTwo ? pools[1].tokenVaultBKeypair.publicKey : pools[1].tokenVaultAKeypair.publicKey,
-        oracleOne: PDAUtil.getOracle(ctx.program.programId, pools[0].whirlpoolPda.publicKey)
-          .publicKey,
-        oracleTwo: PDAUtil.getOracle(ctx.program.programId, pools[1].whirlpoolPda.publicKey)
-          .publicKey,
+        tokenMintInput: twoHopQuote.aToBOne
+          ? pools[0].tokenMintA
+          : pools[0].tokenMintB,
+        tokenMintIntermediate: twoHopQuote.aToBOne
+          ? pools[0].tokenMintB
+          : pools[0].tokenMintA,
+        tokenMintOutput: twoHopQuote.aToBTwo
+          ? pools[1].tokenMintB
+          : pools[1].tokenMintA,
+        tokenProgramInput: twoHopQuote.aToBOne
+          ? pools[0].tokenProgramA
+          : pools[0].tokenProgramB,
+        tokenProgramIntermediate: twoHopQuote.aToBOne
+          ? pools[0].tokenProgramB
+          : pools[0].tokenProgramA,
+        tokenProgramOutput: twoHopQuote.aToBTwo
+          ? pools[1].tokenProgramB
+          : pools[1].tokenProgramA,
+        tokenOwnerAccountInput: twoHopQuote.aToBOne
+          ? tokenAccKeys[0]
+          : tokenAccKeys[1],
+        tokenOwnerAccountOutput: twoHopQuote.aToBTwo
+          ? tokenAccKeys[3]
+          : tokenAccKeys[2],
+        tokenVaultOneInput: twoHopQuote.aToBOne
+          ? pools[0].tokenVaultAKeypair.publicKey
+          : pools[0].tokenVaultBKeypair.publicKey,
+        tokenVaultOneIntermediate: twoHopQuote.aToBOne
+          ? pools[0].tokenVaultBKeypair.publicKey
+          : pools[0].tokenVaultAKeypair.publicKey,
+        tokenVaultTwoIntermediate: twoHopQuote.aToBTwo
+          ? pools[1].tokenVaultAKeypair.publicKey
+          : pools[1].tokenVaultBKeypair.publicKey,
+        tokenVaultTwoOutput: twoHopQuote.aToBTwo
+          ? pools[1].tokenVaultBKeypair.publicKey
+          : pools[1].tokenVaultAKeypair.publicKey,
+        oracleOne: PDAUtil.getOracle(
+          ctx.program.programId,
+          pools[0].whirlpoolPda.publicKey,
+        ).publicKey,
+        oracleTwo: PDAUtil.getOracle(
+          ctx.program.programId,
+          pools[1].whirlpoolPda.publicKey,
+        ).publicKey,
       };
-      
+
       tokenAccountIn = baseIxParams.tokenOwnerAccountInput;
       tokenAccountOut = baseIxParams.tokenOwnerAccountOutput;
     });
 
     it("two_hop_swap_v2: non confidential transfer", async () => {
-      const preBalanceIn = new BN(await getTokenBalance(provider, tokenAccountIn));
-      const preBalanceOut = new BN(await getTokenBalance(provider, tokenAccountOut));
+      const preBalanceIn = new BN(
+        await getTokenBalance(provider, tokenAccountIn),
+      );
+      const preBalanceOut = new BN(
+        await getTokenBalance(provider, tokenAccountOut),
+      );
 
       await toTx(
         ctx,
-        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams)
+        WhirlpoolIx.twoHopSwapV2Ix(ctx.program, baseIxParams),
       ).buildAndExecute();
 
-      const postBalanceIn = new BN(await getTokenBalance(provider, tokenAccountIn));
-      const postBalanceOut = new BN(await getTokenBalance(provider, tokenAccountOut));
+      const postBalanceIn = new BN(
+        await getTokenBalance(provider, tokenAccountIn),
+      );
+      const postBalanceOut = new BN(
+        await getTokenBalance(provider, tokenAccountOut),
+      );
       assert.ok(postBalanceIn.lt(preBalanceIn));
       assert.ok(postBalanceOut.gt(preBalanceOut));
     });
   });
-
 });

@@ -1,10 +1,12 @@
 import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import invariant from "tiny-invariant";
-import { NUM_REWARDS, PositionData, TickData, WhirlpoolData } from "../../types/public";
+import type { PositionData, TickData, WhirlpoolData } from "../../types/public";
+import { NUM_REWARDS } from "../../types/public";
 import { BitMath } from "../../utils/math/bit-math";
 import { PoolUtil } from "../../utils/public/pool-utils";
-import { TokenExtensionContextForReward, TokenExtensionUtil } from "../../utils/public/token-extension-util";
+import type { TokenExtensionContextForReward } from "../../utils/public/token-extension-util";
+import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
 
 /**
  * Parameters needed to generate a quote on collectible rewards on a position.
@@ -29,19 +31,11 @@ export type CollectRewardsQuoteParam = {
  * @category Quotes
  */
 export type CollectRewardsQuote = {
-  rewardOwed: [
-    BN | undefined,
-    BN | undefined,
-    BN | undefined,
-  ];
+  rewardOwed: [BN | undefined, BN | undefined, BN | undefined];
   transferFee: {
-    deductedFromRewardOwed: [
-      BN | undefined,
-      BN | undefined,
-      BN | undefined,
-    ];
+    deductedFromRewardOwed: [BN | undefined, BN | undefined, BN | undefined];
   };
-}
+};
 
 /**
  * Get a quote on the outstanding rewards owed to a position.
@@ -50,20 +44,45 @@ export type CollectRewardsQuote = {
  * @param param A collection of fetched Whirlpool accounts to faciliate the quote.
  * @returns A quote object containing the rewards owed for each reward in the pool.
  */
-export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRewardsQuote {
-  const { whirlpool, position, tickLower, tickUpper, timeStampInSeconds, tokenExtensionCtx } = param;
+export function collectRewardsQuote(
+  param: CollectRewardsQuoteParam,
+): CollectRewardsQuote {
+  const {
+    whirlpool,
+    position,
+    tickLower,
+    tickUpper,
+    timeStampInSeconds,
+    tokenExtensionCtx,
+  } = param;
 
   const {
     tickCurrentIndex,
     rewardInfos: whirlpoolRewardsInfos,
     rewardLastUpdatedTimestamp,
   } = whirlpool;
-  const { tickLowerIndex, tickUpperIndex, liquidity, rewardInfos: positionRewardInfos } = position;
+  const {
+    tickLowerIndex,
+    tickUpperIndex,
+    liquidity,
+    rewardInfos: positionRewardInfos,
+  } = position;
 
-  const currTimestampInSeconds = timeStampInSeconds ?? new BN(Date.now()).div(new BN(1000));
-  const timestampDelta = currTimestampInSeconds.sub(new BN(rewardLastUpdatedTimestamp));
-  const rewardOwed: [BN|undefined,BN|undefined,BN|undefined] = [undefined, undefined, undefined];
-  const transferFee: [BN|undefined,BN|undefined,BN|undefined] = [undefined, undefined, undefined];
+  const currTimestampInSeconds =
+    timeStampInSeconds ?? new BN(Date.now()).div(new BN(1000));
+  const timestampDelta = currTimestampInSeconds.sub(
+    new BN(rewardLastUpdatedTimestamp),
+  );
+  const rewardOwed: [BN | undefined, BN | undefined, BN | undefined] = [
+    undefined,
+    undefined,
+    undefined,
+  ];
+  const transferFee: [BN | undefined, BN | undefined, BN | undefined] = [
+    undefined,
+    undefined,
+    undefined,
+  ];
 
   for (let i = 0; i < NUM_REWARDS; i++) {
     // Calculate the reward growth on the outside of the position (growth_above, growth_below)
@@ -83,9 +102,10 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
         timestampDelta,
         rewardInfo.emissionsPerSecondX64,
         whirlpool.liquidity,
-        128
+        128,
       );
-      adjustedRewardGrowthGlobalX64 = rewardInfo.growthGlobalX64.add(rewardGrowthDelta);
+      adjustedRewardGrowthGlobalX64 =
+        rewardInfo.growthGlobalX64.add(rewardGrowthDelta);
     }
 
     // Calculate the reward growth outside of the position
@@ -98,7 +118,7 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
         tickCurrentIndex < tickLowerIndex
           ? MathUtil.subUnderflowU128(
               adjustedRewardGrowthGlobalX64,
-              tickLowerRewardGrowthsOutsideX64
+              tickLowerRewardGrowthsOutsideX64,
             )
           : tickLowerRewardGrowthsOutsideX64;
     }
@@ -110,13 +130,16 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
           ? tickUpperRewardGrowthsOutsideX64
           : MathUtil.subUnderflowU128(
               adjustedRewardGrowthGlobalX64,
-              tickUpperRewardGrowthsOutsideX64
+              tickUpperRewardGrowthsOutsideX64,
             );
     }
 
     const rewardGrowthInsideX64 = MathUtil.subUnderflowU128(
-      MathUtil.subUnderflowU128(adjustedRewardGrowthGlobalX64, rewardGrowthsBelowX64),
-      rewardGrowthsAboveX64
+      MathUtil.subUnderflowU128(
+        adjustedRewardGrowthGlobalX64,
+        rewardGrowthsBelowX64,
+      ),
+      rewardGrowthsAboveX64,
     );
 
     // Knowing the growth of the reward checkpoint for the position, calculate and increment the amount owed for each reward.
@@ -125,16 +148,17 @@ export function collectRewardsQuote(param: CollectRewardsQuoteParam): CollectRew
       .add(
         MathUtil.subUnderflowU128(
           rewardGrowthInsideX64,
-          positionRewardInfo.growthInsideCheckpoint
-        ).mul(liquidity)
+          positionRewardInfo.growthInsideCheckpoint,
+        ).mul(liquidity),
       )
       .shrn(64);
-    
-    const transferFeeExcluded = TokenExtensionUtil.calculateTransferFeeExcludedAmount(
-      amountOwed,
-      tokenExtensionCtx.rewardTokenMintsWithProgram[i]!,
-      tokenExtensionCtx.currentEpoch
-    );
+
+    const transferFeeExcluded =
+      TokenExtensionUtil.calculateTransferFeeExcludedAmount(
+        amountOwed,
+        tokenExtensionCtx.rewardTokenMintsWithProgram[i]!,
+        tokenExtensionCtx.currentEpoch,
+      );
 
     rewardOwed[i] = transferFeeExcluded.amount;
     transferFee[i] = transferFeeExcluded.fee;

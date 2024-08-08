@@ -1,9 +1,10 @@
-import { Program } from "@coral-xyz/anchor";
-import { PDA } from "@orca-so/common-sdk";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { PDA } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import { SystemProgram } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
-import { Instruction } from "@orca-so/common-sdk";
+import type { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to initialize a FeeTier account.
@@ -38,20 +39,30 @@ export type InitFeeTierParams = {
  */
 export function initializeFeeTierIx(
   program: Program<Whirlpool>,
-  params: InitFeeTierParams
+  params: InitFeeTierParams,
 ): Instruction {
-  const { feeTierPda, whirlpoolsConfig, tickSpacing, feeAuthority, defaultFeeRate, funder } =
-    params;
+  const {
+    feeTierPda,
+    whirlpoolsConfig,
+    tickSpacing,
+    feeAuthority,
+    defaultFeeRate,
+    funder,
+  } = params;
 
-  const ix = program.instruction.initializeFeeTier(tickSpacing, defaultFeeRate, {
-    accounts: {
-      config: whirlpoolsConfig,
-      feeTier: feeTierPda.publicKey,
-      feeAuthority,
-      funder,
-      systemProgram: SystemProgram.programId,
+  const ix = program.instruction.initializeFeeTier(
+    tickSpacing,
+    defaultFeeRate,
+    {
+      accounts: {
+        config: whirlpoolsConfig,
+        feeTier: feeTierPda.publicKey,
+        feeAuthority,
+        funder,
+        systemProgram: SystemProgram.programId,
+      },
     },
-  });
+  );
 
   return {
     instructions: [ix],

@@ -1,20 +1,23 @@
-import { Address } from "@coral-xyz/anchor";
-import { AddressUtil, Percentage } from "@orca-so/common-sdk";
-import BN from "bn.js";
+import type { Address } from "@coral-xyz/anchor";
+import type { Percentage } from "@orca-so/common-sdk";
+import { AddressUtil } from "@orca-so/common-sdk";
+import type BN from "bn.js";
 import invariant from "tiny-invariant";
-import { SwapInput } from "../../instructions";
-import {
-  IGNORE_CACHE,
+import type { SwapInput } from "../../instructions";
+import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
-import { TICK_ARRAY_SIZE, TickArray, WhirlpoolData } from "../../types/public";
+import { IGNORE_CACHE } from "../../network/public/fetcher";
+import type { TickArray, WhirlpoolData } from "../../types/public";
+import { TICK_ARRAY_SIZE } from "../../types/public";
 import { PoolUtil, SwapDirection } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";
-import { Whirlpool } from "../../whirlpool-client";
+import type { Whirlpool } from "../../whirlpool-client";
 import { simulateSwap } from "../swap/swap-quote-impl";
-import { DevFeeSwapQuote } from "./dev-fee-swap-quote";
-import { TokenExtensionContextForPool, TokenExtensionUtil } from "../../utils/public/token-extension-util";
+import type { DevFeeSwapQuote } from "./dev-fee-swap-quote";
+import type { TokenExtensionContextForPool } from "../../utils/public/token-extension-util";
+import { TokenExtensionUtil } from "../../utils/public/token-extension-util";
 import { PublicKey } from "@solana/web3.js";
 
 /**
@@ -122,7 +125,7 @@ export async function swapQuoteByInputToken(
     useFallbackTickArray,
     programId,
     fetcher,
-    opts
+    opts,
   );
   return swapQuoteWithParams(params, slippageTolerance);
 }
@@ -162,7 +165,7 @@ export async function swapQuoteByOutputToken(
     useFallbackTickArray,
     programId,
     fetcher,
-    opts
+    opts,
   );
   return swapQuoteWithParams(params, slippageTolerance);
 }
@@ -177,11 +180,14 @@ export async function swapQuoteByOutputToken(
  */
 export function swapQuoteWithParams(
   params: SwapQuoteParam,
-  slippageTolerance: Percentage
+  slippageTolerance: Percentage,
 ): SwapQuote {
   const quote = simulateSwap({
     ...params,
-    tickArrays: SwapUtils.interpolateUninitializedTickArrays(PublicKey.default, params.tickArrays),  
+    tickArrays: SwapUtils.interpolateUninitializedTickArrays(
+      PublicKey.default,
+      params.tickArrays,
+    ),
   });
 
   if (params.fallbackTickArray) {
@@ -201,7 +207,7 @@ export function swapQuoteWithParams(
       quote.estimatedAmountIn,
       quote.estimatedAmountOut,
       slippageTolerance,
-      quote.amountSpecifiedIsInput
+      quote.amountSpecifiedIsInput,
     ),
   };
 
@@ -216,16 +222,22 @@ async function swapQuoteByToken(
   useFallbackTickArray: UseFallbackTickArray,
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
-  opts?: WhirlpoolAccountFetchOptions
+  opts?: WhirlpoolAccountFetchOptions,
 ): Promise<SwapQuoteParam> {
   const whirlpoolData = whirlpool.getData();
   const swapMintKey = AddressUtil.toPubKey(inputTokenMint);
   const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
-  invariant(!!swapTokenType, "swapTokenMint does not match any tokens on this pool");
+  invariant(
+    !!swapTokenType,
+    "swapTokenMint does not match any tokens on this pool",
+  );
 
   const aToB =
-    SwapUtils.getSwapDirection(whirlpoolData, swapMintKey, amountSpecifiedIsInput) ===
-    SwapDirection.AtoB;
+    SwapUtils.getSwapDirection(
+      whirlpoolData,
+      swapMintKey,
+      amountSpecifiedIsInput,
+    ) === SwapDirection.AtoB;
 
   const tickArrays = await SwapUtils.getTickArrays(
     whirlpoolData.tickCurrentIndex,
@@ -234,7 +246,7 @@ async function swapQuoteByToken(
     AddressUtil.toPubKey(programId),
     whirlpool.getAddress(),
     fetcher,
-    opts
+    opts,
   );
 
   const fallbackTickArray = getFallbackTickArray(
@@ -245,7 +257,11 @@ async function swapQuoteByToken(
     programId,
   );
 
-  const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE);
+  const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(
+    fetcher,
+    whirlpoolData,
+    IGNORE_CACHE,
+  );
 
   return {
     whirlpoolData,
@@ -253,7 +269,9 @@ async function swapQuoteByToken(
     aToB,
     amountSpecifiedIsInput,
     sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-    otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(amountSpecifiedIsInput),
+    otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+      amountSpecifiedIsInput,
+    ),
     tickArrays,
     tokenExtensionCtx,
     fallbackTickArray,
@@ -279,13 +297,16 @@ function getFallbackTickArray(
     whirlpool.getAddress(),
   );
 
-  if (useFallbackTickArray === UseFallbackTickArray.Always || !fallbackTickArray) {
+  if (
+    useFallbackTickArray === UseFallbackTickArray.Always ||
+    !fallbackTickArray
+  ) {
     return fallbackTickArray;
   }
 
   invariant(
     useFallbackTickArray === UseFallbackTickArray.Situational,
-    `Unexpected UseFallbackTickArray value: ${useFallbackTickArray}`
+    `Unexpected UseFallbackTickArray value: ${useFallbackTickArray}`,
   );
 
   const ticksInArray = whirlpool.getData().tickSpacing * TICK_ARRAY_SIZE;
@@ -293,7 +314,7 @@ function getFallbackTickArray(
   if (aToB) {
     // A to B (direction is right to left): [    ta2     ][    ta1     ][    ta0  ===]
     // if tickCurrentIndex is within the rightmost quarter of ta0, use fallbackTickArray
-    const threshold = tickArrays[0].startTickIndex + ticksInArray / 4 * 3;
+    const threshold = tickArrays[0].startTickIndex + (ticksInArray / 4) * 3;
     return tickCurrentIndex >= threshold ? fallbackTickArray : undefined;
   } else {
     // B to A (direction is left to right): [=== ta0     ][    ta1     ][    ta2     ]

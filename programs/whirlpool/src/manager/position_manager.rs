@@ -29,7 +29,7 @@ pub fn next_position_modify_liquidity_update(
     update.fee_owed_a = position.fee_owed_a.wrapping_add(fee_delta_a);
     update.fee_owed_b = position.fee_owed_b.wrapping_add(fee_delta_b);
 
-    for i in 0..NUM_REWARDS {
+    for (i, update) in update.reward_infos.iter_mut().enumerate() {
         let reward_growth_inside = reward_growths_inside[i];
         let curr_reward_info = position.reward_infos[i];
 
@@ -41,11 +41,10 @@ pub fn next_position_modify_liquidity_update(
         let amount_owed_delta =
             checked_mul_shift_right(position.liquidity, reward_growth_delta).unwrap_or(0);
 
-        update.reward_infos[i].growth_inside_checkpoint = reward_growth_inside;
+        update.growth_inside_checkpoint = reward_growth_inside;
 
         // Overflows allowed. Must collect rewards owed before overflow.
-        update.reward_infos[i].amount_owed =
-            curr_reward_info.amount_owed.wrapping_add(amount_owed_delta);
+        update.amount_owed = curr_reward_info.amount_owed.wrapping_add(amount_owed_delta);
     }
 
     update.liquidity = add_liquidity_delta(position.liquidity, liquidity_delta)?;
@@ -112,7 +111,7 @@ mod position_manager_unit_tests {
         assert_eq!(update.fee_growth_checkpoint_a, 120 << Q64_RESOLUTION);
         assert_eq!(update.fee_growth_checkpoint_b, 250 << Q64_RESOLUTION);
         assert_eq!(update.fee_owed_a, 200_000);
-        assert_eq!(update.fee_owed_b, 1500_000);
+        assert_eq!(update.fee_owed_b, 1_500_000);
 
         for i in 0..NUM_REWARDS {
             assert_eq!(update.reward_infos[i].amount_owed, 0);
@@ -245,7 +244,7 @@ mod position_manager_unit_tests {
             },
         ] {
             let update = next_position_modify_liquidity_update(
-                &test.position,
+                test.position,
                 test.liquidity_delta,
                 0,
                 0,

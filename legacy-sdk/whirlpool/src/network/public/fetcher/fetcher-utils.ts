@@ -1,7 +1,13 @@
-import { Address, AddressUtil } from "@orca-so/common-sdk";
-import { Connection } from "@solana/web3.js";
+import type { Address } from "@orca-so/common-sdk";
+import { AddressUtil } from "@orca-so/common-sdk";
+import type { Connection } from "@solana/web3.js";
 import invariant from "tiny-invariant";
-import { AccountName, WHIRLPOOL_CODER, WhirlpoolData, getAccountSize } from "../../../types/public";
+import type { WhirlpoolData } from "../../../types/public";
+import {
+  AccountName,
+  WHIRLPOOL_CODER,
+  getAccountSize,
+} from "../../../types/public";
 import { ParsableWhirlpool } from "../parsing";
 
 /**
@@ -28,21 +34,32 @@ export async function getAllWhirlpoolAccountsForConfig({
     {
       memcmp: WHIRLPOOL_CODER.memcmp(
         AccountName.Whirlpool,
-        AddressUtil.toPubKey(configId).toBuffer()
+        AddressUtil.toPubKey(configId).toBuffer(),
       ),
     },
   ];
 
-  const accounts = await connection.getProgramAccounts(AddressUtil.toPubKey(programId), {
-    filters,
-  });
+  const accounts = await connection.getProgramAccounts(
+    AddressUtil.toPubKey(programId),
+    {
+      filters,
+    },
+  );
 
   const parsedAccounts: [string, WhirlpoolData][] = [];
   accounts.forEach(({ pubkey, account }) => {
     const parsedAccount = ParsableWhirlpool.parse(pubkey, account);
-    invariant(!!parsedAccount, `could not parse whirlpool: ${pubkey.toBase58()}`);
+    invariant(
+      !!parsedAccount,
+      `could not parse whirlpool: ${pubkey.toBase58()}`,
+    );
     parsedAccounts.push([AddressUtil.toString(pubkey), parsedAccount]);
   });
 
-  return new Map(parsedAccounts.map(([address, pool]) => [AddressUtil.toString(address), pool]));
+  return new Map(
+    parsedAccounts.map(([address, pool]) => [
+      AddressUtil.toString(address),
+      pool,
+    ]),
+  );
 }

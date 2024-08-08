@@ -38,14 +38,21 @@ export type WhirlpoolsErrorCode =
 export class WhirlpoolsError extends Error {
   message: string;
   errorCode?: WhirlpoolsErrorCode;
-  constructor(message: string, errorCode?: WhirlpoolsErrorCode, stack?: string) {
+  constructor(
+    message: string,
+    errorCode?: WhirlpoolsErrorCode,
+    stack?: string,
+  ) {
     super(message);
     this.message = message;
     this.errorCode = errorCode;
     this.stack = stack;
   }
 
-  public static isWhirlpoolsErrorCode(e: any, code: WhirlpoolsErrorCode): boolean {
+  public static isWhirlpoolsErrorCode(
+    e: unknown,
+    code: WhirlpoolsErrorCode,
+  ): boolean {
     return e instanceof WhirlpoolsError && e.errorCode === code;
   }
 }

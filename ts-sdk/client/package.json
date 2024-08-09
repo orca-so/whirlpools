@@ -1,0 +1,27 @@
+{
+  "name": "@orca-so/whirlpools-client",
+  "version": "0.0.1",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "node ./kinobi.js && tsc",
+    "format": "prettier --config ../.prettierrc './**/*.ts' --write",
+    "clean": "rimraf dist generated"
+  },
+  "peerDependencies": {
+    "@solana/web3.js": "^2.0.0-preview.4"
+  },
+  "devDependencies": {
+    "@kinobi-so/nodes-from-anchor": "^0.20.6",
+    "@kinobi-so/renderers-js": "^0.20.9",
+    "@orca-so/whirlpools-program": "*",
+    "@solana/web3.js": "^2.0.0-preview.4",
+    "kinobi": "^0.20.4",
+    "typescript": "^5.5.4"
+  }
+}

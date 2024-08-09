@@ -1,0 +1,15 @@
+{
+  "name": "@orca-so/whirlpools-rust-client",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "node ./kinobi.js && cargo build -p orca_whirlpools_client",
+    "test": "cargo test -p orca_whirlpools_client --lib",
+    "format": "cargo fmt -p orca_whirlpools_client",
+    "clean": "cargo clean -p orca_whirlpools_client"
+  },
+  "devDependencies": {
+    "@kinobi-so/nodes-from-anchor": "^0.20.6",
+    "@kinobi-so/renderers-rust": "^0.21.1",
+    "@orca-so/whirlpools-program": "*"
+  }
+}

@@ -6,7 +6,6 @@
     "build": "anchor build -p whirlpool",
     "test": "cargo test -p whirlpool --lib",
     "format": "cargo fmt -p whirlpool",
-    "idl": "anchor build -p whirlpool -i $INIT_CWD/src/artifacts -t $INIT_CWD/src/artifacts",
     "clean": "anchor clean"
   }
 }

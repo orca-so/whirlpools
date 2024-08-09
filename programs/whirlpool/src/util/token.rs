@@ -123,7 +123,7 @@ pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
     metadata_program: &Program<'info, metadata::Metadata>,
     token_program: &Program<'info, Token>,
     system_program: &Program<'info, System>,
-    rent: &Sysvar<'info, Rent>,
+    rent: &UncheckedAccount<'info>,
 ) -> Result<()> {
     mint_position_token(
         whirlpool,
@@ -246,7 +246,7 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     metadata_program: &Program<'info, metadata::Metadata>,
     token_program: &Program<'info, Token>,
     system_program: &Program<'info, System>,
-    rent: &Sysvar<'info, Rent>,
+    rent: &UncheckedAccount<'info>,
     position_bundle_seeds: &[&[u8]],
 ) -> Result<()> {
     mint_position_bundle_token(

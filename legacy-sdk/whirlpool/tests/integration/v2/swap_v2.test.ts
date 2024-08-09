@@ -2239,7 +2239,7 @@ describe("swap_v2", () => {
             oracle: oraclePda.publicKey,
           })
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7d3/ // ConstraintRaw
       );
     });
 
@@ -2288,7 +2288,7 @@ describe("swap_v2", () => {
             oracle: oraclePda.publicKey,
           })
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7d3/ // ConstraintRaw
       );
     });
 
@@ -2386,7 +2386,7 @@ describe("swap_v2", () => {
             oracle: oraclePda.publicKey,
           })
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7d3/ // ConstraintRaw
       );
     });
 
@@ -2435,7 +2435,7 @@ describe("swap_v2", () => {
             oracle: oraclePda.publicKey,
           })
         ).buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7d3/ // ConstraintRaw
       );
     });
 

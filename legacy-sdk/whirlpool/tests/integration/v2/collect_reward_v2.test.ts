@@ -1086,7 +1086,7 @@ describe("collect_reward_v2", () => {
               rewardIndex: i,
             })
           ).buildAndExecute(),
-          /0x7dc/ // ConstraintAddress
+          /0x7d3/ // ConstraintRaw
         );
       }
     });
@@ -1156,7 +1156,7 @@ describe("collect_reward_v2", () => {
               rewardIndex: i,
             })
           ).buildAndExecute(),
-          /0x7dc/ // ConstraintAddress
+          /0x7d3/ // ConstraintRaw
         );
       }
     });

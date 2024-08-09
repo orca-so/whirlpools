@@ -1,6 +1,7 @@
 import { BN, BorshAccountsCoder, Idl } from "@coral-xyz/anchor";
 import { PublicKey } from "@solana/web3.js";
 import WhirlpoolIDL from "../../artifacts/whirlpool.json";
+import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
 
 /**
  * This file contains the types that has the same structure as the types anchor functions returns.
@@ -15,17 +16,17 @@ import WhirlpoolIDL from "../../artifacts/whirlpool.json";
  * @category Network
  */
 export enum AccountName {
-  WhirlpoolsConfig = "WhirlpoolsConfig",
-  Position = "Position",
-  TickArray = "TickArray",
-  Whirlpool = "Whirlpool",
-  FeeTier = "FeeTier",
-  PositionBundle = "PositionBundle",
-  WhirlpoolsConfigExtension = "WhirlpoolsConfigExtension",
-  TokenBadge = "TokenBadge",
+  WhirlpoolsConfig = "whirlpoolsConfig",
+  Position = "position",
+  TickArray = "tickArray",
+  Whirlpool = "whirlpool",
+  FeeTier = "feeTier",
+  PositionBundle = "positionBundle",
+  WhirlpoolsConfigExtension = "whirlpoolsConfigExtension",
+  TokenBadge = "tokenBadge",
 }
 
-export const WHIRLPOOL_IDL = WhirlpoolIDL as Idl;
+export const WHIRLPOOL_IDL = convertIdlToCamelCase(WhirlpoolIDL as Idl);
 
 /**
  * The Anchor coder for the Whirlpool program.
@@ -40,7 +41,7 @@ export const WHIRLPOOL_CODER = new BorshAccountsCoder(WHIRLPOOL_IDL);
  */
 export function getAccountSize(accountName: AccountName) {
   const size = WHIRLPOOL_CODER.size(
-    WHIRLPOOL_IDL.accounts!.find((account) => account.name === accountName)!
+    WHIRLPOOL_IDL.accounts!.find((account) => account.name === accountName)!.name
   );
   return size + RESERVED_BYTES[accountName];
 }

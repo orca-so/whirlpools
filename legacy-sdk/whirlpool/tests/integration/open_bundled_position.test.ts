@@ -500,22 +500,6 @@ describe("open_bundled_position", () => {
         /0xbc0/ // InvalidProgramId
       );
     });
-
-    it("should be failed: invalid rent", async () => {
-      const positionBundleInfo = await initializePositionBundle(ctx);
-
-      const tx = await createOpenBundledPositionTx(
-        ctx, positionBundleInfo.positionBundleMintKeypair.publicKey, 0, {
-        // invalid parameter
-        rent: anchor.web3.SYSVAR_CLOCK_PUBKEY,
-      }
-      );
-
-      await assert.rejects(
-        tx.buildAndExecute(),
-        /0xbc7/ // AccountSysvarMismatch
-      );
-    });
   });
 
   describe("authority delegation", () => {

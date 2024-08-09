@@ -35,7 +35,8 @@ pub struct OpenBundledPosition<'info> {
     pub funder: Signer<'info>,
 
     pub system_program: Program<'info, System>,
-    pub rent: Sysvar<'info, Rent>,
+    /// CHECK: no longer used anywhere
+    pub rent: UncheckedAccount<'info>,
 }
 
 pub fn handler(

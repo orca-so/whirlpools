@@ -12,14 +12,14 @@
   },
   "devDependencies": {
     "@types/bn.js": "~5.1.5",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.10.8",
-    "husky": "^8.0.3",
-    "lint-staged": "^15.2.0",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^22.1.0",
+    "husky": "^9.1.4",
+    "lint-staged": "^15.2.8",
     "mocha": "^10.2.0",
-    "nx": "^19.4.2",
+    "nx": "^19.5.7",
     "prettier": "^3.1.1",
-    "rimraf": "^5.0.5",
+    "rimraf": "^6.0.1",
     "ts-mocha": "^10.0.0"
   },
   "workspaces": [

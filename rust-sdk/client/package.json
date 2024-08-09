@@ -1,6 +1,7 @@
 {
   "name": "@orca-so/whirlpools-rust-client",
   "version": "0.0.1",
+  "type": "module",
   "scripts": {
     "build": "node ./kinobi.js && cargo build -p orca_whirlpools_client",
     "test": "cargo test -p orca_whirlpools_client --lib",

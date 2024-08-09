@@ -7,7 +7,7 @@
   "types": "dist/index.d.ts",
   "peerDependencies": {
     "@coral-xyz/anchor": "~0.29.0",
-    "@orca-so/common-sdk": "0.6.0",
+    "@orca-so/common-sdk": "0.6.2",
     "@solana/spl-token": "^0.4.8",
     "@solana/web3.js": "^1.90.0",
     "decimal.js": "^10.4.3"
@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@coral-xyz/anchor": "~0.29.0",
-    "@orca-so/common-sdk": "0.6.0",
+    "@orca-so/common-sdk": "0.6.2",
     "@orca-so/whirlpools-program": "*",
     "@solana/spl-token": "^0.4.8",
     "@solana/web3.js": "^1.90.0",

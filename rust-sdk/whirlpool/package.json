@@ -4,7 +4,6 @@
   "scripts": {
     "build": "cargo build -p orca_whirlpools",
     "test": "cargo test -p orca_whirlpools --lib",
-    "format": "cargo fmt -p orca_whirlpools",
     "clean": "cargo clean -p orca_whirlpools"
   },
   "devDependencies": {

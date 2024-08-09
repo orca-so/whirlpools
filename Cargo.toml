@@ -2,7 +2,7 @@
 resolver = "2"
 members = [
     "programs/*",
-    "rust/*"
+    "rust-sdk/*"
 ]
 
 [profile.release]

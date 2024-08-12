@@ -97,6 +97,24 @@ export interface WhirlpoolClient {
    * @param whirlpoolConfig the address of the whirlpool config
    * @param tokenMintA the address of the token A
    * @param tokenMintB the address of the token B
+   * @param initialTick the initial tick that the pool is set to (derived from initial price)
+   * @param funder the account to debit SOL from to fund the creation of the account(s)
+   * @return `poolKey`: The public key of the newly created whirlpool account. `tx`: The transaction containing instructions for the on-chain operations.
+   * @throws error when the tokens are not in the canonical byte-based ordering. To resolve this, invert the token order and the initialTick (see `TickUtil.invertTick()`, `PriceMath.invertSqrtPriceX64()`, or `PriceMath.invertPrice()`).
+   */
+    createSplashPool: (
+      whirlpoolsConfig: Address,
+      tokenMintA: Address,
+      tokenMintB: Address,
+      initialTick: number,
+      funder: Address
+    ) => Promise<{ poolKey: PublicKey; tx: TransactionBuilder }>;
+
+  /**
+   * Create a Whirlpool account for a group of token A, token B and tick spacing
+   * @param whirlpoolConfig the address of the whirlpool config
+   * @param tokenMintA the address of the token A
+   * @param tokenMintB the address of the token B
    * @param tickSpacing the space between two ticks in the tick array
    * @param initialTick the initial tick that the pool is set to (derived from initial price)
    * @param funder the account to debit SOL from to fund the creation of the account(s)

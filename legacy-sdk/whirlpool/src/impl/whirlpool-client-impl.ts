@@ -16,7 +16,7 @@ import {
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/fetcher";
 import { WhirlpoolRouter, WhirlpoolRouterBuilder } from "../router/public";
-import { WhirlpoolData } from "../types/public";
+import { FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, PriceMath, TickUtil } from "../utils/public";
 import { Position, Whirlpool, WhirlpoolClient } from "../whirlpool-client";
@@ -185,6 +185,25 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       })
     );
     return Object.fromEntries(results);
+  }
+
+  public async createSplashPool(
+    whirlpoolsConfig: Address,
+    tokenMintA: Address,
+    tokenMintB: Address,
+    initialTick: number,
+    funder: Address,
+    opts = PREFER_CACHE
+  ): Promise<{ poolKey: PublicKey; tx: TransactionBuilder }> {
+    return this.createPool(
+      whirlpoolsConfig,
+      tokenMintA,
+      tokenMintB,
+      32896,
+      initialTick,
+      funder,
+      opts
+    );
   }
 
   public async createPool(

@@ -1,6 +1,6 @@
 import { GetProgramAccountsMemcmpFilter, getBase58Decoder, getAddressEncoder, Address, Account, GetProgramAccountsApi, Rpc } from "@solana/web3.js";
 import { TokenBadge, TOKEN_BADGE_DISCRIMINATOR, getTokenBadgeDecoder } from "../generated/accounts/tokenBadge";
-import { fetchDecodedProgramAccount } from "./utils";
+import { fetchDecodedProgramAccounts } from "./utils";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 export type TokenBadgeFilter = GetProgramAccountsMemcmpFilter & {
@@ -27,12 +27,12 @@ export async function fetchAllTokenBadgeWithFilter(rpc: Rpc<GetProgramAccountsAp
   const discriminator = getBase58Decoder().decode(TOKEN_BADGE_DISCRIMINATOR);
   const discriminatorFilter: GetProgramAccountsMemcmpFilter = {
     memcmp: {
-      offset: 62n,
+      offset: 0n,
       bytes: discriminator,
       encoding: "base58"
     }
   };
-  return fetchDecodedProgramAccount(
+  return fetchDecodedProgramAccounts(
     rpc,
     WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],

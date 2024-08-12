@@ -1,6 +1,6 @@
 import { Account, Address, getAddressEncoder, getBase58Decoder, GetProgramAccountsApi, GetProgramAccountsMemcmpFilter, getU16Encoder, Rpc } from "@solana/web3.js";
 import { Whirlpool, WHIRLPOOL_DISCRIMINATOR, getWhirlpoolDecoder } from "../generated/accounts/whirlpool";
-import { fetchDecodedProgramAccount } from "./utils";
+import { fetchDecodedProgramAccounts } from "./utils";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 export type WhirlpoolFilter = GetProgramAccountsMemcmpFilter & {
@@ -155,7 +155,7 @@ export async function fetchAllWhirlpoolWithFilter(rpc: Rpc<GetProgramAccountsApi
       encoding: "base58"
     }
   };
-  return fetchDecodedProgramAccount(
+  return fetchDecodedProgramAccounts(
     rpc,
     WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],

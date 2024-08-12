@@ -1,26 +1,30 @@
 import { describe, it } from "mocha";
 import assert from "assert";
 import { FeeTierArgs, getFeeTierEncoder } from "../src/generated/accounts/feeTier";
-import { Address, generateKeyPairSigner, getBase58Encoder, GetProgramAccountsMemcmpFilter, ReadonlyUint8Array } from "@solana/web3.js";
-import { feeTierFeeRateFilter, feeTierTickSpacingFilter, feeTierWhirlpoolsConfigFilter } from "../src/gpa/feeTier";
+import { Address, createDefaultRpcTransport, createSolanaRpcFromTransport, generateKeyPairSigner, getBase58Encoder, GetProgramAccountsApi, GetProgramAccountsMemcmpFilter, ReadonlyUint8Array, Rpc } from "@solana/web3.js";
+import { feeTierFeeRateFilter, feeTierTickSpacingFilter, feeTierWhirlpoolsConfigFilter, fetchAllFeeTierWithFilter } from "../src/gpa/feeTier";
 import { getPositionEncoder, PositionArgs } from "../src/generated/accounts/position";
-import { positionMintFilter, positionTickLowerIndexFilter, positionTickUpperIndexFilter, positionWhirlpoolFilter } from "../src/gpa/position";
+import { fetchAllPositionWithFilter, positionMintFilter, positionTickLowerIndexFilter, positionTickUpperIndexFilter, positionWhirlpoolFilter } from "../src/gpa/position";
 import { getPositionBundleEncoder, PositionBundleArgs } from "../src/generated/accounts/positionBundle";
-import { positionBundleMintFilter } from "../src/gpa/positionBundle";
+import { fetchAllPositionBundleWithFilter, positionBundleMintFilter } from "../src/gpa/positionBundle";
 import { getTickArrayEncoder, TickArrayArgs } from "../src/generated/accounts/tickArray";
-import { tickArrayStartTickIndexFilter, tickArrayWhirlpoolFilter } from "../src/gpa/tickArray";
+import { fetchAllTickArrayWithFilter, tickArrayStartTickIndexFilter, tickArrayWhirlpoolFilter } from "../src/gpa/tickArray";
 import { TickArgs } from "../src/generated/types/tick";
 import { getTokenBadgeEncoder, TokenBadgeArgs } from "../src/generated/accounts/tokenBadge";
-import { tokenBadgeTokenMintFilter, tokenBadgeWhirlpoolsConfigFilter } from "../src/gpa/tokenBadge";
+import { fetchAllTokenBadgeWithFilter, tokenBadgeTokenMintFilter, tokenBadgeWhirlpoolsConfigFilter } from "../src/gpa/tokenBadge";
 import { getWhirlpoolEncoder, WhirlpoolArgs } from "../src/generated/accounts/whirlpool";
-import { whirlpoolFeeRateFilter, whirlpoolProtocolFeeRateFilter, whirlpoolRewardMint1Filter, whirlpoolRewardMint2Filter, whirlpoolRewardMint3Filter, whirlpoolRewardVault1Filter, whirlpoolRewardVault2Filter, whirlpoolRewardVault3Filter, whirlpoolTickSpacingFilter, whirlpoolTokenMintAFilter, whirlpoolTokenMintBFilter, whirlpoolTokenVaultAFilter, whirlpoolTokenVaultBFilter, whirlpoolWhirlpoolConfigFilter } from "../src/gpa/whirlpool";
+import { fetchAllWhirlpoolWithFilter, whirlpoolFeeRateFilter, whirlpoolProtocolFeeRateFilter, whirlpoolRewardMint1Filter, whirlpoolRewardMint2Filter, whirlpoolRewardMint3Filter, whirlpoolRewardVault1Filter, whirlpoolRewardVault2Filter, whirlpoolRewardVault3Filter, whirlpoolTickSpacingFilter, whirlpoolTokenMintAFilter, whirlpoolTokenMintBFilter, whirlpoolTokenVaultAFilter, whirlpoolTokenVaultBFilter, whirlpoolWhirlpoolConfigFilter } from "../src/gpa/whirlpool";
 import { getWhirlpoolsConfigEncoder, WhirlpoolsConfigArgs } from "../src/generated/accounts/whirlpoolsConfig";
-import { whirlpoolsConfigCollectProtocolFeesAuthorityFilter, whirlpoolsConfigDefaultProtocolFeeRateFilter, whirlpoolsConfigFeeAuthorityFilter, whirlpoolsConfigRewardEmissionsSuperAuthorityFilter } from "../src/gpa/whirlpoolsConfig";
+import { fetchAllWhirlpoolsConfigWithFilter, whirlpoolsConfigCollectProtocolFeesAuthorityFilter, whirlpoolsConfigDefaultProtocolFeeRateFilter, whirlpoolsConfigFeeAuthorityFilter, whirlpoolsConfigRewardEmissionsSuperAuthorityFilter } from "../src/gpa/whirlpoolsConfig";
 import { getWhirlpoolsConfigExtensionEncoder, WhirlpoolsConfigExtensionArgs } from "../src/generated/accounts/whirlpoolsConfigExtension";
-import { whirlpoolsConfigExtensionConfigExtensionAuthorityFilter, whirlpoolsConfigExtensionConfigTokenBadgeAuthorityFilter, whirlpoolsConfigExtensionWhirlpoolsConfigFilter } from "../src/gpa/whirlpoolsConfigExtension";
+import { fetchAllWhirlpoolsConfigExtensionWithFilter, whirlpoolsConfigExtensionConfigExtensionAuthorityFilter, whirlpoolsConfigExtensionConfigTokenBadgeAuthorityFilter, whirlpoolsConfigExtensionWhirlpoolsConfigFilter } from "../src/gpa/whirlpoolsConfigExtension";
+import { SinonStub, mock, stub } from "sinon";
+import * as gpa from "../src/gpa/utils";
 
 describe("get program account memcmp filters", () => {
+  const mockRpc = createSolanaRpcFromTransport(createDefaultRpcTransport({ url: "" }));
   let addresses: Address[] = [];
+  let gpaMock: SinonStub;
 
   before(async () => {
     addresses = await Promise.all(
@@ -28,7 +32,16 @@ describe("get program account memcmp filters", () => {
     );
   });
 
-  function assertFilters(filters: GetProgramAccountsMemcmpFilter[], data: ReadonlyUint8Array) {
+  beforeEach(() => {
+    gpaMock = stub(gpa, "fetchDecodedProgramAccounts").returns(Promise.resolve([]));
+  });
+
+  afterEach(() => {
+    gpaMock.restore();
+  });
+
+  function assertFilters(data: ReadonlyUint8Array) {
+    const filters = gpaMock.getCall(0).args[2] as GetProgramAccountsMemcmpFilter[];
     for (const filter of filters) {
       const offset = Number(filter.memcmp.offset);
       const actual = getBase58Encoder().encode(filter.memcmp.bytes);
@@ -43,13 +56,14 @@ describe("get program account memcmp filters", () => {
       tickSpacing: 1234,
       defaultFeeRate: 4321,
     }
-    const filters = [
+    await fetchAllFeeTierWithFilter(
+      mockRpc,
       feeTierWhirlpoolsConfigFilter(feeTierStruct.whirlpoolsConfig),
       feeTierTickSpacingFilter(feeTierStruct.tickSpacing),
       feeTierFeeRateFilter(feeTierStruct.defaultFeeRate),
-    ];
+    );
     const data = getFeeTierEncoder().encode(feeTierStruct);
-    assertFilters(filters, data);
+    assertFilters(data);
   });
 
   it("Position", async () => {
@@ -69,14 +83,15 @@ describe("get program account memcmp filters", () => {
         { growthInsideCheckpoint: 7654, amountOwed: 3210 },
       ]
     }
-    const filters = [
+    await fetchAllPositionWithFilter(
+      mockRpc,
       positionWhirlpoolFilter(positionStruct.whirlpool),
       positionMintFilter(positionStruct.positionMint),
       positionTickLowerIndexFilter(positionStruct.tickLowerIndex),
       positionTickUpperIndexFilter(positionStruct.tickUpperIndex),
-    ];
+    );
     const data = getPositionEncoder().encode(positionStruct);
-    assertFilters(filters, data);
+    assertFilters(data);
   });
 
   it("PositionBundle", async () => {
@@ -84,11 +99,12 @@ describe("get program account memcmp filters", () => {
       positionBundleMint: addresses[0],
       positionBitmap: new Uint8Array(88),
     };
-    const filters = [
+    await fetchAllPositionBundleWithFilter(
+      mockRpc,
       positionBundleMintFilter(positionBundleStruct.positionBundleMint),
-    ];
+    );
     const data = getPositionBundleEncoder().encode(positionBundleStruct);
-    assertFilters(filters, data);
+    assertFilters(data);
   });
 
   it("TickArray", async () => {
@@ -105,12 +121,13 @@ describe("get program account memcmp filters", () => {
       ticks: Array(88).fill(tickStruct),
       whirlpool: addresses[0],
     }
-    const filters = [
+    await fetchAllTickArrayWithFilter(
+      mockRpc,
       tickArrayStartTickIndexFilter(tickArrayStruct.startTickIndex),
       tickArrayWhirlpoolFilter(tickArrayStruct.whirlpool),
-    ]
+    );
     const data = getTickArrayEncoder().encode(tickArrayStruct);
-    assertFilters(filters, data);
+    assertFilters(data);
   });
 
   it("TokenBadge", async () => {
@@ -118,12 +135,13 @@ describe("get program account memcmp filters", () => {
       whirlpoolsConfig: addresses[0],
       tokenMint: addresses[1],
     };
-    const filters = [
+    await fetchAllTokenBadgeWithFilter(
+      mockRpc,
       tokenBadgeWhirlpoolsConfigFilter(tokenBadgeStruct.whirlpoolsConfig),
       tokenBadgeTokenMintFilter(tokenBadgeStruct.tokenMint),
-    ];
+    );
     const data = getTokenBadgeEncoder().encode(tokenBadgeStruct);
-    assertFilters(filters, data);
+    assertFilters(data);
   });
 
   it("Whirlpool", async () => {
@@ -152,7 +170,8 @@ describe("get program account memcmp filters", () => {
         { mint: addresses[11], vault: addresses[12], authority: addresses[13], emissionsPerSecondX64: 1821, growthGlobalX64: 1256 },
       ]
     };
-    const filters = [
+    await fetchAllWhirlpoolWithFilter(
+      mockRpc,
       whirlpoolWhirlpoolConfigFilter(whirlpoolStruct.whirlpoolsConfig),
       whirlpoolTickSpacingFilter(whirlpoolStruct.tickSpacing),
       whirlpoolFeeRateFilter(whirlpoolStruct.feeRate),
@@ -167,9 +186,9 @@ describe("get program account memcmp filters", () => {
       whirlpoolRewardVault2Filter(whirlpoolStruct.rewardInfos[1].vault),
       whirlpoolRewardMint3Filter(whirlpoolStruct.rewardInfos[2].mint),
       whirlpoolRewardVault3Filter(whirlpoolStruct.rewardInfos[2].vault),
-    ];
+    );
     const data = getWhirlpoolEncoder().encode(whirlpoolStruct);
-    assertFilters(filters, data);
+    assertFilters(data);
   });
 
   it("WhirlpoolsConfig", async () => {
@@ -179,14 +198,15 @@ describe("get program account memcmp filters", () => {
       rewardEmissionsSuperAuthority: addresses[2],
       defaultProtocolFeeRate: 1234,
     };
-    const filters = [
+    await fetchAllWhirlpoolsConfigWithFilter(
+      mockRpc,
       whirlpoolsConfigFeeAuthorityFilter(whirlpoolsConfigStruct.feeAuthority),
       whirlpoolsConfigCollectProtocolFeesAuthorityFilter(whirlpoolsConfigStruct.collectProtocolFeesAuthority),
       whirlpoolsConfigRewardEmissionsSuperAuthorityFilter(whirlpoolsConfigStruct.rewardEmissionsSuperAuthority),
       whirlpoolsConfigDefaultProtocolFeeRateFilter(whirlpoolsConfigStruct.defaultProtocolFeeRate),
-    ];
+    );
     const data = getWhirlpoolsConfigEncoder().encode(whirlpoolsConfigStruct);
-    assertFilters(filters, data);
+    assertFilters(data);
   });
 
   it("WhirlpoolsConfigExtension", async () => {
@@ -195,13 +215,14 @@ describe("get program account memcmp filters", () => {
       configExtensionAuthority: addresses[1],
       tokenBadgeAuthority: addresses[2],
     };
-    const filters = [
+    await fetchAllWhirlpoolsConfigExtensionWithFilter(
+      mockRpc,
       whirlpoolsConfigExtensionWhirlpoolsConfigFilter(whirlpoolsConfigExtensionStruct.whirlpoolsConfig),
       whirlpoolsConfigExtensionConfigExtensionAuthorityFilter(whirlpoolsConfigExtensionStruct.configExtensionAuthority),
       whirlpoolsConfigExtensionConfigTokenBadgeAuthorityFilter(whirlpoolsConfigExtensionStruct.tokenBadgeAuthority)
-    ];
+    );
     const data = getWhirlpoolsConfigExtensionEncoder().encode(whirlpoolsConfigExtensionStruct);
-    assertFilters(filters, data);
+    assertFilters(data);
   });
 
 });

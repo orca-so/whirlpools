@@ -1,6 +1,6 @@
 import { GetProgramAccountsMemcmpFilter, getBase58Decoder, getAddressEncoder, getI32Encoder, Account, GetProgramAccountsApi, Rpc, Address } from "@solana/web3.js";
 import { POSITION_DISCRIMINATOR, Position, getPositionDecoder } from "../generated/accounts/position";
-import { fetchDecodedProgramAccount } from "./utils";
+import { fetchDecodedProgramAccounts } from "./utils";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 type PositionFilter = GetProgramAccountsMemcmpFilter & {
@@ -48,7 +48,7 @@ export async function fetchAllPositionWithFilter(rpc: Rpc<GetProgramAccountsApi>
       encoding: "base58"
     }
   };
-  return fetchDecodedProgramAccount(
+  return fetchDecodedProgramAccounts(
     rpc,
     WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],

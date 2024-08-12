@@ -1,6 +1,6 @@
 import { Account, Address, getAddressEncoder, getBase58Decoder, GetProgramAccountsApi, GetProgramAccountsMemcmpFilter, getU16Encoder, Rpc } from "@solana/web3.js";
 import { FEE_TIER_DISCRIMINATOR, FeeTier, getFeeTierDecoder } from "../generated/accounts/feeTier";
-import { fetchDecodedProgramAccount } from "./utils";
+import { fetchDecodedProgramAccounts } from "./utils";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 type FeeTierFilter = GetProgramAccountsMemcmpFilter & {
@@ -44,7 +44,7 @@ export async function fetchAllFeeTierWithFilter(rpc: Rpc<GetProgramAccountsApi>,
       encoding: "base58"
     }
   };
-  return fetchDecodedProgramAccount(
+  return fetchDecodedProgramAccounts(
     rpc,
     WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],

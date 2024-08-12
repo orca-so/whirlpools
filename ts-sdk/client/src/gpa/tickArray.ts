@@ -1,6 +1,6 @@
 import { Account, Address, GetProgramAccountsApi, GetProgramAccountsMemcmpFilter, Rpc, getAddressEncoder, getBase58Decoder, getI32Encoder } from "@solana/web3.js";
 import { TickArray, TICK_ARRAY_DISCRIMINATOR, getTickArrayDecoder } from "../generated/accounts/tickArray";
-import { fetchDecodedProgramAccount } from "./utils";
+import { fetchDecodedProgramAccounts } from "./utils";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 export type TickArrayFilter = GetProgramAccountsMemcmpFilter & {
@@ -35,7 +35,7 @@ export async function fetchAllTickArrayWithFilter(rpc: Rpc<GetProgramAccountsApi
       encoding: "base58"
     }
   };
-  return fetchDecodedProgramAccount(
+  return fetchDecodedProgramAccounts(
     rpc,
     WHIRLPOOL_PROGRAM_ADDRESS,
     [discriminatorFilter, ...filters],

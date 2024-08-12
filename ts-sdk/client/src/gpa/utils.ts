@@ -1,6 +1,6 @@
 import { Account, Address, getBase64Encoder, GetProgramAccountsApi, GetProgramAccountsMemcmpFilter, Rpc, VariableSizeDecoder } from "@solana/web3.js";
 
-export async function fetchDecodedProgramAccount<T extends object>(
+export async function fetchDecodedProgramAccounts<T extends object>(
   rpc: Rpc<GetProgramAccountsApi>,
   programAddress: Address,
   filters: GetProgramAccountsMemcmpFilter[],

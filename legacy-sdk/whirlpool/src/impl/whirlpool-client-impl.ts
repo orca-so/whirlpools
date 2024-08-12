@@ -16,7 +16,7 @@ import {
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/fetcher";
 import { WhirlpoolRouter, WhirlpoolRouterBuilder } from "../router/public";
-import { FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, WhirlpoolData } from "../types/public";
+import { WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, PriceMath, TickUtil } from "../utils/public";
 import { Position, Whirlpool, WhirlpoolClient } from "../whirlpool-client";

@@ -73,7 +73,7 @@ interface TestPoolV2Params {
   configInitInfo: InitConfigParams;
   configKeypairs: TestWhirlpoolsConfigKeypairs;
   poolInitInfo: InitPoolV2Params;
-  feeTierParams: object;
+  feeTierParams: { defaultFeeRate: number };
   configExtension: TestConfigExtensionParams;
 }
 

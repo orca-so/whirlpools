@@ -219,6 +219,7 @@ export async function createAndMintToAssociatedTokenAccount(
       if (account.account.data.parsed.info.mint === mint.toString()) {
         return account.pubkey;
       }
+      return undefined;
     })
     .filter(Boolean)[0];
 

@@ -50,7 +50,7 @@ interface TestPoolParams {
   configInitInfo: InitConfigParams;
   configKeypairs: TestWhirlpoolsConfigKeypairs;
   poolInitInfo: InitPoolParams;
-  feeTierParams: object;
+  feeTierParams: { defaultFeeRate: number };
 }
 
 interface InitTestFeeTierParams {

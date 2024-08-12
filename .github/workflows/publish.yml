@@ -21,7 +21,6 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          export RUST_LOG=
           # TODO: Copy over keys from root package.json
           cd ${{ matrix.package }} && yarn version $(basename ${{ github.ref }})
           yarn install
@@ -44,7 +43,6 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          export RUST_LOG=
           # deploy cargo
 
   verifiable:
@@ -58,7 +56,6 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          export RUST_LOG=
           # verifiable build and add to release
 
   release:

@@ -1,0 +1,24 @@
+name: Docs
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+
+    build:
+      runs-on: ubuntu-latest
+      steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Configure Wiki
+        uses: actions4gh/configure-wiki@v1
+      - name: Build Docs
+        uses: ./.github/actions/anchor
+        with:
+          run: |
+            yarn build docs/whirlpool --output-style static
+      - name: Deploy Wiki
+        uses: actions4gh/deploy-wiki@v1
+        with:
+          path: docs/whirlpool/dist

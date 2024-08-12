@@ -29,6 +29,7 @@ runs:
         chmod +x run
         echo "#!/bin/bash" >> run
         echo "set -xeo pipefail" >> run
+        echo "export RUST_LOG=" >> run
       shell: bash
     - name: Install Dependencies
       run: |

@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "build": "nx run-many --target build --projects",
+    "start": "nx run-many --target start --projects",
     "test": "nx run-many --target test --projects",
     "format": "cargo fmt --all && prettier './**/*.ts' --write",
     "lint": "cargo clippy -- -D clippy::all && eslint",
@@ -25,12 +26,14 @@
     "prettier": "^3.1.1",
     "rimraf": "^5.0.5",
     "ts-mocha": "^10.0.0",
+    "typescript": "^5.5.4",
     "typescript-eslint": "^8.0.1"
   },
   "workspaces": [
     "programs/*",
     "rust-sdk/*",
     "ts-sdk/*",
+    "docs/*",
     "legacy-sdk/*"
   ],
   "lint-staged": {

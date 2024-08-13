@@ -594,12 +594,6 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-docs-guides@npm:*, @orca-so/whirlpools-docs-guides@workspace:docs/guides":
-  version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-docs-guides@workspace:docs/guides"
-  languageName: unknown
-  linkType: soft
-
 "@orca-so/whirlpools-docs-rust@npm:*, @orca-so/whirlpools-docs-rust@workspace:docs/rust":
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-docs-rust@workspace:docs/rust"
@@ -622,10 +616,8 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-docs@workspace:docs/whirlpool"
   dependencies:
-    "@orca-so/whirlpools-docs-guides": "npm:*"
     "@orca-so/whirlpools-docs-rust": "npm:*"
     "@orca-so/whirlpools-docs-ts": "npm:*"
-    markdown-serve: "npm:^0.8.0"
     markserv: "npm:^1.17.4"
   languageName: unknown
   linkType: soft
@@ -4349,13 +4341,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"highlight.js@npm:~9.15.8":
-  version: 9.15.10
-  resolution: "highlight.js@npm:9.15.10"
-  checksum: 10c0/7a571887ac3f22c574936e6428d5daf6121ee2f4286882a22f937dcd5e59a2edc1cea301844d33beb16e1544917fe28e23e7342273a79e4e38c4a9cf92de8ca0
-  languageName: node
-  linkType: hard
-
 "hosted-git-info@npm:^2.1.4":
   version: 2.8.9
   resolution: "hosted-git-info@npm:2.8.9"
@@ -4994,18 +4979,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"js-yaml@npm:~3.13.1":
-  version: 3.13.1
-  resolution: "js-yaml@npm:3.13.1"
-  dependencies:
-    argparse: "npm:^1.0.7"
-    esprima: "npm:^4.0.0"
-  bin:
-    js-yaml: bin/js-yaml.js
-  checksum: 10c0/6a4f78b998d2eb58964cc5e051c031865bf292dc3c156a8057cf468d9e60a8739f4e8f607a267e97f09eb8d08263b8262df57eddb16b920ec5a04a259c3b4960
-  languageName: node
-  linkType: hard
-
 "jsbn@npm:1.1.0":
   version: 1.1.0
   resolution: "jsbn@npm:1.1.0"
@@ -5370,13 +5343,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.17.14":
-  version: 4.17.21
-  resolution: "lodash@npm:4.17.21"
-  checksum: 10c0/d8cbea072bb08655bb4c989da418994b073a608dffa608b09ac04b43a791b12aeae7cd7ad919aa4c925f33b48490b5cfe6c1f71d827956071dae2e7bb3a6b74c
-  languageName: node
-  linkType: hard
-
 "log-symbols@npm:^4.0.0, log-symbols@npm:^4.1.0":
   version: 4.1.0
   resolution: "log-symbols@npm:4.1.0"
@@ -5588,28 +5554,6 @@ __metadata:
   bin:
     markdown-it: bin/markdown-it.mjs
   checksum: 10c0/9a6bb444181d2db7016a4173ae56a95a62c84d4cbfb6916a399b11d3e6581bf1cc2e4e1d07a2f022ae72c25f56db90fbe1e529fca16fbf9541659dc53480d4b4
-  languageName: node
-  linkType: hard
-
-"markdown-serve@npm:^0.8.0":
-  version: 0.8.0
-  resolution: "markdown-serve@npm:0.8.0"
-  dependencies:
-    highlight.js: "npm:~9.15.8"
-    js-yaml: "npm:~3.13.1"
-    lodash: "npm:^4.17.14"
-    marked: "npm:^0.7.0"
-    mkdirp: "npm:^0.5.1"
-  checksum: 10c0/298cab6b6b37e50dde85ef8fb5d6a668e5fb7b2de07cf36b58b41439c88e68150768d28076bdeb2b7038a2ecf04ecc62988df38b8f5bfbd54477c5aec82c5350
-  languageName: node
-  linkType: hard
-
-"marked@npm:^0.7.0":
-  version: 0.7.0
-  resolution: "marked@npm:0.7.0"
-  bin:
-    marked: ./bin/marked
-  checksum: 10c0/dc888ca89cfdab52ae46f198deef361c89639d064f47cc9627544142a39877cff953e796362259d6867deb05d18696f611522b2c948a1530117699ccff55a699
   languageName: node
   linkType: hard
 

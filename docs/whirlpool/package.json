@@ -8,7 +8,6 @@
     "clean": "rimraf dist"
   },
   "devDependencies": {
-    "@orca-so/whirlpools-docs-guides": "*",
     "@orca-so/whirlpools-docs-rust": "*",
     "@orca-so/whirlpools-docs-ts": "*",
     "markserv": "^1.17.4"

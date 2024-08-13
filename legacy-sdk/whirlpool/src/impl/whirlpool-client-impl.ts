@@ -192,7 +192,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
     whirlpoolsConfig: Address,
     tokenMintA: Address,
     tokenMintB: Address,
-    initialPrice: Decimal,
+    initialPrice = new Decimal(1),
     funder: Address,
     opts = PREFER_CACHE
   ): Promise<{ poolKey: PublicKey; tx: TransactionBuilder }> {

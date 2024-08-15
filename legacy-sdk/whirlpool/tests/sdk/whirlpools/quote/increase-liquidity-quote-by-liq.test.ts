@@ -1,7 +1,10 @@
 import { Percentage, ZERO } from "@orca-so/common-sdk";
 import assert from "assert";
 import BN from "bn.js";
-import { PriceMath, increaseLiquidityQuoteByLiquidityWithParams } from "../../../../src";
+import {
+  PriceMath,
+  increaseLiquidityQuoteByLiquidityWithParams,
+} from "../../../../src";
 import {
   getTokenAFromLiquidity,
   getTokenBFromLiquidity,
@@ -188,7 +191,8 @@ variations.forEach(([currentTickIndex, slippage, liquidity]) => {
       liquidity: BN;
       slippageTolerance: Percentage;
     }) {
-      const { pTickLowerIndex, pTickUpperIndex, tickCurrentIndex, liquidity } = params;
+      const { pTickLowerIndex, pTickUpperIndex, tickCurrentIndex, liquidity } =
+        params;
 
       const sqrtPrice = PriceMath.tickIndexToSqrtPriceX64(tickCurrentIndex);
 
@@ -289,7 +293,13 @@ function getTokenEstA(params: {
   lowerTickIndex: number;
   upperTickIndex: number;
 }) {
-  const { liquidity, sqrtPrice, currentTickIndex, lowerTickIndex, upperTickIndex } = params;
+  const {
+    liquidity,
+    sqrtPrice,
+    currentTickIndex,
+    lowerTickIndex,
+    upperTickIndex,
+  } = params;
 
   const lowerSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(lowerTickIndex);
   const upperSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(upperTickIndex);
@@ -299,7 +309,12 @@ function getTokenEstA(params: {
   }
 
   if (currentTickIndex < lowerTickIndex) {
-    return getTokenAFromLiquidity(liquidity, lowerSqrtPrice, upperSqrtPrice, true);
+    return getTokenAFromLiquidity(
+      liquidity,
+      lowerSqrtPrice,
+      upperSqrtPrice,
+      true,
+    );
   }
 
   return getTokenAFromLiquidity(liquidity, sqrtPrice, upperSqrtPrice, true);
@@ -312,7 +327,13 @@ function getTokenEstB(params: {
   lowerTickIndex: number;
   upperTickIndex: number;
 }) {
-  const { liquidity, sqrtPrice, currentTickIndex, lowerTickIndex, upperTickIndex } = params;
+  const {
+    liquidity,
+    sqrtPrice,
+    currentTickIndex,
+    lowerTickIndex,
+    upperTickIndex,
+  } = params;
 
   const lowerSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(lowerTickIndex);
   const upperSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(upperTickIndex);
@@ -322,7 +343,12 @@ function getTokenEstB(params: {
   }
 
   if (currentTickIndex >= upperTickIndex) {
-    return getTokenBFromLiquidity(liquidity, lowerSqrtPrice, upperSqrtPrice, true);
+    return getTokenBFromLiquidity(
+      liquidity,
+      lowerSqrtPrice,
+      upperSqrtPrice,
+      true,
+    );
   }
 
   return getTokenBFromLiquidity(liquidity, lowerSqrtPrice, sqrtPrice, true);

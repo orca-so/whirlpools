@@ -11,7 +11,7 @@ const kinobi = createFromRoot({
   ...node,
   program: {
     ...node.program,
-    publicKey: "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
-  }
+    publicKey: "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
+  },
 });
 kinobi.accept(visitor);

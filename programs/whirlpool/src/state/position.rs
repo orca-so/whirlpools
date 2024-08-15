@@ -37,7 +37,7 @@ pub struct Position {
 impl Position {
     pub const LEN: usize = 8 + 136 + 72;
 
-    pub fn is_position_empty<'info>(position: &Position) -> bool {
+    pub fn is_position_empty(position: &Position) -> bool {
         let fees_not_owed = position.fee_owed_a == 0 && position.fee_owed_b == 0;
         let mut rewards_not_owed = true;
         for i in 0..NUM_REWARDS {
@@ -71,7 +71,8 @@ impl Position {
 
         // On tick spacing >= 2^15, should only be able to open full range positions
         if whirlpool.tick_spacing >= FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD {
-            let (full_range_lower_index, full_range_upper_index) = Tick::full_range_indexes(whirlpool.tick_spacing);
+            let (full_range_lower_index, full_range_upper_index) =
+                Tick::full_range_indexes(whirlpool.tick_spacing);
             if tick_lower_index != full_range_lower_index
                 || tick_upper_index != full_range_upper_index
             {
@@ -157,43 +158,43 @@ mod is_position_empty_tests {
     #[test]
     fn test_position_empty() {
         let pos = build_test_position(0, 0, 0, 0, 0, 0);
-        assert_eq!(Position::is_position_empty(&pos), true);
+        assert!(Position::is_position_empty(&pos));
     }
 
     #[test]
     fn test_liquidity_non_zero() {
         let pos = build_test_position(100, 0, 0, 0, 0, 0);
-        assert_eq!(Position::is_position_empty(&pos), false);
+        assert!(!Position::is_position_empty(&pos));
     }
 
     #[test]
     fn test_fee_a_non_zero() {
         let pos = build_test_position(0, 100, 0, 0, 0, 0);
-        assert_eq!(Position::is_position_empty(&pos), false);
+        assert!(!Position::is_position_empty(&pos));
     }
 
     #[test]
     fn test_fee_b_non_zero() {
         let pos = build_test_position(0, 0, 100, 0, 0, 0);
-        assert_eq!(Position::is_position_empty(&pos), false);
+        assert!(!Position::is_position_empty(&pos));
     }
 
     #[test]
     fn test_reward_0_non_zero() {
         let pos = build_test_position(0, 0, 0, 100, 0, 0);
-        assert_eq!(Position::is_position_empty(&pos), false);
+        assert!(!Position::is_position_empty(&pos));
     }
 
     #[test]
     fn test_reward_1_non_zero() {
         let pos = build_test_position(0, 0, 0, 0, 100, 0);
-        assert_eq!(Position::is_position_empty(&pos), false);
+        assert!(!Position::is_position_empty(&pos));
     }
 
     #[test]
     fn test_reward_2_non_zero() {
         let pos = build_test_position(0, 0, 0, 0, 0, 100);
-        assert_eq!(Position::is_position_empty(&pos), false);
+        assert!(!Position::is_position_empty(&pos));
     }
 }
 
@@ -279,7 +280,6 @@ pub mod position_builder {
                 reward_infos: self.reward_infos,
                 tick_lower_index: self.tick_lower_index,
                 tick_upper_index: self.tick_upper_index,
-                ..Default::default()
             }
         }
     }

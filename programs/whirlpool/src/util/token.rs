@@ -1,7 +1,7 @@
 use crate::state::{PositionBundle, Whirlpool};
 use anchor_lang::prelude::*;
+use anchor_spl::metadata::{self, mpl_token_metadata::types::DataV2, CreateMetadataAccountsV3};
 use anchor_spl::token::{self, Mint, Token, TokenAccount, Transfer};
-use anchor_spl::metadata::{self, CreateMetadataAccountsV3, mpl_token_metadata::types::DataV2};
 use solana_program::program::invoke_signed;
 use spl_token::instruction::{burn_checked, close_account, mint_to, set_authority, AuthorityType};
 
@@ -113,6 +113,7 @@ pub fn mint_position_token_and_remove_authority<'info>(
     remove_position_token_mint_authority(whirlpool, position_mint, token_program)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
     whirlpool: &Account<'info, Whirlpool>,
     position_mint: &Account<'info, Mint>,
@@ -154,11 +155,11 @@ pub fn mint_position_token_with_metadata_and_remove_authority<'info>(
             creators: None,
             seller_fee_basis_points: 0,
             collection: None,
-            uses: None
+            uses: None,
         },
         true,
         false,
-        None
+        None,
     )?;
 
     remove_position_token_mint_authority(whirlpool, position_mint, token_program)
@@ -236,6 +237,7 @@ pub fn mint_position_bundle_token_and_remove_authority<'info>(
     )
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
     funder: &Signer<'info>,
     position_bundle: &Account<'info, PositionBundle>,
@@ -288,11 +290,11 @@ pub fn mint_position_bundle_token_with_metadata_and_remove_authority<'info>(
             creators: None,
             seller_fee_basis_points: 0,
             collection: None,
-            uses: None
+            uses: None,
         },
         true,
         false,
-        None
+        None,
     )?;
 
     remove_position_bundle_token_mint_authority(

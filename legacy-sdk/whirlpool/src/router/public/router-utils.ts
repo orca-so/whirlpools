@@ -1,17 +1,19 @@
+import type {
+  LookupTableFetcher,
+  TransactionBuilder,
+} from "@orca-so/common-sdk";
 import {
   AddressUtil,
-  LookupTableFetcher,
   MEASUREMENT_BLOCKHASH,
   Percentage,
-  TransactionBuilder,
   TX_SIZE_LIMIT,
 } from "@orca-so/common-sdk";
-import { Account } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import type { Account } from "@solana/spl-token";
+import type { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import Decimal from "decimal.js";
-import { ExecutableRoute, RoutingOptions, Trade, TradeRoute } from ".";
-import { WhirlpoolContext } from "../../context";
+import type { ExecutableRoute, RoutingOptions, Trade, TradeRoute } from ".";
+import type { WhirlpoolContext } from "../../context";
 import { getSwapFromRoute } from "../../instructions/composites/swap-with-route";
 import { PREFER_CACHE } from "../../network/public/fetcher";
 import { U64 } from "../../utils/math/constants";
@@ -41,7 +43,10 @@ export type RouteSelectOptions = {
   maxSupportedTransactionVersion: "legacy" | number;
   maxTransactionSize: number;
   availableAtaAccounts?: AtaAccountInfo[];
-  onRouteEvaluation?: (route: Readonly<TradeRoute>, tx: TransactionBuilder) => void;
+  onRouteEvaluation?: (
+    route: Readonly<TradeRoute>,
+    tx: TransactionBuilder,
+  ) => void;
 };
 
 /**
@@ -60,13 +65,13 @@ export class RouterUtils {
    * @param opts {@link RouteSelectOptions} to configure the selection of the best route.
    * @returns
    * The best {@link ExecutableRoute} that can be used to execute a swap. If no executable route is found, null is returned.
-   * 
+   *
    * @deprecated WhirlpoolRouter will be removed in the future release. Please use endpoint which provides qoutes.
    */
   static async selectFirstExecutableRoute(
     ctx: WhirlpoolContext,
     orderedRoutes: TradeRoute[],
-    opts: RouteSelectOptions
+    opts: RouteSelectOptions,
   ): Promise<ExecutableRoute | null> {
     const { wallet } = ctx;
 
@@ -80,7 +85,10 @@ export class RouterUtils {
     }
 
     // Preload LookupTableFetcher with lookup tables that are needed for v0 transactions
-    if (opts.maxSupportedTransactionVersion !== "legacy" && ctx.lookupTableFetcher) {
+    if (
+      opts.maxSupportedTransactionVersion !== "legacy" &&
+      ctx.lookupTableFetcher
+    ) {
       await loadLookupTablesForRoutes(ctx.lookupTableFetcher, orderedRoutes);
     }
 
@@ -95,7 +103,7 @@ export class RouterUtils {
           resolvedAtaAccounts: opts.availableAtaAccounts ?? null,
           wallet: wallet.publicKey,
         },
-        PREFER_CACHE
+        PREFER_CACHE,
       );
 
       if (!!opts.onRouteEvaluation) {
@@ -107,23 +115,31 @@ export class RouterUtils {
           latestBlockhash: MEASUREMENT_BLOCKHASH,
           maxSupportedTransactionVersion: "legacy",
         });
-        if (legacyTxSize !== undefined && legacyTxSize <= opts.maxTransactionSize) {
+        if (
+          legacyTxSize !== undefined &&
+          legacyTxSize <= opts.maxTransactionSize
+        ) {
           return [route, undefined];
         }
-      } catch (e) {
+      } catch {
         // No-op
       }
 
       let v0TxSize;
-      if (opts.maxSupportedTransactionVersion !== "legacy" && ctx.lookupTableFetcher) {
-        const addressesToLookup = RouterUtils.getTouchedTickArraysFromRoute(route);
+      if (
+        opts.maxSupportedTransactionVersion !== "legacy" &&
+        ctx.lookupTableFetcher
+      ) {
+        const addressesToLookup =
+          RouterUtils.getTouchedTickArraysFromRoute(route);
         if (addressesToLookup.length > MAX_LOOKUP_TABLE_FETCH_SIZE) {
           continue;
         }
 
-        const lookupTableAccounts = await ctx.lookupTableFetcher.getLookupTableAccountsForAddresses(
-          addressesToLookup
-        );
+        const lookupTableAccounts =
+          await ctx.lookupTableFetcher.getLookupTableAccountsForAddresses(
+            addressesToLookup,
+          );
         try {
           v0TxSize = tx.txnSize({
             latestBlockhash: MEASUREMENT_BLOCKHASH,
@@ -134,7 +150,7 @@ export class RouterUtils {
           if (v0TxSize !== undefined && v0TxSize <= opts.maxTransactionSize) {
             return [route, lookupTableAccounts];
           }
-        } catch (e) {
+        } catch {
           // No-op
         }
       }
@@ -162,7 +178,9 @@ export class RouterUtils {
         const { snapshot } = quote;
         const { aToB, sqrtPrice, feeRate } = snapshot;
         // Inverse sqrt price will cause 1bps precision loss since ticks are spaces of 1bps
-        const directionalSqrtPrice = aToB ? sqrtPrice : PriceMath.invertSqrtPriceX64(sqrtPrice);
+        const directionalSqrtPrice = aToB
+          ? sqrtPrice
+          : PriceMath.invertSqrtPriceX64(sqrtPrice);
 
         // Convert from in/out -> base_out/in using the directional price & fee rate
         let nextBaseValue;
@@ -190,11 +208,15 @@ export class RouterUtils {
 
     const totalBaseValueDec = new Decimal(totalBaseValue.toString());
     const totalAmountEstimatedDec = new Decimal(
-      amountSpecifiedIsInput ? route.totalAmountOut.toString() : route.totalAmountIn.toString()
+      amountSpecifiedIsInput
+        ? route.totalAmountOut.toString()
+        : route.totalAmountIn.toString(),
     );
     const priceImpact = amountSpecifiedIsInput
       ? totalBaseValueDec.sub(totalAmountEstimatedDec).div(totalBaseValueDec)
-      : totalAmountEstimatedDec.sub(totalBaseValueDec).div(totalAmountEstimatedDec);
+      : totalAmountEstimatedDec
+          .sub(totalBaseValueDec)
+          .div(totalAmountEstimatedDec);
 
     return priceImpact.mul(100);
   }
@@ -247,12 +269,14 @@ export class RouterUtils {
 
 async function loadLookupTablesForRoutes(
   lookupTableFetcher: LookupTableFetcher,
-  routes: TradeRoute[]
+  routes: TradeRoute[],
 ) {
   const altTicks = new Set<string>();
   for (let i = 0; i < routes.length && i < MEASURE_ROUTE_MAX; i++) {
     const route = routes[i];
-    RouterUtils.getTouchedTickArraysFromRoute(route).map((ta) => altTicks.add(ta.toBase58()));
+    RouterUtils.getTouchedTickArraysFromRoute(route).map((ta) =>
+      altTicks.add(ta.toBase58()),
+    );
   }
   const altTickArray = Array.from(altTicks);
   const altPageSize = 45;
@@ -264,7 +288,7 @@ async function loadLookupTablesForRoutes(
     altRequests.map((altPage) => {
       const altPageKeys = AddressUtil.toPubKeys(altPage);
       lookupTableFetcher.loadLookupTables(altPageKeys);
-    })
+    }),
   );
 }
 

@@ -1,4 +1,4 @@
-import { Wallet } from "@orca-so/common-sdk";
+import type { Wallet } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 
 /**

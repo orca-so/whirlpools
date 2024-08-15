@@ -1,39 +1,113 @@
 import { describe, it } from "mocha";
 import assert from "assert";
-import { FeeTierArgs, getFeeTierEncoder } from "../src/generated/accounts/feeTier";
-import { Address, createDefaultRpcTransport, createSolanaRpcFromTransport, generateKeyPairSigner, getBase58Encoder, GetProgramAccountsApi, GetProgramAccountsMemcmpFilter, ReadonlyUint8Array, Rpc } from "@solana/web3.js";
-import { feeTierFeeRateFilter, feeTierTickSpacingFilter, feeTierWhirlpoolsConfigFilter, fetchAllFeeTierWithFilter } from "../src/gpa/feeTier";
-import { getPositionEncoder, PositionArgs } from "../src/generated/accounts/position";
-import { fetchAllPositionWithFilter, positionMintFilter, positionTickLowerIndexFilter, positionTickUpperIndexFilter, positionWhirlpoolFilter } from "../src/gpa/position";
-import { getPositionBundleEncoder, PositionBundleArgs } from "../src/generated/accounts/positionBundle";
-import { fetchAllPositionBundleWithFilter, positionBundleMintFilter } from "../src/gpa/positionBundle";
-import { getTickArrayEncoder, TickArrayArgs } from "../src/generated/accounts/tickArray";
-import { fetchAllTickArrayWithFilter, tickArrayStartTickIndexFilter, tickArrayWhirlpoolFilter } from "../src/gpa/tickArray";
-import { TickArgs } from "../src/generated/types/tick";
-import { getTokenBadgeEncoder, TokenBadgeArgs } from "../src/generated/accounts/tokenBadge";
-import { fetchAllTokenBadgeWithFilter, tokenBadgeTokenMintFilter, tokenBadgeWhirlpoolsConfigFilter } from "../src/gpa/tokenBadge";
-import { getWhirlpoolEncoder, WhirlpoolArgs } from "../src/generated/accounts/whirlpool";
-import { fetchAllWhirlpoolWithFilter, whirlpoolFeeRateFilter, whirlpoolProtocolFeeRateFilter, whirlpoolRewardMint1Filter, whirlpoolRewardMint2Filter, whirlpoolRewardMint3Filter, whirlpoolRewardVault1Filter, whirlpoolRewardVault2Filter, whirlpoolRewardVault3Filter, whirlpoolTickSpacingFilter, whirlpoolTokenMintAFilter, whirlpoolTokenMintBFilter, whirlpoolTokenVaultAFilter, whirlpoolTokenVaultBFilter, whirlpoolWhirlpoolConfigFilter } from "../src/gpa/whirlpool";
-import { getWhirlpoolsConfigEncoder, WhirlpoolsConfigArgs } from "../src/generated/accounts/whirlpoolsConfig";
-import { fetchAllWhirlpoolsConfigWithFilter, whirlpoolsConfigCollectProtocolFeesAuthorityFilter, whirlpoolsConfigDefaultProtocolFeeRateFilter, whirlpoolsConfigFeeAuthorityFilter, whirlpoolsConfigRewardEmissionsSuperAuthorityFilter } from "../src/gpa/whirlpoolsConfig";
-import { getWhirlpoolsConfigExtensionEncoder, WhirlpoolsConfigExtensionArgs } from "../src/generated/accounts/whirlpoolsConfigExtension";
-import { fetchAllWhirlpoolsConfigExtensionWithFilter, whirlpoolsConfigExtensionConfigExtensionAuthorityFilter, whirlpoolsConfigExtensionConfigTokenBadgeAuthorityFilter, whirlpoolsConfigExtensionWhirlpoolsConfigFilter } from "../src/gpa/whirlpoolsConfigExtension";
-import { SinonStub, mock, stub } from "sinon";
+import type { FeeTierArgs } from "../src/generated/accounts/feeTier";
+import { getFeeTierEncoder } from "../src/generated/accounts/feeTier";
+import type {
+  Address,
+  GetProgramAccountsMemcmpFilter,
+  ReadonlyUint8Array,
+} from "@solana/web3.js";
+import {
+  createDefaultRpcTransport,
+  createSolanaRpcFromTransport,
+  generateKeyPairSigner,
+  getBase58Encoder,
+} from "@solana/web3.js";
+import {
+  feeTierFeeRateFilter,
+  feeTierTickSpacingFilter,
+  feeTierWhirlpoolsConfigFilter,
+  fetchAllFeeTierWithFilter,
+} from "../src/gpa/feeTier";
+import type { PositionArgs } from "../src/generated/accounts/position";
+import { getPositionEncoder } from "../src/generated/accounts/position";
+import {
+  fetchAllPositionWithFilter,
+  positionMintFilter,
+  positionTickLowerIndexFilter,
+  positionTickUpperIndexFilter,
+  positionWhirlpoolFilter,
+} from "../src/gpa/position";
+import type { PositionBundleArgs } from "../src/generated/accounts/positionBundle";
+import { getPositionBundleEncoder } from "../src/generated/accounts/positionBundle";
+import {
+  fetchAllPositionBundleWithFilter,
+  positionBundleMintFilter,
+} from "../src/gpa/positionBundle";
+import type { TickArrayArgs } from "../src/generated/accounts/tickArray";
+import { getTickArrayEncoder } from "../src/generated/accounts/tickArray";
+import {
+  fetchAllTickArrayWithFilter,
+  tickArrayStartTickIndexFilter,
+  tickArrayWhirlpoolFilter,
+} from "../src/gpa/tickArray";
+import type { TickArgs } from "../src/generated/types/tick";
+import type { TokenBadgeArgs } from "../src/generated/accounts/tokenBadge";
+import { getTokenBadgeEncoder } from "../src/generated/accounts/tokenBadge";
+import {
+  fetchAllTokenBadgeWithFilter,
+  tokenBadgeTokenMintFilter,
+  tokenBadgeWhirlpoolsConfigFilter,
+} from "../src/gpa/tokenBadge";
+import type { WhirlpoolArgs } from "../src/generated/accounts/whirlpool";
+import { getWhirlpoolEncoder } from "../src/generated/accounts/whirlpool";
+import {
+  fetchAllWhirlpoolWithFilter,
+  whirlpoolFeeRateFilter,
+  whirlpoolProtocolFeeRateFilter,
+  whirlpoolRewardMint1Filter,
+  whirlpoolRewardMint2Filter,
+  whirlpoolRewardMint3Filter,
+  whirlpoolRewardVault1Filter,
+  whirlpoolRewardVault2Filter,
+  whirlpoolRewardVault3Filter,
+  whirlpoolTickSpacingFilter,
+  whirlpoolTokenMintAFilter,
+  whirlpoolTokenMintBFilter,
+  whirlpoolTokenVaultAFilter,
+  whirlpoolTokenVaultBFilter,
+  whirlpoolWhirlpoolConfigFilter,
+} from "../src/gpa/whirlpool";
+import type { WhirlpoolsConfigArgs } from "../src/generated/accounts/whirlpoolsConfig";
+import { getWhirlpoolsConfigEncoder } from "../src/generated/accounts/whirlpoolsConfig";
+import {
+  fetchAllWhirlpoolsConfigWithFilter,
+  whirlpoolsConfigCollectProtocolFeesAuthorityFilter,
+  whirlpoolsConfigDefaultProtocolFeeRateFilter,
+  whirlpoolsConfigFeeAuthorityFilter,
+  whirlpoolsConfigRewardEmissionsSuperAuthorityFilter,
+} from "../src/gpa/whirlpoolsConfig";
+import type { WhirlpoolsConfigExtensionArgs } from "../src/generated/accounts/whirlpoolsConfigExtension";
+import { getWhirlpoolsConfigExtensionEncoder } from "../src/generated/accounts/whirlpoolsConfigExtension";
+import {
+  fetchAllWhirlpoolsConfigExtensionWithFilter,
+  whirlpoolsConfigExtensionConfigExtensionAuthorityFilter,
+  whirlpoolsConfigExtensionConfigTokenBadgeAuthorityFilter,
+  whirlpoolsConfigExtensionWhirlpoolsConfigFilter,
+} from "../src/gpa/whirlpoolsConfigExtension";
+import type { SinonStub } from "sinon";
+import { stub } from "sinon";
 import * as gpa from "../src/gpa/utils";
 
 describe("get program account memcmp filters", () => {
-  const mockRpc = createSolanaRpcFromTransport(createDefaultRpcTransport({ url: "" }));
+  const mockRpc = createSolanaRpcFromTransport(
+    createDefaultRpcTransport({ url: "" }),
+  );
   let addresses: Address[] = [];
   let gpaMock: SinonStub;
 
   before(async () => {
     addresses = await Promise.all(
-      [...Array(25).keys()].map(async () => generateKeyPairSigner().then(x => x.address))
+      [...Array(25).keys()].map(async () =>
+        generateKeyPairSigner().then((x) => x.address),
+      ),
     );
   });
 
   beforeEach(() => {
-    gpaMock = stub(gpa, "fetchDecodedProgramAccounts").returns(Promise.resolve([]));
+    gpaMock = stub(gpa, "fetchDecodedProgramAccounts").returns(
+      Promise.resolve([]),
+    );
   });
 
   afterEach(() => {
@@ -41,7 +115,8 @@ describe("get program account memcmp filters", () => {
   });
 
   function assertFilters(data: ReadonlyUint8Array) {
-    const filters = gpaMock.getCall(0).args[2] as GetProgramAccountsMemcmpFilter[];
+    const filters = gpaMock.getCall(0)
+      .args[2] as GetProgramAccountsMemcmpFilter[];
     for (const filter of filters) {
       const offset = Number(filter.memcmp.offset);
       const actual = getBase58Encoder().encode(filter.memcmp.bytes);
@@ -55,7 +130,7 @@ describe("get program account memcmp filters", () => {
       whirlpoolsConfig: addresses[0],
       tickSpacing: 1234,
       defaultFeeRate: 4321,
-    }
+    };
     await fetchAllFeeTierWithFilter(
       mockRpc,
       feeTierWhirlpoolsConfigFilter(feeTierStruct.whirlpoolsConfig),
@@ -81,8 +156,8 @@ describe("get program account memcmp filters", () => {
         { growthInsideCheckpoint: 9876, amountOwed: 5432 },
         { growthInsideCheckpoint: 8765, amountOwed: 4321 },
         { growthInsideCheckpoint: 7654, amountOwed: 3210 },
-      ]
-    }
+      ],
+    };
     await fetchAllPositionWithFilter(
       mockRpc,
       positionWhirlpoolFilter(positionStruct.whirlpool),
@@ -115,12 +190,12 @@ describe("get program account memcmp filters", () => {
       feeGrowthOutsideA: 9012,
       feeGrowthOutsideB: 3456,
       rewardGrowthsOutside: [1234, 5678, 9012],
-    }
+    };
     const tickArrayStruct: TickArrayArgs = {
       startTickIndex: 1234,
       ticks: Array(88).fill(tickStruct),
       whirlpool: addresses[0],
-    }
+    };
     await fetchAllTickArrayWithFilter(
       mockRpc,
       tickArrayStartTickIndexFilter(tickArrayStruct.startTickIndex),
@@ -165,10 +240,28 @@ describe("get program account memcmp filters", () => {
       feeGrowthGlobalB: 5432,
       rewardLastUpdatedTimestamp: 2109,
       rewardInfos: [
-        { mint: addresses[5], vault: addresses[6], authority: addresses[7], emissionsPerSecondX64: 8514, growthGlobalX64: 2841 },
-        { mint: addresses[8], vault: addresses[9], authority: addresses[10], emissionsPerSecondX64: 5815, growthGlobalX64: 1185 },
-        { mint: addresses[11], vault: addresses[12], authority: addresses[13], emissionsPerSecondX64: 1821, growthGlobalX64: 1256 },
-      ]
+        {
+          mint: addresses[5],
+          vault: addresses[6],
+          authority: addresses[7],
+          emissionsPerSecondX64: 8514,
+          growthGlobalX64: 2841,
+        },
+        {
+          mint: addresses[8],
+          vault: addresses[9],
+          authority: addresses[10],
+          emissionsPerSecondX64: 5815,
+          growthGlobalX64: 1185,
+        },
+        {
+          mint: addresses[11],
+          vault: addresses[12],
+          authority: addresses[13],
+          emissionsPerSecondX64: 1821,
+          growthGlobalX64: 1256,
+        },
+      ],
     };
     await fetchAllWhirlpoolWithFilter(
       mockRpc,
@@ -201,9 +294,15 @@ describe("get program account memcmp filters", () => {
     await fetchAllWhirlpoolsConfigWithFilter(
       mockRpc,
       whirlpoolsConfigFeeAuthorityFilter(whirlpoolsConfigStruct.feeAuthority),
-      whirlpoolsConfigCollectProtocolFeesAuthorityFilter(whirlpoolsConfigStruct.collectProtocolFeesAuthority),
-      whirlpoolsConfigRewardEmissionsSuperAuthorityFilter(whirlpoolsConfigStruct.rewardEmissionsSuperAuthority),
-      whirlpoolsConfigDefaultProtocolFeeRateFilter(whirlpoolsConfigStruct.defaultProtocolFeeRate),
+      whirlpoolsConfigCollectProtocolFeesAuthorityFilter(
+        whirlpoolsConfigStruct.collectProtocolFeesAuthority,
+      ),
+      whirlpoolsConfigRewardEmissionsSuperAuthorityFilter(
+        whirlpoolsConfigStruct.rewardEmissionsSuperAuthority,
+      ),
+      whirlpoolsConfigDefaultProtocolFeeRateFilter(
+        whirlpoolsConfigStruct.defaultProtocolFeeRate,
+      ),
     );
     const data = getWhirlpoolsConfigEncoder().encode(whirlpoolsConfigStruct);
     assertFilters(data);
@@ -217,12 +316,19 @@ describe("get program account memcmp filters", () => {
     };
     await fetchAllWhirlpoolsConfigExtensionWithFilter(
       mockRpc,
-      whirlpoolsConfigExtensionWhirlpoolsConfigFilter(whirlpoolsConfigExtensionStruct.whirlpoolsConfig),
-      whirlpoolsConfigExtensionConfigExtensionAuthorityFilter(whirlpoolsConfigExtensionStruct.configExtensionAuthority),
-      whirlpoolsConfigExtensionConfigTokenBadgeAuthorityFilter(whirlpoolsConfigExtensionStruct.tokenBadgeAuthority)
+      whirlpoolsConfigExtensionWhirlpoolsConfigFilter(
+        whirlpoolsConfigExtensionStruct.whirlpoolsConfig,
+      ),
+      whirlpoolsConfigExtensionConfigExtensionAuthorityFilter(
+        whirlpoolsConfigExtensionStruct.configExtensionAuthority,
+      ),
+      whirlpoolsConfigExtensionConfigTokenBadgeAuthorityFilter(
+        whirlpoolsConfigExtensionStruct.tokenBadgeAuthority,
+      ),
     );
-    const data = getWhirlpoolsConfigExtensionEncoder().encode(whirlpoolsConfigExtensionStruct);
+    const data = getWhirlpoolsConfigExtensionEncoder().encode(
+      whirlpoolsConfigExtensionStruct,
+    );
     assertFilters(data);
   });
-
 });

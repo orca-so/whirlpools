@@ -3,6 +3,7 @@ import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
+import type { WhirlpoolData } from "../../../src";
 import {
   buildWhirlpoolClient,
   collectRewardsQuote,
@@ -10,7 +11,6 @@ import {
   NUM_REWARDS,
   toTx,
   WhirlpoolContext,
-  WhirlpoolData,
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
@@ -26,25 +26,43 @@ import {
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
-import { TokenTrait } from "../../utils/v2/init-utils-v2";
+import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { createTokenAccountV2, createMintV2 } from "../../utils/v2/token-2022";
 import { createTokenAccount as createTokenAccountForPosition } from "../../utils/token";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 
 describe("collect_reward_v2", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
   const client = buildWhirlpoolClient(ctx);
 
   describe("v1 parity", () => {
-    const tokenTraitVariations: { tokenTraitAB: TokenTrait; tokenTraitR: TokenTrait }[] = [
-      { tokenTraitAB: { isToken2022: false }, tokenTraitR: { isToken2022: false } },
-      { tokenTraitAB: { isToken2022: true }, tokenTraitR: { isToken2022: false } },
-      { tokenTraitAB: { isToken2022: false }, tokenTraitR: { isToken2022: true } },
-      { tokenTraitAB: { isToken2022: true }, tokenTraitR: { isToken2022: true } },
+    const tokenTraitVariations: {
+      tokenTraitAB: TokenTrait;
+      tokenTraitR: TokenTrait;
+    }[] = [
+      {
+        tokenTraitAB: { isToken2022: false },
+        tokenTraitR: { isToken2022: false },
+      },
+      {
+        tokenTraitAB: { isToken2022: true },
+        tokenTraitR: { isToken2022: false },
+      },
+      {
+        tokenTraitAB: { isToken2022: false },
+        tokenTraitR: { isToken2022: true },
+      },
+      {
+        tokenTraitAB: { isToken2022: true },
+        tokenTraitR: { isToken2022: true },
+      },
     ];
     tokenTraitVariations.forEach((tokenTraits) => {
       describe(`tokenTraitA/B: ${
@@ -101,12 +119,17 @@ describe("collect_reward_v2", () => {
               position: positions[0].publicKey,
               tickArrayLower: positions[0].tickArrayLower,
               tickArrayUpper: positions[0].tickArrayUpper,
-            })
+            }),
           ).buildAndExecute();
 
           // Generate collect reward expectation
-          const whirlpoolData = (await fetcher.getPool(whirlpoolPda.publicKey)) as WhirlpoolData;
-          const positionPreCollect = await client.getPosition(positions[0].publicKey, IGNORE_CACHE);
+          const whirlpoolData = (await fetcher.getPool(
+            whirlpoolPda.publicKey,
+          )) as WhirlpoolData;
+          const positionPreCollect = await client.getPosition(
+            positions[0].publicKey,
+            IGNORE_CACHE,
+          );
 
           // Lock the collectRewards quote to the last time we called updateFeesAndRewards
           const expectation = collectRewardsQuote({
@@ -115,7 +138,12 @@ describe("collect_reward_v2", () => {
             tickLower: positionPreCollect.getLowerTickData(),
             tickUpper: positionPreCollect.getUpperTickData(),
             timeStampInSeconds: whirlpoolData.rewardLastUpdatedTimestamp,
-            tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(fetcher, whirlpoolData, IGNORE_CACHE),
+            tokenExtensionCtx:
+              await TokenExtensionUtil.buildTokenExtensionContext(
+                fetcher,
+                whirlpoolData,
+                IGNORE_CACHE,
+              ),
           });
 
           // Check that the expectation is not zero
@@ -129,7 +157,7 @@ describe("collect_reward_v2", () => {
               provider,
               tokenTraits.tokenTraitR,
               rewards[i].rewardMint,
-              provider.wallet.publicKey
+              provider.wallet.publicKey,
             );
 
             await toTx(
@@ -144,18 +172,31 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount: rewardOwnerAccount,
                 rewardVault: rewards[i].rewardVaultKeypair.publicKey,
                 rewardIndex: i,
-              })
+              }),
             ).buildAndExecute();
 
-            const collectedBalance = parseInt(await getTokenBalance(provider, rewardOwnerAccount));
-            assert.equal(collectedBalance, expectation.rewardOwed[i]?.toNumber());
+            const collectedBalance = parseInt(
+              await getTokenBalance(provider, rewardOwnerAccount),
+            );
+            assert.equal(
+              collectedBalance,
+              expectation.rewardOwed[i]?.toNumber(),
+            );
             const vaultBalance = parseInt(
-              await getTokenBalance(provider, rewards[i].rewardVaultKeypair.publicKey)
+              await getTokenBalance(
+                provider,
+                rewards[i].rewardVaultKeypair.publicKey,
+              ),
             );
             assert.equal(vaultStartBalance - collectedBalance, vaultBalance);
-            const position = await fetcher.getPosition(positions[0].publicKey, IGNORE_CACHE);
+            const position = await fetcher.getPosition(
+              positions[0].publicKey,
+              IGNORE_CACHE,
+            );
             assert.equal(position?.rewardInfos[i].amountOwed, 0);
-            assert.ok(position?.rewardInfos[i].growthInsideCheckpoint.gte(ZERO_BN));
+            assert.ok(
+              position?.rewardInfos[i].growthInsideCheckpoint.gte(ZERO_BN),
+            );
           }
         });
 
@@ -194,7 +235,7 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await toTx(
@@ -204,11 +245,16 @@ describe("collect_reward_v2", () => {
               position: positions[0].publicKey,
               tickArrayLower: positions[0].tickArrayLower,
               tickArrayUpper: positions[0].tickArrayUpper,
-            })
+            }),
           ).buildAndExecute();
 
           const delegate = anchor.web3.Keypair.generate();
-          await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 1);
+          await approveToken(
+            provider,
+            positions[0].tokenAccount,
+            delegate.publicKey,
+            1,
+          );
 
           await toTx(
             ctx,
@@ -222,7 +268,7 @@ describe("collect_reward_v2", () => {
               rewardOwnerAccount,
               rewardVault: rewards[0].rewardVaultKeypair.publicKey,
               rewardIndex: 0,
-            })
+            }),
           )
             .addSigner(delegate)
             .buildAndExecute();
@@ -263,16 +309,21 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           const delegate = anchor.web3.Keypair.generate();
           const delegatePositionAccount = await createTokenAccountForPosition(
             provider,
             positions[0].mintKeypair.publicKey,
-            delegate.publicKey
+            delegate.publicKey,
           );
-          await transferToken(provider, positions[0].tokenAccount, delegatePositionAccount, 1);
+          await transferToken(
+            provider,
+            positions[0].tokenAccount,
+            delegatePositionAccount,
+            1,
+          );
 
           await toTx(
             ctx,
@@ -281,7 +332,7 @@ describe("collect_reward_v2", () => {
               position: positions[0].publicKey,
               tickArrayLower: positions[0].tickArrayLower,
               tickArrayUpper: positions[0].tickArrayUpper,
-            })
+            }),
           ).buildAndExecute();
 
           await toTx(
@@ -296,7 +347,7 @@ describe("collect_reward_v2", () => {
               rewardOwnerAccount,
               rewardVault: rewards[0].rewardVaultKeypair.publicKey,
               rewardIndex: 0,
-            })
+            }),
           )
             .addSigner(delegate)
             .buildAndExecute();
@@ -337,7 +388,7 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await toTx(
@@ -347,11 +398,16 @@ describe("collect_reward_v2", () => {
               position: positions[0].publicKey,
               tickArrayLower: positions[0].tickArrayLower,
               tickArrayUpper: positions[0].tickArrayUpper,
-            })
+            }),
           ).buildAndExecute();
 
           const delegate = anchor.web3.Keypair.generate();
-          await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 1);
+          await approveToken(
+            provider,
+            positions[0].tokenAccount,
+            delegate.publicKey,
+            1,
+          );
 
           await toTx(
             ctx,
@@ -365,7 +421,7 @@ describe("collect_reward_v2", () => {
               rewardOwnerAccount,
               rewardVault: rewards[0].rewardVaultKeypair.publicKey,
               rewardIndex: 0,
-            })
+            }),
           ).buildAndExecute();
         });
 
@@ -391,12 +447,15 @@ describe("collect_reward_v2", () => {
           // accrue rewards
           await sleep(1200);
 
-          const fakeRewardMint = await createMintV2(provider, tokenTraits.tokenTraitR);
+          const fakeRewardMint = await createMintV2(
+            provider,
+            tokenTraits.tokenTraitR,
+          );
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             fakeRewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await assert.rejects(
@@ -414,9 +473,9 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount,
                 rewardVault: anchor.web3.PublicKey.default,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0xbbf/ // AccountNotInitialized
+            /0xbbf/, // AccountNotInitialized
           );
         });
 
@@ -456,13 +515,14 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           await assert.rejects(
             toTx(
               ctx,
               WhirlpoolIx.collectRewardV2Ix(ctx.program, {
-                whirlpool: anotherFixture.getInfos().poolInitInfo.whirlpoolPda.publicKey,
+                whirlpool:
+                  anotherFixture.getInfos().poolInitInfo.whirlpoolPda.publicKey,
                 positionAuthority: provider.wallet.publicKey,
                 position: positions[0].publicKey,
                 positionTokenAccount: positions[0].tokenAccount,
@@ -471,9 +531,9 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d1/ // ConstraintHasOne
+            /0x7d1/, // ConstraintHasOne
           );
         });
 
@@ -511,14 +571,19 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const otherPositionAcount = await createTokenAccountForPosition(
             provider,
             positions[0].mintKeypair.publicKey,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
-          await transferToken(provider, positions[0].tokenAccount, otherPositionAcount, 1);
+          await transferToken(
+            provider,
+            positions[0].tokenAccount,
+            otherPositionAcount,
+            1,
+          );
           await assert.rejects(
             toTx(
               ctx,
@@ -532,9 +597,9 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
 
@@ -560,7 +625,7 @@ describe("collect_reward_v2", () => {
             ],
           });
           const {
-            poolInitInfo: { whirlpoolPda, tokenMintA },
+            poolInitInfo: { whirlpoolPda },
             positions,
             rewards,
           } = fixture.getInfos();
@@ -572,13 +637,13 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           const fakePositionTokenAccount = await createTokenAccountForPosition(
             provider,
             NATIVE_MINT,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await assert.rejects(
@@ -594,9 +659,9 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
 
@@ -634,7 +699,7 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const delegate = anchor.web3.Keypair.generate();
           await assert.rejects(
@@ -650,11 +715,11 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             )
               .addSigner(delegate)
               .buildAndExecute(),
-            /0x1783/ // MissingOrInvalidDelegate
+            /0x1783/, // MissingOrInvalidDelegate
           );
         });
 
@@ -692,10 +757,15 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const delegate = anchor.web3.Keypair.generate();
-          await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 2);
+          await approveToken(
+            provider,
+            positions[0].tokenAccount,
+            delegate.publicKey,
+            2,
+          );
           await assert.rejects(
             toTx(
               ctx,
@@ -709,11 +779,11 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             )
               .addSigner(delegate)
               .buildAndExecute(),
-            /0x1784/ // InvalidPositionTokenAmount
+            /0x1784/, // InvalidPositionTokenAmount
           );
         });
 
@@ -751,10 +821,15 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const delegate = anchor.web3.Keypair.generate();
-          await approveToken(provider, positions[0].tokenAccount, delegate.publicKey, 1);
+          await approveToken(
+            provider,
+            positions[0].tokenAccount,
+            delegate.publicKey,
+            1,
+          );
           await assert.rejects(
             toTx(
               ctx,
@@ -768,9 +843,9 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /.*signature verification fail.*/i
+            /.*signature verification fail.*/i,
           );
         });
 
@@ -808,7 +883,7 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           await assert.rejects(
             toTx(
@@ -823,9 +898,9 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount,
                 rewardVault: rewardOwnerAccount,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
 
@@ -851,7 +926,7 @@ describe("collect_reward_v2", () => {
             ],
           });
           const {
-            poolInitInfo: { whirlpoolPda, tokenMintA },
+            poolInitInfo: { whirlpoolPda },
             positions,
             rewards,
           } = fixture.getInfos();
@@ -859,12 +934,15 @@ describe("collect_reward_v2", () => {
           // accrue rewards
           await sleep(1200);
 
-          const fakeMint = await createMintV2(provider, tokenTraits.tokenTraitR);
+          const fakeMint = await createMintV2(
+            provider,
+            tokenTraits.tokenTraitR,
+          );
           const rewardOwnerAccount = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitR,
             fakeMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           await assert.rejects(
             toTx(
@@ -879,9 +957,9 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 0,
-              })
+              }),
             ).buildAndExecute(),
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
 
@@ -907,7 +985,7 @@ describe("collect_reward_v2", () => {
             ],
           });
           const {
-            poolInitInfo: { whirlpoolPda, tokenMintA },
+            poolInitInfo: { whirlpoolPda },
             positions,
             rewards,
           } = fixture.getInfos();
@@ -919,7 +997,7 @@ describe("collect_reward_v2", () => {
             provider,
             tokenTraits.tokenTraitR,
             rewards[0].rewardMint,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           await assert.rejects(
             toTx(
@@ -934,9 +1012,9 @@ describe("collect_reward_v2", () => {
                 rewardOwnerAccount,
                 rewardVault: rewards[0].rewardVaultKeypair.publicKey,
                 rewardIndex: 4,
-              })
+              }),
             ).buildAndExecute(),
-            /Program failed to complete/ // index out of bounds
+            /Program failed to complete/, // index out of bounds
           );
         });
       });
@@ -991,14 +1069,16 @@ describe("collect_reward_v2", () => {
         rewards,
       } = fixture.getInfos();
 
-      const otherTokenPublicKey = await createMintV2(provider, { isToken2022: true });
+      const otherTokenPublicKey = await createMintV2(provider, {
+        isToken2022: true,
+      });
 
       for (let i = 0; i < NUM_REWARDS; i++) {
         const rewardOwnerAccount = await createTokenAccountV2(
           provider,
           tokenTraits[i],
           rewards[i].rewardMint,
-          provider.wallet.publicKey
+          provider.wallet.publicKey,
         );
 
         await assert.rejects(
@@ -1014,9 +1094,9 @@ describe("collect_reward_v2", () => {
               rewardOwnerAccount: rewardOwnerAccount,
               rewardVault: rewards[i].rewardVaultKeypair.publicKey,
               rewardIndex: i,
-            })
+            }),
           ).buildAndExecute(),
-          /0x7dc/ // ConstraintAddress
+          /0x7dc/, // ConstraintAddress
         );
       }
     });
@@ -1067,7 +1147,7 @@ describe("collect_reward_v2", () => {
           provider,
           { isToken2022: false },
           rewards[i].rewardMint,
-          provider.wallet.publicKey
+          provider.wallet.publicKey,
         );
 
         assert.ok(rewards[i].tokenProgram.equals(TEST_TOKEN_PROGRAM_ID));
@@ -1084,9 +1164,9 @@ describe("collect_reward_v2", () => {
               rewardOwnerAccount: rewardOwnerAccount,
               rewardVault: rewards[i].rewardVaultKeypair.publicKey,
               rewardIndex: i,
-            })
+            }),
           ).buildAndExecute(),
-          /0x7dc/ // ConstraintAddress
+          /0x7dc/, // ConstraintAddress
         );
       }
     });
@@ -1137,7 +1217,7 @@ describe("collect_reward_v2", () => {
           provider,
           { isToken2022: true },
           rewards[i].rewardMint,
-          provider.wallet.publicKey
+          provider.wallet.publicKey,
         );
 
         assert.ok(rewards[i].tokenProgram.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -1154,9 +1234,9 @@ describe("collect_reward_v2", () => {
               rewardOwnerAccount: rewardOwnerAccount,
               rewardVault: rewards[i].rewardVaultKeypair.publicKey,
               rewardIndex: i,
-            })
+            }),
           ).buildAndExecute(),
-          /0x7dc/ // ConstraintAddress
+          /0x7dc/, // ConstraintAddress
         );
       }
     });
@@ -1207,7 +1287,7 @@ describe("collect_reward_v2", () => {
           provider,
           { isToken2022: true },
           rewards[i].rewardMint,
-          provider.wallet.publicKey
+          provider.wallet.publicKey,
         );
 
         assert.ok(rewards[i].tokenProgram.equals(TEST_TOKEN_2022_PROGRAM_ID));
@@ -1224,9 +1304,9 @@ describe("collect_reward_v2", () => {
               rewardOwnerAccount: rewardOwnerAccount,
               rewardVault: rewards[i].rewardVaultKeypair.publicKey,
               rewardIndex: i,
-            })
+            }),
           ).buildAndExecute(),
-          /0xbc0/ // InvalidProgramId
+          /0xbc0/, // InvalidProgramId
         );
       }
     });

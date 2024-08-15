@@ -1,7 +1,9 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Instruction, MathUtil, PDA } from "@orca-so/common-sdk";
-import { ComputeBudgetProgram, Keypair, PublicKey, TransactionInstruction } from "@solana/web3.js";
-import BN from "bn.js";
+import type { Instruction } from "@orca-so/common-sdk";
+import { MathUtil } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import { ComputeBudgetProgram, Keypair } from "@solana/web3.js";
+import type BN from "bn.js";
 import Decimal from "decimal.js";
 import {
   TEST_TOKEN_2022_PROGRAM_ID,
@@ -9,40 +11,39 @@ import {
   TickSpacing,
   ZERO_BN,
 } from "..";
-import {
+import type {
   InitConfigParams,
   InitPoolV2Params,
   InitializeRewardV2Params,
   OpenPositionParams,
+  WhirlpoolContext,
+} from "../../../src";
+import {
   PDAUtil,
   PriceMath,
   TICK_ARRAY_SIZE,
   TickUtil,
-  WhirlpoolContext,
   WhirlpoolIx,
-  toTx
+  toTx,
 } from "../../../src";
 import { PoolUtil } from "../../../src/utils/public/pool-utils";
-import {
-  TestWhirlpoolsConfigKeypairs,
-  generateDefaultConfigParams,
-} from "../test-builders";
-import {
-  initFeeTier,
-  openPosition,
-  initTickArrayRange,
-} from "../init-utils";
+import type { TestWhirlpoolsConfigKeypairs } from "../test-builders";
+import { generateDefaultConfigParams } from "../test-builders";
+import { initFeeTier, openPosition, initTickArrayRange } from "../init-utils";
 import {
   calculateTransferFeeIncludedAmount,
   createAndMintToAssociatedTokenAccountV2,
   createInOrderMintsV2,
   createMintV2,
-  mintToDestinationV2
+  mintToDestinationV2,
 } from "./token-2022";
-import { InitConfigExtensionParams, SetTokenBadgeAuthorityParams } from "../../../src/instructions";
+import type {
+  InitConfigExtensionParams,
+  SetTokenBadgeAuthorityParams,
+} from "../../../src/instructions";
 import { getExtraAccountMetasForTestTransferHookProgram } from "./test-transfer-hook-program";
-import { AccountState, getEpochFee, getMint, getTransferFeeConfig } from "@solana/spl-token";
-
+import type { AccountState } from "@solana/spl-token";
+import { getEpochFee, getMint, getTransferFeeConfig } from "@solana/spl-token";
 
 export interface TokenTrait {
   isToken2022: boolean;
@@ -72,27 +73,8 @@ interface TestPoolV2Params {
   configInitInfo: InitConfigParams;
   configKeypairs: TestWhirlpoolsConfigKeypairs;
   poolInitInfo: InitPoolV2Params;
-  feeTierParams: any;
+  feeTierParams: { defaultFeeRate: number };
   configExtension: TestConfigExtensionParams;
-}
-
-interface InitTestPoolParams {
-  mintIndices: [number, number];
-  tickSpacing: number;
-  feeTierIndex?: number;
-  initSqrtPrice?: anchor.BN;
-}
-
-interface InitTestTickArrayRangeParams {
-  poolIndex: number;
-  startTickIndex: number;
-  arrayCount: number;
-  aToB: boolean;
-}
-
-interface InitTestPositionParams {
-  poolIndex: number;
-  fundParams: FundedPositionV2Params[];
 }
 
 export type FundedPositionV2Params = {
@@ -110,19 +92,7 @@ export interface FundedPositionV2Info {
   tickArrayUpper: PublicKey;
 }
 
-
-const DEFAULT_FEE_RATE = 3000;
-const DEFAULT_MINT_AMOUNT = new anchor.BN("15000000000");
 const DEFAULT_SQRT_PRICE = MathUtil.toX64(new Decimal(5));
-
-const DEFAULT_INIT_FEE_TIER = [{ tickSpacing: TickSpacing.Standard }];
-const DEFAULT_INIT_MINT = [{}, {}];
-const DEFAULT_INIT_TOKEN = [{ mintIndex: 0 }, { mintIndex: 1 }];
-const DEFAULT_INIT_POOL: InitTestPoolParams[] = [
-  { mintIndices: [0, 1], tickSpacing: TickSpacing.Standard },
-];
-const DEFAULT_INIT_TICK_ARR: InitTestTickArrayRangeParams[] = [];
-const DEFAULT_INIT_POSITION: InitTestPositionParams[] = [];
 
 /*
 
@@ -141,7 +111,6 @@ export function getTokenAccsForPools(
 }
 */
 
-
 export async function initTestPoolWithTokensV2(
   ctx: WhirlpoolContext,
   tokenTraitA: TokenTrait,
@@ -152,7 +121,13 @@ export async function initTestPoolWithTokensV2(
 ) {
   const provider = ctx.provider;
 
-  const { poolInitInfo, configInitInfo, configKeypairs, feeTierParams, configExtension } = await initTestPoolV2(
+  const {
+    poolInitInfo,
+    configInitInfo,
+    configKeypairs,
+    feeTierParams,
+    configExtension,
+  } = await initTestPoolV2(
     ctx,
     tokenTraitA,
     tokenTraitB,
@@ -167,25 +142,28 @@ export async function initTestPoolWithTokensV2(
   const connection = ctx.provider.connection;
   const airdropTx = await connection.requestAirdrop(
     ctx.provider.wallet.publicKey,
-    100_000_000_000_000
+    100_000_000_000_000,
   );
-  await ctx.connection.confirmTransaction({
-    signature: airdropTx,
-    ...(await ctx.connection.getLatestBlockhash("confirmed")),
-  }, "confirmed");
+  await ctx.connection.confirmTransaction(
+    {
+      signature: airdropTx,
+      ...(await ctx.connection.getLatestBlockhash("confirmed")),
+    },
+    "confirmed",
+  );
 
   const tokenAccountA = await createAndMintToAssociatedTokenAccountV2(
     provider,
     tokenTraitA,
     tokenMintA,
-    mintAmount
+    mintAmount,
   );
 
   const tokenAccountB = await createAndMintToAssociatedTokenAccountV2(
     provider,
     tokenTraitB,
     tokenMintB,
-    mintAmount
+    mintAmount,
   );
 
   return {
@@ -230,7 +208,7 @@ export async function initTestPoolWithLiquidityV2(
     22528, // to 33792
     3,
     TickSpacing.Standard,
-    false
+    false,
   );
 
   const fundParams: FundedPositionV2Params[] = [
@@ -246,7 +224,7 @@ export async function initTestPoolWithLiquidityV2(
     poolInitInfo,
     tokenAccountA,
     tokenAccountB,
-    fundParams
+    fundParams,
   );
 
   return {
@@ -294,20 +272,45 @@ export async function buildTestPoolV2Params(
   createTokenBadgeIfNeededB: boolean = true,
 ): Promise<TestPoolV2Params> {
   const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-  const { configExtensionInitInfo, configExtensionSetTokenBadgeAuthorityInfo, configExtensionKeypairs } = generateDefaultConfigExtensionParams(ctx, configInitInfo.whirlpoolsConfigKeypair.publicKey, configKeypairs.feeAuthorityKeypair.publicKey);
+  const {
+    configExtensionInitInfo,
+    configExtensionSetTokenBadgeAuthorityInfo,
+    configExtensionKeypairs,
+  } = generateDefaultConfigExtensionParams(
+    ctx,
+    configInitInfo.whirlpoolsConfigKeypair.publicKey,
+    configKeypairs.feeAuthorityKeypair.publicKey,
+  );
 
-  await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
-  await toTx(ctx, WhirlpoolIx.initializeConfigExtensionIx(ctx.program, configExtensionInitInfo))
-    .addSigner(configKeypairs.feeAuthorityKeypair).buildAndExecute();
-  await toTx(ctx, WhirlpoolIx.setTokenBadgeAuthorityIx(ctx.program, configExtensionSetTokenBadgeAuthorityInfo))
-    .addSigner(configKeypairs.feeAuthorityKeypair).buildAndExecute();
+  await toTx(
+    ctx,
+    WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+  ).buildAndExecute();
+  await toTx(
+    ctx,
+    WhirlpoolIx.initializeConfigExtensionIx(
+      ctx.program,
+      configExtensionInitInfo,
+    ),
+  )
+    .addSigner(configKeypairs.feeAuthorityKeypair)
+    .buildAndExecute();
+  await toTx(
+    ctx,
+    WhirlpoolIx.setTokenBadgeAuthorityIx(
+      ctx.program,
+      configExtensionSetTokenBadgeAuthorityInfo,
+    ),
+  )
+    .addSigner(configKeypairs.feeAuthorityKeypair)
+    .buildAndExecute();
 
   const { params: feeTierParams } = await initFeeTier(
     ctx,
     configInitInfo,
     configKeypairs.feeAuthorityKeypair,
     tickSpacing,
-    defaultFeeRate
+    defaultFeeRate,
   );
   const poolInitInfo = await generateDefaultInitPoolV2Params(
     ctx,
@@ -321,25 +324,45 @@ export async function buildTestPoolV2Params(
   );
 
   if (isTokenBadgeRequired(tokenTraitA) && createTokenBadgeIfNeededA) {
-    await toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
-      tokenMint: poolInitInfo.tokenMintA,
-      tokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
-      tokenBadgePda: { publicKey: poolInitInfo.tokenBadgeA, bump: 0/* dummy */ },
-      whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
-      whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
-      funder: funder ?? ctx.wallet.publicKey,
-    })).addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+        tokenMint: poolInitInfo.tokenMintA,
+        tokenBadgeAuthority:
+          configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
+        tokenBadgePda: {
+          publicKey: poolInitInfo.tokenBadgeA,
+          bump: 0 /* dummy */,
+        },
+        whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
+        whirlpoolsConfigExtension:
+          configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
+        funder: funder ?? ctx.wallet.publicKey,
+      }),
+    )
+      .addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair)
+      .buildAndExecute();
   }
 
   if (isTokenBadgeRequired(tokenTraitB) && createTokenBadgeIfNeededB) {
-    await toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
-      tokenMint: poolInitInfo.tokenMintB,
-      tokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
-      tokenBadgePda: { publicKey: poolInitInfo.tokenBadgeB, bump: 0/* dummy */ },
-      whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
-      whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
-      funder: funder ?? ctx.wallet.publicKey,
-    })).addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+        tokenMint: poolInitInfo.tokenMintB,
+        tokenBadgeAuthority:
+          configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
+        tokenBadgePda: {
+          publicKey: poolInitInfo.tokenBadgeB,
+          bump: 0 /* dummy */,
+        },
+        whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
+        whirlpoolsConfigExtension:
+          configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
+        funder: funder ?? ctx.wallet.publicKey,
+      }),
+    )
+      .addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair)
+      .buildAndExecute();
   }
 
   return {
@@ -363,7 +386,7 @@ export async function initializeRewardV2(
   whirlpool: PublicKey,
   rewardIndex: number,
   tokenBadgeAuthorityKeypair: anchor.web3.Keypair,
-  funder?: Keypair
+  funder?: Keypair,
 ): Promise<{ txId: string; params: InitializeRewardV2Params }> {
   const provider = ctx.provider;
   const rewardMint = await createMintV2(provider, tokenTrait);
@@ -372,7 +395,7 @@ export async function initializeRewardV2(
   const rewardTokenBadgePda = PDAUtil.getTokenBadge(
     ctx.program.programId,
     whirlpoolsConfig,
-    rewardMint
+    rewardMint,
   );
 
   if (isTokenBadgeRequired(tokenTrait)) {
@@ -380,17 +403,24 @@ export async function initializeRewardV2(
       ctx.program.programId,
       whirlpoolsConfig,
     );
-    await toTx(ctx, WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
-      tokenMint: rewardMint,
-      tokenBadgeAuthority: tokenBadgeAuthorityKeypair.publicKey,
-      tokenBadgePda: rewardTokenBadgePda,
-      whirlpoolsConfig: whirlpoolsConfig,
-      whirlpoolsConfigExtension: configExtensionPda.publicKey,
-      funder: funder?.publicKey ?? ctx.wallet.publicKey,
-    })).addSigner(tokenBadgeAuthorityKeypair).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+        tokenMint: rewardMint,
+        tokenBadgeAuthority: tokenBadgeAuthorityKeypair.publicKey,
+        tokenBadgePda: rewardTokenBadgePda,
+        whirlpoolsConfig: whirlpoolsConfig,
+        whirlpoolsConfigExtension: configExtensionPda.publicKey,
+        funder: funder?.publicKey ?? ctx.wallet.publicKey,
+      }),
+    )
+      .addSigner(tokenBadgeAuthorityKeypair)
+      .buildAndExecute();
   }
 
-  const tokenProgram = tokenTrait.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID;
+  const tokenProgram = tokenTrait.isToken2022
+    ? TEST_TOKEN_2022_PROGRAM_ID
+    : TEST_TOKEN_PROGRAM_ID;
 
   const params: InitializeRewardV2Params = {
     rewardAuthority: rewardAuthorityKeypair.publicKey,
@@ -403,9 +433,10 @@ export async function initializeRewardV2(
     rewardTokenProgram: tokenProgram,
   };
 
-  const tx = toTx(ctx, WhirlpoolIx.initializeRewardV2Ix(ctx.program, params)).addSigner(
-    rewardAuthorityKeypair
-  );
+  const tx = toTx(
+    ctx,
+    WhirlpoolIx.initializeRewardV2Ix(ctx.program, params),
+  ).addSigner(rewardAuthorityKeypair);
   if (funder) {
     tx.addSigner(funder);
   }
@@ -426,13 +457,28 @@ export async function initRewardAndSetEmissionsV2(
   vaultAmount: BN | number,
   emissionsPerSecondX64: anchor.BN,
   tokenBadgeAuthorityKeypair: anchor.web3.Keypair,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
   const {
     params: { rewardMint, rewardVaultKeypair, rewardTokenProgram },
-  } = await initializeRewardV2(ctx, tokenTrait, whirlpoolsConfig, rewardAuthorityKeypair, whirlpool, rewardIndex, tokenBadgeAuthorityKeypair, funder);
+  } = await initializeRewardV2(
+    ctx,
+    tokenTrait,
+    whirlpoolsConfig,
+    rewardAuthorityKeypair,
+    whirlpool,
+    rewardIndex,
+    tokenBadgeAuthorityKeypair,
+    funder,
+  );
 
-  await mintToDestinationV2(ctx.provider, tokenTrait, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
+  await mintToDestinationV2(
+    ctx.provider,
+    tokenTrait,
+    rewardMint,
+    rewardVaultKeypair.publicKey,
+    vaultAmount,
+  );
 
   await toTx(
     ctx,
@@ -442,10 +488,10 @@ export async function initRewardAndSetEmissionsV2(
       rewardIndex,
       rewardVaultKey: rewardVaultKeypair.publicKey,
       emissionsPerSecondX64,
-    })
+    }),
   )
-  .addSigner(rewardAuthorityKeypair)
-  .buildAndExecute();
+    .addSigner(rewardAuthorityKeypair)
+    .buildAndExecute();
   return { rewardMint, rewardVaultKeypair, tokenProgram: rewardTokenProgram };
 }
 
@@ -462,18 +508,30 @@ async function generateDefaultInitPoolV2Params(
   initSqrtPrice = MathUtil.toX64(new Decimal(5)),
   funder?: PublicKey,
 ): Promise<InitPoolV2Params> {
-  const [tokenAMintPubKey, tokenBMintPubKey] = await createInOrderMintsV2(context.provider, tokenTraitA, tokenTraitB);
+  const [tokenAMintPubKey, tokenBMintPubKey] = await createInOrderMintsV2(
+    context.provider,
+    tokenTraitA,
+    tokenTraitB,
+  );
 
   const whirlpoolPda = PDAUtil.getWhirlpool(
     context.program.programId,
     configKey,
     tokenAMintPubKey,
     tokenBMintPubKey,
-    tickSpacing
+    tickSpacing,
   );
 
-  const tokenBadgeAPda = PDAUtil.getTokenBadge(context.program.programId, configKey, tokenAMintPubKey);
-  const tokenBadgeBPda = PDAUtil.getTokenBadge(context.program.programId, configKey, tokenBMintPubKey);
+  const tokenBadgeAPda = PDAUtil.getTokenBadge(
+    context.program.programId,
+    configKey,
+    tokenAMintPubKey,
+  );
+  const tokenBadgeBPda = PDAUtil.getTokenBadge(
+    context.program.programId,
+    configKey,
+    tokenBMintPubKey,
+  );
 
   return {
     initSqrtPrice,
@@ -482,8 +540,12 @@ async function generateDefaultInitPoolV2Params(
     tokenMintB: tokenBMintPubKey,
     tokenBadgeA: tokenBadgeAPda.publicKey,
     tokenBadgeB: tokenBadgeBPda.publicKey,
-    tokenProgramA: tokenTraitA.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID,
-    tokenProgramB: tokenTraitB.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID,
+    tokenProgramA: tokenTraitA.isToken2022
+      ? TEST_TOKEN_2022_PROGRAM_ID
+      : TEST_TOKEN_PROGRAM_ID,
+    tokenProgramB: tokenTraitB.isToken2022
+      ? TEST_TOKEN_2022_PROGRAM_ID
+      : TEST_TOKEN_PROGRAM_ID,
     whirlpoolPda,
     tokenVaultAKeypair: Keypair.generate(),
     tokenVaultBKeypair: Keypair.generate(),
@@ -491,15 +553,24 @@ async function generateDefaultInitPoolV2Params(
     tickSpacing,
     funder: funder || context.wallet.publicKey,
   };
-};
+}
 
 async function initTestPoolFromParamsV2(
   ctx: WhirlpoolContext,
   poolParams: TestPoolV2Params,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
-  const { configInitInfo, poolInitInfo, configKeypairs, feeTierParams, configExtension } = poolParams;
-  const tx = toTx(ctx, WhirlpoolIx.initializePoolV2Ix(ctx.program, poolInitInfo));
+  const {
+    configInitInfo,
+    poolInitInfo,
+    configKeypairs,
+    feeTierParams,
+    configExtension,
+  } = poolParams;
+  const tx = toTx(
+    ctx,
+    WhirlpoolIx.initializePoolV2Ix(ctx.program, poolInitInfo),
+  );
   if (funder) {
     tx.addSigner(funder);
   }
@@ -514,7 +585,6 @@ async function initTestPoolFromParamsV2(
   };
 }
 
-
 ////////////////////////////////////////////////////////////////////////////////
 // position related
 ////////////////////////////////////////////////////////////////////////////////
@@ -525,51 +595,65 @@ export async function withdrawPositionsV2(
   tokenTraitB: TokenTrait,
   positionInfos: FundedPositionV2Info[],
   tokenOwnerAccountA: PublicKey,
-  tokenOwnerAccountB: PublicKey
+  tokenOwnerAccountB: PublicKey,
 ) {
   const fetcher = ctx.fetcher;
 
-  const tokenProgramA = tokenTraitA.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID;
-  const tokenProgramB = tokenTraitB.isToken2022 ? TEST_TOKEN_2022_PROGRAM_ID : TEST_TOKEN_PROGRAM_ID;
+  const tokenProgramA = tokenTraitA.isToken2022
+    ? TEST_TOKEN_2022_PROGRAM_ID
+    : TEST_TOKEN_PROGRAM_ID;
+  const tokenProgramB = tokenTraitB.isToken2022
+    ? TEST_TOKEN_2022_PROGRAM_ID
+    : TEST_TOKEN_PROGRAM_ID;
 
   await Promise.all(
     positionInfos.map(async (info) => {
       const pool = await fetcher.getPool(info.initParams.whirlpool);
-      const position = await fetcher.getPosition(info.initParams.positionPda.publicKey);
+      const position = await fetcher.getPosition(
+        info.initParams.positionPda.publicKey,
+      );
 
       if (!pool) {
         throw new Error(`Failed to fetch pool - ${info.initParams.whirlpool}`);
       }
 
       if (!position) {
-        throw new Error(`Failed to fetch position - ${info.initParams.whirlpool}`);
+        throw new Error(
+          `Failed to fetch position - ${info.initParams.whirlpool}`,
+        );
       }
 
-      const priceLower = PriceMath.tickIndexToSqrtPriceX64(position.tickLowerIndex);
-      const priceUpper = PriceMath.tickIndexToSqrtPriceX64(position.tickUpperIndex);
+      const priceLower = PriceMath.tickIndexToSqrtPriceX64(
+        position.tickLowerIndex,
+      );
+      const priceUpper = PriceMath.tickIndexToSqrtPriceX64(
+        position.tickUpperIndex,
+      );
 
       const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
         position.liquidity,
         pool.sqrtPrice,
         priceLower,
         priceUpper,
-        false
+        false,
       );
 
       const numTicksInTickArray = pool.tickSpacing * TICK_ARRAY_SIZE;
       const lowerStartTick =
-        position.tickLowerIndex - (position.tickLowerIndex % numTicksInTickArray);
+        position.tickLowerIndex -
+        (position.tickLowerIndex % numTicksInTickArray);
       const tickArrayLower = PDAUtil.getTickArray(
         ctx.program.programId,
         info.initParams.whirlpool,
-        lowerStartTick
+        lowerStartTick,
       );
       const upperStartTick =
-        position.tickUpperIndex - (position.tickUpperIndex % numTicksInTickArray);
+        position.tickUpperIndex -
+        (position.tickUpperIndex % numTicksInTickArray);
       const tickArrayUpper = PDAUtil.getTickArray(
         ctx.program.programId,
         info.initParams.whirlpool,
-        upperStartTick
+        upperStartTick,
       );
 
       await toTx(
@@ -592,7 +676,7 @@ export async function withdrawPositionsV2(
           tokenVaultB: pool.tokenVaultB,
           tickArrayLower: tickArrayLower.publicKey,
           tickArrayUpper: tickArrayUpper.publicKey,
-        })
+        }),
       ).buildAndExecute();
 
       await toTx(
@@ -610,20 +694,18 @@ export async function withdrawPositionsV2(
           tokenOwnerAccountB,
           tokenVaultA: pool.tokenVaultA,
           tokenVaultB: pool.tokenVaultB,
-        })
+        }),
       ).buildAndExecute();
-    })
+    }),
   );
 }
-
-
 
 export async function fundPositionsV2(
   ctx: WhirlpoolContext,
   poolInitInfo: InitPoolV2Params,
   tokenAccountA: PublicKey,
   tokenAccountB: PublicKey,
-  fundParams: FundedPositionV2Params[]
+  fundParams: FundedPositionV2Params[],
 ): Promise<FundedPositionV2Info[]> {
   const {
     whirlpoolPda: { publicKey: whirlpool },
@@ -633,8 +715,18 @@ export async function fundPositionsV2(
     initSqrtPrice,
   } = poolInitInfo;
 
-  const mintA = await getMint(ctx.provider.connection, poolInitInfo.tokenMintA, "confirmed", poolInitInfo.tokenProgramA);
-  const mintB = await getMint(ctx.provider.connection, poolInitInfo.tokenMintB, "confirmed", poolInitInfo.tokenProgramB);
+  const mintA = await getMint(
+    ctx.provider.connection,
+    poolInitInfo.tokenMintA,
+    "confirmed",
+    poolInitInfo.tokenProgramA,
+  );
+  const mintB = await getMint(
+    ctx.provider.connection,
+    poolInitInfo.tokenMintB,
+    "confirmed",
+    poolInitInfo.tokenProgramB,
+  );
   const feeConfigA = getTransferFeeConfig(mintA);
   const feeConfigB = getTransferFeeConfig(mintB);
   const epoch = await ctx.provider.connection.getEpochInfo("confirmed");
@@ -645,19 +737,19 @@ export async function fundPositionsV2(
         ctx,
         whirlpool,
         param.tickLowerIndex,
-        param.tickUpperIndex
+        param.tickUpperIndex,
       );
 
       const tickArrayLower = PDAUtil.getTickArray(
         ctx.program.programId,
         whirlpool,
-        TickUtil.getStartTickIndex(param.tickLowerIndex, tickSpacing)
+        TickUtil.getStartTickIndex(param.tickLowerIndex, tickSpacing),
       ).publicKey;
 
       const tickArrayUpper = PDAUtil.getTickArray(
         ctx.program.programId,
         whirlpool,
-        TickUtil.getStartTickIndex(param.tickUpperIndex, tickSpacing)
+        TickUtil.getStartTickIndex(param.tickUpperIndex, tickSpacing),
       ).publicKey;
 
       if (param.liquidityAmount.gt(ZERO_BN)) {
@@ -666,23 +758,37 @@ export async function fundPositionsV2(
           initSqrtPrice,
           PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
           PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
-          true
+          true,
         );
 
         // transfer fee
         const transferFeeA = !feeConfigA
           ? ZERO_BN
-          : calculateTransferFeeIncludedAmount(getEpochFee(feeConfigA, BigInt(epoch.epoch)), tokenA).fee;
+          : calculateTransferFeeIncludedAmount(
+              getEpochFee(feeConfigA, BigInt(epoch.epoch)),
+              tokenA,
+            ).fee;
         const transferFeeB = !feeConfigB
           ? ZERO_BN
-          : calculateTransferFeeIncludedAmount(getEpochFee(feeConfigB, BigInt(epoch.epoch)), tokenB).fee;
+          : calculateTransferFeeIncludedAmount(
+              getEpochFee(feeConfigB, BigInt(epoch.epoch)),
+              tokenB,
+            ).fee;
 
-        //console.log("transfer feeA", transferFeeA.toString(), "/", tokenA.toString());
-        //console.log("transfer feeB", transferFeeB.toString(), "/", tokenB.toString());
+        //console.info("transfer feeA", transferFeeA.toString(), "/", tokenA.toString());
+        //console.info("transfer feeB", transferFeeB.toString(), "/", tokenB.toString());
 
         // transfer hook
-        const tokenTransferHookAccountsA = await getExtraAccountMetasForTestTransferHookProgram(ctx.provider, poolInitInfo.tokenMintA);
-        const tokenTransferHookAccountsB = await getExtraAccountMetasForTestTransferHookProgram(ctx.provider, poolInitInfo.tokenMintB);
+        const tokenTransferHookAccountsA =
+          await getExtraAccountMetasForTestTransferHookProgram(
+            ctx.provider,
+            poolInitInfo.tokenMintA,
+          );
+        const tokenTransferHookAccountsB =
+          await getExtraAccountMetasForTestTransferHookProgram(
+            ctx.provider,
+            poolInitInfo.tokenMintB,
+          );
 
         await toTx(
           ctx,
@@ -706,8 +812,10 @@ export async function fundPositionsV2(
             tickArrayUpper,
             tokenTransferHookAccountsA,
             tokenTransferHookAccountsB,
-          })
-        ).prependInstruction(useMaxCU()).buildAndExecute();
+          }),
+        )
+          .prependInstruction(useMaxCU())
+          .buildAndExecute();
       }
       return {
         initParams: positionInfo,
@@ -717,7 +825,7 @@ export async function fundPositionsV2(
         tickArrayLower,
         tickArrayUpper,
       };
-    })
+    }),
   );
 }
 
@@ -735,7 +843,7 @@ export const generateDefaultConfigExtensionParams = (
   context: WhirlpoolContext,
   whirlpoolsConfig: PublicKey,
   feeAuthority: PublicKey,
-  funder?: PublicKey
+  funder?: PublicKey,
 ): TestConfigExtensionParams => {
   const configExtensionKeypairs: TestWhirlpoolsConfigExtensionKeypairs = {
     tokenBadgeAuthorityKeypair: Keypair.generate(),
@@ -743,21 +851,29 @@ export const generateDefaultConfigExtensionParams = (
   const configExtensionInitInfo: InitConfigExtensionParams = {
     whirlpoolsConfig,
     feeAuthority,
-    whirlpoolsConfigExtensionPda: PDAUtil.getConfigExtension(context.program.programId, whirlpoolsConfig),
+    whirlpoolsConfigExtensionPda: PDAUtil.getConfigExtension(
+      context.program.programId,
+      whirlpoolsConfig,
+    ),
     funder: funder || context.wallet.publicKey,
   };
-  const configExtensionSetTokenBadgeAuthorityInfo: SetTokenBadgeAuthorityParams = {
-    whirlpoolsConfig,
-    whirlpoolsConfigExtension: configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
-    configExtensionAuthority: feeAuthority,
-    newTokenBadgeAuthority: configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
+  const configExtensionSetTokenBadgeAuthorityInfo: SetTokenBadgeAuthorityParams =
+    {
+      whirlpoolsConfig,
+      whirlpoolsConfigExtension:
+        configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
+      configExtensionAuthority: feeAuthority,
+      newTokenBadgeAuthority:
+        configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
+    };
+  return {
+    configExtensionInitInfo,
+    configExtensionKeypairs,
+    configExtensionSetTokenBadgeAuthorityInfo,
   };
-  return { configExtensionInitInfo, configExtensionKeypairs, configExtensionSetTokenBadgeAuthorityInfo };
 };
 
-export function isTokenBadgeRequired(
-  tokenTrait: TokenTrait
-): boolean {
+export function isTokenBadgeRequired(tokenTrait: TokenTrait): boolean {
   if (tokenTrait.hasFreezeAuthority) return true;
   if (tokenTrait.hasPermanentDelegate) return true;
   if (tokenTrait.hasTransferHookExtension) return true;
@@ -771,8 +887,8 @@ export function useCU(cu: number): Instruction {
     instructions: [
       ComputeBudgetProgram.setComputeUnitLimit({
         units: cu,
-      })
-    ]
+      }),
+    ],
   };
 }
 

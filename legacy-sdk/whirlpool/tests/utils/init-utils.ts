@@ -1,50 +1,56 @@
 import * as anchor from "@coral-xyz/anchor";
-import { AddressUtil, MathUtil, PDA } from "@orca-so/common-sdk";
+import type { PDA } from "@orca-so/common-sdk";
+import { AddressUtil, MathUtil } from "@orca-so/common-sdk";
 import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { Keypair, PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
+import type { PublicKey } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
+import type BN from "bn.js";
 import Decimal from "decimal.js";
 import {
   TickSpacing,
   ZERO_BN,
   createAndMintToAssociatedTokenAccount,
   createMint,
-  mintToDestination
+  mintToDestination,
 } from ".";
-import {
+import type {
   InitConfigParams,
   InitFeeTierParams,
   InitPoolParams,
   InitTickArrayParams,
   InitializeRewardParams,
   OpenPositionParams,
+  WhirlpoolClient,
+  WhirlpoolContext,
+} from "../../src";
+import {
   PDAUtil,
   PriceMath,
   TICK_ARRAY_SIZE,
   TickUtil,
-  WhirlpoolClient,
-  WhirlpoolContext,
   WhirlpoolIx,
-  toTx
+  toTx,
 } from "../../src";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 import { PoolUtil } from "../../src/utils/public/pool-utils";
-import {
+import type {
   TestConfigParams,
   TestWhirlpoolsConfigKeypairs,
+} from "./test-builders";
+import {
   generateDefaultConfigParams,
   generateDefaultInitFeeTierParams,
   generateDefaultInitPoolParams,
   generateDefaultInitTickArrayParams,
   generateDefaultOpenBundledPositionParams,
-  generateDefaultOpenPositionParams
+  generateDefaultOpenPositionParams,
 } from "./test-builders";
 
 interface TestPoolParams {
   configInitInfo: InitConfigParams;
   configKeypairs: TestWhirlpoolsConfigKeypairs;
   poolInitInfo: InitPoolParams;
-  feeTierParams: any;
+  feeTierParams: { defaultFeeRate: number };
 }
 
 interface InitTestFeeTierParams {
@@ -133,11 +139,14 @@ export function getDefaultAquarium(): InitAquariumParams {
 
 export async function buildTestAquariums(
   ctx: WhirlpoolContext,
-  initParams: InitAquariumParams[]
+  initParams: InitAquariumParams[],
 ): Promise<TestAquarium[]> {
-  const aquariums = [];
+  const aquariums: TestAquarium[] = [];
   // Airdrop SOL into provider wallet;
-  await ctx.connection.requestAirdrop(ctx.provider.wallet.publicKey, 100_000_000_000_000);
+  await ctx.connection.requestAirdrop(
+    ctx.provider.wallet.publicKey,
+    100_000_000_000_000,
+  );
   for (const initParam of initParams) {
     // Create configs
     let configParams = initParam.configParams;
@@ -147,7 +156,7 @@ export async function buildTestAquariums(
     // Could batch
     await toTx(
       ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configParams.configInitInfo)
+      WhirlpoolIx.initializeConfigIx(ctx.program, configParams.configInitInfo),
     ).buildAndExecute();
 
     const {
@@ -163,13 +172,15 @@ export async function buildTestAquariums(
     for (const initFeeTierParam of initFeeTierParams) {
       const { tickSpacing } = initFeeTierParam;
       const feeRate =
-        initFeeTierParam.feeRate !== undefined ? initFeeTierParam.feeRate : DEFAULT_FEE_RATE;
+        initFeeTierParam.feeRate !== undefined
+          ? initFeeTierParam.feeRate
+          : DEFAULT_FEE_RATE;
       const { params } = await initFeeTier(
         ctx,
         configParams.configInitInfo,
         configParams.configKeypairs.feeAuthorityKeypair,
         tickSpacing,
-        feeRate
+        feeRate,
       );
       feeTierParams.push(params);
     }
@@ -177,21 +188,24 @@ export async function buildTestAquariums(
     // TODO: Handle native vs sorted mint keys
     const mintKeys = (
       await Promise.all(
-        initMintParams.map(({ isNative }) => (isNative ? NATIVE_MINT : createMint(ctx.provider)))
+        initMintParams.map(({ isNative }) =>
+          isNative ? NATIVE_MINT : createMint(ctx.provider),
+        ),
       )
     ).sort(PoolUtil.compareMints);
 
     const tokenAccounts = await Promise.all(
       initTokenAccParams.map(async (initTokenAccParam) => {
-        const { mintIndex, mintAmount = DEFAULT_MINT_AMOUNT } = initTokenAccParam;
+        const { mintIndex, mintAmount = DEFAULT_MINT_AMOUNT } =
+          initTokenAccParam;
         const mintKey = mintKeys[mintIndex];
         const account = await createAndMintToAssociatedTokenAccount(
           ctx.provider,
           mintKey,
-          mintAmount
+          mintAmount,
         );
         return { mint: mintKey, account };
-      })
+      }),
     );
 
     const pools = await Promise.all(
@@ -203,17 +217,19 @@ export async function buildTestAquariums(
           feeTierIndex = 0,
         } = initPoolParam;
         const [mintOne, mintTwo] = mintIndices.map((idx) => mintKeys[idx]);
-        const [tokenMintA, tokenMintB] = PoolUtil.orderMints(mintOne, mintTwo).map(
-          AddressUtil.toPubKey
-        );
+        const [tokenMintA, tokenMintB] = PoolUtil.orderMints(
+          mintOne,
+          mintTwo,
+        ).map(AddressUtil.toPubKey);
 
-        const configKey = configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey;
+        const configKey =
+          configParams!.configInitInfo.whirlpoolsConfigKeypair.publicKey;
         const whirlpoolPda = PDAUtil.getWhirlpool(
           ctx.program.programId,
           configKey,
           tokenMintA,
           tokenMintB,
-          tickSpacing
+          tickSpacing,
         );
 
         const poolParam = {
@@ -230,15 +246,19 @@ export async function buildTestAquariums(
           funder: ctx.wallet.publicKey,
         };
 
-        const tx = toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, poolParam));
+        const tx = toTx(
+          ctx,
+          WhirlpoolIx.initializePoolIx(ctx.program, poolParam),
+        );
         await tx.buildAndExecute();
         return poolParam;
-      })
+      }),
     );
 
     const tickArrays = await Promise.all(
       initTickArrayRangeParams.map(async (initTickArrayRangeParam) => {
-        const { poolIndex, startTickIndex, arrayCount, aToB } = initTickArrayRangeParam;
+        const { poolIndex, startTickIndex, arrayCount, aToB } =
+          initTickArrayRangeParam;
         const pool = pools[poolIndex];
         const pdas = await initTickArrayRange(
           ctx,
@@ -246,13 +266,13 @@ export async function buildTestAquariums(
           startTickIndex,
           arrayCount,
           pool.tickSpacing,
-          aToB
+          aToB,
         );
         return {
           params: initTickArrayRangeParam,
           pdas,
         };
-      })
+      }),
     );
 
     await Promise.all(
@@ -260,8 +280,14 @@ export async function buildTestAquariums(
         const { poolIndex, fundParams } = initPositionParam;
         const pool = pools[poolIndex];
         const tokenAccKeys = getTokenAccsForPools([pool], tokenAccounts);
-        await fundPositions(ctx, pool, tokenAccKeys[0], tokenAccKeys[1], fundParams);
-      })
+        await fundPositions(
+          ctx,
+          pool,
+          tokenAccKeys[0],
+          tokenAccKeys[1],
+          fundParams,
+        );
+      }),
     );
 
     aquariums.push({
@@ -278,15 +304,15 @@ export async function buildTestAquariums(
 
 export function getTokenAccsForPools(
   pools: InitPoolParams[],
-  tokenAccounts: { mint: PublicKey; account: PublicKey }[]
+  tokenAccounts: { mint: PublicKey; account: PublicKey }[],
 ) {
-  const mints = [];
+  const mints: PublicKey[] = [];
   for (const pool of pools) {
     mints.push(pool.tokenMintA);
     mints.push(pool.tokenMintB);
   }
-  return mints.map((mint) =>
-    tokenAccounts.find((acc) => acc.mint.equals(mint))!.account
+  return mints.map(
+    (mint) => tokenAccounts.find((acc) => acc.mint.equals(mint))!.account,
   );
 }
 
@@ -303,17 +329,20 @@ export async function buildTestPoolParams(
   defaultFeeRate = 3000,
   initSqrtPrice = DEFAULT_SQRT_PRICE,
   funder?: PublicKey,
-  reuseTokenA?: PublicKey
+  reuseTokenA?: PublicKey,
 ) {
   const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
-  await toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo)).buildAndExecute();
+  await toTx(
+    ctx,
+    WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+  ).buildAndExecute();
 
   const { params: feeTierParams } = await initFeeTier(
     ctx,
     configInitInfo,
     configKeypairs.feeAuthorityKeypair,
     tickSpacing,
-    defaultFeeRate
+    defaultFeeRate,
   );
   const poolInitInfo = await generateDefaultInitPoolParams(
     ctx,
@@ -322,7 +351,7 @@ export async function buildTestPoolParams(
     tickSpacing,
     initSqrtPrice,
     funder,
-    reuseTokenA
+    reuseTokenA,
   );
   return {
     configInitInfo,
@@ -343,7 +372,7 @@ export async function initTestPool(
   tickSpacing: number,
   initSqrtPrice = DEFAULT_SQRT_PRICE,
   funder?: Keypair,
-  reuseTokenA?: PublicKey
+  reuseTokenA?: PublicKey,
 ) {
   const poolParams = await buildTestPoolParams(
     ctx,
@@ -351,7 +380,7 @@ export async function initTestPool(
     3000,
     initSqrtPrice,
     funder?.publicKey,
-    reuseTokenA
+    reuseTokenA,
   );
 
   return initTestPoolFromParams(ctx, poolParams, funder);
@@ -360,9 +389,10 @@ export async function initTestPool(
 export async function initTestPoolFromParams(
   ctx: WhirlpoolContext,
   poolParams: TestPoolParams,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
-  const { configInitInfo, poolInitInfo, configKeypairs, feeTierParams } = poolParams;
+  const { configInitInfo, poolInitInfo, configKeypairs, feeTierParams } =
+    poolParams;
   const tx = toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, poolInitInfo));
   if (funder) {
     tx.addSigner(funder);
@@ -383,7 +413,7 @@ export async function initFeeTier(
   feeAuthorityKeypair: Keypair,
   tickSpacing: number,
   defaultFeeRate: number,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
   const params = generateDefaultInitFeeTierParams(
     ctx,
@@ -391,12 +421,13 @@ export async function initFeeTier(
     configInitInfo.feeAuthority,
     tickSpacing,
     defaultFeeRate,
-    funder?.publicKey
+    funder?.publicKey,
   );
 
-  const tx = toTx(ctx, WhirlpoolIx.initializeFeeTierIx(ctx.program, params)).addSigner(
-    feeAuthorityKeypair
-  );
+  const tx = toTx(
+    ctx,
+    WhirlpoolIx.initializeFeeTierIx(ctx.program, params),
+  ).addSigner(feeAuthorityKeypair);
   if (funder) {
     tx.addSigner(funder);
   }
@@ -412,7 +443,7 @@ export async function initializeReward(
   rewardAuthorityKeypair: anchor.web3.Keypair,
   whirlpool: PublicKey,
   rewardIndex: number,
-  funder?: Keypair
+  funder?: Keypair,
 ): Promise<{ txId: string; params: InitializeRewardParams }> {
   const provider = ctx.provider;
   const rewardMint = await createMint(provider);
@@ -427,9 +458,10 @@ export async function initializeReward(
     rewardIndex,
   };
 
-  const tx = toTx(ctx, WhirlpoolIx.initializeRewardIx(ctx.program, params)).addSigner(
-    rewardAuthorityKeypair
-  );
+  const tx = toTx(
+    ctx,
+    WhirlpoolIx.initializeRewardIx(ctx.program, params),
+  ).addSigner(rewardAuthorityKeypair);
   if (funder) {
     tx.addSigner(funder);
   }
@@ -447,13 +479,24 @@ export async function initRewardAndSetEmissions(
   rewardIndex: number,
   vaultAmount: BN | number,
   emissionsPerSecondX64: anchor.BN,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
   const {
     params: { rewardMint, rewardVaultKeypair },
-  } = await initializeReward(ctx, rewardAuthorityKeypair, whirlpool, rewardIndex, funder);
+  } = await initializeReward(
+    ctx,
+    rewardAuthorityKeypair,
+    whirlpool,
+    rewardIndex,
+    funder,
+  );
 
-  await mintToDestination(ctx.provider, rewardMint, rewardVaultKeypair.publicKey, vaultAmount);
+  await mintToDestination(
+    ctx.provider,
+    rewardMint,
+    rewardVaultKeypair.publicKey,
+    vaultAmount,
+  );
 
   await toTx(
     ctx,
@@ -463,7 +506,7 @@ export async function initRewardAndSetEmissions(
       rewardIndex,
       rewardVaultKey: rewardVaultKeypair.publicKey,
       emissionsPerSecondX64,
-    })
+    }),
   )
     .addSigner(rewardAuthorityKeypair)
     .buildAndExecute();
@@ -476,7 +519,7 @@ export async function openPosition(
   tickLowerIndex: number,
   tickUpperIndex: number,
   owner: PublicKey = ctx.provider.wallet.publicKey,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
   return openPositionWithOptMetadata(
     ctx,
@@ -485,7 +528,7 @@ export async function openPosition(
     tickUpperIndex,
     false,
     owner,
-    funder
+    funder,
   );
 }
 
@@ -495,7 +538,7 @@ export async function openPositionWithMetadata(
   tickLowerIndex: number,
   tickUpperIndex: number,
   owner: PublicKey = ctx.provider.wallet.publicKey,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
   return openPositionWithOptMetadata(
     ctx,
@@ -504,7 +547,7 @@ export async function openPositionWithMetadata(
     tickUpperIndex,
     true,
     owner,
-    funder
+    funder,
   );
 }
 
@@ -515,7 +558,7 @@ async function openPositionWithOptMetadata(
   tickUpperIndex: number,
   withMetadata: boolean = false,
   owner: PublicKey = ctx.provider.wallet.publicKey,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
   const { params, mint } = await generateDefaultOpenPositionParams(
     ctx,
@@ -523,7 +566,7 @@ async function openPositionWithOptMetadata(
     tickLowerIndex,
     tickUpperIndex,
     owner,
-    funder?.publicKey || ctx.provider.wallet.publicKey
+    funder?.publicKey || ctx.provider.wallet.publicKey,
   );
   let tx = withMetadata
     ? toTx(ctx, WhirlpoolIx.openPositionWithMetadataIx(ctx.program, params))
@@ -540,13 +583,13 @@ export async function initTickArray(
   ctx: WhirlpoolContext,
   whirlpool: PublicKey,
   startTickIndex: number,
-  funder?: Keypair
+  funder?: Keypair,
 ): Promise<{ txId: string; params: InitTickArrayParams }> {
   const params = generateDefaultInitTickArrayParams(
     ctx,
     whirlpool,
     startTickIndex,
-    funder?.publicKey
+    funder?.publicKey,
   );
   const tx = toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, params));
   if (funder) {
@@ -560,17 +603,12 @@ export async function initTestPoolWithTokens(
   tickSpacing: number,
   initSqrtPrice = DEFAULT_SQRT_PRICE,
   mintAmount = new anchor.BN("15000000000"),
-  reuseTokenA?: PublicKey
+  reuseTokenA?: PublicKey,
 ) {
   const provider = ctx.provider;
 
-  const { poolInitInfo, configInitInfo, configKeypairs, feeTierParams } = await initTestPool(
-    ctx,
-    tickSpacing,
-    initSqrtPrice,
-    undefined,
-    reuseTokenA
-  );
+  const { poolInitInfo, configInitInfo, configKeypairs, feeTierParams } =
+    await initTestPool(ctx, tickSpacing, initSqrtPrice, undefined, reuseTokenA);
 
   const { tokenMintA, tokenMintB, whirlpoolPda } = poolInitInfo;
 
@@ -578,23 +616,26 @@ export async function initTestPoolWithTokens(
   const connection = ctx.provider.connection;
   const airdropTx = await connection.requestAirdrop(
     ctx.provider.wallet.publicKey,
-    100_000_000_000_000
+    100_000_000_000_000,
   );
-  await ctx.connection.confirmTransaction({
-    signature: airdropTx,
-    ...(await ctx.connection.getLatestBlockhash("confirmed")),
-  }, "confirmed");
+  await ctx.connection.confirmTransaction(
+    {
+      signature: airdropTx,
+      ...(await ctx.connection.getLatestBlockhash("confirmed")),
+    },
+    "confirmed",
+  );
 
   const tokenAccountA = await createAndMintToAssociatedTokenAccount(
     provider,
     tokenMintA,
-    mintAmount
+    mintAmount,
   );
 
   const tokenAccountB = await createAndMintToAssociatedTokenAccount(
     provider,
     tokenMintB,
-    mintAmount
+    mintAmount,
   );
 
   return {
@@ -614,7 +655,7 @@ export async function initTickArrayRange(
   startTickIndex: number,
   arrayCount: number,
   tickSpacing: number,
-  aToB: boolean
+  aToB: boolean,
 ): Promise<PDA[]> {
   const ticksInArray = tickSpacing * TICK_ARRAY_SIZE;
   const direction = aToB ? -1 : 1;
@@ -624,7 +665,7 @@ export async function initTickArrayRange(
     const { params } = await initTickArray(
       ctx,
       whirlpool,
-      startTickIndex + direction * ticksInArray * i
+      startTickIndex + direction * ticksInArray * i,
     );
     result.push(params.tickArrayPda);
   }
@@ -642,47 +683,57 @@ export async function withdrawPositions(
   ctx: WhirlpoolContext,
   positionInfos: FundedPositionInfo[],
   tokenOwnerAccountA: PublicKey,
-  tokenOwnerAccountB: PublicKey
+  tokenOwnerAccountB: PublicKey,
 ) {
   const fetcher = ctx.fetcher;
   await Promise.all(
     positionInfos.map(async (info) => {
       const pool = await fetcher.getPool(info.initParams.whirlpool);
-      const position = await fetcher.getPosition(info.initParams.positionPda.publicKey);
+      const position = await fetcher.getPosition(
+        info.initParams.positionPda.publicKey,
+      );
 
       if (!pool) {
         throw new Error(`Failed to fetch pool - ${info.initParams.whirlpool}`);
       }
 
       if (!position) {
-        throw new Error(`Failed to fetch position - ${info.initParams.whirlpool}`);
+        throw new Error(
+          `Failed to fetch position - ${info.initParams.whirlpool}`,
+        );
       }
 
-      const priceLower = PriceMath.tickIndexToSqrtPriceX64(position.tickLowerIndex);
-      const priceUpper = PriceMath.tickIndexToSqrtPriceX64(position.tickUpperIndex);
+      const priceLower = PriceMath.tickIndexToSqrtPriceX64(
+        position.tickLowerIndex,
+      );
+      const priceUpper = PriceMath.tickIndexToSqrtPriceX64(
+        position.tickUpperIndex,
+      );
 
       const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
         position.liquidity,
         pool.sqrtPrice,
         priceLower,
         priceUpper,
-        false
+        false,
       );
 
       const numTicksInTickArray = pool.tickSpacing * TICK_ARRAY_SIZE;
       const lowerStartTick =
-        position.tickLowerIndex - (position.tickLowerIndex % numTicksInTickArray);
+        position.tickLowerIndex -
+        (position.tickLowerIndex % numTicksInTickArray);
       const tickArrayLower = PDAUtil.getTickArray(
         ctx.program.programId,
         info.initParams.whirlpool,
-        lowerStartTick
+        lowerStartTick,
       );
       const upperStartTick =
-        position.tickUpperIndex - (position.tickUpperIndex % numTicksInTickArray);
+        position.tickUpperIndex -
+        (position.tickUpperIndex % numTicksInTickArray);
       const tickArrayUpper = PDAUtil.getTickArray(
         ctx.program.programId,
         info.initParams.whirlpool,
-        upperStartTick
+        upperStartTick,
       );
 
       await toTx(
@@ -701,7 +752,7 @@ export async function withdrawPositions(
           tokenVaultB: pool.tokenVaultB,
           tickArrayLower: tickArrayLower.publicKey,
           tickArrayUpper: tickArrayUpper.publicKey,
-        })
+        }),
       ).buildAndExecute();
 
       await toTx(
@@ -715,9 +766,9 @@ export async function withdrawPositions(
           tokenOwnerAccountB,
           tokenVaultA: pool.tokenVaultA,
           tokenVaultB: pool.tokenVaultB,
-        })
+        }),
       ).buildAndExecute();
-    })
+    }),
   );
 }
 
@@ -733,27 +784,31 @@ export interface FundedPositionInfo {
 export async function fundPositionsWithClient(
   client: WhirlpoolClient,
   whirlpoolKey: PublicKey,
-  fundParams: FundedPositionParams[]
+  fundParams: FundedPositionParams[],
 ) {
   const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
   const whirlpoolData = whirlpool.getData();
   await Promise.all(
-    fundParams.map(async (param, idx) => {
+    fundParams.map(async (param) => {
       const { tokenA, tokenB } = PoolUtil.getTokenAmountsFromLiquidity(
         param.liquidityAmount,
         whirlpoolData.sqrtPrice,
         PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
         PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
-        true
+        true,
       );
 
-      const { tx } = await whirlpool.openPosition(param.tickLowerIndex, param.tickUpperIndex, {
-        liquidityAmount: param.liquidityAmount,
-        tokenMaxA: tokenA,
-        tokenMaxB: tokenB,
-      });
+      const { tx } = await whirlpool.openPosition(
+        param.tickLowerIndex,
+        param.tickUpperIndex,
+        {
+          liquidityAmount: param.liquidityAmount,
+          tokenMaxA: tokenA,
+          tokenMaxB: tokenB,
+        },
+      );
       await tx.buildAndExecute();
-    })
+    }),
   );
 }
 
@@ -762,7 +817,7 @@ export async function fundPositions(
   poolInitInfo: InitPoolParams,
   tokenAccountA: PublicKey,
   tokenAccountB: PublicKey,
-  fundParams: FundedPositionParams[]
+  fundParams: FundedPositionParams[],
 ): Promise<FundedPositionInfo[]> {
   const {
     whirlpoolPda: { publicKey: whirlpool },
@@ -778,19 +833,19 @@ export async function fundPositions(
         ctx,
         whirlpool,
         param.tickLowerIndex,
-        param.tickUpperIndex
+        param.tickUpperIndex,
       );
 
       const tickArrayLower = PDAUtil.getTickArray(
         ctx.program.programId,
         whirlpool,
-        TickUtil.getStartTickIndex(param.tickLowerIndex, tickSpacing)
+        TickUtil.getStartTickIndex(param.tickLowerIndex, tickSpacing),
       ).publicKey;
 
       const tickArrayUpper = PDAUtil.getTickArray(
         ctx.program.programId,
         whirlpool,
-        TickUtil.getStartTickIndex(param.tickUpperIndex, tickSpacing)
+        TickUtil.getStartTickIndex(param.tickUpperIndex, tickSpacing),
       ).publicKey;
 
       if (param.liquidityAmount.gt(ZERO_BN)) {
@@ -799,7 +854,7 @@ export async function fundPositions(
           initSqrtPrice,
           PriceMath.tickIndexToSqrtPriceX64(param.tickLowerIndex),
           PriceMath.tickIndexToSqrtPriceX64(param.tickUpperIndex),
-          true
+          true,
         );
         await toTx(
           ctx,
@@ -817,7 +872,7 @@ export async function fundPositions(
             tokenVaultB: tokenVaultBKeypair.publicKey,
             tickArrayLower,
             tickArrayUpper,
-          })
+          }),
         ).buildAndExecute();
       }
       return {
@@ -828,7 +883,7 @@ export async function fundPositions(
         tickArrayLower,
         tickArrayUpper,
       };
-    })
+    }),
   );
 }
 
@@ -836,7 +891,7 @@ export async function initTestPoolWithLiquidity(
   ctx: WhirlpoolContext,
   initSqrtPrice = DEFAULT_SQRT_PRICE,
   mintAmount = new anchor.BN("15000000000"),
-  reuseTokenA?: PublicKey
+  reuseTokenA?: PublicKey,
 ) {
   const {
     poolInitInfo,
@@ -851,7 +906,7 @@ export async function initTestPoolWithLiquidity(
     TickSpacing.Standard,
     initSqrtPrice,
     mintAmount,
-    reuseTokenA
+    reuseTokenA,
   );
 
   const tickArrays = await initTickArrayRange(
@@ -860,7 +915,7 @@ export async function initTestPoolWithLiquidity(
     22528, // to 33792
     3,
     TickSpacing.Standard,
-    false
+    false,
   );
 
   const fundParams: FundedPositionParams[] = [
@@ -876,7 +931,7 @@ export async function initTestPoolWithLiquidity(
     poolInitInfo,
     tokenAccountA,
     tokenAccountB,
-    fundParams
+    fundParams,
   );
 
   return {
@@ -894,24 +949,32 @@ export async function initTestPoolWithLiquidity(
 export async function initializePositionBundleWithMetadata(
   ctx: WhirlpoolContext,
   owner: PublicKey = ctx.provider.wallet.publicKey,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
   const positionBundleMintKeypair = Keypair.generate();
-  const positionBundlePda = PDAUtil.getPositionBundle(ctx.program.programId, positionBundleMintKeypair.publicKey);
-  const positionBundleMetadataPda = PDAUtil.getPositionBundleMetadata(positionBundleMintKeypair.publicKey);
-  const positionBundleTokenAccount = getAssociatedTokenAddressSync(positionBundleMintKeypair.publicKey, owner);
+  const positionBundlePda = PDAUtil.getPositionBundle(
+    ctx.program.programId,
+    positionBundleMintKeypair.publicKey,
+  );
+  const positionBundleMetadataPda = PDAUtil.getPositionBundleMetadata(
+    positionBundleMintKeypair.publicKey,
+  );
+  const positionBundleTokenAccount = getAssociatedTokenAddressSync(
+    positionBundleMintKeypair.publicKey,
+    owner,
+  );
 
-  const tx = toTx(ctx, WhirlpoolIx.initializePositionBundleWithMetadataIx(
-    ctx.program,
-    {
+  const tx = toTx(
+    ctx,
+    WhirlpoolIx.initializePositionBundleWithMetadataIx(ctx.program, {
       positionBundleMintKeypair,
       positionBundlePda,
       positionBundleMetadataPda,
       owner,
       positionBundleTokenAccount,
       funder: !!funder ? funder.publicKey : owner,
-    },
-  ));
+    }),
+  );
   if (funder) {
     tx.addSigner(funder);
   }
@@ -930,22 +993,28 @@ export async function initializePositionBundleWithMetadata(
 export async function initializePositionBundle(
   ctx: WhirlpoolContext,
   owner: PublicKey = ctx.provider.wallet.publicKey,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
   const positionBundleMintKeypair = Keypair.generate();
-  const positionBundlePda = PDAUtil.getPositionBundle(ctx.program.programId, positionBundleMintKeypair.publicKey);
-  const positionBundleTokenAccount = getAssociatedTokenAddressSync(positionBundleMintKeypair.publicKey, owner);
+  const positionBundlePda = PDAUtil.getPositionBundle(
+    ctx.program.programId,
+    positionBundleMintKeypair.publicKey,
+  );
+  const positionBundleTokenAccount = getAssociatedTokenAddressSync(
+    positionBundleMintKeypair.publicKey,
+    owner,
+  );
 
-  const tx = toTx(ctx, WhirlpoolIx.initializePositionBundleIx(
-    ctx.program,
-    {
+  const tx = toTx(
+    ctx,
+    WhirlpoolIx.initializePositionBundleIx(ctx.program, {
       positionBundleMintKeypair,
       positionBundlePda,
       owner,
       positionBundleTokenAccount,
       funder: !!funder ? funder.publicKey : owner,
-    },
-  ));
+    }),
+  );
   if (funder) {
     tx.addSigner(funder);
   }
@@ -968,7 +1037,7 @@ export async function openBundledPosition(
   tickLowerIndex: number,
   tickUpperIndex: number,
   owner: PublicKey = ctx.provider.wallet.publicKey,
-  funder?: Keypair
+  funder?: Keypair,
 ) {
   const { params } = await generateDefaultOpenBundledPositionParams(
     ctx,
@@ -978,7 +1047,7 @@ export async function openBundledPosition(
     tickLowerIndex,
     tickUpperIndex,
     owner,
-    funder?.publicKey || owner
+    funder?.publicKey || owner,
   );
 
   const tx = toTx(ctx, WhirlpoolIx.openBundledPositionIx(ctx.program, params));

@@ -1,10 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
+import type { Program } from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { Keypair, PublicKey } from "@solana/web3.js";
+import { SystemProgram } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
-import { Instruction } from "@orca-so/common-sdk";
+import type { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to initialize a rewards for a Whirlpool
@@ -41,10 +42,16 @@ export type InitializeRewardParams = {
  */
 export function initializeRewardIx(
   program: Program<Whirlpool>,
-  params: InitializeRewardParams
+  params: InitializeRewardParams,
 ): Instruction {
-  const { rewardAuthority, funder, whirlpool, rewardMint, rewardVaultKeypair, rewardIndex } =
-    params;
+  const {
+    rewardAuthority,
+    funder,
+    whirlpool,
+    rewardMint,
+    rewardVaultKeypair,
+    rewardIndex,
+  } = params;
 
   const ix = program.instruction.initializeReward(rewardIndex, {
     accounts: {

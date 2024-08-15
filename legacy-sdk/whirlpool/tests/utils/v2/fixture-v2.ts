@@ -1,19 +1,23 @@
-import { BN } from "@coral-xyz/anchor";
+import type { BN } from "@coral-xyz/anchor";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import { TickSpacing, ZERO_BN } from "..";
-import { InitConfigParams, InitPoolV2Params, TickUtil, WhirlpoolContext } from "../../../src";
-import {
-  initTickArray,
-} from "../init-utils";
+import type {
+  InitConfigParams,
+  InitPoolV2Params,
+  WhirlpoolContext,
+} from "../../../src";
+import { TickUtil } from "../../../src";
+import { initTickArray } from "../init-utils";
+import type {
+  FundedPositionV2Info,
+  FundedPositionV2Params,
+  TokenTrait,
+} from "./init-utils-v2";
 import {
   initRewardAndSetEmissionsV2,
   initTestPoolWithTokensV2,
-  FundedPositionV2Info,
-  FundedPositionV2Params,
   fundPositionsV2,
-  TokenTrait,
 } from "./init-utils-v2";
-
 
 interface InitFixtureV2Params {
   tokenTraitA: TokenTrait;
@@ -53,17 +57,31 @@ export class WhirlpoolTestFixtureV2 {
   }
 
   async init(params: InitFixtureV2Params): Promise<WhirlpoolTestFixtureV2> {
-    const { tickSpacing, initialSqrtPrice, positions, rewards, tokenTraitA, tokenTraitB, mintAmount } = params;
+    const {
+      tickSpacing,
+      initialSqrtPrice,
+      positions,
+      rewards,
+      tokenTraitA,
+      tokenTraitB,
+      mintAmount,
+    } = params;
 
-    const { poolInitInfo, configInitInfo, configKeypairs, configExtension, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokensV2(
-        this.ctx,
-        tokenTraitA,
-        tokenTraitB,
-        tickSpacing,
-        initialSqrtPrice,
-        mintAmount,
-      );
+    const {
+      poolInitInfo,
+      configInitInfo,
+      configKeypairs,
+      configExtension,
+      tokenAccountA,
+      tokenAccountB,
+    } = await initTestPoolWithTokensV2(
+      this.ctx,
+      tokenTraitA,
+      tokenTraitB,
+      tickSpacing,
+      initialSqrtPrice,
+      mintAmount,
+    );
 
     this.poolInitInfo = poolInitInfo;
     this.configInitInfo = configInitInfo;
@@ -79,7 +97,7 @@ export class WhirlpoolTestFixtureV2 {
         poolInitInfo,
         tokenAccountA,
         tokenAccountB,
-        positions
+        positions,
       );
     }
 
@@ -98,7 +116,7 @@ export class WhirlpoolTestFixtureV2 {
             rewards[i].vaultAmount,
             rewards[i].emissionsPerSecondX64,
             configExtension.configExtensionKeypairs.tokenBadgeAuthorityKeypair,
-          )
+          ),
         );
       }
       this.rewards = initRewards;
@@ -126,18 +144,22 @@ export class WhirlpoolTestFixtureV2 {
 async function initTickArraysV2(
   ctx: WhirlpoolContext,
   poolInitInfo: InitPoolV2Params,
-  positions: FundedPositionV2Params[]
+  positions: FundedPositionV2Params[],
 ) {
   const startTickSet = new Set<number>();
   positions.forEach((p) => {
-    startTickSet.add(TickUtil.getStartTickIndex(p.tickLowerIndex, poolInitInfo.tickSpacing));
-    startTickSet.add(TickUtil.getStartTickIndex(p.tickUpperIndex, poolInitInfo.tickSpacing));
+    startTickSet.add(
+      TickUtil.getStartTickIndex(p.tickLowerIndex, poolInitInfo.tickSpacing),
+    );
+    startTickSet.add(
+      TickUtil.getStartTickIndex(p.tickUpperIndex, poolInitInfo.tickSpacing),
+    );
   });
 
   return Promise.all(
     Array.from(startTickSet).map((startTick) =>
-      initTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick)
-    )
+      initTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick),
+    ),
   );
 }
 

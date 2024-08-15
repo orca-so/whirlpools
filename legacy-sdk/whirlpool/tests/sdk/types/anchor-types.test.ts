@@ -20,7 +20,7 @@ describe("anchor-types", () => {
         assert.equal(
           actualSize,
           expectedSizes[name],
-          `For ${name} expected ${expectedSizes[name]} but got ${actualSize}`
+          `For ${name} expected ${expectedSizes[name]} but got ${actualSize}`,
         );
       } catch (e) {
         assert.fail(`Error fetching size for ${name}: ${e}`);

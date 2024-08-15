@@ -87,9 +87,7 @@ pub fn handler(
         liquidity_delta,
     )?;
 
-    if delta_a > token_max_a {
-        return Err(ErrorCode::TokenMaxExceeded.into());
-    } else if delta_b > token_max_b {
+    if delta_a > token_max_a || delta_b > token_max_b {
         return Err(ErrorCode::TokenMaxExceeded.into());
     }
 

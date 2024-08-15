@@ -66,7 +66,7 @@ pub fn get_amount_delta_a(
         return Err(ErrorCode::TokenMaxExceeded);
     }
 
-    return Ok(result as u64);
+    Ok(result as u64)
 }
 
 //
@@ -365,7 +365,7 @@ mod fuzz_tests {
 
             // Q64.0 << 64 => Q64.64
             let amount_x64 = u128::from(amount) << Q64_RESOLUTION;
-            let delta = div_round_up(amount_x64, liquidity.into()).unwrap();
+            let delta = div_round_up(amount_x64, liquidity).unwrap();
 
             if sqrt_price < delta {
                 // In Case 4, error if sqrt_price < delta
@@ -488,7 +488,7 @@ mod test_get_amount_delta {
     #[test]
     fn test_get_amount_delta_a_overflow() {
         assert!(get_amount_delta_a(1 << 64, 2 << 64, u128::MAX, true).is_err());
-        assert!(get_amount_delta_a(1 << 64, 2 << 64, (u64::MAX as u128) << 1 + 1, true).is_err());
+        assert!(get_amount_delta_a(1 << 64, 2 << 64, (u64::MAX as u128) << (1 + 1), true).is_err());
         assert!(get_amount_delta_a(1 << 64, 2 << 64, (u64::MAX as u128) << 1, true).is_ok());
         assert!(get_amount_delta_a(1 << 64, 2 << 64, u64::MAX as u128, true).is_ok());
     }

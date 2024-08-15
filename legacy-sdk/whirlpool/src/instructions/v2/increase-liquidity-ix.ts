@@ -1,10 +1,14 @@
-import { Program } from "@coral-xyz/anchor";
-import { AccountMeta, PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../../artifacts/whirlpool";
-import { IncreaseLiquidityInput, MEMO_PROGRAM_ADDRESS } from "../..";
+import type { Program } from "@coral-xyz/anchor";
+import type { AccountMeta, PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../../artifacts/whirlpool";
+import type { IncreaseLiquidityInput } from "../..";
+import { MEMO_PROGRAM_ADDRESS } from "../..";
 
-import { Instruction } from "@orca-so/common-sdk";
-import { RemainingAccountsBuilder, RemainingAccountsType } from "../../utils/remaining-accounts-util";
+import type { Instruction } from "@orca-so/common-sdk";
+import {
+  RemainingAccountsBuilder,
+  RemainingAccountsType,
+} from "../../utils/remaining-accounts-util";
 
 /**
  * Parameters to increase liquidity for a position.
@@ -60,7 +64,7 @@ export type IncreaseLiquidityV2Params = {
  */
 export function increaseLiquidityV2Ix(
   program: Program<Whirlpool>,
-  params: IncreaseLiquidityV2Params
+  params: IncreaseLiquidityV2Params,
 ): Instruction {
   const {
     liquidityAmount,
@@ -84,31 +88,38 @@ export function increaseLiquidityV2Ix(
     tickArrayUpper,
   } = params;
 
-  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
-    .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
-    .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
-    .build();
+  const [remainingAccountsInfo, remainingAccounts] =
+    new RemainingAccountsBuilder()
+      .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+      .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+      .build();
 
-  const ix = program.instruction.increaseLiquidityV2(liquidityAmount, tokenMaxA, tokenMaxB, remainingAccountsInfo, {
-    accounts: {
-      whirlpool,
-      positionAuthority,
-      position,
-      positionTokenAccount,
-      tokenMintA,
-      tokenMintB,
-      tokenOwnerAccountA,
-      tokenOwnerAccountB,
-      tokenVaultA,
-      tokenVaultB,
-      tokenProgramA,
-      tokenProgramB,
-      tickArrayLower,
-      tickArrayUpper,
-      memoProgram: MEMO_PROGRAM_ADDRESS,
+  const ix = program.instruction.increaseLiquidityV2(
+    liquidityAmount,
+    tokenMaxA,
+    tokenMaxB,
+    remainingAccountsInfo,
+    {
+      accounts: {
+        whirlpool,
+        positionAuthority,
+        position,
+        positionTokenAccount,
+        tokenMintA,
+        tokenMintB,
+        tokenOwnerAccountA,
+        tokenOwnerAccountB,
+        tokenVaultA,
+        tokenVaultB,
+        tokenProgramA,
+        tokenProgramB,
+        tickArrayLower,
+        tickArrayUpper,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+      },
+      remainingAccounts,
     },
-    remainingAccounts,
-  });
+  );
 
   return {
     instructions: [ix],

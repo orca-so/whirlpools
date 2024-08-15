@@ -1,6 +1,6 @@
 import { BN } from "@coral-xyz/anchor";
 import { AddressUtil } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 import { METADATA_PROGRAM_ADDRESS } from "../../types/public";
 import { PriceMath } from "./price-math";
 import { TickUtil } from "./tick-utils";
@@ -34,7 +34,7 @@ export class PDAUtil {
     whirlpoolsConfigKey: PublicKey,
     tokenMintAKey: PublicKey,
     tokenMintBKey: PublicKey,
-    tickSpacing: number
+    tickSpacing: number,
   ) {
     return AddressUtil.findProgramAddress(
       [
@@ -44,7 +44,7 @@ export class PDAUtil {
         tokenMintBKey.toBuffer(),
         new BN(tickSpacing).toArrayLike(Buffer, "le", 2),
       ],
-      programId
+      programId,
     );
   }
 
@@ -57,7 +57,7 @@ export class PDAUtil {
   public static getPosition(programId: PublicKey, positionMintKey: PublicKey) {
     return AddressUtil.findProgramAddress(
       [Buffer.from(PDA_POSITION_SEED), positionMintKey.toBuffer()],
-      programId
+      programId,
     );
   }
 
@@ -73,7 +73,7 @@ export class PDAUtil {
         METADATA_PROGRAM_ADDRESS.toBuffer(),
         positionMintKey.toBuffer(),
       ],
-      METADATA_PROGRAM_ADDRESS
+      METADATA_PROGRAM_ADDRESS,
     );
   }
 
@@ -84,14 +84,18 @@ export class PDAUtil {
    * @param startTick
    * @returns
    */
-  public static getTickArray(programId: PublicKey, whirlpoolAddress: PublicKey, startTick: number) {
+  public static getTickArray(
+    programId: PublicKey,
+    whirlpoolAddress: PublicKey,
+    startTick: number,
+  ) {
     return AddressUtil.findProgramAddress(
       [
         Buffer.from(PDA_TICK_ARRAY_SEED),
         whirlpoolAddress.toBuffer(),
         Buffer.from(startTick.toString()),
       ],
-      programId
+      programId,
     );
   }
 
@@ -111,13 +115,17 @@ export class PDAUtil {
     tickSpacing: number,
     whirlpool: PublicKey,
     programId: PublicKey,
-    tickArrayOffset = 0
+    tickArrayOffset = 0,
   ) {
-    const startIndex = TickUtil.getStartTickIndex(tickIndex, tickSpacing, tickArrayOffset);
+    const startIndex = TickUtil.getStartTickIndex(
+      tickIndex,
+      tickSpacing,
+      tickArrayOffset,
+    );
     return PDAUtil.getTickArray(
       AddressUtil.toPubKey(programId),
       AddressUtil.toPubKey(whirlpool),
-      startIndex
+      startIndex,
     );
   }
 
@@ -126,7 +134,7 @@ export class PDAUtil {
     tickSpacing: number,
     whirlpool: PublicKey,
     programId: PublicKey,
-    tickArrayOffset = 0
+    tickArrayOffset = 0,
   ) {
     const tickIndex = PriceMath.sqrtPriceX64ToTickIndex(sqrtPriceX64);
     return PDAUtil.getTickArrayFromTickIndex(
@@ -134,7 +142,7 @@ export class PDAUtil {
       tickSpacing,
       whirlpool,
       programId,
-      tickArrayOffset
+      tickArrayOffset,
     );
   }
 
@@ -148,7 +156,7 @@ export class PDAUtil {
   public static getFeeTier(
     programId: PublicKey,
     whirlpoolsConfigAddress: PublicKey,
-    tickSpacing: number
+    tickSpacing: number,
   ) {
     return AddressUtil.findProgramAddress(
       [
@@ -156,7 +164,7 @@ export class PDAUtil {
         whirlpoolsConfigAddress.toBuffer(),
         new BN(tickSpacing).toArrayLike(Buffer, "le", 2),
       ],
-      programId
+      programId,
     );
   }
 
@@ -169,7 +177,7 @@ export class PDAUtil {
   public static getOracle(programId: PublicKey, whirlpoolAddress: PublicKey) {
     return AddressUtil.findProgramAddress(
       [Buffer.from(PDA_ORACLE_SEED), whirlpoolAddress.toBuffer()],
-      programId
+      programId,
     );
   }
 
@@ -183,7 +191,7 @@ export class PDAUtil {
   public static getBundledPosition(
     programId: PublicKey,
     positionBundleMintKey: PublicKey,
-    bundleIndex: number
+    bundleIndex: number,
   ) {
     return AddressUtil.findProgramAddress(
       [
@@ -191,7 +199,7 @@ export class PDAUtil {
         positionBundleMintKey.toBuffer(),
         Buffer.from(bundleIndex.toString()),
       ],
-      programId
+      programId,
     );
   }
 
@@ -201,10 +209,13 @@ export class PDAUtil {
    * @param positionBundleMintKey
    * @returns
    */
-  public static getPositionBundle(programId: PublicKey, positionBundleMintKey: PublicKey) {
+  public static getPositionBundle(
+    programId: PublicKey,
+    positionBundleMintKey: PublicKey,
+  ) {
     return AddressUtil.findProgramAddress(
       [Buffer.from(PDA_POSITION_BUNDLE_SEED), positionBundleMintKey.toBuffer()],
-      programId
+      programId,
     );
   }
 
@@ -220,7 +231,7 @@ export class PDAUtil {
         METADATA_PROGRAM_ADDRESS.toBuffer(),
         positionBundleMintKey.toBuffer(),
       ],
-      METADATA_PROGRAM_ADDRESS
+      METADATA_PROGRAM_ADDRESS,
     );
   }
 
@@ -230,10 +241,16 @@ export class PDAUtil {
    * @param whirlpoolsConfigAddress
    * @returns
    */
-  public static getConfigExtension(programId: PublicKey, whirlpoolsConfigAddress: PublicKey) {
+  public static getConfigExtension(
+    programId: PublicKey,
+    whirlpoolsConfigAddress: PublicKey,
+  ) {
     return AddressUtil.findProgramAddress(
-      [Buffer.from(PDA_CONFIG_EXTENSION_SEED), whirlpoolsConfigAddress.toBuffer()],
-      programId
+      [
+        Buffer.from(PDA_CONFIG_EXTENSION_SEED),
+        whirlpoolsConfigAddress.toBuffer(),
+      ],
+      programId,
     );
   }
 
@@ -247,7 +264,7 @@ export class PDAUtil {
   public static getTokenBadge(
     programId: PublicKey,
     whirlpoolsConfigAddress: PublicKey,
-    tokenMintKey: PublicKey
+    tokenMintKey: PublicKey,
   ) {
     return AddressUtil.findProgramAddress(
       [
@@ -255,7 +272,7 @@ export class PDAUtil {
         whirlpoolsConfigAddress.toBuffer(),
         tokenMintKey.toBuffer(),
       ],
-      programId
+      programId,
     );
   }
 }

@@ -1,13 +1,12 @@
 import invariant from "tiny-invariant";
-import { PositionBundleData, POSITION_BUNDLE_SIZE } from "../../types/public";
+import type { PositionBundleData } from "../../types/public";
+import { POSITION_BUNDLE_SIZE } from "../../types/public";
 
 /**
  * A collection of utility functions when interacting with a PositionBundle.
  * @category Whirlpool Utils
  */
 export class PositionBundleUtil {
-  private constructor() {}
-
   /**
    * Check if the bundle index is in the correct range.
    *
@@ -25,8 +24,14 @@ export class PositionBundleUtil {
    * @param bundleIndex The bundle index to be checked
    * @returns true if Bundled Position has been opened
    */
-  public static isOccupied(positionBundle: PositionBundleData, bundleIndex: number): boolean {
-    invariant(PositionBundleUtil.checkBundleIndexInBounds(bundleIndex), "bundleIndex out of range");
+  public static isOccupied(
+    positionBundle: PositionBundleData,
+    bundleIndex: number,
+  ): boolean {
+    invariant(
+      PositionBundleUtil.checkBundleIndexInBounds(bundleIndex),
+      "bundleIndex out of range",
+    );
     const array = PositionBundleUtil.convertBitmapToArray(positionBundle);
     return array[bundleIndex];
   }
@@ -38,7 +43,10 @@ export class PositionBundleUtil {
    * @param bundleIndex The bundle index to be checked
    * @returns true if Bundled Position has not been opened
    */
-  public static isUnoccupied(positionBundle: PositionBundleData, bundleIndex: number): boolean {
+  public static isUnoccupied(
+    positionBundle: PositionBundleData,
+    bundleIndex: number,
+  ): boolean {
     return !PositionBundleUtil.isOccupied(positionBundle, bundleIndex);
   }
 
@@ -49,7 +57,8 @@ export class PositionBundleUtil {
    * @returns true if all bundle index is occupied
    */
   public static isFull(positionBundle: PositionBundleData): boolean {
-    const unoccupied = PositionBundleUtil.getUnoccupiedBundleIndexes(positionBundle);
+    const unoccupied =
+      PositionBundleUtil.getUnoccupiedBundleIndexes(positionBundle);
     return unoccupied.length === 0;
   }
 
@@ -60,7 +69,8 @@ export class PositionBundleUtil {
    * @returns true if all bundle index is unoccupied
    */
   public static isEmpty(positionBundle: PositionBundleData): boolean {
-    const occupied = PositionBundleUtil.getOccupiedBundleIndexes(positionBundle);
+    const occupied =
+      PositionBundleUtil.getOccupiedBundleIndexes(positionBundle);
     return occupied.length === 0;
   }
 
@@ -70,13 +80,17 @@ export class PositionBundleUtil {
    * @param positionBundle The position bundle to be checked
    * @returns The array of bundle index where the corresponding Bundled Position is open
    */
-  public static getOccupiedBundleIndexes(positionBundle: PositionBundleData): number[] {
+  public static getOccupiedBundleIndexes(
+    positionBundle: PositionBundleData,
+  ): number[] {
     const result: number[] = [];
-    PositionBundleUtil.convertBitmapToArray(positionBundle).forEach((occupied, index) => {
-      if (occupied) {
-        result.push(index);
-      }
-    });
+    PositionBundleUtil.convertBitmapToArray(positionBundle).forEach(
+      (occupied, index) => {
+        if (occupied) {
+          result.push(index);
+        }
+      },
+    );
     return result;
   }
 
@@ -86,13 +100,17 @@ export class PositionBundleUtil {
    * @param positionBundle The position bundle to be checked
    * @returns The array of bundle index where the corresponding Bundled Position is not open
    */
-  public static getUnoccupiedBundleIndexes(positionBundle: PositionBundleData): number[] {
+  public static getUnoccupiedBundleIndexes(
+    positionBundle: PositionBundleData,
+  ): number[] {
     const result: number[] = [];
-    PositionBundleUtil.convertBitmapToArray(positionBundle).forEach((occupied, index) => {
-      if (!occupied) {
-        result.push(index);
-      }
-    });
+    PositionBundleUtil.convertBitmapToArray(positionBundle).forEach(
+      (occupied, index) => {
+        if (!occupied) {
+          result.push(index);
+        }
+      },
+    );
     return result;
   }
 
@@ -102,8 +120,11 @@ export class PositionBundleUtil {
    * @param positionBundle The position bundle to be checked
    * @returns The first unoccupied bundle index, null if the position bundle is full
    */
-  public static findUnoccupiedBundleIndex(positionBundle: PositionBundleData): number | null {
-    const unoccupied = PositionBundleUtil.getUnoccupiedBundleIndexes(positionBundle);
+  public static findUnoccupiedBundleIndex(
+    positionBundle: PositionBundleData,
+  ): number | null {
+    const unoccupied =
+      PositionBundleUtil.getUnoccupiedBundleIndexes(positionBundle);
     return unoccupied.length === 0 ? null : unoccupied[0];
   }
 
@@ -113,7 +134,9 @@ export class PositionBundleUtil {
    * @param positionBundle The position bundle whose bitmap will be converted
    * @returns The array of boolean representing if Bundled Position is open
    */
-  public static convertBitmapToArray(positionBundle: PositionBundleData): boolean[] {
+  public static convertBitmapToArray(
+    positionBundle: PositionBundleData,
+  ): boolean[] {
     const result: boolean[] = [];
     positionBundle.positionBitmap.map((bitmap) => {
       for (let offset = 0; offset < 8; offset++) {

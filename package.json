@@ -3,10 +3,12 @@
   "private": true,
   "license": "Apache-2.0",
   "packageManager": "yarn@4.4.0",
+  "type": "module",
   "scripts": {
     "build": "nx run-many --target build --projects",
     "test": "nx run-many --target test --projects",
     "format": "nx run-many --target format --projects",
+    "lint": "nx run-many --target lint --projects",
     "clean": "nx reset && nx run-many --target clean --projects",
     "prepare": "husky install"
   },
@@ -19,7 +21,6 @@
     "lint-staged": "^15.2.9",
     "mocha": "^10.2.0",
     "nx": "^19.5.7",
-    "prettier": "^3.1.1",
     "rimraf": "^6.0.1",
     "sinon": "^18.0.0",
     "ts-mocha": "^10.0.0"

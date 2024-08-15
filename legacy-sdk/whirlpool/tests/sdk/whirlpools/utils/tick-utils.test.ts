@@ -3,7 +3,10 @@ import { TickUtil, MIN_TICK_INDEX, MAX_TICK_INDEX } from "../../../../src";
 
 describe("TickUtil tests", () => {
   describe("getFullRangeTickIndex", () => {
-    function checkGetFullRangeTickIndex(tickSpacing: number, minMaxAbs: number) {
+    function checkGetFullRangeTickIndex(
+      tickSpacing: number,
+      minMaxAbs: number,
+    ) {
       const [min, max] = TickUtil.getFullRangeTickIndex(tickSpacing);
       assert.equal(min, -minMaxAbs);
       assert.equal(max, +minMaxAbs);
@@ -44,9 +47,9 @@ describe("TickUtil tests", () => {
             TickUtil.isFullRange(
               tickSpacing,
               min + minShift * tickSpacing,
-              max + maxShift * tickSpacing
+              max + maxShift * tickSpacing,
             ),
-            isFullRange
+            isFullRange,
           );
         }
       }

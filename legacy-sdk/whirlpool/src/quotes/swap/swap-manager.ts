@@ -1,9 +1,10 @@
 import { ZERO } from "@orca-so/common-sdk";
 import BN from "bn.js";
-import { PROTOCOL_FEE_RATE_MUL_VALUE, WhirlpoolData } from "../../types/public";
+import type { WhirlpoolData } from "../../types/public";
+import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../types/public";
 import { computeSwapStep } from "../../utils/math/swap-math";
 import { PriceMath } from "../../utils/public";
-import { TickArraySequence } from "./tick-array-sequence";
+import type { TickArraySequence } from "./tick-array-sequence";
 
 export type SwapResult = {
   amountA: BN;
@@ -19,7 +20,7 @@ export function computeSwap(
   tokenAmount: BN,
   sqrtPriceLimit: BN,
   amountSpecifiedIsInput: boolean,
-  aToB: boolean
+  aToB: boolean,
 ): SwapResult {
   let amountRemaining = tokenAmount;
   let amountCalculated = ZERO;
@@ -35,13 +36,11 @@ export function computeSwap(
     : whirlpoolData.feeGrowthGlobalB;
 
   while (amountRemaining.gt(ZERO) && !sqrtPriceLimit.eq(currSqrtPrice)) {
-    let { nextIndex: nextTickIndex } = tickSequence.findNextInitializedTickIndex(currTickIndex);
+    let { nextIndex: nextTickIndex } =
+      tickSequence.findNextInitializedTickIndex(currTickIndex);
 
-    let { nextTickPrice, nextSqrtPriceLimit: targetSqrtPrice } = getNextSqrtPrices(
-      nextTickIndex,
-      sqrtPriceLimit,
-      aToB
-    );
+    let { nextTickPrice, nextSqrtPriceLimit: targetSqrtPrice } =
+      getNextSqrtPrices(nextTickIndex, sqrtPriceLimit, aToB);
 
     const swapComputation = computeSwapStep(
       amountRemaining,
@@ -50,7 +49,7 @@ export function computeSwap(
       currSqrtPrice,
       targetSqrtPrice,
       amountSpecifiedIsInput,
-      aToB
+      aToB,
     );
 
     totalFeeAmount = totalFeeAmount.add(swapComputation.feeAmount);
@@ -70,7 +69,7 @@ export function computeSwap(
       protocolFeeRate,
       currLiquidity,
       currProtocolFee,
-      currFeeGrowthGlobalInput
+      currFeeGrowthGlobalInput,
     );
     currProtocolFee = nextProtocolFee;
     currFeeGrowthGlobalInput = nextFeeGrowthGlobalInput;
@@ -78,11 +77,17 @@ export function computeSwap(
     if (swapComputation.nextPrice.eq(nextTickPrice)) {
       const nextTick = tickSequence.getTick(nextTickIndex);
       if (nextTick.initialized) {
-        currLiquidity = calculateNextLiquidity(nextTick.liquidityNet, currLiquidity, aToB);
+        currLiquidity = calculateNextLiquidity(
+          nextTick.liquidityNet,
+          currLiquidity,
+          aToB,
+        );
       }
       currTickIndex = aToB ? nextTickIndex - 1 : nextTickIndex;
     } else {
-      currTickIndex = PriceMath.sqrtPriceX64ToTickIndex(swapComputation.nextPrice);
+      currTickIndex = PriceMath.sqrtPriceX64ToTickIndex(
+        swapComputation.nextPrice,
+      );
     }
 
     currSqrtPrice = swapComputation.nextPrice;
@@ -93,7 +98,7 @@ export function computeSwap(
     amountRemaining,
     amountCalculated,
     aToB,
-    amountSpecifiedIsInput
+    amountSpecifiedIsInput,
   );
 
   return {
@@ -105,7 +110,11 @@ export function computeSwap(
   };
 }
 
-function getNextSqrtPrices(nextTick: number, sqrtPriceLimit: BN, aToB: boolean) {
+function getNextSqrtPrices(
+  nextTick: number,
+  sqrtPriceLimit: BN,
+  aToB: boolean,
+) {
   const nextTickPrice = PriceMath.tickIndexToSqrtPriceX64(nextTick);
   const nextSqrtPriceLimit = aToB
     ? BN.max(sqrtPriceLimit, nextTickPrice)
@@ -118,7 +127,7 @@ function calculateFees(
   protocolFeeRate: number,
   currLiquidity: BN,
   currProtocolFee: BN,
-  currFeeGrowthGlobalInput: BN
+  currFeeGrowthGlobalInput: BN,
 ) {
   let nextProtocolFee = currProtocolFee;
   let nextFeeGrowthGlobalInput = currFeeGrowthGlobalInput;
@@ -142,7 +151,9 @@ function calculateFees(
 }
 
 function calculateProtocolFee(globalFee: BN, protocolFeeRate: number) {
-  return globalFee.mul(new BN(protocolFeeRate).div(PROTOCOL_FEE_RATE_MUL_VALUE));
+  return globalFee.mul(
+    new BN(protocolFeeRate).div(PROTOCOL_FEE_RATE_MUL_VALUE),
+  );
 }
 
 function calculateEstTokens(
@@ -150,7 +161,7 @@ function calculateEstTokens(
   amountRemaining: BN,
   amountCalculated: BN,
   aToB: boolean,
-  amountSpecifiedIsInput: boolean
+  amountSpecifiedIsInput: boolean,
 ) {
   return aToB === amountSpecifiedIsInput
     ? {
@@ -163,6 +174,12 @@ function calculateEstTokens(
       };
 }
 
-function calculateNextLiquidity(tickNetLiquidity: BN, currLiquidity: BN, aToB: boolean) {
-  return aToB ? currLiquidity.sub(tickNetLiquidity) : currLiquidity.add(tickNetLiquidity);
+function calculateNextLiquidity(
+  tickNetLiquidity: BN,
+  currLiquidity: BN,
+  aToB: boolean,
+) {
+  return aToB
+    ? currLiquidity.sub(tickNetLiquidity)
+    : currLiquidity.add(tickNetLiquidity);
 }

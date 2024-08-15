@@ -7,19 +7,28 @@ describe("PoolUtils tests", () => {
   describe("getTokenType", () => {
     it("Token is tokenA", async () => {
       const whirlpoolData = testWhirlpoolData;
-      const result = PoolUtil.getTokenType(whirlpoolData, whirlpoolData.tokenMintA);
+      const result = PoolUtil.getTokenType(
+        whirlpoolData,
+        whirlpoolData.tokenMintA,
+      );
       assert.equal(result, TokenType.TokenA);
     });
 
     it("Token is tokenB", async () => {
       const whirlpoolData = testWhirlpoolData;
-      const result = PoolUtil.getTokenType(whirlpoolData, whirlpoolData.tokenMintB);
+      const result = PoolUtil.getTokenType(
+        whirlpoolData,
+        whirlpoolData.tokenMintB,
+      );
       assert.equal(result, TokenType.TokenB);
     });
 
     it("Token is some other token", async () => {
       const whirlpoolData = testWhirlpoolData;
-      const result = PoolUtil.getTokenType(whirlpoolData, Keypair.generate().publicKey);
+      const result = PoolUtil.getTokenType(
+        whirlpoolData,
+        Keypair.generate().publicKey,
+      );
       assert.ok(result === undefined);
     });
   });

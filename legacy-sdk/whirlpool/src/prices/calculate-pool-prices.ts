@@ -1,19 +1,19 @@
-import { Address } from "@coral-xyz/anchor";
+import type { Address } from "@coral-xyz/anchor";
 import { AddressUtil, DecimalUtil, Percentage } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
+import type { PublicKey } from "@solana/web3.js";
+import type BN from "bn.js";
 import Decimal from "decimal.js";
-import {
+import type {
   DecimalsMap,
   GetPricesConfig,
   GetPricesThresholdConfig,
   PoolMap,
   PriceMap,
   TickArrayMap,
-  defaultGetPricesConfig,
 } from ".";
+import { defaultGetPricesConfig } from ".";
 import { swapQuoteWithParams } from "../quotes/public/swap-quote";
-import { TickArray, WhirlpoolData } from "../types/public";
+import type { TickArray, WhirlpoolData } from "../types/public";
 import { PoolUtil, PriceMath, SwapUtils } from "../utils/public";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../utils/public/token-extension-util";
 import { getTickArrayPublicKeysWithStartTickIndex } from "../utils/swap-utils";
@@ -23,7 +23,7 @@ function checkLiquidity(
   tickArrays: TickArray[],
   aToB: boolean,
   thresholdConfig: GetPricesThresholdConfig,
-  decimalsMap: DecimalsMap
+  decimalsMap: DecimalsMap,
 ): boolean {
   const { amountOut, priceImpactThreshold } = thresholdConfig;
 
@@ -42,9 +42,9 @@ function checkLiquidity(
         // To calculate token price, transfer fee is NOT taken into account.
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
       },
-      Percentage.fromDecimal(new Decimal(0))
+      Percentage.fromDecimal(new Decimal(0)),
     ));
-  } catch (e) {
+  } catch {
     // If a quote could not be generated, assume there is insufficient liquidity
     return false;
   }
@@ -63,7 +63,10 @@ function checkLiquidity(
 
   const amountOutDecimals = DecimalUtil.fromBN(amountOut, outputDecimals);
 
-  const estimatedAmountInDecimals = DecimalUtil.fromBN(estimatedAmountIn, inputDecimals);
+  const estimatedAmountInDecimals = DecimalUtil.fromBN(
+    estimatedAmountIn,
+    inputDecimals,
+  );
 
   const maxAmountInDecimals = amountOutDecimals
     .div(price)
@@ -76,7 +79,7 @@ function checkLiquidity(
 type PoolObject = { pool: WhirlpoolData; address: PublicKey };
 function getMostLiquidPools(
   quoteTokenMint: PublicKey,
-  poolMap: PoolMap
+  poolMap: PoolMap,
 ): Record<string, PoolObject> {
   const mostLiquidPools = new Map<string, PoolObject>();
   Object.entries(poolMap).forEach(([address, pool]) => {
@@ -86,15 +89,23 @@ function getMostLiquidPools(
     if (pool.liquidity.isZero()) {
       return;
     }
-    if (!pool.tokenMintA.equals(quoteTokenMint) && !pool.tokenMintB.equals(quoteTokenMint)) {
+    if (
+      !pool.tokenMintA.equals(quoteTokenMint) &&
+      !pool.tokenMintB.equals(quoteTokenMint)
+    ) {
       return;
     }
 
-    const baseTokenMint = pool.tokenMintA.equals(quoteTokenMint) ? mintB : mintA;
+    const baseTokenMint = pool.tokenMintA.equals(quoteTokenMint)
+      ? mintB
+      : mintA;
 
     const existingPool = mostLiquidPools.get(baseTokenMint);
     if (!existingPool || pool.liquidity.gt(existingPool.pool.liquidity)) {
-      mostLiquidPools.set(baseTokenMint, { address: AddressUtil.toPubKey(address), pool });
+      mostLiquidPools.set(baseTokenMint, {
+        address: AddressUtil.toPubKey(address),
+        pool,
+      });
     }
   });
 
@@ -108,7 +119,7 @@ export function calculatePricesForQuoteToken(
   tickArrayMap: TickArrayMap,
   decimalsMap: DecimalsMap,
   config: GetPricesConfig,
-  thresholdConfig: GetPricesThresholdConfig
+  thresholdConfig: GetPricesThresholdConfig,
 ): PriceMap {
   const mostLiquidPools = getMostLiquidPools(quoteTokenMint, poolMap);
 
@@ -126,16 +137,29 @@ export function calculatePricesForQuoteToken(
       const aToB = AddressUtil.toPubKey(mintB).equals(quoteTokenMint);
 
       const baseTokenMint = aToB ? mintA : mintB;
-      const poolCandidate = mostLiquidPools[AddressUtil.toString(baseTokenMint)];
+      const poolCandidate =
+        mostLiquidPools[AddressUtil.toString(baseTokenMint)];
       if (poolCandidate === undefined) {
         return [mint.toBase58(), null];
       }
 
       const { pool, address } = poolCandidate;
 
-      const tickArrays = getTickArrays(pool, address, aToB, tickArrayMap, config);
+      const tickArrays = getTickArrays(
+        pool,
+        address,
+        aToB,
+        tickArrayMap,
+        config,
+      );
 
-      const isPoolLiquid = checkLiquidity(pool, tickArrays, aToB, thresholdConfig, decimalsMap);
+      const isPoolLiquid = checkLiquidity(
+        pool,
+        tickArrays,
+        aToB,
+        thresholdConfig,
+        decimalsMap,
+      );
 
       if (!isPoolLiquid) {
         return [mint.toBase58(), null];
@@ -144,7 +168,7 @@ export function calculatePricesForQuoteToken(
       const price = getPrice(pool, decimalsMap);
       const quotePrice = aToB ? price : price.pow(-1);
       return [mint.toBase58(), quotePrice];
-    })
+    }),
   );
 }
 
@@ -153,7 +177,7 @@ function getTickArrays(
   address: PublicKey,
   aToB: boolean,
   tickArrayMap: TickArrayMap,
-  config = defaultGetPricesConfig
+  config = defaultGetPricesConfig,
 ): TickArray[] {
   const { programId } = config;
   const tickArrayAddresses = getTickArrayPublicKeysWithStartTickIndex(
@@ -161,11 +185,15 @@ function getTickArrays(
     pool.tickSpacing,
     aToB,
     programId,
-    address
+    address,
   );
 
   return tickArrayAddresses.map((a) => {
-    return { address: a.pubkey, startTickIndex: a.startTickIndex, data: tickArrayMap[a.pubkey.toBase58()] };
+    return {
+      address: a.pubkey,
+      startTickIndex: a.startTickIndex,
+      data: tickArrayMap[a.pubkey.toBase58()],
+    };
   });
 }
 
@@ -179,7 +207,7 @@ function getPrice(pool: WhirlpoolData, decimalsMap: DecimalsMap) {
   return PriceMath.sqrtPriceX64ToPrice(
     pool.sqrtPrice,
     decimalsMap[tokenAAddress],
-    decimalsMap[tokenBAddress]
+    decimalsMap[tokenBAddress],
   );
 }
 
@@ -191,7 +219,10 @@ export function convertAmount(
   amount: BN,
   price: Decimal,
   amountDecimal: number,
-  resultDecimal: number
+  resultDecimal: number,
 ): BN {
-  return DecimalUtil.toBN(DecimalUtil.fromBN(amount, amountDecimal).div(price), resultDecimal);
+  return DecimalUtil.toBN(
+    DecimalUtil.fromBN(amount, amountDecimal).div(price),
+    resultDecimal,
+  );
 }

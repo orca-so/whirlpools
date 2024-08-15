@@ -1,13 +1,17 @@
-import { Address } from "@coral-xyz/anchor";
+import type { Address } from "@coral-xyz/anchor";
 import { AddressUtil, Percentage } from "@orca-so/common-sdk";
-import { PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import { SwapErrorCode } from "../errors/errors";
-import { PREFER_CACHE, WhirlpoolAccountFetcherInterface } from "../network/public/fetcher";
-import { SwapQuoteParam, swapQuoteWithParams } from "../quotes/public";
-import { Path, PoolUtil } from "../utils/public";
-import { SwapQuoteRequest, batchBuildSwapQuoteParams } from "./batch-swap-quote";
-import { RoutingOptions, Trade, TradeHop } from "./public";
+import type { SwapErrorCode, WhirlpoolsError } from "../errors/errors";
+import type { WhirlpoolAccountFetcherInterface } from "../network/public/fetcher";
+import { PREFER_CACHE } from "../network/public/fetcher";
+import type { SwapQuoteParam } from "../quotes/public";
+import { swapQuoteWithParams } from "../quotes/public";
+import type { Path } from "../utils/public";
+import { PoolUtil } from "../utils/public";
+import type { SwapQuoteRequest } from "./batch-swap-quote";
+import { batchBuildSwapQuoteParams } from "./batch-swap-quote";
+import type { RoutingOptions, Trade, TradeHop } from "./public";
 
 // Key between <splitPercent, array of quotes with successful hop quotes>
 export type SanitizedQuoteMap = Record<number, PathQuote[]>;
@@ -28,12 +32,15 @@ export async function getQuoteMap(
   amountSpecifiedIsInput: boolean,
   programId: PublicKey,
   fetcher: WhirlpoolAccountFetcherInterface,
-  opts: RoutingOptions
+  opts: RoutingOptions,
 ) {
   const { percentIncrement, numTopPartialQuotes } = opts;
   const { tokenIn, tokenOut, tradeAmount } = trade;
 
-  const { percents, amounts } = getSplitPercentageAmts(tradeAmount, percentIncrement);
+  const { percents, amounts } = getSplitPercentageAmts(
+    tradeAmount,
+    percentIncrement,
+  );
   // The max route length is the number of iterations of quoting that we need to do
   const maxRouteLength = Math.max(...paths.map((path) => path.edges.length), 0);
 
@@ -56,14 +63,14 @@ export async function getQuoteMap(
         amounts,
         hop,
         amountSpecifiedIsInput,
-        quoteMap
+        quoteMap,
       );
 
       const quoteParams = await batchBuildSwapQuoteParams(
         quoteUpdates.map((update) => update.request),
         AddressUtil.toPubKey(programId),
         fetcher,
-        PREFER_CACHE
+        PREFER_CACHE,
       );
 
       populateQuoteMap(quoteUpdates, quoteParams, quoteMap);
@@ -72,14 +79,21 @@ export async function getQuoteMap(
     throw e;
   }
 
-  return sanitizeQuoteMap(quoteMap, numTopPartialQuotes, amountSpecifiedIsInput);
+  return sanitizeQuoteMap(
+    quoteMap,
+    numTopPartialQuotes,
+    amountSpecifiedIsInput,
+  );
 }
 
 // Key between <splitPercent, array of quotes of pre-sanitized calculated-hops>
 type InternalQuoteMap = Record<
   number,
   Array<
-    Pick<InternalPathQuote, "path" | "edgesPoolAddrs" | "splitPercent" | "calculatedEdgeQuotes">
+    Pick<
+      InternalPathQuote,
+      "path" | "edgesPoolAddrs" | "splitPercent" | "calculatedEdgeQuotes"
+    >
   >
 >;
 
@@ -97,14 +111,24 @@ type TradeHopQuoteError = {
 function populateQuoteMap(
   quoteUpdates: ReturnType<typeof buildQuoteUpdateRequests>,
   quoteParams: SwapQuoteParam[],
-  quoteMap: InternalQuoteMap
+  quoteMap: InternalQuoteMap,
 ) {
-  for (const { splitPercent, pathIndex, quoteIndex, edgeIndex, request } of quoteUpdates) {
+  for (const {
+    splitPercent,
+    pathIndex,
+    quoteIndex,
+    edgeIndex,
+    request,
+  } of quoteUpdates) {
     const swapParam = quoteParams[quoteIndex];
     const path = quoteMap[splitPercent][pathIndex];
     try {
-      const quote = swapQuoteWithParams(swapParam, Percentage.fromFraction(0, 1000));
-      const { whirlpoolData, tokenAmount, aToB, amountSpecifiedIsInput } = swapParam;
+      const quote = swapQuoteWithParams(
+        swapParam,
+        Percentage.fromFraction(0, 1000),
+      );
+      const { whirlpoolData, tokenAmount, aToB, amountSpecifiedIsInput } =
+        swapParam;
       const [mintA, mintB, vaultA, vaultB] = [
         whirlpoolData.tokenMintA.toBase58(),
         whirlpoolData.tokenMintB.toBase58(),
@@ -114,8 +138,12 @@ function populateQuoteMap(
       const [inputMint, outputMint] = aToB ? [mintA, mintB] : [mintB, mintA];
       path.calculatedEdgeQuotes[edgeIndex] = {
         success: true,
-        amountIn: amountSpecifiedIsInput ? tokenAmount : quote.estimatedAmountIn,
-        amountOut: amountSpecifiedIsInput ? quote.estimatedAmountOut : tokenAmount,
+        amountIn: amountSpecifiedIsInput
+          ? tokenAmount
+          : quote.estimatedAmountIn,
+        amountOut: amountSpecifiedIsInput
+          ? quote.estimatedAmountOut
+          : tokenAmount,
         whirlpool: request.whirlpool,
         inputMint,
         outputMint,
@@ -130,8 +158,8 @@ function populateQuoteMap(
           feeRate: PoolUtil.getFeeRate(whirlpoolData.feeRate),
         },
       };
-    } catch (e: any) {
-      const errorCode: SwapErrorCode = e.errorCode;
+    } catch (e) {
+      const errorCode = (e as WhirlpoolsError).errorCode as SwapErrorCode;
       path.calculatedEdgeQuotes[edgeIndex] = {
         success: false,
         error: errorCode,
@@ -167,7 +195,7 @@ function buildQuoteUpdateRequests(
   amounts: BN[],
   hop: number,
   amountSpecifiedIsInput: boolean,
-  quoteMap: InternalQuoteMap
+  quoteMap: InternalQuoteMap,
 ): QuoteRequest[] {
   // Each batch of quotes needs to be iterative
   const quoteUpdates: QuoteRequest[] = [];
@@ -186,12 +214,18 @@ function buildQuoteUpdateRequests(
       const edges = path.edges;
       // If the current route is already complete (amountSpecifiedIsInput = true) or if the current hop is beyond
       // this route's length (amountSpecifiedIsInput = false), don't do anything
-      if (amountSpecifiedIsInput ? edges.length <= hop : hop > edges.length - 1) {
+      if (
+        amountSpecifiedIsInput ? edges.length <= hop : hop > edges.length - 1
+      ) {
         continue;
       }
 
-      const startingRouteEval = amountSpecifiedIsInput ? hop === 0 : hop === edges.length - 1;
-      const poolsPath = AddressUtil.toStrings(edges.map((edge) => edge.poolAddress));
+      const startingRouteEval = amountSpecifiedIsInput
+        ? hop === 0
+        : hop === edges.length - 1;
+      const poolsPath = AddressUtil.toStrings(
+        edges.map((edge) => edge.poolAddress),
+      );
 
       // If this is the first hop of the route, initialize the quote map
       if (startingRouteEval) {
@@ -219,8 +253,12 @@ function buildQuoteUpdateRequests(
         if (!lastHop?.success) {
           continue;
         }
-        tokenAmount = amountSpecifiedIsInput ? lastHop.amountOut : lastHop.amountIn;
-        tradeToken = amountSpecifiedIsInput ? lastHop.outputMint : lastHop.inputMint;
+        tokenAmount = amountSpecifiedIsInput
+          ? lastHop.amountOut
+          : lastHop.amountIn;
+        tradeToken = amountSpecifiedIsInput
+          ? lastHop.outputMint
+          : lastHop.inputMint;
       }
 
       quoteUpdates.push({
@@ -249,7 +287,7 @@ function buildQuoteUpdateRequests(
 function sanitizeQuoteMap(
   quoteMap: InternalQuoteMap,
   pruneN: number,
-  amountSpecifiedIsInput: boolean
+  amountSpecifiedIsInput: boolean,
 ): readonly [SanitizedQuoteMap, Set<SwapErrorCode>] {
   const percents = Object.keys(quoteMap).map((percent) => Number(percent));
   const cleanedQuoteMap: SanitizedQuoteMap = {};
@@ -265,7 +303,7 @@ function sanitizeQuoteMap(
     } of uncleanedQuotes) {
       // If the route was successful at each step, add it to the clean quote stack
       const filteredCalculatedEdges = calculatedHops.flatMap((val) =>
-        !!val && val.success ? val : []
+        !!val && val.success ? val : [],
       );
       if (filteredCalculatedEdges.length === hopPoolAddrs.length) {
         const [input, output] = [
@@ -284,7 +322,9 @@ function sanitizeQuoteMap(
       }
 
       // If a route failed, there would only be one failure
-      const quoteFailures = calculatedHops.flatMap((f) => (f && !f?.success ? f : []));
+      const quoteFailures = calculatedHops.flatMap((f) =>
+        f && !f?.success ? f : [],
+      );
       failureErrors.add(quoteFailures[0].error);
     }
   }

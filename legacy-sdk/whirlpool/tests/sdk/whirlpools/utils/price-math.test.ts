@@ -43,84 +43,100 @@ variations.forEach(([sqrtPrice, slippage, ignorePrecisionVerification]) => {
     it(`slippage boundary for sqrt price - ${sqrtPrice.toString()}, slippage - ${slippage
       .toDecimal()
       .mul(100)}%`, () => {
-        const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
-          sqrtPrice,
-          slippage,
+      const { lowerBound, upperBound } = PriceMath.getSlippageBoundForSqrtPrice(
+        sqrtPrice,
+        slippage,
+      );
+
+      const price = PriceMath.sqrtPriceX64ToPrice(sqrtPrice, 6, 6);
+      const slippageDecimal = slippage.toDecimal();
+
+      const expectedUpperSlippagePrice = toPrecisionLevel(
+        price.mul(slippageDecimal.add(1)),
+      );
+      const expectedLowerSlippagePrice = toPrecisionLevel(
+        price.mul(new Decimal(1).sub(slippageDecimal)),
+      );
+
+      const expectedUpperSqrtPrice = BN.min(
+        BN.max(
+          MathUtil.toX64(expectedUpperSlippagePrice.sqrt()),
+          MIN_SQRT_PRICE_BN,
+        ),
+        MAX_SQRT_PRICE_BN,
+      );
+      const expectedLowerSqrtPrice = BN.min(
+        BN.max(
+          MathUtil.toX64(expectedLowerSlippagePrice.sqrt()),
+          MIN_SQRT_PRICE_BN,
+        ),
+        MAX_SQRT_PRICE_BN,
+      );
+
+      const expectedUpperTickIndex = PriceMath.sqrtPriceX64ToTickIndex(
+        expectedUpperSqrtPrice,
+      );
+      const expectedLowerTickIndex = PriceMath.sqrtPriceX64ToTickIndex(
+        expectedLowerSqrtPrice,
+      );
+
+      const lowerBoundSqrtPrice = lowerBound[0];
+      const lowerBoundTickIndex = lowerBound[1];
+      const lowerBoundPrice = toPrecisionLevel(
+        PriceMath.sqrtPriceX64ToPrice(lowerBoundSqrtPrice, 6, 6),
+      );
+
+      const upperBoundSqrtPrice = upperBound[0];
+      const upperBoundTickIndex = upperBound[1];
+      const upperBoundPrice = toPrecisionLevel(
+        PriceMath.sqrtPriceX64ToPrice(upperBoundSqrtPrice, 6, 6),
+      );
+
+      // For larger sqrt-price boundary values, it's difficult to verify exactly due to the precision loss.
+      // We will only verify that it won't crash and the upper and lower bounds are within the expected range by
+      // testing that the function won't crash.
+      if (!ignorePrecisionVerification) {
+        assert.ok(
+          lowerBoundPrice.eq(expectedLowerSlippagePrice),
+          `lower slippage price ${lowerBoundPrice.toString()} should equal ${expectedLowerSlippagePrice.toString()}`,
+        );
+        assert.ok(
+          upperBoundPrice.eq(expectedUpperSlippagePrice),
+          `upper slippage price ${upperBoundPrice.toString()} should equal ${expectedUpperSlippagePrice.toString()}`,
+        );
+        assert.ok(
+          expectedUpperTickIndex === upperBoundTickIndex,
+          `upper tick index ${upperBoundTickIndex} should equal ${expectedUpperTickIndex}`,
+        );
+        assert.ok(
+          expectedLowerTickIndex === lowerBoundTickIndex,
+          `lower tick index ${lowerBoundTickIndex} should equal ${expectedLowerTickIndex}`,
+        );
+      } else {
+        // Verify generally the conditions hold between sqrtPrices and tick indicies
+        assert.ok(
+          lowerBoundSqrtPrice.gte(MIN_SQRT_PRICE_BN) &&
+            lowerBoundSqrtPrice.lte(MAX_SQRT_PRICE_BN),
+          `lower bound sqrt price ${lowerBoundSqrtPrice.toString()} should be within bounds of MIN_SQRT_PRICE_BN & MAX_SQRT_PRICE_BN`,
+        );
+        assert.ok(
+          upperBoundSqrtPrice.gte(MIN_SQRT_PRICE_BN) &&
+            upperBoundSqrtPrice.lte(MAX_SQRT_PRICE_BN),
+          `lower bound sqrt price ${upperBoundSqrtPrice.toString()} should be within bounds of MIN_SQRT_PRICE_BN & MAX_SQRT_PRICE_BN`,
         );
 
-        const price = PriceMath.sqrtPriceX64ToPrice(sqrtPrice, 6, 6);
-        const slippageDecimal = slippage.toDecimal();
-
-        const expectedUpperSlippagePrice = toPrecisionLevel(price.mul(slippageDecimal.add(1)));
-        const expectedLowerSlippagePrice = toPrecisionLevel(
-          price.mul(new Decimal(1).sub(slippageDecimal)),
+        assert.ok(
+          lowerBoundTickIndex >= MIN_TICK_INDEX &&
+            lowerBoundTickIndex <= MAX_TICK_INDEX,
+          `lower bound tick index ${lowerBoundTickIndex} should be within bounds of MIN_TICK_INDEX & MAX_TICK_INDEX`,
         );
 
-        const expectedUpperSqrtPrice = BN.min(
-          BN.max(MathUtil.toX64(expectedUpperSlippagePrice.sqrt()), MIN_SQRT_PRICE_BN),
-          MAX_SQRT_PRICE_BN,
+        assert.ok(
+          upperBoundTickIndex >= MIN_TICK_INDEX &&
+            upperBoundTickIndex <= MAX_TICK_INDEX,
+          `upper bound tick index ${upperBoundTickIndex} should be within bounds of MIN_TICK_INDEX & MAX_TICK_INDEX`,
         );
-        const expectedLowerSqrtPrice = BN.min(
-          BN.max(MathUtil.toX64(expectedLowerSlippagePrice.sqrt()), MIN_SQRT_PRICE_BN),
-          MAX_SQRT_PRICE_BN,
-        );
-
-        const expectedUpperTickIndex = PriceMath.sqrtPriceX64ToTickIndex(expectedUpperSqrtPrice);
-        const expectedLowerTickIndex = PriceMath.sqrtPriceX64ToTickIndex(expectedLowerSqrtPrice);
-
-        const lowerBoundSqrtPrice = lowerBound[0];
-        const lowerBoundTickIndex = lowerBound[1];
-        const lowerBoundPrice = toPrecisionLevel(
-          PriceMath.sqrtPriceX64ToPrice(lowerBoundSqrtPrice, 6, 6),
-        );
-
-        const upperBoundSqrtPrice = upperBound[0];
-        const upperBoundTickIndex = upperBound[1];
-        const upperBoundPrice = toPrecisionLevel(
-          PriceMath.sqrtPriceX64ToPrice(upperBoundSqrtPrice, 6, 6),
-        );
-
-        // For larger sqrt-price boundary values, it's difficult to verify exactly due to the precision loss.
-        // We will only verify that it won't crash and the upper and lower bounds are within the expected range by
-        // testing that the function won't crash.
-        if (!ignorePrecisionVerification) {
-          assert.ok(
-            lowerBoundPrice.eq(expectedLowerSlippagePrice),
-            `lower slippage price ${lowerBoundPrice.toString()} should equal ${expectedLowerSlippagePrice.toString()}`,
-          );
-          assert.ok(
-            upperBoundPrice.eq(expectedUpperSlippagePrice),
-            `upper slippage price ${upperBoundPrice.toString()} should equal ${expectedUpperSlippagePrice.toString()}`,
-          );
-          assert.ok(
-            expectedUpperTickIndex === upperBoundTickIndex,
-            `upper tick index ${upperBoundTickIndex} should equal ${expectedUpperTickIndex}`,
-          );
-          assert.ok(
-            expectedLowerTickIndex === lowerBoundTickIndex,
-            `lower tick index ${lowerBoundTickIndex} should equal ${expectedLowerTickIndex}`,
-          );
-        } else {
-          // Verify generally the conditions hold between sqrtPrices and tick indicies
-          assert.ok(
-            lowerBoundSqrtPrice.gte(MIN_SQRT_PRICE_BN) && lowerBoundSqrtPrice.lte(MAX_SQRT_PRICE_BN),
-            `lower bound sqrt price ${lowerBoundSqrtPrice.toString()} should be within bounds of MIN_SQRT_PRICE_BN & MAX_SQRT_PRICE_BN`,
-          );
-          assert.ok(
-            upperBoundSqrtPrice.gte(MIN_SQRT_PRICE_BN) && upperBoundSqrtPrice.lte(MAX_SQRT_PRICE_BN),
-            `lower bound sqrt price ${upperBoundSqrtPrice.toString()} should be within bounds of MIN_SQRT_PRICE_BN & MAX_SQRT_PRICE_BN`,
-          );
-
-          assert.ok(
-            lowerBoundTickIndex >= MIN_TICK_INDEX && lowerBoundTickIndex <= MAX_TICK_INDEX,
-            `lower bound tick index ${lowerBoundTickIndex} should be within bounds of MIN_TICK_INDEX & MAX_TICK_INDEX`,
-          );
-
-          assert.ok(
-            upperBoundTickIndex >= MIN_TICK_INDEX && upperBoundTickIndex <= MAX_TICK_INDEX,
-            `upper bound tick index ${upperBoundTickIndex} should be within bounds of MIN_TICK_INDEX & MAX_TICK_INDEX`,
-          );
-        }
-      });
+      }
+    });
   });
 });

@@ -1,5 +1,6 @@
-import { BN, BorshAccountsCoder, Idl } from "@coral-xyz/anchor";
-import { PublicKey } from "@solana/web3.js";
+import type { BN, Idl } from "@coral-xyz/anchor";
+import { BorshAccountsCoder } from "@coral-xyz/anchor";
+import type { PublicKey } from "@solana/web3.js";
 import WhirlpoolIDL from "../../artifacts/whirlpool.json";
 
 /**
@@ -40,7 +41,7 @@ export const WHIRLPOOL_CODER = new BorshAccountsCoder(WHIRLPOOL_IDL);
  */
 export function getAccountSize(accountName: AccountName) {
   const size = WHIRLPOOL_CODER.size(
-    WHIRLPOOL_IDL.accounts!.find((account) => account.name === accountName)!
+    WHIRLPOOL_IDL.accounts!.find((account) => account.name === accountName)!,
   );
   return size + RESERVED_BYTES[accountName];
 }
@@ -207,7 +208,7 @@ export type WhirlpoolsConfigExtensionData = {
   whirlpoolsConfig: PublicKey;
   configExtensionAuthority: PublicKey;
   tokenBadgeAuthority: PublicKey;
-}
+};
 
 /**
  * @category Solana Accounts
@@ -215,4 +216,4 @@ export type WhirlpoolsConfigExtensionData = {
 export type TokenBadgeData = {
   whirlpoolsConfig: PublicKey;
   tokenMint: PublicKey;
-}
+};

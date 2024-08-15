@@ -1,19 +1,22 @@
 import { ZERO } from "@orca-so/common-sdk";
 import { Keypair, PublicKey } from "@solana/web3.js";
-import { BN } from "bn.js";
+import BN from "bn.js";
 import invariant from "tiny-invariant";
-import {
-  PDAUtil,
-  POSITION_BUNDLE_SIZE,
+import type {
   PositionBundleData,
-  PriceMath,
-  TICK_ARRAY_SIZE,
   TickArray,
   TickArrayData,
   TickData,
-  WhirlpoolContext
+  WhirlpoolContext,
 } from "../../src";
-import { IGNORE_CACHE, WhirlpoolAccountFetcherInterface } from "../../src/network/public/fetcher";
+import {
+  PDAUtil,
+  POSITION_BUNDLE_SIZE,
+  PriceMath,
+  TICK_ARRAY_SIZE,
+} from "../../src";
+import type { WhirlpoolAccountFetcherInterface } from "../../src/network/public/fetcher";
+import { IGNORE_CACHE } from "../../src/network/public/fetcher";
 
 export const testWhirlpoolData = {
   whirlpoolsConfig: Keypair.generate().publicKey,
@@ -60,7 +63,10 @@ export const testTickArrayData: TickArrayData = {
   whirlpool: PublicKey.default,
 };
 
-export const buildTickArrayData = (startTick: number, initializedOffsets: number[]): TickArray => {
+export const buildTickArrayData = (
+  startTick: number,
+  initializedOffsets: number[],
+): TickArray => {
   const result = {
     ticks: Array(TICK_ARRAY_SIZE).fill(testUninitializedTickData),
     whirlpool: PublicKey.default,
@@ -69,7 +75,9 @@ export const buildTickArrayData = (startTick: number, initializedOffsets: number
 
   initializedOffsets.forEach((offset) => {
     if (offset >= TICK_ARRAY_SIZE) {
-      throw new Error(`Cannot build tick-array with initialized offset - ${offset}`);
+      throw new Error(
+        `Cannot build tick-array with initialized offset - ${offset}`,
+      );
     }
     result.ticks[offset] = testInitializedTickData;
   });
@@ -81,13 +89,16 @@ export async function getTickArrays(
   startIndices: number[],
   ctx: WhirlpoolContext,
   whirlpoolKey: PublicKey,
-  fetcher: WhirlpoolAccountFetcherInterface
+  fetcher: WhirlpoolAccountFetcherInterface,
 ): Promise<TickArray[]> {
   const tickArrayPdas = startIndices.map((value) =>
-    PDAUtil.getTickArray(ctx.program.programId, whirlpoolKey, value)
+    PDAUtil.getTickArray(ctx.program.programId, whirlpoolKey, value),
   );
   const tickArrayAddresses = tickArrayPdas.map((pda) => pda.publicKey);
-  const tickArrays = await fetcher.getTickArrays(tickArrayAddresses, IGNORE_CACHE);
+  const tickArrays = await fetcher.getTickArrays(
+    tickArrayAddresses,
+    IGNORE_CACHE,
+  );
   return tickArrayAddresses.map((addr, index) => {
     return {
       address: addr,
@@ -97,8 +108,13 @@ export async function getTickArrays(
   });
 }
 
-export const buildPositionBundleData = (occupiedBundleIndexes: number[]): PositionBundleData => {
-  invariant(POSITION_BUNDLE_SIZE % 8 == 0, "POSITION_BUNDLE_SIZE should be multiple of 8");
+export const buildPositionBundleData = (
+  occupiedBundleIndexes: number[],
+): PositionBundleData => {
+  invariant(
+    POSITION_BUNDLE_SIZE % 8 == 0,
+    "POSITION_BUNDLE_SIZE should be multiple of 8",
+  );
 
   const positionBundleMint = Keypair.generate().publicKey;
   const positionBitmap: number[] = new Array(POSITION_BUNDLE_SIZE / 8).fill(0);

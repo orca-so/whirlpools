@@ -1,23 +1,30 @@
 import BN from "bn.js";
 import { kSmallestPartition } from "../utils/math/k-smallest-partition";
-import { RoutingOptions, SubTradeRoute, TradeRoute } from "./public";
-import { PathQuote, SanitizedQuoteMap } from "./quote-map";
+import type { RoutingOptions, SubTradeRoute, TradeRoute } from "./public";
+import type { PathQuote, SanitizedQuoteMap } from "./quote-map";
 
 export function getBestRoutesFromQuoteMap(
   quoteMap: SanitizedQuoteMap,
   amountSpecifiedIsInput: boolean,
-  opts: RoutingOptions
+  opts: RoutingOptions,
 ): TradeRoute[] {
   const { numTopRoutes, maxSplits } = opts;
   const sortedRoutes = [
-    ...getRankedRoutes(quoteMap, amountSpecifiedIsInput, numTopRoutes, maxSplits),
+    ...getRankedRoutes(
+      quoteMap,
+      amountSpecifiedIsInput,
+      numTopRoutes,
+      maxSplits,
+    ),
     ...getSingleHopSplit(quoteMap),
   ].sort(getRouteCompareFn(amountSpecifiedIsInput));
 
   return convertInternalRoutesToTradeRoutes(sortedRoutes);
 }
 
-function convertInternalRoutesToTradeRoutes(internalRoutes: InternalRoute[]): TradeRoute[] {
+function convertInternalRoutesToTradeRoutes(
+  internalRoutes: InternalRoute[],
+): TradeRoute[] {
   const tradeRoutes: TradeRoute[] = internalRoutes.map((internalRoute) => {
     const { quotes, totalIn, totalOut } = internalRoute;
     return {
@@ -30,7 +37,8 @@ function convertInternalRoutesToTradeRoutes(internalRoutes: InternalRoute[]): Tr
 }
 
 function convertPathQuoteToSubTradeRoute(pathQuote: PathQuote): SubTradeRoute {
-  const { calculatedEdgeQuotes, path, splitPercent, amountIn, amountOut } = pathQuote;
+  const { calculatedEdgeQuotes, path, splitPercent, amountIn, amountOut } =
+    pathQuote;
   return {
     path,
     splitPercent,
@@ -70,7 +78,7 @@ function getRankedRoutes(
   percentMap: SanitizedQuoteMap,
   amountSpecifiedIsInput: boolean,
   topN: number,
-  maxSplits: number
+  maxSplits: number,
 ): InternalRoute[] {
   let routes = generateRoutes(percentMap, maxSplits);
 
@@ -85,7 +93,10 @@ function getRankedRoutes(
   return routes.slice(0, topN).sort(routeCompare);
 }
 
-function generateRoutes(percentMap: SanitizedQuoteMap, maxSplits: number): InternalRoute[] {
+function generateRoutes(
+  percentMap: SanitizedQuoteMap,
+  maxSplits: number,
+): InternalRoute[] {
   let routes: InternalRoute[] = [];
   buildRoutes(
     percentMap,
@@ -96,7 +107,7 @@ function generateRoutes(percentMap: SanitizedQuoteMap, maxSplits: number): Inter
       totalIn: new BN(0),
       totalOut: new BN(0),
     },
-    routes
+    routes,
   );
   return routes;
 }
@@ -105,10 +116,12 @@ function buildRoutes(
   quotePercentMap: SanitizedQuoteMap,
   maxSplits: number,
   currentRoute: InternalRoute,
-  routes: InternalRoute[]
+  routes: InternalRoute[],
 ) {
   const { splitPercent: percent, quotes } = currentRoute;
-  const percents = Object.keys(quotePercentMap).map((percent) => Number(percent));
+  const percents = Object.keys(quotePercentMap).map((percent) =>
+    Number(percent),
+  );
   for (let i = percents.length - 1; i >= 0; i--) {
     const nextPercent = percents[i];
     const newPercentTotal = percent + nextPercent;
@@ -127,7 +140,9 @@ function buildRoutes(
 
       // Don't use a quote that shares a pool with an existing quote
       const hasReusedPools = nextQuote.edgesPoolAddrs.some((r1) =>
-        quotes.some((r2) => r2.edgesPoolAddrs.some((r3) => r3.indexOf(r1) !== -1))
+        quotes.some((r2) =>
+          r2.edgesPoolAddrs.some((r3) => r3.indexOf(r1) !== -1),
+        ),
       );
       if (hasReusedPools) {
         continue;
@@ -157,7 +172,7 @@ function buildRoutes(
           },
           maxSplits,
           nextRoute,
-          routes
+          routes,
         );
       }
     }
@@ -165,7 +180,9 @@ function buildRoutes(
 }
 
 function getRouteCompareFn(amountSpecifiedIsInput: boolean) {
-  return amountSpecifiedIsInput ? routesCompareForInputAmount : routesCompareForOutputAmount;
+  return amountSpecifiedIsInput
+    ? routesCompareForInputAmount
+    : routesCompareForOutputAmount;
 }
 
 function routesCompareForInputAmount(a: InternalRoute, b: InternalRoute) {

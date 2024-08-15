@@ -3,12 +3,12 @@ import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
+import type { WhirlpoolData } from "../../../src";
 import {
   METADATA_PROGRAM_ADDRESS,
   PDAUtil,
   toTx,
   WhirlpoolContext,
-  WhirlpoolData,
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
@@ -21,21 +21,39 @@ import {
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
-import { TokenTrait } from "../../utils/v2/init-utils-v2";
+import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import { createMintV2, createTokenAccountV2 } from "../../utils/v2/token-2022";
 
 describe("collect_protocol_fees_v2", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
   describe("v1 parity", () => {
-    const tokenTraitVariations: { tokenTraitA: TokenTrait; tokenTraitB: TokenTrait }[] = [
-      { tokenTraitA: { isToken2022: false }, tokenTraitB: { isToken2022: false } },
-      { tokenTraitA: { isToken2022: true }, tokenTraitB: { isToken2022: false } },
-      { tokenTraitA: { isToken2022: false }, tokenTraitB: { isToken2022: true } },
-      { tokenTraitA: { isToken2022: true }, tokenTraitB: { isToken2022: true } },
+    const tokenTraitVariations: {
+      tokenTraitA: TokenTrait;
+      tokenTraitB: TokenTrait;
+    }[] = [
+      {
+        tokenTraitA: { isToken2022: false },
+        tokenTraitB: { isToken2022: false },
+      },
+      {
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: false },
+      },
+      {
+        tokenTraitA: { isToken2022: false },
+        tokenTraitB: { isToken2022: true },
+      },
+      {
+        tokenTraitA: { isToken2022: true },
+        tokenTraitB: { isToken2022: true },
+      },
     ];
     tokenTraitVariations.forEach((tokenTraits) => {
       describe(`tokenTraitA: ${
@@ -51,7 +69,11 @@ describe("collect_protocol_fees_v2", () => {
             ...tokenTraits,
             tickSpacing,
             positions: [
-              { tickLowerIndex, tickUpperIndex, liquidityAmount: new anchor.BN(10_000_000) },
+              {
+                tickLowerIndex,
+                tickUpperIndex,
+                liquidityAmount: new anchor.BN(10_000_000),
+              },
             ],
           });
           const {
@@ -64,8 +86,13 @@ describe("collect_protocol_fees_v2", () => {
               tokenProgramA,
               tokenProgramB,
             },
-            configKeypairs: { feeAuthorityKeypair, collectProtocolFeesAuthorityKeypair },
-            configInitInfo: { whirlpoolsConfigKeypair: whirlpoolsConfigKeypair },
+            configKeypairs: {
+              feeAuthorityKeypair,
+              collectProtocolFeesAuthorityKeypair,
+            },
+            configInitInfo: {
+              whirlpoolsConfigKeypair: whirlpoolsConfigKeypair,
+            },
             tokenAccountA,
             tokenAccountB,
             positions,
@@ -78,21 +105,24 @@ describe("collect_protocol_fees_v2", () => {
               whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
               feeAuthority: feeAuthorityKeypair.publicKey,
               protocolFeeRate: 2500,
-            })
+            }),
           )
             .addSigner(feeAuthorityKeypair)
             .buildAndExecute();
 
           const poolBefore = (await fetcher.getPool(
             whirlpoolPda.publicKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           assert.ok(poolBefore?.protocolFeeOwedA.eq(ZERO_BN));
           assert.ok(poolBefore?.protocolFeeOwedB.eq(ZERO_BN));
 
           const tickArrayPda = positions[0].tickArrayLower;
 
-          const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+          const oraclePda = PDAUtil.getOracle(
+            ctx.program.programId,
+            whirlpoolPda.publicKey,
+          );
 
           // Accrue fees in token A
           await toTx(
@@ -117,7 +147,7 @@ describe("collect_protocol_fees_v2", () => {
               tickArray1: tickArrayPda,
               tickArray2: tickArrayPda,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           // Accrue fees in token B
@@ -143,12 +173,12 @@ describe("collect_protocol_fees_v2", () => {
               tickArray1: tickArrayPda,
               tickArray2: tickArrayPda,
               oracle: oraclePda.publicKey,
-            })
+            }),
           ).buildAndExecute();
 
           const poolAfter = (await fetcher.getPool(
             whirlpoolPda.publicKey,
-            IGNORE_CACHE
+            IGNORE_CACHE,
           )) as WhirlpoolData;
           assert.ok(poolAfter?.protocolFeeOwedA.eq(new BN(150)));
           assert.ok(poolAfter?.protocolFeeOwedB.eq(new BN(150)));
@@ -157,13 +187,13 @@ describe("collect_protocol_fees_v2", () => {
             provider,
             tokenTraits.tokenTraitA,
             tokenMintA,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const destB = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitB,
             tokenMintB,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await toTx(
@@ -171,7 +201,8 @@ describe("collect_protocol_fees_v2", () => {
             WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
               whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
               whirlpool: whirlpoolPda.publicKey,
-              collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+              collectProtocolFeesAuthority:
+                collectProtocolFeesAuthorityKeypair.publicKey,
               tokenMintA,
               tokenMintB,
               tokenProgramA,
@@ -180,7 +211,7 @@ describe("collect_protocol_fees_v2", () => {
               tokenVaultB: tokenVaultBKeypair.publicKey,
               tokenOwnerAccountA: destA,
               tokenOwnerAccountB: destB,
-            })
+            }),
           )
             .addSigner(collectProtocolFeesAuthorityKeypair)
             .buildAndExecute();
@@ -228,7 +259,8 @@ describe("collect_protocol_fees_v2", () => {
               WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
                 whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
                 whirlpool: whirlpoolPda.publicKey,
-                collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+                collectProtocolFeesAuthority:
+                  collectProtocolFeesAuthorityKeypair.publicKey,
                 tokenMintA,
                 tokenMintB,
                 tokenProgramA,
@@ -237,9 +269,9 @@ describe("collect_protocol_fees_v2", () => {
                 tokenVaultB: tokenVaultBKeypair.publicKey,
                 tokenOwnerAccountA: tokenAccountA,
                 tokenOwnerAccountB: tokenAccountB,
-              })
+              }),
             ).buildAndExecute(),
-            /.*signature verification fail.*/i
+            /.*signature verification fail.*/i,
           );
         });
 
@@ -278,7 +310,8 @@ describe("collect_protocol_fees_v2", () => {
               WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
                 whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
                 whirlpool: whirlpoolPda.publicKey,
-                collectProtocolFeesAuthority: rewardEmissionsSuperAuthorityKeypair.publicKey,
+                collectProtocolFeesAuthority:
+                  rewardEmissionsSuperAuthorityKeypair.publicKey,
                 tokenMintA,
                 tokenMintB,
                 tokenProgramA,
@@ -287,11 +320,11 @@ describe("collect_protocol_fees_v2", () => {
                 tokenVaultB: tokenVaultBKeypair.publicKey,
                 tokenOwnerAccountA: tokenAccountA,
                 tokenOwnerAccountB: tokenAccountB,
-              })
+              }),
             )
               .addSigner(rewardEmissionsSuperAuthorityKeypair)
               .buildAndExecute(),
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
 
@@ -333,8 +366,10 @@ describe("collect_protocol_fees_v2", () => {
               ctx,
               WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
                 whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
-                whirlpool: anotherFixture.getInfos().poolInitInfo.whirlpoolPda.publicKey,
-                collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+                whirlpool:
+                  anotherFixture.getInfos().poolInitInfo.whirlpoolPda.publicKey,
+                collectProtocolFeesAuthority:
+                  collectProtocolFeesAuthorityKeypair.publicKey,
                 tokenMintA,
                 tokenMintB,
                 tokenProgramA,
@@ -343,11 +378,11 @@ describe("collect_protocol_fees_v2", () => {
                 tokenVaultB: tokenVaultBKeypair.publicKey,
                 tokenOwnerAccountA: tokenAccountA,
                 tokenOwnerAccountB: tokenAccountB,
-              })
+              }),
             )
               .addSigner(collectProtocolFeesAuthorityKeypair)
               .buildAndExecute(),
-            /0x7d1/ // ConstraintHasOne
+            /0x7d1/, // ConstraintHasOne
           );
         });
 
@@ -375,7 +410,9 @@ describe("collect_protocol_fees_v2", () => {
               tokenProgramB,
             },
             configKeypairs: { collectProtocolFeesAuthorityKeypair },
-            configInitInfo: { whirlpoolsConfigKeypair: whirlpoolsConfigKeypair },
+            configInitInfo: {
+              whirlpoolsConfigKeypair: whirlpoolsConfigKeypair,
+            },
             tokenAccountA,
             tokenAccountB,
           } = fixture.getInfos();
@@ -384,13 +421,13 @@ describe("collect_protocol_fees_v2", () => {
             provider,
             tokenTraits.tokenTraitA,
             tokenMintA,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const fakeVaultB = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitB,
             tokenMintB,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await assert.rejects(
@@ -399,7 +436,8 @@ describe("collect_protocol_fees_v2", () => {
               WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
                 whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
                 whirlpool: whirlpoolPda.publicKey,
-                collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+                collectProtocolFeesAuthority:
+                  collectProtocolFeesAuthorityKeypair.publicKey,
                 tokenMintA,
                 tokenMintB,
                 tokenProgramA,
@@ -408,11 +446,11 @@ describe("collect_protocol_fees_v2", () => {
                 tokenVaultB: tokenVaultBKeypair.publicKey,
                 tokenOwnerAccountA: tokenAccountA,
                 tokenOwnerAccountB: tokenAccountB,
-              })
+              }),
             )
               .addSigner(collectProtocolFeesAuthorityKeypair)
               .buildAndExecute(),
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
 
           await assert.rejects(
@@ -421,7 +459,8 @@ describe("collect_protocol_fees_v2", () => {
               WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
                 whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
                 whirlpool: whirlpoolPda.publicKey,
-                collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+                collectProtocolFeesAuthority:
+                  collectProtocolFeesAuthorityKeypair.publicKey,
                 tokenMintA,
                 tokenMintB,
                 tokenProgramA,
@@ -430,11 +469,11 @@ describe("collect_protocol_fees_v2", () => {
                 tokenVaultB: fakeVaultB,
                 tokenOwnerAccountA: tokenAccountA,
                 tokenOwnerAccountB: tokenAccountB,
-              })
+              }),
             )
               .addSigner(collectProtocolFeesAuthorityKeypair)
               .buildAndExecute(),
-            /0x7dc/ // ConstraintAddress
+            /0x7dc/, // ConstraintAddress
           );
         });
 
@@ -471,13 +510,13 @@ describe("collect_protocol_fees_v2", () => {
             provider,
             tokenTraits.tokenTraitB,
             tokenMintB,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
           const invalidDestB = await createTokenAccountV2(
             provider,
             tokenTraits.tokenTraitA,
             tokenMintA,
-            provider.wallet.publicKey
+            provider.wallet.publicKey,
           );
 
           await assert.rejects(
@@ -486,7 +525,8 @@ describe("collect_protocol_fees_v2", () => {
               WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
                 whirlpoolsConfig: whirlpoolsConfigKepair.publicKey,
                 whirlpool: whirlpoolPda.publicKey,
-                collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+                collectProtocolFeesAuthority:
+                  collectProtocolFeesAuthorityKeypair.publicKey,
                 tokenMintA,
                 tokenMintB,
                 tokenProgramA,
@@ -495,11 +535,11 @@ describe("collect_protocol_fees_v2", () => {
                 tokenVaultB: tokenVaultBKeypair.publicKey,
                 tokenOwnerAccountA: invalidDestA,
                 tokenOwnerAccountB: tokenAccountB,
-              })
+              }),
             )
               .addSigner(collectProtocolFeesAuthorityKeypair)
               .buildAndExecute(),
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
 
           await assert.rejects(
@@ -508,7 +548,8 @@ describe("collect_protocol_fees_v2", () => {
               WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
                 whirlpoolsConfig: whirlpoolsConfigKepair.publicKey,
                 whirlpool: whirlpoolPda.publicKey,
-                collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+                collectProtocolFeesAuthority:
+                  collectProtocolFeesAuthorityKeypair.publicKey,
                 tokenMintA,
                 tokenMintB,
                 tokenProgramA,
@@ -517,11 +558,11 @@ describe("collect_protocol_fees_v2", () => {
                 tokenVaultB: tokenVaultBKeypair.publicKey,
                 tokenOwnerAccountA: tokenAccountA,
                 tokenOwnerAccountB: invalidDestB,
-              })
+              }),
             )
               .addSigner(collectProtocolFeesAuthorityKeypair)
               .buildAndExecute(),
-            /0x7d3/ // ConstraintRaw
+            /0x7d3/, // ConstraintRaw
           );
         });
       });
@@ -559,7 +600,9 @@ describe("collect_protocol_fees_v2", () => {
         tokenAccountB,
       } = fixture.getInfos();
 
-      const otherTokenPublicKey = await createMintV2(provider, { isToken2022: true });
+      const otherTokenPublicKey = await createMintV2(provider, {
+        isToken2022: true,
+      });
 
       await assert.rejects(
         toTx(
@@ -567,7 +610,8 @@ describe("collect_protocol_fees_v2", () => {
           WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
             whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
             whirlpool: whirlpoolPda.publicKey,
-            collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+            collectProtocolFeesAuthority:
+              collectProtocolFeesAuthorityKeypair.publicKey,
             tokenMintA: otherTokenPublicKey, // invalid
             tokenMintB,
             tokenProgramA,
@@ -576,11 +620,11 @@ describe("collect_protocol_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
             tokenOwnerAccountA: tokenAccountA,
             tokenOwnerAccountB: tokenAccountB,
-          })
+          }),
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -614,7 +658,9 @@ describe("collect_protocol_fees_v2", () => {
         tokenAccountB,
       } = fixture.getInfos();
 
-      const otherTokenPublicKey = await createMintV2(provider, { isToken2022: true });
+      const otherTokenPublicKey = await createMintV2(provider, {
+        isToken2022: true,
+      });
 
       await assert.rejects(
         toTx(
@@ -622,7 +668,8 @@ describe("collect_protocol_fees_v2", () => {
           WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
             whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
             whirlpool: whirlpoolPda.publicKey,
-            collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+            collectProtocolFeesAuthority:
+              collectProtocolFeesAuthorityKeypair.publicKey,
             tokenMintA,
             tokenMintB: otherTokenPublicKey, // invalid
             tokenProgramA,
@@ -631,11 +678,11 @@ describe("collect_protocol_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
             tokenOwnerAccountA: tokenAccountA,
             tokenOwnerAccountB: tokenAccountB,
-          })
+          }),
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -676,7 +723,8 @@ describe("collect_protocol_fees_v2", () => {
           WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
             whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
             whirlpool: whirlpoolPda.publicKey,
-            collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+            collectProtocolFeesAuthority:
+              collectProtocolFeesAuthorityKeypair.publicKey,
             tokenMintA,
             tokenMintB,
             tokenProgramA: TEST_TOKEN_2022_PROGRAM_ID, // invalid
@@ -685,11 +733,11 @@ describe("collect_protocol_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
             tokenOwnerAccountA: tokenAccountA,
             tokenOwnerAccountB: tokenAccountB,
-          })
+          }),
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -730,7 +778,8 @@ describe("collect_protocol_fees_v2", () => {
           WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
             whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
             whirlpool: whirlpoolPda.publicKey,
-            collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+            collectProtocolFeesAuthority:
+              collectProtocolFeesAuthorityKeypair.publicKey,
             tokenMintA,
             tokenMintB,
             tokenProgramA: TEST_TOKEN_PROGRAM_ID, // invalid
@@ -739,11 +788,11 @@ describe("collect_protocol_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
             tokenOwnerAccountA: tokenAccountA,
             tokenOwnerAccountB: tokenAccountB,
-          })
+          }),
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -784,7 +833,8 @@ describe("collect_protocol_fees_v2", () => {
           WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
             whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
             whirlpool: whirlpoolPda.publicKey,
-            collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+            collectProtocolFeesAuthority:
+              collectProtocolFeesAuthorityKeypair.publicKey,
             tokenMintA,
             tokenMintB,
             tokenProgramA: METADATA_PROGRAM_ADDRESS, // invalid
@@ -793,11 +843,11 @@ describe("collect_protocol_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
             tokenOwnerAccountA: tokenAccountA,
             tokenOwnerAccountB: tokenAccountB,
-          })
+          }),
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0xbc0/ // InvalidProgramId
+        /0xbc0/, // InvalidProgramId
       );
     });
 
@@ -838,7 +888,8 @@ describe("collect_protocol_fees_v2", () => {
           WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
             whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
             whirlpool: whirlpoolPda.publicKey,
-            collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+            collectProtocolFeesAuthority:
+              collectProtocolFeesAuthorityKeypair.publicKey,
             tokenMintA,
             tokenMintB,
             tokenProgramA,
@@ -847,11 +898,11 @@ describe("collect_protocol_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
             tokenOwnerAccountA: tokenAccountA,
             tokenOwnerAccountB: tokenAccountB,
-          })
+          }),
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -892,7 +943,8 @@ describe("collect_protocol_fees_v2", () => {
           WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
             whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
             whirlpool: whirlpoolPda.publicKey,
-            collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+            collectProtocolFeesAuthority:
+              collectProtocolFeesAuthorityKeypair.publicKey,
             tokenMintA,
             tokenMintB,
             tokenProgramA,
@@ -901,11 +953,11 @@ describe("collect_protocol_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
             tokenOwnerAccountA: tokenAccountA,
             tokenOwnerAccountB: tokenAccountB,
-          })
+          }),
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -946,7 +998,8 @@ describe("collect_protocol_fees_v2", () => {
           WhirlpoolIx.collectProtocolFeesV2Ix(ctx.program, {
             whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
             whirlpool: whirlpoolPda.publicKey,
-            collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+            collectProtocolFeesAuthority:
+              collectProtocolFeesAuthorityKeypair.publicKey,
             tokenMintA,
             tokenMintB,
             tokenProgramA,
@@ -955,11 +1008,11 @@ describe("collect_protocol_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
             tokenOwnerAccountA: tokenAccountA,
             tokenOwnerAccountB: tokenAccountB,
-          })
+          }),
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0xbc0/ // InvalidProgramId
+        /0xbc0/, // InvalidProgramId
       );
     });
 
@@ -1006,7 +1059,8 @@ describe("collect_protocol_fees_v2", () => {
                 accounts: {
                   whirlpoolsConfig: whirlpoolsConfigKeypair.publicKey,
                   whirlpool: whirlpoolPda.publicKey,
-                  collectProtocolFeesAuthority: collectProtocolFeesAuthorityKeypair.publicKey,
+                  collectProtocolFeesAuthority:
+                    collectProtocolFeesAuthorityKeypair.publicKey,
                   tokenMintA,
                   tokenMintB,
                   tokenProgramA,
@@ -1017,13 +1071,13 @@ describe("collect_protocol_fees_v2", () => {
                   tokenDestinationB: tokenAccountB,
                   memoProgram: invalidMemoProgram,
                 },
-              }
+              },
             ),
           ],
         })
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0xbc0/ // InvalidProgramId
+        /0xbc0/, // InvalidProgramId
       );
     });
   });

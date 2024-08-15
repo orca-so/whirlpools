@@ -6,7 +6,9 @@ use std::{
 
 use crate::{
     errors::ErrorCode,
-    state::{Tick, TickArray, TickArrayType, TickUpdate, Whirlpool, ZeroedTickArray, TICK_ARRAY_SIZE},
+    state::{
+        Tick, TickArray, TickArrayType, TickUpdate, Whirlpool, ZeroedTickArray, TICK_ARRAY_SIZE,
+    },
     util::SwapTickSequence,
 };
 
@@ -36,7 +38,8 @@ impl<'a> ProxiedTickArray<'a> {
         tick_spacing: u16,
         a_to_b: bool,
     ) -> Result<Option<i32>> {
-        self.as_ref().get_next_init_tick_index(tick_index, tick_spacing, a_to_b)
+        self.as_ref()
+            .get_next_init_tick_index(tick_index, tick_spacing, a_to_b)
     }
 
     pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
@@ -106,16 +109,16 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
     ///
     /// static_tick_array_account_infos and supplemental_tick_array_account_infos will be merged,
     /// and deduplicated by key. TickArray accounts can be provided in any order.
-    /// 
+    ///
     /// Even if over three tick arrays are provided, only three tick arrays are used in the single swap.
     /// The extra TickArray acts as a fallback in case the current price moves.
-    /// 
+    ///
     /// # Parameters
     /// - `whirlpool` - Whirlpool account
     /// - `a_to_b` - Direction of the swap
     /// - `static_tick_array_account_infos` - TickArray accounts provided through required accounts
     /// - `supplemental_tick_array_account_infos` - TickArray accounts provided through remaining accounts
-    /// 
+    ///
     /// # Errors
     /// - `DifferentWhirlpoolTickArrayAccount` - If the provided TickArray account is not for the whirlpool
     /// - `InvalidTickArraySequence` - If no valid TickArray account for the swap is found
@@ -192,7 +195,7 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
             }
 
             // find from uninitialized tick arrays
-            let tick_array_pda = derive_tick_array_pda(&whirlpool, *start_tick_index);
+            let tick_array_pda = derive_tick_array_pda(whirlpool, *start_tick_index);
             if let Some(pos) = uninitialized.iter().position(|t| t.0 == tick_array_pda) {
                 let state = uninitialized.remove(pos).1;
                 if let TickArrayAccount::Uninitialized { pubkey, .. } = state {
@@ -232,10 +235,15 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
                             &mut data.deref_mut()[8..std::mem::size_of::<TickArray>() + 8],
                         )
                     });
-                    proxied_tick_arrays.push_back(ProxiedTickArray::new_initialized(tick_array_refmut));
+                    proxied_tick_arrays
+                        .push_back(ProxiedTickArray::new_initialized(tick_array_refmut));
                 }
-                TickArrayAccount::Uninitialized { start_tick_index, .. } => {
-                    proxied_tick_arrays.push_back(ProxiedTickArray::new_uninitialized(start_tick_index.unwrap()));
+                TickArrayAccount::Uninitialized {
+                    start_tick_index, ..
+                } => {
+                    proxied_tick_arrays.push_back(ProxiedTickArray::new_uninitialized(
+                        start_tick_index.unwrap(),
+                    ));
                 }
             }
         }
@@ -248,7 +256,7 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
     }
 }
 
-fn peek_tick_array<'info>(account_info: AccountInfo<'info>) -> Result<TickArrayAccount<'info>> {
+fn peek_tick_array(account_info: AccountInfo<'_>) -> Result<TickArrayAccount<'_>> {
     use anchor_lang::Discriminator;
 
     // following process is ported from anchor-lang's AccountLoader::try_from and AccountLoader::load_mut
@@ -314,7 +322,8 @@ fn get_start_tick_indexes(whirlpool: &Account<Whirlpool>, a_to_b: bool) -> Vec<i
     let offset = if a_to_b {
         [0, -1, -2]
     } else {
-        let shifted = tick_current_index + tick_spacing_i32 >= start_tick_index_base + ticks_in_array;
+        let shifted =
+            tick_current_index + tick_spacing_i32 >= start_tick_index_base + ticks_in_array;
         if shifted {
             [1, 2, 3]
         } else {
@@ -361,9 +370,9 @@ fn derive_tick_array_pda(whirlpool: &Account<Whirlpool>, start_tick_index: i32) 
 #[cfg(test)]
 mod sparse_swap_tick_sequence_tests {
     use super::*;
-    use std::cell::RefCell;
     use anchor_lang::solana_program::pubkey;
     use anchor_lang::Discriminator;
+    use std::cell::RefCell;
 
     struct AccountInfoMock {
         pub key: Pubkey,
@@ -416,7 +425,7 @@ mod sparse_swap_tick_sequence_tests {
             Self::new(key, data, owner.unwrap_or(TickArray::owner()))
         }
 
-        pub fn to_account_info<'a>(&'a mut self, is_writable: bool) -> AccountInfo<'a> {
+        pub fn to_account_info(&mut self, is_writable: bool) -> AccountInfo<'_> {
             AccountInfo {
                 key: &self.key,
                 is_signer: false,
@@ -441,35 +450,35 @@ mod sparse_swap_tick_sequence_tests {
         let account_info = account_info_mock.to_account_info(false);
         let whirlpool_account = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
-        let ta_start_neg_11264 = derive_tick_array_pda(
-            &whirlpool_account,
-            -11264,
+        let ta_start_neg_11264 = derive_tick_array_pda(&whirlpool_account, -11264);
+        assert_eq!(
+            ta_start_neg_11264,
+            pubkey!("81T5kNuPRkyVzhwbe2RpKR7wmQpGJ7RBkGPdTqyfa5vq")
         );
-        assert_eq!(ta_start_neg_11264, pubkey!("81T5kNuPRkyVzhwbe2RpKR7wmQpGJ7RBkGPdTqyfa5vq"));
 
-        let ta_start_neg_5632 = derive_tick_array_pda(
-            &whirlpool_account,
-            -5632,
+        let ta_start_neg_5632 = derive_tick_array_pda(&whirlpool_account, -5632);
+        assert_eq!(
+            ta_start_neg_5632,
+            pubkey!("9K1HWrGKZKfjTnKfF621BmEQdai4FcUz9tsoF41jwz5B")
         );
-        assert_eq!(ta_start_neg_5632, pubkey!("9K1HWrGKZKfjTnKfF621BmEQdai4FcUz9tsoF41jwz5B"));
 
-        let ta_start_0 = derive_tick_array_pda(
-            &whirlpool_account,
-            0,
+        let ta_start_0 = derive_tick_array_pda(&whirlpool_account, 0);
+        assert_eq!(
+            ta_start_0,
+            pubkey!("JCpxMSDRDPBMqjoX7LkhMwro2y6r85Q8E6p5zNdBZyWa")
         );
-        assert_eq!(ta_start_0, pubkey!("JCpxMSDRDPBMqjoX7LkhMwro2y6r85Q8E6p5zNdBZyWa"));
 
-        let ta_start_5632 = derive_tick_array_pda(
-            &whirlpool_account,
-            5632,
+        let ta_start_5632 = derive_tick_array_pda(&whirlpool_account, 5632);
+        assert_eq!(
+            ta_start_5632,
+            pubkey!("BW2Mr823NUQN7vnVpv5E6yCTnqEXQ3ZnqjZyiywXPcUp")
         );
-        assert_eq!(ta_start_5632, pubkey!("BW2Mr823NUQN7vnVpv5E6yCTnqEXQ3ZnqjZyiywXPcUp"));
 
-        let ta_start_11264 = derive_tick_array_pda(
-            &whirlpool_account,
-            11264,
+        let ta_start_11264 = derive_tick_array_pda(&whirlpool_account, 11264);
+        assert_eq!(
+            ta_start_11264,
+            pubkey!("2ezvsnoXdukw5dAAZ4EkW67bmUo8PHRPX8ZDqf76BKtV")
         );
-        assert_eq!(ta_start_11264, pubkey!("2ezvsnoXdukw5dAAZ4EkW67bmUo8PHRPX8ZDqf76BKtV"));
     }
 
     #[test]
@@ -503,12 +512,7 @@ mod sparse_swap_tick_sequence_tests {
         // b to a (only 2 ta)
         // b to a (only 1 ta)
 
-        fn do_test(
-            a_to_b: bool,
-            tick_spacing: u16,
-            tick_current_index: i32,
-            expected: Vec<i32>,
-        ) {
+        fn do_test(a_to_b: bool, tick_spacing: u16, tick_current_index: i32, expected: Vec<i32>) {
             let mut account_info_mock = AccountInfoMock::new_whirlpool(
                 Pubkey::new_unique(),
                 tick_spacing,
@@ -527,7 +531,7 @@ mod sparse_swap_tick_sequence_tests {
             #[test]
             fn a_to_b() {
                 do_test(true, 1, 0, vec![0, -88, -176]);
-            }                            
+            }
 
             #[test]
             fn a_to_b_not_shifted() {
@@ -571,7 +575,7 @@ mod sparse_swap_tick_sequence_tests {
             #[test]
             fn a_to_b() {
                 do_test(true, 64, 0, vec![0, -5632, -11264]);
-            }                            
+            }
 
             #[test]
             fn a_to_b_not_shifted() {
@@ -615,7 +619,7 @@ mod sparse_swap_tick_sequence_tests {
             #[test]
             fn a_to_b() {
                 do_test(true, 32768, 0, vec![0, -2883584]);
-            }                            
+            }
 
             #[test]
             fn a_to_b_not_shifted() {
@@ -663,29 +667,32 @@ mod sparse_swap_tick_sequence_tests {
                 Pubkey::new_unique(),
                 Pubkey::new_unique(),
                 0,
-                None
+                None,
             );
             let account_info = account_info_mock.to_account_info(false); // not writable
 
             let result = peek_tick_array(account_info);
             assert!(result.is_err());
-            assert!(result.err().unwrap().to_string().contains("AccountNotMutable"));
+            assert!(result
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("AccountNotMutable"));
         }
 
         #[test]
         fn uninitialized_tick_array() {
             let account_address = Pubkey::new_unique();
-            let mut account_info_mock = AccountInfoMock::new(
-                account_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut account_info_mock = AccountInfoMock::new(account_address, vec![], System::id());
             let account_info = account_info_mock.to_account_info(true);
 
             let result = peek_tick_array(account_info);
             assert!(result.is_ok());
             match result.unwrap() {
-                TickArrayAccount::Uninitialized { pubkey, start_tick_index } => {
+                TickArrayAccount::Uninitialized {
+                    pubkey,
+                    start_tick_index,
+                } => {
                     assert_eq!(pubkey, account_address);
                     assert!(start_tick_index.is_none());
                 }
@@ -695,46 +702,48 @@ mod sparse_swap_tick_sequence_tests {
 
         #[test]
         fn fail_system_program_but_not_zero_size() {
-            let mut account_info_mock = AccountInfoMock::new(
-                Pubkey::new_unique(),
-                vec![0u8; 1],
-                System::id()
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new(Pubkey::new_unique(), vec![0u8; 1], System::id());
             let account_info = account_info_mock.to_account_info(true);
 
             let result = peek_tick_array(account_info);
             assert!(result.is_err());
             // non empty account should be owned by this program
-            assert!(result.err().unwrap().to_string().contains("AccountOwnedByWrongProgram"));
+            assert!(result
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("AccountOwnedByWrongProgram"));
         }
 
         #[test]
         fn fail_account_discriminator_not_found() {
-            let mut account_info_mock = AccountInfoMock::new(
-                Pubkey::new_unique(),
-                vec![],
-                TickArray::owner()
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new(Pubkey::new_unique(), vec![], TickArray::owner());
             let account_info = account_info_mock.to_account_info(true);
 
             let result = peek_tick_array(account_info);
             assert!(result.is_err());
-            assert!(result.err().unwrap().to_string().contains("AccountDiscriminatorNotFound"));
+            assert!(result
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("AccountDiscriminatorNotFound"));
         }
 
         #[test]
         fn fail_discriminator_mismatch() {
-            let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                Pubkey::new_unique(),
-                64,
-                0,
-                None,
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new_whirlpool(Pubkey::new_unique(), 64, 0, None);
             let account_info = account_info_mock.to_account_info(true);
 
             let result = peek_tick_array(account_info);
             assert!(result.is_err());
-            assert!(result.err().unwrap().to_string().contains("AccountDiscriminatorMismatch"));
+            assert!(result
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("AccountDiscriminatorMismatch"));
         }
 
         #[test]
@@ -742,17 +751,21 @@ mod sparse_swap_tick_sequence_tests {
             let tick_array_address = Pubkey::new_unique();
             let whirlpool_address = Pubkey::new_unique();
             let mut account_info_mock = AccountInfoMock::new_tick_array(
-                tick_array_address.clone(),
+                tick_array_address,
                 whirlpool_address,
                 439296,
-                None
+                None,
             );
             let account_info = account_info_mock.to_account_info(true);
 
             let result = peek_tick_array(account_info);
             assert!(result.is_ok());
             match result.unwrap() {
-                TickArrayAccount::Initialized { start_tick_index, tick_array_whirlpool, account_info } => {
+                TickArrayAccount::Initialized {
+                    start_tick_index,
+                    tick_array_whirlpool,
+                    account_info,
+                } => {
                     assert_eq!(start_tick_index, 439296);
                     assert_eq!(tick_array_whirlpool, whirlpool_address);
                     assert_eq!(account_info.key(), tick_array_address);
@@ -770,41 +783,32 @@ mod sparse_swap_tick_sequence_tests {
         #[test]
         fn check_zeroed_tick_array_data() {
             let whirlpool_address = Pubkey::new_unique();
-            let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                whirlpool_address.clone(),
-                64,
-                5650,
-                None,
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new_whirlpool(whirlpool_address, 64, 5650, None);
             let account_info = account_info_mock.to_account_info(false);
             let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
             // uninitialized
             let ta0_address = derive_tick_array_pda(&whirlpool, 5632);
-            let mut ta0_mock = AccountInfoMock::new(
-                ta0_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut ta0_mock = AccountInfoMock::new(ta0_address, vec![], System::id());
             let ta0 = ta0_mock.to_account_info(true);
 
             let builder = SparseSwapTickSequenceBuilder::try_from(
                 &whirlpool,
                 false,
-                vec![
-                    ta0.clone(),
-                    ta0.clone(),
-                    ta0.clone(),
-                ],
+                vec![ta0.clone(), ta0.clone(), ta0.clone()],
                 None,
-            ).unwrap();
+            )
+            .unwrap();
 
             assert_eq!(builder.tick_array_accounts.len(), 1);
             match &builder.tick_array_accounts[0] {
                 TickArrayAccount::Initialized { .. } => {
                     panic!("unexpected state");
                 }
-                TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                TickArrayAccount::Uninitialized {
+                    start_tick_index, ..
+                } => {
                     assert!(start_tick_index.is_some());
                     let start_tick_index = start_tick_index.as_ref().unwrap();
                     assert_eq!(*start_tick_index, 5632);
@@ -814,10 +818,12 @@ mod sparse_swap_tick_sequence_tests {
             // after build
             let swap_tick_sequence = builder.build().unwrap();
             for i in 0..TICK_ARRAY_SIZE_USIZE {
-                let tick = swap_tick_sequence.get_tick(0, 5632 + (i as i32) * 64, 64).unwrap();
-            
+                let tick = swap_tick_sequence
+                    .get_tick(0, 5632 + (i as i32) * 64, 64)
+                    .unwrap();
+
                 let initialized = tick.initialized;
-                assert_eq!(initialized, false);
+                assert!(!initialized);
                 let liquidity_net = tick.liquidity_net;
                 assert_eq!(liquidity_net, 0);
                 let liquidity_gross = tick.liquidity_gross;
@@ -838,42 +844,26 @@ mod sparse_swap_tick_sequence_tests {
         #[test]
         fn dedup_tick_array_account_infos() {
             let whirlpool_address = Pubkey::new_unique();
-            let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                whirlpool_address.clone(),
-                64,
-                0,
-                None,
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new_whirlpool(whirlpool_address, 64, 0, None);
             let account_info = account_info_mock.to_account_info(false);
             let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
             // initialized
             let ta0_address = derive_tick_array_pda(&whirlpool, 0);
-            let mut ta0_mock = AccountInfoMock::new_tick_array(
-                ta0_address.clone(),
-                whirlpool_address,
-                0,
-                None
-            );
+            let mut ta0_mock =
+                AccountInfoMock::new_tick_array(ta0_address, whirlpool_address, 0, None);
             let ta0 = ta0_mock.to_account_info(true);
 
             // uninitialized
             let ta1_address = derive_tick_array_pda(&whirlpool, 5632);
-            let mut ta1_mock = AccountInfoMock::new(
-                ta1_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut ta1_mock = AccountInfoMock::new(ta1_address, vec![], System::id());
             let ta1 = ta1_mock.to_account_info(true);
 
             // initialized
             let ta2_address = derive_tick_array_pda(&whirlpool, 11264);
-            let mut ta2_mock = AccountInfoMock::new_tick_array(
-                ta2_address.clone(),
-                whirlpool_address,
-                11264,
-                None
-            );
+            let mut ta2_mock =
+                AccountInfoMock::new_tick_array(ta2_address, whirlpool_address, 11264, None);
             let ta2 = ta2_mock.to_account_info(true);
 
             let builder = SparseSwapTickSequenceBuilder::try_from(
@@ -889,70 +879,61 @@ mod sparse_swap_tick_sequence_tests {
                     ta2.clone(),
                     ta2.clone(), // dup
                 ]),
-            ).unwrap();
+            )
+            .unwrap();
 
             assert_eq!(builder.tick_array_accounts.len(), 3);
-            vec![0, 5632, 11264].iter().enumerate().for_each(|(i, &expected)| {
-                match &builder.tick_array_accounts[i] {
-                    TickArrayAccount::Initialized { start_tick_index: actual, .. } => {
+            [0, 5632, 11264]
+                .iter()
+                .enumerate()
+                .for_each(|(i, &expected)| match &builder.tick_array_accounts[i] {
+                    TickArrayAccount::Initialized {
+                        start_tick_index: actual,
+                        ..
+                    } => {
                         assert_eq!(*actual, expected);
                     }
-                    TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                    TickArrayAccount::Uninitialized {
+                        start_tick_index, ..
+                    } => {
                         assert!(start_tick_index.is_some());
                         let start_tick_index = start_tick_index.as_ref().unwrap();
                         assert_eq!(*start_tick_index, expected);
                     }
-                }
-            });
+                });
         }
 
         #[test]
         fn fail_wrong_whirlpool_tick_array() {
             let whirlpool_address = Pubkey::new_unique();
-            let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                whirlpool_address.clone(),
-                64,
-                0,
-                None,
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new_whirlpool(whirlpool_address, 64, 0, None);
             let account_info = account_info_mock.to_account_info(false);
             let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
             let another_whirlpool_address = Pubkey::new_unique();
-            let mut another_account_info_mock = AccountInfoMock::new_whirlpool(
-                another_whirlpool_address.clone(),
-                64,
-                0,
-                None,
-            );
+            let mut another_account_info_mock =
+                AccountInfoMock::new_whirlpool(another_whirlpool_address, 64, 0, None);
             let another_account_info = another_account_info_mock.to_account_info(true);
             let another_whirlpool = Account::<Whirlpool>::try_from(&another_account_info).unwrap();
 
             let ta0_address = derive_tick_array_pda(&whirlpool, 0);
-            let mut ta0_mock = AccountInfoMock::new_tick_array(
-                ta0_address.clone(),
-                whirlpool_address,
-                0,
-                None
-            );
+            let mut ta0_mock =
+                AccountInfoMock::new_tick_array(ta0_address, whirlpool_address, 0, None);
             let ta0 = ta0_mock.to_account_info(true);
 
             // uninitialized
             let ta1_address = derive_tick_array_pda(&whirlpool, 5632);
-            let mut ta1_mock = AccountInfoMock::new(
-                ta1_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut ta1_mock = AccountInfoMock::new(ta1_address, vec![], System::id());
             let ta1 = ta1_mock.to_account_info(true);
 
             // initialized but for another whirlpool
             let ta2_address = derive_tick_array_pda(&another_whirlpool, 11264);
             let mut ta2_mock = AccountInfoMock::new_tick_array(
-                ta2_address.clone(),
+                ta2_address,
                 another_whirlpool_address,
                 11264,
-                None
+                None,
             );
             let ta2 = ta2_mock.to_account_info(true);
 
@@ -963,47 +944,35 @@ mod sparse_swap_tick_sequence_tests {
                 None,
             );
             assert!(result.is_err());
-            assert!(result.err().unwrap().to_string().contains("DifferentWhirlpoolTickArrayAccount"));
+            assert!(result
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("DifferentWhirlpoolTickArrayAccount"));
         }
 
         #[test]
         fn ignore_wrong_uninitialized_tick_array() {
             let whirlpool_address = Pubkey::new_unique();
-            let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                whirlpool_address.clone(),
-                64,
-                0,
-                None,
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new_whirlpool(whirlpool_address, 64, 0, None);
             let account_info = account_info_mock.to_account_info(false);
             let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
             let another_whirlpool_address = Pubkey::new_unique();
-            let mut another_account_info_mock = AccountInfoMock::new_whirlpool(
-                another_whirlpool_address.clone(),
-                64,
-                0,
-                None,
-            );
+            let mut another_account_info_mock =
+                AccountInfoMock::new_whirlpool(another_whirlpool_address, 64, 0, None);
             let another_account_info = another_account_info_mock.to_account_info(true);
             let another_whirlpool = Account::<Whirlpool>::try_from(&another_account_info).unwrap();
 
             let ta0_address = derive_tick_array_pda(&whirlpool, 0);
-            let mut ta0_mock = AccountInfoMock::new_tick_array(
-                ta0_address.clone(),
-                whirlpool_address,
-                0,
-                None
-            );
+            let mut ta0_mock =
+                AccountInfoMock::new_tick_array(ta0_address, whirlpool_address, 0, None);
             let ta0 = ta0_mock.to_account_info(true);
 
             // uninitialized and for another whirlpool
             let ta1_address = derive_tick_array_pda(&another_whirlpool, 5632);
-            let mut ta1_mock = AccountInfoMock::new(
-                ta1_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut ta1_mock = AccountInfoMock::new(ta1_address, vec![], System::id());
             let ta1 = ta1_mock.to_account_info(true);
 
             let builder = SparseSwapTickSequenceBuilder::try_from(
@@ -1011,12 +980,16 @@ mod sparse_swap_tick_sequence_tests {
                 false,
                 vec![ta0, ta1.clone(), ta1.clone()],
                 None,
-            ).unwrap();
+            )
+            .unwrap();
 
             // ta1 should be ignored
             assert_eq!(builder.tick_array_accounts.len(), 1);
             match &builder.tick_array_accounts[0] {
-                TickArrayAccount::Initialized { start_tick_index: actual, .. } => {
+                TickArrayAccount::Initialized {
+                    start_tick_index: actual,
+                    ..
+                } => {
                     assert_eq!(*actual, 0);
                 }
                 _ => panic!("unexpected state"),
@@ -1026,33 +999,21 @@ mod sparse_swap_tick_sequence_tests {
         #[test]
         fn fail_if_no_appropriate_tick_arrays() {
             let whirlpool_address = Pubkey::new_unique();
-            let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                whirlpool_address.clone(),
-                64,
-                1,
-                None,
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new_whirlpool(whirlpool_address, 64, 1, None);
             let account_info = account_info_mock.to_account_info(false);
             let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
             let ta0_address = derive_tick_array_pda(&whirlpool, 5632);
-            let mut ta0_mock = AccountInfoMock::new_tick_array(
-                ta0_address.clone(),
-                whirlpool_address,
-                5632,
-                None
-            );
+            let mut ta0_mock =
+                AccountInfoMock::new_tick_array(ta0_address, whirlpool_address, 5632, None);
             let ta0 = ta0_mock.to_account_info(true);
 
             let ta1_address = derive_tick_array_pda(&whirlpool, 11264);
-            let mut ta1_mock = AccountInfoMock::new_tick_array(
-                ta1_address.clone(),
-                whirlpool_address,
-                11264,
-                None
-            );
+            let mut ta1_mock =
+                AccountInfoMock::new_tick_array(ta1_address, whirlpool_address, 11264, None);
             let ta1 = ta1_mock.to_account_info(true);
-            
+
             let result = SparseSwapTickSequenceBuilder::try_from(
                 &whirlpool,
                 false,
@@ -1060,14 +1021,18 @@ mod sparse_swap_tick_sequence_tests {
                 None,
             );
             assert!(result.is_err());
-            assert!(result.err().unwrap().to_string().contains("InvalidTickArraySequence"));
+            assert!(result
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("InvalidTickArraySequence"));
         }
 
         #[test]
         fn adjust_tick_array_account_ordering() {
             let whirlpool_address = Pubkey::new_unique();
             let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                whirlpool_address.clone(),
+                whirlpool_address,
                 64,
                 -65, // no shift
                 None,
@@ -1077,41 +1042,25 @@ mod sparse_swap_tick_sequence_tests {
 
             // initialized
             let ta0_address = derive_tick_array_pda(&whirlpool, 0);
-            let mut ta0_mock = AccountInfoMock::new_tick_array(
-                ta0_address.clone(),
-                whirlpool_address,
-                0,
-                None
-            );
+            let mut ta0_mock =
+                AccountInfoMock::new_tick_array(ta0_address, whirlpool_address, 0, None);
             let ta0 = ta0_mock.to_account_info(true);
 
             // uninitialized
             let ta1_address = derive_tick_array_pda(&whirlpool, 5632);
-            let mut ta1_mock = AccountInfoMock::new(
-                ta1_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut ta1_mock = AccountInfoMock::new(ta1_address, vec![], System::id());
             let ta1 = ta1_mock.to_account_info(true);
 
             // initialized
             let ta2_address = derive_tick_array_pda(&whirlpool, 11264);
-            let mut ta2_mock = AccountInfoMock::new_tick_array(
-                ta2_address.clone(),
-                whirlpool_address,
-                11264,
-                None
-            );
+            let mut ta2_mock =
+                AccountInfoMock::new_tick_array(ta2_address, whirlpool_address, 11264, None);
             let ta2 = ta2_mock.to_account_info(true);
 
             // initialized
             let ta3_address = derive_tick_array_pda(&whirlpool, -5632);
-            let mut ta3_mock = AccountInfoMock::new_tick_array(
-                ta3_address.clone(),
-                whirlpool_address,
-                -5632,
-                None
-            );
+            let mut ta3_mock =
+                AccountInfoMock::new_tick_array(ta3_address, whirlpool_address, -5632, None);
             let ta3 = ta3_mock.to_account_info(true);
 
             let builder = SparseSwapTickSequenceBuilder::try_from(
@@ -1126,29 +1075,36 @@ mod sparse_swap_tick_sequence_tests {
                 Some(vec![
                     ta3.clone(), // -5632
                 ]),
-            ).unwrap();
+            )
+            .unwrap();
 
             // -5632 should be used as the first tick array
             assert_eq!(builder.tick_array_accounts.len(), 3);
-            vec![-5632, 0, 5632].iter().enumerate().for_each(|(i, &expected)| {
-                match &builder.tick_array_accounts[i] {
-                    TickArrayAccount::Initialized { start_tick_index: actual, .. } => {
+            [-5632, 0, 5632]
+                .iter()
+                .enumerate()
+                .for_each(|(i, &expected)| match &builder.tick_array_accounts[i] {
+                    TickArrayAccount::Initialized {
+                        start_tick_index: actual,
+                        ..
+                    } => {
                         assert_eq!(*actual, expected);
                     }
-                    TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                    TickArrayAccount::Uninitialized {
+                        start_tick_index, ..
+                    } => {
                         assert!(start_tick_index.is_some());
                         let start_tick_index = start_tick_index.as_ref().unwrap();
                         assert_eq!(*start_tick_index, expected);
                     }
-                }
-            });
+                });
         }
 
         #[test]
         fn uninitialized_tick_array_not_provided() {
             let whirlpool_address = Pubkey::new_unique();
             let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                whirlpool_address.clone(),
+                whirlpool_address,
                 64,
                 -65, // no shift
                 None,
@@ -1158,41 +1114,25 @@ mod sparse_swap_tick_sequence_tests {
 
             // initialized
             let ta0_address = derive_tick_array_pda(&whirlpool, 0);
-            let mut ta0_mock = AccountInfoMock::new_tick_array(
-                ta0_address.clone(),
-                whirlpool_address,
-                0,
-                None
-            );
+            let mut ta0_mock =
+                AccountInfoMock::new_tick_array(ta0_address, whirlpool_address, 0, None);
             let ta0 = ta0_mock.to_account_info(true);
 
             // uninitialized
             let ta1_address = derive_tick_array_pda(&whirlpool, 5632);
-            let mut ta1_mock = AccountInfoMock::new(
-                ta1_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut ta1_mock = AccountInfoMock::new(ta1_address, vec![], System::id());
             let _ta1 = ta1_mock.to_account_info(true);
 
             // initialized
             let ta2_address = derive_tick_array_pda(&whirlpool, 11264);
-            let mut ta2_mock = AccountInfoMock::new_tick_array(
-                ta2_address.clone(),
-                whirlpool_address,
-                11264,
-                None
-            );
+            let mut ta2_mock =
+                AccountInfoMock::new_tick_array(ta2_address, whirlpool_address, 11264, None);
             let ta2 = ta2_mock.to_account_info(true);
 
             // initialized
             let ta3_address = derive_tick_array_pda(&whirlpool, -5632);
-            let mut ta3_mock = AccountInfoMock::new_tick_array(
-                ta3_address.clone(),
-                whirlpool_address,
-                -5632,
-                None
-            );
+            let mut ta3_mock =
+                AccountInfoMock::new_tick_array(ta3_address, whirlpool_address, -5632, None);
             let ta3 = ta3_mock.to_account_info(true);
 
             let builder = SparseSwapTickSequenceBuilder::try_from(
@@ -1205,17 +1145,23 @@ mod sparse_swap_tick_sequence_tests {
                     ta2.clone(), // 11264
                 ],
                 None,
-            ).unwrap();
+            )
+            .unwrap();
 
             // -5632 should be used as the first tick array
             // 5632 should not be included because it is not provided
             assert_eq!(builder.tick_array_accounts.len(), 2);
-            vec![-5632, 0].iter().enumerate().for_each(|(i, &expected)| {
+            [-5632, 0].iter().enumerate().for_each(|(i, &expected)| {
                 match &builder.tick_array_accounts[i] {
-                    TickArrayAccount::Initialized { start_tick_index: actual, .. } => {
+                    TickArrayAccount::Initialized {
+                        start_tick_index: actual,
+                        ..
+                    } => {
                         assert_eq!(*actual, expected);
                     }
-                    TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                    TickArrayAccount::Uninitialized {
+                        start_tick_index, ..
+                    } => {
                         assert!(start_tick_index.is_some());
                         let start_tick_index = start_tick_index.as_ref().unwrap();
                         assert_eq!(*start_tick_index, expected);
@@ -1227,49 +1173,29 @@ mod sparse_swap_tick_sequence_tests {
         #[test]
         fn all_tick_array_uninitialized() {
             let whirlpool_address = Pubkey::new_unique();
-            let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                whirlpool_address.clone(),
-                64,
-                6000,
-                None,
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new_whirlpool(whirlpool_address, 64, 6000, None);
             let account_info = account_info_mock.to_account_info(false);
             let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
             // uninitialized
             let ta0_address = derive_tick_array_pda(&whirlpool, 0);
-            let mut ta0_mock = AccountInfoMock::new(
-                ta0_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut ta0_mock = AccountInfoMock::new(ta0_address, vec![], System::id());
             let ta0 = ta0_mock.to_account_info(true);
 
             // uninitialized
             let ta1_address = derive_tick_array_pda(&whirlpool, 5632);
-            let mut ta1_mock = AccountInfoMock::new(
-                ta1_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut ta1_mock = AccountInfoMock::new(ta1_address, vec![], System::id());
             let ta1 = ta1_mock.to_account_info(true);
 
             // uninitialized
             let ta2_address = derive_tick_array_pda(&whirlpool, 11264);
-            let mut ta2_mock = AccountInfoMock::new(
-                ta2_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut ta2_mock = AccountInfoMock::new(ta2_address, vec![], System::id());
             let ta2 = ta2_mock.to_account_info(true);
 
             // uninitialized
             let ta3_address = derive_tick_array_pda(&whirlpool, -5632);
-            let mut ta3_mock = AccountInfoMock::new(
-                ta3_address.clone(),
-                vec![],
-                System::id(),
-            );
+            let mut ta3_mock = AccountInfoMock::new(ta3_address, vec![], System::id());
             let ta3 = ta3_mock.to_account_info(true);
 
             let builder = SparseSwapTickSequenceBuilder::try_from(
@@ -1283,63 +1209,50 @@ mod sparse_swap_tick_sequence_tests {
                 Some(vec![
                     ta3.clone(), // -5632
                 ]),
-            ).unwrap();
+            )
+            .unwrap();
 
             // 5632 should be used as the first tick array and its direction should be a to b.
             assert_eq!(builder.tick_array_accounts.len(), 3);
-            vec![5632, 0, -5632].iter().enumerate().for_each(|(i, &expected)| {
-                match &builder.tick_array_accounts[i] {
+            [5632, 0, -5632]
+                .iter()
+                .enumerate()
+                .for_each(|(i, &expected)| match &builder.tick_array_accounts[i] {
                     TickArrayAccount::Initialized { .. } => {
                         panic!("unexpected state");
                     }
-                    TickArrayAccount::Uninitialized { start_tick_index, .. } => {
+                    TickArrayAccount::Uninitialized {
+                        start_tick_index, ..
+                    } => {
                         assert!(start_tick_index.is_some());
                         let start_tick_index = start_tick_index.as_ref().unwrap();
                         assert_eq!(*start_tick_index, expected);
                     }
-                }
-            });
-
+                });
         }
 
         #[test]
         fn fail_if_account_is_not_writable() {
             fn run_test(i: usize) {
                 let whirlpool_address = Pubkey::new_unique();
-                let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                    whirlpool_address.clone(),
-                    64,
-                    0,
-                    None,
-                );
+                let mut account_info_mock =
+                    AccountInfoMock::new_whirlpool(whirlpool_address, 64, 0, None);
                 let account_info = account_info_mock.to_account_info(false);
                 let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
                 // initialized
                 let ta0_address = derive_tick_array_pda(&whirlpool, 0);
-                let mut ta0_mock = AccountInfoMock::new_tick_array(
-                    ta0_address.clone(),
-                    whirlpool_address,
-                    0,
-                    None
-                );
+                let mut ta0_mock =
+                    AccountInfoMock::new_tick_array(ta0_address, whirlpool_address, 0, None);
 
                 // uninitialized
                 let ta1_address = derive_tick_array_pda(&whirlpool, 5632);
-                let mut ta1_mock = AccountInfoMock::new(
-                    ta1_address.clone(),
-                    vec![],
-                    System::id(),
-                );
+                let mut ta1_mock = AccountInfoMock::new(ta1_address, vec![], System::id());
 
                 // initialized
                 let ta2_address = derive_tick_array_pda(&whirlpool, 11264);
-                let mut ta2_mock = AccountInfoMock::new_tick_array(
-                    ta2_address.clone(),
-                    whirlpool_address,
-                    11264,
-                    None
-                );
+                let mut ta2_mock =
+                    AccountInfoMock::new_tick_array(ta2_address, whirlpool_address, 11264, None);
 
                 let ta0 = ta0_mock.to_account_info(i != 0);
                 let ta1 = ta1_mock.to_account_info(i != 1);
@@ -1351,7 +1264,11 @@ mod sparse_swap_tick_sequence_tests {
                     None,
                 );
                 assert!(result.is_err());
-                assert!(result.err().unwrap().to_string().contains("AccountNotMutable"));    
+                assert!(result
+                    .err()
+                    .unwrap()
+                    .to_string()
+                    .contains("AccountNotMutable"));
             }
 
             run_test(0);
@@ -1362,40 +1279,28 @@ mod sparse_swap_tick_sequence_tests {
         #[test]
         fn fail_if_uninitialized_account_is_not_empty() {
             let whirlpool_address = Pubkey::new_unique();
-            let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                whirlpool_address.clone(),
-                64,
-                0,
-                None,
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new_whirlpool(whirlpool_address, 64, 0, None);
             let account_info = account_info_mock.to_account_info(false);
             let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
             // initialized
             let ta0_address = derive_tick_array_pda(&whirlpool, 0);
-            let mut ta0_mock = AccountInfoMock::new_tick_array(
-                ta0_address.clone(),
-                whirlpool_address,
-                0,
-                None
-            );
+            let mut ta0_mock =
+                AccountInfoMock::new_tick_array(ta0_address, whirlpool_address, 0, None);
 
             // uninitialized
             let ta1_address = derive_tick_array_pda(&whirlpool, 5632);
             let mut ta1_mock = AccountInfoMock::new(
-                ta1_address.clone(),
+                ta1_address,
                 vec![0u8; 8], // not empty
                 System::id(),
             );
 
             // initialized
             let ta2_address = derive_tick_array_pda(&whirlpool, 11264);
-            let mut ta2_mock = AccountInfoMock::new_tick_array(
-                ta2_address.clone(),
-                whirlpool_address,
-                11264,
-                None
-            );
+            let mut ta2_mock =
+                AccountInfoMock::new_tick_array(ta2_address, whirlpool_address, 11264, None);
 
             let ta0 = ta0_mock.to_account_info(true);
             let ta1 = ta1_mock.to_account_info(true);
@@ -1407,38 +1312,30 @@ mod sparse_swap_tick_sequence_tests {
                 None,
             );
             assert!(result.is_err());
-            assert!(result.err().unwrap().to_string().contains("AccountOwnedByWrongProgram"));    
+            assert!(result
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("AccountOwnedByWrongProgram"));
         }
 
         #[test]
         fn fail_if_wrong_tick_array_account() {
             let whirlpool_address = Pubkey::new_unique();
-            let mut account_info_mock = AccountInfoMock::new_whirlpool(
-                whirlpool_address.clone(),
-                64,
-                0,
-                None,
-            );
+            let mut account_info_mock =
+                AccountInfoMock::new_whirlpool(whirlpool_address, 64, 0, None);
             let whirlpool_account_info = account_info_mock.to_account_info(true);
             let whirlpool = Account::<Whirlpool>::try_from(&whirlpool_account_info).unwrap();
 
             // initialized
             let ta0_address = derive_tick_array_pda(&whirlpool, 0);
-            let mut ta0_mock = AccountInfoMock::new_tick_array(
-                ta0_address.clone(),
-                whirlpool_address,
-                0,
-                None
-            );
+            let mut ta0_mock =
+                AccountInfoMock::new_tick_array(ta0_address, whirlpool_address, 0, None);
 
             // initialized
             let ta2_address = derive_tick_array_pda(&whirlpool, 11264);
-            let mut ta2_mock = AccountInfoMock::new_tick_array(
-                ta2_address.clone(),
-                whirlpool_address,
-                11264,
-                None
-            );
+            let mut ta2_mock =
+                AccountInfoMock::new_tick_array(ta2_address, whirlpool_address, 11264, None);
 
             let ta0 = ta0_mock.to_account_info(true);
             let ta1 = whirlpool_account_info.clone();
@@ -1446,15 +1343,15 @@ mod sparse_swap_tick_sequence_tests {
             let result = SparseSwapTickSequenceBuilder::try_from(
                 &whirlpool,
                 false,
-                vec![
-                    ta0,
-                    ta1,
-                    ta2
-                ],
+                vec![ta0, ta1, ta2],
                 None,
             );
             assert!(result.is_err());
-            assert!(result.err().unwrap().to_string().contains("AccountDiscriminatorMismatch"));
+            assert!(result
+                .err()
+                .unwrap()
+                .to_string()
+                .contains("AccountDiscriminatorMismatch"));
         }
     }
 
@@ -1463,7 +1360,9 @@ mod sparse_swap_tick_sequence_tests {
 
         use super::*;
 
-        fn to_proxied_tick_array_initialized<'a>(account_info: &'a AccountInfo<'a>) -> ProxiedTickArray<'a> {
+        fn to_proxied_tick_array_initialized<'a>(
+            account_info: &'a AccountInfo<'a>,
+        ) -> ProxiedTickArray<'a> {
             use std::ops::DerefMut;
 
             let data = account_info.try_borrow_mut_data().unwrap();
@@ -1481,7 +1380,7 @@ mod sparse_swap_tick_sequence_tests {
                 Pubkey::new_unique(),
                 Pubkey::new_unique(),
                 28160,
-                None
+                None,
             );
             let start_28160 = start_28160.to_account_info(true);
             let proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
@@ -1500,25 +1399,27 @@ mod sparse_swap_tick_sequence_tests {
                 Pubkey::new_unique(),
                 Pubkey::new_unique(),
                 28160,
-                None
+                None,
             );
             let start_28160 = start_28160.to_account_info(true);
             let mut proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
 
             let tick = proxied_28160.get_tick(28160 + 64, 64).unwrap();
-            assert_eq!(tick.initialized, false);
+            assert!(!tick.initialized);
 
-            proxied_28160.update_tick(
-                28160 + 64,
-                64,
-                &TickUpdate {
-                    initialized: true,
-                    ..Default::default()
-                }
-            ).unwrap();
+            proxied_28160
+                .update_tick(
+                    28160 + 64,
+                    64,
+                    &TickUpdate {
+                        initialized: true,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
 
             let tick = proxied_28160.get_tick(28160 + 64, 64).unwrap();
-            assert_eq!(tick.initialized, true);
+            assert!(tick.initialized);
         }
 
         #[test]
@@ -1526,7 +1427,7 @@ mod sparse_swap_tick_sequence_tests {
             let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
             for i in 0..TICK_ARRAY_SIZE_USIZE {
                 let tick = proxied_56320.get_tick(56320 + (i as i32) * 64, 64).unwrap();
-                assert_eq!(tick.initialized, false);
+                assert!(!tick.initialized);
             }
         }
 
@@ -1536,14 +1437,16 @@ mod sparse_swap_tick_sequence_tests {
             let mut proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
 
             // uninitialized tick must not be updated, so updating ProxiedTickArray::Uninitialized should panic
-            proxied_56320.update_tick(
-                56320 + 64,
-                64,
-                &TickUpdate {
-                    initialized: true,
-                    ..Default::default()
-                }
-            ).unwrap();
+            proxied_56320
+                .update_tick(
+                    56320 + 64,
+                    64,
+                    &TickUpdate {
+                        initialized: true,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
         }
 
         #[test]
@@ -1552,30 +1455,30 @@ mod sparse_swap_tick_sequence_tests {
                 Pubkey::new_unique(),
                 Pubkey::new_unique(),
                 28160,
-                None
+                None,
             );
             let start_28160 = start_28160.to_account_info(true);
             let proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
-            assert_eq!(proxied_28160.is_min_tick_array(), false);
+            assert!(!proxied_28160.is_min_tick_array());
 
             let mut start_neg_444928 = AccountInfoMock::new_tick_array(
                 Pubkey::new_unique(),
                 Pubkey::new_unique(),
                 -444928,
-                None
+                None,
             );
             let start_neg_444928 = start_neg_444928.to_account_info(true);
             let proxied_neg_444928 = to_proxied_tick_array_initialized(&start_neg_444928);
-            assert_eq!(proxied_neg_444928.is_min_tick_array(), true);
+            assert!(proxied_neg_444928.is_min_tick_array());
         }
 
         #[test]
         fn uninitialized_is_min_tick_array() {
             let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
-            assert_eq!(proxied_56320.is_min_tick_array(), false);
+            assert!(!proxied_56320.is_min_tick_array());
 
             let proxied_neg_444928 = ProxiedTickArray::new_uninitialized(-444928);
-            assert_eq!(proxied_neg_444928.is_min_tick_array(), true);
+            assert!(proxied_neg_444928.is_min_tick_array());
         }
 
         #[test]
@@ -1584,30 +1487,30 @@ mod sparse_swap_tick_sequence_tests {
                 Pubkey::new_unique(),
                 Pubkey::new_unique(),
                 28160,
-                None
+                None,
             );
             let start_28160 = start_28160.to_account_info(true);
             let proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
-            assert_eq!(proxied_28160.is_max_tick_array(64), false);
+            assert!(!proxied_28160.is_max_tick_array(64));
 
             let mut start_439296 = AccountInfoMock::new_tick_array(
                 Pubkey::new_unique(),
                 Pubkey::new_unique(),
                 439296,
-                None
+                None,
             );
             let start_439296 = start_439296.to_account_info(true);
             let proxied_439296 = to_proxied_tick_array_initialized(&start_439296);
-            assert_eq!(proxied_439296.is_max_tick_array(64), true);
+            assert!(proxied_439296.is_max_tick_array(64));
         }
 
         #[test]
         fn uninitialized_is_max_tick_array() {
             let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
-            assert_eq!(proxied_56320.is_max_tick_array(64), false);
+            assert!(!proxied_56320.is_max_tick_array(64));
 
             let proxied_439296 = ProxiedTickArray::new_uninitialized(439296);
-            assert_eq!(proxied_439296.is_max_tick_array(64), true);
+            assert!(proxied_439296.is_max_tick_array(64));
         }
 
         #[test]
@@ -1616,13 +1519,15 @@ mod sparse_swap_tick_sequence_tests {
                 Pubkey::new_unique(),
                 Pubkey::new_unique(),
                 28160,
-                None
+                None,
             );
             let start_28160 = start_28160.to_account_info(true);
             let proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
             for i in 0..TICK_ARRAY_SIZE_USIZE {
-                let offset = proxied_28160.tick_offset(28160 + 64 * (i as i32), 64).unwrap();
-                assert_eq!(offset, i as isize) ;
+                let offset = proxied_28160
+                    .tick_offset(28160 + 64 * (i as i32), 64)
+                    .unwrap();
+                assert_eq!(offset, i as isize);
             }
         }
 
@@ -1630,7 +1535,9 @@ mod sparse_swap_tick_sequence_tests {
         fn uninitialized_tick_offset() {
             let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
             for i in 0..TICK_ARRAY_SIZE_USIZE {
-                let offset = proxied_56320.tick_offset(56320 + 64 * (i as i32), 64).unwrap();
+                let offset = proxied_56320
+                    .tick_offset(56320 + 64 * (i as i32), 64)
+                    .unwrap();
                 assert_eq!(offset, i as isize);
             }
         }
@@ -1641,28 +1548,35 @@ mod sparse_swap_tick_sequence_tests {
                 Pubkey::new_unique(),
                 Pubkey::new_unique(),
                 28160,
-                None
+                None,
             );
             let start_28160 = start_28160.to_account_info(true);
             let mut proxied_28160 = to_proxied_tick_array_initialized(&start_28160);
 
-            proxied_28160.update_tick(
-                28160 + 64 * 16,
-                64,
-                &TickUpdate {
-                    initialized: true,
-                    ..Default::default()
-                }
-            ).unwrap();
+            proxied_28160
+                .update_tick(
+                    28160 + 64 * 16,
+                    64,
+                    &TickUpdate {
+                        initialized: true,
+                        ..Default::default()
+                    },
+                )
+                .unwrap();
 
-            let next_initialized_tick_index = proxied_28160.get_next_init_tick_index(28160, 64, false).unwrap().unwrap();
+            let next_initialized_tick_index = proxied_28160
+                .get_next_init_tick_index(28160, 64, false)
+                .unwrap()
+                .unwrap();
             assert_eq!(next_initialized_tick_index, 28160 + 64 * 16);
         }
 
         #[test]
         fn uninitialized_get_next_init_tick_index() {
             let proxied_56320 = ProxiedTickArray::new_uninitialized(56320);
-            let next_initialized_tick_index = proxied_56320.get_next_init_tick_index(56320, 64, false).unwrap();
+            let next_initialized_tick_index = proxied_56320
+                .get_next_init_tick_index(56320, 64, false)
+                .unwrap();
             assert!(next_initialized_tick_index.is_none());
         }
     }

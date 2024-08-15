@@ -1,10 +1,14 @@
-import { Program } from "@coral-xyz/anchor";
-import { Instruction } from "@orca-so/common-sdk";
-import { AccountMeta, PublicKey } from "@solana/web3.js";
-import BN from "bn.js";
-import { Whirlpool } from "../../artifacts/whirlpool";
-import { MEMO_PROGRAM_ADDRESS, SwapInput } from "../../types/public";
-import { RemainingAccountsBuilder, RemainingAccountsType, toSupplementalTickArrayAccountMetas } from "../../utils/remaining-accounts-util";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction } from "@orca-so/common-sdk";
+import type { AccountMeta, PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../../artifacts/whirlpool";
+import type { SwapInput } from "../../types/public";
+import { MEMO_PROGRAM_ADDRESS } from "../../types/public";
+import {
+  RemainingAccountsBuilder,
+  RemainingAccountsType,
+  toSupplementalTickArrayAccountMetas,
+} from "../../utils/remaining-accounts-util";
 
 /**
  * Raw parameters and accounts to swap on a Whirlpool
@@ -60,7 +64,10 @@ export type SwapV2Params = SwapInput & {
  * @param params - {@link SwapV2Params}
  * @returns - Instruction to perform the action.
  */
-export function swapV2Ix(program: Program<Whirlpool>, params: SwapV2Params): Instruction {
+export function swapV2Ix(
+  program: Program<Whirlpool>,
+  params: SwapV2Params,
+): Instruction {
   const {
     amount,
     otherAmountThreshold,
@@ -86,11 +93,15 @@ export function swapV2Ix(program: Program<Whirlpool>, params: SwapV2Params): Ins
     supplementalTickArrays,
   } = params;
 
-  const [remainingAccountsInfo, remainingAccounts] = new RemainingAccountsBuilder()
-    .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
-    .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
-    .addSlice(RemainingAccountsType.SupplementalTickArrays, toSupplementalTickArrayAccountMetas(supplementalTickArrays))
-    .build();
+  const [remainingAccountsInfo, remainingAccounts] =
+    new RemainingAccountsBuilder()
+      .addSlice(RemainingAccountsType.TransferHookA, tokenTransferHookAccountsA)
+      .addSlice(RemainingAccountsType.TransferHookB, tokenTransferHookAccountsB)
+      .addSlice(
+        RemainingAccountsType.SupplementalTickArrays,
+        toSupplementalTickArrayAccountMetas(supplementalTickArrays),
+      )
+      .build();
 
   const ix = program.instruction.swapV2(
     amount,
@@ -118,7 +129,7 @@ export function swapV2Ix(program: Program<Whirlpool>, params: SwapV2Params): Ins
         oracle,
       },
       remainingAccounts,
-    }
+    },
   );
 
   return {

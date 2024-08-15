@@ -1,10 +1,14 @@
-import { Instruction, TransactionBuilder } from "@orca-so/common-sdk";
-import { WhirlpoolContext } from "../../context";
+import type { Instruction } from "@orca-so/common-sdk";
+import { TransactionBuilder } from "@orca-so/common-sdk";
+import type { WhirlpoolContext } from "../../context";
 
-export function toTx(ctx: WhirlpoolContext, ix: Instruction): TransactionBuilder {
+export function toTx(
+  ctx: WhirlpoolContext,
+  ix: Instruction,
+): TransactionBuilder {
   return new TransactionBuilder(
     ctx.provider.connection,
     ctx.provider.wallet,
-    ctx.txBuilderOpts
+    ctx.txBuilderOpts,
   ).addInstruction(ix);
 }

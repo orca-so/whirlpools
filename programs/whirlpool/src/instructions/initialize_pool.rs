@@ -65,7 +65,7 @@ pub fn handler(
     // ignore the bump passed and use one Anchor derived
     let bump = ctx.bumps.whirlpool;
 
-    Ok(whirlpool.initialize(
+    whirlpool.initialize(
         whirlpools_config,
         bump,
         tick_spacing,
@@ -75,5 +75,5 @@ pub fn handler(
         ctx.accounts.token_vault_a.key(),
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
-    )?)
+    )
 }

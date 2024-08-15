@@ -1,20 +1,17 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import {
-  InitPoolParams,
-  PDAUtil,
-  toTx,
-  WhirlpoolContext,
-  WhirlpoolData,
-  WhirlpoolIx
-} from "../../src";
+import type { InitPoolParams, WhirlpoolData } from "../../src";
+import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../src";
 import { TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 import { createInOrderMints } from "../utils/test-builders";
 
 describe("set_default_protocol_fee_rate", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -23,17 +20,21 @@ describe("set_default_protocol_fee_rate", () => {
   it("successfully set_default_protocol_fee_rate", async () => {
     const { poolInitInfo, configInitInfo, configKeypairs } = await initTestPool(
       ctx,
-      TickSpacing.Standard
+      TickSpacing.Standard,
     );
     const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
-    const whirlpoolsConfigKey = configInitInfo.whirlpoolsConfigKeypair.publicKey;
+    const whirlpoolsConfigKey =
+      configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
     const newDefaultProtocolFeeRate = 45;
 
     // Fetch initial whirlpool and check it is default
     let whirlpool_0 = (await fetcher.getPool(whirlpoolKey)) as WhirlpoolData;
-    assert.equal(whirlpool_0.protocolFeeRate, configInitInfo.defaultProtocolFeeRate);
+    assert.equal(
+      whirlpool_0.protocolFeeRate,
+      configInitInfo.defaultProtocolFeeRate,
+    );
 
     await toTx(
       ctx,
@@ -41,14 +42,17 @@ describe("set_default_protocol_fee_rate", () => {
         whirlpoolsConfig: whirlpoolsConfigKey,
         feeAuthority: feeAuthorityKeypair.publicKey,
         defaultProtocolFeeRate: newDefaultProtocolFeeRate,
-      })
+      }),
     )
       .addSigner(feeAuthorityKeypair)
       .buildAndExecute();
 
     // Setting the default rate did not change existing whirlpool fee rate
     whirlpool_0 = (await fetcher.getPool(whirlpoolKey)) as WhirlpoolData;
-    assert.equal(whirlpool_0.protocolFeeRate, configInitInfo.defaultProtocolFeeRate);
+    assert.equal(
+      whirlpool_0.protocolFeeRate,
+      configInitInfo.defaultProtocolFeeRate,
+    );
 
     const [tokenMintA, tokenMintB] = await createInOrderMints(ctx);
     const whirlpoolPda = PDAUtil.getWhirlpool(
@@ -56,7 +60,7 @@ describe("set_default_protocol_fee_rate", () => {
       whirlpoolsConfigKey,
       tokenMintA,
       tokenMintB,
-      TickSpacing.Standard
+      TickSpacing.Standard,
     );
     const tokenVaultAKeypair = anchor.web3.Keypair.generate();
     const tokenVaultBKeypair = anchor.web3.Keypair.generate();
@@ -70,15 +74,24 @@ describe("set_default_protocol_fee_rate", () => {
       tokenVaultBKeypair,
       tickSpacing: TickSpacing.Standard,
     };
-    await toTx(ctx, WhirlpoolIx.initializePoolIx(ctx.program, newPoolInitInfo)).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializePoolIx(ctx.program, newPoolInitInfo),
+    ).buildAndExecute();
 
-    const whirlpool_1 = (await fetcher.getPool(whirlpoolPda.publicKey)) as WhirlpoolData;
+    const whirlpool_1 = (await fetcher.getPool(
+      whirlpoolPda.publicKey,
+    )) as WhirlpoolData;
     assert.equal(whirlpool_1.protocolFeeRate, newDefaultProtocolFeeRate);
   });
 
   it("fails when default fee rate exceeds max", async () => {
-    const { configInitInfo, configKeypairs } = await initTestPool(ctx, TickSpacing.Standard);
-    const whirlpoolsConfigKey = configInitInfo.whirlpoolsConfigKeypair.publicKey;
+    const { configInitInfo, configKeypairs } = await initTestPool(
+      ctx,
+      TickSpacing.Standard,
+    );
+    const whirlpoolsConfigKey =
+      configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
     const newDefaultProtocolFeeRate = 20_000;
@@ -89,17 +102,21 @@ describe("set_default_protocol_fee_rate", () => {
           whirlpoolsConfig: whirlpoolsConfigKey,
           feeAuthority: feeAuthorityKeypair.publicKey,
           defaultProtocolFeeRate: newDefaultProtocolFeeRate,
-        })
+        }),
       )
         .addSigner(feeAuthorityKeypair)
         .buildAndExecute(),
-      /0x178d/ // ProtocolFeeRateMaxExceeded
+      /0x178d/, // ProtocolFeeRateMaxExceeded
     );
   });
 
   it("fails when fee authority is not a signer", async () => {
-    const { configInitInfo, configKeypairs } = await initTestPool(ctx, TickSpacing.Standard);
-    const whirlpoolsConfigKey = configInitInfo.whirlpoolsConfigKeypair.publicKey;
+    const { configInitInfo, configKeypairs } = await initTestPool(
+      ctx,
+      TickSpacing.Standard,
+    );
+    const whirlpoolsConfigKey =
+      configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
     const newDefaultProtocolFeeRate = 1000;
@@ -110,13 +127,14 @@ describe("set_default_protocol_fee_rate", () => {
           feeAuthority: feeAuthorityKeypair.publicKey,
         },
       }),
-      /.*signature verification fail.*/i
+      /.*signature verification fail.*/i,
     );
   });
 
   it("fails when invalid fee authority provided", async () => {
     const { configInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
-    const whirlpoolsConfigKey = configInitInfo.whirlpoolsConfigKeypair.publicKey;
+    const whirlpoolsConfigKey =
+      configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const fakeFeeAuthorityKeypair = anchor.web3.Keypair.generate();
 
     const newDefaultProtocolFeeRate = 1000;
@@ -128,7 +146,7 @@ describe("set_default_protocol_fee_rate", () => {
         },
         signers: [fakeFeeAuthorityKeypair],
       }),
-      /An address constraint was violated/
+      /An address constraint was violated/,
     );
   });
 });

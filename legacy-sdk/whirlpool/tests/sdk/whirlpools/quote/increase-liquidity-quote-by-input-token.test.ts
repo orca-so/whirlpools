@@ -48,8 +48,12 @@ const variations = [
 // |-------| = Position Boundary
 variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
   describe("increaseLiquidityQuoteByInputTokenUsingPriceSlippage", () => {
-    const tokenMintA = new PublicKey("orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE");
-    const tokenMintB = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+    const tokenMintA = new PublicKey(
+      "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
+    );
+    const tokenMintB = new PublicKey(
+      "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+    );
 
     it(`|[--------P--------]| @ isTokenA - ${isTokenA} tickCurrentIndex - ${currentTickIndex}, slippage - ${slippage.toDecimal()}%`, async () => {
       const slippageRange = getTestSlippageRange(currentTickIndex, slippage);
@@ -215,25 +219,31 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
       isTokenA: boolean;
       slippageTolerance: Percentage;
     }) {
-      const { pTickLowerIndex, pTickUpperIndex, tickCurrentIndex, inputTokenAmount, isTokenA } =
-        params;
+      const {
+        pTickLowerIndex,
+        pTickUpperIndex,
+        tickCurrentIndex,
+        inputTokenAmount,
+        isTokenA,
+      } = params;
 
       const sqrtPrice = PriceMath.tickIndexToSqrtPriceX64(tickCurrentIndex);
 
       const inputTokenMint = isTokenA ? tokenMintA : tokenMintB;
 
-      const quote = increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage({
-        inputTokenAmount,
-        inputTokenMint,
-        sqrtPrice,
-        tokenMintA,
-        tokenMintB,
-        tickLowerIndex: pTickLowerIndex,
-        tickUpperIndex: pTickUpperIndex,
-        tickCurrentIndex,
-        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
-        slippageTolerance: slippage,
-      });
+      const quote =
+        increaseLiquidityQuoteByInputTokenWithParamsUsingPriceSlippage({
+          inputTokenAmount,
+          inputTokenMint,
+          sqrtPrice,
+          tokenMintA,
+          tokenMintB,
+          tickLowerIndex: pTickLowerIndex,
+          tickUpperIndex: pTickUpperIndex,
+          tickCurrentIndex,
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT, // TokenExtension is not related to this test
+          slippageTolerance: slippage,
+        });
 
       // Expectations
       const liquidity = getLiquidityFromInputToken({
@@ -283,8 +293,12 @@ variations.forEach(([currentTickIndex, isTokenA, slippage]) => {
 });
 
 describe("edge cases for old slippage", () => {
-  const tokenMintA = new PublicKey("orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE");
-  const tokenMintB = new PublicKey("EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v");
+  const tokenMintA = new PublicKey(
+    "orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE",
+  );
+  const tokenMintB = new PublicKey(
+    "EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v",
+  );
 
   it("sqrtPrice on lower bound, tokenB input", async () => {
     const quote = increaseLiquidityQuoteByInputTokenWithParams({
@@ -330,7 +344,9 @@ describe("edge cases for old slippage", () => {
 
   it("tickCurrentIndex on lower bound but sqrtPrice not on lower bound, tokenA input", async () => {
     assert.ok(
-      PriceMath.tickIndexToSqrtPriceX64(1).subn(1).gt(PriceMath.tickIndexToSqrtPriceX64(0)),
+      PriceMath.tickIndexToSqrtPriceX64(1)
+        .subn(1)
+        .gt(PriceMath.tickIndexToSqrtPriceX64(0)),
     );
 
     const quote = increaseLiquidityQuoteByInputTokenWithParams({
@@ -355,7 +371,9 @@ describe("edge cases for old slippage", () => {
 
   it("tickCurrentIndex on lower bound but sqrtPrice not on lower bound, tokenB input", async () => {
     assert.ok(
-      PriceMath.tickIndexToSqrtPriceX64(1).subn(1).gt(PriceMath.tickIndexToSqrtPriceX64(0)),
+      PriceMath.tickIndexToSqrtPriceX64(1)
+        .subn(1)
+        .gt(PriceMath.tickIndexToSqrtPriceX64(0)),
     );
 
     const quote = increaseLiquidityQuoteByInputTokenWithParams({
@@ -444,16 +462,31 @@ function getLiquidityFromInputToken(params: {
   if (currentTickIndex >= upperTickIndex) {
     return isInputTokenA
       ? ZERO
-      : getLiquidityFromTokenB(inputTokenAmount, lowerSqrtPrice, upperSqrtPrice, false);
+      : getLiquidityFromTokenB(
+          inputTokenAmount,
+          lowerSqrtPrice,
+          upperSqrtPrice,
+          false,
+        );
   }
 
   if (currentTickIndex < lowerTickIndex) {
     return isInputTokenA
-      ? getLiquidityFromTokenA(inputTokenAmount, lowerSqrtPrice, upperSqrtPrice, false)
+      ? getLiquidityFromTokenA(
+          inputTokenAmount,
+          lowerSqrtPrice,
+          upperSqrtPrice,
+          false,
+        )
       : ZERO;
   }
 
   return isInputTokenA
     ? getLiquidityFromTokenA(inputTokenAmount, sqrtPrice, upperSqrtPrice, false)
-    : getLiquidityFromTokenB(inputTokenAmount, lowerSqrtPrice, sqrtPrice, false);
+    : getLiquidityFromTokenB(
+        inputTokenAmount,
+        lowerSqrtPrice,
+        sqrtPrice,
+        false,
+      );
 }

@@ -1,9 +1,9 @@
-import { Program } from "@coral-xyz/anchor";
+import type { Program } from "@coral-xyz/anchor";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
-import { Whirlpool } from "../artifacts/whirlpool";
+import type { PublicKey } from "@solana/web3.js";
+import type { Whirlpool } from "../artifacts/whirlpool";
 
-import { Instruction } from "@orca-so/common-sdk";
+import type { Instruction } from "@orca-so/common-sdk";
 
 /**
  * Parameters to collect fees from a position.
@@ -38,7 +38,10 @@ export type CollectFeesParams = {
  * @param params - CollectFeesParams object
  * @returns - Instruction to perform the action.
  */
-export function collectFeesIx(program: Program<Whirlpool>, params: CollectFeesParams): Instruction {
+export function collectFeesIx(
+  program: Program<Whirlpool>,
+  params: CollectFeesParams,
+): Instruction {
   const {
     whirlpool,
     positionAuthority,

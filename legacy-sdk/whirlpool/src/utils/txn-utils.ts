@@ -1,18 +1,26 @@
-import {
+import type {
   Instruction,
-  MEASUREMENT_BLOCKHASH,
   ResolvedTokenAddressInstruction,
+  TransactionBuilderOptions,
+} from "@orca-so/common-sdk";
+import {
+  MEASUREMENT_BLOCKHASH,
   TokenUtil,
   TransactionBuilder,
-  TransactionBuilderOptions,
   ZERO,
   defaultTransactionBuilderOptions,
 } from "@orca-so/common-sdk";
-import { WhirlpoolContext, WhirlpoolContextOpts as WhirlpoolContextOptions, toTx } from "..";
+import type {
+  WhirlpoolContext,
+  WhirlpoolContextOpts as WhirlpoolContextOptions,
+} from "..";
 import { NATIVE_MINT } from "@solana/spl-token";
-import { PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 
-export function convertListToMap<T>(fetchedData: T[], addresses: string[]): Record<string, T> {
+export function convertListToMap<T>(
+  fetchedData: T[],
+  addresses: string[],
+): Record<string, T> {
   const result: Record<string, T> = {};
   fetchedData.forEach((data, index) => {
     if (data) {
@@ -26,7 +34,7 @@ export function convertListToMap<T>(fetchedData: T[], addresses: string[]): Reco
 // Filter out null objects in the first array and remove the corresponding objects in the second array
 export function filterNullObjects<T, K>(
   firstArray: ReadonlyArray<T | null>,
-  secondArray: ReadonlyArray<K>
+  secondArray: ReadonlyArray<K>,
 ): [Array<T>, Array<K>] {
   const filteredFirstArray: Array<T> = [];
   const filteredSecondArray: Array<K> = [];
@@ -47,22 +55,28 @@ export async function checkMergedTransactionSizeIsValid(
   latestBlockhash: Readonly<{
     blockhash: string;
     lastValidBlockHeight: number;
-  }>
+  }>,
 ): Promise<boolean> {
-  const merged = new TransactionBuilder(ctx.connection, ctx.wallet, ctx.txBuilderOpts);
-  builders.forEach((builder) => merged.addInstruction(builder.compressIx(true)));
+  const merged = new TransactionBuilder(
+    ctx.connection,
+    ctx.wallet,
+    ctx.txBuilderOpts,
+  );
+  builders.forEach((builder) =>
+    merged.addInstruction(builder.compressIx(true)),
+  );
   try {
-    const size = await merged.txnSize({
+    await merged.txnSize({
       latestBlockhash,
     });
     return true;
-  } catch (e) {
+  } catch {
     return false;
   }
 }
 
 export function contextOptionsToBuilderOptions(
-  opts: WhirlpoolContextOptions
+  opts: WhirlpoolContextOptions,
 ): TransactionBuilderOptions | undefined {
   return {
     defaultBuildOption: {
@@ -92,53 +106,62 @@ export class MultipleTransactionBuilderFactoryWithAccountResolver {
     private payer: PublicKey = tokenOwner,
   ) {}
 
-  public async addInstructions(generator: (resolve: (mint: string) => PublicKey) => Promise<Instruction[]>) {
+  public async addInstructions(
+    generator: (resolve: (mint: string) => PublicKey) => Promise<Instruction[]>,
+  ) {
     if (this.accountExemption === null) {
       this.accountExemption = await this.ctx.fetcher.getAccountRentExempt();
     }
 
     for (let iter = 0; iter < 2; iter++) {
       if (!this.pendingTxBuilder || !this.touchedMints) {
-        this.pendingTxBuilder = new TransactionBuilder(this.ctx.connection, this.ctx.wallet, this.ctx.txBuilderOpts);
-        this.touchedMints = new Set<string>();
-        this.resolvedAtas[NATIVE_MINT.toBase58()] = TokenUtil.createWrappedNativeAccountInstruction(
-          this.tokenOwner,
-          ZERO,
-          this.accountExemption,
-          this.payer,
-          this.tokenOwner,
-          this.ctx.accountResolverOpts.createWrappedSolAccountMethod
+        this.pendingTxBuilder = new TransactionBuilder(
+          this.ctx.connection,
+          this.ctx.wallet,
+          this.ctx.txBuilderOpts,
         );
+        this.touchedMints = new Set<string>();
+        this.resolvedAtas[NATIVE_MINT.toBase58()] =
+          TokenUtil.createWrappedNativeAccountInstruction(
+            this.tokenOwner,
+            ZERO,
+            this.accountExemption,
+            this.payer,
+            this.tokenOwner,
+            this.ctx.accountResolverOpts.createWrappedSolAccountMethod,
+          );
       }
 
-      const newTxBuilder = new TransactionBuilder(this.ctx.connection, this.ctx.wallet, this.ctx.txBuilderOpts);
+      const newTxBuilder = new TransactionBuilder(
+        this.ctx.connection,
+        this.ctx.wallet,
+        this.ctx.txBuilderOpts,
+      );
       const resolve = (mint: string): PublicKey => {
         if (!this.touchedMints!.has(mint)) {
           newTxBuilder.addInstruction(this.resolvedAtas[mint]);
           this.touchedMints!.add(mint);
         }
-        return this.resolvedAtas[mint].address;        
+        return this.resolvedAtas[mint].address;
       };
 
       const ixs = await generator(resolve.bind(this));
       newTxBuilder.addInstructions(ixs);
-  
+
       // Attempt to push the new instructions into the pending builder
       const mergeable = await checkMergedTransactionSizeIsValid(
         this.ctx,
         [this.pendingTxBuilder, newTxBuilder],
-        MEASUREMENT_BLOCKHASH
+        MEASUREMENT_BLOCKHASH,
       );
       if (mergeable) {
         this.pendingTxBuilder.addInstruction(newTxBuilder.compressIx(false));
         break;
       } else {
         if (iter !== 0) {
-          throw new Error(
-            `instruction is too large.`
-          );
+          throw new Error(`instruction is too large.`);
         }
-  
+
         this.txBuilders.push(this.pendingTxBuilder);
         this.pendingTxBuilder = null;
         this.touchedMints = null;

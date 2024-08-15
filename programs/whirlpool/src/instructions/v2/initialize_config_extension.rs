@@ -25,14 +25,8 @@ pub struct InitializeConfigExtension<'info> {
     pub system_program: Program<'info, System>,
 }
 
-pub fn handler(
-    ctx: Context<InitializeConfigExtension>,
-) -> Result<()> {
-    Ok(ctx
-        .accounts
+pub fn handler(ctx: Context<InitializeConfigExtension>) -> Result<()> {
+    ctx.accounts
         .config_extension
-        .initialize(
-            ctx.accounts.config.key(),
-            ctx.accounts.fee_authority.key(),
-        )?)
+        .initialize(ctx.accounts.config.key(), ctx.accounts.fee_authority.key())
 }

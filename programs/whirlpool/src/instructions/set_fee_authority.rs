@@ -16,8 +16,8 @@ pub struct SetFeeAuthority<'info> {
 
 /// Set the fee authority. Only the current fee authority has permission to invoke this instruction.
 pub fn handler(ctx: Context<SetFeeAuthority>) -> Result<()> {
-    Ok(ctx
-        .accounts
+    ctx.accounts
         .whirlpools_config
-        .update_fee_authority(ctx.accounts.new_fee_authority.key()))
+        .update_fee_authority(ctx.accounts.new_fee_authority.key());
+    Ok(())
 }

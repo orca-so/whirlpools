@@ -1,8 +1,8 @@
-import * as anchor from "@coral-xyz/anchor";
-import { Program } from "@coral-xyz/anchor";
-import { Instruction, PDA } from "@orca-so/common-sdk";
-import { PublicKey, SystemProgram } from "@solana/web3.js";
-import { Whirlpool } from "../../artifacts/whirlpool";
+import type { Program } from "@coral-xyz/anchor";
+import type { Instruction, PDA } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import { SystemProgram } from "@solana/web3.js";
+import type { Whirlpool } from "../../artifacts/whirlpool";
 
 /**
  * Parameters to initialize a TokenBadge account.
@@ -34,7 +34,7 @@ export type InitializeTokenBadgeParams = {
  */
 export function initializeTokenBadgeIx(
   program: Program<Whirlpool>,
-  params: InitializeTokenBadgeParams
+  params: InitializeTokenBadgeParams,
 ): Instruction {
   const {
     whirlpoolsConfig,

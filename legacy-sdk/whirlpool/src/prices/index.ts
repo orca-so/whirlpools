@@ -1,12 +1,11 @@
 import { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import Decimal from "decimal.js";
+import type Decimal from "decimal.js";
+import type { TickArrayData, WhirlpoolData } from "../types/public";
 import {
   ORCA_SUPPORTED_TICK_SPACINGS,
   ORCA_WHIRLPOOLS_CONFIG,
   ORCA_WHIRLPOOL_PROGRAM_ID,
-  TickArrayData,
-  WhirlpoolData,
 } from "../types/public";
 import { TOKEN_MINTS } from "../utils/constants";
 

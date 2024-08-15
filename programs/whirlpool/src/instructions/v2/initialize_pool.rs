@@ -2,9 +2,9 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::{
-  errors::ErrorCode,
-  state::*,
-  util::{is_token_badge_initialized, v2::is_supported_token_mint}
+    errors::ErrorCode,
+    state::*,
+    util::{is_token_badge_initialized, v2::is_supported_token_mint},
 };
 
 #[derive(Accounts)]
@@ -55,9 +55,9 @@ pub struct InitializePoolV2<'info> {
     #[account(has_one = whirlpools_config, constraint = fee_tier.tick_spacing == tick_spacing)]
     pub fee_tier: Account<'info, FeeTier>,
 
-    #[account(address = token_mint_a.to_account_info().owner.clone())]
+    #[account(address = *token_mint_a.to_account_info().owner)]
     pub token_program_a: Interface<'info, TokenInterface>,
-    #[account(address = token_mint_b.to_account_info().owner.clone())]
+    #[account(address = *token_mint_b.to_account_info().owner)]
     pub token_program_b: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
     pub rent: Sysvar<'info, Rent>,
@@ -81,26 +81,26 @@ pub fn handler(
 
     // Don't allow creating a pool with unsupported token mints
     let is_token_badge_initialized_a = is_token_badge_initialized(
-      whirlpools_config.key(),
-      token_mint_a,
-      &ctx.accounts.token_badge_a
+        whirlpools_config.key(),
+        token_mint_a,
+        &ctx.accounts.token_badge_a,
     )?;
 
     if !is_supported_token_mint(&ctx.accounts.token_mint_a, is_token_badge_initialized_a).unwrap() {
-      return Err(ErrorCode::UnsupportedTokenMint.into());
+        return Err(ErrorCode::UnsupportedTokenMint.into());
     }
 
     let is_token_badge_initialized_b = is_token_badge_initialized(
-      whirlpools_config.key(),
-      token_mint_b,
-      &ctx.accounts.token_badge_b
+        whirlpools_config.key(),
+        token_mint_b,
+        &ctx.accounts.token_badge_b,
     )?;
 
     if !is_supported_token_mint(&ctx.accounts.token_mint_b, is_token_badge_initialized_b).unwrap() {
-      return Err(ErrorCode::UnsupportedTokenMint.into());
+        return Err(ErrorCode::UnsupportedTokenMint.into());
     }
 
-    Ok(whirlpool.initialize(
+    whirlpool.initialize(
         whirlpools_config,
         bump,
         tick_spacing,
@@ -110,5 +110,5 @@ pub fn handler(
         ctx.accounts.token_vault_a.key(),
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
-    )?)
+    )
 }

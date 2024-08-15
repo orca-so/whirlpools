@@ -1,13 +1,15 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import {
+import type {
   InitPoolParams,
   InitTickArrayParams,
-  TICK_ARRAY_SIZE,
   TickArrayData,
+} from "../../src";
+import {
+  TICK_ARRAY_SIZE,
   WhirlpoolContext,
   WhirlpoolIx,
-  toTx
+  toTx,
 } from "../../src";
 import { ONE_SOL, TickSpacing, systemTransferTx } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -15,7 +17,10 @@ import { initTestPool, initTickArray } from "../utils/init-utils";
 import { generateDefaultInitTickArrayParams } from "../utils/test-builders";
 
 describe("initialize_tick_array", () => {
-  const provider = anchor.AnchorProvider.local(undefined, defaultConfirmOptions);
+  const provider = anchor.AnchorProvider.local(
+    undefined,
+    defaultConfirmOptions,
+  );
 
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -30,10 +35,13 @@ describe("initialize_tick_array", () => {
     const tickArrayInitInfo = generateDefaultInitTickArrayParams(
       ctx,
       poolInitInfo.whirlpoolPda.publicKey,
-      startTick
+      startTick,
     );
 
-    await toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, tickArrayInitInfo)).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initTickArrayIx(ctx.program, tickArrayInitInfo),
+    ).buildAndExecute();
     assertTickArrayInitialized(ctx, tickArrayInitInfo, poolInitInfo, startTick);
   });
 
@@ -46,10 +54,13 @@ describe("initialize_tick_array", () => {
     const tickArrayInitInfo = generateDefaultInitTickArrayParams(
       ctx,
       poolInitInfo.whirlpoolPda.publicKey,
-      startTick
+      startTick,
     );
 
-    await toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, tickArrayInitInfo)).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initTickArrayIx(ctx.program, tickArrayInitInfo),
+    ).buildAndExecute();
     assertTickArrayInitialized(ctx, tickArrayInitInfo, poolInitInfo, startTick);
   });
 
@@ -57,10 +68,19 @@ describe("initialize_tick_array", () => {
     const tickSpacing = TickSpacing.Standard;
     const { poolInitInfo } = await initTestPool(ctx, TickSpacing.Standard);
     const funderKeypair = anchor.web3.Keypair.generate();
-    await systemTransferTx(provider, funderKeypair.publicKey, ONE_SOL).buildAndExecute();
+    await systemTransferTx(
+      provider,
+      funderKeypair.publicKey,
+      ONE_SOL,
+    ).buildAndExecute();
     await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey);
     const startTick = TICK_ARRAY_SIZE * tickSpacing * 3;
-    await initTickArray(ctx, poolInitInfo.whirlpoolPda.publicKey, startTick, funderKeypair);
+    await initTickArray(
+      ctx,
+      poolInitInfo.whirlpoolPda.publicKey,
+      startTick,
+      funderKeypair,
+    );
   });
 
   it("fails when start tick index is not a valid start index", async () => {
@@ -72,13 +92,16 @@ describe("initialize_tick_array", () => {
     const params = generateDefaultInitTickArrayParams(
       ctx,
       poolInitInfo.whirlpoolPda.publicKey,
-      startTick
+      startTick,
     );
 
     try {
-      await toTx(ctx, WhirlpoolIx.initTickArrayIx(ctx.program, params)).buildAndExecute();
+      await toTx(
+        ctx,
+        WhirlpoolIx.initTickArrayIx(ctx.program, params),
+      ).buildAndExecute();
       assert.fail(
-        "should fail if start-tick is not a multiple of tick spacing and num ticks in array"
+        "should fail if start-tick is not a multiple of tick spacing and num ticks in array",
       );
     } catch (e) {
       const error = e as Error;
@@ -90,12 +113,14 @@ describe("initialize_tick_array", () => {
     ctx: WhirlpoolContext,
     tickArrayInitInfo: InitTickArrayParams,
     poolInitInfo: InitPoolParams,
-    startTick: number
+    startTick: number,
   ) {
     let tickArrayData = (await fetcher.getTickArray(
-      tickArrayInitInfo.tickArrayPda.publicKey
+      tickArrayInitInfo.tickArrayPda.publicKey,
     )) as TickArrayData;
-    assert.ok(tickArrayData.whirlpool.equals(poolInitInfo.whirlpoolPda.publicKey));
+    assert.ok(
+      tickArrayData.whirlpool.equals(poolInitInfo.whirlpoolPda.publicKey),
+    );
     assert.ok(tickArrayData.startTickIndex == startTick);
   }
 });

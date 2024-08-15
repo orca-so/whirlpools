@@ -1,9 +1,10 @@
-import { BorshAccountsCoder, Idl } from "@coral-xyz/anchor";
-import { ParsableEntity, staticImplements } from "@orca-so/common-sdk";
-import { AccountInfo, PublicKey } from "@solana/web3.js";
+import type { Idl } from "@coral-xyz/anchor";
+import { BorshAccountsCoder } from "@coral-xyz/anchor";
+import type { ParsableEntity } from "@orca-so/common-sdk";
+import { staticImplements } from "@orca-so/common-sdk";
+import type { AccountInfo, PublicKey } from "@solana/web3.js";
 import * as WhirlpoolIDL from "../../artifacts/whirlpool.json";
-import {
-  AccountName,
+import type {
   FeeTierData,
   PositionBundleData,
   PositionData,
@@ -13,17 +14,16 @@ import {
   WhirlpoolsConfigData,
   WhirlpoolsConfigExtensionData,
 } from "../../types/public";
+import { AccountName } from "../../types/public";
 
 /**
  * @category Network
  */
 @staticImplements<ParsableEntity<WhirlpoolsConfigData>>()
 export class ParsableWhirlpoolsConfig {
-  private constructor() {}
-
   public static parse(
     address: PublicKey,
-    accountData: AccountInfo<Buffer> | undefined | null
+    accountData: AccountInfo<Buffer> | undefined | null,
   ): WhirlpoolsConfigData | null {
     if (!accountData?.data) {
       return null;
@@ -43,11 +43,9 @@ export class ParsableWhirlpoolsConfig {
  */
 @staticImplements<ParsableEntity<WhirlpoolData>>()
 export class ParsableWhirlpool {
-  private constructor() {}
-
   public static parse(
     address: PublicKey,
-    accountData: AccountInfo<Buffer> | undefined | null
+    accountData: AccountInfo<Buffer> | undefined | null,
   ): WhirlpoolData | null {
     if (!accountData?.data) {
       return null;
@@ -67,11 +65,9 @@ export class ParsableWhirlpool {
  */
 @staticImplements<ParsableEntity<PositionData>>()
 export class ParsablePosition {
-  private constructor() {}
-
   public static parse(
     address: PublicKey,
-    accountData: AccountInfo<Buffer> | undefined | null
+    accountData: AccountInfo<Buffer> | undefined | null,
   ): PositionData | null {
     if (!accountData?.data) {
       return null;
@@ -91,11 +87,9 @@ export class ParsablePosition {
  */
 @staticImplements<ParsableEntity<TickArrayData>>()
 export class ParsableTickArray {
-  private constructor() {}
-
   public static parse(
     address: PublicKey,
-    accountData: AccountInfo<Buffer> | undefined | null
+    accountData: AccountInfo<Buffer> | undefined | null,
   ): TickArrayData | null {
     if (!accountData?.data) {
       return null;
@@ -115,11 +109,9 @@ export class ParsableTickArray {
  */
 @staticImplements<ParsableEntity<FeeTierData>>()
 export class ParsableFeeTier {
-  private constructor() {}
-
   public static parse(
     address: PublicKey,
-    accountData: AccountInfo<Buffer> | undefined | null
+    accountData: AccountInfo<Buffer> | undefined | null,
   ): FeeTierData | null {
     if (!accountData?.data) {
       return null;
@@ -139,11 +131,9 @@ export class ParsableFeeTier {
  */
 @staticImplements<ParsableEntity<PositionBundleData>>()
 export class ParsablePositionBundle {
-  private constructor() {}
-
   public static parse(
     address: PublicKey,
-    accountData: AccountInfo<Buffer> | undefined | null
+    accountData: AccountInfo<Buffer> | undefined | null,
   ): PositionBundleData | null {
     if (!accountData?.data) {
       return null;
@@ -163,18 +153,19 @@ export class ParsablePositionBundle {
  */
 @staticImplements<ParsableEntity<WhirlpoolsConfigExtensionData>>()
 export class ParsableWhirlpoolsConfigExtension {
-  private constructor() {}
-
   public static parse(
     address: PublicKey,
-    accountData: AccountInfo<Buffer> | undefined | null
+    accountData: AccountInfo<Buffer> | undefined | null,
   ): WhirlpoolsConfigExtensionData | null {
     if (!accountData?.data) {
       return null;
     }
 
     try {
-      return parseAnchorAccount(AccountName.WhirlpoolsConfigExtension, accountData);
+      return parseAnchorAccount(
+        AccountName.WhirlpoolsConfigExtension,
+        accountData,
+      );
     } catch (e) {
       console.error(`error while parsing WhirlpoolsConfigExtension: ${e}`);
       return null;
@@ -187,11 +178,9 @@ export class ParsableWhirlpoolsConfigExtension {
  */
 @staticImplements<ParsableEntity<TokenBadgeData>>()
 export class ParsableTokenBadge {
-  private constructor() {}
-
   public static parse(
     address: PublicKey,
-    accountData: AccountInfo<Buffer> | undefined | null
+    accountData: AccountInfo<Buffer> | undefined | null,
   ): TokenBadgeData | null {
     if (!accountData?.data) {
       return null;
@@ -208,7 +197,10 @@ export class ParsableTokenBadge {
 
 const WhirlpoolCoder = new BorshAccountsCoder(WhirlpoolIDL as Idl);
 
-function parseAnchorAccount(accountName: AccountName, accountData: AccountInfo<Buffer>) {
+function parseAnchorAccount(
+  accountName: AccountName,
+  accountData: AccountInfo<Buffer>,
+) {
   const data = accountData.data;
   const discriminator = BorshAccountsCoder.accountDiscriminator(accountName);
   if (discriminator.compare(data.slice(0, 8))) {

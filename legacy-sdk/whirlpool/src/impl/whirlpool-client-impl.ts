@@ -9,12 +9,11 @@ import {
   collectProtocolFees,
 } from "../instructions/composites";
 import { WhirlpoolIx } from "../ix";
-import {
-  IGNORE_CACHE,
-  PREFER_CACHE,
-  type WhirlpoolAccountFetchOptions,
-  type WhirlpoolAccountFetcherInterface,
+import type {
+  WhirlpoolAccountFetchOptions,
+  WhirlpoolAccountFetcherInterface,
 } from "../network/public/fetcher";
+import { IGNORE_CACHE, PREFER_CACHE } from "../network/public/fetcher";
 import type { WhirlpoolRouter } from "../router/public";
 import { WhirlpoolRouterBuilder } from "../router/public";
 import type { WhirlpoolData } from "../types/public";

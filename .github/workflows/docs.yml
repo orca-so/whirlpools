@@ -23,7 +23,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: github-pages
-          path: ./docs/dist
+          path: ./utility/docs/dist
       - name: Deploy Artifact
         id: deployment
         uses: actions/deploy-pages@v4

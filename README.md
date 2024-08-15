@@ -37,8 +37,8 @@ This monorepo contains all the code needed to build, deploy and interact the Whi
 
 ### Requirements
 
-- Anchor 0.29.0
-- Solana 1.17.22
+- Anchor v0.29.0
+- Solana v1.17.22
 
 ### Getting Started
 

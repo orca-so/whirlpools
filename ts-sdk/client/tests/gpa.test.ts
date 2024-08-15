@@ -128,7 +128,7 @@ describe("get program account memcmp filters", () => {
     }
   }
 
-  it("feeTier", async () => {
+  it("FeeTier", async () => {
     const feeTierStruct: FeeTierArgs = {
       whirlpoolsConfig: addresses[0],
       tickSpacing: 1234,

@@ -1,4 +1,5 @@
-#[allow(ambiguous_glob_reexports)]
+#![allow(ambiguous_glob_reexports)]
+
 pub mod collect_fees;
 pub mod collect_protocol_fees;
 pub mod collect_reward;

@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use anchor_spl::metadata::Metadata;
-use solana_program::sysvar;
 
 use crate::constants::nft::whirlpool_nft_update_auth::ID as WPB_NFT_UPDATE_AUTH;
 use crate::{state::*, util::mint_position_bundle_token_with_metadata_and_remove_authority};
@@ -49,9 +48,7 @@ pub struct InitializePositionBundleWithMetadata<'info> {
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    /// CHECK: checked via account constraints
-    #[account(address = sysvar::rent::ID)]
-    pub rent: UncheckedAccount<'info>,
+    pub rent: Sysvar<'info, Rent>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 
     pub metadata_program: Program<'info, Metadata>,

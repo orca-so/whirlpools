@@ -5,5 +5,12 @@ import idl from "../../target/idl/whirlpool.json" with { type: "json" };
 
 const node = rootNodeFromAnchor(idl);
 const visitor = renderVisitor("./src/generated");
-const kinobi = createFromRoot(node);
+// IDL generated with anchor 0.29 does not have the address field so we have to add it manually
+const kinobi = createFromRoot({
+  ...node,
+  program: {
+    ...node.program,
+    publicKey: "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc"
+  }
+});
 kinobi.accept(visitor);

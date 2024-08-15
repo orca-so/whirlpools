@@ -16,7 +16,7 @@ import {
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/fetcher";
 import { WhirlpoolRouter, WhirlpoolRouterBuilder } from "../router/public";
-import { WhirlpoolData } from "../types/public";
+import { MAX_TICK_INDEX, MIN_TICK_INDEX, SPLASH_POOL_TICK_SPACING, WhirlpoolData } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
 import { PDAUtil, PoolUtil, PriceMath, TickUtil } from "../utils/public";
 import { Position, Whirlpool, WhirlpoolClient } from "../whirlpool-client";
@@ -24,6 +24,7 @@ import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenMintInfos, getTokenVaultAccountInfos } from "./util";
 import { WhirlpoolImpl } from "./whirlpool-impl";
 import { NO_TOKEN_EXTENSION_CONTEXT, TokenExtensionContextForPool, TokenExtensionUtil } from "../utils/public/token-extension-util";
+import Decimal from "decimal.js";
 
 export class WhirlpoolClientImpl implements WhirlpoolClient {
   constructor(readonly ctx: WhirlpoolContext) {}
@@ -185,6 +186,128 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       })
     );
     return Object.fromEntries(results);
+  }
+
+  public async createSplashPool(
+    whirlpoolsConfig: Address,
+    tokenMintA: Address,
+    tokenMintB: Address,
+    initialPrice = new Decimal(1),
+    funder: Address,
+    opts = PREFER_CACHE
+  ): Promise<{ poolKey: PublicKey; tx: TransactionBuilder }> {
+    const correctTokenOrder = PoolUtil.orderMints(tokenMintA, tokenMintB).map((addr) =>
+      addr.toString()
+    );
+
+    invariant(
+      correctTokenOrder[0] === tokenMintA.toString(),
+      "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)"
+    );
+
+    const mintInfos = await this.getFetcher().getMintInfos([tokenMintA, tokenMintB], opts);
+    invariant(mintInfos.size === 2, "At least one of the token mints cannot be found.");
+
+    const tokenExtensionCtx: TokenExtensionContextForPool = {
+      ...NO_TOKEN_EXTENSION_CONTEXT,
+      tokenMintWithProgramA: mintInfos.get(tokenMintA.toString())!,
+      tokenMintWithProgramB: mintInfos.get(tokenMintB.toString())!,
+    };
+
+    whirlpoolsConfig = AddressUtil.toPubKey(whirlpoolsConfig);
+
+    const feeTierKey = PDAUtil.getFeeTier(
+      this.ctx.program.programId,
+      whirlpoolsConfig,
+      SPLASH_POOL_TICK_SPACING
+    ).publicKey;
+
+    const whirlpoolPda = PDAUtil.getWhirlpool(
+      this.ctx.program.programId,
+      whirlpoolsConfig,
+      new PublicKey(tokenMintA),
+      new PublicKey(tokenMintB),
+      SPLASH_POOL_TICK_SPACING
+    );
+
+    const tokenDecimalsA = mintInfos.get(tokenMintA.toString())?.decimals ?? 0;
+    const tokenDecimalsB = mintInfos.get(tokenMintB.toString())?.decimals ?? 0;
+    const initSqrtPrice = PriceMath.priceToSqrtPriceX64(initialPrice, tokenDecimalsA, tokenDecimalsB);
+    const tokenVaultAKeypair = Keypair.generate();
+    const tokenVaultBKeypair = Keypair.generate();
+
+    const txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet,
+      this.ctx.txBuilderOpts
+    );
+
+    const tokenBadgeA = PDAUtil.getTokenBadge(this.ctx.program.programId, whirlpoolsConfig, AddressUtil.toPubKey(tokenMintA)).publicKey;
+    const tokenBadgeB = PDAUtil.getTokenBadge(this.ctx.program.programId, whirlpoolsConfig, AddressUtil.toPubKey(tokenMintB)).publicKey;
+
+    const baseParams = {
+      initSqrtPrice,
+      whirlpoolsConfig,
+      whirlpoolPda,
+      tokenMintA: new PublicKey(tokenMintA),
+      tokenMintB: new PublicKey(tokenMintB),
+      tokenVaultAKeypair,
+      tokenVaultBKeypair,
+      feeTierKey,
+      tickSpacing: SPLASH_POOL_TICK_SPACING,
+      funder: new PublicKey(funder),
+    };
+
+    const initPoolIx = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
+      ? WhirlpoolIx.initializePoolIx(this.ctx.program, baseParams)
+      : WhirlpoolIx.initializePoolV2Ix(this.ctx.program, {
+        ...baseParams,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        tokenBadgeA,
+        tokenBadgeB,
+      });
+
+      txBuilder.addInstruction(initPoolIx);
+
+      const [startTickIndex, endTickIndex] = TickUtil.getFullRangeTickIndex(SPLASH_POOL_TICK_SPACING);
+      const startInitializableTickIndex = TickUtil.getStartTickIndex(startTickIndex, SPLASH_POOL_TICK_SPACING);
+      const endInitializableTickIndex = TickUtil.getStartTickIndex(endTickIndex, SPLASH_POOL_TICK_SPACING);
+
+      const startTickArrayPda = PDAUtil.getTickArray(
+        this.ctx.program.programId,
+        whirlpoolPda.publicKey,
+        startInitializableTickIndex
+      );
+
+      const endTickArrayPda = PDAUtil.getTickArray(
+        this.ctx.program.programId,
+        whirlpoolPda.publicKey,
+        endInitializableTickIndex
+      );
+
+      txBuilder.addInstruction(
+        initTickArrayIx(this.ctx.program, {
+          startTick: startInitializableTickIndex,
+          tickArrayPda: startTickArrayPda,
+          whirlpool: whirlpoolPda.publicKey,
+          funder: AddressUtil.toPubKey(funder),
+        })
+      );
+
+      txBuilder.addInstruction(
+        initTickArrayIx(this.ctx.program, {
+          startTick: endInitializableTickIndex,
+          tickArrayPda: endTickArrayPda,
+          whirlpool: whirlpoolPda.publicKey,
+          funder: AddressUtil.toPubKey(funder),
+        })
+      );
+
+      return {
+        poolKey: whirlpoolPda.publicKey,
+        tx: txBuilder,
+      };
   }
 
   public async createPool(

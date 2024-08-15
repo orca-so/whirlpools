@@ -738,8 +738,9 @@ describe("initialize_reward_v2", () => {
         isToken2022: true,
         hasGroupPointerExtension: true,
       };
-      await runTest({ supported: false, createTokenBadge: true, tokenTrait, anchorPatch: false });
-      await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: false });
+      // TODO: remove anchorPatch: v0.29 doesn't recognize GroupPointer
+      await runTest({ supported: false, createTokenBadge: true, tokenTrait, anchorPatch: true });
+      await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: true });
     });
 
     //[11 Mar, 2024] NOT IMPLEMENTED / I believe this extension is not stable yet
@@ -758,10 +759,11 @@ describe("initialize_reward_v2", () => {
         isToken2022: true,
         hasGroupMemberPointerExtension: true,
       };
-      await runTest({ supported: false, createTokenBadge: true, tokenTrait, anchorPatch: false });
-      await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: false });
+      // TODO: remove anchorPatch: v0.29 doesn't recognize MemberPointer
+      await runTest({ supported: false, createTokenBadge: true, tokenTrait, anchorPatch: true });
+      await runTest({ supported: false, createTokenBadge: false, tokenTrait, anchorPatch: true });
     });
-
+    
     it("Token-2022: [FAIL] with/without TokenBadge with NonTransferable", async () => {
       const tokenTrait: TokenTrait = {
         isToken2022: true,

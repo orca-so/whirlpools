@@ -13,7 +13,6 @@ import {
   WhirlpoolsConfigData,
   WhirlpoolsConfigExtensionData,
 } from "../../types/public";
-import { convertIdlToCamelCase } from "@coral-xyz/anchor/dist/cjs/idl";
 
 /**
  * @category Network
@@ -207,11 +206,11 @@ export class ParsableTokenBadge {
   }
 }
 
-const WhirlpoolCoder = new BorshAccountsCoder(convertIdlToCamelCase(WhirlpoolIDL as Idl));
+const WhirlpoolCoder = new BorshAccountsCoder(WhirlpoolIDL as Idl);
 
 function parseAnchorAccount(accountName: AccountName, accountData: AccountInfo<Buffer>) {
   const data = accountData.data;
-  const discriminator = WhirlpoolCoder.accountDiscriminator(accountName);
+  const discriminator = BorshAccountsCoder.accountDiscriminator(accountName);
   if (discriminator.compare(data.slice(0, 8))) {
     console.error("incorrect account name during parsing");
     return null;

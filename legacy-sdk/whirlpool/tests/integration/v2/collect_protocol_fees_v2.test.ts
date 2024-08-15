@@ -689,7 +689,7 @@ describe("collect_protocol_fees_v2", () => {
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0x7d3/ // ConstraintRaw
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -743,7 +743,7 @@ describe("collect_protocol_fees_v2", () => {
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0x7d3/ // ConstraintRaw
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -851,7 +851,7 @@ describe("collect_protocol_fees_v2", () => {
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0x7d3/ // ConstraintRaw
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -905,7 +905,7 @@ describe("collect_protocol_fees_v2", () => {
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
           .buildAndExecute(),
-        /0x7d3/ // ConstraintRaw
+        /0x7dc/ // ConstraintAddress
       );
     });
 

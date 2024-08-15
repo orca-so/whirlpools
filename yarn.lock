@@ -14,19 +14,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@coral-xyz/anchor-errors@npm:^0.30.1":
-  version: 0.30.1
-  resolution: "@coral-xyz/anchor-errors@npm:0.30.1"
-  checksum: 10c0/cb6749b68c12df54041d1be47df7a7b7f1d4ad2c54759bca7964c22a5dd892de0deb004100ac81cf70278e373d228a99d648013225613b5de85854530c41f501
-  languageName: node
-  linkType: hard
-
-"@coral-xyz/anchor@npm:~0.30.0":
-  version: 0.30.1
-  resolution: "@coral-xyz/anchor@npm:0.30.1"
+"@coral-xyz/anchor@npm:~0.29.0":
+  version: 0.29.0
+  resolution: "@coral-xyz/anchor@npm:0.29.0"
   dependencies:
-    "@coral-xyz/anchor-errors": "npm:^0.30.1"
-    "@coral-xyz/borsh": "npm:^0.30.1"
+    "@coral-xyz/borsh": "npm:^0.29.0"
     "@noble/hashes": "npm:^1.3.1"
     "@solana/web3.js": "npm:^1.68.0"
     bn.js: "npm:^5.1.2"
@@ -40,7 +32,7 @@ __metadata:
     snake-case: "npm:^3.0.4"
     superstruct: "npm:^0.15.4"
     toml: "npm:^3.0.0"
-  checksum: 10c0/ed0e5903e72d11884015bd8c21199604f56c20a4570972323133011172677b7dcfa8c7054055d827f914b61ad5b70378343809a83a06f3f6010e9d08707fd4c5
+  checksum: 10c0/cc863ab22b23c126e83b0804a43d45fdb7836659b917db0a8895146ec8d48637db034a7ae7dbd55d5ec7a058a266dd06878e1f921950df1e899369e49fb36c93
   languageName: node
   linkType: hard
 
@@ -56,15 +48,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@coral-xyz/borsh@npm:^0.30.1":
-  version: 0.30.1
-  resolution: "@coral-xyz/borsh@npm:0.30.1"
+"@coral-xyz/borsh@npm:^0.29.0":
+  version: 0.29.0
+  resolution: "@coral-xyz/borsh@npm:0.29.0"
   dependencies:
     bn.js: "npm:^5.1.2"
     buffer-layout: "npm:^1.2.0"
   peerDependencies:
     "@solana/web3.js": ^1.68.0
-  checksum: 10c0/eaad9c59647ba58faecc408a30416f17b0cab56bce907cc54654f7a0b151526954c71cedadce7ed38830b731244d918e87b7c3fb19c56a26c2b140c5ccef27dd
+  checksum: 10c0/25afec48714d9f0c95a02d04215803181f7da0aad85fdd1b076d9f37ef54586342e01e24fc1b2128aba0b5155e970afd6a2c6f8b0343699d8733c0703655ce39
   languageName: node
   linkType: hard
 
@@ -475,10 +467,10 @@ __metadata:
   dependencies:
     "@types/bn.js": "npm:~5.1.5"
     "@types/mocha": "npm:^10.0.7"
-    "@types/node": "npm:^22.1.0"
+    "@types/node": "npm:^22.3.0"
     "@types/sinon": "npm:^17.0.3"
     husky: "npm:^9.1.4"
-    lint-staged: "npm:^15.2.8"
+    lint-staged: "npm:^15.2.9"
     mocha: "npm:^10.2.0"
     nx: "npm:^19.5.7"
     prettier: "npm:^3.1.1"
@@ -529,7 +521,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-sdk@workspace:legacy-sdk/whirlpool"
   dependencies:
-    "@coral-xyz/anchor": "npm:~0.30.0"
+    "@coral-xyz/anchor": "npm:~0.29.0"
     "@orca-so/common-sdk": "npm:0.6.2"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/spl-token": "npm:^0.4.8"
@@ -538,7 +530,7 @@ __metadata:
     tiny-invariant: "npm:^1.3.1"
     typescript: "npm:^5.3.3"
   peerDependencies:
-    "@coral-xyz/anchor": ~0.30.0
+    "@coral-xyz/anchor": ~0.29.0
     "@orca-so/common-sdk": 0.6.2
     "@solana/spl-token": ^0.4.8
     "@solana/web3.js": ^1.90.0
@@ -1437,7 +1429,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^22.1.0":
+"@types/node@npm:*":
   version: 22.1.0
   resolution: "@types/node@npm:22.1.0"
   dependencies:
@@ -1450,6 +1442,15 @@ __metadata:
   version: 12.20.55
   resolution: "@types/node@npm:12.20.55"
   checksum: 10c0/3b190bb0410047d489c49bbaab592d2e6630de6a50f00ba3d7d513d59401d279972a8f5a598b5bb8ddc1702f8a2f4ec57a65d93852f9c329639738e7053637d1
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^22.3.0":
+  version: 22.3.0
+  resolution: "@types/node@npm:22.3.0"
+  dependencies:
+    undici-types: "npm:~6.18.2"
+  checksum: 10c0/855be3b97f4262a84818f889ff898e147dcef4f72b866e3551a8367380cdb63a45cf3929f09d9a0647f62706f8d4772e91a1ecd1bd7c6a80d6744c2b0cbca608
   languageName: node
   linkType: hard
 
@@ -3179,9 +3180,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lint-staged@npm:^15.2.8":
-  version: 15.2.8
-  resolution: "lint-staged@npm:15.2.8"
+"lint-staged@npm:^15.2.9":
+  version: 15.2.9
+  resolution: "lint-staged@npm:15.2.9"
   dependencies:
     chalk: "npm:~5.3.0"
     commander: "npm:~12.1.0"
@@ -3195,7 +3196,7 @@ __metadata:
     yaml: "npm:~2.5.0"
   bin:
     lint-staged: bin/lint-staged.js
-  checksum: 10c0/7d43f11f493d27951c746b4c077fed16ba954c0517cf2fd999034e9e7bf86fde506a797b23531a56a1fde4c24846e0f6583ce6db3bdfd42e92335b1aab367737
+  checksum: 10c0/820c622378b62b826974af17f1747e2a4b0556e4fb99d101af89ad298d392ff079f580fdc576f16a27e975d726b95d73495fd524139402ff654c4649ef2f1a6a
   languageName: node
   linkType: hard
 
@@ -4651,6 +4652,13 @@ __metadata:
   version: 6.13.0
   resolution: "undici-types@npm:6.13.0"
   checksum: 10c0/2de55181f569c77a4f08063f8bf2722fcbb6ea312a26a9e927bd1f5ea5cf3a281c5ddf23155061db083e0a25838f54813543ff13b0ac34d230d5c1205ead66c1
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~6.18.2":
+  version: 6.18.2
+  resolution: "undici-types@npm:6.18.2"
+  checksum: 10c0/dea28163891a5af7624c120107dc07a74c369ee94c6dd1d0de29af061ee129fac4846f97130589f4436b85f6102c73d30328ca908be02626dd8ab9fec5642aba
   languageName: node
   linkType: hard
 

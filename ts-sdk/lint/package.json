@@ -3,8 +3,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "format": "cd ../.. && eslint --fix && prettier './**/*.{js,jsx,ts,tsx,json}' --write",
-    "lint": "cd ../.. && eslint"
+    "format": "cd ../.. && eslint -c ts-sdk/lint/eslint.config.js --fix && prettier './**/*.{js,jsx,ts,tsx,json}' --write",
+    "lint": "cd ../.. && eslint -c ts-sdk/lint/eslint.config.js"
   },
   "devDependencies": {
     "eslint": "^9.8.0",

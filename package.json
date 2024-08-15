@@ -31,6 +31,7 @@
     "rust-sdk/*",
     "ts-sdk/*",
     "legacy-sdk/*",
+    "docs/*",
     "utility/*"
   ],
   "lint-staged": {

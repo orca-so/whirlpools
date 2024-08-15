@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "build": "docusaurus build --out-dir dist",
-    "start": "docusaurus start --no-open",
+    "start": "docusaurus start",
     "clean": "docusaurus clean"
   },
   "dependencies": {
@@ -20,13 +20,10 @@
     "@docusaurus/module-type-aliases": "^3.5.2",
     "@docusaurus/tsconfig": "^3.5.2",
     "@docusaurus/types": "^3.5.2",
-    "@orca-so/whirlpools": "*",
-    "@orca-so/whirlpools-sdk": "*",
-    "@types/react": "^18.3.3",
-    "docusaurus-plugin-typedoc": "^1.0.2",
-    "typedoc": "^0.26.3",
-    "typedoc-plugin-markdown": "^4.1.1",
-    "typescript": "^5.5.4"
+    "@orca-so/whirlpools-docs-legacy": "*",
+    "@orca-so/whirlpools-docs-rust": "*",
+    "@orca-so/whirlpools-docs-ts": "*",
+    "@types/react": "^18.3.3"
   },
   "browserslist": {
     "production": [

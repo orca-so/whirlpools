@@ -6,7 +6,7 @@ export default {
   favicon: "https://orca.so/favicon.ico",
 
   url: "https://orca-so.github.io/",
-  baseUrl: "/",
+  baseUrl: "/whirlpools",
 
   organizationName: "orca-so",
   projectName: "whirlpools",
@@ -23,31 +23,7 @@ export default {
     format: 'md',
   },
 
-  plugins: [
-    [
-      "docusaurus-plugin-typedoc",
-      {
-        entryPoints: [
-          "../../ts-sdk/whirlpool/src/index.ts",
-          "../../legacy-sdk/whirlpool/src/index.ts",
-        ],
-        out: './docs/generated',
-        tsconfig: "../../tsconfig.json",
-        readme: "none",
-        indexFormat: "table",
-        disableSources: true,
-        groupOrder: ["Classes", "Interfaces", "Enums"],
-        sidebar: { pretty: true },
-        textContentMappings: {
-          "title.indexPage": "API Reference",
-          "title.memberPage": "{name}",
-        },
-        parametersFormat: "table",
-        enumMembersFormat: "table",
-        useCodeBlocks: true,
-      },
-    ],
-  ],
+  staticDirectories: ['static', "../ts/dist", "../legacy/dist", "../rust/dist"],
 
   presets: [
     [
@@ -74,6 +50,10 @@ export default {
         src: "https://orca.so/android-chrome-192x192.png",
       },
       items: [
+        { to: "/", label: "Docs", position: "left" },
+        { href: "/orca_whirlpools/", label: "Rust SDK Reference", position: "left", target: '_blank', },
+        { href: "/ts/", label: "TS SDK Reference", position: "left", target: '_blank', },
+        { href: "/legacy/", label: "Legacy SDK Reference", position: "left", target: '_blank', },
         {
           href: "https://github.com/orca-so/whirlpools",
           label: "GitHub",

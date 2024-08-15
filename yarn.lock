@@ -2897,9 +2897,37 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-docs@workspace:utility/docs":
+"@orca-so/whirlpools-docs-legacy@npm:*, @orca-so/whirlpools-docs-legacy@workspace:docs/legacy":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-docs@workspace:utility/docs"
+  resolution: "@orca-so/whirlpools-docs-legacy@workspace:docs/legacy"
+  dependencies:
+    "@orca-so/whirlpools-sdk": "npm:*"
+    typedoc: "npm:^0.26.5"
+    typescript: "npm:^5.5.4"
+  languageName: unknown
+  linkType: soft
+
+"@orca-so/whirlpools-docs-rust@npm:*, @orca-so/whirlpools-docs-rust@workspace:docs/rust":
+  version: 0.0.0-use.local
+  resolution: "@orca-so/whirlpools-docs-rust@workspace:docs/rust"
+  dependencies:
+    "@orca-so/whirlpools-rust": "npm:*"
+  languageName: unknown
+  linkType: soft
+
+"@orca-so/whirlpools-docs-ts@npm:*, @orca-so/whirlpools-docs-ts@workspace:docs/ts":
+  version: 0.0.0-use.local
+  resolution: "@orca-so/whirlpools-docs-ts@workspace:docs/ts"
+  dependencies:
+    "@orca-so/whirlpools": "npm:*"
+    typedoc: "npm:^0.26.5"
+    typescript: "npm:^5.5.4"
+  languageName: unknown
+  linkType: soft
+
+"@orca-so/whirlpools-docs@workspace:docs/whirlpool":
+  version: 0.0.0-use.local
+  resolution: "@orca-so/whirlpools-docs@workspace:docs/whirlpool"
   dependencies:
     "@docusaurus/core": "npm:3.5.2"
     "@docusaurus/module-type-aliases": "npm:^3.5.2"
@@ -2907,17 +2935,14 @@ __metadata:
     "@docusaurus/tsconfig": "npm:^3.5.2"
     "@docusaurus/types": "npm:^3.5.2"
     "@mdx-js/react": "npm:^3.0.1"
-    "@orca-so/whirlpools": "npm:*"
-    "@orca-so/whirlpools-sdk": "npm:*"
+    "@orca-so/whirlpools-docs-legacy": "npm:*"
+    "@orca-so/whirlpools-docs-rust": "npm:*"
+    "@orca-so/whirlpools-docs-ts": "npm:*"
     "@types/react": "npm:^18.3.3"
     clsx: "npm:^2.1.1"
-    docusaurus-plugin-typedoc: "npm:^1.0.2"
     prism-react-renderer: "npm:^2.3.1"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    typedoc: "npm:^0.26.3"
-    typedoc-plugin-markdown: "npm:^4.1.1"
-    typescript: "npm:^5.5.4"
   languageName: unknown
   linkType: soft
 
@@ -2966,7 +2991,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-rust@workspace:rust-sdk/whirlpool":
+"@orca-so/whirlpools-rust@npm:*, @orca-so/whirlpools-rust@workspace:rust-sdk/whirlpool":
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-rust@workspace:rust-sdk/whirlpool"
   dependencies:
@@ -6907,15 +6932,6 @@ __metadata:
   dependencies:
     "@leichtgewicht/ip-codec": "npm:^2.0.1"
   checksum: 10c0/8948d3d03063fb68e04a1e386875f8c3bcc398fc375f535f2b438fad8f41bf1afa6f5e70893ba44f4ae884c089247e0a31045722fa6ff0f01d228da103f1811d
-  languageName: node
-  linkType: hard
-
-"docusaurus-plugin-typedoc@npm:^1.0.2":
-  version: 1.0.5
-  resolution: "docusaurus-plugin-typedoc@npm:1.0.5"
-  peerDependencies:
-    typedoc-plugin-markdown: ">=4.0.0"
-  checksum: 10c0/fff201b77862be882a9ac8d1d5e6115fbb3287a94d90999cbb4a3062266bf39c207b47735effb6952fc94dd29261d39b89e36bf39e114d031013903971007df3
   languageName: node
   linkType: hard
 
@@ -14508,16 +14524,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typedoc-plugin-markdown@npm:^4.1.1":
-  version: 4.2.4
-  resolution: "typedoc-plugin-markdown@npm:4.2.4"
-  peerDependencies:
-    typedoc: 0.26.x
-  checksum: 10c0/0392c191a0f753ab8c4d7e4f32915380d740509e90b84c0b9e8f2e0b7907ba54f0b8951edeec944d6f3a5c2bd396771f828c9a94a88ee244b87f361769947a54
-  languageName: node
-  linkType: hard
-
-"typedoc@npm:^0.26.3":
+"typedoc@npm:^0.26.5":
   version: 0.26.5
   resolution: "typedoc@npm:0.26.5"
   dependencies:

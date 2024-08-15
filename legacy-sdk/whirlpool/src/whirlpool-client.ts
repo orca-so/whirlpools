@@ -17,6 +17,7 @@ import {
   WhirlpoolData,
 } from "./types/public";
 import { TokenAccountInfo, TokenInfo, WhirlpoolRewardInfo } from "./types/public/client-types";
+import Decimal from "decimal.js";
 
 /**
  * Helper class to help interact with Whirlpool Accounts with a simpler interface.
@@ -91,6 +92,24 @@ export interface WhirlpoolClient {
     positionAddresses: Address[],
     opts?: WhirlpoolAccountFetchOptions
   ) => Promise<TransactionBuilder[]>;
+
+  /**
+   * Create a Whirlpool account for a group of token A, token B and tick spacing
+   * @param whirlpoolConfig the address of the whirlpool config
+   * @param tokenMintA the address of the token A
+   * @param tokenMintB the address of the token B
+   * @param initialPrice the initial price of the pool (as x token B per 1 token A)
+   * @param funder the account to debit SOL from to fund the creation of the account(s)
+   * @return `poolKey`: The public key of the newly created whirlpool account. `tx`: The transaction containing instructions for the on-chain operations.
+   * @throws error when the tokens are not in the canonical byte-based ordering. To resolve this, invert the token order and the initialTick (see `TickUtil.invertTick()`, `PriceMath.invertSqrtPriceX64()`, or `PriceMath.invertPrice()`).
+   */
+    createSplashPool: (
+      whirlpoolsConfig: Address,
+      tokenMintA: Address,
+      tokenMintB: Address,
+      initialPrice: Decimal,
+      funder: Address
+    ) => Promise<{ poolKey: PublicKey; tx: TransactionBuilder }>;
 
   /**
    * Create a Whirlpool account for a group of token A, token B and tick spacing

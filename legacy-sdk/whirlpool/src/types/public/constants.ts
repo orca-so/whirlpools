@@ -132,3 +132,10 @@ export const WHIRLPOOL_NFT_UPDATE_AUTH = new PublicKey(
  * @category Constants
  */
 export const FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD = 32768;
+
+
+/**
+ * The tick spacing for splash pools.
+ * @category Constants
+ */
+export const SPLASH_POOL_TICK_SPACING = 32896;

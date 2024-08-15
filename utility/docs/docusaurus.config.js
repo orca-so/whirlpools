@@ -28,11 +28,11 @@ export default {
       "docusaurus-plugin-typedoc",
       {
         entryPoints: [
-          "../ts-sdk/whirlpool/src/index.ts",
-          "../legacy-sdk/whirlpool/src/index.ts",
+          "../../ts-sdk/whirlpool/src/index.ts",
+          "../../legacy-sdk/whirlpool/src/index.ts",
         ],
         out: './docs/generated',
-        tsconfig: "../tsconfig.json",
+        tsconfig: "../../tsconfig.json",
         readme: "none",
         indexFormat: "table",
         disableSources: true,

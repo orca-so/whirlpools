@@ -20,10 +20,10 @@ export default {
   },
 
   markdown: {
-    format: 'md',
+    format: "md",
   },
 
-  staticDirectories: ['static', "../ts/dist", "../legacy/dist", "../rust/dist"],
+  staticDirectories: ["static", "../ts/dist", "../legacy/dist", "../rust/dist"],
 
   presets: [
     [
@@ -51,9 +51,24 @@ export default {
       },
       items: [
         { to: "/", label: "Docs", position: "left" },
-        { href: "/orca_whirlpools/", label: "Rust SDK Reference", position: "left", target: '_blank', },
-        { href: "/ts/", label: "TS SDK Reference", position: "left", target: '_blank', },
-        { href: "/legacy/", label: "Legacy SDK Reference", position: "left", target: '_blank', },
+        {
+          href: "/orca_whirlpools/",
+          label: "Rust SDK Reference",
+          position: "left",
+          target: "_blank",
+        },
+        {
+          href: "/ts/",
+          label: "TS SDK Reference",
+          position: "left",
+          target: "_blank",
+        },
+        {
+          href: "/legacy/",
+          label: "Legacy SDK Reference",
+          position: "left",
+          target: "_blank",
+        },
         {
           href: "https://github.com/orca-so/whirlpools",
           label: "GitHub",

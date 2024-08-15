@@ -1,9 +1,7 @@
 {
-  "entryPoints": [
-    "../../ts-sdk/whirlpool/src/index.ts",
-  ],
+  "entryPoints": ["../../ts-sdk/whirlpool/src/index.ts"],
   "entryPointStrategy": "resolve",
   "githubPages": false,
   "readme": "none",
-  "out": "dist/ts",
+  "out": "dist/ts"
 }

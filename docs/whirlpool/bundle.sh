@@ -3,7 +3,7 @@ set -e
 rm -r dist || true
 
 mkdir -p dist
-rsync -a ../../README.md ./dist
+cp -a ../../README.md ./dist/Home.md
 
 mkdir -p ./dist/api-docs
 rsync -a ../ts/dist/legacy-sdk ./dist/api-docs

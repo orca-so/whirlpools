@@ -1,17 +1,20 @@
 version: 2
 updates:
   - package-ecosystem: "npm"
-    directory: "/"
+    directories:
+      - "**/*"
     schedule:
       interval: "daily"
     labels: [ ]
   - package-ecosystem: "cargo"
-    directory: "/"
+    directories:
+      - "**/*"
     schedule:
       interval: "daily"
     labels: [ ]
   - package-ecosystem: "github-actions"
-    directory: "/"
+    directories:
+      - "**/*"
     schedule:
       interval: "daily"
     labels: [ ]

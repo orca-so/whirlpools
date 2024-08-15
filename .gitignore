@@ -20,3 +20,4 @@ generated
 !.yarn/sdks
 !.yarn/versions
 .nx
+generated

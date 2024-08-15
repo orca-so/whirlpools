@@ -1,0 +1,12 @@
+{
+  "name": "@orca-so/whirlpools-rust",
+  "version": "0.0.1",
+  "scripts": {
+    "build": "cargo build",
+    "test": "cargo test --lib",
+    "clean": "cargo clean"
+  },
+  "devDependencies": {
+    "@orca-so/whirlpools-rust-client": "*"
+  }
+}

@@ -562,9 +562,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-lint@workspace:utility/lint":
+"@orca-so/whirlpools-lint@workspace:ts-sdk/lint":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-lint@workspace:utility/lint"
+  resolution: "@orca-so/whirlpools-lint@workspace:ts-sdk/lint"
   dependencies:
     eslint: "npm:^9.8.0"
     prettier: "npm:^3.1.1"

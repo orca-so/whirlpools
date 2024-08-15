@@ -29,8 +29,7 @@
     "programs/*",
     "rust-sdk/*",
     "ts-sdk/*",
-    "legacy-sdk/*",
-    "utility/*"
+    "legacy-sdk/*"
   ],
   "lint-staged": {
     "*": "yarn format"

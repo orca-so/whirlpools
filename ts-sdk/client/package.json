@@ -15,13 +15,13 @@
     "clean": "rimraf dist src/generated"
   },
   "peerDependencies": {
-    "@solana/web3.js": "^2.0.0-preview.4"
+    "@solana/web3.js": "^2.0.0-rc.1"
   },
   "devDependencies": {
     "@kinobi-so/nodes-from-anchor": "^0.20.6",
     "@kinobi-so/renderers-js": "^0.21.4",
     "@orca-so/whirlpools-program": "*",
-    "@solana/web3.js": "^2.0.0-preview.4",
+    "@solana/web3.js": "^2.0.0-rc.1",
     "kinobi": "^0.20.4",
     "typescript": "^5.5.4"
   }

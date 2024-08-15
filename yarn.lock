@@ -137,6 +137,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@kinobi-so/errors@npm:0.21.1":
+  version: 0.21.1
+  resolution: "@kinobi-so/errors@npm:0.21.1"
+  dependencies:
+    "@kinobi-so/node-types": "npm:0.21.1"
+    chalk: "npm:^5.3.0"
+    commander: "npm:^12.1.0"
+  bin:
+    errors: bin/cli.mjs
+  checksum: 10c0/881949e214bec4bba2fb9f8e08c3f06bdd722c7b6d2ce9a4510489b2a281cbf7f9f55bf9ff7d03d2ea1a6d056a25da29d62505454e9539efec16754ad2e195a6
+  languageName: node
+  linkType: hard
+
 "@kinobi-so/node-types@npm:0.20.6":
   version: 0.20.6
   resolution: "@kinobi-so/node-types@npm:0.20.6"
@@ -151,15 +164,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/nodes-from-anchor@npm:0.20.8":
-  version: 0.20.8
-  resolution: "@kinobi-so/nodes-from-anchor@npm:0.20.8"
+"@kinobi-so/node-types@npm:0.21.1":
+  version: 0.21.1
+  resolution: "@kinobi-so/node-types@npm:0.21.1"
+  checksum: 10c0/8cb35c9116182e722514367a460ab1a55a1f9553eb356ec94055ec006f325ff7e9723fcf18525376df1db6394cc7f8a643261d04274165d36c431bff3bf07d0e
+  languageName: node
+  linkType: hard
+
+"@kinobi-so/nodes-from-anchor@npm:0.20.10":
+  version: 0.20.10
+  resolution: "@kinobi-so/nodes-from-anchor@npm:0.20.10"
   dependencies:
-    "@kinobi-so/errors": "npm:0.20.6"
-    "@kinobi-so/nodes": "npm:0.20.6"
-    "@kinobi-so/visitors": "npm:0.20.6"
+    "@kinobi-so/errors": "npm:0.21.1"
+    "@kinobi-so/nodes": "npm:0.21.1"
+    "@kinobi-so/visitors": "npm:0.21.1"
     "@noble/hashes": "npm:^1.4.0"
-  checksum: 10c0/b205765e0c430f8f71be3224f7c4aab2c2f57f93a7f2dd0e435ed21e7b1ee2f17bb0524f1e31398bbac7536f02036ba23f82c65281b2ba7bcc0f36fa8501f842
+  checksum: 10c0/573cc2802ca603d974deb127b3925c28aa77437a262638c613f9e7280eb780986bf7ef6278df71a85f913f6ba0a59c028628de71fc53c819ff9b8c2253da9a7a
   languageName: node
   linkType: hard
 
@@ -195,14 +215,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/renderers-core@npm:0.20.6":
-  version: 0.20.6
-  resolution: "@kinobi-so/renderers-core@npm:0.20.6"
+"@kinobi-so/nodes@npm:0.21.1":
+  version: 0.21.1
+  resolution: "@kinobi-so/nodes@npm:0.21.1"
   dependencies:
-    "@kinobi-so/errors": "npm:0.20.6"
-    "@kinobi-so/nodes": "npm:0.20.6"
-    "@kinobi-so/visitors-core": "npm:0.20.6"
-  checksum: 10c0/9270ecb88447f991fa6cb5c07507eedba4de72a2536a18aad8326f6e29ad84eb2dd0cf2ced17b784d79ada1243076d7f9090150fc42186892fe9b3912eb30853
+    "@kinobi-so/errors": "npm:0.21.1"
+    "@kinobi-so/node-types": "npm:0.21.1"
+  checksum: 10c0/68f51cabf19b3cfc8433057cbaa60fed0f9a0f433d4f7b37b2246caf6ad9b3592b8b396a68b307231e65c772ef13f716f4048464ac7dd4b6b52d1b1e4cea7294
   languageName: node
   linkType: hard
 
@@ -217,19 +236,30 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/renderers-js@npm:^0.20.9":
-  version: 0.20.11
-  resolution: "@kinobi-so/renderers-js@npm:0.20.11"
+"@kinobi-so/renderers-core@npm:0.20.8":
+  version: 0.20.8
+  resolution: "@kinobi-so/renderers-core@npm:0.20.8"
   dependencies:
-    "@kinobi-so/errors": "npm:0.20.6"
-    "@kinobi-so/nodes": "npm:0.20.6"
-    "@kinobi-so/nodes-from-anchor": "npm:0.20.8"
-    "@kinobi-so/renderers-core": "npm:0.20.6"
-    "@kinobi-so/visitors-core": "npm:0.20.6"
-    "@solana/codecs-strings": "npm:tp2"
+    "@kinobi-so/errors": "npm:0.21.1"
+    "@kinobi-so/nodes": "npm:0.21.1"
+    "@kinobi-so/visitors-core": "npm:0.21.1"
+  checksum: 10c0/27bc5529de78f7985c82ec0b8398bcaf259b695e4f93f5191a920c1f5825eb1bcedaedee6a6326f75ce527fafa36a8a4defc2b32bb2bb66e9cb3dfb38ee1684f
+  languageName: node
+  linkType: hard
+
+"@kinobi-so/renderers-js@npm:^0.21.4":
+  version: 0.21.4
+  resolution: "@kinobi-so/renderers-js@npm:0.21.4"
+  dependencies:
+    "@kinobi-so/errors": "npm:0.21.1"
+    "@kinobi-so/nodes": "npm:0.21.1"
+    "@kinobi-so/nodes-from-anchor": "npm:0.20.10"
+    "@kinobi-so/renderers-core": "npm:0.20.8"
+    "@kinobi-so/visitors-core": "npm:0.21.1"
+    "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
     prettier: "npm:^3.3.0"
-  checksum: 10c0/1dbee93b66e23671728917abf31e31ad96aef02f68ca9816c66418661ac2dbbdffe09eff6233353df2e55036ff2f2d358f0e4cb113767e0c06a4cddca62ea3ef
+  checksum: 10c0/39c491d58df594b7af5494eb317911681b8e8a305bbc8638aaf839f74811e278abfdfe2121831f2bf8821b1336cae3f4706fc657775f5efca62683945cc8f6e6
   languageName: node
   linkType: hard
 
@@ -280,6 +310,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@kinobi-so/visitors-core@npm:0.21.1":
+  version: 0.21.1
+  resolution: "@kinobi-so/visitors-core@npm:0.21.1"
+  dependencies:
+    "@kinobi-so/errors": "npm:0.21.1"
+    "@kinobi-so/nodes": "npm:0.21.1"
+    json-stable-stringify: "npm:^1.1.1"
+  checksum: 10c0/8a89fe73dfc125ac6199bd27f9ba51083d63e50c8e8ec8c6d53bffd81e7a518f8e19e09501c379681a72452f6db70ec2813ea54f548c9f4d66535a46b3a0f8c7
+  languageName: node
+  linkType: hard
+
 "@kinobi-so/visitors@npm:0.20.6":
   version: 0.20.6
   resolution: "@kinobi-so/visitors@npm:0.20.6"
@@ -299,6 +340,17 @@ __metadata:
     "@kinobi-so/nodes": "npm:0.21.0"
     "@kinobi-so/visitors-core": "npm:0.21.0"
   checksum: 10c0/da615c6368fac1c3dc3fce9456daa5cb87529dc9b70a180fdc302d6b24eeb3a1bf55048162e7ea5c49d25324b9ac61d69df2a9ce08e1845fa8f7e3569dc36694
+  languageName: node
+  linkType: hard
+
+"@kinobi-so/visitors@npm:0.21.1":
+  version: 0.21.1
+  resolution: "@kinobi-so/visitors@npm:0.21.1"
+  dependencies:
+    "@kinobi-so/errors": "npm:0.21.1"
+    "@kinobi-so/nodes": "npm:0.21.1"
+    "@kinobi-so/visitors-core": "npm:0.21.1"
+  checksum: 10c0/cb62e870b1892aa30bfa5ecf976dba3d26ccc1598f58834cc1927dca2f312b475e28c70a5008eb65d0783b271c536927e468ab44b4309921911642b0c91c946b
   languageName: node
   linkType: hard
 
@@ -451,7 +503,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-client@workspace:ts-sdk/client"
   dependencies:
     "@kinobi-so/nodes-from-anchor": "npm:^0.20.6"
-    "@kinobi-so/renderers-js": "npm:^0.20.9"
+    "@kinobi-so/renderers-js": "npm:^0.21.4"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/web3.js": "npm:^2.0.0-preview.4"
     kinobi: "npm:^0.20.4"
@@ -722,6 +774,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@solana/codecs-core@npm:2.0.0-rc.1":
+  version: 2.0.0-rc.1
+  resolution: "@solana/codecs-core@npm:2.0.0-rc.1"
+  dependencies:
+    "@solana/errors": "npm:2.0.0-rc.1"
+  peerDependencies:
+    typescript: ">=5"
+  checksum: 10c0/3b1fd09727bf850d191292b14e1afb64cda4e57f898c06483f40d0402c4f07f1d4df555f028f664701e647834c74924818857443666d039f4e44c8c01f31f427
+  languageName: node
+  linkType: hard
+
 "@solana/codecs-data-structures@npm:2.0.0-preview.2":
   version: 2.0.0-preview.2
   resolution: "@solana/codecs-data-structures@npm:2.0.0-preview.2"
@@ -793,7 +856,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/codecs-strings@npm:2.0.0-preview.2, @solana/codecs-strings@npm:tp2":
+"@solana/codecs-numbers@npm:2.0.0-rc.1":
+  version: 2.0.0-rc.1
+  resolution: "@solana/codecs-numbers@npm:2.0.0-rc.1"
+  dependencies:
+    "@solana/codecs-core": "npm:2.0.0-rc.1"
+    "@solana/errors": "npm:2.0.0-rc.1"
+  peerDependencies:
+    typescript: ">=5"
+  checksum: 10c0/baf888bbd9c9ed2420207329c735def60a2b3d94d4a0dd1a92703f4de165a96dfd5b66e4fe954d6a7fae12b6b95c41da500499f100b6d5cfad6420d4bfe71b50
+  languageName: node
+  linkType: hard
+
+"@solana/codecs-strings@npm:2.0.0-preview.2":
   version: 2.0.0-preview.2
   resolution: "@solana/codecs-strings@npm:2.0.0-preview.2"
   dependencies:
@@ -831,6 +906,20 @@ __metadata:
     fastestsmallesttextencoderdecoder: ^1.0.22
     typescript: ">=5"
   checksum: 10c0/b5ac5f013a2605ed948e7f3acc550885b9706ebb775bf14c119be2f7cf5913ce4a617756309e424b12aa8c26932a641b3854282f598f47c4ec259cfc288dd343
+  languageName: node
+  linkType: hard
+
+"@solana/codecs-strings@npm:rc":
+  version: 2.0.0-rc.1
+  resolution: "@solana/codecs-strings@npm:2.0.0-rc.1"
+  dependencies:
+    "@solana/codecs-core": "npm:2.0.0-rc.1"
+    "@solana/codecs-numbers": "npm:2.0.0-rc.1"
+    "@solana/errors": "npm:2.0.0-rc.1"
+  peerDependencies:
+    fastestsmallesttextencoderdecoder: ^1.0.22
+    typescript: ">=5"
+  checksum: 10c0/7f3483407de7e324075a85f2f8c91103021d6b8f38cfd4cf78603cbd7b00ea8b828a0cb9b61fb2b0db6d3e733fdf358006de23278cf3b103af1f1de4f3f66233
   languageName: node
   linkType: hard
 
@@ -914,6 +1003,20 @@ __metadata:
   bin:
     errors: bin/cli.mjs
   checksum: 10c0/387d4def12a3254cef21269a3eb32d4e322a878b233d2bb15293cec3ff8b2538299dc1a7a7d6f773f7f402e05d98c1c020a98686976106267730c39390cee542
+  languageName: node
+  linkType: hard
+
+"@solana/errors@npm:2.0.0-rc.1":
+  version: 2.0.0-rc.1
+  resolution: "@solana/errors@npm:2.0.0-rc.1"
+  dependencies:
+    chalk: "npm:^5.3.0"
+    commander: "npm:^12.1.0"
+  peerDependencies:
+    typescript: ">=5"
+  bin:
+    errors: bin/cli.mjs
+  checksum: 10c0/26b9edb43b4ba86b36aefb020a6e47706554ce57a95a357a55879c570ffd000417b1d9567b94120d114dfd38051e8362c18ee082b58cc34690c4c00f1040423c
   languageName: node
   linkType: hard
 

@@ -225,17 +225,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/renderers-core@npm:0.20.7":
-  version: 0.20.7
-  resolution: "@kinobi-so/renderers-core@npm:0.20.7"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.21.0"
-    "@kinobi-so/nodes": "npm:0.21.0"
-    "@kinobi-so/visitors-core": "npm:0.21.0"
-  checksum: 10c0/1d8535168b18ac0736a620d98bf6d96a984174ea1ea5e72295996596886b4d0786565a8943986588e034d924ed80105d356aba567ccc51f606c7ab99d7d93c33
-  languageName: node
-  linkType: hard
-
 "@kinobi-so/renderers-core@npm:0.20.8":
   version: 0.20.8
   resolution: "@kinobi-so/renderers-core@npm:0.20.8"
@@ -263,17 +252,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/renderers-rust@npm:^0.21.1":
-  version: 0.21.1
-  resolution: "@kinobi-so/renderers-rust@npm:0.21.1"
+"@kinobi-so/renderers-rust@npm:^0.21.3":
+  version: 0.21.3
+  resolution: "@kinobi-so/renderers-rust@npm:0.21.3"
   dependencies:
-    "@kinobi-so/errors": "npm:0.21.0"
-    "@kinobi-so/nodes": "npm:0.21.0"
-    "@kinobi-so/renderers-core": "npm:0.20.7"
-    "@kinobi-so/visitors-core": "npm:0.21.0"
-    "@solana/codecs-strings": "npm:tp4"
+    "@kinobi-so/errors": "npm:0.21.1"
+    "@kinobi-so/nodes": "npm:0.21.1"
+    "@kinobi-so/renderers-core": "npm:0.20.8"
+    "@kinobi-so/visitors-core": "npm:0.21.1"
+    "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
-  checksum: 10c0/a3639102cce2cbe615d3370380a838811e40f73d65e786fc2572829883606000c89e840f3a08a6d8201425c3d4fb6c52e35630a72dcd6b415bb4eea0136ee8dd
+  checksum: 10c0/827226ffb095bd69000fdfc53238355155b8119b3c79d340a6df82695e82cf4f72a166f820e2398ceda26ef80faae369063d2c075958ce711d3f03efbafade24
   languageName: node
   linkType: hard
 
@@ -543,7 +532,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
     "@kinobi-so/nodes-from-anchor": "npm:^0.20.6"
-    "@kinobi-so/renderers-rust": "npm:^0.21.1"
+    "@kinobi-so/renderers-rust": "npm:^0.21.3"
     "@orca-so/whirlpools-program": "npm:*"
   languageName: unknown
   linkType: soft
@@ -881,7 +870,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/codecs-strings@npm:2.0.0-preview.4, @solana/codecs-strings@npm:tp4":
+"@solana/codecs-strings@npm:2.0.0-preview.4":
   version: 2.0.0-preview.4
   resolution: "@solana/codecs-strings@npm:2.0.0-preview.4"
   dependencies:

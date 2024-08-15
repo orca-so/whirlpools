@@ -6,7 +6,7 @@
       "cache": true
     },
     "start": {
-      "dependsOn": ["build"]
+      "dependsOn": ["^build"]
     },
     "test": {
       "dependsOn": ["build"]

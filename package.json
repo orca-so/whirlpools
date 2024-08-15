@@ -30,7 +30,7 @@
     "programs/*",
     "rust-sdk/*",
     "ts-sdk/*",
-    "docs/*",
+    "docs",
     "legacy-sdk/*"
   ],
   "lint-staged": {

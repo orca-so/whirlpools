@@ -1,9 +1,0 @@
-{
-  "entryPoints": [
-    "../../ts-sdk/whirlpool/src/index.ts",
-    "../../legacy-sdk/whirlpool/src/index.ts"
-  ],
-  "entryPointStrategy": "resolve",
-  "out": "dist",
-  "plugin": ["typedoc-plugin-markdown"]
-}

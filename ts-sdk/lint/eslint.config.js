@@ -12,7 +12,7 @@ export default [
       "**/.anchor",
       "**/artifacts",
       "**/generated",
-      "**/docs",
+      "**/.docusaurus",
     ],
   },
   {

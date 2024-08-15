@@ -9,8 +9,11 @@ import type {
 } from "@solana/web3.js";
 import {
   createDefaultRpcTransport,
+  createKeyPairSignerFromBytes,
   createSolanaRpcFromTransport,
   generateKeyPairSigner,
+  getAddressDecoder,
+  getAddressEncoder,
   getBase58Encoder,
 } from "@solana/web3.js";
 import {
@@ -96,12 +99,12 @@ describe("get program account memcmp filters", () => {
   let addresses: Address[] = [];
   let gpaMock: SinonStub;
 
-  before(async () => {
-    addresses = await Promise.all(
-      [...Array(25).keys()].map(async () =>
-        generateKeyPairSigner().then((x) => x.address),
-      ),
-    );
+  before(() => {
+    const decoder = getAddressDecoder();
+    addresses = [...Array(25).keys()].map((i) => {
+      const bytes = Array.from({ length: 32 }, () => i);
+      return decoder.decode(new Uint8Array(bytes));
+    });
   });
 
   beforeEach(() => {

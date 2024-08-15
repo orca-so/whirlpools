@@ -12,7 +12,6 @@ export default [
       "**/.anchor",
       "**/artifacts",
       "**/generated",
-      "eslint.config.js",
       "**/docs",
     ],
   },
@@ -25,6 +24,7 @@ export default [
       parser,
       parserOptions: {
         project: "./tsconfig.json",
+        tsconfigRootDir: import.meta.dirname,
       },
     },
     rules: {

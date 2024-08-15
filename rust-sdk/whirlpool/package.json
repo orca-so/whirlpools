@@ -2,10 +2,11 @@
   "name": "@orca-so/whirlpools-rust",
   "version": "0.0.1",
   "scripts": {
-    "build": "cargo build -p orca_whirlpools",
-    "test": "cargo test -p orca_whirlpools --lib",
-    "format": "cargo fmt -p orca_whirlpools",
-    "clean": "cargo clean -p orca_whirlpools"
+    "build": "cargo build",
+    "test": "cargo test --lib",
+    "format": "cargo clippy --fix --allow-dirty --allow-staged -- -D clippy::all && cargo fmt",
+    "lint": "cargo clippy -- -D clippy::all",
+    "clean": "cargo clean"
   },
   "devDependencies": {
     "@orca-so/whirlpools-rust-client": "*"

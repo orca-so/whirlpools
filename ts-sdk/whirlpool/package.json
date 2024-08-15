@@ -10,8 +10,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "format": "prettier --config ../.prettierrc './**/*.ts' --write",
-    "clean": "rimraf dist generated"
+    "clean": "rimraf dist"
   },
   "dependencies": {
     "@orca-so/whirlpools-client": "*"

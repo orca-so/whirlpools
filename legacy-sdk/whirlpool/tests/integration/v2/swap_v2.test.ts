@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import BN from "bn.js";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import type { SwapV2Params, TickArrayData, WhirlpoolData } from "../../../src";
 import {
@@ -1952,8 +1952,8 @@ describe("swap_v2", () => {
             fundParams,
           );
 
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
           (
             await Promise.all(
@@ -1969,7 +1969,7 @@ describe("swap_v2", () => {
               }
 
               /*
-        console.info(
+        console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
@@ -2009,8 +2009,8 @@ describe("swap_v2", () => {
             }),
           ).buildAndExecute();
 
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
           (
             await Promise.all(
@@ -2026,7 +2026,7 @@ describe("swap_v2", () => {
               }
 
               /*
-        console.info(
+        console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
@@ -2060,8 +2060,8 @@ describe("swap_v2", () => {
             }),
           ).buildAndExecute();
 
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
           (
             await Promise.all(
@@ -2077,7 +2077,7 @@ describe("swap_v2", () => {
               }
 
               /*
-        console.info(
+        console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
@@ -2111,8 +2111,8 @@ describe("swap_v2", () => {
             }),
           ).buildAndExecute();
 
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
           (
             await Promise.all(
@@ -2128,7 +2128,7 @@ describe("swap_v2", () => {
               }
 
               /*
-        console.info(
+        console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
@@ -2162,8 +2162,8 @@ describe("swap_v2", () => {
             }),
           ).buildAndExecute();
 
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
           (
             await Promise.all(
@@ -2179,7 +2179,7 @@ describe("swap_v2", () => {
               }
 
               /*
-        console.info(
+        console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
@@ -2213,8 +2213,8 @@ describe("swap_v2", () => {
             }),
           ).buildAndExecute();
 
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
           (
             await Promise.all(
@@ -2230,7 +2230,7 @@ describe("swap_v2", () => {
               }
 
               /*
-        console.info(
+        console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
@@ -2264,8 +2264,8 @@ describe("swap_v2", () => {
             }),
           ).buildAndExecute();
 
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
           (
             await Promise.all(
@@ -2281,7 +2281,7 @@ describe("swap_v2", () => {
               }
 
               /*
-        console.info(
+        console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
@@ -2299,8 +2299,8 @@ describe("swap_v2", () => {
             tokenAccountB,
           );
 
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
 
           (
             await Promise.all(
@@ -2316,7 +2316,7 @@ describe("swap_v2", () => {
               }
 
               /*
-        console.info(
+        console.log(
           ta.startTickIndex + index * TickSpacing.Stable,
           tick.feeGrowthOutsideA.toString(),
           tick.feeGrowthOutsideB.toString()
@@ -2345,8 +2345,8 @@ describe("swap_v2", () => {
             .addSigner(configKeypairs.collectProtocolFeesAuthorityKeypair)
             .buildAndExecute();
 
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
-          //console.info(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultAKeypair.publicKey));
+          //console.log(await getTokenBalance(provider, poolInitInfo.tokenVaultBKeypair.publicKey));
         });
       });
     });
@@ -2511,7 +2511,7 @@ describe("swap_v2", () => {
             oracle: oraclePda.publicKey,
           }),
         ).buildAndExecute(),
-        /0x7d3/, // ConstraintRaw
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -2563,7 +2563,7 @@ describe("swap_v2", () => {
             oracle: oraclePda.publicKey,
           }),
         ).buildAndExecute(),
-        /0x7d3/, // ConstraintRaw
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -2667,7 +2667,7 @@ describe("swap_v2", () => {
             oracle: oraclePda.publicKey,
           }),
         ).buildAndExecute(),
-        /0x7d3/, // ConstraintRaw
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -2719,7 +2719,7 @@ describe("swap_v2", () => {
             oracle: oraclePda.publicKey,
           }),
         ).buildAndExecute(),
-        /0x7d3/, // ConstraintRaw
+        /0x7dc/, // ConstraintAddress
       );
     });
 

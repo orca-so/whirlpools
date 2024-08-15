@@ -22,9 +22,9 @@ pub struct ModifyLiquidityV2<'info> {
     #[account(mut)]
     pub whirlpool: Account<'info, Whirlpool>,
 
-    #[account(constraint = token_program_a.key() == *token_mint_a.to_account_info().owner)]
+    #[account(address = *token_mint_a.to_account_info().owner)]
     pub token_program_a: Interface<'info, TokenInterface>,
-    #[account(constraint = token_program_b.key() == *token_mint_b.to_account_info().owner)]
+    #[account(address = *token_mint_b.to_account_info().owner)]
     pub token_program_b: Interface<'info, TokenInterface>,
 
     pub memo_program: Program<'info, Memo>,

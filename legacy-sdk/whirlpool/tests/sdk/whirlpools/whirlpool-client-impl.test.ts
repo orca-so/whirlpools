@@ -1,11 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import Decimal from "decimal.js";
-import type { InitPoolParams } from "../../../src";
 import {
   buildWhirlpoolClient,
   PDAUtil,
   PriceMath,
+  SPLASH_POOL_TICK_SPACING,
   TickUtil,
   WhirlpoolContext,
 } from "../../../src";
@@ -33,7 +33,6 @@ describe("whirlpool-client-impl", () => {
 
   describe("TokenProgram", () => {
     let funderKeypair: anchor.web3.Keypair;
-    let poolInitInfo: InitPoolParams;
     beforeEach(async () => {
       funderKeypair = anchor.web3.Keypair.generate();
       await systemTransferTx(
@@ -41,7 +40,10 @@ describe("whirlpool-client-impl", () => {
         funderKeypair.publicKey,
         ONE_SOL,
       ).buildAndExecute();
-      poolInitInfo = (
+    });
+
+    it("successfully creates a new whirpool account and initial tick array account", async () => {
+      const poolInitInfo = (
         await buildTestPoolParams(
           ctx,
           TickSpacing.Standard,
@@ -50,9 +52,7 @@ describe("whirlpool-client-impl", () => {
           funderKeypair.publicKey,
         )
       ).poolInitInfo;
-    });
 
-    it("successfully creates a new whirpool account and initial tick array account", async () => {
       const initalTick = TickUtil.getInitializableTickIndex(
         PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice),
         poolInitInfo.tickSpacing,
@@ -141,6 +141,16 @@ describe("whirlpool-client-impl", () => {
     });
 
     it("throws an error when token order is incorrect", async () => {
+      const poolInitInfo = (
+        await buildTestPoolParams(
+          ctx,
+          TickSpacing.Standard,
+          3000,
+          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
+          funderKeypair.publicKey,
+        )
+      ).poolInitInfo;
+
       const initalTick = TickUtil.getInitializableTickIndex(
         PriceMath.sqrtPriceX64ToTickIndex(poolInitInfo.initSqrtPrice),
         poolInitInfo.tickSpacing,
@@ -155,6 +165,159 @@ describe("whirlpool-client-impl", () => {
           poolInitInfo.tokenMintA,
           poolInitInfo.tickSpacing,
           invInitialTick,
+          funderKeypair.publicKey,
+        ),
+        /Token order needs to be flipped to match the canonical ordering \(i.e. sorted on the byte repr. of the mint pubkeys\)/,
+      );
+    });
+
+    it("successfully creates a new splash pool whirlpool account and initial tick array account", async () => {
+      const poolInitInfo = (
+        await buildTestPoolParams(
+          ctx,
+          SPLASH_POOL_TICK_SPACING,
+          3000,
+          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
+          funderKeypair.publicKey,
+        )
+      ).poolInitInfo;
+      const [startTick, endTick] = TickUtil.getFullRangeTickIndex(
+        SPLASH_POOL_TICK_SPACING,
+      );
+
+      const { poolKey: actualPubkey, tx } = await client.createSplashPool(
+        poolInitInfo.whirlpoolsConfig,
+        poolInitInfo.tokenMintA,
+        poolInitInfo.tokenMintB,
+        PriceMath.sqrtPriceX64ToPrice(poolInitInfo.initSqrtPrice, 6, 6),
+        funderKeypair.publicKey,
+      );
+
+      const expectedPda = PDAUtil.getWhirlpool(
+        ctx.program.programId,
+        poolInitInfo.whirlpoolsConfig,
+        poolInitInfo.tokenMintA,
+        poolInitInfo.tokenMintB,
+        SPLASH_POOL_TICK_SPACING,
+      );
+
+      const startTickArrayPda = PDAUtil.getTickArrayFromTickIndex(
+        startTick,
+        SPLASH_POOL_TICK_SPACING,
+        expectedPda.publicKey,
+        ctx.program.programId,
+      );
+
+      const endTickArrayPda = PDAUtil.getTickArrayFromTickIndex(
+        endTick,
+        SPLASH_POOL_TICK_SPACING,
+        expectedPda.publicKey,
+        ctx.program.programId,
+      );
+
+      assert.ok(expectedPda.publicKey.equals(actualPubkey));
+
+      const [
+        whirlpoolAccountBefore,
+        startTickArrayAccountBefore,
+        endTickArrayAccountBefore,
+      ] = await Promise.all([
+        ctx.fetcher.getPool(expectedPda.publicKey, IGNORE_CACHE),
+        ctx.fetcher.getTickArray(startTickArrayPda.publicKey, IGNORE_CACHE),
+        ctx.fetcher.getTickArray(endTickArrayPda.publicKey, IGNORE_CACHE),
+      ]);
+
+      assert.ok(whirlpoolAccountBefore === null);
+      assert.ok(startTickArrayAccountBefore === null);
+      assert.ok(endTickArrayAccountBefore === null);
+
+      await tx.addSigner(funderKeypair).buildAndExecute();
+
+      const [
+        whirlpoolAccountAfter,
+        startTickArrayAccountAfter,
+        endTickArrayAccountAfter,
+      ] = await Promise.all([
+        ctx.fetcher.getPool(expectedPda.publicKey, IGNORE_CACHE),
+        ctx.fetcher.getTickArray(startTickArrayPda.publicKey, IGNORE_CACHE),
+        ctx.fetcher.getTickArray(endTickArrayPda.publicKey, IGNORE_CACHE),
+      ]);
+
+      assert.ok(whirlpoolAccountAfter !== null);
+      assert.ok(startTickArrayAccountAfter !== null);
+      assert.ok(endTickArrayAccountAfter !== null);
+
+      const startSqrtPrice = PriceMath.priceToSqrtPriceX64(
+        PriceMath.sqrtPriceX64ToPrice(poolInitInfo.initSqrtPrice, 6, 6),
+        6,
+        6,
+      );
+
+      assert.ok(whirlpoolAccountAfter.feeGrowthGlobalA.eqn(0));
+      assert.ok(whirlpoolAccountAfter.feeGrowthGlobalB.eqn(0));
+      assert.ok(whirlpoolAccountAfter.feeRate === 3000);
+      assert.ok(whirlpoolAccountAfter.liquidity.eqn(0));
+      assert.ok(whirlpoolAccountAfter.protocolFeeOwedA.eqn(0));
+      assert.ok(whirlpoolAccountAfter.protocolFeeOwedB.eqn(0));
+      assert.ok(whirlpoolAccountAfter.protocolFeeRate === 300);
+      assert.ok(whirlpoolAccountAfter.rewardInfos.length === 3);
+      assert.ok(whirlpoolAccountAfter.rewardLastUpdatedTimestamp.eqn(0));
+      assert.ok(whirlpoolAccountAfter.sqrtPrice.eq(startSqrtPrice));
+      assert.ok(
+        whirlpoolAccountAfter.tickCurrentIndex ===
+          PriceMath.sqrtPriceX64ToTickIndex(startSqrtPrice),
+      );
+      assert.ok(whirlpoolAccountAfter.tickSpacing === SPLASH_POOL_TICK_SPACING);
+      assert.ok(
+        whirlpoolAccountAfter.tokenMintA.equals(poolInitInfo.tokenMintA),
+      );
+      assert.ok(
+        whirlpoolAccountAfter.tokenMintB.equals(poolInitInfo.tokenMintB),
+      );
+      assert.ok(whirlpoolAccountAfter.whirlpoolBump[0] === expectedPda.bump);
+      assert.ok(
+        whirlpoolAccountAfter.whirlpoolsConfig.equals(
+          poolInitInfo.whirlpoolsConfig,
+        ),
+      );
+
+      assert.ok(
+        startTickArrayAccountAfter.startTickIndex ===
+          TickUtil.getStartTickIndex(startTick, SPLASH_POOL_TICK_SPACING),
+      );
+      assert.ok(startTickArrayAccountAfter.ticks.length > 0);
+      assert.ok(
+        startTickArrayAccountAfter.whirlpool.equals(expectedPda.publicKey),
+      );
+
+      assert.ok(
+        endTickArrayAccountAfter.startTickIndex ===
+          TickUtil.getStartTickIndex(endTick, SPLASH_POOL_TICK_SPACING),
+      );
+
+      assert.ok(endTickArrayAccountAfter.ticks.length > 0);
+      assert.ok(
+        endTickArrayAccountAfter.whirlpool.equals(expectedPda.publicKey),
+      );
+    });
+
+    it("throws an error when token order is incorrect while creating splash pool", async () => {
+      const poolInitInfo = (
+        await buildTestPoolParams(
+          ctx,
+          SPLASH_POOL_TICK_SPACING,
+          3000,
+          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
+          funderKeypair.publicKey,
+        )
+      ).poolInitInfo;
+
+      await assert.rejects(
+        client.createSplashPool(
+          poolInitInfo.whirlpoolsConfig,
+          poolInitInfo.tokenMintB,
+          poolInitInfo.tokenMintA,
+          PriceMath.sqrtPriceX64ToPrice(poolInitInfo.initSqrtPrice, 6, 6),
           funderKeypair.publicKey,
         ),
         /Token order needs to be flipped to match the canonical ordering \(i.e. sorted on the byte repr. of the mint pubkeys\)/,
@@ -410,6 +573,266 @@ describe("whirlpool-client-impl", () => {
           poolInitInfo.tokenMintB,
           poolInitInfo.tickSpacing,
           initialTick,
+          ctx.wallet.publicKey,
+        )
+      ).tx;
+
+      await assert.rejects(
+        tx.buildAndExecute(),
+        /0x179f/, // UnsupportedTokenMint
+      );
+    });
+
+    it("successfully creates a new whirpool account and initial tick array account (without TokenBadge) for splash pool", async () => {
+      const poolInitInfo = (
+        await buildTestPoolV2Params(
+          ctx,
+          { isToken2022: true, hasTransferFeeExtension: true },
+          { isToken2022: true, hasTransferFeeExtension: true },
+          SPLASH_POOL_TICK_SPACING,
+          3000,
+          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
+          funderKeypair.publicKey,
+        )
+      ).poolInitInfo;
+
+      // initialized with TransferFee extension
+      const mintDataA = await getMint(
+        provider.connection,
+        poolInitInfo.tokenMintA,
+        "confirmed",
+        TEST_TOKEN_2022_PROGRAM_ID,
+      );
+      const mintDataB = await getMint(
+        provider.connection,
+        poolInitInfo.tokenMintB,
+        "confirmed",
+        TEST_TOKEN_2022_PROGRAM_ID,
+      );
+      const transferFeeConfigA = getTransferFeeConfig(mintDataA);
+      const transferFeeConfigB = getTransferFeeConfig(mintDataB);
+      assert.ok(transferFeeConfigA !== null);
+      assert.ok(transferFeeConfigB !== null);
+
+      const [startTick, endTick] = TickUtil.getFullRangeTickIndex(
+        SPLASH_POOL_TICK_SPACING,
+      );
+
+      const { poolKey: actualPubkey, tx } = await client.createSplashPool(
+        poolInitInfo.whirlpoolsConfig,
+        poolInitInfo.tokenMintA,
+        poolInitInfo.tokenMintB,
+        PriceMath.sqrtPriceX64ToPrice(poolInitInfo.initSqrtPrice, 6, 6),
+        funderKeypair.publicKey,
+      );
+
+      const expectedPda = PDAUtil.getWhirlpool(
+        ctx.program.programId,
+        poolInitInfo.whirlpoolsConfig,
+        poolInitInfo.tokenMintA,
+        poolInitInfo.tokenMintB,
+        SPLASH_POOL_TICK_SPACING,
+      );
+
+      const startTickArrayPda = PDAUtil.getTickArrayFromTickIndex(
+        startTick,
+        SPLASH_POOL_TICK_SPACING,
+        expectedPda.publicKey,
+        ctx.program.programId,
+      );
+
+      const endTickArrayPda = PDAUtil.getTickArrayFromTickIndex(
+        endTick,
+        SPLASH_POOL_TICK_SPACING,
+        expectedPda.publicKey,
+        ctx.program.programId,
+      );
+
+      assert.ok(expectedPda.publicKey.equals(actualPubkey));
+
+      const [
+        whirlpoolAccountBefore,
+        startTickArrayAccountBefore,
+        endTickArrayAccountBefore,
+      ] = await Promise.all([
+        ctx.fetcher.getPool(expectedPda.publicKey, IGNORE_CACHE),
+        ctx.fetcher.getTickArray(startTickArrayPda.publicKey, IGNORE_CACHE),
+        ctx.fetcher.getTickArray(endTickArrayPda.publicKey, IGNORE_CACHE),
+      ]);
+
+      assert.ok(whirlpoolAccountBefore === null);
+      assert.ok(startTickArrayAccountBefore === null);
+      assert.ok(endTickArrayAccountBefore === null);
+
+      await tx.addSigner(funderKeypair).buildAndExecute();
+
+      const [
+        whirlpoolAccountAfter,
+        startTickArrayAccountAfter,
+        endTickArrayAccountAfter,
+      ] = await Promise.all([
+        ctx.fetcher.getPool(expectedPda.publicKey, IGNORE_CACHE),
+        ctx.fetcher.getTickArray(startTickArrayPda.publicKey, IGNORE_CACHE),
+        ctx.fetcher.getTickArray(endTickArrayPda.publicKey, IGNORE_CACHE),
+      ]);
+
+      assert.ok(whirlpoolAccountAfter !== null);
+      assert.ok(startTickArrayAccountAfter !== null);
+      assert.ok(endTickArrayAccountAfter !== null);
+
+      const startSqrtPrice = PriceMath.priceToSqrtPriceX64(
+        PriceMath.sqrtPriceX64ToPrice(poolInitInfo.initSqrtPrice, 6, 6),
+        6,
+        6,
+      );
+
+      assert.ok(whirlpoolAccountAfter.feeGrowthGlobalA.eqn(0));
+      assert.ok(whirlpoolAccountAfter.feeGrowthGlobalB.eqn(0));
+      assert.ok(whirlpoolAccountAfter.feeRate === 3000);
+      assert.ok(whirlpoolAccountAfter.liquidity.eqn(0));
+      assert.ok(whirlpoolAccountAfter.protocolFeeOwedA.eqn(0));
+      assert.ok(whirlpoolAccountAfter.protocolFeeOwedB.eqn(0));
+      assert.ok(whirlpoolAccountAfter.protocolFeeRate === 300);
+      assert.ok(whirlpoolAccountAfter.rewardInfos.length === 3);
+      assert.ok(whirlpoolAccountAfter.rewardLastUpdatedTimestamp.eqn(0));
+      assert.ok(whirlpoolAccountAfter.sqrtPrice.eq(startSqrtPrice));
+      assert.ok(
+        whirlpoolAccountAfter.tickCurrentIndex ===
+          PriceMath.sqrtPriceX64ToTickIndex(startSqrtPrice),
+      );
+      assert.ok(whirlpoolAccountAfter.tickSpacing === SPLASH_POOL_TICK_SPACING);
+      assert.ok(
+        whirlpoolAccountAfter.tokenMintA.equals(poolInitInfo.tokenMintA),
+      );
+      assert.ok(
+        whirlpoolAccountAfter.tokenMintB.equals(poolInitInfo.tokenMintB),
+      );
+      assert.ok(whirlpoolAccountAfter.whirlpoolBump[0] === expectedPda.bump);
+      assert.ok(
+        whirlpoolAccountAfter.whirlpoolsConfig.equals(
+          poolInitInfo.whirlpoolsConfig,
+        ),
+      );
+
+      assert.ok(
+        startTickArrayAccountAfter.startTickIndex ===
+          TickUtil.getStartTickIndex(startTick, SPLASH_POOL_TICK_SPACING),
+      );
+      assert.ok(startTickArrayAccountAfter.ticks.length > 0);
+      assert.ok(
+        startTickArrayAccountAfter.whirlpool.equals(expectedPda.publicKey),
+      );
+
+      assert.ok(
+        endTickArrayAccountAfter.startTickIndex ===
+          TickUtil.getStartTickIndex(endTick, SPLASH_POOL_TICK_SPACING),
+      );
+
+      assert.ok(endTickArrayAccountAfter.ticks.length > 0);
+      assert.ok(
+        endTickArrayAccountAfter.whirlpool.equals(expectedPda.publicKey),
+      );
+    });
+
+    it("successfully creates a new whirpool account (with TokenBadge) for splash pool", async () => {
+      const poolInitInfo = (
+        await buildTestPoolV2Params(
+          ctx,
+          {
+            isToken2022: true,
+            hasTransferHookExtension: true,
+            hasPermanentDelegate: true,
+          }, // TokenBadge required
+          {
+            isToken2022: true,
+            hasTransferHookExtension: true,
+            hasPermanentDelegate: true,
+          }, // TokenBadge required
+          SPLASH_POOL_TICK_SPACING,
+          3000,
+          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
+          ctx.wallet.publicKey,
+          true, // initialize TokenBadge
+          true, // initialize TokenBadge
+        )
+      ).poolInitInfo;
+
+      const tx = (
+        await client.createSplashPool(
+          poolInitInfo.whirlpoolsConfig,
+          poolInitInfo.tokenMintA,
+          poolInitInfo.tokenMintB,
+          PriceMath.sqrtPriceX64ToPrice(poolInitInfo.initSqrtPrice, 6, 6),
+          ctx.wallet.publicKey,
+        )
+      ).tx;
+
+      await tx.buildAndExecute();
+
+      const whirlpool = await client.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+
+      assert.ok(whirlpool !== null);
+      assert.ok(whirlpool.getData().tokenMintA.equals(poolInitInfo.tokenMintA));
+      assert.ok(whirlpool.getData().tokenMintB.equals(poolInitInfo.tokenMintB));
+    });
+
+    it("throws an error when token order is incorrect for splash pool", async () => {
+      const poolInitInfo = (
+        await buildTestPoolV2Params(
+          ctx,
+          { isToken2022: true, hasTransferFeeExtension: true },
+          { isToken2022: true, hasTransferFeeExtension: true },
+          SPLASH_POOL_TICK_SPACING,
+          3000,
+          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
+          funderKeypair.publicKey,
+        )
+      ).poolInitInfo;
+
+      await assert.rejects(
+        client.createSplashPool(
+          poolInitInfo.whirlpoolsConfig,
+          poolInitInfo.tokenMintB,
+          poolInitInfo.tokenMintA,
+          PriceMath.sqrtPriceX64ToPrice(poolInitInfo.initSqrtPrice, 6, 6),
+          funderKeypair.publicKey,
+        ),
+        /Token order needs to be flipped to match the canonical ordering \(i.e. sorted on the byte repr. of the mint pubkeys\)/,
+      );
+    });
+
+    it("throws an error when TokenBadge is not initialized for splash pool", async () => {
+      const poolInitInfo = (
+        await buildTestPoolV2Params(
+          ctx,
+          {
+            isToken2022: true,
+            hasTransferHookExtension: true,
+            hasPermanentDelegate: true,
+          },
+          {
+            isToken2022: true,
+            hasTransferHookExtension: true,
+            hasPermanentDelegate: true,
+          },
+          SPLASH_POOL_TICK_SPACING,
+          3000,
+          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
+          ctx.wallet.publicKey,
+          false, // not initialize TokenBadge
+          false, // not initialize TokenBadge
+        )
+      ).poolInitInfo;
+
+      const tx = (
+        await client.createSplashPool(
+          poolInitInfo.whirlpoolsConfig,
+          poolInitInfo.tokenMintA,
+          poolInitInfo.tokenMintB,
+          PriceMath.sqrtPriceX64ToPrice(poolInitInfo.initSqrtPrice, 6, 6),
           ctx.wallet.publicKey,
         )
       ).tx;

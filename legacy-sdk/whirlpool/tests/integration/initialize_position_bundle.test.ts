@@ -304,6 +304,18 @@ describe("initialize_position_bundle", () => {
       );
     });
 
+    it("should be failed: invalid rent sysvar", async () => {
+      const tx = await createInitializePositionBundleTx(ctx, {
+        // invalid parameter
+        rent: anchor.web3.SYSVAR_CLOCK_PUBKEY,
+      });
+
+      await assert.rejects(
+        tx.buildAndExecute(),
+        /0xbc7/, // AccountSysvarMismatch
+      );
+    });
+
     it("should be failed: invalid associated token program", async () => {
       const tx = await createInitializePositionBundleTx(ctx, {
         // invalid parameter

@@ -40,8 +40,7 @@ pub struct OpenPosition<'info> {
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    /// CHECK: no longer used anywhere
-    pub rent: UncheckedAccount<'info>,
+    pub rent: Sysvar<'info, Rent>,
     pub associated_token_program: Program<'info, AssociatedToken>,
 }
 

@@ -11,8 +11,8 @@
   ],
   "scripts": {
     "build": "node ./kinobi.js && tsc",
-    "format": "prettier --config ../.prettierrc './**/*.ts' --write",
-    "clean": "rimraf dist generated"
+    "test": "ts-mocha ./tests/**/*.test.ts",
+    "clean": "rimraf dist src/generated"
   },
   "peerDependencies": {
     "@solana/web3.js": "^2.0.0-preview.4"

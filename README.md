@@ -37,8 +37,8 @@ This monorepo contains all the code needed to build, deploy and interact the Whi
 
 ### Requirements
 
-- Anchor v0.30
-- Solana v1.18
+- Anchor v0.29.0
+- Solana v1.17.22
 
 ### Getting Started
 
@@ -47,10 +47,10 @@ These instructions are for setting up a development environment on a Mac. If you
 * Install NodeJS and gcc-12 using `brew install node gcc@12`.
 * Add gcc-12 headers to your cpath using `export CPATH="/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include"`.
 * Install Rust lang using `curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh`.
-* Install the Solana CLI using `curl -sSfL https://release.solana.com/v1.18.21/install | sh`.
+* Install the Solana CLI using `curl -sSfL https://release.solana.com/v1.17.22/install | sh`.
 * Add the Solana CLI to your path using `export PATH="/Users/$(whoami)/.local/share/solana/install/active_release/bin:$PATH"`.
 * Install Anchor version manager using `cargo install --git https://github.com/coral-xyz/anchor avm --locked --force`.
-* Install the latest Anchor version using `avm install 0.30.1 && avm use 0.30.1`.
+* Install the latest Anchor version using `avm install 0.29.0 && avm use 0.29.0`.
 * Clone this repository using `git clone https://github.com/orca-so/whirlpools`.
 * Install the dependencies using `yarn`.
 * Set up a Solana wallet if you don't have one already (see below).

@@ -28,8 +28,7 @@ pub struct InitializeReward<'info> {
     #[account(address = token::ID)]
     pub token_program: Program<'info, Token>,
     pub system_program: Program<'info, System>,
-    /// CHECK: no longer used anywhere
-    pub rent: UncheckedAccount<'info>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 pub fn handler(ctx: Context<InitializeReward>, reward_index: u8) -> Result<()> {

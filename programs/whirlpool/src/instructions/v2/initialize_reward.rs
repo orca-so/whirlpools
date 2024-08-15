@@ -34,11 +34,10 @@ pub struct InitializeRewardV2<'info> {
     )]
     pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(constraint = reward_token_program.key() == *reward_mint.to_account_info().owner)]
+    #[account(address = *reward_mint.to_account_info().owner)]
     pub reward_token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
-    /// CHECK: no longer used anywhere
-    pub rent: UncheckedAccount<'info>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 pub fn handler(ctx: Context<InitializeRewardV2>, reward_index: u8) -> Result<()> {

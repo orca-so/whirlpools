@@ -22,10 +22,10 @@ jobs:
       with:
         run: |
           # TODO: Copy over keys from root package.json
-          cd ${{ matrix.package }} && yarn version $(basename ${{ github.ref }})
+          cd ts-sdk/${{ matrix.package }} && yarn version $(basename ${{ github.ref }})
           yarn install
-          yarn build ${{ matrix.package }} --output-style static
-          cd ${{ matrix.package }} && npm publish --access public
+          yarn build ts-sdk/${{ matrix.package }} --output-style static
+          cd ts-sdk/${{ matrix.package }} && npm publish --access public
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
@@ -46,6 +46,9 @@ jobs:
           # deploy cargo
 
   verifiable:
+    strategy:
+      matrix:
+        program: []
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository

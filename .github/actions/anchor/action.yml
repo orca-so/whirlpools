@@ -35,6 +35,10 @@ runs:
       run: |
         echo "yarn" >> run
       shell: bash
+    - name: Update rustc
+      run: |
+        echo "rustup update" >> run
+      shell: bash
     - name: Configure Solana
       run: |
         echo "solana config set --url ${{ inputs.solana-cluster }}" >> run

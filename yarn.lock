@@ -2897,9 +2897,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-docs@workspace:docs":
+"@orca-so/whirlpools-docs@workspace:utility/docs":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-docs@workspace:docs"
+  resolution: "@orca-so/whirlpools-docs@workspace:utility/docs"
   dependencies:
     "@docusaurus/core": "npm:3.5.2"
     "@docusaurus/module-type-aliases": "npm:^3.5.2"
@@ -2921,9 +2921,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-lint@workspace:ts-sdk/lint":
+"@orca-so/whirlpools-lint@workspace:utility/lint":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-lint@workspace:ts-sdk/lint"
+  resolution: "@orca-so/whirlpools-lint@workspace:utility/lint"
   dependencies:
     eslint: "npm:^9.8.0"
     prettier: "npm:^3.1.1"

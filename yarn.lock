@@ -185,19 +185,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/errors@npm:0.20.6":
-  version: 0.20.6
-  resolution: "@kinobi-so/errors@npm:0.20.6"
-  dependencies:
-    "@kinobi-so/node-types": "npm:0.20.6"
-    chalk: "npm:^5.3.0"
-    commander: "npm:^12.0.0"
-  bin:
-    errors: bin/cli.mjs
-  checksum: 10c0/768ae7a821d67cf8b8b0f85b7cf4cf0010467f5fd5dceccdaddc8ba1b2c7e57df8de0d37b03f3929829367b1c85688342bba36221d6ccee5c1fec05ce92db51f
-  languageName: node
-  linkType: hard
-
 "@kinobi-so/errors@npm:0.21.0":
   version: 0.21.0
   resolution: "@kinobi-so/errors@npm:0.21.0"
@@ -224,13 +211,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/node-types@npm:0.20.6":
-  version: 0.20.6
-  resolution: "@kinobi-so/node-types@npm:0.20.6"
-  checksum: 10c0/bd39766403017bfcc14e1aa97a1aef2ba15b6670a94a5d310781b44b242191a2d23e9cd6811c04cde82f5f70ee40c0eecf16cab169eeb6cd9cc213212c8eccc9
-  languageName: node
-  linkType: hard
-
 "@kinobi-so/node-types@npm:0.21.0":
   version: 0.21.0
   resolution: "@kinobi-so/node-types@npm:0.21.0"
@@ -254,16 +234,6 @@ __metadata:
     "@kinobi-so/visitors": "npm:0.21.1"
     "@noble/hashes": "npm:^1.4.0"
   checksum: 10c0/573cc2802ca603d974deb127b3925c28aa77437a262638c613f9e7280eb780986bf7ef6278df71a85f913f6ba0a59c028628de71fc53c819ff9b8c2253da9a7a
-  languageName: node
-  linkType: hard
-
-"@kinobi-so/nodes@npm:0.20.6":
-  version: 0.20.6
-  resolution: "@kinobi-so/nodes@npm:0.20.6"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.20.6"
-    "@kinobi-so/node-types": "npm:0.20.6"
-  checksum: 10c0/04f8c43bf47b7160a39284aebfb7b8b63a6241c58b5466c907a8a90ea678adf888245f94bed23a78d14c4b64218d7c20da41e9c37f1a558be71818c737af2bdb
   languageName: node
   linkType: hard
 
@@ -339,25 +309,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/validators@npm:0.20.6":
-  version: 0.20.6
-  resolution: "@kinobi-so/validators@npm:0.20.6"
+"@kinobi-so/validators@npm:0.21.1":
+  version: 0.21.1
+  resolution: "@kinobi-so/validators@npm:0.21.1"
   dependencies:
-    "@kinobi-so/errors": "npm:0.20.6"
-    "@kinobi-so/nodes": "npm:0.20.6"
-    "@kinobi-so/visitors-core": "npm:0.20.6"
-  checksum: 10c0/8429f08203ec5f3b9d3bdf2f443be271c84059ef7105b97cb42d7fda5ac96d569a8df4aee14d39e140057c721928efe009535fe943b29cbb0ee5153299b33688
-  languageName: node
-  linkType: hard
-
-"@kinobi-so/visitors-core@npm:0.20.6":
-  version: 0.20.6
-  resolution: "@kinobi-so/visitors-core@npm:0.20.6"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.20.6"
-    "@kinobi-so/nodes": "npm:0.20.6"
-    json-stable-stringify: "npm:^1.1.1"
-  checksum: 10c0/d14d1c45ca22f8653c31de8a3a7e33eed60d50eadb7072a4f9b52ba01318d3d9cbd5d6b8a23e048410926a231294e8a3722cd4c80fcf4923604a89864aeaad89
+    "@kinobi-so/errors": "npm:0.21.1"
+    "@kinobi-so/nodes": "npm:0.21.1"
+    "@kinobi-so/visitors-core": "npm:0.21.1"
+  checksum: 10c0/edd8867b77a827996c8f7399bb438997d21393a95ea0381e868634905fb932e3a361cc39e9f1e1305293e4b7fe420b5243054dcde51cc28f1edc18a2b9f29277
   languageName: node
   linkType: hard
 
@@ -380,17 +339,6 @@ __metadata:
     "@kinobi-so/nodes": "npm:0.21.1"
     json-stable-stringify: "npm:^1.1.1"
   checksum: 10c0/8a89fe73dfc125ac6199bd27f9ba51083d63e50c8e8ec8c6d53bffd81e7a518f8e19e09501c379681a72452f6db70ec2813ea54f548c9f4d66535a46b3a0f8c7
-  languageName: node
-  linkType: hard
-
-"@kinobi-so/visitors@npm:0.20.6":
-  version: 0.20.6
-  resolution: "@kinobi-so/visitors@npm:0.20.6"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.20.6"
-    "@kinobi-so/nodes": "npm:0.20.6"
-    "@kinobi-so/visitors-core": "npm:0.20.6"
-  checksum: 10c0/083f82e759afd98cb75d2999ac04ed8c265c6b12219a6526b8fe2ba468dcbc8200a7d36cb5777b2ddbee76db297e57f125eb72cd0a5302b967b820bf3ba096a5
   languageName: node
   linkType: hard
 
@@ -584,7 +532,7 @@ __metadata:
     "@kinobi-so/renderers-js": "npm:^0.21.4"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/web3.js": "npm:^2.0.0-preview.4"
-    kinobi: "npm:^0.20.4"
+    kinobi: "npm:^0.21.1"
     typescript: "npm:^5.5.4"
   peerDependencies:
     "@solana/web3.js": ^2.0.0-preview.4
@@ -3803,15 +3751,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"kinobi@npm:^0.20.4":
-  version: 0.20.6
-  resolution: "kinobi@npm:0.20.6"
+"kinobi@npm:^0.21.1":
+  version: 0.21.1
+  resolution: "kinobi@npm:0.21.1"
   dependencies:
-    "@kinobi-so/errors": "npm:0.20.6"
-    "@kinobi-so/nodes": "npm:0.20.6"
-    "@kinobi-so/validators": "npm:0.20.6"
-    "@kinobi-so/visitors": "npm:0.20.6"
-  checksum: 10c0/9ba764b74f1966c7df4bffebb398f7aaf5c322410eb48206c07b0b1d12add291e565fdcf18ba2fb6f5714433010577f389e22f7d9d80025a594ab4c9b198335a
+    "@kinobi-so/errors": "npm:0.21.1"
+    "@kinobi-so/nodes": "npm:0.21.1"
+    "@kinobi-so/validators": "npm:0.21.1"
+    "@kinobi-so/visitors": "npm:0.21.1"
+  checksum: 10c0/2f2541f20254b721713dd1dbf5a8249a0042a37e4ba74d4d205f54f7f0873ca8142a0c9714e6e9b70a8f0613d377d90ad68febcafd815f5e6f30e1b7fd2becea
   languageName: node
   linkType: hard
 

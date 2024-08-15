@@ -64,8 +64,7 @@ export class WhirlpoolContext {
       commitment: opts.userDefaultConfirmCommitment || "confirmed",
       preflightCommitment: opts.userDefaultConfirmCommitment || "confirmed",
     });
-    const idl = { ...WhirlpoolIDL, address: programId.toString() } as Idl;
-    const program = new Program(idl, anchorProvider);
+    const program = new Program(WhirlpoolIDL as Idl, programId, anchorProvider);
     return new WhirlpoolContext(
       anchorProvider,
       anchorProvider.wallet,
@@ -100,8 +99,7 @@ export class WhirlpoolContext {
     lookupTableFetcher?: LookupTableFetcher,
     opts: WhirlpoolContextOpts = {}
   ): WhirlpoolContext {
-    const idl = { ...WhirlpoolIDL, address: programId.toString() } as Idl;
-    const program = new Program(idl, provider);
+    const program = new Program(WhirlpoolIDL as Idl, programId, provider);
     return new WhirlpoolContext(
       provider,
       provider.wallet,

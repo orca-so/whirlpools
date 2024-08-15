@@ -106,16 +106,16 @@ impl<'info> SparseSwapTickSequenceBuilder<'info> {
     ///
     /// static_tick_array_account_infos and supplemental_tick_array_account_infos will be merged,
     /// and deduplicated by key. TickArray accounts can be provided in any order.
-    ///
+    /// 
     /// Even if over three tick arrays are provided, only three tick arrays are used in the single swap.
     /// The extra TickArray acts as a fallback in case the current price moves.
-    ///
+    /// 
     /// # Parameters
     /// - `whirlpool` - Whirlpool account
     /// - `a_to_b` - Direction of the swap
     /// - `static_tick_array_account_infos` - TickArray accounts provided through required accounts
     /// - `supplemental_tick_array_account_infos` - TickArray accounts provided through remaining accounts
-    ///
+    /// 
     /// # Errors
     /// - `DifferentWhirlpoolTickArrayAccount` - If the provided TickArray account is not for the whirlpool
     /// - `InvalidTickArraySequence` - If no valid TickArray account for the swap is found
@@ -527,7 +527,7 @@ mod sparse_swap_tick_sequence_tests {
             #[test]
             fn a_to_b() {
                 do_test(true, 1, 0, vec![0, -88, -176]);
-            }
+            }                            
 
             #[test]
             fn a_to_b_not_shifted() {
@@ -571,7 +571,7 @@ mod sparse_swap_tick_sequence_tests {
             #[test]
             fn a_to_b() {
                 do_test(true, 64, 0, vec![0, -5632, -11264]);
-            }
+            }                            
 
             #[test]
             fn a_to_b_not_shifted() {
@@ -615,7 +615,7 @@ mod sparse_swap_tick_sequence_tests {
             #[test]
             fn a_to_b() {
                 do_test(true, 32768, 0, vec![0, -2883584]);
-            }
+            }                            
 
             #[test]
             fn a_to_b_not_shifted() {
@@ -815,6 +815,7 @@ mod sparse_swap_tick_sequence_tests {
             let swap_tick_sequence = builder.build().unwrap();
             for i in 0..TICK_ARRAY_SIZE_USIZE {
                 let tick = swap_tick_sequence.get_tick(0, 5632 + (i as i32) * 64, 64).unwrap();
+            
                 let initialized = tick.initialized;
                 assert_eq!(initialized, false);
                 let liquidity_net = tick.liquidity_net;
@@ -1051,6 +1052,7 @@ mod sparse_swap_tick_sequence_tests {
                 None
             );
             let ta1 = ta1_mock.to_account_info(true);
+            
             let result = SparseSwapTickSequenceBuilder::try_from(
                 &whirlpool,
                 false,
@@ -1349,7 +1351,7 @@ mod sparse_swap_tick_sequence_tests {
                     None,
                 );
                 assert!(result.is_err());
-                assert!(result.err().unwrap().to_string().contains("AccountNotMutable"));
+                assert!(result.err().unwrap().to_string().contains("AccountNotMutable"));    
             }
 
             run_test(0);
@@ -1405,7 +1407,7 @@ mod sparse_swap_tick_sequence_tests {
                 None,
             );
             assert!(result.is_err());
-            assert!(result.err().unwrap().to_string().contains("AccountOwnedByWrongProgram"));
+            assert!(result.err().unwrap().to_string().contains("AccountOwnedByWrongProgram"));    
         }
 
         #[test]

@@ -34,11 +34,10 @@ pub struct InitializeRewardV2<'info> {
     )]
     pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(constraint = reward_token_program.key() == reward_mint.to_account_info().owner.clone())]
+    #[account(address = reward_mint.to_account_info().owner.clone())]
     pub reward_token_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
-    /// CHECK: no longer used anywhere
-    pub rent: UncheckedAccount<'info>,
+    pub rent: Sysvar<'info, Rent>,
 }
 
 pub fn handler(ctx: Context<InitializeRewardV2>, reward_index: u8) -> Result<()> {
@@ -50,10 +49,10 @@ pub fn handler(ctx: Context<InitializeRewardV2>, reward_index: u8) -> Result<()>
         ctx.accounts.reward_mint.key(),
         &ctx.accounts.reward_token_badge,
     )?;
-
+  
     if !is_supported_token_mint(&ctx.accounts.reward_mint, is_token_badge_initialized).unwrap() {
         return Err(ErrorCode::UnsupportedTokenMint.into());
-    }
+    }  
 
     Ok(whirlpool.initialize_reward(
         reward_index as usize,

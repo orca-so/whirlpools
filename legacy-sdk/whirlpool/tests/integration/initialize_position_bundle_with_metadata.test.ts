@@ -362,7 +362,7 @@ describe("initialize_position_bundle_with_metadata", () => {
 
       await assert.rejects(
         tx.buildAndExecute(),
-        /0x7dc/ // ConstraintAddress
+        /0xbc7/ // AccountSysvarMismatch
       );
     });
 

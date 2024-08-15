@@ -13,9 +13,9 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct SwapV2<'info> {
-    #[account(constraint = token_program_a.key() == token_mint_a.to_account_info().owner.clone())]
+    #[account(address = token_mint_a.to_account_info().owner.clone())]
     pub token_program_a: Interface<'info, TokenInterface>,
-    #[account(constraint = token_program_b.key() == token_mint_b.to_account_info().owner.clone())]
+    #[account(address = token_mint_b.to_account_info().owner.clone())]
     pub token_program_b: Interface<'info, TokenInterface>,
 
     pub memo_program: Program<'info, Memo>,
@@ -29,7 +29,7 @@ pub struct SwapV2<'info> {
     pub token_mint_a: InterfaceAccount<'info, Mint>,
     #[account(address = whirlpool.token_mint_b)]
     pub token_mint_b: InterfaceAccount<'info, Mint>,
-
+    
     #[account(mut, constraint = token_owner_account_a.mint == whirlpool.token_mint_a)]
     pub token_owner_account_a: Box<InterfaceAccount<'info, TokenAccount>>,
     #[account(mut, address = whirlpool.token_vault_a)]
@@ -273,5 +273,5 @@ pub fn swap_with_transfer_fee_extension<'info>(
         next_fee_growth_global: swap_update.next_fee_growth_global,
         next_reward_infos: swap_update.next_reward_infos,
         next_protocol_fee: swap_update.next_protocol_fee,
-    })
+    })    
 }

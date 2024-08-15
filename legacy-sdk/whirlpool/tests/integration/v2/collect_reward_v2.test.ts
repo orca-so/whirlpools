@@ -1166,7 +1166,7 @@ describe("collect_reward_v2", () => {
               rewardIndex: i,
             }),
           ).buildAndExecute(),
-          /0x7d3/, // ConstraintRaw
+          /0x7dc/, // ConstraintAddress
         );
       }
     });
@@ -1236,7 +1236,7 @@ describe("collect_reward_v2", () => {
               rewardIndex: i,
             }),
           ).buildAndExecute(),
-          /0x7d3/, // ConstraintRaw
+          /0x7dc/, // ConstraintAddress
         );
       }
     });
@@ -1310,5 +1310,7 @@ describe("collect_reward_v2", () => {
         );
       }
     });
+
+    it("fails when passed memo_program is token_metadata", async () => {});
   });
 });

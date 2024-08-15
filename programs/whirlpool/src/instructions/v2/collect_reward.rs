@@ -36,7 +36,7 @@ pub struct CollectRewardV2<'info> {
     #[account(mut, address = whirlpool.reward_infos[reward_index as usize].vault)]
     pub reward_vault: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(constraint = reward_token_program.key() == *reward_mint.to_account_info().owner)]
+    #[account(address = *reward_mint.to_account_info().owner)]
     pub reward_token_program: Interface<'info, TokenInterface>,
     pub memo_program: Program<'info, Memo>,
     // remaining accounts

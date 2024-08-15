@@ -1570,17 +1570,18 @@ describe("initialize_pool_v2", () => {
         isToken2022: true,
         hasGroupPointerExtension: true,
       };
+      // TODO: remove anchorPatch: v0.29 doesn't recognize GroupPointer
       await runTest({
         supported: false,
         createTokenBadge: true,
         tokenTrait,
-        anchorPatch: false,
+        anchorPatch: true,
       });
       await runTest({
         supported: false,
         createTokenBadge: false,
         tokenTrait,
-        anchorPatch: false,
+        anchorPatch: true,
       });
     });
 
@@ -1610,17 +1611,18 @@ describe("initialize_pool_v2", () => {
         isToken2022: true,
         hasGroupMemberPointerExtension: true,
       };
+      // TODO: remove anchorPatch: v0.29 doesn't recognize MemberPointer
       await runTest({
         supported: false,
         createTokenBadge: true,
         tokenTrait,
-        anchorPatch: false,
+        anchorPatch: true,
       });
       await runTest({
         supported: false,
         createTokenBadge: false,
         tokenTrait,
-        anchorPatch: false,
+        anchorPatch: true,
       });
     });
 

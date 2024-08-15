@@ -2,30 +2,28 @@
   "name": "@orca-so/whirlpools-monorepo",
   "private": true,
   "license": "Apache-2.0",
-  "packageManager": "yarn@4.3.1",
+  "packageManager": "yarn@4.4.0",
   "type": "module",
   "scripts": {
     "build": "nx run-many --target build --projects",
     "test": "nx run-many --target test --projects",
-    "format": "cargo fmt --all && prettier './**/*.ts' --write",
-    "lint": "cargo clippy -- -D clippy::all && eslint",
-    "lint:fix": "cargo clippy --fix --allow-dirty --allow-staged -- -D clippy::all && eslint --fix",
+    "format": "nx run-many --target format --projects",
+    "lint": "nx run-many --target lint --projects",
     "clean": "nx reset && nx run-many --target clean --projects",
     "prepare": "husky install"
   },
   "devDependencies": {
     "@types/bn.js": "~5.1.5",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.10.8",
-    "eslint": "^9.8.0",
-    "husky": "^8.0.3",
-    "lint-staged": "^15.2.0",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^22.3.0",
+    "@types/sinon": "^17.0.3",
+    "husky": "^9.1.4",
+    "lint-staged": "^15.2.9",
     "mocha": "^10.2.0",
-    "nx": "^19.4.2",
-    "prettier": "^3.1.1",
-    "rimraf": "^5.0.5",
-    "ts-mocha": "^10.0.0",
-    "typescript-eslint": "^8.0.1"
+    "nx": "^19.5.7",
+    "rimraf": "^6.0.1",
+    "sinon": "^18.0.0",
+    "ts-mocha": "^10.0.0"
   },
   "workspaces": [
     "programs/*",
@@ -34,12 +32,7 @@
     "legacy-sdk/*"
   ],
   "lint-staged": {
-    "**/*.{js,ts,json}": [
-      "yarn prettier './**/*.ts' --write"
-    ],
-    "**/*.rs": [
-      "cargo fmt --all --"
-    ]
+    "*": "yarn format"
   },
   "repository": {
     "type": "git",

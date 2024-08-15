@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import BN from "bn.js";
+import { BN } from "bn.js";
 import Decimal from "decimal.js";
 import type { PositionData, TickArrayData, WhirlpoolData } from "../../../src";
 import {
@@ -1468,7 +1468,7 @@ describe("decrease_liquidity_v2", () => {
             tickArrayUpper: tickArray,
           }),
         ).buildAndExecute(),
-        /0x7d3/, // ConstraintRaw
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -1524,7 +1524,7 @@ describe("decrease_liquidity_v2", () => {
             tickArrayUpper: tickArray,
           }),
         ).buildAndExecute(),
-        /0x7d3/, // ConstraintRaw
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -1636,7 +1636,7 @@ describe("decrease_liquidity_v2", () => {
             tickArrayUpper: tickArray,
           }),
         ).buildAndExecute(),
-        /0x7d3/, // ConstraintRaw
+        /0x7dc/, // ConstraintAddress
       );
     });
 
@@ -1692,7 +1692,7 @@ describe("decrease_liquidity_v2", () => {
             tickArrayUpper: tickArray,
           }),
         ).buildAndExecute(),
-        /0x7d3/, // ConstraintRaw
+        /0x7dc/, // ConstraintAddress
       );
     });
 

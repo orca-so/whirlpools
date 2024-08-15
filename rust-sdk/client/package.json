@@ -3,9 +3,11 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "node ./kinobi.js && cargo build -p orca_whirlpools_client",
-    "test": "cargo test -p orca_whirlpools_client --lib",
-    "clean": "cargo clean -p orca_whirlpools_client"
+    "build": "node ./kinobi.js && cargo build",
+    "test": "cargo test --lib",
+    "format": "cargo clippy --fix --allow-dirty --allow-staged -- -D clippy::all && cargo fmt",
+    "lint": "cargo clippy -- -D clippy::all",
+    "clean": "cargo clean"
   },
   "devDependencies": {
     "@kinobi-so/nodes-from-anchor": "^0.20.6",

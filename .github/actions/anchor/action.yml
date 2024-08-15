@@ -9,7 +9,7 @@ inputs:
   anchor-version:
     description: 'The version of anchor to use.'
     required: false
-    default: 'v0.30.1'
+    default: 'v0.29.0'
   solana-key:
     description: 'The private key to use for the solana sdk.'
     required: false

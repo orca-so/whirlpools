@@ -9,11 +9,8 @@ import type {
 } from "@solana/web3.js";
 import {
   createDefaultRpcTransport,
-  createKeyPairSignerFromBytes,
   createSolanaRpcFromTransport,
-  generateKeyPairSigner,
   getAddressDecoder,
-  getAddressEncoder,
   getBase58Encoder,
 } from "@solana/web3.js";
 import {

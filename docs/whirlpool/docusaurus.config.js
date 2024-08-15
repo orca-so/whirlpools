@@ -32,7 +32,7 @@ export default {
         docs: {
           routeBasePath: "/",
           sidebarPath: "./sidebars.js",
-          editUrl: "https://github.com/orca-so/whirlpools/tree/main/docs/docs",
+          editUrl: "https://github.com/orca-so/whirlpools/tree/main/docs/whirlpool",
         },
         theme: {
           customCss: "./static/index.css",

@@ -52,7 +52,7 @@ export type RouteSelectOptions = {
 export class RouterUtils {
   /**
    * Selects the best executable route from a list of routes using the current execution environment.
-   * The wallet support type, available ATA accounts, existance of lookup tables all effect the transaction size
+   * The wallet support type, available ATA accounts, existence of lookup tables all effect the transaction size
    * and eligibility of a route.
    *
    * @param ctx The {@link WhirlpoolContext} that represents the current execution environment

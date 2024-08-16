@@ -5,7 +5,7 @@
   "scripts": {
     "build": "docusaurus build --out-dir dist",
     "start": "docusaurus start",
-    "clean": "docusaurus clean"
+    "clean": "rimraf dist .docusaurus"
   },
   "dependencies": {
     "@docusaurus/core": "3.5.2",

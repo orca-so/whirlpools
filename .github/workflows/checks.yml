@@ -15,7 +15,6 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          export RUST_LOG=
           yarn build --output-style static
 
   test:
@@ -27,7 +26,6 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          export RUST_LOG=
           yarn test --exclude legacy-sdk/whirlpool --output-style static
 
   lint:
@@ -39,5 +37,4 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          export RUST_LOG=
           yarn lint --output-style static

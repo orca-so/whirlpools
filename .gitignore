@@ -21,3 +21,5 @@ generated
 !.yarn/versions
 .nx
 generated
+.docusaurus
+.cache-loader

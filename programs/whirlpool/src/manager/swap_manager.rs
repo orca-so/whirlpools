@@ -2519,7 +2519,7 @@ mod swap_error_tests {
     // Expectation
     // The swap should fail to do amount calculated overflowing.
     fn swap_does_not_overflow() {
-        // Use filled arrays to minimize the the overflow from calculations, rather than accumulation
+        // Use filled arrays to minimize the overflow from calculations, rather than accumulation
         let array_1_ticks: Vec<TestTickInfo> = build_filled_tick_array(439296, TS_128);
         let array_2_ticks: Vec<TestTickInfo> = build_filled_tick_array(439296 - 88 * 128, TS_128);
         let array_3_ticks: Vec<TestTickInfo> =

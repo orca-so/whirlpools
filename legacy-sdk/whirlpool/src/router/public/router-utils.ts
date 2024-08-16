@@ -257,7 +257,7 @@ export class RouterUtils {
 
   /**
    * Get the default options for selecting a route from a list of generated routes.
-   * @returns Default options for selecting a a route from a list of generated routes.
+   * @returns Default options for selecting a route from a list of generated routes.
    */
   static getDefaultSelectOptions(): RouteSelectOptions {
     return {

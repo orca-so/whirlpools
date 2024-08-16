@@ -256,7 +256,7 @@ function findWalks(
   tokenPairs.forEach(([tokenMintFrom, tokenMintTo]) => {
     let paths = [];
 
-    // Adjust walk's from & to token based of of internal path id.
+    // Adjust walk's from & to token based of internal path id.
     const [internalTokenMintFrom, internalTokenMintTo] = [
       tokenMintFrom,
       tokenMintTo,

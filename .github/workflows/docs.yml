@@ -4,6 +4,10 @@ on:
   push:
     branches: [main]
 
+concurrency:
+  group: "docs"
+  cancel-in-progress: false
+
 jobs:
 
     build:
@@ -14,6 +18,8 @@ jobs:
       steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Setup Github Pages
+        uses: actions/configure-pages@v5
       - name: Build Docs
         uses: ./.github/actions/anchor
         with:
@@ -23,7 +29,7 @@ jobs:
         uses: actions/upload-artifact@master
         with:
           name: github-pages
-          path: ./utility/docs/dist
+          path: ./docs/whirlpool/dist
       - name: Deploy Artifact
         id: deployment
         uses: actions/deploy-pages@v4

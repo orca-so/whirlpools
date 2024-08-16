@@ -10,6 +10,10 @@ inputs:
     description: 'The version of anchor to use.'
     required: false
     default: 'v0.29.0'
+  rust-version:
+    description: 'The version of rust to use.'
+    required: false
+    default: '1.78'
   solana-key:
     description: 'The private key to use for the solana sdk.'
     required: false
@@ -37,7 +41,7 @@ runs:
       shell: bash
     - name: Update rustc
       run: |
-        echo "rustup update" >> run
+        echo "rustup install ${{ inputs.rust-version }}" >> run
       shell: bash
     - name: Configure Solana
       run: |

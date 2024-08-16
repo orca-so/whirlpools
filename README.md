@@ -17,7 +17,7 @@ The program has been audited several times by different security firms.
 
 ## Usage
 
-***The new whirlpool SDKs are still in development and are not reccomended for production use yet. Please see [Legacy](#legacy)***
+***The new whirlpool SDKs are still in development and are not recommended for production use yet. Please see [Legacy](#legacy)***
 
 This repository contains several libraries that can be used to interact with the Whirlpools contract. For most purposes you can use the full library (`@orca-so/whirlpools` and `orca-whirlpools`).
 

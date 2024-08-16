@@ -2503,19 +2503,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/errors@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@kinobi-so/errors@npm:0.21.0"
-  dependencies:
-    "@kinobi-so/node-types": "npm:0.21.0"
-    chalk: "npm:^5.3.0"
-    commander: "npm:^12.0.0"
-  bin:
-    errors: bin/cli.mjs
-  checksum: 10c0/774c8807d0947699c52aa3b83633f3802f24b17e6c0247cd9a06a846ffa12bbb927ede7650a1af8607402f08554c9307db5af6bbd76cf4eafca8b8de0ec569d4
-  languageName: node
-  linkType: hard
-
 "@kinobi-so/errors@npm:0.21.1":
   version: 0.21.1
   resolution: "@kinobi-so/errors@npm:0.21.1"
@@ -2526,13 +2513,6 @@ __metadata:
   bin:
     errors: bin/cli.mjs
   checksum: 10c0/881949e214bec4bba2fb9f8e08c3f06bdd722c7b6d2ce9a4510489b2a281cbf7f9f55bf9ff7d03d2ea1a6d056a25da29d62505454e9539efec16754ad2e195a6
-  languageName: node
-  linkType: hard
-
-"@kinobi-so/node-types@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@kinobi-so/node-types@npm:0.21.0"
-  checksum: 10c0/51355e9c7ec58077edddc21b5b0ecabefefc3a24a0b170aad8878cd5c333aa68df8f9f882369d68e960b621db32b6c1bbc9b6b760ba9ce591578ea58907e7dfc
   languageName: node
   linkType: hard
 
@@ -2555,16 +2535,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/nodes@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@kinobi-so/nodes@npm:0.21.0"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.21.0"
-    "@kinobi-so/node-types": "npm:0.21.0"
-  checksum: 10c0/188753c519647e558c4b886987dfdf582fae02595f92d655316a0d32489d2ae59bea18e0cdbfce9408a6ddaea790bf1272ffd85466816f55bc30fd6cb97f8d6d
-  languageName: node
-  linkType: hard
-
 "@kinobi-so/nodes@npm:0.21.1":
   version: 0.21.1
   resolution: "@kinobi-so/nodes@npm:0.21.1"
@@ -2572,17 +2542,6 @@ __metadata:
     "@kinobi-so/errors": "npm:0.21.1"
     "@kinobi-so/node-types": "npm:0.21.1"
   checksum: 10c0/68f51cabf19b3cfc8433057cbaa60fed0f9a0f433d4f7b37b2246caf6ad9b3592b8b396a68b307231e65c772ef13f716f4048464ac7dd4b6b52d1b1e4cea7294
-  languageName: node
-  linkType: hard
-
-"@kinobi-so/renderers-core@npm:0.20.7":
-  version: 0.20.7
-  resolution: "@kinobi-so/renderers-core@npm:0.20.7"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.21.0"
-    "@kinobi-so/nodes": "npm:0.21.0"
-    "@kinobi-so/visitors-core": "npm:0.21.0"
-  checksum: 10c0/1d8535168b18ac0736a620d98bf6d96a984174ea1ea5e72295996596886b4d0786565a8943986588e034d924ed80105d356aba567ccc51f606c7ab99d7d93c33
   languageName: node
   linkType: hard
 
@@ -2613,17 +2572,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/renderers-rust@npm:^0.21.1":
-  version: 0.21.1
-  resolution: "@kinobi-so/renderers-rust@npm:0.21.1"
+"@kinobi-so/renderers-rust@npm:^0.21.3":
+  version: 0.21.3
+  resolution: "@kinobi-so/renderers-rust@npm:0.21.3"
   dependencies:
-    "@kinobi-so/errors": "npm:0.21.0"
-    "@kinobi-so/nodes": "npm:0.21.0"
-    "@kinobi-so/renderers-core": "npm:0.20.7"
-    "@kinobi-so/visitors-core": "npm:0.21.0"
-    "@solana/codecs-strings": "npm:tp4"
+    "@kinobi-so/errors": "npm:0.21.1"
+    "@kinobi-so/nodes": "npm:0.21.1"
+    "@kinobi-so/renderers-core": "npm:0.20.8"
+    "@kinobi-so/visitors-core": "npm:0.21.1"
+    "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
-  checksum: 10c0/a3639102cce2cbe615d3370380a838811e40f73d65e786fc2572829883606000c89e840f3a08a6d8201425c3d4fb6c52e35630a72dcd6b415bb4eea0136ee8dd
+  checksum: 10c0/827226ffb095bd69000fdfc53238355155b8119b3c79d340a6df82695e82cf4f72a166f820e2398ceda26ef80faae369063d2c075958ce711d3f03efbafade24
   languageName: node
   linkType: hard
 
@@ -2635,17 +2594,6 @@ __metadata:
     "@kinobi-so/nodes": "npm:0.21.1"
     "@kinobi-so/visitors-core": "npm:0.21.1"
   checksum: 10c0/edd8867b77a827996c8f7399bb438997d21393a95ea0381e868634905fb932e3a361cc39e9f1e1305293e4b7fe420b5243054dcde51cc28f1edc18a2b9f29277
-  languageName: node
-  linkType: hard
-
-"@kinobi-so/visitors-core@npm:0.21.0":
-  version: 0.21.0
-  resolution: "@kinobi-so/visitors-core@npm:0.21.0"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.21.0"
-    "@kinobi-so/nodes": "npm:0.21.0"
-    json-stable-stringify: "npm:^1.1.1"
-  checksum: 10c0/e0da68594a5670551934c8f1d3535a55117102981d6e1ebcd7caf4e3dac87a7eaf4d7c80316ba51456dde47e084c6862f150b982b79cfa9996ad6f981df5e4c6
   languageName: node
   linkType: hard
 
@@ -2996,7 +2944,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
     "@kinobi-so/nodes-from-anchor": "npm:^0.20.10"
-    "@kinobi-so/renderers-rust": "npm:^0.21.1"
+    "@kinobi-so/renderers-rust": "npm:^0.21.3"
     "@orca-so/whirlpools-program": "npm:*"
   languageName: unknown
   linkType: soft
@@ -3426,7 +3374,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/codecs-strings@npm:2.0.0-preview.4, @solana/codecs-strings@npm:tp4":
+"@solana/codecs-strings@npm:2.0.0-preview.4":
   version: 2.0.0-preview.4
   resolution: "@solana/codecs-strings@npm:2.0.0-preview.4"
   dependencies:

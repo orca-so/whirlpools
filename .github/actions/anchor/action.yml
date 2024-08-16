@@ -42,6 +42,7 @@ runs:
     - name: Update rustc
       run: |
         echo "rustup install ${{ inputs.rust-version }}" >> run
+        echo "rustup default ${{ inputs.rust-version }}" >> run
       shell: bash
     - name: Configure Solana
       run: |

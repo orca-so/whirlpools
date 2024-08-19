@@ -2587,17 +2587,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/renderers-core@npm:0.20.8":
-  version: 0.20.8
-  resolution: "@kinobi-so/renderers-core@npm:0.20.8"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.21.1"
-    "@kinobi-so/nodes": "npm:0.21.1"
-    "@kinobi-so/visitors-core": "npm:0.21.1"
-  checksum: 10c0/27bc5529de78f7985c82ec0b8398bcaf259b695e4f93f5191a920c1f5825eb1bcedaedee6a6326f75ce527fafa36a8a4defc2b32bb2bb66e9cb3dfb38ee1684f
-  languageName: node
-  linkType: hard
-
 "@kinobi-so/renderers-core@npm:0.21.0":
   version: 0.21.0
   resolution: "@kinobi-so/renderers-core@npm:0.21.0"
@@ -2625,17 +2614,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/renderers-rust@npm:^0.21.3":
-  version: 0.21.3
-  resolution: "@kinobi-so/renderers-rust@npm:0.21.3"
+"@kinobi-so/renderers-rust@npm:^0.21.4":
+  version: 0.21.4
+  resolution: "@kinobi-so/renderers-rust@npm:0.21.4"
   dependencies:
-    "@kinobi-so/errors": "npm:0.21.1"
-    "@kinobi-so/nodes": "npm:0.21.1"
-    "@kinobi-so/renderers-core": "npm:0.20.8"
-    "@kinobi-so/visitors-core": "npm:0.21.1"
+    "@kinobi-so/errors": "npm:0.21.2"
+    "@kinobi-so/nodes": "npm:0.21.2"
+    "@kinobi-so/renderers-core": "npm:0.21.0"
+    "@kinobi-so/visitors-core": "npm:0.21.2"
     "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
-  checksum: 10c0/827226ffb095bd69000fdfc53238355155b8119b3c79d340a6df82695e82cf4f72a166f820e2398ceda26ef80faae369063d2c075958ce711d3f03efbafade24
+  checksum: 10c0/ca3a259c01c0afcd390fc01603b80d81d73113e5d5abbb234ca8a610bbe84b5d72fd571d33f1022379e3352eedb581a2e06107158ab507bbe81e37ef9f45b995
   languageName: node
   linkType: hard
 
@@ -3019,7 +3008,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
     "@kinobi-so/nodes-from-anchor": "npm:^0.20.10"
-    "@kinobi-so/renderers-rust": "npm:^0.21.3"
+    "@kinobi-so/renderers-rust": "npm:^0.21.4"
     "@orca-so/whirlpools-program": "npm:*"
   languageName: unknown
   linkType: soft

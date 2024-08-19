@@ -20,7 +20,9 @@ pub fn compute_swap(
     amount_specified_is_input: bool,
     a_to_b: bool,
 ) -> Result<SwapStepComputation, ErrorCode> {
-    let mut amount_fixed_delta = get_amount_fixed_delta(
+    // Some: delta within u64::MAX
+    // None: delta exceeds u64::MAX
+    let initial_amount_fixed_delta = try_get_amount_fixed_delta(
         sqrt_price_current,
         sqrt_price_target,
         liquidity,
@@ -38,7 +40,7 @@ pub fn compute_swap(
         .try_into()?;
     }
 
-    let next_sqrt_price = if amount_calc >= amount_fixed_delta {
+    let next_sqrt_price = if initial_amount_fixed_delta.as_ref().map_or(false, |delta| amount_calc >= *delta) {
         sqrt_price_target
     } else {
         get_next_sqrt_price(
@@ -61,15 +63,17 @@ pub fn compute_swap(
     )?;
 
     // If the swap is not at the max, we need to readjust the amount of the fixed token we are using
-    if !is_max_swap {
-        amount_fixed_delta = get_amount_fixed_delta(
+    let amount_fixed_delta = if !is_max_swap || initial_amount_fixed_delta.is_none() {
+        get_amount_fixed_delta(
             sqrt_price_current,
             next_sqrt_price,
             liquidity,
             amount_specified_is_input,
             a_to_b,
-        )?;
-    }
+        )?
+    } else {
+        initial_amount_fixed_delta.unwrap()
+    };
 
     let (amount_in, mut amount_out) = if amount_specified_is_input {
         (amount_fixed_delta, amount_unfixed_delta)
@@ -122,6 +126,40 @@ fn get_amount_fixed_delta(
             liquidity,
             amount_specified_is_input,
         )
+    }
+}
+
+fn try_get_amount_fixed_delta(
+    sqrt_price_current: u128,
+    sqrt_price_target: u128,
+    liquidity: u128,
+    amount_specified_is_input: bool,
+    a_to_b: bool,
+) -> Result<Option<u64>, ErrorCode> {
+    if a_to_b == amount_specified_is_input {
+        match get_amount_delta_a(
+            sqrt_price_current,
+            sqrt_price_target,
+            liquidity,
+            amount_specified_is_input,
+        ) {
+            Ok(amount) => Ok(Some(amount)),
+            // delta exceeds u64::MAX
+            Err(ErrorCode::MultiplicationOverflow) | Err(ErrorCode::NumberDownCastError) | Err(ErrorCode::TokenMaxExceeded) => Ok(None),
+            Err(e) => Err(e),
+        }
+    } else {
+        match get_amount_delta_b(
+            sqrt_price_current,
+            sqrt_price_target,
+            liquidity,
+            amount_specified_is_input,
+        ) {
+            Ok(amount) => Ok(Some(amount)),
+            // delta exceeds u64::MAX
+            Err(ErrorCode::MultiplicationShiftRightOverflow) | Err(ErrorCode::MultiplicationOverflow) => Ok(None),
+            Err(e) => Err(e),
+        }
     }
 }
 

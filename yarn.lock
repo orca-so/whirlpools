@@ -2639,14 +2639,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/validators@npm:0.21.1":
-  version: 0.21.1
-  resolution: "@kinobi-so/validators@npm:0.21.1"
+"@kinobi-so/validators@npm:0.21.2":
+  version: 0.21.2
+  resolution: "@kinobi-so/validators@npm:0.21.2"
   dependencies:
-    "@kinobi-so/errors": "npm:0.21.1"
-    "@kinobi-so/nodes": "npm:0.21.1"
-    "@kinobi-so/visitors-core": "npm:0.21.1"
-  checksum: 10c0/edd8867b77a827996c8f7399bb438997d21393a95ea0381e868634905fb932e3a361cc39e9f1e1305293e4b7fe420b5243054dcde51cc28f1edc18a2b9f29277
+    "@kinobi-so/errors": "npm:0.21.2"
+    "@kinobi-so/nodes": "npm:0.21.2"
+    "@kinobi-so/visitors-core": "npm:0.21.2"
+  checksum: 10c0/6c36b3b9eadb5b5e41986cfe95ad315dad9e8430e73118dade14ff2db2175487d0dfda68125cdea429e5723da754e121c343ea0811bcbf8ae2051b5a95bfc2d7
   languageName: node
   linkType: hard
 
@@ -2923,7 +2923,7 @@ __metadata:
     "@kinobi-so/renderers-js": "npm:^0.21.5"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/web3.js": "npm:^2.0.0-preview.4"
-    kinobi: "npm:^0.21.1"
+    kinobi: "npm:^0.21.2"
     typescript: "npm:^5.5.4"
   peerDependencies:
     "@solana/web3.js": ^2.0.0-preview.4
@@ -9764,15 +9764,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"kinobi@npm:^0.21.1":
-  version: 0.21.1
-  resolution: "kinobi@npm:0.21.1"
+"kinobi@npm:^0.21.2":
+  version: 0.21.2
+  resolution: "kinobi@npm:0.21.2"
   dependencies:
-    "@kinobi-so/errors": "npm:0.21.1"
-    "@kinobi-so/nodes": "npm:0.21.1"
-    "@kinobi-so/validators": "npm:0.21.1"
-    "@kinobi-so/visitors": "npm:0.21.1"
-  checksum: 10c0/2f2541f20254b721713dd1dbf5a8249a0042a37e4ba74d4d205f54f7f0873ca8142a0c9714e6e9b70a8f0613d377d90ad68febcafd815f5e6f30e1b7fd2becea
+    "@kinobi-so/errors": "npm:0.21.2"
+    "@kinobi-so/nodes": "npm:0.21.2"
+    "@kinobi-so/validators": "npm:0.21.2"
+    "@kinobi-so/visitors": "npm:0.21.2"
+  checksum: 10c0/69cd9842bd2c458a3437e307bb86e94b4aecbb63b34519e55d5a1737663e9541d6895a0a69c93814e6b7c137ca64e00f8582be83c1e57395035ec3f2b6a585a2
   languageName: node
   linkType: hard
 

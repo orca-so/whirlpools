@@ -22,7 +22,7 @@
     "@kinobi-so/renderers-js": "^0.21.5",
     "@orca-so/whirlpools-program": "*",
     "@solana/web3.js": "^2.0.0-preview.4",
-    "kinobi": "^0.21.2",
+    "kinobi": "^0.21.3",
     "typescript": "^5.5.4"
   }
 }

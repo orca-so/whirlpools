@@ -285,19 +285,29 @@ mod data_layout_tests {
         let mut offset = 0;
         position_bundle_data[offset..offset + 8].copy_from_slice(&PositionBundle::discriminator());
         offset += 8;
-        position_bundle_data[offset..offset + 32].copy_from_slice(&position_bundle_position_bundle_mint.to_bytes());
+        position_bundle_data[offset..offset + 32]
+            .copy_from_slice(&position_bundle_position_bundle_mint.to_bytes());
         offset += 32;
-        position_bundle_data[offset..offset + POSITION_BITMAP_USIZE].copy_from_slice(&position_bundle_position_bitmap);
+        position_bundle_data[offset..offset + POSITION_BITMAP_USIZE]
+            .copy_from_slice(&position_bundle_position_bitmap);
         offset += POSITION_BITMAP_USIZE;
-        position_bundle_data[offset..offset + position_bundle_reserved.len()].copy_from_slice(&position_bundle_reserved);
+        position_bundle_data[offset..offset + position_bundle_reserved.len()]
+            .copy_from_slice(&position_bundle_reserved);
         offset += position_bundle_reserved.len();
         assert_eq!(offset, PositionBundle::LEN);
 
         // deserialize
-        let deserialized = PositionBundle::try_deserialize(&mut position_bundle_data.as_ref()).unwrap();
+        let deserialized =
+            PositionBundle::try_deserialize(&mut position_bundle_data.as_ref()).unwrap();
 
-        assert_eq!(position_bundle_position_bundle_mint, deserialized.position_bundle_mint);
-        assert_eq!(position_bundle_position_bitmap, deserialized.position_bitmap);
+        assert_eq!(
+            position_bundle_position_bundle_mint,
+            deserialized.position_bundle_mint
+        );
+        assert_eq!(
+            position_bundle_position_bitmap,
+            deserialized.position_bitmap
+        );
 
         // serialize
         let mut serialized = Vec::new();

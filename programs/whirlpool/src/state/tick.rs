@@ -14,7 +14,7 @@ pub const TICK_ARRAY_SIZE: i32 = 88;
 pub const TICK_ARRAY_SIZE_USIZE: usize = 88;
 
 #[zero_copy(unsafe)]
-#[repr(C,packed)]
+#[repr(C, packed)]
 #[derive(Default, Debug, PartialEq)]
 pub struct Tick {
     // Total 137 bytes
@@ -225,7 +225,7 @@ fn get_offset(tick_index: i32, start_tick_index: i32, tick_spacing: u16) -> isiz
 }
 
 #[account(zero_copy(unsafe))]
-#[repr(C,packed)]
+#[repr(C, packed)]
 pub struct TickArray {
     pub start_tick_index: i32,
     pub ticks: [Tick; TICK_ARRAY_SIZE_USIZE],
@@ -778,16 +778,17 @@ mod data_layout_tests {
         let mut offset = 0;
         tick_data[offset] = tick_initialized as u8;
         offset += 1;
-        tick_data[offset..offset+16].copy_from_slice(&tick_liquidity_net.to_le_bytes());
+        tick_data[offset..offset + 16].copy_from_slice(&tick_liquidity_net.to_le_bytes());
         offset += 16;
-        tick_data[offset..offset+16].copy_from_slice(&tick_liquidity_gross.to_le_bytes());
+        tick_data[offset..offset + 16].copy_from_slice(&tick_liquidity_gross.to_le_bytes());
         offset += 16;
-        tick_data[offset..offset+16].copy_from_slice(&tick_fee_growth_outside_a.to_le_bytes());
+        tick_data[offset..offset + 16].copy_from_slice(&tick_fee_growth_outside_a.to_le_bytes());
         offset += 16;
-        tick_data[offset..offset+16].copy_from_slice(&tick_fee_growth_outside_b.to_le_bytes());
+        tick_data[offset..offset + 16].copy_from_slice(&tick_fee_growth_outside_b.to_le_bytes());
         offset += 16;
         for i in 0..NUM_REWARDS {
-            tick_data[offset..offset+16].copy_from_slice(&tick_reward_growths_outside[i].to_le_bytes());
+            tick_data[offset..offset + 16]
+                .copy_from_slice(&tick_reward_growths_outside[i].to_le_bytes());
             offset += 16;
         }
 
@@ -795,13 +796,14 @@ mod data_layout_tests {
         // note: no discriminator
         let mut tick_array_data = [0u8; TickArray::LEN - 8];
         let mut offset = 0;
-        tick_array_data[offset..offset+4].copy_from_slice(&tick_array_start_tick_index.to_le_bytes());
+        tick_array_data[offset..offset + 4]
+            .copy_from_slice(&tick_array_start_tick_index.to_le_bytes());
         offset += 4;
         for _ in 0..TICK_ARRAY_SIZE_USIZE {
-            tick_array_data[offset..offset+Tick::LEN].copy_from_slice(&tick_data);
+            tick_array_data[offset..offset + Tick::LEN].copy_from_slice(&tick_data);
             offset += Tick::LEN;
         }
-        tick_array_data[offset..offset+32].copy_from_slice(&tick_array_whirlpool.to_bytes());
+        tick_array_data[offset..offset + 32].copy_from_slice(&tick_array_whirlpool.to_bytes());
         offset += 32;
 
         assert_eq!(offset, tick_array_data.len());

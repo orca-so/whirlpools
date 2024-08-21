@@ -309,9 +309,11 @@ mod data_layout_tests {
         // manually build the expected data layout
         let mut position_reward_data = [0u8; 24];
         let mut offset = 0;
-        position_reward_data[offset..offset + 16].copy_from_slice(&position_reward_info_growth_inside_checkpoint.to_le_bytes());
+        position_reward_data[offset..offset + 16]
+            .copy_from_slice(&position_reward_info_growth_inside_checkpoint.to_le_bytes());
         offset += 16;
-        position_reward_data[offset..offset + 8].copy_from_slice(&position_reward_info_amount_owed.to_le_bytes());
+        position_reward_data[offset..offset + 8]
+            .copy_from_slice(&position_reward_info_amount_owed.to_le_bytes());
 
         let mut position_data = [0u8; Position::LEN];
         let mut offset = 0;
@@ -327,16 +329,19 @@ mod data_layout_tests {
         offset += 4;
         position_data[offset..offset + 4].copy_from_slice(&position_tick_upper_index.to_le_bytes());
         offset += 4;
-        position_data[offset..offset + 16].copy_from_slice(&position_fee_growth_checkpoint_a.to_le_bytes());
+        position_data[offset..offset + 16]
+            .copy_from_slice(&position_fee_growth_checkpoint_a.to_le_bytes());
         offset += 16;
         position_data[offset..offset + 8].copy_from_slice(&position_fee_owed_a.to_le_bytes());
         offset += 8;
-        position_data[offset..offset + 16].copy_from_slice(&position_fee_growth_checkpoint_b.to_le_bytes());
+        position_data[offset..offset + 16]
+            .copy_from_slice(&position_fee_growth_checkpoint_b.to_le_bytes());
         offset += 16;
         position_data[offset..offset + 8].copy_from_slice(&position_fee_owed_b.to_le_bytes());
         offset += 8;
         for _ in 0..NUM_REWARDS {
-            position_data[offset..offset + position_reward_data.len()].copy_from_slice(&position_reward_data);
+            position_data[offset..offset + position_reward_data.len()]
+                .copy_from_slice(&position_reward_data);
             offset += position_reward_data.len();
         }
         assert_eq!(offset, Position::LEN);
@@ -349,13 +354,25 @@ mod data_layout_tests {
         assert_eq!(position_liquidity, deserialized.liquidity);
         assert_eq!(position_tick_lower_index, deserialized.tick_lower_index);
         assert_eq!(position_tick_upper_index, deserialized.tick_upper_index);
-        assert_eq!(position_fee_growth_checkpoint_a, deserialized.fee_growth_checkpoint_a);
+        assert_eq!(
+            position_fee_growth_checkpoint_a,
+            deserialized.fee_growth_checkpoint_a
+        );
         assert_eq!(position_fee_owed_a, deserialized.fee_owed_a);
-        assert_eq!(position_fee_growth_checkpoint_b, deserialized.fee_growth_checkpoint_b);
+        assert_eq!(
+            position_fee_growth_checkpoint_b,
+            deserialized.fee_growth_checkpoint_b
+        );
         assert_eq!(position_fee_owed_b, deserialized.fee_owed_b);
         for i in 0..NUM_REWARDS {
-            assert_eq!(position_reward_info_growth_inside_checkpoint, deserialized.reward_infos[i].growth_inside_checkpoint);
-            assert_eq!(position_reward_info_amount_owed, deserialized.reward_infos[i].amount_owed);
+            assert_eq!(
+                position_reward_info_growth_inside_checkpoint,
+                deserialized.reward_infos[i].growth_inside_checkpoint
+            );
+            assert_eq!(
+                position_reward_info_amount_owed,
+                deserialized.reward_infos[i].amount_owed
+            );
         }
 
         // serialize

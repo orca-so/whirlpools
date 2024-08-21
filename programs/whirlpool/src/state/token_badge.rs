@@ -66,18 +66,23 @@ mod data_layout_tests {
         let mut offset = 0;
         token_badge_data[offset..offset + 8].copy_from_slice(&TokenBadge::discriminator());
         offset += 8;
-        token_badge_data[offset..offset + 32].copy_from_slice(&token_badge_whirlpools_config.to_bytes());
+        token_badge_data[offset..offset + 32]
+            .copy_from_slice(&token_badge_whirlpools_config.to_bytes());
         offset += 32;
         token_badge_data[offset..offset + 32].copy_from_slice(&token_badge_token_mint.to_bytes());
         offset += 32;
-        token_badge_data[offset..offset + token_badge_reserved.len()].copy_from_slice(&token_badge_reserved);
+        token_badge_data[offset..offset + token_badge_reserved.len()]
+            .copy_from_slice(&token_badge_reserved);
         offset += token_badge_reserved.len();
         assert_eq!(offset, TokenBadge::LEN);
 
         // deserialize
         let deserialized = TokenBadge::try_deserialize(&mut token_badge_data.as_ref()).unwrap();
 
-        assert_eq!(token_badge_whirlpools_config, deserialized.whirlpools_config);
+        assert_eq!(
+            token_badge_whirlpools_config,
+            deserialized.whirlpools_config
+        );
         assert_eq!(token_badge_token_mint, deserialized.token_mint);
 
         // serialize
@@ -86,5 +91,5 @@ mod data_layout_tests {
         serialized.extend_from_slice(&token_badge_reserved);
 
         assert_eq!(serialized.as_slice(), token_badge_data.as_ref());
-   }
+    }
 }

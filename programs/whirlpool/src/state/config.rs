@@ -80,11 +80,14 @@ mod data_layout_tests {
         offset += 8;
         config_data[offset..offset + 32].copy_from_slice(&config_fee_authority.to_bytes());
         offset += 32;
-        config_data[offset..offset + 32].copy_from_slice(&config_collect_protocol_fees_authority.to_bytes());
+        config_data[offset..offset + 32]
+            .copy_from_slice(&config_collect_protocol_fees_authority.to_bytes());
         offset += 32;
-        config_data[offset..offset + 32].copy_from_slice(&config_reward_emissions_super_authority.to_bytes());
+        config_data[offset..offset + 32]
+            .copy_from_slice(&config_reward_emissions_super_authority.to_bytes());
         offset += 32;
-        config_data[offset..offset + 2].copy_from_slice(&config_default_protocol_fee_rate.to_le_bytes());
+        config_data[offset..offset + 2]
+            .copy_from_slice(&config_default_protocol_fee_rate.to_le_bytes());
         offset += 2;
         config_data[offset..offset + config_reserved.len()].copy_from_slice(&config_reserved);
         offset += config_reserved.len();
@@ -94,9 +97,18 @@ mod data_layout_tests {
         let deserialized = WhirlpoolsConfig::try_deserialize(&mut config_data.as_ref()).unwrap();
 
         assert_eq!(config_fee_authority, deserialized.fee_authority);
-        assert_eq!(config_collect_protocol_fees_authority, deserialized.collect_protocol_fees_authority);
-        assert_eq!(config_reward_emissions_super_authority, deserialized.reward_emissions_super_authority);
-        assert_eq!(config_default_protocol_fee_rate, deserialized.default_protocol_fee_rate);
+        assert_eq!(
+            config_collect_protocol_fees_authority,
+            deserialized.collect_protocol_fees_authority
+        );
+        assert_eq!(
+            config_reward_emissions_super_authority,
+            deserialized.reward_emissions_super_authority
+        );
+        assert_eq!(
+            config_default_protocol_fee_rate,
+            deserialized.default_protocol_fee_rate
+        );
 
         // serialize
         let mut serialized = Vec::new();
@@ -104,5 +116,5 @@ mod data_layout_tests {
         serialized.extend_from_slice(&config_reserved);
 
         assert_eq!(serialized.as_slice(), config_data.as_ref());
-   }
+    }
 }

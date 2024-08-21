@@ -14,7 +14,7 @@ pub const TICK_ARRAY_SIZE: i32 = 88;
 pub const TICK_ARRAY_SIZE_USIZE: usize = 88;
 
 #[zero_copy(unsafe)]
-#[repr(packed)]
+#[repr(C,packed)]
 #[derive(Default, Debug, PartialEq)]
 pub struct Tick {
     // Total 137 bytes
@@ -225,7 +225,7 @@ fn get_offset(tick_index: i32, start_tick_index: i32, tick_spacing: u16) -> isiz
 }
 
 #[account(zero_copy(unsafe))]
-#[repr(packed)]
+#[repr(C,packed)]
 pub struct TickArray {
     pub start_tick_index: i32,
     pub ticks: [Tick; TICK_ARRAY_SIZE_USIZE],
@@ -750,5 +750,86 @@ mod array_update_tests {
         };
         let result = array.get_tick(tick_index, tick_spacing).unwrap();
         assert_eq!(*result, expected);
+    }
+}
+
+#[cfg(test)]
+mod data_layout_tests {
+    use super::*;
+
+    #[test]
+    fn test_tick_array_data_layout() {
+        let tick_array_start_tick_index = 0x70e0d0c0i32;
+        let tick_array_whirlpool = Pubkey::new_unique();
+
+        let tick_initialized = true;
+        let tick_liquidity_net = 0x11002233445566778899aabbccddeeffi128;
+        let tick_liquidity_gross = 0xff00eeddccbbaa998877665544332211u128;
+        let tick_fee_growth_outside_a = 0x11220033445566778899aabbccddeeffu128;
+        let tick_fee_growth_outside_b = 0xffee00ddccbbaa998877665544332211u128;
+        let tick_reward_growths_outside = [
+            0x11223300445566778899aabbccddeeffu128,
+            0x11223344005566778899aabbccddeeffu128,
+            0x11223344550066778899aabbccddeeffu128,
+        ];
+
+        // manually build the expected Tick data layout
+        let mut tick_data = [0u8; Tick::LEN];
+        let mut offset = 0;
+        tick_data[offset] = tick_initialized as u8;
+        offset += 1;
+        tick_data[offset..offset+16].copy_from_slice(&tick_liquidity_net.to_le_bytes());
+        offset += 16;
+        tick_data[offset..offset+16].copy_from_slice(&tick_liquidity_gross.to_le_bytes());
+        offset += 16;
+        tick_data[offset..offset+16].copy_from_slice(&tick_fee_growth_outside_a.to_le_bytes());
+        offset += 16;
+        tick_data[offset..offset+16].copy_from_slice(&tick_fee_growth_outside_b.to_le_bytes());
+        offset += 16;
+        for i in 0..NUM_REWARDS {
+            tick_data[offset..offset+16].copy_from_slice(&tick_reward_growths_outside[i].to_le_bytes());
+            offset += 16;
+        }
+
+        // manually build the expected TickArray data layout
+        // note: no discriminator
+        let mut tick_array_data = [0u8; TickArray::LEN - 8];
+        let mut offset = 0;
+        tick_array_data[offset..offset+4].copy_from_slice(&tick_array_start_tick_index.to_le_bytes());
+        offset += 4;
+        for _ in 0..TICK_ARRAY_SIZE_USIZE {
+            tick_array_data[offset..offset+Tick::LEN].copy_from_slice(&tick_data);
+            offset += Tick::LEN;
+        }
+        tick_array_data[offset..offset+32].copy_from_slice(&tick_array_whirlpool.to_bytes());
+        offset += 32;
+
+        assert_eq!(offset, tick_array_data.len());
+        assert_eq!(tick_array_data.len(), core::mem::size_of::<TickArray>());
+
+        // cast from bytes to TickArray (re-interpret)
+        let tick_array: &TickArray = bytemuck::from_bytes(&tick_array_data);
+
+        // check that the data layout matches the expected layout
+        let read_start_tick_index = tick_array.start_tick_index;
+        assert_eq!(read_start_tick_index, tick_array_start_tick_index);
+        for i in 0..TICK_ARRAY_SIZE_USIZE {
+            let read_tick = tick_array.ticks[i];
+
+            let read_initialized = read_tick.initialized;
+            assert_eq!(read_initialized, tick_initialized);
+            let read_liquidity_net = read_tick.liquidity_net;
+            assert_eq!(read_liquidity_net, tick_liquidity_net);
+            let read_liquidity_gross = read_tick.liquidity_gross;
+            assert_eq!(read_liquidity_gross, tick_liquidity_gross);
+            let read_fee_growth_outside_a = read_tick.fee_growth_outside_a;
+            assert_eq!(read_fee_growth_outside_a, tick_fee_growth_outside_a);
+            let read_fee_growth_outside_b = read_tick.fee_growth_outside_b;
+            assert_eq!(read_fee_growth_outside_b, tick_fee_growth_outside_b);
+            let read_reward_growths_outside = read_tick.reward_growths_outside;
+            assert_eq!(read_reward_growths_outside, tick_reward_growths_outside);
+        }
+        let read_whirlpool = tick_array.whirlpool;
+        assert_eq!(read_whirlpool, tick_array_whirlpool);
     }
 }

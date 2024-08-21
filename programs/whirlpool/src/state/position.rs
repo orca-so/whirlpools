@@ -284,3 +284,84 @@ pub mod position_builder {
         }
     }
 }
+
+#[cfg(test)]
+mod data_layout_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_position_data_layout() {
+        let position_whirlpool = Pubkey::new_unique();
+        let position_position_mint = Pubkey::new_unique();
+        let position_liquidity = 0x11223344556677889900aabbccddeeffu128;
+        let position_tick_lower_index = 0x11002233i32;
+        let position_tick_upper_index = 0x22003344i32;
+        let position_fee_growth_checkpoint_a = 0x11002233445566778899aabbccddeeffu128;
+        let position_fee_owed_a = 0x11ff223344556677u64;
+        let position_fee_growth_checkpoint_b = 0x11220033445566778899aabbccddeeffu128;
+        let position_fee_owed_b = 0x1122ff3344556677u64;
+
+        let position_reward_info_growth_inside_checkpoint = 0x112233445566778899ffaabbccddee00u128;
+        let position_reward_info_amount_owed = 0x1122334455667788u64;
+
+        // manually build the expected data layout
+        let mut position_reward_data = [0u8; 24];
+        let mut offset = 0;
+        position_reward_data[offset..offset + 16].copy_from_slice(&position_reward_info_growth_inside_checkpoint.to_le_bytes());
+        offset += 16;
+        position_reward_data[offset..offset + 8].copy_from_slice(&position_reward_info_amount_owed.to_le_bytes());
+
+        let mut position_data = [0u8; Position::LEN];
+        let mut offset = 0;
+        position_data[offset..offset + 8].copy_from_slice(&Position::discriminator());
+        offset += 8;
+        position_data[offset..offset + 32].copy_from_slice(&position_whirlpool.to_bytes());
+        offset += 32;
+        position_data[offset..offset + 32].copy_from_slice(&position_position_mint.to_bytes());
+        offset += 32;
+        position_data[offset..offset + 16].copy_from_slice(&position_liquidity.to_le_bytes());
+        offset += 16;
+        position_data[offset..offset + 4].copy_from_slice(&position_tick_lower_index.to_le_bytes());
+        offset += 4;
+        position_data[offset..offset + 4].copy_from_slice(&position_tick_upper_index.to_le_bytes());
+        offset += 4;
+        position_data[offset..offset + 16].copy_from_slice(&position_fee_growth_checkpoint_a.to_le_bytes());
+        offset += 16;
+        position_data[offset..offset + 8].copy_from_slice(&position_fee_owed_a.to_le_bytes());
+        offset += 8;
+        position_data[offset..offset + 16].copy_from_slice(&position_fee_growth_checkpoint_b.to_le_bytes());
+        offset += 16;
+        position_data[offset..offset + 8].copy_from_slice(&position_fee_owed_b.to_le_bytes());
+        offset += 8;
+        for _ in 0..NUM_REWARDS {
+            position_data[offset..offset + position_reward_data.len()].copy_from_slice(&position_reward_data);
+            offset += position_reward_data.len();
+        }
+        assert_eq!(offset, Position::LEN);
+
+        // deserialize
+        let deserialized = Position::try_deserialize(&mut position_data.as_ref()).unwrap();
+
+        assert_eq!(position_whirlpool, deserialized.whirlpool);
+        assert_eq!(position_position_mint, deserialized.position_mint);
+        assert_eq!(position_liquidity, deserialized.liquidity);
+        assert_eq!(position_tick_lower_index, deserialized.tick_lower_index);
+        assert_eq!(position_tick_upper_index, deserialized.tick_upper_index);
+        assert_eq!(position_fee_growth_checkpoint_a, deserialized.fee_growth_checkpoint_a);
+        assert_eq!(position_fee_owed_a, deserialized.fee_owed_a);
+        assert_eq!(position_fee_growth_checkpoint_b, deserialized.fee_growth_checkpoint_b);
+        assert_eq!(position_fee_owed_b, deserialized.fee_owed_b);
+        for i in 0..NUM_REWARDS {
+            assert_eq!(position_reward_info_growth_inside_checkpoint, deserialized.reward_infos[i].growth_inside_checkpoint);
+            assert_eq!(position_reward_info_amount_owed, deserialized.reward_infos[i].amount_owed);
+        }
+
+        // serialize
+        let mut serialized = Vec::new();
+        deserialized.try_serialize(&mut serialized).unwrap();
+
+        assert_eq!(serialized.as_slice(), position_data.as_ref());
+    }
+}

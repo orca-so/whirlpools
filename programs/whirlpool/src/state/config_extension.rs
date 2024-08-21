@@ -109,3 +109,46 @@ mod whirlpools_config_extension_update_tests {
         );
     }
 }
+
+#[cfg(test)]
+mod data_layout_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_whirlpools_config_extension_data_layout() {
+        let config_extension_whirlpools_config = Pubkey::new_unique();
+        let config_extension_config_extension_authority = Pubkey::new_unique();
+        let config_extension_token_badge_authority = Pubkey::new_unique();
+        let config_extension_reserved = [0u8; 512];
+
+        let mut config_extension_data = [0u8; WhirlpoolsConfigExtension::LEN];
+        let mut offset = 0;
+        config_extension_data[offset..offset + 8].copy_from_slice(&WhirlpoolsConfigExtension::discriminator());
+        offset += 8;
+        config_extension_data[offset..offset + 32].copy_from_slice(&config_extension_whirlpools_config.to_bytes());
+        offset += 32;
+        config_extension_data[offset..offset + 32].copy_from_slice(&config_extension_config_extension_authority.to_bytes());
+        offset += 32;
+        config_extension_data[offset..offset + 32].copy_from_slice(&config_extension_token_badge_authority.to_bytes());
+        offset += 32;
+        config_extension_data[offset..offset + config_extension_reserved.len()].copy_from_slice(&config_extension_reserved);
+        offset += config_extension_reserved.len();
+        assert_eq!(offset, WhirlpoolsConfigExtension::LEN);
+
+        // deserialize
+        let deserialized = WhirlpoolsConfigExtension::try_deserialize(&mut config_extension_data.as_ref()).unwrap();
+
+        assert_eq!(config_extension_whirlpools_config, deserialized.whirlpools_config);
+        assert_eq!(config_extension_config_extension_authority, deserialized.config_extension_authority);
+        assert_eq!(config_extension_token_badge_authority, deserialized.token_badge_authority);
+
+        // serialize
+        let mut serialized = Vec::new();
+        deserialized.try_serialize(&mut serialized).unwrap();
+        serialized.extend_from_slice(&config_extension_reserved);
+
+        assert_eq!(serialized.as_slice(), config_extension_data.as_ref());
+    }
+}

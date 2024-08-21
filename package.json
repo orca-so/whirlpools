@@ -18,7 +18,7 @@
     "@types/mocha": "^10.0.7",
     "@types/node": "^22.4.2",
     "@types/sinon": "^17.0.3",
-    "husky": "^9.1.4",
+    "husky": "^9.1.5",
     "lint-staged": "^15.2.9",
     "mocha": "^10.7.3",
     "nx": "^19.6.1",

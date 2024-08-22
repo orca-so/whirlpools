@@ -20,8 +20,8 @@ pub fn compute_swap(
     amount_specified_is_input: bool,
     a_to_b: bool,
 ) -> Result<SwapStepComputation, ErrorCode> {
-    // Some: delta within u64::MAX
-    // None: delta exceeds u64::MAX
+    // Some: delta <= u64::MAX
+    // None: delta >  u64::MAX
     let initial_amount_fixed_delta = try_get_amount_fixed_delta(
         sqrt_price_current,
         sqrt_price_target,

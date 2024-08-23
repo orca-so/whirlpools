@@ -14,6 +14,7 @@ The contract is deployed using verifiable build, so that you can ensure that the
 The program has been audited several times by different security firms.
 * Jan 28th, 2022 - [Kudelski Security](/.audits/2022-01-28.pdf)
 * May 5th, 2022 - [Neodyme](/.audits/2022-05-05.pdf)
+* Aug 21st, 2024 - [OtterSec](/.audits/2024-08-21.pdf)
 
 ## Usage
 

@@ -33,12 +33,22 @@ pub fn swap(
     a_to_b: bool,
     timestamp: u64,
 ) -> Result<PostSwapUpdate> {
-    if !(MIN_SQRT_PRICE_X64..=MAX_SQRT_PRICE_X64).contains(&sqrt_price_limit) {
+    let adjusted_sqrt_price_limit = if sqrt_price_limit == NO_EXPLICIT_SQRT_PRICE_LIMIT {
+        if a_to_b {
+            MIN_SQRT_PRICE_X64
+        } else {
+            MAX_SQRT_PRICE_X64
+        }
+    } else {
+        sqrt_price_limit
+    };
+
+    if !(MIN_SQRT_PRICE_X64..=MAX_SQRT_PRICE_X64).contains(&adjusted_sqrt_price_limit) {
         return Err(ErrorCode::SqrtPriceOutOfBounds.into());
     }
 
-    if a_to_b && sqrt_price_limit > whirlpool.sqrt_price
-        || !a_to_b && sqrt_price_limit < whirlpool.sqrt_price
+    if a_to_b && adjusted_sqrt_price_limit > whirlpool.sqrt_price
+        || !a_to_b && adjusted_sqrt_price_limit < whirlpool.sqrt_price
     {
         return Err(ErrorCode::InvalidSqrtPriceLimitDirection.into());
     }
@@ -65,7 +75,7 @@ pub fn swap(
         whirlpool.fee_growth_global_b
     };
 
-    while amount_remaining > 0 && sqrt_price_limit != curr_sqrt_price {
+    while amount_remaining > 0 && adjusted_sqrt_price_limit != curr_sqrt_price {
         let (next_array_index, next_tick_index) = swap_tick_sequence
             .get_next_initialized_tick_index(
                 curr_tick_index,
@@ -75,7 +85,7 @@ pub fn swap(
             )?;
 
         let (next_tick_sqrt_price, sqrt_price_target) =
-            get_next_sqrt_prices(next_tick_index, sqrt_price_limit, a_to_b);
+            get_next_sqrt_prices(next_tick_index, adjusted_sqrt_price_limit, a_to_b);
 
         let swap_computation = compute_swap(
             amount_remaining,
@@ -180,6 +190,11 @@ pub fn swap(
         }
 
         curr_sqrt_price = swap_computation.next_price;
+    }
+
+    // Reject partial fills if no explicit sqrt price limit is set and trade is exact out mode
+    if amount_remaining > 0 && !amount_specified_is_input && sqrt_price_limit == NO_EXPLICIT_SQRT_PRICE_LIMIT {
+        return Err(ErrorCode::PartialFillError.into());
     }
 
     let (amount_a, amount_b) = if a_to_b == amount_specified_is_input {

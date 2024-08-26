@@ -658,7 +658,7 @@ describe("two-hop swap", () => {
     );
   });
 
-  it("swaps [2] with two-hop swap, amount_specified_is_input=true, second swap price limit", async () => {
+  it("fails swaps [2] with two-hop swap, amount_specified_is_input=true, second swap price limit", async () => {
     const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
     const { tokenAccounts, mintKeys, pools } = aquarium;
 
@@ -701,21 +701,17 @@ describe("two-hop swap", () => {
 
     const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
 
-    await toTx(
-      ctx,
-      WhirlpoolIx.twoHopSwapIx(ctx.program, {
-        ...twoHopQuote,
-        ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
-        tokenAuthority: ctx.wallet.publicKey,
-      }),
-    ).buildAndExecute();
-
-    whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
-    whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
-
-    assert.equal(
-      whirlpoolTwo.getData().sqrtPrice.eq(quote2.sqrtPriceLimit),
-      true,
+    // output amount of swapOne must be equal to input amount of swapTwo
+    await assert.rejects(
+      toTx(
+        ctx,
+        WhirlpoolIx.twoHopSwapIx(ctx.program, {
+          ...twoHopQuote,
+          ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+          tokenAuthority: ctx.wallet.publicKey,
+        }),
+      ).buildAndExecute(),
+      /0x17a3/, // IntermediateTokenAmountMismatch
     );
   });
 

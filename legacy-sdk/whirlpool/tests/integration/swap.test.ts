@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
-import { MathUtil, PDA, Percentage } from "@orca-so/common-sdk";
+import { MathUtil,  Percentage } from "@orca-so/common-sdk";
+import type { PDA } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import BN from "bn.js";
 import Decimal from "decimal.js";
@@ -33,7 +34,7 @@ import {
   initTickArrayRange,
   withdrawPositions,
 } from "../utils/init-utils";
-import { PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 
 describe("swap", () => {
   const provider = anchor.AnchorProvider.local(
@@ -2229,8 +2230,6 @@ describe("swap", () => {
         IGNORE_CACHE,
       );
 
-      const [preA, preB] = await getTokenBalances();
-  
       await assert.rejects(
         toTx(
           ctx,
@@ -2474,8 +2473,6 @@ describe("swap", () => {
         fetcher,
         IGNORE_CACHE,
       );
-
-      const [preA, preB] = await getTokenBalances();
   
       await assert.rejects(
         toTx(

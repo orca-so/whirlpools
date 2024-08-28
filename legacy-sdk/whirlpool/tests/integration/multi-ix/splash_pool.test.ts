@@ -1,20 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
-import { DecimalUtil, Percentage, U64_MAX } from "@orca-so/common-sdk";
-import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import type { AccountMeta, PublicKey } from "@solana/web3.js";
-import { Keypair } from "@solana/web3.js";
+import { DecimalUtil, Percentage } from "@orca-so/common-sdk";
+import type { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
 import type {
-  SwapQuote,
-  TwoHopSwapV2Params,
   WhirlpoolClient,
-  WhirlpoolData,
 } from "../../../src";
 import {
-  MAX_SQRT_PRICE,
-  MEMO_PROGRAM_ADDRESS,
-  MIN_SQRT_PRICE,
   MIN_SQRT_PRICE_BN,
   PDAUtil,
   PriceMath,
@@ -23,26 +15,16 @@ import {
   WhirlpoolIx,
   buildWhirlpoolClient,
   increaseLiquidityQuoteByInputToken,
-  swapQuoteByInputToken,
   swapQuoteByOutputToken,
-  swapQuoteWithParams,
   toTx,
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { defaultConfirmOptions } from "../../utils/const";
 import {
-  buildTestAquariums,
-  getDefaultAquarium,
   initTestPoolWithTokens,
 } from "../../utils/init-utils";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
-import { buildTickArrayData } from "../../utils/testDataTypes";
-import type { SwapV2Params } from "../../../src/instructions";
-import {
-  RemainingAccountsBuilder,
-  RemainingAccountsType,
-} from "../../../src/utils/remaining-accounts-util";
 import { getTokenBalance } from "../../utils";
 
 interface SharedTestContext {

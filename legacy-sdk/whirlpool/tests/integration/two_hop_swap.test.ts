@@ -870,7 +870,7 @@ describe("two-hop swap", () => {
       let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
       let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
-      const [inputToken, intermediaryToken, outputToken] = mintKeys;
+      const [_inputToken, intermediaryToken, outputToken] = mintKeys;
   
       const quoteSecond = await swapQuoteByOutputToken(
         whirlpoolTwo,
@@ -960,7 +960,7 @@ describe("two-hop swap", () => {
       let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
       let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
-      const [inputToken, intermediaryToken, outputToken] = mintKeys;
+      const [_inputToken, intermediaryToken, outputToken] = mintKeys;
   
       // 1 --> 1
       const quoteSecond = await swapQuoteByOutputToken(
@@ -1043,7 +1043,7 @@ describe("two-hop swap", () => {
       let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
       let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
-      const [inputToken, intermediaryToken, outputToken] = mintKeys;
+      const [_inputToken, intermediaryToken, outputToken] = mintKeys;
   
       // 1 --> 1
       const quoteSecond = await swapQuoteByOutputToken(
@@ -1126,7 +1126,7 @@ describe("two-hop swap", () => {
       let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
       let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
 
-      const [inputToken, intermediaryToken, outputToken] = mintKeys;
+      const [inputToken, intermediaryToken, _outputToken] = mintKeys;
         
       // 1000000 --> 1103339
       const quoteFirst = await swapQuoteByInputToken(

@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
 import { MathUtil, Percentage } from "@orca-so/common-sdk";
-import { PDA } from "@orca-so/common-sdk";
+import type { PDA } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";

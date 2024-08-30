@@ -1,13 +1,14 @@
 {
   "name": "@orca-so/whirlpools-client",
   "version": "0.0.1",
+  "description": "Typescript client to interact with Orca's on-chain Whirlpool program.",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "sideEffects": false,
   "type": "module",
   "files": [
     "dist",
-    "LICENSE"
+    "README.md"
   ],
   "scripts": {
     "build": "node ./kinobi.js && tsc",
@@ -24,5 +25,25 @@
     "@solana/web3.js": "^2.0.0-preview.4",
     "kinobi": "^0.21.4",
     "typescript": "^5.5.4"
-  }
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orca-so/whirlpools.git"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "orca_so",
+    "orca",
+    "solana",
+    "typescript",
+    "sdk",
+    "crypto",
+    "dex",
+    "amm"
+  ],
+  "author": "team@orca.so",
+  "bugs": {
+    "url": "https://github.com/orca-so/whirlpools/issues"
+  },
+  "homepage": "https://orca.so"
 }

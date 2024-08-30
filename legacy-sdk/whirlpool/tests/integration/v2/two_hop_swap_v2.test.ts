@@ -2501,6 +2501,7 @@ describe("two_hop_swap_v2", () => {
           ctx,
           WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
             ...twoHopQuote,
+            sqrtPriceLimitOne: MIN_SQRT_PRICE_BN, // Partial fill is allowed
             sqrtPriceLimitTwo: new BN(0), // Partial fill is NOT allowed
             ...getParamsFromPools([pools[0], pools[1]], [true, true], tokenAccounts),
             tokenAuthority: ctx.wallet.publicKey,
@@ -2513,6 +2514,7 @@ describe("two_hop_swap_v2", () => {
         ctx,
         WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
           ...twoHopQuote,
+          sqrtPriceLimitOne: MIN_SQRT_PRICE_BN, // Partial fill is allowed
           sqrtPriceLimitTwo: MIN_SQRT_PRICE_BN, // Partial fill is allowed
           ...getParamsFromPools([pools[0], pools[1]], [true, true], tokenAccounts),
           tokenAuthority: ctx.wallet.publicKey,
@@ -2594,6 +2596,7 @@ describe("two_hop_swap_v2", () => {
           WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
             ...twoHopQuote,
             sqrtPriceLimitOne: new BN(0), // Partial fill is NOT allowed
+            sqrtPriceLimitTwo: MIN_SQRT_PRICE_BN, // Partial fill is allowed
             ...getParamsFromPools([pools[0], pools[1]], [true, true], tokenAccounts),
             tokenAuthority: ctx.wallet.publicKey,
           }),
@@ -2603,7 +2606,7 @@ describe("two_hop_swap_v2", () => {
     });
 
     // Reject partial fill on the first swap by the constraint that first output must be equal to the second input
-    // Pools are safe, but owner consume intermediate tokens unproportionally
+    // This case must be rejected due to vault to vault transfer
     // |-min,T----**-S-| --> |--***T**-S-| (where *: liquidity, S: start, T: end)
     it("fails ExactOut, partial fill on first swap, sqrt_price_limit_one != 0", async () => {
       const aquarium = (await buildTestAquariumsV2(ctx, [{
@@ -2676,7 +2679,8 @@ describe("two_hop_swap_v2", () => {
           ctx,
           WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
             ...twoHopQuote,
-            sqrtPriceLimitTwo: new BN(0), // Partial fill is NOT allowed
+            sqrtPriceLimitOne: MIN_SQRT_PRICE_BN, // Partial fill is allowed
+            sqrtPriceLimitTwo: MIN_SQRT_PRICE_BN, // Partial fill is allowed
             ...getParamsFromPools([pools[0], pools[1]], [true, true], tokenAccounts),
             tokenAuthority: ctx.wallet.publicKey,
           }),
@@ -2895,6 +2899,7 @@ describe("two_hop_swap_v2", () => {
           ctx,
           WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
             ...twoHopQuote,
+            sqrtPriceLimitOne: MIN_SQRT_PRICE_BN, // Partial fill is allowed
             sqrtPriceLimitTwo: PriceMath.tickIndexToSqrtPriceX64(1002), // Partial fill
             ...getParamsFromPools([pools[0], pools[1]], [true, true], tokenAccounts),
             tokenAuthority: ctx.wallet.publicKey,

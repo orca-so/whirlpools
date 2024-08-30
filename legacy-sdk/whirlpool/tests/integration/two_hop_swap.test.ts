@@ -1037,6 +1037,7 @@ describe("two-hop swap", () => {
           ctx,
           WhirlpoolIx.twoHopSwapIx(ctx.program, {
             ...twoHopQuote,
+            sqrtPriceLimitOne: MIN_SQRT_PRICE_BN, // Partial fill is allowed
             sqrtPriceLimitTwo: new BN(0), // Partial fill is NOT allowed
             ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
             tokenAuthority: ctx.wallet.publicKey,
@@ -1049,6 +1050,7 @@ describe("two-hop swap", () => {
         ctx,
         WhirlpoolIx.twoHopSwapIx(ctx.program, {
           ...twoHopQuote,
+          sqrtPriceLimitOne: MIN_SQRT_PRICE_BN, // Partial fill is allowed
           sqrtPriceLimitTwo: MIN_SQRT_PRICE_BN, // Partial fill is allowed
           ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
           tokenAuthority: ctx.wallet.publicKey,
@@ -1130,6 +1132,7 @@ describe("two-hop swap", () => {
           WhirlpoolIx.twoHopSwapIx(ctx.program, {
             ...twoHopQuote,
             sqrtPriceLimitOne: new BN(0), // Partial fill is NOT allowed
+            sqrtPriceLimitTwo: MIN_SQRT_PRICE_BN, // Partial fill is allowed
             ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
             tokenAuthority: ctx.wallet.publicKey,
           }),
@@ -1212,7 +1215,8 @@ describe("two-hop swap", () => {
           ctx,
           WhirlpoolIx.twoHopSwapIx(ctx.program, {
             ...twoHopQuote,
-            sqrtPriceLimitTwo: new BN(0), // Partial fill is NOT allowed
+            sqrtPriceLimitOne: MIN_SQRT_PRICE_BN, // Partial fill is allowed
+            sqrtPriceLimitTwo: MIN_SQRT_PRICE_BN, // Partial fill is allowed
             ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
             tokenAuthority: ctx.wallet.publicKey,
           }),
@@ -1431,6 +1435,7 @@ describe("two-hop swap", () => {
           ctx,
           WhirlpoolIx.twoHopSwapIx(ctx.program, {
             ...twoHopQuote,
+            sqrtPriceLimitOne: MIN_SQRT_PRICE_BN, // Partial fill is allowed
             sqrtPriceLimitTwo: PriceMath.tickIndexToSqrtPriceX64(1002), // Partial fill
             ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
             tokenAuthority: ctx.wallet.publicKey,

@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { Percentage } from "@orca-so/common-sdk";
+import { Percentage, U64_MAX } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
@@ -7,10 +7,13 @@ import type { InitPoolParams } from "../../src";
 import {
   buildWhirlpoolClient,
   MIN_SQRT_PRICE_BN,
+  NO_TOKEN_EXTENSION_CONTEXT,
   PDAUtil,
   PriceMath,
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
+  swapQuoteWithParams,
+  SwapUtils,
   toTx,
   twoHopSwapQuoteFromSwapQuotes,
   WhirlpoolContext,
@@ -828,6 +831,141 @@ describe("two-hop swap", () => {
   });
 
   describe("partial fill", () => {
+    // Partial fill on second swap in ExactOut is allowed
+    // |--***T**-S-| --> |--***T,limit**-S-| (where *: liquidity, S: start, T: end)
+    it("ExactOut, partial fill on second swap", async () => {
+      const aquarium = (await buildTestAquariums(ctx, [{
+        configParams: aqConfig.configParams,
+        initFeeTierParams: aqConfig.initFeeTierParams,
+        initMintParams: aqConfig.initMintParams,
+        initTokenAccParams: [
+          {mintIndex: 0, mintAmount: new BN(1_000_000_000_000_000)},
+          {mintIndex: 1, mintAmount: new BN(1_000_000_000_000_000)},
+          {mintIndex: 2, mintAmount: new BN(1_000_000_000_000_000)},
+        ],
+        initPoolParams: [
+          { ...aqConfig.initPoolParams[0], tickSpacing: 128, initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(1024 + 1) },
+          { ...aqConfig.initPoolParams[1], tickSpacing: 128, initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(1024 + 1) },
+        ],
+        initTickArrayRangeParams: [
+          {
+            poolIndex: 0,
+            startTickIndex: 0,
+            arrayCount: 3,
+            aToB: true,
+          },
+          {
+            poolIndex: 1,
+            startTickIndex: 0,
+            arrayCount: 3,
+            aToB: true,
+          },
+        ],
+        initPositionParams: [
+          {poolIndex: 0, fundParams: [{tickLowerIndex: 512, tickUpperIndex: 1024, liquidityAmount: new BN(1_000_000_000)}]},
+          {poolIndex: 1, fundParams: [{tickLowerIndex: 512, tickUpperIndex: 1024, liquidityAmount: new BN(1_000_000_000)}]},
+        ],
+      }]))[0];
+      const { tokenAccounts, mintKeys, pools } = aquarium;
+
+      const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+      const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+      let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+      let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
+
+      const [_inputToken, intermediaryToken, _outputToken] = mintKeys;
+
+      const quoteParams = {
+        amountSpecifiedIsInput: false,
+        aToB: true,
+        otherAmountThreshold: U64_MAX,
+        tickArrays: await SwapUtils.getTickArrays(
+          whirlpoolTwo.getData().tickCurrentIndex,
+          whirlpoolTwo.getData().tickSpacing,
+          true,
+          ctx.program.programId,
+          whirlpoolTwoKey,
+          ctx.fetcher,
+          IGNORE_CACHE
+        ),
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        whirlpoolData: whirlpoolOne.getData(),
+        tokenAmount: new BN(1_000_000),
+      };
+
+      // 906251 --> 1000000 (end tick: 1004)
+      const quoteSecondWithoutLimit = swapQuoteWithParams({
+        ...quoteParams,
+        sqrtPriceLimit: MIN_SQRT_PRICE_BN,
+      }, Percentage.fromFraction(0, 100));
+      assert.ok(quoteSecondWithoutLimit.estimatedEndTickIndex < 1008);
+
+      // 762627 --> 841645 (end tick: 1008)
+      const quoteSecondWithLimit = swapQuoteWithParams({
+        ...quoteParams,
+        sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(1008),
+      }, Percentage.fromFraction(0, 100));
+      assert.ok(quoteSecondWithLimit.estimatedEndTickIndex == 1008);
+      assert.ok(quoteSecondWithLimit.estimatedAmountOut.lt(quoteSecondWithoutLimit.estimatedAmountOut));
+      assert.ok(quoteSecondWithLimit.estimatedAmountIn.lt(quoteSecondWithoutLimit.estimatedAmountIn));
+
+      // 821218 --> 906251
+      const quoteFirstWithoutLimit = await swapQuoteByOutputToken(
+        whirlpoolOne,
+        intermediaryToken,
+        quoteSecondWithoutLimit.estimatedAmountIn,
+        Percentage.fromFraction(0, 100),
+        ctx.program.programId,
+        fetcher,
+        IGNORE_CACHE,
+      );
+
+      // 690975 --> 762627
+      const quoteFirstWithLimit = await swapQuoteByOutputToken(
+        whirlpoolOne,
+        intermediaryToken,
+        quoteSecondWithLimit.estimatedAmountIn,
+        Percentage.fromFraction(0, 100),
+        ctx.program.programId,
+        fetcher,
+        IGNORE_CACHE,
+      );
+
+      // build without limit
+      const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quoteFirstWithoutLimit, quoteSecondWithoutLimit);
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.twoHopSwapIx(ctx.program, {
+            ...twoHopQuote,
+            amount: quoteSecondWithoutLimit.estimatedAmountOut,
+            sqrtPriceLimitOne: new BN(0), // partial fill on second swap is NOT allowd
+            sqrtPriceLimitTwo: PriceMath.tickIndexToSqrtPriceX64(1008), // partial fill is allowed
+            // -1 to check input amount
+            otherAmountThreshold: quoteFirstWithLimit.estimatedAmountIn.subn(1),
+            ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+            tokenAuthority: ctx.wallet.publicKey,
+          }),
+        ).buildAndExecute(),
+        /0x1795/,  // AmountInAboveMaximum.
+      );
+
+      assert.ok(quoteSecondWithoutLimit.estimatedEndTickIndex > 999);
+      await toTx(
+        ctx,
+        WhirlpoolIx.twoHopSwapIx(ctx.program, {
+          ...twoHopQuote,
+          amount: quoteSecondWithoutLimit.estimatedAmountOut,
+          sqrtPriceLimitOne: new BN(0), // partial fill on second swap is NOT allowd
+          sqrtPriceLimitTwo: PriceMath.tickIndexToSqrtPriceX64(1008), // partial fill is allowed
+          otherAmountThreshold: quoteFirstWithLimit.estimatedAmountIn,
+          ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+          tokenAuthority: ctx.wallet.publicKey,
+        }),
+      ).buildAndExecute();
+    });
+
     // Reject partial fill result
     // |--***T**-S-| --> |-min,T----**-S-| (where *: liquidity, S: start, T: end)
     it("fails ExactOut, partial fill on second swap, sqrt_price_limit_two == 0", async () => {
@@ -1083,9 +1221,144 @@ describe("two-hop swap", () => {
       );
     });
 
+    // Partial fill on the first swap in ExactIn is allowed.
+    // |--***T,limit**-S-| -> |--***T**-S--| (where *: liquidity, S: start, T: end)
+    it("ExactIn, partial fill on first swap", async () => {
+      const aquarium = (await buildTestAquariums(ctx, [{
+        configParams: aqConfig.configParams,
+        initFeeTierParams: aqConfig.initFeeTierParams,
+        initMintParams: aqConfig.initMintParams,
+        initTokenAccParams: [
+          {mintIndex: 0, mintAmount: new BN(1_000_000_000_000_000)},
+          {mintIndex: 1, mintAmount: new BN(1_000_000_000_000_000)},
+          {mintIndex: 2, mintAmount: new BN(1_000_000_000_000_000)},
+        ],
+        initPoolParams: [
+          { ...aqConfig.initPoolParams[0], tickSpacing: 128, initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(1024 + 1) },
+          { ...aqConfig.initPoolParams[1], tickSpacing: 128, initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(1024 + 1) },
+        ],
+        initTickArrayRangeParams: [
+          {
+            poolIndex: 0,
+            startTickIndex: 0,
+            arrayCount: 3,
+            aToB: true,
+          },
+          {
+            poolIndex: 1,
+            startTickIndex: 0,
+            arrayCount: 3,
+            aToB: true,
+          },
+        ],
+        initPositionParams: [
+          {poolIndex: 0, fundParams: [{tickLowerIndex: 512, tickUpperIndex: 1024, liquidityAmount: new BN(1_000_000_000)}]},
+          {poolIndex: 1, fundParams: [{tickLowerIndex: 512, tickUpperIndex: 1024, liquidityAmount: new BN(1_000_000_000)}]},
+        ],
+      }]))[0];
+      const { tokenAccounts, mintKeys, pools } = aquarium;
+
+      const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+      const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+      let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+      let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
+
+      const [_inputToken, intermediaryToken, _outputToken] = mintKeys;
+
+      const quoteParams = {
+        amountSpecifiedIsInput: true,
+        aToB: true,
+        otherAmountThreshold: new BN(0),
+        tickArrays: await SwapUtils.getTickArrays(
+          whirlpoolOne.getData().tickCurrentIndex,
+          whirlpoolOne.getData().tickSpacing,
+          true,
+          ctx.program.programId,
+          whirlpoolOneKey,
+          ctx.fetcher,
+          IGNORE_CACHE
+        ),
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        whirlpoolData: whirlpoolOne.getData(),
+        tokenAmount: new BN(1_000_000),
+      };
+
+      // 1000000 --> 1103339
+      const quoteFirstWithoutLimit = swapQuoteWithParams({
+        ...quoteParams,
+        sqrtPriceLimit: MIN_SQRT_PRICE_BN,
+      }, Percentage.fromFraction(0, 100));
+      assert.ok(quoteFirstWithoutLimit.estimatedEndTickIndex < 1010);
+
+      // 667266 --> 736476
+      const quoteFirstWithLimit = swapQuoteWithParams({
+        ...quoteParams,
+        sqrtPriceLimit: PriceMath.tickIndexToSqrtPriceX64(1010),
+      }, Percentage.fromFraction(0, 100));
+      assert.ok(quoteFirstWithLimit.estimatedEndTickIndex == 1010);
+      assert.ok(quoteFirstWithLimit.estimatedAmountIn.lt(quoteFirstWithoutLimit.estimatedAmountIn));
+      assert.ok(quoteFirstWithLimit.estimatedAmountOut.lt(quoteFirstWithoutLimit.estimatedAmountOut));
+
+      // 1103339 --> 1217224
+      const quoteSecondWithoutLimit = await swapQuoteByInputToken(
+        whirlpoolTwo,
+        intermediaryToken,
+        quoteFirstWithoutLimit.estimatedAmountOut,
+        Percentage.fromFraction(0, 100),
+        ctx.program.programId,
+        fetcher,
+        IGNORE_CACHE,
+      );
+
+      // 736476 --> 812807
+      const quoteSecondWithLimit = await swapQuoteByInputToken(
+        whirlpoolTwo,
+        intermediaryToken,
+        quoteFirstWithLimit.estimatedAmountOut,
+        Percentage.fromFraction(0, 100),
+        ctx.program.programId,
+        fetcher,
+        IGNORE_CACHE,
+      );
+
+      // build without limit
+      const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quoteFirstWithoutLimit, quoteSecondWithoutLimit);
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.twoHopSwapIx(ctx.program, {
+            ...twoHopQuote,
+            amount: quoteFirstWithoutLimit.estimatedAmountIn,
+            sqrtPriceLimitOne: PriceMath.tickIndexToSqrtPriceX64(1010), // partial fill is allowed
+            sqrtPriceLimitTwo: new BN(0), // partial fill on second swap is NOT allowd
+            // +1 to check output amount
+            otherAmountThreshold: quoteSecondWithLimit.estimatedAmountOut.addn(1),
+            ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+            tokenAuthority: ctx.wallet.publicKey,
+          }),
+        ).buildAndExecute(),
+        /0x1794/,  // AmountOutBelowMinimum
+      );
+
+      assert.ok(quoteSecondWithoutLimit.estimatedEndTickIndex > 999);
+      await toTx(
+        ctx,
+        WhirlpoolIx.twoHopSwapIx(ctx.program, {
+          ...twoHopQuote,
+          amount: quoteFirstWithoutLimit.estimatedAmountIn,
+          sqrtPriceLimitOne: PriceMath.tickIndexToSqrtPriceX64(1010), // partial fill is allowed
+          sqrtPriceLimitTwo: new BN(0), // partial fill on second swap is NOT allowd
+          otherAmountThreshold: quoteSecondWithLimit.estimatedAmountOut,
+          ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+          tokenAuthority: ctx.wallet.publicKey,
+      }),
+      ).buildAndExecute();
+    });
+
     // Reject partial fill on the second swap by the constraint that second output must be equal to the first input
     // Pools and owner are safe, but owner will receive unconsumed intermediate tokens
-    // |-S-***T**-| -> |-S-***T,limit**--| (where *: liquidity, S: start, T: end)
+    // |--***T**-S-| -> |--***T,limit**-S--| (where *: liquidity, S: start, T: end)
     it("fails ExactIn, partial fill on second swap", async () => {
       const aquarium = (await buildTestAquariums(ctx, [{
         configParams: aqConfig.configParams,
@@ -1139,7 +1412,7 @@ describe("two-hop swap", () => {
         IGNORE_CACHE,
       );
 
-      // 1103339 1217224
+      // 1103339 --> 1217224
       const quoteSecond = await swapQuoteByInputToken(
         whirlpoolTwo,
         intermediaryToken,

@@ -13,7 +13,7 @@ updates:
     groups:
       program-dependencies:
         applies-to: version-updates
-        update-types: production
+        dependency-type: production
   - package-ecosystem: "cargo"
     directories:
       - "rust-sdk/*"

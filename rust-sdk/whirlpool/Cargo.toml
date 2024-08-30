@@ -6,7 +6,7 @@ documentation = "https://orca-so.github.io/whirlpools/"
 homepage = "https://orca.so"
 repository = "https://github.com/orca-so/whirlpools"
 license = "Apache-2.0"
-keywords =["orca_so", "orca", "solana", "rust", "sdk", "crypto", "defi", "dex", "amm"]
+keywords = ["solana", "crypto", "defi", "dex", "amm"]
 edition = "2021"
 
 [dependencies]

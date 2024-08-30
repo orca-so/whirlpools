@@ -24,7 +24,13 @@
     "url": "git+https://github.com/orca-so/whirlpools.git"
   },
   "license": "Apache-2.0",
-  "keywords": ["solana", "crypto", "defi", "dex", "amm"],
+  "keywords": [
+    "solana",
+    "crypto",
+    "defi",
+    "dex",
+    "amm"
+  ],
   "author": "team@orca.so",
   "bugs": {
     "url": "https://github.com/orca-so/whirlpools/issues"

@@ -10,7 +10,7 @@ jobs:
   npm:
     strategy:
       matrix:
-        package: []
+        package: [client]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
@@ -21,8 +21,8 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          # TODO: Copy over keys from root package.json
           cd ts-sdk/${{ matrix.package }} && yarn version $(basename ${{ github.ref }})
+          # TODO: replace workspace dependencies with fixed version
           yarn install
           yarn build ts-sdk/${{ matrix.package }} --output-style static
           cd ts-sdk/${{ matrix.package }} && npm publish --access public
@@ -32,7 +32,7 @@ jobs:
   cargo:
     strategy:
       matrix:
-        package: []
+        package: [client]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
@@ -43,23 +43,30 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          # deploy cargo
+          sed -i 's/^version = ".*"$/version = "$(basename ${{ github.ref }})"/' rust-sdk/${{ matrix.package }}/Cargo.toml
+          # TODO: replace workspace dependencies with fixed version
+          yarn build rust-sdk/${{ matrix.package }} --output-style static
+          cd rust-sdk/${{ matrix.package }} && cargo publish --allow-dirty
+      env:
+        CRATES_IO_API_TOKEN: ${{ secrets.CRATES_TOKEN }}
 
   verifiable:
-    strategy:
-      matrix:
-        program: []
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - name: Deploy cargo
-      uses: ./.github/actions/anchor
+    - name: Verifiable build
+      run: anchor build --verifiable
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
       with:
-        run: |
-          # verifiable build and add to release
+        name: verifiable-build
+        path: |
+          target/deploy/*.so
+          target/idl/*.json
+        if-no-files-found: error
 
   release:
     needs: [npm, cargo, verifiable]
@@ -68,8 +75,14 @@ jobs:
     permissions:
       contents: write
     steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+      with:
+        name: verifiable-build
+        path: artifacts/
     - name: Create Release
       uses: ncipollo/release-action@v1
       with:
         generateReleaseNotes: true
         allowUpdates: true
+        artifacts: artifacts/

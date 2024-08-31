@@ -3,6 +3,8 @@ use std::convert::TryInto;
 use crate::errors::ErrorCode;
 use crate::math::*;
 
+pub const NO_EXPLICIT_SQRT_PRICE_LIMIT: u128 = 0u128;
+
 #[derive(PartialEq, Debug)]
 pub struct SwapStepComputation {
     pub amount_in: u64,

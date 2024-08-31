@@ -71,7 +71,6 @@ jobs:
 
   release:
     needs: [npm, cargo, idl]
-    if: ${{ always() }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

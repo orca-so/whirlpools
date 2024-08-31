@@ -43,7 +43,7 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          sed -i 's/^version = ".*"$/version = "$(basename ${{ github.ref }})"/' rust-sdk/${{ matrix.package }}/Cargo.toml
+          sed -i 's/^version = ".*"$/version = \"$(basename ${{ github.ref }})\"/' rust-sdk/${{ matrix.package }}/Cargo.toml
           # TODO: replace workspace dependencies with fixed version
           yarn build rust-sdk/${{ matrix.package }} --output-style static
           cd rust-sdk/${{ matrix.package }} && cargo publish --allow-dirty

@@ -60,7 +60,7 @@ jobs:
     - name: Verifiable build
       run: anchor build --verifiable
     - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v4
       with:
         name: verifiable-build
         path: |

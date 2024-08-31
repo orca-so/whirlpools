@@ -48,3 +48,48 @@ mod token_badge_initialize_tests {
         assert_eq!(token_mint, token_badge.token_mint);
     }
 }
+
+#[cfg(test)]
+mod data_layout_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_token_badge_data_layout() {
+        let token_badge_whirlpools_config = Pubkey::new_unique();
+        let token_badge_token_mint = Pubkey::new_unique();
+        let token_badge_reserved = [0u8; 128];
+
+        // manually build the expected data layout
+        let mut token_badge_data = [0u8; TokenBadge::LEN];
+        let mut offset = 0;
+        token_badge_data[offset..offset + 8].copy_from_slice(&TokenBadge::discriminator());
+        offset += 8;
+        token_badge_data[offset..offset + 32]
+            .copy_from_slice(&token_badge_whirlpools_config.to_bytes());
+        offset += 32;
+        token_badge_data[offset..offset + 32].copy_from_slice(&token_badge_token_mint.to_bytes());
+        offset += 32;
+        token_badge_data[offset..offset + token_badge_reserved.len()]
+            .copy_from_slice(&token_badge_reserved);
+        offset += token_badge_reserved.len();
+        assert_eq!(offset, TokenBadge::LEN);
+
+        // deserialize
+        let deserialized = TokenBadge::try_deserialize(&mut token_badge_data.as_ref()).unwrap();
+
+        assert_eq!(
+            token_badge_whirlpools_config,
+            deserialized.whirlpools_config
+        );
+        assert_eq!(token_badge_token_mint, deserialized.token_mint);
+
+        // serialize
+        let mut serialized = Vec::new();
+        deserialized.try_serialize(&mut serialized).unwrap();
+        serialized.extend_from_slice(&token_badge_reserved);
+
+        assert_eq!(serialized.as_slice(), token_badge_data.as_ref());
+    }
+}

@@ -268,3 +268,52 @@ mod position_bundle_open_and_close_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod data_layout_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_position_bundle_data_layout() {
+        let position_bundle_position_bundle_mint = Pubkey::new_unique();
+        let position_bundle_position_bitmap = [0xFFu8; POSITION_BITMAP_USIZE];
+        let position_bundle_reserved = [0u8; 64];
+
+        let mut position_bundle_data = [0u8; PositionBundle::LEN];
+        let mut offset = 0;
+        position_bundle_data[offset..offset + 8].copy_from_slice(&PositionBundle::discriminator());
+        offset += 8;
+        position_bundle_data[offset..offset + 32]
+            .copy_from_slice(&position_bundle_position_bundle_mint.to_bytes());
+        offset += 32;
+        position_bundle_data[offset..offset + POSITION_BITMAP_USIZE]
+            .copy_from_slice(&position_bundle_position_bitmap);
+        offset += POSITION_BITMAP_USIZE;
+        position_bundle_data[offset..offset + position_bundle_reserved.len()]
+            .copy_from_slice(&position_bundle_reserved);
+        offset += position_bundle_reserved.len();
+        assert_eq!(offset, PositionBundle::LEN);
+
+        // deserialize
+        let deserialized =
+            PositionBundle::try_deserialize(&mut position_bundle_data.as_ref()).unwrap();
+
+        assert_eq!(
+            position_bundle_position_bundle_mint,
+            deserialized.position_bundle_mint
+        );
+        assert_eq!(
+            position_bundle_position_bitmap,
+            deserialized.position_bitmap
+        );
+
+        // serialize
+        let mut serialized = Vec::new();
+        deserialized.try_serialize(&mut serialized).unwrap();
+        serialized.extend_from_slice(&position_bundle_reserved);
+
+        assert_eq!(serialized.as_slice(), position_bundle_data.as_ref());
+    }
+}

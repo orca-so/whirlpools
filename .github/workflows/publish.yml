@@ -43,46 +43,46 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          sed -i 's/^version = ".*"$/version = "$(basename ${{ github.ref }})"/' rust-sdk/${{ matrix.package }}/Cargo.toml
+          sed -i 's/^version = ".*"$/version = \"$(basename ${{ github.ref }})\"/' rust-sdk/${{ matrix.package }}/Cargo.toml
           # TODO: replace workspace dependencies with fixed version
           yarn build rust-sdk/${{ matrix.package }} --output-style static
           cd rust-sdk/${{ matrix.package }} && cargo publish --allow-dirty
       env:
         CRATES_IO_API_TOKEN: ${{ secrets.CRATES_TOKEN }}
 
-  verifiable:
+  idl:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
-    - name: Verifiable build
-      run: anchor build --verifiable
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v2
+    - name: Build idl
+      uses: ./.github/actions/anchor
       with:
-        name: verifiable-build
-        path: |
-          target/deploy/*.so
-          target/idl/*.json
+        run: |
+          anchor build
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v4
+      with:
+        name: idl
+        path: target/idl/*.json
         if-no-files-found: error
 
   release:
-    needs: [npm, cargo, verifiable]
-    if: ${{ always() }}
+    needs: [npm, cargo, idl]
     runs-on: ubuntu-latest
     permissions:
       contents: write
     steps:
     - name: Download artifacts
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v4
       with:
-        name: verifiable-build
-        path: artifacts/
+        name: idl
+        path: idl
     - name: Create Release
       uses: ncipollo/release-action@v1
       with:
         generateReleaseNotes: true
         allowUpdates: true
-        artifacts: artifacts/
+        artifacts: idl

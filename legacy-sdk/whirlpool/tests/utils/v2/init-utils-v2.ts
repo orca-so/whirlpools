@@ -783,11 +783,17 @@ export async function fundPositionsV2(
           await getExtraAccountMetasForTestTransferHookProgram(
             ctx.provider,
             poolInitInfo.tokenMintA,
+            tokenAccountA,
+            tokenVaultAKeypair.publicKey,
+            ctx.provider.wallet.publicKey,
           );
         const tokenTransferHookAccountsB =
           await getExtraAccountMetasForTestTransferHookProgram(
             ctx.provider,
             poolInitInfo.tokenMintB,
+            tokenAccountB,
+            tokenVaultBKeypair.publicKey,
+            ctx.provider.wallet.publicKey,            
           );
 
         await toTx(

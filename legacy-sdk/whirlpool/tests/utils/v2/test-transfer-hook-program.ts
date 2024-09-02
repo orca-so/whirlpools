@@ -14,15 +14,18 @@ import {
 export async function getExtraAccountMetasForTestTransferHookProgram(
   provider: AnchorProvider,
   mint: web3.PublicKey,
+  source: web3.PublicKey,
+  destination: web3.PublicKey,
+  owner: web3.PublicKey,
 ): Promise<AccountMeta[] | undefined> {
   const dummy = web3.PublicKey.default;
   return getExtraAccountMetasForHookProgram(
     provider,
     TEST_TRANSFER_HOOK_PROGRAM_ID,
-    dummy, // not used to derive addresses
+    source,
     mint,
-    dummy, // not used to derive addresses
-    dummy, // not used to derive addresses
+    destination,
+    owner,
     0, // not used to derive addresses
   );
 }

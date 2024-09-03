@@ -41,7 +41,7 @@ import {
 } from "../../../utils/v2/init-utils-v2";
 import { createTokenAccountV2 } from "../../../utils/v2/token-2022";
 import type { AccountMeta } from "@solana/web3.js";
-import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import type { InitAquariumV2Params } from "../../../utils/v2/aquarium-v2";
 import {

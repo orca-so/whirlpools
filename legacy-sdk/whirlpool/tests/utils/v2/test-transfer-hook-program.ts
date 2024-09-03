@@ -18,7 +18,6 @@ export async function getExtraAccountMetasForTestTransferHookProgram(
   destination: web3.PublicKey,
   owner: web3.PublicKey,
 ): Promise<AccountMeta[] | undefined> {
-  const dummy = web3.PublicKey.default;
   return getExtraAccountMetasForHookProgram(
     provider,
     TEST_TRANSFER_HOOK_PROGRAM_ID,

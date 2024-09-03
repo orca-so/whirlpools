@@ -80,7 +80,7 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
             token_vault.to_account_info(),
             authority.to_account_info(),
             amount,
-            &transfer_hook_accounts.clone().unwrap(),
+            transfer_hook_accounts.as_ref().unwrap(),
         )?;
     }
 
@@ -159,7 +159,7 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
             token_vault.to_account_info(),
             whirlpool.to_account_info(),
             amount,
-            &transfer_hook_accounts.clone().unwrap(),
+            transfer_hook_accounts.as_ref().unwrap(),
         )?;
     }
 

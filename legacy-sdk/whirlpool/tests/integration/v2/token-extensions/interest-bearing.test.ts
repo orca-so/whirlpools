@@ -1,5 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
+import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import type {
@@ -20,7 +21,7 @@ import {
   fundPositionsV2,
   initTestPoolWithTokensV2,
 } from "../../../utils/v2/init-utils-v2";
-import { Keypair, type PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
 import { amountToUiAmount, updateRateInterestBearingMint } from "@solana/spl-token";
@@ -34,8 +35,7 @@ describe("TokenExtension/InterestBearing", () => {
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
 
-  // HACK: use NodeWallet.payer field
-  const payer = ctx.wallet["payer"] as Keypair;
+  const payer = (ctx.wallet as NodeWallet).payer;
 
   async function rawAmountToUIAmount(mint: PublicKey, rawAmount: BN): Promise<string> {
     const result = await amountToUiAmount(ctx.connection, payer, mint, rawAmount.toNumber(), TEST_TOKEN_2022_PROGRAM_ID);

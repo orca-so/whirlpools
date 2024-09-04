@@ -48,10 +48,11 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
 
     let mut instruction = spl_token_2022::instruction::transfer_checked(
         token_program.key,
-        &token_owner_account.key(), // from
+        // owner to vault
+        &token_owner_account.key(), // from (owner account)
         &token_mint.key(),          // mint
-        &token_vault.key(),         // to
-        authority.key,              // authority
+        &token_vault.key(),         // to (vault account)
+        authority.key,              // authority (owner)
         &[],
         amount,
         token_mint.decimals,
@@ -59,10 +60,11 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
 
     let mut account_infos = vec![
         token_program.to_account_info(),
-        token_owner_account.to_account_info(),
-        token_mint.to_account_info(),
-        token_vault.to_account_info(),
-        authority.to_account_info(),
+        // owner to vault
+        token_owner_account.to_account_info(), // from (owner account)
+        token_mint.to_account_info(),          // mint
+        token_vault.to_account_info(),         // to (vault account)
+        authority.to_account_info(),           // authority (owner)
     ];
 
     // TransferHook extension
@@ -75,10 +77,11 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
             &mut instruction,
             &mut account_infos,
             &hook_program_id,
-            token_owner_account.to_account_info(),
-            token_mint.to_account_info(),
-            token_vault.to_account_info(),
-            authority.to_account_info(),
+            // owner to vault
+            token_owner_account.to_account_info(), // from (owner account)
+            token_mint.to_account_info(), // mint
+            token_vault.to_account_info(), // to (vault account)
+            authority.to_account_info(), // authority (owner)
             amount,
             transfer_hook_accounts.as_ref().unwrap(),
         )?;
@@ -127,10 +130,11 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
 
     let mut instruction = spl_token_2022::instruction::transfer_checked(
         token_program.key,
-        &token_vault.key(),         // from
+        // vault to owner
+        &token_vault.key(),         // from (vault account)
         &token_mint.key(),          // mint
-        &token_owner_account.key(), // to
-        &whirlpool.key(),           // authority
+        &token_owner_account.key(), // to (owner account)
+        &whirlpool.key(),           // authority (pool)
         &[],
         amount,
         token_mint.decimals,
@@ -138,10 +142,11 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
 
     let mut account_infos = vec![
         token_program.to_account_info(),
-        token_vault.to_account_info(),
-        token_mint.to_account_info(),
-        token_owner_account.to_account_info(),
-        whirlpool.to_account_info(),
+        // vault to owner
+        token_vault.to_account_info(), // from (vault account)
+        token_mint.to_account_info(), // mint
+        token_owner_account.to_account_info(), // to (owner account)
+        whirlpool.to_account_info(), // authority (pool)
     ];
 
     // TransferHook extension
@@ -154,10 +159,11 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
             &mut instruction,
             &mut account_infos,
             &hook_program_id,
-            token_owner_account.to_account_info(),
-            token_mint.to_account_info(),
-            token_vault.to_account_info(),
-            whirlpool.to_account_info(),
+            // vault to owner
+            token_vault.to_account_info(), // from (vault account)
+            token_mint.to_account_info(), // mint
+            token_owner_account.to_account_info(), // to (owner account)
+            whirlpool.to_account_info(), // authority (pool)
             amount,
             transfer_hook_accounts.as_ref().unwrap(),
         )?;

@@ -11,6 +11,8 @@ jobs:
     strategy:
       matrix:
         package: [client]
+      max-parallel: 1
+      fail-fast: true
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
@@ -36,6 +38,8 @@ jobs:
     strategy:
       matrix:
         package: [client]
+      max-parallel: 1
+      fail-fast: true
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository

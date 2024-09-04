@@ -1,6 +1,14 @@
 [package]
 name = "orca_whirlpools_client"
 version = "0.1.0"
+description = "Rust client to interact with Orca's on-chain Whirlpool program."
+include = ["src/*"]
+documentation = "https://orca-so.github.io/whirlpools/"
+homepage = "https://orca.so"
+repository = "https://github.com/orca-so/whirlpools"
+license = "Apache-2.0"
+keywords = ["solana", "crypto", "defi", "dex", "amm"]
+authors = ["team@orca.so"]
 edition = "2021"
 
 [features]

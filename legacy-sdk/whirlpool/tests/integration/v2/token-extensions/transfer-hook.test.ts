@@ -41,7 +41,7 @@ import {
 } from "../../../utils/v2/init-utils-v2";
 import { createTokenAccountV2 } from "../../../utils/v2/token-2022";
 import type { AccountMeta } from "@solana/web3.js";
-import { ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import type { InitAquariumV2Params } from "../../../utils/v2/aquarium-v2";
 import {
@@ -126,15 +126,41 @@ describe("TokenExtension/TransferHook", () => {
       );
 
       // TransferHook
-      tokenTransferHookAccountsA =
+      const tokenTransferHookAccountsAForAToB =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // owner to vault
           tokenMintA,
+          tokenAccountA,
+          tokenVaultAKeypair.publicKey,
+          ctx.wallet.publicKey,
         );
-      tokenTransferHookAccountsB =
+      const tokenTransferHookAccountsBForAToB =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // vault to owner
           tokenMintB,
+          tokenVaultBKeypair.publicKey,
+          tokenAccountB,
+          whirlpoolPda.publicKey,
+        );
+      const tokenTransferHookAccountsAForBToA =
+        await getExtraAccountMetasForTestTransferHookProgram(
+          provider,
+          // vault to owner
+          tokenMintA,
+          tokenVaultAKeypair.publicKey,
+          tokenAccountA,
+          whirlpoolPda.publicKey,
+        );
+      const tokenTransferHookAccountsBForBToA =
+        await getExtraAccountMetasForTestTransferHookProgram(
+          provider,
+          // owner to vault
+          tokenMintB,
+          tokenAccountB,
+          tokenVaultBKeypair.publicKey,
+          ctx.wallet.publicKey,
         );
 
       // Accrue fees in token A
@@ -160,8 +186,8 @@ describe("TokenExtension/TransferHook", () => {
           tickArray1: tickArrayPda.publicKey,
           tickArray2: tickArrayPda.publicKey,
           oracle: oraclePda.publicKey,
-          tokenTransferHookAccountsA, // TransferHook
-          tokenTransferHookAccountsB, // TransferHook
+          tokenTransferHookAccountsA: tokenTransferHookAccountsAForAToB, // TransferHook
+          tokenTransferHookAccountsB: tokenTransferHookAccountsBForAToB, // TransferHook
         }),
       )
         .prependInstruction(useMaxCU())
@@ -190,8 +216,8 @@ describe("TokenExtension/TransferHook", () => {
           tickArray1: tickArrayPda.publicKey,
           tickArray2: tickArrayPda.publicKey,
           oracle: oraclePda.publicKey,
-          tokenTransferHookAccountsA, // TransferHook
-          tokenTransferHookAccountsB, // TransferHook
+          tokenTransferHookAccountsA: tokenTransferHookAccountsAForBToA, // TransferHook
+          tokenTransferHookAccountsB: tokenTransferHookAccountsBForBToA, // TransferHook
         }),
       )
         .prependInstruction(useMaxCU())
@@ -233,6 +259,26 @@ describe("TokenExtension/TransferHook", () => {
         tokenMintB,
         provider.wallet.publicKey,
       );
+
+      // TransferHook
+      tokenTransferHookAccountsA =
+        await getExtraAccountMetasForTestTransferHookProgram(
+          provider,
+          // vault to owner
+          tokenMintA,
+          tokenVaultAKeypair.publicKey,
+          feeAccountA,
+          whirlpoolPda.publicKey,
+        );
+      tokenTransferHookAccountsB =
+        await getExtraAccountMetasForTestTransferHookProgram(
+          provider,
+          // vault to owner
+          tokenMintB,
+          tokenVaultBKeypair.publicKey,
+          feeAccountB,
+          whirlpoolPda.publicKey,
+        );
     });
 
     it("collect_fees_v2: with transfer hook", async () => {
@@ -276,7 +322,9 @@ describe("TokenExtension/TransferHook", () => {
           tokenTransferHookAccountsA, // TransferHook
           tokenTransferHookAccountsB, // TransferHook
         }),
-      ).buildAndExecute();
+      )
+      .prependInstruction(useMaxCU())
+      .buildAndExecute();
       const feeBalanceA = await getTokenBalance(provider, feeAccountA);
       const feeBalanceB = await getTokenBalance(provider, feeAccountB);
       assert.ok(new BN(feeBalanceA).gtn(0));
@@ -338,7 +386,9 @@ describe("TokenExtension/TransferHook", () => {
           tokenTransferHookAccountsA: undefined, // TransferHook
           tokenTransferHookAccountsB: undefined, // TransferHook
         }),
-      ).buildAndExecute();
+      )
+      .prependInstruction(useMaxCU())
+      .buildAndExecute();
       const feeBalanceA = await getTokenBalance(provider, feeAccountA);
       const feeBalanceB = await getTokenBalance(provider, feeAccountB);
       assert.ok(new BN(feeBalanceA).gtn(0));
@@ -390,7 +440,9 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA: undefined, // TransferHook (not provided)
             tokenTransferHookAccountsB, // TransferHook
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
     });
@@ -428,7 +480,9 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA, // TransferHook
             tokenTransferHookAccountsB: undefined, // TransferHook (not provided)
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
     });
@@ -470,14 +524,16 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
             tokenTransferHookAccountsB, // TransferHook
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         // Errors on tlv-account-resolution
         // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/libraries/tlv-account-resolution/src/error.rs#L6
         /0xa261c2c0/, // IncorrectAccount (2724315840)
       );
     });
 
-    it("collect_fees_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(ExtraAccountMetas)", async () => {
+    it("collect_fees_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(account_order_verifier)", async () => {
       const {
         poolInitInfo: {
           whirlpoolPda,
@@ -491,9 +547,12 @@ describe("TokenExtension/TransferHook", () => {
         positions,
       } = fixture.getInfos();
 
-      // ExtraAccountMetas is missing
+      // account_order_verifier account is missing
       const insufficientTransferHookAccountsA = [
+        // counter_account
         ...tokenTransferHookAccountsA!.slice(0, 1),
+        // skip account_order_verifier
+        // extra account metas, hook program
         ...tokenTransferHookAccountsA!.slice(2),
       ];
 
@@ -516,7 +575,60 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
             tokenTransferHookAccountsB, // TransferHook
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
+        // Errors on tlv-account-resolution
+        // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/libraries/tlv-account-resolution/src/error.rs#L6
+        /0xa261c2c0/, // IncorrectAccount (2724315840)
+      );
+    });
+
+    it("collect_fees_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(ExtraAccountMetas)", async () => {
+      const {
+        poolInitInfo: {
+          whirlpoolPda,
+          tokenVaultAKeypair,
+          tokenVaultBKeypair,
+          tokenMintA,
+          tokenMintB,
+          tokenProgramA,
+          tokenProgramB,
+        },
+        positions,
+      } = fixture.getInfos();
+
+      // ExtraAccountMetas is missing
+      const insufficientTransferHookAccountsA = [
+        // counter_account, account_order_verifier
+        ...tokenTransferHookAccountsA!.slice(0, 2),
+        // skip extra account metas
+        // hook program
+        ...tokenTransferHookAccountsA!.slice(3),
+      ];
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+            whirlpool: whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positions[0].publicKey,
+            positionTokenAccount: positions[0].tokenAccount,
+            tokenMintA,
+            tokenMintB,
+            tokenProgramA,
+            tokenProgramB,
+            tokenOwnerAccountA: feeAccountA,
+            tokenOwnerAccountB: feeAccountB,
+            tokenVaultA: tokenVaultAKeypair.publicKey,
+            tokenVaultB: tokenVaultBKeypair.publicKey,
+            tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
+            tokenTransferHookAccountsB, // TransferHook
+          }),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         // Errors on transfer-hook-interface
         // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/token/transfer-hook/interface/src/error.rs#L6
         /0x7dc8348c/, // IncorrectAccount (2110272652)
@@ -539,7 +651,7 @@ describe("TokenExtension/TransferHook", () => {
 
       // HookProgram is missing
       const insufficientTransferHookAccountsA =
-        tokenTransferHookAccountsA!.slice(0, 2);
+        tokenTransferHookAccountsA!.slice(0, 3);
 
       await assert.rejects(
         toTx(
@@ -560,7 +672,9 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
             tokenTransferHookAccountsB, // TransferHook
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         // Errors on transfer-hook-interface
         // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/token/transfer-hook/interface/src/error.rs#L6
         /0x7dc8348c/, // IncorrectAccount (2110272652)
@@ -622,7 +736,9 @@ describe("TokenExtension/TransferHook", () => {
           instructions: [ix],
           cleanupInstructions: [],
           signers: [],
-        }).buildAndExecute(),
+        })
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a0/, // RemainingAccountsInvalidSlice
       );
     });
@@ -682,7 +798,9 @@ describe("TokenExtension/TransferHook", () => {
           instructions: [ix],
           cleanupInstructions: [],
           signers: [],
-        }).buildAndExecute(),
+        })
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a1/, // RemainingAccountsInsufficient
       );
     });
@@ -742,7 +860,9 @@ describe("TokenExtension/TransferHook", () => {
           instructions: [ix],
           cleanupInstructions: [],
           signers: [],
-        }).buildAndExecute(),
+        })
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a5/, // RemainingAccountsDuplicatedAccountsType
       );
     });
@@ -802,7 +922,9 @@ describe("TokenExtension/TransferHook", () => {
           instructions: [ix],
           cleanupInstructions: [],
           signers: [],
-        }).buildAndExecute(),
+        })
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a5/, // RemainingAccountsDuplicatedAccountsType
       );
     });
@@ -851,6 +973,7 @@ describe("TokenExtension/TransferHook", () => {
         }),
       )
         .addSigner(collectProtocolFeesAuthorityKeypair)
+        .prependInstruction(useMaxCU())
         .buildAndExecute();
       const feeBalanceA = await getTokenBalance(provider, feeAccountA);
       const feeBalanceB = await getTokenBalance(provider, feeAccountB);
@@ -905,6 +1028,7 @@ describe("TokenExtension/TransferHook", () => {
           }),
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
+          .prependInstruction(useMaxCU())
           .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
@@ -946,6 +1070,7 @@ describe("TokenExtension/TransferHook", () => {
           }),
         )
           .addSigner(collectProtocolFeesAuthorityKeypair)
+          .prependInstruction(useMaxCU())
           .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
@@ -1018,7 +1143,9 @@ describe("TokenExtension/TransferHook", () => {
           tickArrayLower: positions[0].tickArrayLower,
           tickArrayUpper: positions[0].tickArrayUpper,
         }),
-      ).buildAndExecute();
+      )
+      .prependInstruction(useMaxCU())
+      .buildAndExecute();
 
       // Generate collect reward expectation
       const whirlpoolData = (await fetcher.getPool(
@@ -1060,10 +1187,14 @@ describe("TokenExtension/TransferHook", () => {
       );
 
       tokenTransferHookAccounts = await Promise.all(
-        rewards.map((reward) => {
+        rewards.map((reward, i) => {
           return getExtraAccountMetasForTestTransferHookProgram(
             provider,
+            // vault to owner
             reward.rewardMint,
+            reward.rewardVaultKeypair.publicKey,
+            rewardAccounts[i],
+            whirlpoolPda.publicKey,  
           );
         }),
       );
@@ -1096,7 +1227,9 @@ describe("TokenExtension/TransferHook", () => {
             rewardIndex: i,
             rewardTransferHookAccounts: tokenTransferHookAccounts[i], // TransferHook
           }),
-        ).buildAndExecute();
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute();
         const rewardBalance = await getTokenBalance(
           provider,
           rewardAccounts[i],
@@ -1136,7 +1269,9 @@ describe("TokenExtension/TransferHook", () => {
               rewardIndex: i,
               rewardTransferHookAccounts: undefined, // TransferHook (not provided)
             }),
-          ).buildAndExecute(),
+          )
+          .prependInstruction(useMaxCU())
+          .buildAndExecute(),
           /0x17a2/, // NoExtraAccountsForTransferHook
         );
       }
@@ -1187,7 +1322,9 @@ describe("TokenExtension/TransferHook", () => {
             instructions: [ix],
             cleanupInstructions: [],
             signers: [],
-          }).buildAndExecute(),
+          })
+          .prependInstruction(useMaxCU())
+          .buildAndExecute(),
           /0x17a5/, // RemainingAccountsDuplicatedAccountsType
         );
       }
@@ -1219,12 +1356,20 @@ describe("TokenExtension/TransferHook", () => {
       tokenTransferHookAccountsA =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // owner to vault
           poolInitInfo.tokenMintA,
+          fixture.getInfos().tokenAccountA,
+          poolInitInfo.tokenVaultAKeypair.publicKey,
+          ctx.wallet.publicKey,
         );
       tokenTransferHookAccountsB =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // owner to vault
           poolInitInfo.tokenMintB,
+          fixture.getInfos().tokenAccountB,
+          poolInitInfo.tokenVaultBKeypair.publicKey,
+          ctx.wallet.publicKey,
         );
     });
 
@@ -1282,7 +1427,9 @@ describe("TokenExtension/TransferHook", () => {
           tokenTransferHookAccountsA, // TransferHook
           tokenTransferHookAccountsB, // TransferHook
         }),
-      ).buildAndExecute();
+      )
+      .prependInstruction(useMaxCU())
+      .buildAndExecute();
 
       const postVaultBalanceA = await getTokenBalance(
         provider,
@@ -1372,7 +1519,9 @@ describe("TokenExtension/TransferHook", () => {
           tokenTransferHookAccountsA: undefined, // TransferHook
           tokenTransferHookAccountsB: undefined, // TransferHook
         }),
-      ).buildAndExecute();
+      )
+      .prependInstruction(useMaxCU())
+      .buildAndExecute();
 
       const postVaultBalanceA = await getTokenBalance(
         provider,
@@ -1434,7 +1583,9 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA: undefined, // TransferHook (not provided)
             tokenTransferHookAccountsB, // TransferHook
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
     });
@@ -1476,7 +1627,9 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA, // TransferHook
             tokenTransferHookAccountsB: undefined, // TransferHook (not provided)
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
     });
@@ -1522,14 +1675,16 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
             tokenTransferHookAccountsB, // TransferHook
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         // Errors on tlv-account-resolution
         // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/libraries/tlv-account-resolution/src/error.rs#L6
         /0xa261c2c0/, // IncorrectAccount (2724315840)
       );
     });
 
-    it("increase_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(ExtraAccountMetas)", async () => {
+    it("increase_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(account_order_verifier)", async () => {
       const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
         fixture.getInfos();
       const positionInitInfo = positions[0];
@@ -1542,9 +1697,12 @@ describe("TokenExtension/TransferHook", () => {
         tokenAmount,
       );
 
-      // ExtraAccountMetas is missing
+      // account_order_verifier account is missing
       const insufficientTransferHookAccountsA = [
+        // counter_account
         ...tokenTransferHookAccountsA!.slice(0, 1),
+        // skip account_order_verifier
+        // extra account metas, hook program
         ...tokenTransferHookAccountsA!.slice(2),
       ];
 
@@ -1572,14 +1730,16 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
             tokenTransferHookAccountsB, // TransferHook
           }),
-        ).buildAndExecute(),
-        // Errors on transfer-hook-interface
-        // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/token/transfer-hook/interface/src/error.rs#L6
-        /0x7dc8348c/, // IncorrectAccount (2110272652)
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
+        // Errors on tlv-account-resolution
+        // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/libraries/tlv-account-resolution/src/error.rs#L6
+        /0xa261c2c0/, // IncorrectAccount (2724315840)
       );
     });
 
-    it("increase_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(HookProgram)", async () => {
+    it("increase_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(ExtraAccountMetas)", async () => {
       const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
         fixture.getInfos();
       const positionInitInfo = positions[0];
@@ -1592,9 +1752,14 @@ describe("TokenExtension/TransferHook", () => {
         tokenAmount,
       );
 
-      // HookProgram is missing
-      const insufficientTransferHookAccountsA =
-        tokenTransferHookAccountsA!.slice(0, 2);
+      // ExtraAccountMetas is missing
+      const insufficientTransferHookAccountsA = [
+        // counter_account, account_order_verifier
+        ...tokenTransferHookAccountsA!.slice(0, 2),
+        // skip extra account metas
+        // hook program
+        ...tokenTransferHookAccountsA!.slice(3),
+      ];
 
       await assert.rejects(
         toTx(
@@ -1620,7 +1785,59 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
             tokenTransferHookAccountsB, // TransferHook
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
+        // Errors on transfer-hook-interface
+        // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/token/transfer-hook/interface/src/error.rs#L6
+        /0x7dc8348c/, // IncorrectAccount (2110272652)
+      );
+    });
+
+    it("increase_liquidity_v2: [Fail] with transfer hook, but extra accounts provided for A is insufficient(HookProgram)", async () => {
+      const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+        fixture.getInfos();
+      const positionInitInfo = positions[0];
+
+      const tokenAmount = toTokenAmount(1_000_000, 1_000_000);
+      const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
+        currTick,
+        tickLowerIndex,
+        tickUpperIndex,
+        tokenAmount,
+      );
+
+      // HookProgram is missing
+      const insufficientTransferHookAccountsA =
+        tokenTransferHookAccountsA!.slice(0, 3);
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
+            liquidityAmount,
+            tokenMaxA: tokenAmount.tokenA,
+            tokenMaxB: tokenAmount.tokenB,
+            whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+            positionAuthority: provider.wallet.publicKey,
+            position: positionInitInfo.publicKey,
+            positionTokenAccount: positionInitInfo.tokenAccount,
+            tokenMintA: poolInitInfo.tokenMintA,
+            tokenMintB: poolInitInfo.tokenMintB,
+            tokenProgramA: poolInitInfo.tokenProgramA,
+            tokenProgramB: poolInitInfo.tokenProgramB,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+            tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+            tickArrayLower: positionInitInfo.tickArrayLower,
+            tickArrayUpper: positionInitInfo.tickArrayUpper,
+            tokenTransferHookAccountsA: insufficientTransferHookAccountsA,
+            tokenTransferHookAccountsB, // TransferHook
+          }),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         // Errors on transfer-hook-interface
         // https://github.com/solana-labs/solana-program-library/blob/dbf609206a60ed5698644f4840ddbd117d2c83d8/token/transfer-hook/interface/src/error.rs#L6
         /0x7dc8348c/, // IncorrectAccount (2110272652)
@@ -1693,12 +1910,20 @@ describe("TokenExtension/TransferHook", () => {
       tokenTransferHookAccountsA =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // vault to owner
           poolInitInfo.tokenMintA,
+          poolInitInfo.tokenVaultAKeypair.publicKey,
+          destAccountA,
+          poolInitInfo.whirlpoolPda.publicKey,
         );
       tokenTransferHookAccountsB =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // vault to owner
           poolInitInfo.tokenMintB,
+          poolInitInfo.tokenVaultBKeypair.publicKey,
+          destAccountB,
+          poolInitInfo.whirlpoolPda.publicKey,
         );
     });
 
@@ -1735,7 +1960,9 @@ describe("TokenExtension/TransferHook", () => {
           tokenTransferHookAccountsA, // TransferHook
           tokenTransferHookAccountsB, // TransferHook
         }),
-      ).buildAndExecute();
+      )
+      .prependInstruction(useMaxCU())
+      .buildAndExecute();
       const destBalanceA = await getTokenBalance(provider, destAccountA);
       const destBalanceB = await getTokenBalance(provider, destAccountB);
       assert.ok(new BN(destBalanceA).gtn(0));
@@ -1778,7 +2005,9 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA: undefined, // TransferHook (not provided)
             tokenTransferHookAccountsB, // TransferHook
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
     });
@@ -1808,7 +2037,9 @@ describe("TokenExtension/TransferHook", () => {
             tokenTransferHookAccountsA, // TransferHook
             tokenTransferHookAccountsB: undefined, // TransferHook (not provided)
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
     });
@@ -1822,8 +2053,10 @@ describe("TokenExtension/TransferHook", () => {
     let oraclePubkey: PublicKey;
     let quoteAToB: SwapQuote;
     let quoteBToA: SwapQuote;
-    let tokenTransferHookAccountsA: AccountMeta[] | undefined;
-    let tokenTransferHookAccountsB: AccountMeta[] | undefined;
+    let tokenTransferHookAccountsAForAToB: AccountMeta[] | undefined;
+    let tokenTransferHookAccountsBForAToB: AccountMeta[] | undefined;
+    let tokenTransferHookAccountsAForBToA: AccountMeta[] | undefined;
+    let tokenTransferHookAccountsBForBToA: AccountMeta[] | undefined;
 
     beforeEach(async () => {
       const init = await initTestPoolWithTokensV2(
@@ -1929,15 +2162,41 @@ describe("TokenExtension/TransferHook", () => {
       );
 
       // TransferHook
-      tokenTransferHookAccountsA =
+      tokenTransferHookAccountsAForAToB =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // owner to vault
           poolInitInfo.tokenMintA,
+          tokenAccountA,
+          poolInitInfo.tokenVaultAKeypair.publicKey,
+          ctx.wallet.publicKey,
         );
-      tokenTransferHookAccountsB =
+      tokenTransferHookAccountsBForAToB =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // vault to owner
           poolInitInfo.tokenMintB,
+          poolInitInfo.tokenVaultBKeypair.publicKey,
+          tokenAccountB,
+          whirlpoolPda.publicKey,
+        );
+      tokenTransferHookAccountsAForBToA =
+        await getExtraAccountMetasForTestTransferHookProgram(
+          provider,
+          // vault to owner
+          poolInitInfo.tokenMintA,
+          poolInitInfo.tokenVaultAKeypair.publicKey,
+          tokenAccountA,
+          whirlpoolPda.publicKey,
+        );
+      tokenTransferHookAccountsBForBToA =
+        await getExtraAccountMetasForTestTransferHookProgram(
+          provider,
+          // owner to vault
+          poolInitInfo.tokenMintB,
+          tokenAccountB,
+          poolInitInfo.tokenVaultBKeypair.publicKey,
+          ctx.wallet.publicKey,
         );
     });
 
@@ -1966,10 +2225,12 @@ describe("TokenExtension/TransferHook", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePubkey,
-          tokenTransferHookAccountsA, // TransferHook
-          tokenTransferHookAccountsB, // TransferHook
+          tokenTransferHookAccountsA: tokenTransferHookAccountsAForAToB, // TransferHook
+          tokenTransferHookAccountsB: tokenTransferHookAccountsBForAToB, // TransferHook
         }),
-      ).buildAndExecute();
+      )
+      .prependInstruction(useMaxCU())
+      .buildAndExecute();
 
       const postCounterA = await getTestTransferHookCounter(
         provider,
@@ -2008,10 +2269,12 @@ describe("TokenExtension/TransferHook", () => {
           tokenOwnerAccountB: tokenAccountB,
           tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
           oracle: oraclePubkey,
-          tokenTransferHookAccountsA, // TransferHook
-          tokenTransferHookAccountsB, // TransferHook
+          tokenTransferHookAccountsA: tokenTransferHookAccountsAForBToA, // TransferHook
+          tokenTransferHookAccountsB: tokenTransferHookAccountsBForBToA, // TransferHook
         }),
-      ).buildAndExecute();
+      )
+      .prependInstruction(useMaxCU())
+      .buildAndExecute();
 
       const postCounterA = await getTestTransferHookCounter(
         provider,
@@ -2043,9 +2306,11 @@ describe("TokenExtension/TransferHook", () => {
             tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
             oracle: oraclePubkey,
             tokenTransferHookAccountsA: undefined, // TransferHook (not provided)
-            tokenTransferHookAccountsB, // TransferHook
+            tokenTransferHookAccountsB: tokenTransferHookAccountsBForAToB, // TransferHook
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
     });
@@ -2067,10 +2332,12 @@ describe("TokenExtension/TransferHook", () => {
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
             oracle: oraclePubkey,
-            tokenTransferHookAccountsA, // TransferHook
+            tokenTransferHookAccountsA: tokenTransferHookAccountsAForAToB, // TransferHook
             tokenTransferHookAccountsB: undefined, // TransferHook (not provided)
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
     });
@@ -2093,9 +2360,11 @@ describe("TokenExtension/TransferHook", () => {
             tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
             oracle: oraclePubkey,
             tokenTransferHookAccountsA: undefined, // TransferHook (not provided)
-            tokenTransferHookAccountsB, // TransferHook
+            tokenTransferHookAccountsB: tokenTransferHookAccountsBForBToA, // TransferHook
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
     });
@@ -2117,10 +2386,12 @@ describe("TokenExtension/TransferHook", () => {
             tokenOwnerAccountB: tokenAccountB,
             tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
             oracle: oraclePubkey,
-            tokenTransferHookAccountsA, // TransferHook
+            tokenTransferHookAccountsA: tokenTransferHookAccountsAForBToA, // TransferHook
             tokenTransferHookAccountsB: undefined, // TransferHook (not provided)
           }),
-        ).buildAndExecute(),
+        )
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a2/, // NoExtraAccountsForTransferHook
       );
     });
@@ -2305,17 +2576,29 @@ describe("TokenExtension/TransferHook", () => {
       tokenTransferHookAccountsInput =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // input: owner to vault
           baseIxParams.tokenMintInput,
+          baseIxParams.tokenOwnerAccountInput,
+          baseIxParams.tokenVaultOneInput,
+          baseIxParams.tokenAuthority,
         );
       tokenTransferHookAccountsMid =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // intermediate: vault to vault (vault to owner logic is used)
           baseIxParams.tokenMintIntermediate,
+          baseIxParams.tokenVaultOneIntermediate,
+          baseIxParams.tokenVaultTwoIntermediate,
+          baseIxParams.whirlpoolOne,
         );
       tokenTransferHookAccountsOutput =
         await getExtraAccountMetasForTestTransferHookProgram(
           provider,
+          // output: vault to owner
           baseIxParams.tokenMintOutput,
+          baseIxParams.tokenVaultTwoOutput,
+          baseIxParams.tokenOwnerAccountOutput,
+          baseIxParams.whirlpoolTwo,
         );
     });
 
@@ -2344,7 +2627,7 @@ describe("TokenExtension/TransferHook", () => {
         }),
       );
 
-      // add Compute units (because it calls 4 external hooks)
+      // add Compute units (because it calls 3 external hooks)
       tx.prependInstruction(useMaxCU());
 
       await tx.buildAndExecute();
@@ -2406,16 +2689,8 @@ describe("TokenExtension/TransferHook", () => {
         }),
       );
 
-      // add Compute units (because it calls 4 external hooks)
-      tx.prependInstruction({
-        cleanupInstructions: [],
-        signers: [],
-        instructions: [
-          ComputeBudgetProgram.setComputeUnitLimit({
-            units: 400_000,
-          }),
-        ],
-      });
+      // add Compute units (because it calls 3 external hooks)
+      tx.prependInstruction(useMaxCU());
 
       await tx.buildAndExecute();
 
@@ -2538,7 +2813,9 @@ describe("TokenExtension/TransferHook", () => {
           instructions: [ix],
           cleanupInstructions: [],
           signers: [],
-        }).buildAndExecute(),
+        })
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a5/, // RemainingAccountsDuplicatedAccountsType
       );
     });
@@ -2588,7 +2865,9 @@ describe("TokenExtension/TransferHook", () => {
           instructions: [ix],
           cleanupInstructions: [],
           signers: [],
-        }).buildAndExecute(),
+        })
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a5/, // RemainingAccountsDuplicatedAccountsType
       );
     });
@@ -2638,7 +2917,9 @@ describe("TokenExtension/TransferHook", () => {
           instructions: [ix],
           cleanupInstructions: [],
           signers: [],
-        }).buildAndExecute(),
+        })
+        .prependInstruction(useMaxCU())
+        .buildAndExecute(),
         /0x17a5/, // RemainingAccountsDuplicatedAccountsType
       );
     });
@@ -2725,7 +3006,11 @@ describe("TokenExtension/TransferHook", () => {
         const tokenTransferHookAccountsA =
           await getExtraAccountMetasForTestTransferHookProgram(
             provider,
+            // a to b, owner to vault (input token is tokenA)
             poolInitInfo.tokenMintA,
+            tokenAccountA,
+            poolInitInfo.tokenVaultAKeypair.publicKey,
+            ctx.wallet.publicKey,
           );
         const tokenTransferHookAccountsB = undefined;
 
@@ -2751,7 +3036,9 @@ describe("TokenExtension/TransferHook", () => {
               tokenTransferHookAccountsA,
               tokenTransferHookAccountsB,
             }),
-          ).buildAndExecute(),
+          )
+          .prependInstruction(useMaxCU())
+          .buildAndExecute(),
           (err) => {
             // error code is 0x1770 from transfer hook program and it is ambiguous, so use message string
             return JSON.stringify(err).includes("AmountTooBig");
@@ -2841,7 +3128,11 @@ describe("TokenExtension/TransferHook", () => {
         const tokenTransferHookAccountsB =
           await getExtraAccountMetasForTestTransferHookProgram(
             provider,
+            // a to b, vault to owner (output token is tokenB)
             poolInitInfo.tokenMintB,
+            poolInitInfo.tokenVaultBKeypair.publicKey,
+            tokenAccountB,
+            poolInitInfo.whirlpoolPda.publicKey,
           );
 
         await assert.rejects(
@@ -2866,7 +3157,9 @@ describe("TokenExtension/TransferHook", () => {
               tokenTransferHookAccountsA,
               tokenTransferHookAccountsB,
             }),
-          ).buildAndExecute(),
+          )
+          .prependInstruction(useMaxCU())
+          .buildAndExecute(),
           (err) => {
             // error code is 0x1770 from transfer hook program and it is ambiguous, so use message string
             return JSON.stringify(err).includes("AmountTooBig");

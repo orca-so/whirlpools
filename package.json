@@ -1,7 +1,6 @@
 {
   "name": "@orca-so/whirlpools-monorepo",
   "private": true,
-  "license": "Apache-2.0",
   "packageManager": "yarn@4.4.0",
   "type": "module",
   "scripts": {
@@ -16,12 +15,12 @@
   "devDependencies": {
     "@types/bn.js": "~5.1.5",
     "@types/mocha": "^10.0.7",
-    "@types/node": "^22.3.0",
+    "@types/node": "^22.5.2",
     "@types/sinon": "^17.0.3",
-    "husky": "^9.1.4",
-    "lint-staged": "^15.2.9",
+    "husky": "^9.1.5",
+    "lint-staged": "^15.2.10",
     "mocha": "^10.7.3",
-    "nx": "^19.5.7",
+    "nx": "^19.6.4",
     "rimraf": "^6.0.1",
     "sinon": "^18.0.0",
     "ts-mocha": "^10.0.0"
@@ -35,23 +34,5 @@
   ],
   "lint-staged": {
     "*": "yarn format"
-  },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/orca-so/whirlpools.git"
-  },
-  "keywords": [
-    "orca_so",
-    "orca",
-    "solana",
-    "typescript",
-    "sdk",
-    "crypto",
-    "dex"
-  ],
-  "author": "team@orca.so",
-  "bugs": {
-    "url": "https://github.com/orca-so/whirlpools/issues"
-  },
-  "homepage": "https://www.orca.so"
+  }
 }

@@ -10,8 +10,8 @@
     "clean": "cargo clean"
   },
   "devDependencies": {
-    "@kinobi-so/nodes-from-anchor": "^0.20.10",
-    "@kinobi-so/renderers-rust": "^0.21.3",
+    "@kinobi-so/nodes-from-anchor": "^0.21.2",
+    "@kinobi-so/renderers-rust": "^0.21.6",
     "@orca-so/whirlpools-program": "*"
   }
 }

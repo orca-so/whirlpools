@@ -437,3 +437,172 @@ pub mod whirlpool_builder {
         }
     }
 }
+
+#[cfg(test)]
+mod data_layout_tests {
+    use anchor_lang::Discriminator;
+
+    use super::*;
+
+    #[test]
+    fn test_whirlpool_data_layout() {
+        let whirlpool_whirlpools_config = Pubkey::new_unique();
+        let whirlpool_bump = 0x12u8;
+        let whirlpool_tick_spacing = 0x1234u16;
+        let whirlpool_tick_spacing_seed = [0x56u8, 0x78u8];
+        let whirlpool_fee_rate = 0x9abcu16;
+        let whirlpool_protocol_fee_rate = 0xdef0u16;
+        let whirlpool_liquidity = 0x11002233445566778899aabbccddeeffu128;
+        let whirlpool_sqrt_price = 0x11220033445566778899aabbccddeeffu128;
+        let whirlpool_tick_current_index = 0x12345678i32;
+        let whirlpool_protocol_fee_owed_a = 0x1122334455667788u64;
+        let whirlpool_protocol_fee_owed_b = 0x99aabbccddeeff00u64;
+        let whirlpool_token_mint_a = Pubkey::new_unique();
+        let whirlpool_token_vault_a = Pubkey::new_unique();
+        let whirlpool_fee_growth_global_a = 0x11223300445566778899aabbccddeeffu128;
+        let whirlpool_token_mint_b = Pubkey::new_unique();
+        let whirlpool_token_vault_b = Pubkey::new_unique();
+        let whirlpool_fee_growth_global_b = 0x11223344005566778899aabbccddeeffu128;
+        let whirlpool_reward_last_updated_timestamp = 0x1234567890abcdefu64;
+
+        let reward_info_mint = Pubkey::new_unique();
+        let reward_info_vault = Pubkey::new_unique();
+        let reward_info_authority = Pubkey::new_unique();
+        let reward_info_emissions_per_second_x64 = 0x1122334455667788u128;
+        let reward_info_growth_global_x64 = 0x99aabbccddeeff00u128;
+
+        // manually build the expected data layout
+        let mut reward_info_data = [0u8; 128];
+        let mut offset = 0;
+        reward_info_data[offset..offset + 32].copy_from_slice(&reward_info_mint.to_bytes());
+        offset += 32;
+        reward_info_data[offset..offset + 32].copy_from_slice(&reward_info_vault.to_bytes());
+        offset += 32;
+        reward_info_data[offset..offset + 32].copy_from_slice(&reward_info_authority.to_bytes());
+        offset += 32;
+        reward_info_data[offset..offset + 16]
+            .copy_from_slice(&reward_info_emissions_per_second_x64.to_le_bytes());
+        offset += 16;
+        reward_info_data[offset..offset + 16]
+            .copy_from_slice(&reward_info_growth_global_x64.to_le_bytes());
+        offset += 16;
+        assert_eq!(offset, reward_info_data.len());
+
+        let mut whirlpool_data = [0u8; Whirlpool::LEN];
+        let mut offset = 0;
+        whirlpool_data[offset..offset + 8].copy_from_slice(&Whirlpool::discriminator());
+        offset += 8;
+        whirlpool_data[offset..offset + 32]
+            .copy_from_slice(&whirlpool_whirlpools_config.to_bytes());
+        offset += 32;
+        whirlpool_data[offset..offset + 1].copy_from_slice(&whirlpool_bump.to_le_bytes());
+        offset += 1;
+        whirlpool_data[offset..offset + 2].copy_from_slice(&whirlpool_tick_spacing.to_le_bytes());
+        offset += 2;
+        whirlpool_data[offset..offset + 2].copy_from_slice(&whirlpool_tick_spacing_seed);
+        offset += 2;
+        whirlpool_data[offset..offset + 2].copy_from_slice(&whirlpool_fee_rate.to_le_bytes());
+        offset += 2;
+        whirlpool_data[offset..offset + 2]
+            .copy_from_slice(&whirlpool_protocol_fee_rate.to_le_bytes());
+        offset += 2;
+        whirlpool_data[offset..offset + 16].copy_from_slice(&whirlpool_liquidity.to_le_bytes());
+        offset += 16;
+        whirlpool_data[offset..offset + 16].copy_from_slice(&whirlpool_sqrt_price.to_le_bytes());
+        offset += 16;
+        whirlpool_data[offset..offset + 4]
+            .copy_from_slice(&whirlpool_tick_current_index.to_le_bytes());
+        offset += 4;
+        whirlpool_data[offset..offset + 8]
+            .copy_from_slice(&whirlpool_protocol_fee_owed_a.to_le_bytes());
+        offset += 8;
+        whirlpool_data[offset..offset + 8]
+            .copy_from_slice(&whirlpool_protocol_fee_owed_b.to_le_bytes());
+        offset += 8;
+        whirlpool_data[offset..offset + 32].copy_from_slice(&whirlpool_token_mint_a.to_bytes());
+        offset += 32;
+        whirlpool_data[offset..offset + 32].copy_from_slice(&whirlpool_token_vault_a.to_bytes());
+        offset += 32;
+        whirlpool_data[offset..offset + 16]
+            .copy_from_slice(&whirlpool_fee_growth_global_a.to_le_bytes());
+        offset += 16;
+        whirlpool_data[offset..offset + 32].copy_from_slice(&whirlpool_token_mint_b.to_bytes());
+        offset += 32;
+        whirlpool_data[offset..offset + 32].copy_from_slice(&whirlpool_token_vault_b.to_bytes());
+        offset += 32;
+        whirlpool_data[offset..offset + 16]
+            .copy_from_slice(&whirlpool_fee_growth_global_b.to_le_bytes());
+        offset += 16;
+        whirlpool_data[offset..offset + 8]
+            .copy_from_slice(&whirlpool_reward_last_updated_timestamp.to_le_bytes());
+        offset += 8;
+        for _ in 0..NUM_REWARDS {
+            whirlpool_data[offset..offset + reward_info_data.len()]
+                .copy_from_slice(&reward_info_data);
+            offset += reward_info_data.len();
+        }
+        assert_eq!(offset, whirlpool_data.len());
+
+        // deserialize
+        let deserialized = Whirlpool::try_deserialize(&mut whirlpool_data.as_ref()).unwrap();
+
+        assert_eq!(deserialized.whirlpools_config, whirlpool_whirlpools_config);
+        assert_eq!(deserialized.whirlpool_bump, [whirlpool_bump]);
+        assert_eq!(deserialized.tick_spacing, whirlpool_tick_spacing);
+        assert_eq!(deserialized.tick_spacing_seed, whirlpool_tick_spacing_seed);
+        assert_eq!(deserialized.fee_rate, whirlpool_fee_rate);
+        assert_eq!(deserialized.protocol_fee_rate, whirlpool_protocol_fee_rate);
+        assert_eq!(deserialized.liquidity, whirlpool_liquidity);
+        assert_eq!(deserialized.sqrt_price, whirlpool_sqrt_price);
+        assert_eq!(
+            deserialized.tick_current_index,
+            whirlpool_tick_current_index
+        );
+        assert_eq!(
+            deserialized.protocol_fee_owed_a,
+            whirlpool_protocol_fee_owed_a
+        );
+        assert_eq!(
+            deserialized.protocol_fee_owed_b,
+            whirlpool_protocol_fee_owed_b
+        );
+        assert_eq!(deserialized.token_mint_a, whirlpool_token_mint_a);
+        assert_eq!(deserialized.token_vault_a, whirlpool_token_vault_a);
+        assert_eq!(
+            deserialized.fee_growth_global_a,
+            whirlpool_fee_growth_global_a
+        );
+        assert_eq!(deserialized.token_mint_b, whirlpool_token_mint_b);
+        assert_eq!(deserialized.token_vault_b, whirlpool_token_vault_b);
+        assert_eq!(
+            deserialized.fee_growth_global_b,
+            whirlpool_fee_growth_global_b
+        );
+        assert_eq!(
+            deserialized.reward_last_updated_timestamp,
+            whirlpool_reward_last_updated_timestamp
+        );
+        for i in 0..NUM_REWARDS {
+            assert_eq!(deserialized.reward_infos[i].mint, reward_info_mint);
+            assert_eq!(deserialized.reward_infos[i].vault, reward_info_vault);
+            assert_eq!(
+                deserialized.reward_infos[i].authority,
+                reward_info_authority
+            );
+            assert_eq!(
+                deserialized.reward_infos[i].emissions_per_second_x64,
+                reward_info_emissions_per_second_x64
+            );
+            assert_eq!(
+                deserialized.reward_infos[i].growth_global_x64,
+                reward_info_growth_global_x64
+            );
+        }
+
+        // serialize
+        let mut serialized = Vec::new();
+        deserialized.try_serialize(&mut serialized).unwrap();
+
+        assert_eq!(serialized.as_slice(), whirlpool_data.as_ref());
+    }
+}

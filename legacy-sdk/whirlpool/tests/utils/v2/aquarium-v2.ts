@@ -121,7 +121,7 @@ export async function buildTestAquariumsV2(
   ctx: WhirlpoolContext,
   initParams: InitAquariumV2Params[],
 ): Promise<TestAquarium[]> {
-  const aquariums = [];
+  const aquariums: TestAquarium[] = [];
   // Airdrop SOL into provider wallet;
   await ctx.connection.requestAirdrop(
     ctx.provider.wallet.publicKey,
@@ -381,7 +381,7 @@ export function getTokenAccsForPoolsV2(
     tokenTrait: TokenTrait;
   }[],
 ) {
-  const mints = [];
+  const mints: PublicKey[] = [];
   for (const pool of pools) {
     mints.push(pool.tokenMintA);
     mints.push(pool.tokenMintB);

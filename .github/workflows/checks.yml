@@ -5,7 +5,7 @@ on:
     branches: [main]
 
 concurrency:
-  group: "checks"
+  group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:

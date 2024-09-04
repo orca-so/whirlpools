@@ -14,6 +14,7 @@ The contract is deployed using verifiable build, so that you can ensure that the
 The program has been audited several times by different security firms.
 * Jan 28th, 2022 - [Kudelski Security](/.audits/2022-01-28.pdf)
 * May 5th, 2022 - [Neodyme](/.audits/2022-05-05.pdf)
+* Aug 21st, 2024 - [OtterSec](/.audits/2024-08-21.pdf)
 
 ## Usage
 
@@ -71,9 +72,9 @@ This repository uses NX to manage the Rust and Typescript codebases. This allows
 This repository is split up into sevaral parts. The following is a (non-exhaustive) list of the components and their purpose.
 
 * **`/programs/*`** - Rust programs that are deployed on Solana.
-* **`/ts-sdk/*`** (WIP) - Typescript SDKs for interacting with the programs.
-* **`/rust-sdk/*`** (WIP) - Rust SDKs for interacting with the programs.
-* **`/docs/*`** (WIP) - Documentation for the programs and SDKs.
+* **`/ts-sdk/*`** - Typescript SDKs for interacting with the programs.
+* **`/rust-sdk/*`** - Rust SDKs for interacting with the programs.
+* **`/docs/*`** - Documentation for the programs and SDKs.
 * **`/legacy-sdk/*`** - Legacy Typescript SDKs and integration tests.
 
 ### Commands

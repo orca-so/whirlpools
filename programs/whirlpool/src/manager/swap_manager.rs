@@ -33,12 +33,22 @@ pub fn swap(
     a_to_b: bool,
     timestamp: u64,
 ) -> Result<PostSwapUpdate> {
-    if !(MIN_SQRT_PRICE_X64..=MAX_SQRT_PRICE_X64).contains(&sqrt_price_limit) {
+    let adjusted_sqrt_price_limit = if sqrt_price_limit == NO_EXPLICIT_SQRT_PRICE_LIMIT {
+        if a_to_b {
+            MIN_SQRT_PRICE_X64
+        } else {
+            MAX_SQRT_PRICE_X64
+        }
+    } else {
+        sqrt_price_limit
+    };
+
+    if !(MIN_SQRT_PRICE_X64..=MAX_SQRT_PRICE_X64).contains(&adjusted_sqrt_price_limit) {
         return Err(ErrorCode::SqrtPriceOutOfBounds.into());
     }
 
-    if a_to_b && sqrt_price_limit > whirlpool.sqrt_price
-        || !a_to_b && sqrt_price_limit < whirlpool.sqrt_price
+    if a_to_b && adjusted_sqrt_price_limit > whirlpool.sqrt_price
+        || !a_to_b && adjusted_sqrt_price_limit < whirlpool.sqrt_price
     {
         return Err(ErrorCode::InvalidSqrtPriceLimitDirection.into());
     }
@@ -65,7 +75,7 @@ pub fn swap(
         whirlpool.fee_growth_global_b
     };
 
-    while amount_remaining > 0 && sqrt_price_limit != curr_sqrt_price {
+    while amount_remaining > 0 && adjusted_sqrt_price_limit != curr_sqrt_price {
         let (next_array_index, next_tick_index) = swap_tick_sequence
             .get_next_initialized_tick_index(
                 curr_tick_index,
@@ -75,7 +85,7 @@ pub fn swap(
             )?;
 
         let (next_tick_sqrt_price, sqrt_price_target) =
-            get_next_sqrt_prices(next_tick_index, sqrt_price_limit, a_to_b);
+            get_next_sqrt_prices(next_tick_index, adjusted_sqrt_price_limit, a_to_b);
 
         let swap_computation = compute_swap(
             amount_remaining,
@@ -180,6 +190,11 @@ pub fn swap(
         }
 
         curr_sqrt_price = swap_computation.next_price;
+    }
+
+    // Reject partial fills if no explicit sqrt price limit is set and trade is exact out mode
+    if amount_remaining > 0 && !amount_specified_is_input && sqrt_price_limit == NO_EXPLICIT_SQRT_PRICE_LIMIT {
+        return Err(ErrorCode::PartialFillError.into());
     }
 
     let (amount_a, amount_b) = if a_to_b == amount_specified_is_input {
@@ -2324,6 +2339,267 @@ mod swap_sqrt_price_tests {
                 end_reward_growths: [0, 0, 0],
             },
         )
+    }
+
+    #[test]
+    #[should_panic(expected = "TickArraySequenceInvalidIndex")]
+    /// An attempt to swap walking over 3 tick arrays
+    /// |c1_____|_______|_______|c2 limit(0)
+    ///
+    /// Expectation:
+    /// Swap will fail due to over run
+    fn sqrt_price_limit_0_b_to_a_map_to_max() {
+        let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+            tick_spacing: TS_128,
+            liquidity: 0,
+            curr_tick_index: 1, // c1
+            start_tick_index: 0,
+            trade_amount: 1_000_000_000,
+            sqrt_price_limit: 0, // no explicit limit = over run = TickArraySequenceInvalidIndex
+            amount_specified_is_input: false, // exact out
+            a_to_b: false,
+            ..Default::default()
+        });
+        let mut tick_sequence = SwapTickSequence::new(
+            swap_test_info.tick_arrays[0].borrow_mut(),
+            Some(swap_test_info.tick_arrays[1].borrow_mut()),
+            Some(swap_test_info.tick_arrays[2].borrow_mut()),
+        );
+        swap_test_info.run(&mut tick_sequence, 100);
+    }
+
+    #[test]
+    #[should_panic(expected = "TickArraySequenceInvalidIndex")]
+    /// An attempt to swap walking over 3 tick arrays
+    /// limit(0) c2|_______|_______|_____c1|
+    ///
+    /// Expectation:
+    /// Swap will fail due to over run
+    fn sqrt_price_limit_0_a_to_b_map_to_min() {
+        let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+            tick_spacing: TS_128,
+            liquidity: 0,
+            curr_tick_index: 256,
+            start_tick_index: 0,
+            trade_amount: 1_000_000_000,
+            sqrt_price_limit: 0, // no explicit limit = over run = TickArraySequenceInvalidIndex
+            amount_specified_is_input: false, // exact out
+            a_to_b: true,
+            ..Default::default()
+        });
+        let mut tick_sequence = SwapTickSequence::new(
+            swap_test_info.tick_arrays[0].borrow_mut(),
+            Some(swap_test_info.tick_arrays[1].borrow_mut()),
+            Some(swap_test_info.tick_arrays[2].borrow_mut()),
+        );
+        swap_test_info.run(&mut tick_sequence, 100);
+    }
+
+    #[test]
+    #[should_panic(expected = "PartialFillError")]
+    /// An attempt to swap to the maximum tick implicitly without the last initializable tick
+    /// being initialized
+    /// |c1_______________c2,max,limit(0)|
+    ///
+    /// Expectation:
+    /// Swap will fail due to partial fill.
+    fn sqrt_price_limit_0_b_to_a_exact_out() {
+        let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+            tick_spacing: TS_128,
+            liquidity: 0,
+            curr_tick_index: 442369, // c1
+            start_tick_index: 442368,
+            trade_amount: 1_000_000_000,
+            sqrt_price_limit: 0, // no explicit limit
+            amount_specified_is_input: false, // exact out
+            a_to_b: false,
+            ..Default::default()
+        });
+        let mut tick_sequence = SwapTickSequence::new(
+            swap_test_info.tick_arrays[0].borrow_mut(),
+            Some(swap_test_info.tick_arrays[1].borrow_mut()),
+            Some(swap_test_info.tick_arrays[2].borrow_mut()),
+        );
+        swap_test_info.run(&mut tick_sequence, 100);
+    }
+
+    #[test]
+    #[should_panic(expected = "PartialFillError")]
+    /// An attempt to swap to the minimum tick implicitly without the last initializable tick
+    /// being initialized
+    /// |limit(0),min,c2____________c1|
+    ///
+    /// Expectation:
+    /// Swap will fail due to partial fill.
+    fn sqrt_price_limit_0_a_to_b_exact_out() {
+        let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+            tick_spacing: TS_128,
+            liquidity: 0,
+            curr_tick_index: -440321, // c1
+            start_tick_index: -451584,
+            trade_amount: 1_000_000_000,
+            sqrt_price_limit: 0, // no explicit limit
+            amount_specified_is_input: false, // exact out
+            a_to_b: true,
+            ..Default::default()
+        });
+        let mut tick_sequence = SwapTickSequence::new(
+            swap_test_info.tick_arrays[0].borrow_mut(),
+            Some(swap_test_info.tick_arrays[1].borrow_mut()),
+            Some(swap_test_info.tick_arrays[2].borrow_mut()),
+        );
+        swap_test_info.run(&mut tick_sequence, 100);
+    }
+
+    #[test]
+    /// An attempt to swap to the maximum tick explicitly without the last initializable tick
+    /// being initialized
+    /// |c1_______________c2,max,limit(MAX_SQRT_PRICE_X64)|
+    ///
+    /// Expectation:
+    /// Swap will succeed with partial fill.
+    fn sqrt_price_limit_explicit_max_b_to_a_exact_out() {
+        let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+            tick_spacing: TS_128,
+            liquidity: 0,
+            curr_tick_index: 442369, // c1
+            start_tick_index: 442368,
+            trade_amount: 1_000_000_000,
+            sqrt_price_limit: MAX_SQRT_PRICE_X64, // explicit limit
+            amount_specified_is_input: false, // exact out
+            a_to_b: false,
+            ..Default::default()
+        });
+        let mut tick_sequence = SwapTickSequence::new(
+            swap_test_info.tick_arrays[0].borrow_mut(),
+            Some(swap_test_info.tick_arrays[1].borrow_mut()),
+            Some(swap_test_info.tick_arrays[2].borrow_mut()),
+        );
+        let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+        assert_swap(
+            &post_swap,
+            &SwapTestExpectation {
+                traded_amount_a: 0,
+                traded_amount_b: 0,
+                end_tick_index: 443636, // MAX
+                end_liquidity: 0,
+                end_reward_growths: [0, 0, 0],
+            },
+        );
+    }
+
+    #[test]
+    /// An attempt to swap to the minimum tick explicitly without the last initializable tick
+    /// being initialized
+    /// |limit(MIN_SQRT_PRICE_X64),min,c2____________c1|
+    ///
+    /// Expectation:
+    /// Swap will succeed with partial fill.
+    fn sqrt_price_limit_explicit_min_a_to_b_exact_out() {
+        let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+            tick_spacing: TS_128,
+            liquidity: 0,
+            curr_tick_index: -440321, // c1
+            start_tick_index: -451584,
+            trade_amount: 1_000_000_000,
+            sqrt_price_limit: MIN_SQRT_PRICE_X64, // explicit limit
+            amount_specified_is_input: false, // exact out
+            a_to_b: true,
+            ..Default::default()
+        });
+        let mut tick_sequence = SwapTickSequence::new(
+            swap_test_info.tick_arrays[0].borrow_mut(),
+            Some(swap_test_info.tick_arrays[1].borrow_mut()),
+            Some(swap_test_info.tick_arrays[2].borrow_mut()),
+        );
+        let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+        assert_swap(
+            &post_swap,
+            &SwapTestExpectation {
+                traded_amount_a: 0,
+                traded_amount_b: 0,
+                end_tick_index: -443636 - 1, // MIN - 1 (shifted)
+                end_liquidity: 0,
+                end_reward_growths: [0, 0, 0],
+            },
+        );
+    }
+
+    #[test]
+    /// An attempt to swap to the maximum tick implicitly without the last initializable tick
+    /// being initialized
+    /// |c1_______________c2,max,limit(0)|
+    ///
+    /// Expectation:
+    /// The swap will succeed and exits at the maximum tick index.
+    /// In exact in mode, partial fill may be allowed if other_amount_threshold is satisfied.
+    fn sqrt_price_limit_0_b_to_a_exact_in() {
+        let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+            tick_spacing: TS_128,
+            liquidity: 0,
+            curr_tick_index: 442369, // c1
+            start_tick_index: 442368,
+            trade_amount: 1_000_000_000,
+            sqrt_price_limit: 0, // no explicit limit
+            amount_specified_is_input: true, // exact in
+            a_to_b: false,
+            ..Default::default()
+        });
+        let mut tick_sequence = SwapTickSequence::new(
+            swap_test_info.tick_arrays[0].borrow_mut(),
+            Some(swap_test_info.tick_arrays[1].borrow_mut()),
+            Some(swap_test_info.tick_arrays[2].borrow_mut()),
+        );
+        let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+        assert_swap(
+            &post_swap,
+            &SwapTestExpectation {
+                traded_amount_a: 0,
+                traded_amount_b: 0,
+                end_tick_index: 443636, // MAX
+                end_liquidity: 0,
+                end_reward_growths: [0, 0, 0],
+            },
+        );
+    }
+
+    #[test]
+    /// An attempt to swap to the minimum tick implicitly without the last initializable tick
+    /// being initialized
+    /// |limit(0),min,c2____________c1|
+    ///
+    /// Expectation:
+    /// The swap will succeed and exits at the minimum tick index.
+    /// In exact in mode, partial fill may be allowed if other_amount_threshold is satisfied.
+    fn sqrt_price_limit_0_a_to_b_exact_in() {
+        let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+            tick_spacing: TS_128,
+            liquidity: 0,
+            curr_tick_index: -440321, // c1
+            start_tick_index: -451584,
+            trade_amount: 1_000_000_000,
+            sqrt_price_limit: 0, // no explicit limit
+            amount_specified_is_input: true, // exact in
+            a_to_b: true,
+            ..Default::default()
+        });
+        let mut tick_sequence = SwapTickSequence::new(
+            swap_test_info.tick_arrays[0].borrow_mut(),
+            Some(swap_test_info.tick_arrays[1].borrow_mut()),
+            Some(swap_test_info.tick_arrays[2].borrow_mut()),
+        );
+        swap_test_info.run(&mut tick_sequence, 100);
+        let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+        assert_swap(
+            &post_swap,
+            &SwapTestExpectation {
+                traded_amount_a: 0,
+                traded_amount_b: 0,
+                end_tick_index: -443636 - 1, // MIN - 1 (shifted)
+                end_liquidity: 0,
+                end_reward_growths: [0, 0, 0],
+            },
+        );
     }
 }
 

@@ -202,6 +202,21 @@ pub fn handler(
         (swap_calc_one, swap_calc_two)
     };
 
+    // All output token should be consumed by the second swap
+    let swap_calc_one_output = if a_to_b_one {
+        swap_update_one.amount_b
+    } else {
+        swap_update_one.amount_a
+    };
+    let swap_calc_two_input = if a_to_b_two {
+        swap_update_two.amount_a
+    } else {
+        swap_update_two.amount_b
+    };
+    if swap_calc_one_output != swap_calc_two_input {
+        return Err(ErrorCode::IntermediateTokenAmountMismatch.into());
+    }
+
     if amount_specified_is_input {
         // If amount_specified_is_input == true, then we have a variable amount of output
         // The slippage we care about is the output of the second swap.

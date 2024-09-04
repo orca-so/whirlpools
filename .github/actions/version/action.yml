@@ -50,6 +50,6 @@ runs:
       if: ${{ steps.env.outputs.ENV == 'cargo' }}
       run: |
         sed -i 's/^version = ".*"$/version = "${{ steps.version.outputs.VERSION }}"/' ${{ inputs.manifest-file }}
-        # TODO: Following should only happen in dependencies and not devDependencies
+        # TODO: Following should only happen in dependencies and not dev-dependencies
         # sed -i 's/path = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' ${{ inputs.manifest-file }}
       shell: bash

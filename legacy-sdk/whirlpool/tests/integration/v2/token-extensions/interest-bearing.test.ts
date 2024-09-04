@@ -1,54 +1,29 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import type { PDA } from "@orca-so/common-sdk";
-import { MathUtil, Percentage } from "@orca-so/common-sdk";
+import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import Decimal from "decimal.js";
 import type {
-  DecreaseLiquidityQuote,
-  InitPoolV2Params,
-  PositionData,
-  SwapQuote,
-  TwoHopSwapV2Params,
   WhirlpoolData,
 } from "../../../../src";
 import {
-  buildWhirlpoolClient,
-  collectRewardsQuote,
-  decreaseLiquidityQuoteByLiquidityWithParams,
-  NUM_REWARDS,
   PDAUtil,
   swapQuoteWithParams,
   SwapUtils,
   toTx,
-  twoHopSwapQuoteFromSwapQuotes,
   WhirlpoolContext,
   WhirlpoolIx,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
-import { getTokenBalance, sleep, TickSpacing, ZERO_BN } from "../../../utils";
+import { getTokenBalance, sleep, TEST_TOKEN_2022_PROGRAM_ID, TickSpacing } from "../../../utils";
 import { defaultConfirmOptions } from "../../../utils/const";
-import { WhirlpoolTestFixtureV2 } from "../../../utils/v2/fixture-v2";
-import type { FundedPositionV2Params } from "../../../utils/v2/init-utils-v2";
 import {
   fundPositionsV2,
   initTestPoolWithTokensV2,
 } from "../../../utils/v2/init-utils-v2";
-import {
-  createTokenAccountV2,
-  disableRequiredMemoTransfers,
-  enableRequiredMemoTransfers,
-  isRequiredMemoTransfersEnabled,
-} from "../../../utils/v2/token-2022";
-import type { PublicKey } from "@solana/web3.js";
+import { Keypair, type PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../../utils/init-utils";
-import type { InitAquariumV2Params } from "../../../utils/v2/aquarium-v2";
-import {
-  buildTestAquariumsV2,
-  getDefaultAquariumV2,
-  getTokenAccsForPoolsV2,
-} from "../../../utils/v2/aquarium-v2";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
+import { amountToUiAmount, updateRateInterestBearingMint } from "@solana/spl-token";
 
 describe("TokenExtension/InterestBearing", () => {
   const provider = anchor.AnchorProvider.local(
@@ -58,9 +33,23 @@ describe("TokenExtension/InterestBearing", () => {
   const program = anchor.workspace.Whirlpool;
   const ctx = WhirlpoolContext.fromWorkspace(provider, program);
   const fetcher = ctx.fetcher;
-  const client = buildWhirlpoolClient(ctx);
 
-  it("swap_v2", async () => {
+  // HACK: use NodeWallet.payer field
+  const payer = ctx.wallet["payer"] as Keypair;
+
+  async function rawAmountToUIAmount(mint: PublicKey, rawAmount: BN): Promise<string> {
+    const result = await amountToUiAmount(ctx.connection, payer, mint, rawAmount.toNumber(), TEST_TOKEN_2022_PROGRAM_ID);
+    if (typeof result === "string") {
+      return result;
+    }
+    throw new Error("Failed to convert raw amount to UI amount");
+  }
+
+  // Since InterestBearing is no different from normal mint as far as handling raw amounts (u64 amounts),
+  // swap_v2 is executed to check the owner to vault and vault to owner logic.
+
+  // |----------|-----*S*T*|****------| (*: liquidity, S: start, T: end)
+  it("swap_v2 (covers both owner to vault and vault to owner transfer)", async () => {
     const {
       whirlpoolPda,
       poolInitInfo,
@@ -68,10 +57,50 @@ describe("TokenExtension/InterestBearing", () => {
       tokenAccountB,
     } = await initTestPoolWithTokensV2(
       ctx,
-      { isToken2022: true, hasInterestBearingExtension: true, interestBearingRate: 10_000 },
-      { isToken2022: true, hasInterestBearingExtension: true, interestBearingRate: 10_000 },
+      { isToken2022: true, hasInterestBearingExtension: true, interestBearingRate: 0 }, // 0%
+      { isToken2022: true, hasInterestBearingExtension: true, interestBearingRate: 0 }, // 0%
       TickSpacing.Standard,
     );
+
+    const initialRawBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
+    const initialRawBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
+    const initialUIBalanceA = await rawAmountToUIAmount(poolInitInfo.tokenMintA, initialRawBalanceA);
+    const initialUIBalanceB = await rawAmountToUIAmount(poolInitInfo.tokenMintB, initialRawBalanceB);
+
+    // rate is 0%, so these values should be equal
+    assert.ok(initialRawBalanceA.eq(new BN(Number.parseInt(initialUIBalanceA))));
+    assert.ok(initialRawBalanceB.eq(new BN(Number.parseInt(initialUIBalanceB))));
+
+    // set rate > 0%
+    const sigA = await updateRateInterestBearingMint(
+      ctx.connection,
+      payer,
+      poolInitInfo.tokenMintA,
+      payer,
+      30_000, // 300%
+    );
+    const sigB = await updateRateInterestBearingMint(
+      ctx.connection,
+      payer,
+      poolInitInfo.tokenMintB,
+      payer,
+      10_000, // 100%
+    );
+    await Promise.all([
+      ctx.connection.confirmTransaction(sigA),
+      ctx.connection.confirmTransaction(sigB),
+    ]);
+
+    await sleep(10 * 1000);
+  
+    const newUIBalanceA = await rawAmountToUIAmount(poolInitInfo.tokenMintA, initialRawBalanceA);
+    const newUIBalanceB = await rawAmountToUIAmount(poolInitInfo.tokenMintB, initialRawBalanceB);
+
+    // rate is >0%, so these values should NOT be equal
+    assert.ok(initialRawBalanceA.lt(new BN(Number.parseInt(newUIBalanceA))));
+    assert.ok(initialRawBalanceB.lt(new BN(Number.parseInt(newUIBalanceB))));
+
+    // now we can assure that InterestBearing works as expected on both tokens
 
     const aToB = false;
     await initTickArrayRange(
@@ -83,20 +112,18 @@ describe("TokenExtension/InterestBearing", () => {
       aToB,
     );
 
-    const fundParams: FundedPositionV2Params[] = [
-      {
-        liquidityAmount: new anchor.BN(10_000_000),
-        tickLowerIndex: 29440,
-        tickUpperIndex: 33536,
-      },
-    ];
-
     await fundPositionsV2(
       ctx,
       poolInitInfo,
       tokenAccountA,
       tokenAccountB,
-      fundParams,
+      [
+        {
+          liquidityAmount: new anchor.BN(10_000_000),
+          tickLowerIndex: 29440,
+          tickUpperIndex: 33536,
+        },  
+      ]
     );
 
     const oraclePubkey = PDAUtil.getOracle(
@@ -110,38 +137,12 @@ describe("TokenExtension/InterestBearing", () => {
       IGNORE_CACHE,
     )) as WhirlpoolData;
 
-    const quoteAToB = swapQuoteWithParams(
-      {
-        amountSpecifiedIsInput: true,
-        aToB: true,
-        tokenAmount: new BN(100000),
-        otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
-        sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(true),
-        whirlpoolData,
-        tickArrays: await SwapUtils.getTickArrays(
-          whirlpoolData.tickCurrentIndex,
-          whirlpoolData.tickSpacing,
-          true,
-          ctx.program.programId,
-          whirlpoolKey,
-          fetcher,
-          IGNORE_CACHE,
-        ),
-        tokenExtensionCtx:
-          await TokenExtensionUtil.buildTokenExtensionContext(
-            fetcher,
-            whirlpoolData,
-            IGNORE_CACHE,
-          ),
-      },
-      Percentage.fromFraction(100, 100), // 100% slippage
-    );
-
+    // tick: 32190 -> 32269
     const quoteBToA = swapQuoteWithParams(
       {
         amountSpecifiedIsInput: true,
         aToB: false,
-        tokenAmount: new BN(100000),
+        tokenAmount: new BN(200000),
         otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(true),
         sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(false),
         whirlpoolData,
@@ -161,13 +162,15 @@ describe("TokenExtension/InterestBearing", () => {
             IGNORE_CACHE,
           ),
       },
-      Percentage.fromFraction(100, 100), // 100% slippage
+      Percentage.fromFraction(0, 100),
     );
+
+    assert.ok(quoteBToA.estimatedAmountIn.gtn(0));
+    assert.ok(quoteBToA.estimatedAmountOut.gtn(0));
 
     const balanceA0 = new BN(await getTokenBalance(provider, tokenAccountA));
     const balanceB0 = new BN(await getTokenBalance(provider, tokenAccountB));
-
-    const sigBToA = await toTx(
+    await toTx(
       ctx,
       WhirlpoolIx.swapV2Ix(ctx.program, {
         ...quoteBToA,
@@ -184,13 +187,13 @@ describe("TokenExtension/InterestBearing", () => {
         oracle: oraclePubkey,
       }),
     ).buildAndExecute();
-
     const balanceA1 = new BN(await getTokenBalance(provider, tokenAccountA));
     const balanceB1 = new BN(await getTokenBalance(provider, tokenAccountB));
-    assert.ok(balanceB1.lt(balanceB0));
-    assert.ok(balanceA1.gt(balanceA0));
 
-
+    const diffA = balanceA1.sub(balanceA0);
+    const diffB = balanceB1.sub(balanceB0);
+    assert.ok(diffA.eq(quoteBToA.estimatedAmountOut));
+    assert.ok(diffB.eq(quoteBToA.estimatedAmountIn.neg()));
   });
 
 });

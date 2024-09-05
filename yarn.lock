@@ -2556,9 +2556,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/renderers-js@npm:^0.21.7":
-  version: 0.21.7
-  resolution: "@kinobi-so/renderers-js@npm:0.21.7"
+"@kinobi-so/renderers-js@npm:^0.21.8":
+  version: 0.21.8
+  resolution: "@kinobi-so/renderers-js@npm:0.21.8"
   dependencies:
     "@kinobi-so/errors": "npm:0.21.4"
     "@kinobi-so/nodes": "npm:0.21.4"
@@ -2568,7 +2568,7 @@ __metadata:
     "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
     prettier: "npm:^3.3.3"
-  checksum: 10c0/a5b72065a1c540861d2ea5ef6b222c027de8c8e6651725dedfaec28f82253cb47a6e65134b97798322b9b92848734d175b3b67e3b879968cfa7c87ac3d394c2c
+  checksum: 10c0/ce98be416d8e43b5707c9abd2a831e9efed556ad49b7276dda3f5b14e777ab9705a406408d08256d6d64a4db1c775977c18ce7851d38243e852f051d9cd91e1e
   languageName: node
   linkType: hard
 
@@ -2845,7 +2845,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-client@workspace:ts-sdk/client"
   dependencies:
     "@kinobi-so/nodes-from-anchor": "npm:^0.21.2"
-    "@kinobi-so/renderers-js": "npm:^0.21.7"
+    "@kinobi-so/renderers-js": "npm:^0.21.8"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/web3.js": "npm:^2.0.0-preview.4"
     kinobi: "npm:^0.21.4"

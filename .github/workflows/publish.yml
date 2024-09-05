@@ -11,19 +11,23 @@ jobs:
     strategy:
       matrix:
         package: [client]
+      max-parallel: 1
+      fail-fast: true
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    - name: Set Version
+      uses: ./.github/actions/version
+      with:
+        version: ${{ github.ref }}
+        manifest-file: ts-sdk/${{ matrix.package }}/package.json
     - name: Deploy npm
       uses: ./.github/actions/anchor
       with:
         run: |
-          VERSION=$(basename ${{ github.ref }})
-          sed -i "s/\"version\": \".*\",/\"version\": \"${VERSION:1}\",/" ts-sdk/${{ matrix.package }}/package.json
-          # TODO: replace workspace dependencies with fixed version
           yarn install
           yarn build ts-sdk/${{ matrix.package }} --output-style static
           cd ts-sdk/${{ matrix.package }} && npm publish --access public
@@ -34,19 +38,23 @@ jobs:
     strategy:
       matrix:
         package: [client]
+      max-parallel: 1
+      fail-fast: true
     runs-on: ubuntu-latest
     steps:
     - name: Checkout Repository
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+    - name: Set Version
+      uses: ./.github/actions/version
+      with:
+        version: ${{ github.ref }}
+        manifest-file: rust-sdk/${{ matrix.package }}/Cargo.toml
     - name: Deploy cargo
       uses: ./.github/actions/anchor
       with:
         run: |
-          VERSION=$(basename ${{ github.ref }})
-          sed -i "s/^version = \".*\"$/version = \"${VERSION:1}\"/" rust-sdk/${{ matrix.package }}/Cargo.toml
-          # TODO: replace workspace dependencies with fixed version
           yarn build rust-sdk/${{ matrix.package }} --output-style static
           cd rust-sdk/${{ matrix.package }} && cargo publish --allow-dirty
       env:

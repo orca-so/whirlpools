@@ -28,12 +28,10 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
+          export NODE_AUTH_TOKEN=${{ secrets.NPM_TOKEN }}
           yarn install
           yarn build ts-sdk/${{ matrix.package }} --output-style static
-          npm config set registry https://registry.npmjs.org/
           cd ts-sdk/${{ matrix.package }} && npm publish --access public
-      env:
-        NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
 
   cargo:
     strategy:
@@ -56,10 +54,9 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
+          export CARGO_REGISTRY_TOKEN=${{ secrets.CRATES_TOKEN }}
           yarn build rust-sdk/${{ matrix.package }} --output-style static
           cd rust-sdk/${{ matrix.package }} && cargo publish --allow-dirty
-      env:
-        CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
 
   idl:
     runs-on: ubuntu-latest

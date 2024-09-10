@@ -40,7 +40,7 @@ import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
-import { initTestPoolV2 } from "../../utils/v2/init-utils-v2";
+import { initTestPoolV2, useMaxCU } from "../../utils/v2/init-utils-v2";
 import { mintTokensToTestAccountV2 } from "../../utils/v2/token-2022";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import { ASSOCIATED_PROGRAM_ID } from "@coral-xyz/anchor/dist/cjs/utils/token";
@@ -908,7 +908,9 @@ describe("whirlpool-impl", () => {
               whirlpoolPda.publicKey,
             )),
           }),
-        ).buildAndExecute();
+        )
+        .prependInstruction(useMaxCU())  // TransferHook require much CU
+        .buildAndExecute();
 
         // Accrue fees in token B
         await toTx(
@@ -944,7 +946,9 @@ describe("whirlpool-impl", () => {
               ctx.wallet.publicKey,
             )),
           }),
-        ).buildAndExecute();
+        )
+        .prependInstruction(useMaxCU())  // TransferHook require much CU
+        .buildAndExecute();
 
         // accrue rewards
         // closePosition does not attempt to create an ATA unless reward has accumulated.

@@ -20,7 +20,7 @@ import { defaultConfirmOptions } from "../../utils/const";
 import { initPosition } from "../../utils/test-builders";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
-import { initTestPoolV2 } from "../../utils/v2/init-utils-v2";
+import { initTestPoolV2, useMaxCU } from "../../utils/v2/init-utils-v2";
 import { mintTokensToTestAccountV2 } from "../../utils/v2/token-2022";
 
 describe("position-impl", () => {
@@ -140,7 +140,9 @@ describe("position-impl", () => {
             false,
             ctx.wallet.publicKey,
           )
-        ).buildAndExecute();
+        )
+        .prependInstruction(useMaxCU())  // TransferHook require much CU
+        .buildAndExecute();
 
         const postIncreaseData = await position.refreshData();
         const expectedPostIncreaseLiquidity = preIncreaseData.liquidity.add(
@@ -167,7 +169,9 @@ describe("position-impl", () => {
 
         await (
           await position.decreaseLiquidity(decrease_quote, false)
-        ).buildAndExecute();
+        )
+        .prependInstruction(useMaxCU())  // TransferHook require much CU
+        .buildAndExecute();
 
         const postWithdrawData = await position.refreshData();
         const expectedPostWithdrawLiquidity = postIncreaseData.liquidity.sub(
@@ -253,7 +257,9 @@ describe("position-impl", () => {
 
         await (
           await position.increaseLiquidity(increase_quote, false)
-        ).buildAndExecute();
+        )
+        .prependInstruction(useMaxCU())  // TransferHook require much CU
+        .buildAndExecute();
 
         const postIncreaseData = await position.refreshData();
         const expectedPostIncreaseLiquidity = preIncreaseData.liquidity.add(
@@ -331,6 +337,7 @@ describe("position-impl", () => {
           )
         )
           .addSigner(otherWallet)
+          .prependInstruction(useMaxCU())  // TransferHook require much CU
           .buildAndExecute();
 
         const postSecondIncreaseData = await position.refreshData();
@@ -346,6 +353,7 @@ describe("position-impl", () => {
           )
         )
           .addSigner(otherWallet)
+          .prependInstruction(useMaxCU())  // TransferHook require much CU
           .buildAndExecute();
 
         const postWithdrawData = await position.refreshData();

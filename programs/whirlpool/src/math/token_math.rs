@@ -24,6 +24,7 @@ pub const MAX_PROTOCOL_FEE_RATE: u16 = 2_500;
 // We want PROTOCOL_FEE_RATE_MUL_VALUE = 1/PROTOCOL_FEE_UNIT, so 1e4
 pub const PROTOCOL_FEE_RATE_MUL_VALUE: u128 = 10_000;
 
+#[derive(Debug)]
 pub enum AmountDeltaU64 {
     Valid(u64),
     ExceedsMax(ErrorCode),

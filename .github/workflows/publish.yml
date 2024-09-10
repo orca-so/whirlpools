@@ -28,8 +28,7 @@ jobs:
       uses: ./.github/actions/anchor
       with:
         run: |
-          export NODE_AUTH_TOKEN=${{ secrets.NPM_TOKEN }}
-          yarn install
+          npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPM_TOKEN }} && yarn
           yarn build ts-sdk/${{ matrix.package }} --output-style static
           cd ts-sdk/${{ matrix.package }} && npm publish --access public
 

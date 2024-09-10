@@ -74,7 +74,7 @@ pub fn compute_swap(
             a_to_b,
         )?
     } else {
-        initial_amount_fixed_delta.unwrap()
+        initial_amount_fixed_delta.value()
     };
 
     let (amount_in, mut amount_out) = if amount_specified_is_input {

@@ -20,6 +20,8 @@ export enum SwapErrorCode {
   TickArrayCrossingAboveMax = `TickArrayCrossingAboveMax`,
   TickArrayIndexNotInitialized = `TickArrayIndexNotInitialized`,
   TickArraySequenceInvalid = `TickArraySequenceInvalid`,
+  AmountRemainingOverflow = `AmountRemainingOverflow`,
+  AmountCalcOverflow = `AmountCalcOverflow`,
 }
 
 export enum RouteQueryErrorCode {

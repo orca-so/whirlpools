@@ -45,7 +45,7 @@ impl AmountDeltaU64 {
         }
     }
 
-    pub fn unwrap(self) -> u64 {
+    pub fn value(self) -> u64 {
         match self {
             AmountDeltaU64::Valid(value) => value,
             // This should never happen

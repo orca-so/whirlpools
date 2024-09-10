@@ -5,6 +5,8 @@ import {
   getAmountDeltaA,
   getAmountDeltaB,
   getNextSqrtPrice,
+  tryGetAmountDeltaA,
+  tryGetAmountDeltaB,
 } from "./token-math";
 
 export type SwapStep = {
@@ -23,7 +25,7 @@ export function computeSwapStep(
   amountSpecifiedIsInput: boolean,
   aToB: boolean,
 ): SwapStep {
-  let amountFixedDelta = getAmountFixedDelta(
+  let initialAmountFixedDelta = tryGetAmountFixedDelta(
     currSqrtPrice,
     targetSqrtPrice,
     currLiquidity,
@@ -42,7 +44,7 @@ export function computeSwapStep(
     amountCalc = result;
   }
 
-  let nextSqrtPrice = amountCalc.gte(amountFixedDelta)
+  let nextSqrtPrice = initialAmountFixedDelta.lte(amountCalc)
     ? targetSqrtPrice
     : getNextSqrtPrice(
         currSqrtPrice,
@@ -62,15 +64,15 @@ export function computeSwapStep(
     aToB,
   );
 
-  if (!isMaxSwap) {
-    amountFixedDelta = getAmountFixedDelta(
-      currSqrtPrice,
-      nextSqrtPrice,
-      currLiquidity,
-      amountSpecifiedIsInput,
-      aToB,
-    );
-  }
+  let amountFixedDelta = (!isMaxSwap || initialAmountFixedDelta.exceedsMax())
+    ? getAmountFixedDelta(
+        currSqrtPrice,
+        nextSqrtPrice,
+        currLiquidity,
+        amountSpecifiedIsInput,
+        aToB,
+      )
+    : initialAmountFixedDelta.value();
 
   let amountIn = amountSpecifiedIsInput ? amountFixedDelta : amountUnfixedDelta;
   let amountOut = amountSpecifiedIsInput
@@ -118,6 +120,30 @@ function getAmountFixedDelta(
     );
   } else {
     return getAmountDeltaB(
+      currSqrtPrice,
+      targetSqrtPrice,
+      currLiquidity,
+      amountSpecifiedIsInput,
+    );
+  }
+}
+
+function tryGetAmountFixedDelta(
+  currSqrtPrice: BN,
+  targetSqrtPrice: BN,
+  currLiquidity: BN,
+  amountSpecifiedIsInput: boolean,
+  aToB: boolean,
+) {
+  if (aToB === amountSpecifiedIsInput) {
+    return tryGetAmountDeltaA(
+      currSqrtPrice,
+      targetSqrtPrice,
+      currLiquidity,
+      amountSpecifiedIsInput,
+    );
+  } else {
+    return tryGetAmountDeltaB(
       currSqrtPrice,
       targetSqrtPrice,
       currLiquidity,

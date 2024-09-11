@@ -141,7 +141,9 @@ export function tryGetAmountDeltaB(
     return AmountDeltaU64.fromValid(ZERO);
   }
 
-  const p = BitMath.mul(n0, n1, limit);
+  // we need to use limit * 2 (u256) here to prevent overflow error IN BitMath.mul.
+  // we check the overflow in the next step and return wrapped error if it happens.
+  const p = BitMath.mul(n0, n1, limit * 2);
   if (BitMath.isOverLimit(p, limit)) {
     return AmountDeltaU64.fromExceedsMax(new WhirlpoolsError(
       `MulShiftRight overflowed u${limit}.`,
@@ -149,7 +151,7 @@ export function tryGetAmountDeltaB(
     ));
   }
   const result = MathUtil.fromX64_BN(p);
-  const shouldRound = roundUp && result.and(U64_MAX).gt(ZERO);
+  const shouldRound = roundUp && p.and(U64_MAX).gt(ZERO);
   if (shouldRound && result.eq(U64_MAX)) {
     return AmountDeltaU64.fromExceedsMax(new WhirlpoolsError(
       `MulShiftRight overflowed u${limit}.`,

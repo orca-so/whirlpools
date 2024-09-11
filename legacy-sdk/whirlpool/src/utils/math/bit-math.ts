@@ -52,6 +52,8 @@ export class BitMath {
     roundUp: boolean,
     limit: number,
   ) {
+    // customized this function is used in tryGetAmountDeltaB (token-math.ts)
+
     if (n0.eq(ZERO) || n1.eq(ZERO)) {
       return ZERO;
     }
@@ -64,7 +66,7 @@ export class BitMath {
       );
     }
     const result = MathUtil.fromX64_BN(p);
-    const shouldRound = roundUp && result.and(U64_MAX).gt(ZERO);
+    const shouldRound = roundUp && p.and(U64_MAX).gt(ZERO);
     if (shouldRound && result.eq(U64_MAX)) {
       throw new WhirlpoolsError(
         `MulShiftRight overflowed u${limit}.`,

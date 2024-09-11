@@ -275,7 +275,7 @@ describe("splash pool tests", () => {
       },
     ];
 
-    testVariations.forEach((variation, i) => {
+    testVariations.forEach((variation) => {
       const caseName = `${variation.figure}, mode=${variation.tradeMode}, liq=${variation.poolLiquidity}, amount=${variation.tradeTokenAmount}`;
 
       it(caseName, async () => {
@@ -290,7 +290,7 @@ describe("splash pool tests", () => {
         const tradeAmountSpecifiedIsInput = tradeMode === "exactIn";
         const tradeAToB = tradeDirection === "AtoB";
 
-        const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+        const { whirlpoolPda, tokenAccountA, tokenAccountB } =
         await initTestPoolWithTokens(
           testCtx.whirlpoolCtx,
           poolTickSpacing,

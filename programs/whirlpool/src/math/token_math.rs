@@ -167,7 +167,7 @@ pub fn try_get_amount_delta_b(
     
         Ok(AmountDeltaU64::Valid(if should_round { result + 1 } else { result }))
     } else {
-        return Ok(AmountDeltaU64::ExceedsMax(ErrorCode::MultiplicationShiftRightOverflow));
+        Ok(AmountDeltaU64::ExceedsMax(ErrorCode::MultiplicationShiftRightOverflow))
     }
 }
 

@@ -620,9 +620,11 @@ function tryGetAmountADelta(
   let product = liquidity.mul(diff);
   let num = toX64(product);
 
+  // eslint-disable-next-line no-console
   console.log(
     `liquidity - ${liquidity.toFixed(0, 1)}, diff - ${diff.toFixed(0, 1)}`
   );
+  // eslint-disable-next-line no-console
   console.log(`product - ${product.toFixed(0, 1)} >192 - ${num.gt(U256_MAX)}`);
   if (product.gt(U192_MAX)) {
     throw new Error("MultiplicationOverflow");
@@ -638,6 +640,7 @@ function tryGetAmountADelta(
   }
 
   if (result.gt(U64_MAX)) {
+    // eslint-disable-next-line no-console
     console.log(`result exceed token - ${result.toFixed(0, 1)}`);
     return {
       type: "ExceedsMax",
@@ -802,9 +805,11 @@ function fromX64(num: Decimal) {
   return num.div(new Decimal(2).pow(64));
 }
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 function writeJson(pathToFile: string, data: any): void {
   const pathName = path.join(__dirname, "../", pathToFile);
   const stringifiedData = JSON.stringify(data, null, 2);
+  // eslint-disable-next-line no-console
   console.log(`Writing to file - ${pathName}`);
   writeFileSync(pathName, stringifiedData);
 }
@@ -826,6 +831,7 @@ function tickIndexToSqrtPriceX64(tickIndex: number): BN {
 }
 
 function panic() {
+  // eslint-disable-next-line no-console
   console.error("PANIC!");
   process.exit(1);
 }

@@ -735,9 +735,8 @@ function getTokenDirectionText(
   if (exactInput && !aToB) {
     return `swap exactly ${tradeAmountString} tokenB to tokenA`;
   }
-  if (!exactInput && !aToB) {
-    return `swap tokenB to exactly ${tradeAmountString} tokenA`;
-  }
+  // (!exactInput && !aToB)
+  return `swap tokenB to exactly ${tradeAmountString} tokenA`;
 }
 
 function getCurrTickText(currTickSetup: CurrTickSetup) {

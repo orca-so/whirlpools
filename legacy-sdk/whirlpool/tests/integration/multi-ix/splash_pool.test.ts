@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { DecimalUtil, Percentage } from "@orca-so/common-sdk";
+import { DecimalUtil, Percentage, U64_MAX } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
@@ -414,6 +414,189 @@ describe("splash pool tests", () => {
     );
     return [tokenVaultA, tokenVaultB];
   }
+
+  describe("ExactOut overflow (required input token is over u64 max)", () => {
+    // Since trade mode is ExactOut, the outputt amount must be within u64 max, but the input token may over u64 max.
+    // It is okay to fail with overflow error because the trade is impossible.
+
+    // B to A (too much tokenB is required)
+    it("(toB) |-----m-----l********************|S******************Tu-----x-----| (toA), too much tokenB is required", async () => {
+      const poolTickSpacing = 32768 + 128;
+      const poolInitialTickIndex = 0;
+      const poolLiquidity = powBN(2, 34);
+      const tradeAmountSpecifiedIsInput = false;
+      const tradeAToB = false;
+
+      const { whirlpoolPda, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokens(
+        testCtx.whirlpoolCtx,
+        poolTickSpacing,
+        PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex), 
+        MAX_U64,
+      );
+  
+      const pool = await testCtx.whirlpoolClient.getPool(
+        whirlpoolPda.publicKey,
+      );
+  
+      await (await pool.initTickArrayForTicks([
+        -1, +1
+      ]))!.buildAndExecute();
+  
+      const fullRange = TickUtil.getFullRangeTickIndex(pool.getData().tickSpacing);
+  
+      // provide liquidity
+      const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
+        liquidity: poolLiquidity,
+        slippageTolerance: Percentage.fromFraction(0, 100),
+        sqrtPrice: pool.getData().sqrtPrice,
+        tickCurrentIndex: pool.getData().tickCurrentIndex,
+        tickLowerIndex: fullRange[0],
+        tickUpperIndex: fullRange[1],
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+      });
+      const txAndMint = await pool.openPosition(fullRange[0], fullRange[1], depositQuote);
+      await txAndMint.tx.buildAndExecute();
+      await pool.refreshData(); // reflect new liquidity
+
+      // try to output all tokenA
+      const tradeTokenAmount = depositQuote.tokenEstA;
+      
+      await assert.rejects(async () => swapQuoteWithParams({
+          amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+          aToB: tradeAToB,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(tradeAmountSpecifiedIsInput),
+          sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+          tickArrays: await SwapUtils.getTickArrays(
+            pool.getData().tickCurrentIndex,
+            pool.getData().tickSpacing,
+            tradeAToB,
+            testCtx.whirlpoolCtx.program.programId,
+            pool.getAddress(),
+            testCtx.whirlpoolCtx.fetcher,
+            IGNORE_CACHE,
+          ),
+          tokenAmount: tradeTokenAmount,
+          whirlpoolData: pool.getData(),
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        }, Percentage.fromFraction(0, 100)),
+        /MulShiftRight overflowed u128/ // at getAmountUnfixedDelta for tokenB (too much tokenB is required)
+      );
+
+      await assert.rejects(
+        toTx(
+          testCtx.whirlpoolCtx,
+          WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+            amount: tradeTokenAmount,
+            amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+            aToB: tradeAToB,
+            otherAmountThreshold: U64_MAX,
+            sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+            tokenAuthority: testCtx.provider.wallet.publicKey,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: pool.getData().tokenVaultA,
+            tokenVaultB: pool.getData().tokenVaultB,
+            whirlpool: pool.getAddress(),
+            tickArray0: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId).publicKey,
+            tickArray1: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId).publicKey,
+            tickArray2: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId).publicKey,
+            oracle: PDAUtil.getOracle(testCtx.whirlpoolCtx.program.programId, pool.getAddress()).publicKey,
+          })
+        ).buildAndExecute(),
+        /MultiplicationShiftRightOverflow/ // at get_amount_unfixed_delta for tokenB (too much tokenB is required)
+      );  
+    });
+
+    // A to B (too much tokenA is required)
+    it("(toB) |-----m-----lT******************S|********************u-----x-----| (toA), too much tokenA is required", async () => {
+      const poolTickSpacing = 32768 + 128;
+      const poolInitialTickIndex = 0;
+      const poolLiquidity = powBN(2, 34);
+      const tradeAmountSpecifiedIsInput = false;
+      const tradeAToB = true;
+
+      const { whirlpoolPda, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokens(
+        testCtx.whirlpoolCtx,
+        poolTickSpacing,
+        PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex), 
+        MAX_U64,
+      );
+  
+      const pool = await testCtx.whirlpoolClient.getPool(
+        whirlpoolPda.publicKey,
+      );
+  
+      await (await pool.initTickArrayForTicks([
+        -1, +1
+      ]))!.buildAndExecute();
+  
+      const fullRange = TickUtil.getFullRangeTickIndex(pool.getData().tickSpacing);
+  
+      // provide liquidity
+      const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
+        liquidity: poolLiquidity,
+        slippageTolerance: Percentage.fromFraction(0, 100),
+        sqrtPrice: pool.getData().sqrtPrice,
+        tickCurrentIndex: pool.getData().tickCurrentIndex,
+        tickLowerIndex: fullRange[0],
+        tickUpperIndex: fullRange[1],
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+      });
+      const txAndMint = await pool.openPosition(fullRange[0], fullRange[1], depositQuote);
+      await txAndMint.tx.buildAndExecute();
+      await pool.refreshData(); // reflect new liquidity
+
+      // try to output all tokenB
+      const tradeTokenAmount = depositQuote.tokenEstB;
+      
+      await assert.rejects(async () => swapQuoteWithParams({
+          amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+          aToB: tradeAToB,
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(tradeAmountSpecifiedIsInput),
+          sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+          tickArrays: await SwapUtils.getTickArrays(
+            pool.getData().tickCurrentIndex,
+            pool.getData().tickSpacing,
+            tradeAToB,
+            testCtx.whirlpoolCtx.program.programId,
+            pool.getAddress(),
+            testCtx.whirlpoolCtx.fetcher,
+            IGNORE_CACHE,
+          ),
+          tokenAmount: tradeTokenAmount,
+          whirlpoolData: pool.getData(),
+          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        }, Percentage.fromFraction(0, 100)),
+        /Results larger than U64/ // at getAmountUnfixedDelta for tokenA (too much tokenA is required)
+      );
+
+      await assert.rejects(
+        toTx(
+          testCtx.whirlpoolCtx,
+          WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+            amount: tradeTokenAmount,
+            amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+            aToB: tradeAToB,
+            otherAmountThreshold: U64_MAX,
+            sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+            tokenAuthority: testCtx.provider.wallet.publicKey,
+            tokenOwnerAccountA: tokenAccountA,
+            tokenOwnerAccountB: tokenAccountB,
+            tokenVaultA: pool.getData().tokenVaultA,
+            tokenVaultB: pool.getData().tokenVaultB,
+            whirlpool: pool.getAddress(),
+            tickArray0: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId).publicKey,
+            tickArray1: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId, -1).publicKey,
+            tickArray2: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId, -1).publicKey,
+            oracle: PDAUtil.getOracle(testCtx.whirlpoolCtx.program.programId, pool.getAddress()).publicKey,
+          })
+        ).buildAndExecute(),
+        /TokenMaxExceeded/ // at get_amount_unfixed_delta for tokenA (too much tokenA is required)
+      );  
+    });
+  });
 
   it("ExactOut Sandwitch attack senario", async () => {
     const tickSpacingSplash128 = 32768 + 128;

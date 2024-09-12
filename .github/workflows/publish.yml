@@ -89,6 +89,7 @@ jobs:
     - name: Create Release
       uses: ncipollo/release-action@v1
       with:
+        name: "SDK - $(basename ${{ github.ref_name }})"
         generateReleaseNotes: true
         allowUpdates: true
         artifacts: idl.zip

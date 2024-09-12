@@ -86,10 +86,9 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: idl
-        path: idl
     - name: Create Release
       uses: ncipollo/release-action@v1
       with:
         generateReleaseNotes: true
         allowUpdates: true
-        artifacts: idl
+        artifacts: idl.zip

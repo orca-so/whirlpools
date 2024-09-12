@@ -86,10 +86,13 @@ jobs:
       uses: actions/download-artifact@v4
       with:
         name: idl
+    - name: Create Release Name
+      id: name
+      run: echo "NAME=SDK - $(basename ${{ github.ref_name }})" >> $GITHUB_OUTPUT
     - name: Create Release
       uses: ncipollo/release-action@v1
       with:
-        name: "SDK - $(basename ${{ github.ref_name }})"
+        name: ${{ steps.name.outputs.NAME }}
         generateReleaseNotes: true
         allowUpdates: true
         artifacts: idl.zip

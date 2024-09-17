@@ -2937,7 +2937,7 @@ __metadata:
     mocha: "npm:^10.7.3"
     nx: "npm:^19.7.3"
     rimraf: "npm:^6.0.1"
-    sinon: "npm:^19.0.1"
+    sinon: "npm:^19.0.2"
     ts-mocha: "npm:^10.0.0"
   languageName: unknown
   linkType: soft
@@ -3144,12 +3144,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sinonjs/fake-timers@npm:13.0.1, @sinonjs/fake-timers@npm:^13.0.1":
+"@sinonjs/fake-timers@npm:^13.0.1":
   version: 13.0.1
   resolution: "@sinonjs/fake-timers@npm:13.0.1"
   dependencies:
     "@sinonjs/commons": "npm:^3.0.1"
   checksum: 10c0/4d0a0f83d0847780675ee8287ae41a19f2dba372256df5383db1a84491a752114bf1724024a52a0d85f240f705b88a64271322c475158e8162e5e5b4568a7399
+  languageName: node
+  linkType: hard
+
+"@sinonjs/fake-timers@npm:^13.0.2":
+  version: 13.0.2
+  resolution: "@sinonjs/fake-timers@npm:13.0.2"
+  dependencies:
+    "@sinonjs/commons": "npm:^3.0.1"
+  checksum: 10c0/fc68fd872dff8a3457f7b0cf4e3c06db5ab35332a19da58165bb2e02b2016911dd77c6d5bd8995f8d9e012f3379b065ea37c3f240d0aa6716a591ba89912a486
   languageName: node
   linkType: hard
 
@@ -13716,17 +13725,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"sinon@npm:^19.0.1":
-  version: 19.0.1
-  resolution: "sinon@npm:19.0.1"
+"sinon@npm:^19.0.2":
+  version: 19.0.2
+  resolution: "sinon@npm:19.0.2"
   dependencies:
     "@sinonjs/commons": "npm:^3.0.1"
-    "@sinonjs/fake-timers": "npm:13.0.1"
+    "@sinonjs/fake-timers": "npm:^13.0.2"
     "@sinonjs/samsam": "npm:^8.0.1"
     diff: "npm:^7.0.0"
     nise: "npm:^6.1.1"
     supports-color: "npm:^7.2.0"
-  checksum: 10c0/e25db53e34f07b8585b1db2d73c3182bcff828485785abe50ef33856d1f784b255d9f100a3d7b1475e19caf5072a10f6845f3f0af141a8e1ece30b1f46453b99
+  checksum: 10c0/a5d988d55643677e55bbc70c3aa6c9977f8a7cf55d157278ea8e4474d9acbec16d9c44056bd763e4f5988daf0fb75370099cf90105243dbb8742978478d53c40
   languageName: node
   linkType: hard
 

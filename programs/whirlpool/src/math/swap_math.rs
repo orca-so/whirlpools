@@ -22,6 +22,14 @@ pub fn compute_swap(
     amount_specified_is_input: bool,
     a_to_b: bool,
 ) -> Result<SwapStepComputation, ErrorCode> {
+    // Since SplashPool (aka FullRange only pool) has only 2 initialized ticks at both ends,
+    // the possibility of exceeding u64 when calculating "delta amount" is higher than concentrated pools.
+    // This problem occurs with ExactIn.
+    // The reason is that in ExactOut, "fixed delta" never exceeds the amount of tokens present in the pool and is clearly within the u64 range.
+    // On the other hand, for ExactIn, "fixed delta" may exceed u64 because it calculates the amount of tokens needed to move the price to the end.
+    // However, the primary purpose of initial calculation of "fixed delta" is to determine whether or not the iteration is "max swap" or not.
+    // So the info that “the amount of tokens required exceeds the u64 range” is sufficient to determine that the iteration is NOT "max swap".
+    //
     // delta <= u64::MAX: AmountDeltaU64::Valid
     // delta >  u64::MAX: AmountDeltaU64::ExceedsMax
     let initial_amount_fixed_delta = try_get_amount_fixed_delta(
@@ -66,6 +74,7 @@ pub fn compute_swap(
 
     // If the swap is not at the max, we need to readjust the amount of the fixed token we are using
     let amount_fixed_delta = if !is_max_swap || initial_amount_fixed_delta.exceeds_max() {
+        // next_sqrt_price is calculated by get_next_sqrt_price and the result will be in the u64 range.
         get_amount_fixed_delta(
             sqrt_price_current,
             next_sqrt_price,
@@ -74,6 +83,7 @@ pub fn compute_swap(
             a_to_b,
         )?
     } else {
+        // the result will be in the u64 range.
         initial_amount_fixed_delta.value()
     };
 

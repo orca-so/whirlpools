@@ -2930,7 +2930,7 @@ __metadata:
   dependencies:
     "@types/bn.js": "npm:~5.1.6"
     "@types/mocha": "npm:^10.0.8"
-    "@types/node": "npm:^22.5.5"
+    "@types/node": "npm:^22.6.1"
     "@types/sinon": "npm:^17.0.3"
     husky: "npm:^9.1.6"
     lint-staged: "npm:^15.2.10"
@@ -4448,12 +4448,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.5.5":
-  version: 22.5.5
-  resolution: "@types/node@npm:22.5.5"
+"@types/node@npm:^22.6.1":
+  version: 22.6.1
+  resolution: "@types/node@npm:22.6.1"
   dependencies:
     undici-types: "npm:~6.19.2"
-  checksum: 10c0/ead9495cfc6b1da5e7025856dcce2591e9bae635357410c0d2dd619fce797d2a1d402887580ca4b336cb78168b195224869967de370a23f61663cf1e4836121c
+  checksum: 10c0/79fdb14f268070eb21d25f3e81811b73c10dfcc65a638a6546fd97aa3e7dfe473f31a547fd21c43b8559a435b6ab26057066a47b5453bd1b1cdffe14430ac399
   languageName: node
   linkType: hard
 

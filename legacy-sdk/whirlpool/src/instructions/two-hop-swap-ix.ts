@@ -93,6 +93,11 @@ export type TwoHopSwapInput = {
  * - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
  * - `InvalidIntermediaryMint` - Error if the intermediary mint between hop one and two do not equal.
  * - `DuplicateTwoHopPool` - Error if whirlpool one & two are the same pool.
+ * - `AmountCalcOverflow` - The required token amount exceeds the u64 range.
+ * - `AmountRemainingOverflow` - Result does not match the specified amount.
+ * - `DifferentWhirlpoolTickArrayAccount` - The provided tick array account does not belong to the whirlpool.
+ * - `PartialFillError` - Partially filled when sqrtPriceLimit = 0 and amountSpecifiedIsInput = false.
+ * - `IntermediateTokenAmountMismatch` - The amount of tokens received from the first hop does not match the amount sent to the second hop.
  *
  * ### Parameters
  * @category Instructions

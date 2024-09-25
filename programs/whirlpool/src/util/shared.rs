@@ -37,7 +37,7 @@ pub fn verify_position_authority(
     Ok(())
 }
 
-pub fn verify_position_authority_2022(
+pub fn verify_position_authority_interface(
     // position_token_account is owned by either TokenProgram or Token2022Program
     position_token_account: &InterfaceAccount<'_, TokenAccountInterface>,
     position_authority: &Signer<'_>,

@@ -8,7 +8,7 @@ use solana_program::program_option::COption;
 
 use crate::errors::ErrorCode;
 use crate::state::*;
-use crate::util::{burn_and_close_user_position_token, verify_position_authority_2022};
+use crate::util::{burn_and_close_user_position_token, verify_position_authority_interface};
 
 #[derive(Accounts)]
 pub struct ClosePosition2022<'info> {
@@ -39,7 +39,7 @@ pub struct ClosePosition2022<'info> {
 }
 
 pub fn handler(ctx: Context<ClosePosition2022>) -> Result<()> {
-    verify_position_authority_2022(
+    verify_position_authority_interface(
         &ctx.accounts.position_token_account_2022,
         &ctx.accounts.position_authority,
     )?;

@@ -8,7 +8,7 @@ use crate::manager::liquidity_manager::{
 };
 use crate::math::convert_to_liquidity_delta;
 use crate::state::*;
-use crate::util::{to_timestamp_u64, transfer_from_owner_to_vault, verify_position_authority_2022};
+use crate::util::{to_timestamp_u64, transfer_from_owner_to_vault, verify_position_authority_interface};
 
 #[derive(Accounts)]
 pub struct ModifyLiquidity<'info> {
@@ -50,7 +50,7 @@ pub fn handler(
     token_max_a: u64,
     token_max_b: u64,
 ) -> Result<()> {
-    verify_position_authority_2022(
+    verify_position_authority_interface(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;

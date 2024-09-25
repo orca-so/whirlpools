@@ -4,7 +4,7 @@ use anchor_spl::token_interface::TokenAccount as TokenAccountInterface;
 
 use crate::{
     state::*,
-    util::{transfer_from_vault_to_owner, verify_position_authority_2022},
+    util::{transfer_from_vault_to_owner, verify_position_authority_interface},
 };
 
 #[derive(Accounts)]
@@ -36,7 +36,7 @@ pub struct CollectFees<'info> {
 }
 
 pub fn handler(ctx: Context<CollectFees>) -> Result<()> {
-    verify_position_authority_2022(
+    verify_position_authority_interface(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;

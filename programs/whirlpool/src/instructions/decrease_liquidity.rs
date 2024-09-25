@@ -5,7 +5,7 @@ use crate::manager::liquidity_manager::{
     calculate_liquidity_token_deltas, calculate_modify_liquidity, sync_modify_liquidity_values,
 };
 use crate::math::convert_to_liquidity_delta;
-use crate::util::{to_timestamp_u64, transfer_from_vault_to_owner, verify_position_authority_2022};
+use crate::util::{to_timestamp_u64, transfer_from_vault_to_owner, verify_position_authority_interface};
 
 use super::increase_liquidity::ModifyLiquidity;
 
@@ -18,7 +18,7 @@ pub fn handler(
     token_min_a: u64,
     token_min_b: u64,
 ) -> Result<()> {
-    verify_position_authority_2022(
+    verify_position_authority_interface(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;

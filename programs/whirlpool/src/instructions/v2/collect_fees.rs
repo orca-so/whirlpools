@@ -6,7 +6,7 @@ use crate::util::{parse_remaining_accounts, AccountsType, RemainingAccountsInfo}
 use crate::{
     constants::transfer_memo,
     state::*,
-    util::{v2::transfer_from_vault_to_owner_v2, verify_position_authority_2022},
+    util::{v2::transfer_from_vault_to_owner_v2, verify_position_authority_interface},
 };
 
 #[derive(Accounts)]
@@ -52,7 +52,7 @@ pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CollectFeesV2<'info>>,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
-    verify_position_authority_2022(
+    verify_position_authority_interface(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;

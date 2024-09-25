@@ -1,5 +1,6 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount};
+use anchor_spl::token_interface::TokenAccount as TokenAccountInterface;
 
 use crate::errors::ErrorCode;
 use crate::manager::liquidity_manager::{
@@ -7,7 +8,7 @@ use crate::manager::liquidity_manager::{
 };
 use crate::math::convert_to_liquidity_delta;
 use crate::state::*;
-use crate::util::{to_timestamp_u64, transfer_from_owner_to_vault, verify_position_authority};
+use crate::util::{to_timestamp_u64, transfer_from_owner_to_vault, verify_position_authority_2022};
 
 #[derive(Accounts)]
 pub struct ModifyLiquidity<'info> {
@@ -25,7 +26,7 @@ pub struct ModifyLiquidity<'info> {
         constraint = position_token_account.mint == position.position_mint,
         constraint = position_token_account.amount == 1
     )]
-    pub position_token_account: Box<Account<'info, TokenAccount>>,
+    pub position_token_account: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
     #[account(mut, constraint = token_owner_account_a.mint == whirlpool.token_mint_a)]
     pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
@@ -49,7 +50,7 @@ pub fn handler(
     token_max_a: u64,
     token_max_b: u64,
 ) -> Result<()> {
-    verify_position_authority(
+    verify_position_authority_2022(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;

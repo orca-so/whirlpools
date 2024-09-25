@@ -8,7 +8,7 @@ use solana_program::program_option::COption;
 
 use crate::errors::ErrorCode;
 use crate::state::*;
-use crate::util::{burn_and_close_user_position_token, verify_position_authority};
+use crate::util::{burn_and_close_user_position_token, verify_position_authority_2022};
 
 #[derive(Accounts)]
 pub struct ClosePosition2022<'info> {
@@ -127,36 +127,6 @@ pub fn burn_and_close_user_position_token_2022<'info>(
         ],
         &[position_seeds],
     )?;
-
-    Ok(())
-}
-
-pub fn verify_position_authority_2022(
-    position_token_account_2022: &InterfaceAccount<'_, TokenAccount>,
-    position_authority: &Signer<'_>,
-) -> Result<()> {
-    // Check token authority using validate_owner method...
-    match position_token_account_2022.delegate {
-        COption::Some(ref delegate) if position_authority.key == delegate => {
-            validate_owner(delegate, &position_authority.to_account_info())?;
-            if position_token_account_2022.delegated_amount != 1 {
-                return Err(ErrorCode::InvalidPositionTokenAmount.into());
-            }
-        }
-        _ => validate_owner(
-            &position_token_account_2022.owner,
-            &position_authority.to_account_info(),
-        )?,
-    };
-    Ok(())
-}
-
-// private
-// TODO: remove
-fn validate_owner(expected_owner: &Pubkey, owner_account_info: &AccountInfo) -> Result<()> {
-    if expected_owner != owner_account_info.key || !owner_account_info.is_signer {
-        return Err(ErrorCode::MissingOrInvalidDelegate.into());
-    }
 
     Ok(())
 }

@@ -11,7 +11,7 @@ use crate::util::{
     RemainingAccountsInfo,
 };
 use crate::util::{
-    to_timestamp_u64, v2::transfer_from_vault_to_owner_v2, verify_position_authority,
+    to_timestamp_u64, v2::transfer_from_vault_to_owner_v2, verify_position_authority_2022,
 };
 
 use super::increase_liquidity::ModifyLiquidityV2;
@@ -26,7 +26,7 @@ pub fn handler<'info>(
     token_min_b: u64,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
-    verify_position_authority(
+    verify_position_authority_2022(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;

@@ -2761,84 +2761,84 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nrwl/tao@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nrwl/tao@npm:19.8.0"
+"@nrwl/tao@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nrwl/tao@npm:19.8.2"
   dependencies:
-    nx: "npm:19.8.0"
+    nx: "npm:19.8.2"
     tslib: "npm:^2.3.0"
   bin:
     tao: index.js
-  checksum: 10c0/fd553087fbef6afc855f8c64598abd1d304850bbf725d874db814a653e10850ca41ba33cdfcb0799c440df86adc7c1c3146977e96551c677d7416a2f1c89af2b
+  checksum: 10c0/e85be912f2851750c012fed71c85f0362d466ff2752361ff0a8f91df275fb7d9d4499ba1083ffa28aabd6dcce2c225e704bdbe06f1a9b3f36b558dc31ffaa045
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-arm64@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nx/nx-darwin-arm64@npm:19.8.0"
+"@nx/nx-darwin-arm64@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nx/nx-darwin-arm64@npm:19.8.2"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-x64@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nx/nx-darwin-x64@npm:19.8.0"
+"@nx/nx-darwin-x64@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nx/nx-darwin-x64@npm:19.8.2"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-freebsd-x64@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nx/nx-freebsd-x64@npm:19.8.0"
+"@nx/nx-freebsd-x64@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nx/nx-freebsd-x64@npm:19.8.2"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm-gnueabihf@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nx/nx-linux-arm-gnueabihf@npm:19.8.0"
+"@nx/nx-linux-arm-gnueabihf@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nx/nx-linux-arm-gnueabihf@npm:19.8.2"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-gnu@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nx/nx-linux-arm64-gnu@npm:19.8.0"
+"@nx/nx-linux-arm64-gnu@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nx/nx-linux-arm64-gnu@npm:19.8.2"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-musl@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nx/nx-linux-arm64-musl@npm:19.8.0"
+"@nx/nx-linux-arm64-musl@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nx/nx-linux-arm64-musl@npm:19.8.2"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-gnu@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nx/nx-linux-x64-gnu@npm:19.8.0"
+"@nx/nx-linux-x64-gnu@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nx/nx-linux-x64-gnu@npm:19.8.2"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-musl@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nx/nx-linux-x64-musl@npm:19.8.0"
+"@nx/nx-linux-x64-musl@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nx/nx-linux-x64-musl@npm:19.8.2"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-arm64-msvc@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nx/nx-win32-arm64-msvc@npm:19.8.0"
+"@nx/nx-win32-arm64-msvc@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nx/nx-win32-arm64-msvc@npm:19.8.2"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-x64-msvc@npm:19.8.0":
-  version: 19.8.0
-  resolution: "@nx/nx-win32-x64-msvc@npm:19.8.0"
+"@nx/nx-win32-x64-msvc@npm:19.8.2":
+  version: 19.8.2
+  resolution: "@nx/nx-win32-x64-msvc@npm:19.8.2"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -2942,7 +2942,7 @@ __metadata:
     husky: "npm:^9.1.6"
     lint-staged: "npm:^15.2.10"
     mocha: "npm:^10.7.3"
-    nx: "npm:^19.8.0"
+    nx: "npm:^19.8.2"
     rimraf: "npm:^6.0.1"
     sinon: "npm:^19.0.2"
     ts-mocha: "npm:^10.0.0"
@@ -8031,7 +8031,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"fs-extra@npm:^11.1.0, fs-extra@npm:^11.1.1, fs-extra@npm:^11.2.0":
+"fs-extra@npm:^11.1.1, fs-extra@npm:^11.2.0":
   version: 11.2.0
   resolution: "fs-extra@npm:11.2.0"
   dependencies:
@@ -11466,22 +11466,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nx@npm:19.8.0, nx@npm:^19.8.0":
-  version: 19.8.0
-  resolution: "nx@npm:19.8.0"
+"nx@npm:19.8.2, nx@npm:^19.8.2":
+  version: 19.8.2
+  resolution: "nx@npm:19.8.2"
   dependencies:
     "@napi-rs/wasm-runtime": "npm:0.2.4"
-    "@nrwl/tao": "npm:19.8.0"
-    "@nx/nx-darwin-arm64": "npm:19.8.0"
-    "@nx/nx-darwin-x64": "npm:19.8.0"
-    "@nx/nx-freebsd-x64": "npm:19.8.0"
-    "@nx/nx-linux-arm-gnueabihf": "npm:19.8.0"
-    "@nx/nx-linux-arm64-gnu": "npm:19.8.0"
-    "@nx/nx-linux-arm64-musl": "npm:19.8.0"
-    "@nx/nx-linux-x64-gnu": "npm:19.8.0"
-    "@nx/nx-linux-x64-musl": "npm:19.8.0"
-    "@nx/nx-win32-arm64-msvc": "npm:19.8.0"
-    "@nx/nx-win32-x64-msvc": "npm:19.8.0"
+    "@nrwl/tao": "npm:19.8.2"
+    "@nx/nx-darwin-arm64": "npm:19.8.2"
+    "@nx/nx-darwin-x64": "npm:19.8.2"
+    "@nx/nx-freebsd-x64": "npm:19.8.2"
+    "@nx/nx-linux-arm-gnueabihf": "npm:19.8.2"
+    "@nx/nx-linux-arm64-gnu": "npm:19.8.2"
+    "@nx/nx-linux-arm64-musl": "npm:19.8.2"
+    "@nx/nx-linux-x64-gnu": "npm:19.8.2"
+    "@nx/nx-linux-x64-musl": "npm:19.8.2"
+    "@nx/nx-win32-arm64-msvc": "npm:19.8.2"
+    "@nx/nx-win32-x64-msvc": "npm:19.8.2"
     "@yarnpkg/lockfile": "npm:^1.1.0"
     "@yarnpkg/parsers": "npm:3.0.0-rc.46"
     "@zkochan/js-yaml": "npm:0.0.7"
@@ -11496,7 +11496,6 @@ __metadata:
     figures: "npm:3.2.0"
     flat: "npm:^5.0.2"
     front-matter: "npm:^4.0.2"
-    fs-extra: "npm:^11.1.0"
     ignore: "npm:^5.0.4"
     jest-diff: "npm:^29.4.1"
     jsonc-parser: "npm:3.2.0"
@@ -11547,7 +11546,7 @@ __metadata:
   bin:
     nx: bin/nx.js
     nx-cloud: bin/nx-cloud.js
-  checksum: 10c0/aa9d60ff0933ccbc6ddae0362f765750218658fbb2f8ac88d5e30575f94ad11c0d733f690a362a53092d43198f22143396e4436c8c5d1dbd803453339317f65d
+  checksum: 10c0/c6c48a30b7981bd6088f5b8317a249e05e837514f6ba4b7eb49055133f368ded77e23931fc22f72f3480635d6e939ac4ff827d4e08d973e34076fef2905c2bed
   languageName: node
   linkType: hard
 

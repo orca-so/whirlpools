@@ -1,5 +1,6 @@
 export * from "./close-bundled-position-ix";
 export * from "./close-position-ix";
+export * from "./close-position-with-token-extensions-ix";
 export * from "./collect-fees-ix";
 export * from "./collect-protocol-fees-ix";
 export * from "./collect-reward-ix";
@@ -15,6 +16,7 @@ export * from "./initialize-reward-ix";
 export * from "./initialize-tick-array-ix";
 export * from "./open-bundled-position-ix";
 export * from "./open-position-ix";
+export * from "./open-position-with-token-extensions-ix";
 export * from "./set-collect-protocol-fees-authority-ix";
 export * from "./set-default-fee-rate-ix";
 export * from "./set-default-protocol-fee-rate-ix";

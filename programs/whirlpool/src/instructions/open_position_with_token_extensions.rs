@@ -16,7 +16,7 @@ use crate::state::*;
 use crate::constants::nft::whirlpool_nft_update_auth::ID as WP_NFT_UPDATE_AUTH;
 
 #[derive(Accounts)]
-pub struct OpenPosition2022WithMetadata<'info> {
+pub struct OpenPositionWithTokenExtensions<'info> {
     #[account(mut)]
     pub funder: Signer<'info>,
 
@@ -26,18 +26,18 @@ pub struct OpenPosition2022WithMetadata<'info> {
     #[account(init,
       payer = funder,
       space = Position::LEN,
-      seeds = [b"position".as_ref(), position_mint_2022.key().as_ref()],
+      seeds = [b"position".as_ref(), position_mint.key().as_ref()],
       bump,
     )]
     pub position: Box<Account<'info, Position>>,
 
     /// CHECK: initialized in the handler
     #[account(mut)]
-    pub position_mint_2022: Signer<'info>,
+    pub position_mint: Signer<'info>,
 
     /// CHECK: initialized in the handler
     #[account(mut)]
-    pub position_token_account_2022: UncheckedAccount<'info>,
+    pub position_token_account: UncheckedAccount<'info>,
 
     pub whirlpool: Box<Account<'info, Whirlpool>>,
 
@@ -52,49 +52,53 @@ pub struct OpenPosition2022WithMetadata<'info> {
 }
 
 /*
-  Opens a new Whirlpool Position with TokenMetadata extension.
+  Opens a new Whirlpool Position with Mint and TokenAccount owned by Token-2022.
 */
 pub fn handler(
-    ctx: Context<OpenPosition2022WithMetadata>,
+    ctx: Context<OpenPositionWithTokenExtensions>,
     tick_lower_index: i32,
     tick_upper_index: i32,
+    with_token_metadata: bool,
 ) -> Result<()> {
     let whirlpool = &ctx.accounts.whirlpool;
-    let position_mint_2022 = &ctx.accounts.position_mint_2022;
+    let position_mint = &ctx.accounts.position_mint;
     let position = &mut ctx.accounts.position;
 
     let position_seeds = [
         b"position".as_ref(),
-        position_mint_2022.key.as_ref(),
+        position_mint.key.as_ref(),
         &[ctx.bumps.position],
     ];
 
     position.open_position(
         whirlpool,
-        position_mint_2022.key(),
+        position_mint.key(),
         tick_lower_index,
         tick_upper_index,
     )?;
 
-    let with_token_metadata_extension = true;
     initialize_position_mint_2022(
-        position_mint_2022,
+        position_mint,
         &ctx.accounts.funder,
         position,
         &ctx.accounts.system_program,
         &ctx.accounts.token_2022_program,
-        with_token_metadata_extension,
-    )?;
-    initialize_token_metadata_extension(
-        position_mint_2022,
-        position,
-        &ctx.accounts.token_2022_program,
-        &position_seeds,
+        with_token_metadata,
     )?;
 
+    if with_token_metadata {
+        initialize_token_metadata_extension(
+            position_mint,
+            position,
+            &ctx.accounts.metadata_update_auth,
+            &ctx.accounts.token_2022_program,
+            &position_seeds,
+        )?;
+    }
+
     initialize_position_token_account_2022(
-        &ctx.accounts.position_token_account_2022,
-        position_mint_2022,
+        &ctx.accounts.position_token_account,
+        position_mint,
         &ctx.accounts.funder,
         &ctx.accounts.owner,
         &ctx.accounts.token_2022_program,
@@ -104,8 +108,8 @@ pub fn handler(
 
     mint_position_token_2022_and_remove_authority(
         position,
-        position_mint_2022,
-        &ctx.accounts.position_token_account_2022,
+        position_mint,
+        &ctx.accounts.position_token_account,
         &ctx.accounts.token_2022_program,
         &position_seeds,
     )?;
@@ -114,7 +118,7 @@ pub fn handler(
 }
 
 pub fn initialize_position_mint_2022<'info>(
-    position_mint_2022: &Signer<'info>,
+    position_mint: &Signer<'info>,
     funder: &Signer<'info>,
     position: &Account<'info, Position>,
     system_program: &Program<'info, System>,
@@ -144,14 +148,14 @@ pub fn initialize_position_mint_2022<'info>(
     invoke(
         &create_account(
             funder.key,
-            position_mint_2022.key,
+            position_mint.key,
             lamports,
             space as u64,
             token_2022_program.key,
         ),
         &[
             funder.to_account_info(),
-            position_mint_2022.to_account_info(),
+            position_mint.to_account_info(),
             token_2022_program.to_account_info(),
             system_program.to_account_info(),
         ],
@@ -162,11 +166,11 @@ pub fn initialize_position_mint_2022<'info>(
     invoke(
         &spl_token_2022::instruction::initialize_mint_close_authority(
             token_2022_program.key,
-            position_mint_2022.key,
+            position_mint.key,
             Some(&authority.key()),
         )?,
         &[
-            position_mint_2022.to_account_info(),
+            position_mint.to_account_info(),
             authority.to_account_info(),
             token_2022_program.to_account_info(),
         ],
@@ -178,12 +182,12 @@ pub fn initialize_position_mint_2022<'info>(
         invoke(
             &spl_token_2022::extension::metadata_pointer::instruction::initialize(
                 token_2022_program.key,
-                position_mint_2022.key,
+                position_mint.key,
                 None,
-                Some(position_mint_2022.key()),
+                Some(position_mint.key()),
             )?,
             &[
-                position_mint_2022.to_account_info(),
+                position_mint.to_account_info(),
                 authority.to_account_info(),
                 token_2022_program.to_account_info(),
             ],
@@ -196,13 +200,13 @@ pub fn initialize_position_mint_2022<'info>(
     invoke(
         &spl_token_2022::instruction::initialize_mint2(
             token_2022_program.key,
-            position_mint_2022.key,
+            position_mint.key,
             &authority.key(),
             None,
             0,
         )?,
         &[
-            position_mint_2022.to_account_info(),
+            position_mint.to_account_info(),
             authority.to_account_info(),
             token_2022_program.to_account_info(),
         ],
@@ -212,17 +216,18 @@ pub fn initialize_position_mint_2022<'info>(
 }
 
 pub fn initialize_token_metadata_extension<'info>(
-    position_mint_2022: &Signer<'info>,
+    position_mint: &Signer<'info>,
     position: &Account<'info, Position>,
+    metadata_update_authority: &UncheckedAccount<'info>,
     token_2022_program: &Program<'info, Token2022>,
     position_seeds: &[&[u8]],
 ) -> Result<()> {
-    let authority = position;
+    let mint_authority = position;
 
     // Create Metadata
-    // Orca Whirlpool Position xxxx...yyyy
+    // WP_2022_METADATA_NAME_PREFIX + " xxxx...yyyy"
     // xxxx and yyyy are the first and last 4 chars of mint address
-    let mint_address = position_mint_2022.key().to_string();
+    let mint_address = position_mint.key().to_string();
     let mut nft_name = String::from(WP_2022_METADATA_NAME_PREFIX);
     nft_name += " ";
     nft_name += &mint_address[0..4];
@@ -234,17 +239,18 @@ pub fn initialize_token_metadata_extension<'info>(
     invoke_signed(
         &spl_token_metadata_interface::instruction::initialize(
             token_2022_program.key,
-            position_mint_2022.key,
-            &WP_NFT_UPDATE_AUTH,
-            position_mint_2022.key,
-            &authority.key(),
+            position_mint.key,
+            metadata_update_authority.key,
+            position_mint.key,
+            &mint_authority.key(),
             nft_name,
             WP_2022_METADATA_SYMBOL.to_string(),
             WP_2022_METADATA_URI.to_string(),
         ),
         &[
-            position_mint_2022.to_account_info(),
-            authority.to_account_info(),
+            position_mint.to_account_info(),
+            mint_authority.to_account_info(),
+            metadata_update_authority.to_account_info(),
             token_2022_program.to_account_info(),
         ],
         &[position_seeds],
@@ -254,8 +260,8 @@ pub fn initialize_token_metadata_extension<'info>(
 }
 
 pub fn initialize_position_token_account_2022<'info>(
-    position_token_account_2022: &UncheckedAccount<'info>,
-    position_mint_2022: &Signer<'info>,
+    position_token_account: &UncheckedAccount<'info>,
+    position_mint: &Signer<'info>,
     funder: &Signer<'info>,
     owner: &UncheckedAccount<'info>,
     token_2022_program: &Program<'info, Token2022>,
@@ -266,9 +272,9 @@ pub fn initialize_position_token_account_2022<'info>(
         associated_token_program.to_account_info(),
         associated_token::Create {
             payer: funder.to_account_info(),
-            associated_token: position_token_account_2022.to_account_info(),
+            associated_token: position_token_account.to_account_info(),
             authority: owner.to_account_info(),
-            mint: position_mint_2022.to_account_info(),
+            mint: position_mint.to_account_info(),
             system_program: system_program.to_account_info(),
             token_program: token_2022_program.to_account_info(),
         },
@@ -277,8 +283,8 @@ pub fn initialize_position_token_account_2022<'info>(
 
 pub fn mint_position_token_2022_and_remove_authority<'info>(
     position: &Account<'info, Position>,
-    position_mint_2022: &Signer<'info>,
-    position_token_account_2022: &UncheckedAccount<'info>,
+    position_mint: &Signer<'info>,
+    position_token_account: &UncheckedAccount<'info>,
     token_2022_program: &Program<'info, Token2022>,
     position_seeds: &[&[u8]],
 ) -> Result<()> {
@@ -288,15 +294,15 @@ pub fn mint_position_token_2022_and_remove_authority<'info>(
     invoke_signed(
         &spl_token_2022::instruction::mint_to(
             token_2022_program.key,
-            position_mint_2022.to_account_info().key,
-            position_token_account_2022.to_account_info().key,
+            position_mint.to_account_info().key,
+            position_token_account.to_account_info().key,
             authority.to_account_info().key,
             &[authority.to_account_info().key],
             1,
         )?,
         &[
-            position_mint_2022.to_account_info(),
-            position_token_account_2022.to_account_info(),
+            position_mint.to_account_info(),
+            position_token_account.to_account_info(),
             authority.to_account_info(),
             token_2022_program.to_account_info(),
         ],
@@ -307,14 +313,14 @@ pub fn mint_position_token_2022_and_remove_authority<'info>(
     invoke_signed(
         &spl_token_2022::instruction::set_authority(
             token_2022_program.key,
-            position_mint_2022.to_account_info().key,
+            position_mint.to_account_info().key,
             Option::None,
             AuthorityType::MintTokens,
             authority.to_account_info().key,
             &[authority.to_account_info().key],
         )?,
         &[
-            position_mint_2022.to_account_info(),
+            position_mint.to_account_info(),
             authority.to_account_info(),
             token_2022_program.to_account_info(),
         ],

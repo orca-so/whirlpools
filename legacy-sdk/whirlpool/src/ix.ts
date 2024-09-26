@@ -558,6 +558,42 @@ export class WhirlpoolIx {
     return ix.closeBundledPositionIx(program, params);
   }
 
+  /**
+   * Open a position in a Whirlpool. A unique token will be minted to represent the position
+   * in the users wallet. Additional TokenMetadata extension is initialized to identify the token if requested.
+   * Mint and Token account are based on Token-2022.
+   * The position will start off with 0 liquidity.
+   *
+   * #### Special Errors
+   * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
+   *
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - OpenPositionWithTokenExtensionsParams object and a derived PDA that hosts the position's metadata.
+   * @returns - Instruction to perform the action.
+   */
+  public static openPositionWithTokenExtensionsIx(
+    program: Program<Whirlpool>,
+    params: ix.OpenPositionWithTokenExtensionsParams,
+  ) {
+    return ix.openPositionWithTokenExtensionsIx(program, params);
+  }
+
+  /**
+   * Close a position in a Whirlpool. Burns the position token in the owner's wallet.
+   * Mint and TokenAccount are based on Token-2022. And Mint accout will be also closed.
+   *
+   * @category Instructions
+   * @param context - Context object containing services required to generate the instruction
+   * @param params - ClosePositionWithTokenExtensionsParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static closePositionWithTokenExtensionsIx(
+    program: Program<Whirlpool>,
+    params: ix.ClosePositionWithTokenExtensionsParams,
+  ) {
+    return ix.closePositionWithTokenExtensionsIx(program, params);
+  }
+
   // V2 instructions
   // TODO: comments
   public static collectFeesV2Ix(

@@ -1,14 +1,13 @@
 use anchor_lang::prelude::*;
 //use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use anchor_spl::token_2022::{self, Token2022};
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::token_interface::{Mint, TokenAccount};
 use solana_program::program::{invoke, invoke_signed};
 use anchor_spl::token_2022::spl_token_2022;
-use solana_program::program_option::COption;
 
 use crate::errors::ErrorCode;
 use crate::state::*;
-use crate::util::{burn_and_close_user_position_token, verify_position_authority_interface};
+use crate::util::verify_position_authority_interface;
 
 #[derive(Accounts)]
 pub struct ClosePosition2022<'info> {

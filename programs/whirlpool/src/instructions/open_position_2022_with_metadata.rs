@@ -172,21 +172,23 @@ pub fn initialize_position_mint_2022<'info>(
         ],
     )?;
 
-    // initialize MetadataPointer extension
-    // authority: None
-    invoke(
-        &spl_token_2022::extension::metadata_pointer::instruction::initialize(
-            token_2022_program.key,
-            position_mint_2022.key,
-            None,
-            Some(position_mint_2022.key()),
-        )?,
-        &[
-            position_mint_2022.to_account_info(),
-            authority.to_account_info(),
-            token_2022_program.to_account_info(),
-        ],
-    )?;
+    if with_token_metadata_extension {
+        // initialize MetadataPointer extension
+        // authority: None
+        invoke(
+            &spl_token_2022::extension::metadata_pointer::instruction::initialize(
+                token_2022_program.key,
+                position_mint_2022.key,
+                None,
+                Some(position_mint_2022.key()),
+            )?,
+            &[
+                position_mint_2022.to_account_info(),
+                authority.to_account_info(),
+                token_2022_program.to_account_info(),
+            ],
+        )?;
+    }
 
     // initialize Mint
     // mint authority: Position account (PDA) (will be removed in the transaction)

@@ -5,9 +5,7 @@ import type { AuthorityType } from "@solana/spl-token";
 import {
   AccountLayout,
   NATIVE_MINT,
-  TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
-  createAccount,
   createApproveInstruction,
   createAssociatedTokenAccountInstruction,
   createBurnInstruction,
@@ -64,35 +62,20 @@ export async function createTokenAccount(
   provider: AnchorProvider,
   mint: web3.PublicKey,
   owner: web3.PublicKey,
-  tokenProgram: web3.PublicKey = TOKEN_PROGRAM_ID,
 ) {
   const tokenAccount = web3.Keypair.generate();
-  if (tokenProgram.equals(TOKEN_2022_PROGRAM_ID)) {
-    // in Token-2022, account size is not constant
-    // it is easy way to delegate work to spl-token package...
-    await createAccount(
-      provider.connection,
-      provider.wallet["payer"],
+  const tx = new web3.Transaction();
+  tx.add(
+    ...(await createTokenAccountInstrs(
+      provider,
+      tokenAccount.publicKey,
       mint,
       owner,
-      tokenAccount,
-      {commitment: "confirmed"},
-      TOKEN_2022_PROGRAM_ID,
-    )
-  } else {
-    const tx = new web3.Transaction();
-    tx.add(
-      ...(await createTokenAccountInstrs(
-        provider,
-        tokenAccount.publicKey,
-        mint,
-        owner,
-      )),
-    );
-    await provider.sendAndConfirm(tx, [tokenAccount], {
-      commitment: "confirmed",
-    });
-  }
+    )),
+  );
+  await provider.sendAndConfirm(tx, [tokenAccount], {
+    commitment: "confirmed",
+  });
   return tokenAccount.publicKey;
 }
 

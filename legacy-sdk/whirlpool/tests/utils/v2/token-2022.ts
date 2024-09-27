@@ -38,6 +38,7 @@ import {
   createReallocateInstruction,
   getAccount,
   getAccountLen,
+  getAccountTypeOfMintType,
   getAssociatedTokenAddressSync,
   getExtensionTypes,
   getMemoTransfer,
@@ -1066,13 +1067,15 @@ function getAccountLenForMintHack(mintData: Mint): number {
   // spl-token cannot handle ConfidentialTransferFeeConfig yet, so we need to patch...
   // 16: ConfidentialTransferFeeConfig
   if (!extensionTypes.includes(16 as ExtensionType)) {
-    return getAccountLen(extensionTypes);
+    return getAccountLen(extensionTypes.map(getAccountTypeOfMintType));
   }
 
   const confidentialTransferFeeAmountLen = 2 + 2 + 64;
   return (
     getAccountLen(
-      extensionTypes.filter((type) => type !== (16 as ExtensionType)),
+      extensionTypes
+      .filter((type) => type !== (16 as ExtensionType))
+      .map(getAccountTypeOfMintType),
     ) + confidentialTransferFeeAmountLen
   );
 }

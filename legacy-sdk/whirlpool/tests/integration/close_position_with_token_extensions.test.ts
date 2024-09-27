@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { AuthorityType, closeAccount, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { AuthorityType, createCloseAccountInstruction, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import * as assert from "assert";
 import { IGNORE_CACHE, increaseLiquidityQuoteByLiquidityWithParams, NO_TOKEN_EXTENSION_CONTEXT, PDAUtil, TickUtil, toTx, WhirlpoolIx } from "../../src";
 import type { InitPoolParams } from "../../src";
@@ -27,6 +27,7 @@ import { Percentage } from "@orca-so/common-sdk";
 import type { PDA } from "@orca-so/common-sdk";
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../utils/test-builders";
 import type { PublicKey } from "@solana/web3.js";
+import { createTokenAccountV2 } from "../utils/v2/token-2022";
 
 describe("close_position_with_token_extensions", () => {
   const provider = anchor.AnchorProvider.local(
@@ -255,11 +256,11 @@ describe("close_position_with_token_extensions", () => {
     .buildAndExecute();
 
     const newOwner = anchor.web3.Keypair.generate();
-    const newOwnerPositionTokenAccount = await createTokenAccount(
+    const newOwnerPositionTokenAccount = await createTokenAccountV2(
       provider,
+      { isToken2022: true },
       mint.publicKey,
       newOwner.publicKey,
-      TOKEN_2022_PROGRAM_ID,
     );
     await transferToken(
       provider,
@@ -303,16 +304,21 @@ describe("close_position_with_token_extensions", () => {
     assert.ok(oldOwnerTokenAccountAfter.amount === 0n);
 
     // closing token account should be possible even if Mint have been closed.
-    await closeAccount(
-      ctx.connection,
-      ctx.wallet["payer"],
-      params.positionTokenAccount,
-      ctx.wallet.publicKey,
-      ctx.wallet.publicKey,
-      [],
-      { commitment: "confirmed" },
-      TOKEN_2022_PROGRAM_ID,
-    );
+    await toTx(
+      ctx, {
+        instructions: [
+          createCloseAccountInstruction(
+            params.positionTokenAccount,
+            ctx.wallet.publicKey,
+            ctx.wallet.publicKey,
+            [],
+            TOKEN_2022_PROGRAM_ID,
+          )
+        ],
+        cleanupInstructions: [],
+        signers: [],
+      }
+    ).buildAndExecute();
     await checkClosed(params.positionTokenAccount);
   });
 
@@ -594,11 +600,11 @@ describe("close_position_with_token_extensions", () => {
     .buildAndExecute();
 
     // not ATA
-    const fakePositionTokenAccount = await createTokenAccount(
+    const fakePositionTokenAccount = await createTokenAccountV2(
       provider,
+      { isToken2022: true },
       mint.publicKey,
       provider.wallet.publicKey,
-      TOKEN_2022_PROGRAM_ID,
     );
 
     await assert.rejects(

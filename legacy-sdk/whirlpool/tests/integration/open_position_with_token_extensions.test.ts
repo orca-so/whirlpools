@@ -14,8 +14,10 @@ import {
   createMint,
   ASSOCIATED_TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { TokenMetadata, unpack as unpackTokenMetadata } from '@solana/spl-token-metadata';
-import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import { unpack as unpackTokenMetadata } from '@solana/spl-token-metadata';
+import type { TokenMetadata } from '@solana/spl-token-metadata';
+import { Keypair, SystemProgram } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import type {
   InitPoolParams,
@@ -40,7 +42,7 @@ import {
 import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../utils/test-builders";
-import { OpenPositionWithTokenExtensionsParams } from "../../src/instructions";
+import type { OpenPositionWithTokenExtensionsParams } from "../../src/instructions";
 
 describe("open_position_with_token_extensions", () => {
   const provider = anchor.AnchorProvider.local(

@@ -21,6 +21,7 @@ import {
   openBundledPosition,
   openPosition,
 } from "../utils/init-utils";
+import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../utils/test-builders";
 
 describe("close_position", () => {
   const provider = anchor.AnchorProvider.local(
@@ -498,7 +499,7 @@ describe("close_position", () => {
     );
   });
 
-  describe("bundled position", () => {
+  describe("bundled position and TokenExtensions based position", () => {
     it("fails if position is BUNDLED position", async () => {
       const fixture = await new WhirlpoolTestFixture(ctx).init({
         tickSpacing: TickSpacing.Standard,
@@ -532,6 +533,45 @@ describe("close_position", () => {
           }),
         ).buildAndExecute(),
         /0x7d6/, // ConstraintSeeds (seed constraint was violated)
+      );
+    });
+
+    it("fails if position is TokenExtensions based position", async () => {
+      const fixture = await new WhirlpoolTestFixture(ctx).init({
+        tickSpacing: TickSpacing.Standard,
+        positions: [],
+      });
+      const { poolInitInfo } = fixture.getInfos();
+
+      // open position with TokenExtensions
+      const { params, mint } = await generateDefaultOpenPositionWithTokenExtensionsParams(
+        ctx,
+        poolInitInfo.whirlpoolPda.publicKey,
+        true,
+        0,
+        poolInitInfo.tickSpacing,
+        provider.wallet.publicKey,
+      );
+      await toTx(
+        ctx,
+        WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      )
+      .addSigner(mint)
+      .buildAndExecute();
+
+      // try to close bundled position
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.closePositionIx(ctx.program, {
+            positionAuthority: provider.wallet.publicKey,
+            receiver: provider.wallet.publicKey,
+            position: params.positionPda.publicKey,
+            positionMint: params.positionMint,
+            positionTokenAccount: params.positionTokenAccount,
+          }),
+        ).buildAndExecute(),
+        /0xbbf/, // AccountOwnedByWrongProgram (Mint and TokenAccount must be owned by TokenProgram (but owned by Token-2022 program))
       );
     });
   });

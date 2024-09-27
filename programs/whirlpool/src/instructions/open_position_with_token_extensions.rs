@@ -324,7 +324,7 @@ pub fn mint_position_token_2022_and_remove_authority<'info>(
             authority.to_account_info(),
             token_2022_program.to_account_info(),
         ],
-        &[&position_seeds],
+        &[position_seeds],
     )?;
 
     Ok(())

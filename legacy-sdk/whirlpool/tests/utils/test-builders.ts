@@ -24,7 +24,7 @@ import {
 } from "../../src";
 import type { WhirlpoolContext } from "../../src/context";
 import { TokenExtensionUtil } from "../../src/utils/public/token-extension-util";
-import { OpenPositionWithTokenExtensionsParams } from "../../src/instructions";
+import type { OpenPositionWithTokenExtensionsParams } from "../../src/instructions";
 
 export interface TestWhirlpoolsConfigKeypairs {
   feeAuthorityKeypair: Keypair;

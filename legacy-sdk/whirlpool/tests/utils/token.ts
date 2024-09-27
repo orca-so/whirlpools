@@ -5,7 +5,9 @@ import type { AuthorityType } from "@solana/spl-token";
 import {
   AccountLayout,
   NATIVE_MINT,
+  TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
+  createAccount,
   createApproveInstruction,
   createAssociatedTokenAccountInstruction,
   createBurnInstruction,
@@ -62,20 +64,35 @@ export async function createTokenAccount(
   provider: AnchorProvider,
   mint: web3.PublicKey,
   owner: web3.PublicKey,
+  tokenProgram: web3.PublicKey = TOKEN_PROGRAM_ID,
 ) {
   const tokenAccount = web3.Keypair.generate();
-  const tx = new web3.Transaction();
-  tx.add(
-    ...(await createTokenAccountInstrs(
-      provider,
-      tokenAccount.publicKey,
+  if (tokenProgram.equals(TOKEN_2022_PROGRAM_ID)) {
+    // in Token-2022, account size is not constant
+    // it is easy way to delegate work to spl-token package...
+    await createAccount(
+      provider.connection,
+      provider.wallet["payer"],
       mint,
       owner,
-    )),
-  );
-  await provider.sendAndConfirm(tx, [tokenAccount], {
-    commitment: "confirmed",
-  });
+      tokenAccount,
+      {commitment: "confirmed"},
+      TOKEN_2022_PROGRAM_ID,
+    )
+  } else {
+    const tx = new web3.Transaction();
+    tx.add(
+      ...(await createTokenAccountInstrs(
+        provider,
+        tokenAccount.publicKey,
+        mint,
+        owner,
+      )),
+    );
+    await provider.sendAndConfirm(tx, [tokenAccount], {
+      commitment: "confirmed",
+    });
+  }
   return tokenAccount.publicKey;
 }
 
@@ -255,6 +272,7 @@ export async function approveToken(
   delegate: web3.PublicKey,
   amount: number | BN,
   owner?: web3.Keypair,
+  tokenProgram: web3.PublicKey = TOKEN_PROGRAM_ID,
 ) {
   const tx = new web3.Transaction();
   const amountVal = amount instanceof BN ? BigInt(amount.toString()) : amount;
@@ -264,6 +282,8 @@ export async function approveToken(
       delegate,
       owner?.publicKey || provider.wallet.publicKey,
       amountVal,
+      undefined,
+      tokenProgram,
     ),
   );
   return provider.sendAndConfirm(tx, !!owner ? [owner] : [], {
@@ -277,6 +297,7 @@ export async function setAuthority(
   newAuthority: web3.PublicKey,
   authorityType: AuthorityType,
   authority: web3.Keypair,
+  tokenProgram: web3.PublicKey = TOKEN_PROGRAM_ID,
 ) {
   const tx = new web3.Transaction();
   tx.add(
@@ -285,6 +306,8 @@ export async function setAuthority(
       authority.publicKey,
       authorityType,
       newAuthority,
+      undefined,
+      tokenProgram,
     ),
   );
 
@@ -296,6 +319,7 @@ export async function transferToken(
   source: web3.PublicKey,
   destination: web3.PublicKey,
   amount: number,
+  tokenProgram: web3.PublicKey = TOKEN_PROGRAM_ID,
 ) {
   const tx = new web3.Transaction();
   tx.add(
@@ -304,6 +328,8 @@ export async function transferToken(
       destination,
       provider.wallet.publicKey,
       amount,
+      undefined,
+      tokenProgram,
     ),
   );
   return provider.sendAndConfirm(tx, [], { commitment: "confirmed" });

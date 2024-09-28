@@ -63,6 +63,7 @@ export class PositionImpl implements Position {
     whirlpoolData: WhirlpoolData,
     lowerTickArrayData: TickArrayData,
     upperTickArrayData: TickArrayData,
+    readonly positionMintTokenProgramId: PublicKey,
   ) {
     this.data = data;
     this.whirlpoolData = whirlpoolData;
@@ -72,6 +73,10 @@ export class PositionImpl implements Position {
 
   getAddress(): PublicKey {
     return this.address;
+  }
+
+  getPositionMintTokenProgramId(): PublicKey {
+    return this.positionMintTokenProgramId;
   }
 
   getData(): PositionData {
@@ -188,6 +193,7 @@ export class PositionImpl implements Position {
       this.data.positionMint,
       positionWalletKey,
       this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+      this.positionMintTokenProgramId,
     );
 
     const baseParams = {
@@ -324,6 +330,7 @@ export class PositionImpl implements Position {
         this.data.positionMint,
         positionWalletKey,
         this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+        this.positionMintTokenProgramId,
       ),
       tokenOwnerAccountA,
       tokenOwnerAccountB,
@@ -457,6 +464,7 @@ export class PositionImpl implements Position {
       this.data.positionMint,
       positionWalletKey,
       this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+      this.positionMintTokenProgramId,
     );
 
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {
@@ -578,6 +586,7 @@ export class PositionImpl implements Position {
       this.data.positionMint,
       positionWalletKey,
       this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+      this.positionMintTokenProgramId,
     );
 
     if (updateFeesAndRewards && !this.data.liquidity.isZero()) {

@@ -344,6 +344,12 @@ export interface Position {
   getAddress: () => PublicKey;
 
   /**
+   * Return the program address owning the position token.
+   * @return the PublicKey for the program address owning the position token.
+   */
+  getPositionMintTokenProgramId: () => PublicKey;
+
+  /**
    * Return the most recently fetched Position account data.
    * @return most recently fetched PositionData for this address.
    */

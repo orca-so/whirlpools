@@ -8,7 +8,7 @@ import {
   ZERO,
   resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import invariant from "tiny-invariant";
@@ -20,11 +20,13 @@ import type {
 } from "../instructions";
 import {
   closePositionIx,
+  closePositionWithTokenExtensionsIx,
   increaseLiquidityIx,
   increaseLiquidityV2Ix,
   initTickArrayIx,
   openPositionIx,
   openPositionWithMetadataIx,
+  openPositionWithTokenExtensionsIx,
   swapAsync,
 } from "../instructions";
 import { WhirlpoolIx } from "../ix";
@@ -111,6 +113,7 @@ export class WhirlpoolImpl implements Whirlpool {
     wallet?: Address,
     funder?: Address,
     positionMint?: PublicKey,
+    withTokenExtensions: boolean = false, // false for v0.13.x, true for future releases
   ) {
     await this.refresh();
     return this.getOpenPositionWithOptMetadataTx(
@@ -119,6 +122,7 @@ export class WhirlpoolImpl implements Whirlpool {
       liquidityInput,
       !!wallet ? AddressUtil.toPubKey(wallet) : this.ctx.wallet.publicKey,
       !!funder ? AddressUtil.toPubKey(funder) : this.ctx.wallet.publicKey,
+      withTokenExtensions,
       false,
       positionMint,
     );
@@ -131,6 +135,7 @@ export class WhirlpoolImpl implements Whirlpool {
     sourceWallet?: Address,
     funder?: Address,
     positionMint?: PublicKey,
+    withTokenExtensions: boolean = false, // false for v0.13.x, true for future releases
   ) {
     await this.refresh();
     return this.getOpenPositionWithOptMetadataTx(
@@ -141,6 +146,7 @@ export class WhirlpoolImpl implements Whirlpool {
         ? AddressUtil.toPubKey(sourceWallet)
         : this.ctx.wallet.publicKey,
       !!funder ? AddressUtil.toPubKey(funder) : this.ctx.wallet.publicKey,
+      withTokenExtensions,
       true,
       positionMint,
     );
@@ -294,6 +300,7 @@ export class WhirlpoolImpl implements Whirlpool {
     liquidityInput: IncreaseLiquidityInput,
     wallet: PublicKey,
     funder: PublicKey,
+    withTokenExtensions: boolean,
     withMetadata: boolean = false,
     positionMint?: PublicKey,
   ): Promise<{ positionMint: PublicKey; tx: TransactionBuilder }> {
@@ -347,6 +354,7 @@ export class WhirlpoolImpl implements Whirlpool {
       positionMintPubkey,
       wallet,
       this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+      withTokenExtensions ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID,
     );
 
     const txBuilder = new TransactionBuilder(
@@ -355,20 +363,35 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.txBuilderOpts,
     );
 
-    const positionIx = (
-      withMetadata ? openPositionWithMetadataIx : openPositionIx
-    )(this.ctx.program, {
-      funder,
-      owner: wallet,
-      positionPda,
-      metadataPda,
-      positionMintAddress: positionMintPubkey,
-      positionTokenAccount: positionTokenAccountAddress,
-      whirlpool: this.address,
-      tickLowerIndex: tickLower,
-      tickUpperIndex: tickUpper,
-    });
-    txBuilder.addInstruction(positionIx);
+    if (withTokenExtensions) {
+      const positionIx = openPositionWithTokenExtensionsIx(this.ctx.program, {
+        funder,
+        owner: wallet,
+        positionPda,
+        positionMint: positionMintPubkey,
+        positionTokenAccount: positionTokenAccountAddress,
+        whirlpool: this.address,
+        tickLowerIndex: tickLower,
+        tickUpperIndex: tickUpper,
+        withTokenMetadataExtension: withMetadata,
+      });
+      txBuilder.addInstruction(positionIx);
+    } else {
+      const positionIx = (
+        withMetadata ? openPositionWithMetadataIx : openPositionIx
+      )(this.ctx.program, {
+        funder,
+        owner: wallet,
+        positionPda,
+        metadataPda,
+        positionMintAddress: positionMintPubkey,
+        positionTokenAccount: positionTokenAccountAddress,
+        whirlpool: this.address,
+        tickLowerIndex: tickLower,
+        tickUpperIndex: tickUpper,
+      });
+      txBuilder.addInstruction(positionIx);  
+    }
     if (positionMint === undefined) {
       txBuilder.addSigner(positionMintKeypair);
     }
@@ -466,6 +489,15 @@ export class WhirlpoolImpl implements Whirlpool {
       throw new Error(`Position not found: ${positionAddress.toBase58()}`);
     }
 
+    const positionMint = await this.ctx.fetcher.getMintInfo(
+      positionData.positionMint,
+    );
+    if (!positionMint) {
+      throw new Error(
+        `Position mint not found: ${positionData.positionMint.toBase58()}`,
+      );
+    }
+
     const whirlpool = this.data;
 
     invariant(
@@ -477,6 +509,7 @@ export class WhirlpoolImpl implements Whirlpool {
       positionData.positionMint,
       positionWallet,
       this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+      positionMint.tokenProgram,
     );
 
     const accountExemption = await this.ctx.fetcher.getAccountRentExempt();
@@ -527,6 +560,7 @@ export class WhirlpoolImpl implements Whirlpool {
       whirlpool,
       tickArrayLowerData,
       tickArrayUpperData,
+      positionMint.tokenProgram,
     );
 
     const tickLower = position.getLowerTickData();
@@ -769,15 +803,19 @@ export class WhirlpoolImpl implements Whirlpool {
 
     /* Close position */
     await builder.addInstructions(async () => {
-      const ix = closePositionIx(this.ctx.program, {
+      const closePositionParams = {
         positionAuthority: positionWallet,
         receiver: destinationWallet,
         positionTokenAccount,
         position: positionAddress,
         positionMint: positionData.positionMint,
-      });
+      };
 
-      return [ix];
+      if (positionMint.tokenProgram.equals(TOKEN_2022_PROGRAM_ID)) {
+        return [closePositionWithTokenExtensionsIx(this.ctx.program, closePositionParams)]
+      } else {
+        return [closePositionIx(this.ctx.program, closePositionParams)];
+      }
     });
 
     return builder.build();

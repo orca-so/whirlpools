@@ -36,4 +36,5 @@ pub const WPB_METADATA_URI: &str =
 pub const WP_2022_METADATA_MAX_LEN: usize = 2 + 2 + 258;
 pub const WP_2022_METADATA_NAME_PREFIX: &str = "OWP";
 pub const WP_2022_METADATA_SYMBOL: &str = "OWP";
-pub const WP_2022_METADATA_URI: &str = "https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws";
+pub const WP_2022_METADATA_URI: &str =
+    "https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws";

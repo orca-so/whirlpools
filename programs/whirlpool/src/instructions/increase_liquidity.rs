@@ -8,7 +8,9 @@ use crate::manager::liquidity_manager::{
 };
 use crate::math::convert_to_liquidity_delta;
 use crate::state::*;
-use crate::util::{to_timestamp_u64, transfer_from_owner_to_vault, verify_position_authority_interface};
+use crate::util::{
+    to_timestamp_u64, transfer_from_owner_to_vault, verify_position_authority_interface,
+};
 
 #[derive(Accounts)]
 pub struct ModifyLiquidity<'info> {

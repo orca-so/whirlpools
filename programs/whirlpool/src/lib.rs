@@ -583,7 +583,6 @@ pub mod whirlpool {
         instructions::close_bundled_position::handler(ctx, bundle_index)
     }
 
-
     /// Open a position in a Whirlpool. A unique token will be minted to represent the position
     /// in the users wallet. Additional TokenMetadata extension is initialized to identify the token.
     /// Mint and TokenAccount are based on Token-2022.
@@ -619,7 +618,9 @@ pub mod whirlpool {
     ///
     /// #### Special Errors
     /// - `ClosePositionNotEmpty` - The provided position account is not empty.
-    pub fn close_position_with_token_extensions(ctx: Context<ClosePositionWithTokenExtensions>) -> Result<()> {
+    pub fn close_position_with_token_extensions(
+        ctx: Context<ClosePositionWithTokenExtensions>,
+    ) -> Result<()> {
         instructions::close_position_with_token_extensions::handler(ctx)
     }
 

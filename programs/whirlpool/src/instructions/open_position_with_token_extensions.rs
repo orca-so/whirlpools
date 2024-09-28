@@ -1,15 +1,13 @@
+use crate::state::*;
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token_2022::spl_token_2022;
 use anchor_spl::token_2022::Token2022;
-use crate::state::*;
 
 use crate::constants::nft::whirlpool_nft_update_auth::ID as WP_NFT_UPDATE_AUTH;
 use crate::util::{
-    initialize_position_mint_2022,
-    initialize_position_token_account_2022,
-    initialize_token_metadata_extension,
-    mint_position_token_2022_and_remove_authority,
+    initialize_position_mint_2022, initialize_position_token_account_2022,
+    initialize_token_metadata_extension, mint_position_token_2022_and_remove_authority,
 };
 
 #[derive(Accounts)]

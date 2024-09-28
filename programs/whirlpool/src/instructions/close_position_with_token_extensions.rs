@@ -1,13 +1,10 @@
 use anchor_lang::prelude::*;
-//use anchor_spl::token::{self, Mint, Token, TokenAccount};
 use anchor_spl::token_2022::{self, Token2022};
 use anchor_spl::token_interface::{Mint, TokenAccount};
-use solana_program::program::{invoke, invoke_signed};
-use anchor_spl::token_2022::spl_token_2022;
 
 use crate::errors::ErrorCode;
 use crate::state::*;
-use crate::util::verify_position_authority_interface;
+use crate::util::{burn_and_close_user_position_token_2022, verify_position_authority_interface};
 
 #[derive(Accounts)]
 pub struct ClosePositionWithTokenExtensions<'info> {
@@ -59,72 +56,6 @@ pub fn handler(ctx: Context<ClosePositionWithTokenExtensions>) -> Result<()> {
             ctx.accounts.position_mint.key().as_ref(),
             &[ctx.bumps.position],
         ],
-    )?;
-
-    Ok(())
-}
-
-pub fn burn_and_close_user_position_token_2022<'info>(
-    token_authority: &Signer<'info>,
-    receiver: &UncheckedAccount<'info>,
-    position_mint: &InterfaceAccount<'info, Mint>,
-    position_token_account: &InterfaceAccount<'info, TokenAccount>,
-    token_2022_program: &Program<'info, Token2022>,
-    position: &Account<'info, Position>,
-    position_seeds: &[&[u8]],
-) -> Result<()> {
-    // Burn a single token in user account
-    invoke(
-        &spl_token_2022::instruction::burn_checked(
-            token_2022_program.key,
-            position_token_account.to_account_info().key,
-            position_mint.to_account_info().key,
-            token_authority.key,
-            &[],
-            1,
-            position_mint.decimals,
-        )?,
-        &[
-            token_2022_program.to_account_info(),
-            position_token_account.to_account_info(),
-            position_mint.to_account_info(),
-            token_authority.to_account_info(),
-        ],
-    )?;
-
-    // Close user account
-    invoke(
-        &spl_token_2022::instruction::close_account(
-            token_2022_program.key,
-            position_token_account.to_account_info().key,
-            receiver.key,
-            token_authority.key,
-            &[],
-        )?,
-        &[
-            token_2022_program.to_account_info(),
-            position_token_account.to_account_info(),
-            receiver.to_account_info(),
-            token_authority.to_account_info(),
-        ],
-    )?;
-
-    // Close mint
-    invoke_signed(
-        &spl_token_2022::instruction::close_account(
-            token_2022_program.key,
-            position_mint.to_account_info().key,
-            receiver.key,
-            &position.key(),
-            &[],
-        )?,
-        &[
-            token_2022_program.to_account_info(),
-            position_mint.to_account_info(),
-            receiver.to_account_info(),
-            position.to_account_info(),
-        ],
-        &[position_seeds],
     )?;
 
     Ok(())

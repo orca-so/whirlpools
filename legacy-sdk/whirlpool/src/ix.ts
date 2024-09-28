@@ -196,6 +196,10 @@ export class WhirlpoolIx {
    * - `TickArrayIndexOutofBounds` - The swap loop attempted to access an invalid array index during tick crossing.
    * - `LiquidityOverflow` - Liquidity value overflowed 128bits during tick crossing.
    * - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
+   * - `AmountCalcOverflow` - The required token amount exceeds the u64 range.
+   * - `AmountRemainingOverflow` - Result does not match the specified amount.
+   * - `DifferentWhirlpoolTickArrayAccount` - The provided tick array account does not belong to the whirlpool.
+   * - `PartialFillError` - Partially filled when sqrtPriceLimit = 0 and amountSpecifiedIsInput = false.
    *
    * ### Parameters
    * @param program - program object containing services required to generate the instruction
@@ -220,6 +224,11 @@ export class WhirlpoolIx {
    * - `InvalidTickSpacing` - The swap pool was initialized with tick-spacing of 0.
    * - `DuplicateTwoHopPool` - Swaps on the same pool are not allowed.
    * - `InvalidIntermediaryMint` - The first and second leg of the hops do not share a common token.
+   * - `AmountCalcOverflow` - The required token amount exceeds the u64 range.
+   * - `AmountRemainingOverflow` - Result does not match the specified amount.
+   * - `DifferentWhirlpoolTickArrayAccount` - The provided tick array account does not belong to the whirlpool.
+   * - `PartialFillError` - Partially filled when sqrtPriceLimit = 0 and amountSpecifiedIsInput = false.
+   * - `IntermediateTokenAmountMismatch` - The amount of tokens received from the first hop does not match the amount sent to the second hop.
    *
    * ### Parameters
    * @param program - program object containing services required to generate the instruction

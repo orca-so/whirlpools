@@ -22,7 +22,17 @@ pub fn compute_swap(
     amount_specified_is_input: bool,
     a_to_b: bool,
 ) -> Result<SwapStepComputation, ErrorCode> {
-    let mut amount_fixed_delta = get_amount_fixed_delta(
+    // Since SplashPool (aka FullRange only pool) has only 2 initialized ticks at both ends,
+    // the possibility of exceeding u64 when calculating "delta amount" is higher than concentrated pools.
+    // This problem occurs with ExactIn.
+    // The reason is that in ExactOut, "fixed delta" never exceeds the amount of tokens present in the pool and is clearly within the u64 range.
+    // On the other hand, for ExactIn, "fixed delta" may exceed u64 because it calculates the amount of tokens needed to move the price to the end.
+    // However, the primary purpose of initial calculation of "fixed delta" is to determine whether or not the iteration is "max swap" or not.
+    // So the info that “the amount of tokens required exceeds the u64 range” is sufficient to determine that the iteration is NOT "max swap".
+    //
+    // delta <= u64::MAX: AmountDeltaU64::Valid
+    // delta >  u64::MAX: AmountDeltaU64::ExceedsMax
+    let initial_amount_fixed_delta = try_get_amount_fixed_delta(
         sqrt_price_current,
         sqrt_price_target,
         liquidity,
@@ -40,7 +50,7 @@ pub fn compute_swap(
         .try_into()?;
     }
 
-    let next_sqrt_price = if amount_calc >= amount_fixed_delta {
+    let next_sqrt_price = if initial_amount_fixed_delta.lte(amount_calc) {
         sqrt_price_target
     } else {
         get_next_sqrt_price(
@@ -63,15 +73,19 @@ pub fn compute_swap(
     )?;
 
     // If the swap is not at the max, we need to readjust the amount of the fixed token we are using
-    if !is_max_swap {
-        amount_fixed_delta = get_amount_fixed_delta(
+    let amount_fixed_delta = if !is_max_swap || initial_amount_fixed_delta.exceeds_max() {
+        // next_sqrt_price is calculated by get_next_sqrt_price and the result will be in the u64 range.
+        get_amount_fixed_delta(
             sqrt_price_current,
             next_sqrt_price,
             liquidity,
             amount_specified_is_input,
             a_to_b,
-        )?;
-    }
+        )?
+    } else {
+        // the result will be in the u64 range.
+        initial_amount_fixed_delta.value()
+    };
 
     let (amount_in, mut amount_out) = if amount_specified_is_input {
         (amount_fixed_delta, amount_unfixed_delta)
@@ -119,6 +133,30 @@ fn get_amount_fixed_delta(
         )
     } else {
         get_amount_delta_b(
+            sqrt_price_current,
+            sqrt_price_target,
+            liquidity,
+            amount_specified_is_input,
+        )
+    }
+}
+
+fn try_get_amount_fixed_delta(
+    sqrt_price_current: u128,
+    sqrt_price_target: u128,
+    liquidity: u128,
+    amount_specified_is_input: bool,
+    a_to_b: bool,
+) -> Result<AmountDeltaU64, ErrorCode> {
+    if a_to_b == amount_specified_is_input {
+        try_get_amount_delta_a(
+            sqrt_price_current,
+            sqrt_price_target,
+            liquidity,
+            amount_specified_is_input,
+        )
+    } else {
+        try_get_amount_delta_b(
             sqrt_price_current,
             sqrt_price_target,
             liquidity,

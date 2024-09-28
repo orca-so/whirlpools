@@ -1,4 +1,4 @@
 export * from "./anchor-types";
-export * from "./client-types";
+export type * from "./client-types";
 export * from "./constants";
-export * from "./ix-types";
+export type * from "./ix-types";

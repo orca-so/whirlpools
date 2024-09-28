@@ -19,6 +19,7 @@ import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
+import { useMaxCU } from "../../utils/v2/init-utils-v2";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -398,7 +399,9 @@ describe("PositionImpl#collectFees()", () => {
           whirlpoolPda.publicKey,
         )),
       }),
-    ).buildAndExecute();
+    )
+    .prependInstruction(useMaxCU())  // TransferHook require much CU
+    .buildAndExecute();
 
     // Accrue fees in token B
     await toTx(
@@ -434,7 +437,9 @@ describe("PositionImpl#collectFees()", () => {
           ctx.wallet.publicKey,
         )),
       }),
-    ).buildAndExecute();
+    )
+    .prependInstruction(useMaxCU())  // TransferHook require much CU
+    .buildAndExecute();
 
     const poolData = await pool.refreshData();
     const positionData = await position.refreshData();

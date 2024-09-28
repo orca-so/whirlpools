@@ -26,7 +26,7 @@ import {
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
-import type { TokenTrait } from "../../utils/v2/init-utils-v2";
+import { useMaxCU, type TokenTrait } from "../../utils/v2/init-utils-v2";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 
 interface SharedTestContext {
@@ -92,7 +92,9 @@ describe("WhirlpoolImpl#closePosition()", () => {
         tickArray1: tickArrayPda.publicKey,
         tickArray2: tickArrayPda.publicKey,
       })
-    ).buildAndExecute();
+    )
+    .prependInstruction(useMaxCU()) // TransferHook require much CU
+    .buildAndExecute();
 
     // Accrue fees in token B
     await (
@@ -106,7 +108,9 @@ describe("WhirlpoolImpl#closePosition()", () => {
         tickArray1: tickArrayPda.publicKey,
         tickArray2: tickArrayPda.publicKey,
       })
-    ).buildAndExecute();
+    )
+    .prependInstruction(useMaxCU())  // TransferHook require much CU
+    .buildAndExecute();
 
     // accrue rewards
     await sleep(1200);
@@ -141,6 +145,9 @@ describe("WhirlpoolImpl#closePosition()", () => {
     );
 
     const tx = await position.decreaseLiquidity(liquidityCollectedQuote);
+
+     // TransferHook require much CU
+     tx.prependInstruction(useMaxCU());
 
     await tx.buildAndExecute();
   }

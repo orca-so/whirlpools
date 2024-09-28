@@ -1,5 +1,5 @@
 import type { Percentage } from "@orca-so/common-sdk";
-import { U64_MAX, ZERO } from "@orca-so/common-sdk";
+import { MathUtil, ONE, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import {
   MathErrorCode,
@@ -8,6 +8,58 @@ import {
 } from "../../errors/errors";
 import { MAX_SQRT_PRICE, MIN_SQRT_PRICE } from "../../types/public";
 import { BitMath } from "./bit-math";
+import invariant from "tiny-invariant";
+
+type AmountDeltaU64Valid = {
+  type: "Valid";
+  value: BN;
+};
+type AmountDeltaU64ExceedsMax = {
+  type: "ExceedsMax";
+  error: Error;
+};
+
+export class AmountDeltaU64 {
+  constructor(private inner: AmountDeltaU64Valid | AmountDeltaU64ExceedsMax) {}
+
+  public static fromValid(value: BN): AmountDeltaU64 {
+    return new AmountDeltaU64({
+      type: "Valid",
+      value,
+    });
+  }
+
+  public static fromExceedsMax(error: Error): AmountDeltaU64 {
+    return new AmountDeltaU64({
+      type: "ExceedsMax",
+      error,
+    });
+  }
+
+  public lte(other: BN): boolean {
+    if (this.inner.type === "ExceedsMax") {
+      return false;
+    }
+    return this.inner.value.lte(other);
+  }
+
+  public exceedsMax(): boolean {
+    return this.inner.type === "ExceedsMax";
+  }
+
+  public value(): BN {
+    invariant(this.inner.type === "Valid", "Expected valid AmountDeltaU64");
+    return this.inner.value;
+  }
+
+  public unwrap(): BN {
+    if (this.inner.type === "Valid") {
+      return this.inner.value;
+    } else {
+      throw this.inner.error;
+    }
+  }
+}
 
 export function getAmountDeltaA(
   currSqrtPrice: BN,
@@ -15,6 +67,20 @@ export function getAmountDeltaA(
   currLiquidity: BN,
   roundUp: boolean,
 ): BN {
+  return tryGetAmountDeltaA(
+    currSqrtPrice,
+    targetSqrtPrice,
+    currLiquidity,
+    roundUp,
+  ).unwrap();
+}
+
+export function tryGetAmountDeltaA(
+  currSqrtPrice: BN,
+  targetSqrtPrice: BN,
+  currLiquidity: BN,
+  roundUp: boolean,
+): AmountDeltaU64 {
   let [sqrtPriceLower, sqrtPriceUpper] = toIncreasingPriceOrder(
     currSqrtPrice,
     targetSqrtPrice,
@@ -31,13 +97,13 @@ export function getAmountDeltaA(
     roundUp && !remainder.eq(ZERO) ? quotient.add(new BN(1)) : quotient;
 
   if (result.gt(U64_MAX)) {
-    throw new WhirlpoolsError(
+    return AmountDeltaU64.fromExceedsMax(new WhirlpoolsError(
       "Results larger than U64",
       TokenErrorCode.TokenMaxExceeded,
-    );
+    ));
   }
 
-  return result;
+  return AmountDeltaU64.fromValid(result);
 }
 
 export function getAmountDeltaB(
@@ -46,17 +112,54 @@ export function getAmountDeltaB(
   currLiquidity: BN,
   roundUp: boolean,
 ): BN {
+  return tryGetAmountDeltaB(
+    currSqrtPrice,
+    targetSqrtPrice,
+    currLiquidity,
+    roundUp,
+  ).unwrap();
+}
+
+export function tryGetAmountDeltaB(
+  currSqrtPrice: BN,
+  targetSqrtPrice: BN,
+  currLiquidity: BN,
+  roundUp: boolean,
+): AmountDeltaU64 {
   let [sqrtPriceLower, sqrtPriceUpper] = toIncreasingPriceOrder(
     currSqrtPrice,
     targetSqrtPrice,
   );
-  let sqrtPriceDiff = sqrtPriceUpper.sub(sqrtPriceLower);
-  return BitMath.checked_mul_shift_right_round_up_if(
-    currLiquidity,
-    sqrtPriceDiff,
-    roundUp,
-    128,
-  );
+
+  // customized BitMath.checked_mul_shift_right_round_up_if
+
+  const n0 = currLiquidity;
+  const n1 = sqrtPriceUpper.sub(sqrtPriceLower);
+  const limit = 128;
+
+  if (n0.eq(ZERO) || n1.eq(ZERO)) {
+    return AmountDeltaU64.fromValid(ZERO);
+  }
+
+  // we need to use limit * 2 (u256) here to prevent overflow error IN BitMath.mul.
+  // we check the overflow in the next step and return wrapped error if it happens.
+  const p = BitMath.mul(n0, n1, limit * 2);
+  if (BitMath.isOverLimit(p, limit)) {
+    return AmountDeltaU64.fromExceedsMax(new WhirlpoolsError(
+      `MulShiftRight overflowed u${limit}.`,
+      MathErrorCode.MultiplicationShiftRightOverflow,
+    ));
+  }
+  const result = MathUtil.fromX64_BN(p);
+  const shouldRound = roundUp && p.and(U64_MAX).gt(ZERO);
+  if (shouldRound && result.eq(U64_MAX)) {
+    return AmountDeltaU64.fromExceedsMax(new WhirlpoolsError(
+      `MulShiftRight overflowed u${limit}.`,
+      MathErrorCode.MultiplicationOverflow,
+    ));
+  }
+
+  return AmountDeltaU64.fromValid(shouldRound ? result.add(ONE) : result);
 }
 
 export function getNextSqrtPrice(

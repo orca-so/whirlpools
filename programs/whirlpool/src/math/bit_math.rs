@@ -3,6 +3,7 @@ use crate::errors::ErrorCode;
 use super::U256Muldiv;
 
 pub const Q64_RESOLUTION: u8 = 64;
+pub const Q64_MASK: u128 = 0xFFFF_FFFF_FFFF_FFFF;
 pub const TO_Q64: u128 = 1u128 << Q64_RESOLUTION;
 
 pub fn checked_mul_div(n0: u128, n1: u128, d: u128) -> Result<u128, ErrorCode> {
@@ -33,8 +34,6 @@ pub fn checked_mul_shift_right(n0: u128, n1: u128) -> Result<u64, ErrorCode> {
     checked_mul_shift_right_round_up_if(n0, n1, false)
 }
 
-const Q64_MASK: u128 = 0xFFFF_FFFF_FFFF_FFFF;
-
 /// Multiplies an integer u128 and a Q64.64 fixed point number.
 /// Returns a product represented as a u64 integer.
 pub fn checked_mul_shift_right_round_up_if(
@@ -42,6 +41,8 @@ pub fn checked_mul_shift_right_round_up_if(
     n1: u128,
     round_up: bool,
 ) -> Result<u64, ErrorCode> {
+    // customized this function is used in try_get_amount_delta_b (token_math.rs)
+
     if n0 == 0 || n1 == 0 {
         return Ok(0);
     }

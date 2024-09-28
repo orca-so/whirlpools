@@ -1,10 +1,11 @@
-import { ZERO } from "@orca-so/common-sdk";
+import { U64_MAX, ZERO } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import type { WhirlpoolData } from "../../types/public";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../types/public";
 import { computeSwapStep } from "../../utils/math/swap-math";
 import { PriceMath } from "../../utils/public";
 import type { TickArraySequence } from "./tick-array-sequence";
+import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
 
 export type SwapResult = {
   amountA: BN;
@@ -62,6 +63,19 @@ export function computeSwap(
       amountRemaining = amountRemaining.sub(swapComputation.amountOut);
       amountCalculated = amountCalculated.add(swapComputation.amountIn);
       amountCalculated = amountCalculated.add(swapComputation.feeAmount);
+    }
+
+    if (amountRemaining.isNeg()) {
+      throw new WhirlpoolsError(
+        "Amount remaining is negative.",
+        SwapErrorCode.AmountRemainingOverflow,
+      );  
+    }
+    if (amountCalculated.gt(U64_MAX)) {
+      throw new WhirlpoolsError(
+        "Amount calculated is greater than U64_MAX.",
+        SwapErrorCode.AmountCalcOverflow,
+      );
     }
 
     let { nextProtocolFee, nextFeeGrowthGlobalInput } = calculateFees(

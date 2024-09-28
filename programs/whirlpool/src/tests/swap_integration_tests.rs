@@ -14,7 +14,7 @@ use std::fs;
 #[derive(Debug, Deserialize, Default)]
 #[serde(rename_all = "camelCase")]
 struct TestCase {
-    test_id: u16,
+    test_id: u32,
     description: String,
     tick_spacing: u16,
     fee_rate: u16,
@@ -51,7 +51,7 @@ struct Expectation {
 
 /// Current version of Anchor doesn't bubble up errors in a way
 /// where we can compare. v0.23.0 has an updated format that will allow us to do so.
-const CATCHABLE_ERRORS: [(&str, ErrorCode); 8] = [
+const CATCHABLE_ERRORS: [(&str, ErrorCode); 10] = [
     (
         "MultiplicationShiftRightOverflow",
         ErrorCode::MultiplicationShiftRightOverflow,
@@ -66,6 +66,9 @@ const CATCHABLE_ERRORS: [(&str, ErrorCode); 8] = [
     ("ZeroTradableAmount", ErrorCode::ZeroTradableAmount),
     ("NumberDownCastError", ErrorCode::NumberDownCastError),
     ("MultiplicationOverflow", ErrorCode::MultiplicationOverflow),
+    // from swap_manager.rs
+    ("AmountRemainingOverflow", ErrorCode::AmountRemainingOverflow),
+    ("AmountCalcOverflow", ErrorCode::AmountCalcOverflow),
 ];
 
 #[test]
@@ -78,9 +81,28 @@ const CATCHABLE_ERRORS: [(&str, ErrorCode); 8] = [
 /// 5. TradeAmount (0, 10^9, 10^12, U64::max)
 /// 6. Trade Direction (a->b, b->a)
 /// 7. TradeAmountToken (amountIsInput, amountIsOutput)
-fn run_swap_integration_tests() {
-    let contents =
-        fs::read_to_string("src/tests/swap_test_cases.json").expect("Failure to read the file.");
+fn run_concentrated_pool_swap_integration_tests() {
+    run_swap_integration_tests("src/tests/swap_test_cases.json");
+}
+
+#[test]
+/// Run a collection of tests on the swap_manager against expectations
+/// A total of 2880 tests on these variables:
+/// 1. FeeRate ([MAX_FEE, MAX_PROTOCOL_FEE], [65535, 600], [700, 300], [0, 0])
+/// 2. CurrentTickPosition (-443500, -223027, 0, 223027, 443500)
+/// 3. Liquidity (0, 2^32, 2^64)
+/// 4. TickSpacing (32768+1, 32768+64, 32768+128)
+/// 5. TradeAmount (0, 10^9, 10^12, U64::max)
+/// 6. Trade Direction (a->b, b->a)
+/// 7. TradeAmountToken (amountIsInput, amountIsOutput)
+fn run_splash_pool_swap_integration_tests() {
+    run_swap_integration_tests("src/tests/swap_test_cases_splash_pool.json");
+}
+
+fn run_swap_integration_tests(
+    test_cases_json_path: &str,
+) {
+    let contents = fs::read_to_string(test_cases_json_path).expect("Failure to read the file.");
     let json: Vec<TestCase> = serde_json::from_str(&contents).expect("JSON was not well-formatted");
     let test_iterator = json.iter();
 

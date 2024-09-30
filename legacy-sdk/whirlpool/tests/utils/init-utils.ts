@@ -566,7 +566,6 @@ export async function openPositionWithMetadata(
   tickUpperIndex: number,
   owner: PublicKey = ctx.provider.wallet.publicKey,
   funder?: Keypair,
-  withTokenExtensions: boolean = false,
 ) {
   return openPositionWithOptMetadata(
     ctx,

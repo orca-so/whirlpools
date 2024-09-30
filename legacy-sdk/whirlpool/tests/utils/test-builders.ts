@@ -273,6 +273,7 @@ export async function initPosition(
   inputTokenMint: PublicKey,
   inputTokenAmount: number,
   sourceWallet?: Keypair,
+  withTokenExtensions: boolean = false,
 ) {
   const sourceWalletKey = sourceWallet
     ? sourceWallet.publicKey
@@ -313,6 +314,8 @@ export async function initPosition(
     quote,
     sourceWalletKey,
     ctx.wallet.publicKey,
+    undefined,
+    withTokenExtensions,
   );
 
   if (sourceWallet) {

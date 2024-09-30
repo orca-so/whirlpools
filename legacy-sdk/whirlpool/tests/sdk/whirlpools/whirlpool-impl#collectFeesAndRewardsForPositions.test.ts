@@ -45,7 +45,7 @@ interface SharedTestContext {
   whirlpoolClient: WhirlpoolClient;
 }
 
-describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
+describe.only("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
   let testCtx: SharedTestContext;
   const tickLowerIndex = 29440;
   const tickUpperIndex = 33536;

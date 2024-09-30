@@ -247,6 +247,7 @@ export interface Whirlpool {
    * @param wallet - the wallet to withdraw tokens to deposit into the position and house the position token. If null, the WhirlpoolContext wallet is used.
    * @param funder - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
    * @param positionMint - the mint address of the position token to be created. If null, a new mint address will be created.
+   * @param withTokenExtensions - if true, the position token will be created with Token-2022 program
    * @return `positionMint` - the position to be created. `tx` - The transaction containing the instructions to perform the operation on chain.
    */
   openPosition: (
@@ -256,6 +257,7 @@ export interface Whirlpool {
     wallet?: Address,
     funder?: Address,
     positionMint?: PublicKey,
+    withTokenExtensions?: boolean,
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
   /**
@@ -271,6 +273,7 @@ export interface Whirlpool {
    * @param wallet - the wallet to withdraw tokens to deposit into the position and house the position token. If null, the WhirlpoolContext wallet is used.
    * @param funder - the wallet that will fund the cost needed to initialize the position. If null, the WhirlpoolContext wallet is used.
    * @param positionMint - the mint address of the position token to be created. If null, a new mint address will be created.
+   * @param withTokenExtensions - if true, the position token will be created with Token-2022 program
    * @return `positionMint` - the position to be created. `tx` - The transaction containing the instructions to perform the operation on chain.
    */
   openPositionWithMetadata: (
@@ -280,6 +283,7 @@ export interface Whirlpool {
     wallet?: Address,
     funder?: Address,
     positionMint?: PublicKey,
+    withTokenExtensions?: boolean,
   ) => Promise<{ positionMint: PublicKey; tx: TransactionBuilder }>;
 
   /**

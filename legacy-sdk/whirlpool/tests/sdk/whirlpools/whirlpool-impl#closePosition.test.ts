@@ -162,7 +162,9 @@ describe("WhirlpoolImpl#closePosition()", () => {
       IGNORE_CACHE,
     );
     const hasL = !position.getData().liquidity.isZero();
-    await (await position.collectFees(hasL)).buildAndExecute();
+    await (await position.collectFees(hasL))
+    .prependInstruction(useMaxCU()) // TransferHook require much CU
+    .buildAndExecute();
   }
 
   async function testClosePosition(

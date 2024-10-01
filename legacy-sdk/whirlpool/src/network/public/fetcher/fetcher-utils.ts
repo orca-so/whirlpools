@@ -11,7 +11,8 @@ import {
 import { ParsableWhirlpool } from "../parsing";
 import { TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, unpackAccount } from "@solana/spl-token";
 import { PDAUtil, PositionBundleUtil } from "../../../utils/public";
-import { IGNORE_CACHE, WhirlpoolContext } from "../../..";
+import { IGNORE_CACHE } from "../../..";
+import type { WhirlpoolContext } from "../../..";
 
 /**
  * Retrieve a list of whirlpool addresses and accounts filtered by the given params using
@@ -67,14 +68,16 @@ export async function getAllWhirlpoolAccountsForConfig({
   );
 }
 
-type PositionMap = {
+export type PositionMap = {
   positions: ReadonlyMap<string, PositionData>;
   positionsWithTokenExtensions: ReadonlyMap<string, PositionData>;
-  positionBundles: {
-    positionBundleAddress: Address,
-    positionBundleData: PositionBundleData,
-    bundledPositions: ReadonlyMap<number, PositionData>
-  }[]
+  positionBundles: BundledPositionMap[]
+};
+
+export type BundledPositionMap = {
+  positionBundleAddress: Address,
+  positionBundleData: PositionBundleData,
+  bundledPositions: ReadonlyMap<number, PositionData>
 };
 
 /**
@@ -97,9 +100,9 @@ export async function getAllPositionAccountsByOwner({
 }: {
   ctx: WhirlpoolContext;
   owner: Address;
-  includesPositions: boolean;
-  includesPositionsWithTokenExtensions: boolean;
-  includesBundledPositions: boolean;
+  includesPositions?: boolean;
+  includesPositionsWithTokenExtensions?: boolean;
+  includesBundledPositions?: boolean;
 }): Promise<PositionMap> {
   const positions = !includesPositions
     ? new Map()
@@ -136,17 +139,19 @@ async function findPositions(
   owner: Address,
   tokenProgramId: Address,
 ): Promise<ReadonlyMap<string, PositionData>> {
+  const programId = AddressUtil.toPubKey(tokenProgramId);
+
   const tokenAccounts = await ctx.connection.getTokenAccountsByOwner(
     AddressUtil.toPubKey(owner),
     {
-      programId: AddressUtil.toPubKey(tokenProgramId)
+      programId,
     }
   );
   
   // Get candidate addresses for the position
   const candidatePubkeys: PublicKey[] = [];
   tokenAccounts.value.forEach((ta) => {
-    const parsed = unpackAccount(ta.pubkey, ta.account);
+    const parsed = unpackAccount(ta.pubkey, ta.account, programId);
     if (parsed.amount === 1n) {
       const pda = PDAUtil.getPosition(ctx.program.programId, parsed.mint);
       candidatePubkeys.push(pda.publicKey);
@@ -174,14 +179,14 @@ async function findBundledPositions(
   const tokenAccounts = await ctx.connection.getTokenAccountsByOwner(
     AddressUtil.toPubKey(owner),
     {
-      programId: AddressUtil.toPubKey(TOKEN_PROGRAM_ID)
+      programId: TOKEN_PROGRAM_ID
     }
   );
 
   // Get candidate addresses for the position bundle
   const candidatePubkeys: PublicKey[] = [];
   tokenAccounts.value.forEach((ta) => {
-    const parsed = unpackAccount(ta.pubkey, ta.account);
+    const parsed = unpackAccount(ta.pubkey, ta.account, TOKEN_PROGRAM_ID);
     if (parsed.amount === 1n) {
       const pda = PDAUtil.getPositionBundle(ctx.program.programId, parsed.mint);
       candidatePubkeys.push(pda.publicKey);
@@ -196,7 +201,7 @@ async function findBundledPositions(
     .filter(([_, v]) => v !== null) as [string, PositionBundleData][];
 
   const bundledPositionPubkeys: PublicKey[] = [];
-  positionBundles.forEach(([_, positionBundle], i) => {
+  positionBundles.forEach(([_, positionBundle]) => {
     const bundleIndexes = PositionBundleUtil.getOccupiedBundleIndexes(positionBundle);
     bundleIndexes.forEach((bundleIndex) => {
       const pda = PDAUtil.getBundledPosition(ctx.program.programId, positionBundle.positionBundleMint, bundleIndex);

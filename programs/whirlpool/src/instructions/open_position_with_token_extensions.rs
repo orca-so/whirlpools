@@ -85,6 +85,7 @@ pub fn handler(
         initialize_token_metadata_extension(
             position_mint,
             position,
+            whirlpool,
             &ctx.accounts.metadata_update_auth,
             &ctx.accounts.token_2022_program,
             &position_seeds,

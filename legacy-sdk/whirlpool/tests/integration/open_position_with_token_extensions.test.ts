@@ -73,10 +73,12 @@ describe("open_position_with_token_extensions", () => {
   function checkMetadata(
     tokenMetadata: TokenMetadata,
     positionMint: PublicKey,
+    poolAddress: PublicKey,
+    positionAddress: PublicKey,
   ) {
     const WP_2022_METADATA_NAME_PREFIX = "OWP";
     const WP_2022_METADATA_SYMBOL = "OWP";
-    const WP_2022_METADATA_URI = "https://arweave.net/E19ZNY2sqMqddm1Wx7mrXPUZ0ZZ5ISizhebb0UsVEws";
+    const WP_2022_METADATA_URI_BASE = "https://position-nft.orca.so/meta";
 
     const mintAddress = positionMint.toBase58();
     const name =
@@ -86,10 +88,17 @@ describe("open_position_with_token_extensions", () => {
       "..." +
       mintAddress.slice(-4);
 
+    const uri =
+      WP_2022_METADATA_URI_BASE +
+      "/" +
+      poolAddress.toBase58() +
+      "/" +
+      positionAddress.toBase58();
+
     assert.ok(tokenMetadata.mint.equals(positionMint));
     assert.ok(tokenMetadata.name === name);
     assert.ok(tokenMetadata.symbol === WP_2022_METADATA_SYMBOL);
-    assert.ok(tokenMetadata.uri === WP_2022_METADATA_URI);
+    assert.ok(tokenMetadata.uri === uri);
     assert.ok(!!tokenMetadata.updateAuthority);
     assert.ok(tokenMetadata.updateAuthority.equals(WHIRLPOOL_NFT_UPDATE_AUTH));
     assert.ok(tokenMetadata.additionalMetadata.length === 0); // no additional metadata
@@ -98,6 +107,7 @@ describe("open_position_with_token_extensions", () => {
   async function checkMintState(
     positionMint: PublicKey,
     withTokenMetadataExtension: boolean,
+    poolAddress: PublicKey,
   ) {
     const positionPda = PDAUtil.getPosition(ctx.program.programId, positionMint);
 
@@ -146,7 +156,7 @@ describe("open_position_with_token_extensions", () => {
         return unpackTokenMetadata(data);
       })();
       assert.ok(tokenMetadata !== null);
-      checkMetadata(tokenMetadata, positionMint);
+      checkMetadata(tokenMetadata, positionMint, poolAddress, positionPda.publicKey);
     }
   }
 
@@ -207,7 +217,7 @@ describe("open_position_with_token_extensions", () => {
     ).addSigner(mint).buildAndExecute();
 
     // check Mint state (with metadata)
-    await checkMintState(params.positionMint, withTokenMetadataExtension);
+    await checkMintState(params.positionMint, withTokenMetadataExtension, whirlpoolPda.publicKey);
 
     // check TokenAccount state
     await checkTokenAccountState(
@@ -238,7 +248,7 @@ describe("open_position_with_token_extensions", () => {
     ).addSigner(mint).buildAndExecute();
 
     // check Mint state (with metadata)
-    await checkMintState(params.positionMint, withTokenMetadataExtension);
+    await checkMintState(params.positionMint, withTokenMetadataExtension, whirlpoolPda.publicKey);
 
     // check TokenAccount state
     await checkTokenAccountState(

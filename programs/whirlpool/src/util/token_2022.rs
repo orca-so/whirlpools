@@ -10,7 +10,7 @@ use solana_program::system_instruction::create_account;
 
 use crate::constants::{
     WP_2022_METADATA_MAX_LEN, WP_2022_METADATA_NAME_PREFIX, WP_2022_METADATA_SYMBOL,
-    WP_2022_METADATA_URI,
+    WP_2022_METADATA_URI_BASE,
 };
 use crate::state::*;
 
@@ -116,6 +116,7 @@ pub fn initialize_position_mint_2022<'info>(
 pub fn initialize_token_metadata_extension<'info>(
     position_mint: &Signer<'info>,
     position: &Account<'info, Position>,
+    whirlpool: &Account<'info, Whirlpool>,
     metadata_update_authority: &UncheckedAccount<'info>,
     token_2022_program: &Program<'info, Token2022>,
     position_seeds: &[&[u8]],
@@ -126,11 +127,21 @@ pub fn initialize_token_metadata_extension<'info>(
     // WP_2022_METADATA_NAME_PREFIX + " xxxx...yyyy"
     // xxxx and yyyy are the first and last 4 chars of mint address
     let mint_address = position_mint.key().to_string();
-    let mut nft_name = String::from(WP_2022_METADATA_NAME_PREFIX);
-    nft_name += " ";
-    nft_name += &mint_address[0..4];
-    nft_name += "...";
-    nft_name += &mint_address[mint_address.len() - 4..];
+    let nft_name = format!(
+        "{} {}...{}",
+        WP_2022_METADATA_NAME_PREFIX,
+        &mint_address[0..4],
+        &mint_address[mint_address.len() - 4..],
+    );
+
+    // WP_2022_METADATA_URI_BASE + "/" + pool address + "/" + position address
+    // Must be less than 128 bytes
+    let nft_uri = format!(
+        "{}/{}/{}",
+        WP_2022_METADATA_URI_BASE,
+        whirlpool.key().to_string(),
+        position.key().to_string(),
+    );
 
     // initialize TokenMetadata extension
     // update authority: WP_NFT_UPDATE_AUTH
@@ -143,7 +154,7 @@ pub fn initialize_token_metadata_extension<'info>(
             &mint_authority.key(),
             nft_name,
             WP_2022_METADATA_SYMBOL.to_string(),
-            WP_2022_METADATA_URI.to_string(),
+            nft_uri,
         ),
         &[
             position_mint.to_account_info(),

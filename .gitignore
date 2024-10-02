@@ -23,3 +23,4 @@ generated
 generated
 .docusaurus
 .cache-loader
+.devcontainer

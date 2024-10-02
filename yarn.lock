@@ -2519,19 +2519,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/errors@npm:0.21.4":
-  version: 0.21.4
-  resolution: "@kinobi-so/errors@npm:0.21.4"
-  dependencies:
-    "@kinobi-so/node-types": "npm:0.21.4"
-    chalk: "npm:^5.3.0"
-    commander: "npm:^12.1.0"
-  bin:
-    errors: bin/cli.mjs
-  checksum: 10c0/bf9dfa3c9ad8f1c809504d211bcc301e5869a46ae954d6166a977e62dacbd602a9e52b0f522aa157a6f60a7b665ddeb22bbd432cf98bda7a210f8b7fa428f372
-  languageName: node
-  linkType: hard
-
 "@kinobi-so/errors@npm:0.21.5":
   version: 0.21.5
   resolution: "@kinobi-so/errors@npm:0.21.5"
@@ -2545,13 +2532,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/node-types@npm:0.21.4":
-  version: 0.21.4
-  resolution: "@kinobi-so/node-types@npm:0.21.4"
-  checksum: 10c0/4e520af7a74b42898fa39805c92b6f07bd44fe59f9911dbe32675aa9674cfb90e04cf9236411176789bc01314b900990fbac2c1646a43ad40da128668d0c82a7
-  languageName: node
-  linkType: hard
-
 "@kinobi-so/node-types@npm:0.21.5":
   version: 0.21.5
   resolution: "@kinobi-so/node-types@npm:0.21.5"
@@ -2559,7 +2539,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/nodes-from-anchor@npm:0.21.3":
+"@kinobi-so/nodes-from-anchor@npm:0.21.3, @kinobi-so/nodes-from-anchor@npm:^0.21.3":
   version: 0.21.3
   resolution: "@kinobi-so/nodes-from-anchor@npm:0.21.3"
   dependencies:
@@ -2568,28 +2548,6 @@ __metadata:
     "@kinobi-so/visitors": "npm:0.21.5"
     "@noble/hashes": "npm:^1.5.0"
   checksum: 10c0/c5947f6ab6a20024a1aa63940e56f3783b64a521708e76744a21dd2ede39b8c81a80feda52ed30378465cb6720d1a23e45f2de6af605572f99c1d21e1a753dca
-  languageName: node
-  linkType: hard
-
-"@kinobi-so/nodes-from-anchor@npm:^0.21.2":
-  version: 0.21.2
-  resolution: "@kinobi-so/nodes-from-anchor@npm:0.21.2"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.21.4"
-    "@kinobi-so/nodes": "npm:0.21.4"
-    "@kinobi-so/visitors": "npm:0.21.4"
-    "@noble/hashes": "npm:^1.4.0"
-  checksum: 10c0/4e75b343ac2ed6a266c1925f07c55fe47d2573470f15ab30d6f03f26cc20e87fe917e9c48233b388311c69a3f6a4ec50f62ae925eda55609cb2e06e948d4ec6a
-  languageName: node
-  linkType: hard
-
-"@kinobi-so/nodes@npm:0.21.4":
-  version: 0.21.4
-  resolution: "@kinobi-so/nodes@npm:0.21.4"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.21.4"
-    "@kinobi-so/node-types": "npm:0.21.4"
-  checksum: 10c0/ad9cfdfb57bb6e1d740528d03505b836978f5090eee666029bd21f8e66977a674a5d3e8c88c00ce020545e3d0482a8cc32e40c362fc40a9c27c8b9631f839f61
   languageName: node
   linkType: hard
 
@@ -2655,17 +2613,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@kinobi-so/visitors-core@npm:0.21.4":
-  version: 0.21.4
-  resolution: "@kinobi-so/visitors-core@npm:0.21.4"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.21.4"
-    "@kinobi-so/nodes": "npm:0.21.4"
-    json-stable-stringify: "npm:^1.1.1"
-  checksum: 10c0/43bfbcd7ff4864b3aeab16df02d1cc03b093e0343b8caeea79f8be719e32cf4e3ee7d9e663528a4b4e1d310f1b475fac016d2da080e07969b62950de8008e1da
-  languageName: node
-  linkType: hard
-
 "@kinobi-so/visitors-core@npm:0.21.5":
   version: 0.21.5
   resolution: "@kinobi-so/visitors-core@npm:0.21.5"
@@ -2674,17 +2621,6 @@ __metadata:
     "@kinobi-so/nodes": "npm:0.21.5"
     json-stable-stringify: "npm:^1.1.1"
   checksum: 10c0/2e913a8f5acea9b3912403f766069622d44d2a5975c794c236e4f42e68c62d32d626255798fb6696720d6a7a462bf23b5cdc70e9cf9e01c362cc0d7abb073dd4
-  languageName: node
-  linkType: hard
-
-"@kinobi-so/visitors@npm:0.21.4":
-  version: 0.21.4
-  resolution: "@kinobi-so/visitors@npm:0.21.4"
-  dependencies:
-    "@kinobi-so/errors": "npm:0.21.4"
-    "@kinobi-so/nodes": "npm:0.21.4"
-    "@kinobi-so/visitors-core": "npm:0.21.4"
-  checksum: 10c0/5e78536b5badfc1ebde8cbbc15cd758e271486d210e9d1de0cca82001332fb00c3bf6907e0a3a0720b1ef1dba87f86a34bf1f692367e6f54eb19635a33eb5001
   languageName: node
   linkType: hard
 
@@ -2931,7 +2867,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-client@workspace:ts-sdk/client"
   dependencies:
-    "@kinobi-so/nodes-from-anchor": "npm:^0.21.2"
+    "@kinobi-so/nodes-from-anchor": "npm:^0.21.3"
     "@kinobi-so/renderers-js": "npm:^0.21.9"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/web3.js": "npm:^2.0.0-preview.4"
@@ -3030,7 +2966,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
-    "@kinobi-so/nodes-from-anchor": "npm:^0.21.2"
+    "@kinobi-so/nodes-from-anchor": "npm:^0.21.3"
     "@kinobi-so/renderers-rust": "npm:^0.21.7"
     "@orca-so/whirlpools-program": "npm:*"
   languageName: unknown

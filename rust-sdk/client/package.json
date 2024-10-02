@@ -11,7 +11,7 @@
   },
   "devDependencies": {
     "@kinobi-so/nodes-from-anchor": "^0.21.2",
-    "@kinobi-so/renderers-rust": "^0.21.6",
+    "@kinobi-so/renderers-rust": "^0.21.7",
     "@orca-so/whirlpools-program": "*"
   }
 }

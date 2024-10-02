@@ -139,8 +139,8 @@ pub fn initialize_token_metadata_extension<'info>(
     let nft_uri = format!(
         "{}/{}/{}",
         WP_2022_METADATA_URI_BASE,
-        whirlpool.key().to_string(),
-        position.key().to_string(),
+        whirlpool.key(),
+        position.key(),
     );
 
     // initialize TokenMetadata extension

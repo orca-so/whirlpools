@@ -113,7 +113,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
     .buildAndExecute();
 
     // accrue rewards
-    await sleep(1200);
+    await sleep(2000);
   }
 
   async function removeLiquidity(
@@ -420,7 +420,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
 
           // accrue rewards
           // closePosition does not attempt to create an ATA unless reward has accumulated.
-          await sleep(1200);
+          await sleep(2000);
 
           await removeLiquidity(fixture);
           await collectFees(fixture);
@@ -472,7 +472,7 @@ describe("WhirlpoolImpl#closePosition()", () => {
 
           // accrue rewards
           // closePosition does not attempt to create an ATA unless reward has accumulated.
-          await sleep(1200);
+          await sleep(2000);
 
           await testClosePosition(fixture);
         });

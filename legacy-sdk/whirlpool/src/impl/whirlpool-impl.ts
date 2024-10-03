@@ -363,35 +363,28 @@ export class WhirlpoolImpl implements Whirlpool {
       this.ctx.txBuilderOpts,
     );
 
-    if (withTokenExtensions) {
-      const positionIx = openPositionWithTokenExtensionsIx(this.ctx.program, {
-        funder,
-        owner: wallet,
-        positionPda,
+    const params = {
+      funder,
+      owner: wallet,
+      positionPda,
+      positionTokenAccount: positionTokenAccountAddress,
+      whirlpool: this.address,
+      tickLowerIndex: tickLower,
+      tickUpperIndex: tickUpper,
+    };
+    const positionIx = withTokenExtensions
+      ? openPositionWithTokenExtensionsIx(this.ctx.program, {
+        ...params,
         positionMint: positionMintPubkey,
-        positionTokenAccount: positionTokenAccountAddress,
-        whirlpool: this.address,
-        tickLowerIndex: tickLower,
-        tickUpperIndex: tickUpper,
         withTokenMetadataExtension: withMetadata,
-      });
-      txBuilder.addInstruction(positionIx);
-    } else {
-      const positionIx = (
-        withMetadata ? openPositionWithMetadataIx : openPositionIx
-      )(this.ctx.program, {
-        funder,
-        owner: wallet,
-        positionPda,
-        metadataPda,
+      })
+      : (withMetadata ? openPositionWithMetadataIx : openPositionIx)(this.ctx.program, {
+        ...params,
         positionMintAddress: positionMintPubkey,
-        positionTokenAccount: positionTokenAccountAddress,
-        whirlpool: this.address,
-        tickLowerIndex: tickLower,
-        tickUpperIndex: tickUpper,
+        metadataPda,
       });
-      txBuilder.addInstruction(positionIx);  
-    }
+    txBuilder.addInstruction(positionIx);
+
     if (positionMint === undefined) {
       txBuilder.addSigner(positionMintKeypair);
     }

@@ -35,21 +35,9 @@ export function closePositionWithTokenExtensionsIx(
   program: Program<Whirlpool>,
   params: ClosePositionWithTokenExtensionsParams,
 ): Instruction {
-  const {
-    positionAuthority,
-    receiver: receiver,
-    position: position,
-    positionMint,
-    positionTokenAccount,
-  } = params;
-
   const ix = program.instruction.closePositionWithTokenExtensions({
     accounts: {
-      positionAuthority,
-      receiver,
-      position,
-      positionMint,
-      positionTokenAccount,
+      ...params,
       token2022Program: TOKEN_2022_PROGRAM_ID,
     },
   });

@@ -92,13 +92,13 @@ pub fn initialize_position_mint_2022<'info>(
 
     // initialize Mint
     // mint authority: Position account (PDA) (will be removed in the transaction)
-    // freeze authority: None
+    // freeze authority: Position account (PDA) (reserved for future improvements)
     invoke(
         &spl_token_2022::instruction::initialize_mint2(
             token_2022_program.key,
             position_mint.key,
             &authority.key(),
-            None,
+            Some(&authority.key()),
             0,
         )?,
         &[

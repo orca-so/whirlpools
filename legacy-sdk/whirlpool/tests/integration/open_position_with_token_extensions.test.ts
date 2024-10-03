@@ -116,8 +116,13 @@ describe("open_position_with_token_extensions", () => {
 
     assert.ok(mint !== null);
     assert.ok(mint.tokenProgram.equals(TOKEN_2022_PROGRAM_ID));
-    assert.ok(mint.freezeAuthority === null);
-    assert.ok(mint.mintAuthority === null); // should be removed
+
+    // freeze authority: reserved for future improvements
+    assert.ok(mint.freezeAuthority !== null);
+    assert.ok(mint.freezeAuthority.equals(positionPda.publicKey));
+    // mint authority: should be removed
+    assert.ok(mint.mintAuthority === null);
+
     assert.ok(mint.decimals === 0); // NFT
     assert.ok(mint.supply === 1n); // NFT
 

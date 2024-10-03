@@ -111,6 +111,7 @@ pub fn initialize_position_mint_2022<'info>(
     Ok(())
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn initialize_token_metadata_extension<'info>(
     name: String,
     symbol: String,

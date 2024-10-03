@@ -43,6 +43,7 @@ import { defaultConfirmOptions } from "../utils/const";
 import { initTestPool } from "../utils/init-utils";
 import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../utils/test-builders";
 import type { OpenPositionWithTokenExtensionsParams } from "../../src/instructions";
+import { useMaxCU } from "../utils/v2/init-utils-v2";
 
 describe("open_position_with_token_extensions", () => {
   const provider = anchor.AnchorProvider.local(
@@ -119,6 +120,13 @@ describe("open_position_with_token_extensions", () => {
     assert.ok(mint.mintAuthority === null); // should be removed
     assert.ok(mint.decimals === 0); // NFT
     assert.ok(mint.supply === 1n); // NFT
+
+    // rent should be necessary and sufficient
+    const mintAccount = await ctx.connection.getAccountInfo(positionMint);
+    assert.ok(mintAccount !== null);
+    const dataLength = mintAccount.data.length;
+    const rentRequired = await ctx.connection.getMinimumBalanceForRentExemption(dataLength);
+    assert.ok(mintAccount.lamports === rentRequired);
 
     // check initialized extensions
     const initializedExtensions = getExtensionTypes(mint.tlvData);
@@ -214,7 +222,7 @@ describe("open_position_with_token_extensions", () => {
     await toTx(
       ctx,
       WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
-    ).addSigner(mint).buildAndExecute();
+    ).addSigner(mint).prependInstruction(useMaxCU()).buildAndExecute();
 
     // check Mint state (with metadata)
     await checkMintState(params.positionMint, withTokenMetadataExtension, whirlpoolPda.publicKey);

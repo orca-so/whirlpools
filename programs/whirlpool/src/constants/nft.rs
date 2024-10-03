@@ -21,19 +21,11 @@ pub const WPB_METADATA_URI: &str =
 
 // Based on Token-2022 TokenMetadata extension
 //
-// type: 2
-// length: 2
-// value: <= 258
-//   update_authority: 32
-//   mint: 32
-//   name: 4 + len(name) <= 4 + 40
-//   symbol: 4 + len(symbol) <= 4 + 10
-//   uri: 4 + len(uri) <= 4 + 128
-//   additional_metadata: 4 + 0 (no additional metadata)
+// There is no clear upper limit on the length of name, symbol, and uri,
+// but it is safe for wallet apps to limit the uri to 128 bytes.
 //
-// see: TokenMetadata struct
+// see also: TokenMetadata struct
 // https://github.com/solana-labs/solana-program-library/blob/cd6ce4b7709d2420bca60b4656bbd3d15d2e1485/token-metadata/interface/src/state.rs#L25
-pub const WP_2022_METADATA_MAX_LEN: usize = 2 + 2 + 258;
 pub const WP_2022_METADATA_NAME_PREFIX: &str = "OWP";
 pub const WP_2022_METADATA_SYMBOL: &str = "OWP";
 pub const WP_2022_METADATA_URI_BASE: &str = "https://position-nft.orca.so/meta";

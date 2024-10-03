@@ -1,4 +1,5 @@
 use crate::state::*;
+use crate::util::build_position_token_metadata;
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::AssociatedToken;
 use anchor_spl::token_2022::spl_token_2022;
@@ -82,11 +83,17 @@ pub fn handler(
     )?;
 
     if with_token_metadata {
+        let (name, symbol, uri) = build_position_token_metadata(position_mint, position, whirlpool);
+    
         initialize_token_metadata_extension(
+            name,
+            symbol,
+            uri,
             position_mint,
             position,
-            whirlpool,
             &ctx.accounts.metadata_update_auth,
+            &ctx.accounts.funder,
+            &ctx.accounts.system_program,
             &ctx.accounts.token_2022_program,
             &position_seeds,
         )?;

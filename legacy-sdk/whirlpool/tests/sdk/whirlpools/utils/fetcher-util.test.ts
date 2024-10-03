@@ -7,15 +7,16 @@ import {
   toTx,
   WhirlpoolContext,
 } from "../../../../src";
-import { TickSpacing } from "../../../utils";
+import { systemTransferTx, TickSpacing } from "../../../utils";
 import { defaultConfirmOptions } from "../../../utils/const";
 import { WhirlpoolTestFixture } from "../../../utils/fixture";
-import { Keypair } from "@solana/web3.js";
+import { Keypair, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import type { PublicKey } from "@solana/web3.js";
 import { PDAUtil } from "../../../../dist/utils/public/pda-utils";
 import { WhirlpoolIx } from "../../../../dist/ix";
 import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { PositionBundleUtil } from "../../../../dist/utils/public/position-bundle-util";
+import NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 
 describe("fetcher util tests", () => {
   const provider = anchor.AnchorProvider.local(
@@ -23,8 +24,20 @@ describe("fetcher util tests", () => {
     defaultConfirmOptions,
   );
   const program = anchor.workspace.Whirlpool;
-  const ctx = WhirlpoolContext.fromWorkspace(provider, program);
+  const globalCtx = WhirlpoolContext.fromWorkspace(provider, program);
+
+  // create isolated wallet because the wallet for globalCtx has many positions created by other test cases.
+  const isolatedOwnerKeypair = Keypair.generate();
+  const isolatedWallet = new NodeWallet(isolatedOwnerKeypair);
+  const ctx = WhirlpoolContext.from(globalCtx.connection, isolatedWallet, globalCtx.program.programId);
   const fetcher = ctx.fetcher;
+  before(async () => {
+    await systemTransferTx(
+      provider,
+      isolatedOwnerKeypair.publicKey,
+      10 * LAMPORTS_PER_SOL,
+    ).buildAndExecute();
+  });
 
   const tickLowerIndex = 29440;
   const tickUpperIndex = 33536;
@@ -77,7 +90,6 @@ describe("fetcher util tests", () => {
   }
 
   it("getAllPositionAccountsByOwner", async () => {
-  
     const fixture = await new WhirlpoolTestFixture(ctx).init(
       {
         tickSpacing,

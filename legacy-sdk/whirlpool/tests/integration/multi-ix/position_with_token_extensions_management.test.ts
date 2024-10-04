@@ -432,7 +432,7 @@ describe("position with token extensions management tests", () => {
       }));
     }
 
-    await builder.buildAndExecute(undefined, {skipPreflight: true});
+    await builder.buildAndExecute();
 
     checkClosed(params.positionPda.publicKey);
     checkClosed(params.positionMint);

@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import type { PDA } from "@orca-so/common-sdk";
 import { AddressUtil, MathUtil } from "@orca-so/common-sdk";
-import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import type BN from "bn.js";
@@ -853,6 +853,10 @@ export async function fundPositionsWithClient(
         true,
       );
 
+      const tokenProgramId = (param.isTokenExtensionsBasedPosition ?? false)
+        ? TOKEN_2022_PROGRAM_ID
+        : TOKEN_PROGRAM_ID;
+
       const { tx } = await whirlpool.openPosition(
         param.tickLowerIndex,
         param.tickUpperIndex,
@@ -864,7 +868,7 @@ export async function fundPositionsWithClient(
         undefined,
         undefined,
         undefined,
-        param.isTokenExtensionsBasedPosition ?? false,
+        tokenProgramId,
       );
       await tx.buildAndExecute();
     }),

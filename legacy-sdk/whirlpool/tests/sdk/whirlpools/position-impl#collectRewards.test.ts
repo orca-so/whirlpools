@@ -179,7 +179,7 @@ describe("PositionImpl#collectRewards()", () => {
         liquidityAmount,
         tokenMaxA: MAX_U64,
         tokenMaxB: MAX_U64,
-      }, undefined, undefined, undefined, true);
+      }, undefined, undefined, undefined, TOKEN_2022_PROGRAM_ID);
       await positionWithTokenExtensions.tx.buildAndExecute();
       const positionAddress = PDAUtil.getPosition(testCtx.whirlpoolCtx.program.programId, positionWithTokenExtensions.positionMint).publicKey;
 

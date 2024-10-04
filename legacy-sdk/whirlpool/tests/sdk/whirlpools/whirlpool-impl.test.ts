@@ -4,6 +4,7 @@ import {
   createBurnInstruction,
   createCloseAccountInstruction,
   getAssociatedTokenAddressSync,
+  TOKEN_2022_PROGRAM_ID,
 } from "@solana/spl-token";
 import * as assert from "assert";
 import BN from "bn.js";
@@ -1192,7 +1193,7 @@ describe("whirlpool-impl", () => {
           ctx.wallet.publicKey,
           funderKeypair.publicKey,
           undefined,
-          true, // withTokenExtensions
+          TOKEN_2022_PROGRAM_ID,
         );
         openIx.addSigner(funderKeypair);
 

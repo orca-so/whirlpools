@@ -1,7 +1,7 @@
 import type { AnchorProvider } from "@coral-xyz/anchor";
 import type { PDA } from "@orca-so/common-sdk";
 import { AddressUtil, MathUtil, Percentage } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -315,7 +315,7 @@ export async function initPosition(
     sourceWalletKey,
     ctx.wallet.publicKey,
     undefined,
-    withTokenExtensions,
+    withTokenExtensions ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID,
   );
 
   if (sourceWallet) {

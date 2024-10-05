@@ -155,6 +155,7 @@ export class PoolUtil {
    * @param upperTick - Position upper tick index
    * @param tokenAmount - The desired amount of tokens to deposit/withdraw
    * @returns An estimated amount of liquidity needed to deposit/withdraw the desired amount of tokens.
+   * @deprecated Please use {@link estimateMaxLiquidityFromTokenAmounts} instead.
    */
   public static estimateLiquidityFromTokenAmounts(
     currTick: number,
@@ -162,21 +163,45 @@ export class PoolUtil {
     upperTick: number,
     tokenAmount: TokenAmounts,
   ): BN {
-    if (upperTick < lowerTick) {
+    return this.estimateMaxLiquidityFromTokenAmounts(
+      PriceMath.tickIndexToSqrtPriceX64(currTick),
+      lowerTick,
+      upperTick,
+      tokenAmount,
+    );
+  }
+
+  /**
+   * Estimate the liquidity amount required to increase/decrease liquidity.
+   *
+   * @category Whirlpool Utils
+   * @param sqrtPriceX64 - Whirlpool's current sqrt price
+   * @param tickLowerIndex - Position lower tick index
+   * @param tickUpperIndex - Position upper tick index
+   * @param tokenAmount - The desired amount of tokens to deposit/withdraw
+   * @returns An estimated amount of liquidity needed to deposit/withdraw the desired amount of tokens.
+   */
+  public static estimateMaxLiquidityFromTokenAmounts(
+    sqrtPriceX64: BN,
+    tickLowerIndex: number,
+    tickUpperIndex: number,
+    tokenAmount: TokenAmounts,
+  ): BN {
+    if (tickUpperIndex < tickLowerIndex) {
       throw new Error("upper tick cannot be lower than the lower tick");
     }
 
-    const currSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(currTick);
-    const lowerSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(lowerTick);
-    const upperSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(upperTick);
+    const currSqrtPrice = sqrtPriceX64;
+    const lowerSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(tickLowerIndex);
+    const upperSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(tickUpperIndex);
 
-    if (currTick >= upperTick) {
+    if (currSqrtPrice.gte(upperSqrtPrice)) {
       return estLiquidityForTokenB(
         upperSqrtPrice,
         lowerSqrtPrice,
         tokenAmount.tokenB,
       );
-    } else if (currTick < lowerTick) {
+    } else if (currSqrtPrice.lt(lowerSqrtPrice)) {
       return estLiquidityForTokenA(
         lowerSqrtPrice,
         upperSqrtPrice,
@@ -196,6 +221,7 @@ export class PoolUtil {
       return BN.min(estLiquidityAmountA, estLiquidityAmountB);
     }
   }
+
 
   /**
    * Given an arbitrary pair of token mints, this function returns an ordering of the token mints

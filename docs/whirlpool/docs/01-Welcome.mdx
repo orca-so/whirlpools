@@ -8,12 +8,36 @@ import DocCard from '@theme/DocCard';
 
 Whirlpools is an open-sourced concentrated liquidity automated market maker (CLAMM) program built for the Solana ecosystem.
 
-Here, you can find information on the specific design details of the protocol and instructions on how to interact with it.
-
 <DocCard item={{
   type: 'link',
   href: 'https://github.com/orca-so/whirlpools',
-  label: 'Whirlpools GitHub',
+  label: 'Whirlpools Program',
   description: 'https://github.com/orca-so/whirlpools'
 }} />
 
+## Introduction to the Solana.
+
+On Solana, all data is stored in what are referred to as account. The way accounts are organized on Solana resembles a key-value store, where each entry in the database is called an account, the key is the account's address, and the value is the data stored in the account.
+
+We send transactions to the network to interact with the accounts. Transactions are a sequence of instructions that are executed atomically on the network. The execution logic for instruction is stored on programs (smart contracts) that run on the network.
+
+You can programmatically interact with Solana trough the JS/TS or Rust SDKs.
+
+## Whirlpools SDK
+
+The whirlpools SDK is an open-sourced library that allows developers to interact with the Whirlpools program and is intended to be used in conjuction with the Solana SDK. Simply put, you use the Whirlpools SDK to create instrcutions, and the Solana SDK to send them to the network.
+
+Some of the main features are:
+- Create instructions to create a new pool, open new positions, add or remove liqduidity, and swap tokens.
+- Get quotes for swaps.
+- Query the state of the pools to get information about the price of the assets, the amount of liquidity, and the fees.
+
+## How to use this documentation
+
+In the next section you will find information about the Whirlpools program and it's architecture.
+
+In the following sections you will find information about the Whirlpools SDK and how to use it to interact with the program.
+
+We also provide start-to-end tutorials for specific use cases combining the Whirlpools SDK with the Solana SDK.
+
+If you have any questions or need help, feel free to reach out to us on the [Discord](link).

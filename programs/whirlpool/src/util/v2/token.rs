@@ -79,9 +79,9 @@ pub fn transfer_from_owner_to_vault_v2<'info>(
             &hook_program_id,
             // owner to vault
             token_owner_account.to_account_info(), // from (owner account)
-            token_mint.to_account_info(), // mint
-            token_vault.to_account_info(), // to (vault account)
-            authority.to_account_info(), // authority (owner)
+            token_mint.to_account_info(),          // mint
+            token_vault.to_account_info(),         // to (vault account)
+            authority.to_account_info(),           // authority (owner)
             amount,
             transfer_hook_accounts.as_ref().unwrap(),
         )?;
@@ -143,10 +143,10 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
     let mut account_infos = vec![
         token_program.to_account_info(),
         // vault to owner
-        token_vault.to_account_info(), // from (vault account)
-        token_mint.to_account_info(), // mint
+        token_vault.to_account_info(),         // from (vault account)
+        token_mint.to_account_info(),          // mint
         token_owner_account.to_account_info(), // to (owner account)
-        whirlpool.to_account_info(), // authority (pool)
+        whirlpool.to_account_info(),           // authority (pool)
     ];
 
     // TransferHook extension
@@ -161,9 +161,9 @@ pub fn transfer_from_vault_to_owner_v2<'info>(
             &hook_program_id,
             // vault to owner
             token_vault.to_account_info(), // from (vault account)
-            token_mint.to_account_info(), // mint
+            token_mint.to_account_info(),  // mint
             token_owner_account.to_account_info(), // to (owner account)
-            whirlpool.to_account_info(), // authority (pool)
+            whirlpool.to_account_info(),   // authority (pool)
             amount,
             transfer_hook_accounts.as_ref().unwrap(),
         )?;
@@ -239,6 +239,7 @@ pub fn is_supported_token_mint(
         match extension {
             // supported
             extension::ExtensionType::TransferFeeConfig => {}
+            extension::ExtensionType::InterestBearingConfig => {}
             extension::ExtensionType::TokenMetadata => {}
             extension::ExtensionType::MetadataPointer => {}
             // partially supported

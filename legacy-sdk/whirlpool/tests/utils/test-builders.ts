@@ -1,7 +1,7 @@
 import type { AnchorProvider } from "@coral-xyz/anchor";
 import type { PDA } from "@orca-so/common-sdk";
 import { AddressUtil, MathUtil, Percentage } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import Decimal from "decimal.js";
@@ -24,6 +24,7 @@ import {
 } from "../../src";
 import type { WhirlpoolContext } from "../../src/context";
 import { TokenExtensionUtil } from "../../src/utils/public/token-extension-util";
+import type { OpenPositionWithTokenExtensionsParams } from "../../src/instructions";
 
 export interface TestWhirlpoolsConfigKeypairs {
   feeAuthorityKeypair: Keypair;
@@ -198,6 +199,48 @@ export async function generateDefaultOpenPositionParams(
   };
 }
 
+export async function generateDefaultOpenPositionWithTokenExtensionsParams(
+  context: WhirlpoolContext,
+  whirlpool: PublicKey,
+  withTokenMetadataExtension: boolean,
+  tickLowerIndex: number,
+  tickUpperIndex: number,
+  owner: PublicKey,
+  funder?: PublicKey,
+): Promise<{
+  params: OpenPositionWithTokenExtensionsParams;
+  mint: Keypair;
+}> {
+  const positionMintKeypair = Keypair.generate();
+  const positionPda = PDAUtil.getPosition(
+    context.program.programId,
+    positionMintKeypair.publicKey,
+  );
+
+  // Mint is based on Token-2022, so TokenAccount is also based on Token-2022.
+  const positionTokenAccount2022Address = getAssociatedTokenAddressSync(
+    positionMintKeypair.publicKey,
+    owner,
+    true,
+    TOKEN_2022_PROGRAM_ID, // token program id
+  );
+
+  return {
+    params: {
+      funder: funder || context.wallet.publicKey,
+      owner: owner,
+      positionPda,
+      positionMint: positionMintKeypair.publicKey,
+      positionTokenAccount: positionTokenAccount2022Address,
+      whirlpool: whirlpool,
+      tickLowerIndex,
+      tickUpperIndex,
+      withTokenMetadataExtension,
+    },
+    mint: positionMintKeypair,
+  };
+}
+
 export async function mintTokensToTestAccount(
   provider: AnchorProvider,
   tokenAMint: PublicKey,
@@ -230,6 +273,7 @@ export async function initPosition(
   inputTokenMint: PublicKey,
   inputTokenAmount: number,
   sourceWallet?: Keypair,
+  withTokenExtensions: boolean = false,
 ) {
   const sourceWalletKey = sourceWallet
     ? sourceWallet.publicKey
@@ -270,6 +314,8 @@ export async function initPosition(
     quote,
     sourceWalletKey,
     ctx.wallet.publicKey,
+    undefined,
+    withTokenExtensions ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID,
   );
 
   if (sourceWallet) {

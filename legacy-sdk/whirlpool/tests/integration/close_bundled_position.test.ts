@@ -28,7 +28,7 @@ import {
   openBundledPosition,
   openPosition,
 } from "../utils/init-utils";
-import { mintTokensToTestAccount } from "../utils/test-builders";
+import { generateDefaultOpenPositionWithTokenExtensionsParams, mintTokensToTestAccount } from "../utils/test-builders";
 import { TokenExtensionUtil } from "../../src/utils/public/token-extension-util";
 
 describe("close_bundled_position", () => {
@@ -684,7 +684,7 @@ describe("close_bundled_position", () => {
   });
 
   describe("non-bundled position", () => {
-    it("should be failed: try to close NON-bundled position", async () => {
+    it("should be failed: try to close NON-bundled position (TokenProgram based)", async () => {
       const positionBundleInfo = await initializePositionBundle(ctx);
 
       const bundleIndex = 0;
@@ -705,6 +705,55 @@ describe("close_bundled_position", () => {
         0,
         128,
       );
+
+      const tx = toTx(
+        ctx,
+        WhirlpoolIx.closeBundledPositionIx(ctx.program, {
+          bundledPosition: params.positionPda.publicKey, // NON-bundled position
+          bundleIndex,
+          positionBundle: positionBundleInfo.positionBundlePda.publicKey,
+          positionBundleAuthority: ctx.wallet.publicKey,
+          positionBundleTokenAccount:
+            positionBundleInfo.positionBundleTokenAccount,
+          receiver: ctx.wallet.publicKey,
+        }),
+      );
+
+      await assert.rejects(
+        tx.buildAndExecute(),
+        /0x7d6/, // ConstraintSeeds (seed constraint was violated)
+      );
+    });
+
+    it("should be failed: try to close NON-bundled position (TokenExtensions based)", async () => {
+      const positionBundleInfo = await initializePositionBundle(ctx);
+
+      const bundleIndex = 0;
+
+      await openBundledPosition(
+        ctx,
+        whirlpoolPda.publicKey,
+        positionBundleInfo.positionBundleMintKeypair.publicKey,
+        bundleIndex,
+        tickLowerIndex,
+        tickUpperIndex,
+      );
+
+      // open position with TokenExtensions
+      const { params, mint } = await generateDefaultOpenPositionWithTokenExtensionsParams(
+        ctx,
+        poolInitInfo.whirlpoolPda.publicKey,
+        true,
+        0,
+        poolInitInfo.tickSpacing,
+        provider.wallet.publicKey,
+      );
+      await toTx(
+        ctx,
+        WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
+      )
+      .addSigner(mint)
+      .buildAndExecute();
 
       const tx = toTx(
         ctx,

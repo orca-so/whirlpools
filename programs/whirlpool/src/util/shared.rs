@@ -3,6 +3,7 @@ use anchor_lang::{
     ToAccountInfo,
 };
 use anchor_spl::token::TokenAccount;
+use anchor_spl::token_interface::TokenAccount as TokenAccountInterface;
 use solana_program::program_option::COption;
 use std::convert::TryFrom;
 
@@ -18,6 +19,27 @@ pub fn verify_position_bundle_authority(
 
 pub fn verify_position_authority(
     position_token_account: &TokenAccount,
+    position_authority: &Signer<'_>,
+) -> Result<()> {
+    // Check token authority using validate_owner method...
+    match position_token_account.delegate {
+        COption::Some(ref delegate) if position_authority.key == delegate => {
+            validate_owner(delegate, &position_authority.to_account_info())?;
+            if position_token_account.delegated_amount != 1 {
+                return Err(ErrorCode::InvalidPositionTokenAmount.into());
+            }
+        }
+        _ => validate_owner(
+            &position_token_account.owner,
+            &position_authority.to_account_info(),
+        )?,
+    };
+    Ok(())
+}
+
+pub fn verify_position_authority_interface(
+    // position_token_account is owned by either TokenProgram or Token2022Program
+    position_token_account: &InterfaceAccount<'_, TokenAccountInterface>,
     position_authority: &Signer<'_>,
 ) -> Result<()> {
     // Check token authority using validate_owner method...

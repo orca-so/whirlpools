@@ -160,6 +160,13 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       );
     }
 
+    const positionMint = await this.ctx.fetcher.getMintInfo(account.positionMint, opts);
+    if (!positionMint) {
+      throw new Error(
+        `Unable to fetch Mint for Position at address at ${positionAddress}`,
+      );
+    }
+
     const [lowerTickArray, upperTickArray] = await getTickArrayDataForPosition(
       this.ctx,
       account,
@@ -178,6 +185,7 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       whirlAccount,
       lowerTickArray,
       upperTickArray,
+      positionMint.tokenProgram,
     );
   }
 
@@ -193,6 +201,10 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       .map((position) => position?.whirlpool.toBase58())
       .flatMap((x) => (!!x ? x : []));
     await this.ctx.fetcher.getPools(whirlpoolAddrs, opts);
+    const positionMintAddrs = positions
+      .map((position) => position?.positionMint.toBase58())
+      .flatMap((x) => (!!x ? x : []));
+    await this.ctx.fetcher.getMintInfos(positionMintAddrs, opts);
     const tickArrayAddresses: Set<string> = new Set();
     await Promise.all(
       positions.map(async (pos) => {

@@ -193,7 +193,10 @@ pub fn swap(
     }
 
     // Reject partial fills if no explicit sqrt price limit is set and trade is exact out mode
-    if amount_remaining > 0 && !amount_specified_is_input && sqrt_price_limit == NO_EXPLICIT_SQRT_PRICE_LIMIT {
+    if amount_remaining > 0
+        && !amount_specified_is_input
+        && sqrt_price_limit == NO_EXPLICIT_SQRT_PRICE_LIMIT
+    {
         return Err(ErrorCode::PartialFillError.into());
     }
 
@@ -2410,7 +2413,7 @@ mod swap_sqrt_price_tests {
             curr_tick_index: 442369, // c1
             start_tick_index: 442368,
             trade_amount: 1_000_000_000,
-            sqrt_price_limit: 0, // no explicit limit
+            sqrt_price_limit: 0,              // no explicit limit
             amount_specified_is_input: false, // exact out
             a_to_b: false,
             ..Default::default()
@@ -2438,7 +2441,7 @@ mod swap_sqrt_price_tests {
             curr_tick_index: -440321, // c1
             start_tick_index: -451584,
             trade_amount: 1_000_000_000,
-            sqrt_price_limit: 0, // no explicit limit
+            sqrt_price_limit: 0,              // no explicit limit
             amount_specified_is_input: false, // exact out
             a_to_b: true,
             ..Default::default()
@@ -2466,7 +2469,7 @@ mod swap_sqrt_price_tests {
             start_tick_index: 442368,
             trade_amount: 1_000_000_000,
             sqrt_price_limit: MAX_SQRT_PRICE_X64, // explicit limit
-            amount_specified_is_input: false, // exact out
+            amount_specified_is_input: false,     // exact out
             a_to_b: false,
             ..Default::default()
         });
@@ -2503,7 +2506,7 @@ mod swap_sqrt_price_tests {
             start_tick_index: -451584,
             trade_amount: 1_000_000_000,
             sqrt_price_limit: MIN_SQRT_PRICE_X64, // explicit limit
-            amount_specified_is_input: false, // exact out
+            amount_specified_is_input: false,     // exact out
             a_to_b: true,
             ..Default::default()
         });
@@ -2540,7 +2543,7 @@ mod swap_sqrt_price_tests {
             curr_tick_index: 442369, // c1
             start_tick_index: 442368,
             trade_amount: 1_000_000_000,
-            sqrt_price_limit: 0, // no explicit limit
+            sqrt_price_limit: 0,             // no explicit limit
             amount_specified_is_input: true, // exact in
             a_to_b: false,
             ..Default::default()
@@ -2578,7 +2581,7 @@ mod swap_sqrt_price_tests {
             curr_tick_index: -440321, // c1
             start_tick_index: -451584,
             trade_amount: 1_000_000_000,
-            sqrt_price_limit: 0, // no explicit limit
+            sqrt_price_limit: 0,             // no explicit limit
             amount_specified_is_input: true, // exact in
             a_to_b: true,
             ..Default::default()

@@ -17,9 +17,10 @@ import {
   TickSpacing,
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
-import { buildTestPoolParams } from "../../utils/init-utils";
+import { buildTestPoolParams, initTestPool } from "../../utils/init-utils";
 import { buildTestPoolV2Params } from "../../utils/v2/init-utils-v2";
-import { getMint, getTransferFeeConfig } from "@solana/spl-token";
+import { getMint, getTransferFeeConfig, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
+import { initPosition, mintTokensToTestAccount } from "../../utils/test-builders";
 
 describe("whirlpool-client-impl", () => {
   const provider = anchor.AnchorProvider.local(
@@ -841,6 +842,80 @@ describe("whirlpool-client-impl", () => {
         tx.buildAndExecute(),
         /0x179f/, // UnsupportedTokenMint
       );
+    });
+  });
+
+  it("getPosition/getPositions for TokenExtensions based Position", async () => {
+    const { poolInitInfo } = await initTestPool(
+      ctx,
+      TickSpacing.Standard,
+      PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
+    );
+
+    // Create and mint tokens in this wallet
+    await mintTokensToTestAccount(
+      ctx.provider,
+      poolInitInfo.tokenMintA,
+      10_000_000_000,
+      poolInitInfo.tokenMintB,
+      10_000_000_000,
+    );
+    
+    const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey);
+    const lowerTick = PriceMath.priceToTickIndex(
+      new Decimal(89),
+      pool.getTokenAInfo().decimals,
+      pool.getTokenBInfo().decimals,
+    );
+    const upperTick = PriceMath.priceToTickIndex(
+      new Decimal(120),
+      pool.getTokenAInfo().decimals,
+      pool.getTokenBInfo().decimals,
+    );
+
+    // [Action] Initialize Tick Arrays
+    const initTickArrayTx = (await pool.initTickArrayForTicks([
+      lowerTick,
+      upperTick,
+    ]))!;
+    await initTickArrayTx.buildAndExecute();
+
+    // [Action] Create a position at price 89, 120 with 50 token A
+    const lowerPrice = new Decimal(89);
+    const upperPrice = new Decimal(120);
+    const withTokenExtensions = [true, false, true, false];
+    const positions = await Promise.all(
+      withTokenExtensions.map((withTokenExtension) =>
+        initPosition(
+          ctx,
+          pool,
+          lowerPrice,
+          upperPrice,
+          poolInitInfo.tokenMintA,
+          50,
+          undefined,
+          withTokenExtension,
+        ),
+      ),
+    );
+
+    // check .getPosition
+    const position0 = await client.getPosition(positions[0].positionAddress.publicKey, IGNORE_CACHE);
+    assert.ok(position0.getPositionMintTokenProgramId().equals(TOKEN_2022_PROGRAM_ID));
+    const position1 = await client.getPosition(positions[1].positionAddress.publicKey, IGNORE_CACHE);
+    assert.ok(position1.getPositionMintTokenProgramId().equals(TOKEN_PROGRAM_ID));
+
+    // check .getPositions
+    const positionsFetched = await client.getPositions(
+      positions.map((p) => p.positionAddress.publicKey),
+      IGNORE_CACHE,
+    );
+    withTokenExtensions.forEach((withTokenExtension, i) => {
+      const position = positionsFetched[positions[i].positionAddress.publicKey.toBase58()];
+      assert.ok(!!position);
+      assert.ok(position.getPositionMintTokenProgramId().equals(
+        withTokenExtension ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID,
+      ));
     });
   });
 });

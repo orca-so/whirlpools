@@ -255,6 +255,7 @@ export async function approveToken(
   delegate: web3.PublicKey,
   amount: number | BN,
   owner?: web3.Keypair,
+  tokenProgram: web3.PublicKey = TOKEN_PROGRAM_ID,
 ) {
   const tx = new web3.Transaction();
   const amountVal = amount instanceof BN ? BigInt(amount.toString()) : amount;
@@ -264,6 +265,8 @@ export async function approveToken(
       delegate,
       owner?.publicKey || provider.wallet.publicKey,
       amountVal,
+      undefined,
+      tokenProgram,
     ),
   );
   return provider.sendAndConfirm(tx, !!owner ? [owner] : [], {
@@ -277,6 +280,7 @@ export async function setAuthority(
   newAuthority: web3.PublicKey,
   authorityType: AuthorityType,
   authority: web3.Keypair,
+  tokenProgram: web3.PublicKey = TOKEN_PROGRAM_ID,
 ) {
   const tx = new web3.Transaction();
   tx.add(
@@ -285,6 +289,8 @@ export async function setAuthority(
       authority.publicKey,
       authorityType,
       newAuthority,
+      undefined,
+      tokenProgram,
     ),
   );
 
@@ -296,6 +302,7 @@ export async function transferToken(
   source: web3.PublicKey,
   destination: web3.PublicKey,
   amount: number,
+  tokenProgram: web3.PublicKey = TOKEN_PROGRAM_ID,
 ) {
   const tx = new web3.Transaction();
   tx.add(
@@ -304,6 +311,8 @@ export async function transferToken(
       destination,
       provider.wallet.publicKey,
       amount,
+      undefined,
+      tokenProgram,
     ),
   );
   return provider.sendAndConfirm(tx, [], { commitment: "confirmed" });

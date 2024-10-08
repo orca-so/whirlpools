@@ -2,6 +2,7 @@
 
 pub mod close_bundled_position;
 pub mod close_position;
+pub mod close_position_with_token_extensions;
 pub mod collect_fees;
 pub mod collect_protocol_fees;
 pub mod collect_reward;
@@ -18,6 +19,7 @@ pub mod initialize_tick_array;
 pub mod open_bundled_position;
 pub mod open_position;
 pub mod open_position_with_metadata;
+pub mod open_position_with_token_extensions;
 pub mod set_collect_protocol_fees_authority;
 pub mod set_default_fee_rate;
 pub mod set_default_protocol_fee_rate;
@@ -34,6 +36,7 @@ pub mod update_fees_and_rewards;
 
 pub use close_bundled_position::*;
 pub use close_position::*;
+pub use close_position_with_token_extensions::*;
 pub use collect_fees::*;
 pub use collect_protocol_fees::*;
 pub use collect_reward::*;
@@ -50,6 +53,7 @@ pub use initialize_tick_array::*;
 pub use open_bundled_position::*;
 pub use open_position::*;
 pub use open_position_with_metadata::*;
+pub use open_position_with_token_extensions::*;
 pub use set_collect_protocol_fees_authority::*;
 pub use set_default_fee_rate::*;
 pub use set_default_protocol_fee_rate::*;

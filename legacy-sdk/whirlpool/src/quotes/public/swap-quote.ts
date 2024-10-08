@@ -224,7 +224,10 @@ async function swapQuoteByToken(
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions,
 ): Promise<SwapQuoteParam> {
-  const whirlpoolData = whirlpool.getData();
+  // If we use whirlpool.getData() here, quote will not be the latest even if opts is IGNORE_CACHE
+  const whirlpoolData = await fetcher.getPool(whirlpool.getAddress(), opts);
+  invariant(!!whirlpoolData, "Whirlpool data not found");
+
   const swapMintKey = AddressUtil.toPubKey(inputTokenMint);
   const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
   invariant(

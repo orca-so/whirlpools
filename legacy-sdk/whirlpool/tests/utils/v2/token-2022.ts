@@ -246,7 +246,7 @@ async function createMintInstructions(
         createInitializeInterestBearingMintInstruction(
           mint,
           authority,
-          1,
+          tokenTrait.interestBearingRate ?? 1, // default 1/10000
           TEST_TOKEN_2022_PROGRAM_ID,
         ),
       );

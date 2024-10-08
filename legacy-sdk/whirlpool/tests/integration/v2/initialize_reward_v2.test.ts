@@ -656,6 +656,17 @@ describe("initialize_reward_v2", () => {
       });
     });
 
+    it("Token-2022: with InterestBearingConfig", async () => {
+      await runTest({
+        supported: true,
+        createTokenBadge: false,
+        tokenTrait: {
+          isToken2022: true,
+          hasInterestBearingExtension: true,
+        },
+      });
+    });
+
     it("Token-2022: with MetadataPointer & TokenMetadata", async () => {
       await runTest({
         supported: true,
@@ -834,15 +845,6 @@ describe("initialize_reward_v2", () => {
           isNativeMint: true,
         },
       });
-    });
-
-    it("Token-2022: [FAIL] with/without TokenBadge with InterestBearingConfig", async () => {
-      const tokenTrait: TokenTrait = {
-        isToken2022: true,
-        hasInterestBearingExtension: true,
-      };
-      await runTest({ supported: false, createTokenBadge: true, tokenTrait });
-      await runTest({ supported: false, createTokenBadge: false, tokenTrait });
     });
 
     // [11 Mar, 2024] NOT IMPLEMENTED / I believe this extension is not stable yet

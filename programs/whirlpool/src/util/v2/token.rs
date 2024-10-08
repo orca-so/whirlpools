@@ -239,6 +239,7 @@ pub fn is_supported_token_mint(
         match extension {
             // supported
             extension::ExtensionType::TransferFeeConfig => {}
+            extension::ExtensionType::InterestBearingConfig => {}
             extension::ExtensionType::TokenMetadata => {}
             extension::ExtensionType::MetadataPointer => {}
             // partially supported

@@ -282,6 +282,7 @@ export class PoolUtil {
       switch (extension) {
         // supported
         case ExtensionType.TransferFeeConfig:
+        case ExtensionType.InterestBearingConfig:
         case ExtensionType.TokenMetadata:
         case ExtensionType.MetadataPointer:
         case ExtensionType.ConfidentialTransferMint:

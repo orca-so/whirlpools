@@ -57,6 +57,7 @@ export interface TokenTrait {
   hasConfidentialTransferExtension?: boolean;
 
   hasInterestBearingExtension?: boolean;
+  interestBearingRate?: number; // u16
   hasMintCloseAuthorityExtension?: boolean;
   hasDefaultAccountStateExtension?: boolean;
   defaultAccountInitialState?: AccountState;

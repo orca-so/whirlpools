@@ -2955,7 +2955,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-monorepo@workspace:."
   dependencies:
     "@types/bn.js": "npm:~5.1.6"
-    "@types/mocha": "npm:^10.0.8"
+    "@types/mocha": "npm:^10.0.9"
     "@types/node": "npm:^22.7.4"
     "@types/sinon": "npm:^17.0.3"
     husky: "npm:^9.1.6"
@@ -2999,7 +2999,7 @@ __metadata:
     "@project-serum/anchor": "npm:~0.26.0"
     "@solana/spl-token": "npm:^0.4.8"
     "@solana/web3.js": "npm:^1.95.2"
-    "@types/mocha": "npm:^10.0.8"
+    "@types/mocha": "npm:^10.0.9"
     "@types/mz": "npm:^2.7.3"
     mz: "npm:^2.7.0"
     typescript: "npm:^5.6.2"
@@ -4426,10 +4426,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mocha@npm:^10.0.8":
-  version: 10.0.8
-  resolution: "@types/mocha@npm:10.0.8"
-  checksum: 10c0/af01f70cf2888762e79e91219dcc28b5d82c85d9a1c8ba4606d3ae30748be7e2cb9f06d680ad36112c78f5e568d0423a65ba8b7c53d02d37b193787bbc03d088
+"@types/mocha@npm:^10.0.9":
+  version: 10.0.9
+  resolution: "@types/mocha@npm:10.0.9"
+  checksum: 10c0/76dd782ac7e971ea159d4a7fd40c929afa051e040be3f41187ff03a2d7b3279e19828ddaa498ba1757b3e6b91316263bb7640db0e906938275b97a06e087b989
   languageName: node
   linkType: hard
 

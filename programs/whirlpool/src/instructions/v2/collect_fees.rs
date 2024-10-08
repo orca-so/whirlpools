@@ -1,13 +1,12 @@
 use anchor_lang::prelude::*;
 use anchor_spl::memo::Memo;
-use anchor_spl::token;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::util::{parse_remaining_accounts, AccountsType, RemainingAccountsInfo};
 use crate::{
     constants::transfer_memo,
     state::*,
-    util::{v2::transfer_from_vault_to_owner_v2, verify_position_authority},
+    util::{v2::transfer_from_vault_to_owner_v2, verify_position_authority_interface},
 };
 
 #[derive(Accounts)]
@@ -22,7 +21,7 @@ pub struct CollectFeesV2<'info> {
         constraint = position_token_account.mint == position.position_mint,
         constraint = position_token_account.amount == 1
     )]
-    pub position_token_account: Box<Account<'info, token::TokenAccount>>,
+    pub position_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(address = whirlpool.token_mint_a)]
     pub token_mint_a: InterfaceAccount<'info, Mint>,
@@ -53,7 +52,7 @@ pub fn handler<'info>(
     ctx: Context<'_, '_, '_, 'info, CollectFeesV2<'info>>,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
-    verify_position_authority(
+    verify_position_authority_interface(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;

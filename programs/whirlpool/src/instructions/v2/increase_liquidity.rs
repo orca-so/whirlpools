@@ -1,6 +1,5 @@
 use anchor_lang::prelude::*;
 use anchor_spl::memo::Memo;
-use anchor_spl::token;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::errors::ErrorCode;
@@ -14,7 +13,7 @@ use crate::util::{
     RemainingAccountsInfo,
 };
 use crate::util::{
-    to_timestamp_u64, v2::transfer_from_owner_to_vault_v2, verify_position_authority,
+    to_timestamp_u64, v2::transfer_from_owner_to_vault_v2, verify_position_authority_interface,
 };
 
 #[derive(Accounts)]
@@ -37,7 +36,7 @@ pub struct ModifyLiquidityV2<'info> {
         constraint = position_token_account.mint == position.position_mint,
         constraint = position_token_account.amount == 1
     )]
-    pub position_token_account: Box<Account<'info, token::TokenAccount>>,
+    pub position_token_account: Box<InterfaceAccount<'info, TokenAccount>>,
 
     #[account(address = whirlpool.token_mint_a)]
     pub token_mint_a: InterfaceAccount<'info, Mint>,
@@ -70,7 +69,7 @@ pub fn handler<'info>(
     token_max_b: u64,
     remaining_accounts_info: Option<RemainingAccountsInfo>,
 ) -> Result<()> {
-    verify_position_authority(
+    verify_position_authority_interface(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;

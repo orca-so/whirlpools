@@ -129,6 +129,9 @@ export async function collectAllForPositionsTxns(
   const allMints = getTokenMintsFromWhirlpools(Array.from(whirlpools.values()));
   const accountExemption = await ctx.fetcher.getAccountRentExempt();
 
+  const positionMintAddrs = positionList.map(([, pos]) => pos.positionMint);
+  const positionMintInfos = await ctx.fetcher.getMintInfos(positionMintAddrs);
+
   // make cache
   await ctx.fetcher.getMintInfos(allMints.mintMap);
 
@@ -164,12 +167,20 @@ export async function collectAllForPositionsTxns(
       );
     }
 
+    const positionMintInfo = positionMintInfos.get(position.positionMint.toBase58());
+    if (!positionMintInfo) {
+      throw new Error(
+        `Unable to process positionMint ${position.positionMint.toBase58()} - missing mint info`,
+      );
+    }
+
     // add fee collection task
     collectionTasks.push({
       collectionType: "fee",
       positionAddr,
       position,
       whirlpool,
+      positionMintTokenProgramId: positionMintInfo.tokenProgram,
     });
 
     // add reward collection task
@@ -181,6 +192,7 @@ export async function collectAllForPositionsTxns(
           positionAddr,
           position,
           whirlpool,
+          positionMintTokenProgramId: positionMintInfo.tokenProgram,
         });
       }
     });
@@ -274,6 +286,7 @@ type RewardCollectionTask = {
 type CollectionTaskBase = {
   positionAddr: string;
   position: PositionData;
+  positionMintTokenProgramId: PublicKey;
   whirlpool: WhirlpoolData;
 };
 
@@ -295,6 +308,7 @@ const constructCollectIxForPosition = async (
     tickUpperIndex,
     positionMint,
   } = task.position;
+  const positionMintTokenProgramId = task.positionMintTokenProgramId;
 
   const whirlpool = task.whirlpool;
   const { tickSpacing } = whirlpool;
@@ -311,6 +325,7 @@ const constructCollectIxForPosition = async (
     positionMint,
     positionOwner,
     ctx.accountResolverOpts.allowPDAOwnerAddress,
+    positionMintTokenProgramId,
   );
 
   // Update fee and reward values if necessary

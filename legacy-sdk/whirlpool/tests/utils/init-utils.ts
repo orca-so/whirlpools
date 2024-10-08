@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import type { PDA } from "@orca-so/common-sdk";
 import { AddressUtil, MathUtil } from "@orca-so/common-sdk";
-import { NATIVE_MINT, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import type BN from "bn.js";
@@ -44,6 +44,7 @@ import {
   generateDefaultInitTickArrayParams,
   generateDefaultOpenBundledPositionParams,
   generateDefaultOpenPositionParams,
+  generateDefaultOpenPositionWithTokenExtensionsParams,
 } from "./test-builders";
 
 interface TestPoolParams {
@@ -520,7 +521,33 @@ export async function openPosition(
   tickUpperIndex: number,
   owner: PublicKey = ctx.provider.wallet.publicKey,
   funder?: Keypair,
-) {
+  withTokenExtensions: boolean = false,
+): ReturnType<typeof openPositionWithOptMetadata> {
+  if (withTokenExtensions) {
+    const result = await openPositionWithTokenExtensions(
+      ctx,
+      whirlpool,
+      tickLowerIndex,
+      tickUpperIndex,
+      false,
+      owner,
+      funder,
+    );
+
+    // adjust return type for compatibility
+    return {
+      mint: result.mint,
+      txId: result.txId,
+      params: {
+        ...result.params,
+        // rename
+        positionMintAddress: result.params.positionMint,
+        // add metadata
+        metadataPda: PDAUtil.getPositionMetadata(result.params.positionMint),
+      }
+    }
+  }
+
   return openPositionWithOptMetadata(
     ctx,
     whirlpool,
@@ -571,6 +598,33 @@ async function openPositionWithOptMetadata(
   let tx = withMetadata
     ? toTx(ctx, WhirlpoolIx.openPositionWithMetadataIx(ctx.program, params))
     : toTx(ctx, WhirlpoolIx.openPositionIx(ctx.program, params));
+  tx.addSigner(mint);
+  if (funder) {
+    tx.addSigner(funder);
+  }
+  const txId = await tx.buildAndExecute();
+  return { txId, params, mint };
+}
+
+async function openPositionWithTokenExtensions(
+  ctx: WhirlpoolContext,
+  whirlpool: PublicKey,
+  tickLowerIndex: number,
+  tickUpperIndex: number,
+  withMetadata: boolean = false,
+  owner: PublicKey = ctx.provider.wallet.publicKey,
+  funder?: Keypair,
+) {
+  const { params, mint } = await generateDefaultOpenPositionWithTokenExtensionsParams(
+    ctx,
+    whirlpool,
+    withMetadata,
+    tickLowerIndex,
+    tickUpperIndex,
+    owner,
+    funder?.publicKey || ctx.provider.wallet.publicKey,
+  );
+  let tx = toTx(ctx, WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params));
   tx.addSigner(mint);
   if (funder) {
     tx.addSigner(funder);
@@ -677,6 +731,7 @@ export type FundedPositionParams = {
   tickLowerIndex: number;
   tickUpperIndex: number;
   liquidityAmount: anchor.BN;
+  isTokenExtensionsBasedPosition?: boolean;
 };
 
 export async function withdrawPositions(
@@ -798,6 +853,10 @@ export async function fundPositionsWithClient(
         true,
       );
 
+      const tokenProgramId = (param.isTokenExtensionsBasedPosition ?? false)
+        ? TOKEN_2022_PROGRAM_ID
+        : TOKEN_PROGRAM_ID;
+
       const { tx } = await whirlpool.openPosition(
         param.tickLowerIndex,
         param.tickUpperIndex,
@@ -806,6 +865,10 @@ export async function fundPositionsWithClient(
           tokenMaxA: tokenA,
           tokenMaxB: tokenB,
         },
+        undefined,
+        undefined,
+        undefined,
+        tokenProgramId,
       );
       await tx.buildAndExecute();
     }),
@@ -834,6 +897,9 @@ export async function fundPositions(
         whirlpool,
         param.tickLowerIndex,
         param.tickUpperIndex,
+        undefined,
+        undefined,
+        param.isTokenExtensionsBasedPosition ?? false,
       );
 
       const tickArrayLower = PDAUtil.getTickArray(

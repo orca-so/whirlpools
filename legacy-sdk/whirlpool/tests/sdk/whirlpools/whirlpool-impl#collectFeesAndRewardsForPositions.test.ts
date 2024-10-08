@@ -8,6 +8,8 @@ import {
 } from "@orca-so/common-sdk";
 import {
   NATIVE_MINT,
+  TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
   createAssociatedTokenAccountInstruction,
   createBurnInstruction,
   createCloseAccountInstruction,
@@ -338,7 +340,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     await tx.buildAndExecute();
   }
 
-  async function baseTestSenario(tokenAIsNative: boolean, ataExists: boolean) {
+  async function baseTestSenario(tokenAIsNative: boolean, ataExists: boolean, includeTokenExtensionBasedPosition: boolean) {
     const fixtures: WhirlpoolTestFixture[] = [];
     const positions: FundedPositionInfo[] = [];
     const numOfPool = 3;
@@ -350,9 +352,9 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
           tickSpacing,
           positions: [
             // 3 Positions / pool
-            { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-            { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-            { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+            { tickLowerIndex, tickUpperIndex, liquidityAmount, isTokenExtensionsBasedPosition: includeTokenExtensionBasedPosition }, // In range position
+            { tickLowerIndex, tickUpperIndex, liquidityAmount, isTokenExtensionsBasedPosition: false }, // In range position
+            { tickLowerIndex, tickUpperIndex, liquidityAmount, isTokenExtensionsBasedPosition: includeTokenExtensionBasedPosition }, // In range position
           ],
           rewards: [
             {
@@ -373,6 +375,15 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
 
       fixtures.push(fixture);
       positions.push(...fixture.getInfos().positions);
+    }
+
+    const positionMints = positions.map((p) => p.mintKeypair.publicKey);
+    const positionMintInfos = await testCtx.whirlpoolCtx.fetcher.getMintInfos(positionMints, IGNORE_CACHE);
+    for (let i = 0; i < numOfPool; i++) {
+      const base = i * 3;
+      assert.ok(positionMintInfos.get(positionMints[base+0].toBase58())?.tokenProgram.equals(includeTokenExtensionBasedPosition ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID));
+      assert.ok(positionMintInfos.get(positionMints[base+1].toBase58())?.tokenProgram.equals(TOKEN_PROGRAM_ID));
+      assert.ok(positionMintInfos.get(positionMints[base+2].toBase58())?.tokenProgram.equals(includeTokenExtensionBasedPosition ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID));
     }
 
     await sleep(2); // accrueRewards
@@ -510,13 +521,19 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     it("should collect fees and rewards, create all ATAs", async () => {
       const tokenAIsNative = false;
       const ataExists = false;
-      await baseTestSenario(tokenAIsNative, ataExists);
+      await baseTestSenario(tokenAIsNative, ataExists, false);
     });
 
     it("should collect fees and rewards, all ATAs exists", async () => {
       const tokenAIsNative = false;
       const ataExists = true;
-      await baseTestSenario(tokenAIsNative, ataExists);
+      await baseTestSenario(tokenAIsNative, ataExists, false);
+    });
+
+    it("should collect fees and rewards, all ATAs exists (some Positions are TokenExtensions based)", async () => {
+      const tokenAIsNative = false;
+      const ataExists = true;
+      await baseTestSenario(tokenAIsNative, ataExists, true);
     });
   });
 
@@ -524,13 +541,19 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     it("should collect fees and rewards, create all ATAs", async () => {
       const tokenAIsNative = true;
       const ataExists = false;
-      await baseTestSenario(tokenAIsNative, ataExists);
+      await baseTestSenario(tokenAIsNative, ataExists, false);
     });
 
     it("should collect fees and rewards, all ATAs exists", async () => {
       const tokenAIsNative = true;
       const ataExists = true;
-      await baseTestSenario(tokenAIsNative, ataExists);
+      await baseTestSenario(tokenAIsNative, ataExists, false);
+    });
+
+    it("should collect fees and rewards, all ATAs exists (some Positions are TokenExtensions based)", async () => {
+      const tokenAIsNative = true;
+      const ataExists = true;
+      await baseTestSenario(tokenAIsNative, ataExists, true);
     });
   });
 

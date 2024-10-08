@@ -91,7 +91,7 @@ describe("update_fees_and_rewards", () => {
       }),
     ).buildAndExecute();
 
-    await sleep(1_000);
+    await sleep(2_000);
 
     await toTx(
       ctx,

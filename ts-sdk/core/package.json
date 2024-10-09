@@ -1,0 +1,44 @@
+{
+  "name": "@orca-so/whirlpools-core",
+  "description": "Orca's core typescript package.",
+  "version": "0.0.1",
+  "main": "./dist/nodejs/orca_whirlpools_core_js_bindings.js",
+  "types": "./dist/nodejs/orca_whirlpools_core_js_bindings.d.ts",
+  "browser": "./dist/web/orca_whirlpools_core_js_bindings.js",
+  "type": "module",
+  "sideEffects": [
+    "./dist/web/snippets/*"
+  ],
+  "files": [
+    "./dist/*/orca_whirlpools_core_js_bindings_bg.wasm",
+    "./dist/*/orca_whirlpools_core_js_bindings.js",
+    "./dist/*/orca_whirlpools_core_js_bindings.d.ts",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "wasm-pack build --out-dir ./dist/web --target web && wasm-pack build --out-dir ./dist/nodejs --target nodejs",
+    "test": "bash test.sh",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@orca-so/whirlpools-rust-core": "*",
+    "wasm-pack": "^0.13.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/orca-so/whirlpools.git"
+  },
+  "license": "Apache-2.0",
+  "keywords": [
+    "solana",
+    "crypto",
+    "defi",
+    "dex",
+    "amm"
+  ],
+  "author": "team@orca.so",
+  "bugs": {
+    "url": "https://github.com/orca-so/whirlpools/issues"
+  },
+  "homepage": "https://orca.so"
+}

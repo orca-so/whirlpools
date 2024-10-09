@@ -5,8 +5,8 @@
   "scripts": {
     "build": "node ./kinobi.js && cargo build",
     "test": "cargo test --lib",
-    "format": "cargo clippy --fix --allow-dirty --allow-staged -- -D clippy::all && cargo fmt",
-    "lint": "cargo clippy -- -D clippy::all",
+    "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
+    "lint": "cargo clippy",
     "clean": "cargo clean"
   },
   "devDependencies": {

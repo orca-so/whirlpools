@@ -1,0 +1,32 @@
+[package]
+name = "orca_whirlpools_core"
+version = "0.1.0"
+description = "Orca's core rust package."
+documentation = "https://orca-so.github.io/whirlpools/"
+homepage = "https://orca.so"
+repository = "https://github.com/orca-so/whirlpools"
+license = "Apache-2.0"
+keywords = ["solana", "crypto", "defi", "dex", "amm"]
+edition = "2021"
+
+[features]
+default = ["floats"]
+wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen", "dep:serde", "dep:serde-big-array", "dep:tsify", "dep:orca_whirlpools_macros"]
+floats = ["dep:libm"]
+
+[dependencies]
+ethnum = { version = "^1.5.0" }
+libm = { version = "^0.2.1", optional = true }
+wasm-bindgen = { version = "^0.2.93", optional = true }
+serde = { version = "^1.0.207", features = ["derive"], optional = true }
+serde-big-array = { version = "^0.5.1", optional = true }
+serde-wasm-bindgen = { version = "^0.6.5", optional = true }
+tsify = { version = "^0.4.5", features = ["js"], optional = true }
+orca_whirlpools_macros = { path = "../macros", optional = true }
+
+[target.'cfg(not(feature = "wasm"))'.dependencies]
+orca_whirlpools_client = { path = "../client" }
+
+[dev-dependencies]
+print-no-std = { version = "^0.1.0"}
+approx = { version = "^0.3.2" }

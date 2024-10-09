@@ -1,7 +1,7 @@
 [package]
-name = "orca_whirlpools"
+name = "orca_whirlpools_macros"
 version = "0.1.0"
-description = "Orca's high-level rust sdk to interact with Orca's on-chain Whirlpool program."
+description = "Orca's rust macro package."
 documentation = "https://orca-so.github.io/whirlpools/"
 homepage = "https://orca.so"
 repository = "https://github.com/orca-so/whirlpools"
@@ -9,6 +9,10 @@ license = "Apache-2.0"
 keywords = ["solana", "crypto", "defi", "dex", "amm"]
 edition = "2021"
 
+[lib]
+proc-macro = true
+
 [dependencies]
-orca_whirlpools_core = { path = "../core" }
-orca_whirlpools_client = { path = "../client" }
+syn = { version = "^2", features = ["full"] }
+quote = { version = "^1" }
+proc-macro2 = { version = "^1" }

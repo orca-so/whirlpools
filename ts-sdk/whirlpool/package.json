@@ -14,7 +14,8 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@orca-so/whirlpools-client": "*"
+    "@orca-so/whirlpools-client": "*",
+    "@orca-so/whirlpools-core": "*"
   },
   "devDependencies": {
     "typescript": "^5.6.3"

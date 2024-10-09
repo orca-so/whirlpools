@@ -1,5 +1,5 @@
 {
-  "name": "@orca-so/whirlpools-rust",
+  "name": "@orca-so/whirlpools-rust-macros",
   "version": "0.0.1",
   "scripts": {
     "build": "cargo build",
@@ -7,8 +7,5 @@
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
     "lint": "cargo clippy",
     "clean": "cargo clean"
-  },
-  "devDependencies": {
-    "@orca-so/whirlpools-rust-client": "*"
   }
 }

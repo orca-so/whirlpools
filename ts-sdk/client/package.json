@@ -19,7 +19,7 @@
     "@solana/web3.js": "^2.0.0-preview.4"
   },
   "devDependencies": {
-    "@kinobi-so/nodes-from-anchor": "^0.21.3",
+    "@kinobi-so/nodes-from-anchor": "^0.22.0",
     "@kinobi-so/renderers-js": "^0.22.0",
     "@orca-so/whirlpools-program": "*",
     "@solana/web3.js": "^2.0.0-preview.4",

@@ -17,7 +17,7 @@
     "@orca-so/whirlpools-client": "*"
   },
   "devDependencies": {
-    "typescript": "^5.6.2"
+    "typescript": "^5.6.3"
   },
   "repository": {
     "type": "git",

@@ -4,6 +4,7 @@ import type {
   VariableSizeDecoder,
 } from "@solana/web3.js";
 import {
+  assertIsAddress,
   createSolanaRpcFromTransport,
   getAddressDecoder,
   getBase58Decoder,
@@ -113,6 +114,7 @@ function getAccountData<T>(address: unknown, opts: unknown): unknown {
   }
 
   assert(typeof address === "string");
+  assertIsAddress(address);
   const data = mockAccounts[address];
   if (data == null) {
     throw new Error(`No mock account found for ${address}`);
@@ -120,10 +122,10 @@ function getAccountData<T>(address: unknown, opts: unknown): unknown {
   return {
     data: [decoder.decode(data.bytes), opts.encoding],
     executable: false,
-    lamports: data.length * 10,
+    lamports: data.bytes.length * 10,
     owner: data.owner ?? DEFAULT_ADDRESS,
     rentEpoch: 0,
-    space: data.length,
+    space: data.bytes.length,
   } as T;
 }
 

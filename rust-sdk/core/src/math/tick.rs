@@ -115,6 +115,28 @@ pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
     }
 }
 
+/// Get the initializable tick index.
+/// If the tick index is already initializable, it is returned as is.
+///
+/// # Parameters
+/// - `tick_index` - A i32 integer representing the tick integer
+/// - `tick_spacing` - A i32 integer representing the tick spacing
+/// - `round_up` - A boolean value indicating if the supplied tick index should be rounded up
+///
+/// # Returns
+/// - A i32 integer representing the previous initializable tick index
+#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getInitializableTickIndex, skip_jsdoc))]
+pub fn get_initializable_tick_index(tick_index: i32, tick_spacing: u16, round_up: bool) -> i32 {
+    let tick_spacing_i32 = tick_spacing as i32;
+    let remainder = tick_index % tick_spacing_i32;
+    let result = tick_index / tick_spacing_i32 * tick_spacing_i32;
+    if round_up && remainder != 0 {
+        result + tick_spacing_i32
+    } else {
+        result
+    }
+}
+
 /// Get the previous initializable tick index.
 ///
 /// # Parameters
@@ -125,8 +147,12 @@ pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
 /// - A i32 integer representing the previous initializable tick index
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getPrevInitializableTickIndex, skip_jsdoc))]
 pub fn get_prev_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
-    let tick_spacing_i32 = tick_spacing as i32;
-    tick_index - (tick_index % tick_spacing_i32)
+    let initializable_tick_index = get_initializable_tick_index(tick_index, tick_spacing, false);
+    if tick_index == initializable_tick_index {
+        initializable_tick_index - tick_spacing as i32
+    } else {
+        initializable_tick_index
+    }
 }
 
 /// Get the next initializable tick index.
@@ -139,8 +165,12 @@ pub fn get_prev_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> 
 /// - A i32 integer representing the next initializable tick index
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getNextInitializableTickIndex, skip_jsdoc))]
 pub fn get_next_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
-    let tick_spacing_i32 = tick_spacing as i32;
-    get_prev_initializable_tick_index(tick_index, tick_spacing) + tick_spacing_i32
+    let initializable_tick_index = get_initializable_tick_index(tick_index, tick_spacing, true);
+    if tick_index == initializable_tick_index {
+        initializable_tick_index + tick_spacing as i32
+    } else {
+        initializable_tick_index
+    }
 }
 
 /// Check if a tick is in-bounds.
@@ -252,6 +282,24 @@ pub fn order_tick_indexes(tick_lower_index: i32, tick_upper_index: i32) -> TickR
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = isFullRangeOnly, skip_jsdoc))]
 pub fn is_full_range_only(tick_spacing: u16) -> bool {
     tick_spacing >= FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD
+}
+
+/// Get the index of a tick in a tick array.
+///
+/// # Parameters
+/// - `tick_index` - A i32 integer representing the tick index
+/// - `tick_array_start_index` - A i32 integer representing the start tick index of the tick array
+/// - `tick_spacing` - A u16 integer representing the tick spacing
+///
+/// # Returns
+/// - A i32 integer representing the tick index in the tick array
+#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getTickIndexInArray, skip_jsdoc))]
+pub fn get_tick_index_in_array(
+    tick_index: i32,
+    tick_array_start_index: i32,
+    tick_spacing: u16,
+) -> i32 {
+    (tick_index - tick_array_start_index) / tick_spacing as i32
 }
 
 // Private functions
@@ -425,10 +473,18 @@ mod tests {
     }
 
     #[test]
+    fn test_get_initializable_tick_index() {
+        assert_eq!(get_initializable_tick_index(100, 10, false), 100);
+        assert_eq!(get_initializable_tick_index(100, 10, true), 100);
+        assert_eq!(get_initializable_tick_index(105, 10, false), 100);
+        assert_eq!(get_initializable_tick_index(105, 10, true), 110);
+    }
+
+    #[test]
     fn test_get_prev_initializable_tick_index() {
-        assert_eq!(get_prev_initializable_tick_index(100, 10), 100);
+        assert_eq!(get_prev_initializable_tick_index(100, 10), 90);
         assert_eq!(get_prev_initializable_tick_index(105, 10), 100);
-        assert_eq!(get_prev_initializable_tick_index(0, 10), 0);
+        assert_eq!(get_prev_initializable_tick_index(0, 10), -10);
     }
 
     #[test]

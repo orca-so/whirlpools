@@ -46,7 +46,7 @@ export function createSplashPoolInstructions(
   initialPrice: number = 1,
   funder: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<CreatePoolInstructions> {
-  return createPoolInstructions(
+  return createConcentratedLiquidityPoolInstructions(
     rpc,
     tokenMintOne,
     tokenMintTwo,
@@ -56,7 +56,7 @@ export function createSplashPoolInstructions(
   );
 }
 
-export async function createPoolInstructions(
+export async function createConcentratedLiquidityPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,

@@ -79,7 +79,7 @@ pub fn swap_quote_by_input_token(
 
     let token_min_out_before_fee = adjust_amount(
         token_est_out_before_fee.into(),
-        AdjustmentType::Slippage(slippage_tolerance),
+        AdjustmentType::Slippage { slippage_tolerance },
         false,
     );
 
@@ -170,7 +170,7 @@ pub fn swap_quote_by_output_token(
 
     let token_max_in_after_fee = adjust_amount(
         token_est_in_after_fee.into(),
-        crate::AdjustmentType::Slippage(slippage_tolerance),
+        AdjustmentType::Slippage { slippage_tolerance },
         true,
     );
 
@@ -318,7 +318,7 @@ fn compute_swap_step(
     let amount_calculated: u128 = if specified_input {
         adjust_amount(
             amount_remaining.into(),
-            AdjustmentType::SwapFee(fee_rate),
+            AdjustmentType::SwapFee { fee_rate },
             false,
         )
         .into()
@@ -373,9 +373,12 @@ fn compute_swap_step(
     let fee_amount: u128 = if specified_input && !is_max_swap {
         amount_remaining - amount_in
     } else {
-        let pre_fee_amount: u128 =
-            inverse_adjust_amount(amount_in.into(), AdjustmentType::SwapFee(fee_rate), false)
-                .into();
+        let pre_fee_amount: u128 = inverse_adjust_amount(
+            amount_in.into(),
+            AdjustmentType::SwapFee { fee_rate },
+            false,
+        )
+        .into();
         pre_fee_amount - amount_in
     };
 

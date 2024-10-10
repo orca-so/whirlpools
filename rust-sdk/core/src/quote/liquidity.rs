@@ -50,12 +50,12 @@ pub fn decrease_liquidity_quote(
 
     let token_min_before_fees_a = adjust_amount(
         token_est_before_fees_a.into(),
-        AdjustmentType::Slippage(slippage_tolerance),
+        AdjustmentType::Slippage { slippage_tolerance },
         false,
     );
     let token_min_before_fees_b = adjust_amount(
         token_est_before_fees_b.into(),
-        AdjustmentType::Slippage(slippage_tolerance),
+        AdjustmentType::Slippage { slippage_tolerance },
         false,
     );
 
@@ -235,12 +235,12 @@ pub fn increase_liquidity_quote(
 
     let token_max_before_fees_a = adjust_amount(
         token_est_before_fees_a.into(),
-        AdjustmentType::Slippage(slippage_tolerance),
+        AdjustmentType::Slippage { slippage_tolerance },
         true,
     );
     let token_max_before_fees_b = adjust_amount(
         token_est_before_fees_b.into(),
-        AdjustmentType::Slippage(slippage_tolerance),
+        AdjustmentType::Slippage { slippage_tolerance },
         true,
     );
 

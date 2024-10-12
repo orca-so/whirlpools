@@ -17,11 +17,13 @@
   ],
   "scripts": {
     "build": "wasm-pack build --out-dir ./dist/web --target web && wasm-pack build --out-dir ./dist/nodejs --target nodejs",
-    "test": "bash test.sh",
-    "clean": "rimraf dist"
+    "test": "ts-mocha --type-check ./tests/**/*.test.ts",
+    "clean": "cargo clean && rimraf dist"
   },
   "devDependencies": {
+    "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-rust-core": "*",
+    "typescript": "^5.6.3",
     "wasm-pack": "^0.13.0"
   },
   "repository": {

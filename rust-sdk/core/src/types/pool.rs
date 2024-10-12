@@ -19,7 +19,9 @@ pub struct WhirlpoolFacade {
     pub tick_current_index: i32,
     pub fee_growth_global_a: u128,
     pub fee_growth_global_b: u128,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub reward_last_updated_timestamp: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "WhirlpoolRewardInfoFacade[]"))]
     pub reward_infos: [WhirlpoolRewardInfoFacade; 3],
 }
 

@@ -8,16 +8,24 @@ use tsify::Tsify;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize, Tsify))]
-#[cfg_attr(feature = "wasm", serde(rename_all = "camelCase"))]
+#[cfg_attr(feature = "wasm", serde(rename_all = "camelCase", tag = "type"))]
 #[cfg_attr(feature = "wasm", tsify(from_wasm_abi))]
 pub enum AdjustmentType {
     None,
     // fee bps, maximum fee
-    TransferFee(u16, u64),
+    TransferFee {
+        fee_bps: u16,
+        #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+        max_fee: u64,
+    },
     // fee denominated by 1e6
-    SwapFee(u16),
+    SwapFee {
+        fee_rate: u16,
+    },
     // slippage bps
-    Slippage(u16),
+    Slippage {
+        slippage_tolerance: u16,
+    },
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
@@ -26,6 +34,7 @@ pub enum AdjustmentType {
 #[cfg_attr(feature = "wasm", tsify(from_wasm_abi))]
 pub struct TransferFee {
     pub fee_bps: u16,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub max_fee: u64,
 }
 
@@ -45,7 +54,10 @@ impl TransferFee {
 impl From<Option<TransferFee>> for AdjustmentType {
     fn from(transfer_fee: Option<TransferFee>) -> Self {
         if let Some(transfer_fee) = transfer_fee {
-            Self::TransferFee(transfer_fee.fee_bps, transfer_fee.max_fee)
+            Self::TransferFee {
+                fee_bps: transfer_fee.fee_bps,
+                max_fee: transfer_fee.max_fee,
+            }
         } else {
             Self::None
         }

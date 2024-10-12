@@ -29,9 +29,9 @@ pub struct TickRange {
 pub struct TickFacade {
     pub initialized: bool,
     pub liquidity_net: i128,
-    pub liquidity_gross: u128,
     pub fee_growth_outside_a: u128,
     pub fee_growth_outside_b: u128,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint[]"))]
     pub reward_growths_outside: [u128; 3],
 }
 

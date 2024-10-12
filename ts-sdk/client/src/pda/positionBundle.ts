@@ -17,6 +17,10 @@ export async function getBundledPositionAddress(
 ): Promise<ProgramDerivedAddress> {
   return await getProgramDerivedAddress({
     programAddress: WHIRLPOOL_PROGRAM_ADDRESS,
-    seeds: ["bundled_position", getAddressEncoder().encode(positionBundleAddress), Buffer.from(bundleIndex.toString())],
+    seeds: [
+      "bundled_position",
+      getAddressEncoder().encode(positionBundleAddress),
+      Buffer.from(bundleIndex.toString()),
+    ],
   });
 }

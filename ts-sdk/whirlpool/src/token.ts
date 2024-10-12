@@ -81,13 +81,11 @@ export async function prepareTokenAccountsInstructions(
   const mints = await fetchAllMint(rpc, mintAddresses.filter(mintFilter));
   const tokenAddresses = await Promise.all(
     mints.map((mint) =>
-      findAssociatedTokenPda(
-        {
-          owner: owner.address,
-          mint: mint.address,
-          tokenProgram: mint.programAddress,
-        },
-      ).then((x) => x[0]),
+      findAssociatedTokenPda({
+        owner: owner.address,
+        mint: mint.address,
+        tokenProgram: mint.programAddress,
+      }).then((x) => x[0]),
     ),
   );
   const tokenAccounts = await fetchAllMaybeToken(rpc, tokenAddresses);
@@ -233,16 +231,23 @@ export async function prepareTokenAccountsInstructions(
   };
 }
 
-
-export function getCurrentTransferFee(mint: Mint, currentEpoch: bigint): TransferFee | undefined {
+export function getCurrentTransferFee(
+  mint: Mint,
+  currentEpoch: bigint,
+): TransferFee | undefined {
   if (mint.extensions.__option === "None") {
     return undefined;
   }
-  const feeConfig = mint.extensions.value.find(x => x.__kind === "TransferFeeConfig");
+  const feeConfig = mint.extensions.value.find(
+    (x) => x.__kind === "TransferFeeConfig",
+  );
   if (feeConfig == null) {
     return undefined;
   }
-  const transferFee = currentEpoch >= feeConfig.newerTransferFee.epoch ? feeConfig.newerTransferFee : feeConfig.olderTransferFee;
+  const transferFee =
+    currentEpoch >= feeConfig.newerTransferFee.epoch
+      ? feeConfig.newerTransferFee
+      : feeConfig.olderTransferFee;
   return {
     feeBps: transferFee.transferFeeBasisPoints,
     maxFee: transferFee.maximumFee,

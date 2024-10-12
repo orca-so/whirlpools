@@ -911,6 +911,7 @@ dependencies = [
  "borsh 0.10.3",
  "num-derive",
  "num-traits",
+ "orca_whirlpools_core",
  "solana-program",
  "thiserror",
 ]
@@ -921,7 +922,6 @@ version = "0.1.0"
 dependencies = [
  "ethnum",
  "libm",
- "orca_whirlpools_client",
 ]
 
 [[package]]

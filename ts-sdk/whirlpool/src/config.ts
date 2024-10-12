@@ -15,7 +15,10 @@ export async function setWhirlpoolsConfig(
   whirlpoolsConfigAddress: Address,
 ): Promise<void> {
   WHIRLPOOLS_CONFIG_ADDRESS = whirlpoolsConfigAddress;
-  WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS = await getWhirlpoolsConfigExtensionAddress(whirlpoolsConfigAddress).then((x) => x[0]);
+  WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
+    await getWhirlpoolsConfigExtensionAddress(whirlpoolsConfigAddress).then(
+      (x) => x[0],
+    );
 }
 
 export const SPLASH_POOL_TICK_SPACING = 32896;
@@ -35,7 +38,9 @@ export function setDefaultFunder(
 
 export let DEFAULT_SLIPPAGE_TOLERANCE_BPS = 100;
 
-export function setDefaultSlippageToleranceBps(slippageToleranceBps: number): void {
+export function setDefaultSlippageToleranceBps(
+  slippageToleranceBps: number,
+): void {
   DEFAULT_SLIPPAGE_TOLERANCE_BPS = Math.floor(slippageToleranceBps);
 }
 
@@ -65,7 +70,9 @@ export function setSolWrappingStrategy(strategy: SolWrappingStrategy): void {
 }
 
 export async function resetConfiguration(): Promise<void> {
-  await setWhirlpoolsConfig(address("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ"));
+  await setWhirlpoolsConfig(
+    address("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ"),
+  );
   setDefaultFunder(DEFAULT_ADDRESS);
   setDefaultSlippageToleranceBps(100);
   setSolWrappingStrategy("ata");

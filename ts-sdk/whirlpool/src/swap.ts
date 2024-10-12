@@ -5,15 +5,15 @@ import type {
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
   IInstruction,
-  MaybeAccount,
   Rpc,
   TransactionPartialSigner,
 } from "@solana/web3.js";
-import { AccountRole } from "@solana/web3.js";
+import { AccountRole, lamports } from "@solana/web3.js";
 import { DEFAULT_FUNDER, DEFAULT_SLIPPAGE_TOLERANCE_BPS } from "./config";
 import type {
   ExactInSwapQuote,
   ExactOutSwapQuote,
+  TickArrayFacade,
   TransferFee,
 } from "@orca-so/whirlpools-core";
 import {
@@ -22,7 +22,7 @@ import {
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
 } from "@orca-so/whirlpools-core";
-import type { TickArray, Whirlpool } from "@orca-so/whirlpools-client";
+import type { Whirlpool } from "@orca-so/whirlpools-client";
 import {
   AccountsType,
   fetchAllMaybeTickArray,
@@ -31,7 +31,10 @@ import {
   getSwapV2Instruction,
   getTickArrayAddress,
 } from "@orca-so/whirlpools-client";
-import { getCurrentTransferFee, prepareTokenAccountsInstructions } from "./token";
+import {
+  getCurrentTransferFee,
+  prepareTokenAccountsInstructions,
+} from "./token";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import { fetchAllMint } from "@solana-program/token-2022";
 
@@ -59,7 +62,33 @@ type SwapInstructions<T extends SwapParams> = {
   quote: SwapQuote<T>;
 };
 
-async function fetchTickArrayOrDefault(rpc: Rpc<GetMultipleAccountsApi>, whirlpool: Account<Whirlpool>): Promise<Account<TickArray>[]> {
+function createUninitializedTickArray(
+  address: Address,
+  startTickIndex: number,
+  programAddress: Address,
+): Account<TickArrayFacade> {
+  return {
+    address,
+    data: {
+      startTickIndex,
+      ticks: Array(_TICK_ARRAY_SIZE()).fill({
+        initialized: false,
+        liquidityNet: 0n,
+        feeGrowthOutsideA: 0n,
+        feeGrowthOutsideB: 0n,
+        rewardGrowthsOutside: [0n, 0n, 0n],
+      }),
+    },
+    executable: false,
+    lamports: lamports(0n),
+    programAddress,
+  };
+}
+
+async function fetchTickArrayOrDefault(
+  rpc: Rpc<GetMultipleAccountsApi>,
+  whirlpool: Account<Whirlpool>,
+): Promise<Account<TickArrayFacade>[]> {
   const tickArrayStartIndex = getTickArrayStartTickIndex(
     whirlpool.data.tickCurrentIndex,
     whirlpool.data.tickSpacing,
@@ -75,13 +104,29 @@ async function fetchTickArrayOrDefault(rpc: Rpc<GetMultipleAccountsApi>, whirlpo
   ];
 
   const tickArrayAddresses = await Promise.all(
-    tickArrayIndexes.map(startIndex => getTickArrayAddress(whirlpool.address, startIndex).then(x => x[0]))
+    tickArrayIndexes.map((startIndex) =>
+      getTickArrayAddress(whirlpool.address, startIndex).then((x) => x[0]),
+    ),
   );
 
-  const tickArrays = await fetchAllMaybeTickArray(
-    rpc,
-    tickArrayAddresses,
-  );
+  const maybeTickArrays = await fetchAllMaybeTickArray(rpc, tickArrayAddresses);
+
+  const tickArrays: Account<TickArrayFacade>[] = [];
+
+  for (let i = 0; i < maybeTickArrays.length; i++) {
+    const maybeTickArray = maybeTickArrays[i];
+    if (maybeTickArray.exists) {
+      tickArrays.push(maybeTickArray);
+    } else {
+      tickArrays.push(
+        createUninitializedTickArray(
+          tickArrayAddresses[i],
+          tickArrayIndexes[i],
+          whirlpool.programAddress,
+        ),
+      );
+    }
+  }
 
   return tickArrays;
 }
@@ -91,7 +136,7 @@ function getSwapQuote<T extends SwapParams>(
   whirlpool: Whirlpool,
   transferFeeA: TransferFee | undefined,
   transferFeeB: TransferFee | undefined,
-  tickArrays: Account<TickArray>[],
+  tickArrays: Account<TickArrayFacade>[],
   specifiedTokenA: boolean,
   slippageToleranceBps: number,
 ): SwapQuote<T> {

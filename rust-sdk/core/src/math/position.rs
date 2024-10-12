@@ -104,10 +104,7 @@ pub fn position_ratio(
             let ratio_a = ((amount_a * 10000) / amount_total) as u16;
             let ratio_b = 10000 - ratio_a;
 
-            PositionRatio {
-                ratio_a,
-                ratio_b
-            }
+            PositionRatio { ratio_a, ratio_b }
         }
     }
 }
@@ -127,14 +124,38 @@ mod test {
 
     #[test]
     fn test_position_status() {
-        assert_eq!(position_status(18354745142194483560, -100, 100), PositionStatus::PriceBelowRange);
-        assert_eq!(position_status(18354745142194483561, -100, 100), PositionStatus::PriceBelowRange);
-        assert_eq!(position_status(18354745142194483562, -100, 100), PositionStatus::PriceInRange);
-        assert_eq!(position_status(18446744073709551616, -100, 100), PositionStatus::PriceInRange);
-        assert_eq!(position_status(18539204128674405811, -100, 100), PositionStatus::PriceInRange);
-        assert_eq!(position_status(18539204128674405812, -100, 100), PositionStatus::PriceAboveRange);
-        assert_eq!(position_status(18539204128674405813, -100, 100), PositionStatus::PriceAboveRange);
-        assert_eq!(position_status(18446744073709551616, 100, 100), PositionStatus::Invalid);
+        assert_eq!(
+            position_status(18354745142194483560, -100, 100),
+            PositionStatus::PriceBelowRange
+        );
+        assert_eq!(
+            position_status(18354745142194483561, -100, 100),
+            PositionStatus::PriceBelowRange
+        );
+        assert_eq!(
+            position_status(18354745142194483562, -100, 100),
+            PositionStatus::PriceInRange
+        );
+        assert_eq!(
+            position_status(18446744073709551616, -100, 100),
+            PositionStatus::PriceInRange
+        );
+        assert_eq!(
+            position_status(18539204128674405811, -100, 100),
+            PositionStatus::PriceInRange
+        );
+        assert_eq!(
+            position_status(18539204128674405812, -100, 100),
+            PositionStatus::PriceAboveRange
+        );
+        assert_eq!(
+            position_status(18539204128674405813, -100, 100),
+            PositionStatus::PriceAboveRange
+        );
+        assert_eq!(
+            position_status(18446744073709551616, 100, 100),
+            PositionStatus::Invalid
+        );
     }
 
     #[test]

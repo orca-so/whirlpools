@@ -16,10 +16,7 @@ import type {
   Address,
   GetProgramAccountsApi,
 } from "@solana/web3.js";
-import {
-  SPLASH_POOL_TICK_SPACING,
-  WHIRLPOOLS_CONFIG_ADDRESS,
-} from "./config";
+import { SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS } from "./config";
 
 type InitializablePool = {
   initialized: false;
@@ -44,7 +41,12 @@ export async function fetchSplashPool(
   tokenMintOne: Address,
   tokenMintTwo: Address,
 ): Promise<PoolInfo> {
-  return fetchWhirlpool(rpc, tokenMintOne, tokenMintTwo, SPLASH_POOL_TICK_SPACING);
+  return fetchWhirlpool(
+    rpc,
+    tokenMintOne,
+    tokenMintTwo,
+    SPLASH_POOL_TICK_SPACING,
+  );
 }
 
 export async function fetchWhirlpool(
@@ -105,7 +107,10 @@ export async function fetchWhirlpools(
       ? [tokenMintOne, tokenMintTwo]
       : [tokenMintTwo, tokenMintOne];
 
-  const feeTierAccounts = await fetchAllFeeTierWithFilter(rpc, feeTierWhirlpoolsConfigFilter(WHIRLPOOLS_CONFIG_ADDRESS));
+  const feeTierAccounts = await fetchAllFeeTierWithFilter(
+    rpc,
+    feeTierWhirlpoolsConfigFilter(WHIRLPOOLS_CONFIG_ADDRESS),
+  );
 
   const supportedTickSpacings = feeTierAccounts.map((x) => x.data.tickSpacing);
 

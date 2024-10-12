@@ -1,5 +1,5 @@
 import { describe } from "mocha";
 
-describe("Fetch Position", () => {
+describe("e2e", () => {
   // TODO: <-
 });

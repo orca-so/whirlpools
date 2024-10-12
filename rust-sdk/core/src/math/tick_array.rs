@@ -1,4 +1,7 @@
-use crate::{ErrorCode, TickArrayFacade, TickFacade, INVALID_TICK_INDEX, TICK_ARRAY_NOT_EVENLY_SPACED, TICK_ARRAY_SIZE, TICK_INDEX_OUT_OF_BOUNDS};
+use crate::{
+    ErrorCode, TickArrayFacade, TickFacade, INVALID_TICK_INDEX, TICK_ARRAY_NOT_EVENLY_SPACED,
+    TICK_ARRAY_SIZE, TICK_INDEX_OUT_OF_BOUNDS,
+};
 
 use super::{get_next_initializable_tick_index, get_prev_initializable_tick_index};
 
@@ -35,7 +38,8 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
     }
 
     pub fn end_index(&self) -> i32 {
-        self.tick_arrays[SIZE - 1].start_tick_index + TICK_ARRAY_SIZE as i32 * self.tick_spacing as i32
+        self.tick_arrays[SIZE - 1].start_tick_index
+            + TICK_ARRAY_SIZE as i32 * self.tick_spacing as i32
     }
 
     pub fn tick(&self, tick_index: i32) -> Result<&TickFacade, ErrorCode> {
@@ -134,7 +138,10 @@ mod tests {
         let sequence = test_sequence();
 
         let out_out_bounds_lower = sequence.tick(-1409);
-        assert!(matches!(out_out_bounds_lower, Err(TICK_INDEX_OUT_OF_BOUNDS)));
+        assert!(matches!(
+            out_out_bounds_lower,
+            Err(TICK_INDEX_OUT_OF_BOUNDS)
+        ));
 
         let out_of_bounds_upper = sequence.tick(2817);
         assert!(matches!(out_of_bounds_upper, Err(TICK_INDEX_OUT_OF_BOUNDS)));
@@ -143,7 +150,10 @@ mod tests {
         assert!(matches!(invalid_tick_index, Err(INVALID_TICK_INDEX)));
 
         let invalid_negative_tick_index = sequence.tick(-1);
-        assert!(matches!(invalid_negative_tick_index, Err(INVALID_TICK_INDEX)));
+        assert!(matches!(
+            invalid_negative_tick_index,
+            Err(INVALID_TICK_INDEX)
+        ));
     }
 
     #[test]

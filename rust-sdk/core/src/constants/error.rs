@@ -22,4 +22,3 @@ pub const AMOUNT_EXCEEDS_MAX_U64: ErrorCode = 9004;
 
 #[cfg_attr(feature = "wasm", wasm_const)]
 pub const SQRT_PRICE_OUT_OF_BOUNDS: ErrorCode = 9005;
-

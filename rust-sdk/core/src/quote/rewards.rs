@@ -4,7 +4,8 @@ use ethnum::U256;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    try_adjust_amount, CollectRewardsQuote, PositionFacade, TickFacade, TransferFee, WhirlpoolFacade,
+    try_adjust_amount, CollectRewardsQuote, PositionFacade, TickFacade, TransferFee,
+    WhirlpoolFacade,
 };
 
 /// Calculate rewards owed for a position
@@ -111,9 +112,12 @@ pub fn collect_rewards_quote(
     let withdrawable_reward_2 = position.reward_infos[1].amount_owed + reward_growth_delta_2;
     let withdrawable_reward_3 = position.reward_infos[2].amount_owed + reward_growth_delta_3;
 
-    let reward_owed_1 = try_adjust_amount(withdrawable_reward_1, transfer_fee_1.into(), false).unwrap();
-    let reward_owed_2 = try_adjust_amount(withdrawable_reward_2, transfer_fee_2.into(), false).unwrap();
-    let reward_owed_3 = try_adjust_amount(withdrawable_reward_3, transfer_fee_3.into(), false).unwrap();
+    let reward_owed_1 =
+        try_adjust_amount(withdrawable_reward_1, transfer_fee_1.into(), false).unwrap();
+    let reward_owed_2 =
+        try_adjust_amount(withdrawable_reward_2, transfer_fee_2.into(), false).unwrap();
+    let reward_owed_3 =
+        try_adjust_amount(withdrawable_reward_3, transfer_fee_3.into(), false).unwrap();
 
     CollectRewardsQuote {
         reward_owed_1,

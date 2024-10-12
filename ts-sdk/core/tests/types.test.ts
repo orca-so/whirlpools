@@ -9,7 +9,6 @@ import type {
 // Since these tests are only for type checking, nothing actually happens at runtime.
 
 describe("WASM exported types match Kinobi types", () => {
-
   it("Whirlpool", () => {
     const fauxWhirlpool = {} as Whirlpool;
     fauxWhirlpool satisfies WhirlpoolFacade;

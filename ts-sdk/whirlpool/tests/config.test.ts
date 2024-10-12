@@ -47,5 +47,4 @@ describe("Configuration", () => {
     setSolWrappingStrategy("ata");
     assert.strictEqual(SOL_WRAPPING_STRATEGY, "ata");
   });
-
 });

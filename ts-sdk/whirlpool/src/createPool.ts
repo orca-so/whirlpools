@@ -24,7 +24,6 @@ import {
   SPLASH_POOL_TICK_SPACING,
   WHIRLPOOLS_CONFIG_ADDRESS,
 } from "./config";
-import invariant from "tiny-invariant";
 import {
   getFullRangeTickIndexes,
   getTickArrayStartTickIndex,
@@ -32,6 +31,7 @@ import {
   sqrtPriceToTickIndex,
 } from "@orca-so/whirlpools-core";
 import { fetchAllMint, getTokenSize } from "@solana-program/token";
+import assert from "assert";
 
 type CreatePoolInstructions = {
   instructions: IInstruction[];
@@ -64,7 +64,7 @@ export async function createConcentratedLiquidityPoolInstructions(
   initialPrice: number = 1,
   funder: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<CreatePoolInstructions> {
-  invariant(
+  assert(
     funder.address !== DEFAULT_ADDRESS,
     "Either supply a funder or set the default funder",
   );

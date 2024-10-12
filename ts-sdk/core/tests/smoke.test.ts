@@ -93,7 +93,6 @@ function testPosition(): PositionFacade {
 // FIXME: SwapIn and SwapOut are failing
 
 describe("WASM bundle smoke test", () => {
-
   it.skip("SwapIn", async () => {
     const result = swapQuoteByInputToken(
       1000n,
@@ -134,7 +133,7 @@ describe("WASM bundle smoke test", () => {
     const result = increaseLiquidityQuote(
       1000000n,
       100,
-      0,
+      18446744073709551616n,
       -10,
       10,
       { feeBps: 2000, maxFee: 100000n },
@@ -151,7 +150,7 @@ describe("WASM bundle smoke test", () => {
     const result = decreaseLiquidityQuote(
       1000000n,
       100,
-      0,
+      18446744073709551616n,
       -10,
       10,
       { feeBps: 2000, maxFee: 100000n },

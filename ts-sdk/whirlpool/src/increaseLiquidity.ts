@@ -47,16 +47,20 @@ import {
 } from "./config";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-  fetchMint,
   findAssociatedTokenPda,
   getMintSize,
-  TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
-import invariant from "tiny-invariant";
-import { getCurrentTransferFee, prepareTokenAccountsInstructions } from "./token";
-import type { Mint} from "@solana-program/token-2022";
-import { fetchAllMint, TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
+import {
+  getCurrentTransferFee,
+  prepareTokenAccountsInstructions,
+} from "./token";
+import type { Mint } from "@solana-program/token-2022";
+import {
+  fetchAllMint,
+  TOKEN_2022_PROGRAM_ADDRESS,
+} from "@solana-program/token-2022";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
+import assert from "assert";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
@@ -130,7 +134,7 @@ export async function increaseLiquidityInstructions(
   slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   authority: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
-  invariant(
+  assert(
     authority.address !== DEFAULT_ADDRESS,
     "Either supply the authority or set the default funder",
   );
@@ -140,7 +144,11 @@ export async function increaseLiquidityInstructions(
   const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
 
   const currentEpoch = await rpc.getEpochInfo().send();
-  const [mintA, mintB, positionMint] = await fetchAllMint(rpc, [whirlpool.data.tokenMintA, whirlpool.data.tokenMintB, positionMintAddress]);
+  const [mintA, mintB, positionMint] = await fetchAllMint(rpc, [
+    whirlpool.data.tokenMintA,
+    whirlpool.data.tokenMintB,
+    positionMintAddress,
+  ]);
   const transferFeeA = getCurrentTransferFee(mintA.data, currentEpoch.epoch);
   const transferFeeB = getCurrentTransferFee(mintB.data, currentEpoch.epoch);
 
@@ -226,7 +234,7 @@ async function internalOpenPositionInstructions(
   slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   funder: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
-  invariant(
+  assert(
     funder.address !== DEFAULT_ADDRESS,
     "Either supply a funder or set the default funder",
   );
@@ -424,7 +432,13 @@ export async function openSplashPoolPositionInstructions(
   slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   funder: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
-  return openFullRangePositionInstructions(rpc, poolAddress, param, slippageToleranceBps, funder);
+  return openFullRangePositionInstructions(
+    rpc,
+    poolAddress,
+    param,
+    slippageToleranceBps,
+    funder,
+  );
 }
 
 export async function openPositionInstructions(
@@ -448,9 +462,15 @@ export async function openPositionInstructions(
   const decimalsA = mintA.data.decimals;
   const decimalsB = mintB.data.decimals;
   const lowerTickIndex = priceToTickIndex(lowerPrice, decimalsA, decimalsB);
-  const lowerInitializableTickIndex = getInitializableTickIndex(lowerTickIndex, whirlpool.data.tickSpacing);
+  const lowerInitializableTickIndex = getInitializableTickIndex(
+    lowerTickIndex,
+    whirlpool.data.tickSpacing,
+  );
   const upperTickIndex = priceToTickIndex(upperPrice, decimalsA, decimalsB);
-  const upperInitializableTickIndex = getInitializableTickIndex(upperTickIndex, whirlpool.data.tickSpacing);
+  const upperInitializableTickIndex = getInitializableTickIndex(
+    upperTickIndex,
+    whirlpool.data.tickSpacing,
+  );
   return internalOpenPositionInstructions(
     rpc,
     whirlpool,

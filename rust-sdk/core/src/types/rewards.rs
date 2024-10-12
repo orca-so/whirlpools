@@ -12,7 +12,10 @@ use tsify::Tsify;
 #[cfg_attr(feature = "wasm", tsify(into_wasm_abi))]
 
 pub struct CollectRewardsQuote {
-    pub reward_owed_1: u128,
-    pub reward_owed_2: u128,
-    pub reward_owed_3: u128,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub reward_owed_1: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub reward_owed_2: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub reward_owed_3: u64,
 }

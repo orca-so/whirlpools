@@ -1,12 +1,13 @@
 #![allow(non_snake_case)]
 
+use crate::NUM_REWRARDS;
+
 #[cfg(feature = "wasm")]
 use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "wasm")]
 use tsify::Tsify;
 
-#[cfg(any(feature = "wasm", test))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize, Tsify))]
 #[cfg_attr(feature = "wasm", serde(rename_all = "camelCase"))]
@@ -22,10 +23,9 @@ pub struct WhirlpoolFacade {
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub reward_last_updated_timestamp: u64,
     #[cfg_attr(feature = "wasm", tsify(type = "WhirlpoolRewardInfoFacade[]"))]
-    pub reward_infos: [WhirlpoolRewardInfoFacade; 3],
+    pub reward_infos: [WhirlpoolRewardInfoFacade; NUM_REWRARDS],
 }
 
-#[cfg(any(feature = "wasm", test))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize, Tsify))]
 #[cfg_attr(feature = "wasm", serde(rename_all = "camelCase"))]
@@ -34,6 +34,3 @@ pub struct WhirlpoolRewardInfoFacade {
     pub emissions_per_second_x64: u128,
     pub growth_global_x64: u128,
 }
-
-#[cfg(not(any(feature = "wasm", test)))]
-pub use orca_whirlpools_client::accounts::Whirlpool as WhirlpoolFacade;

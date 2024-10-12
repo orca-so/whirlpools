@@ -5,7 +5,7 @@ use ethnum::U256;
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    adjust_amount, CollectFeesQuote, PositionFacade, TickFacade, TransferFee, WhirlpoolFacade,
+    try_adjust_amount, CollectFeesQuote, PositionFacade, TickFacade, TransferFee, WhirlpoolFacade,
 };
 
 /// Calculate fees owed for a position
@@ -55,36 +55,36 @@ pub fn collect_fees_quote(
 
     let fee_growth_inside_a = whirlpool
         .fee_growth_global_a
-        .saturating_sub(fee_growth_below_a)
-        .saturating_sub(fee_growth_above_a);
+        .wrapping_sub(fee_growth_below_a)
+        .wrapping_sub(fee_growth_above_a);
 
     let fee_growth_inside_b = whirlpool
         .fee_growth_global_b
-        .saturating_sub(fee_growth_below_b)
-        .saturating_sub(fee_growth_above_b);
+        .wrapping_sub(fee_growth_below_b)
+        .wrapping_sub(fee_growth_above_b);
 
     let fee_owed_delta_a: U256 = <U256>::from(fee_growth_inside_a)
-        .saturating_sub(position.fee_growth_checkpoint_a.into())
+        .wrapping_sub(position.fee_growth_checkpoint_a.into())
         .saturating_mul(position.liquidity.into())
         .shr(64);
 
     let fee_owed_delta_b: U256 = <U256>::from(fee_growth_inside_b)
-        .saturating_sub(position.fee_growth_checkpoint_b.into())
+        .wrapping_sub(position.fee_growth_checkpoint_b.into())
         .saturating_mul(position.liquidity.into())
         .shr(64);
 
-    let fee_owed_delta_a: u128 = fee_owed_delta_a.try_into().unwrap();
-    let fee_owed_delta_b: u128 = fee_owed_delta_b.try_into().unwrap();
+    let fee_owed_delta_a: u64 = fee_owed_delta_a.try_into().unwrap();
+    let fee_owed_delta_b: u64 = fee_owed_delta_b.try_into().unwrap();
 
-    let withdrawable_fee_a: u128 = position.fee_owed_a as u128 + fee_owed_delta_a;
-    let withdrawable_fee_b: u128 = position.fee_owed_b as u128 + fee_owed_delta_b;
+    let withdrawable_fee_a = position.fee_owed_a + fee_owed_delta_a;
+    let withdrawable_fee_b = position.fee_owed_b + fee_owed_delta_b;
 
-    let fee_owed_a = adjust_amount(withdrawable_fee_a.into(), transfer_fee_a.into(), false);
-    let fee_owed_b = adjust_amount(withdrawable_fee_b.into(), transfer_fee_b.into(), false);
+    let fee_owed_a = try_adjust_amount(withdrawable_fee_a, transfer_fee_a.into(), false).unwrap();
+    let fee_owed_b = try_adjust_amount(withdrawable_fee_b, transfer_fee_b.into(), false).unwrap();
 
     CollectFeesQuote {
-        fee_owed_a: fee_owed_a.into(),
-        fee_owed_b: fee_owed_b.into(),
+        fee_owed_a,
+        fee_owed_b,
     }
 }
 

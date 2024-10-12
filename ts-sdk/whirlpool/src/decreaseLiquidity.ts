@@ -6,8 +6,11 @@ import {
   getClosePositionInstruction,
   getClosePositionWithTokenExtensionsInstruction,
   getCollectFeesInstruction,
+  getCollectFeesV2Instruction,
   getCollectRewardInstruction,
+  getCollectRewardV2Instruction,
   getDecreaseLiquidityInstruction,
+  getDecreaseLiquidityV2Instruction,
   getPositionAddress,
   getTickArrayAddress,
 } from "@orca-so/whirlpools-client";
@@ -41,16 +44,16 @@ import type {
 import {
   DEFAULT_ADDRESS,
   DEFAULT_FUNDER,
-  DEFAULT_SLIPPAGE_TOLERANCE,
+  DEFAULT_SLIPPAGE_TOLERANCE_BPS,
 } from "./config";
 import {
-  fetchMint,
   findAssociatedTokenPda,
   TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
 import invariant from "tiny-invariant";
 import { getCurrentTransferFee, prepareTokenAccountsInstructions } from "./token";
 import { fetchAllMint, TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
+import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
@@ -75,16 +78,15 @@ function getDecreaseLiquidityQuote(
   param: DecreaseLiquidityQuoteParam,
   pool: Whirlpool,
   tickRange: TickRange,
-  slippageTolerance: number,
+  slippageToleranceBps: number,
   transferFeeA: TransferFee | undefined,
   transferFeeB: TransferFee | undefined,
 ): DecreaseLiquidityQuote {
-  const slippageToleranceBps = Math.floor(slippageTolerance * 10000);
   if ("liquidity" in param) {
     return decreaseLiquidityQuote(
       param.liquidity,
       slippageToleranceBps,
-      pool.tickCurrentIndex,
+      pool.sqrtPrice,
       tickRange.tickLowerIndex,
       tickRange.tickUpperIndex,
       transferFeeA,
@@ -94,7 +96,7 @@ function getDecreaseLiquidityQuote(
     return decreaseLiquidityQuoteA(
       param.tokenA,
       slippageToleranceBps,
-      pool.tickCurrentIndex,
+      pool.sqrtPrice,
       tickRange.tickLowerIndex,
       tickRange.tickUpperIndex,
       transferFeeA,
@@ -104,7 +106,7 @@ function getDecreaseLiquidityQuote(
     return decreaseLiquidityQuoteB(
       param.tokenB,
       slippageToleranceBps,
-      pool.tickCurrentIndex,
+      pool.sqrtPrice,
       tickRange.tickLowerIndex,
       tickRange.tickUpperIndex,
       transferFeeA,
@@ -119,9 +121,9 @@ export async function decreaseLiquidityInstructions(
       GetMultipleAccountsApi &
       GetMinimumBalanceForRentExemptionApi
   >,
-  positionMint: Address,
+  positionMintAddress: Address,
   param: DecreaseLiquidityQuoteParam,
-  slippageTolerance: number = DEFAULT_SLIPPAGE_TOLERANCE,
+  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   authority: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<DecreaseLiquidityInstructions> {
   invariant(
@@ -129,12 +131,12 @@ export async function decreaseLiquidityInstructions(
     "Either supply the authority or set the default funder",
   );
 
-  const positionAddress = await getPositionAddress(positionMint);
+  const positionAddress = await getPositionAddress(positionMintAddress);
   const position = await fetchPosition(rpc, positionAddress[0]);
   const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
 
   const currentEpoch = await rpc.getEpochInfo().send();
-  const [mintA, mintB] = await fetchAllMint(rpc, [whirlpool.data.tokenMintA, whirlpool.data.tokenMintB]);
+  const [mintA, mintB, positionMint] = await fetchAllMint(rpc, [whirlpool.data.tokenMintA, whirlpool.data.tokenMintB, positionMintAddress]);
   const transferFeeA = getCurrentTransferFee(mintA.data, currentEpoch.epoch);
   const transferFeeB = getCurrentTransferFee(mintB.data, currentEpoch.epoch);
 
@@ -142,7 +144,7 @@ export async function decreaseLiquidityInstructions(
     param,
     whirlpool.data,
     position.data,
-    slippageTolerance,
+    slippageToleranceBps,
     transferFeeA,
     transferFeeB,
   );
@@ -161,8 +163,8 @@ export async function decreaseLiquidityInstructions(
     await Promise.all([
       findAssociatedTokenPda({
         owner: authority.address,
-        mint: positionMint,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        mint: positionMintAddress,
+        tokenProgram: positionMint.programAddress,
       }).then((x) => x[0]),
       getTickArrayAddress(whirlpool.address, lowerTickArrayStartIndex).then(
         (x) => x[0],
@@ -181,7 +183,7 @@ export async function decreaseLiquidityInstructions(
   instructions.push(...createInstructions);
 
   instructions.push(
-    getDecreaseLiquidityInstruction({
+    getDecreaseLiquidityV2Instruction({
       whirlpool: whirlpool.address,
       positionAuthority: authority,
       position: position.address,
@@ -190,11 +192,17 @@ export async function decreaseLiquidityInstructions(
       tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
       tokenVaultA: whirlpool.data.tokenVaultA,
       tokenVaultB: whirlpool.data.tokenVaultB,
+      tokenMintA: whirlpool.data.tokenMintA,
+      tokenMintB: whirlpool.data.tokenMintB,
+      tokenProgramA: mintA.programAddress,
+      tokenProgramB: mintB.programAddress,
+      memoProgram: MEMO_PROGRAM_ADDRESS,
       tickArrayLower,
       tickArrayUpper,
       liquidityAmount: quote.liquidityDelta,
       tokenMinA: quote.tokenMinA,
       tokenMinB: quote.tokenMinB,
+      remainingAccountsInfo: null,
     }),
   );
 
@@ -214,9 +222,9 @@ export async function closePositionInstructions(
       GetMultipleAccountsApi &
       GetMinimumBalanceForRentExemptionApi
   >,
-  positionMint: Address,
+  positionMintAddress: Address,
   param: DecreaseLiquidityQuoteParam,
-  slippageTolerance: number = DEFAULT_SLIPPAGE_TOLERANCE,
+  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   authority: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<ClosePositionInstructions> {
   invariant(
@@ -225,13 +233,12 @@ export async function closePositionInstructions(
   );
   const instructions: IInstruction[] = [];
 
-  const positionAddress = await getPositionAddress(positionMint);
-  const mint = await fetchMint(rpc, positionMint);
+  const positionAddress = await getPositionAddress(positionMintAddress);
   const position = await fetchPosition(rpc, positionAddress[0]);
   const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
 
   const currentEpoch = await rpc.getEpochInfo().send();
-  const [mintA, mintB] = await fetchAllMint(rpc, [whirlpool.data.tokenMintA, whirlpool.data.tokenMintB]);
+  const [mintA, mintB, positionMint] = await fetchAllMint(rpc, [whirlpool.data.tokenMintA, whirlpool.data.tokenMintB, positionMintAddress]);
   const transferFeeA = getCurrentTransferFee(mintA.data, currentEpoch.epoch);
   const transferFeeB = getCurrentTransferFee(mintB.data, currentEpoch.epoch);
 
@@ -239,7 +246,7 @@ export async function closePositionInstructions(
     param,
     whirlpool.data,
     position.data,
-    slippageTolerance,
+    slippageToleranceBps,
     transferFeeA,
     transferFeeB,
   );
@@ -257,8 +264,8 @@ export async function closePositionInstructions(
     await Promise.all([
       findAssociatedTokenPda({
         owner: authority.address,
-        mint: positionMint,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        mint: positionMintAddress,
+        tokenProgram: positionMint.programAddress,
       }).then((x) => x[0]),
       getTickArrayAddress(whirlpool.address, lowerTickArrayStartIndex).then(
         (x) => x[0],
@@ -291,6 +298,8 @@ export async function closePositionInstructions(
     currentUnixTimestamp,
   );
 
+  // FIXME: this creates the accounts even if they are not actually needed
+  // (no rewards, fees, to decrease liquidity, etc.)
   const { createInstructions, cleanupInstructions, tokenAccountAddresses } =
     await prepareTokenAccountsInstructions(rpc, authority, [
       whirlpool.data.tokenMintA,
@@ -298,26 +307,60 @@ export async function closePositionInstructions(
       whirlpool.data.rewardInfos[0].mint,
       whirlpool.data.rewardInfos[1].mint,
       whirlpool.data.rewardInfos[2].mint,
-    ]);
+    ].filter(x => x !== DEFAULT_ADDRESS));
 
   instructions.push(...createInstructions);
 
-  instructions.push(
-    getCollectFeesInstruction({
-      whirlpool: whirlpool.address,
-      positionAuthority: authority,
-      position: positionAddress[0],
-      positionTokenAccount,
-      tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-      tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-      tokenVaultA: whirlpool.data.tokenVaultA,
-      tokenVaultB: whirlpool.data.tokenVaultB,
-    }),
-  );
-
-  if (rewardsQuote.rewardOwed1 > 0) {
+  if (quote.liquidityDelta > 0n) {
     instructions.push(
-      getCollectRewardInstruction({
+      getDecreaseLiquidityV2Instruction({
+        whirlpool: whirlpool.address,
+        positionAuthority: authority,
+        position: positionAddress[0],
+        positionTokenAccount,
+        tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+        tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+        tokenVaultA: whirlpool.data.tokenVaultA,
+        tokenVaultB: whirlpool.data.tokenVaultB,
+        tickArrayLower: lowerTickArrayAddress,
+        tickArrayUpper: upperTickArrayAddress,
+        liquidityAmount: quote.liquidityDelta,
+        tokenMinA: quote.tokenMinA,
+        tokenMinB: quote.tokenMinB,
+        tokenMintA: whirlpool.data.tokenMintA,
+        tokenMintB: whirlpool.data.tokenMintB,
+        tokenProgramA: mintA.programAddress,
+        tokenProgramB: mintB.programAddress,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        remainingAccountsInfo: null,
+      }),
+    );
+  }
+
+  if (feesQuote.feeOwedA > 0n || feesQuote.feeOwedB > 0n) {
+    instructions.push(
+      getCollectFeesV2Instruction({
+        whirlpool: whirlpool.address,
+        positionAuthority: authority,
+        position: positionAddress[0],
+        positionTokenAccount,
+        tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
+        tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
+        tokenVaultA: whirlpool.data.tokenVaultA,
+        tokenVaultB: whirlpool.data.tokenVaultB,
+        tokenMintA: whirlpool.data.tokenMintA,
+        tokenMintB: whirlpool.data.tokenMintB,
+        tokenProgramA: mintA.programAddress,
+        tokenProgramB: mintB.programAddress,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        remainingAccountsInfo: null,
+      }),
+    );
+  }
+
+  if (rewardsQuote.rewardOwed1 > 0n) {
+    instructions.push(
+      getCollectRewardV2Instruction({
         whirlpool: whirlpool.address,
         positionAuthority: authority,
         position: positionAddress[0],
@@ -326,13 +369,17 @@ export async function closePositionInstructions(
           tokenAccountAddresses[whirlpool.data.rewardInfos[0].mint],
         rewardVault: whirlpool.data.rewardInfos[0].vault,
         rewardIndex: 0,
+        rewardMint: whirlpool.data.rewardInfos[0].mint,
+        rewardTokenProgram: whirlpool.data.rewardInfos[0].programAddress,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        remainingAccountsInfo: null,
       }),
     );
   }
 
-  if (rewardsQuote.rewardOwed2 > 0) {
+  if (rewardsQuote.rewardOwed2 > 0n) {
     instructions.push(
-      getCollectRewardInstruction({
+      getCollectRewardV2Instruction({
         whirlpool: whirlpool.address,
         positionAuthority: authority,
         position: positionAddress[0],
@@ -341,13 +388,17 @@ export async function closePositionInstructions(
           tokenAccountAddresses[whirlpool.data.rewardInfos[1].mint],
         rewardVault: whirlpool.data.rewardInfos[1].vault,
         rewardIndex: 1,
+        rewardMint: whirlpool.data.rewardInfos[1].mint,
+        rewardTokenProgram: whirlpool.data.rewardInfos[1].programAddress,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        remainingAccountsInfo: null,
       }),
     );
   }
 
-  if (rewardsQuote.rewardOwed3 > 0) {
+  if (rewardsQuote.rewardOwed3 > 0n) {
     instructions.push(
-      getCollectRewardInstruction({
+      getCollectRewardV2Instruction({
         whirlpool: whirlpool.address,
         positionAuthority: authority,
         position: positionAddress[0],
@@ -356,36 +407,22 @@ export async function closePositionInstructions(
           tokenAccountAddresses[whirlpool.data.rewardInfos[2].mint],
         rewardVault: whirlpool.data.rewardInfos[2].vault,
         rewardIndex: 2,
+        rewardMint: whirlpool.data.rewardInfos[2].mint,
+        rewardTokenProgram: whirlpool.data.rewardInfos[2].programAddress,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        remainingAccountsInfo: null,
       }),
     );
   }
 
-  instructions.push(
-    getDecreaseLiquidityInstruction({
-      whirlpool: whirlpool.address,
-      positionAuthority: authority,
-      position: positionAddress[0],
-      positionTokenAccount,
-      tokenOwnerAccountA: tokenAccountAddresses[whirlpool.data.tokenMintA],
-      tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
-      tokenVaultA: whirlpool.data.tokenVaultA,
-      tokenVaultB: whirlpool.data.tokenVaultB,
-      tickArrayLower: lowerTickArrayAddress,
-      tickArrayUpper: upperTickArrayAddress,
-      liquidityAmount: quote.liquidityDelta,
-      tokenMinA: quote.tokenMinA,
-      tokenMinB: quote.tokenMinB,
-    }),
-  );
-
-  switch (mint.programAddress) {
+  switch (positionMint.programAddress) {
     case TOKEN_PROGRAM_ADDRESS:
       instructions.push(
         getClosePositionInstruction({
           positionAuthority: authority,
           position: positionAddress[0],
           positionTokenAccount,
-          positionMint,
+          positionMint:positionMintAddress,
           receiver: authority.address,
         }),
       );
@@ -396,7 +433,7 @@ export async function closePositionInstructions(
           positionAuthority: authority,
           position: positionAddress[0],
           positionTokenAccount,
-          positionMint,
+          positionMint: positionMintAddress,
           receiver: authority.address,
           token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
         }),

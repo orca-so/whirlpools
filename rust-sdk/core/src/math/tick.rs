@@ -92,12 +92,8 @@ pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
     let logbp_x64 = log2p_x32 * LOG_B_2_X32;
 
     // Derive tick_low & high estimate. Adjust with the possibility of under-estimating by 2^precision_bits/log_2(b) + 0.01 error margin.
-    let tick_low: i32 = ((logbp_x64 - LOG_B_P_ERR_MARGIN_LOWER_X64) >> 64)
-        .try_into()
-        .unwrap();
-    let tick_high: i32 = ((logbp_x64 + LOG_B_P_ERR_MARGIN_UPPER_X64) >> 64)
-        .try_into()
-        .unwrap();
+    let tick_low: i32 = ((logbp_x64 - LOG_B_P_ERR_MARGIN_LOWER_X64) >> 64) as i32;
+    let tick_high: i32 = ((logbp_x64 + LOG_B_P_ERR_MARGIN_UPPER_X64) >> 64) as i32;
 
     if tick_low == tick_high {
         tick_low
@@ -126,11 +122,11 @@ pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
 /// # Returns
 /// - A i32 integer representing the previous initializable tick index
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getInitializableTickIndex, skip_jsdoc))]
-pub fn get_initializable_tick_index(tick_index: i32, tick_spacing: u16, round_up: bool) -> i32 {
+pub fn get_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index % tick_spacing_i32;
     let result = tick_index / tick_spacing_i32 * tick_spacing_i32;
-    if round_up && remainder != 0 {
+    if remainder >= tick_spacing_i32 / 2 {
         result + tick_spacing_i32
     } else {
         result
@@ -147,11 +143,12 @@ pub fn get_initializable_tick_index(tick_index: i32, tick_spacing: u16, round_up
 /// - A i32 integer representing the previous initializable tick index
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getPrevInitializableTickIndex, skip_jsdoc))]
 pub fn get_prev_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
-    let initializable_tick_index = get_initializable_tick_index(tick_index, tick_spacing, false);
-    if tick_index == initializable_tick_index {
-        initializable_tick_index - tick_spacing as i32
+    let tick_spacing_i32 = tick_spacing as i32;
+    let remainder = tick_index.rem_euclid(tick_spacing_i32);
+    if remainder == 0 {
+        tick_index - tick_spacing_i32
     } else {
-        initializable_tick_index
+        tick_index - remainder
     }
 }
 
@@ -165,12 +162,9 @@ pub fn get_prev_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> 
 /// - A i32 integer representing the next initializable tick index
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getNextInitializableTickIndex, skip_jsdoc))]
 pub fn get_next_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
-    let initializable_tick_index = get_initializable_tick_index(tick_index, tick_spacing, true);
-    if tick_index == initializable_tick_index {
-        initializable_tick_index + tick_spacing as i32
-    } else {
-        initializable_tick_index
-    }
+    let tick_spacing_i32 = tick_spacing as i32;
+    let remainder = tick_index.rem_euclid(tick_spacing_i32);
+    tick_index - remainder + tick_spacing_i32
 }
 
 /// Check if a tick is in-bounds.
@@ -216,6 +210,8 @@ pub fn invert_tick_index(tick_index: i32) -> i32 {
 }
 
 /// Get the sqrt price for the inverse of the price that this tick represents.
+/// Because converting to a tick index and then back to a sqrt price is lossy,
+/// this function is clamped to the nearest tick index.
 ///
 /// # Parameters
 /// - `sqrt_price` - A u128 integer representing the sqrt price
@@ -258,16 +254,16 @@ pub fn get_full_range_tick_indexes(tick_spacing: u16) -> TickRange {
 /// # Returns
 /// - A TickRange struct containing the lower and upper tick index
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = orderTickIndexes, skip_jsdoc))]
-pub fn order_tick_indexes(tick_lower_index: i32, tick_upper_index: i32) -> TickRange {
-    if tick_lower_index < tick_upper_index {
+pub fn order_tick_indexes(tick_index_1: i32, tick_index_2: i32) -> TickRange {
+    if tick_index_1 < tick_index_2 {
         TickRange {
-            tick_lower_index,
-            tick_upper_index,
+            tick_lower_index: tick_index_1,
+            tick_upper_index: tick_index_2,
         }
     } else {
         TickRange {
-            tick_lower_index: tick_upper_index,
-            tick_upper_index: tick_lower_index,
+            tick_lower_index: tick_index_2,
+            tick_upper_index: tick_index_1,
         }
     }
 }
@@ -306,7 +302,7 @@ pub fn get_tick_index_in_array(
 
 fn mul_shift_96(n0: u128, n1: u128) -> u128 {
     let mul = <U256>::from(n0) * <U256>::from(n1);
-    mul.wrapping_shr(96).try_into().unwrap()
+    mul.wrapping_shr(96).as_u128()
 }
 
 fn get_sqrt_price_positive_tick(tick: i32) -> u128 {
@@ -446,6 +442,7 @@ fn get_sqrt_price_negative_tick(tick: i32) -> u128 {
 #[cfg(all(test, not(feature = "wasm")))]
 mod tests {
     use super::*;
+    use crate::{MAX_SQRT_PRICE, MIN_SQRT_PRICE};
 
     #[test]
     fn test_get_tick_array_start_tick_index() {
@@ -456,42 +453,50 @@ mod tests {
 
     #[test]
     fn test_tick_index_to_sqrt_price() {
+        assert_eq!(tick_index_to_sqrt_price(MAX_TICK_INDEX), MAX_SQRT_PRICE);
         assert_eq!(tick_index_to_sqrt_price(100), 18539204128674405812);
         assert_eq!(tick_index_to_sqrt_price(1), 18447666387855959850);
         assert_eq!(tick_index_to_sqrt_price(0), 18446744073709551616);
         assert_eq!(tick_index_to_sqrt_price(-1), 18445821805675392311);
         assert_eq!(tick_index_to_sqrt_price(-100), 18354745142194483561);
+        assert_eq!(tick_index_to_sqrt_price(MIN_TICK_INDEX), MIN_SQRT_PRICE);
     }
 
     #[test]
     fn test_sqrt_price_to_tick_index() {
+        assert_eq!(sqrt_price_to_tick_index(MAX_SQRT_PRICE), MAX_TICK_INDEX);
         assert_eq!(sqrt_price_to_tick_index(18539204128674405812), 100);
         assert_eq!(sqrt_price_to_tick_index(18447666387855959850), 1);
         assert_eq!(sqrt_price_to_tick_index(18446744073709551616), 0);
         assert_eq!(sqrt_price_to_tick_index(18445821805675392311), -1);
         assert_eq!(sqrt_price_to_tick_index(18354745142194483561), -100);
+        assert_eq!(sqrt_price_to_tick_index(MIN_SQRT_PRICE), MIN_TICK_INDEX);
     }
 
     #[test]
     fn test_get_initializable_tick_index() {
-        assert_eq!(get_initializable_tick_index(100, 10, false), 100);
-        assert_eq!(get_initializable_tick_index(100, 10, true), 100);
-        assert_eq!(get_initializable_tick_index(105, 10, false), 100);
-        assert_eq!(get_initializable_tick_index(105, 10, true), 110);
+        assert_eq!(get_initializable_tick_index(100, 10), 100);
+        assert_eq!(get_initializable_tick_index(101, 10), 100);
+        assert_eq!(get_initializable_tick_index(105, 10), 110);
+        assert_eq!(get_initializable_tick_index(109, 10), 110);
     }
 
     #[test]
     fn test_get_prev_initializable_tick_index() {
-        assert_eq!(get_prev_initializable_tick_index(100, 10), 90);
-        assert_eq!(get_prev_initializable_tick_index(105, 10), 100);
+        assert_eq!(get_prev_initializable_tick_index(10, 10), 0);
+        assert_eq!(get_prev_initializable_tick_index(5, 10), 0);
         assert_eq!(get_prev_initializable_tick_index(0, 10), -10);
+        assert_eq!(get_prev_initializable_tick_index(-5, 10), -10);
+        assert_eq!(get_prev_initializable_tick_index(-10, 10), -20);
     }
 
     #[test]
     fn test_get_next_initializable_tick_index() {
-        assert_eq!(get_next_initializable_tick_index(100, 10), 110);
-        assert_eq!(get_next_initializable_tick_index(105, 10), 110);
+        assert_eq!(get_next_initializable_tick_index(10, 10), 20);
+        assert_eq!(get_next_initializable_tick_index(5, 10), 10);
         assert_eq!(get_next_initializable_tick_index(0, 10), 10);
+        assert_eq!(get_next_initializable_tick_index(-5, 10), 0);
+        assert_eq!(get_next_initializable_tick_index(-10, 10), 0);
     }
 
     #[test]

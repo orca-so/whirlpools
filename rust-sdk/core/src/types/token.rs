@@ -24,7 +24,7 @@ pub enum AdjustmentType {
     },
     // slippage bps
     Slippage {
-        slippage_tolerance: u16,
+        slippage_tolerance_bps: u16,
     },
 }
 

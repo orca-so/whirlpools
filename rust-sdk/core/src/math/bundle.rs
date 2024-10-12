@@ -13,16 +13,16 @@ const POSITION_BUNDLE_BYTES: usize = POSITION_BUNDLE_SIZE / 8;
 /// * `bundle` - The bundle to check
 ///
 /// # Returns
-/// * `u32` - The first unoccupied position
+/// * `u32` - The first unoccupied position (None if full)
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = firstUnoccupiedPositionInBundle, skip_jsdoc))]
-pub fn first_unoccupied_position_in_bundle(bitmap: &[u8]) -> u32 {
+pub fn first_unoccupied_position_in_bundle(bitmap: &[u8]) -> Option<u32> {
     let value = bitmap_to_u256(bitmap);
     for i in 0..POSITION_BUNDLE_SIZE {
         if value & (U256::ONE << i) == 0 {
-            return i as u32;
+            return Some(i as u32);
         }
     }
-    panic!("No unoccupied position in bundle");
+    None
 }
 
 /// Check whether a position bundle is full
@@ -71,15 +71,18 @@ mod tests {
     #[test]
     fn test_first_unoccupied_position_in_bundle() {
         let bundle: [u8; POSITION_BUNDLE_BYTES] = [0; POSITION_BUNDLE_BYTES];
-        assert_eq!(first_unoccupied_position_in_bundle(&bundle), 0);
+        assert_eq!(first_unoccupied_position_in_bundle(&bundle), Some(0));
 
-        let mut empty_bundle: [u8; POSITION_BUNDLE_BYTES] = [0; POSITION_BUNDLE_BYTES];
-        empty_bundle[0] = 0b11101111;
-        assert_eq!(first_unoccupied_position_in_bundle(&empty_bundle), 4);
+        let mut low_bundle: [u8; POSITION_BUNDLE_BYTES] = [0; POSITION_BUNDLE_BYTES];
+        low_bundle[0] = 0b11101111;
+        assert_eq!(first_unoccupied_position_in_bundle(&low_bundle), Some(4));
 
-        let mut full_bundle: [u8; POSITION_BUNDLE_BYTES] = [255; POSITION_BUNDLE_BYTES];
-        full_bundle[10] = 0b10111111;
-        assert_eq!(first_unoccupied_position_in_bundle(&full_bundle), 86);
+        let mut high_bundle: [u8; POSITION_BUNDLE_BYTES] = [255; POSITION_BUNDLE_BYTES];
+        high_bundle[10] = 0b10111111;
+        assert_eq!(first_unoccupied_position_in_bundle(&high_bundle), Some(86));
+
+        let full_bundle: [u8; POSITION_BUNDLE_BYTES] = [255; POSITION_BUNDLE_BYTES];
+        assert_eq!(first_unoccupied_position_in_bundle(&full_bundle), None);
     }
 
     #[test]

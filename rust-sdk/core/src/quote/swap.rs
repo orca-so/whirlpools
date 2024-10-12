@@ -1,17 +1,11 @@
 use core::cmp::{max, min};
 
 use crate::{
-    adjust_amount, get_amount_delta_a, get_amount_delta_b, get_next_sqrt_price_from_a,
-    get_next_sqrt_price_from_b, inverse_adjust_amount, sqrt_price_to_tick_index,
-    tick_index_to_sqrt_price, AdjustmentType, ExactInSwapQuote, ExactOutSwapQuote, TickArrayFacade,
-    TickArraySequence, TickFacade, TransferFee, WhirlpoolFacade, U128,
+    try_adjust_amount, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b, try_inverse_adjust_amount, sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_get_amount_delta_a, try_get_amount_delta_b, AdjustmentType, ErrorCode, ExactInSwapQuote, ExactOutSwapQuote, TickArrayFacade, TickArraySequence, TickFacade, TransferFee, WhirlpoolFacade, MAX_SQRT_PRICE, MIN_SQRT_PRICE
 };
 
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
-
-const MIN_SQRT_PRICE: u128 = 4295048016;
-const MAX_SQRT_PRICE: u128 = 79226673515401279992447579055;
 
 /// Computes the exact input or output amount for a swap transaction.
 ///
@@ -33,9 +27,9 @@ const MAX_SQRT_PRICE: u128 = 79226673515401279992447579055;
 #[allow(clippy::too_many_arguments)]
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = swapQuoteByInputToken, skip_jsdoc))]
 pub fn swap_quote_by_input_token(
-    token_in: U128,
+    token_in: u64,
     specified_token_a: bool,
-    slippage_tolerance: u16,
+    slippage_tolerance_bps: u16,
     whirlpool: WhirlpoolFacade,
     tick_array_0: TickArrayFacade,
     tick_array_plus_1: TickArrayFacade,
@@ -50,7 +44,7 @@ pub fn swap_quote_by_input_token(
     } else {
         (transfer_fee_a, transfer_fee_b)
     };
-    let token_in_after_fee = adjust_amount(token_in.into(), transfer_fee_in.into(), false);
+    let token_in_after_fee = try_adjust_amount(token_in.into(), transfer_fee_in.into(), false).unwrap();
 
     let tick_sequence = TickArraySequence::new(
         [
@@ -66,7 +60,7 @@ pub fn swap_quote_by_input_token(
     let swap_result = compute_swap(
         token_in_after_fee.into(),
         whirlpool,
-        tick_sequence,
+        tick_sequence.unwrap(),
         specified_token_a,
         true,
     );
@@ -77,23 +71,23 @@ pub fn swap_quote_by_input_token(
         (swap_result.token_b, swap_result.token_a)
     };
 
-    let token_min_out_before_fee = adjust_amount(
+    let token_min_out_before_fee = try_adjust_amount(
         token_est_out_before_fee.into(),
-        AdjustmentType::Slippage { slippage_tolerance },
+        AdjustmentType::Slippage { slippage_tolerance_bps },
         false,
-    );
+    ).unwrap();
 
-    let token_in = inverse_adjust_amount(token_in_after_fees.into(), transfer_fee_in.into(), false);
-    let token_est_out = adjust_amount(
+    let token_in = try_inverse_adjust_amount(token_in_after_fees.into(), transfer_fee_in.into(), false).unwrap();
+    let token_est_out = try_adjust_amount(
         token_est_out_before_fee.into(),
         transfer_fee_out.into(),
         false,
-    );
-    let token_min_out = adjust_amount(
+    ).unwrap();
+        let token_min_out = try_adjust_amount(
         token_min_out_before_fee.into(),
         transfer_fee_out.into(),
         false,
-    );
+    ).unwrap();
 
     ExactInSwapQuote {
         token_in: token_in.into(),
@@ -123,9 +117,9 @@ pub fn swap_quote_by_input_token(
 #[allow(clippy::too_many_arguments)]
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = swapQuoteByOutputToken, skip_jsdoc))]
 pub fn swap_quote_by_output_token(
-    token_out: U128,
+    token_out: u64,
     specified_token_a: bool,
-    slippage_tolerance: u16,
+    slippage_tolerance_bps: u16,
     whirlpool: WhirlpoolFacade,
     tick_array_0: TickArrayFacade,
     tick_array_plus_1: TickArrayFacade,
@@ -141,7 +135,7 @@ pub fn swap_quote_by_output_token(
         (transfer_fee_a, transfer_fee_b)
     };
     let token_out_before_fee =
-        inverse_adjust_amount(token_out.into(), transfer_fee_out.into(), false);
+        try_inverse_adjust_amount(token_out.into(), transfer_fee_out.into(), false).unwrap();
 
     let tick_sequence = TickArraySequence::new(
         [
@@ -157,7 +151,7 @@ pub fn swap_quote_by_output_token(
     let swap_result = compute_swap(
         token_out_before_fee.into(),
         whirlpool,
-        tick_sequence,
+        tick_sequence.unwrap(),
         !specified_token_a,
         false,
     );
@@ -168,17 +162,17 @@ pub fn swap_quote_by_output_token(
         (swap_result.token_b, swap_result.token_a)
     };
 
-    let token_max_in_after_fee = adjust_amount(
+    let token_max_in_after_fee = try_adjust_amount(
         token_est_in_after_fee.into(),
-        AdjustmentType::Slippage { slippage_tolerance },
+        AdjustmentType::Slippage { slippage_tolerance_bps },
         true,
-    );
+    ).unwrap();
 
     let token_est_in =
-        inverse_adjust_amount(token_est_in_after_fee.into(), transfer_fee_in.into(), false);
+        try_inverse_adjust_amount(token_est_in_after_fee.into(), transfer_fee_in.into(), false).unwrap();
     let token_max_in =
-        inverse_adjust_amount(token_max_in_after_fee.into(), transfer_fee_in.into(), false);
-    let token_out = adjust_amount(token_out_before_fee.into(), transfer_fee_out.into(), false);
+        try_inverse_adjust_amount(token_max_in_after_fee.into(), transfer_fee_in.into(), false).unwrap();
+    let token_out = try_adjust_amount(token_out_before_fee.into(), transfer_fee_out.into(), false).unwrap();
 
     ExactOutSwapQuote {
         token_out: token_out.into(),
@@ -191,33 +185,33 @@ pub fn swap_quote_by_output_token(
 // Private functions
 
 struct SwapResult {
-    token_a: u128,
-    token_b: u128,
-    total_fee: u128,
+    token_a: u64,
+    token_b: u64,
+    total_fee: u64,
 }
 
 fn compute_swap<const SIZE: usize>(
-    token_amount: u128,
+    token_amount: u64,
     whirlpool: WhirlpoolFacade,
     tick_sequence: TickArraySequence<SIZE>,
     a_to_b: bool,
     specified_input: bool,
 ) -> SwapResult {
     let mut amount_remaining = token_amount;
-    let mut amount_calculated = 0u128;
+    let mut amount_calculated = 0u64;
     let mut current_sqrt_price = whirlpool.sqrt_price;
     let mut current_tick_index = whirlpool.tick_current_index;
     let mut current_liquidity = whirlpool.liquidity;
-    let mut total_fee = 0u128;
+    let mut total_fee = 0u64;
 
     while amount_remaining > 0
         && current_sqrt_price > MIN_SQRT_PRICE
         && current_sqrt_price < MAX_SQRT_PRICE
     {
         let (next_tick, next_tick_index) = if a_to_b {
-            tick_sequence.next_initialized_tick(current_tick_index)
+            tick_sequence.next_initialized_tick(current_tick_index).unwrap()
         } else {
-            tick_sequence.prev_initialized_tick(current_tick_index)
+            tick_sequence.prev_initialized_tick(current_tick_index).unwrap()
         };
         let next_tick_sqrt_price: u128 = tick_index_to_sqrt_price(next_tick_index.into()).into();
         let target_sqrt_price = if a_to_b {
@@ -269,9 +263,9 @@ fn compute_swap<const SIZE: usize>(
     };
 
     SwapResult {
-        token_a,
-        token_b,
-        total_fee,
+        token_a: token_a.try_into().unwrap(),
+        token_b: token_b.try_into().unwrap(),
+        total_fee: total_fee.try_into().unwrap(),
     }
 }
 
@@ -292,14 +286,14 @@ fn get_next_liquidity(current_liquidity: u128, next_tick: &TickFacade, a_to_b: b
 }
 
 struct SwapStepQuote {
-    amount_in: u128,
-    amount_out: u128,
+    amount_in: u64,
+    amount_out: u64,
     next_sqrt_price: u128,
-    fee_amount: u128,
+    fee_amount: u64,
 }
 
 fn compute_swap_step(
-    amount_remaining: u128,
+    amount_remaining: u64,
     fee_rate: u16,
     current_liquidity: u128,
     current_sqrt_price: u128,
@@ -307,21 +301,20 @@ fn compute_swap_step(
     a_to_b: bool,
     specified_input: bool,
 ) -> SwapStepQuote {
-    let mut amount_fixed_delta = get_amount_fixed_delta(
+    let mut amount_fixed_delta = try_get_amount_fixed_delta(
         current_sqrt_price,
         target_sqrt_price,
         current_liquidity,
         a_to_b,
         specified_input,
-    );
+    ).unwrap();
 
-    let amount_calculated: u128 = if specified_input {
-        adjust_amount(
+    let amount_calculated = if specified_input {
+        try_adjust_amount(
             amount_remaining.into(),
             AdjustmentType::SwapFee { fee_rate },
             false,
-        )
-        .into()
+        ).unwrap()
     } else {
         amount_remaining
     };
@@ -335,28 +328,28 @@ fn compute_swap_step(
             amount_calculated,
             a_to_b,
             specified_input,
-        )
+        ).unwrap()
     };
 
     let is_max_swap = next_sqrt_price == target_sqrt_price;
 
-    let amount_unfixed_delta = get_amount_unfixed_delta(
+    let amount_unfixed_delta = try_get_amount_unfixed_delta(
         current_sqrt_price,
         next_sqrt_price,
         current_liquidity,
         a_to_b,
         specified_input,
-    );
+    ).unwrap();
 
     // If the swap is not at the max, we need to readjust the amount of the fixed token we are using
     if !is_max_swap {
-        amount_fixed_delta = get_amount_fixed_delta(
+        amount_fixed_delta = try_get_amount_fixed_delta(
             current_sqrt_price,
             next_sqrt_price,
             current_liquidity,
             a_to_b,
             specified_input,
-        );
+        ).unwrap();
     };
 
     let (amount_in, mut amount_out) = if specified_input {
@@ -370,15 +363,10 @@ fn compute_swap_step(
         amount_out = amount_remaining;
     }
 
-    let fee_amount: u128 = if specified_input && !is_max_swap {
+    let fee_amount = if specified_input && !is_max_swap {
         amount_remaining - amount_in
     } else {
-        let pre_fee_amount: u128 = inverse_adjust_amount(
-            amount_in.into(),
-            AdjustmentType::SwapFee { fee_rate },
-            false,
-        )
-        .into();
+        let pre_fee_amount = try_inverse_adjust_amount(amount_in.into(), AdjustmentType::SwapFee { fee_rate }, false).unwrap();
         pre_fee_amount - amount_in
     };
 
@@ -390,81 +378,75 @@ fn compute_swap_step(
     }
 }
 
-fn get_amount_fixed_delta(
+fn try_get_amount_fixed_delta(
     current_sqrt_price: u128,
     target_sqrt_price: u128,
     current_liquidity: u128,
     a_to_b: bool,
     specified_input: bool,
-) -> u128 {
+) -> Result<u64, ErrorCode> {
     if a_to_b == specified_input {
-        get_amount_delta_a(
+        try_get_amount_delta_a(
             current_sqrt_price.into(),
             target_sqrt_price.into(),
             current_liquidity.into(),
             specified_input,
         )
-        .into()
     } else {
-        get_amount_delta_b(
+        try_get_amount_delta_b(
             current_sqrt_price.into(),
             target_sqrt_price.into(),
             current_liquidity.into(),
             specified_input,
         )
-        .into()
     }
 }
 
-fn get_amount_unfixed_delta(
+fn try_get_amount_unfixed_delta(
     current_sqrt_price: u128,
     target_sqrt_price: u128,
     current_liquidity: u128,
     a_to_b: bool,
     specified_input: bool,
-) -> u128 {
+) -> Result<u64, ErrorCode> {
     if specified_input == a_to_b {
-        get_amount_delta_b(
+        try_get_amount_delta_b(
             current_sqrt_price.into(),
             target_sqrt_price.into(),
             current_liquidity.into(),
             !specified_input,
         )
-        .into()
     } else {
-        get_amount_delta_a(
+        try_get_amount_delta_a(
             current_sqrt_price.into(),
             target_sqrt_price.into(),
             current_liquidity.into(),
             !specified_input,
         )
-        .into()
     }
 }
 
 fn get_next_sqrt_price(
     current_sqrt_price: u128,
     current_liquidity: u128,
-    amount_calculated: u128,
+    amount_calculated: u64,
     a_to_b: bool,
     specified_input: bool,
-) -> u128 {
+) -> Result<u128, ErrorCode> {
     if specified_input == a_to_b {
-        get_next_sqrt_price_from_a(
+        try_get_next_sqrt_price_from_a(
             current_sqrt_price.into(),
             current_liquidity.into(),
             amount_calculated.into(),
             specified_input,
-        )
-        .into()
+        ).map(|x| x.into())
     } else {
-        get_next_sqrt_price_from_b(
+        try_get_next_sqrt_price_from_b(
             current_sqrt_price.into(),
             current_liquidity.into(),
             amount_calculated.into(),
             specified_input,
-        )
-        .into()
+        ).map(|x| x.into())
     }
 }
 

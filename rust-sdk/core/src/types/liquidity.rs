@@ -13,10 +13,14 @@ use tsify::Tsify;
 
 pub struct DecreaseLiquidityQuote {
     pub liquidity_delta: u128,
-    pub token_est_a: u128,
-    pub token_est_b: u128,
-    pub token_min_a: u128,
-    pub token_min_b: u128,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_est_a: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_est_b: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_min_a: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_min_b: u64,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
@@ -26,8 +30,12 @@ pub struct DecreaseLiquidityQuote {
 
 pub struct IncreaseLiquidityQuote {
     pub liquidity_delta: u128,
-    pub token_est_a: u128,
-    pub token_est_b: u128,
-    pub token_max_a: u128,
-    pub token_max_b: u128,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_est_a: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_est_b: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_max_a: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_max_b: u64,
 }

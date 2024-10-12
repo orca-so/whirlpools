@@ -24,7 +24,7 @@ const Q64_RESOLUTION: f64 = 18446744073709551616.0;
 pub fn price_to_sqrt_price(price: f64, decimals_a: u8, decimals_b: u8) -> U128 {
     let power = pow(10f64, decimals_a as f64 - decimals_b as f64);
 
-    (floor(sqrt(price * power) * Q64_RESOLUTION) as u128).into()
+    (floor(sqrt(price / power) * Q64_RESOLUTION) as u128).into()
 }
 
 /// Convert a sqrt priceX64 into a tick index
@@ -43,7 +43,7 @@ pub fn sqrt_price_to_price(sqrt_price: U128, decimals_a: u8, decimals_b: u8) -> 
     let power = pow(10f64, decimals_a as f64 - decimals_b as f64);
     let sqrt_price: u128 = sqrt_price.into();
     let sqrt_price_u128 = sqrt_price as f64;
-    pow(sqrt_price_u128 / Q64_RESOLUTION, 2.0) / power
+    pow(sqrt_price_u128 / Q64_RESOLUTION, 2.0) * power
 }
 
 /// Invert a price
@@ -105,16 +105,16 @@ mod tests {
 
     #[test]
     fn test_price_to_sqrt_price() {
-        assert_eq!(price_to_sqrt_price(100.0, 8, 6), 1844674407370955161600);
+        assert_eq!(price_to_sqrt_price(100.0, 8, 6), 18446744073709551616);
         assert_eq!(price_to_sqrt_price(100.0, 6, 6), 184467440737095516160);
-        assert_eq!(price_to_sqrt_price(100.0, 6, 8), 18446744073709551616);
+        assert_eq!(price_to_sqrt_price(100.0, 6, 8), 1844674407370955161600);
     }
 
     #[test]
     fn test_sqrt_price_to_price() {
-        assert_eq!(sqrt_price_to_price(1844674407370955161600, 8, 6), 100.0);
+        assert_eq!(sqrt_price_to_price(18446744073709551616, 8, 6), 100.0);
         assert_eq!(sqrt_price_to_price(184467440737095516160, 6, 6), 100.0);
-        assert_eq!(sqrt_price_to_price(18446744073709551616, 6, 8), 100.0);
+        assert_eq!(sqrt_price_to_price(1844674407370955161600, 6, 8), 100.0);
     }
 
     #[test]
@@ -136,5 +136,29 @@ mod tests {
         assert_eq!(price_to_tick_index(0.00999999, 8, 6), -1);
         assert_eq!(price_to_tick_index(1.0, 6, 6), 0);
         assert_eq!(price_to_tick_index(100.011, 6, 8), 1);
+    }
+
+    #[test]
+    fn test_sol_usdc_example() {
+        let sqrt_price = 6918418495991757039u128; // 140.661 USDC/SOL
+        let decimals_a = 9u8; // SOL
+        let decimals_b = 6u8; // USDC
+        let price = sqrt_price_to_price(sqrt_price, decimals_a, decimals_b);
+        let sqrt_price_back = price_to_sqrt_price(price, decimals_a, decimals_b);
+        let diff = (sqrt_price_back as i128) - (sqrt_price as i128); // sqrt_price <= u96::MAX, so i128 is safe
+        let diff_rate = (diff as f64) / (sqrt_price as f64) * 100.0;
+        relative_eq!(diff_rate, 0.0);
+    }
+
+    #[test]
+    fn test_bonk_usdc_example() {
+        let sqrt_price = 265989152599097743u128; // 0.00002 USDC/BONK
+        let decimals_a = 5u8; // BONK
+        let decimals_b = 6u8; // USDC
+        let price = sqrt_price_to_price(sqrt_price, decimals_a, decimals_b);
+        let sqrt_price_back = price_to_sqrt_price(price, decimals_a, decimals_b);
+        let diff = (sqrt_price_back as i128) - (sqrt_price as i128); // sqrt_price <= u96::MAX, so i128 is safe
+        let diff_rate = (diff as f64) / (sqrt_price as f64) * 100.0;
+        relative_eq!(diff_rate, 0.0);
     }
 }

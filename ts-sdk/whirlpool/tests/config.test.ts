@@ -2,10 +2,10 @@ import { describe, it } from "mocha";
 import {
   DEFAULT_ADDRESS,
   DEFAULT_FUNDER,
-  DEFAULT_SLIPPAGE_TOLERANCE,
+  DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   resetConfiguration,
   setDefaultFunder,
-  setDefaultSlippageTolerance,
+  setDefaultSlippageToleranceBps,
   setSolWrappingStrategy,
   setWhirlpoolsConfig,
   SOL_WRAPPING_STRATEGY,
@@ -20,8 +20,8 @@ describe("Configuration", () => {
     await resetConfiguration();
   });
 
-  it("Should be able to set whirlpool config", () => {
-    setWhirlpoolsConfig(DEFAULT_ADDRESS);
+  it("Should be able to set whirlpool config", async () => {
+    await setWhirlpoolsConfig(DEFAULT_ADDRESS);
     assert.strictEqual(WHIRLPOOLS_CONFIG_ADDRESS, DEFAULT_ADDRESS);
     assert.strictEqual(WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS, "");
   });
@@ -39,12 +39,13 @@ describe("Configuration", () => {
   });
 
   it("Should be able to set the default slippage tolerance", () => {
-    setDefaultSlippageTolerance(0.02);
-    assert.strictEqual(DEFAULT_SLIPPAGE_TOLERANCE, 0.02);
+    setDefaultSlippageToleranceBps(200);
+    assert.strictEqual(DEFAULT_SLIPPAGE_TOLERANCE_BPS, 200);
   });
 
   it("Should be able to set the sol wrapping strategy", () => {
     setSolWrappingStrategy("ata");
     assert.strictEqual(SOL_WRAPPING_STRATEGY, "ata");
   });
+
 });

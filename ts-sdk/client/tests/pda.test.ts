@@ -3,7 +3,7 @@ import assert from "assert";
 import { getFeeTierAddress } from "../src/pda/feeTier";
 import { getOracleAddress } from "../src/pda/oracle";
 import { getPositionAddress } from "../src/pda/position";
-import { getPositionBundleAddress } from "../src/pda/positionBundle";
+import { getBundledPositionAddress, getPositionBundleAddress } from "../src/pda/positionBundle";
 import { getTickArrayAddress } from "../src/pda/tickArray";
 import { getTokenBadgeAddress } from "../src/pda/tokenBadge";
 import { getWhirlpoolAddress } from "../src/pda/whirlpool";
@@ -52,6 +52,14 @@ describe("derive program accounts", () => {
 
   it("PositionBundle", async () => {
     const address = await getPositionBundleAddress(TEST_POSITION_MINT_ADDRESS);
+    assert.strictEqual(
+      address[0],
+      "2EtH4ZZStW8Ffh2CbbW4baekdtWgPLcBXfYQ6FRmMVsq",
+    );
+  });
+
+  it("BundledPosition", async () => {
+    const address = await getBundledPositionAddress(TEST_POSITION_MINT_ADDRESS, 0);
     assert.strictEqual(
       address[0],
       "2EtH4ZZStW8Ffh2CbbW4baekdtWgPLcBXfYQ6FRmMVsq",

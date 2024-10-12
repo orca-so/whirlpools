@@ -6,6 +6,8 @@ use serde::{Deserialize, Serialize};
 #[cfg(feature = "wasm")]
 use tsify::Tsify;
 
+use crate::NUM_REWRARDS;
+
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize, Tsify))]
 #[cfg_attr(feature = "wasm", serde(rename_all = "camelCase"))]
@@ -20,13 +22,12 @@ pub struct PositionRatio {
 #[cfg_attr(feature = "wasm", serde(rename_all = "camelCase"))]
 #[cfg_attr(feature = "wasm", tsify(into_wasm_abi))]
 pub enum PositionStatus {
-    InRange,
-    BelowRange,
-    AboveRange,
+    PriceInRange,
+    PriceBelowRange,
+    PriceAboveRange,
     Invalid,
 }
 
-#[cfg(any(feature = "wasm", test))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize, Tsify))]
 #[cfg_attr(feature = "wasm", serde(rename_all = "camelCase"))]
@@ -42,10 +43,9 @@ pub struct PositionFacade {
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub fee_owed_b: u64,
     #[cfg_attr(feature = "wasm", tsify(type = "PositionRewardInfoFacade[]"))]
-    pub reward_infos: [PositionRewardInfoFacade; 3],
+    pub reward_infos: [PositionRewardInfoFacade; NUM_REWRARDS],
 }
 
-#[cfg(any(feature = "wasm", test))]
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "wasm", derive(Serialize, Deserialize, Tsify))]
 #[cfg_attr(feature = "wasm", serde(rename_all = "camelCase"))]
@@ -55,6 +55,3 @@ pub struct PositionRewardInfoFacade {
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub amount_owed: u64,
 }
-
-#[cfg(not(any(feature = "wasm", test)))]
-pub use orca_whirlpools_client::accounts::Position as PositionFacade;

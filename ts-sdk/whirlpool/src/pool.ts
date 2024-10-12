@@ -44,10 +44,10 @@ export async function fetchSplashPool(
   tokenMintOne: Address,
   tokenMintTwo: Address,
 ): Promise<PoolInfo> {
-  return fetchPool(rpc, tokenMintOne, tokenMintTwo, SPLASH_POOL_TICK_SPACING);
+  return fetchWhirlpool(rpc, tokenMintOne, tokenMintTwo, SPLASH_POOL_TICK_SPACING);
 }
 
-export async function fetchPool(
+export async function fetchWhirlpool(
   rpc: Rpc<GetAccountInfoApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,
@@ -95,7 +95,7 @@ export async function fetchPool(
   }
 }
 
-export async function fetchPools(
+export async function fetchWhirlpools(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,

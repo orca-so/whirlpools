@@ -35,7 +35,7 @@ import { fetchAllMint, getTokenSize } from "@solana-program/token";
 
 type CreatePoolInstructions = {
   instructions: IInstruction[];
-  initializationCost: LamportsUnsafeBeyond2Pow53Minus1;
+  estInitializationCost: LamportsUnsafeBeyond2Pow53Minus1;
   poolAddress: Address;
 };
 
@@ -198,6 +198,6 @@ export async function createConcentratedLiquidityPoolInstructions(
   return {
     instructions,
     poolAddress,
-    initializationCost: nonRefundableRent,
+    estInitializationCost: nonRefundableRent,
   };
 }

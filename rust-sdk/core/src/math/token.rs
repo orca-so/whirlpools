@@ -1,6 +1,4 @@
-use crate::{AdjustmentType, FEE_RATE_DENOMINATOR, U128};
-
-use core::ops::{Shl, Shr};
+use crate::{AdjustmentType, ErrorCode, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, FEE_RATE_DENOMINATOR, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_OUT_OF_BOUNDS, U128};
 
 use ethnum::U256;
 #[cfg(feature = "wasm")]
@@ -19,20 +17,21 @@ const BPS_DENOMINATOR: u16 = 10000;
 /// # Returns
 /// - `u64`: The amount delta
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getAmountDeltaA, skip_jsdoc))]
-pub fn get_amount_delta_a(
+pub fn try_get_amount_delta_a(
     current_sqrt_price: U128,
     target_sqrt_price: U128,
     current_liquidity: U128,
     round_up: bool,
-) -> u64 {
+) -> Result<u64, ErrorCode> {
     let (sqrt_price_lower, sqrt_price_upper) =
         order_prices(current_sqrt_price.into(), target_sqrt_price.into());
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
     let numerator: U256 = <U256>::from(current_liquidity)
-        .saturating_mul(sqrt_price_diff.into())
-        .shl(64);
+        .wrapping_mul(sqrt_price_diff.into())
+        .checked_shl(64)
+        .ok_or(ARITHMETIC_OVERFLOW)?;
 
-    let denominator: U256 = <U256>::from(sqrt_price_lower).saturating_mul(sqrt_price_upper.into());
+    let denominator: U256 = <U256>::from(sqrt_price_lower).wrapping_mul(sqrt_price_upper.into());
 
     let quotient = numerator / denominator;
     let remainder = numerator % denominator;
@@ -43,7 +42,7 @@ pub fn get_amount_delta_a(
         quotient
     };
 
-    result.try_into().unwrap()
+    result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
 /// Calculate the amount B delta between two sqrt_prices
@@ -57,26 +56,28 @@ pub fn get_amount_delta_a(
 /// # Returns
 /// - `u64`: The amount delta
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getAmountDeltaB, skip_jsdoc))]
-pub fn get_amount_delta_b(
+pub fn try_get_amount_delta_b(
     current_sqrt_price: U128,
     target_sqrt_price: U128,
     current_liquidity: U128,
     round_up: bool,
-) -> u64 {
+) -> Result<u64, ErrorCode> {
     let (sqrt_price_lower, sqrt_price_upper) =
         order_prices(current_sqrt_price.into(), target_sqrt_price.into());
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
 
-    let p: U256 = <U256>::from(current_liquidity).saturating_mul(sqrt_price_diff.into());
-    let result: U256 = p.shr(64);
+    let product: U256 = <U256>::from(current_liquidity).wrapping_mul(sqrt_price_diff.into());
+    let quotient: U256 = product.wrapping_shr(64);
 
-    let should_round = round_up && p & <U256>::from(u64::MAX) > 0;
+    let should_round = round_up && product & <U256>::from(u64::MAX) > 0;
 
-    if should_round {
-        (result + 1).try_into().unwrap()
+    let result = if should_round {
+        quotient + 1
     } else {
-        result.try_into().unwrap()
-    }
+        quotient
+    };
+
+    result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
 /// Calculate the next square root price
@@ -90,24 +91,27 @@ pub fn get_amount_delta_b(
 /// # Returns
 /// - `u128`: The next square root price
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getNextSqrtPriceFromA, skip_jsdoc))]
-pub fn get_next_sqrt_price_from_a(
+pub fn try_get_next_sqrt_price_from_a(
     current_sqrt_price: U128,
     current_liquidity: U128,
-    amount: U128,
+    amount: u64,
     specified_input: bool,
-) -> U128 {
+) -> Result<U128, ErrorCode> {
     if amount == 0 {
-        return current_sqrt_price;
+        return Ok(current_sqrt_price);
     }
     let current_sqrt_price: u128 = current_sqrt_price.into();
     let current_liquidity: u128 = current_liquidity.into();
 
     let p = <U256>::from(current_sqrt_price).saturating_mul(amount.into());
     let numerator = <U256>::from(current_liquidity)
-        .saturating_mul(current_sqrt_price.into())
-        .shl(64);
+        .wrapping_mul(current_sqrt_price.into())
+        .checked_shl(64)
+        .ok_or(ARITHMETIC_OVERFLOW)?;
 
-    let current_liquidity_shifted: u128 = current_liquidity.shl(64);
+    let current_liquidity_shifted = <U256>::from(current_liquidity)
+        .checked_shl(64)
+        .ok_or(ARITHMETIC_OVERFLOW)?;
     let denominator = if specified_input {
         current_liquidity_shifted + p
     } else {
@@ -117,13 +121,17 @@ pub fn get_next_sqrt_price_from_a(
     let quotient: U256 = numerator / denominator;
     let remainder: U256 = numerator % denominator;
 
-    let result: u128 = if remainder != 0 {
-        (quotient + 1).try_into().unwrap()
+    let result = if remainder != 0 {
+        quotient + 1
     } else {
-        quotient.try_into().unwrap()
+        quotient
     };
 
-    result.into()
+    if result < MIN_SQRT_PRICE || result > MAX_SQRT_PRICE {
+        return Err(SQRT_PRICE_OUT_OF_BOUNDS);
+    }
+
+    result.try_into().map(|x: u128| x.into()).map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
 /// Calculate the next square root price
@@ -137,34 +145,41 @@ pub fn get_next_sqrt_price_from_a(
 /// # Returns
 /// - `u128`: The next square root price
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getNextSqrtPriceFromB, skip_jsdoc))]
-pub fn get_next_sqrt_price_from_b(
+pub fn try_get_next_sqrt_price_from_b(
     current_sqrt_price: U128,
     current_liquidity: U128,
-    amount: U128,
+    amount: u64,
     specified_input: bool,
-) -> U128 {
+) -> Result<U128, ErrorCode> {
     if amount == 0 {
-        return current_sqrt_price;
+        return Ok(current_sqrt_price);
     }
-    let current_sqrt_price: u128 = current_sqrt_price.into();
-
+    let current_sqrt_price = <U256>::from(current_sqrt_price);
     let current_liquidity = <U256>::from(current_liquidity);
-    let amount_shifted = <U256>::from(amount).shl(64);
+    let amount_shifted = <U256>::from(amount)
+        .checked_shl(64)
+        .ok_or(ARITHMETIC_OVERFLOW)?;
 
     let quotient: U256 = amount_shifted / current_liquidity;
     let remainder: U256 = amount_shifted % current_liquidity;
 
-    let delta: u128 = if !specified_input && remainder != 0 {
-        (quotient + 1).try_into().unwrap()
+    let delta = if !specified_input && remainder != 0 {
+        quotient + 1
     } else {
-        quotient.try_into().unwrap()
+        quotient
     };
 
-    if specified_input {
-        (current_sqrt_price + delta).into()
+    let result =if specified_input {
+        current_sqrt_price.wrapping_add(delta)
     } else {
-        (current_sqrt_price - delta).into()
+        current_sqrt_price.wrapping_sub(delta)
+    };
+
+    if result < MIN_SQRT_PRICE || result > MAX_SQRT_PRICE {
+        return Err(SQRT_PRICE_OUT_OF_BOUNDS);
     }
+
+    result.try_into().map(|x: u128| x.into()).map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
 /// Calculate the amount after transfer fee
@@ -178,28 +193,32 @@ pub fn get_next_sqrt_price_from_b(
 /// # Returns
 /// - `u128`: The amount after transfer fee
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = adjust_amount, skip_jsdoc))]
-pub fn adjust_amount(amount: U128, adjust_type: AdjustmentType, adjust_up: bool) -> U128 {
-    let amount: u128 = amount.into();
-
-    if adjustment_numerator(adjust_type) == 0 {
-        return amount.into();
+pub fn try_adjust_amount(amount: u64, adjust_type: AdjustmentType, adjust_up: bool) -> Result<u64, ErrorCode> {
+    if amount == 0 {
+        return Ok(0);
     }
 
-    let p = if adjust_up {
+    if adjustment_numerator(adjust_type) == 0 {
+        return Ok(amount);
+    }
+
+    let amount: u128 = amount.into();
+
+    let product = if adjust_up {
         adjustment_denominator(adjust_type) + adjustment_numerator(adjust_type)
     } else {
         adjustment_denominator(adjust_type) - adjustment_numerator(adjust_type)
     };
 
-    let numerator = <U256>::from(amount).saturating_mul(p.into());
-    let denominator = <U256>::from(adjustment_denominator(adjust_type));
+    let numerator = amount.wrapping_mul(product);
+    let denominator = adjustment_denominator(adjust_type);
     let quotient = numerator / denominator;
     let remainder = numerator % denominator;
 
     let mut result: u128 = if adjust_up && remainder != 0 {
-        (quotient + 1).try_into().unwrap()
+        quotient + 1
     } else {
-        quotient.try_into().unwrap()
+        quotient
     };
 
     let fee_amount = if adjust_up {
@@ -217,7 +236,7 @@ pub fn adjust_amount(amount: U128, adjust_type: AdjustmentType, adjust_up: bool)
         }
     }
 
-    result.into()
+    result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
 /// Calculate the amount before transfer fee
@@ -234,31 +253,31 @@ pub fn adjust_amount(amount: U128, adjust_type: AdjustmentType, adjust_up: bool)
 /// # Returns
 /// - `u128`: The amount before transfer fee
 #[cfg_attr(feature = "wasm", wasm_bindgen(js_name = inverseAdjustAmount, skip_jsdoc))]
-pub fn inverse_adjust_amount(amount: U128, adjust_type: AdjustmentType, adjust_up: bool) -> U128 {
-    let amount: u128 = amount.into();
-
+pub fn try_inverse_adjust_amount(amount: u64, adjust_type: AdjustmentType, adjust_up: bool) -> Result<u64, ErrorCode> {
     if amount == 0 {
-        return 0u128.into();
+        return Ok(0);
     }
 
     if adjustment_numerator(adjust_type) == 0 {
-        return amount.into();
+        return Ok(amount);
     }
 
-    let numerator = <U256>::from(amount).saturating_mul(adjustment_denominator(adjust_type).into());
+    let amount: u128 = amount.into();
+
+    let numerator = amount.wrapping_mul(adjustment_denominator(adjust_type));
     let denominator = if adjust_up {
         adjustment_denominator(adjust_type) + adjustment_numerator(adjust_type)
     } else {
         adjustment_denominator(adjust_type) - adjustment_numerator(adjust_type)
     };
 
-    let quotient = numerator / <U256>::from(denominator);
-    let remainder = numerator % <U256>::from(denominator);
+    let quotient = numerator / denominator;
+    let remainder = numerator % denominator;
 
     let mut result = if !adjust_up && remainder != 0 {
-        (quotient + 1).try_into().unwrap()
+        quotient + 1
     } else {
-        quotient.try_into().unwrap()
+        quotient
     };
 
     let fee_amount = if adjust_up {
@@ -276,7 +295,7 @@ pub fn inverse_adjust_amount(amount: U128, adjust_type: AdjustmentType, adjust_u
         }
     }
 
-    result.try_into().unwrap()
+    result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
 // Private functions
@@ -293,7 +312,7 @@ fn adjustment_numerator(adjust_type: AdjustmentType) -> u128 {
     match adjust_type {
         AdjustmentType::None => 0,
         AdjustmentType::SwapFee { fee_rate } => fee_rate.into(),
-        AdjustmentType::Slippage { slippage_tolerance } => slippage_tolerance.into(),
+        AdjustmentType::Slippage { slippage_tolerance_bps } => slippage_tolerance_bps.into(),
         AdjustmentType::TransferFee {
             fee_bps,
             max_fee: _,
@@ -324,164 +343,164 @@ mod tests {
 
     #[test]
     fn test_get_amount_delta_a() {
-        assert_eq!(get_amount_delta_a(4 << 64, 2 << 64, 4, true), 1);
-        assert_eq!(get_amount_delta_a(4 << 64, 2 << 64, 4, false), 1);
+        assert_eq!(try_get_amount_delta_a(4 << 64, 2 << 64, 4, true).unwrap(), 1);
+        assert_eq!(try_get_amount_delta_a(4 << 64, 2 << 64, 4, false).unwrap(), 1);
 
-        assert_eq!(get_amount_delta_a(4 << 64, 4 << 64, 4, true), 0);
-        assert_eq!(get_amount_delta_a(4 << 64, 4 << 64, 4, false), 0);
+        assert_eq!(try_get_amount_delta_a(4 << 64, 4 << 64, 4, true).unwrap(), 0);
+        assert_eq!(try_get_amount_delta_a(4 << 64, 4 << 64, 4, false).unwrap(), 0);
     }
 
     #[test]
     fn test_get_amount_delta_b() {
-        assert_eq!(get_amount_delta_b(4 << 64, 2 << 64, 4, true), 8);
-        assert_eq!(get_amount_delta_b(4 << 64, 2 << 64, 4, false), 8);
+        assert_eq!(try_get_amount_delta_b(4 << 64, 2 << 64, 4, true).unwrap(), 8);
+        assert_eq!(try_get_amount_delta_b(4 << 64, 2 << 64, 4, false).unwrap(), 8);
 
-        assert_eq!(get_amount_delta_b(4 << 64, 4 << 64, 4, true), 0);
-        assert_eq!(get_amount_delta_b(4 << 64, 4 << 64, 4, false), 0);
+        assert_eq!(try_get_amount_delta_b(4 << 64, 4 << 64, 4, true).unwrap(), 0);
+        assert_eq!(try_get_amount_delta_b(4 << 64, 4 << 64, 4, false).unwrap(), 0);
     }
 
     #[test]
     fn test_get_next_sqrt_price_from_a() {
-        assert_eq!(get_next_sqrt_price_from_a(4 << 64, 4, 1, true), 2 << 64);
-        assert_eq!(get_next_sqrt_price_from_a(2 << 64, 4, 1, false), 4 << 64);
+        assert_eq!(try_get_next_sqrt_price_from_a(4 << 64, 4, 1, true).unwrap(), 2 << 64);
+        assert_eq!(try_get_next_sqrt_price_from_a(2 << 64, 4, 1, false).unwrap(), 4 << 64);
 
-        assert_eq!(get_next_sqrt_price_from_a(4 << 64, 4, 0, true), 4 << 64);
-        assert_eq!(get_next_sqrt_price_from_a(4 << 64, 4, 0, false), 4 << 64);
+        assert_eq!(try_get_next_sqrt_price_from_a(4 << 64, 4, 0, true).unwrap(), 4 << 64);
+        assert_eq!(try_get_next_sqrt_price_from_a(4 << 64, 4, 0, false).unwrap(), 4 << 64);
     }
 
     #[test]
     fn test_get_next_sqrt_price_from_b() {
-        assert_eq!(get_next_sqrt_price_from_b(2 << 64, 4, 8, true), 4 << 64);
-        assert_eq!(get_next_sqrt_price_from_b(4 << 64, 4, 8, false), 2 << 64);
+        assert_eq!(try_get_next_sqrt_price_from_b(2 << 64, 4, 8, true).unwrap(), 4 << 64);
+        assert_eq!(try_get_next_sqrt_price_from_b(4 << 64, 4, 8, false).unwrap(), 2 << 64);
 
-        assert_eq!(get_next_sqrt_price_from_b(4 << 64, 4, 0, true), 4 << 64);
-        assert_eq!(get_next_sqrt_price_from_b(4 << 64, 4, 0, false), 4 << 64);
+        assert_eq!(try_get_next_sqrt_price_from_b(4 << 64, 4, 0, true).unwrap(), 4 << 64);
+        assert_eq!(try_get_next_sqrt_price_from_b(4 << 64, 4, 0, false).unwrap(), 4 << 64);
     }
 
     #[test]
     fn test_adjust_amount() {
         assert_eq!(
-            adjust_amount(
+            try_adjust_amount(
                 10000,
                 AdjustmentType::TransferFee {
                     fee_bps: 1000,
                     max_fee: 10000
                 },
                 true
-            ),
+            ).unwrap(),
             11000
         );
         assert_eq!(
-            adjust_amount(
+            try_adjust_amount(
                 10000,
                 AdjustmentType::TransferFee {
                     fee_bps: 1000,
                     max_fee: 10000
                 },
                 false
-            ),
+            ).unwrap(),
             9000
         );
         assert_eq!(
-            adjust_amount(
+            try_adjust_amount(
                 10000,
                 AdjustmentType::TransferFee {
                     fee_bps: 1000,
                     max_fee: 500
                 },
                 true
-            ),
+            ).unwrap(),
             10500
         );
         assert_eq!(
-            adjust_amount(
+            try_adjust_amount(
                 10000,
                 AdjustmentType::TransferFee {
                     fee_bps: 1000,
                     max_fee: 500
                 },
                 false
-            ),
+            ).unwrap(),
             9500
         );
         assert_eq!(
-            adjust_amount(
+            try_adjust_amount(
                 10000,
                 AdjustmentType::TransferFee {
                     fee_bps: 0,
                     max_fee: 10000
                 },
                 true
-            ),
+            ).unwrap(),
             10000
         );
         assert_eq!(
-            adjust_amount(
+            try_adjust_amount(
                 10000,
                 AdjustmentType::TransferFee {
                     fee_bps: 0,
                     max_fee: 10000
                 },
                 false
-            ),
+            ).unwrap(),
             10000
         );
 
         assert_eq!(
-            adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 1000 }, true),
+            try_adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 1000 }, true).unwrap(),
             10010
         );
         assert_eq!(
-            adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 1000 }, false),
+            try_adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 1000 }, false).unwrap(),
             9990
         );
         assert_eq!(
-            adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 0 }, true),
+            try_adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 0 }, true).unwrap(),
             10000
         );
         assert_eq!(
-            adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 0 }, false),
+            try_adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 0 }, false).unwrap(),
             10000
         );
 
         assert_eq!(
-            adjust_amount(
+            try_adjust_amount(
                 10000,
                 AdjustmentType::Slippage {
-                    slippage_tolerance: 1000
+                    slippage_tolerance_bps: 1000
                 },
                 true
-            ),
+            ).unwrap(),
             11000
         );
         assert_eq!(
-            adjust_amount(
+            try_adjust_amount(
                 10000,
                 AdjustmentType::Slippage {
-                    slippage_tolerance: 1000
+                    slippage_tolerance_bps: 1000
                 },
                 false
-            ),
+            ).unwrap(),
             9000
         );
         assert_eq!(
-            adjust_amount(
+            try_adjust_amount(
                 10000,
                 AdjustmentType::Slippage {
-                    slippage_tolerance: 0
+                    slippage_tolerance_bps: 0
                 },
                 true
-            ),
+            ).unwrap(),
             10000
         );
         assert_eq!(
-            adjust_amount(
+            try_adjust_amount(
                 10000,
                 AdjustmentType::Slippage {
-                    slippage_tolerance: 0
+                    slippage_tolerance_bps: 0
                 },
                 false
-            ),
+            ).unwrap(),
             10000
         );
     }
@@ -489,127 +508,127 @@ mod tests {
     #[test]
     fn test_inverse_adjust_amount() {
         assert_eq!(
-            inverse_adjust_amount(
+            try_inverse_adjust_amount(
                 11000,
                 AdjustmentType::TransferFee {
                     fee_bps: 1000,
                     max_fee: 10000
                 },
                 true
-            ),
+            ).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(
+            try_inverse_adjust_amount(
                 9000,
                 AdjustmentType::TransferFee {
                     fee_bps: 1000,
                     max_fee: 10000
                 },
                 false
-            ),
+            ).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(
+            try_inverse_adjust_amount(
                 10500,
                 AdjustmentType::TransferFee {
                     fee_bps: 1000,
                     max_fee: 500
                 },
                 true
-            ),
+            ).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(
+            try_inverse_adjust_amount(
                 9500,
                 AdjustmentType::TransferFee {
                     fee_bps: 1000,
                     max_fee: 500
                 },
                 false
-            ),
+            ).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(
+            try_inverse_adjust_amount(
                 10000,
                 AdjustmentType::TransferFee {
                     fee_bps: 0,
                     max_fee: 10000
                 },
                 true
-            ),
+            ).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(
+            try_inverse_adjust_amount(
                 10000,
                 AdjustmentType::TransferFee {
                     fee_bps: 0,
                     max_fee: 10000
                 },
                 false
-            ),
+            ).unwrap(),
             10000
         );
 
         assert_eq!(
-            inverse_adjust_amount(10010, AdjustmentType::SwapFee { fee_rate: 1000 }, true),
+            try_inverse_adjust_amount(10010, AdjustmentType::SwapFee { fee_rate: 1000 }, true).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(9990, AdjustmentType::SwapFee { fee_rate: 1000 }, false),
+            try_inverse_adjust_amount(9990, AdjustmentType::SwapFee { fee_rate: 1000 }, false).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 0 }, true),
+            try_inverse_adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 0 }, true).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 0 }, false),
+            try_inverse_adjust_amount(10000, AdjustmentType::SwapFee { fee_rate: 0 }, false).unwrap(),
             10000
         );
 
         assert_eq!(
-            inverse_adjust_amount(
+            try_inverse_adjust_amount(
                 11000,
                 AdjustmentType::Slippage {
-                    slippage_tolerance: 1000
+                    slippage_tolerance_bps: 1000
                 },
                 true
-            ),
+            ).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(
+            try_inverse_adjust_amount(
                 9000,
                 AdjustmentType::Slippage {
-                    slippage_tolerance: 1000
+                    slippage_tolerance_bps: 1000
                 },
                 false
-            ),
+            ).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(
+            try_inverse_adjust_amount(
                 10000,
                 AdjustmentType::Slippage {
-                    slippage_tolerance: 0
+                    slippage_tolerance_bps: 0
                 },
                 true
-            ),
+            ).unwrap(),
             10000
         );
         assert_eq!(
-            inverse_adjust_amount(
+            try_inverse_adjust_amount(
                 10000,
                 AdjustmentType::Slippage {
-                    slippage_tolerance: 0
+                    slippage_tolerance_bps: 0
                 },
                 false
-            ),
+            ).unwrap(),
             10000
         );
     }

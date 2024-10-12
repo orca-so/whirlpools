@@ -4,9 +4,8 @@ import {
   fetchPosition,
   fetchWhirlpool,
   getIncreaseLiquidityInstruction,
+  getIncreaseLiquidityV2Instruction,
   getInitializeTickArrayInstruction,
-  getOpenPositionInstruction,
-  getOpenPositionWithMetadataInstruction,
   getOpenPositionWithTokenExtensionsInstruction,
   getPositionAddress,
   getTickArrayAddress,
@@ -44,10 +43,11 @@ import { generateKeyPairSigner, lamports } from "@solana/web3.js";
 import {
   DEFAULT_ADDRESS,
   DEFAULT_FUNDER,
-  DEFAULT_SLIPPAGE_TOLERANCE,
+  DEFAULT_SLIPPAGE_TOLERANCE_BPS,
 } from "./config";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+  fetchMint,
   findAssociatedTokenPda,
   getMintSize,
   TOKEN_PROGRAM_ADDRESS,
@@ -56,6 +56,7 @@ import invariant from "tiny-invariant";
 import { getCurrentTransferFee, prepareTokenAccountsInstructions } from "./token";
 import type { Mint} from "@solana-program/token-2022";
 import { fetchAllMint, TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
+import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
@@ -81,16 +82,15 @@ function getIncreaseLiquidityQuote(
   param: IncreaseLiquidityQuoteParam,
   pool: Whirlpool,
   tickRange: TickRange,
-  slippageTolerance: number,
+  slippageToleranceBps: number,
   transferFeeA: TransferFee | undefined,
   transferFeeB: TransferFee | undefined,
 ): IncreaseLiquidityQuote {
-  const slippageToleranceBps = Math.floor(slippageTolerance * 10000);
   if ("liquidity" in param) {
     return increaseLiquidityQuote(
       param.liquidity,
       slippageToleranceBps,
-      pool.tickCurrentIndex,
+      pool.sqrtPrice,
       tickRange.tickLowerIndex,
       tickRange.tickUpperIndex,
       transferFeeA,
@@ -100,7 +100,7 @@ function getIncreaseLiquidityQuote(
     return increaseLiquidityQuoteA(
       param.tokenA,
       slippageToleranceBps,
-      pool.tickCurrentIndex,
+      pool.sqrtPrice,
       tickRange.tickLowerIndex,
       tickRange.tickUpperIndex,
       transferFeeA,
@@ -110,7 +110,7 @@ function getIncreaseLiquidityQuote(
     return increaseLiquidityQuoteB(
       param.tokenB,
       slippageToleranceBps,
-      pool.tickCurrentIndex,
+      pool.sqrtPrice,
       tickRange.tickLowerIndex,
       tickRange.tickUpperIndex,
       transferFeeA,
@@ -125,9 +125,9 @@ export async function increaseLiquidityInstructions(
       GetMultipleAccountsApi &
       GetMinimumBalanceForRentExemptionApi
   >,
-  positionMint: Address,
+  positionMintAddress: Address,
   param: IncreaseLiquidityQuoteParam,
-  slippageTolerance: number = DEFAULT_SLIPPAGE_TOLERANCE,
+  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   authority: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   invariant(
@@ -135,12 +135,12 @@ export async function increaseLiquidityInstructions(
     "Either supply the authority or set the default funder",
   );
 
-  const positionAddress = await getPositionAddress(positionMint);
+  const positionAddress = await getPositionAddress(positionMintAddress);
   const position = await fetchPosition(rpc, positionAddress[0]);
   const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
 
   const currentEpoch = await rpc.getEpochInfo().send();
-  const [mintA, mintB] = await fetchAllMint(rpc, [whirlpool.data.tokenMintA, whirlpool.data.tokenMintB]);
+  const [mintA, mintB, positionMint] = await fetchAllMint(rpc, [whirlpool.data.tokenMintA, whirlpool.data.tokenMintB, positionMintAddress]);
   const transferFeeA = getCurrentTransferFee(mintA.data, currentEpoch.epoch);
   const transferFeeB = getCurrentTransferFee(mintB.data, currentEpoch.epoch);
 
@@ -148,7 +148,7 @@ export async function increaseLiquidityInstructions(
     param,
     whirlpool.data,
     position.data,
-    slippageTolerance,
+    slippageToleranceBps,
     transferFeeA,
     transferFeeB,
   );
@@ -167,8 +167,8 @@ export async function increaseLiquidityInstructions(
     await Promise.all([
       findAssociatedTokenPda({
         owner: authority.address,
-        mint: positionMint,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
+        mint: positionMintAddress,
+        tokenProgram: positionMint.programAddress,
       }).then((x) => x[0]),
       getTickArrayAddress(whirlpool.address, lowerTickArrayStartIndex).then(
         (x) => x[0],
@@ -221,9 +221,9 @@ async function internalOpenPositionInstructions(
   param: IncreaseLiquidityQuoteParam,
   lowerTickIndex: number,
   upperTickIndex: number,
-  mintA: Mint,
-  mintB: Mint,
-  slippageTolerance: number = DEFAULT_SLIPPAGE_TOLERANCE,
+  mintA: Account<Mint>,
+  mintB: Account<Mint>,
+  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   funder: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   invariant(
@@ -236,12 +236,10 @@ async function internalOpenPositionInstructions(
   const initializableLowerTickIndex = getInitializableTickIndex(
     lowerTickIndex,
     whirlpool.data.tickSpacing,
-    false,
   );
   const initializableUpperTickIndex = getInitializableTickIndex(
     upperTickIndex,
     whirlpool.data.tickSpacing,
-    true,
   );
   const tickRange = orderTickIndexes(
     initializableLowerTickIndex,
@@ -249,14 +247,14 @@ async function internalOpenPositionInstructions(
   );
 
   const currentEpoch = await rpc.getEpochInfo().send();
-  const transferFeeA = getCurrentTransferFee(mintA, currentEpoch.epoch);
-  const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
+  const transferFeeA = getCurrentTransferFee(mintA.data, currentEpoch.epoch);
+  const transferFeeB = getCurrentTransferFee(mintB.data, currentEpoch.epoch);
 
   const quote = getIncreaseLiquidityQuote(
     param,
     whirlpool.data,
     tickRange,
-    slippageTolerance,
+    slippageToleranceBps,
     transferFeeA,
     transferFeeB,
   );
@@ -282,7 +280,7 @@ async function internalOpenPositionInstructions(
     findAssociatedTokenPda({
       owner: funder.address,
       mint: positionMint.address,
-      tokenProgram: TOKEN_PROGRAM_ADDRESS,
+      tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     }).then((x) => x[0]),
     getTickArrayAddress(whirlpool.address, lowerTickArrayIndex).then(
       (x) => x[0],
@@ -317,7 +315,7 @@ async function internalOpenPositionInstructions(
     stateSpace += getTickArraySize();
   }
 
-  if (!upperTickArray.exists) {
+  if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
     instructions.push(
       getInitializeTickArrayInstruction({
         whirlpool: whirlpool.address,
@@ -348,7 +346,7 @@ async function internalOpenPositionInstructions(
   stateSpace += getMintSize();
 
   instructions.push(
-    getIncreaseLiquidityInstruction({
+    getIncreaseLiquidityV2Instruction({
       whirlpool: whirlpool.address,
       positionAuthority: funder,
       position: positionAddress[0],
@@ -357,11 +355,17 @@ async function internalOpenPositionInstructions(
       tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
       tokenVaultA: whirlpool.data.tokenVaultA,
       tokenVaultB: whirlpool.data.tokenVaultB,
+      tokenMintA: whirlpool.data.tokenMintA,
+      tokenMintB: whirlpool.data.tokenMintB,
+      tokenProgramA: mintA.programAddress,
+      tokenProgramB: mintB.programAddress,
       tickArrayLower: lowerTickArrayAddress,
       tickArrayUpper: upperTickArrayAddress,
       liquidityAmount: quote.liquidityDelta,
       tokenMaxA: quote.tokenMaxA,
       tokenMaxB: quote.tokenMaxB,
+      memoProgram: MEMO_PROGRAM_ADDRESS,
+      remainingAccountsInfo: null,
     }),
   );
 
@@ -387,7 +391,7 @@ export async function openFullRangePositionInstructions(
   >,
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,
-  slippageTolerance: number = DEFAULT_SLIPPAGE_TOLERANCE,
+  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   funder: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
@@ -402,9 +406,9 @@ export async function openFullRangePositionInstructions(
     param,
     tickRange.tickLowerIndex,
     tickRange.tickUpperIndex,
-    mintA.data,
-    mintB.data,
-    slippageTolerance,
+    mintA,
+    mintB,
+    slippageToleranceBps,
     funder,
   );
 }
@@ -417,26 +421,10 @@ export async function openSplashPoolPositionInstructions(
   >,
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,
-  slippageTolerance: number = DEFAULT_SLIPPAGE_TOLERANCE,
+  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   funder: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
-  const whirlpool = await fetchWhirlpool(rpc, poolAddress);
-  const [mintA, mintB] = await fetchAllMint(rpc, [
-    whirlpool.data.tokenMintA,
-    whirlpool.data.tokenMintB,
-  ]);
-  const tickRange = getFullRangeTickIndexes(whirlpool.data.tickSpacing);
-  return internalOpenPositionInstructions(
-    rpc,
-    whirlpool,
-    param,
-    tickRange.tickLowerIndex,
-    tickRange.tickUpperIndex,
-    mintA.data,
-    mintB.data,
-    slippageTolerance,
-    funder,
-  );
+  return openFullRangePositionInstructions(rpc, poolAddress, param, slippageToleranceBps, funder);
 }
 
 export async function openPositionInstructions(
@@ -449,7 +437,7 @@ export async function openPositionInstructions(
   param: IncreaseLiquidityQuoteParam,
   lowerPrice: number,
   upperPrice: number,
-  slippageTolerance: number = DEFAULT_SLIPPAGE_TOLERANCE,
+  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   funder: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
@@ -460,16 +448,18 @@ export async function openPositionInstructions(
   const decimalsA = mintA.data.decimals;
   const decimalsB = mintB.data.decimals;
   const lowerTickIndex = priceToTickIndex(lowerPrice, decimalsA, decimalsB);
+  const lowerInitializableTickIndex = getInitializableTickIndex(lowerTickIndex, whirlpool.data.tickSpacing);
   const upperTickIndex = priceToTickIndex(upperPrice, decimalsA, decimalsB);
+  const upperInitializableTickIndex = getInitializableTickIndex(upperTickIndex, whirlpool.data.tickSpacing);
   return internalOpenPositionInstructions(
     rpc,
     whirlpool,
     param,
-    lowerTickIndex,
-    upperTickIndex,
-    mintA.data,
-    mintB.data,
-    slippageTolerance,
+    lowerInitializableTickIndex,
+    upperInitializableTickIndex,
+    mintA,
+    mintB,
+    slippageToleranceBps,
     funder,
   );
 }

@@ -12,10 +12,14 @@ use tsify::Tsify;
 #[cfg_attr(feature = "wasm", tsify(into_wasm_abi))]
 
 pub struct ExactInSwapQuote {
-    pub token_in: u128,
-    pub token_est_out: u128,
-    pub token_min_out: u128,
-    pub total_fee: u128,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_in: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_est_out: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_min_out: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub total_fee: u64,
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
@@ -24,8 +28,12 @@ pub struct ExactInSwapQuote {
 #[cfg_attr(feature = "wasm", tsify(into_wasm_abi))]
 
 pub struct ExactOutSwapQuote {
-    pub token_out: u128,
-    pub token_est_in: u128,
-    pub token_max_in: u128,
-    pub total_fee: u128,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_out: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_est_in: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub token_max_in: u64,
+    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
+    pub total_fee: u64,
 }

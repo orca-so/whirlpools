@@ -5,11 +5,12 @@ import type {
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
   IInstruction,
+  MaybeAccount,
   Rpc,
   TransactionPartialSigner,
 } from "@solana/web3.js";
 import { AccountRole } from "@solana/web3.js";
-import { DEFAULT_FUNDER, DEFAULT_SLIPPAGE_TOLERANCE } from "./config";
+import { DEFAULT_FUNDER, DEFAULT_SLIPPAGE_TOLERANCE_BPS } from "./config";
 import type {
   ExactInSwapQuote,
   ExactOutSwapQuote,
@@ -24,7 +25,7 @@ import {
 import type { TickArray, Whirlpool } from "@orca-so/whirlpools-client";
 import {
   AccountsType,
-  fetchAllTickArray,
+  fetchAllMaybeTickArray,
   fetchWhirlpool,
   getOracleAddress,
   getSwapV2Instruction,
@@ -58,6 +59,33 @@ type SwapInstructions<T extends SwapParams> = {
   quote: SwapQuote<T>;
 };
 
+async function fetchTickArrayOrDefault(rpc: Rpc<GetMultipleAccountsApi>, whirlpool: Account<Whirlpool>): Promise<Account<TickArray>[]> {
+  const tickArrayStartIndex = getTickArrayStartTickIndex(
+    whirlpool.data.tickCurrentIndex,
+    whirlpool.data.tickSpacing,
+  );
+  const offset = whirlpool.data.tickSpacing * _TICK_ARRAY_SIZE();
+
+  const tickArrayIndexes = [
+    tickArrayStartIndex,
+    tickArrayStartIndex + offset,
+    tickArrayStartIndex + offset * 2,
+    tickArrayStartIndex - offset,
+    tickArrayStartIndex - offset * 2,
+  ];
+
+  const tickArrayAddresses = await Promise.all(
+    tickArrayIndexes.map(startIndex => getTickArrayAddress(whirlpool.address, startIndex).then(x => x[0]))
+  );
+
+  const tickArrays = await fetchAllMaybeTickArray(
+    rpc,
+    tickArrayAddresses,
+  );
+
+  return tickArrays;
+}
+
 function getSwapQuote<T extends SwapParams>(
   params: T,
   whirlpool: Whirlpool,
@@ -65,9 +93,8 @@ function getSwapQuote<T extends SwapParams>(
   transferFeeB: TransferFee | undefined,
   tickArrays: Account<TickArray>[],
   specifiedTokenA: boolean,
-  slippageTolerance: number,
+  slippageToleranceBps: number,
 ): SwapQuote<T> {
-  const slippageToleranceBps = Math.floor(slippageTolerance * 10000);
   if ("inputAmount" in params) {
     return swapQuoteByInputToken(
       params.inputAmount,
@@ -107,7 +134,7 @@ export async function swapInstructions<T extends SwapParams>(
   >,
   params: T,
   poolAddress: Address,
-  slippageTolerance: number = DEFAULT_SLIPPAGE_TOLERANCE,
+  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
   signer: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<SwapInstructions<T>> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
@@ -118,36 +145,8 @@ export async function swapInstructions<T extends SwapParams>(
   const specifiedTokenA = params.mint === whirlpool.data.tokenMintA;
   const specifiedInput = "inputAmount" in params;
 
-  const tickArrayStartIndex = getTickArrayStartTickIndex(
-    whirlpool.data.tickCurrentIndex,
-    whirlpool.data.tickSpacing,
-  );
-  const offset = whirlpool.data.tickSpacing * _TICK_ARRAY_SIZE();
+  const tickArrays = await fetchTickArrayOrDefault(rpc, whirlpool);
 
-  const tickArrayAddresses = await Promise.all([
-    getTickArrayAddress(whirlpool.address, tickArrayStartIndex).then(
-      (x) => x[0],
-    ),
-    getTickArrayAddress(whirlpool.address, tickArrayStartIndex + offset).then(
-      (x) => x[0],
-    ),
-    getTickArrayAddress(
-      whirlpool.address,
-      tickArrayStartIndex + offset * 2,
-    ).then((x) => x[0]),
-    getTickArrayAddress(whirlpool.address, tickArrayStartIndex - offset).then(
-      (x) => x[0],
-    ),
-    getTickArrayAddress(
-      whirlpool.address,
-      tickArrayStartIndex - offset * 2,
-    ).then((x) => x[0]),
-  ]);
-
-  const tickArrays = await fetchAllTickArray(
-    rpc,
-    tickArrayAddresses,
-  );
   const oracleAddress = await getOracleAddress(whirlpool.address).then(
     (x) => x[0],
   );
@@ -163,7 +162,7 @@ export async function swapInstructions<T extends SwapParams>(
     transferFeeB,
     tickArrays,
     specifiedTokenA,
-    slippageTolerance,
+    slippageToleranceBps,
   );
   const maxInAmount = "tokenIn" in quote ? quote.tokenIn : quote.tokenMaxIn;
   const tokenAIsInput = specifiedTokenA === specifiedInput;
@@ -206,8 +205,7 @@ export async function swapInstructions<T extends SwapParams>(
     oracle: oracleAddress,
     remainingAccountsInfo: {
       slices: [
-        { accountsType: AccountsType.SupplementalTickArraysOne, length: 32 },
-        { accountsType: AccountsType.SupplementalTickArraysTwo, length: 32 },
+        { accountsType: AccountsType.SupplementalTickArrays, length: 2 },
       ],
     },
   });

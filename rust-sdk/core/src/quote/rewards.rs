@@ -1,12 +1,10 @@
-use core::ops::{Shl, Shr};
-
 use ethnum::U256;
 
 #[cfg(feature = "wasm")]
 use wasm_bindgen::prelude::*;
 
 use crate::{
-    adjust_amount, CollectRewardsQuote, PositionFacade, TickFacade, TransferFee, WhirlpoolFacade,
+    try_adjust_amount, CollectRewardsQuote, PositionFacade, TickFacade, TransferFee, WhirlpoolFacade,
 };
 
 /// Calculate rewards owed for a position
@@ -82,56 +80,45 @@ pub fn collect_rewards_quote(
     }
 
     let reward_growth_inside_1 = reward_growth_1
-        .saturating_sub(reward_growth_below_1)
-        .saturating_sub(reward_growth_above_1);
+        .wrapping_sub(reward_growth_below_1)
+        .wrapping_sub(reward_growth_above_1);
 
     let reward_growth_inside_2 = reward_growth_2
-        .saturating_sub(reward_growth_below_2)
-        .saturating_sub(reward_growth_above_2);
+        .wrapping_sub(reward_growth_below_2)
+        .wrapping_sub(reward_growth_above_2);
 
     let reward_growth_inside_3 = reward_growth_3
-        .saturating_sub(reward_growth_below_3)
-        .saturating_sub(reward_growth_above_3);
+        .wrapping_sub(reward_growth_below_3)
+        .wrapping_sub(reward_growth_above_3);
 
     let reward_growth_delta_1: U256 = <U256>::from(reward_growth_inside_1)
-        .saturating_sub(position.reward_infos[0].growth_inside_checkpoint.into())
-        .saturating_mul(position.liquidity.into())
-        .shl(64);
+        .wrapping_sub(position.reward_infos[0].growth_inside_checkpoint.into())
+        .saturating_mul(position.liquidity.into());
 
     let reward_growth_delta_2: U256 = <U256>::from(reward_growth_inside_2)
-        .saturating_sub(position.reward_infos[1].growth_inside_checkpoint.into())
-        .saturating_mul(position.liquidity.into())
-        .shl(64);
+        .wrapping_sub(position.reward_infos[1].growth_inside_checkpoint.into())
+        .saturating_mul(position.liquidity.into());
 
     let reward_growth_delta_3: U256 = <U256>::from(reward_growth_inside_3)
-        .saturating_sub(position.reward_infos[2].growth_inside_checkpoint.into())
-        .saturating_mul(position.liquidity.into())
-        .shl(64);
+        .wrapping_sub(position.reward_infos[2].growth_inside_checkpoint.into())
+        .saturating_mul(position.liquidity.into());
 
-    let reward_growth_delta_1: u128 = reward_growth_delta_1.try_into().unwrap();
-    let reward_growth_delta_2: u128 = reward_growth_delta_2.try_into().unwrap();
-    let reward_growth_delta_3: u128 = reward_growth_delta_3.try_into().unwrap();
+    let reward_growth_delta_1: u64 = reward_growth_delta_1.try_into().unwrap();
+    let reward_growth_delta_2: u64 = reward_growth_delta_2.try_into().unwrap();
+    let reward_growth_delta_3: u64 = reward_growth_delta_3.try_into().unwrap();
 
-    let amount_owed_1: u128 = position.reward_infos[0].amount_owed.into();
-    let amount_owed_2: u128 = position.reward_infos[1].amount_owed.into();
-    let amount_owed_3: u128 = position.reward_infos[2].amount_owed.into();
+    let withdrawable_reward_1 = position.reward_infos[0].amount_owed + reward_growth_delta_1;
+    let withdrawable_reward_2 = position.reward_infos[1].amount_owed + reward_growth_delta_2;
+    let withdrawable_reward_3 = position.reward_infos[2].amount_owed + reward_growth_delta_3;
 
-    let amount_owed_1_shifted: u128 = amount_owed_1.shl(64);
-    let amount_owed_2_shifted: u128 = amount_owed_2.shl(64);
-    let amount_owed_3_shifted: u128 = amount_owed_3.shl(64);
-
-    let withdrawable_reward_1: u128 = (amount_owed_1_shifted + reward_growth_delta_1).shr(64);
-    let withdrawable_reward_2: u128 = (amount_owed_2_shifted + reward_growth_delta_2).shr(64);
-    let withdrawable_reward_3: u128 = (amount_owed_3_shifted + reward_growth_delta_3).shr(64);
-
-    let reward_owed_1 = adjust_amount(withdrawable_reward_1.into(), transfer_fee_1.into(), false);
-    let reward_owed_2 = adjust_amount(withdrawable_reward_2.into(), transfer_fee_2.into(), false);
-    let reward_owed_3 = adjust_amount(withdrawable_reward_3.into(), transfer_fee_3.into(), false);
+    let reward_owed_1 = try_adjust_amount(withdrawable_reward_1, transfer_fee_1.into(), false).unwrap();
+    let reward_owed_2 = try_adjust_amount(withdrawable_reward_2, transfer_fee_2.into(), false).unwrap();
+    let reward_owed_3 = try_adjust_amount(withdrawable_reward_3, transfer_fee_3.into(), false).unwrap();
 
     CollectRewardsQuote {
-        reward_owed_1: reward_owed_1.into(),
-        reward_owed_2: reward_owed_2.into(),
-        reward_owed_3: reward_owed_3.into(),
+        reward_owed_1,
+        reward_owed_2,
+        reward_owed_3,
     }
 }
 

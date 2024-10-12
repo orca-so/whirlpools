@@ -72,7 +72,7 @@ export async function prepareTokenAccountsInstructions(
       GetMinimumBalanceForRentExemptionApi
   >,
   owner: TransactionSigner,
-  spec: Address[] | Record<Address, bigint>,
+  spec: Address[] | Record<Address, bigint | number>,
 ): Promise<TokenAccountInstructions> {
   const mintAddresses = Array.isArray(spec)
     ? spec
@@ -86,9 +86,6 @@ export async function prepareTokenAccountsInstructions(
           owner: owner.address,
           mint: mint.address,
           tokenProgram: mint.programAddress,
-        },
-        {
-          programAddress: mint.programAddress,
         },
       ).then((x) => x[0]),
     ),

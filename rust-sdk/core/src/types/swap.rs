@@ -12,12 +12,16 @@ use tsify::Tsify;
 #[cfg_attr(feature = "wasm", tsify(into_wasm_abi))]
 
 pub struct ExactInSwapQuote {
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_in: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_est_out: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_min_out: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub total_fee: u64,
 }
@@ -28,12 +32,16 @@ pub struct ExactInSwapQuote {
 #[cfg_attr(feature = "wasm", tsify(into_wasm_abi))]
 
 pub struct ExactOutSwapQuote {
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_out: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_est_in: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_max_in: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub total_fee: u64,
 }

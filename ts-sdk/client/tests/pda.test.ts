@@ -57,7 +57,7 @@ describe("derive program accounts", () => {
     const address = await getPositionBundleAddress(TEST_POSITION_MINT_ADDRESS);
     assert.strictEqual(
       address[0],
-      "2EtH4ZZStW8Ffh2CbbW4baekdtWgPLcBXfYQ6FRmMVsq",
+      "At1QvbnANV6imkdNkfB4h1XsY4jbTzPAmScgjLCnM7jy",
     );
   });
 
@@ -68,7 +68,7 @@ describe("derive program accounts", () => {
     );
     assert.strictEqual(
       address[0],
-      "2EtH4ZZStW8Ffh2CbbW4baekdtWgPLcBXfYQ6FRmMVsq",
+      "9Zj8oWYVQdBCtqMn9Z3YyGo8o7hVXLEUZ5x5no5ykVm6",
     );
   });
 

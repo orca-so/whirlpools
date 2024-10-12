@@ -15,6 +15,7 @@ pub enum AdjustmentType {
     // fee bps, maximum fee
     TransferFee {
         fee_bps: u16,
+        #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
         #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
         max_fee: u64,
     },
@@ -34,6 +35,7 @@ pub enum AdjustmentType {
 #[cfg_attr(feature = "wasm", tsify(from_wasm_abi))]
 pub struct TransferFee {
     pub fee_bps: u16,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub max_fee: u64,
 }

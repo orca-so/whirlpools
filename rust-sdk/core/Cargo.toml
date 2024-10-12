@@ -10,7 +10,7 @@ keywords = ["solana", "crypto", "defi", "dex", "amm"]
 edition = "2021"
 
 [features]
-default = ["floats"]
+default = ["floats", "wasm"]
 wasm = ["dep:wasm-bindgen", "dep:serde-wasm-bindgen", "dep:serde", "dep:serde-big-array", "dep:tsify", "dep:orca_whirlpools_macros"]
 floats = ["dep:libm"]
 

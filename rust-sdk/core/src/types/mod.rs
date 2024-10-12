@@ -6,6 +6,7 @@ mod rewards;
 mod swap;
 mod tick;
 mod token;
+mod u64;
 mod u128;
 
 pub use fees::*;

@@ -13,12 +13,16 @@ use tsify::Tsify;
 
 pub struct DecreaseLiquidityQuote {
     pub liquidity_delta: u128,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_est_a: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_est_b: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_min_a: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_min_b: u64,
 }
@@ -30,12 +34,16 @@ pub struct DecreaseLiquidityQuote {
 
 pub struct IncreaseLiquidityQuote {
     pub liquidity_delta: u128,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_est_a: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_est_b: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_max_a: u64,
+    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
     #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub token_max_b: u64,
 }

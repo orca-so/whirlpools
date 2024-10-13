@@ -1,9 +1,13 @@
-# Splash Pool
+---
+sidebar_label: Splash Pool
+---
+
+# Create Splash Pools
 
 Creating a Splash Pool is the easiest way to launch your token on Orca. You only need to provide the mint addresses of 2 tokens and the initial price. Easy as that!
 
 ## Function overview
-
+**`createSplashPoolInstructions()`**
 - **Inputs**:
 
     - `rpc`: A Solana RPC client used to communicate with the blockchain.
@@ -30,11 +34,10 @@ async function main() {
   const wallet = getWallet();
   await airdropSolIfNeeded(connection, wallet);
 
-  const tokenMintOne = "TOKEN_MINT_ADDRESS_1"; // Replace with actual mint address
-  const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; // Replace with actual mint address
-  const initialPrice = 0.01;  // Example initial price
+  const tokenMintOne = "TOKEN_MINT_ADDRESS_1"; 
+  const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
+  const initialPrice = 0.01;  
 
-  // Generate the instructions to create the Splash Pool
   const poolInstructions = await createSplashPoolInstructions(
     connection,
     tokenMintOne,
@@ -43,7 +46,6 @@ async function main() {
     wallet
   );
 
-  // Log the pool address and instructions
   console.log("Pool Address:", poolInstructions.poolAddress);
   console.log("Initialization Instructions:", poolInstructions.instructions);
   console.log("Initialization Cost (lamports):", poolInstructions.initializationCost);

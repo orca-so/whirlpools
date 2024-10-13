@@ -17,15 +17,19 @@ Whirlpools is an open-sourced concentrated liquidity automated market maker (CLA
 
 ## Introduction to the Solana.
 
-On Solana, all data is stored in what are referred to as account. The way accounts are organized on Solana resembles a key-value store, where each entry in the database is called an account, the key is the account's address, and the value is the data stored in the account.
+On Solana, all data is stored in so called accounts. The way accounts are organized on Solana resembles a key-value store, where each entry in the database is called an account, the key is the account's address, and the value is the data stored in the account.
 
-We send transactions to the network to interact with the accounts. Transactions are a sequence of instructions that are executed atomically on the network. The execution logic for instruction is stored on programs (smart contracts) that run on the network.
+Some accounts only store data, such as a tokenaccount of you favorite token. Other accoutns store programs. For example, there exists a Token Program that is responsible for managing token accounts and transfers. Every time you send a token, you are sending a transaction to the Token Program that will update the balances of the accounts involved.
 
-You can programmatically interact with Solana trough the JS/TS or Rust SDKs.
+The Whirlpools Program is also a program. It can create new data accounts if you instruct it to, and can even set you as the owner of those accounts. Accounts that you can own are Splash Pools, Concentrated Liquidity pools, and liquidity positions. For those accounts you will pay rent. But this is no ordinary rent, you get the entire rent back if you decide to close to account! You only pay for the transaction costs on the Solana network, which, as you may know, are very low. You can also instruct the program to swap tokens against one of the many liquidity pools that holds the tokens you would like to swap.
+
+You interact with the Solana network by sending transactions to the network to interact with the accounts. Transactions are a sequence of instructions that are executed atomically on the network. The execution logic for instructions is stored on the programs (smart contracts) that run on the network.
+
+Interacting with the Solana network and the many programs that already exist on it is not as complicated as you think. There are many SDKs available to do so.
 
 ## Whirlpools SDK
 
-The whirlpools SDK is an open-sourced library that allows developers to interact with the Whirlpools program and is intended to be used in conjuction with the Solana SDK. Simply put, you use the Whirlpools SDK to create instrcutions, and the Solana SDK to send them to the network.
+The whirlpools SDK is an open-sourced library that allows developers to interact with the Whirlpools Program and is intended to be used in conjuction with the Solana SDK. Simply put, you use the Whirlpools SDK to create instructions, and the Solana SDK to send them to the network.
 
 Some of the main features are:
 - Create instructions to create a new pool, open new positions, add or remove liqduidity, and swap tokens.
@@ -34,7 +38,7 @@ Some of the main features are:
 
 ## How to use this documentation
 
-In the next section you will find information about the Whirlpools program and it's architecture.
+In the next section you will find information about the Whirlpools Program and it's architecture.
 
 In the following sections you will find information about the Whirlpools SDK and how to use it to interact with the program.
 

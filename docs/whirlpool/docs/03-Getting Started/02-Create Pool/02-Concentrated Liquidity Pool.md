@@ -1,11 +1,14 @@
-# CLMM Pool
+---
+sidebar_label: CLMM Pool
+---
+
+# Create Concentrated Liquidity Pool
 
 Creating a Concentrated Liquidity Pool requires specific knowledge. Make sure you understand out sections [Price & Ticks](../../02-Whirlpools%20Overview/02-Price%20&%20Ticks.md) and [Understanding TickArrays](../../02-Whirlpools%20Overview/03-Understanding%20Tick%20Arrays.md) very well before proceeding.
 
 ## Function overview
-
+**`())`**
 - **Inputs**:
-
     - `rpc`: A Solana RPC client used to communicate with the blockchain.
     - `tokenMintOne` and `tokenMintTwo`: Addresses of the two token mints that will make up the liquidity pool. Selecting which of the two tokens will be token 1 and token 2 matters for the price you are going to set. In most cases, you select your token as token 1 and select SOL/USDC/USDT as token 2.
     - `tickSpacing`: The spacing between ticks that affects how granularly liquidity can be provided.
@@ -31,12 +34,11 @@ async function main() {
   const wallet = getWallet();
   await airdropSolIfNeeded(connection, wallet);
 
-  const tokenMintOne = "TOKEN_MINT_ADDRESS_1"; // Replace with actual mint address
-  const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; // Replace with actual mint address
-  const tickSpacing = 64;  // Example tick spacing, replace as necessary
-  const initialPrice = 0.01;  // Example initial price
+  const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
+  const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
+  const tickSpacing = 64;
+  const initialPrice = 0.01;
 
-  // Generate the instructions to create the Splash Pool
   const poolInstructions = await createSplashPoolInstructions(
     connection,
     tokenMintOne,

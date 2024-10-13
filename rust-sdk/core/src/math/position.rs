@@ -1,7 +1,7 @@
 use crate::{PositionRatio, PositionStatus, U128};
 
 #[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+use orca_whirlpools_macros::wasm_expose;
 
 use super::{order_tick_indexes, tick_index_to_sqrt_price};
 
@@ -15,7 +15,7 @@ use super::{order_tick_indexes, tick_index_to_sqrt_price};
 ///
 /// # Returns
 /// - A boolean value indicating if the position is in range
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = isPositionInRange, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn is_position_in_range(
     sqrt_price: U128,
     tick_lower_index: i32,
@@ -38,7 +38,7 @@ pub fn is_position_in_range(
 ///
 /// # Returns
 /// - A PositionStatus enum value indicating the status of the position
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = positionStatus, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn position_status(
     current_sqrt_price: U128,
     tick_lower_index: i32,
@@ -69,7 +69,7 @@ pub fn position_status(
 ///
 /// # Returns
 /// - A PositionRatio struct containing the ratio of token_a and token_b
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = positionRatio, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn position_ratio(
     current_sqrt_price: U128,
     tick_lower_index: i32,

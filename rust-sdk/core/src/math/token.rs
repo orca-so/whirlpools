@@ -5,7 +5,7 @@ use crate::{
 
 use ethnum::U256;
 #[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+use orca_whirlpools_macros::wasm_expose;
 
 const BPS_DENOMINATOR: u16 = 10000;
 
@@ -19,7 +19,7 @@ const BPS_DENOMINATOR: u16 = 10000;
 ///
 /// # Returns
 /// - `u64`: The amount delta
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getAmountDeltaA, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn try_get_amount_delta_a(
     current_sqrt_price: U128,
     target_sqrt_price: U128,
@@ -58,7 +58,7 @@ pub fn try_get_amount_delta_a(
 ///
 /// # Returns
 /// - `u64`: The amount delta
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getAmountDeltaB, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn try_get_amount_delta_b(
     current_sqrt_price: U128,
     target_sqrt_price: U128,
@@ -89,7 +89,7 @@ pub fn try_get_amount_delta_b(
 ///
 /// # Returns
 /// - `u128`: The next square root price
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getNextSqrtPriceFromA, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn try_get_next_sqrt_price_from_a(
     current_sqrt_price: U128,
     current_liquidity: U128,
@@ -146,7 +146,7 @@ pub fn try_get_next_sqrt_price_from_a(
 ///
 /// # Returns
 /// - `u128`: The next square root price
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getNextSqrtPriceFromB, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn try_get_next_sqrt_price_from_b(
     current_sqrt_price: U128,
     current_liquidity: U128,
@@ -197,7 +197,7 @@ pub fn try_get_next_sqrt_price_from_b(
 ///
 /// # Returns
 /// - `u128`: The amount after transfer fee
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = adjust_amount, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn try_adjust_amount(
     amount: u64,
     adjust_type: AdjustmentType,
@@ -261,7 +261,7 @@ pub fn try_adjust_amount(
 ///
 /// # Returns
 /// - `u128`: The amount before transfer fee
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = inverseAdjustAmount, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn try_inverse_adjust_amount(
     amount: u64,
     adjust_type: AdjustmentType,

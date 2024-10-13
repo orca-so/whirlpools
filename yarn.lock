@@ -2973,6 +2973,7 @@ __metadata:
     "@kinobi-so/nodes-from-anchor": "npm:^0.22.0"
     "@kinobi-so/renderers-rust": "npm:^0.22.0"
     "@orca-so/whirlpools-program": "npm:*"
+    "@orca-so/whirlpools-rust-core": "npm:*"
   languageName: unknown
   linkType: soft
 
@@ -2980,7 +2981,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-rust-core@workspace:rust-sdk/core"
   dependencies:
-    "@orca-so/whirlpools-rust-client": "npm:*"
     "@orca-so/whirlpools-rust-macros": "npm:*"
   languageName: unknown
   linkType: soft

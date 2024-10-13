@@ -1,10 +1,10 @@
 #![allow(non_snake_case)]
 
 #[cfg(feature = "wasm")]
-use orca_whirlpools_macros::wasm_const;
+use orca_whirlpools_macros::wasm_expose;
 
 /// The denominator of the fee rate value.
-#[cfg_attr(feature = "wasm", wasm_const)]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub const FEE_RATE_DENOMINATOR: u32 = 1_000_000;
 
 // TODO: WASM export (which doesn't work with u128 yet)

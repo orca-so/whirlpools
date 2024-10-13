@@ -1,42 +1,24 @@
 #![allow(non_snake_case)]
 
 #[cfg(feature = "wasm")]
-use serde::{Deserialize, Serialize};
-
-#[cfg(feature = "wasm")]
-use tsify::Tsify;
+use orca_whirlpools_macros::wasm_expose;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize, Tsify))]
-#[cfg_attr(feature = "wasm", serde(rename_all = "camelCase", tag = "type"))]
-#[cfg_attr(feature = "wasm", tsify(from_wasm_abi))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub enum AdjustmentType {
     None,
     // fee bps, maximum fee
-    TransferFee {
-        fee_bps: u16,
-        #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
-        #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
-        max_fee: u64,
-    },
+    TransferFee { fee_bps: u16, max_fee: u64 },
     // fee denominated by 1e6
-    SwapFee {
-        fee_rate: u16,
-    },
+    SwapFee { fee_rate: u16 },
     // slippage bps
-    Slippage {
-        slippage_tolerance_bps: u16,
-    },
+    Slippage { slippage_tolerance_bps: u16 },
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-#[cfg_attr(feature = "wasm", derive(Serialize, Deserialize, Tsify))]
-#[cfg_attr(feature = "wasm", serde(rename_all = "camelCase"))]
-#[cfg_attr(feature = "wasm", tsify(from_wasm_abi))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub struct TransferFee {
     pub fee_bps: u16,
-    #[cfg_attr(feature = "wasm", serde(with = "crate::types::u64"))]
-    #[cfg_attr(feature = "wasm", tsify(type = "bigint"))]
     pub max_fee: u64,
 }
 

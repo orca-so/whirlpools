@@ -6,8 +6,8 @@ mod rewards;
 mod swap;
 mod tick;
 mod token;
-mod u64;
 mod u128;
+mod u64;
 
 pub use fees::*;
 pub use liquidity::*;
@@ -18,3 +18,4 @@ pub use swap::*;
 pub use tick::*;
 pub use token::*;
 pub use u128::*;
+pub use u64::*;

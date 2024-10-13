@@ -1,7 +1,7 @@
 use ethnum::U256;
 
 #[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
     try_adjust_amount, CollectRewardsQuote, PositionFacade, TickFacade, TransferFee,
@@ -23,7 +23,7 @@ use crate::{
 /// # Returns
 /// - `CollectRewardsQuote`: The rewards owed for the 3 reward tokens.
 #[allow(clippy::too_many_arguments)]
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = collectRewardsQuote, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn collect_rewards_quote(
     whirlpool: WhirlpoolFacade,
     position: PositionFacade,

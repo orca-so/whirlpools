@@ -1,7 +1,7 @@
 use core::ops::{Shl, Shr};
 
 #[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+use orca_whirlpools_macros::wasm_expose;
 
 use ethnum::U256;
 
@@ -24,7 +24,7 @@ use crate::{
 ///
 /// # Returns
 /// - A DecreaseLiquidityQuote struct containing the estimated token amounts
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = decreaseLiquidityQuote, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn decrease_liquidity_quote(
     liquidity_delta: U128,
     slippage_tolerance_bps: u16,
@@ -100,7 +100,7 @@ pub fn decrease_liquidity_quote(
 ///
 /// # Returns
 /// - A DecreaseLiquidityQuote struct containing the estimated token amounts
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = decreaseLiquidityQuoteA, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn decrease_liquidity_quote_a(
     token_amount_a: u64,
     slippage_tolerance_bps: u16,
@@ -162,7 +162,7 @@ pub fn decrease_liquidity_quote_a(
 ///
 /// # Returns
 /// - A DecreaseLiquidityQuote struct containing the estimated token amounts
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = decreaseLiquidityQuoteB, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn decrease_liquidity_quote_b(
     token_amount_b: u64,
     slippage_tolerance_bps: u16,
@@ -224,7 +224,7 @@ pub fn decrease_liquidity_quote_b(
 ///
 /// # Returns
 /// - An IncreaseLiquidityQuote struct containing the estimated token amounts
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = increaseLiquidityQuote, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn increase_liquidity_quote(
     liquidity_delta: U128,
     slippage_tolerance_bps: u16,
@@ -300,7 +300,7 @@ pub fn increase_liquidity_quote(
 ///
 /// # Returns
 /// - An IncreaseLiquidityQuote struct containing the estimated token amounts
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = increaseLiquidityQuoteA, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn increase_liquidity_quote_a(
     token_amount_a: u64,
     slippage_tolerance_bps: u16,
@@ -361,7 +361,7 @@ pub fn increase_liquidity_quote_a(
 ///
 /// # Returns
 /// - An IncreaseLiquidityQuote struct containing the estimated token amounts
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = increaseLiquidityQuoteB, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn increase_liquidity_quote_b(
     token_amount_b: u64,
     slippage_tolerance_bps: u16,

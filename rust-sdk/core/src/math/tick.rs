@@ -1,7 +1,7 @@
 use ethnum::U256;
 
 #[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
     TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX,
@@ -21,7 +21,7 @@ const LOG_B_P_ERR_MARGIN_UPPER_X64: i128 = 15793534762490258745i128; // 2^-preci
 ///
 /// # Returns
 /// - A i32 integer representing the first tick index in the tick array
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getTickArrayStartTickIndex, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_tick_array_start_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
     let tick_spacing_i32 = tick_spacing as i32;
     let tick_array_size_i32 = TICK_ARRAY_SIZE as i32;
@@ -37,7 +37,7 @@ pub fn get_tick_array_start_tick_index(tick_index: i32, tick_spacing: u16) -> i3
 ///
 /// # Returns
 /// - `Ok`: A u128 Q32.64 representing the sqrt_price
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = tickIndexToSqrtPrice, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn tick_index_to_sqrt_price(tick_index: i32) -> U128 {
     if tick_index >= 0 {
         get_sqrt_price_positive_tick(tick_index).into()
@@ -54,7 +54,7 @@ pub fn tick_index_to_sqrt_price(tick_index: i32) -> U128 {
 ///
 /// # Returns
 /// - `Ok`: A i32 integer representing the tick integer
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = sqrtPriceToTickIndex, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
     let sqrt_price_x64: u128 = sqrt_price.into();
     // Determine log_b(sqrt_ratio). First by calculating integer portion (msb)
@@ -121,7 +121,7 @@ pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
 ///
 /// # Returns
 /// - A i32 integer representing the previous initializable tick index
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getInitializableTickIndex, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index % tick_spacing_i32;
@@ -141,7 +141,7 @@ pub fn get_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
 ///
 /// # Returns
 /// - A i32 integer representing the previous initializable tick index
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getPrevInitializableTickIndex, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_prev_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index.rem_euclid(tick_spacing_i32);
@@ -160,7 +160,7 @@ pub fn get_prev_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> 
 ///
 /// # Returns
 /// - A i32 integer representing the next initializable tick index
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getNextInitializableTickIndex, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_next_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index.rem_euclid(tick_spacing_i32);
@@ -174,7 +174,7 @@ pub fn get_next_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> 
 ///
 /// # Returns
 /// - A boolean value indicating if the tick is in-bounds
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = isTickIndexInBounds, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 #[allow(clippy::manual_range_contains)]
 pub fn is_tick_index_in_bounds(tick_index: i32) -> bool {
     tick_index <= MAX_TICK_INDEX && tick_index >= MIN_TICK_INDEX
@@ -189,7 +189,7 @@ pub fn is_tick_index_in_bounds(tick_index: i32) -> bool {
 ///
 /// # Returns
 /// - A boolean value indicating if the tick is initializable
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = isTickInitializable, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn is_tick_initializable(tick_index: i32, tick_spacing: u16) -> bool {
     let tick_spacing_i32 = tick_spacing as i32;
     tick_index % tick_spacing_i32 == 0
@@ -204,7 +204,7 @@ pub fn is_tick_initializable(tick_index: i32, tick_spacing: u16) -> bool {
 ///
 /// # Returns
 /// - A i32 integer representing the tick index for the inverse of the price
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = invertTickIndex, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn invert_tick_index(tick_index: i32) -> i32 {
     -tick_index
 }
@@ -218,7 +218,7 @@ pub fn invert_tick_index(tick_index: i32) -> i32 {
 ///
 /// # Returns
 /// - A u128 integer representing the sqrt price for the inverse of the price
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = invertSqrtPrice, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn invert_sqrt_price(sqrt_price: U128) -> U128 {
     let tick_index = sqrt_price_to_tick_index(sqrt_price);
     let inverted_tick_index = invert_tick_index(tick_index);
@@ -232,7 +232,7 @@ pub fn invert_sqrt_price(sqrt_price: U128) -> U128 {
 ///
 /// # Returns
 /// - A TickRange struct containing the lower and upper tick index
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getFullRangeTickIndexes, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_full_range_tick_indexes(tick_spacing: u16) -> TickRange {
     let tick_spacing_i32 = tick_spacing as i32;
     let min_tick_index = (MIN_TICK_INDEX / tick_spacing_i32) * tick_spacing_i32;
@@ -253,7 +253,7 @@ pub fn get_full_range_tick_indexes(tick_spacing: u16) -> TickRange {
 ///
 /// # Returns
 /// - A TickRange struct containing the lower and upper tick index
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = orderTickIndexes, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn order_tick_indexes(tick_index_1: i32, tick_index_2: i32) -> TickRange {
     if tick_index_1 < tick_index_2 {
         TickRange {
@@ -275,7 +275,7 @@ pub fn order_tick_indexes(tick_index_1: i32, tick_index_2: i32) -> TickRange {
 ///
 /// # Returns
 /// - A boolean value indicating if the whirlpool is a full-range only pool
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = isFullRangeOnly, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn is_full_range_only(tick_spacing: u16) -> bool {
     tick_spacing >= FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD
 }
@@ -289,7 +289,7 @@ pub fn is_full_range_only(tick_spacing: u16) -> bool {
 ///
 /// # Returns
 /// - A i32 integer representing the tick index in the tick array
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = getTickIndexInArray, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_tick_index_in_array(
     tick_index: i32,
     tick_array_start_index: i32,

@@ -1,5 +1,5 @@
 #[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+use orca_whirlpools_macros::wasm_expose;
 
 use libm::{floor, pow, sqrt};
 
@@ -20,7 +20,7 @@ const Q64_RESOLUTION: f64 = 18446744073709551616.0;
 ///
 /// # Returns
 /// * `u128` - The sqrt priceX64
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = priceToSqrtPrice, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn price_to_sqrt_price(price: f64, decimals_a: u8, decimals_b: u8) -> U128 {
     let power = pow(10f64, decimals_a as f64 - decimals_b as f64);
 
@@ -38,7 +38,7 @@ pub fn price_to_sqrt_price(price: f64, decimals_a: u8, decimals_b: u8) -> U128 {
 ///
 /// # Returns
 /// * `f64` - The decimal price
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = sqrtPriceToPrice, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn sqrt_price_to_price(sqrt_price: U128, decimals_a: u8, decimals_b: u8) -> f64 {
     let power = pow(10f64, decimals_a as f64 - decimals_b as f64);
     let sqrt_price: u128 = sqrt_price.into();
@@ -57,7 +57,7 @@ pub fn sqrt_price_to_price(sqrt_price: U128, decimals_a: u8, decimals_b: u8) -> 
 ///
 /// # Returns
 /// * `f64` - The inverted price
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = invertPrice, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn invert_price(price: f64, decimals_a: u8, decimals_b: u8) -> f64 {
     let tick_index = price_to_tick_index(price, decimals_a, decimals_b);
     let inverted_tick_index = invert_tick_index(tick_index);
@@ -75,7 +75,7 @@ pub fn invert_price(price: f64, decimals_a: u8, decimals_b: u8) -> f64 {
 ///
 /// # Returns
 /// * `f64` - The decimal price
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = tickIndexToPrice, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn tick_index_to_price(tick_index: i32, decimals_a: u8, decimals_b: u8) -> f64 {
     let sqrt_price = tick_index_to_sqrt_price(tick_index);
     sqrt_price_to_price(sqrt_price, decimals_a, decimals_b)
@@ -92,7 +92,7 @@ pub fn tick_index_to_price(tick_index: i32, decimals_a: u8, decimals_b: u8) -> f
 ///
 /// # Returns
 /// * `i32` - The tick index
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = priceToTickIndex, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn price_to_tick_index(price: f64, decimals_a: u8, decimals_b: u8) -> i32 {
     let sqrt_price = price_to_sqrt_price(price, decimals_a, decimals_b);
     sqrt_price_to_tick_index(sqrt_price)

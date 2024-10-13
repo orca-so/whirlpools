@@ -2,7 +2,7 @@ use core::ops::Shr;
 
 use ethnum::U256;
 #[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
     try_adjust_amount, CollectFeesQuote, PositionFacade, TickFacade, TransferFee, WhirlpoolFacade,
@@ -21,7 +21,7 @@ use crate::{
 /// # Returns
 /// - `CollectFeesQuote`: The fees owed for token A and token B
 #[allow(clippy::too_many_arguments)]
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = collectFeesQuote, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn collect_fees_quote(
     whirlpool: WhirlpoolFacade,
     position: PositionFacade,

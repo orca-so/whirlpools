@@ -1,5 +1,5 @@
 #[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+use orca_whirlpools_macros::wasm_expose;
 
 use ethnum::U256;
 
@@ -14,7 +14,7 @@ const POSITION_BUNDLE_BYTES: usize = POSITION_BUNDLE_SIZE / 8;
 ///
 /// # Returns
 /// * `u32` - The first unoccupied position (None if full)
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = firstUnoccupiedPositionInBundle, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn first_unoccupied_position_in_bundle(bitmap: &[u8]) -> Option<u32> {
     let value = bitmap_to_u256(bitmap);
     for i in 0..POSITION_BUNDLE_SIZE {
@@ -33,7 +33,7 @@ pub fn first_unoccupied_position_in_bundle(bitmap: &[u8]) -> Option<u32> {
 ///
 /// # Returns
 /// * `bool` - Whether the bundle is full
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = isPositionBundleFull, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn is_position_bundle_full(bitmap: &[u8]) -> bool {
     let value = bitmap_to_u256(bitmap);
     value == U256::MAX
@@ -46,7 +46,7 @@ pub fn is_position_bundle_full(bitmap: &[u8]) -> bool {
 ///
 /// # Returns
 /// * `bool` - Whether the bundle is empty
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = isPositionBundleEmpty, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn is_position_bundle_empty(bitmap: &[u8]) -> bool {
     let value = bitmap_to_u256(bitmap);
     value == U256::MIN

@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[cfg(feature = "wasm")]
-use wasm_bindgen::prelude::*;
+use orca_whirlpools_macros::wasm_expose;
 
 /// Computes the exact input or output amount for a swap transaction.
 ///
@@ -29,7 +29,7 @@ use wasm_bindgen::prelude::*;
 /// # Returns
 /// The exact input or output amount for the swap transaction.
 #[allow(clippy::too_many_arguments)]
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = swapQuoteByInputToken, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn swap_quote_by_input_token(
     token_in: u64,
     specified_token_a: bool,
@@ -127,7 +127,7 @@ pub fn swap_quote_by_input_token(
 /// # Returns
 /// The exact input or output amount for the swap transaction.
 #[allow(clippy::too_many_arguments)]
-#[cfg_attr(feature = "wasm", wasm_bindgen(js_name = swapQuoteByOutputToken, skip_jsdoc))]
+#[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn swap_quote_by_output_token(
     token_out: u64,
     specified_token_a: bool,

@@ -86,13 +86,6 @@ mod tests {
     }
 
     #[test]
-    #[should_panic(expected = "No unoccupied position in bundle")]
-    fn test_first_unoccupied_position_in_bundle_panic() {
-        let bundle: [u8; POSITION_BUNDLE_BYTES] = [255; POSITION_BUNDLE_BYTES];
-        first_unoccupied_position_in_bundle(&bundle);
-    }
-
-    #[test]
     fn test_is_position_bundle_full() {
         let bundle: [u8; POSITION_BUNDLE_BYTES] = [0; POSITION_BUNDLE_BYTES];
         assert!(!is_position_bundle_full(&bundle));

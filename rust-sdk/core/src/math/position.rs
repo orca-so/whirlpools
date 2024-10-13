@@ -115,11 +115,11 @@ mod test {
 
     #[test]
     fn test_is_position_in_range() {
-        assert!(!is_position_in_range(85, 90, 100));
-        assert!(is_position_in_range(90, 90, 100));
-        assert!(is_position_in_range(95, 90, 100));
-        assert!(!is_position_in_range(100, 90, 100));
-        assert!(!is_position_in_range(105, 90, 100));
+        assert!(is_position_in_range(18446744073709551616, -5, 5));
+        assert!(!is_position_in_range(18446744073709551616, 0, 5));
+        assert!(!is_position_in_range(18446744073709551616, -5, 0));
+        assert!(!is_position_in_range(18446744073709551616, -5, -1));
+        assert!(!is_position_in_range(18446744073709551616, 1, 5));
     }
 
     #[test]
@@ -160,36 +160,20 @@ mod test {
 
     #[test]
     fn test_position_ratio() {
-        let ratio_1 = position_ratio(18354745142194483560, -100, 100);
+        let ratio_1 = position_ratio(18354745142194483561, -100, 100);
         assert_eq!(ratio_1.ratio_a, 10000);
         assert_eq!(ratio_1.ratio_b, 0);
 
-        let ratio_2 = position_ratio(18354745142194483561, -100, 100);
-        assert_eq!(ratio_2.ratio_a, 7500);
-        assert_eq!(ratio_2.ratio_b, 2500);
+        let ratio_2 = position_ratio(18446744073709551616, -100, 100);
+        assert_eq!(ratio_2.ratio_a, 5012);
+        assert_eq!(ratio_2.ratio_b, 4988);
 
-        let ratio_3 = position_ratio(18354745142194483562, -100, 100);
-        assert_eq!(ratio_3.ratio_a, 5001);
-        assert_eq!(ratio_3.ratio_b, 4999);
+        let ratio_3 = position_ratio(18539204128674405812, -100, 100);
+        assert_eq!(ratio_3.ratio_a, 0);
+        assert_eq!(ratio_3.ratio_b, 10000);
 
-        let ratio_4 = position_ratio(18446744073709551616, -100, 100);
-        assert_eq!(ratio_4.ratio_a, 5000);
-        assert_eq!(ratio_4.ratio_b, 5000);
-
-        let ratio_5 = position_ratio(18539204128674405811, -100, 100);
-        assert_eq!(ratio_5.ratio_a, 0);
-        assert_eq!(ratio_5.ratio_b, 10000);
-
-        let ratio_6 = position_ratio(18539204128674405812, -100, 100);
-        assert_eq!(ratio_6.ratio_a, 0);
-        assert_eq!(ratio_6.ratio_b, 0);
-
-        let ratio_7 = position_ratio(18539204128674405813, -100, 100);
-        assert_eq!(ratio_7.ratio_a, 0);
-        assert_eq!(ratio_7.ratio_b, 0);
-
-        let ratio_8 = position_ratio(18446744073709551616, 100, 100);
-        assert_eq!(ratio_8.ratio_a, 5000);
-        assert_eq!(ratio_8.ratio_b, 5000);
+        let ratio_4 = position_ratio(18446744073709551616, 0, 0);
+        assert_eq!(ratio_4.ratio_a, 0);
+        assert_eq!(ratio_4.ratio_b, 0);
     }
 }

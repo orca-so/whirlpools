@@ -90,6 +90,8 @@ pub fn collect_fees_quote(
 
 #[cfg(all(test, not(feature = "wasm")))]
 mod tests {
+    use crate::tick_index_to_sqrt_price;
+
     use super::*;
 
     fn test_whirlpool(tick_index: i32) -> WhirlpoolFacade {

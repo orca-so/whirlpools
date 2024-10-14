@@ -19,8 +19,8 @@ import type {
 import {
   _TICK_ARRAY_SIZE,
   getTickArrayStartTickIndex,
-  swapQuoteByInputToken,
-  swapQuoteByOutputToken,
+  swapQuoteByInputToken5,
+  swapQuoteByOutputToken5,
 } from "@orca-so/whirlpools-core";
 import type { Whirlpool } from "@orca-so/whirlpools-client";
 import {
@@ -141,7 +141,7 @@ function getSwapQuote<T extends SwapParams>(
   slippageToleranceBps: number,
 ): SwapQuote<T> {
   if ("inputAmount" in params) {
-    return swapQuoteByInputToken(
+    return swapQuoteByInputToken5(
       params.inputAmount,
       specifiedTokenA,
       slippageToleranceBps,
@@ -156,7 +156,7 @@ function getSwapQuote<T extends SwapParams>(
     ) as SwapQuote<T>;
   }
 
-  return swapQuoteByOutputToken(
+  return swapQuoteByOutputToken5(
     params.outputAmount,
     specifiedTokenA,
     slippageToleranceBps,

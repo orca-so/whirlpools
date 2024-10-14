@@ -23,7 +23,6 @@ const Q64_RESOLUTION: f64 = 18446744073709551616.0;
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn price_to_sqrt_price(price: f64, decimals_a: u8, decimals_b: u8) -> U128 {
     let power = pow(10f64, decimals_a as f64 - decimals_b as f64);
-
     (floor(sqrt(price / power) * Q64_RESOLUTION) as u128).into()
 }
 
@@ -100,65 +99,68 @@ pub fn price_to_tick_index(price: f64, decimals_a: u8, decimals_b: u8) -> i32 {
 
 #[cfg(all(test, not(feature = "wasm")))]
 mod tests {
+    use approx::assert_relative_eq;
+
     use super::*;
-    use approx::relative_eq;
 
     #[test]
     fn test_price_to_sqrt_price() {
-        assert_eq!(price_to_sqrt_price(100.0, 8, 6), 18446744073709551616);
+        assert_eq!(price_to_sqrt_price(0.00999999, 8, 6), 184467348503352096);
         assert_eq!(price_to_sqrt_price(100.0, 6, 6), 184467440737095516160);
-        assert_eq!(price_to_sqrt_price(100.0, 6, 8), 1844674407370955161600);
+        assert_eq!(price_to_sqrt_price(100.0111, 6, 8), 1844776783959692673024);
     }
 
     #[test]
     fn test_sqrt_price_to_price() {
-        assert_eq!(sqrt_price_to_price(18446744073709551616, 8, 6), 100.0);
-        assert_eq!(sqrt_price_to_price(184467440737095516160, 6, 6), 100.0);
-        assert_eq!(sqrt_price_to_price(1844674407370955161600, 6, 8), 100.0);
+        assert_relative_eq!(sqrt_price_to_price(184467348503352096, 8, 6), 0.00999999);
+        assert_relative_eq!(sqrt_price_to_price(184467440737095516160, 6, 6), 100.0);
+        assert_relative_eq!(sqrt_price_to_price(1844776783959692673024, 6, 8), 100.0111);
     }
 
     #[test]
     fn test_invert_price() {
-        relative_eq!(invert_price(100.0, 8, 6), 0.000001);
-        relative_eq!(invert_price(100.0, 6, 6), 0.0);
-        relative_eq!(invert_price(100.0, 6, 8), -1000.0);
+        assert_relative_eq!(invert_price(0.00999999, 8, 6), 1000099.11863, epsilon = 1e-5);
+        assert_relative_eq!(invert_price(100.0, 6, 6), 0.01, epsilon = 1e-5);
+        assert_relative_eq!(invert_price(100.0111, 6, 8), 9.99e-7, epsilon = 1e-5);
     }
 
     #[test]
     fn test_tick_index_to_price() {
-        relative_eq!(tick_index_to_price(-1, 8, 6), 0.00999999);
-        relative_eq!(tick_index_to_price(0, 6, 6), 1.0);
-        relative_eq!(tick_index_to_price(1, 6, 8), 100.011);
+        assert_relative_eq!(tick_index_to_price(-92111, 8, 6), 0.009998, epsilon = 1e-5);
+        assert_relative_eq!(tick_index_to_price(0, 6, 6), 1.0);
+        assert_relative_eq!(tick_index_to_price(92108, 6, 8), 99.999912, epsilon = 1e-5);
     }
 
     #[test]
     fn test_price_to_tick_index() {
-        assert_eq!(price_to_tick_index(0.00999999, 8, 6), -1);
+        assert_eq!(price_to_tick_index(0.009998, 8, 6), -92111);
         assert_eq!(price_to_tick_index(1.0, 6, 6), 0);
-        assert_eq!(price_to_tick_index(100.011, 6, 8), 1);
+        assert_eq!(price_to_tick_index(99.999912, 6, 8), 92108);
     }
 
     #[test]
-    fn test_sol_usdc_example() {
+    fn test_sol_usdc() {
         let sqrt_price = 6918418495991757039u128; // 140.661 USDC/SOL
         let decimals_a = 9u8; // SOL
         let decimals_b = 6u8; // USDC
         let price = sqrt_price_to_price(sqrt_price, decimals_a, decimals_b);
+        assert_eq!(price, 140.66116595692344);
         let sqrt_price_back = price_to_sqrt_price(price, decimals_a, decimals_b);
-        let diff = (sqrt_price_back as i128) - (sqrt_price as i128); // sqrt_price <= u96::MAX, so i128 is safe
+        let diff = (sqrt_price_back as i128) - (sqrt_price as i128);
         let diff_rate = (diff as f64) / (sqrt_price as f64) * 100.0;
-        relative_eq!(diff_rate, 0.0);
+        assert_relative_eq!(diff_rate, 0.0, epsilon = 1e-10);
     }
 
     #[test]
-    fn test_bonk_usdc_example() {
+    fn test_bonk_usdc() {
         let sqrt_price = 265989152599097743u128; // 0.00002 USDC/BONK
         let decimals_a = 5u8; // BONK
         let decimals_b = 6u8; // USDC
         let price = sqrt_price_to_price(sqrt_price, decimals_a, decimals_b);
+        assert_eq!(price, 2.0791623715496336e-5);
         let sqrt_price_back = price_to_sqrt_price(price, decimals_a, decimals_b);
-        let diff = (sqrt_price_back as i128) - (sqrt_price as i128); // sqrt_price <= u96::MAX, so i128 is safe
+        let diff = (sqrt_price_back as i128) - (sqrt_price as i128);
         let diff_rate = (diff as f64) / (sqrt_price as f64) * 100.0;
-        relative_eq!(diff_rate, 0.0);
+        assert_relative_eq!(diff_rate, 0.0, epsilon = 1e-10);
     }
 }

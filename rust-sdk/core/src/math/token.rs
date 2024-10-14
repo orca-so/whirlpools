@@ -248,7 +248,7 @@ pub fn try_adjust_amount(
     result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
-/// Calculate the amount before transfer fee
+/// Calculate the amount before fee
 /// The original transfer amount may not always be unique due to rounding.
 /// In this case, the smaller amount will be chosen.
 /// e.g. Both transfer amount 10, 11 with 10% fee rate results in net

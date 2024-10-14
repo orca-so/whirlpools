@@ -1,14 +1,10 @@
-use core::ops::{Shl, Shr};
-
 #[cfg(feature = "wasm")]
 use orca_whirlpools_macros::wasm_expose;
 
 use ethnum::U256;
 
 use crate::{
-    order_tick_indexes, position_status, sqrt_price_to_tick_index, tick_index_to_sqrt_price,
-    try_adjust_amount, try_inverse_adjust_amount, AdjustmentType, DecreaseLiquidityQuote,
-    IncreaseLiquidityQuote, PositionStatus, TransferFee, U128,
+    order_tick_indexes, position_status, sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_adjust_amount, try_inverse_adjust_amount, AdjustmentType, DecreaseLiquidityQuote, ErrorCode, IncreaseLiquidityQuote, PositionStatus, TransferFee, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, U128
 };
 
 /// Calculate the quote for decreasing liquidity
@@ -33,10 +29,10 @@ pub fn decrease_liquidity_quote(
     tick_upper_index: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
-) -> DecreaseLiquidityQuote {
+) -> Result<DecreaseLiquidityQuote, ErrorCode> {
     let liquidity_delta: u128 = liquidity_delta.into();
     if liquidity_delta == 0 {
-        return DecreaseLiquidityQuote::default();
+        return Ok(DecreaseLiquidityQuote::default());
     }
 
     let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
@@ -44,47 +40,41 @@ pub fn decrease_liquidity_quote(
     let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
     let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
 
-    let (token_est_before_fees_a, token_est_before_fees_b) = get_token_estimates_from_liquidity(
+    let (token_est_before_fees_a, token_est_before_fees_b) = try_get_token_estimates_from_liquidity(
         liquidity_delta,
         current_sqrt_price,
         sqrt_price_lower,
         sqrt_price_upper,
-    );
+    )?;
 
-    let token_min_before_fees_a = try_adjust_amount(
+    let token_min_before_slippage_a = try_adjust_amount(
         token_est_before_fees_a,
-        AdjustmentType::Slippage {
-            slippage_tolerance_bps,
-        },
+        transfer_fee_a.into(),
         false,
-    )
-    .unwrap();
-    let token_min_before_fees_b = try_adjust_amount(
+    )?;
+    let token_min_before_slippage_b = try_adjust_amount(
         token_est_before_fees_b,
-        AdjustmentType::Slippage {
-            slippage_tolerance_bps,
-        },
+        transfer_fee_b.into(),
         false,
-    )
-    .unwrap();
+    )?;
 
     let token_est_a =
-        try_adjust_amount(token_est_before_fees_a, transfer_fee_a.into(), false).unwrap();
+        try_adjust_amount(token_est_before_fees_a, transfer_fee_a.into(), false)?;
     let token_est_b =
-        try_adjust_amount(token_est_before_fees_b, transfer_fee_b.into(), false).unwrap();
+        try_adjust_amount(token_est_before_fees_b, transfer_fee_b.into(), false)?;
 
     let token_min_a =
-        try_adjust_amount(token_min_before_fees_a, transfer_fee_a.into(), false).unwrap();
+        try_adjust_amount(token_min_before_slippage_a, AdjustmentType::Slippage { slippage_tolerance_bps }, false)?;
     let token_min_b =
-        try_adjust_amount(token_min_before_fees_b, transfer_fee_b.into(), false).unwrap();
+        try_adjust_amount(token_min_before_slippage_b, AdjustmentType::Slippage { slippage_tolerance_bps }, false)?;
 
-    DecreaseLiquidityQuote {
+    Ok(DecreaseLiquidityQuote {
         liquidity_delta,
         token_est_a,
         token_est_b,
         token_min_a,
         token_min_b,
-    }
+    })
 }
 
 /// Calculate the quote for decreasing liquidity given a token a amount
@@ -109,13 +99,13 @@ pub fn decrease_liquidity_quote_a(
     tick_upper_index: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
-) -> DecreaseLiquidityQuote {
+) -> Result<DecreaseLiquidityQuote, ErrorCode> {
     let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
     let token_delta_a =
-        try_inverse_adjust_amount(token_amount_a, transfer_fee_a.into(), false).unwrap();
+        try_inverse_adjust_amount(token_amount_a, transfer_fee_a.into(), false)?;
 
     if token_delta_a == 0 {
-        return DecreaseLiquidityQuote::default();
+        return Ok(DecreaseLiquidityQuote::default());
     }
 
     let current_sqrt_price: u128 = current_sqrt_price.into();
@@ -130,11 +120,11 @@ pub fn decrease_liquidity_quote_a(
 
     let liquidity: u128 = match position_status {
         PositionStatus::PriceBelowRange => {
-            get_liquidity_from_a(token_delta_a, sqrt_price_lower, sqrt_price_upper)
+            try_get_liquidity_from_a(token_delta_a, sqrt_price_lower, sqrt_price_upper)?
         }
         PositionStatus::Invalid | PositionStatus::PriceAboveRange => 0,
         PositionStatus::PriceInRange => {
-            get_liquidity_from_a(token_delta_a, current_sqrt_price, sqrt_price_upper)
+            try_get_liquidity_from_a(token_delta_a, current_sqrt_price, sqrt_price_upper)?
         }
     };
 
@@ -171,13 +161,13 @@ pub fn decrease_liquidity_quote_b(
     tick_upper_index: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
-) -> DecreaseLiquidityQuote {
+) -> Result<DecreaseLiquidityQuote, ErrorCode> {
     let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
     let token_delta_b =
-        try_inverse_adjust_amount(token_amount_b, transfer_fee_b.into(), false).unwrap();
+        try_inverse_adjust_amount(token_amount_b, transfer_fee_b.into(), false)?;
 
     if token_delta_b == 0 {
-        return DecreaseLiquidityQuote::default();
+        return Ok(DecreaseLiquidityQuote::default());
     }
 
     let current_sqrt_price: u128 = current_sqrt_price.into();
@@ -193,10 +183,10 @@ pub fn decrease_liquidity_quote_b(
     let liquidity: u128 = match position_status {
         PositionStatus::Invalid | PositionStatus::PriceBelowRange => 0,
         PositionStatus::PriceAboveRange => {
-            get_liquidity_from_b(token_delta_b, sqrt_price_lower, sqrt_price_upper)
+            try_get_liquidity_from_b(token_delta_b, sqrt_price_lower, sqrt_price_upper)?
         }
         PositionStatus::PriceInRange => {
-            get_liquidity_from_b(token_delta_b, sqrt_price_lower, current_sqrt_price)
+            try_get_liquidity_from_b(token_delta_b, sqrt_price_lower, current_sqrt_price)?
         }
     };
 
@@ -233,10 +223,10 @@ pub fn increase_liquidity_quote(
     tick_upper_index: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
-) -> IncreaseLiquidityQuote {
+) -> Result<IncreaseLiquidityQuote, ErrorCode> {
     let liquidity_delta: u128 = liquidity_delta.into();
     if liquidity_delta == 0 {
-        return IncreaseLiquidityQuote::default();
+        return Ok(IncreaseLiquidityQuote::default());
     }
 
     let current_sqrt_price: u128 = current_sqrt_price.into();
@@ -244,47 +234,41 @@ pub fn increase_liquidity_quote(
     let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
     let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
 
-    let (token_est_before_fees_a, token_est_before_fees_b) = get_token_estimates_from_liquidity(
+    let (token_est_before_fees_a, token_est_before_fees_b) = try_get_token_estimates_from_liquidity(
         liquidity_delta,
         current_sqrt_price,
         sqrt_price_lower,
         sqrt_price_upper,
-    );
+    )?;
 
-    let token_max_before_fees_a = try_adjust_amount(
+    let token_max_before_slippage_a = try_inverse_adjust_amount(
         token_est_before_fees_a,
-        AdjustmentType::Slippage {
-            slippage_tolerance_bps,
-        },
-        true,
-    )
-    .unwrap();
-    let token_max_before_fees_b = try_adjust_amount(
+        transfer_fee_a.into(),
+        false,
+    )?;
+    let token_max_before_slippage_b = try_inverse_adjust_amount(
         token_est_before_fees_b,
-        AdjustmentType::Slippage {
-            slippage_tolerance_bps,
-        },
-        true,
-    )
-    .unwrap();
+        transfer_fee_b.into(),
+        false,
+    )?;
 
     let token_est_a =
-        try_inverse_adjust_amount(token_est_before_fees_a, transfer_fee_a.into(), false).unwrap();
+        try_inverse_adjust_amount(token_est_before_fees_a, transfer_fee_a.into(), false)?;
     let token_est_b =
-        try_inverse_adjust_amount(token_est_before_fees_b, transfer_fee_b.into(), false).unwrap();
+        try_inverse_adjust_amount(token_est_before_fees_b, transfer_fee_b.into(), false)?;
 
     let token_max_a =
-        try_inverse_adjust_amount(token_max_before_fees_a, transfer_fee_a.into(), false).unwrap();
+        try_adjust_amount(token_max_before_slippage_a, AdjustmentType::Slippage { slippage_tolerance_bps }, true)?;
     let token_max_b =
-        try_inverse_adjust_amount(token_max_before_fees_b, transfer_fee_b.into(), false).unwrap();
+    try_adjust_amount(token_max_before_slippage_b, AdjustmentType::Slippage { slippage_tolerance_bps }, true)?;
 
-    IncreaseLiquidityQuote {
+    Ok(IncreaseLiquidityQuote {
         liquidity_delta,
         token_est_a,
         token_est_b,
         token_max_a,
         token_max_b,
-    }
+    })
 }
 
 /// Calculate the quote for increasing liquidity given a token a amount
@@ -309,12 +293,12 @@ pub fn increase_liquidity_quote_a(
     tick_upper_index: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
-) -> IncreaseLiquidityQuote {
+) -> Result<IncreaseLiquidityQuote, ErrorCode> {
     let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
-    let token_delta_a = try_adjust_amount(token_amount_a, transfer_fee_a.into(), false).unwrap();
+    let token_delta_a = try_adjust_amount(token_amount_a, transfer_fee_a.into(), false)?;
 
     if token_delta_a == 0 {
-        return IncreaseLiquidityQuote::default();
+        return Ok(IncreaseLiquidityQuote::default());
     }
 
     let current_sqrt_price: u128 = current_sqrt_price.into();
@@ -329,11 +313,11 @@ pub fn increase_liquidity_quote_a(
 
     let liquidity: u128 = match position_status {
         PositionStatus::PriceBelowRange => {
-            get_liquidity_from_a(token_delta_a, sqrt_price_lower, sqrt_price_upper)
+            try_get_liquidity_from_a(token_delta_a, sqrt_price_lower, sqrt_price_upper)?
         }
         PositionStatus::Invalid | PositionStatus::PriceAboveRange => 0,
         PositionStatus::PriceInRange => {
-            get_liquidity_from_a(token_delta_a, current_sqrt_price, sqrt_price_upper)
+            try_get_liquidity_from_a(token_delta_a, current_sqrt_price, sqrt_price_upper)?
         }
     };
 
@@ -370,12 +354,12 @@ pub fn increase_liquidity_quote_b(
     tick_upper_index: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
-) -> IncreaseLiquidityQuote {
+) -> Result<IncreaseLiquidityQuote, ErrorCode> {
     let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
-    let token_delta_b = try_adjust_amount(token_amount_b, transfer_fee_b.into(), false).unwrap();
+    let token_delta_b = try_adjust_amount(token_amount_b, transfer_fee_b.into(), false)?;
 
     if token_delta_b == 0 {
-        return IncreaseLiquidityQuote::default();
+        return Ok(IncreaseLiquidityQuote::default());
     }
 
     let current_sqrt_price: u128 = current_sqrt_price.into();
@@ -391,10 +375,10 @@ pub fn increase_liquidity_quote_b(
     let liquidity: u128 = match position_status {
         PositionStatus::Invalid | PositionStatus::PriceBelowRange => 0,
         PositionStatus::PriceAboveRange => {
-            get_liquidity_from_b(token_delta_b, sqrt_price_lower, sqrt_price_upper)
+            try_get_liquidity_from_b(token_delta_b, sqrt_price_lower, sqrt_price_upper)?
         }
         PositionStatus::PriceInRange => {
-            get_liquidity_from_b(token_delta_b, sqrt_price_lower, current_sqrt_price)
+            try_get_liquidity_from_b(token_delta_b, sqrt_price_lower, current_sqrt_price)?
         }
     };
 
@@ -411,77 +395,78 @@ pub fn increase_liquidity_quote_b(
 
 // Private functions
 
-fn get_liquidity_from_a(
+fn try_get_liquidity_from_a(
     token_delta_a: u64,
     sqrt_price_lower: u128,
     sqrt_price_upper: u128,
-) -> u128 {
+) -> Result<u128, ErrorCode> {
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
     let result: U256 = <U256>::from(token_delta_a)
         .wrapping_mul(sqrt_price_lower.into())
         .wrapping_mul(sqrt_price_upper.into())
         .wrapping_div(sqrt_price_diff.into())
-        .shr(64);
-    result.try_into().unwrap()
+        .wrapping_shr(64);
+    result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
-fn get_token_a_from_liquidity(
+fn try_get_token_a_from_liquidity(
     liquidity_delta: u128,
     sqrt_price_lower: u128,
     sqrt_price_upper: u128,
     round_up: bool,
-) -> u64 {
+) -> Result<u64, ErrorCode> {
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
     let numerator: U256 = <U256>::from(liquidity_delta)
         .saturating_mul(sqrt_price_diff.into())
-        .shl(64);
+        .checked_shl(64)
+        .ok_or(ARITHMETIC_OVERFLOW)?;
     let denominator = sqrt_price_upper.saturating_mul(sqrt_price_lower);
     let quotient = numerator / denominator;
     let remainder = numerator % denominator;
     if round_up && remainder != 0 {
-        (quotient + 1).try_into().unwrap()
+        (quotient + 1).try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
     } else {
-        quotient.try_into().unwrap()
+        quotient.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
     }
 }
 
-fn get_liquidity_from_b(
+fn try_get_liquidity_from_b(
     token_delta_b: u64,
     sqrt_price_lower: u128,
     sqrt_price_upper: u128,
-) -> u128 {
-    let numerator: U256 = <U256>::from(token_delta_b).shl(64);
+) -> Result<u128, ErrorCode> {
+    let numerator: U256 = <U256>::from(token_delta_b).checked_shl(64).ok_or(ARITHMETIC_OVERFLOW)?;
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
     numerator
         .saturating_div(sqrt_price_diff.into())
         .try_into()
-        .unwrap()
+        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
-fn get_token_b_from_liquidity(
+fn try_get_token_b_from_liquidity(
     liquidity_delta: u128,
     sqrt_price_lower: u128,
     sqrt_price_upper: u128,
     round_up: bool,
-) -> u64 {
+) -> Result<u64, ErrorCode> {
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
     let p: U256 = <U256>::from(liquidity_delta).saturating_mul(sqrt_price_diff.into());
-    let result: U256 = p.shr(64);
+    let result: U256 = p.wrapping_shr(64);
     if round_up && p & <U256>::from(u64::MAX) > 0 {
-        (result + 1).try_into().unwrap()
+        (result + 1).try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
     } else {
-        result.try_into().unwrap()
+        result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
     }
 }
 
-fn get_token_estimates_from_liquidity(
+fn try_get_token_estimates_from_liquidity(
     liquidity_delta: u128,
     current_sqrt_price: u128,
     sqrt_price_lower: u128,
     sqrt_price_upper: u128,
-) -> (u64, u64) {
+) -> Result<(u64, u64), ErrorCode> {
     if liquidity_delta == 0 {
-        return (0, 0);
+        return Ok((0, 0));
     }
 
     let tick_lower_index = sqrt_price_to_tick_index(sqrt_price_lower.into());
@@ -494,39 +479,39 @@ fn get_token_estimates_from_liquidity(
 
     match position_status {
         PositionStatus::PriceBelowRange => {
-            let token_a = get_token_a_from_liquidity(
+            let token_a = try_get_token_a_from_liquidity(
                 liquidity_delta,
                 sqrt_price_lower,
                 sqrt_price_upper,
                 true,
-            );
-            (token_a, 0)
+            )?;
+            Ok((token_a, 0))
         }
         PositionStatus::PriceInRange => {
-            let token_a = get_token_a_from_liquidity(
+            let token_a = try_get_token_a_from_liquidity(
                 liquidity_delta,
                 sqrt_price_lower,
                 current_sqrt_price,
                 false,
-            );
-            let token_b = get_token_b_from_liquidity(
+            )?;
+            let token_b = try_get_token_b_from_liquidity(
                 liquidity_delta,
                 current_sqrt_price,
                 sqrt_price_upper,
                 false,
-            );
-            (token_a, token_b)
+            )?;
+            Ok((token_a, token_b))
         }
         PositionStatus::PriceAboveRange => {
-            let token_b = get_token_b_from_liquidity(
+            let token_b = try_get_token_b_from_liquidity(
                 liquidity_delta,
                 sqrt_price_lower,
                 sqrt_price_upper,
                 true,
-            );
-            (0, token_b)
+            )?;
+            Ok((0, token_b))
         }
-        PositionStatus::Invalid => (0, 0),
+        PositionStatus::Invalid => Ok((0, 0)),
     }
 }
 
@@ -538,7 +523,7 @@ mod tests {
     fn test_decrease_liquidity_quote() {
         // Below range
         let result =
-            decrease_liquidity_quote(1000000, 100, 18354745142194483561, -10, 10, None, None);
+            decrease_liquidity_quote(1000000, 100, 18354745142194483561, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 1000);
         assert_eq!(result.token_est_b, 0);
@@ -547,7 +532,7 @@ mod tests {
 
         // in range
         let result =
-            decrease_liquidity_quote(1000000, 100, 18446744073709551616, -10, 10, None, None);
+            decrease_liquidity_quote(1000000, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 500);
@@ -556,7 +541,7 @@ mod tests {
 
         // Above range
         let result =
-            decrease_liquidity_quote(1000000, 100, 18539204128674405812, -10, 10, None, None);
+            decrease_liquidity_quote(1000000, 100, 18539204128674405812, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 1000);
@@ -564,7 +549,7 @@ mod tests {
         assert_eq!(result.token_min_b, 990);
 
         // zero liquidity
-        let result = decrease_liquidity_quote(0, 100, 18446744073709551616, -10, 10, None, None);
+        let result = decrease_liquidity_quote(0, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -576,7 +561,7 @@ mod tests {
     fn test_decrease_liquidity_quote_a() {
         // Below range
         let result =
-            decrease_liquidity_quote_a(1000, 100, 18354745142194483561, -10, 10, None, None);
+            decrease_liquidity_quote_a(1000, 100, 18354745142194483561, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000049);
         assert_eq!(result.token_est_a, 1000);
         assert_eq!(result.token_est_b, 0);
@@ -585,7 +570,7 @@ mod tests {
 
         // in range
         let result =
-            decrease_liquidity_quote_a(500, 100, 18446744073709551616, -10, 10, None, None);
+            decrease_liquidity_quote_a(500, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
         assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 500);
@@ -594,7 +579,7 @@ mod tests {
 
         // Above range
         let result =
-            decrease_liquidity_quote_a(1000, 100, 18539204128674405812, -10, 10, None, None);
+            decrease_liquidity_quote_a(1000, 100, 18539204128674405812, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -602,7 +587,7 @@ mod tests {
         assert_eq!(result.token_min_b, 0);
 
         // zero liquidity
-        let result = decrease_liquidity_quote_a(0, 100, 18446744073709551616, -10, 10, None, None);
+        let result = decrease_liquidity_quote_a(0, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -614,7 +599,7 @@ mod tests {
     fn test_decrease_liquidity_quote_b() {
         // Below range
         let result =
-            decrease_liquidity_quote_b(1000, 100, 18354745142194483561, -10, 10, None, None);
+            decrease_liquidity_quote_b(1000, 100, 18354745142194483561, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -623,7 +608,7 @@ mod tests {
 
         // in range
         let result =
-            decrease_liquidity_quote_b(500, 100, 18446744073709551616, -10, 10, None, None);
+            decrease_liquidity_quote_b(500, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
         assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 500);
@@ -632,7 +617,7 @@ mod tests {
 
         // Above range
         let result =
-            decrease_liquidity_quote_b(1000, 100, 18539204128674405812, -10, 10, None, None);
+            decrease_liquidity_quote_b(1000, 100, 18539204128674405812, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000049);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 1000);
@@ -640,7 +625,7 @@ mod tests {
         assert_eq!(result.token_min_b, 990);
 
         // zero liquidity
-        let result = decrease_liquidity_quote_b(0, 100, 18446744073709551616, -10, 10, None, None);
+        let result = decrease_liquidity_quote_b(0, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -652,7 +637,7 @@ mod tests {
     fn test_increase_liquidity_quote() {
         // Below range
         let result =
-            increase_liquidity_quote(1000000, 100, 18354745142194483561, -10, 10, None, None);
+            increase_liquidity_quote(1000000, 100, 18354745142194483561, -10, 10, None, None).unwrap()  ;
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 1000);
         assert_eq!(result.token_est_b, 0);
@@ -661,7 +646,7 @@ mod tests {
 
         // in range
         let result =
-            increase_liquidity_quote(1000000, 100, 18446744073709551616, -10, 10, None, None);
+            increase_liquidity_quote(1000000, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 500);
@@ -670,7 +655,7 @@ mod tests {
 
         // Above range
         let result =
-            increase_liquidity_quote(1000000, 100, 18539204128674405812, -10, 10, None, None);
+            increase_liquidity_quote(1000000, 100, 18539204128674405812, -10, 10, None, None).unwrap()  ;
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 1000);
@@ -678,7 +663,7 @@ mod tests {
         assert_eq!(result.token_max_b, 1010);
 
         // zero liquidity
-        let result = increase_liquidity_quote(0, 100, 18446744073709551616, -10, 10, None, None);
+        let result = increase_liquidity_quote(0, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -690,7 +675,7 @@ mod tests {
     fn test_increase_liquidity_quote_a() {
         // Below range
         let result =
-            increase_liquidity_quote_a(1000, 100, 18354745142194483561, -10, 10, None, None);
+            increase_liquidity_quote_a(1000, 100, 18354745142194483561, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000049);
         assert_eq!(result.token_est_a, 1000);
         assert_eq!(result.token_est_b, 0);
@@ -699,7 +684,7 @@ mod tests {
 
         // in range
         let result =
-            increase_liquidity_quote_a(500, 100, 18446744073709551616, -10, 10, None, None);
+            increase_liquidity_quote_a(500, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
         assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 500);
@@ -708,7 +693,7 @@ mod tests {
 
         // Above range
         let result =
-            increase_liquidity_quote_a(1000, 100, 18539204128674405812, -10, 10, None, None);
+            increase_liquidity_quote_a(1000, 100, 18539204128674405812, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -716,7 +701,7 @@ mod tests {
         assert_eq!(result.token_max_b, 0);
 
         // zero liquidity
-        let result = increase_liquidity_quote_a(0, 100, 18446744073709551616, -10, 10, None, None);
+        let result = increase_liquidity_quote_a(0, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -728,7 +713,7 @@ mod tests {
     fn test_increase_liquidity_quote_b() {
         // Below range
         let result =
-            increase_liquidity_quote_b(1000, 100, 18354745142194483561, -10, 10, None, None);
+            increase_liquidity_quote_b(1000, 100, 18354745142194483561, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -737,7 +722,7 @@ mod tests {
 
         // in range
         let result =
-            increase_liquidity_quote_b(500, 100, 18446744073709551616, -10, 10, None, None);
+            increase_liquidity_quote_b(500, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
         assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 500);
@@ -746,7 +731,7 @@ mod tests {
 
         // Above range
         let result =
-            increase_liquidity_quote_b(1000, 100, 18539204128674405812, -10, 10, None, None);
+            increase_liquidity_quote_b(1000, 100, 18539204128674405812, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 1000049);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 1000);
@@ -754,7 +739,7 @@ mod tests {
         assert_eq!(result.token_max_b, 1010);
 
         // zero liquidity
-        let result = increase_liquidity_quote_b(0, 100, 18446744073709551616, -10, 10, None, None);
+        let result = increase_liquidity_quote_b(0, 100, 18446744073709551616, -10, 10, None, None).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -773,7 +758,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 800);
         assert_eq!(result.token_est_b, 0);
@@ -789,7 +774,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap()  ;
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 400);
         assert_eq!(result.token_est_b, 450);
@@ -805,7 +790,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 900);
@@ -821,7 +806,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -840,11 +825,11 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 1250062);
         assert_eq!(result.token_est_a, 1000);
         assert_eq!(result.token_est_b, 0);
-        assert_eq!(result.token_min_a, 989);
+        assert_eq!(result.token_min_a, 990);
         assert_eq!(result.token_min_b, 0);
 
         // in range
@@ -856,11 +841,11 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 1250375);
         assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 562);
-        assert_eq!(result.token_min_a, 494);
+        assert_eq!(result.token_min_a, 495);
         assert_eq!(result.token_min_b, 556);
 
         // Above range
@@ -872,7 +857,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -888,7 +873,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -907,7 +892,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -923,11 +908,11 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 1112333);
         assert_eq!(result.token_est_a, 444);
         assert_eq!(result.token_est_b, 500);
-        assert_eq!(result.token_min_a, 440);
+        assert_eq!(result.token_min_a, 439);
         assert_eq!(result.token_min_b, 495);
 
         // Above range
@@ -939,7 +924,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 1112055);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 1000);
@@ -955,7 +940,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -974,7 +959,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 1250);
         assert_eq!(result.token_est_b, 0);
@@ -990,7 +975,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 625);
         assert_eq!(result.token_est_b, 556);
@@ -1006,12 +991,12 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 1112);
         assert_eq!(result.token_max_a, 0);
-        assert_eq!(result.token_max_b, 1123);
+        assert_eq!(result.token_max_b, 1124);
 
         // zero liquidity
         let result = increase_liquidity_quote(
@@ -1022,7 +1007,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -1041,7 +1026,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 800039);
         assert_eq!(result.token_est_a, 1000);
         assert_eq!(result.token_est_b, 0);
@@ -1057,12 +1042,12 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 800240);
         assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 445);
         assert_eq!(result.token_max_a, 505);
-        assert_eq!(result.token_max_b, 449);
+        assert_eq!(result.token_max_b, 450);
 
         // Above range
         let result = increase_liquidity_quote_a(
@@ -1073,7 +1058,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -1089,7 +1074,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -1108,7 +1093,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);
@@ -1124,12 +1109,12 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 900270);
         assert_eq!(result.token_est_a, 563);
         assert_eq!(result.token_est_b, 500);
         assert_eq!(result.token_max_a, 569);
-        assert_eq!(result.token_max_b, 506);
+        assert_eq!(result.token_max_b, 505);
 
         // Above range
         let result = increase_liquidity_quote_b(
@@ -1140,7 +1125,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 900044);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 1000);
@@ -1156,7 +1141,7 @@ mod tests {
             10,
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(1000)),
-        );
+        ).unwrap();
         assert_eq!(result.liquidity_delta, 0);
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 0);

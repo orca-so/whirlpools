@@ -10,8 +10,8 @@ import {
   collectRewardsQuote,
   decreaseLiquidityQuote,
   increaseLiquidityQuote,
-  swapQuoteByInputToken,
-  swapQuoteByOutputToken,
+  swapQuoteByInputToken5,
+  swapQuoteByOutputToken5,
 } from "../dist/nodejs/orca_whirlpools_core_js_bindings";
 import assert from "assert";
 
@@ -94,7 +94,7 @@ function testPosition(): PositionFacade {
 
 describe("WASM bundle smoke test", () => {
   it.skip("SwapIn", async () => {
-    const result = swapQuoteByInputToken(
+    const result = swapQuoteByInputToken5(
       1000n,
       false,
       1000,
@@ -108,11 +108,11 @@ describe("WASM bundle smoke test", () => {
     assert.strictEqual(result.tokenIn, 1000n);
     assert.strictEqual(result.tokenEstOut, 872n);
     assert.strictEqual(result.tokenMinOut, 784n);
-    assert.strictEqual(result.totalFee, 68n);
+    assert.strictEqual(result.tradeFee, 68n);
   });
 
   it.skip("SwapOut", async () => {
-    const result = swapQuoteByOutputToken(
+    const result = swapQuoteByOutputToken5(
       1000n,
       true,
       1000,
@@ -126,7 +126,7 @@ describe("WASM bundle smoke test", () => {
     assert.strictEqual(result.tokenOut, 1000n);
     assert.strictEqual(result.tokenEstIn, 1141n);
     assert.strictEqual(result.tokenMaxIn, 1256n);
-    assert.strictEqual(result.totalFee, 76n);
+    assert.strictEqual(result.tradeFee, 76n);
   });
 
   it("IncreaseLiquidity", async () => {

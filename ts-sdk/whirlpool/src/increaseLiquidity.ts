@@ -44,6 +44,7 @@ import {
   DEFAULT_ADDRESS,
   DEFAULT_FUNDER,
   DEFAULT_SLIPPAGE_TOLERANCE_BPS,
+  SPLASH_POOL_TICK_SPACING,
 } from "./config";
 import {
   ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
@@ -421,26 +422,6 @@ export async function openFullRangePositionInstructions(
   );
 }
 
-export async function openSplashPoolPositionInstructions(
-  rpc: Rpc<
-    GetAccountInfoApi &
-      GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi
-  >,
-  poolAddress: Address,
-  param: IncreaseLiquidityQuoteParam,
-  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
-  funder: TransactionPartialSigner = DEFAULT_FUNDER,
-): Promise<IncreaseLiquidityInstructions> {
-  return openFullRangePositionInstructions(
-    rpc,
-    poolAddress,
-    param,
-    slippageToleranceBps,
-    funder,
-  );
-}
-
 export async function openPositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
@@ -455,6 +436,7 @@ export async function openPositionInstructions(
   funder: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
+  assert(whirlpool.data.tickSpacing !== SPLASH_POOL_TICK_SPACING, "Splash pools only support full range positions");
   const [mintA, mintB] = await fetchAllMint(rpc, [
     whirlpool.data.tokenMintA,
     whirlpool.data.tokenMintB,

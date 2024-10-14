@@ -8,6 +8,7 @@ import {
   fetchAllMaybeWhirlpool,
   fetchAllFeeTierWithFilter,
   feeTierWhirlpoolsConfigFilter,
+  fetchWhirlpool,
 } from "@orca-so/whirlpools-client";
 import type {
   Rpc,
@@ -41,7 +42,7 @@ export async function fetchSplashPool(
   tokenMintOne: Address,
   tokenMintTwo: Address,
 ): Promise<PoolInfo> {
-  return fetchWhirlpool(
+  return fetchConcentratedLiquidityPool(
     rpc,
     tokenMintOne,
     tokenMintTwo,
@@ -49,7 +50,7 @@ export async function fetchSplashPool(
   );
 }
 
-export async function fetchWhirlpool(
+export async function fetchConcentratedLiquidityPool(
   rpc: Rpc<GetAccountInfoApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,

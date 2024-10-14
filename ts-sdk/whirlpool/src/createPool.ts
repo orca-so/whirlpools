@@ -33,12 +33,38 @@ import {
 import { fetchAllMint, getTokenSize } from "@solana-program/token";
 import assert from "assert";
 
+/**
+ * Represents the instructions and metadata for creating a pool.
+ *
+ * @property {IInstruction[]} instructions - The list of instructions needed to create the pool.
+ * @property {LamportsUnsafeBeyond2Pow53Minus1} estInitializationCost - The estimated rent exemption cost for initializing the pool.
+ * @property {Address} poolAddress - The address of the newly created pool.
+ */
 type CreatePoolInstructions = {
   instructions: IInstruction[];
   estInitializationCost: LamportsUnsafeBeyond2Pow53Minus1;
   poolAddress: Address;
 };
 
+/**
+ * Creates the necessary instructions to initialize a Splash Pool on Orca Whirlpools.
+ *
+ * @param {Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - A Solana RPC client for communicating with the blockchain.
+ * @param {Address} tokenMintOne - The first token mint address to include in the pool.
+ * @param {Address} tokenMintTwo - The second token mint address to include in the pool.
+ * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
+ * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account that will fund the initialization process.
+ * 
+ * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
+ *
+ * @example
+ * const { poolAddress, instructions, estInitializationCost } = await createSplashPoolInstructions(
+ *   connection, tokenMintOne, tokenMintTwo, initialPrice, wallet
+ * );
+ * console.log("Pool Address:", poolAddress);
+ * console.log("Initialization Instructions:", instructions);
+ * console.log("Rent (lamports):", estInitializationCost);
+ */
 export function createSplashPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
   tokenMintOne: Address,
@@ -56,6 +82,26 @@ export function createSplashPoolInstructions(
   );
 }
 
+/**
+ * Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM) on Orca Whirlpools.
+ *
+ * @param {Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - A Solana RPC client for communicating with the blockchain.
+ * @param {Address} tokenMintOne - The first token mint address to include in the pool.
+ * @param {Address} tokenMintTwo - The second token mint address to include in the pool.
+ * @param {number} tickSpacing - The spacing between price ticks for the pool.
+ * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
+ * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account that will fund the initialization process.
+ * 
+ * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
+ *
+ * @example
+ * const { poolAddress, instructions, estInitializationCost } = await createConcentratedLiquidityPoolInstructions(
+ *   connection, tokenMintOne, tokenMintTwo, tickSpacing, initialPrice, wallet
+ * );
+ * console.log("Pool Address:", poolAddress);
+ * console.log("Initialization Instructions:", instructions);
+ * console.log("Rent (lamports):", estInitializationCost);
+ */
 export async function createConcentratedLiquidityPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
   tokenMintOne: Address,

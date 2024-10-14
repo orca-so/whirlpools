@@ -62,6 +62,14 @@ import assert from "assert";
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
 
+/**
+ * Parameters for decreasing liquidity in a position.
+ *
+ * You can specify one of the following:
+ * - `liquidity`: Specify the amount of liquidity to remove.
+ * - `tokenA`: Specify the amount of token A to remove.
+ * - `tokenB`: Specify the amount of token B to remove.
+ */
 type DecreaseLiquidityQuoteParam =
   | {
       liquidity: bigint;
@@ -73,6 +81,12 @@ type DecreaseLiquidityQuoteParam =
       tokenB: bigint;
     };
 
+/**
+ * Represents the instructions and quote for decreasing liquidity in a position.
+ *
+ * @property {DecreaseLiquidityQuote} quote - The quote details for decreasing liquidity.
+ * @property {IInstruction[]} instructions - The list of instructions required to decrease liquidity.
+ */
 type DecreaseLiquidityInstructions = {
   quote: DecreaseLiquidityQuote;
   instructions: IInstruction[];
@@ -119,6 +133,28 @@ function getDecreaseLiquidityQuote(
   }
 }
 
+/**
+ * Generates instructions to decrease liquidity from an existing position in an Orca Whirlpool.
+ *
+ * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - A Solana RPC client for fetching necessary accounts and pool data.
+ * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position from which liquidity will be removed.
+ * @param {DecreaseLiquidityQuoteParam} param - Defines the liquidity removal method (liquidity, tokenA, or tokenB).
+ * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
+ * @param {TransactionPartialSigner} [authority=DEFAULT_FUNDER] - The account authorizing the liquidity removal.
+ *
+ * @returns {Promise<DecreaseLiquidityInstructions>} A promise resolving to an object containing the decrease liquidity quote and instructions.
+ *
+ * @example
+ * const { quote, instructions } = await decreaseLiquidityInstructions(
+ *   connection,
+ *   positionMintAddress,
+ *   { liquidity: 500_000n },
+ *   0.01,
+ *   wallet
+ * );
+ * console.log("Liquidity Decrease Quote:", quote);
+ * console.log("Liquidity Decrease Instructions:", instructions);
+ */
 export async function decreaseLiquidityInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
@@ -219,11 +255,44 @@ export async function decreaseLiquidityInstructions(
   return { quote, instructions };
 }
 
+/**
+ * Represents the instructions and quotes for closing a liquidity position in an Orca Whirlpool.
+ *
+ * Extends `DecreaseLiquidityInstructions` and adds:
+ * @property {CollectFeesQuote} feesQuote - The fees collected from the position.
+ * @property {CollectRewardsQuote} rewardsQuote - The rewards collected from the position.
+ */
 type ClosePositionInstructions = DecreaseLiquidityInstructions & {
   feesQuote: CollectFeesQuote;
   rewardsQuote: CollectRewardsQuote;
 };
 
+
+/**
+ * Generates instructions to close a liquidity position in an Orca Whirlpool. This includes collecting all fees,
+ * rewards, removing any remaining liquidity, and closing the position.
+ *
+ * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - A Solana RPC client for fetching accounts and pool data.
+ * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position to be closed.
+ * @param {DecreaseLiquidityQuoteParam} param - The parameters for removing liquidity (liquidity, tokenA, or tokenB).
+ * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
+ * @param {TransactionPartialSigner} [authority=DEFAULT_FUNDER] - The account authorizing the transaction.
+ *
+ * @returns {Promise<ClosePositionInstructions>} A promise resolving to an object containing instructions, fees quote, rewards quote, and the liquidity quote for the closed position.
+ *
+ * @example
+ * const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
+ *   connection,
+ *   positionMintAddress,
+ *   { liquidity: 500_000n },
+ *   0.01,
+ *   wallet
+ * );
+ * console.log("Fees Collected:", feesQuote);
+ * console.log("Rewards Collected:", rewardsQuote);
+ * console.log("Liquidity Removed:", quote);
+ * console.log("Close Position Instructions:", instructions);
+ */
 export async function closePositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &

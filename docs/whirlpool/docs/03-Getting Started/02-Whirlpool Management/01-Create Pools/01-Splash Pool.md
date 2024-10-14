@@ -55,4 +55,4 @@ console.log("Rent (lamports):", initializationCost);
 
 After creating a Splash Pool, the pool is still empty and requires liquidity for people to trade against.
 
-To do this, you’ll need to open a position and deposit both tokens into the pool at a ratio that is equal to the current price. Luckily, our SDK takes care of that in one simple step: [Open a Position](../03-Provide%20Liquidity/01-Open%20Position/01-Splash%20Pool.md). By providing liquidity, you enable trades between the two tokens and start earning fees.
+To do this, you’ll need to open a position and deposit both tokens into the pool at a ratio that is equal to the current price. Luckily, our SDK takes care of that in one simple step: [Open a Position](../../03-Position%20Management/01-Open%20Position/01-Splash%20Pool.md). By providing liquidity, you enable trades between the two tokens and start earning fees.

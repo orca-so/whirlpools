@@ -1,8 +1,8 @@
 ---
-sidebar_label: Positions
+sidebar_label: Fetch Positions
 ---
 
-# Fetching Positions in Orca Whirlpools
+# Fetching Positions
 
 The `fetchPositions()` function is used to retrieve all positions that a given wallet owns in Orca Whirlpools. It gathers token accounts owned by the wallet, checks which ones correspond to positions, and decodes them to provide detailed information about the liquidity positions.
 

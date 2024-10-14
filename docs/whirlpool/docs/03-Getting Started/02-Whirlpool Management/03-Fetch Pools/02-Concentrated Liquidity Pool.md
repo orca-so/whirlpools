@@ -1,5 +1,5 @@
 ---
-sidebar_label: CLMM Pools
+sidebar_label: Concentrated Liquidity Pool
 ---
 
 # Fetching a Concentrated Liquidity Pool

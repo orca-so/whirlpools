@@ -1,5 +1,5 @@
 ---
-sidebar_label: Splash Pools
+sidebar_label: Splash Pool
 ---
 
 # Fetching a Splash Pool

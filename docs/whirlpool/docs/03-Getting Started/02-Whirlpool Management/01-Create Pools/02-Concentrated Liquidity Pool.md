@@ -4,7 +4,7 @@ sidebar_label: Concentrated Liquidity Pool
 
 # Create Concentrated Liquidity Pool
 
-Creating a Concentrated Liquidity Pool requires specific knowledge. Make sure you understand our sections [Price & Ticks](../../02-Whirlpools%20Overview/02-Price%20&%20Ticks.md) and [Understanding TickArrays](../../02-Whirlpools%20Overview/03-Understanding%20Tick%20Arrays.md) very well before proceeding.
+Creating a Concentrated Liquidity Pool requires specific knowledge. Make sure you understand our sections [Price & Ticks](../../../02-Whirlpools%20Overview/02-Price%20&%20Ticks.md) and [Understanding TickArrays](../../../02-Whirlpools%20Overview/03-Understanding%20Tick%20Arrays.md) very well before proceeding.
 
 ## Function overview
 **`createConcentratedLiquidityPool()`**
@@ -56,4 +56,4 @@ console.log("Rent (lamports):", initializationCost);
 
 After creating a Concentrated Liquidity pool, the pool is still empty and requires liquidity for people to trade against.
 
-To do this, you’ll need to open a position in a specific price range and deposit both tokens into the pool at a ratio that is equal to the current price.  Luckily, our SDK takes care of that in one simple step: [Open a Position](../03-Provide%20Liquidity/01-Open%20Position/02-CLMM%20Pool.md). By providing liquidity, you enable trades between the two tokens and start earning fees.
+To do this, you’ll need to open a position in a specific price range and deposit both tokens into the pool at a ratio that is equal to the current price.  Luckily, our SDK takes care of that in one simple step: [Open a Position](../../03-Position%20Management/01-Open%20Position/02-Concentrated%20Liquidity%20Pool.md). By providing liquidity, you enable trades between the two tokens and start earning fees.

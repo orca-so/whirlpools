@@ -2,10 +2,12 @@
 sidebar_label: Pools by Token Pairs
 ---
 
+# Fetching Pools by Token Pairs
+
 The fetchPools function is designed to fetch all possible liquidity pools between two token mints in Orca Whirlpools. Each pool may have different tick spacings, and this function retrieves both initialized and uninitialized pool data.
 
 ## Function overview
-**`fetchPools ()`**
+**`fetchPools()`**
 - **Inputs**
     - `rpc`: A Solana RPC client used to interact with the blockchain and fetch pool data.
     - `tokenMintOne`: The first token mint address in the pool.

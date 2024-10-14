@@ -10,8 +10,8 @@ Before you start, ensure you have Node.js installed on your machine. Download it
 Create a new project directory:
 
 ```bash
-mkdir whirlpool-env-setup
-cd whirlpool-env-setup
+mkdir whirlpools
+cd whirlpools
 ```
 
 Initialize a new Node.js project:
@@ -23,7 +23,7 @@ npm init -y
 Install the necessary packages:
 
 ```bash
-npm install typescript ts-node @orca-so/whirlpools-client @solana/web3.js fs
+npm install typescript @orca-so/whirlpools @solana/web3.js
 ```
 
 Initialize the project as a TypeScript project
@@ -32,103 +32,32 @@ Initialize the project as a TypeScript project
 npx tsc --init
 ```
 
-## 3. Wallet Creation and Management
+## 3. Wallet Creation
 
-To simplify wallet management, we’ll generate a wallet programmatically and store its private key in a .env file for future use.
+You can create a wallet using `generateKeyPair()` from the Solana SDK.
 
-First, create a `wallet.ts` file in your current directory and add the following code.
+```tsx
+import { generateKeyPair } from '@solana/web3.js';
 
-```tsx title="wallet.ts"
-import { Keypair } from '@solana/web3.js';
-import * as fs from 'fs';
-import * as dotenv from 'dotenv';
-import * as path from 'path';
-
-dotenv.config();
-
-const ENV_FILE_PATH = path.resolve(__dirname, './.env');
-
-function createWallet(): Keypair {
-  const keypair = Keypair.generate();
-  const secretKey = `[${keypair.secretKey.toString()}]`;
-  fs.appendFileSync(ENV_FILE_PATH, `\nPRIVATE_KEY=${secretKey}\n`);
-  console.log(`New wallet created with address: ${keypair.publicKey.toBase5()}`);
-  return keypair;
-}
-
-export function getWallet(): Keypair {
-  const privateKeyString = process.env.PRIVATE_KEY;
-
-  if (privateKeyString) {
-    const privateKeyArray = JSON.parse(privateKeyString) as number[];
-    const wallet = Keypair.fromSecretKey(Uint8Array.from(privateKeyArray));
-    console.log(`Using wallet: ${wallet.publicKey.toBase58()}`);
-    return wallet;
-  } else {
-    return createWallet();
-  }
-}
+const wallet = await generateKeyPair();
 ```
-
-### Explanation
-
-1. `createWallet()`: Uses `Keypair.generate()` to create a new wallet and appends the private key to the .env file under PRIVATE_KEY.
-
-2. `getWallet()`: Loads the private key from the `.env` file if it exists, otherwise it creates a new wallet using createWallet().
 
 > ⚠️ Important: Never share your private key publicly.
 
 ## 4. Airdrop SOL to Your Wallet
 
-Once your wallet is created, you will need some SOL to pay for transactions. We will create a function that checks if you have some SOL on **Devnet** and airdrops if you don't.
+Once your wallet is created, you will need some SOL to pay for transactions.
 
-```ts title="airdrop.ts"
-import { Connection, Keypair, LAMPORTS_PER_SOL } from '@solana/web3.js';
+```tsx
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-export async function airdropSolIfNeeded(rpc: Connection, wallet: Keypair) {
-  const rpcUrl = rpc.rpcEndpoint;
-
-  if (!rpcUrl.includes('devnet')) {
-    console.log('Airdrop is only available on Devnet. Current RPC URL:', rpcUrl);
-    return;
-  }
-
-  const balance = await rpc.getBalance(wallet.publicKey);
-
-  const solBalance = balance / LAMPORTS_PER_SOL;
-
-  if (solBalance < 0.1) {
-    console.log(`Balance is ${solBalance} SOL. Requesting airdrop of 1 SOL...`);
-    const airdropSignature = await rpc.requestAirdrop(wallet.publicKey, 1 * LAMPORTS_PER_SOL);
-    await rpc.confirmTransaction(airdropSignature);
-    const solscanUrl = `https://solscan.io/tx/${airdropSignature}?cluster=devnet`;
-    console.log(`Airdrop of 1 SOL successful! View transaction: ${solscanUrl}`);
-  } else {
-    console.log(`Current balance: ${solBalance} SOL`);
-  }
-}
-
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 ```
-
-## 5. Putting it all together
-
-Here’s a basic flow of how you can use the `getWallet()` function to load your wallet, check its balance, and request an airdrop if needed (only on **Devnet**):
-
-```tsx title="main.ts"
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
-import { airdropSolIfNeeded } from './airdrop';
-
-async function main() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
-  await airdropSolIfNeeded(connection, wallet);
-}
-
-main();
-```
-
-Execute this code by running `ts-node main.ts` in your terminal.
 
 ## Next steps
 

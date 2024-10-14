@@ -32,34 +32,31 @@ The function returns a promise resolving to an object containing:
 ## Basic Usage
 This code example demonstrates how to close a position in a Whirlpool, which includes withdrawing liquidity, collecting any earned fees, and receiving any rewards.
 
-```tsx title="closePosition.ts"
-import { closePositionInstructions } from '@orca-so/whirlpools-sdk';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
-import { airdropSolIfNeeded } from './airdrop';
+```tsx
+import { closePositionInstructions } from '@orca-so/whirlpools';
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function closePosition() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
-  await airdropSolIfNeeded(connection, wallet);
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const positionMint = "POSITION_MINT";
-  
-  const param = { liquidity: 500_000n };
+const positionMint = "POSITION_MINT";
 
-  const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
-    connection,
-    positionMint,
-    param,
-    0.01, 
-    wallet 
-  );
-  
-  console.log("Fees Quote (Fees Collected):", feesQuote);
-  console.log("Rewards Quote (Rewards Collected):", rewardsQuote);
-  console.log("Close Position Instructions:", instructions);
-  console.log("Liquidity Quote (Liquidity Removed):", quote);
-}
+const param = { liquidity: 500_000n };
 
-closePosition();
+const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
+  devnetRpc,
+  positionMint,
+  param,
+  0.01, 
+  wallet 
+);
+
+console.log("Fees Quote (Fees Collected):", feesQuote);
+console.log("Rewards Quote (Rewards Collected):", rewardsQuote);
+console.log("Close Position Instructions:", instructions);
+console.log("Liquidity Quote (Liquidity Removed):", quote);
 ```

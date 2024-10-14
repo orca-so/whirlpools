@@ -33,33 +33,30 @@ In this example, you will open a position in a Splash Pool by specifying how man
 
 If you want to know for sure you can request a quote first by using the `getIncreaseLiquidityQuote()` function.
 
-```tsx title="main.ts"
-import { openSplashPoolPositionInstructions } from '@orca-so/whirlpools-sdk';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
-import { airdropSolIfNeeded } from './airdrop';
+```tsx
+import { openSplashPoolPositionInstructions } from '@orca-so/whirlpools';
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function main() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
-  await airdropSolIfNeeded(connection, wallet);
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const poolAddress = "POOL_ADDRESS";
-  
-  const param = { tokenA: 1_000_000 }; 
-  
-  const { quote, instructions, initializationCost } = await openSplashPoolPositionInstructions(
-    connection,
-    poolAddress,
-    param, 
-    0.01,
-    wallet
-  );
+const poolAddress = "POOL_ADDRESS";
 
-  console.log("Position Quote:", quote);
-  console.log("Position Instructions:", instructions);
-  console.log("Rent (lamports):", initializationCost);
-}
+const param = { tokenA: 1_000_000 }; 
 
-main();
+const { quote, instructions, initializationCost } = await openSplashPoolPositionInstructions(
+  devnetRpc,
+  poolAddress,
+  param, 
+  0.01,
+  wallet
+);
+
+console.log("Position Quote:", quote);
+console.log("Position Instructions:", instructions);
+console.log("Rent (lamports):", initializationCost);
 ```

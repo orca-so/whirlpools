@@ -1,5 +1,5 @@
 ---
-sidebar_label: CLMM Pool
+sidebar_label: Concentrated Liquidity Pool
 ---
 
 # Open a Position in Concentrated Liquidity Pools
@@ -41,37 +41,34 @@ If you want to know for sure you can check the first `quote` object that is bein
 
 If you want to provide liquidity over the entire price range of the liquidity pool, you can use `openFullRangePositionInstructions()`, which does not require the `lowerPrice` and `upperPrice` parameter.
 
-```tsx title="main.ts"
-import { openPositionInstructions } from '@orca-so/whirlpools-sdk';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
-import { airdropSolIfNeeded } from './airdrop';
+```tsx
+import { openPositionInstructions } from '@orca-so/whirlpools';
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function main() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
-  await airdropSolIfNeeded(connection, wallet);
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const poolAddress = "POOL_ADDRESS";
-  
-  const param = { tokenA: 1_000_000 };
-  const lowerPrice = 0.00005
-  const upperPrice = 0.00015
-  
-  const { quote, instructions, initializationCost } = await openPositionInstructions(
-    connection,
-    poolAddress,
-    param,
-    lowerPrice,
-    upperPrice, 
-    0.01,
-    wallet
-  );
+const poolAddress = "POOL_ADDRESS";
 
-  console.log("Position Quote:", quote);
-  console.log("Position Instructions:", instructions);
-  console.log("Rent (lamports):", initializationCost);
-}
+const param = { tokenA: 1_000_000 };
+const lowerPrice = 0.00005
+const upperPrice = 0.00015
 
-main();
+const { quote, instructions, initializationCost } = await openPositionInstructions(
+  devnetRpc,
+  poolAddress,
+  param,
+  lowerPrice,
+  upperPrice, 
+  0.01,
+  wallet
+);
+
+console.log("Position Quote:", quote);
+console.log("Position Instructions:", instructions);
+console.log("Rent (lamports):", initializationCost);
 ```

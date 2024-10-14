@@ -21,24 +21,21 @@ The function returns a Promise that resolves to an array of `PositionData[]`, wh
 ## Basic Usage
 
 ```tsx title="getPositions()"
-import { fetchPositions } from '@orca-so/whirlpools-sdk';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
+import { fetchPositions } from '@orca-so/whirlpools';
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function getPositions() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
-  
-  const ownerAddress = wallet.publicKey;
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const positions = await fetchPositions(connection, ownerAddress);
+const positions = await fetchPositions(devnetRpc, wallet.address);
 
-  console.log(`Found ${positions.length} position(s) for wallet ${ownerAddress}:`);
-  positions.forEach(position => {
-    console.log("Position Address:", position.address);
-    console.log("Onchain Position State:", position.data);
-  });
-}
-
-getPositions();
+console.log(`Found ${positions.length} position(s) for wallet ${wallet.address}:`);
+positions.forEach(position => {
+  console.log("Position Address:", position.address);
+  console.log("Onchain Position State:", position.data);
+});
 ```

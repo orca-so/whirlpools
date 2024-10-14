@@ -23,35 +23,32 @@ Creating a Splash Pool is the easiest way to launch your token on Orca. You only
 
 ## Basic usage
 
-```tsx title="main.ts"
-import { createSplashPoolInstructions } from '@orca-so/whirlpools-sdk'
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
-import { airdropSolIfNeeded } from './airdrop';
+```tsx
+import { createSplashPoolInstructions } from '@orca-so/whirlpools'
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function main() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
-  await airdropSolIfNeeded(connection, wallet);
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const tokenMintOne = "TOKEN_MINT_ADDRESS_1"; 
-  const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
-  const initialPrice = 0.01;  
+const tokenMintOne = "TOKEN_MINT_ADDRESS_1"; 
+const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
+const initialPrice = 0.01;  
 
-  const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
-    connection,
-    tokenMintOne,
-    tokenMintTwo,
-    initialPrice,
-    wallet
-  );
+const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
+  devnetRpc,
+  tokenMintOne,
+  tokenMintTwo,
+  initialPrice,
+  wallet
+);
 
-  console.log("Pool Address:", poolAddress);
-  console.log("Initialization Instructions:", instructions);
-  console.log("Rent (lamports):", initializationCost);
-}
-
-main()
+console.log("Pool Address:", poolAddress);
+console.log("Initialization Instructions:", instructions);
+console.log("Rent (lamports):", initializationCost);
 ```
 
 ## Next Steps

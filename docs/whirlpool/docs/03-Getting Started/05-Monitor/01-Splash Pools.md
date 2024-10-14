@@ -17,22 +17,25 @@ This guide explains how to use fetchSplashPool to fetch the details of a specifi
 
 ## Basic Usage
 
-```tsx title="getSplashPool.ts"
-import { fetchSplashPool } from '@orca-so/whirlpools-sdk';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
+```tsx
+import { fetchSplashPool } from '@orca-so/whirlpools';
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function getSplashPoolInfo() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const tokenMintOne = "TOKEN_MINT_ONE"; 
-  const tokenMintTwo = "TOKEN_MINT_TWO";
-  
-  const poolInfo = await fetchSplashPool(connection, tokenMintOne, tokenMintTwo);
+const tokenMintOne = "TOKEN_MINT_ONE"; 
+const tokenMintTwo = "TOKEN_MINT_TWO";
 
-  console.log("Splash Pool State:", poolInfo);
-}
+const poolInfo = await fetchSplashPool(
+  devnetRpc,
+  tokenMintOne,
+  tokenMintTwo
+);
 
-getSplashPoolInfo()
+console.log("Splash Pool State:", poolInfo);
 ```

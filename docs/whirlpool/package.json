@@ -5,14 +5,11 @@
   "scripts": {
     "build": "docusaurus build --out-dir dist",
     "start": "docusaurus start",
-    "swizzle": "docusaurus swizzle",
     "clean": "rimraf dist .docusaurus"
   },
   "dependencies": {
     "@docusaurus/core": "3.5.2",
     "@docusaurus/preset-classic": "3.5.2",
-    "@emotion/react": "^11.13.3",
-    "@emotion/styled": "^11.13.0",
     "@mdx-js/react": "^3.0.1",
     "clsx": "^2.1.1",
     "prism-react-renderer": "^2.4.0",

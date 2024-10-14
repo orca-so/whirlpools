@@ -1,5 +1,5 @@
 ---
-sidebar_label: CLMM pool
+sidebar_label: CLMM Pools
 ---
 
 # Fetching a Concentrated Liquidity Pool
@@ -18,27 +18,31 @@ The `fetchPool()` function is used to retrieve detailed information about a liqu
 
 ## Basic Usage
 
-```tsx title="getPoolInfo.ts"
-import { fetchPool } from '@orca-so/whirlpools-sdk';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
+```tsx
+import { fetchPool } from '@orca-so/whirlpools';
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function getPoolInfo() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const tokenMintOne = "TOKEN_MINT_ONE";
-  const tokenMintTwo = "TOKEN_MINT_TWO";
-  const tickSpacing = 64;
-  
-  const poolInfo = await fetchPool(connection, tokenMintOne, tokenMintTwo, tickSpacing);
+const tokenMintOne = "TOKEN_MINT_ONE";
+const tokenMintTwo = "TOKEN_MINT_TWO";
+const tickSpacing = 64;
 
-  if (poolInfo.initialized) {
-    console.log("Initialized Pool State:", poolInfo);
-  } else {
-    console.log("Uninitialized Pool Info (Defaults):", poolInfo);
-  }
+const poolInfo = await fetchPool(
+  devnetRpc,
+  tokenMintOne,
+  tokenMintTwo,
+  tickSpacing
+);
+
+if (poolInfo.initialized) {
+  console.log("Initialized Pool State:", poolInfo);
+} else {
+  console.log("Uninitialized Pool Info (Defaults):", poolInfo);
 }
-
-getPoolInfo().catch((err) => console.error(err));
 ```

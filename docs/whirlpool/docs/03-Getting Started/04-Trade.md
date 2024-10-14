@@ -4,7 +4,7 @@ sidebar_label: Trade
 
 # Executing a Token Swap
 
-The `swapInstructions()` function generates all the instructions necessary to execute a token swap in an Orca Whirlpool pool. Whether you're swapping a specific amount of input tokens or looking to receive a precise amount of output tokens, this function handles the preparation of token accounts, liquidity data, and transaction assembly. It also manages slippage tolerance to ensure that swaps are executed within acceptable price changes.
+The `swapInstructions()` function generates all the instructions necessary to execute a token swap on Orca. Whether you're swapping a specific amount of input tokens or looking to receive a precise amount of output tokens, this function handles the preparation of token accounts, liquidity data, and transaction assembly. It also manages slippage tolerance to ensure that swaps are executed within acceptable price changes.
 
 ## Function Overview
 **`swapInstructions()`**
@@ -23,32 +23,29 @@ The `swapInstructions()` function generates all the instructions necessary to ex
 
 ## Basic usage
 
-```tsx title="performSwap.ts"
-import { swapInstructions } from '@orca-so/whirlpools-sdk';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
-import { airdropSolIfNeeded } from './airdrop';
+```tsx
+import { swapInstructions } from '@orca-so/whirlpools';
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function performSwap() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
-  await airdropSolIfNeeded(connection, wallet);
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const poolAddress = "POOL_ADDRESS";
-  const mintAddress = "TOKEN_MINT";
-  const inputAmount = 1_000_000;
+const poolAddress = "POOL_ADDRESS";
+const mintAddress = "TOKEN_MINT";
+const inputAmount = 1_000_000;
 
-  const { instructions, quote } = await swapInstructions(
-    connection, 
-    { inputAmount, mint: mintAddress }, 
-    poolAddress, 
-    0.01,
-    wallet
-  );
+const { instructions, quote } = await swapInstructions(
+  devnetRpc, 
+  { inputAmount, mint: mintAddress }, 
+  poolAddress, 
+  0.01,
+  wallet
+);
 
-  console.log("Swap Quote:", quote);
-  console.log("Swap Instructions:", instructions);
-}
-
-performSwap();
+console.log("Swap Quote:", quote);
+console.log("Swap Instructions:", instructions);
 ```

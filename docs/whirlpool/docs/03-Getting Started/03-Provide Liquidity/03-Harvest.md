@@ -1,5 +1,5 @@
 ---
-sidebar_label: Harvest Position
+sidebar_label: Harvest
 ---
 
 # Harvesting a Position
@@ -28,29 +28,26 @@ The function returns an object with the following properties:
 
 Here is an example of how to use `harvestPositionInstructions()` to collect the fees and rewards from an open position in an Orca Whirlpool.
 
-```tsx title="harvestPosition.ts"
-import { harvestPositionInstructions } from '@orca-so/whirlpools-sdk';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
-import { airdropSolIfNeeded } from './airdrop';
+```tsx
+import { harvestPositionInstructions } from '@orca-so/whirlpools';
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function harvestPosition() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
-  await airdropSolIfNeeded(connection, wallet);
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const positionMint = "POSITION_MINT";
+const positionMint = "POSITION_MINT";
 
-  const { feesQuote, rewardsQuote, instructions } = await harvestPositionInstructions(
-    connection,
-    positionMint,
-    wallet
-  );
+const { feesQuote, rewardsQuote, instructions } = await harvestPositionInstructions(
+  devnetRpc,
+  positionMint,
+  wallet
+);
 
-  console.log("Fees Quote (Fees Collected):", feesQuote);
-  console.log("Rewards Quote (Rewards Collected):", rewardsQuote);
-  console.log("Harvest Position Instructions:", instructions);
-}
-
-harvestPosition();
+console.log("Fees Quote (Fees Collected):", feesQuote);
+console.log("Rewards Quote (Rewards Collected):", rewardsQuote);
+console.log("Harvest Position Instructions:", instructions);
 ```

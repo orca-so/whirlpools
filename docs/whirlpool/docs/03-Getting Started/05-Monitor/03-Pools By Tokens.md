@@ -15,28 +15,31 @@ The fetchPools function is designed to fetch all possible liquidity pools betwee
 
 ## Basic Usage
 
-```tsx title="getSplashPool.ts"
-import { fetchPools } from '@orca-so/whirlpools-sdk';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
+```tsx
+import { fetchPools } from '@orca-so/whirlpools';
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function getPoolsInfo() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const tokenMintOne = "TOKEN_MINT_ONE";  
-  const tokenMintTwo = "TOKEN_MINT_TWO"; 
+const tokenMintOne = "TOKEN_MINT_ONE";  
+const tokenMintTwo = "TOKEN_MINT_TWO"; 
 
-  const pools = await fetchPools(connection, tokenMintOne, tokenMintTwo);
+const pools = await fetchPools(
+  devnetRpc,
+  tokenMintOne,
+  tokenMintTwo
+);
 
-  pools.forEach(pool => {
-    if (pool.initialized) {
-      console.log("Initialized Pool Info:", pool);
-    } else {
-      console.log("Uninitialized Pool Info (Defaults):", pool);
-    }
-  });
-}
-
-getPoolsInfo().catch((err) => console.error(err));
+pools.forEach(pool => {
+  if (pool.initialized) {
+    console.log("Initialized Pool Info:", pool);
+  } else {
+    console.log("Uninitialized Pool Info (Defaults):", pool);
+  }
+});
 ```

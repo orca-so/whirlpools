@@ -31,29 +31,30 @@ Both the `increaseLiquidityInstructions()` and `decreaseLiquidityInstructions()`
 
 The example below demonstrates how to adjust liquidity in a position, whether you are increasing or decreasing liquidity. Before proceeding with the transaction, check the `quote` object to ensure you have enough balance (for increasing liquidity) or verify the amount you will receive back (for decreasing liquidity).
 
-```tsx title="adjustLiquidity.ts"
-import { increaseLiquidityInstructions } from '@orca-so/whirlpools-sdk';
-import { Connection, clusterApiUrl } from '@solana/web3.js';
-import { getWallet } from './wallet';
-import { airdropSolIfNeeded } from './airdrop';
+```tsx
+import { increaseLiquidityInstructions } from '@orca-so/whirlpools';
+import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
 
-async function increaseLiquidity() {
-  const connection = new Connection(clusterApiUrl('devnet'));
-  const wallet = getWallet();
-  await airdropSolIfNeeded(connection, wallet);
+const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+const wallet = await generateKeyPairSigner();
+devnetRpc.requestAirdrop(
+  wallet.address,
+  lamports(1000000000n)
+).send()
 
-  const positionMint = "POSITION_MINT";  
-  
-  const param = { tokenA: 1_000_000 } 
+const positionMint = "POSITION_MINT";  
 
-  const {quote, instructions, initializationCost} = await increaseLiquidityInstructions(connection, positionMint, param, 0.01, wallet)
+const param = { tokenA: 1_000_000 } 
 
-  console.log(`Increase Liquidity Quote:`, quote);
+const {quote, instructions, initializationCost} = await increaseLiquidityInstructions(
+    devnetRpc, 
+    positionMint, 
+    param, 
+    0.01, 
+    wallet
+)
 
-  console.log(`Decrease Liquidity Instructions:`, instructions);
-
-  console.log("Rent (lamports):", initializationCost);
-}
-
-increaseLiquidity();
+console.log(`Increase Liquidity Quote:`, quote);
+console.log(`Decrease Liquidity Instructions:`, instructions);
+console.log("Rent (lamports):", initializationCost);
 ```

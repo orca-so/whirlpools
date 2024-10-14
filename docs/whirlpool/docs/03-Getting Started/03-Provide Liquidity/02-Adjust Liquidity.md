@@ -14,7 +14,7 @@ Both the `increaseLiquidityInstructions()` and `decreaseLiquidityInstructions()`
 
 - **Inputs:**
     - `rpc`: A Solana RPC client used to communicate with the blockchain
-    - `poolAddress`: The address of the Liquidity Pool where you want to open a position.
+    - `poolAddress`: The address of the Liquidity Pool where you want to adjust a position.
     - `param`: Defines how you want to provide or withdraw liquidity. This can be done in one of three ways:
         - `liquidity`: Specify the liquidity to add or remove.
         - `tokenA`: Specify how much of tokenA to add or withdraw
@@ -23,7 +23,7 @@ Both the `increaseLiquidityInstructions()` and `decreaseLiquidityInstructions()`
     - `funder`: The account funding the transaction and providing liquidity.
     
 - **Outputs:** The function returns a promise resolving to an object containing:
-    - `quote`: A breakdown of the liquidity and tokens you are adding
+    - `quote`: A breakdown of the liquidity and tokens you are adding or removing
     - `instructions`: A list of instructions to initialize the position.
     - `initializationCost`: The minimum balance required for rent exemption, in lamports.
 
@@ -46,13 +46,13 @@ async function increaseLiquidity() {
   
   const param = { tokenA: 1_000_000 } 
 
-  const {quote, instructions, rent} = await increaseLiquidityInstructions(connection, positionMint, param, 0.01, wallet)
+  const {quote, instructions, initializationCost} = await increaseLiquidityInstructions(connection, positionMint, param, 0.01, wallet)
 
   console.log(`Increase Liquidity Quote:`, quote);
 
   console.log(`Decrease Liquidity Instructions:`, instructions);
 
-  console.log("Initialization Cost (lamports):", rent);
+  console.log("Rent (lamports):", initializationCost);
 }
 
 increaseLiquidity();

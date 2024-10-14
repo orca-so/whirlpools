@@ -11,11 +11,11 @@ The `swapInstructions()` function generates all the instructions necessary to ex
 
 - **Inputs**
     - `rpc`: A Solana RPC client used to interact with the blockchain and fetch necessary accounts and pool data.
-    - `params`: A swap parameter object that can contain:
+    - `params`: A swap parameter object that contains:
         - `inputAmount` for exact input swaps or `outputAmount` for exact output swaps. 
         - `mint`: Mint address of the token you want to swap out.
     - `poolAddress`: The address of the Orca Whirlpool pool where the swap will take place.
-    - `slippageToleranceBps`: The acceptable slippage tolerance for the swap, in basis points (BPS).
+    - `slippageToleranceBps`: The acceptable slippage tolerance for the swap, in basis points (bps).
     - `signer`: The wallet or signer executing the swap.
 - **Outputs:** The function returns a `Promise` that resolves to an object containing:
     - `instructions`: The list of instructions needed to perform the swap.

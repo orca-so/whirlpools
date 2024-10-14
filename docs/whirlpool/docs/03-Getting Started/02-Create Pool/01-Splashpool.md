@@ -4,7 +4,7 @@ sidebar_label: Splash Pool
 
 # Create Splash Pools
 
-Creating a Splash Pool is the easiest way to launch your token on Orca. You only need to provide the mint addresses of 2 tokens and the initial price. Easy as that!
+Creating a Splash Pool is the easiest way to launch your token on Orca. You only need to provide the mint addresses of 2 tokens and the initial price. It's that simple.
 
 ## Function overview
 **`createSplashPoolInstructions()`**
@@ -38,7 +38,7 @@ async function main() {
   const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
   const initialPrice = 0.01;  
 
-  const poolInstructions = await createSplashPoolInstructions(
+  const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
     connection,
     tokenMintOne,
     tokenMintTwo,
@@ -46,9 +46,9 @@ async function main() {
     wallet
   );
 
-  console.log("Pool Address:", poolInstructions.poolAddress);
-  console.log("Initialization Instructions:", poolInstructions.instructions);
-  console.log("Initialization Cost (lamports):", poolInstructions.initializationCost);
+  console.log("Pool Address:", poolAddress);
+  console.log("Initialization Instructions:", instructions);
+  console.log("Rent (lamports):", initializationCost);
 }
 
 main()
@@ -58,4 +58,4 @@ main()
 
 After creating a Splash Pool, the pool is still empty and requires liquidity for people to trade against.
 
-To do this, you’ll need to open a position and deposit both tokens into the pool at a ratio that is equal the current price. Luckily, our SDK takes care of that in 1 simple step: [Open a Position](../03-Provide%20Liquidity/01-Open%20Position.md). By providing liquidity, you enable trades between the two tokens and start earning fees.
+To do this, you’ll need to open a position and deposit both tokens into the pool at a ratio that is equal to the current price. Luckily, our SDK takes care of that in one simple step: [Open a Position](../03-Provide%20Liquidity/01-Open%20Position/01-Splash%20Pool.md). By providing liquidity, you enable trades between the two tokens and start earning fees.

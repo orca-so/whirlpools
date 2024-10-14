@@ -5,11 +5,11 @@ sidebar_label: CLMM Pool
 # Open a Position in Concentrated Liquidity Pools
 Opening a position in a Concentrated Liquidity Pool allows you to provide liquidity within a price range and start earning fees from the trades in the pool. The tighter the price range, the more efficient your liquidity is used, and the more rewards you earn.
 
-When you open a position using the Whirlpools SDK, you also specify how much liquidity you want to add. Later, you can add and remove liquidity from your position, or close the position alltogether.
+When you open a position using the Whirlpools SDK, you also specify how much liquidity you want to add. Later, you can add and remove liquidity from your position, or close the position altogether.
 
 Note that you cannot change the price range of an existing position. If you want to update the price range, you need to close the position and open a new one.
 
-> ⚠️ The ratio of token A and token B that you deposit as liquidity in the pool, reflects by definition the current price. Vice versa, when the price starts to move in either direction, the amount of token A and token B that you deposited, also changes. This can work to your advantage, but it can also happen that the value of the two tokens combined (+ earned rewards) is less than the value of those tokens before you deposited liquidity. This is often referred to as **impermanent loss**.
+> ⚠️ The ratio of token A and token B that you deposit as liquidity in the pool, reflects the current price by definition. Vice versa, when the price starts to move in either direction, the amount of token A and token B that you deposited, also changes. This can work to your advantage, but it can also happen that the value of the two tokens combined (+ earned rewards) is less than the value of those tokens before you deposited liquidity. This is often referred to as **impermanent loss**.
 
 ## Function Overview
 **`openPositionInstructions()`**
@@ -28,11 +28,11 @@ Note that you cannot change the price range of an existing position. If you want
 - **Outputs:** The function returns a promise resolving to an object containing:
     - `quote`: A breakdown of the liquidity and tokens you are adding
     - `instructions`: A list of instructions to initialize the position.
-    - `initializationCost`: The minimum balance required for rent exemption, in lamports.
+    - `initializationCost`: The minimum balance required for [rent](https://solana.com/docs/core/fees#rent) exemption, in lamports.
 
 ## Basic Usage
 
-In this example, you will open a position in a Concentrated Liquidity Pool by specifying how many tokens A you want to provide for liquidity. The function `openPositionInstructions()` used in the code below will automatically calcultate how many tokens B will be needed and will use that. If it's a new pool that you created, you probably already know by heart what the amounts are. A simple example:
+In this example, you will open a position in a Concentrated Liquidity Pool by specifying how many tokens A you want to provide for liquidity. The function `openPositionInstructions()` used in the code below will automatically calculate how many tokens B will be needed and will use that. If it's a new pool that you created, you probably already know by heart what the amounts are. A simple example:
 - You set the price of Token A to 0.0001 SOL
 - You want to provide 1,000,000 Token A in the pool
 - You will need 100 SOL as Token B
@@ -58,7 +58,7 @@ async function main() {
   const lowerPrice = 0.00005
   const upperPrice = 0.00015
   
-  const quote, insructions, rent = await openPositionInstructions(
+  const { quote, instructions, initializationCost } = await openPositionInstructions(
     connection,
     poolAddress,
     param,
@@ -70,7 +70,7 @@ async function main() {
 
   console.log("Position Quote:", quote);
   console.log("Position Instructions:", instructions);
-  console.log("Initialization Cost (lamports):", rent);
+  console.log("Rent (lamports):", initializationCost);
 }
 
 main();

@@ -26,7 +26,7 @@ Install the necessary packages:
 npm install typescript ts-node @orca-so/whirlpools-client @solana/web3.js fs
 ```
 
-Initialize the project as a typescript project
+Initialize the project as a TypeScript project
 
 ```bash
 npx tsc --init
@@ -36,7 +36,7 @@ npx tsc --init
 
 To simplify wallet management, we’ll generate a wallet programmatically and store its private key in a .env file for future use.
 
-First, create a `wallet.ts` file in you current directory and add the following code.
+First, create a `wallet.ts` file in your current directory and add the following code.
 
 ```tsx title="wallet.ts"
 import { Keypair } from '@solana/web3.js';
@@ -78,7 +78,7 @@ export function getWallet(): Keypair {
 
 > ⚠️ Important: Never share your private key publicly.
 
-## 4. Aidrop SOL to Your Wallet
+## 4. Airdrop SOL to Your Wallet
 
 Once your wallet is created, you will need some SOL to pay for transactions. We will create a function that checks if you have some SOL on **Devnet** and airdrops if you don't.
 

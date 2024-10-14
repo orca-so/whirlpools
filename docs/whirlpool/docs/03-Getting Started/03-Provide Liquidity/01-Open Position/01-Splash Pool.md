@@ -5,7 +5,7 @@ sidebar_label: Splash Pool
 # Open a Position in Splash Pools
 Opening a position in a Splash Pool allows you to provide liquidity and start earning fees from the trades in the pool. You can think of a position as your investment in the liquidity pool, where you add two tokens to facilitate swaps and earn a share of the fees.
 
-When you open a position using the Whirlpools SDK, you also specify how much liquidity you want to add. Later, you can add and remove liquidity from your position, or close the position alltogether.
+When you open a position using the Whirlpools SDK, you also specify how much liquidity you want to add. Later, you can add and remove liquidity from your position, or close the position altogether.
 
 ## Function Overview
 **`openSplashPoolPositionInstructions()`**
@@ -22,11 +22,11 @@ When you open a position using the Whirlpools SDK, you also specify how much liq
 - **Outputs:** The function returns a promise resolving to an object containing:
     - `quote`: A breakdown of the liquidity and tokens you are adding
     - `instructions`: A list of instructions to initialize the position.
-    - `initializationCost`: The minimum balance required for rent exemption, in lamports.
+    - `initializationCost`: The minimum balance required for [rent](https://solana.com/docs/core/fees#rent) exemption, in lamports.
 
 ## Basic Usage
 
-In this example, you will open a position in a Splash Pool by specifying how many tokens A of you want to provide for liquidity. The function `openSplashPoolPositionInstructions()` used in the code below will automatically calcultate how many tokens B will be needed and will use that. If it's a new pool that you created, you probably already know by heart what the amounts are. A simple example:
+In this example, you will open a position in a Splash Pool by specifying how many tokens of token A you want to provide for liquidity. The function `openSplashPoolPositionInstructions()` used in the code below will automatically calculate how many tokens B will be needed and will use that. If it's a new pool that you created, you probably already know by heart what the amounts are. A simple example:
 - You set the price of Token A to 0.0001 SOL
 - You want to provide 1,000,000 Token A in the pool
 - You will need 100 SOL as Token B
@@ -48,7 +48,7 @@ async function main() {
   
   const param = { tokenA: 1_000_000 }; 
   
-  const quote, positionInstructions, rent = await openSplashPoolPositionInstructions(
+  const { quote, instructions, initializationCost } = await openSplashPoolPositionInstructions(
     connection,
     poolAddress,
     param, 
@@ -58,7 +58,7 @@ async function main() {
 
   console.log("Position Quote:", quote);
   console.log("Position Instructions:", instructions);
-  console.log("Initialization Cost (lamports):", rent);
+  console.log("Rent (lamports):", initializationCost);
 }
 
 main();

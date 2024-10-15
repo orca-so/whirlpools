@@ -1,11 +1,7 @@
 use core::cmp::{max, min};
 
 use crate::{
-    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_adjust_amount, try_get_amount_delta_a,
-    try_get_amount_delta_b, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b,
-    try_inverse_adjust_amount, AdjustmentType, ErrorCode, ExactInSwapQuote, ExactOutSwapQuote,
-    TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade, ARITHMETIC_OVERFLOW,
-    MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_OUT_OF_BOUNDS,
+    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_adjust_amount, try_get_amount_delta_a, try_get_amount_delta_b, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b, try_inverse_adjust_amount, AdjustmentType, ErrorCode, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade, ARITHMETIC_OVERFLOW, INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, SQRT_PRICE_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT
 };
 
 #[cfg(feature = "wasm")]
@@ -45,10 +41,12 @@ pub fn swap_quote_by_input_token(
 
     let swap_result = compute_swap(
         token_in_after_fee.into(),
+        0,
         whirlpool,
         tick_sequence,
         specified_token_a,
         true,
+        0,
     )?;
 
     let (token_in_after_fees, token_est_out_before_fee) = if specified_token_a {
@@ -121,10 +119,12 @@ pub fn swap_quote_by_output_token(
 
     let swap_result = compute_swap(
         token_out_before_fee.into(),
+        0,
         whirlpool,
         tick_sequence,
         !specified_token_a,
         false,
+        0,
     )?;
 
     let (token_out_before_fee, token_est_in_after_fee) = if specified_token_a {
@@ -165,11 +165,37 @@ struct SwapResult {
 
 fn compute_swap<const SIZE: usize>(
     token_amount: u64,
+    sqrt_price_limit: u128,
     whirlpool: WhirlpoolFacade,
     tick_sequence: TickArraySequence<SIZE>,
     a_to_b: bool,
     specified_input: bool,
+    _timestamp: u64, // currently ignored but needed for full swap logic
 ) -> Result<SwapResult, ErrorCode> {
+    let sqrt_price_limit = if sqrt_price_limit == 0 {
+        if a_to_b {
+            MIN_SQRT_PRICE
+        } else {
+            MAX_SQRT_PRICE
+        }
+    } else {
+        sqrt_price_limit
+    };
+
+    if !(MIN_SQRT_PRICE..=MAX_SQRT_PRICE).contains(&sqrt_price_limit) {
+        return Err(SQRT_PRICE_LIMIT_OUT_OF_BOUNDS);
+    }
+
+    if a_to_b && sqrt_price_limit > whirlpool.sqrt_price
+    || !a_to_b && sqrt_price_limit < whirlpool.sqrt_price
+{
+        return Err(INVALID_SQRT_PRICE_LIMIT_DIRECTION);
+    }
+
+    if token_amount == 0 {
+        return Err(ZERO_TRADABLE_AMOUNT);
+    }
+
     let mut amount_remaining = token_amount;
     let mut amount_calculated = 0u64;
     let mut current_sqrt_price = whirlpool.sqrt_price;
@@ -178,8 +204,7 @@ fn compute_swap<const SIZE: usize>(
     let mut trade_fee = 0u64;
 
     while amount_remaining > 0
-        && current_sqrt_price > MIN_SQRT_PRICE
-        && current_sqrt_price < MAX_SQRT_PRICE
+        && sqrt_price_limit != current_sqrt_price
     {
         let (next_tick, next_tick_index) = if a_to_b {
             tick_sequence.prev_initialized_tick(current_tick_index)?
@@ -188,9 +213,9 @@ fn compute_swap<const SIZE: usize>(
         };
         let next_tick_sqrt_price: u128 = tick_index_to_sqrt_price(next_tick_index.into()).into();
         let target_sqrt_price = if a_to_b {
-            max(next_tick_sqrt_price, MIN_SQRT_PRICE)
+            next_tick_sqrt_price.max(sqrt_price_limit)
         } else {
-            min(next_tick_sqrt_price, MAX_SQRT_PRICE)
+            next_tick_sqrt_price.min(sqrt_price_limit)
         };
 
         let step_quote = compute_swap_step(
@@ -287,13 +312,13 @@ fn compute_swap_step(
     a_to_b: bool,
     specified_input: bool,
 ) -> Result<SwapStepQuote, ErrorCode> {
-    let mut amount_fixed_delta = try_get_amount_fixed_delta(
+    let initial_amount_fixed_delta = try_get_amount_fixed_delta(
         current_sqrt_price,
         target_sqrt_price,
         current_liquidity,
         a_to_b,
         specified_input,
-    )?;
+    );
 
     let amount_calculated = if specified_input {
         try_adjust_amount(
@@ -305,10 +330,10 @@ fn compute_swap_step(
         amount_remaining
     };
 
-    let next_sqrt_price = if amount_calculated >= amount_fixed_delta {
+    let next_sqrt_price = if initial_amount_fixed_delta.is_ok() && initial_amount_fixed_delta? <= amount_calculated {
         target_sqrt_price
     } else {
-        get_next_sqrt_price(
+        try_get_next_sqrt_price(
             current_sqrt_price,
             current_liquidity,
             amount_calculated,
@@ -316,10 +341,6 @@ fn compute_swap_step(
             specified_input,
         )?
     };
-
-    if !(MIN_SQRT_PRICE..=MAX_SQRT_PRICE).contains(&next_sqrt_price) {
-        return Err(SQRT_PRICE_OUT_OF_BOUNDS);
-    }
 
     let is_max_swap = next_sqrt_price == target_sqrt_price;
 
@@ -332,14 +353,16 @@ fn compute_swap_step(
     )?;
 
     // If the swap is not at the max, we need to readjust the amount of the fixed token we are using
-    if !is_max_swap {
-        amount_fixed_delta = try_get_amount_fixed_delta(
+    let amount_fixed_delta = if !is_max_swap || initial_amount_fixed_delta.is_err() {
+        try_get_amount_fixed_delta(
             current_sqrt_price,
             next_sqrt_price,
             current_liquidity,
             a_to_b,
             specified_input,
-        )?;
+        )?
+    } else {
+        initial_amount_fixed_delta?
     };
 
     let (amount_in, mut amount_out) = if specified_input {
@@ -359,7 +382,7 @@ fn compute_swap_step(
         let pre_fee_amount = try_inverse_adjust_amount(
             amount_in.into(),
             AdjustmentType::SwapFee { fee_rate },
-            true,
+            false,
         )?;
         pre_fee_amount - amount_in
     };
@@ -420,7 +443,7 @@ fn try_get_amount_unfixed_delta(
     }
 }
 
-fn get_next_sqrt_price(
+fn try_get_next_sqrt_price(
     current_sqrt_price: u128,
     current_liquidity: u128,
     amount_calculated: u64,
@@ -454,7 +477,7 @@ mod tests {
 
     fn test_whirlpool(sqrt_price: u128, sufficient_liq: bool) -> WhirlpoolFacade {
         let tick_current_index = sqrt_price_to_tick_index(sqrt_price);
-        let liquidity = if sufficient_liq { 100000000 } else { 100000 };
+        let liquidity = if sufficient_liq { 100000000 } else { 265000 };
         WhirlpoolFacade {
             tick_current_index,
             fee_rate: 3000,
@@ -523,9 +546,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.token_in, 1000);
-        assert_eq!(result.token_est_out, 871);
-        assert_eq!(result.token_min_out, 783);
-        assert_eq!(result.trade_fee, 68);
+        assert_eq!(result.token_est_out, 918);
+        assert_eq!(result.token_min_out, 826);
+        assert_eq!(result.trade_fee, 39);
     }
 
     #[test]
@@ -559,9 +582,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.token_in, 1000);
-        assert_eq!(result.token_est_out, 872);
-        assert_eq!(result.token_min_out, 784);
-        assert_eq!(result.trade_fee, 68);
+        assert_eq!(result.token_est_out, 918);
+        assert_eq!(result.token_min_out, 826);
+        assert_eq!(result.trade_fee, 39);
     }
 
     #[test]
@@ -578,7 +601,7 @@ mod tests {
         .unwrap();
         assert_eq!(result.token_out, 1000);
         assert_eq!(result.token_est_in, 1005);
-        assert_eq!(result.token_max_in, 1106);
+        assert_eq!(result.token_max_in, 1117);
         assert_eq!(result.trade_fee, 4);
     }
 
@@ -595,9 +618,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.token_out, 1000);
-        assert_eq!(result.token_est_in, 1142);
-        assert_eq!(result.token_max_in, 1257);
-        assert_eq!(result.trade_fee, 76);
+        assert_eq!(result.token_est_in, 1088);
+        assert_eq!(result.token_max_in, 1209);
+        assert_eq!(result.trade_fee, 42);
     }
 
     #[test]
@@ -614,7 +637,7 @@ mod tests {
         .unwrap();
         assert_eq!(result.token_out, 1000);
         assert_eq!(result.token_est_in, 1005);
-        assert_eq!(result.token_max_in, 1106);
+        assert_eq!(result.token_max_in, 1117);
         assert_eq!(result.trade_fee, 4);
     }
 
@@ -631,9 +654,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.token_out, 1000);
-        assert_eq!(result.token_est_in, 1141);
-        assert_eq!(result.token_max_in, 1256);
-        assert_eq!(result.trade_fee, 76);
+        assert_eq!(result.token_est_in, 1088);
+        assert_eq!(result.token_max_in, 1209);
+        assert_eq!(result.trade_fee, 42);
     }
 
     // TODO: add more complex tests that

@@ -17,8 +17,24 @@ import type {
 } from "@solana/web3.js";
 import { getBase58Encoder, getBase64Encoder } from "@solana/web3.js";
 
-type PositionOrBundle = Account<Position | PositionBundle>;
-type PositionData = PositionOrBundle & {
+/**
+ * Represents either a Position or Position Bundle account.
+ *
+ * @typedef {Object} PositionOrBundle
+ * @property {Account<Position | PositionBundle>} data - The decoded data of the position or bundle.
+ */
+export type PositionOrBundle = Account<Position | PositionBundle>;
+
+/**
+ * Represents a decoded Position or Position Bundle account.
+ * Includes the token program address associated with the position.
+ *
+ * @typedef {Object} PositionData
+ * @property {Account<Position | PositionBundle>} data - The decoded position or bundle data.
+ * @property {Address} address - The address of the position or bundle.
+ * @property {Address} tokenProgram - The token program associated with the position (either TOKEN_PROGRAM_ADDRESS or TOKEN_2022_PROGRAM_ADDRESS).
+ */
+export type PositionData = PositionOrBundle & {
   tokenProgram: Address;
 };
 
@@ -38,6 +54,23 @@ function decodePositionOrBundle(
   throw new Error("Could not decode position or bundle dat");
 }
 
+/**
+ * Fetches all positions owned by a given wallet in the Orca Whirlpools.
+ * It looks for token accounts owned by the wallet using both the TOKEN_PROGRAM_ADDRESS and TOKEN_2022_PROGRAM_ADDRESS.
+ * For token accounts holding exactly 1 token (indicating a position or bundle), it fetches the corresponding position addresses,
+ * decodes the accounts, and returns an array of position or bundle data.
+ *
+ * @param {Rpc<GetTokenAccountsByOwnerApi & GetMultipleAccountsApi>} rpc - The Solana RPC client used to fetch token accounts and multiple accounts.
+ * @param {Address} owner - The wallet address whose positions you want to fetch.
+ * @returns {Promise<PositionData[]>} - A promise that resolves to an array of decoded position data for the given owner.
+ *
+ * @example
+ * const positions = await fetchPositions(connection, walletAddress);
+ * positions.forEach((position) => {
+ *   console.log("Position Address:", position.address);
+ *   console.log("Position Data:", position.data);
+ * });
+ */
 export async function fetchPositions(
   rpc: Rpc<GetTokenAccountsByOwnerApi & GetMultipleAccountsApi>,
   owner: Address,

@@ -66,7 +66,15 @@ import assert from "assert";
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
 
-type IncreaseLiquidityQuoteParam =
+/**
+ * @typedef {Object} IncreaseLiquidityQuoteParam
+ * You must choose only one of the properties (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two based on the input provided.
+ * 
+ * @property {bigint} liquidity - The amount of liquidity to increase. The SDK will calculate the required amounts of Token A and Token B.
+ * @property {bigint} tokenA - The amount of Token A to add. The SDK will calculate the corresponding liquidity and Token B amount.
+ * @property {bigint} tokenB - The amount of Token B to add. The SDK will calculate the corresponding liquidity and Token A amount.
+ */
+export type IncreaseLiquidityQuoteParam =
   | {
       liquidity: bigint;
     }
@@ -77,7 +85,13 @@ type IncreaseLiquidityQuoteParam =
       tokenB: bigint;
     };
 
-type IncreaseLiquidityInstructions = {
+/**
+ * @typedef {Object} IncreaseLiquidityInstructions
+ * @property {IncreaseLiquidityQuote} quote - The quote object with details about the increase in liquidity.
+ * @property {LamportsUnsafeBeyond2Pow53Minus1} initializationCost - The initialization cost for liquidity in lamports.
+ * @property {IInstruction[]} instructions - List of Solana transaction instructions to execute.
+ */
+export type IncreaseLiquidityInstructions = {
   quote: IncreaseLiquidityQuote;
   initializationCost: LamportsUnsafeBeyond2Pow53Minus1;
   instructions: IInstruction[];
@@ -124,6 +138,28 @@ function getIncreaseLiquidityQuote(
   }
 }
 
+/**
+ * Generates instructions to increase liquidity for an existing position.
+ *
+ * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - The Solana RPC client.
+ * @param {Address} positionMintAddress - The mint address of the NFT that represents the position.
+ * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity. Can specify liquidity, Token A, or Token B amounts.
+ * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
+ * @param {TransactionPartialSigner} [authority=DEFAULT_FUNDER] - The account that authorizes the transaction.
+ * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for increasing liquidity.
+ *
+ * @example
+ * const { quote, instructions, initializationCost } = await increaseLiquidityInstructions(
+ *   connection,
+ *   positionMintAddress,
+ *   { liquidity: 500_000n },
+ *   0.01,
+ *   wallet
+ * );
+ * console.log("Liquidity Quote:", quote);
+ * console.log("Initialization Cost:", initializationCost);
+ * console.log("Instructions:", instructions);
+ */
 export async function increaseLiquidityInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
@@ -392,6 +428,28 @@ async function internalOpenPositionInstructions(
   };
 }
 
+/**
+ * Opens a full-range position for a pool, typically used for Splash Pools or other full-range liquidity provisioning.
+ *
+ * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - The Solana RPC client.
+ * @param {Address} poolAddress - The address of the liquidity pool.
+ * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity, where one of `liquidity`, `tokenA`, or `tokenB` must be specified. The SDK will compute the others.
+ * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
+ * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account funding the transaction.
+ * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for opening a full-range position.
+ *
+ * @example
+ * const { quote, instructions, initializationCost } = await openFullRangePositionInstructions(
+ *   connection,
+ *   poolAddress,
+ *   { tokenA: 1_000_000n },
+ *   0.01,
+ *   wallet
+ * );
+ * console.log("Position Quote:", quote);
+ * console.log("Initialization Cost:", initializationCost);
+ * console.log("Instructions:", instructions);
+ */
 export async function openFullRangePositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
@@ -422,6 +480,34 @@ export async function openFullRangePositionInstructions(
   );
 }
 
+/**
+ * Opens a new position in a concentrated liquidity pool within a specific price range.
+ * This function allows you to provide liquidity for the specified range of prices and adjust liquidity parameters accordingly.
+ *
+ * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - A Solana RPC client used to interact with the blockchain.
+ * @param {Address} poolAddress - The address of the liquidity pool where the position will be opened.
+ * @param {IncreaseLiquidityQuoteParam} param - The parameters for increasing liquidity, where you must choose one (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two.
+ * @param {number} lowerPrice - The lower bound of the price range for the position.
+ * @param {number} upperPrice - The upper bound of the price range for the position.
+ * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The slippage tolerance for adding liquidity, in basis points (BPS).
+ * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account funding the transaction.
+ *
+ * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing liquidity information and the list of instructions needed to open the position.
+ *
+ * @example
+ * const { instructions, quote, initializationCost } = await openPositionInstructions(
+ *   connection,
+ *   poolAddress,
+ *   { tokenA: 1_000_000n },
+ *   0.00005,
+ *   0.00015,
+ *   0.01,
+ *   wallet
+ * );
+ * console.log("Liquidity Quote:", quote);
+ * console.log("Initialization Instructions:", instructions);
+ * console.log("Rent (lamports):", initializationCost);
+ */
 export async function openPositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &

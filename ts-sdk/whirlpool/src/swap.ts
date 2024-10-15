@@ -41,22 +41,57 @@ import { fetchAllMint } from "@solana-program/token-2022";
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
 
+/**
+ * Parameters for an exact input swap.
+ *
+ * @typedef {Object} ExactInParams
+ * @property {bigint} inputAmount - The exact amount of input tokens to be swapped.
+ */
 type ExactInParams = {
   inputAmount: bigint;
 };
 
+/**
+ * Parameters for an exact output swap.
+ *
+ * @typedef {Object} ExactOutParams
+ * @property {bigint} outputAmount - The exact amount of output tokens to be received from the swap.
+ */
 type ExactOutParams = {
   outputAmount: bigint;
 };
 
+/**
+ * Swap parameters, either for an exact input or exact output swap.
+ *
+ * @typedef {Object} SwapParams
+ * @property {bigint} inputAmount - The exact input amount for the swap.
+ * @property {bigint} outputAmount - The exact output amount for the swap.
+ * @property {Address} mint - The mint address of the token being swapped.
+ */
 type SwapParams = (ExactInParams | ExactOutParams) & {
   mint: Address;
 };
 
+/**
+ * Swap quote that corresponds to the type of swap being executed (either input or output swap).
+ *
+ * @typedef {Object} SwapQuote
+ * @template T - The type of swap (input or output).
+ * @property {ExactInSwapQuote | ExactOutSwapQuote} - The quote for the swap based on input or output.
+ */
 type SwapQuote<T extends SwapParams> = T extends ExactInParams
   ? ExactInSwapQuote
   : ExactOutSwapQuote;
 
+/**
+ * Instructions and quote for executing a swap.
+ *
+ * @typedef {Object} SwapInstructions
+ * @template T - The type of swap (input or output).
+ * @property {IInstruction[]} instructions - The list of instructions needed to perform the swap.
+ * @property {SwapQuote<T>} quote - The swap quote, which includes information about the amounts involved in the swap.
+ */
 type SwapInstructions<T extends SwapParams> = {
   instructions: IInstruction[];
   quote: SwapQuote<T>;
@@ -171,6 +206,29 @@ function getSwapQuote<T extends SwapParams>(
   ) as SwapQuote<T>;
 }
 
+/**
+ * Generates the instructions necessary to execute a token swap in an Orca Whirlpool.
+ * It handles both exact input and exact output swaps, fetching the required accounts, tick arrays, and determining the swap quote.
+ *
+ * @template T - The type of swap (exact input or output).
+ * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - The Solana RPC client.
+ * @param {T} params - The swap parameters, specifying either the input or output amount and the mint address of the token being swapped.
+ * @param {Address} poolAddress - The address of the Whirlpool pool where the swap will take place.
+ * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage tolerance for the swap, in basis points (BPS).
+ * @param {TransactionPartialSigner} [signer=DEFAULT_FUNDER] - The wallet or signer executing the swap.
+ * @returns {Promise<SwapInstructions<T>>} - A promise that resolves to an object containing the swap instructions and the swap quote.
+ *
+ * @example
+ * const { quote, instructions } = await swapInstructions(
+ *   connection,
+ *   { inputAmount: 1_000_000n, mint: mintAddress },
+ *   poolAddress,
+ *   0.01,
+ *   wallet
+ * );
+ * console.log("Swap Quote:", quote);
+ * console.log("Swap Instructions:", instructions);
+ */
 export async function swapInstructions<T extends SwapParams>(
   rpc: Rpc<
     GetAccountInfoApi &

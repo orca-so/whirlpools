@@ -63,14 +63,14 @@ import assert from "assert";
 // TODO: transfer hook
 
 /**
- * Parameters for decreasing liquidity in a position.
- *
- * You can specify one of the following:
- * - `liquidity`: Specify the amount of liquidity to remove.
- * - `tokenA`: Specify the amount of token A to remove.
- * - `tokenB`: Specify the amount of token B to remove.
+ * @typedef {Object} DecreaseLiquidityQuoteParam
+ * You must choose only one of the properties (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two based on the input provided.
+ * 
+ * @property {bigint} liquidity - The amount of liquidity to decrease. The SDK will calculate the corresponding amounts of Token A and Token B.
+ * @property {bigint} tokenA - The amount of Token A to withdraw. The SDK will calculate the corresponding liquidity decrease and Token B amount.
+ * @property {bigint} tokenB - The amount of Token B to withdraw. The SDK will calculate the corresponding liquidity decrease and Token A amount.
  */
-type DecreaseLiquidityQuoteParam =
+export type DecreaseLiquidityQuoteParam =
   | {
       liquidity: bigint;
     }
@@ -87,7 +87,7 @@ type DecreaseLiquidityQuoteParam =
  * @property {DecreaseLiquidityQuote} quote - The quote details for decreasing liquidity.
  * @property {IInstruction[]} instructions - The list of instructions required to decrease liquidity.
  */
-type DecreaseLiquidityInstructions = {
+export type DecreaseLiquidityInstructions = {
   quote: DecreaseLiquidityQuote;
   instructions: IInstruction[];
 };
@@ -262,7 +262,7 @@ export async function decreaseLiquidityInstructions(
  * @property {CollectFeesQuote} feesQuote - The fees collected from the position.
  * @property {CollectRewardsQuote} rewardsQuote - The rewards collected from the position.
  */
-type ClosePositionInstructions = DecreaseLiquidityInstructions & {
+export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
   feesQuote: CollectFeesQuote;
   rewardsQuote: CollectRewardsQuote;
 };

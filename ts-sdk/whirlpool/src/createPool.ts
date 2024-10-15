@@ -40,7 +40,7 @@ import assert from "assert";
  * @property {LamportsUnsafeBeyond2Pow53Minus1} estInitializationCost - The estimated rent exemption cost for initializing the pool.
  * @property {Address} poolAddress - The address of the newly created pool.
  */
-type CreatePoolInstructions = {
+export type CreatePoolInstructions = {
   instructions: IInstruction[];
   estInitializationCost: LamportsUnsafeBeyond2Pow53Minus1;
   poolAddress: Address;
@@ -58,12 +58,28 @@ type CreatePoolInstructions = {
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
  * @example
- * const { poolAddress, instructions, estInitializationCost } = await createSplashPoolInstructions(
- *   connection, tokenMintOne, tokenMintTwo, initialPrice, wallet
+ * import { createSplashPoolInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const tokenMintOne = "TOKEN_MINT_ADDRESS_1"; 
+ * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
+ * const initialPrice = 0.01;
+ * 
+ * const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
+ *   devnetRpc,
+ *   tokenMintOne,
+ *   tokenMintTwo,
+ *   initialPrice,
+ *   wallet
  * );
+ * 
  * console.log("Pool Address:", poolAddress);
  * console.log("Initialization Instructions:", instructions);
- * console.log("Rent (lamports):", estInitializationCost);
+ * console.log("Rent (lamports):", initializationCost);
  */
 export function createSplashPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
@@ -95,12 +111,30 @@ export function createSplashPoolInstructions(
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
  * @example
- * const { poolAddress, instructions, estInitializationCost } = await createConcentratedLiquidityPoolInstructions(
- *   connection, tokenMintOne, tokenMintTwo, tickSpacing, initialPrice, wallet
+ * import { createConcentratedLiquidityPool } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
+ * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
+ * const tickSpacing = 64;
+ * const initialPrice = 0.01;
+ * 
+ * const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPool(
+ *   devnetRpc,
+ *   tokenMintOne,
+ *   tokenMintTwo,
+ *   tickSpacing,
+ *   initialPrice,
+ *   wallet
  * );
+ * 
  * console.log("Pool Address:", poolAddress);
  * console.log("Initialization Instructions:", instructions);
- * console.log("Rent (lamports):", estInitializationCost);
+ * console.log("Rent (lamports):", initializationCost);
  */
 export async function createConcentratedLiquidityPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,

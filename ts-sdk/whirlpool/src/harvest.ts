@@ -41,7 +41,13 @@ import assert from "assert";
 
 // TODO: Transfer hook
 
-type HarvestPositionInstructions = {
+/**
+ * @typedef {Object} HarvestPositionInstructions
+ * @property {CollectFeesQuote} feesQuote - A breakdown of the fees owed to the position owner in token A and token B.
+ * @property {CollectRewardsQuote} rewardsQuote - A breakdown of the rewards owed in up to three reward tokens.
+ * @property {IInstruction[]} instructions - A list of instructions needed to harvest the position.
+ */
+export type HarvestPositionInstructions = {
   feesQuote: CollectFeesQuote;
   rewardsQuote: CollectRewardsQuote;
   instructions: IInstruction[];
@@ -73,6 +79,31 @@ async function getTransferFeeConfigs(
   };
 }
 
+/**
+ * Generates instructions to harvest accumulated fees and rewards from an Orca Whirlpool position.
+ * 
+ * This function creates a set of instructions that collect any accumulated fees and rewards from a position.
+ * The liquidity remains in place, and the position stays open.
+ * 
+ * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi & GetEpochInfoApi>} rpc 
+ *    A Solana RPC client used to interact with the blockchain.
+ * @param {Address} positionMintAddress 
+ *    The mint address of the position you want to harvest fees and rewards from.
+ * @param {TransactionPartialSigner} [authority=DEFAULT_FUNDER] 
+ *    The account that authorizes the transaction. Defaults to a predefined funder.
+ * 
+ * @returns {Promise<HarvestPositionInstructions>} 
+ *    A promise that resolves to an object containing the instructions, fees, and rewards quotes.
+ * @example
+ * const { feesQuote, rewardsQuote, instructions } = await harvestPositionInstructions(
+ *   connection,
+ *   positionMintAddress,
+ *   wallet
+ * );
+ * console.log("Fees Collected:", feesQuote);
+ * console.log("Rewards Collected:", rewardsQuote);
+ * console.log("Harvest Position Instructions:", instructions);
+ */
 export async function harvestPositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &

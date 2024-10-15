@@ -8,7 +8,6 @@ import {
   fetchAllMaybeWhirlpool,
   fetchAllFeeTierWithFilter,
   feeTierWhirlpoolsConfigFilter,
-  fetchWhirlpool,
 } from "@orca-so/whirlpools-client";
 import type {
   Rpc,

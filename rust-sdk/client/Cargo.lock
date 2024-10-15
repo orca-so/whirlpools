@@ -1276,10 +1276,21 @@ version = "0.1.0"
 dependencies = [
  "ethnum",
  "libm",
+ "orca_whirlpools_macros",
  "serde",
+ "serde-big-array",
  "serde-wasm-bindgen 0.6.5",
  "tsify",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "orca_whirlpools_macros"
+version = "0.1.0"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn 2.0.74",
 ]
 
 [[package]]
@@ -1549,6 +1560,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c8e3592472072e6e22e0a54d5904d9febf8508f65fb8552499a1abc7d1078c3a"
 dependencies = [
  "serde_derive",
+]
+
+[[package]]
+name = "serde-big-array"
+version = "0.5.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "11fc7cc2c76d73e0f27ee52abbd64eec84d46f370c88371120433196934e4b7f"
+dependencies = [
+ "serde",
 ]
 
 [[package]]

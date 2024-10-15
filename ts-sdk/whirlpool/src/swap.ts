@@ -8,19 +8,20 @@ import type {
   Rpc,
   TransactionPartialSigner,
 } from "@solana/web3.js";
-import { AccountRole, lamports } from "@solana/web3.js";
+import { AccountRole } from "@solana/web3.js";
 import { DEFAULT_FUNDER, DEFAULT_SLIPPAGE_TOLERANCE_BPS } from "./config";
 import type {
   ExactInSwapQuote,
   ExactOutSwapQuote,
   TickArrayFacade,
+  TickArrays,
   TransferFee,
 } from "@orca-so/whirlpools-core";
 import {
   _TICK_ARRAY_SIZE,
   getTickArrayStartTickIndex,
-  swapQuoteByInputToken5,
-  swapQuoteByOutputToken5,
+  swapQuoteByInputToken,
+  swapQuoteByOutputToken,
 } from "@orca-so/whirlpools-core";
 import type { Whirlpool } from "@orca-so/whirlpools-client";
 import {
@@ -62,33 +63,23 @@ type SwapInstructions<T extends SwapParams> = {
   quote: SwapQuote<T>;
 };
 
-function createUninitializedTickArray(
-  address: Address,
-  startTickIndex: number,
-  programAddress: Address,
-): Account<TickArrayFacade> {
+function createUninitializedTickArray(startTickIndex: number): TickArrayFacade {
   return {
-    address,
-    data: {
-      startTickIndex,
-      ticks: Array(_TICK_ARRAY_SIZE()).fill({
-        initialized: false,
-        liquidityNet: 0n,
-        feeGrowthOutsideA: 0n,
-        feeGrowthOutsideB: 0n,
-        rewardGrowthsOutside: [0n, 0n, 0n],
-      }),
-    },
-    executable: false,
-    lamports: lamports(0n),
-    programAddress,
+    startTickIndex,
+    ticks: Array(_TICK_ARRAY_SIZE()).fill({
+      initialized: false,
+      liquidityNet: 0n,
+      feeGrowthOutsideA: 0n,
+      feeGrowthOutsideB: 0n,
+      rewardGrowthsOutside: [0n, 0n, 0n],
+    }),
   };
 }
 
 async function fetchTickArrayOrDefault(
   rpc: Rpc<GetMultipleAccountsApi>,
   whirlpool: Account<Whirlpool>,
-): Promise<Account<TickArrayFacade>[]> {
+): Promise<[TickArrays, Address[]]> {
   const tickArrayStartIndex = getTickArrayStartTickIndex(
     whirlpool.data.tickCurrentIndex,
     whirlpool.data.tickSpacing,
@@ -111,24 +102,18 @@ async function fetchTickArrayOrDefault(
 
   const maybeTickArrays = await fetchAllMaybeTickArray(rpc, tickArrayAddresses);
 
-  const tickArrays: Account<TickArrayFacade>[] = [];
+  const tickArrays: TickArrayFacade[] = [];
 
   for (let i = 0; i < maybeTickArrays.length; i++) {
     const maybeTickArray = maybeTickArrays[i];
     if (maybeTickArray.exists) {
-      tickArrays.push(maybeTickArray);
+      tickArrays.push(maybeTickArray.data);
     } else {
-      tickArrays.push(
-        createUninitializedTickArray(
-          tickArrayAddresses[i],
-          tickArrayIndexes[i],
-          whirlpool.programAddress,
-        ),
-      );
+      tickArrays.push(createUninitializedTickArray(tickArrayIndexes[i]));
     }
   }
 
-  return tickArrays;
+  return [tickArrays as TickArrays, tickArrayAddresses];
 }
 
 function getSwapQuote<T extends SwapParams>(
@@ -136,36 +121,28 @@ function getSwapQuote<T extends SwapParams>(
   whirlpool: Whirlpool,
   transferFeeA: TransferFee | undefined,
   transferFeeB: TransferFee | undefined,
-  tickArrays: Account<TickArrayFacade>[],
+  tickArrays: TickArrays,
   specifiedTokenA: boolean,
   slippageToleranceBps: number,
 ): SwapQuote<T> {
   if ("inputAmount" in params) {
-    return swapQuoteByInputToken5(
+    return swapQuoteByInputToken(
       params.inputAmount,
       specifiedTokenA,
       slippageToleranceBps,
       whirlpool,
-      tickArrays[0].data,
-      tickArrays[1].data,
-      tickArrays[2].data,
-      tickArrays[3].data,
-      tickArrays[4].data,
+      tickArrays,
       transferFeeA,
       transferFeeB,
     ) as SwapQuote<T>;
   }
 
-  return swapQuoteByOutputToken5(
+  return swapQuoteByOutputToken(
     params.outputAmount,
     specifiedTokenA,
     slippageToleranceBps,
     whirlpool,
-    tickArrays[0].data,
-    tickArrays[1].data,
-    tickArrays[2].data,
-    tickArrays[3].data,
-    tickArrays[4].data,
+    tickArrays,
     transferFeeA,
     transferFeeB,
   ) as SwapQuote<T>;
@@ -190,7 +167,10 @@ export async function swapInstructions<T extends SwapParams>(
   const specifiedTokenA = params.mint === whirlpool.data.tokenMintA;
   const specifiedInput = "inputAmount" in params;
 
-  const tickArrays = await fetchTickArrayOrDefault(rpc, whirlpool);
+  const [tickArrays, tickArrayAddresses] = await fetchTickArrayOrDefault(
+    rpc,
+    whirlpool,
+  );
 
   const oracleAddress = await getOracleAddress(whirlpool.address).then(
     (x) => x[0],
@@ -239,9 +219,9 @@ export async function swapInstructions<T extends SwapParams>(
     tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
     tokenVaultA: whirlpool.data.tokenVaultA,
     tokenVaultB: whirlpool.data.tokenVaultB,
-    tickArray0: tickArrays[0].address,
-    tickArray1: tickArrays[1].address,
-    tickArray2: tickArrays[2].address,
+    tickArray0: tickArrayAddresses[0],
+    tickArray1: tickArrayAddresses[1],
+    tickArray2: tickArrayAddresses[2],
     amount: specifiedAmount,
     otherAmountThreshold,
     sqrtPriceLimit: 0,
@@ -256,8 +236,8 @@ export async function swapInstructions<T extends SwapParams>(
   });
 
   swapInstruction.accounts.push(
-    { address: tickArrays[3].address, role: AccountRole.WRITABLE },
-    { address: tickArrays[4].address, role: AccountRole.WRITABLE },
+    { address: tickArrayAddresses[3], role: AccountRole.WRITABLE },
+    { address: tickArrayAddresses[4], role: AccountRole.WRITABLE },
   );
 
   instructions.push(swapInstruction);

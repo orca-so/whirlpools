@@ -1,7 +1,11 @@
 use core::cmp::{max, min};
 
 use crate::{
-    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_adjust_amount, try_get_amount_delta_a, try_get_amount_delta_b, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b, try_inverse_adjust_amount, AdjustmentType, ErrorCode, ExactInSwapQuote, ExactOutSwapQuote, TickArrayFacade, TickArraySequence, TickFacade, TransferFee, WhirlpoolFacade, ARITHMETIC_OVERFLOW, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_OUT_OF_BOUNDS
+    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_adjust_amount, try_get_amount_delta_a,
+    try_get_amount_delta_b, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b,
+    try_inverse_adjust_amount, AdjustmentType, ErrorCode, ExactInSwapQuote, ExactOutSwapQuote,
+    TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade, ARITHMETIC_OVERFLOW,
+    MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_OUT_OF_BOUNDS,
 };
 
 #[cfg(feature = "wasm")]
@@ -14,82 +18,19 @@ use orca_whirlpools_macros::wasm_expose;
 /// - `specified_token_a`: If `true`, the input token is token A. Otherwise, it is token B.
 /// - `slippage_tolerance`: The slippage tolerance in basis points.
 /// - `whirlpool`: The whirlpool state.
-/// - `tick_array_lower`: The tick array at the lower tick index.
-/// - `tick_array_upper`: The tick array at the upper tick index.
+/// - `tick_arrays`: The tick arrays needed for the swap.
 /// - `transfer_fee_a`: The transfer fee for token A.
 /// - `transfer_fee_b`: The transfer fee for token B.
 ///
 /// # Returns
 /// The exact input or output amount for the swap transaction.
 #[cfg_attr(feature = "wasm", wasm_expose)]
-#[cfg(feature = "wasm")]
-pub fn swap_quote_by_input_token_2(
+pub fn swap_quote_by_input_token(
     token_in: u64,
     specified_token_a: bool,
     slippage_tolerance_bps: u16,
     whirlpool: WhirlpoolFacade,
-    tick_array_lower: TickArrayFacade,
-    tick_array_upper: TickArrayFacade,
-) -> Result<ExactInSwapQuote, ErrorCode> {
-    let tick_arrays = [tick_array_lower, tick_array_upper];
-    swap_quote_by_input_token(token_in, specified_token_a, slippage_tolerance_bps, whirlpool, tick_arrays, None, None)
-}
-
-/// Computes the exact input or output amount for a swap transaction.
-///
-/// # Arguments
-/// - `token_in`: The input token amount.
-/// - `specified_token_a`: If `true`, the input token is token A. Otherwise, it is token B.
-/// - `slippage_tolerance`: The slippage tolerance in basis points.
-/// - `whirlpool`: The whirlpool state.
-/// - `tick_array_0`: The tick array at the current tick index.
-/// - `tick_array_plus_1`: The tick array at the current tick offset plus 1.
-/// - `tick_array_plus_2`: The tick array at the current tick offset plus 2.
-/// - `tick_array_minus_1`: The tick array at the current tick offset minus 1.
-/// - `tick_array_minus_2`: The tick array at the current tick offset minus 2.
-/// - `transfer_fee_a`: The transfer fee for token A.
-/// - `transfer_fee_b`: The transfer fee for token B.
-///
-/// # Returns
-/// The exact input or output amount for the swap transaction.
-#[cfg_attr(feature = "wasm", wasm_expose)]
-#[cfg(feature = "wasm")]
-pub fn swap_quote_by_input_token_5(
-    token_in: u64,
-    specified_token_a: bool,
-    slippage_tolerance_bps: u16,
-    whirlpool: WhirlpoolFacade,
-    tick_array_0: TickArrayFacade,
-    tick_array_plus_1: TickArrayFacade,
-    tick_array_plus_2: TickArrayFacade,
-    tick_array_minus_1: TickArrayFacade,
-    tick_array_minus_2: TickArrayFacade,
-    transfer_fee_a: Option<TransferFee>,
-    transfer_fee_b: Option<TransferFee>,
-) -> Result<ExactInSwapQuote, ErrorCode> {
-    let tick_arrays = [tick_array_0, tick_array_plus_1, tick_array_plus_2, tick_array_minus_1, tick_array_minus_2];
-    swap_quote_by_input_token(token_in, specified_token_a, slippage_tolerance_bps, whirlpool, tick_arrays, transfer_fee_a, transfer_fee_b)
-}
-
-/// Computes the exact input or output amount for a swap transaction.
-///
-/// # Arguments
-/// - `token_in`: The input token amount.
-/// - `specified_token_a`: If `true`, the input token is token A. Otherwise, it is token B.
-/// - `slippage_tolerance`: The slippage tolerance in basis points.
-/// - `whirlpool`: The whirlpool state.
-/// - `tick_arrays`: The tick arrays at the current tick index.
-/// - `transfer_fee_a`: The transfer fee for token A.
-/// - `transfer_fee_b`: The transfer fee for token B.
-///
-/// # Returns
-/// The exact input or output amount for the swap transaction.
-pub fn swap_quote_by_input_token<const SIZE: usize>(
-    token_in: u64,
-    specified_token_a: bool,
-    slippage_tolerance_bps: u16,
-    whirlpool: WhirlpoolFacade,
-    tick_arrays: [TickArrayFacade; SIZE],
+    tick_arrays: TickArrays,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
 ) -> Result<ExactInSwapQuote, ErrorCode> {
@@ -98,13 +39,9 @@ pub fn swap_quote_by_input_token<const SIZE: usize>(
     } else {
         (transfer_fee_b, transfer_fee_a)
     };
-    let token_in_after_fee =
-        try_adjust_amount(token_in.into(), transfer_fee_in.into(), true)?;
+    let token_in_after_fee = try_adjust_amount(token_in.into(), transfer_fee_in.into(), true)?;
 
-    let tick_sequence = TickArraySequence::new(
-        tick_arrays,
-        whirlpool.tick_spacing,
-    )?;
+    let tick_sequence = tick_arrays.into_tick_array_sequence(whirlpool.tick_spacing)?;
 
     let swap_result = compute_swap(
         token_in_after_fee.into(),
@@ -135,7 +72,9 @@ pub fn swap_quote_by_input_token<const SIZE: usize>(
     )?;
     let token_min_out = try_adjust_amount(
         token_min_out_before_slippage.into(),
-        AdjustmentType::Slippage { slippage_tolerance_bps },
+        AdjustmentType::Slippage {
+            slippage_tolerance_bps,
+        },
         false,
     )?;
 
@@ -154,69 +93,19 @@ pub fn swap_quote_by_input_token<const SIZE: usize>(
 /// - `specified_token_a`: If `true`, the output token is token A. Otherwise, it is token B.
 /// - `slippage_tolerance`: The slippage tolerance in basis points.
 /// - `whirlpool`: The whirlpool state.
-/// - `tick_array_lower`: The tick array at the lower tick index.
-/// - `tick_array_upper`: The tick array at the upper tick index.
+/// - `tick_arrays`: The tick arrays needed for the swap.
 /// - `transfer_fee_a`: The transfer fee for token A.
 /// - `transfer_fee_b`: The transfer fee for token B.
 ///
 /// # Returns
 /// The exact input or output amount for the swap transaction.
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn swap_quote_by_output_token_2(
+pub fn swap_quote_by_output_token(
     token_out: u64,
     specified_token_a: bool,
     slippage_tolerance_bps: u16,
     whirlpool: WhirlpoolFacade,
-    tick_array_lower: TickArrayFacade,
-    tick_array_upper: TickArrayFacade,
-    transfer_fee_a: Option<TransferFee>,
-    transfer_fee_b: Option<TransferFee>,
-) -> Result<ExactOutSwapQuote, ErrorCode> {
-    let tick_arrays = [tick_array_lower, tick_array_upper];
-    swap_quote_by_output_token(token_out, specified_token_a, slippage_tolerance_bps, whirlpool, tick_arrays, transfer_fee_a, transfer_fee_b)
-}
-
-/// Computes the exact input or output amount for a swap transaction.
-///
-/// # Arguments
-/// - `token_out`: The output token amount.
-/// - `specified_token_a`: If `true`, the output token is token A. Otherwise, it is token B.
-/// - `slippage_tolerance`: The slippage tolerance in basis points.
-/// - `whirlpool`: The whirlpool state.
-/// - `tick_array_0`: The tick array at the current tick index.
-/// - `tick_array_plus_1`: The tick array at the current tick offset plus 1.
-/// - `tick_array_plus_2`: The tick array at the current tick offset plus 2.
-/// - `tick_array_minus_1`: The tick array at the current tick offset minus 1.
-/// - `tick_array_minus_2`: The tick array at the current tick offset minus 2.
-/// - `transfer_fee_a`: The transfer fee for token A.
-/// - `transfer_fee_b`: The transfer fee for token B.
-///
-/// # Returns
-/// The exact input or output amount for the swap transaction.
-#[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn swap_quote_by_output_token_5(
-    token_out: u64,
-    specified_token_a: bool,
-    slippage_tolerance_bps: u16,
-    whirlpool: WhirlpoolFacade,
-    tick_array_0: TickArrayFacade,
-    tick_array_plus_1: TickArrayFacade,
-    tick_array_plus_2: TickArrayFacade,
-    tick_array_minus_1: TickArrayFacade,
-    tick_array_minus_2: TickArrayFacade,
-    transfer_fee_a: Option<TransferFee>,
-    transfer_fee_b: Option<TransferFee>,
-) -> Result<ExactOutSwapQuote, ErrorCode> {
-    let tick_arrays = [tick_array_0, tick_array_plus_1, tick_array_plus_2, tick_array_minus_1, tick_array_minus_2];
-    swap_quote_by_output_token(token_out, specified_token_a, slippage_tolerance_bps, whirlpool, tick_arrays, transfer_fee_a, transfer_fee_b)
-}
-
-pub fn swap_quote_by_output_token<const SIZE: usize>(
-    token_out: u64,
-    specified_token_a: bool,
-    slippage_tolerance_bps: u16,
-    whirlpool: WhirlpoolFacade,
-    tick_arrays: [TickArrayFacade; SIZE],
+    tick_arrays: TickArrays,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
 ) -> Result<ExactOutSwapQuote, ErrorCode> {
@@ -228,10 +117,7 @@ pub fn swap_quote_by_output_token<const SIZE: usize>(
     let token_out_before_fee =
         try_inverse_adjust_amount(token_out.into(), transfer_fee_out.into(), false)?;
 
-    let tick_sequence = TickArraySequence::new(
-        tick_arrays,
-        whirlpool.tick_spacing,
-    )?;
+    let tick_sequence = tick_arrays.into_tick_array_sequence(whirlpool.tick_spacing)?;
 
     let swap_result = compute_swap(
         token_out_before_fee.into(),
@@ -247,18 +133,19 @@ pub fn swap_quote_by_output_token<const SIZE: usize>(
         (swap_result.token_b, swap_result.token_a)
     };
 
-    let token_max_in_slippage_fee = try_adjust_amount(
-        token_est_in_after_fee.into(),
-        transfer_fee_in.into(),
-        true,
-    )?;
+    let token_max_in_slippage_fee =
+        try_adjust_amount(token_est_in_after_fee.into(), transfer_fee_in.into(), true)?;
 
     let token_est_in =
         try_inverse_adjust_amount(token_est_in_after_fee.into(), transfer_fee_in.into(), false)?;
-    let token_max_in =
-        try_inverse_adjust_amount(token_max_in_slippage_fee.into(), AdjustmentType::Slippage { slippage_tolerance_bps }, false)?;
-    let token_out =
-        try_adjust_amount(token_out_before_fee.into(), transfer_fee_out.into(), false)?;
+    let token_max_in = try_inverse_adjust_amount(
+        token_max_in_slippage_fee.into(),
+        AdjustmentType::Slippage {
+            slippage_tolerance_bps,
+        },
+        false,
+    )?;
+    let token_out = try_adjust_amount(token_out_before_fee.into(), transfer_fee_out.into(), false)?;
 
     Ok(ExactOutSwapQuote {
         token_out: token_out.into(),
@@ -295,11 +182,9 @@ fn compute_swap<const SIZE: usize>(
         && current_sqrt_price < MAX_SQRT_PRICE
     {
         let (next_tick, next_tick_index) = if a_to_b {
-            tick_sequence
-                .prev_initialized_tick(current_tick_index)?
+            tick_sequence.prev_initialized_tick(current_tick_index)?
         } else {
-            tick_sequence
-                .next_initialized_tick(current_tick_index)?
+            tick_sequence.next_initialized_tick(current_tick_index)?
         };
         let next_tick_sqrt_price: u128 = tick_index_to_sqrt_price(next_tick_index.into()).into();
         let target_sqrt_price = if a_to_b {
@@ -432,7 +317,7 @@ fn compute_swap_step(
         )?
     };
 
-    if next_sqrt_price < MIN_SQRT_PRICE || next_sqrt_price > MAX_SQRT_PRICE {
+    if !(MIN_SQRT_PRICE..=MAX_SQRT_PRICE).contains(&next_sqrt_price) {
         return Err(SQRT_PRICE_OUT_OF_BOUNDS);
     }
 
@@ -597,14 +482,14 @@ mod tests {
         }
     }
 
-    fn test_tick_arrays() -> [TickArrayFacade; 5] {
-        [
+    fn test_tick_arrays() -> TickArrays {
+        TickArrays::Five(
             test_tick_array(0),
             test_tick_array(176),
             test_tick_array(352),
             test_tick_array(-176),
             test_tick_array(-352),
-        ]
+        )
     }
 
     #[test]
@@ -617,7 +502,8 @@ mod tests {
             test_tick_arrays(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.token_in, 1000);
         assert_eq!(result.token_est_out, 996);
         assert_eq!(result.token_min_out, 896);
@@ -634,7 +520,8 @@ mod tests {
             test_tick_arrays(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.token_in, 1000);
         assert_eq!(result.token_est_out, 871);
         assert_eq!(result.token_min_out, 783);
@@ -651,7 +538,8 @@ mod tests {
             test_tick_arrays(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.token_in, 1000);
         assert_eq!(result.token_est_out, 996);
         assert_eq!(result.token_min_out, 896);
@@ -668,7 +556,8 @@ mod tests {
             test_tick_arrays(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.token_in, 1000);
         assert_eq!(result.token_est_out, 872);
         assert_eq!(result.token_min_out, 784);
@@ -685,7 +574,8 @@ mod tests {
             test_tick_arrays(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.token_out, 1000);
         assert_eq!(result.token_est_in, 1005);
         assert_eq!(result.token_max_in, 1106);
@@ -702,7 +592,8 @@ mod tests {
             test_tick_arrays(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.token_out, 1000);
         assert_eq!(result.token_est_in, 1142);
         assert_eq!(result.token_max_in, 1257);
@@ -719,7 +610,8 @@ mod tests {
             test_tick_arrays(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.token_out, 1000);
         assert_eq!(result.token_est_in, 1005);
         assert_eq!(result.token_max_in, 1106);
@@ -736,7 +628,8 @@ mod tests {
             test_tick_arrays(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.token_out, 1000);
         assert_eq!(result.token_est_in, 1141);
         assert_eq!(result.token_max_in, 1256);

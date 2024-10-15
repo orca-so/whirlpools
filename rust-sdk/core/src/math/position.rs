@@ -1,4 +1,4 @@
-use crate::{PositionRatio, PositionStatus, ARITHMETIC_OVERFLOW, U128};
+use crate::{PositionRatio, PositionStatus, U128};
 
 use ethnum::U256;
 #[cfg(feature = "wasm")]
@@ -76,8 +76,12 @@ pub fn position_ratio(
     tick_lower_index: i32,
     tick_upper_index: i32,
 ) -> PositionRatio {
-    let sqrt_price: u128 = current_sqrt_price.into();
-    let position_status = position_status(sqrt_price.into(), tick_lower_index, tick_upper_index);
+    let current_sqrt_price: u128 = current_sqrt_price.into();
+    let position_status = position_status(
+        current_sqrt_price.into(),
+        tick_lower_index,
+        tick_upper_index,
+    );
     match position_status {
         PositionStatus::Invalid => PositionRatio {
             ratio_a: 0,
@@ -100,13 +104,9 @@ pub fn position_ratio(
 
             let l = <U256>::from(1u16).wrapping_shl(128);
 
-            let deposit_a_1 = l
-                .wrapping_shl(64)
-                .wrapping_div(current_sqrt_price.into());
+            let deposit_a_1 = l.wrapping_shl(64).wrapping_div(current_sqrt_price.into());
 
-            let deposit_a_2 = l
-                .wrapping_shl(64)
-                .wrapping_div(upper_sqrt_price.into());
+            let deposit_a_2 = l.wrapping_shl(64).wrapping_div(upper_sqrt_price.into());
 
             let deposit_a = deposit_a_1
                 .wrapping_sub(deposit_a_2)
@@ -116,9 +116,7 @@ pub fn position_ratio(
 
             let deposit_b_1 = current_sqrt_price.wrapping_sub(lower_sqrt_price);
 
-            let deposit_b = l
-                .wrapping_mul(deposit_b_1.into())
-                .wrapping_shr(64);
+            let deposit_b = l.wrapping_mul(deposit_b_1.into()).wrapping_shr(64);
 
             let total_deposit = deposit_a.wrapping_add(deposit_b);
 

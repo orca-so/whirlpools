@@ -90,10 +90,8 @@ function testPosition(): PositionFacade {
   };
 }
 
-// FIXME: SwapIn and SwapOut are failing
-
 describe("WASM bundle smoke test", () => {
-  it.skip("SwapIn", async () => {
+  it("SwapIn", async () => {
     const result = swapQuoteByInputToken(1000n, false, 1000, testWhirlpool(), [
       testTickArray(0),
       testTickArray(176),
@@ -107,7 +105,7 @@ describe("WASM bundle smoke test", () => {
     assert.strictEqual(result.tradeFee, 68n);
   });
 
-  it.skip("SwapOut", async () => {
+  it("SwapOut", async () => {
     const result = swapQuoteByOutputToken(1000n, true, 1000, testWhirlpool(), [
       testTickArray(0),
       testTickArray(176),

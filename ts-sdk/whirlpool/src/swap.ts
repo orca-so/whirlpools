@@ -8,13 +8,12 @@ import type {
   Rpc,
   TransactionPartialSigner,
 } from "@solana/web3.js";
-import { AccountRole } from "@solana/web3.js";
+import { AccountRole, lamports } from "@solana/web3.js";
 import { DEFAULT_FUNDER, DEFAULT_SLIPPAGE_TOLERANCE_BPS } from "./config";
 import type {
   ExactInSwapQuote,
   ExactOutSwapQuote,
   TickArrayFacade,
-  TickArrays,
   TransferFee,
 } from "@orca-so/whirlpools-core";
 import {
@@ -63,8 +62,10 @@ type SwapInstructions<T extends SwapParams> = {
   quote: SwapQuote<T>;
 };
 
-function createUninitializedTickArray(startTickIndex: number): TickArrayFacade {
+function createUninitializedTickArray(address: Address, startTickIndex: number, programAddress: Address): Account<TickArrayFacade> {
   return {
+    address,
+    data: {
     startTickIndex,
     ticks: Array(_TICK_ARRAY_SIZE()).fill({
       initialized: false,
@@ -72,14 +73,18 @@ function createUninitializedTickArray(startTickIndex: number): TickArrayFacade {
       feeGrowthOutsideA: 0n,
       feeGrowthOutsideB: 0n,
       rewardGrowthsOutside: [0n, 0n, 0n],
-    }),
+      }),
+    },
+    executable: false,
+    lamports: lamports(0n),
+    programAddress,
   };
 }
 
 async function fetchTickArrayOrDefault(
   rpc: Rpc<GetMultipleAccountsApi>,
   whirlpool: Account<Whirlpool>,
-): Promise<[TickArrays, Address[]]> {
+): Promise<Account<TickArrayFacade>[]> {
   const tickArrayStartIndex = getTickArrayStartTickIndex(
     whirlpool.data.tickCurrentIndex,
     whirlpool.data.tickSpacing,
@@ -102,18 +107,18 @@ async function fetchTickArrayOrDefault(
 
   const maybeTickArrays = await fetchAllMaybeTickArray(rpc, tickArrayAddresses);
 
-  const tickArrays: TickArrayFacade[] = [];
+  const tickArrays: Account<TickArrayFacade>[] = [];
 
   for (let i = 0; i < maybeTickArrays.length; i++) {
     const maybeTickArray = maybeTickArrays[i];
     if (maybeTickArray.exists) {
-      tickArrays.push(maybeTickArray.data);
+      tickArrays.push(maybeTickArray);
     } else {
-      tickArrays.push(createUninitializedTickArray(tickArrayIndexes[i]));
+      tickArrays.push(createUninitializedTickArray(tickArrayAddresses[i], tickArrayIndexes[i], whirlpool.programAddress));
     }
   }
 
-  return [tickArrays as TickArrays, tickArrayAddresses];
+  return tickArrays;
 }
 
 function getSwapQuote<T extends SwapParams>(
@@ -121,7 +126,7 @@ function getSwapQuote<T extends SwapParams>(
   whirlpool: Whirlpool,
   transferFeeA: TransferFee | undefined,
   transferFeeB: TransferFee | undefined,
-  tickArrays: TickArrays,
+  tickArrays: TickArrayFacade[],
   specifiedTokenA: boolean,
   slippageToleranceBps: number,
 ): SwapQuote<T> {
@@ -167,7 +172,7 @@ export async function swapInstructions<T extends SwapParams>(
   const specifiedTokenA = params.mint === whirlpool.data.tokenMintA;
   const specifiedInput = "inputAmount" in params;
 
-  const [tickArrays, tickArrayAddresses] = await fetchTickArrayOrDefault(
+  const tickArrays = await fetchTickArrayOrDefault(
     rpc,
     whirlpool,
   );
@@ -185,7 +190,7 @@ export async function swapInstructions<T extends SwapParams>(
     whirlpool.data,
     transferFeeA,
     transferFeeB,
-    tickArrays,
+    tickArrays.map((x) => x.data),
     specifiedTokenA,
     slippageToleranceBps,
   );
@@ -219,9 +224,9 @@ export async function swapInstructions<T extends SwapParams>(
     tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
     tokenVaultA: whirlpool.data.tokenVaultA,
     tokenVaultB: whirlpool.data.tokenVaultB,
-    tickArray0: tickArrayAddresses[0],
-    tickArray1: tickArrayAddresses[1],
-    tickArray2: tickArrayAddresses[2],
+    tickArray0: tickArrays[0].address,
+    tickArray1: tickArrays[1].address,
+    tickArray2: tickArrays[2].address,
     amount: specifiedAmount,
     otherAmountThreshold,
     sqrtPriceLimit: 0,
@@ -236,8 +241,8 @@ export async function swapInstructions<T extends SwapParams>(
   });
 
   swapInstruction.accounts.push(
-    { address: tickArrayAddresses[3], role: AccountRole.WRITABLE },
-    { address: tickArrayAddresses[4], role: AccountRole.WRITABLE },
+    { address: tickArrays[3].address, role: AccountRole.WRITABLE },
+    { address: tickArrays[4].address, role: AccountRole.WRITABLE },
   );
 
   instructions.push(swapInstruction);

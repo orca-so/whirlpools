@@ -41,7 +41,7 @@ pub fn swap_quote_by_input_token(
     };
     let token_in_after_fee = try_adjust_amount(token_in.into(), transfer_fee_in.into(), true)?;
 
-    let tick_sequence = tick_arrays.into_tick_array_sequence(whirlpool.tick_spacing)?;
+    let tick_sequence = TickArraySequence::new(tick_arrays.into(), whirlpool.tick_spacing)?;
 
     let swap_result = compute_swap(
         token_in_after_fee.into(),
@@ -117,7 +117,7 @@ pub fn swap_quote_by_output_token(
     let token_out_before_fee =
         try_inverse_adjust_amount(token_out.into(), transfer_fee_out.into(), false)?;
 
-    let tick_sequence = tick_arrays.into_tick_array_sequence(whirlpool.tick_spacing)?;
+    let tick_sequence = TickArraySequence::new(tick_arrays.into(), whirlpool.tick_spacing)?;
 
     let swap_result = compute_swap(
         token_out_before_fee.into(),
@@ -448,7 +448,7 @@ fn get_next_sqrt_price(
 
 #[cfg(all(test, not(feature = "wasm")))]
 mod tests {
-    use crate::TICK_ARRAY_SIZE;
+    use crate::{TickArrayFacade, TICK_ARRAY_SIZE};
 
     use super::*;
 
@@ -483,13 +483,13 @@ mod tests {
     }
 
     fn test_tick_arrays() -> TickArrays {
-        TickArrays::Five(
+        [
             test_tick_array(0),
             test_tick_array(176),
             test_tick_array(352),
             test_tick_array(-176),
             test_tick_array(-352),
-        )
+        ].into()
     }
 
     #[test]

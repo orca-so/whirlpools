@@ -1,157 +1,122 @@
-use crate::{types::TickArrayFacade, TickArraySequence};
+use crate::types::TickArrayFacade;
+
+#[cfg(not(feature = "wasm"))]
+pub struct TickArrays([Option<TickArrayFacade>; 6]);
 
 #[cfg(feature = "wasm")]
-use orca_whirlpools_macros::wasm_expose;
+use core::fmt::{Debug, Formatter, Result as FmtResult};
 
-#[derive(Debug, Clone)]
-#[cfg_attr(feature = "wasm", wasm_expose)]
-#[cfg_attr(feature = "wasm", serde(untagged))]
-pub enum TickArrays {
-    One(TickArrayFacade),
-    Two(TickArrayFacade, TickArrayFacade),
-    Three(TickArrayFacade, TickArrayFacade, TickArrayFacade),
-    Four(
-        TickArrayFacade,
-        TickArrayFacade,
-        TickArrayFacade,
-        TickArrayFacade,
-    ),
-    Five(
-        TickArrayFacade,
-        TickArrayFacade,
-        TickArrayFacade,
-        TickArrayFacade,
-        TickArrayFacade,
-    ),
-    Six(
-        TickArrayFacade,
-        TickArrayFacade,
-        TickArrayFacade,
-        TickArrayFacade,
-        TickArrayFacade,
-        TickArrayFacade,
-    ),
+#[cfg(feature = "wasm")]
+use js_sys::Array;
+
+#[cfg(feature = "wasm")]
+use wasm_bindgen::prelude::*;
+
+#[cfg(feature = "wasm")]
+#[wasm_bindgen]
+extern "C" {
+    #[wasm_bindgen(typescript_type = "TickArrayFacade[]")]
+    pub type TickArrays;
 }
 
-impl TickArrays {
-    pub fn into_tick_array_sequence(self, tick_spacing: u16) -> Result<TickArraySequence<6>, u16> {
-        match self {
-            TickArrays::One(tick_array_0) => TickArraySequence::new(
-                [Some(tick_array_0), None, None, None, None, None],
-                tick_spacing,
-            ),
-            TickArrays::Two(tick_array_0, tick_array_1) => TickArraySequence::new(
-                [
-                    Some(tick_array_0),
-                    Some(tick_array_1),
-                    None,
-                    None,
-                    None,
-                    None,
-                ],
-                tick_spacing,
-            ),
-            TickArrays::Three(tick_array_0, tick_array_1, tick_array_2) => TickArraySequence::new(
-                [
-                    Some(tick_array_0),
-                    Some(tick_array_1),
-                    Some(tick_array_2),
-                    None,
-                    None,
-                    None,
-                ],
-                tick_spacing,
-            ),
-            TickArrays::Four(tick_array_0, tick_array_1, tick_array_2, tick_array_3) => {
-                TickArraySequence::new(
-                    [
-                        Some(tick_array_0),
-                        Some(tick_array_1),
-                        Some(tick_array_2),
-                        Some(tick_array_3),
-                        None,
-                        None,
-                    ],
-                    tick_spacing,
-                )
-            }
-            TickArrays::Five(
-                tick_array_0,
-                tick_array_1,
-                tick_array_2,
-                tick_array_3,
-                tick_array_4,
-            ) => TickArraySequence::new(
-                [
-                    Some(tick_array_0),
-                    Some(tick_array_1),
-                    Some(tick_array_2),
-                    Some(tick_array_3),
-                    Some(tick_array_4),
-                    None,
-                ],
-                tick_spacing,
-            ),
-            TickArrays::Six(
-                tick_array_0,
-                tick_array_1,
-                tick_array_2,
-                tick_array_3,
-                tick_array_4,
-                tick_array_5,
-            ) => TickArraySequence::new(
-                [
-                    Some(tick_array_0),
-                    Some(tick_array_1),
-                    Some(tick_array_2),
-                    Some(tick_array_3),
-                    Some(tick_array_4),
-                    Some(tick_array_5),
-                ],
-                tick_spacing,
-            ),
+#[cfg(feature = "wasm")]
+impl Debug for TickArrays {
+    fn fmt(&self, f: &mut Formatter<'_>) -> FmtResult {
+        write!(f, "{:?}", JsValue::from(self))
+    }
+}
+
+#[cfg(feature = "wasm")]
+impl From<TickArrays> for [Option<TickArrayFacade>; 6] {
+    fn from(val: TickArrays) -> Self {
+      let val = JsValue::from(val);
+      if !val.is_array() {
+        return [None, None, None, None, None, None];
+      }
+      let array: Array = val.unchecked_into();
+      let mut result = [None, None, None, None, None, None];
+      for (i, item) in array.iter().enumerate() {
+        if let Ok(item) = serde_wasm_bindgen::from_value(item) {
+          result[i] = Some(item);
         }
+      }
+      result
     }
 }
 
-impl From<TickArrayFacade> for TickArrays {
-    fn from(val: TickArrayFacade) -> Self {
-        TickArrays::One(val)
+#[cfg(not(feature = "wasm"))]
+impl From<TickArrays> for [Option<TickArrayFacade>; 6] {
+  fn from(val: TickArrays) -> Self {
+    val.0
+  }
+}
+
+#[cfg(not(feature = "wasm"))]
+impl Into<TickArrays> for TickArrayFacade {
+  fn into(self) -> TickArrays {
+    TickArrays([Some(self), None, None, None, None, None])
+  }
+}
+
+#[cfg(not(feature = "wasm"))]
+impl Into<TickArrays> for [TickArrayFacade; 1] {
+  fn into(self) -> TickArrays {
+    TickArrays([Some(self[0]), None, None, None, None, None])
+  }
+}
+
+#[cfg(not(feature = "wasm"))]
+impl Into<TickArrays> for [TickArrayFacade; 2] {
+  fn into(self) -> TickArrays {
+    TickArrays([Some(self[0]), Some(self[1]), None, None, None, None])
+  }
+}
+
+#[cfg(not(feature = "wasm"))]
+    impl Into<TickArrays> for [TickArrayFacade; 3] {
+  fn into(self) -> TickArrays {
+    TickArrays([Some(self[0]), Some(self[1]), Some(self[2]), None, None, None])
+  }
+}
+
+#[cfg(not(feature = "wasm"))]
+impl Into<TickArrays> for [TickArrayFacade; 4] {
+  fn into(self) -> TickArrays {
+    TickArrays([
+        Some(self[0]),
+        Some(self[1]),
+        Some(self[2]),
+        Some(self[3]),
+        None,
+        None,
+      ])
     }
 }
 
-impl From<[TickArrayFacade; 1]> for TickArrays {
-    fn from(val: [TickArrayFacade; 1]) -> Self {
-        TickArrays::One(val[0])
+#[cfg(not(feature = "wasm"))]
+impl Into<TickArrays> for [TickArrayFacade; 5] {
+    fn into(self) -> TickArrays {
+      TickArrays([
+        Some(self[0]),
+        Some(self[1]),
+        Some(self[2]),
+        Some(self[3]),
+        Some(self[4]),
+        None,
+      ])
     }
 }
 
-impl From<[TickArrayFacade; 2]> for TickArrays {
-    fn from(val: [TickArrayFacade; 2]) -> Self {
-        TickArrays::Two(val[0], val[1])
-    }
-}
-
-impl From<[TickArrayFacade; 3]> for TickArrays {
-    fn from(val: [TickArrayFacade; 3]) -> Self {
-        TickArrays::Three(val[0], val[1], val[2])
-    }
-}
-
-impl From<[TickArrayFacade; 4]> for TickArrays {
-    fn from(val: [TickArrayFacade; 4]) -> Self {
-        TickArrays::Four(val[0], val[1], val[2], val[3])
-    }
-}
-
-impl From<[TickArrayFacade; 5]> for TickArrays {
-    fn from(val: [TickArrayFacade; 5]) -> Self {
-        TickArrays::Five(val[0], val[1], val[2], val[3], val[4])
-    }
-}
-
-impl From<[TickArrayFacade; 6]> for TickArrays {
-    fn from(val: [TickArrayFacade; 6]) -> Self {
-        TickArrays::Six(val[0], val[1], val[2], val[3], val[4], val[5])
+#[cfg(not(feature = "wasm"))]
+impl Into<TickArrays> for [TickArrayFacade; 6] {
+    fn into(self) -> TickArrays {
+      TickArrays([
+        Some(self[0]),
+        Some(self[1]),
+        Some(self[2]),
+        Some(self[3]),
+        Some(self[4]),
+        Some(self[5]),
+      ])
     }
 }

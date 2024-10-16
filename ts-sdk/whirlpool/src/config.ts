@@ -45,21 +45,19 @@ export function setDefaultSlippageToleranceBps(
 }
 
 /**
- * Keypair:
- * Create auxillary token account using keypair.
- * Optionally add funds to account.
- * Close account at the end of tx.
+ * Defines the strategy for handling SOL wrapping in a transaction.
  *
- * Seed:
- * Same as Keypair but then with a seed account.
+ * - **Keypair**: 
+ *   Creates an auxiliary token account using a keypair. Optionally adds funds to the account. Closes it at the end of the transaction.
  *
- * ATA:
- * Create ata (if needed) for NATIVE_MINT
- * Optionally add funds to ata.
- * Close ata at the end of tx if it did not exist before the tx.
+ * - **Seed**: 
+ *   Functions similarly to Keypair, but uses a seed account instead.
  *
- * None:
- * Use/create ata and do not do any wrapping / unwrapping of SOL
+ * - **ATA**: 
+ *   Creates an associated token account (ATA) for `NATIVE_MINT` if necessary. Optionally adds funds to the ATA. Closes it at the end of the transaction if it was newly created.
+ *
+ * - **None**: 
+ *   Uses or creates an ATA without performing any SOL wrapping or unwrapping.
  */
 export type SolWrappingStrategy = "keypair" | "seed" | "ata" | "none";
 

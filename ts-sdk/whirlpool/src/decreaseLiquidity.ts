@@ -63,32 +63,32 @@ import assert from "assert";
 // TODO: transfer hook
 
 /**
- * @typedef {Object} DecreaseLiquidityQuoteParam
- * You must choose only one of the properties (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two based on the input provided.
- * 
- * @property {bigint} liquidity - The amount of liquidity to decrease. The SDK will calculate the corresponding amounts of Token A and Token B.
- * @property {bigint} tokenA - The amount of Token A to withdraw. The SDK will calculate the corresponding liquidity decrease and Token B amount.
- * @property {bigint} tokenB - The amount of Token B to withdraw. The SDK will calculate the corresponding liquidity decrease and Token A amount.
+ * Represents the parameters for decreasing liquidity. 
+ * You must choose only one of the properties (`liquidity`, `tokenA`, or `tokenB`). 
+ * The SDK will compute the other two based on the input provided.
  */
 export type DecreaseLiquidityQuoteParam =
   | {
+      /** The amount of liquidity to decrease.*/
       liquidity: bigint;
     }
   | {
+      /** The amount of Token A to withdraw.*/
       tokenA: bigint;
     }
   | {
+      /** The amount of Token B to withdraw.*/
       tokenB: bigint;
     };
 
 /**
  * Represents the instructions and quote for decreasing liquidity in a position.
- *
- * @property {DecreaseLiquidityQuote} quote - The quote details for decreasing liquidity.
- * @property {IInstruction[]} instructions - The list of instructions required to decrease liquidity.
  */
 export type DecreaseLiquidityInstructions = {
+  /** The quote details for decreasing liquidity, including the liquidity delta, estimated tokens, and minimum token amounts based on slippage tolerance. */
   quote: DecreaseLiquidityQuote;
+
+  /** The list of instructions required to decrease liquidity. */
   instructions: IInstruction[];
 };
 
@@ -145,15 +145,24 @@ function getDecreaseLiquidityQuote(
  * @returns {Promise<DecreaseLiquidityInstructions>} A promise resolving to an object containing the decrease liquidity quote and instructions.
  *
  * @example
+ * import { decreaseLiquidityInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const positionMint = "POSITION_MINT";  
+ * 
+ * const param = { liquidity: 500_000n }; 
+ * 
  * const { quote, instructions } = await decreaseLiquidityInstructions(
- *   connection,
- *   positionMintAddress,
- *   { liquidity: 500_000n },
- *   0.01,
+ *   devnetRpc,
+ *   positionMint,
+ *   param, 
+ *   100,
  *   wallet
  * );
- * console.log("Liquidity Decrease Quote:", quote);
- * console.log("Liquidity Decrease Instructions:", instructions);
  */
 export async function decreaseLiquidityInstructions(
   rpc: Rpc<
@@ -257,13 +266,13 @@ export async function decreaseLiquidityInstructions(
 
 /**
  * Represents the instructions and quotes for closing a liquidity position in an Orca Whirlpool.
- *
- * Extends `DecreaseLiquidityInstructions` and adds:
- * @property {CollectFeesQuote} feesQuote - The fees collected from the position.
- * @property {CollectRewardsQuote} rewardsQuote - The rewards collected from the position.
+ * Extends `DecreaseLiquidityInstructions` and adds additional fee and reward details.
  */
 export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
+  /** The fees collected from the position, including the amounts for token A (`fee_owed_a`) and token B (`fee_owed_b`). */
   feesQuote: CollectFeesQuote;
+
+  /** The rewards collected from the position, including up to three reward tokens (`reward_owed_1`, `reward_owed_2`, and `reward_owed_3`). */
   rewardsQuote: CollectRewardsQuote;
 };
 
@@ -281,17 +290,24 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  * @returns {Promise<ClosePositionInstructions>} A promise resolving to an object containing instructions, fees quote, rewards quote, and the liquidity quote for the closed position.
  *
  * @example
+ * import { closePositionInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const positionMint = "POSITION_MINT";
+ * 
+ * const param = { liquidity: 500_000n };
+ * 
  * const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
- *   connection,
- *   positionMintAddress,
- *   { liquidity: 500_000n },
- *   0.01,
- *   wallet
+ *   devnetRpc,
+ *   positionMint,
+ *   param,
+ *   100, 
+ *   wallet 
  * );
- * console.log("Fees Collected:", feesQuote);
- * console.log("Rewards Collected:", rewardsQuote);
- * console.log("Liquidity Removed:", quote);
- * console.log("Close Position Instructions:", instructions);
  */
 export async function closePositionInstructions(
   rpc: Rpc<

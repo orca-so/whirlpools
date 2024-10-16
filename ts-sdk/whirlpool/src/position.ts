@@ -19,22 +19,15 @@ import { getBase58Encoder, getBase64Encoder } from "@solana/web3.js";
 
 /**
  * Represents either a Position or Position Bundle account.
- *
- * @typedef {Object} PositionOrBundle
- * @property {Account<Position | PositionBundle>} data - The decoded data of the position or bundle.
  */
 export type PositionOrBundle = Account<Position | PositionBundle>;
 
 /**
  * Represents a decoded Position or Position Bundle account.
  * Includes the token program address associated with the position.
- *
- * @typedef {Object} PositionData
- * @property {Account<Position | PositionBundle>} data - The decoded position or bundle data.
- * @property {Address} address - The address of the position or bundle.
- * @property {Address} tokenProgram - The token program associated with the position (either TOKEN_PROGRAM_ADDRESS or TOKEN_2022_PROGRAM_ADDRESS).
  */
 export type PositionData = PositionOrBundle & {
+  /** The token program associated with the position (either TOKEN_PROGRAM_ADDRESS or TOKEN_2022_PROGRAM_ADDRESS). */
   tokenProgram: Address;
 };
 
@@ -65,11 +58,14 @@ function decodePositionOrBundle(
  * @returns {Promise<PositionData[]>} - A promise that resolves to an array of decoded position data for the given owner.
  *
  * @example
- * const positions = await fetchPositions(connection, walletAddress);
- * positions.forEach((position) => {
- *   console.log("Position Address:", position.address);
- *   console.log("Position Data:", position.data);
- * });
+ * import { fetchPositions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const positions = await fetchPositions(devnetRpc, wallet.address);
  */
 export async function fetchPositions(
   rpc: Rpc<GetTokenAccountsByOwnerApi & GetMultipleAccountsApi>,

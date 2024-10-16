@@ -35,14 +35,15 @@ import assert from "assert";
 
 /**
  * Represents the instructions and metadata for creating a pool.
- *
- * @property {IInstruction[]} instructions - The list of instructions needed to create the pool.
- * @property {LamportsUnsafeBeyond2Pow53Minus1} estInitializationCost - The estimated rent exemption cost for initializing the pool.
- * @property {Address} poolAddress - The address of the newly created pool.
  */
 export type CreatePoolInstructions = {
+  /** The list of instructions needed to create the pool. */
   instructions: IInstruction[];
+
+  /** The estimated rent exemption cost for initializing the pool, in lamports. */
   estInitializationCost: LamportsUnsafeBeyond2Pow53Minus1;
+
+  /** The address of the newly created pool. */
   poolAddress: Address;
 };
 
@@ -76,10 +77,6 @@ export type CreatePoolInstructions = {
  *   initialPrice,
  *   wallet
  * );
- * 
- * console.log("Pool Address:", poolAddress);
- * console.log("Initialization Instructions:", instructions);
- * console.log("Rent (lamports):", initializationCost);
  */
 export function createSplashPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
@@ -131,10 +128,6 @@ export function createSplashPoolInstructions(
  *   initialPrice,
  *   wallet
  * );
- * 
- * console.log("Pool Address:", poolAddress);
- * console.log("Initialization Instructions:", instructions);
- * console.log("Rent (lamports):", initializationCost);
  */
 export async function createConcentratedLiquidityPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,

@@ -43,57 +43,47 @@ import { fetchAllMint } from "@solana-program/token-2022";
 
 /**
  * Parameters for an exact input swap.
- *
- * @typedef {Object} ExactInParams
- * @property {bigint} inputAmount - The exact amount of input tokens to be swapped.
  */
-type ExactInParams = {
+export type ExactInParams = {
+  /** The exact amount of input tokens to be swapped. */
   inputAmount: bigint;
 };
 
 /**
  * Parameters for an exact output swap.
- *
- * @typedef {Object} ExactOutParams
- * @property {bigint} outputAmount - The exact amount of output tokens to be received from the swap.
  */
-type ExactOutParams = {
+export type ExactOutParams = {
+  /** The exact amount of output tokens to be received from the swap. */
   outputAmount: bigint;
 };
 
 /**
  * Swap parameters, either for an exact input or exact output swap.
- *
- * @typedef {Object} SwapParams
- * @property {bigint} inputAmount - The exact input amount for the swap.
- * @property {bigint} outputAmount - The exact output amount for the swap.
- * @property {Address} mint - The mint address of the token being swapped.
  */
-type SwapParams = (ExactInParams | ExactOutParams) & {
+export type SwapParams = (ExactInParams | ExactOutParams) & {
+  /** The mint address of the token being swapped. */
   mint: Address;
 };
 
 /**
  * Swap quote that corresponds to the type of swap being executed (either input or output swap).
  *
- * @typedef {Object} SwapQuote
  * @template T - The type of swap (input or output).
- * @property {ExactInSwapQuote | ExactOutSwapQuote} - The quote for the swap based on input or output.
  */
-type SwapQuote<T extends SwapParams> = T extends ExactInParams
+export type SwapQuote<T extends SwapParams> = T extends ExactInParams
   ? ExactInSwapQuote
   : ExactOutSwapQuote;
 
 /**
  * Instructions and quote for executing a swap.
  *
- * @typedef {Object} SwapInstructions
  * @template T - The type of swap (input or output).
- * @property {IInstruction[]} instructions - The list of instructions needed to perform the swap.
- * @property {SwapQuote<T>} quote - The swap quote, which includes information about the amounts involved in the swap.
  */
-type SwapInstructions<T extends SwapParams> = {
+export type SwapInstructions<T extends SwapParams> = {
+  /** The list of instructions needed to perform the swap. */
   instructions: IInstruction[];
+
+  /** The swap quote, which includes information about the amounts involved in the swap. */
   quote: SwapQuote<T>;
 };
 
@@ -195,21 +185,30 @@ function getSwapQuote<T extends SwapParams>(
  * @template T - The type of swap (exact input or output).
  * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - The Solana RPC client.
  * @param {T} params - The swap parameters, specifying either the input or output amount and the mint address of the token being swapped.
- * @param {Address} poolAddress - The address of the Whirlpool pool where the swap will take place.
+ * @param {Address} poolAddress - The address of the Whirlpool against which the swap will be made.
  * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage tolerance for the swap, in basis points (BPS).
  * @param {TransactionPartialSigner} [signer=DEFAULT_FUNDER] - The wallet or signer executing the swap.
  * @returns {Promise<SwapInstructions<T>>} - A promise that resolves to an object containing the swap instructions and the swap quote.
  *
  * @example
- * const { quote, instructions } = await swapInstructions(
- *   connection,
- *   { inputAmount: 1_000_000n, mint: mintAddress },
- *   poolAddress,
- *   0.01,
+ * import { swapInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const poolAddress = "POOL_ADDRESS";
+ * const mintAddress = "TOKEN_MINT";
+ * const inputAmount = 1_000_000n;
+ * 
+ * const { instructions, quote } = await swapInstructions(
+ *   devnetRpc, 
+ *   { inputAmount, mint: mintAddress }, 
+ *   poolAddress, 
+ *   100,
  *   wallet
  * );
- * console.log("Swap Quote:", quote);
- * console.log("Swap Instructions:", instructions);
  */
 export async function swapInstructions<T extends SwapParams>(
   rpc: Rpc<

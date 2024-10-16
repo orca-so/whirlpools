@@ -20,17 +20,9 @@ import { SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS } from "./config";
 
 /**
  * Type representing a pool that is not yet initialized.
- *
- * @typedef {Object} InitializablePool
- * @property {false} initialized - Indicates the pool is not initialized.
- * @property {Address} whirlpoolsConfig - The configuration address of the Whirlpool.
- * @property {number} tickSpacing - The spacing between ticks in the pool.
- * @property {number} feeRate - The fee rate applied to swaps in the pool.
- * @property {number} protocolFeeRate - The fee rate collected by the protocol.
- * @property {Address} tokenMintA - The mint address for the first token in the pool.
- * @property {Address} tokenMintB - The mint address for the second token in the pool.
  */
-type InitializablePool = {
+export type InitializablePool = {
+  /** Indicates the pool is not initialized. */
   initialized: false;
 } & Pick<
   Whirlpool,
@@ -44,24 +36,20 @@ type InitializablePool = {
 
 /**
  * Type representing a pool that has been initialized.
- *
- * @typedef {Object} InitializedPool
- * @property {true} initialized - Indicates the pool is initialized.
- * @extends Whirlpool
+ * Extends the `Whirlpool` type, inheriting all its properties.
  */
-type InitializedPool = {
+export type InitializedPool = {
+  /** Indicates the pool is initialized. */
   initialized: true;
 } & Whirlpool;
 
 /**
  * Combined type representing both initialized and uninitialized pools.
- *
- * @typedef {Object} PoolInfo
- * @property {Address} address - The address of the pool.
- * @property {boolean} initialized - Indicates whether the pool is initialized or not.
- * @property {Whirlpool | InitializablePool} - Either the fully initialized pool details or initializable pool configuration.
  */
-type PoolInfo = (InitializablePool | InitializedPool) & { address: Address };
+export type PoolInfo = (InitializablePool | InitializedPool) & {
+  /** The address of the pool. */
+  address: Address;
+};
 
 /**
  * Fetches the details of a specific Splash Pool.
@@ -87,8 +75,6 @@ type PoolInfo = (InitializablePool | InitializedPool) & { address: Address };
  *   tokenMintOne,
  *   tokenMintTwo
  * );
- * 
- * console.log("Splash Pool State:", poolInfo);
  */
 export async function fetchSplashPool(
   rpc: Rpc<GetAccountInfoApi>,
@@ -130,12 +116,6 @@ export async function fetchSplashPool(
  *   tokenMintTwo,
  *   tickSpacing
  * );
- * 
- * if (poolInfo.initialized) {
- *   console.log("Initialized Pool State:", poolInfo);
- * } else {
- *   console.log("Uninitialized Pool Info (Defaults):", poolInfo);
- * }
  */
 export async function fetchConcentratedLiquidityPool(
   rpc: Rpc<GetAccountInfoApi>,
@@ -187,7 +167,8 @@ export async function fetchConcentratedLiquidityPool(
 
 /**
  * Fetches all possible liquidity pools between two token mints in Orca Whirlpools.
- *
+ * If a pool does not exist, it creates a placeholder account for the uninitialized pool with default data
+ * 
  * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi>} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
@@ -209,14 +190,6 @@ export async function fetchConcentratedLiquidityPool(
  *   tokenMintOne,
  *   tokenMintTwo
  * );
- * 
- * pools.forEach(pool => {
- *   if (pool.initialized) {
- *     console.log("Initialized Pool Info:", pool);
- *   } else {
- *     console.log("Uninitialized Pool Info (Defaults):", pool);
- *   }
- * });
  */
 export async function fetchWhirlpools(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi>,

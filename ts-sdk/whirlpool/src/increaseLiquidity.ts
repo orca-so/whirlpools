@@ -67,33 +67,35 @@ import assert from "assert";
 // TODO: transfer hook
 
 /**
- * @typedef {Object} IncreaseLiquidityQuoteParam
- * You must choose only one of the properties (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two based on the input provided.
- * 
- * @property {bigint} liquidity - The amount of liquidity to increase. The SDK will calculate the required amounts of Token A and Token B.
- * @property {bigint} tokenA - The amount of Token A to add. The SDK will calculate the corresponding liquidity and Token B amount.
- * @property {bigint} tokenB - The amount of Token B to add. The SDK will calculate the corresponding liquidity and Token A amount.
+ * Represents the parameters for increasing liquidity.
+ * You must choose only one of the properties (`liquidity`, `tokenA`, or `tokenB`).
+ * The SDK will compute the other two based on the input provided.
  */
 export type IncreaseLiquidityQuoteParam =
   | {
+      /** The amount of liquidity to increase. */
       liquidity: bigint;
     }
   | {
+      /** The amount of Token A to add. */
       tokenA: bigint;
     }
   | {
+      /** The amount of Token B to add. */
       tokenB: bigint;
     };
 
 /**
- * @typedef {Object} IncreaseLiquidityInstructions
- * @property {IncreaseLiquidityQuote} quote - The quote object with details about the increase in liquidity.
- * @property {LamportsUnsafeBeyond2Pow53Minus1} initializationCost - The initialization cost for liquidity in lamports.
- * @property {IInstruction[]} instructions - List of Solana transaction instructions to execute.
+ * Represents the instructions and quote for increasing liquidity in a position.
  */
 export type IncreaseLiquidityInstructions = {
+  /** The quote object with details about the increase in liquidity, including the liquidity delta, estimated tokens, and maximum token amounts based on slippage tolerance. */
   quote: IncreaseLiquidityQuote;
+
+  /** The initialization cost for liquidity in lamports. */
   initializationCost: LamportsUnsafeBeyond2Pow53Minus1;
+
+  /** List of Solana transaction instructions to execute. */
   instructions: IInstruction[];
 };
 
@@ -149,16 +151,24 @@ function getIncreaseLiquidityQuote(
  * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for increasing liquidity.
  *
  * @example
+ * import { increaseLiquidityInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const positionMint = "POSITION_MINT";  
+ * 
+ * const param = { tokenA: 1_000_000n }; 
+ * 
  * const { quote, instructions, initializationCost } = await increaseLiquidityInstructions(
- *   connection,
- *   positionMintAddress,
- *   { liquidity: 500_000n },
- *   0.01,
+ *   devnetRpc, 
+ *   positionMint, 
+ *   param, 
+ *   100, 
  *   wallet
  * );
- * console.log("Liquidity Quote:", quote);
- * console.log("Initialization Cost:", initializationCost);
- * console.log("Instructions:", instructions);
  */
 export async function increaseLiquidityInstructions(
   rpc: Rpc<
@@ -439,16 +449,24 @@ async function internalOpenPositionInstructions(
  * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for opening a full-range position.
  *
  * @example
+ * import { openFullRangePositionInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const poolAddress = "POOL_ADDRESS";
+ * 
+ * const param = { tokenA: 1_000_000n }; 
+ * 
  * const { quote, instructions, initializationCost } = await openFullRangePositionInstructions(
- *   connection,
+ *   devnetRpc,
  *   poolAddress,
- *   { tokenA: 1_000_000n },
- *   0.01,
+ *   param, 
+ *   100,
  *   wallet
  * );
- * console.log("Position Quote:", quote);
- * console.log("Initialization Cost:", initializationCost);
- * console.log("Instructions:", instructions);
  */
 export async function openFullRangePositionInstructions(
   rpc: Rpc<
@@ -495,18 +513,28 @@ export async function openFullRangePositionInstructions(
  * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing liquidity information and the list of instructions needed to open the position.
  *
  * @example
- * const { instructions, quote, initializationCost } = await openPositionInstructions(
- *   connection,
+ * import { openPositionInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const poolAddress = "POOL_ADDRESS";
+ * 
+ * const param = { tokenA: 1_000_000n };
+ * const lowerPrice = 0.00005;
+ * const upperPrice = 0.00015;
+ * 
+ * const { quote, instructions, initializationCost } = await openPositionInstructions(
+ *   devnetRpc,
  *   poolAddress,
- *   { tokenA: 1_000_000n },
- *   0.00005,
- *   0.00015,
- *   0.01,
+ *   param,
+ *   lowerPrice,
+ *   upperPrice,
+ *   100,
  *   wallet
  * );
- * console.log("Liquidity Quote:", quote);
- * console.log("Initialization Instructions:", instructions);
- * console.log("Rent (lamports):", initializationCost);
  */
 export async function openPositionInstructions(
   rpc: Rpc<

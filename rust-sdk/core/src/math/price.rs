@@ -119,7 +119,11 @@ mod tests {
 
     #[test]
     fn test_invert_price() {
-        assert_relative_eq!(invert_price(0.00999999, 8, 6), 1000099.11863, epsilon = 1e-5);
+        assert_relative_eq!(
+            invert_price(0.00999999, 8, 6),
+            1000099.11863,
+            epsilon = 1e-5
+        );
         assert_relative_eq!(invert_price(100.0, 6, 6), 0.01, epsilon = 1e-5);
         assert_relative_eq!(invert_price(100.0111, 6, 8), 9.99e-7, epsilon = 1e-5);
     }

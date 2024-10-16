@@ -522,7 +522,10 @@ export async function openPositionInstructions(
   funder: TransactionPartialSigner = DEFAULT_FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
-  assert(whirlpool.data.tickSpacing !== SPLASH_POOL_TICK_SPACING, "Splash pools only support full range positions");
+  assert(
+    whirlpool.data.tickSpacing !== SPLASH_POOL_TICK_SPACING,
+    "Splash pools only support full range positions",
+  );
   const [mintA, mintB] = await fetchAllMint(rpc, [
     whirlpool.data.tokenMintA,
     whirlpool.data.tokenMintB,

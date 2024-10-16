@@ -4,7 +4,8 @@ use ethnum::U256;
 use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
-    try_adjust_amount, CollectFeesQuote, ErrorCode, PositionFacade, TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW
+    try_adjust_amount, CollectFeesQuote, ErrorCode, PositionFacade, TickFacade, TransferFee,
+    WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
 };
 
 /// Calculate fees owed for a position
@@ -74,8 +75,12 @@ pub fn collect_fees_quote(
         .ok_or(ARITHMETIC_OVERFLOW)?
         .wrapping_shr(64);
 
-    let fee_owed_delta_a: u64 = fee_owed_delta_a.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
-    let fee_owed_delta_b: u64 = fee_owed_delta_b.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
+    let fee_owed_delta_a: u64 = fee_owed_delta_a
+        .try_into()
+        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
+    let fee_owed_delta_b: u64 = fee_owed_delta_b
+        .try_into()
+        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
 
     let withdrawable_fee_a = position.fee_owed_a + fee_owed_delta_a;
     let withdrawable_fee_b = position.fee_owed_b + fee_owed_delta_b;
@@ -132,7 +137,8 @@ mod tests {
             test_tick(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.fee_owed_a, 400);
         assert_eq!(result.fee_owed_b, 600);
     }
@@ -146,7 +152,8 @@ mod tests {
             test_tick(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.fee_owed_a, 779);
         assert_eq!(result.fee_owed_b, 1120);
     }
@@ -160,7 +167,8 @@ mod tests {
             test_tick(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.fee_owed_a, 400);
         assert_eq!(result.fee_owed_b, 600);
     }
@@ -174,7 +182,8 @@ mod tests {
             test_tick(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.fee_owed_a, 779);
         assert_eq!(result.fee_owed_b, 1120);
     }
@@ -188,7 +197,8 @@ mod tests {
             test_tick(),
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.fee_owed_a, 400);
         assert_eq!(result.fee_owed_b, 600);
     }
@@ -202,7 +212,8 @@ mod tests {
             test_tick(),
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(5000)),
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(result.fee_owed_a, 623);
         assert_eq!(result.fee_owed_b, 560);
     }

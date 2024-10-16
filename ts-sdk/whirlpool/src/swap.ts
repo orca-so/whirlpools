@@ -19,8 +19,8 @@ import type {
 import {
   _TICK_ARRAY_SIZE,
   getTickArrayStartTickIndex,
-  swapQuoteByInputToken5,
-  swapQuoteByOutputToken5,
+  swapQuoteByInputToken,
+  swapQuoteByOutputToken,
 } from "@orca-so/whirlpools-core";
 import type { Whirlpool } from "@orca-so/whirlpools-client";
 import {
@@ -97,21 +97,17 @@ type SwapInstructions<T extends SwapParams> = {
   quote: SwapQuote<T>;
 };
 
-function createUninitializedTickArray(
-  address: Address,
-  startTickIndex: number,
-  programAddress: Address,
-): Account<TickArrayFacade> {
+function createUninitializedTickArray(address: Address, startTickIndex: number, programAddress: Address): Account<TickArrayFacade> {
   return {
     address,
     data: {
-      startTickIndex,
-      ticks: Array(_TICK_ARRAY_SIZE()).fill({
-        initialized: false,
-        liquidityNet: 0n,
-        feeGrowthOutsideA: 0n,
-        feeGrowthOutsideB: 0n,
-        rewardGrowthsOutside: [0n, 0n, 0n],
+    startTickIndex,
+    ticks: Array(_TICK_ARRAY_SIZE()).fill({
+      initialized: false,
+      liquidityNet: 0n,
+      feeGrowthOutsideA: 0n,
+      feeGrowthOutsideB: 0n,
+      rewardGrowthsOutside: [0n, 0n, 0n],
       }),
     },
     executable: false,
@@ -153,13 +149,7 @@ async function fetchTickArrayOrDefault(
     if (maybeTickArray.exists) {
       tickArrays.push(maybeTickArray);
     } else {
-      tickArrays.push(
-        createUninitializedTickArray(
-          tickArrayAddresses[i],
-          tickArrayIndexes[i],
-          whirlpool.programAddress,
-        ),
-      );
+      tickArrays.push(createUninitializedTickArray(tickArrayAddresses[i], tickArrayIndexes[i], whirlpool.programAddress));
     }
   }
 
@@ -171,36 +161,28 @@ function getSwapQuote<T extends SwapParams>(
   whirlpool: Whirlpool,
   transferFeeA: TransferFee | undefined,
   transferFeeB: TransferFee | undefined,
-  tickArrays: Account<TickArrayFacade>[],
+  tickArrays: TickArrayFacade[],
   specifiedTokenA: boolean,
   slippageToleranceBps: number,
 ): SwapQuote<T> {
   if ("inputAmount" in params) {
-    return swapQuoteByInputToken5(
+    return swapQuoteByInputToken(
       params.inputAmount,
       specifiedTokenA,
       slippageToleranceBps,
       whirlpool,
-      tickArrays[0].data,
-      tickArrays[1].data,
-      tickArrays[2].data,
-      tickArrays[3].data,
-      tickArrays[4].data,
+      tickArrays,
       transferFeeA,
       transferFeeB,
     ) as SwapQuote<T>;
   }
 
-  return swapQuoteByOutputToken5(
+  return swapQuoteByOutputToken(
     params.outputAmount,
     specifiedTokenA,
     slippageToleranceBps,
     whirlpool,
-    tickArrays[0].data,
-    tickArrays[1].data,
-    tickArrays[2].data,
-    tickArrays[3].data,
-    tickArrays[4].data,
+    tickArrays,
     transferFeeA,
     transferFeeB,
   ) as SwapQuote<T>;
@@ -248,7 +230,10 @@ export async function swapInstructions<T extends SwapParams>(
   const specifiedTokenA = params.mint === whirlpool.data.tokenMintA;
   const specifiedInput = "inputAmount" in params;
 
-  const tickArrays = await fetchTickArrayOrDefault(rpc, whirlpool);
+  const tickArrays = await fetchTickArrayOrDefault(
+    rpc,
+    whirlpool,
+  );
 
   const oracleAddress = await getOracleAddress(whirlpool.address).then(
     (x) => x[0],
@@ -263,7 +248,7 @@ export async function swapInstructions<T extends SwapParams>(
     whirlpool.data,
     transferFeeA,
     transferFeeB,
-    tickArrays,
+    tickArrays.map((x) => x.data),
     specifiedTokenA,
     slippageToleranceBps,
   );

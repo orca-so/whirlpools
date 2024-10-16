@@ -10,8 +10,8 @@ import {
   collectRewardsQuote,
   decreaseLiquidityQuote,
   increaseLiquidityQuote,
-  swapQuoteByInputToken5,
-  swapQuoteByOutputToken5,
+  swapQuoteByInputToken,
+  swapQuoteByOutputToken,
 } from "../dist/nodejs/orca_whirlpools_core_js_bindings";
 import assert from "assert";
 
@@ -21,11 +21,11 @@ import assert from "assert";
 
 function testWhirlpool(): WhirlpoolFacade {
   return {
-    tickCurrentIndex: 100,
+    tickCurrentIndex: 0,
     feeGrowthGlobalA: 800n,
     feeGrowthGlobalB: 1000n,
     feeRate: 3000,
-    liquidity: 100000n,
+    liquidity: 265000n,
     sqrtPrice: 1n << 64n,
     tickSpacing: 2,
     rewardLastUpdatedTimestamp: 0n,
@@ -67,66 +67,56 @@ function testTickArray(startTickIndex: number): TickArrayFacade {
 function testPosition(): PositionFacade {
   return {
     liquidity: 50n,
-    tickLowerIndex: 95,
-    tickUpperIndex: 105,
-    feeGrowthCheckpointA: 300n,
+    tickLowerIndex: -5,
+    tickUpperIndex: 5,
+    feeGrowthCheckpointA: 0n,
     feeOwedA: 400n,
-    feeGrowthCheckpointB: 500n,
+    feeGrowthCheckpointB: 0n,
     feeOwedB: 600n,
     rewardInfos: [
       {
-        growthInsideCheckpoint: 100n,
+        growthInsideCheckpoint: 0n,
         amountOwed: 100n,
       },
       {
-        growthInsideCheckpoint: 200n,
+        growthInsideCheckpoint: 0n,
         amountOwed: 200n,
       },
       {
-        growthInsideCheckpoint: 300n,
+        growthInsideCheckpoint: 0n,
         amountOwed: 300n,
       },
     ],
   };
 }
 
-// FIXME: SwapIn and SwapOut are failing
-
 describe("WASM bundle smoke test", () => {
-  it.skip("SwapIn", async () => {
-    const result = swapQuoteByInputToken5(
-      1000n,
-      false,
-      1000,
-      testWhirlpool(),
+  it("SwapIn", async () => {
+    const result = swapQuoteByInputToken(1000n, false, 1000, testWhirlpool(), [
       testTickArray(0),
       testTickArray(176),
       testTickArray(352),
       testTickArray(-176),
       testTickArray(-352),
-    );
+    ]);
     assert.strictEqual(result.tokenIn, 1000n);
-    assert.strictEqual(result.tokenEstOut, 872n);
-    assert.strictEqual(result.tokenMinOut, 784n);
-    assert.strictEqual(result.tradeFee, 68n);
+    assert.strictEqual(result.tokenEstOut, 918n);
+    assert.strictEqual(result.tokenMinOut, 826n);
+    assert.strictEqual(result.tradeFee, 39n);
   });
 
-  it.skip("SwapOut", async () => {
-    const result = swapQuoteByOutputToken5(
-      1000n,
-      true,
-      1000,
-      testWhirlpool(),
+  it("SwapOut", async () => {
+    const result = swapQuoteByOutputToken(1000n, true, 1000, testWhirlpool(), [
       testTickArray(0),
       testTickArray(176),
       testTickArray(352),
       testTickArray(-176),
       testTickArray(-352),
-    );
+    ]);
     assert.strictEqual(result.tokenOut, 1000n);
-    assert.strictEqual(result.tokenEstIn, 1141n);
-    assert.strictEqual(result.tokenMaxIn, 1256n);
-    assert.strictEqual(result.tradeFee, 76n);
+    assert.strictEqual(result.tokenEstIn, 1088n);
+    assert.strictEqual(result.tokenMaxIn, 1209n);
+    assert.strictEqual(result.tradeFee, 42n);
   });
 
   it("IncreaseLiquidity", async () => {
@@ -187,8 +177,8 @@ describe("WASM bundle smoke test", () => {
       { feeBps: 2000, maxFee: 100000n },
       { feeBps: 3000, maxFee: 100000n },
     );
-    assert.strictEqual(result.rewardOwed1, 17190n);
-    assert.strictEqual(result.rewardOwed2, 14560n);
-    assert.strictEqual(result.rewardOwed3, 12110n);
+    assert.strictEqual(result.rewardOwed1, 21690n);
+    assert.strictEqual(result.rewardOwed2, 22560n);
+    assert.strictEqual(result.rewardOwed3, 22610n);
   });
 });

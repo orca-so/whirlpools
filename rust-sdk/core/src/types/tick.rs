@@ -26,7 +26,7 @@ pub struct TickFacade {
     pub reward_growths_outside: [u128; 3],
 }
 
-#[derive(Clone, Debug, PartialEq, Eq)]
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub struct TickArrayFacade {
     pub start_tick_index: i32,

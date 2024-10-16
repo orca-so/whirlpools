@@ -4,7 +4,8 @@ use ethnum::U256;
 use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
-    try_adjust_amount, CollectRewardsQuote, ErrorCode, PositionFacade, TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW
+    try_adjust_amount, CollectRewardsQuote, ErrorCode, PositionFacade, TickFacade, TransferFee,
+    WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
 };
 
 /// Calculate rewards owed for a position
@@ -109,20 +110,23 @@ pub fn collect_rewards_quote(
         .checked_mul(position.liquidity.into())
         .ok_or(ARITHMETIC_OVERFLOW)?;
 
-    let reward_growth_delta_1: u64 = reward_growth_delta_1.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
-    let reward_growth_delta_2: u64 = reward_growth_delta_2.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
-    let reward_growth_delta_3: u64 = reward_growth_delta_3.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
+    let reward_growth_delta_1: u64 = reward_growth_delta_1
+        .try_into()
+        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
+    let reward_growth_delta_2: u64 = reward_growth_delta_2
+        .try_into()
+        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
+    let reward_growth_delta_3: u64 = reward_growth_delta_3
+        .try_into()
+        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
 
     let withdrawable_reward_1 = position.reward_infos[0].amount_owed + reward_growth_delta_1;
     let withdrawable_reward_2 = position.reward_infos[1].amount_owed + reward_growth_delta_2;
     let withdrawable_reward_3 = position.reward_infos[2].amount_owed + reward_growth_delta_3;
 
-    let reward_owed_1 =
-        try_adjust_amount(withdrawable_reward_1, transfer_fee_1.into(), false)?;
-    let reward_owed_2 =
-        try_adjust_amount(withdrawable_reward_2, transfer_fee_2.into(), false)?;
-    let reward_owed_3 =
-        try_adjust_amount(withdrawable_reward_3, transfer_fee_3.into(), false)?;
+    let reward_owed_1 = try_adjust_amount(withdrawable_reward_1, transfer_fee_1.into(), false)?;
+    let reward_owed_2 = try_adjust_amount(withdrawable_reward_2, transfer_fee_2.into(), false)?;
+    let reward_owed_3 = try_adjust_amount(withdrawable_reward_3, transfer_fee_3.into(), false)?;
 
     Ok(CollectRewardsQuote {
         reward_owed_1,
@@ -201,7 +205,8 @@ mod tests {
             None,
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(quote.reward_owed_1, 100);
         assert_eq!(quote.reward_owed_2, 200);
         assert_eq!(quote.reward_owed_3, 300);
@@ -218,7 +223,8 @@ mod tests {
             None,
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(quote.reward_owed_1, 24100);
         assert_eq!(quote.reward_owed_2, 28200);
         assert_eq!(quote.reward_owed_3, 32300);
@@ -235,7 +241,8 @@ mod tests {
             None,
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(quote.reward_owed_1, 100);
         assert_eq!(quote.reward_owed_2, 200);
         assert_eq!(quote.reward_owed_3, 300);
@@ -252,7 +259,8 @@ mod tests {
             None,
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(quote.reward_owed_1, 24100);
         assert_eq!(quote.reward_owed_2, 28200);
         assert_eq!(quote.reward_owed_3, 32300);
@@ -269,7 +277,8 @@ mod tests {
             None,
             None,
             None,
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(quote.reward_owed_1, 100);
         assert_eq!(quote.reward_owed_2, 200);
         assert_eq!(quote.reward_owed_3, 300);
@@ -286,7 +295,8 @@ mod tests {
             Some(TransferFee::new(1000)),
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(3000)),
-        ).unwrap();
+        )
+        .unwrap();
         assert_eq!(quote.reward_owed_1, 21690);
         assert_eq!(quote.reward_owed_2, 22560);
         assert_eq!(quote.reward_owed_3, 22610);

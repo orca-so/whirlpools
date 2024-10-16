@@ -31,14 +31,14 @@ impl Debug for U128 {
 #[cfg(feature = "wasm")]
 impl From<U128> for u128 {
     fn from(value: U128) -> u128 {
-        JsValue::from(value).try_into().unwrap()
+        JsValue::from(value).try_into().unwrap_or(0)
     }
 }
 
 #[cfg(feature = "wasm")]
 impl From<U128> for U256 {
     fn from(value: U128) -> U256 {
-        let u_128: u128 = JsValue::from(value).try_into().unwrap();
+        let u_128: u128 = value.into();
         <U256>::from(u_128)
     }
 }

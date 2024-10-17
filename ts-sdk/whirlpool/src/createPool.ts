@@ -50,7 +50,7 @@ export type CreatePoolInstructions = {
 /**
  * Creates the necessary instructions to initialize a Splash Pool on Orca Whirlpools.
  *
- * @param {Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - A Solana RPC client for communicating with the blockchain.
+ * @param {SolanaRpc} rpc - A Solana RPC client for communicating with the blockchain.
  * @param {Address} tokenMintOne - The first token mint address to include in the pool.
  * @param {Address} tokenMintTwo - The second token mint address to include in the pool.
  * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
@@ -98,7 +98,7 @@ export function createSplashPoolInstructions(
 /**
  * Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM) on Orca Whirlpools.
  *
- * @param {Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - A Solana RPC client for communicating with the blockchain.
+ * @param {SolanaRpc} rpc - A Solana RPC client for communicating with the blockchain.
  * @param {Address} tokenMintOne - The first token mint address to include in the pool.
  * @param {Address} tokenMintTwo - The second token mint address to include in the pool.
  * @param {number} tickSpacing - The spacing between price ticks for the pool.

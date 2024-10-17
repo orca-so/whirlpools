@@ -183,7 +183,7 @@ function getSwapQuote<T extends SwapParams>(
  * It handles both exact input and exact output swaps, fetching the required accounts, tick arrays, and determining the swap quote.
  *
  * @template T - The type of swap (exact input or output).
- * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - The Solana RPC client.
+ * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {T} params - The swap parameters, specifying either the input or output amount and the mint address of the token being swapped.
  * @param {Address} poolAddress - The address of the Whirlpool against which the swap will be made.
  * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage tolerance for the swap, in basis points (BPS).

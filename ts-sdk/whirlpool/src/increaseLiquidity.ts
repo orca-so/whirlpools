@@ -143,7 +143,7 @@ function getIncreaseLiquidityQuote(
 /**
  * Generates instructions to increase liquidity for an existing position.
  *
- * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - The Solana RPC client.
+ * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} positionMintAddress - The mint address of the NFT that represents the position.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity. Can specify liquidity, Token A, or Token B amounts.
  * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
@@ -441,7 +441,7 @@ async function internalOpenPositionInstructions(
 /**
  * Opens a full-range position for a pool, typically used for Splash Pools or other full-range liquidity provisioning.
  *
- * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - The Solana RPC client.
+ * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} poolAddress - The address of the liquidity pool.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity, where one of `liquidity`, `tokenA`, or `tokenB` must be specified. The SDK will compute the others.
  * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
@@ -502,7 +502,9 @@ export async function openFullRangePositionInstructions(
  * Opens a new position in a concentrated liquidity pool within a specific price range.
  * This function allows you to provide liquidity for the specified range of prices and adjust liquidity parameters accordingly.
  *
- * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - A Solana RPC client used to interact with the blockchain.
+ * **Note:** This function cannot be used with Splash Pools.
+ * 
+ * @param {SolanaRpc} rpc - A Solana RPC client used to interact with the blockchain.
  * @param {Address} poolAddress - The address of the liquidity pool where the position will be opened.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for increasing liquidity, where you must choose one (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two.
  * @param {number} lowerPrice - The lower bound of the price range for the position.

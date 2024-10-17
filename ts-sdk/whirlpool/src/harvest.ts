@@ -85,7 +85,7 @@ async function getTransferFeeConfigs(
  * This function creates a set of instructions that collect any accumulated fees and rewards from a position.
  * The liquidity remains in place, and the position stays open.
  * 
- * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi & GetEpochInfoApi>} rpc 
+ * @param {SolanaRpc} rpc 
  *    A Solana RPC client used to interact with the blockchain.
  * @param {Address} positionMintAddress 
  *    The position mint address you want to harvest fees and rewards from.

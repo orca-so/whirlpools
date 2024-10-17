@@ -54,7 +54,7 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
 /**
  * Fetches the details of a specific Splash Pool.
  *
- * @param {Rpc<GetAccountInfoApi>} rpc - The Solana RPC client.
+ * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
  * @returns {Promise<PoolInfo>} - A promise that resolves to the pool information, which includes whether the pool is initialized or not.
@@ -92,7 +92,7 @@ export async function fetchSplashPool(
 /**
  * Fetches the details of a specific Concentrated Liquidity Pool.
  *
- * @param {Rpc<GetAccountInfoApi>} rpc - The Solana RPC client.
+ * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
  * @param {number} tickSpacing - The tick spacing of the pool.
@@ -169,7 +169,7 @@ export async function fetchConcentratedLiquidityPool(
  * Fetches all possible liquidity pools between two token mints in Orca Whirlpools.
  * If a pool does not exist, it creates a placeholder account for the uninitialized pool with default data
  * 
- * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi>} rpc - The Solana RPC client.
+ * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
  * @returns {Promise<PoolInfo[]>} - A promise that resolves to an array of pool information for each pool between the two tokens.

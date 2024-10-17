@@ -136,7 +136,7 @@ function getDecreaseLiquidityQuote(
 /**
  * Generates instructions to decrease liquidity from an existing position in an Orca Whirlpool.
  *
- * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - A Solana RPC client for fetching necessary accounts and pool data.
+ * @param {SolanaRpc} rpc - A Solana RPC client for fetching necessary accounts and pool data.
  * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position from which liquidity will be removed.
  * @param {DecreaseLiquidityQuoteParam} param - Defines the liquidity removal method (liquidity, tokenA, or tokenB).
  * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
@@ -281,7 +281,7 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  * Generates instructions to close a liquidity position in an Orca Whirlpool. This includes collecting all fees,
  * rewards, removing any remaining liquidity, and closing the position.
  *
- * @param {Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>} rpc - A Solana RPC client for fetching accounts and pool data.
+ * @param {SolanaRpc} rpc - A Solana RPC client for fetching accounts and pool data.
  * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position to be closed.
  * @param {DecreaseLiquidityQuoteParam} param - The parameters for removing liquidity (liquidity, tokenA, or tokenB).
  * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.

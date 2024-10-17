@@ -53,7 +53,7 @@ function decodePositionOrBundle(
  * For token accounts holding exactly 1 token (indicating a position or bundle), it fetches the corresponding position addresses,
  * decodes the accounts, and returns an array of position or bundle data.
  *
- * @param {Rpc<GetTokenAccountsByOwnerApi & GetMultipleAccountsApi>} rpc - The Solana RPC client used to fetch token accounts and multiple accounts.
+ * @param {SolanaRpc} rpc - The Solana RPC client used to fetch token accounts and multiple accounts.
  * @param {Address} owner - The wallet address whose positions you want to fetch.
  * @returns {Promise<PositionData[]>} - A promise that resolves to an array of decoded position data for the given owner.
  *

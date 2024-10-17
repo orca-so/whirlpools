@@ -41,24 +41,49 @@ import { fetchAllMint } from "@solana-program/token-2022";
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
 
-type ExactInParams = {
+/**
+ * Parameters for an exact input swap.
+ */
+export type ExactInParams = {
+  /** The exact amount of input tokens to be swapped. */
   inputAmount: bigint;
 };
 
-type ExactOutParams = {
+/**
+ * Parameters for an exact output swap.
+ */
+export type ExactOutParams = {
+  /** The exact amount of output tokens to be received from the swap. */
   outputAmount: bigint;
 };
 
-type SwapParams = (ExactInParams | ExactOutParams) & {
+/**
+ * Swap parameters, either for an exact input or exact output swap.
+ */
+export type SwapParams = (ExactInParams | ExactOutParams) & {
+  /** The mint address of the token being swapped. */
   mint: Address;
 };
 
-type SwapQuote<T extends SwapParams> = T extends ExactInParams
+/**
+ * Swap quote that corresponds to the type of swap being executed (either input or output swap).
+ *
+ * @template T - The type of swap (input or output).
+ */
+export type SwapQuote<T extends SwapParams> = T extends ExactInParams
   ? ExactInSwapQuote
   : ExactOutSwapQuote;
 
-type SwapInstructions<T extends SwapParams> = {
+/**
+ * Instructions and quote for executing a swap.
+ *
+ * @template T - The type of swap (input or output).
+ */
+export type SwapInstructions<T extends SwapParams> = {
+  /** The list of instructions needed to perform the swap. */
   instructions: IInstruction[];
+
+  /** The swap quote, which includes information about the amounts involved in the swap. */
   quote: SwapQuote<T>;
 };
 
@@ -153,6 +178,38 @@ function getSwapQuote<T extends SwapParams>(
   ) as SwapQuote<T>;
 }
 
+/**
+ * Generates the instructions necessary to execute a token swap in an Orca Whirlpool.
+ * It handles both exact input and exact output swaps, fetching the required accounts, tick arrays, and determining the swap quote.
+ *
+ * @template T - The type of swap (exact input or output).
+ * @param {SolanaRpc} rpc - The Solana RPC client.
+ * @param {T} params - The swap parameters, specifying either the input or output amount and the mint address of the token being swapped.
+ * @param {Address} poolAddress - The address of the Whirlpool against which the swap will be made.
+ * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage tolerance for the swap, in basis points (BPS).
+ * @param {TransactionPartialSigner} [signer=DEFAULT_FUNDER] - The wallet or signer executing the swap.
+ * @returns {Promise<SwapInstructions<T>>} - A promise that resolves to an object containing the swap instructions and the swap quote.
+ *
+ * @example
+ * import { swapInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const poolAddress = "POOL_ADDRESS";
+ * const mintAddress = "TOKEN_MINT";
+ * const inputAmount = 1_000_000n;
+ * 
+ * const { instructions, quote } = await swapInstructions(
+ *   devnetRpc, 
+ *   { inputAmount, mint: mintAddress }, 
+ *   poolAddress, 
+ *   100,
+ *   wallet
+ * );
+ */
 export async function swapInstructions<T extends SwapParams>(
   rpc: Rpc<
     GetAccountInfoApi &

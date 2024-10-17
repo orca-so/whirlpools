@@ -39,9 +39,17 @@ export const NATIVE_MINT = address(
   "So11111111111111111111111111111111111111112",
 );
 
+/**
+ * Represents the instructions and associated addresses for preparing token accounts during a transaction.
+ */
 type TokenAccountInstructions = {
+  /** A list of instructions required to create the necessary token accounts. */
   createInstructions: IInstruction[];
+
+  /** A list of instructions to clean up (e.g., close) token accounts after the transaction is complete. */
   cleanupInstructions: IInstruction[];
+
+  /** A mapping of mint addresses to their respective token account addresses. */
   tokenAccountAddresses: Record<Address, Address>;
 };
 
@@ -231,6 +239,18 @@ export async function prepareTokenAccountsInstructions(
   };
 }
 
+/**
+ * Retrieves the current transfer fee configuration for a given token mint based on the current epoch.
+ * 
+ * This function checks the mint's transfer fee configuration and returns the appropriate fee 
+ * structure (older or newer) depending on the current epoch. If no transfer fee configuration is found,
+ * it returns `undefined`.
+ *
+ * @param {Mint} mint - The mint account of the token, which may include transfer fee extensions.
+ * @param {bigint} currentEpoch - The current epoch to determine the applicable transfer fee.
+ * 
+ * @returns {TransferFee | undefined} - The transfer fee configuration for the given mint, or `undefined` if no transfer fee is configured.
+ */
 export function getCurrentTransferFee(
   mint: Mint,
   currentEpoch: bigint,

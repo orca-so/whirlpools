@@ -41,9 +41,17 @@ import assert from "assert";
 
 // TODO: Transfer hook
 
-type HarvestPositionInstructions = {
+/**
+ * Represents the instructions and quotes for harvesting a position.
+ */
+export type HarvestPositionInstructions = {
+  /** A breakdown of the fees owed to the position owner, detailing the amounts for token A (`fee_owed_a`) and token B (`fee_owed_b`). */
   feesQuote: CollectFeesQuote;
+
+  /** A breakdown of the rewards owed, detailing up to three reward tokens (`reward_owed_1`, `reward_owed_2`, and `reward_owed_3`). */
   rewardsQuote: CollectRewardsQuote;
+
+  /** A list of instructions required to harvest the position. */
   instructions: IInstruction[];
 };
 
@@ -73,6 +81,35 @@ async function getTransferFeeConfigs(
   };
 }
 
+/**
+ * This function creates a set of instructions that collect any accumulated fees and rewards from a position.
+ * The liquidity remains in place, and the position stays open.
+ * 
+ * @param {SolanaRpc} rpc 
+ *    A Solana RPC client used to interact with the blockchain.
+ * @param {Address} positionMintAddress 
+ *    The position mint address you want to harvest fees and rewards from.
+ * @param {TransactionPartialSigner} [authority=DEFAULT_FUNDER] 
+ *    The account that authorizes the transaction. Defaults to a predefined funder.
+ * 
+ * @returns {Promise<HarvestPositionInstructions>} 
+ *    A promise that resolves to an object containing the instructions, fees, and rewards quotes.
+ * @example
+ * import { harvestPositionInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const positionMint = "POSITION_MINT";
+ * 
+ * const { feesQuote, rewardsQuote, instructions } = await harvestPositionInstructions(
+ *   devnetRpc,
+ *   positionMint,
+ *   wallet
+ * );
+ */
 export async function harvestPositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &

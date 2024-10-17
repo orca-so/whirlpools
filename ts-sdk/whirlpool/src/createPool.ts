@@ -33,12 +33,51 @@ import {
 import { fetchAllMint, getTokenSize } from "@solana-program/token";
 import assert from "assert";
 
-type CreatePoolInstructions = {
+/**
+ * Represents the instructions and metadata for creating a pool.
+ */
+export type CreatePoolInstructions = {
+  /** The list of instructions needed to create the pool. */
   instructions: IInstruction[];
+
+  /** The estimated rent exemption cost for initializing the pool, in lamports. */
   estInitializationCost: LamportsUnsafeBeyond2Pow53Minus1;
+
+  /** The address of the newly created pool. */
   poolAddress: Address;
 };
 
+/**
+ * Creates the necessary instructions to initialize a Splash Pool on Orca Whirlpools.
+ *
+ * @param {SolanaRpc} rpc - A Solana RPC client for communicating with the blockchain.
+ * @param {Address} tokenMintOne - The first token mint address to include in the pool.
+ * @param {Address} tokenMintTwo - The second token mint address to include in the pool.
+ * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
+ * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account that will fund the initialization process.
+ * 
+ * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
+ *
+ * @example
+ * import { createSplashPoolInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const tokenMintOne = "TOKEN_MINT_ADDRESS_1"; 
+ * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
+ * const initialPrice = 0.01;
+ * 
+ * const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
+ *   devnetRpc,
+ *   tokenMintOne,
+ *   tokenMintTwo,
+ *   initialPrice,
+ *   wallet
+ * );
+ */
 export function createSplashPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
   tokenMintOne: Address,
@@ -56,6 +95,40 @@ export function createSplashPoolInstructions(
   );
 }
 
+/**
+ * Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM) on Orca Whirlpools.
+ *
+ * @param {SolanaRpc} rpc - A Solana RPC client for communicating with the blockchain.
+ * @param {Address} tokenMintOne - The first token mint address to include in the pool.
+ * @param {Address} tokenMintTwo - The second token mint address to include in the pool.
+ * @param {number} tickSpacing - The spacing between price ticks for the pool.
+ * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
+ * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account that will fund the initialization process.
+ * 
+ * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
+ *
+ * @example
+ * import { createConcentratedLiquidityPool } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
+ * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
+ * const tickSpacing = 64;
+ * const initialPrice = 0.01;
+ * 
+ * const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPool(
+ *   devnetRpc,
+ *   tokenMintOne,
+ *   tokenMintTwo,
+ *   tickSpacing,
+ *   initialPrice,
+ *   wallet
+ * );
+ */
 export async function createConcentratedLiquidityPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
   tokenMintOne: Address,

@@ -17,8 +17,17 @@ import type {
 } from "@solana/web3.js";
 import { getBase58Encoder, getBase64Encoder } from "@solana/web3.js";
 
-type PositionOrBundle = Account<Position | PositionBundle>;
-type PositionData = PositionOrBundle & {
+/**
+ * Represents either a Position or Position Bundle account.
+ */
+export type PositionOrBundle = Account<Position | PositionBundle>;
+
+/**
+ * Represents a decoded Position or Position Bundle account.
+ * Includes the token program address associated with the position.
+ */
+export type PositionData = PositionOrBundle & {
+  /** The token program associated with the position (either TOKEN_PROGRAM_ADDRESS or TOKEN_2022_PROGRAM_ADDRESS). */
   tokenProgram: Address;
 };
 
@@ -38,6 +47,26 @@ function decodePositionOrBundle(
   throw new Error("Could not decode position or bundle dat");
 }
 
+/**
+ * Fetches all positions owned by a given wallet in the Orca Whirlpools.
+ * It looks for token accounts owned by the wallet using both the TOKEN_PROGRAM_ADDRESS and TOKEN_2022_PROGRAM_ADDRESS.
+ * For token accounts holding exactly 1 token (indicating a position or bundle), it fetches the corresponding position addresses,
+ * decodes the accounts, and returns an array of position or bundle data.
+ *
+ * @param {SolanaRpc} rpc - The Solana RPC client used to fetch token accounts and multiple accounts.
+ * @param {Address} owner - The wallet address whose positions you want to fetch.
+ * @returns {Promise<PositionData[]>} - A promise that resolves to an array of decoded position data for the given owner.
+ *
+ * @example
+ * import { fetchPositions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const positions = await fetchPositions(devnetRpc, wallet.address);
+ */
 export async function fetchPositions(
   rpc: Rpc<GetTokenAccountsByOwnerApi & GetMultipleAccountsApi>,
   owner: Address,

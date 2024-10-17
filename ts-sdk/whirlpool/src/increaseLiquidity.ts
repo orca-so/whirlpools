@@ -66,20 +66,36 @@ import assert from "assert";
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
 
-type IncreaseLiquidityQuoteParam =
+/**
+ * Represents the parameters for increasing liquidity.
+ * You must choose only one of the properties (`liquidity`, `tokenA`, or `tokenB`).
+ * The SDK will compute the other two based on the input provided.
+ */
+export type IncreaseLiquidityQuoteParam =
   | {
+      /** The amount of liquidity to increase. */
       liquidity: bigint;
     }
   | {
+      /** The amount of Token A to add. */
       tokenA: bigint;
     }
   | {
+      /** The amount of Token B to add. */
       tokenB: bigint;
     };
 
-type IncreaseLiquidityInstructions = {
+/**
+ * Represents the instructions and quote for increasing liquidity in a position.
+ */
+export type IncreaseLiquidityInstructions = {
+  /** The quote object with details about the increase in liquidity, including the liquidity delta, estimated tokens, and maximum token amounts based on slippage tolerance. */
   quote: IncreaseLiquidityQuote;
+
+  /** The initialization cost for liquidity in lamports. */
   initializationCost: LamportsUnsafeBeyond2Pow53Minus1;
+
+  /** List of Solana transaction instructions to execute. */
   instructions: IInstruction[];
 };
 
@@ -124,6 +140,36 @@ function getIncreaseLiquidityQuote(
   }
 }
 
+/**
+ * Generates instructions to increase liquidity for an existing position.
+ *
+ * @param {SolanaRpc} rpc - The Solana RPC client.
+ * @param {Address} positionMintAddress - The mint address of the NFT that represents the position.
+ * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity. Can specify liquidity, Token A, or Token B amounts.
+ * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
+ * @param {TransactionPartialSigner} [authority=DEFAULT_FUNDER] - The account that authorizes the transaction.
+ * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for increasing liquidity.
+ *
+ * @example
+ * import { increaseLiquidityInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const positionMint = "POSITION_MINT";  
+ * 
+ * const param = { tokenA: 1_000_000n }; 
+ * 
+ * const { quote, instructions, initializationCost } = await increaseLiquidityInstructions(
+ *   devnetRpc, 
+ *   positionMint, 
+ *   param, 
+ *   100, 
+ *   wallet
+ * );
+ */
 export async function increaseLiquidityInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
@@ -392,6 +438,36 @@ async function internalOpenPositionInstructions(
   };
 }
 
+/**
+ * Opens a full-range position for a pool, typically used for Splash Pools or other full-range liquidity provisioning.
+ *
+ * @param {SolanaRpc} rpc - The Solana RPC client.
+ * @param {Address} poolAddress - The address of the liquidity pool.
+ * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity, where one of `liquidity`, `tokenA`, or `tokenB` must be specified. The SDK will compute the others.
+ * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
+ * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account funding the transaction.
+ * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for opening a full-range position.
+ *
+ * @example
+ * import { openFullRangePositionInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const poolAddress = "POOL_ADDRESS";
+ * 
+ * const param = { tokenA: 1_000_000n }; 
+ * 
+ * const { quote, instructions, initializationCost } = await openFullRangePositionInstructions(
+ *   devnetRpc,
+ *   poolAddress,
+ *   param, 
+ *   100,
+ *   wallet
+ * );
+ */
 export async function openFullRangePositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
@@ -422,6 +498,46 @@ export async function openFullRangePositionInstructions(
   );
 }
 
+/**
+ * Opens a new position in a concentrated liquidity pool within a specific price range.
+ * This function allows you to provide liquidity for the specified range of prices and adjust liquidity parameters accordingly.
+ *
+ * **Note:** This function cannot be used with Splash Pools.
+ * 
+ * @param {SolanaRpc} rpc - A Solana RPC client used to interact with the blockchain.
+ * @param {Address} poolAddress - The address of the liquidity pool where the position will be opened.
+ * @param {IncreaseLiquidityQuoteParam} param - The parameters for increasing liquidity, where you must choose one (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two.
+ * @param {number} lowerPrice - The lower bound of the price range for the position.
+ * @param {number} upperPrice - The upper bound of the price range for the position.
+ * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The slippage tolerance for adding liquidity, in basis points (BPS).
+ * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account funding the transaction.
+ *
+ * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing liquidity information and the list of instructions needed to open the position.
+ *
+ * @example
+ * import { openPositionInstructions } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * 
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * const wallet = await generateKeyPairSigner();
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * 
+ * const poolAddress = "POOL_ADDRESS";
+ * 
+ * const param = { tokenA: 1_000_000n };
+ * const lowerPrice = 0.00005;
+ * const upperPrice = 0.00015;
+ * 
+ * const { quote, instructions, initializationCost } = await openPositionInstructions(
+ *   devnetRpc,
+ *   poolAddress,
+ *   param,
+ *   lowerPrice,
+ *   upperPrice,
+ *   100,
+ *   wallet
+ * );
+ */
 export async function openPositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &

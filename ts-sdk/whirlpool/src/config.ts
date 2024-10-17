@@ -49,14 +49,14 @@ export function setDefaultFunder(
 }
 
 /**
- * The default slippage tolerance, expressed in hundredths of a basis point. Value of 100 is equivalent to 0.01%.
+ * The default slippage tolerance, expressed in basis points. Value of 100 is equivalent to 1%.
  */
 export let DEFAULT_SLIPPAGE_TOLERANCE_BPS = 100;
 
 /**
  * Sets the default slippage tolerance for transactions.
  *
- * @param {number} slippageToleranceBps - The slippage tolerance, expressed in hundredths of a basis point. Value of 100 is equivalent to 0.01%.
+ * @param {number} slippageToleranceBps - The slippage tolerance, expressed basis points. Value of 100 is equivalent to 1%.
  */
 export function setDefaultSlippageToleranceBps(
   slippageToleranceBps: number,

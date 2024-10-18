@@ -4,10 +4,10 @@ use orca_whirlpools_macros::wasm_expose;
 use ethnum::U256;
 
 use crate::{
-    order_tick_indexes, position_status, sqrt_price_to_tick_index, tick_index_to_sqrt_price,
-    try_adjust_amount, try_inverse_adjust_amount, AdjustmentType, DecreaseLiquidityQuote,
-    ErrorCode, IncreaseLiquidityQuote, PositionStatus, TransferFee, AMOUNT_EXCEEDS_MAX_U64,
-    ARITHMETIC_OVERFLOW, U128,
+    order_tick_indexes, position_status, tick_index_to_sqrt_price, try_apply_transfer_fee,
+    try_get_max_amount_with_slippage_tolerance, try_get_min_amount_with_slippage_tolerance,
+    try_reverse_apply_transfer_fee, DecreaseLiquidityQuote, ErrorCode, IncreaseLiquidityQuote,
+    PositionStatus, TransferFee, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, U128,
 };
 
 /// Calculate the quote for decreasing liquidity
@@ -16,8 +16,8 @@ use crate::{
 /// - `liquidity_delta` - The amount of liquidity to decrease
 /// - `slippage_tolerance` - The slippage tolerance in bps
 /// - `current_sqrt_price` - The current sqrt price of the pool
-/// - `tick_lower_index` - The lower tick index of the position
-/// - `tick_upper_index` - The upper tick index of the position
+/// - `tick_index_1` - The first tick index of the position
+/// - `tick_index_2` - The second tick index of the position
 /// - `transfer_fee_a` - The transfer fee for token A in bps
 /// - `transfer_fee_b` - The transfer fee for token B in bps
 ///
@@ -28,8 +28,8 @@ pub fn decrease_liquidity_quote(
     liquidity_delta: U128,
     slippage_tolerance_bps: u16,
     current_sqrt_price: U128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
+    tick_index_1: i32,
+    tick_index_2: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
 ) -> Result<DecreaseLiquidityQuote, ErrorCode> {
@@ -38,40 +38,34 @@ pub fn decrease_liquidity_quote(
         return Ok(DecreaseLiquidityQuote::default());
     }
 
-    let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
+    let tick_range = order_tick_indexes(tick_index_1, tick_index_2);
     let current_sqrt_price: u128 = current_sqrt_price.into();
-    let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
-    let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
 
     let (token_est_before_fees_a, token_est_before_fees_b) =
         try_get_token_estimates_from_liquidity(
             liquidity_delta,
             current_sqrt_price,
-            sqrt_price_lower,
-            sqrt_price_upper,
+            tick_range.tick_lower_index,
+            tick_range.tick_upper_index,
         )?;
 
     let token_min_before_slippage_a =
-        try_adjust_amount(token_est_before_fees_a, transfer_fee_a.into(), false)?;
+        try_apply_transfer_fee(token_est_before_fees_a, transfer_fee_a.unwrap_or_default())?;
     let token_min_before_slippage_b =
-        try_adjust_amount(token_est_before_fees_b, transfer_fee_b.into(), false)?;
+        try_apply_transfer_fee(token_est_before_fees_b, transfer_fee_b.unwrap_or_default())?;
 
-    let token_est_a = try_adjust_amount(token_est_before_fees_a, transfer_fee_a.into(), false)?;
-    let token_est_b = try_adjust_amount(token_est_before_fees_b, transfer_fee_b.into(), false)?;
+    let token_est_a =
+        try_apply_transfer_fee(token_est_before_fees_a, transfer_fee_a.unwrap_or_default())?;
+    let token_est_b =
+        try_apply_transfer_fee(token_est_before_fees_b, transfer_fee_b.unwrap_or_default())?;
 
-    let token_min_a = try_adjust_amount(
+    let token_min_a = try_get_min_amount_with_slippage_tolerance(
         token_min_before_slippage_a,
-        AdjustmentType::Slippage {
-            slippage_tolerance_bps,
-        },
-        false,
+        slippage_tolerance_bps,
     )?;
-    let token_min_b = try_adjust_amount(
+    let token_min_b = try_get_min_amount_with_slippage_tolerance(
         token_min_before_slippage_b,
-        AdjustmentType::Slippage {
-            slippage_tolerance_bps,
-        },
-        false,
+        slippage_tolerance_bps,
     )?;
 
     Ok(DecreaseLiquidityQuote {
@@ -89,8 +83,8 @@ pub fn decrease_liquidity_quote(
 /// - `token_amount_a` - The amount of token a to decrease
 /// - `slippage_tolerance` - The slippage tolerance in bps
 /// - `current_sqrt_price` - The current sqrt price of the pool
-/// - `tick_lower_index` - The lower tick index of the position
-/// - `tick_upper_index` - The upper tick index of the position
+/// - `tick_index_1` - The first tick index of the position
+/// - `tick_index_2` - The second tick index of the position
 /// - `transfer_fee_a` - The transfer fee for token A in bps
 /// - `transfer_fee_b` - The transfer fee for token B in bps
 ///
@@ -101,13 +95,14 @@ pub fn decrease_liquidity_quote_a(
     token_amount_a: u64,
     slippage_tolerance_bps: u16,
     current_sqrt_price: U128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
+    tick_index_1: i32,
+    tick_index_2: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
 ) -> Result<DecreaseLiquidityQuote, ErrorCode> {
-    let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
-    let token_delta_a = try_inverse_adjust_amount(token_amount_a, transfer_fee_a.into(), false)?;
+    let tick_range = order_tick_indexes(tick_index_1, tick_index_2);
+    let token_delta_a =
+        try_reverse_apply_transfer_fee(token_amount_a, transfer_fee_a.unwrap_or_default())?;
 
     if token_delta_a == 0 {
         return Ok(DecreaseLiquidityQuote::default());
@@ -137,8 +132,8 @@ pub fn decrease_liquidity_quote_a(
         liquidity.into(),
         slippage_tolerance_bps,
         current_sqrt_price.into(),
-        tick_lower_index,
-        tick_upper_index,
+        tick_index_1,
+        tick_index_2,
         transfer_fee_a,
         transfer_fee_b,
     )
@@ -150,8 +145,8 @@ pub fn decrease_liquidity_quote_a(
 /// - `token_amount_b` - The amount of token b to decrease
 /// - `slippage_tolerance` - The slippage tolerance in bps
 /// - `current_sqrt_price` - The current sqrt price of the pool
-/// - `tick_lower_index` - The lower tick index of the position
-/// - `tick_upper_index` - The upper tick index of the position
+/// - `tick_index_1` - The first tick index of the position
+/// - `tick_index_2` - The second tick index of the position
 /// - `transfer_fee_a` - The transfer fee for token A in bps
 /// - `transfer_fee_b` - The transfer fee for token B in bps
 ///
@@ -162,13 +157,14 @@ pub fn decrease_liquidity_quote_b(
     token_amount_b: u64,
     slippage_tolerance_bps: u16,
     current_sqrt_price: U128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
+    tick_index_1: i32,
+    tick_index_2: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
 ) -> Result<DecreaseLiquidityQuote, ErrorCode> {
-    let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
-    let token_delta_b = try_inverse_adjust_amount(token_amount_b, transfer_fee_b.into(), false)?;
+    let tick_range = order_tick_indexes(tick_index_1, tick_index_2);
+    let token_delta_b =
+        try_reverse_apply_transfer_fee(token_amount_b, transfer_fee_b.unwrap_or_default())?;
 
     if token_delta_b == 0 {
         return Ok(DecreaseLiquidityQuote::default());
@@ -198,8 +194,8 @@ pub fn decrease_liquidity_quote_b(
         liquidity.into(),
         slippage_tolerance_bps,
         current_sqrt_price.into(),
-        tick_lower_index,
-        tick_upper_index,
+        tick_index_1,
+        tick_index_2,
         transfer_fee_a,
         transfer_fee_b,
     )
@@ -211,8 +207,8 @@ pub fn decrease_liquidity_quote_b(
 /// - `liquidity_delta` - The amount of liquidity to increase
 /// - `slippage_tolerance` - The slippage tolerance in bps
 /// - `current_sqrt_price` - The current sqrt price of the pool
-/// - `tick_lower_index` - The lower tick index of the position
-/// - `tick_upper_index` - The upper tick index of the position
+/// - `tick_index_1` - The first tick index of the position
+/// - `tick_index_2` - The second tick index of the position
 /// - `transfer_fee_a` - The transfer fee for token A in bps
 /// - `transfer_fee_b` - The transfer fee for token B in bps
 ///
@@ -223,8 +219,8 @@ pub fn increase_liquidity_quote(
     liquidity_delta: U128,
     slippage_tolerance_bps: u16,
     current_sqrt_price: U128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
+    tick_index_1: i32,
+    tick_index_2: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
 ) -> Result<IncreaseLiquidityQuote, ErrorCode> {
@@ -234,41 +230,41 @@ pub fn increase_liquidity_quote(
     }
 
     let current_sqrt_price: u128 = current_sqrt_price.into();
-    let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
-    let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
-    let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
+    let tick_range = order_tick_indexes(tick_index_1, tick_index_2);
 
     let (token_est_before_fees_a, token_est_before_fees_b) =
         try_get_token_estimates_from_liquidity(
             liquidity_delta,
             current_sqrt_price,
-            sqrt_price_lower,
-            sqrt_price_upper,
+            tick_range.tick_lower_index,
+            tick_range.tick_upper_index,
         )?;
 
-    let token_max_before_slippage_a =
-        try_inverse_adjust_amount(token_est_before_fees_a, transfer_fee_a.into(), false)?;
-    let token_max_before_slippage_b =
-        try_inverse_adjust_amount(token_est_before_fees_b, transfer_fee_b.into(), false)?;
-
-    let token_est_a =
-        try_inverse_adjust_amount(token_est_before_fees_a, transfer_fee_a.into(), false)?;
-    let token_est_b =
-        try_inverse_adjust_amount(token_est_before_fees_b, transfer_fee_b.into(), false)?;
-
-    let token_max_a = try_adjust_amount(
-        token_max_before_slippage_a,
-        AdjustmentType::Slippage {
-            slippage_tolerance_bps,
-        },
-        true,
+    let token_max_before_slippage_a = try_reverse_apply_transfer_fee(
+        token_est_before_fees_a,
+        transfer_fee_a.unwrap_or_default(),
     )?;
-    let token_max_b = try_adjust_amount(
+    let token_max_before_slippage_b = try_reverse_apply_transfer_fee(
+        token_est_before_fees_b,
+        transfer_fee_b.unwrap_or_default(),
+    )?;
+
+    let token_est_a = try_reverse_apply_transfer_fee(
+        token_est_before_fees_a,
+        transfer_fee_a.unwrap_or_default(),
+    )?;
+    let token_est_b = try_reverse_apply_transfer_fee(
+        token_est_before_fees_b,
+        transfer_fee_b.unwrap_or_default(),
+    )?;
+
+    let token_max_a = try_get_max_amount_with_slippage_tolerance(
+        token_max_before_slippage_a,
+        slippage_tolerance_bps,
+    )?;
+    let token_max_b = try_get_max_amount_with_slippage_tolerance(
         token_max_before_slippage_b,
-        AdjustmentType::Slippage {
-            slippage_tolerance_bps,
-        },
-        true,
+        slippage_tolerance_bps,
     )?;
 
     Ok(IncreaseLiquidityQuote {
@@ -286,8 +282,8 @@ pub fn increase_liquidity_quote(
 /// - `token_amount_a` - The amount of token a to increase
 /// - `slippage_tolerance` - The slippage tolerance in bps
 /// - `current_sqrt_price` - The current sqrt price of the pool
-/// - `tick_lower_index` - The lower tick index of the position
-/// - `tick_upper_index` - The upper tick index of the position
+/// - `tick_index_1` - The first tick index of the position
+/// - `tick_index_2` - The second tick index of the position
 /// - `transfer_fee_a` - The transfer fee for token A in bps
 /// - `transfer_fee_b` - The transfer fee for token B in bps
 ///
@@ -298,13 +294,13 @@ pub fn increase_liquidity_quote_a(
     token_amount_a: u64,
     slippage_tolerance_bps: u16,
     current_sqrt_price: U128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
+    tick_index_1: i32,
+    tick_index_2: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
 ) -> Result<IncreaseLiquidityQuote, ErrorCode> {
-    let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
-    let token_delta_a = try_adjust_amount(token_amount_a, transfer_fee_a.into(), false)?;
+    let tick_range = order_tick_indexes(tick_index_1, tick_index_2);
+    let token_delta_a = try_apply_transfer_fee(token_amount_a, transfer_fee_a.unwrap_or_default())?;
 
     if token_delta_a == 0 {
         return Ok(IncreaseLiquidityQuote::default());
@@ -314,11 +310,7 @@ pub fn increase_liquidity_quote_a(
     let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
     let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
 
-    let position_status = position_status(
-        current_sqrt_price.into(),
-        tick_range.tick_lower_index,
-        tick_range.tick_upper_index,
-    );
+    let position_status = position_status(current_sqrt_price.into(), tick_index_1, tick_index_2);
 
     let liquidity: u128 = match position_status {
         PositionStatus::PriceBelowRange => {
@@ -334,8 +326,8 @@ pub fn increase_liquidity_quote_a(
         liquidity.into(),
         slippage_tolerance_bps,
         current_sqrt_price.into(),
-        tick_lower_index,
-        tick_upper_index,
+        tick_index_1,
+        tick_index_2,
         transfer_fee_a,
         transfer_fee_b,
     )
@@ -347,8 +339,8 @@ pub fn increase_liquidity_quote_a(
 /// - `token_amount_b` - The amount of token b to increase
 /// - `slippage_tolerance` - The slippage tolerance in bps
 /// - `current_sqrt_price` - The current sqrt price of the pool
-/// - `tick_lower_index` - The lower tick index of the position
-/// - `tick_upper_index` - The upper tick index of the position
+/// - `tick_index_1` - The first tick index of the position
+/// - `tick_index_2` - The second tick index of the position
 /// - `transfer_fee_a` - The transfer fee for token A in bps
 /// - `transfer_fee_b` - The transfer fee for token B in bps
 ///
@@ -359,13 +351,13 @@ pub fn increase_liquidity_quote_b(
     token_amount_b: u64,
     slippage_tolerance_bps: u16,
     current_sqrt_price: U128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
+    tick_index_1: i32,
+    tick_index_2: i32,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
 ) -> Result<IncreaseLiquidityQuote, ErrorCode> {
-    let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
-    let token_delta_b = try_adjust_amount(token_amount_b, transfer_fee_b.into(), false)?;
+    let tick_range = order_tick_indexes(tick_index_1, tick_index_2);
+    let token_delta_b = try_apply_transfer_fee(token_amount_b, transfer_fee_b.unwrap_or_default())?;
 
     if token_delta_b == 0 {
         return Ok(IncreaseLiquidityQuote::default());
@@ -375,11 +367,7 @@ pub fn increase_liquidity_quote_b(
     let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
     let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
 
-    let position_status = position_status(
-        current_sqrt_price.into(),
-        tick_range.tick_lower_index,
-        tick_range.tick_upper_index,
-    );
+    let position_status = position_status(current_sqrt_price.into(), tick_index_1, tick_index_2);
 
     let liquidity: u128 = match position_status {
         PositionStatus::Invalid | PositionStatus::PriceBelowRange => 0,
@@ -395,8 +383,8 @@ pub fn increase_liquidity_quote_b(
         liquidity.into(),
         slippage_tolerance_bps,
         current_sqrt_price.into(),
-        tick_lower_index,
-        tick_upper_index,
+        tick_index_1,
+        tick_index_2,
         transfer_fee_a,
         transfer_fee_b,
     )
@@ -410,11 +398,12 @@ fn try_get_liquidity_from_a(
     sqrt_price_upper: u128,
 ) -> Result<u128, ErrorCode> {
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
-    let result: U256 = <U256>::from(token_delta_a)
-        .wrapping_mul(sqrt_price_lower.into())
-        .wrapping_mul(sqrt_price_upper.into())
-        .wrapping_div(sqrt_price_diff.into())
-        .wrapping_shr(64);
+    let mul: U256 = <U256>::from(token_delta_a)
+        .checked_mul(sqrt_price_lower.into())
+        .ok_or(ARITHMETIC_OVERFLOW)?
+        .checked_mul(sqrt_price_upper.into())
+        .ok_or(ARITHMETIC_OVERFLOW)?;
+    let result: U256 = (mul / sqrt_price_diff) >> 64;
     result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
@@ -463,9 +452,11 @@ fn try_get_token_b_from_liquidity(
     round_up: bool,
 ) -> Result<u64, ErrorCode> {
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
-    let p: U256 = <U256>::from(liquidity_delta).saturating_mul(sqrt_price_diff.into());
-    let result: U256 = p.wrapping_shr(64);
-    if round_up && p & <U256>::from(u64::MAX) > 0 {
+    let mul: U256 = <U256>::from(liquidity_delta)
+        .checked_mul(sqrt_price_diff.into())
+        .ok_or(ARITHMETIC_OVERFLOW)?;
+    let result: U256 = mul >> 64;
+    if round_up && mul & <U256>::from(u64::MAX) > 0 {
         (result + 1).try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
     } else {
         result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
@@ -475,15 +466,16 @@ fn try_get_token_b_from_liquidity(
 fn try_get_token_estimates_from_liquidity(
     liquidity_delta: u128,
     current_sqrt_price: u128,
-    sqrt_price_lower: u128,
-    sqrt_price_upper: u128,
+    tick_lower_index: i32,
+    tick_upper_index: i32,
 ) -> Result<(u64, u64), ErrorCode> {
     if liquidity_delta == 0 {
         return Ok((0, 0));
     }
 
-    let tick_lower_index = sqrt_price_to_tick_index(sqrt_price_lower.into());
-    let tick_upper_index = sqrt_price_to_tick_index(sqrt_price_upper.into());
+    let sqrt_price_lower = tick_index_to_sqrt_price(tick_lower_index).into();
+    let sqrt_price_upper = tick_index_to_sqrt_price(tick_upper_index).into();
+
     let position_status = position_status(
         current_sqrt_price.into(),
         tick_lower_index,

@@ -20,7 +20,7 @@ import type {
 import { generateKeyPairSigner } from "@solana/web3.js";
 import {
   DEFAULT_ADDRESS,
-  DEFAULT_FUNDER,
+  FUNDER,
   SPLASH_POOL_TICK_SPACING,
   WHIRLPOOLS_CONFIG_ADDRESS,
 } from "./config";
@@ -51,25 +51,25 @@ export type CreatePoolInstructions = {
  * Creates the necessary instructions to initialize a Splash Pool on Orca Whirlpools.
  *
  * @param {SolanaRpc} rpc - A Solana RPC client for communicating with the blockchain.
- * @param {Address} tokenMintOne - The first token mint address to include in the pool.
- * @param {Address} tokenMintTwo - The second token mint address to include in the pool.
+ * @param {Address} tokenMintA - The first token mint address to include in the pool.
+ * @param {Address} tokenMintB - The second token mint address to include in the pool.
  * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
- * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account that will fund the initialization process.
- * 
+ * @param {TransactionPartialSigner} [funder=FUNDER] - The account that will fund the initialization process.
+ *
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
  * @example
  * import { createSplashPoolInstructions } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
- * const tokenMintOne = "TOKEN_MINT_ADDRESS_1"; 
- * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
+ *
+ * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
+ * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2";
  * const initialPrice = 0.01;
- * 
+ *
  * const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
  *   devnetRpc,
  *   tokenMintOne,
@@ -80,15 +80,15 @@ export type CreatePoolInstructions = {
  */
 export function createSplashPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
-  tokenMintOne: Address,
-  tokenMintTwo: Address,
+  tokenMintA: Address,
+  tokenMintB: Address,
   initialPrice: number = 1,
-  funder: TransactionPartialSigner = DEFAULT_FUNDER,
+  funder: TransactionPartialSigner = FUNDER,
 ): Promise<CreatePoolInstructions> {
   return createConcentratedLiquidityPoolInstructions(
     rpc,
-    tokenMintOne,
-    tokenMintTwo,
+    tokenMintA,
+    tokenMintB,
     SPLASH_POOL_TICK_SPACING,
     initialPrice,
     funder,
@@ -99,27 +99,27 @@ export function createSplashPoolInstructions(
  * Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM) on Orca Whirlpools.
  *
  * @param {SolanaRpc} rpc - A Solana RPC client for communicating with the blockchain.
- * @param {Address} tokenMintOne - The first token mint address to include in the pool.
- * @param {Address} tokenMintTwo - The second token mint address to include in the pool.
+ * @param {Address} tokenMintA - The first token mint address to include in the pool.
+ * @param {Address} tokenMintB - The second token mint address to include in the pool.
  * @param {number} tickSpacing - The spacing between price ticks for the pool.
  * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
- * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account that will fund the initialization process.
- * 
+ * @param {TransactionPartialSigner} [funder=FUNDER] - The account that will fund the initialization process.
+ *
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
  * @example
  * import { createConcentratedLiquidityPool } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
+ *
  * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
- * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2"; 
+ * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2";
  * const tickSpacing = 64;
  * const initialPrice = 0.01;
- * 
+ *
  * const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPool(
  *   devnetRpc,
  *   tokenMintOne,
@@ -131,20 +131,20 @@ export function createSplashPoolInstructions(
  */
 export async function createConcentratedLiquidityPoolInstructions(
   rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
-  tokenMintOne: Address,
-  tokenMintTwo: Address,
+  tokenMintA: Address,
+  tokenMintB: Address,
   tickSpacing: number,
   initialPrice: number = 1,
-  funder: TransactionPartialSigner = DEFAULT_FUNDER,
+  funder: TransactionPartialSigner = FUNDER,
 ): Promise<CreatePoolInstructions> {
   assert(
     funder.address !== DEFAULT_ADDRESS,
     "Either supply a funder or set the default funder",
   );
-  const [tokenMintA, tokenMintB] =
-    Buffer.from(tokenMintOne) < Buffer.from(tokenMintTwo)
-      ? [tokenMintOne, tokenMintTwo]
-      : [tokenMintTwo, tokenMintOne];
+  assert(
+    Buffer.from(tokenMintA) < Buffer.from(tokenMintB),
+    "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)",
+  );
   const instructions: IInstruction[] = [];
   let stateSpace = 0;
 

@@ -117,16 +117,27 @@ pub fn sqrt_price_to_tick_index(sqrt_price: U128) -> i32 {
 /// # Parameters
 /// - `tick_index` - A i32 integer representing the tick integer
 /// - `tick_spacing` - A i32 integer representing the tick spacing
-/// - `round_up` - A boolean value indicating if the supplied tick index should be rounded up
+/// - `round_up` - A boolean value indicating if the supplied tick index should be rounded up. None will round to the nearest.
 ///
 /// # Returns
 /// - A i32 integer representing the previous initializable tick index
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn get_initializable_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
+pub fn get_initializable_tick_index(
+    tick_index: i32,
+    tick_spacing: u16,
+    round_up: Option<bool>,
+) -> i32 {
     let tick_spacing_i32 = tick_spacing as i32;
     let remainder = tick_index % tick_spacing_i32;
     let result = tick_index / tick_spacing_i32 * tick_spacing_i32;
-    if remainder >= tick_spacing_i32 / 2 {
+
+    let should_round_up = if let Some(round_up) = round_up {
+        round_up && remainder > 0
+    } else {
+        remainder >= tick_spacing_i32 / 2
+    };
+
+    if should_round_up {
         result + tick_spacing_i32
     } else {
         result
@@ -248,8 +259,8 @@ pub fn get_full_range_tick_indexes(tick_spacing: u16) -> TickRange {
 /// This is useful for ensuring that the lower tick index is always less than the upper tick index.
 ///
 /// # Parameters
-/// - `tick_lower_index` - A i32 integer representing the lower tick index
-/// - `tick_upper_index` - A i32 integer representing the upper tick index
+/// - `tick_index_1` - A i32 integer representing the first tick index
+/// - `tick_index_2` - A i32 integer representing the second tick index
 ///
 /// # Returns
 /// - A TickRange struct containing the lower and upper tick index
@@ -301,8 +312,8 @@ pub fn get_tick_index_in_array(
 // Private functions
 
 fn mul_shift_96(n0: u128, n1: u128) -> u128 {
-    let mul = <U256>::from(n0) * <U256>::from(n1);
-    mul.wrapping_shr(96).as_u128()
+    let mul: U256 = (<U256>::from(n0) * <U256>::from(n1)) >> 96;
+    mul.as_u128()
 }
 
 fn get_sqrt_price_positive_tick(tick: i32) -> u128 {
@@ -475,10 +486,21 @@ mod tests {
 
     #[test]
     fn test_get_initializable_tick_index() {
-        assert_eq!(get_initializable_tick_index(100, 10), 100);
-        assert_eq!(get_initializable_tick_index(101, 10), 100);
-        assert_eq!(get_initializable_tick_index(105, 10), 110);
-        assert_eq!(get_initializable_tick_index(109, 10), 110);
+        assert_eq!(get_initializable_tick_index(100, 10, Some(true)), 100);
+        assert_eq!(get_initializable_tick_index(100, 10, Some(false)), 100);
+        assert_eq!(get_initializable_tick_index(100, 10, None), 100);
+
+        assert_eq!(get_initializable_tick_index(101, 10, Some(true)), 110);
+        assert_eq!(get_initializable_tick_index(101, 10, Some(false)), 100);
+        assert_eq!(get_initializable_tick_index(101, 10, None), 100);
+
+        assert_eq!(get_initializable_tick_index(105, 10, Some(true)), 110);
+        assert_eq!(get_initializable_tick_index(105, 10, Some(false)), 100);
+        assert_eq!(get_initializable_tick_index(105, 10, None), 110);
+
+        assert_eq!(get_initializable_tick_index(109, 10, Some(true)), 110);
+        assert_eq!(get_initializable_tick_index(109, 10, Some(false)), 100);
+        assert_eq!(get_initializable_tick_index(109, 10, None), 110);
     }
 
     #[test]

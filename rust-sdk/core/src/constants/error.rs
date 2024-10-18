@@ -37,4 +37,3 @@ pub const ZERO_TRADABLE_AMOUNT: ErrorCode = 9009;
 
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub const INVALID_TIMESTAMP: ErrorCode = 9010;
-

@@ -1,6 +1,6 @@
 #![allow(non_snake_case)]
 
-use crate::NUM_REWRARDS;
+use crate::NUM_REWARDS;
 
 #[cfg(feature = "wasm")]
 use orca_whirlpools_macros::wasm_expose;
@@ -17,7 +17,7 @@ pub struct WhirlpoolFacade {
     pub fee_growth_global_b: u128,
     pub reward_last_updated_timestamp: u64,
     #[cfg_attr(feature = "wasm", tsify(type = "WhirlpoolRewardInfoFacade[]"))]
-    pub reward_infos: [WhirlpoolRewardInfoFacade; NUM_REWRARDS],
+    pub reward_infos: [WhirlpoolRewardInfoFacade; NUM_REWARDS],
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]

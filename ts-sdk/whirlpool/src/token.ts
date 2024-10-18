@@ -241,14 +241,14 @@ export async function prepareTokenAccountsInstructions(
 
 /**
  * Retrieves the current transfer fee configuration for a given token mint based on the current epoch.
- * 
- * This function checks the mint's transfer fee configuration and returns the appropriate fee 
+ *
+ * This function checks the mint's transfer fee configuration and returns the appropriate fee
  * structure (older or newer) depending on the current epoch. If no transfer fee configuration is found,
  * it returns `undefined`.
  *
  * @param {Mint} mint - The mint account of the token, which may include transfer fee extensions.
  * @param {bigint} currentEpoch - The current epoch to determine the applicable transfer fee.
- * 
+ *
  * @returns {TransferFee | undefined} - The transfer fee configuration for the given mint, or `undefined` if no transfer fee is configured.
  */
 export function getCurrentTransferFee(

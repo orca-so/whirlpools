@@ -4,7 +4,7 @@ use ethnum::U256;
 use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
-    try_adjust_amount, CollectFeesQuote, ErrorCode, PositionFacade, TickFacade, TransferFee,
+    try_apply_transfer_fee, CollectFeesQuote, ErrorCode, PositionFacade, TickFacade, TransferFee,
     WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
 };
 
@@ -36,44 +36,32 @@ pub fn collect_fees_quote(
     let mut fee_growth_above_b: u128 = tick_upper.fee_growth_outside_b;
 
     if whirlpool.tick_current_index < position.tick_lower_index {
-        fee_growth_below_a = whirlpool
-            .fee_growth_global_a
-            .wrapping_sub(fee_growth_below_a);
-        fee_growth_below_b = whirlpool
-            .fee_growth_global_b
-            .wrapping_sub(fee_growth_below_b);
+        fee_growth_below_a = whirlpool.fee_growth_global_a - fee_growth_below_a;
+        fee_growth_below_b = whirlpool.fee_growth_global_b - fee_growth_below_b;
     }
 
     if whirlpool.tick_current_index >= position.tick_upper_index {
-        fee_growth_above_a = whirlpool
-            .fee_growth_global_a
-            .wrapping_sub(fee_growth_above_a);
-        fee_growth_above_b = whirlpool
-            .fee_growth_global_b
-            .wrapping_sub(fee_growth_above_b);
+        fee_growth_above_a = whirlpool.fee_growth_global_a - fee_growth_above_a;
+        fee_growth_above_b = whirlpool.fee_growth_global_b - fee_growth_above_b;
     }
 
-    let fee_growth_inside_a = whirlpool
-        .fee_growth_global_a
-        .wrapping_sub(fee_growth_below_a)
-        .wrapping_sub(fee_growth_above_a);
+    let fee_growth_inside_a =
+        whirlpool.fee_growth_global_a - fee_growth_below_a - fee_growth_above_a;
 
-    let fee_growth_inside_b = whirlpool
-        .fee_growth_global_b
-        .wrapping_sub(fee_growth_below_b)
-        .wrapping_sub(fee_growth_above_b);
+    let fee_growth_inside_b =
+        whirlpool.fee_growth_global_b - fee_growth_below_b - fee_growth_above_b;
 
-    let fee_owed_delta_a: U256 = <U256>::from(fee_growth_inside_a)
-        .wrapping_sub(position.fee_growth_checkpoint_a.into())
-        .checked_mul(position.liquidity.into())
-        .ok_or(ARITHMETIC_OVERFLOW)?
-        .wrapping_shr(64);
+    let fee_owed_delta_a: U256 =
+        <U256>::from(fee_growth_inside_a - position.fee_growth_checkpoint_a)
+            .checked_mul(position.liquidity.into())
+            .ok_or(ARITHMETIC_OVERFLOW)?
+            >> 64;
 
-    let fee_owed_delta_b: U256 = <U256>::from(fee_growth_inside_b)
-        .wrapping_sub(position.fee_growth_checkpoint_b.into())
-        .checked_mul(position.liquidity.into())
-        .ok_or(ARITHMETIC_OVERFLOW)?
-        .wrapping_shr(64);
+    let fee_owed_delta_b: U256 =
+        <U256>::from(fee_growth_inside_b - position.fee_growth_checkpoint_b)
+            .checked_mul(position.liquidity.into())
+            .ok_or(ARITHMETIC_OVERFLOW)?
+            >> 64;
 
     let fee_owed_delta_a: u64 = fee_owed_delta_a
         .try_into()
@@ -85,8 +73,10 @@ pub fn collect_fees_quote(
     let withdrawable_fee_a = position.fee_owed_a + fee_owed_delta_a;
     let withdrawable_fee_b = position.fee_owed_b + fee_owed_delta_b;
 
-    let fee_owed_a = try_adjust_amount(withdrawable_fee_a, transfer_fee_a.into(), false)?;
-    let fee_owed_b = try_adjust_amount(withdrawable_fee_b, transfer_fee_b.into(), false)?;
+    let fee_owed_a =
+        try_apply_transfer_fee(withdrawable_fee_a, transfer_fee_a.unwrap_or_default())?;
+    let fee_owed_b =
+        try_apply_transfer_fee(withdrawable_fee_b, transfer_fee_b.unwrap_or_default())?;
 
     Ok(CollectFeesQuote {
         fee_owed_a,

@@ -3,7 +3,7 @@
 #[cfg(feature = "wasm")]
 use orca_whirlpools_macros::wasm_expose;
 
-use crate::NUM_REWRARDS;
+use crate::NUM_REWARDS;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "wasm", wasm_expose)]
@@ -32,7 +32,7 @@ pub struct PositionFacade {
     pub fee_growth_checkpoint_b: u128,
     pub fee_owed_b: u64,
     #[cfg_attr(feature = "wasm", tsify(type = "PositionRewardInfoFacade[]"))]
-    pub reward_infos: [PositionRewardInfoFacade; NUM_REWRARDS],
+    pub reward_infos: [PositionRewardInfoFacade; NUM_REWARDS],
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]

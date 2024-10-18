@@ -9,7 +9,7 @@ import type {
   TransactionPartialSigner,
 } from "@solana/web3.js";
 import { AccountRole, lamports } from "@solana/web3.js";
-import { DEFAULT_FUNDER, DEFAULT_SLIPPAGE_TOLERANCE_BPS } from "./config";
+import { FUNDER, SLIPPAGE_TOLERANCE_BPS } from "./config";
 import type {
   ExactInSwapQuote,
   ExactOutSwapQuote,
@@ -87,17 +87,21 @@ export type SwapInstructions<T extends SwapParams> = {
   quote: SwapQuote<T>;
 };
 
-function createUninitializedTickArray(address: Address, startTickIndex: number, programAddress: Address): Account<TickArrayFacade> {
+function createUninitializedTickArray(
+  address: Address,
+  startTickIndex: number,
+  programAddress: Address,
+): Account<TickArrayFacade> {
   return {
     address,
     data: {
-    startTickIndex,
-    ticks: Array(_TICK_ARRAY_SIZE()).fill({
-      initialized: false,
-      liquidityNet: 0n,
-      feeGrowthOutsideA: 0n,
-      feeGrowthOutsideB: 0n,
-      rewardGrowthsOutside: [0n, 0n, 0n],
+      startTickIndex,
+      ticks: Array(_TICK_ARRAY_SIZE()).fill({
+        initialized: false,
+        liquidityNet: 0n,
+        feeGrowthOutsideA: 0n,
+        feeGrowthOutsideB: 0n,
+        rewardGrowthsOutside: [0n, 0n, 0n],
       }),
     },
     executable: false,
@@ -139,7 +143,13 @@ async function fetchTickArrayOrDefault(
     if (maybeTickArray.exists) {
       tickArrays.push(maybeTickArray);
     } else {
-      tickArrays.push(createUninitializedTickArray(tickArrayAddresses[i], tickArrayIndexes[i], whirlpool.programAddress));
+      tickArrays.push(
+        createUninitializedTickArray(
+          tickArrayAddresses[i],
+          tickArrayIndexes[i],
+          whirlpool.programAddress,
+        ),
+      );
     }
   }
 
@@ -186,26 +196,26 @@ function getSwapQuote<T extends SwapParams>(
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {T} params - The swap parameters, specifying either the input or output amount and the mint address of the token being swapped.
  * @param {Address} poolAddress - The address of the Whirlpool against which the swap will be made.
- * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage tolerance for the swap, in basis points (BPS).
- * @param {TransactionPartialSigner} [signer=DEFAULT_FUNDER] - The wallet or signer executing the swap.
+ * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage tolerance for the swap, in basis points (BPS).
+ * @param {TransactionPartialSigner} [signer=FUNDER] - The wallet or signer executing the swap.
  * @returns {Promise<SwapInstructions<T>>} - A promise that resolves to an object containing the swap instructions and the swap quote.
  *
  * @example
  * import { swapInstructions } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
+ *
  * const poolAddress = "POOL_ADDRESS";
  * const mintAddress = "TOKEN_MINT";
  * const inputAmount = 1_000_000n;
- * 
+ *
  * const { instructions, quote } = await swapInstructions(
- *   devnetRpc, 
- *   { inputAmount, mint: mintAddress }, 
- *   poolAddress, 
+ *   devnetRpc,
+ *   { inputAmount, mint: mintAddress },
+ *   poolAddress,
  *   100,
  *   wallet
  * );
@@ -218,8 +228,8 @@ export async function swapInstructions<T extends SwapParams>(
   >,
   params: T,
   poolAddress: Address,
-  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
-  signer: TransactionPartialSigner = DEFAULT_FUNDER,
+  slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  signer: TransactionPartialSigner = FUNDER,
 ): Promise<SwapInstructions<T>> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   const [tokenA, tokenB] = await fetchAllMint(rpc, [
@@ -229,10 +239,7 @@ export async function swapInstructions<T extends SwapParams>(
   const specifiedTokenA = params.mint === whirlpool.data.tokenMintA;
   const specifiedInput = "inputAmount" in params;
 
-  const tickArrays = await fetchTickArrayOrDefault(
-    rpc,
-    whirlpool,
-  );
+  const tickArrays = await fetchTickArrayOrDefault(rpc, whirlpool);
 
   const oracleAddress = await getOracleAddress(whirlpool.address).then(
     (x) => x[0],

@@ -12,7 +12,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "test": "ts-mocha ./tests/**/*.test.ts",
+    "test": "mocha -r tsx ./tests/**/*.test.ts",
     "clean": "rimraf dist"
   },
   "dependencies": {

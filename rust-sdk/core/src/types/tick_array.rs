@@ -29,94 +29,94 @@ impl Debug for TickArrays {
 #[cfg(feature = "wasm")]
 impl From<TickArrays> for [Option<TickArrayFacade>; 6] {
     fn from(val: TickArrays) -> Self {
-      let val = JsValue::from(val);
-      if !val.is_array() {
-        return [None, None, None, None, None, None];
-      }
-      let array: Array = val.unchecked_into();
-      let mut result = [None, None, None, None, None, None];
-      for (i, item) in array.iter().enumerate() {
-        if let Ok(item) = serde_wasm_bindgen::from_value(item) {
-          result[i] = Some(item);
+        let val = JsValue::from(val);
+        if !val.is_array() {
+            return [None, None, None, None, None, None];
         }
-      }
-      result
+        let array: Array = val.unchecked_into();
+        let mut result = [None, None, None, None, None, None];
+        for (i, item) in array.iter().enumerate() {
+            if let Ok(item) = serde_wasm_bindgen::from_value(item) {
+                result[i] = Some(item);
+            }
+        }
+        result
     }
 }
 
 #[cfg(not(feature = "wasm"))]
 impl From<TickArrays> for [Option<TickArrayFacade>; 6] {
-  fn from(val: TickArrays) -> Self {
-    val.0
-  }
-}
-
-#[cfg(not(feature = "wasm"))]
-impl Into<TickArrays> for TickArrayFacade {
-  fn into(self) -> TickArrays {
-    TickArrays([Some(self), None, None, None, None, None])
-  }
-}
-
-#[cfg(not(feature = "wasm"))]
-impl Into<TickArrays> for [TickArrayFacade; 1] {
-  fn into(self) -> TickArrays {
-    TickArrays([Some(self[0]), None, None, None, None, None])
-  }
-}
-
-#[cfg(not(feature = "wasm"))]
-impl Into<TickArrays> for [TickArrayFacade; 2] {
-  fn into(self) -> TickArrays {
-    TickArrays([Some(self[0]), Some(self[1]), None, None, None, None])
-  }
-}
-
-#[cfg(not(feature = "wasm"))]
-    impl Into<TickArrays> for [TickArrayFacade; 3] {
-  fn into(self) -> TickArrays {
-    TickArrays([Some(self[0]), Some(self[1]), Some(self[2]), None, None, None])
-  }
-}
-
-#[cfg(not(feature = "wasm"))]
-impl Into<TickArrays> for [TickArrayFacade; 4] {
-  fn into(self) -> TickArrays {
-    TickArrays([
-        Some(self[0]),
-        Some(self[1]),
-        Some(self[2]),
-        Some(self[3]),
-        None,
-        None,
-      ])
+    fn from(val: TickArrays) -> Self {
+        val.0
     }
 }
 
 #[cfg(not(feature = "wasm"))]
-impl Into<TickArrays> for [TickArrayFacade; 5] {
-    fn into(self) -> TickArrays {
-      TickArrays([
-        Some(self[0]),
-        Some(self[1]),
-        Some(self[2]),
-        Some(self[3]),
-        Some(self[4]),
-        None,
-      ])
+impl From<TickArrayFacade> for TickArrays {
+    fn from(val: TickArrayFacade) -> Self {
+        TickArrays([Some(val), None, None, None, None, None])
     }
 }
 
 #[cfg(not(feature = "wasm"))]
-impl Into<TickArrays> for [TickArrayFacade; 6] {
-    fn into(self) -> TickArrays {
-      TickArrays([
-        Some(self[0]),
-        Some(self[1]),
-        Some(self[2]),
-        Some(self[3]),
-        Some(self[4]),
-        Some(self[5]),
-      ])
+impl From<[TickArrayFacade; 1]> for TickArrays {
+    fn from(val: [TickArrayFacade; 1]) -> Self {
+        TickArrays([Some(val[0]), None, None, None, None, None])
+    }
+}
+
+#[cfg(not(feature = "wasm"))]
+impl From<[TickArrayFacade; 2]> for TickArrays {
+    fn from(val: [TickArrayFacade; 2]) -> Self {
+        TickArrays([Some(val[0]), Some(val[1]), None, None, None, None])
+    }
+}
+
+#[cfg(not(feature = "wasm"))]
+impl From<[TickArrayFacade; 3]> for TickArrays {
+    fn from(val: [TickArrayFacade; 3]) -> Self {
+        TickArrays([Some(val[0]), Some(val[1]), Some(val[2]), None, None, None])
+    }
+}
+
+#[cfg(not(feature = "wasm"))]
+impl From<[TickArrayFacade; 4]> for TickArrays {
+    fn from(val: [TickArrayFacade; 4]) -> Self {
+        TickArrays([
+            Some(val[0]),
+            Some(val[1]),
+            Some(val[2]),
+            Some(val[3]),
+            None,
+            None,
+        ])
+    }
+}
+
+#[cfg(not(feature = "wasm"))]
+impl From<[TickArrayFacade; 5]> for TickArrays {
+    fn from(val: [TickArrayFacade; 5]) -> Self {
+        TickArrays([
+            Some(val[0]),
+            Some(val[1]),
+            Some(val[2]),
+            Some(val[3]),
+            Some(val[4]),
+            None,
+        ])
+    }
+}
+
+#[cfg(not(feature = "wasm"))]
+impl From<[TickArrayFacade; 6]> for TickArrays {
+    fn from(val: [TickArrayFacade; 6]) -> Self {
+        TickArrays([
+            Some(val[0]),
+            Some(val[1]),
+            Some(val[2]),
+            Some(val[3]),
+            Some(val[4]),
+            Some(val[5]),
+        ])
     }
 }

@@ -3,7 +3,6 @@ import {
   fetchAllMaybeTickArray,
   fetchPosition,
   fetchWhirlpool,
-  getIncreaseLiquidityInstruction,
   getIncreaseLiquidityV2Instruction,
   getInitializeTickArrayInstruction,
   getOpenPositionWithTokenExtensionsInstruction,
@@ -42,8 +41,8 @@ import type {
 import { generateKeyPairSigner, lamports } from "@solana/web3.js";
 import {
   DEFAULT_ADDRESS,
-  DEFAULT_FUNDER,
-  DEFAULT_SLIPPAGE_TOLERANCE_BPS,
+  FUNDER,
+  SLIPPAGE_TOLERANCE_BPS,
   SPLASH_POOL_TICK_SPACING,
 } from "./config";
 import {
@@ -146,27 +145,27 @@ function getIncreaseLiquidityQuote(
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} positionMintAddress - The mint address of the NFT that represents the position.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity. Can specify liquidity, Token A, or Token B amounts.
- * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
- * @param {TransactionPartialSigner} [authority=DEFAULT_FUNDER] - The account that authorizes the transaction.
+ * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
+ * @param {TransactionPartialSigner} [authority=FUNDER] - The account that authorizes the transaction.
  * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for increasing liquidity.
  *
  * @example
  * import { increaseLiquidityInstructions } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
- * const positionMint = "POSITION_MINT";  
- * 
- * const param = { tokenA: 1_000_000n }; 
- * 
+ *
+ * const positionMint = "POSITION_MINT";
+ *
+ * const param = { tokenA: 1_000_000n };
+ *
  * const { quote, instructions, initializationCost } = await increaseLiquidityInstructions(
- *   devnetRpc, 
- *   positionMint, 
- *   param, 
- *   100, 
+ *   devnetRpc,
+ *   positionMint,
+ *   param,
+ *   100,
  *   wallet
  * );
  */
@@ -178,8 +177,8 @@ export async function increaseLiquidityInstructions(
   >,
   positionMintAddress: Address,
   param: IncreaseLiquidityQuoteParam,
-  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
-  authority: TransactionPartialSigner = DEFAULT_FUNDER,
+  slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  authority: TransactionPartialSigner = FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,
@@ -244,7 +243,7 @@ export async function increaseLiquidityInstructions(
   // Since position exists tick arrays must also already exist
 
   instructions.push(
-    getIncreaseLiquidityInstruction({
+    getIncreaseLiquidityV2Instruction({
       whirlpool: whirlpool.address,
       positionAuthority: authority,
       position: position.address,
@@ -253,11 +252,17 @@ export async function increaseLiquidityInstructions(
       tokenOwnerAccountB: tokenAccountAddresses[whirlpool.data.tokenMintB],
       tokenVaultA: whirlpool.data.tokenVaultA,
       tokenVaultB: whirlpool.data.tokenVaultB,
+      tokenMintA: whirlpool.data.tokenMintA,
+      tokenMintB: whirlpool.data.tokenMintB,
+      tokenProgramA: mintA.programAddress,
+      tokenProgramB: mintB.programAddress,
       tickArrayLower,
       tickArrayUpper,
       liquidityAmount: quote.liquidityDelta,
       tokenMaxA: quote.tokenMaxA,
       tokenMaxB: quote.tokenMaxB,
+      memoProgram: MEMO_PROGRAM_ADDRESS,
+      remainingAccountsInfo: null,
     }),
   );
 
@@ -278,8 +283,8 @@ async function internalOpenPositionInstructions(
   upperTickIndex: number,
   mintA: Account<Mint>,
   mintB: Account<Mint>,
-  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
-  funder: TransactionPartialSigner = DEFAULT_FUNDER,
+  slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  funder: TransactionPartialSigner = FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   assert(
     funder.address !== DEFAULT_ADDRESS,
@@ -291,10 +296,12 @@ async function internalOpenPositionInstructions(
   const initializableLowerTickIndex = getInitializableTickIndex(
     lowerTickIndex,
     whirlpool.data.tickSpacing,
+    false,
   );
   const initializableUpperTickIndex = getInitializableTickIndex(
     upperTickIndex,
     whirlpool.data.tickSpacing,
+    true,
   );
   const tickRange = orderTickIndexes(
     initializableLowerTickIndex,
@@ -444,26 +451,26 @@ async function internalOpenPositionInstructions(
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} poolAddress - The address of the liquidity pool.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity, where one of `liquidity`, `tokenA`, or `tokenB` must be specified. The SDK will compute the others.
- * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
- * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account funding the transaction.
+ * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
+ * @param {TransactionPartialSigner} [funder=FUNDER] - The account funding the transaction.
  * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for opening a full-range position.
  *
  * @example
  * import { openFullRangePositionInstructions } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
+ *
  * const poolAddress = "POOL_ADDRESS";
- * 
- * const param = { tokenA: 1_000_000n }; 
- * 
+ *
+ * const param = { tokenA: 1_000_000n };
+ *
  * const { quote, instructions, initializationCost } = await openFullRangePositionInstructions(
  *   devnetRpc,
  *   poolAddress,
- *   param, 
+ *   param,
  *   100,
  *   wallet
  * );
@@ -476,8 +483,8 @@ export async function openFullRangePositionInstructions(
   >,
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,
-  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
-  funder: TransactionPartialSigner = DEFAULT_FUNDER,
+  slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  funder: TransactionPartialSigner = FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   const tickRange = getFullRangeTickIndexes(whirlpool.data.tickSpacing);
@@ -503,31 +510,31 @@ export async function openFullRangePositionInstructions(
  * This function allows you to provide liquidity for the specified range of prices and adjust liquidity parameters accordingly.
  *
  * **Note:** This function cannot be used with Splash Pools.
- * 
+ *
  * @param {SolanaRpc} rpc - A Solana RPC client used to interact with the blockchain.
  * @param {Address} poolAddress - The address of the liquidity pool where the position will be opened.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for increasing liquidity, where you must choose one (`liquidity`, `tokenA`, or `tokenB`). The SDK will compute the other two.
  * @param {number} lowerPrice - The lower bound of the price range for the position.
  * @param {number} upperPrice - The upper bound of the price range for the position.
- * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The slippage tolerance for adding liquidity, in basis points (BPS).
- * @param {TransactionPartialSigner} [funder=DEFAULT_FUNDER] - The account funding the transaction.
+ * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The slippage tolerance for adding liquidity, in basis points (BPS).
+ * @param {TransactionPartialSigner} [funder=FUNDER] - The account funding the transaction.
  *
  * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing liquidity information and the list of instructions needed to open the position.
  *
  * @example
  * import { openPositionInstructions } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
+ *
  * const poolAddress = "POOL_ADDRESS";
- * 
+ *
  * const param = { tokenA: 1_000_000n };
  * const lowerPrice = 0.00005;
  * const upperPrice = 0.00015;
- * 
+ *
  * const { quote, instructions, initializationCost } = await openPositionInstructions(
  *   devnetRpc,
  *   poolAddress,
@@ -548,8 +555,8 @@ export async function openPositionInstructions(
   param: IncreaseLiquidityQuoteParam,
   lowerPrice: number,
   upperPrice: number,
-  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
-  funder: TransactionPartialSigner = DEFAULT_FUNDER,
+  slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  funder: TransactionPartialSigner = FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   assert(

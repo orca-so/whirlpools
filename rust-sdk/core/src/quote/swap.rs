@@ -1,7 +1,11 @@
-use core::cmp::{max, min};
-
 use crate::{
-    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_adjust_amount, try_get_amount_delta_a, try_get_amount_delta_b, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b, try_inverse_adjust_amount, AdjustmentType, ErrorCode, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade, ARITHMETIC_OVERFLOW, INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, SQRT_PRICE_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT
+    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee,
+    try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance,
+    try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a,
+    try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee,
+    ErrorCode, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade,
+    TransferFee, WhirlpoolFacade, ARITHMETIC_OVERFLOW, INVALID_SQRT_PRICE_LIMIT_DIRECTION,
+    MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT,
 };
 
 #[cfg(feature = "wasm")]
@@ -35,7 +39,8 @@ pub fn swap_quote_by_input_token(
     } else {
         (transfer_fee_b, transfer_fee_a)
     };
-    let token_in_after_fee = try_adjust_amount(token_in.into(), transfer_fee_in.into(), true)?;
+    let token_in_after_fee =
+        try_apply_transfer_fee(token_in.into(), transfer_fee_in.unwrap_or_default())?;
 
     let tick_sequence = TickArraySequence::new(tick_arrays.into(), whirlpool.tick_spacing)?;
 
@@ -55,31 +60,21 @@ pub fn swap_quote_by_input_token(
         (swap_result.token_b, swap_result.token_a)
     };
 
-    let token_min_out_before_slippage = try_adjust_amount(
-        token_est_out_before_fee.into(),
-        transfer_fee_out.into(),
-        false,
+    let token_in =
+        try_reverse_apply_transfer_fee(token_in_after_fees, transfer_fee_in.unwrap_or_default())?;
+
+    let token_est_out = try_apply_transfer_fee(
+        token_est_out_before_fee,
+        transfer_fee_out.unwrap_or_default(),
     )?;
 
-    let token_in =
-        try_inverse_adjust_amount(token_in_after_fees.into(), transfer_fee_in.into(), false)?;
-    let token_est_out = try_adjust_amount(
-        token_est_out_before_fee.into(),
-        transfer_fee_out.into(),
-        false,
-    )?;
-    let token_min_out = try_adjust_amount(
-        token_min_out_before_slippage.into(),
-        AdjustmentType::Slippage {
-            slippage_tolerance_bps,
-        },
-        false,
-    )?;
+    let token_min_out =
+        try_get_min_amount_with_slippage_tolerance(token_est_out, slippage_tolerance_bps)?;
 
     Ok(ExactInSwapQuote {
-        token_in: token_in.into(),
-        token_est_out: token_est_out.into(),
-        token_min_out: token_min_out.into(),
+        token_in,
+        token_est_out,
+        token_min_out,
         trade_fee: swap_result.trade_fee,
     })
 }
@@ -113,7 +108,7 @@ pub fn swap_quote_by_output_token(
         (transfer_fee_a, transfer_fee_b)
     };
     let token_out_before_fee =
-        try_inverse_adjust_amount(token_out.into(), transfer_fee_out.into(), false)?;
+        try_reverse_apply_transfer_fee(token_out, transfer_fee_out.unwrap_or_default())?;
 
     let tick_sequence = TickArraySequence::new(tick_arrays.into(), whirlpool.tick_spacing)?;
 
@@ -133,24 +128,21 @@ pub fn swap_quote_by_output_token(
         (swap_result.token_b, swap_result.token_a)
     };
 
-    let token_max_in_slippage_fee =
-        try_adjust_amount(token_est_in_after_fee.into(), transfer_fee_in.into(), true)?;
+    let token_out =
+        try_apply_transfer_fee(token_out_before_fee, transfer_fee_out.unwrap_or_default())?;
 
-    let token_est_in =
-        try_inverse_adjust_amount(token_est_in_after_fee.into(), transfer_fee_in.into(), false)?;
-    let token_max_in = try_inverse_adjust_amount(
-        token_max_in_slippage_fee.into(),
-        AdjustmentType::Slippage {
-            slippage_tolerance_bps,
-        },
-        false,
+    let token_est_in = try_reverse_apply_transfer_fee(
+        token_est_in_after_fee,
+        transfer_fee_in.unwrap_or_default(),
     )?;
-    let token_out = try_adjust_amount(token_out_before_fee.into(), transfer_fee_out.into(), false)?;
+
+    let token_max_in =
+        try_get_max_amount_with_slippage_tolerance(token_est_in, slippage_tolerance_bps)?;
 
     Ok(ExactOutSwapQuote {
-        token_out: token_out.into(),
-        token_est_in: token_est_in.into(),
-        token_max_in: token_max_in.into(),
+        token_out,
+        token_est_in,
+        token_max_in,
         trade_fee: swap_result.trade_fee,
     })
 }
@@ -187,8 +179,8 @@ fn compute_swap<const SIZE: usize>(
     }
 
     if a_to_b && sqrt_price_limit > whirlpool.sqrt_price
-    || !a_to_b && sqrt_price_limit < whirlpool.sqrt_price
-{
+        || !a_to_b && sqrt_price_limit < whirlpool.sqrt_price
+    {
         return Err(INVALID_SQRT_PRICE_LIMIT_DIRECTION);
     }
 
@@ -203,9 +195,7 @@ fn compute_swap<const SIZE: usize>(
     let mut current_liquidity = whirlpool.liquidity;
     let mut trade_fee = 0u64;
 
-    while amount_remaining > 0
-        && sqrt_price_limit != current_sqrt_price
-    {
+    while amount_remaining > 0 && sqrt_price_limit != current_sqrt_price {
         let (next_tick, next_tick_index) = if a_to_b {
             tick_sequence.prev_initialized_tick(current_tick_index)?
         } else {
@@ -321,26 +311,23 @@ fn compute_swap_step(
     );
 
     let amount_calculated = if specified_input {
-        try_adjust_amount(
-            amount_remaining.into(),
-            AdjustmentType::SwapFee { fee_rate },
-            false,
-        )?
+        try_apply_swap_fee(amount_remaining.into(), fee_rate)?
     } else {
         amount_remaining
     };
 
-    let next_sqrt_price = if initial_amount_fixed_delta.is_ok() && initial_amount_fixed_delta? <= amount_calculated {
-        target_sqrt_price
-    } else {
-        try_get_next_sqrt_price(
-            current_sqrt_price,
-            current_liquidity,
-            amount_calculated,
-            a_to_b,
-            specified_input,
-        )?
-    };
+    let next_sqrt_price =
+        if initial_amount_fixed_delta.is_ok() && initial_amount_fixed_delta? <= amount_calculated {
+            target_sqrt_price
+        } else {
+            try_get_next_sqrt_price(
+                current_sqrt_price,
+                current_liquidity,
+                amount_calculated,
+                a_to_b,
+                specified_input,
+            )?
+        };
 
     let is_max_swap = next_sqrt_price == target_sqrt_price;
 
@@ -379,11 +366,7 @@ fn compute_swap_step(
     let fee_amount = if specified_input && !is_max_swap {
         amount_remaining - amount_in
     } else {
-        let pre_fee_amount = try_inverse_adjust_amount(
-            amount_in.into(),
-            AdjustmentType::SwapFee { fee_rate },
-            false,
-        )?;
+        let pre_fee_amount = try_reverse_apply_swap_fee(amount_in.into(), fee_rate)?;
         pre_fee_amount - amount_in
     };
 
@@ -512,7 +495,8 @@ mod tests {
             test_tick_array(352),
             test_tick_array(-176),
             test_tick_array(-352),
-        ].into()
+        ]
+        .into()
     }
 
     #[test]

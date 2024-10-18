@@ -18,7 +18,7 @@ import type {
   GetMinimumBalanceForRentExemptionApi,
   GetEpochInfoApi,
 } from "@solana/web3.js";
-import { DEFAULT_ADDRESS, DEFAULT_FUNDER } from "./config";
+import { DEFAULT_ADDRESS, FUNDER } from "./config";
 import type { Whirlpool } from "@orca-so/whirlpools-client";
 import {
   fetchAllTickArray,
@@ -84,26 +84,26 @@ async function getTransferFeeConfigs(
 /**
  * This function creates a set of instructions that collect any accumulated fees and rewards from a position.
  * The liquidity remains in place, and the position stays open.
- * 
- * @param {SolanaRpc} rpc 
+ *
+ * @param {SolanaRpc} rpc
  *    A Solana RPC client used to interact with the blockchain.
- * @param {Address} positionMintAddress 
+ * @param {Address} positionMintAddress
  *    The position mint address you want to harvest fees and rewards from.
- * @param {TransactionPartialSigner} [authority=DEFAULT_FUNDER] 
+ * @param {TransactionPartialSigner} [authority=FUNDER]
  *    The account that authorizes the transaction. Defaults to a predefined funder.
- * 
- * @returns {Promise<HarvestPositionInstructions>} 
+ *
+ * @returns {Promise<HarvestPositionInstructions>}
  *    A promise that resolves to an object containing the instructions, fees, and rewards quotes.
  * @example
  * import { harvestPositionInstructions } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
+ *
  * const positionMint = "POSITION_MINT";
- * 
+ *
  * const { feesQuote, rewardsQuote, instructions } = await harvestPositionInstructions(
  *   devnetRpc,
  *   positionMint,
@@ -118,7 +118,7 @@ export async function harvestPositionInstructions(
       GetEpochInfoApi
   >,
   positionMintAddress: Address,
-  authority: TransactionPartialSigner = DEFAULT_FUNDER,
+  authority: TransactionPartialSigner = FUNDER,
 ): Promise<HarvestPositionInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,

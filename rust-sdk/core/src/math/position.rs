@@ -1,4 +1,4 @@
-use crate::{PositionRatio, PositionStatus, U128};
+use crate::{PositionRatio, PositionStatus, BPS_DENOMINATOR, U128};
 
 use ethnum::U256;
 #[cfg(feature = "wasm")]
@@ -11,19 +11,14 @@ use super::{order_tick_indexes, tick_index_to_sqrt_price};
 ///
 /// # Parameters
 /// - `sqrt_price` - A u128 integer representing the sqrt price of the pool
-/// - `tick_lower_index` - A i32 integer representing the lower tick index of the position
-/// - `tick_upper_index` - A i32 integer representing the upper tick index of the position
+/// - `tick_index_1` - A i32 integer representing the first tick index of the position
+/// - `tick_index_2` - A i32 integer representing the second tick index of the position
 ///
 /// # Returns
 /// - A boolean value indicating if the position is in range
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn is_position_in_range(
-    sqrt_price: U128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
-) -> bool {
-    position_status(sqrt_price.into(), tick_lower_index, tick_upper_index)
-        == PositionStatus::PriceInRange
+pub fn is_position_in_range(sqrt_price: U128, tick_index_1: i32, tick_index_2: i32) -> bool {
+    position_status(sqrt_price.into(), tick_index_1, tick_index_2) == PositionStatus::PriceInRange
 }
 
 /// Calculate the status of a position
@@ -34,23 +29,23 @@ pub fn is_position_in_range(
 ///
 /// # Parameters
 /// - `sqrt_price` - A u128 integer representing the sqrt price of the pool
-/// - `tick_lower_index` - A i32 integer representing the lower tick index of the position
-/// - `tick_upper_index` - A i32 integer representing the upper tick index of the position
+/// - `tick_index_1` - A i32 integer representing the first tick index of the position
+/// - `tick_index_2` - A i32 integer representing the second tick index of the position
 ///
 /// # Returns
 /// - A PositionStatus enum value indicating the status of the position
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn position_status(
     current_sqrt_price: U128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
+    tick_index_1: i32,
+    tick_index_2: i32,
 ) -> PositionStatus {
     let current_sqrt_price: u128 = current_sqrt_price.into();
-    let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
+    let tick_range = order_tick_indexes(tick_index_1, tick_index_2);
     let sqrt_price_lower: u128 = tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
     let sqrt_price_upper: u128 = tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
 
-    if tick_lower_index == tick_upper_index {
+    if tick_index_1 == tick_index_2 {
         PositionStatus::Invalid
     } else if current_sqrt_price <= sqrt_price_lower {
         PositionStatus::PriceBelowRange
@@ -65,23 +60,19 @@ pub fn position_status(
 ///
 /// # Parameters
 /// - `sqrt_price` - A u128 integer representing the sqrt price of the pool
-/// - `tick_lower_index` - A i32 integer representing the lower tick index of the position
-/// - `tick_upper_index` - A i32 integer representing the upper tick index of the position
+/// - `tick_index_1` - A i32 integer representing the first tick index of the position
+/// - `tick_index_2` - A i32 integer representing the second tick index of the position
 ///
 /// # Returns
 /// - A PositionRatio struct containing the ratio of token_a and token_b
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn position_ratio(
     current_sqrt_price: U128,
-    tick_lower_index: i32,
-    tick_upper_index: i32,
+    tick_index_1: i32,
+    tick_index_2: i32,
 ) -> PositionRatio {
     let current_sqrt_price: u128 = current_sqrt_price.into();
-    let position_status = position_status(
-        current_sqrt_price.into(),
-        tick_lower_index,
-        tick_upper_index,
-    );
+    let position_status = position_status(current_sqrt_price.into(), tick_index_1, tick_index_2);
     match position_status {
         PositionStatus::Invalid => PositionRatio {
             ratio_a: 0,
@@ -96,34 +87,32 @@ pub fn position_ratio(
             ratio_b: 10000,
         },
         PositionStatus::PriceInRange => {
-            let tick_range = order_tick_indexes(tick_lower_index, tick_upper_index);
+            let tick_range = order_tick_indexes(tick_index_1, tick_index_2);
             let lower_sqrt_price: u128 =
                 tick_index_to_sqrt_price(tick_range.tick_lower_index).into();
             let upper_sqrt_price: u128 =
                 tick_index_to_sqrt_price(tick_range.tick_upper_index).into();
 
-            let l = <U256>::from(1u16).wrapping_shl(128);
+            let l: U256 = <U256>::from(1u16) << 128;
+            let p = current_sqrt_price * current_sqrt_price;
 
-            let deposit_a_1 = l.wrapping_shl(64).wrapping_div(current_sqrt_price.into());
+            let deposit_a_1: U256 = (l << 64) / current_sqrt_price;
+            let deposit_a_2: U256 = (l << 64) / upper_sqrt_price;
+            let deposit_a: U256 = ((deposit_a_1 - deposit_a_2) * p) >> 128;
 
-            let deposit_a_2 = l.wrapping_shl(64).wrapping_div(upper_sqrt_price.into());
+            let deposit_b_1 = current_sqrt_price - lower_sqrt_price;
+            let deposit_b = (l * deposit_b_1) >> 64;
 
-            let deposit_a = deposit_a_1
-                .wrapping_sub(deposit_a_2)
-                .wrapping_mul(current_sqrt_price.into())
-                .wrapping_mul(current_sqrt_price.into())
-                .wrapping_shr(128);
+            let total_deposit = deposit_a + deposit_b;
 
-            let deposit_b_1 = current_sqrt_price.wrapping_sub(lower_sqrt_price);
+            let denominator = <U256>::from(BPS_DENOMINATOR);
+            let ratio_a: U256 = (deposit_a * denominator) / total_deposit;
+            let ratio_b: U256 = denominator - ratio_a;
 
-            let deposit_b = l.wrapping_mul(deposit_b_1.into()).wrapping_shr(64);
-
-            let total_deposit = deposit_a.wrapping_add(deposit_b);
-
-            let ratio_a = ((deposit_a * 10000) / total_deposit).as_u16();
-            let ratio_b = 10000 - ratio_a;
-
-            PositionRatio { ratio_a, ratio_b }
+            PositionRatio {
+                ratio_a: ratio_a.as_u16(),
+                ratio_b: ratio_b.as_u16(),
+            }
         }
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    ErrorCode, TickArrayFacade, TickFacade, INVALID_TICK_INDEX, MAX_TICK_INDEX,
+    ErrorCode, TickArrayFacade, TickFacade, INVALID_TICK_INDEX, MAX_TICK_INDEX, MIN_TICK_INDEX,
     TICK_ARRAY_NOT_EVENLY_SPACED, TICK_ARRAY_SIZE, TICK_INDEX_OUT_OF_BOUNDS, TICK_SEQUENCE_EMPTY,
 };
 
@@ -41,17 +41,18 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
     }
 
     pub fn start_index(&self) -> i32 {
-        start_tick_index(&self.tick_arrays[0])
+        start_tick_index(&self.tick_arrays[0]).max(MIN_TICK_INDEX)
     }
 
     pub fn end_index(&self) -> i32 {
         let mut last_valid_start_index = self.start_index();
         for i in 0..self.tick_arrays.len() {
-            if start_tick_index(&self.tick_arrays[i]) != MAX_TICK_INDEX {
+            if start_tick_index(&self.tick_arrays[i]) != <i32>::MAX {
                 last_valid_start_index = start_tick_index(&self.tick_arrays[i]);
             }
         }
-        last_valid_start_index + TICK_ARRAY_SIZE as i32 * self.tick_spacing as i32
+        let end_index = last_valid_start_index + TICK_ARRAY_SIZE as i32 * self.tick_spacing as i32;
+        end_index.min(MAX_TICK_INDEX)
     }
 
     pub fn tick(&self, tick_index: i32) -> Result<&TickFacade, ErrorCode> {
@@ -99,7 +100,7 @@ fn start_tick_index(tick_array: &Option<TickArrayFacade>) -> i32 {
     if let Some(tick_array) = tick_array {
         tick_array.start_tick_index
     } else {
-        MAX_TICK_INDEX
+        <i32>::MAX
     }
 }
 

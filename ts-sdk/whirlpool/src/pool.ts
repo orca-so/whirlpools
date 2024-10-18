@@ -62,14 +62,14 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  * @example
  * import { fetchSplashPool } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
- * const tokenMintOne = "TOKEN_MINT_ONE"; 
+ *
+ * const tokenMintOne = "TOKEN_MINT_ONE";
  * const tokenMintTwo = "TOKEN_MINT_TWO";
- * 
+ *
  * const poolInfo = await fetchSplashPool(
  *   devnetRpc,
  *   tokenMintOne,
@@ -101,15 +101,15 @@ export async function fetchSplashPool(
  * @example
  * import { fetchPool } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
+ *
  * const tokenMintOne = "TOKEN_MINT_ONE";
  * const tokenMintTwo = "TOKEN_MINT_TWO";
  * const tickSpacing = 64;
- * 
+ *
  * const poolInfo = await fetchPool(
  *   devnetRpc,
  *   tokenMintOne,
@@ -168,7 +168,7 @@ export async function fetchConcentratedLiquidityPool(
 /**
  * Fetches all possible liquidity pools between two token mints in Orca Whirlpools.
  * If a pool does not exist, it creates a placeholder account for the uninitialized pool with default data
- * 
+ *
  * @param {SolanaRpc} rpc - The Solana RPC client.
  * @param {Address} tokenMintOne - The first token mint address in the pool.
  * @param {Address} tokenMintTwo - The second token mint address in the pool.
@@ -177,14 +177,14 @@ export async function fetchConcentratedLiquidityPool(
  * @example
  * import { fetchWhirlpools } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
- * const tokenMintOne = "TOKEN_MINT_ONE";  
- * const tokenMintTwo = "TOKEN_MINT_TWO"; 
- * 
+ *
+ * const tokenMintOne = "TOKEN_MINT_ONE";
+ * const tokenMintTwo = "TOKEN_MINT_TWO";
+ *
  * const pools = await fetchWhirlpools(
  *   devnetRpc,
  *   tokenMintOne,

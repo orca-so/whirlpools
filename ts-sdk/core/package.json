@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "build": "wasm-pack build --out-dir ./dist/web --target web && wasm-pack build --out-dir ./dist/nodejs --target nodejs",
-    "test": "ts-mocha --type-check ./tests/**/*.test.ts",
+    "test": "tsc --noEmit && mocha -r tsx ./tests/**/*.test.ts",
     "clean": "cargo clean && rimraf dist"
   },
   "devDependencies": {

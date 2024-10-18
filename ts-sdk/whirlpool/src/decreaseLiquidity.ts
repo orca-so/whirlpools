@@ -38,11 +38,7 @@ import type {
   Rpc,
   TransactionPartialSigner,
 } from "@solana/web3.js";
-import {
-  DEFAULT_ADDRESS,
-  DEFAULT_FUNDER,
-  DEFAULT_SLIPPAGE_TOLERANCE_BPS,
-} from "./config";
+import { DEFAULT_ADDRESS, FUNDER, SLIPPAGE_TOLERANCE_BPS } from "./config";
 import {
   findAssociatedTokenPda,
   TOKEN_PROGRAM_ADDRESS,
@@ -63,8 +59,8 @@ import assert from "assert";
 // TODO: transfer hook
 
 /**
- * Represents the parameters for decreasing liquidity. 
- * You must choose only one of the properties (`liquidity`, `tokenA`, or `tokenB`). 
+ * Represents the parameters for decreasing liquidity.
+ * You must choose only one of the properties (`liquidity`, `tokenA`, or `tokenB`).
  * The SDK will compute the other two based on the input provided.
  */
 export type DecreaseLiquidityQuoteParam =
@@ -139,27 +135,27 @@ function getDecreaseLiquidityQuote(
  * @param {SolanaRpc} rpc - A Solana RPC client for fetching necessary accounts and pool data.
  * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position from which liquidity will be removed.
  * @param {DecreaseLiquidityQuoteParam} param - Defines the liquidity removal method (liquidity, tokenA, or tokenB).
- * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
- * @param {TransactionPartialSigner} [authority=DEFAULT_FUNDER] - The account authorizing the liquidity removal.
+ * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
+ * @param {TransactionPartialSigner} [authority=FUNDER] - The account authorizing the liquidity removal.
  *
  * @returns {Promise<DecreaseLiquidityInstructions>} A promise resolving to an object containing the decrease liquidity quote and instructions.
  *
  * @example
  * import { decreaseLiquidityInstructions } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
- * const positionMint = "POSITION_MINT";  
- * 
- * const param = { liquidity: 500_000n }; 
- * 
+ *
+ * const positionMint = "POSITION_MINT";
+ *
+ * const param = { liquidity: 500_000n };
+ *
  * const { quote, instructions } = await decreaseLiquidityInstructions(
  *   devnetRpc,
  *   positionMint,
- *   param, 
+ *   param,
  *   100,
  *   wallet
  * );
@@ -172,8 +168,8 @@ export async function decreaseLiquidityInstructions(
   >,
   positionMintAddress: Address,
   param: DecreaseLiquidityQuoteParam,
-  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
-  authority: TransactionPartialSigner = DEFAULT_FUNDER,
+  slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  authority: TransactionPartialSigner = FUNDER,
 ): Promise<DecreaseLiquidityInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,
@@ -276,7 +272,6 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
   rewardsQuote: CollectRewardsQuote;
 };
 
-
 /**
  * Generates instructions to close a liquidity position in an Orca Whirlpool. This includes collecting all fees,
  * rewards, removing any remaining liquidity, and closing the position.
@@ -284,29 +279,29 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  * @param {SolanaRpc} rpc - A Solana RPC client for fetching accounts and pool data.
  * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position to be closed.
  * @param {DecreaseLiquidityQuoteParam} param - The parameters for removing liquidity (liquidity, tokenA, or tokenB).
- * @param {number} [slippageToleranceBps=DEFAULT_SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
- * @param {TransactionPartialSigner} [authority=DEFAULT_FUNDER] - The account authorizing the transaction.
+ * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
+ * @param {TransactionPartialSigner} [authority=FUNDER] - The account authorizing the transaction.
  *
  * @returns {Promise<ClosePositionInstructions>} A promise resolving to an object containing instructions, fees quote, rewards quote, and the liquidity quote for the closed position.
  *
  * @example
  * import { closePositionInstructions } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- * 
+ *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * 
+ *
  * const positionMint = "POSITION_MINT";
- * 
+ *
  * const param = { liquidity: 500_000n };
- * 
+ *
  * const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
  *   devnetRpc,
  *   positionMint,
  *   param,
- *   100, 
- *   wallet 
+ *   100,
+ *   wallet
  * );
  */
 export async function closePositionInstructions(
@@ -317,8 +312,8 @@ export async function closePositionInstructions(
   >,
   positionMintAddress: Address,
   param: DecreaseLiquidityQuoteParam,
-  slippageToleranceBps: number = DEFAULT_SLIPPAGE_TOLERANCE_BPS,
-  authority: TransactionPartialSigner = DEFAULT_FUNDER,
+  slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
+  authority: TransactionPartialSigner = FUNDER,
 ): Promise<ClosePositionInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,

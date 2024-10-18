@@ -10,4 +10,5 @@ keywords = ["solana", "crypto", "defi", "dex", "amm"]
 edition = "2021"
 
 [dependencies]
+orca_whirlpools_core = { path = "../core" }
 orca_whirlpools_client = { path = "../client" }

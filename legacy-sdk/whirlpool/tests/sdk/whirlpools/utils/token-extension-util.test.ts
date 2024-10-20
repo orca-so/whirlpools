@@ -35,7 +35,7 @@ describe("TokenExtensionUtil tests", () => {
     return true;
   }
 
-  before(async () => {
+  beforeAll(async () => {
     const vaultStartBalance = 1_000_000;
     const lowerTickIndex = -1280,
       upperTickIndex = 1280,

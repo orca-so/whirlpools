@@ -1,4 +1,4 @@
-import { describe, it } from "mocha";
+import { describe, it, beforeEach, afterEach, vi } from "vitest";
 import assert from "assert";
 import type { FeeTierArgs } from "../src/generated/accounts/feeTier";
 import { getFeeTierEncoder } from "../src/generated/accounts/feeTier";
@@ -85,38 +85,31 @@ import {
   whirlpoolsConfigExtensionConfigTokenBadgeAuthorityFilter,
   whirlpoolsConfigExtensionWhirlpoolsConfigFilter,
 } from "../src/gpa/whirlpoolsConfigExtension";
-import type { SinonStub } from "sinon";
-import { stub } from "sinon";
-import * as gpa from "../src/gpa/utils";
+import { fetchDecodedProgramAccounts } from "../src/gpa/utils";
 
 describe("get program account memcmp filters", () => {
   const mockRpc = createSolanaRpcFromTransport(
     createDefaultRpcTransport({ url: "" }),
   );
-  let addresses: Address[] = [];
-  let gpaMock: SinonStub;
-
-  before(() => {
-    const decoder = getAddressDecoder();
-    addresses = [...Array(25).keys()].map((i) => {
-      const bytes = Array.from({ length: 32 }, () => i);
-      return decoder.decode(new Uint8Array(bytes));
-    });
+  const addresses: Address[] = [...Array(25).keys()].map((i) => {
+    const bytes = Array.from({ length: 32 }, () => i);
+    return getAddressDecoder().decode(new Uint8Array(bytes));
   });
 
   beforeEach(() => {
-    gpaMock = stub(gpa, "fetchDecodedProgramAccounts").returns(
-      Promise.resolve([]),
-    );
+    vi.mock("../src/gpa/utils", () => ({
+      fetchDecodedProgramAccounts: vi.fn().mockResolvedValue([]),
+    }));
   });
 
   afterEach(() => {
-    gpaMock.restore();
+    vi.restoreAllMocks();
   });
 
   function assertFilters(data: ReadonlyUint8Array) {
-    const filters = gpaMock.getCall(0)
-      .args[2] as GetProgramAccountsMemcmpFilter[];
+    const mockFetch = vi.mocked(fetchDecodedProgramAccounts);
+    const filters = mockFetch.mock
+      .calls[0][2] as GetProgramAccountsMemcmpFilter[];
     for (const filter of filters) {
       const offset = Number(filter.memcmp.offset);
       const actual = getBase58Encoder().encode(filter.memcmp.bytes);

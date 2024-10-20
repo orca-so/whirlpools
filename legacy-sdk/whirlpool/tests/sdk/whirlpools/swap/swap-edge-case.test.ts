@@ -7,12 +7,12 @@ import {
   WhirlpoolContext,
   buildWhirlpoolClient,
   swapQuoteByInputToken,
+  swapQuoteByOutputToken
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import { defaultConfirmOptions } from "../../../utils/const";
 import { NATIVE_MINT } from "@solana/spl-token";
 import { WhirlpoolTestFixture } from "../../../utils/fixture";
-import { swapQuoteByOutputToken } from "../../../../dist";
 import { SystemInstruction } from "@solana/web3.js";
 import { SwapUtils } from "../../../../dist/utils/public/swap-utils";
 

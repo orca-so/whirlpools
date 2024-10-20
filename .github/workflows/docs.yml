@@ -18,17 +18,18 @@ jobs:
       steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+      - name: Setup Anchor
+        uses: ./.github/actions/anchor
       - name: Setup Github Pages
         uses: actions/configure-pages@v5
-      - name: Build Docs
-        uses: ./.github/actions/anchor
-        with:
-          run: |
-            yarn build docs/whirlpool --output-style static
-      - name: Upload Artifact
+      - name: Install dependencies
+        run: yarn install
+      - name: Build docs
+        run: yarn build docs/whirlpool --output-style static
+      - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
           path: ./docs/whirlpool/dist
-      - name: Deploy Artifact
+      - name: Deploy artifact
         id: deployment
         uses: actions/deploy-pages@v4

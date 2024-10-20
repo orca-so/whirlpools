@@ -208,11 +208,11 @@ export class PriceMath {
       .toDecimalPlaces(0);
 
     const lowerBoundSqrtPrice = BN.min(
-      BN.max(new BN(lowerBoundSqrtPriceDecimal.toString()), MIN_SQRT_PRICE_BN),
+      BN.max(new BN(lowerBoundSqrtPriceDecimal.toFixed(0)), MIN_SQRT_PRICE_BN),
       MAX_SQRT_PRICE_BN,
     );
     const upperBoundSqrtPrice = BN.min(
-      BN.max(new BN(upperBoundSqrtPriceDecimal.toString()), MIN_SQRT_PRICE_BN),
+      BN.max(new BN(upperBoundSqrtPriceDecimal.toFixed(0)), MIN_SQRT_PRICE_BN),
       MAX_SQRT_PRICE_BN,
     );
 

@@ -2,27 +2,38 @@
   "name": "@orca-so/whirlpools-client",
   "version": "0.0.1",
   "description": "Typescript client to interact with Orca's on-chain Whirlpool program.",
-  "main": "./dist/index.js",
-  "types": "./dist/index.d.ts",
-  "sideEffects": false,
   "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "import": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "require": {
+      "types": "./dist/index.d.cts",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "sideEffects": false,
   "files": [
     "dist",
     "README.md"
   ],
   "scripts": {
-    "build": "node ./kinobi.js && tsc",
-    "test": "ts-mocha ./tests/**/*.test.ts",
+    "build": "node ./kinobi.js && tsup src/index.ts --format cjs,esm --dts --sourcemap",
+    "test": "vitest run tests",
     "clean": "rimraf dist src/generated"
   },
   "peerDependencies": {
-    "@solana/web3.js": "^2.0.0-preview.4"
+    "@solana/web3.js": "^2.0.0-rc.1"
   },
   "devDependencies": {
     "@kinobi-so/nodes-from-anchor": "^0.22.0",
     "@kinobi-so/renderers-js": "^0.22.0",
     "@orca-so/whirlpools-program": "*",
-    "@solana/web3.js": "^2.0.0-preview.4",
+    "@solana/web3.js": "^2.0.0-rc.1",
     "kinobi": "^0.22.0",
     "typescript": "^5.6.3"
   },

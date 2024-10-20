@@ -57,7 +57,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
   const sleep = (second: number) =>
     new Promise((resolve) => setTimeout(resolve, second * 1000));
 
-  before(() => {
+  beforeAll(() => {
     const provider = anchor.AnchorProvider.local(
       undefined,
       defaultConfirmOptions,
@@ -517,7 +517,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     }
   }
 
-  context("when the whirlpool is SPL-only", () => {
+  describe("when the whirlpool is SPL-only", () => {
     it("should collect fees and rewards, create all ATAs", async () => {
       const tokenAIsNative = false;
       const ataExists = false;
@@ -537,7 +537,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     });
   });
 
-  context("when the whirlpool is SOL-SPL", () => {
+  describe("when the whirlpool is SOL-SPL", () => {
     it("should collect fees and rewards, create all ATAs", async () => {
       const tokenAIsNative = true;
       const ataExists = false;
@@ -557,7 +557,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     });
   });
 
-  context("when the whirlpool is TokenExtension-TokenExtension", () => {
+  describe("when the whirlpool is TokenExtension-TokenExtension", () => {
     async function accrueFeesV2(fixture: WhirlpoolTestFixtureV2) {
       const ctx = testCtx.whirlpoolCtx;
       const {

@@ -31,7 +31,7 @@ describe("fetcher util tests", () => {
   const isolatedWallet = new NodeWallet(isolatedOwnerKeypair);
   const ctx = WhirlpoolContext.from(globalCtx.connection, isolatedWallet, globalCtx.program.programId);
   const fetcher = ctx.fetcher;
-  before(async () => {
+  beforeAll(async () => {
     await systemTransferTx(
       provider,
       isolatedOwnerKeypair.publicKey,

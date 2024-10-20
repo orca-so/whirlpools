@@ -54,7 +54,7 @@ describe("bundled position management tests", () => {
   const sleep = (second: number) =>
     new Promise((resolve) => setTimeout(resolve, second * 1000));
 
-  before(() => {
+  beforeAll(() => {
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);

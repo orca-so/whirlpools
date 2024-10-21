@@ -3200,6 +3200,7 @@ __metadata:
     "@solana-program/token": "npm:^0.2.1"
     "@solana-program/token-2022": "npm:^0.1.0"
     "@solana/web3.js": "npm:^2.0.0-rc.1"
+    solana-bankrun: "npm:^0.4.0"
     typescript: "npm:^5.6.3"
   peerDependencies:
     "@solana/web3.js": ^2.0.0-rc.1
@@ -14398,6 +14399,67 @@ __metadata:
     ip-address: "npm:^9.0.5"
     smart-buffer: "npm:^4.2.0"
   checksum: 10c0/d54a52bf9325165770b674a67241143a3d8b4e4c8884560c4e0e078aace2a728dffc7f70150660f51b85797c4e1a3b82f9b7aa25e0a0ceae1a243365da5c51a7
+  languageName: node
+  linkType: hard
+
+"solana-bankrun-darwin-arm64@npm:0.4.0":
+  version: 0.4.0
+  resolution: "solana-bankrun-darwin-arm64@npm:0.4.0"
+  conditions: os=darwin & cpu=arm64
+  languageName: node
+  linkType: hard
+
+"solana-bankrun-darwin-universal@npm:0.4.0":
+  version: 0.4.0
+  resolution: "solana-bankrun-darwin-universal@npm:0.4.0"
+  conditions: os=darwin
+  languageName: node
+  linkType: hard
+
+"solana-bankrun-darwin-x64@npm:0.4.0":
+  version: 0.4.0
+  resolution: "solana-bankrun-darwin-x64@npm:0.4.0"
+  conditions: os=darwin & cpu=x64
+  languageName: node
+  linkType: hard
+
+"solana-bankrun-linux-x64-gnu@npm:0.4.0":
+  version: 0.4.0
+  resolution: "solana-bankrun-linux-x64-gnu@npm:0.4.0"
+  conditions: os=linux & cpu=x64 & libc=glibc
+  languageName: node
+  linkType: hard
+
+"solana-bankrun-linux-x64-musl@npm:0.4.0":
+  version: 0.4.0
+  resolution: "solana-bankrun-linux-x64-musl@npm:0.4.0"
+  conditions: os=linux & cpu=x64 & libc=musl
+  languageName: node
+  linkType: hard
+
+"solana-bankrun@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "solana-bankrun@npm:0.4.0"
+  dependencies:
+    "@solana/web3.js": "npm:^1.68.0"
+    bs58: "npm:^4.0.1"
+    solana-bankrun-darwin-arm64: "npm:0.4.0"
+    solana-bankrun-darwin-universal: "npm:0.4.0"
+    solana-bankrun-darwin-x64: "npm:0.4.0"
+    solana-bankrun-linux-x64-gnu: "npm:0.4.0"
+    solana-bankrun-linux-x64-musl: "npm:0.4.0"
+  dependenciesMeta:
+    solana-bankrun-darwin-arm64:
+      optional: true
+    solana-bankrun-darwin-universal:
+      optional: true
+    solana-bankrun-darwin-x64:
+      optional: true
+    solana-bankrun-linux-x64-gnu:
+      optional: true
+    solana-bankrun-linux-x64-musl:
+      optional: true
+  checksum: 10c0/806f3e281d89e306de659ac996c212ad43f13731732be8d49800a62a184f6facad76a9571fb103db201a09f3cdf63ec3ad90e9a8c6d9314fd7cd0e8c4d0b9f8b
   languageName: node
   linkType: hard
 

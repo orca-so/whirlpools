@@ -130,9 +130,9 @@ describe("WASM bundle smoke test", () => {
       { feeBps: 1000, maxFee: 100000n },
     );
     assert.strictEqual(result.liquidityDelta, 1000000n);
-    assert.strictEqual(result.tokenEstA, 625n);
+    assert.strictEqual(result.tokenEstA, 627n);
     assert.strictEqual(result.tokenEstB, 556n);
-    assert.strictEqual(result.tokenMaxA, 632n);
+    assert.strictEqual(result.tokenMaxA, 634n);
     assert.strictEqual(result.tokenMaxB, 562n);
   });
 
@@ -148,9 +148,9 @@ describe("WASM bundle smoke test", () => {
     );
     assert.strictEqual(result.liquidityDelta, 1000000n);
     assert.strictEqual(result.tokenEstA, 400n);
-    assert.strictEqual(result.tokenEstB, 450n);
+    assert.strictEqual(result.tokenEstB, 449n);
     assert.strictEqual(result.tokenMinA, 396n);
-    assert.strictEqual(result.tokenMinB, 445n);
+    assert.strictEqual(result.tokenMinB, 444n);
   });
 
   it("CollectFeesQuote", async () => {

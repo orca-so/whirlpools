@@ -105,7 +105,9 @@ pub fn try_get_next_sqrt_price_from_a(
     let current_sqrt_price: u128 = current_sqrt_price.into();
     let current_liquidity: u128 = current_liquidity.into();
 
-    let p = <U256>::from(current_sqrt_price).saturating_mul(amount.into());
+    let p = <U256>::from(current_sqrt_price)
+        .checked_mul(amount.into())
+        .ok_or(ARITHMETIC_OVERFLOW)?;
     let numerator = <U256>::from(current_liquidity)
         .checked_mul(current_sqrt_price.into())
         .ok_or(ARITHMETIC_OVERFLOW)?

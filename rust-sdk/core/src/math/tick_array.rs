@@ -59,13 +59,14 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
     }
 
     pub fn tick(&self, tick_index: i32) -> Result<&TickFacade, ErrorCode> {
-        if (tick_index < self.start_index()) || (tick_index >= self.end_index()) {
+        if (tick_index < self.start_index()) || (tick_index > self.end_index()) {
             return Err(TICK_INDEX_OUT_OF_BOUNDS);
         }
         if (tick_index % self.tick_spacing as i32) != 0 {
             return Err(INVALID_TICK_INDEX);
         }
-        let tick_array_index = ((tick_index - self.start_index())
+        let first_index = start_tick_index(&self.tick_arrays[0]);
+        let tick_array_index = ((tick_index - first_index)
             / (TICK_ARRAY_SIZE as i32 * self.tick_spacing as i32))
             as usize;
         let tick_array_start_index = start_tick_index(&self.tick_arrays[tick_array_index]);
@@ -120,7 +121,7 @@ fn ticks(tick_array: &Option<TickArrayFacade>) -> &[TickFacade] {
 mod tests {
     use super::*;
 
-    fn test_sequence() -> TickArraySequence<5> {
+    fn test_sequence(tick_spacing: u16) -> TickArraySequence<5> {
         let ticks: [TickFacade; TICK_ARRAY_SIZE] = (0..TICK_ARRAY_SIZE)
             .map(|x| TickFacade {
                 initialized: x & 1 == 1,
@@ -131,7 +132,7 @@ mod tests {
             .try_into()
             .unwrap();
         let one = TickArrayFacade {
-            start_tick_index: TICK_ARRAY_SIZE as i32 * -16,
+            start_tick_index: TICK_ARRAY_SIZE as i32 * tick_spacing as i32 * -1,
             ticks,
         };
         let two = TickArrayFacade {
@@ -139,27 +140,27 @@ mod tests {
             ticks,
         };
         let three = TickArrayFacade {
-            start_tick_index: TICK_ARRAY_SIZE as i32 * 16,
+            start_tick_index: TICK_ARRAY_SIZE as i32 * tick_spacing as i32,
             ticks,
         };
-        TickArraySequence::new([Some(one), Some(two), Some(three), None, None], 16).unwrap()
+        TickArraySequence::new([Some(one), Some(two), Some(three), None, None], tick_spacing).unwrap()
     }
 
     #[test]
     fn test_tick_array_start_index() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         assert_eq!(sequence.start_index(), -1408);
     }
 
     #[test]
     fn test_tick_array_end_index() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         assert_eq!(sequence.end_index(), 2816);
     }
 
     #[test]
     fn test_get_tick() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         assert_eq!(sequence.tick(-1408).unwrap().liquidity_net, 0);
         assert_eq!(sequence.tick(-16).unwrap().liquidity_net, 87);
         assert_eq!(sequence.tick(0).unwrap().liquidity_net, 0);
@@ -169,8 +170,16 @@ mod tests {
     }
 
     #[test]
+    fn test_get_tick_large_tick_spacing() {
+        let sequence: TickArraySequence<5> = test_sequence(32896);
+        assert_eq!(sequence.tick(-427648).unwrap().liquidity_net, 75);
+        assert_eq!(sequence.tick(0).unwrap().liquidity_net, 0);
+        assert_eq!(sequence.tick(427648).unwrap().liquidity_net, 13);
+    }
+
+    #[test]
     fn test_get_tick_errors() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
 
         let out_out_bounds_lower = sequence.tick(-1409);
         assert!(matches!(
@@ -193,7 +202,7 @@ mod tests {
 
     #[test]
     fn test_get_next_initializable_tick_index() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         let (tick, index) = sequence.next_initialized_tick(0).unwrap();
         assert_eq!(index, 16);
         assert_eq!(tick.liquidity_net, 1);
@@ -201,7 +210,7 @@ mod tests {
 
     #[test]
     fn test_get_next_initializable_tick_index_off_spacing() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         let (tick, index) = sequence.next_initialized_tick(-17).unwrap();
         assert_eq!(index, -16);
         assert_eq!(tick.liquidity_net, 87);
@@ -209,7 +218,7 @@ mod tests {
 
     #[test]
     fn test_get_next_initializable_tick_cross_array() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         let (tick, index) = sequence.next_initialized_tick(1392).unwrap();
         assert_eq!(index, 1424);
         assert_eq!(tick.liquidity_net, 1);
@@ -217,7 +226,7 @@ mod tests {
 
     #[test]
     fn test_get_next_initializable_tick_skip_uninitialized() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         let (tick, index) = sequence.next_initialized_tick(-1).unwrap();
         assert_eq!(index, 16);
         assert_eq!(tick.liquidity_net, 1);
@@ -225,7 +234,7 @@ mod tests {
 
     #[test]
     fn test_get_prev_initializable_tick_index() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         let (tick, index) = sequence.prev_initialized_tick(32).unwrap();
         assert_eq!(index, 16);
         assert_eq!(tick.liquidity_net, 1);
@@ -233,7 +242,7 @@ mod tests {
 
     #[test]
     fn test_get_prev_initializable_tick_index_off_spacing() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         let (tick, index) = sequence.prev_initialized_tick(-1).unwrap();
         assert_eq!(index, -16);
         assert_eq!(tick.liquidity_net, 87);
@@ -241,7 +250,7 @@ mod tests {
 
     #[test]
     fn test_get_prev_initializable_tick_skip_uninitialized() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         let (tick, index) = sequence.prev_initialized_tick(33).unwrap();
         assert_eq!(index, 16);
         assert_eq!(tick.liquidity_net, 1);
@@ -249,7 +258,7 @@ mod tests {
 
     #[test]
     fn test_get_prev_initializable_tick_cross_array() {
-        let sequence = test_sequence();
+        let sequence = test_sequence(16);
         let (tick, index) = sequence.prev_initialized_tick(1408).unwrap();
         assert_eq!(index, 1392);
         assert_eq!(tick.liquidity_net, 87);

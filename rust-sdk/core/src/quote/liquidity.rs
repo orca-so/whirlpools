@@ -47,6 +47,7 @@ pub fn decrease_liquidity_quote(
             current_sqrt_price,
             tick_range.tick_lower_index,
             tick_range.tick_upper_index,
+            false,
         )?;
 
     let token_min_before_slippage_a =
@@ -238,6 +239,7 @@ pub fn increase_liquidity_quote(
             current_sqrt_price,
             tick_range.tick_lower_index,
             tick_range.tick_upper_index,
+            true,
         )?;
 
     let token_max_before_slippage_a = try_reverse_apply_transfer_fee(
@@ -415,10 +417,13 @@ fn try_get_token_a_from_liquidity(
 ) -> Result<u64, ErrorCode> {
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
     let numerator: U256 = <U256>::from(liquidity_delta)
-        .saturating_mul(sqrt_price_diff.into())
+        .checked_mul(sqrt_price_diff.into())
+        .ok_or(ARITHMETIC_OVERFLOW)?
         .checked_shl(64)
         .ok_or(ARITHMETIC_OVERFLOW)?;
-    let denominator = sqrt_price_upper.saturating_mul(sqrt_price_lower);
+    let denominator = <U256>::from(sqrt_price_upper)
+        .checked_mul(<U256>::from(sqrt_price_lower))
+        .ok_or(ARITHMETIC_OVERFLOW)?;
     let quotient = numerator / denominator;
     let remainder = numerator % denominator;
     if round_up && remainder != 0 {
@@ -439,10 +444,8 @@ fn try_get_liquidity_from_b(
         .checked_shl(64)
         .ok_or(ARITHMETIC_OVERFLOW)?;
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
-    numerator
-        .saturating_div(sqrt_price_diff.into())
-        .try_into()
-        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
+    let result = numerator / <U256>::from(sqrt_price_diff);
+    result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
 
 fn try_get_token_b_from_liquidity(
@@ -468,6 +471,7 @@ fn try_get_token_estimates_from_liquidity(
     current_sqrt_price: u128,
     tick_lower_index: i32,
     tick_upper_index: i32,
+    round_up: bool,
 ) -> Result<(u64, u64), ErrorCode> {
     if liquidity_delta == 0 {
         return Ok((0, 0));
@@ -488,22 +492,22 @@ fn try_get_token_estimates_from_liquidity(
                 liquidity_delta,
                 sqrt_price_lower,
                 sqrt_price_upper,
-                true,
+                round_up,
             )?;
             Ok((token_a, 0))
         }
         PositionStatus::PriceInRange => {
             let token_a = try_get_token_a_from_liquidity(
                 liquidity_delta,
-                sqrt_price_lower,
                 current_sqrt_price,
-                false,
+                sqrt_price_upper,
+                round_up,
             )?;
             let token_b = try_get_token_b_from_liquidity(
                 liquidity_delta,
+                sqrt_price_lower,
                 current_sqrt_price,
-                sqrt_price_upper,
-                false,
+                round_up,
             )?;
             Ok((token_a, token_b))
         }
@@ -512,7 +516,7 @@ fn try_get_token_estimates_from_liquidity(
                 liquidity_delta,
                 sqrt_price_lower,
                 sqrt_price_upper,
-                true,
+                round_up,
             )?;
             Ok((0, token_b))
         }
@@ -531,9 +535,9 @@ mod tests {
             decrease_liquidity_quote(1000000, 100, 18354745142194483561, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
-        assert_eq!(result.token_est_a, 1000);
+        assert_eq!(result.token_est_a, 999);
         assert_eq!(result.token_est_b, 0);
-        assert_eq!(result.token_min_a, 990);
+        assert_eq!(result.token_min_a, 989);
         assert_eq!(result.token_min_b, 0);
 
         // in range
@@ -542,9 +546,9 @@ mod tests {
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 500);
-        assert_eq!(result.token_est_b, 500);
+        assert_eq!(result.token_est_b, 499);
         assert_eq!(result.token_min_a, 495);
-        assert_eq!(result.token_min_b, 495);
+        assert_eq!(result.token_min_b, 494);
 
         // Above range
         let result =
@@ -552,9 +556,9 @@ mod tests {
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 0);
-        assert_eq!(result.token_est_b, 1000);
+        assert_eq!(result.token_est_b, 999);
         assert_eq!(result.token_min_a, 0);
-        assert_eq!(result.token_min_b, 990);
+        assert_eq!(result.token_min_b, 989);
 
         // zero liquidity
         let result =
@@ -573,9 +577,9 @@ mod tests {
             decrease_liquidity_quote_a(1000, 100, 18354745142194483561, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000049);
-        assert_eq!(result.token_est_a, 1000);
+        assert_eq!(result.token_est_a, 999);
         assert_eq!(result.token_est_b, 0);
-        assert_eq!(result.token_min_a, 990);
+        assert_eq!(result.token_min_a, 989);
         assert_eq!(result.token_min_b, 0);
 
         // in range
@@ -583,10 +587,10 @@ mod tests {
             decrease_liquidity_quote_a(500, 100, 18446744073709551616, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
-        assert_eq!(result.token_est_a, 500);
-        assert_eq!(result.token_est_b, 500);
+        assert_eq!(result.token_est_a, 499);
+        assert_eq!(result.token_est_b, 499);
         assert_eq!(result.token_min_a, 495);
-        assert_eq!(result.token_min_b, 495);
+        assert_eq!(result.token_min_b, 494);
 
         // Above range
         let result =
@@ -626,9 +630,9 @@ mod tests {
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
         assert_eq!(result.token_est_a, 500);
-        assert_eq!(result.token_est_b, 500);
+        assert_eq!(result.token_est_b, 499);
         assert_eq!(result.token_min_a, 495);
-        assert_eq!(result.token_min_b, 495);
+        assert_eq!(result.token_min_b, 494);
 
         // Above range
         let result =
@@ -636,9 +640,9 @@ mod tests {
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000049);
         assert_eq!(result.token_est_a, 0);
-        assert_eq!(result.token_est_b, 1000);
+        assert_eq!(result.token_est_b, 999);
         assert_eq!(result.token_min_a, 0);
-        assert_eq!(result.token_min_b, 990);
+        assert_eq!(result.token_min_b, 989);
 
         // zero liquidity
         let result =
@@ -667,9 +671,9 @@ mod tests {
             increase_liquidity_quote(1000000, 100, 18446744073709551616, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
-        assert_eq!(result.token_est_a, 500);
+        assert_eq!(result.token_est_a, 501);
         assert_eq!(result.token_est_b, 500);
-        assert_eq!(result.token_max_a, 505);
+        assert_eq!(result.token_max_a, 507);
         assert_eq!(result.token_max_b, 505);
 
         // Above range
@@ -709,9 +713,9 @@ mod tests {
             increase_liquidity_quote_a(500, 100, 18446744073709551616, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
-        assert_eq!(result.token_est_a, 500);
+        assert_eq!(result.token_est_a, 501);
         assert_eq!(result.token_est_b, 500);
-        assert_eq!(result.token_max_a, 505);
+        assert_eq!(result.token_max_a, 507);
         assert_eq!(result.token_max_b, 505);
 
         // Above range
@@ -751,9 +755,9 @@ mod tests {
             increase_liquidity_quote_b(500, 100, 18446744073709551616, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
-        assert_eq!(result.token_est_a, 500);
+        assert_eq!(result.token_est_a, 501);
         assert_eq!(result.token_est_b, 500);
-        assert_eq!(result.token_max_a, 505);
+        assert_eq!(result.token_max_a, 507);
         assert_eq!(result.token_max_b, 505);
 
         // Above range
@@ -790,9 +794,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
-        assert_eq!(result.token_est_a, 800);
+        assert_eq!(result.token_est_a, 799);
         assert_eq!(result.token_est_b, 0);
-        assert_eq!(result.token_min_a, 792);
+        assert_eq!(result.token_min_a, 791);
         assert_eq!(result.token_min_b, 0);
 
         // in range
@@ -808,9 +812,9 @@ mod tests {
         .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 400);
-        assert_eq!(result.token_est_b, 450);
+        assert_eq!(result.token_est_b, 449);
         assert_eq!(result.token_min_a, 396);
-        assert_eq!(result.token_min_b, 445);
+        assert_eq!(result.token_min_b, 444);
 
         // Above range
         let result = decrease_liquidity_quote(
@@ -825,9 +829,9 @@ mod tests {
         .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
         assert_eq!(result.token_est_a, 0);
-        assert_eq!(result.token_est_b, 900);
+        assert_eq!(result.token_est_b, 899);
         assert_eq!(result.token_min_a, 0);
-        assert_eq!(result.token_min_b, 891);
+        assert_eq!(result.token_min_b, 889);
 
         // zero liquidity
         let result = decrease_liquidity_quote(
@@ -861,9 +865,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.liquidity_delta, 1250062);
-        assert_eq!(result.token_est_a, 1000);
+        assert_eq!(result.token_est_a, 999);
         assert_eq!(result.token_est_b, 0);
-        assert_eq!(result.token_min_a, 990);
+        assert_eq!(result.token_min_a, 989);
         assert_eq!(result.token_min_b, 0);
 
         // in range
@@ -879,9 +883,9 @@ mod tests {
         .unwrap();
         assert_eq!(result.liquidity_delta, 1250375);
         assert_eq!(result.token_est_a, 500);
-        assert_eq!(result.token_est_b, 562);
+        assert_eq!(result.token_est_b, 561);
         assert_eq!(result.token_min_a, 495);
-        assert_eq!(result.token_min_b, 556);
+        assert_eq!(result.token_min_b, 555);
 
         // Above range
         let result = decrease_liquidity_quote_a(
@@ -950,9 +954,9 @@ mod tests {
         .unwrap();
         assert_eq!(result.liquidity_delta, 1112333);
         assert_eq!(result.token_est_a, 444);
-        assert_eq!(result.token_est_b, 500);
+        assert_eq!(result.token_est_b, 499);
         assert_eq!(result.token_min_a, 439);
-        assert_eq!(result.token_min_b, 495);
+        assert_eq!(result.token_min_b, 494);
 
         // Above range
         let result = decrease_liquidity_quote_b(
@@ -967,9 +971,9 @@ mod tests {
         .unwrap();
         assert_eq!(result.liquidity_delta, 1112055);
         assert_eq!(result.token_est_a, 0);
-        assert_eq!(result.token_est_b, 1000);
+        assert_eq!(result.token_est_b, 999);
         assert_eq!(result.token_min_a, 0);
-        assert_eq!(result.token_min_b, 990);
+        assert_eq!(result.token_min_b, 989);
 
         // zero liquidity
         let result = decrease_liquidity_quote_b(
@@ -1020,9 +1024,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
-        assert_eq!(result.token_est_a, 625);
+        assert_eq!(result.token_est_a, 627);
         assert_eq!(result.token_est_b, 556);
-        assert_eq!(result.token_max_a, 632);
+        assert_eq!(result.token_max_a, 634);
         assert_eq!(result.token_max_b, 562);
 
         // Above range
@@ -1091,9 +1095,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.liquidity_delta, 800240);
-        assert_eq!(result.token_est_a, 500);
+        assert_eq!(result.token_est_a, 502);
         assert_eq!(result.token_est_b, 445);
-        assert_eq!(result.token_max_a, 505);
+        assert_eq!(result.token_max_a, 508);
         assert_eq!(result.token_max_b, 450);
 
         // Above range
@@ -1162,9 +1166,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.liquidity_delta, 900270);
-        assert_eq!(result.token_est_a, 563);
+        assert_eq!(result.token_est_a, 564);
         assert_eq!(result.token_est_b, 500);
-        assert_eq!(result.token_max_a, 569);
+        assert_eq!(result.token_max_a, 570);
         assert_eq!(result.token_max_b, 505);
 
         // Above range

@@ -1,5 +1,5 @@
 import { getWhirlpoolsConfigExtensionAddress } from "@orca-so/whirlpools-client";
-import type { Address, TransactionPartialSigner } from "@solana/web3.js";
+import type { Address, TransactionSigner } from "@solana/web3.js";
 import { address, createNoopSigner } from "@solana/web3.js";
 
 /**
@@ -57,21 +57,21 @@ export const SPLASH_POOL_TICK_SPACING = 32896;
 /**
  * The default funder for transactions. No explicit funder specified.
  */
-export const DEFAULT_FUNDER: TransactionPartialSigner =
+export const DEFAULT_FUNDER: TransactionSigner =
   createNoopSigner(DEFAULT_ADDRESS);
 
 /**
  * The currently selected funder for transactions.
  */
-export let FUNDER: TransactionPartialSigner = DEFAULT_FUNDER;
+export let FUNDER: TransactionSigner = DEFAULT_FUNDER;
 
 /**
  * Sets the default funder for transactions.
  *
- * @param {TransactionPartialSigner | Address | null} funder - The funder to be set as default, either as an address or a transaction signer.
+ * @param {TransactionSigner | Address | null} funder - The funder to be set as default, either as an address or a transaction signer.
  */
 export function setDefaultFunder(
-  funder: TransactionPartialSigner | Address | null,
+  funder: TransactionSigner | Address | null,
 ): void {
   if (typeof funder === "string") {
     FUNDER = createNoopSigner(funder);

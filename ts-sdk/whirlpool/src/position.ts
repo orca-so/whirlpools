@@ -69,16 +69,16 @@ function getPositionInBundleAddresses(
  * @returns {Promise<PositionData[]>} - A promise that resolves to an array of decoded position data for the given owner.
  *
  * @example
- * import { fetchPositions } from '@orca-so/whirlpools';
+ * import { fetchPositionsForOwner } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner();
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
- * const positions = await fetchPositions(devnetRpc, wallet.address);
+ * const positions = await fetchPositionsForOwner(devnetRpc, wallet.address);
  */
-export async function fetchPositions(
+export async function fetchPositionsForOwner(
   rpc: Rpc<GetTokenAccountsByOwnerApi & GetMultipleAccountsApi>,
   owner: Address,
 ): Promise<PositionData[]> {

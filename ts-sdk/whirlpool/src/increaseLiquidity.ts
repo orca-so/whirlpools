@@ -36,9 +36,9 @@ import type {
   IInstruction,
   LamportsUnsafeBeyond2Pow53Minus1,
   Rpc,
-  TransactionPartialSigner,
+  TransactionSigner,
 } from "@solana/web3.js";
-import { generateKeyPairSigner, lamports } from "@solana/web3.js";
+import { address, generateKeyPairSigner, lamports } from "@solana/web3.js";
 import {
   DEFAULT_ADDRESS,
   FUNDER,
@@ -94,6 +94,9 @@ export type IncreaseLiquidityInstructions = {
   /** The initialization cost for liquidity in lamports. */
   initializationCost: LamportsUnsafeBeyond2Pow53Minus1;
 
+  /** The mint address of the position NFT. */
+  positionMint: Address;
+
   /** List of Solana transaction instructions to execute. */
   instructions: IInstruction[];
 };
@@ -146,7 +149,7 @@ function getIncreaseLiquidityQuote(
  * @param {Address} positionMintAddress - The mint address of the NFT that represents the position.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity. Can specify liquidity, Token A, or Token B amounts.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
- * @param {TransactionPartialSigner} [authority=FUNDER] - The account that authorizes the transaction.
+ * @param {TransactionSigner} [authority=FUNDER] - The account that authorizes the transaction.
  * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for increasing liquidity.
  *
  * @example
@@ -178,7 +181,7 @@ export async function increaseLiquidityInstructions(
   positionMintAddress: Address,
   param: IncreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  authority: TransactionPartialSigner = FUNDER,
+  authority: TransactionSigner = FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,
@@ -195,8 +198,8 @@ export async function increaseLiquidityInstructions(
     whirlpool.data.tokenMintB,
     positionMintAddress,
   ]);
-  const transferFeeA = getCurrentTransferFee(mintA.data, currentEpoch.epoch);
-  const transferFeeB = getCurrentTransferFee(mintB.data, currentEpoch.epoch);
+  const transferFeeA = getCurrentTransferFee(mintA, currentEpoch.epoch);
+  const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
 
   const quote = getIncreaseLiquidityQuote(
     param,
@@ -268,7 +271,7 @@ export async function increaseLiquidityInstructions(
 
   instructions.push(...cleanupInstructions);
 
-  return { quote, instructions, initializationCost: lamports(0n) };
+  return { quote, instructions, positionMint: positionMintAddress, initializationCost: lamports(0n) };
 }
 
 async function internalOpenPositionInstructions(
@@ -284,7 +287,7 @@ async function internalOpenPositionInstructions(
   mintA: Account<Mint>,
   mintB: Account<Mint>,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  funder: TransactionPartialSigner = FUNDER,
+  funder: TransactionSigner = FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   assert(
     funder.address !== DEFAULT_ADDRESS,
@@ -309,8 +312,8 @@ async function internalOpenPositionInstructions(
   );
 
   const currentEpoch = await rpc.getEpochInfo().send();
-  const transferFeeA = getCurrentTransferFee(mintA.data, currentEpoch.epoch);
-  const transferFeeB = getCurrentTransferFee(mintB.data, currentEpoch.epoch);
+  const transferFeeA = getCurrentTransferFee(mintA, currentEpoch.epoch);
+  const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
 
   const quote = getIncreaseLiquidityQuote(
     param,
@@ -401,7 +404,7 @@ async function internalOpenPositionInstructions(
       tickLowerIndex: tickRange.tickLowerIndex,
       tickUpperIndex: tickRange.tickUpperIndex,
       token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
-      metadataUpdateAuth: positionAddress[0],
+      metadataUpdateAuth: address("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr"),
       withTokenMetadataExtension: true,
     }),
   );
@@ -441,6 +444,7 @@ async function internalOpenPositionInstructions(
   return {
     instructions,
     quote,
+    positionMint: positionMint.address,
     initializationCost,
   };
 }
@@ -452,7 +456,7 @@ async function internalOpenPositionInstructions(
  * @param {Address} poolAddress - The address of the liquidity pool.
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity, where one of `liquidity`, `tokenA`, or `tokenB` must be specified. The SDK will compute the others.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
- * @param {TransactionPartialSigner} [funder=FUNDER] - The account funding the transaction.
+ * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
  * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for opening a full-range position.
  *
  * @example
@@ -484,7 +488,7 @@ export async function openFullRangePositionInstructions(
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  funder: TransactionPartialSigner = FUNDER,
+  funder: TransactionSigner = FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   const tickRange = getFullRangeTickIndexes(whirlpool.data.tickSpacing);
@@ -517,7 +521,7 @@ export async function openFullRangePositionInstructions(
  * @param {number} lowerPrice - The lower bound of the price range for the position.
  * @param {number} upperPrice - The upper bound of the price range for the position.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The slippage tolerance for adding liquidity, in basis points (BPS).
- * @param {TransactionPartialSigner} [funder=FUNDER] - The account funding the transaction.
+ * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
  *
  * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing liquidity information and the list of instructions needed to open the position.
  *
@@ -556,7 +560,7 @@ export async function openPositionInstructions(
   lowerPrice: number,
   upperPrice: number,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  funder: TransactionPartialSigner = FUNDER,
+  funder: TransactionSigner = FUNDER,
 ): Promise<IncreaseLiquidityInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   assert(

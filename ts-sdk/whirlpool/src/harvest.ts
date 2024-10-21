@@ -13,10 +13,11 @@ import type {
   GetAccountInfoApi,
   Address,
   IInstruction,
-  TransactionPartialSigner,
+  TransactionSigner,
   GetMultipleAccountsApi,
   GetMinimumBalanceForRentExemptionApi,
   GetEpochInfoApi,
+  Account,
 } from "@solana/web3.js";
 import { DEFAULT_ADDRESS, FUNDER } from "./config";
 import type { Whirlpool } from "@orca-so/whirlpools-client";
@@ -35,7 +36,7 @@ import {
   getCurrentTransferFee,
   prepareTokenAccountsInstructions,
 } from "./token";
-import { fetchAllMaybeMint } from "@solana-program/token-2022";
+import { fetchAllMaybeMint, Mint } from "@solana-program/token-2022";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
 
@@ -55,32 +56,6 @@ export type HarvestPositionInstructions = {
   instructions: IInstruction[];
 };
 
-async function getTransferFeeConfigs(
-  rpc: Rpc<GetMultipleAccountsApi & GetEpochInfoApi>,
-  whirlpool: Whirlpool,
-) {
-  const currentEpoch = await rpc.getEpochInfo().send();
-  const mintAddresses = [
-    whirlpool.tokenMintA,
-    whirlpool.tokenMintB,
-    whirlpool.rewardInfos[0].mint,
-    whirlpool.rewardInfos[1].mint,
-    whirlpool.rewardInfos[2].mint,
-  ];
-
-  const mints = await fetchAllMaybeMint(rpc, mintAddresses);
-  const [tokenA, tokenB, reward1, reward2, reward3] = mints.map((x) =>
-    x.exists ? getCurrentTransferFee(x.data, currentEpoch.epoch) : undefined,
-  );
-  return {
-    tokenA,
-    tokenB,
-    reward1,
-    reward2,
-    reward3,
-  };
-}
-
 /**
  * This function creates a set of instructions that collect any accumulated fees and rewards from a position.
  * The liquidity remains in place, and the position stays open.
@@ -89,7 +64,7 @@ async function getTransferFeeConfigs(
  *    A Solana RPC client used to interact with the blockchain.
  * @param {Address} positionMintAddress
  *    The position mint address you want to harvest fees and rewards from.
- * @param {TransactionPartialSigner} [authority=FUNDER]
+ * @param {TransactionSigner} [authority=FUNDER]
  *    The account that authorizes the transaction. Defaults to a predefined funder.
  *
  * @returns {Promise<HarvestPositionInstructions>}
@@ -118,13 +93,14 @@ export async function harvestPositionInstructions(
       GetEpochInfoApi
   >,
   positionMintAddress: Address,
-  authority: TransactionPartialSigner = FUNDER,
+  authority: TransactionSigner = FUNDER,
 ): Promise<HarvestPositionInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,
     "Either supply an authority or set the default funder",
   );
 
+  const currentEpoch = await rpc.getEpochInfo().send();
   const positionAddress = await getPositionAddress(positionMintAddress);
   const position = await fetchPosition(rpc, positionAddress[0]);
   const whirlpool = await fetchWhirlpool(rpc, position.data.whirlpool);
@@ -134,7 +110,7 @@ export async function harvestPositionInstructions(
       whirlpool.data.tokenMintA,
       whirlpool.data.tokenMintB,
       positionMintAddress,
-      ...whirlpool.data.rewardInfos.map((x) => x.mint),
+      ...whirlpool.data.rewardInfos.map((x) => x.mint).filter((x) => x !== DEFAULT_ADDRESS),
     ],
   );
 
@@ -188,15 +164,13 @@ export async function harvestPositionInstructions(
       )
     ];
 
-  const transferFees = await getTransferFeeConfigs(rpc, whirlpool.data);
-
   const feesQuote = collectFeesQuote(
     whirlpool.data,
     position.data,
     lowerTick,
     upperTick,
-    transferFees.tokenA,
-    transferFees.tokenB,
+    getCurrentTransferFee(mintA, currentEpoch.epoch),
+    getCurrentTransferFee(mintB, currentEpoch.epoch),
   );
   const currentUnixTimestamp = BigInt(Math.floor(Date.now() / 1000));
   const rewardsQuote = collectRewardsQuote(
@@ -205,16 +179,14 @@ export async function harvestPositionInstructions(
     lowerTick,
     upperTick,
     currentUnixTimestamp,
-    transferFees.reward1,
-    transferFees.reward2,
-    transferFees.reward3,
+    getCurrentTransferFee(rewardMints[0], currentEpoch.epoch),
+    getCurrentTransferFee(rewardMints[1], currentEpoch.epoch),
+    getCurrentTransferFee(rewardMints[2], currentEpoch.epoch),
   );
 
   const requiredMints: Address[] = [];
-  if (feesQuote.feeOwedA > 0n) {
+  if (feesQuote.feeOwedA > 0n || feesQuote.feeOwedB > 0n) {
     requiredMints.push(whirlpool.data.tokenMintA);
-  }
-  if (feesQuote.feeOwedB > 0n) {
     requiredMints.push(whirlpool.data.tokenMintB);
   }
   if (rewardsQuote.rewardOwed1 > 0n) {
@@ -232,6 +204,15 @@ export async function harvestPositionInstructions(
 
   const instructions: IInstruction[] = [];
   instructions.push(...createInstructions);
+
+  instructions.push(
+    getUpdateFeesAndRewardsInstruction({
+      whirlpool: whirlpool.address,
+      position: positionAddress[0],
+      tickArrayLower: lowerTickArrayAddress,
+      tickArrayUpper: upperTickArrayAddress,
+    }),
+  );
 
   if (feesQuote.feeOwedA > 0n || feesQuote.feeOwedB > 0n) {
     instructions.push(
@@ -310,15 +291,6 @@ export async function harvestPositionInstructions(
       }),
     );
   }
-
-  instructions.push(
-    getUpdateFeesAndRewardsInstruction({
-      whirlpool: whirlpool.address,
-      position: positionAddress[0],
-      tickArrayLower: lowerTickArrayAddress,
-      tickArrayUpper: upperTickArrayAddress,
-    }),
-  );
 
   instructions.push(...cleanupInstructions);
 

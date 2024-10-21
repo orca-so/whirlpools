@@ -1,21 +1,38 @@
+import { getMintEncoder, TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
+import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
 import type {
   Address,
+  IInstruction,
   ReadonlyUint8Array,
+  TransactionSigner,
   VariableSizeDecoder,
 } from "@solana/web3.js";
 import {
+  address,
+  appendTransactionMessageInstructions,
   assertIsAddress,
   createSolanaRpcFromTransport,
+  createTransactionMessage,
+  generateKeyPairSigner,
   getAddressDecoder,
+  getAddressEncoder,
   getBase58Decoder,
   getBase64Decoder,
+  getBase64EncodedWireTransaction,
+  getBase64Encoder,
+  getTransactionDecoder,
+  lamports,
+  pipe,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  signTransactionMessageWithSigners,
 } from "@solana/web3.js";
 import assert from "assert";
-import { DEFAULT_ADDRESS } from "../src/config";
-import { getMintEncoder, TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
-import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
+import { Account, ProgramTestContext, startAnchor } from "solana-bankrun/dist/internal";
+import { DEFAULT_ADDRESS, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS } from "../src/config";
 import { NATIVE_MINT } from "../src/token";
 import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
+import { getFeeTierEncoder, getWhirlpoolsConfigEncoder, WHIRLPOOL_PROGRAM_ADDRESS } from "@orca-so/whirlpools-client";
 
 export const [
   TOKEN_MINT_1,
@@ -24,58 +41,76 @@ export const [
   TOKEN_2022_MINT_TRANSFER_FEE,
   TOKEN_2022_MINT_TRANSFER_HOOK,
 ] = [...Array(25).keys()].map((i) => {
-  const bytes = Array.from({ length: 32 }, () => i);
+  const bytes = Array.from({ length: 32 }, () => i + 1);
   return getAddressDecoder().decode(new Uint8Array(bytes));
 });
 
-type AccountData = {
-  bytes: ReadonlyUint8Array;
-  owner?: Address;
-};
+export const CONCENTRATED_POOL_FEE_TIER = address("BGnhGXT9CCt5WYS23zg9sqsAT2MGXkq7VSwch9pML82W");
+export const SPLASH_POOL_FEE_TIER = address("zVmMsL5qGh7txhTHFgGZcFQpSsxSx6DBLJ3u113PBer");
 
-export const mockAccounts: Record<Address, AccountData> = {
-  [TOKEN_MINT_1]: {
-    bytes: getMintEncoder().encode({
-      mintAuthority: DEFAULT_ADDRESS,
-      supply: 1000000000,
-      decimals: 6,
+function toBytes(address: Address): Uint8Array {
+  return new Uint8Array(getAddressEncoder().encode(address));
+}
+
+function systemAccount(): Account {
+  return new Account(
+    BigInt(1e9),
+    new Uint8Array(),
+    toBytes(SYSTEM_PROGRAM_ADDRESS),
+    false,
+    0n,
+  );
+}
+
+function toAccount(data: ReadonlyUint8Array | null, owner?: Address): Account {
+  const bytes = data ?? new Uint8Array();
+  return new Account(
+    BigInt(bytes.length ?? 0) * 10n,
+    new Uint8Array(bytes),
+    toBytes(owner ?? SYSTEM_PROGRAM_ADDRESS),
+    false,
+    0n,
+  );
+}
+
+const initialAccounts: [Uint8Array, Account][] = [
+  [toBytes(TOKEN_MINT_1), toAccount(getMintEncoder().encode({
+    mintAuthority: DEFAULT_ADDRESS,
+    supply: 1000000000,
+    decimals: 6,
+    isInitialized: true,
+      freezeAuthority: null,
+    }),
+    TOKEN_PROGRAM_ADDRESS,
+  )],
+  [toBytes(TOKEN_MINT_2), toAccount(getMintEncoder().encode( {
+    mintAuthority: DEFAULT_ADDRESS,
+    supply: 1000000000,
+      decimals: 9,
       isInitialized: true,
       freezeAuthority: null,
     }),
-    owner: TOKEN_PROGRAM_ADDRESS,
-  },
-  [TOKEN_MINT_2]: {
-    bytes: getMintEncoder().encode({
+    TOKEN_PROGRAM_ADDRESS,
+  )],
+  [toBytes(NATIVE_MINT), toAccount(getMintEncoder().encode({
       mintAuthority: DEFAULT_ADDRESS,
       supply: 1000000000,
       decimals: 9,
       isInitialized: true,
       freezeAuthority: null,
     }),
-    owner: TOKEN_PROGRAM_ADDRESS,
-  },
-  [NATIVE_MINT]: {
-    bytes: getMintEncoder().encode({
+    TOKEN_PROGRAM_ADDRESS,
+  )],
+  [toBytes(TOKEN_2022_MINT), toAccount(getMintEncoder().encode({
       mintAuthority: DEFAULT_ADDRESS,
       supply: 1000000000,
       decimals: 9,
       isInitialized: true,
       freezeAuthority: null,
     }),
-    owner: TOKEN_PROGRAM_ADDRESS,
-  },
-  [TOKEN_2022_MINT]: {
-    bytes: getMintEncoder().encode({
-      mintAuthority: DEFAULT_ADDRESS,
-      supply: 1000000000,
-      decimals: 9,
-      isInitialized: true,
-      freezeAuthority: null,
-    }),
-    owner: TOKEN_2022_PROGRAM_ADDRESS,
-  },
-  [TOKEN_2022_MINT_TRANSFER_FEE]: {
-    bytes: getMintEncoder().encode({
+    TOKEN_2022_PROGRAM_ADDRESS,
+  )],
+  [toBytes(TOKEN_2022_MINT_TRANSFER_FEE), toAccount(getMintEncoder().encode({
       mintAuthority: DEFAULT_ADDRESS,
       supply: 1000000000,
       decimals: 9,
@@ -83,50 +118,116 @@ export const mockAccounts: Record<Address, AccountData> = {
       freezeAuthority: null,
       // TODO: <- transfer fee config
     }),
-    owner: TOKEN_2022_PROGRAM_ADDRESS,
-  },
-  [TOKEN_2022_MINT_TRANSFER_HOOK]: {
-    bytes: getMintEncoder().encode({
-      mintAuthority: DEFAULT_ADDRESS,
-      supply: 1000000000,
-      decimals: 9,
-      isInitialized: true,
-      freezeAuthority: null,
-      // TODO: <- transfer hook config
+    TOKEN_2022_PROGRAM_ADDRESS,
+  )],
+  [toBytes(TOKEN_2022_MINT_TRANSFER_HOOK), toAccount(getMintEncoder().encode({
+    mintAuthority: DEFAULT_ADDRESS,
+    supply: 1000000000,
+    decimals: 9,
+    isInitialized: true,
+    freezeAuthority: null,
+    // TODO: <- transfer hook config
     }),
-    owner: TOKEN_2022_PROGRAM_ADDRESS,
-  },
-};
+    TOKEN_2022_PROGRAM_ADDRESS,
+  )],
+  [toBytes(WHIRLPOOLS_CONFIG_ADDRESS), toAccount(getWhirlpoolsConfigEncoder().encode({
+    feeAuthority: DEFAULT_ADDRESS,
+    collectProtocolFeesAuthority: DEFAULT_ADDRESS,
+    rewardEmissionsSuperAuthority: DEFAULT_ADDRESS,
+    defaultProtocolFeeRate: 100,
+  }), WHIRLPOOL_PROGRAM_ADDRESS)],
+  [toBytes(CONCENTRATED_POOL_FEE_TIER), toAccount(getFeeTierEncoder().encode({
+    whirlpoolsConfig: WHIRLPOOLS_CONFIG_ADDRESS,
+    tickSpacing: 128,
+    defaultFeeRate: 10000,
+  }), WHIRLPOOL_PROGRAM_ADDRESS)],
+  [toBytes(SPLASH_POOL_FEE_TIER), toAccount(getFeeTierEncoder().encode({
+    whirlpoolsConfig: WHIRLPOOLS_CONFIG_ADDRESS,
+    tickSpacing: SPLASH_POOL_TICK_SPACING,
+    defaultFeeRate: 10000,
+  }), WHIRLPOOL_PROGRAM_ADDRESS)],
+];
+
+let _testContext: ProgramTestContext | null = null;
+export async function getTestContext(): Promise<ProgramTestContext> {
+  if (_testContext == null) {
+    _testContext = await startAnchor(
+      "../../",
+      [["whirlpool", toBytes(WHIRLPOOL_PROGRAM_ADDRESS)]],
+      initialAccounts,
+    );
+  }
+  return _testContext;
+}
+
+export async function setAccount(address: Address, data: ReadonlyUint8Array | null, owner?: Address) {
+  const testContext = await getTestContext();
+  testContext.setAccount(
+    toBytes(address),
+    toAccount(data, owner),
+  );
+}
+
+export async function initPayer(): Promise<TransactionSigner> {
+  const payer = await generateKeyPairSigner();
+  const testContext = await getTestContext();
+  testContext.setAccount(
+    toBytes(payer.address),
+    systemAccount(),
+  );
+  return payer;
+}
+
+export async function sendTransaction(ixs: IInstruction[], payer: TransactionSigner) {
+  const blockhash = await rpc.getLatestBlockhash().send();
+  const transaction = await pipe(
+    createTransactionMessage({ version: 0 }),
+    x => appendTransactionMessageInstructions(ixs, x),
+    x => setTransactionMessageFeePayerSigner(payer, x),
+    x => setTransactionMessageLifetimeUsingBlockhash(blockhash.value, x),
+    x => signTransactionMessageWithSigners(x),
+  );
+  const serialized = getBase64EncodedWireTransaction(transaction);
+  const signature = await rpc.sendTransaction(serialized).send();
+  return signature;
+}
 
 const decoders: Record<string, VariableSizeDecoder<string>> = {
   base58: getBase58Decoder(),
   base64: getBase64Decoder(),
 };
 
-function getAccountData<T>(address: unknown, opts: unknown): unknown {
+async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
   assert(typeof opts === "object");
   assert(opts != null);
-  assert("encoding" in opts);
-  assert(typeof opts.encoding === "string");
 
-  const decoder = decoders[opts.encoding];
+  let encoding: string;
+  if ("encoding" in opts) {
+    assert(typeof opts.encoding === "string");
+    encoding = opts.encoding;
+  } else {
+    encoding = "base58";
+  }
+
+  const decoder = decoders[encoding];
   if (decoder == null) {
-    throw new Error(`No decoder found for ${opts}`);
+    throw new Error(`No decoder found for ${encoding}`);
   }
 
   assert(typeof address === "string");
   assertIsAddress(address);
-  const data = mockAccounts[address];
-  if (data == null) {
+  const testContext = await getTestContext();
+  const account = await testContext.banksClient.getAccount(toBytes(address));
+  if (account == null || account.lamports === 0n) {
     return null as T;
   }
   return {
-    data: [decoder.decode(data.bytes), opts.encoding],
+    data: [decoder.decode(account.data), encoding],
     executable: false,
-    lamports: data.bytes.length * 10,
-    owner: data.owner ?? SYSTEM_PROGRAM_ADDRESS,
-    rentEpoch: 0,
-    space: data.bytes.length,
+    lamports: lamports(account.lamports),
+    owner: getAddressDecoder().decode(account.owner),
+    rentEpoch: 0n,
+    space: account.data.length,
   } as T;
 }
 
@@ -149,7 +250,7 @@ function getResponse<T>(value: unknown): T {
   } as T;
 }
 
-function mockTransport<T>(
+async function mockTransport<T>(
   config: Readonly<{
     payload: unknown;
     signal?: AbortSignal;
@@ -162,22 +263,49 @@ function mockTransport<T>(
   assert("params" in config.payload);
   assert(Array.isArray(config.payload.params));
 
+  const testContext = await getTestContext();
+
   switch (config.payload.method) {
     case "getAccountInfo":
       const address = config.payload.params[0];
       assert(typeof address === "string");
-      const accountData = getAccountData(address, config.payload.params[1]);
-      return Promise.resolve(getResponseWithContext<T>(accountData));
+      const accountData = await getAccountData(address, config.payload.params[1]);
+      return getResponseWithContext<T>(accountData);
     case "getMultipleAccounts":
       const addresses = config.payload.params[0];
       const opts = config.payload.params[1];
       assert(Array.isArray(addresses));
-      const accountsData = addresses.map((x) => getAccountData(x, opts));
-      return Promise.resolve(getResponseWithContext<T>(accountsData));
+      const accountsData = await Promise.all(addresses.map((x) => getAccountData(x, opts)));
+      return getResponseWithContext<T>(accountsData);
     case "getMinimumBalanceForRentExemption":
       const space = config.payload.params[0];
       assert(typeof space === "number");
-      return Promise.resolve(getResponse<T>(space * 10));
+      return getResponse<T>(space * 10);
+    case "getLatestBlockhash":
+      const blockhash = await testContext.banksClient.getLatestBlockhash();
+      assert(blockhash != null);
+      return getResponseWithContext<T>({
+        blockhash: blockhash.blockhash,
+        lastValidBlockHeight: blockhash.lastValidBlockHeight,
+      });
+    case "sendTransaction":
+      const serialized = config.payload.params[0];
+      assert(typeof serialized === "string");
+      const wireTransaction = new Uint8Array(getBase64Encoder().encode(serialized));
+      const transaction = getTransactionDecoder().decode(wireTransaction);
+      const { result } = await testContext.banksClient.tryProcessVersionedTransaction(wireTransaction);
+      assert(result == null, result ?? "");
+      return getResponse<T>(transaction.signatures[0]);
+    case "getEpochInfo":
+      const slot = await testContext.banksClient.getSlot();
+      return getResponse<T>({
+        epoch: slot / 32n,
+        absoluteSlot: slot,
+        blockheight: slot,
+        slotIndex: slot % 32n,
+        slotsInEpoch: 32n,
+        transactionCount: 0n,
+      });
   }
   return Promise.reject(
     `Method ${config.payload.method} not supported in mock transport`,

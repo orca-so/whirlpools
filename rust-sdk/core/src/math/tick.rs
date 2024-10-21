@@ -25,7 +25,9 @@ const LOG_B_P_ERR_MARGIN_UPPER_X64: i128 = 15793534762490258745i128; // 2^-preci
 pub fn get_tick_array_start_tick_index(tick_index: i32, tick_spacing: u16) -> i32 {
     let tick_spacing_i32 = tick_spacing as i32;
     let tick_array_size_i32 = TICK_ARRAY_SIZE as i32;
-    let real_index = tick_index / tick_spacing_i32 / tick_array_size_i32;
+    let real_index = tick_index
+        .div_euclid(tick_spacing_i32)
+        .div_euclid(tick_array_size_i32);
     real_index * tick_spacing_i32 * tick_array_size_i32
 }
 
@@ -457,9 +459,11 @@ mod tests {
 
     #[test]
     fn test_get_tick_array_start_tick_index() {
-        assert_eq!(get_tick_array_start_tick_index(100, 10), 0);
         assert_eq!(get_tick_array_start_tick_index(1000, 10), 880);
+        assert_eq!(get_tick_array_start_tick_index(100, 10), 0);
         assert_eq!(get_tick_array_start_tick_index(0, 10), 0);
+        assert_eq!(get_tick_array_start_tick_index(-100, 10), -880);
+        assert_eq!(get_tick_array_start_tick_index(-1000, 10), -1760);
     }
 
     #[test]

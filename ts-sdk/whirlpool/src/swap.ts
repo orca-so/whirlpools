@@ -6,7 +6,7 @@ import type {
   GetMultipleAccountsApi,
   IInstruction,
   Rpc,
-  TransactionPartialSigner,
+  TransactionSigner,
 } from "@solana/web3.js";
 import { AccountRole, lamports } from "@solana/web3.js";
 import { FUNDER, SLIPPAGE_TOLERANCE_BPS } from "./config";
@@ -197,7 +197,7 @@ function getSwapQuote<T extends SwapParams>(
  * @param {T} params - The swap parameters, specifying either the input or output amount and the mint address of the token being swapped.
  * @param {Address} poolAddress - The address of the Whirlpool against which the swap will be made.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage tolerance for the swap, in basis points (BPS).
- * @param {TransactionPartialSigner} [signer=FUNDER] - The wallet or signer executing the swap.
+ * @param {TransactionSigner} [signer=FUNDER] - The wallet or signer executing the swap.
  * @returns {Promise<SwapInstructions<T>>} - A promise that resolves to an object containing the swap instructions and the swap quote.
  *
  * @example
@@ -229,7 +229,7 @@ export async function swapInstructions<T extends SwapParams>(
   params: T,
   poolAddress: Address,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  signer: TransactionPartialSigner = FUNDER,
+  signer: TransactionSigner = FUNDER,
 ): Promise<SwapInstructions<T>> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   const [tokenA, tokenB] = await fetchAllMint(rpc, [
@@ -246,8 +246,8 @@ export async function swapInstructions<T extends SwapParams>(
   );
 
   const currentEpoch = await rpc.getEpochInfo().send();
-  const transferFeeA = getCurrentTransferFee(tokenA.data, currentEpoch.epoch);
-  const transferFeeB = getCurrentTransferFee(tokenB.data, currentEpoch.epoch);
+  const transferFeeA = getCurrentTransferFee(tokenA, currentEpoch.epoch);
+  const transferFeeB = getCurrentTransferFee(tokenB, currentEpoch.epoch);
 
   const quote = getSwapQuote<T>(
     params,
@@ -259,12 +259,12 @@ export async function swapInstructions<T extends SwapParams>(
     slippageToleranceBps,
   );
   const maxInAmount = "tokenIn" in quote ? quote.tokenIn : quote.tokenMaxIn;
-  const tokenAIsInput = specifiedTokenA === specifiedInput;
+  const aToB = specifiedTokenA === specifiedInput;
 
   const { createInstructions, cleanupInstructions, tokenAccountAddresses } =
     await prepareTokenAccountsInstructions(rpc, signer, {
-      [whirlpool.data.tokenMintA]: tokenAIsInput ? maxInAmount : 0n,
-      [whirlpool.data.tokenMintB]: tokenAIsInput ? 0n : maxInAmount,
+      [whirlpool.data.tokenMintA]: aToB ? maxInAmount : 0n,
+      [whirlpool.data.tokenMintB]: aToB ? 0n : maxInAmount,
     });
 
   const instructions: IInstruction[] = [];
@@ -295,7 +295,7 @@ export async function swapInstructions<T extends SwapParams>(
     otherAmountThreshold,
     sqrtPriceLimit: 0,
     amountSpecifiedIsInput: specifiedInput,
-    aToB: specifiedTokenA,
+    aToB,
     oracle: oracleAddress,
     remainingAccountsInfo: {
       slices: [

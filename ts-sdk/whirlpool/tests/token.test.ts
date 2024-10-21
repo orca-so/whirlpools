@@ -1,6 +1,6 @@
 import { describe, it, beforeAll, afterAll, afterEach, vi } from "vitest";
 import {
-  mockAccounts,
+  setAccount,
   rpc,
   TOKEN_2022_MINT,
   TOKEN_MINT_1,
@@ -39,20 +39,16 @@ describe("Token Account Creation", () => {
   let nativeMintTokenAccount: Address = DEFAULT_ADDRESS;
 
   const createNativeMintTokenAccount = async () => {
-    mockAccounts[nativeMintTokenAccount] = mockAccounts[existingTokenAccount] =
-      {
-        bytes: getTokenEncoder().encode({
-          mint: TOKEN_MINT_1,
-          owner: signer.address,
-          amount: 500,
-          delegate: null,
-          state: AccountState.Initialized,
-          isNative: null,
-          delegatedAmount: 0,
-          closeAuthority: null,
-        }),
-        owner: TOKEN_PROGRAM_ADDRESS,
-      };
+    setAccount(nativeMintTokenAccount, getTokenEncoder().encode({
+      mint: TOKEN_MINT_1,
+      owner: signer.address,
+      amount: 500,
+      delegate: null,
+      state: AccountState.Initialized,
+      isNative: null,
+      delegatedAmount: 0,
+      closeAuthority: null,
+    }), TOKEN_PROGRAM_ADDRESS);
   };
 
   beforeAll(async () => {
@@ -68,24 +64,21 @@ describe("Token Account Creation", () => {
           }).then((x) => x[0]),
         ),
       );
-    mockAccounts[existingTokenAccount] = {
-      bytes: getTokenEncoder().encode({
-        mint: TOKEN_MINT_1,
-        owner: signer.address,
-        amount: 500,
-        delegate: null,
-        state: AccountState.Initialized,
-        isNative: null,
+    await setAccount(existingTokenAccount, getTokenEncoder().encode({
+      mint: TOKEN_MINT_1,
+      owner: signer.address,
+      amount: 500,
+      delegate: null,
+      state: AccountState.Initialized,
+      isNative: null,
         delegatedAmount: 0,
         closeAuthority: null,
-      }),
-      owner: TOKEN_PROGRAM_ADDRESS,
-    };
+      }), TOKEN_PROGRAM_ADDRESS);
   });
 
   afterAll(async () => {
     vi.useRealTimers();
-    delete mockAccounts[existingTokenAccount];
+    await setAccount(existingTokenAccount, null);
   });
 
   afterEach(async () => {
@@ -309,7 +302,7 @@ describe("Token Account Creation", () => {
     });
     assert.strictEqual(result.cleanupInstructions.length, 0);
 
-    delete mockAccounts[nativeMintTokenAccount];
+    setAccount(nativeMintTokenAccount, null);
   });
 
   it("Native mint and wrapping is ata with balances", async () => {
@@ -399,7 +392,7 @@ describe("Token Account Creation", () => {
     });
     assert.strictEqual(result.cleanupInstructions.length, 0);
 
-    delete mockAccounts[nativeMintTokenAccount];
+    setAccount(nativeMintTokenAccount, null);
   });
 
   it("Native mint and wrapping is seed", async () => {

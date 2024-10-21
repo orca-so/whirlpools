@@ -10,6 +10,7 @@ import {
   getDecreaseLiquidityV2Instruction,
   getPositionAddress,
   getTickArrayAddress,
+  getUpdateFeesAndRewardsInstruction,
 } from "@orca-so/whirlpools-client";
 import type {
   CollectFeesQuote,
@@ -36,7 +37,7 @@ import type {
   GetMultipleAccountsApi,
   IInstruction,
   Rpc,
-  TransactionPartialSigner,
+  TransactionSigner,
 } from "@solana/web3.js";
 import { DEFAULT_ADDRESS, FUNDER, SLIPPAGE_TOLERANCE_BPS } from "./config";
 import {
@@ -136,7 +137,7 @@ function getDecreaseLiquidityQuote(
  * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position from which liquidity will be removed.
  * @param {DecreaseLiquidityQuoteParam} param - Defines the liquidity removal method (liquidity, tokenA, or tokenB).
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
- * @param {TransactionPartialSigner} [authority=FUNDER] - The account authorizing the liquidity removal.
+ * @param {TransactionSigner} [authority=FUNDER] - The account authorizing the liquidity removal.
  *
  * @returns {Promise<DecreaseLiquidityInstructions>} A promise resolving to an object containing the decrease liquidity quote and instructions.
  *
@@ -169,7 +170,7 @@ export async function decreaseLiquidityInstructions(
   positionMintAddress: Address,
   param: DecreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  authority: TransactionPartialSigner = FUNDER,
+  authority: TransactionSigner = FUNDER,
 ): Promise<DecreaseLiquidityInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,
@@ -186,8 +187,8 @@ export async function decreaseLiquidityInstructions(
     whirlpool.data.tokenMintB,
     positionMintAddress,
   ]);
-  const transferFeeA = getCurrentTransferFee(mintA.data, currentEpoch.epoch);
-  const transferFeeB = getCurrentTransferFee(mintB.data, currentEpoch.epoch);
+  const transferFeeA = getCurrentTransferFee(mintA, currentEpoch.epoch);
+  const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
 
   const quote = getDecreaseLiquidityQuote(
     param,
@@ -280,7 +281,7 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position to be closed.
  * @param {DecreaseLiquidityQuoteParam} param - The parameters for removing liquidity (liquidity, tokenA, or tokenB).
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
- * @param {TransactionPartialSigner} [authority=FUNDER] - The account authorizing the transaction.
+ * @param {TransactionSigner} [authority=FUNDER] - The account authorizing the transaction.
  *
  * @returns {Promise<ClosePositionInstructions>} A promise resolving to an object containing instructions, fees quote, rewards quote, and the liquidity quote for the closed position.
  *
@@ -313,7 +314,7 @@ export async function closePositionInstructions(
   positionMintAddress: Address,
   param: DecreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
-  authority: TransactionPartialSigner = FUNDER,
+  authority: TransactionSigner = FUNDER,
 ): Promise<ClosePositionInstructions> {
   assert(
     authority.address !== DEFAULT_ADDRESS,
@@ -331,7 +332,7 @@ export async function closePositionInstructions(
       whirlpool.data.tokenMintA,
       whirlpool.data.tokenMintB,
       positionMintAddress,
-      ...whirlpool.data.rewardInfos.map((x) => x.mint),
+      ...whirlpool.data.rewardInfos.map((x) => x.mint).filter((x) => x !== DEFAULT_ADDRESS),
     ],
   );
 
@@ -339,8 +340,8 @@ export async function closePositionInstructions(
   assert(mintB.exists, "Token B not found");
   assert(positionMint.exists, "Position mint not found");
 
-  const transferFeeA = getCurrentTransferFee(mintA.data, currentEpoch.epoch);
-  const transferFeeB = getCurrentTransferFee(mintB.data, currentEpoch.epoch);
+  const transferFeeA = getCurrentTransferFee(mintA, currentEpoch.epoch);
+  const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
 
   const quote = getDecreaseLiquidityQuote(
     param,
@@ -402,6 +403,8 @@ export async function closePositionInstructions(
     position.data,
     lowerTick,
     upperTick,
+    transferFeeA,
+    transferFeeB,
   );
   const currentUnixTimestamp = BigInt(Math.floor(Date.now() / 1000));
   const rewardsQuote = collectRewardsQuote(
@@ -410,13 +413,14 @@ export async function closePositionInstructions(
     lowerTick,
     upperTick,
     currentUnixTimestamp,
+    getCurrentTransferFee(rewardMints[0], currentEpoch.epoch),
+    getCurrentTransferFee(rewardMints[1], currentEpoch.epoch),
+    getCurrentTransferFee(rewardMints[2], currentEpoch.epoch),
   );
 
   const requiredMints: Address[] = [];
-  if (quote.liquidityDelta > 0n || feesQuote.feeOwedA > 0n) {
+  if (quote.liquidityDelta > 0n || feesQuote.feeOwedA > 0n || feesQuote.feeOwedB > 0n) {
     requiredMints.push(whirlpool.data.tokenMintA);
-  }
-  if (quote.liquidityDelta > 0n || feesQuote.feeOwedB > 0n) {
     requiredMints.push(whirlpool.data.tokenMintB);
   }
   if (rewardsQuote.rewardOwed1 > 0n) {
@@ -436,6 +440,15 @@ export async function closePositionInstructions(
 
   const instructions: IInstruction[] = [];
   instructions.push(...createInstructions);
+
+  instructions.push(
+    getUpdateFeesAndRewardsInstruction({
+      whirlpool: whirlpool.address,
+      position: positionAddress[0],
+      tickArrayLower: lowerTickArrayAddress,
+      tickArrayUpper: upperTickArrayAddress,
+    }),
+  );
 
   if (quote.liquidityDelta > 0n) {
     instructions.push(

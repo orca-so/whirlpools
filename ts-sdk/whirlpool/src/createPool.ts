@@ -15,7 +15,7 @@ import type {
   IInstruction,
   LamportsUnsafeBeyond2Pow53Minus1,
   Rpc,
-  TransactionPartialSigner,
+  TransactionSigner,
 } from "@solana/web3.js";
 import { generateKeyPairSigner } from "@solana/web3.js";
 import {
@@ -54,7 +54,7 @@ export type CreatePoolInstructions = {
  * @param {Address} tokenMintA - The first token mint address to include in the pool.
  * @param {Address} tokenMintB - The second token mint address to include in the pool.
  * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
- * @param {TransactionPartialSigner} [funder=FUNDER] - The account that will fund the initialization process.
+ * @param {TransactionSigner} [funder=FUNDER] - The account that will fund the initialization process.
  *
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
@@ -83,7 +83,7 @@ export function createSplashPoolInstructions(
   tokenMintA: Address,
   tokenMintB: Address,
   initialPrice: number = 1,
-  funder: TransactionPartialSigner = FUNDER,
+  funder: TransactionSigner = FUNDER,
 ): Promise<CreatePoolInstructions> {
   return createConcentratedLiquidityPoolInstructions(
     rpc,
@@ -103,7 +103,7 @@ export function createSplashPoolInstructions(
  * @param {Address} tokenMintB - The second token mint address to include in the pool.
  * @param {number} tickSpacing - The spacing between price ticks for the pool.
  * @param {number} [initialPrice=1] - The initial price of token 1 in terms of token 2.
- * @param {TransactionPartialSigner} [funder=FUNDER] - The account that will fund the initialization process.
+ * @param {TransactionSigner} [funder=FUNDER] - The account that will fund the initialization process.
  *
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
@@ -135,7 +135,7 @@ export async function createConcentratedLiquidityPoolInstructions(
   tokenMintB: Address,
   tickSpacing: number,
   initialPrice: number = 1,
-  funder: TransactionPartialSigner = FUNDER,
+  funder: TransactionSigner = FUNDER,
 ): Promise<CreatePoolInstructions> {
   assert(
     funder.address !== DEFAULT_ADDRESS,
@@ -219,47 +219,20 @@ export async function createConcentratedLiquidityPoolInstructions(
     tickSpacing,
   );
 
-  const [
-    lowerTickArrayAddress,
-    upperTickArrayAddress,
-    currentTickArrayAddress,
-  ] = await Promise.all([
-    getTickArrayAddress(poolAddress, lowerTickIndex).then((x) => x[0]),
-    getTickArrayAddress(poolAddress, upperTickIndex).then((x) => x[0]),
-    getTickArrayAddress(poolAddress, currentTickIndex).then((x) => x[0]),
-  ]);
+  const tickArrayIndexes = Array.from(new Set([lowerTickIndex, upperTickIndex, currentTickIndex]));
 
-  instructions.push(
-    getInitializeTickArrayInstruction({
-      whirlpool: poolAddress,
-      funder,
-      tickArray: lowerTickArrayAddress,
-      startTickIndex: lowerTickIndex,
-    }),
+  const tickArrayAddresses = await Promise.all(
+    tickArrayIndexes.map(x => getTickArrayAddress(poolAddress, x).then((x) => x[0]))
   );
 
-  instructions.push(
-    getInitializeTickArrayInstruction({
-      whirlpool: poolAddress,
-      funder,
-      tickArray: upperTickArrayAddress,
-      startTickIndex: upperTickIndex,
-    }),
-  );
-
-  stateSpace += getTickArraySize() * 2;
-
-  if (
-    currentTickIndex !== lowerTickIndex &&
-    currentTickIndex !== upperTickIndex
-  ) {
+  for (let i = 0; i < tickArrayIndexes.length; i++) {
     instructions.push(
       getInitializeTickArrayInstruction({
         whirlpool: poolAddress,
         funder,
-        tickArray: currentTickArrayAddress,
-        startTickIndex: currentTickIndex,
-      }),
+        tickArray: tickArrayAddresses[i],
+        startTickIndex: tickArrayIndexes[i],
+    }),
     );
     stateSpace += getTickArraySize();
   }

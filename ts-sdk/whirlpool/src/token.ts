@@ -10,11 +10,13 @@ import {
   TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
 import type {
+  Account,
   Address,
   GetAccountInfoApi,
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
   IInstruction,
+  MaybeAccount,
   Rpc,
   TransactionSigner,
 } from "@solana/web3.js";
@@ -250,13 +252,13 @@ export async function prepareTokenAccountsInstructions(
  * @returns {TransferFee | undefined} - The transfer fee configuration for the given mint, or `undefined` if no transfer fee is configured.
  */
 export function getCurrentTransferFee(
-  mint: Mint,
+  mint: MaybeAccount<Mint> | Account<Mint> | null,
   currentEpoch: bigint,
 ): TransferFee | undefined {
-  if (mint.extensions.__option === "None") {
+  if (mint == null || ("exists" in mint && !mint.exists) || mint.data.extensions.__option === "None") {
     return undefined;
   }
-  const feeConfig = mint.extensions.value.find(
+  const feeConfig = mint.data.extensions.value.find(
     (x) => x.__kind === "TransferFeeConfig",
   );
   if (feeConfig == null) {

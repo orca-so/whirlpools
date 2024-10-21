@@ -4,7 +4,7 @@ This document covers the essential setup required to start building on Orca’s 
 
 ## Prerequisites
 
-Before you start, ensure you have Node.js installed on your machine. Download it from the official website: https://nodejs.org/.
+Before you start, ensure you have Node.js version 20 or higher installed on your machine. Download it from the official website: https://nodejs.org/.
 
 ## 1. Initialize a new project
 Create a new project directory:
@@ -23,10 +23,10 @@ npm init -y
 Install the necessary packages:
 
 ```bash
-npm install typescript @orca-so/whirlpools @solana/web3.js
+npm install typescript @orca-so/whirlpools @solana/web3.js@rc
 ```
 
-Initialize the project as a TypeScript project
+Initialize the project as a TypeScript project:
 
 ```bash
 npx tsc --init
@@ -46,7 +46,7 @@ const wallet = await generateKeyPairSigner();
 
 ## 4. Airdrop SOL to Your Wallet
 
-Once your wallet is created, you will need some SOL to pay for transactions.
+Once your wallet is created, you will need some SOL to pay for transactions. You can request an airdrop of SOL from the network, but this is only available on **Devnet** and **Testnet**.
 
 ```tsx
 import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
@@ -57,6 +57,15 @@ devnetRpc.requestAirdrop(
   wallet.address,
   lamports(1000000000n)
 ).send()
+```
+
+## 5. Set the FUNDER for Transactions
+
+After funding your wallet, you can set the wallet as the **FUNDER** for future transactions within the SDK. The funder is the account that will cover the transaction costs for initializing pools, providing liquidity, etc.
+```tsx
+import { setDefaultFunder } from '@orca-so/whirlpools';
+
+setDefaultFunder(wallet);
 ```
 
 ## Next steps

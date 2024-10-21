@@ -31,15 +31,15 @@ For more details, refer to our [Environment Setup Guide](../01-Environment%20Set
 
 Splash Pools are the easiest way to get started:
 
-1. **Token Mint Addresses**: Provide the mint addresses of the two tokens that will make up the liquidity pool.
+1. **Token Mint Addresses**: Provide the mint addresses of the two tokens that will make up the liquidity pool. The order of the tokens is important: the first token will be priced in terms of the second token. This means that the price you set will reflect how many units of the second token are needed to equal one unit of the first token. For example, if you set the price to 0.0001 SOL, this means that one unit of the first token is worth 0.0001 units of the second token (SOL). Make sure to verify the order of your tokens.
 2. **Initial Price**: Set the initial price of token 1 in terms of token 2.
 3. **Funder**: This will be your wallet, which will fund the initialization process.
-4. **Create Instructions**: Use the `createSplashPoolInstructions()` function to generate the required pool creation instructions.
+4. **Create Instructions**: Use the appropriate function to generate the required pool creation instructions.
     ```tsx
     import { createSplashPoolInstructions } from '@orca-so/whirlpools'
 
     const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
-        Rpc,
+        rpc,
         tokenMintOne,
         tokenMintTwo,
         initialPrice,
@@ -55,13 +55,13 @@ Concentrated Liquidity Pools offer more flexibility:
 1. **Token Mint Addresses**: Provide the two token mints.
 2. **Tick Spacing**: Set the tick spacing, which defines the intervals for price ticks. Visit [this link](https://orca-so.gitbook.io/orca-developer-portal/whirlpools/interacting-with-the-protocol/orca-whirlpools-parameters#initialized-feetier-and-tickspacing) to learn more about the available values of tick spacing and their corresponding fee rates.
 3. **Initial Price**: Specify the initial price of token 1 in terms of token 2.
-4. **Funder**: This will be your wallet, which will fund the pool initialization.
-5. **Create instructions**: Use the `createConcentratedLiquidityPool()` function to create the pool.
+4. **Funder**: This can be your wallet, which will fund the pool initialization. If the funder is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
+5. **Create instructions**: Use the appropriate function to create the pool.
     ```tsx
     import { createConcentratedLiquidityPool } from '@orca-so/whirlpools'
 
     const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPool(
-        Rpc,
+        rpc,
         tokenMintOne,
         tokenMintTwo,
         tickSpacing,
@@ -83,12 +83,12 @@ Concentrated Liquidity Pools offer more flexibility:
 
 ### Launching a Token Pair with a Splash Pool
 
-Suppose you want to launch a new memecoin and pair it with USDC. You can use `createSplashPoolInstructions()` to set up the pool quickly with a given initial price. This is ideal if you want to keep things simple and start earning trading fees with minimal configuration. For example, if a development team is building a launchpad for memecoins, Splash Pools are an ideal solution.
+Suppose you want to launch a new memecoin and pair it with USDC. You can leverage the simplicity of Splash Pools to quickly set up the pool with an initial price. This is ideal if you want to keep things simple and start earning trading fees with minimal configuration. For example, if a development team is building a launchpad for memecoins, Splash Pools are an ideal solution.
 
 ### Creating a Concentrated Liquidity Pool for Efficiency
 
-If you want to maximize capital efficiency, use `createConcentratedLiquidityPool()` to define specific price ranges for your liquidity. This approach is beneficial when you expect price movements within certain bounds and want to concentrate liquidity accordingly. For example, a DeFi protocol might use a Concentrated Liquidity Pool to facilitate a stablecoin-stablecoin pair, where the price is expected to remain within a tight range. By concentrating liquidity in this range, the protocol can maximize returns for liquidity providers and reduce slippage for traders.
+If you want to maximize capital efficiency, you can use the flexibility of Concentrated Liquidity Pools to define specific price ranges for your liquidity. This approach is beneficial when you expect price movements within certain bounds and want to concentrate liquidity accordingly. For example, a DeFi protocol might use a Concentrated Liquidity Pool to facilitate a stablecoin-stablecoin pair, where the price is expected to remain within a tight range. By concentrating liquidity in this range, the protocol can maximize returns for liquidity providers and reduce slippage for traders.
 
 ## 4. Next Steps
 
-After creating a liquidity pool, the pool is still empty and requires liquidity for people to trade against. To make the pool functional, open a position and add liquidity at a ratio that matches the current price. This enables traders to swap between tokens and helps you start earning fees.
+After creating a liquidity pool, the pool is still empty and requires liquidity for people to trade against. To make the pool functional, open a position and add liquidity. This enables traders to swap between tokens and helps you start earning fees.

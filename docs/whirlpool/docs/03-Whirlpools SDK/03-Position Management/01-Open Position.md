@@ -37,7 +37,7 @@ For more details, refer to our [Environment Setup Guide](../01-Environment%20Set
     - `tokenB`: Specify the amount of token B (second token in the pool).
 3. **Slippage Tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected price and the actual price at which the transaction is executed. A lower slippage tolerance reduces the risk of price changes during the transaction but may lead to failed transactions if the market moves too quickly.
 4. **Funder**: This will be your wallet, which will fund the transaction.
-5. **Create Instructions**: Use the `openFullRangePositionInstructions()` function to generate the necessary instructions.
+5. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
     ```tsx
     const { quote, instructions, initializationCost } = await openFullRangePositionInstructions(
         devnetRpc,
@@ -51,18 +51,18 @@ For more details, refer to our [Environment Setup Guide](../01-Environment%20Set
 
 ### Opening a Position in Concentrated Liquidity Pools
 
-1. **Pool Address**: Provide the address of the Splash Pool where you want to open a position.
+1. **Pool Address**: Provide the address of the Concentrated Liquidity Pool where you want to open a position.
 2. **Liquidity Parameters**: Choose how you want to provide liquidity. You only need to provide one of these parameters, and the function will compute the others in the returned quote based on the price range and the current price of the pool:
     - `liquidity`: Specify the liquidity value to provide.
     - `tokenA`: Specify the amount of token A (first token in the pool).
     - `tokenB`: Specify the amount of token B (second token in the pool).
-3. **Price Range**: Set the lower and upper bounds of the price range within which your liquidity will be active. The current price and the specified price range will influence the quote amounts. If the current price is in the middle of your price range, the ratio of token A to token B will reflect that price. However, if the current price is outside your range, you will only deposit one token, resulting in one-sided liquidity.
-3. **Slippage Tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected price and the actual price at which the transaction is executed. A lower slippage tolerance reduces the risk of price changes during the transaction but may lead to failed transactions if the market moves too quickly.
-4. **Funder**: This will be your wallet, which will fund the transaction.
-5. **Create Instructions**: Use the `openPositionInstructions()` function to generate the necessary instructions.
+3. **Price Range**: Set the lower and upper bounds of the price range within which your liquidity will be active. The current price and the specified price range will influence the quote amounts. If the current price is in the middle of your price range, the ratio of token A to token B will reflect that price. However, if the current price is outside your range, you will only deposit one token, resulting in one-sided liquidity. Note that your position will only earn fees when the price falls within your selected price range, so it’s important to choose a range where you expect the price to remain active.
+3. **Slippage Tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected token amounts and the actual amounts deposited into the liquidity pool. A lower slippage tolerance reduces the risk of depositing more tokens than expected but may lead to failed transactions if the market moves too quickly. For example, if you expect to deposit 100 units of Token A and 1,000 units of Token B, with a 1% slippage tolerance, the maximum amounts would be 101 Token A and 1,010 Token B.
+4. **Funder**: This can be your wallet, which will fund the pool initialization. If the funder is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
+5. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
     ```tsx
     const { quote, instructions, initializationCost } = await openPositionInstructions(
-        devnetRpc,
+        rpc,
         poolAddress,
         param, 
         slippageTolerance,
@@ -71,17 +71,17 @@ For more details, refer to our [Environment Setup Guide](../01-Environment%20Set
     ```
 6. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK. Ensure that you have enough of both Token A and Token B as calculated in the quote, or the transaction will fail.
 
-> ⚠️ You cannot use `openPositionInstructions()` on Splash Pools, as this function is specifically for Concentrated Liquidity Pools.
+> ⚠️ You cannot use this function on Splash Pools, as this function is specifically for Concentrated Liquidity Pools.
 
 ## 3. Usage examples
 
 ### Opening a Position in a Splash Pool
 
-Suppose you want to provide 1,000,000 tokens of Token A at a price of 0.0001 SOL. You will also need to provide 100 SOL as Token B to match the price. Use `openFullRangePositionInstructions()` to add liquidity to the pool. This approach is ideal if you are launching a new token and want to facilitate easy swaps for traders.
+Suppose you want to provide 1,000,000 tokens of Token A at a price of 0.0001 SOL. You will also need to provide 100 SOL as Token B to match the price. By using the SDK to open full range positions, you ensure that your liquidity is spread evenly across all price levels. This approach is ideal if you are launching a new token and want to facilitate easy swaps for traders.
 
 ### Opening a Position in a Concentrated Liquidity Pool
 
-If you want to maximize capital efficiency, you can open a position in a Concentrated Liquidity Pool. For example, if you want to provide liquidity between the price range of 0.00005 SOL to 0.00015 SOL for Token A, use `openPositionInstructions()`. This allows you to focus your liquidity in a narrower price range, making it more effective and profitable.
+If you want to maximize capital efficiency, you can open a position in a Concentrated Liquidity Pool. For example, if the current price is at 0.01 and you want to maximize profitability, you could use the SDK to deposit liquidity between the price range of 0.009 and 0.011. This approach allows you to focus your liquidity in a narrow range, making it more effective and potentially more profitable.
 
 ## Next Steps
 

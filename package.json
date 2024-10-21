@@ -15,12 +15,12 @@
   "devDependencies": {
     "@types/bn.js": "~5.1.6",
     "@types/mocha": "^10.0.9",
-    "@types/node": "^22.7.5",
+    "@types/node": "^22.7.6",
     "@types/sinon": "^17.0.3",
     "husky": "^9.1.6",
     "lint-staged": "^15.2.10",
     "mocha": "^10.7.3",
-    "nx": "^20.0.0",
+    "nx": "^20.0.2",
     "rimraf": "^6.0.1",
     "sinon": "^19.0.2",
     "ts-mocha": "^10.0.0"

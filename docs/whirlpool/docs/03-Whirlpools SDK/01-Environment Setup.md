@@ -34,12 +34,12 @@ npx tsc --init
 
 ## 3. Wallet Creation
 
-You can create a wallet using `generateKeyPair()` from the Solana SDK.
+You can create a wallet using `generateKeyPairSigner()` from the Solana SDK.
 
 ```tsx
-import { generateKeyPair } from '@solana/web3.js';
+import { generateKeyPairSigner } from '@solana/web3.js';
 
-const wallet = await generateKeyPair();
+const wallet = await generateKeyPairSigner();
 ```
 
 > ⚠️ Important: Never share your private key publicly.

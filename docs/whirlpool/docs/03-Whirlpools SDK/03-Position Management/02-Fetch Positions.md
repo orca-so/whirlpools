@@ -8,7 +8,7 @@ Retrieving details about positions held in liquidity pools is an essential part 
 
 ## 1. Overview of Fetching Positions
 
-The `fetchPositions()` function helps developers retrieve liquidity positions associated with a specific wallet. It scans the Solana blockchain for token accounts owned by the wallet, determines which ones represent positions, and decodes their data to provide detailed information about each position.
+The `fetchPositions()` function helps developers retrieve liquidity positions associated with a specific wallet. It scans the Solana blockchain for token accounts owned by the wallet, determines which ones represent positions, and decodes the data to provide detailed information about each position.
 
 With this function, you can:
 - Identify all liquidity positions held by a wallet.
@@ -22,7 +22,7 @@ Fetching positions is a straightforward process:
 
 1. **RPC Client**: Use a Solana RPC client to interact with the blockchain.
 2. **Wallet Address**: Provide the wallet address of the user whose positions you want to fetch.
-3. **Fetch Positions**: Use the fetchPositions() function to retrieve all positions held by the specified wallet.
+3. **Fetch Positions**: Use the `fetchPositions()` function to retrieve all positions held by the specified wallet.
 
 ```tsx
 const positions = await fetchPositions(Rpc, wallet.address);
@@ -30,7 +30,7 @@ const positions = await fetchPositions(Rpc, wallet.address);
 
 ## 3. Usage example
 
-Suppose you want to monitor all active positions held by a wallet. By using fetchPositions(), you can retrieve detailed information about each position, including liquidity amounts, associated pools, and earned rewards. This information can also be used to build a bot that rebalances or repositions liquidity according to a strategy defined by an algorithmic trader. Tracking position performance helps in making informed decisions about adjusting, rebalancing, or closing positions.
+Suppose you want to monitor all active positions held by a wallet. Using `fetchPositions()`, you can retrieve detailed information about each position, including liquidity amounts, associated pools, and earned rewards. This information can also be used to build a bot that rebalances or repositions liquidity according to a strategy defined by an algorithmic trader. Tracking position performance helps in making informed decisions about adjusting, rebalancing, or closing positions.
 
 ## 4. Next steps
 

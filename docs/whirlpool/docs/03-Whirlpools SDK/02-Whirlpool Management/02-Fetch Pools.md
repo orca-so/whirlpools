@@ -34,7 +34,7 @@ const poolInfo = await fetchSplashPool(
 
 1. **Token Mint Addresses**: Provide the mint addresses of the two tokens that make up the liquidity pool.
 2. **Tick Spacing**: Specify the tick spacing, which defines the intervals for price ticks.
-3. **Fetch Pool Details**: Use the fetchConcentratedLiquidityPool() function to fetch the details of the specified Splash Pool.
+3. **Fetch Pool Details**: Use the fetchConcentratedLiquidityPool() function to fetch the details of the specified Concentrated Liquidity Pool.
 
 ```tsx
 const poolInfo = await fetchConcentratedLiquidityPool(
@@ -48,7 +48,7 @@ const poolInfo = await fetchConcentratedLiquidityPool(
 ### Fetching Pools by Token Pairs
 
 1. **Token Mint Addresses**: Provide the mint addresses of the two tokens that make up the liquidity pool.
-2. **Fetch Pool Details**: Use the fetchPools() function to fetch the details of the specified Splash Pool.
+2. **Fetch Pool Details**: Use the fetchPools() function to fetch the details of the specified pools.
 
 ```tsx
 const pools = await fetchPools(

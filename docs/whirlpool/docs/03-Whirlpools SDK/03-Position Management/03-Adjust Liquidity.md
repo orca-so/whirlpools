@@ -29,7 +29,7 @@ Adjusting liquidity in an existing position can be done using the `increaseLiqui
     - `tokenA`: Specify the amount of token A to add or withdraw.
     - `tokenB`: Specify the amount of token B to add or withdraw.
 4. **Slippage tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected price and the actual price at which the transaction is executed. A lower slippage tolerance reduces the risk of price changes during the transaction but may lead to failed transactions if the market moves too quickly.
-5. **Funder**: This will be your wallet, which will fund the transaction will be used for the liquidity adjustment.
+5. **Funder**: This will be your wallet, which will cover the transaction costs and reflect the liquidity adjustment as a withdrawal or deposit of token amounts.
 6. **Create Instructions**: Use the appropriate function (`increaseLiquidityInstructions()` or `decreaseLiquidityInstructions()`) to generate the necessary instructions.
     ```tsx
     const {quote, instructions, initializationCost} = await increaseLiquidityInstructions(
@@ -44,7 +44,7 @@ Adjusting liquidity in an existing position can be done using the `increaseLiqui
 
 ## 3. Usage example
 
-You are creating a bot with which you manage investors funds and want to optimize returns. Such a bot could rebalance liquidity based on market signals to maintain a specific target price range or to optimize fee collection during periods of high volatility.
+You are creating a bot with which you manage investors' funds and want to optimize returns. Such a bot could rebalance liquidity based on market signals to maintain a specific target price range or to optimize fee collection during periods of high volatility.
 
 ## 4. Next steps
 

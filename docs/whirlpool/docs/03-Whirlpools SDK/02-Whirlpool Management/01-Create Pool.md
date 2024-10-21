@@ -4,7 +4,7 @@ sidebar_label: Create Liquidity Pools
 
 # Creating Liquidity Pools on Orca
 
-Creating liquidity pools on Orca is an essential step for launching your token and enabling trading. In this guide, we'll explore two types of liquidity pools available in the Orca ecosystem - **Splash Pools** and **Concentrated Liquidity Pools** - and help you understand how to create them, their differences, and which one best suits your needs.
+Creating liquidity pools on Orca is an essential step for launching your token and enabling trading. In this guide, we'll explore two types of liquidity pools available in the Orca ecosystem, **Splash Pools** and **Concentrated Liquidity Pools**, and help you understand how to create them, their differences, and which one best suits your needs.
 
 ## 1. Introduction to Pool Types
 
@@ -56,7 +56,7 @@ Concentrated Liquidity Pools offer more flexibility:
 2. **Tick Spacing**: Set the tick spacing, which defines the intervals for price ticks. Visit [this link](https://orca-so.gitbook.io/orca-developer-portal/whirlpools/interacting-with-the-protocol/orca-whirlpools-parameters#initialized-feetier-and-tickspacing) to learn more about the available values of tick spacing and their corresponding fee rates.
 3. **Initial Price**: Specify the initial price of token 1 in terms of token 2.
 4. **Funder**: This will be your wallet, which will fund the pool initialization.
-5. **Create instruction**s: Use the `createConcentratedLiquidityPool()` function to create the pool.
+5. **Create instructions**: Use the `createConcentratedLiquidityPool()` function to create the pool.
     ```tsx
     import { createConcentratedLiquidityPool } from '@orca-so/whirlpools'
 
@@ -91,4 +91,4 @@ If you want to maximize capital efficiency, use `createConcentratedLiquidityPool
 
 ## 4. Next Steps
 
-After creating a liquidity pool, the pool is still empty and requires liquidity for people to trade against. To make the pool functional, open a postion and add liquidity at a ratio that matches the current price. This enables traders to swap between tokens and helps you start earning fees.
+After creating a liquidity pool, the pool is still empty and requires liquidity for people to trade against. To make the pool functional, open a position and add liquidity at a ratio that matches the current price. This enables traders to swap between tokens and helps you start earning fees.

@@ -13,7 +13,7 @@ A position in a liquidity pool represents your contribution of liquidity, which 
 - **Splash Pools**: Provide liquidity without specifying a price range. Ideal for those seeking a simple way to start providing liquidity.
 
 - **Concentrated Liquidity Pools**: Allow you to provide liquidity within a specified price range, enabling higher capital efficiency but requiring more advanced management.
-    > ⚠️ The ratio of token A and token B that you deposit as liquidity in the pool, reflects the current price by definition. Vice versa, when the price starts to move in either direction, the amount of token A and token B that you deposited, also changes. This can work to your advantage, but it can also happen that the value of the two tokens combined (+ earned rewards) is less than the value of those tokens before you deposited liquidity. This is often referred to as **divergence loss**.
+    > ⚠️ The ratio of Token A to Token B that you deposit as liquidity in the pool is influenced by the current price. As the price moves in either direction, the amounts of Token A and Token B in the pool will adjust. This shift can work to your advantage, but it may also result in the combined value of your tokens (plus any earned rewards) being lower than their initial value before you deposited liquidity. This is commonly referred to as **divergence loss**.
 
  Upon creation of the position, an NFT will be minted to represent ownership of the position. This NFT is used by the program to verify your ownership when adjusting liquidity, harvesting rewards, or closing the position. 
  
@@ -37,9 +37,9 @@ For more details, refer to our [Environment Setup Guide](../01-Environment%20Set
     - `tokenB`: Specify the amount of token B (second token in the pool).
 3. **Slippage Tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected price and the actual price at which the transaction is executed. A lower slippage tolerance reduces the risk of price changes during the transaction but may lead to failed transactions if the market moves too quickly.
 4. **Funder**: This will be your wallet, which will fund the transaction.
-5. **Create Instructions**: Use the `openFullRangePosition()` function to generate the necessary instructions.
+5. **Create Instructions**: Use the `openFullRangePositionInstructions()` function to generate the necessary instructions.
     ```tsx
-    const { quote, instructions, initializationCost } = await openFullRangePosition(
+    const { quote, instructions, initializationCost } = await openFullRangePositionInstructions(
         devnetRpc,
         poolAddress,
         param, 
@@ -49,7 +49,7 @@ For more details, refer to our [Environment Setup Guide](../01-Environment%20Set
     ```
 6. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK. Ensure that you have enough of both Token A and Token B as calculated in the quote, or the transaction will fail.
 
-### Opening a Position in Splash Pools
+### Opening a Position in Concentrated Liquidity Pools
 
 1. **Pool Address**: Provide the address of the Splash Pool where you want to open a position.
 2. **Liquidity Parameters**: Choose how you want to provide liquidity. You only need to provide one of these parameters, and the function will compute the others in the returned quote based on the price range and the current price of the pool:
@@ -59,9 +59,9 @@ For more details, refer to our [Environment Setup Guide](../01-Environment%20Set
 3. **Price Range**: Set the lower and upper bounds of the price range within which your liquidity will be active. The current price and the specified price range will influence the quote amounts. If the current price is in the middle of your price range, the ratio of token A to token B will reflect that price. However, if the current price is outside your range, you will only deposit one token, resulting in one-sided liquidity.
 3. **Slippage Tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected price and the actual price at which the transaction is executed. A lower slippage tolerance reduces the risk of price changes during the transaction but may lead to failed transactions if the market moves too quickly.
 4. **Funder**: This will be your wallet, which will fund the transaction.
-5. **Create Instructions**: Use the `openFullRangePosition()` function to generate the necessary instructions.
+5. **Create Instructions**: Use the `openPositionInstructions()` function to generate the necessary instructions.
     ```tsx
-    const { quote, instructions, initializationCost } = await openFullRangePosition(
+    const { quote, instructions, initializationCost } = await openPositionInstructions(
         devnetRpc,
         poolAddress,
         param, 
@@ -71,11 +71,13 @@ For more details, refer to our [Environment Setup Guide](../01-Environment%20Set
     ```
 6. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK. Ensure that you have enough of both Token A and Token B as calculated in the quote, or the transaction will fail.
 
+> ⚠️ You cannot use `openPositionInstructions()` on Splash Pools, as this function is specifically for Concentrated Liquidity Pools.
+
 ## 3. Usage examples
 
 ### Opening a Position in a Splash Pool
 
-Suppose you want to provide 1,000,000 tokens of Token A at a price of 0.0001 SOL. You will also need to provide 100 SOL as Token B to match the price. Use `openSplashPoolPositionInstructions()` to add liquidity to the pool. This approach is ideal if you are launching a new token and want to facilitate easy swaps for traders.
+Suppose you want to provide 1,000,000 tokens of Token A at a price of 0.0001 SOL. You will also need to provide 100 SOL as Token B to match the price. Use `openFullRangePositionInstructions()` to add liquidity to the pool. This approach is ideal if you are launching a new token and want to facilitate easy swaps for traders.
 
 ### Opening a Position in a Concentrated Liquidity Pool
 

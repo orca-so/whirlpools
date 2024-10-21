@@ -26,7 +26,7 @@ To close a position and withdraw all liquidity, follow these steps:
 1. **RPC Client**: Use a Solana RPC client to interact with the blockchain.
 2. **Position Mint**: Provide the mint address of the NFT representing your position. This NFT serves as proof of ownership and represents the liquidity in the position.
 3. **Parameters for Liquidity**: Define the parameters for decreasing liquidity. This can be specified as a liquidity amount or as specific token amounts.
-4. **Slippage** Tolerance: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected price and the actual price at which the transaction is executed. A lower slippage tolerance reduces the risk of price changes during the transaction but may lead to failed transactions if the market moves too quickly..
+4. **Slippage Tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected price and the actual price at which the transaction is executed. A lower slippage tolerance reduces the risk of price changes during the transaction but may lead to failed transactions if the market moves too quickly.
 5. **Authority**: The wallet authorizing the transaction for closing the position.
 6. **Create Instructions**: Use the closePositionInstructions() function to generate the necessary instructions.
   ```tsx
@@ -42,4 +42,4 @@ To close a position and withdraw all liquidity, follow these steps:
 
 ## 3. Usage Example
 
-Suppose your trading strategy predicts that the current price range will lead to divergence loss, and you need to close the position to avoid further losses. Using closePositionInstructions(), you can generate the instructions to collect all accumulated fees, rewards, and remove liquidity to prevent further losses.
+Suppose your trading strategy predicts that the current price range will lead to divergence loss, and you need to close the position to avoid further losses. Using `closePositionInstructions()`, you can generate the instructions to collect all accumulated fees, rewards, and remove liquidity to prevent further losses.

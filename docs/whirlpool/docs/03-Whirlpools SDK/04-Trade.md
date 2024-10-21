@@ -32,7 +32,7 @@ To execute a token swap in an Orca Whirlpool, follow these steps:
 1. **RPC Client**: Use a Solana RPC client to interact with the blockchain.
 2. **Pool Address**: Provide the address of the Orca Whirlpool pool where the swap will take place.
 3. **Swap Parameters**: Define the swap parameters. You only need to provide one of these parameters, and the function will compute the others in the returned quote based on the current price of the pool:
-  - `inputAmount`: Specify the amount of tokens to swap (if exact input)..
+  - `inputAmount`: Specify the amount of tokens to swap (if exact input).
   - `outputAmount`: Specify the desired amount of tokens to receive (if exact output).
   - `mint`: Provide the mint address of the token you want to swap out.
 4. **Slippage tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected price and the actual price at which the transaction is executed. A lower slippage tolerance reduces the risk of price changes during the transaction but may lead to failed transactions if the market moves too quickly.

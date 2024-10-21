@@ -19,15 +19,11 @@ export default {
     locales: ["en"],
   },
 
-  markdown: {
-    format: "md",
-  },
-
   staticDirectories: ["static", "../ts/dist", "../legacy/dist", "../rust/dist"],
 
   presets: [
     [
-      "classic",
+      "@docusaurus/preset-classic",
       {
         docs: {
           routeBasePath: "/",

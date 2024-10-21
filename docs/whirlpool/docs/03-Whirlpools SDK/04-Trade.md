@@ -37,7 +37,7 @@ To execute a token swap in an Orca Whirlpool, follow these steps:
   - `mint`: Provide the mint address of the token you want to swap out.
 4. **Slippage tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected price and the actual price at which the transaction is executed. A lower slippage tolerance reduces the risk of price changes during the transaction but may lead to failed transactions if the market moves too quickly.
 5. **Signer**: The wallet or signer that authorizes and executes the swap.
-6. **Create Instructions**: Use the swapInstructions() function to generate the necessary instructions for the swap.
+6. **Create Instructions**: Use the `swapInstructions()` function to generate the necessary instructions for the swap.
   ```tsx
   const { instructions, quote } = await swapInstructions(
     devnetRpc, 
@@ -54,4 +54,4 @@ To execute a token swap in an Orca Whirlpool, follow these steps:
 
 ### 3. Example Usage
 
-Suppose you are developing an arbitrage bot that looks for price discrepancies between different liquidity pools on Orca. By using swapInstructions(), the bot can retrieve the quote object for a potential swap, which includes details about the token amounts and expected output. The bot can quickly compare quotes from multiple pools to identify arbitrage opportunities and execute profitable swaps.
+Suppose you are developing an arbitrage bot that looks for price discrepancies between different liquidity pools on Orca. By using `swapInstructions()`, the bot can retrieve the quote object for a potential swap, which includes details about the token amounts and expected output. The bot can quickly compare quotes from multiple pools to identify arbitrage opportunities and execute profitable swaps.

@@ -42,7 +42,7 @@ Suppose you are a developer creating a bot to manage investments for a group of 
 
 After harvesting fees and rewards, you can:
 
-- [Monitor Performance](./02-Fetch%20Positions.md): Keep track of your position to evaluate future earnings and the overall performance.
+- [Monitor Performance](02-Fetch%20Positions.md): Keep track of your position to evaluate future earnings and the overall performance.
 - Reinvest Earnings: Use the harvested fees and rewards to add more liquidity or diversify your positions.
 - Harvest Regularly: Regularly collect your earnings to maintain optimal capital efficiency while keeping your liquidity active.
 

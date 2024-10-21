@@ -86,7 +86,7 @@ If you want to maximize capital efficiency, you can open a position in a Concent
 ## Next Steps
 
 After opening a position, you can:
-- [Add or Remove Liquidity](./03-Adjust%20Liquidity.md): Adjust the amount of liquidity in your position based on market conditions.
-- [Harvest Rewards](./05-Harvest.md): Collect rewards and fees without closing the position.
-- [Monitor Performance](./02-Fetch%20Positions.md): Track your position's performance and earned fees.
-- [Close Position](./04-Close%20Position.md): When you decide to exit, close the position and withdraw the provided tokens along with any earned fees.
+- [Add or Remove Liquidity](03-Adjust%20Liquidity.md): Adjust the amount of liquidity in your position based on market conditions.
+- [Harvest Rewards](04-Harvest.md): Collect rewards and fees without closing the position.
+- [Monitor Performance](02-Fetch%20Positions.md): Track your position's performance and earned fees.
+- [Close Position](05-Close%20Position.md): When you decide to exit, close the position and withdraw the provided tokens along with any earned fees.

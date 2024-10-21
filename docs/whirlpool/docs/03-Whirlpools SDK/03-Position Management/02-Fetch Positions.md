@@ -36,8 +36,8 @@ Suppose you want to monitor all active positions held by a wallet. Using `fetchP
 
 After fetching positions, you could:
 
-- [Add or Remove Liquidity](./03-Adjust%20Liquidity.md): Adjust the amount of liquidity in your position based on market conditions.
-- [Harvest Rewards](./05-Harvest.md): Collect rewards and fees without closing the position.
-- [Close Position](./04-Close%20Position.md): When you decide to exit, close the position and withdraw the provided tokens along with any earned fees.
+- [Add or Remove Liquidity](03-Adjust%20Liquidity.md): Adjust the amount of liquidity in your position based on market conditions.
+- [Harvest Rewards](04-Harvest.md): Collect rewards and fees without closing the position.
+- [Close Position](05-Close%20Position.md): When you decide to exit, close the position and withdraw the provided tokens along with any earned fees.
 
 By utilizing the `fetchPositions()` function, you gain visibility into your liquidity positions and can take necessary actions to optimize returns

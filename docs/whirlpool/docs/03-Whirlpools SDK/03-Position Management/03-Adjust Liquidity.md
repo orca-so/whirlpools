@@ -50,8 +50,8 @@ You are creating a bot with which you manage investors' funds and want to optimi
 
 After adjusting liquidity, you can:
 
-- [Monitor Performance](./02-Fetch%20Positions.md): Track your adjusted position to evaluate its performance and earned fees.
-- [Harvest Rewards](./05-Harvest.md): Collect any earned fees and rewards without closing your position.
+- [Monitor Performance](02-Fetch%20Positions.md): Track your adjusted position to evaluate its performance and earned fees.
+- [Harvest Rewards](04-Harvest.md): Collect any earned fees and rewards without closing your position.
 - Make Further Adjustments: Depending on market conditions, continue to adjust liquidity as needed to maximize returns or manage risk.
 
 By using `increaseLiquidityInstructions()`and `decreaseLiquidityInstructions()`, you gain flexibility in managing your positions and optimizing your liquidity provision strategy.

@@ -332,7 +332,9 @@ export async function closePositionInstructions(
       whirlpool.data.tokenMintA,
       whirlpool.data.tokenMintB,
       positionMintAddress,
-      ...whirlpool.data.rewardInfos.map((x) => x.mint).filter((x) => x !== DEFAULT_ADDRESS),
+      ...whirlpool.data.rewardInfos
+        .map((x) => x.mint)
+        .filter((x) => x !== DEFAULT_ADDRESS),
     ],
   );
 
@@ -419,7 +421,11 @@ export async function closePositionInstructions(
   );
 
   const requiredMints: Address[] = [];
-  if (quote.liquidityDelta > 0n || feesQuote.feeOwedA > 0n || feesQuote.feeOwedB > 0n) {
+  if (
+    quote.liquidityDelta > 0n ||
+    feesQuote.feeOwedA > 0n ||
+    feesQuote.feeOwedB > 0n
+  ) {
     requiredMints.push(whirlpool.data.tokenMintA);
     requiredMints.push(whirlpool.data.tokenMintB);
   }

@@ -17,10 +17,8 @@ import type {
   GetMultipleAccountsApi,
   GetMinimumBalanceForRentExemptionApi,
   GetEpochInfoApi,
-  Account,
 } from "@solana/web3.js";
 import { DEFAULT_ADDRESS, FUNDER } from "./config";
-import type { Whirlpool } from "@orca-so/whirlpools-client";
 import {
   fetchAllTickArray,
   fetchPosition,
@@ -36,7 +34,7 @@ import {
   getCurrentTransferFee,
   prepareTokenAccountsInstructions,
 } from "./token";
-import { fetchAllMaybeMint, Mint } from "@solana-program/token-2022";
+import { fetchAllMaybeMint } from "@solana-program/token-2022";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
 
@@ -110,7 +108,9 @@ export async function harvestPositionInstructions(
       whirlpool.data.tokenMintA,
       whirlpool.data.tokenMintB,
       positionMintAddress,
-      ...whirlpool.data.rewardInfos.map((x) => x.mint).filter((x) => x !== DEFAULT_ADDRESS),
+      ...whirlpool.data.rewardInfos
+        .map((x) => x.mint)
+        .filter((x) => x !== DEFAULT_ADDRESS),
     ],
   );
 

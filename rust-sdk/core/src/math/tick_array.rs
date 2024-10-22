@@ -132,7 +132,7 @@ mod tests {
             .try_into()
             .unwrap();
         let one = TickArrayFacade {
-            start_tick_index: TICK_ARRAY_SIZE as i32 * tick_spacing as i32 * -1,
+            start_tick_index: -(TICK_ARRAY_SIZE as i32 * tick_spacing as i32),
             ticks,
         };
         let two = TickArrayFacade {
@@ -143,7 +143,11 @@ mod tests {
             start_tick_index: TICK_ARRAY_SIZE as i32 * tick_spacing as i32,
             ticks,
         };
-        TickArraySequence::new([Some(one), Some(two), Some(three), None, None], tick_spacing).unwrap()
+        TickArraySequence::new(
+            [Some(one), Some(two), Some(three), None, None],
+            tick_spacing,
+        )
+        .unwrap()
     }
 
     #[test]

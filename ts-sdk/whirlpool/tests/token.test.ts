@@ -39,16 +39,20 @@ describe("Token Account Creation", () => {
   let nativeMintTokenAccount: Address = DEFAULT_ADDRESS;
 
   const createNativeMintTokenAccount = async () => {
-    setAccount(nativeMintTokenAccount, getTokenEncoder().encode({
-      mint: TOKEN_MINT_1,
-      owner: signer.address,
-      amount: 500,
-      delegate: null,
-      state: AccountState.Initialized,
-      isNative: null,
-      delegatedAmount: 0,
-      closeAuthority: null,
-    }), TOKEN_PROGRAM_ADDRESS);
+    setAccount(
+      nativeMintTokenAccount,
+      getTokenEncoder().encode({
+        mint: TOKEN_MINT_1,
+        owner: signer.address,
+        amount: 500,
+        delegate: null,
+        state: AccountState.Initialized,
+        isNative: null,
+        delegatedAmount: 0,
+        closeAuthority: null,
+      }),
+      TOKEN_PROGRAM_ADDRESS,
+    );
   };
 
   beforeAll(async () => {
@@ -64,16 +68,20 @@ describe("Token Account Creation", () => {
           }).then((x) => x[0]),
         ),
       );
-    await setAccount(existingTokenAccount, getTokenEncoder().encode({
-      mint: TOKEN_MINT_1,
-      owner: signer.address,
-      amount: 500,
-      delegate: null,
-      state: AccountState.Initialized,
-      isNative: null,
+    await setAccount(
+      existingTokenAccount,
+      getTokenEncoder().encode({
+        mint: TOKEN_MINT_1,
+        owner: signer.address,
+        amount: 500,
+        delegate: null,
+        state: AccountState.Initialized,
+        isNative: null,
         delegatedAmount: 0,
         closeAuthority: null,
-      }), TOKEN_PROGRAM_ADDRESS);
+      }),
+      TOKEN_PROGRAM_ADDRESS,
+    );
   });
 
   afterAll(async () => {

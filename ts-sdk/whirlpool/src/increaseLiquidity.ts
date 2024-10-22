@@ -271,7 +271,12 @@ export async function increaseLiquidityInstructions(
 
   instructions.push(...cleanupInstructions);
 
-  return { quote, instructions, positionMint: positionMintAddress, initializationCost: lamports(0n) };
+  return {
+    quote,
+    instructions,
+    positionMint: positionMintAddress,
+    initializationCost: lamports(0n),
+  };
 }
 
 async function internalOpenPositionInstructions(
@@ -404,7 +409,9 @@ async function internalOpenPositionInstructions(
       tickLowerIndex: tickRange.tickLowerIndex,
       tickUpperIndex: tickRange.tickUpperIndex,
       token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
-      metadataUpdateAuth: address("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr"),
+      metadataUpdateAuth: address(
+        "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
+      ),
       withTokenMetadataExtension: true,
     }),
   );

@@ -219,10 +219,14 @@ export async function createConcentratedLiquidityPoolInstructions(
     tickSpacing,
   );
 
-  const tickArrayIndexes = Array.from(new Set([lowerTickIndex, upperTickIndex, currentTickIndex]));
+  const tickArrayIndexes = Array.from(
+    new Set([lowerTickIndex, upperTickIndex, currentTickIndex]),
+  );
 
   const tickArrayAddresses = await Promise.all(
-    tickArrayIndexes.map(x => getTickArrayAddress(poolAddress, x).then((x) => x[0]))
+    tickArrayIndexes.map((x) =>
+      getTickArrayAddress(poolAddress, x).then((x) => x[0]),
+    ),
   );
 
   for (let i = 0; i < tickArrayIndexes.length; i++) {
@@ -232,7 +236,7 @@ export async function createConcentratedLiquidityPoolInstructions(
         funder,
         tickArray: tickArrayAddresses[i],
         startTickIndex: tickArrayIndexes[i],
-    }),
+      }),
     );
     stateSpace += getTickArraySize();
   }

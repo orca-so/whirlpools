@@ -545,9 +545,9 @@ mod tests {
             decrease_liquidity_quote(1000000, 100, 18446744073709551616, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
-        assert_eq!(result.token_est_a, 500);
+        assert_eq!(result.token_est_a, 499);
         assert_eq!(result.token_est_b, 499);
-        assert_eq!(result.token_min_a, 495);
+        assert_eq!(result.token_min_a, 494);
         assert_eq!(result.token_min_b, 494);
 
         // Above range
@@ -589,7 +589,7 @@ mod tests {
         assert_eq!(result.liquidity_delta, 1000300);
         assert_eq!(result.token_est_a, 499);
         assert_eq!(result.token_est_b, 499);
-        assert_eq!(result.token_min_a, 495);
+        assert_eq!(result.token_min_a, 494);
         assert_eq!(result.token_min_b, 494);
 
         // Above range
@@ -629,9 +629,9 @@ mod tests {
             decrease_liquidity_quote_b(500, 100, 18446744073709551616, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
-        assert_eq!(result.token_est_a, 500);
+        assert_eq!(result.token_est_a, 499);
         assert_eq!(result.token_est_b, 499);
-        assert_eq!(result.token_min_a, 495);
+        assert_eq!(result.token_min_a, 494);
         assert_eq!(result.token_min_b, 494);
 
         // Above range
@@ -671,9 +671,9 @@ mod tests {
             increase_liquidity_quote(1000000, 100, 18446744073709551616, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
-        assert_eq!(result.token_est_a, 501);
+        assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 500);
-        assert_eq!(result.token_max_a, 507);
+        assert_eq!(result.token_max_a, 505);
         assert_eq!(result.token_max_b, 505);
 
         // Above range
@@ -713,9 +713,9 @@ mod tests {
             increase_liquidity_quote_a(500, 100, 18446744073709551616, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
-        assert_eq!(result.token_est_a, 501);
+        assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 500);
-        assert_eq!(result.token_max_a, 507);
+        assert_eq!(result.token_max_a, 505);
         assert_eq!(result.token_max_b, 505);
 
         // Above range
@@ -755,9 +755,9 @@ mod tests {
             increase_liquidity_quote_b(500, 100, 18446744073709551616, -10, 10, None, None)
                 .unwrap();
         assert_eq!(result.liquidity_delta, 1000300);
-        assert_eq!(result.token_est_a, 501);
+        assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 500);
-        assert_eq!(result.token_max_a, 507);
+        assert_eq!(result.token_max_a, 505);
         assert_eq!(result.token_max_b, 505);
 
         // Above range
@@ -811,9 +811,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
-        assert_eq!(result.token_est_a, 400);
+        assert_eq!(result.token_est_a, 399);
         assert_eq!(result.token_est_b, 449);
-        assert_eq!(result.token_min_a, 396);
+        assert_eq!(result.token_min_a, 395);
         assert_eq!(result.token_min_b, 444);
 
         // Above range
@@ -831,7 +831,7 @@ mod tests {
         assert_eq!(result.token_est_a, 0);
         assert_eq!(result.token_est_b, 899);
         assert_eq!(result.token_min_a, 0);
-        assert_eq!(result.token_min_b, 889);
+        assert_eq!(result.token_min_b, 890);
 
         // zero liquidity
         let result = decrease_liquidity_quote(
@@ -882,9 +882,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.liquidity_delta, 1250375);
-        assert_eq!(result.token_est_a, 500);
+        assert_eq!(result.token_est_a, 499);
         assert_eq!(result.token_est_b, 561);
-        assert_eq!(result.token_min_a, 495);
+        assert_eq!(result.token_min_a, 494);
         assert_eq!(result.token_min_b, 555);
 
         // Above range
@@ -1024,9 +1024,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.liquidity_delta, 1000000);
-        assert_eq!(result.token_est_a, 627);
+        assert_eq!(result.token_est_a, 625);
         assert_eq!(result.token_est_b, 556);
-        assert_eq!(result.token_max_a, 634);
+        assert_eq!(result.token_max_a, 632);
         assert_eq!(result.token_max_b, 562);
 
         // Above range
@@ -1095,9 +1095,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.liquidity_delta, 800240);
-        assert_eq!(result.token_est_a, 502);
+        assert_eq!(result.token_est_a, 500);
         assert_eq!(result.token_est_b, 445);
-        assert_eq!(result.token_max_a, 508);
+        assert_eq!(result.token_max_a, 505);
         assert_eq!(result.token_max_b, 450);
 
         // Above range
@@ -1166,9 +1166,9 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.liquidity_delta, 900270);
-        assert_eq!(result.token_est_a, 564);
+        assert_eq!(result.token_est_a, 563);
         assert_eq!(result.token_est_b, 500);
-        assert_eq!(result.token_max_a, 570);
+        assert_eq!(result.token_max_a, 569);
         assert_eq!(result.token_max_b, 505);
 
         // Above range

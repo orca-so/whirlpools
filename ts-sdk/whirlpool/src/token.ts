@@ -255,7 +255,11 @@ export function getCurrentTransferFee(
   mint: MaybeAccount<Mint> | Account<Mint> | null,
   currentEpoch: bigint,
 ): TransferFee | undefined {
-  if (mint == null || ("exists" in mint && !mint.exists) || mint.data.extensions.__option === "None") {
+  if (
+    mint == null ||
+    ("exists" in mint && !mint.exists) ||
+    mint.data.extensions.__option === "None"
+  ) {
     return undefined;
   }
   const feeConfig = mint.data.extensions.value.find(

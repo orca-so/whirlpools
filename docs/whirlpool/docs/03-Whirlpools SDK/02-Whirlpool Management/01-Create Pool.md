@@ -16,7 +16,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
 
 - **Splash Pools**: Splash Pools are the simplest type of liquidity pool. They are ideal for those looking to launch a new token with minimal parameters. You only need to provide the mint addresses of the two tokens and set the initial price. Splash Pools offer an easy entry point into liquidity provision, making them especially appealing for community-driven projects like memecoins. These projects often prioritize community engagement over technical complexity, and Splash Pools provide a straightforward way to get started.
 
-- **Concentrated Liquidity Pools:** Concentrated Liquidity Pools are more advanced and allow liquidity providers to concentrate their liquidity within specific price ranges. This results in higher capital efficiency but requires a deeper understanding of how to manage liquidity. Concentrated Liquidity Pools are better suited for experienced users who want greater control over their liquidity. However, they also come with the risk of divergence loss, where the value of your position may decrease compared to simply holding the tokens individually.
+- **Concentrated Liquidity Pools:** Concentrated Liquidity Pools are more advanced and allow liquidity providers to concentrate their liquidity within specific price ranges. This results in higher capital efficiency but requires a deeper understanding of how to manage liquidity. Concentrated Liquidity Pools are better suited for experienced users who want greater control over their liquidity. 
 
 ## 2. Getting Started Guide
 

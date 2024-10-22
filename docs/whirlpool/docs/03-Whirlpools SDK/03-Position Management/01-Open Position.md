@@ -13,11 +13,12 @@ A position in a liquidity pool represents your contribution of liquidity, which 
 - **Splash Pools**: Provide liquidity without specifying a price range. Ideal for those seeking a simple way to start providing liquidity.
 
 - **Concentrated Liquidity Pools**: Allow you to provide liquidity within a specified price range, enabling higher capital efficiency but requiring more advanced management.
-    > ⚠️ The ratio of Token A to Token B that you deposit as liquidity in the pool is influenced by the current price. As the price moves in either direction, the amounts of Token A and Token B in the pool will adjust. This shift can work to your advantage, but it may also result in the combined value of your tokens (plus any earned rewards) being lower than their initial value before you deposited liquidity. This is commonly referred to as **divergence loss**.
 
- Upon creation of the position, an NFT will be minted to represent ownership of the position. This NFT is used by the program to verify your ownership when adjusting liquidity, harvesting rewards, or closing the position. 
+Upon creation of the position, an NFT will be minted to represent ownership of the position. This NFT is used by the program to verify your ownership when adjusting liquidity, harvesting rewards, or closing the position.
+
+> ⚠️ **Risk of Divergence loss**: The ratio of Token A to Token B that you deposit as liquidity is determined by several factors, including the current price. As trades occur against the pool, the amounts of Token A and Token B in the pool — and in your position — will change, which affects the price of the tokens relative to each other. This can work to your advantage, but it may also result in the combined value of your tokens (including any earned fees and rewards) being lower than when you initially provided liquidity.
  
- > ⚠️ Do not burn the position NFT, as burning it will result in the indefinite loss of your position and liquidity.
+> ⚠️ Do not burn the position NFT, as burning it will result in the indefinite loss of your position and liquidity.
 
 ## 2. Getting Started Guide
 

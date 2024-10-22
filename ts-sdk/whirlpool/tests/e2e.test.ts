@@ -366,7 +366,7 @@ describe("e2e", () => {
     await testClosePosition(positionMint);
   });
 
-  it.skip("Concentrated liquidity pool", async () => {
+  it("Concentrated liquidity pool", async () => {
     const poolAddress = await testInitConcentratedLiquidityPool();
     const positionMint = await testOpenPosition(poolAddress);
     await testSwapAExactIn(poolAddress);

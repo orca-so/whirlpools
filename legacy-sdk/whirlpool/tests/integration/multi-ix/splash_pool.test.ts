@@ -48,7 +48,7 @@ describe("splash pool tests", () => {
 
   let testCtx: SharedTestContext;
 
-  before(() => {
+  beforeAll(() => {
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);

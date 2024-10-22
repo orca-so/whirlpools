@@ -361,8 +361,8 @@ async function createMintInstructions(
       const groupData: TokenGroup = {
         mint,
         updateAuthority: authority,
-        maxSize: 10,
-        size: 10,
+        maxSize: 10n,
+        size: 10n,
       };
 
       const tokenGroupSize = packTokenGroup(groupData).length;
@@ -386,7 +386,7 @@ async function createMintInstructions(
       const groupMemberData: TokenGroupMember = {
         mint: mint,
         group: mint,
-        memberNumber: 10,
+        memberNumber: 10n,
       };
 
       const tokenGroupMemberSize = packTokenGroupMember(groupMemberData).length;

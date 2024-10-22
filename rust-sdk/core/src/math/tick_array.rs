@@ -43,10 +43,12 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
         })
     }
 
+    /// Returns the first valid tick index in the sequence.
     pub fn start_index(&self) -> i32 {
         start_tick_index(&self.tick_arrays[0]).max(MIN_TICK_INDEX)
     }
 
+    /// Returns the last valid tick index in the sequence.
     pub fn end_index(&self) -> i32 {
         let mut last_valid_start_index = self.start_index();
         for i in 0..self.tick_arrays.len() {
@@ -55,7 +57,8 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
             }
         }
         let end_index = last_valid_start_index + TICK_ARRAY_SIZE as i32 * self.tick_spacing as i32;
-        end_index.min(MAX_TICK_INDEX)
+        let last_valid_index = end_index - self.tick_spacing as i32;
+        last_valid_index.min(MAX_TICK_INDEX)
     }
 
     pub fn tick(&self, tick_index: i32) -> Result<&TickFacade, ErrorCode> {
@@ -76,22 +79,26 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
     }
 
     pub fn next_initialized_tick(&self, tick_index: i32) -> Result<(&TickFacade, i32), ErrorCode> {
+        let array_end_index = self.end_index();
         let mut next_index = tick_index;
         loop {
             next_index = get_next_initializable_tick_index(next_index, self.tick_spacing);
             let tick = self.tick(next_index)?;
-            if tick.initialized {
+            // If tick is initialized or is the last tick in the sequence, return it
+            if tick.initialized || next_index == array_end_index {
                 return Ok((tick, next_index));
             }
         }
     }
 
     pub fn prev_initialized_tick(&self, tick_index: i32) -> Result<(&TickFacade, i32), ErrorCode> {
+        let array_start_index = self.start_index();
         let mut prev_index =
             get_initializable_tick_index(tick_index, self.tick_spacing, Some(false));
         loop {
             let tick = self.tick(prev_index)?;
-            if tick.initialized {
+            // If tick is initialized or is the first tick in the sequence, return it
+            if tick.initialized || prev_index == array_start_index {
                 return Ok((tick, prev_index));
             }
             prev_index = get_prev_initializable_tick_index(prev_index, self.tick_spacing);
@@ -159,7 +166,7 @@ mod tests {
     #[test]
     fn test_tick_array_end_index() {
         let sequence = test_sequence(16);
-        assert_eq!(sequence.end_index(), 2816);
+        assert_eq!(sequence.end_index(), 2800);
     }
 
     #[test]

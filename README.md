@@ -24,7 +24,7 @@ This repository contains several libraries that can be used to interact with the
 
 For specific use-cases you can opt for integrating with lower level packages such as:
 * `@orca-so/whirlpools-client` & `orca_whirlpools_client` - auto-generated client for the Whirlpools program that contains account, instruction and error parsing.
-* `@orca-so/whirlpools-core` & `orca_whirlpools_core` - utility and math functions used by other packages.
+* `@orca-so/whirlpools-core` & `orca_whirlpools_core` - utility, math and quoting functions used by other packages.
 
 ### Legacy
 

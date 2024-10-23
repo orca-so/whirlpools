@@ -23,6 +23,6 @@ borsh = { version = "^0.10.3" }
 num-derive = { version = "^0.4.2" }
 num-traits = { version = "^0.2.19" }
 solana-program = { version = "^1.18.21" }
-thiserror = { version = "^1.0.64" }
+thiserror = { version = "^1.0.65" }
 serde = { version = "^1.0", features = ["derive"], optional = true }
 serde_with = { version = "^3.10", optional = true }

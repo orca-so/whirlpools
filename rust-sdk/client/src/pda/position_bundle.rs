@@ -25,36 +25,24 @@ pub fn get_bundled_position_address(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use base58::FromBase58;
+    use std::str::FromStr;
 
     #[test]
     fn test_get_position_bundle_address() {
-        let position_mint: Pubkey = "6sf6fSK6tTubFA2LMCeTzt4c6DeNVyA6WpDDgtWs7a5p"
-            .from_base58()
-            .unwrap()
-            .try_into()
-            .unwrap();
-        let position_bundle: Pubkey = "At1QvbnANV6imkdNkfB4h1XsY4jbTzPAmScgjLCnM7jy"
-            .from_base58()
-            .unwrap()
-            .try_into()
-            .unwrap();
+        let position_mint =
+            Pubkey::from_str("6sf6fSK6tTubFA2LMCeTzt4c6DeNVyA6WpDDgtWs7a5p").unwrap();
+        let position_bundle =
+            Pubkey::from_str("At1QvbnANV6imkdNkfB4h1XsY4jbTzPAmScgjLCnM7jy").unwrap();
         let (address, _) = get_position_bundle_address(&position_mint).unwrap();
         assert_eq!(address, position_bundle);
     }
 
     #[test]
     fn test_get_bundled_position_address() {
-        let position_bundle_address: Pubkey = "6sf6fSK6tTubFA2LMCeTzt4c6DeNVyA6WpDDgtWs7a5p"
-            .from_base58()
-            .unwrap()
-            .try_into()
-            .unwrap();
-        let bundled_position: Pubkey = "9Zj8oWYVQdBCtqMn9Z3YyGo8o7hVXLEUZ5x5no5ykVm6"
-            .from_base58()
-            .unwrap()
-            .try_into()
-            .unwrap();
+        let position_bundle_address =
+            Pubkey::from_str("6sf6fSK6tTubFA2LMCeTzt4c6DeNVyA6WpDDgtWs7a5p").unwrap();
+        let bundled_position =
+            Pubkey::from_str("9Zj8oWYVQdBCtqMn9Z3YyGo8o7hVXLEUZ5x5no5ykVm6").unwrap();
         let (address, _) = get_bundled_position_address(&position_bundle_address, 0).unwrap();
         assert_eq!(address, bundled_position);
     }

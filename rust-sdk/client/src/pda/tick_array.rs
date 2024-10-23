@@ -19,20 +19,12 @@ pub fn get_tick_array_address(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use base58::FromBase58;
+    use std::str::FromStr;
 
     #[test]
     fn test_get_tick_array_address() {
-        let whirlpool: Pubkey = "2kJmUjxWBwL2NGPBV2PiA5hWtmLCqcKY6reQgkrPtaeS"
-            .from_base58()
-            .unwrap()
-            .try_into()
-            .unwrap();
-        let tick_array: Pubkey = "7me8W7puQ5tNA15r7ocNX9tFQD9pwtzFDTSdHMMSmDRt"
-            .from_base58()
-            .unwrap()
-            .try_into()
-            .unwrap();
+        let whirlpool = Pubkey::from_str("2kJmUjxWBwL2NGPBV2PiA5hWtmLCqcKY6reQgkrPtaeS").unwrap();
+        let tick_array = Pubkey::from_str("7me8W7puQ5tNA15r7ocNX9tFQD9pwtzFDTSdHMMSmDRt").unwrap();
         let (address, _) = get_tick_array_address(&whirlpool, -2894848).unwrap();
         assert_eq!(address, tick_array);
     }

@@ -13,20 +13,14 @@ pub fn get_whirlpools_config_extension_address(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use base58::FromBase58;
+    use std::str::FromStr;
 
     #[test]
     fn test_get_whirlpools_config_extension_address() {
-        let whirlpools_config: Pubkey = "2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ"
-            .from_base58()
-            .unwrap()
-            .try_into()
-            .unwrap();
-        let whirlpools_config_extension: Pubkey = "777H5H3Tp9U11uRVRzFwM8BinfiakbaLT8vQpeuhvEiH"
-            .from_base58()
-            .unwrap()
-            .try_into()
-            .unwrap();
+        let whirlpools_config =
+            Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
+        let whirlpools_config_extension =
+            Pubkey::from_str("777H5H3Tp9U11uRVRzFwM8BinfiakbaLT8vQpeuhvEiH").unwrap();
         let (address, _) = get_whirlpools_config_extension_address(&whirlpools_config).unwrap();
         assert_eq!(address, whirlpools_config_extension);
     }

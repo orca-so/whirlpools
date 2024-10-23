@@ -11,20 +11,12 @@ pub fn get_oracle_address(whirlpool: &Pubkey) -> Result<(Pubkey, u8), ProgramErr
 #[cfg(test)]
 mod tests {
     use super::*;
-    use base58::FromBase58;
+    use std::str::FromStr;
 
     #[test]
     fn test_get_oracle_address() {
-        let whirlpool: Pubkey = "2kJmUjxWBwL2NGPBV2PiA5hWtmLCqcKY6reQgkrPtaeS"
-            .from_base58()
-            .unwrap()
-            .try_into()
-            .unwrap();
-        let oracle: Pubkey = "821SHenpVGYY7BCXUzNhs8Xi4grG557fqRw4wzgaPQcS"
-            .from_base58()
-            .unwrap()
-            .try_into()
-            .unwrap();
+        let whirlpool = Pubkey::from_str("2kJmUjxWBwL2NGPBV2PiA5hWtmLCqcKY6reQgkrPtaeS").unwrap();
+        let oracle = Pubkey::from_str("821SHenpVGYY7BCXUzNhs8Xi4grG557fqRw4wzgaPQcS").unwrap();
         let (address, _) = get_oracle_address(&whirlpool).unwrap();
         assert_eq!(address, oracle);
     }

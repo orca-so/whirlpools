@@ -35,6 +35,8 @@ import {
 import type { Mint } from "@solana-program/token-2022";
 import type { TransferFee } from "@orca-so/whirlpools-core";
 
+// This file is not exported through the barrel file
+
 /** The public key for the native mint (SOL) */
 export const NATIVE_MINT = address(
   "So11111111111111111111111111111111111111112",

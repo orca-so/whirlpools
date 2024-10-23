@@ -1,6 +1,6 @@
-use solana_program::pubkey::Pubkey;
-use solana_program::program_error::ProgramError;
 use crate::generated::programs::WHIRLPOOL_ID;
+use solana_program::program_error::ProgramError;
+use solana_program::pubkey::Pubkey;
 
 pub fn get_tick_array_address(
     whirlpool: &Pubkey,
@@ -13,8 +13,7 @@ pub fn get_tick_array_address(
         start_tick_index_str.as_bytes(),
     ];
 
-    Pubkey::try_find_program_address(seeds, &WHIRLPOOL_ID)
-        .ok_or(ProgramError::InvalidSeeds)
+    Pubkey::try_find_program_address(seeds, &WHIRLPOOL_ID).ok_or(ProgramError::InvalidSeeds)
 }
 
 #[cfg(test)]
@@ -24,8 +23,16 @@ mod tests {
 
     #[test]
     fn test_get_tick_array_address() {
-        let whirlpool: Pubkey = "2kJmUjxWBwL2NGPBV2PiA5hWtmLCqcKY6reQgkrPtaeS".from_base58().unwrap().try_into().unwrap();
-        let tick_array: Pubkey = "7me8W7puQ5tNA15r7ocNX9tFQD9pwtzFDTSdHMMSmDRt".from_base58().unwrap().try_into().unwrap();
+        let whirlpool: Pubkey = "2kJmUjxWBwL2NGPBV2PiA5hWtmLCqcKY6reQgkrPtaeS"
+            .from_base58()
+            .unwrap()
+            .try_into()
+            .unwrap();
+        let tick_array: Pubkey = "7me8W7puQ5tNA15r7ocNX9tFQD9pwtzFDTSdHMMSmDRt"
+            .from_base58()
+            .unwrap()
+            .try_into()
+            .unwrap();
         let (address, _) = get_tick_array_address(&whirlpool, -2894848).unwrap();
         assert_eq!(address, tick_array);
     }

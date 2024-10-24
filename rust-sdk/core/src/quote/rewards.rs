@@ -4,8 +4,7 @@ use ethnum::U256;
 use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
-    try_apply_transfer_fee, CollectRewardsQuote, ErrorCode, PositionFacade, TickFacade,
-    TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
+    try_apply_transfer_fee, CollectRewardQuote, CollectRewardsQuote, ErrorCode, PositionFacade, TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, NUM_REWARDS
 };
 
 /// Calculate rewards owed for a position
@@ -35,101 +34,45 @@ pub fn collect_rewards_quote(
     transfer_fee_3: Option<TransferFee>,
 ) -> Result<CollectRewardsQuote, ErrorCode> {
     let timestamp_delta = current_timestamp - whirlpool.reward_last_updated_timestamp;
+    let transfer_fees = [transfer_fee_1, transfer_fee_2, transfer_fee_3];
+    let mut reward_quotes: [CollectRewardQuote; NUM_REWARDS] = [CollectRewardQuote::default(); NUM_REWARDS];
 
-    let mut reward_growth_1: u128 = whirlpool.reward_infos[0].growth_global_x64;
-    let mut reward_growth_2: u128 = whirlpool.reward_infos[1].growth_global_x64;
-    let mut reward_growth_3: u128 = whirlpool.reward_infos[2].growth_global_x64;
+    for i in 0..NUM_REWARDS {
+        let mut reward_growth: u128 = whirlpool.reward_infos[i].growth_global_x64;
+        if whirlpool.liquidity != 0 {
+            let reward_growth_delta = whirlpool.reward_infos[i]
+                .emissions_per_second_x64
+                .checked_mul(timestamp_delta as u128)
+                .ok_or(ARITHMETIC_OVERFLOW)?
+                / whirlpool.liquidity;
+            reward_growth += <u128>::try_from(reward_growth_delta).unwrap();
+        }
+        let mut reward_growth_below = tick_lower.reward_growths_outside[i];
+        let mut reward_growth_above = tick_upper.reward_growths_outside[i];
 
-    if whirlpool.liquidity != 0 {
-        let reward_growth_delta_1 = whirlpool.reward_infos[0]
-            .emissions_per_second_x64
-            .checked_mul(timestamp_delta as u128)
-            .ok_or(ARITHMETIC_OVERFLOW)?
-            / whirlpool.liquidity;
-        reward_growth_1 += <u128>::try_from(reward_growth_delta_1).unwrap();
+        if whirlpool.tick_current_index < position.tick_lower_index {
+            reward_growth_below = reward_growth - reward_growth_below;
+        }
 
-        let reward_growth_delta_2 = whirlpool.reward_infos[1]
-            .emissions_per_second_x64
-            .checked_mul(timestamp_delta as u128)
-            .ok_or(ARITHMETIC_OVERFLOW)?
-            / whirlpool.liquidity;
-        reward_growth_2 += <u128>::try_from(reward_growth_delta_2).unwrap();
+        if whirlpool.tick_current_index >= position.tick_upper_index {
+            reward_growth_above = reward_growth - reward_growth_above;
+        }
 
-        let reward_growth_delta_3 = whirlpool.reward_infos[2]
-            .emissions_per_second_x64
-            .checked_mul(timestamp_delta as u128)
-            .ok_or(ARITHMETIC_OVERFLOW)?
-            / whirlpool.liquidity;
-        reward_growth_3 += <u128>::try_from(reward_growth_delta_3).unwrap();
+        let reward_growth_inside = reward_growth - reward_growth_below - reward_growth_above;
+        let reward_growth_delta: u64 =
+            <U256>::from(reward_growth_inside - position.reward_infos[i].growth_inside_checkpoint)
+                .checked_mul(position.liquidity.into())
+                .ok_or(ARITHMETIC_OVERFLOW)?
+                .try_into()
+                .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
+        let withdrawable_reward = position.reward_infos[i].amount_owed + reward_growth_delta;
+        let rewards_owed = try_apply_transfer_fee(withdrawable_reward, transfer_fees[i].unwrap_or_default())?;
+        reward_quotes[i] = CollectRewardQuote {
+            rewards_owed,
+        }
     }
 
-    let mut reward_growth_below_1: u128 = tick_lower.reward_growths_outside[0];
-    let mut reward_growth_below_2: u128 = tick_lower.reward_growths_outside[1];
-    let mut reward_growth_below_3: u128 = tick_lower.reward_growths_outside[2];
-
-    let mut reward_growth_above_1: u128 = tick_upper.reward_growths_outside[0];
-    let mut reward_growth_above_2: u128 = tick_upper.reward_growths_outside[1];
-    let mut reward_growth_above_3: u128 = tick_upper.reward_growths_outside[2];
-
-    if whirlpool.tick_current_index < position.tick_lower_index {
-        reward_growth_below_1 = reward_growth_1 - reward_growth_below_1;
-        reward_growth_below_2 = reward_growth_2 - reward_growth_below_2;
-        reward_growth_below_3 = reward_growth_3 - reward_growth_below_3;
-    }
-
-    if whirlpool.tick_current_index >= position.tick_upper_index {
-        reward_growth_above_1 = reward_growth_1 - reward_growth_above_1;
-        reward_growth_above_2 = reward_growth_2 - reward_growth_above_2;
-        reward_growth_above_3 = reward_growth_3 - reward_growth_above_3;
-    }
-
-    let reward_growth_inside_1 = reward_growth_1 - reward_growth_below_1 - reward_growth_above_1;
-
-    let reward_growth_inside_2 = reward_growth_2 - reward_growth_below_2 - reward_growth_above_2;
-
-    let reward_growth_inside_3 = reward_growth_3 - reward_growth_below_3 - reward_growth_above_3;
-
-    let reward_growth_delta_1: U256 =
-        <U256>::from(reward_growth_inside_1 - position.reward_infos[0].growth_inside_checkpoint)
-            .checked_mul(position.liquidity.into())
-            .ok_or(ARITHMETIC_OVERFLOW)?;
-
-    let reward_growth_delta_2: U256 =
-        <U256>::from(reward_growth_inside_2 - position.reward_infos[1].growth_inside_checkpoint)
-            .checked_mul(position.liquidity.into())
-            .ok_or(ARITHMETIC_OVERFLOW)?;
-
-    let reward_growth_delta_3: U256 =
-        <U256>::from(reward_growth_inside_3 - position.reward_infos[2].growth_inside_checkpoint)
-            .checked_mul(position.liquidity.into())
-            .ok_or(ARITHMETIC_OVERFLOW)?;
-
-    let reward_growth_delta_1: u64 = reward_growth_delta_1
-        .try_into()
-        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
-    let reward_growth_delta_2: u64 = reward_growth_delta_2
-        .try_into()
-        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
-    let reward_growth_delta_3: u64 = reward_growth_delta_3
-        .try_into()
-        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
-
-    let withdrawable_reward_1 = position.reward_infos[0].amount_owed + reward_growth_delta_1;
-    let withdrawable_reward_2 = position.reward_infos[1].amount_owed + reward_growth_delta_2;
-    let withdrawable_reward_3 = position.reward_infos[2].amount_owed + reward_growth_delta_3;
-
-    let reward_owed_1 =
-        try_apply_transfer_fee(withdrawable_reward_1, transfer_fee_1.unwrap_or_default())?;
-    let reward_owed_2 =
-        try_apply_transfer_fee(withdrawable_reward_2, transfer_fee_2.unwrap_or_default())?;
-    let reward_owed_3 =
-        try_apply_transfer_fee(withdrawable_reward_3, transfer_fee_3.unwrap_or_default())?;
-
-    Ok(CollectRewardsQuote {
-        reward_owed_1,
-        reward_owed_2,
-        reward_owed_3,
-    })
+    Ok(CollectRewardsQuote { rewards: reward_quotes })
 }
 
 #[cfg(all(test, not(feature = "wasm")))]
@@ -202,11 +145,10 @@ mod tests {
             None,
             None,
             None,
-        )
-        .unwrap();
-        assert_eq!(quote.reward_owed_1, 100);
-        assert_eq!(quote.reward_owed_2, 200);
-        assert_eq!(quote.reward_owed_3, 300);
+        );
+        assert_eq!(quote.map(|x| x.rewards[0].rewards_owed), Ok(100));
+        assert_eq!(quote.map(|x| x.rewards[1].rewards_owed), Ok(200));
+        assert_eq!(quote.map(|x| x.rewards[2].rewards_owed), Ok(300));
     }
 
     #[test]
@@ -220,11 +162,10 @@ mod tests {
             None,
             None,
             None,
-        )
-        .unwrap();
-        assert_eq!(quote.reward_owed_1, 24100);
-        assert_eq!(quote.reward_owed_2, 28200);
-        assert_eq!(quote.reward_owed_3, 32300);
+        );
+        assert_eq!(quote.map(|x| x.rewards[0].rewards_owed), Ok(24100));
+        assert_eq!(quote.map(|x| x.rewards[1].rewards_owed), Ok(28200));
+        assert_eq!(quote.map(|x| x.rewards[2].rewards_owed), Ok(32300));
     }
 
     #[test]
@@ -238,11 +179,10 @@ mod tests {
             None,
             None,
             None,
-        )
-        .unwrap();
-        assert_eq!(quote.reward_owed_1, 100);
-        assert_eq!(quote.reward_owed_2, 200);
-        assert_eq!(quote.reward_owed_3, 300);
+        );
+        assert_eq!(quote.map(|x| x.rewards[0].rewards_owed), Ok(100));
+        assert_eq!(quote.map(|x| x.rewards[1].rewards_owed), Ok(200));
+        assert_eq!(quote.map(|x| x.rewards[2].rewards_owed), Ok(300));
     }
 
     #[test]
@@ -256,11 +196,10 @@ mod tests {
             None,
             None,
             None,
-        )
-        .unwrap();
-        assert_eq!(quote.reward_owed_1, 24100);
-        assert_eq!(quote.reward_owed_2, 28200);
-        assert_eq!(quote.reward_owed_3, 32300);
+        );
+        assert_eq!(quote.map(|x| x.rewards[0].rewards_owed), Ok(24100));
+        assert_eq!(quote.map(|x| x.rewards[1].rewards_owed), Ok(28200));
+        assert_eq!(quote.map(|x| x.rewards[2].rewards_owed), Ok(32300));
     }
 
     #[test]
@@ -274,11 +213,10 @@ mod tests {
             None,
             None,
             None,
-        )
-        .unwrap();
-        assert_eq!(quote.reward_owed_1, 100);
-        assert_eq!(quote.reward_owed_2, 200);
-        assert_eq!(quote.reward_owed_3, 300);
+        );
+        assert_eq!(quote.map(|x| x.rewards[0].rewards_owed), Ok(100));
+        assert_eq!(quote.map(|x| x.rewards[1].rewards_owed), Ok(200));
+        assert_eq!(quote.map(|x| x.rewards[2].rewards_owed), Ok(300));
     }
 
     #[test]
@@ -292,10 +230,9 @@ mod tests {
             Some(TransferFee::new(1000)),
             Some(TransferFee::new(2000)),
             Some(TransferFee::new(3000)),
-        )
-        .unwrap();
-        assert_eq!(quote.reward_owed_1, 21690);
-        assert_eq!(quote.reward_owed_2, 22560);
-        assert_eq!(quote.reward_owed_3, 22610);
+        );
+        assert_eq!(quote.map(|x| x.rewards[0].rewards_owed), Ok(21690));
+        assert_eq!(quote.map(|x| x.rewards[1].rewards_owed), Ok(22560));
+        assert_eq!(quote.map(|x| x.rewards[2].rewards_owed), Ok(22610));
     }
 }

@@ -50,24 +50,15 @@ pub fn decrease_liquidity_quote(
             false,
         )?;
 
-    let token_min_before_slippage_a =
-        try_apply_transfer_fee(token_est_before_fees_a, transfer_fee_a.unwrap_or_default())?;
-    let token_min_before_slippage_b =
-        try_apply_transfer_fee(token_est_before_fees_b, transfer_fee_b.unwrap_or_default())?;
-
     let token_est_a =
         try_apply_transfer_fee(token_est_before_fees_a, transfer_fee_a.unwrap_or_default())?;
     let token_est_b =
         try_apply_transfer_fee(token_est_before_fees_b, transfer_fee_b.unwrap_or_default())?;
 
-    let token_min_a = try_get_min_amount_with_slippage_tolerance(
-        token_min_before_slippage_a,
-        slippage_tolerance_bps,
-    )?;
-    let token_min_b = try_get_min_amount_with_slippage_tolerance(
-        token_min_before_slippage_b,
-        slippage_tolerance_bps,
-    )?;
+    let token_min_a =
+        try_get_min_amount_with_slippage_tolerance(token_est_a, slippage_tolerance_bps)?;
+    let token_min_b =
+        try_get_min_amount_with_slippage_tolerance(token_est_b, slippage_tolerance_bps)?;
 
     Ok(DecreaseLiquidityQuote {
         liquidity_delta,
@@ -242,15 +233,6 @@ pub fn increase_liquidity_quote(
             true,
         )?;
 
-    let token_max_before_slippage_a = try_reverse_apply_transfer_fee(
-        token_est_before_fees_a,
-        transfer_fee_a.unwrap_or_default(),
-    )?;
-    let token_max_before_slippage_b = try_reverse_apply_transfer_fee(
-        token_est_before_fees_b,
-        transfer_fee_b.unwrap_or_default(),
-    )?;
-
     let token_est_a = try_reverse_apply_transfer_fee(
         token_est_before_fees_a,
         transfer_fee_a.unwrap_or_default(),
@@ -260,14 +242,10 @@ pub fn increase_liquidity_quote(
         transfer_fee_b.unwrap_or_default(),
     )?;
 
-    let token_max_a = try_get_max_amount_with_slippage_tolerance(
-        token_max_before_slippage_a,
-        slippage_tolerance_bps,
-    )?;
-    let token_max_b = try_get_max_amount_with_slippage_tolerance(
-        token_max_before_slippage_b,
-        slippage_tolerance_bps,
-    )?;
+    let token_max_a =
+        try_get_max_amount_with_slippage_tolerance(token_est_a, slippage_tolerance_bps)?;
+    let token_max_b =
+        try_get_max_amount_with_slippage_tolerance(token_est_b, slippage_tolerance_bps)?;
 
     Ok(IncreaseLiquidityQuote {
         liquidity_delta,

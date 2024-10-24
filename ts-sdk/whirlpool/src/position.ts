@@ -7,6 +7,7 @@ import {
   getPositionAddress,
   getPositionBundleAddress,
 } from "@orca-so/whirlpools-client";
+import { _POSITION_BUNDLE_SIZE } from "@orca-so/whirlpools-core";
 import { getTokenDecoder, TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
 import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
 import type {
@@ -19,16 +20,24 @@ import type {
 import { getBase58Encoder } from "@solana/web3.js";
 
 /**
+ * Represents a Position account.
+ */
+export type HydratedPosition = Account<Position> & {
+  isPositionBundle: false;
+};
+
+/**
  * Represents a Position Bundle account including its associated positions.
  */
 export type HydratedPositionBundle = Account<PositionBundle> & {
   positions: Account<Position>[];
+  isPositionBundle: true;
 };
 
 /**
  * Represents either a Position or Position Bundle account.
  */
-export type PositionOrBundle = Account<Position> | HydratedPositionBundle;
+export type PositionOrBundle = HydratedPosition | HydratedPositionBundle;
 
 /**
  * Represents a decoded Position or Position Bundle account.
@@ -40,16 +49,16 @@ export type PositionData = PositionOrBundle & {
 };
 
 function getPositionInBundleAddresses(
-  positionBundles: PositionBundle,
+  positionBundle: PositionBundle,
 ): Promise<Address>[] {
-  const buffer = Buffer.from(positionBundles.positionBitmap);
+  const buffer = Buffer.from(positionBundle.positionBitmap);
   const positions: Promise<Address>[] = [];
-  for (let i = 0; i < 256; i++) {
+  for (let i = 0; i < _POSITION_BUNDLE_SIZE(); i++) {
     const byteIndex = Math.floor(i / 8);
     const bitIndex = i % 8;
     if (buffer[byteIndex] & (1 << bitIndex)) {
       positions.push(
-        getBundledPositionAddress(positionBundles.positionBundleMint, i).then(
+        getBundledPositionAddress(positionBundle.positionBundleMint, i).then(
           (x) => x[0],
         ),
       );
@@ -143,10 +152,10 @@ export async function fetchPositionsForOwner(
       positionsOrBundles.push({
         ...position,
         tokenProgram: token.owner,
+        isPositionBundle: false
       });
     }
 
-    // FIXME: Should this fetch positions inside the bundle?
     if (positionBundle.exists) {
       const positions =
         bundledPositionMap.get(positionBundle.data.positionBundleMint) ?? [];
@@ -154,6 +163,7 @@ export async function fetchPositionsForOwner(
         ...positionBundle,
         positions,
         tokenProgram: token.owner,
+        isPositionBundle: true,
       });
     }
   }

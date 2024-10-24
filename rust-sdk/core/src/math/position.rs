@@ -17,8 +17,13 @@ use super::{order_tick_indexes, tick_index_to_sqrt_price};
 /// # Returns
 /// - A boolean value indicating if the position is in range
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn is_position_in_range(sqrt_price: U128, tick_index_1: i32, tick_index_2: i32) -> bool {
-    position_status(sqrt_price.into(), tick_index_1, tick_index_2) == PositionStatus::PriceInRange
+pub fn is_position_in_range(
+    current_sqrt_price: U128,
+    tick_index_1: i32,
+    tick_index_2: i32,
+) -> bool {
+    position_status(current_sqrt_price.into(), tick_index_1, tick_index_2)
+        == PositionStatus::PriceInRange
 }
 
 /// Calculate the status of a position

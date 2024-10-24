@@ -7,6 +7,7 @@ impl From<Whirlpool> for WhirlpoolFacade {
         WhirlpoolFacade {
             tick_spacing: val.tick_spacing,
             fee_rate: val.fee_rate,
+            protocol_fee_rate: val.protocol_fee_rate,
             liquidity: val.liquidity,
             sqrt_price: val.sqrt_price,
             tick_current_index: val.tick_current_index,

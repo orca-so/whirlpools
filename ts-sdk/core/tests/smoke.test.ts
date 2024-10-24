@@ -24,6 +24,7 @@ function testWhirlpool(): WhirlpoolFacade {
     tickCurrentIndex: 0,
     feeGrowthGlobalA: 800n,
     feeGrowthGlobalB: 1000n,
+    protocolFeeRate: 3000,
     feeRate: 3000,
     liquidity: 265000n,
     sqrtPrice: 1n << 64n,
@@ -51,6 +52,7 @@ function testTick(positive: boolean = true): TickFacade {
   return {
     initialized: true,
     liquidityNet,
+    liquidityGross: 1000n,
     feeGrowthOutsideA: 50n,
     feeGrowthOutsideB: 20n,
     rewardGrowthsOutside: [10n, 20n, 30n],
@@ -177,8 +179,8 @@ describe("WASM bundle smoke test", () => {
       { feeBps: 2000, maxFee: 100000n },
       { feeBps: 3000, maxFee: 100000n },
     );
-    assert.strictEqual(result.rewardOwed1, 21690n);
-    assert.strictEqual(result.rewardOwed2, 22560n);
-    assert.strictEqual(result.rewardOwed3, 22610n);
+    assert.strictEqual(result.rewards[0].rewardsOwed, 21690n);
+    assert.strictEqual(result.rewards[1].rewardsOwed, 22560n);
+    assert.strictEqual(result.rewards[2].rewardsOwed, 22610n);
   });
 });

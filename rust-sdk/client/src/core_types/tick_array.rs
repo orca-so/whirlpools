@@ -15,6 +15,7 @@ impl From<Tick> for TickFacade {
     fn from(val: Tick) -> Self {
         TickFacade {
             liquidity_net: val.liquidity_net,
+            liquidity_gross: val.liquidity_gross,
             initialized: val.initialized,
             fee_growth_outside_a: val.fee_growth_outside_a,
             fee_growth_outside_b: val.fee_growth_outside_b,

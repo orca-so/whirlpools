@@ -1,11 +1,5 @@
 use crate::{
-    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee,
-    try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance,
-    try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a,
-    try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee,
-    ErrorCode, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade,
-    TransferFee, WhirlpoolFacade, ARITHMETIC_OVERFLOW, INVALID_SQRT_PRICE_LIMIT_DIRECTION,
-    MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT,
+    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee, try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance, try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee, ErrorCode, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT
 };
 
 #[cfg(feature = "wasm")]
@@ -247,7 +241,7 @@ fn compute_swap<const SIZE: usize>(
             } else {
                 next_tick_index
             }
-        } else {
+        } else if step_quote.next_sqrt_price != current_sqrt_price {
             current_tick_index = sqrt_price_to_tick_index(step_quote.next_sqrt_price.into()).into();
         }
 
@@ -274,8 +268,12 @@ fn compute_swap<const SIZE: usize>(
     })
 }
 
-fn get_next_liquidity(current_liquidity: u128, next_tick: &TickFacade, a_to_b: bool) -> u128 {
-    let liquidity_net = next_tick.liquidity_net;
+fn get_next_liquidity(
+    current_liquidity: u128,
+    next_tick: Option<&TickFacade>,
+    a_to_b: bool,
+) -> u128 {
+    let liquidity_net = next_tick.map(|tick| tick.liquidity_net).unwrap_or(0);
     let liquidity_net_unsigned = liquidity_net.unsigned_abs();
     if a_to_b {
         if liquidity_net < 0 {
@@ -306,6 +304,7 @@ fn compute_swap_step(
     a_to_b: bool,
     specified_input: bool,
 ) -> Result<SwapStepQuote, ErrorCode> {
+    // Any error that is not AMOUNT_EXCEEDS_MAX_U64 is not recoverable
     let initial_amount_fixed_delta = try_get_amount_fixed_delta(
         current_sqrt_price,
         target_sqrt_price,
@@ -313,6 +312,7 @@ fn compute_swap_step(
         a_to_b,
         specified_input,
     );
+    let is_initial_amount_fixed_overflow = initial_amount_fixed_delta == Err(AMOUNT_EXCEEDS_MAX_U64);
 
     let amount_calculated = if specified_input {
         try_apply_swap_fee(amount_remaining.into(), fee_rate)?
@@ -321,7 +321,7 @@ fn compute_swap_step(
     };
 
     let next_sqrt_price =
-        if initial_amount_fixed_delta.is_ok() && initial_amount_fixed_delta? <= amount_calculated {
+        if !is_initial_amount_fixed_overflow && initial_amount_fixed_delta? <= amount_calculated {
             target_sqrt_price
         } else {
             try_get_next_sqrt_price(
@@ -344,7 +344,7 @@ fn compute_swap_step(
     )?;
 
     // If the swap is not at the max, we need to readjust the amount of the fixed token we are using
-    let amount_fixed_delta = if !is_max_swap || initial_amount_fixed_delta.is_err() {
+    let amount_fixed_delta = if !is_max_swap || is_initial_amount_fixed_overflow {
         try_get_amount_fixed_delta(
             current_sqrt_price,
             next_sqrt_price,

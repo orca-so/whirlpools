@@ -429,13 +429,13 @@ export async function closePositionInstructions(
     requiredMints.push(whirlpool.data.tokenMintA);
     requiredMints.push(whirlpool.data.tokenMintB);
   }
-  if (rewardsQuote.rewardOwed1 > 0n) {
+  if (rewardsQuote.rewards[0].rewardsOwed > 0n) {
     requiredMints.push(whirlpool.data.rewardInfos[0].mint);
   }
-  if (rewardsQuote.rewardOwed2 > 0n) {
+  if (rewardsQuote.rewards[1].rewardsOwed > 0n) {
     requiredMints.push(whirlpool.data.rewardInfos[1].mint);
   }
-  if (rewardsQuote.rewardOwed3 > 0n) {
+  if (rewardsQuote.rewards[2].rewardsOwed > 0n) {
     requiredMints.push(whirlpool.data.rewardInfos[2].mint);
   }
 
@@ -447,14 +447,16 @@ export async function closePositionInstructions(
   const instructions: IInstruction[] = [];
   instructions.push(...createInstructions);
 
-  instructions.push(
-    getUpdateFeesAndRewardsInstruction({
-      whirlpool: whirlpool.address,
-      position: positionAddress[0],
-      tickArrayLower: lowerTickArrayAddress,
-      tickArrayUpper: upperTickArrayAddress,
-    }),
-  );
+  if (position.data.liquidity > 0n) {
+    instructions.push(
+      getUpdateFeesAndRewardsInstruction({
+        whirlpool: whirlpool.address,
+        position: positionAddress[0],
+        tickArrayLower: lowerTickArrayAddress,
+        tickArrayUpper: upperTickArrayAddress,
+      }),
+    );
+  }
 
   if (quote.liquidityDelta > 0n) {
     instructions.push(
@@ -503,57 +505,23 @@ export async function closePositionInstructions(
     );
   }
 
-  if (rewardsQuote.rewardOwed1 > 0n) {
-    assert(rewardMints[0].exists, "Reward mint 0 not found");
+  for (let i = 0; i < rewardsQuote.rewards.length; i++) {
+    if (rewardsQuote.rewards[i].rewardsOwed === 0n) {
+      continue;
+    }
+    const rewardMint = rewardMints[i];
+    assert(rewardMint.exists, `Reward mint ${i} not found`);
     instructions.push(
       getCollectRewardV2Instruction({
         whirlpool: whirlpool.address,
         positionAuthority: authority,
         position: positionAddress[0],
         positionTokenAccount,
-        rewardOwnerAccount: tokenAccountAddresses[rewardMints[0].address],
-        rewardVault: whirlpool.data.rewardInfos[0].vault,
-        rewardIndex: 0,
-        rewardMint: rewardMints[0].address,
-        rewardTokenProgram: rewardMints[0].programAddress,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        remainingAccountsInfo: null,
-      }),
-    );
-  }
-
-  if (rewardsQuote.rewardOwed2 > 0n) {
-    assert(rewardMints[1].exists, "Reward mint 1 not found");
-    instructions.push(
-      getCollectRewardV2Instruction({
-        whirlpool: whirlpool.address,
-        positionAuthority: authority,
-        position: positionAddress[0],
-        positionTokenAccount,
-        rewardOwnerAccount: tokenAccountAddresses[rewardMints[1].address],
-        rewardVault: whirlpool.data.rewardInfos[1].vault,
-        rewardIndex: 1,
-        rewardMint: rewardMints[1].address,
-        rewardTokenProgram: rewardMints[1].programAddress,
-        memoProgram: MEMO_PROGRAM_ADDRESS,
-        remainingAccountsInfo: null,
-      }),
-    );
-  }
-
-  if (rewardsQuote.rewardOwed3 > 0n) {
-    assert(rewardMints[2].exists, "Reward mint 2 not found");
-    instructions.push(
-      getCollectRewardV2Instruction({
-        whirlpool: whirlpool.address,
-        positionAuthority: authority,
-        position: positionAddress[0],
-        positionTokenAccount,
-        rewardOwnerAccount: tokenAccountAddresses[rewardMints[2].address],
-        rewardVault: whirlpool.data.rewardInfos[2].vault,
-        rewardIndex: 2,
-        rewardMint: rewardMints[2].address,
-        rewardTokenProgram: rewardMints[2].programAddress,
+        rewardOwnerAccount: tokenAccountAddresses[rewardMint.address],
+        rewardVault: whirlpool.data.rewardInfos[i].vault,
+        rewardIndex: i,
+        rewardMint: rewardMint.address,
+        rewardTokenProgram: rewardMint.programAddress,
         memoProgram: MEMO_PROGRAM_ADDRESS,
         remainingAccountsInfo: null,
       }),

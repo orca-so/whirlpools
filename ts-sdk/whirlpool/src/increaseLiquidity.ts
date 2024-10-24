@@ -48,7 +48,6 @@ import {
 import {
   ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
   findAssociatedTokenPda,
-  getMintSize,
 } from "@solana-program/token";
 import {
   getCurrentTransferFee,
@@ -299,7 +298,7 @@ async function internalOpenPositionInstructions(
     "Either supply a funder or set the default funder",
   );
   const instructions: IInstruction[] = [];
-  let stateSpace = 0;
+  let nonReclaimableStateSpace = 0;
 
   const initializableLowerTickIndex = getInitializableTickIndex(
     lowerTickIndex,
@@ -382,7 +381,7 @@ async function internalOpenPositionInstructions(
         startTickIndex: lowerTickIndex,
       }),
     );
-    stateSpace += getTickArraySize();
+    nonReclaimableStateSpace += getTickArraySize();
   }
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
@@ -394,7 +393,7 @@ async function internalOpenPositionInstructions(
         startTickIndex: upperTickIndex,
       }),
     );
-    stateSpace += getTickArraySize();
+    nonReclaimableStateSpace += getTickArraySize();
   }
 
   instructions.push(
@@ -415,7 +414,6 @@ async function internalOpenPositionInstructions(
       withTokenMetadataExtension: true,
     }),
   );
-  stateSpace += getMintSize();
 
   instructions.push(
     getIncreaseLiquidityV2Instruction({
@@ -443,16 +441,18 @@ async function internalOpenPositionInstructions(
 
   instructions.push(...cleanupInstructions);
 
-  const nonRefundableRent = await rpc
-    .getMinimumBalanceForRentExemption(BigInt(stateSpace))
-    .send();
-  const initializationCost = lamports(nonRefundableRent + 15616720n); // Rent + protocol fee for metaplex
+  let nonRefundableRent = lamports(0n);
+  if (nonReclaimableStateSpace > 0) {
+    nonRefundableRent = await rpc
+      .getMinimumBalanceForRentExemption(BigInt(nonReclaimableStateSpace))
+      .send();
+  }
 
   return {
     instructions,
     quote,
     positionMint: positionMint.address,
-    initializationCost,
+    initializationCost: nonRefundableRent,
   };
 }
 

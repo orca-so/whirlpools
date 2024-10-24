@@ -19,15 +19,15 @@ use orca_whirlpools_macros::wasm_expose;
 /// - `u64`: The amount delta
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn try_get_amount_delta_a(
-    current_sqrt_price: U128,
-    target_sqrt_price: U128,
-    current_liquidity: U128,
+    sqrt_price_1: U128,
+    sqrt_price_2: U128,
+    liquidity: U128,
     round_up: bool,
 ) -> Result<u64, ErrorCode> {
     let (sqrt_price_lower, sqrt_price_upper) =
-        order_prices(current_sqrt_price.into(), target_sqrt_price.into());
+        order_prices(sqrt_price_1.into(), sqrt_price_2.into());
     let sqrt_price_diff = sqrt_price_upper - sqrt_price_lower;
-    let numerator: U256 = <U256>::from(current_liquidity)
+    let numerator: U256 = <U256>::from(liquidity)
         .checked_mul(sqrt_price_diff.into())
         .ok_or(ARITHMETIC_OVERFLOW)?
         .checked_shl(64)
@@ -136,10 +136,7 @@ pub fn try_get_next_sqrt_price_from_a(
         return Err(SQRT_PRICE_OUT_OF_BOUNDS);
     }
 
-    result
-        .try_into()
-        .map(|x: u128| x.into())
-        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
+    Ok(result.as_u128().into())
 }
 
 /// Calculate the next square root price
@@ -202,13 +199,15 @@ pub fn try_get_next_sqrt_price_from_b(
 /// - `u64`: The amount after the fee has been applied
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn try_apply_transfer_fee(amount: u64, transfer_fee: TransferFee) -> Result<u64, ErrorCode> {
-    try_adjust_amount(
-        amount,
-        transfer_fee.fee_bps.into(),
-        BPS_DENOMINATOR.into(),
-        transfer_fee.max_fee.into(),
-        false,
-    )
+    let product = <u128>::from(BPS_DENOMINATOR) - <u128>::from(transfer_fee.fee_bps);
+    let result = try_mul_div(amount, product, BPS_DENOMINATOR.into(), false)?;
+    let fee_amount = amount - result;
+    let max_fee: u64 = transfer_fee.max_fee.into();
+    if fee_amount >= max_fee {
+        Ok(amount - max_fee)
+    } else {
+        Ok(result)
+    }
 }
 
 /// Reverse the application of a transfer fee to an amount
@@ -226,13 +225,15 @@ pub fn try_reverse_apply_transfer_fee(
     amount: u64,
     transfer_fee: TransferFee,
 ) -> Result<u64, ErrorCode> {
-    try_reverse_adjust_amount(
-        amount,
-        transfer_fee.fee_bps.into(),
-        BPS_DENOMINATOR.into(),
-        transfer_fee.max_fee.into(),
-        false,
-    )
+    let denominator = <u128>::from(BPS_DENOMINATOR) - <u128>::from(transfer_fee.fee_bps);
+    let result = try_mul_div(amount, BPS_DENOMINATOR.into(), denominator, true)?;
+    let fee_amount = result - amount;
+    let max_fee: u64 = transfer_fee.max_fee.into();
+    if fee_amount >= max_fee {
+        Ok(amount + max_fee)
+    } else {
+        Ok(result)
+    }
 }
 
 /// Get the maximum amount with a slippage tolerance
@@ -249,13 +250,9 @@ pub fn try_get_max_amount_with_slippage_tolerance(
     amount: u64,
     slippage_tolerance_bps: u16,
 ) -> Result<u64, ErrorCode> {
-    try_adjust_amount(
-        amount,
-        slippage_tolerance_bps.into(),
-        BPS_DENOMINATOR.into(),
-        u128::MAX,
-        true,
-    )
+    let product = <u128>::from(BPS_DENOMINATOR) + <u128>::from(slippage_tolerance_bps);
+    let result = try_mul_div(amount, product, BPS_DENOMINATOR.into(), true)?;
+    Ok(result)
 }
 
 /// Get the minimum amount with a slippage tolerance
@@ -272,13 +269,9 @@ pub fn try_get_min_amount_with_slippage_tolerance(
     amount: u64,
     slippage_tolerance_bps: u16,
 ) -> Result<u64, ErrorCode> {
-    try_adjust_amount(
-        amount,
-        slippage_tolerance_bps.into(),
-        BPS_DENOMINATOR.into(),
-        u128::MAX,
-        false,
-    )
+    let product = <u128>::from(BPS_DENOMINATOR) - <u128>::from(slippage_tolerance_bps);
+    let result = try_mul_div(amount, product, BPS_DENOMINATOR.into(), false)?;
+    Ok(result)
 }
 
 /// Apply a swap fee to an amount
@@ -293,13 +286,9 @@ pub fn try_get_min_amount_with_slippage_tolerance(
 /// - `u64`: The amount after the fee has been applied
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn try_apply_swap_fee(amount: u64, fee_rate: u16) -> Result<u64, ErrorCode> {
-    try_adjust_amount(
-        amount,
-        fee_rate.into(),
-        FEE_RATE_DENOMINATOR.into(),
-        u128::MAX,
-        false,
-    )
+    let product = <u128>::from(FEE_RATE_DENOMINATOR) - <u128>::from(fee_rate);
+    let result = try_mul_div(amount, product, FEE_RATE_DENOMINATOR.into(), false)?;
+    Ok(result)
 }
 
 /// Reverse the application of a swap fee to an amount
@@ -314,116 +303,33 @@ pub fn try_apply_swap_fee(amount: u64, fee_rate: u16) -> Result<u64, ErrorCode> 
 /// - `u64`: The amount before the fee has been applied
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn try_reverse_apply_swap_fee(amount: u64, fee_rate: u16) -> Result<u64, ErrorCode> {
-    try_reverse_adjust_amount(
-        amount,
-        fee_rate.into(),
-        FEE_RATE_DENOMINATOR.into(),
-        u128::MAX,
-        false,
-    )
+    let denominator = <u128>::from(FEE_RATE_DENOMINATOR) - <u128>::from(fee_rate);
+    let result = try_mul_div(amount, FEE_RATE_DENOMINATOR.into(), denominator, true)?;
+    Ok(result)
 }
 
 // Private functions
 
-fn try_adjust_amount(
+fn try_mul_div(
     amount: u64,
-    adjust_numerator: u128,
-    adjust_denominator: u128,
-    adjust_max: u128,
-    adjust_up: bool,
+    product: u128,
+    denominator: u128,
+    round_up: bool,
 ) -> Result<u64, ErrorCode> {
-    if amount == 0 {
+    if amount == 0 || product == 0 {
         return Ok(0);
     }
 
-    if adjust_numerator == 0 {
-        return Ok(amount);
-    }
-
     let amount: u128 = amount.into();
-
-    let product = if adjust_up {
-        adjust_denominator + adjust_numerator
-    } else {
-        adjust_denominator - adjust_numerator
-    };
-
     let numerator = amount.checked_mul(product).ok_or(ARITHMETIC_OVERFLOW)?;
-    let denominator = adjust_denominator;
     let quotient = numerator / denominator;
     let remainder = numerator % denominator;
 
-    let mut result: u128 = if adjust_up && remainder != 0 {
+    let result = if round_up && remainder != 0 {
         quotient + 1
     } else {
         quotient
     };
-
-    let fee_amount = if adjust_up {
-        result - amount
-    } else {
-        amount - result
-    };
-
-    if fee_amount >= adjust_max {
-        if adjust_up {
-            result = amount + adjust_max
-        } else {
-            result = amount - adjust_max
-        }
-    }
-
-    result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
-}
-
-fn try_reverse_adjust_amount(
-    amount: u64,
-    adjust_numerator: u128,
-    adjust_denominator: u128,
-    adjust_max: u128,
-    adjust_up: bool,
-) -> Result<u64, ErrorCode> {
-    if amount == 0 {
-        return Ok(0);
-    }
-
-    if adjust_numerator == 0 {
-        return Ok(amount);
-    }
-
-    let amount: u128 = amount.into();
-
-    let numerator = amount
-        .checked_mul(adjust_denominator)
-        .ok_or(ARITHMETIC_OVERFLOW)?;
-    let denominator = if adjust_up {
-        adjust_denominator + adjust_numerator
-    } else {
-        adjust_denominator - adjust_numerator
-    };
-
-    let quotient = numerator / denominator;
-    let remainder = numerator % denominator;
-
-    let mut result = if !adjust_up && remainder != 0 {
-        quotient + 1
-    } else {
-        quotient
-    };
-
-    let fee_amount = if adjust_up {
-        amount - result
-    } else {
-        result - amount
-    };
-
-    if fee_amount >= adjust_max {
-        if adjust_up {
-            result = amount - adjust_max
-        } else {
-            result = amount + adjust_max
-        }
-    }
 
     result.try_into().map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
 }
@@ -443,168 +349,244 @@ mod tests {
     #[test]
     fn test_get_amount_delta_a() {
         assert_eq!(
-            try_get_amount_delta_a(4 << 64, 2 << 64, 4, true).unwrap(),
-            1
+            try_get_amount_delta_a(4 << 64, 2 << 64, 4, true),
+            Ok(1)
         );
         assert_eq!(
-            try_get_amount_delta_a(4 << 64, 2 << 64, 4, false).unwrap(),
-            1
+            try_get_amount_delta_a(4 << 64, 2 << 64, 4, false),
+            Ok(1)
         );
 
         assert_eq!(
-            try_get_amount_delta_a(4 << 64, 4 << 64, 4, true).unwrap(),
-            0
+            try_get_amount_delta_a(4 << 64, 4 << 64, 4, true),
+            Ok(0)
         );
         assert_eq!(
-            try_get_amount_delta_a(4 << 64, 4 << 64, 4, false).unwrap(),
-            0
+            try_get_amount_delta_a(4 << 64, 4 << 64, 4, false),
+            Ok(0)
         );
     }
 
     #[test]
     fn test_get_amount_delta_b() {
         assert_eq!(
-            try_get_amount_delta_b(4 << 64, 2 << 64, 4, true).unwrap(),
-            8
+            try_get_amount_delta_b(4 << 64, 2 << 64, 4, true),
+            Ok(8)
         );
         assert_eq!(
-            try_get_amount_delta_b(4 << 64, 2 << 64, 4, false).unwrap(),
-            8
+            try_get_amount_delta_b(4 << 64, 2 << 64, 4, false),
+            Ok(8)
         );
 
         assert_eq!(
-            try_get_amount_delta_b(4 << 64, 4 << 64, 4, true).unwrap(),
-            0
+            try_get_amount_delta_b(4 << 64, 4 << 64, 4, true),
+            Ok(0)
         );
         assert_eq!(
-            try_get_amount_delta_b(4 << 64, 4 << 64, 4, false).unwrap(),
-            0
+            try_get_amount_delta_b(4 << 64, 4 << 64, 4, false),
+            Ok(0)
         );
     }
 
     #[test]
     fn test_get_next_sqrt_price_from_a() {
         assert_eq!(
-            try_get_next_sqrt_price_from_a(4 << 64, 4, 1, true).unwrap(),
-            2 << 64
+            try_get_next_sqrt_price_from_a(4 << 64, 4, 1, true),
+            Ok(2 << 64)
         );
         assert_eq!(
-            try_get_next_sqrt_price_from_a(2 << 64, 4, 1, false).unwrap(),
-            4 << 64
+            try_get_next_sqrt_price_from_a(2 << 64, 4, 1, false),
+            Ok(4 << 64)
         );
 
         assert_eq!(
-            try_get_next_sqrt_price_from_a(4 << 64, 4, 0, true).unwrap(),
-            4 << 64
+            try_get_next_sqrt_price_from_a(4 << 64, 4, 0, true),
+            Ok(4 << 64)
         );
         assert_eq!(
-            try_get_next_sqrt_price_from_a(4 << 64, 4, 0, false).unwrap(),
-            4 << 64
+            try_get_next_sqrt_price_from_a(4 << 64, 4, 0, false),
+            Ok(4 << 64)
         );
     }
 
     #[test]
     fn test_get_next_sqrt_price_from_b() {
         assert_eq!(
-            try_get_next_sqrt_price_from_b(2 << 64, 4, 8, true).unwrap(),
-            4 << 64
+            try_get_next_sqrt_price_from_b(2 << 64, 4, 8, true),
+            Ok(4 << 64)
         );
         assert_eq!(
-            try_get_next_sqrt_price_from_b(4 << 64, 4, 8, false).unwrap(),
-            2 << 64
+            try_get_next_sqrt_price_from_b(4 << 64, 4, 8, false),
+            Ok(2 << 64)
         );
 
         assert_eq!(
-            try_get_next_sqrt_price_from_b(4 << 64, 4, 0, true).unwrap(),
-            4 << 64
+            try_get_next_sqrt_price_from_b(4 << 64, 4, 0, true),
+            Ok(4 << 64)
         );
         assert_eq!(
-            try_get_next_sqrt_price_from_b(4 << 64, 4, 0, false).unwrap(),
-            4 << 64
+            try_get_next_sqrt_price_from_b(4 << 64, 4, 0, false),
+            Ok(4 << 64)
         );
     }
 
     #[test]
     fn test_apply_transfer_fee() {
         assert_eq!(
-            try_apply_transfer_fee(10000, TransferFee::new(100)).unwrap(),
-            9900
+            try_apply_transfer_fee(0, TransferFee::new(100)),
+            Ok(0)
         );
         assert_eq!(
-            try_apply_transfer_fee(10000, TransferFee::new(1000)).unwrap(),
-            9000
+            try_apply_transfer_fee(10000, TransferFee::new(0)),
+            Ok(10000)
+        );
+        assert_eq!(
+            try_apply_transfer_fee(10000, TransferFee::new(100)),
+            Ok(9900)
+        );
+        assert_eq!(
+            try_apply_transfer_fee(10000, TransferFee::new(1000)),
+            Ok(9000)
+        );
+        assert_eq!(
+            try_apply_transfer_fee(10000, TransferFee::new(10000)),
+            Ok(0)
         );
     }
 
     #[test]
     fn test_apply_transfer_fee_with_max() {
         assert_eq!(
-            try_apply_transfer_fee(10000, TransferFee::new_with_max(100, 500)).unwrap(),
-            9900
+            try_apply_transfer_fee(0, TransferFee::new_with_max(100, 500)),
+            Ok(0)
         );
         assert_eq!(
-            try_apply_transfer_fee(10000, TransferFee::new_with_max(1000, 500)).unwrap(),
-            9500
+            try_apply_transfer_fee(10000, TransferFee::new_with_max(0, 500)),
+            Ok(10000)
+        );
+        assert_eq!(
+            try_apply_transfer_fee(10000, TransferFee::new_with_max(100, 500)),
+            Ok(9900)
+        );
+        assert_eq!(
+            try_apply_transfer_fee(10000, TransferFee::new_with_max(1000, 500)),
+            Ok(9500)
+        );
+        assert_eq!(
+            try_apply_transfer_fee(10000, TransferFee::new_with_max(10000, 500)),
+            Ok(9500)
         );
     }
 
     #[test]
     fn test_reverse_apply_transfer_fee() {
         assert_eq!(
-            try_reverse_apply_transfer_fee(9900, TransferFee::new(100)).unwrap(),
-            10000
+            try_reverse_apply_transfer_fee(0, TransferFee::new(100)),
+            Ok(0)
         );
         assert_eq!(
-            try_reverse_apply_transfer_fee(9000, TransferFee::new(1000)).unwrap(),
-            10000
+            try_reverse_apply_transfer_fee(10000, TransferFee::new(0)),
+            Ok(10000)
+        );
+        assert_eq!(
+            try_reverse_apply_transfer_fee(9900, TransferFee::new(100)),
+            Ok(10000)
+        );
+        assert_eq!(
+            try_reverse_apply_transfer_fee(9000, TransferFee::new(1000)),
+            Ok(10000)
+        );
+        assert_eq!(
+            try_reverse_apply_transfer_fee(0, TransferFee::new(10000)),
+            Ok(0)
         );
     }
 
     #[test]
     fn test_reverse_apply_transfer_fee_with_max() {
         assert_eq!(
-            try_reverse_apply_transfer_fee(9900, TransferFee::new_with_max(100, 500)).unwrap(),
-            10000
+            try_reverse_apply_transfer_fee(0, TransferFee::new_with_max(100, 500)),
+            Ok(0)
         );
         assert_eq!(
-            try_reverse_apply_transfer_fee(9500, TransferFee::new_with_max(1000, 500)).unwrap(),
-            10000
+            try_reverse_apply_transfer_fee(10000, TransferFee::new_with_max(0, 500)),
+            Ok(10000)
+        );
+        assert_eq!(
+            try_reverse_apply_transfer_fee(9900, TransferFee::new_with_max(100, 500)),
+            Ok(10000)
+        );
+        assert_eq!(
+            try_reverse_apply_transfer_fee(9500, TransferFee::new_with_max(1000, 500)),
+            Ok(10000)
+        );
+        assert_eq!(
+            try_reverse_apply_transfer_fee(0, TransferFee::new_with_max(10000, 500)),
+            Ok(0)
         );
     }
 
     #[test]
     fn test_get_max_amount_with_slippage_tolerance() {
         assert_eq!(
-            try_get_max_amount_with_slippage_tolerance(10000, 100).unwrap(),
-            10100
+            try_get_max_amount_with_slippage_tolerance(0, 100),
+            Ok(0)
         );
         assert_eq!(
-            try_get_max_amount_with_slippage_tolerance(10000, 1000).unwrap(),
-            11000
+            try_get_max_amount_with_slippage_tolerance(10000, 0),
+            Ok(10000)
+        );
+        assert_eq!(
+            try_get_max_amount_with_slippage_tolerance(10000, 100),
+            Ok(10100)
+        );
+        assert_eq!(
+            try_get_max_amount_with_slippage_tolerance(10000, 1000),
+            Ok(11000)
+        );
+        assert_eq!(
+            try_get_max_amount_with_slippage_tolerance(10000, 10000),
+            Ok(20000)
         );
     }
 
     #[test]
     fn test_get_min_amount_with_slippage_tolerance() {
         assert_eq!(
-            try_get_min_amount_with_slippage_tolerance(10000, 100).unwrap(),
-            9900
+            try_get_min_amount_with_slippage_tolerance(0, 100),
+            Ok(0)
         );
         assert_eq!(
-            try_get_min_amount_with_slippage_tolerance(10000, 1000).unwrap(),
-            9000
+            try_get_min_amount_with_slippage_tolerance(10000, 0),
+            Ok(10000)
+        );
+        assert_eq!(
+            try_get_min_amount_with_slippage_tolerance(10000, 100),
+            Ok(9900)
+        );
+        assert_eq!(
+            try_get_min_amount_with_slippage_tolerance(10000, 1000),
+            Ok(9000)
+        );
+        assert_eq!(
+            try_get_min_amount_with_slippage_tolerance(10000, 10000),
+            Ok(0)
         );
     }
 
     #[test]
     fn test_apply_swap_fee() {
-        assert_eq!(try_apply_swap_fee(10000, 1000).unwrap(), 9990);
-        assert_eq!(try_apply_swap_fee(10000, 10000).unwrap(), 9900);
+        assert_eq!(try_apply_swap_fee(0, 1000), Ok(0));
+        assert_eq!(try_apply_swap_fee(10000, 0), Ok(10000));
+        assert_eq!(try_apply_swap_fee(10000, 1000), Ok(9990));
+        assert_eq!(try_apply_swap_fee(10000, 10000), Ok(9900));
     }
 
     #[test]
     fn test_reverse_apply_swap_fee() {
-        assert_eq!(try_reverse_apply_swap_fee(9990, 1000).unwrap(), 10000);
-        assert_eq!(try_reverse_apply_swap_fee(9900, 10000).unwrap(), 10000);
+        assert_eq!(try_reverse_apply_swap_fee(0, 1000), Ok(0));
+        assert_eq!(try_reverse_apply_swap_fee(10000, 0), Ok(10000));
+        assert_eq!(try_reverse_apply_swap_fee(9990, 1000), Ok(10000));
+        assert_eq!(try_reverse_apply_swap_fee(9900, 10000), Ok(10000));
     }
 }

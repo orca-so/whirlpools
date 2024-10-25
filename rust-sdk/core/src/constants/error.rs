@@ -37,3 +37,9 @@ pub const ZERO_TRADABLE_AMOUNT: ErrorCode = 9009;
 
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub const INVALID_TIMESTAMP: ErrorCode = 9010;
+
+#[cfg_attr(feature = "wasm", wasm_expose)]
+pub const INVALID_TRANSFER_FEE: ErrorCode = 9011;
+
+#[cfg_attr(feature = "wasm", wasm_expose)]
+pub const INVALID_SLIPPAGE_TOLERANCE: ErrorCode = 9012;

@@ -36,32 +36,44 @@ pub fn collect_fees_quote(
     let mut fee_growth_above_b: u128 = tick_upper.fee_growth_outside_b;
 
     if whirlpool.tick_current_index < position.tick_lower_index {
-        fee_growth_below_a = whirlpool.fee_growth_global_a - fee_growth_below_a;
-        fee_growth_below_b = whirlpool.fee_growth_global_b - fee_growth_below_b;
+        fee_growth_below_a = whirlpool
+            .fee_growth_global_a
+            .wrapping_sub(fee_growth_below_a);
+        fee_growth_below_b = whirlpool
+            .fee_growth_global_b
+            .wrapping_sub(fee_growth_below_b);
     }
 
     if whirlpool.tick_current_index >= position.tick_upper_index {
-        fee_growth_above_a = whirlpool.fee_growth_global_a - fee_growth_above_a;
-        fee_growth_above_b = whirlpool.fee_growth_global_b - fee_growth_above_b;
+        fee_growth_above_a = whirlpool
+            .fee_growth_global_a
+            .wrapping_sub(fee_growth_above_a);
+        fee_growth_above_b = whirlpool
+            .fee_growth_global_b
+            .wrapping_sub(fee_growth_above_b);
     }
 
-    let fee_growth_inside_a =
-        whirlpool.fee_growth_global_a - fee_growth_below_a - fee_growth_above_a;
+    let fee_growth_inside_a = whirlpool
+        .fee_growth_global_a
+        .wrapping_sub(fee_growth_below_a)
+        .wrapping_sub(fee_growth_above_a);
 
-    let fee_growth_inside_b =
-        whirlpool.fee_growth_global_b - fee_growth_below_b - fee_growth_above_b;
+    let fee_growth_inside_b = whirlpool
+        .fee_growth_global_b
+        .wrapping_sub(fee_growth_below_b)
+        .wrapping_sub(fee_growth_above_b);
 
-    let fee_owed_delta_a: U256 =
-        <U256>::from(fee_growth_inside_a - position.fee_growth_checkpoint_a)
-            .checked_mul(position.liquidity.into())
-            .ok_or(ARITHMETIC_OVERFLOW)?
-            >> 64;
+    let fee_owed_delta_a: U256 = <U256>::from(fee_growth_inside_a)
+        .wrapping_sub(position.fee_growth_checkpoint_a.into())
+        .checked_mul(position.liquidity.into())
+        .ok_or(ARITHMETIC_OVERFLOW)?
+        >> 64;
 
-    let fee_owed_delta_b: U256 =
-        <U256>::from(fee_growth_inside_b - position.fee_growth_checkpoint_b)
-            .checked_mul(position.liquidity.into())
-            .ok_or(ARITHMETIC_OVERFLOW)?
-            >> 64;
+    let fee_owed_delta_b: U256 = <U256>::from(fee_growth_inside_b)
+        .wrapping_sub(position.fee_growth_checkpoint_b.into())
+        .checked_mul(position.liquidity.into())
+        .ok_or(ARITHMETIC_OVERFLOW)?
+        >> 64;
 
     let fee_owed_delta_a: u64 = fee_owed_delta_a
         .try_into()

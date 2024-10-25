@@ -1,5 +1,7 @@
 use crate::{
-    ErrorCode, TransferFee, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, BPS_DENOMINATOR, FEE_RATE_DENOMINATOR, INVALID_SLIPPAGE_TOLERANCE, INVALID_TRANSFER_FEE, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_OUT_OF_BOUNDS, U128
+    ErrorCode, TransferFee, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, BPS_DENOMINATOR,
+    FEE_RATE_DENOMINATOR, INVALID_SLIPPAGE_TOLERANCE, INVALID_TRANSFER_FEE, MAX_SQRT_PRICE,
+    MIN_SQRT_PRICE, SQRT_PRICE_OUT_OF_BOUNDS, U128,
 };
 
 use ethnum::U256;
@@ -201,15 +203,18 @@ pub fn try_apply_transfer_fee(amount: u64, transfer_fee: TransferFee) -> Result<
     if transfer_fee.fee_bps > BPS_DENOMINATOR {
         return Err(INVALID_TRANSFER_FEE);
     }
-    let product = <u128>::from(BPS_DENOMINATOR) - <u128>::from(transfer_fee.fee_bps);
-    let result = try_mul_div(amount, product, BPS_DENOMINATOR.into(), false)?;
-    let fee_amount = amount - result;
-    let max_fee: u64 = transfer_fee.max_fee.into();
-    if fee_amount >= max_fee {
-        Ok(amount - max_fee)
-    } else {
-        Ok(result)
+    if transfer_fee.fee_bps == 0 || amount == 0 {
+        return Ok(amount);
     }
+    let numerator = <u128>::from(amount)
+        .checked_mul(transfer_fee.fee_bps.into())
+        .ok_or(ARITHMETIC_OVERFLOW)?;
+    let raw_fee: u64 = numerator
+        .div_ceil(BPS_DENOMINATOR.into())
+        .try_into()
+        .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
+    let fee_amount = raw_fee.min(transfer_fee.max_fee);
+    Ok(amount - fee_amount)
 }
 
 /// Reverse the application of a transfer fee to an amount
@@ -228,20 +233,33 @@ pub fn try_reverse_apply_transfer_fee(
     transfer_fee: TransferFee,
 ) -> Result<u64, ErrorCode> {
     if transfer_fee.fee_bps > BPS_DENOMINATOR {
-        return Err(INVALID_TRANSFER_FEE);
-    }
-    let denominator = <u128>::from(BPS_DENOMINATOR) - <u128>::from(transfer_fee.fee_bps);
-    let result = if transfer_fee.fee_bps == BPS_DENOMINATOR {
-        amount.checked_mul(2).ok_or(AMOUNT_EXCEEDS_MAX_U64)?
+        Err(INVALID_TRANSFER_FEE)
+    } else if transfer_fee.fee_bps == 0 {
+        Ok(amount)
+    } else if amount == 0 {
+        Ok(0)
+    } else if transfer_fee.fee_bps == BPS_DENOMINATOR {
+        amount
+            .checked_add(transfer_fee.max_fee)
+            .ok_or(AMOUNT_EXCEEDS_MAX_U64)
     } else {
-        try_mul_div(amount, BPS_DENOMINATOR.into(), denominator, true)?
-    };
-    let fee_amount = result - amount;
-    let max_fee: u64 = transfer_fee.max_fee.into();
-    if fee_amount >= max_fee {
-        Ok(amount + max_fee)
-    } else {
-        Ok(result)
+        let numerator = <u128>::from(amount)
+            .checked_mul(BPS_DENOMINATOR.into())
+            .ok_or(ARITHMETIC_OVERFLOW)?;
+        let denominator = <u128>::from(BPS_DENOMINATOR) - <u128>::from(transfer_fee.fee_bps);
+        let raw_pre_fee_amount = numerator.div_ceil(denominator);
+        let fee_amount = raw_pre_fee_amount
+            .checked_sub(amount.into())
+            .ok_or(AMOUNT_EXCEEDS_MAX_U64)?;
+        if fee_amount >= transfer_fee.max_fee as u128 {
+            amount
+                .checked_add(transfer_fee.max_fee)
+                .ok_or(AMOUNT_EXCEEDS_MAX_U64)
+        } else {
+            raw_pre_fee_amount
+                .try_into()
+                .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)
+        }
     }
 }
 
@@ -363,44 +381,20 @@ mod tests {
 
     #[test]
     fn test_get_amount_delta_a() {
-        assert_eq!(
-            try_get_amount_delta_a(4 << 64, 2 << 64, 4, true),
-            Ok(1)
-        );
-        assert_eq!(
-            try_get_amount_delta_a(4 << 64, 2 << 64, 4, false),
-            Ok(1)
-        );
+        assert_eq!(try_get_amount_delta_a(4 << 64, 2 << 64, 4, true), Ok(1));
+        assert_eq!(try_get_amount_delta_a(4 << 64, 2 << 64, 4, false), Ok(1));
 
-        assert_eq!(
-            try_get_amount_delta_a(4 << 64, 4 << 64, 4, true),
-            Ok(0)
-        );
-        assert_eq!(
-            try_get_amount_delta_a(4 << 64, 4 << 64, 4, false),
-            Ok(0)
-        );
+        assert_eq!(try_get_amount_delta_a(4 << 64, 4 << 64, 4, true), Ok(0));
+        assert_eq!(try_get_amount_delta_a(4 << 64, 4 << 64, 4, false), Ok(0));
     }
 
     #[test]
     fn test_get_amount_delta_b() {
-        assert_eq!(
-            try_get_amount_delta_b(4 << 64, 2 << 64, 4, true),
-            Ok(8)
-        );
-        assert_eq!(
-            try_get_amount_delta_b(4 << 64, 2 << 64, 4, false),
-            Ok(8)
-        );
+        assert_eq!(try_get_amount_delta_b(4 << 64, 2 << 64, 4, true), Ok(8));
+        assert_eq!(try_get_amount_delta_b(4 << 64, 2 << 64, 4, false), Ok(8));
 
-        assert_eq!(
-            try_get_amount_delta_b(4 << 64, 4 << 64, 4, true),
-            Ok(0)
-        );
-        assert_eq!(
-            try_get_amount_delta_b(4 << 64, 4 << 64, 4, false),
-            Ok(0)
-        );
+        assert_eq!(try_get_amount_delta_b(4 << 64, 4 << 64, 4, true), Ok(0));
+        assert_eq!(try_get_amount_delta_b(4 << 64, 4 << 64, 4, false), Ok(0));
     }
 
     #[test]
@@ -447,10 +441,7 @@ mod tests {
 
     #[test]
     fn test_apply_transfer_fee() {
-        assert_eq!(
-            try_apply_transfer_fee(0, TransferFee::new(100)),
-            Ok(0)
-        );
+        assert_eq!(try_apply_transfer_fee(0, TransferFee::new(100)), Ok(0));
         assert_eq!(
             try_apply_transfer_fee(10000, TransferFee::new(0)),
             Ok(10000)
@@ -545,7 +536,7 @@ mod tests {
         );
         assert_eq!(
             try_reverse_apply_transfer_fee(5000, TransferFee::new(10000)),
-            Ok(10000)
+            Err(AMOUNT_EXCEEDS_MAX_U64)
         );
         assert_eq!(
             try_reverse_apply_transfer_fee(0, TransferFee::new(10000)),
@@ -592,6 +583,10 @@ mod tests {
             Ok(0)
         );
         assert_eq!(
+            try_reverse_apply_transfer_fee(u64::MAX - 500, TransferFee::new_with_max(10000, 500)),
+            Ok(u64::MAX)
+        );
+        assert_eq!(
             try_reverse_apply_transfer_fee(u64::MAX, TransferFee::new_with_max(10000, 500)),
             Err(AMOUNT_EXCEEDS_MAX_U64)
         );
@@ -607,10 +602,7 @@ mod tests {
 
     #[test]
     fn test_get_max_amount_with_slippage_tolerance() {
-        assert_eq!(
-            try_get_max_amount_with_slippage_tolerance(0, 100),
-            Ok(0)
-        );
+        assert_eq!(try_get_max_amount_with_slippage_tolerance(0, 100), Ok(0));
         assert_eq!(
             try_get_max_amount_with_slippage_tolerance(10000, 0),
             Ok(10000)
@@ -643,10 +635,7 @@ mod tests {
 
     #[test]
     fn test_get_min_amount_with_slippage_tolerance() {
-        assert_eq!(
-            try_get_min_amount_with_slippage_tolerance(0, 100),
-            Ok(0)
-        );
+        assert_eq!(try_get_min_amount_with_slippage_tolerance(0, 100), Ok(0));
         assert_eq!(
             try_get_min_amount_with_slippage_tolerance(10000, 0),
             Ok(10000)
@@ -689,7 +678,10 @@ mod tests {
         assert_eq!(try_apply_swap_fee(10000, 10000), Ok(9900));
         assert_eq!(try_apply_swap_fee(10000, u16::MAX), Ok(9344));
         assert_eq!(try_apply_swap_fee(u64::MAX, 1000), Ok(18428297329635842063));
-        assert_eq!(try_apply_swap_fee(u64::MAX, 10000), Ok(18262276632972456098));
+        assert_eq!(
+            try_apply_swap_fee(u64::MAX, 10000),
+            Ok(18262276632972456098)
+        );
     }
 
     #[test]
@@ -699,7 +691,13 @@ mod tests {
         assert_eq!(try_reverse_apply_swap_fee(9990, 1000), Ok(10000));
         assert_eq!(try_reverse_apply_swap_fee(9900, 10000), Ok(10000));
         assert_eq!(try_reverse_apply_swap_fee(9344, u16::MAX), Ok(10000));
-        assert_eq!(try_reverse_apply_swap_fee(u64::MAX, 1000), Err(AMOUNT_EXCEEDS_MAX_U64));
-        assert_eq!(try_reverse_apply_swap_fee(u64::MAX, 10000), Err(AMOUNT_EXCEEDS_MAX_U64));
+        assert_eq!(
+            try_reverse_apply_swap_fee(u64::MAX, 1000),
+            Err(AMOUNT_EXCEEDS_MAX_U64)
+        );
+        assert_eq!(
+            try_reverse_apply_swap_fee(u64::MAX, 10000),
+            Err(AMOUNT_EXCEEDS_MAX_U64)
+        );
     }
 }

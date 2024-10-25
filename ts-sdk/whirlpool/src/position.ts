@@ -152,7 +152,7 @@ export async function fetchPositionsForOwner(
       positionsOrBundles.push({
         ...position,
         tokenProgram: token.owner,
-        isPositionBundle: false
+        isPositionBundle: false,
       });
     }
 

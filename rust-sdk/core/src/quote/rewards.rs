@@ -4,7 +4,9 @@ use ethnum::U256;
 use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
-    try_apply_transfer_fee, CollectRewardQuote, CollectRewardsQuote, ErrorCode, PositionFacade, TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, NUM_REWARDS
+    try_apply_transfer_fee, CollectRewardQuote, CollectRewardsQuote, ErrorCode, PositionFacade,
+    TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
+    NUM_REWARDS,
 };
 
 /// Calculate rewards owed for a position
@@ -35,7 +37,8 @@ pub fn collect_rewards_quote(
 ) -> Result<CollectRewardsQuote, ErrorCode> {
     let timestamp_delta = current_timestamp - whirlpool.reward_last_updated_timestamp;
     let transfer_fees = [transfer_fee_1, transfer_fee_2, transfer_fee_3];
-    let mut reward_quotes: [CollectRewardQuote; NUM_REWARDS] = [CollectRewardQuote::default(); NUM_REWARDS];
+    let mut reward_quotes: [CollectRewardQuote; NUM_REWARDS] =
+        [CollectRewardQuote::default(); NUM_REWARDS];
 
     for i in 0..NUM_REWARDS {
         let mut reward_growth: u128 = whirlpool.reward_infos[i].growth_global_x64;
@@ -51,28 +54,33 @@ pub fn collect_rewards_quote(
         let mut reward_growth_above = tick_upper.reward_growths_outside[i];
 
         if whirlpool.tick_current_index < position.tick_lower_index {
-            reward_growth_below = reward_growth - reward_growth_below;
+            reward_growth_below = reward_growth.wrapping_sub(reward_growth_below);
         }
 
         if whirlpool.tick_current_index >= position.tick_upper_index {
-            reward_growth_above = reward_growth - reward_growth_above;
+            reward_growth_above = reward_growth.wrapping_sub(reward_growth_above);
         }
 
-        let reward_growth_inside = reward_growth - reward_growth_below - reward_growth_above;
-        let reward_growth_delta: u64 =
-            <U256>::from(reward_growth_inside - position.reward_infos[i].growth_inside_checkpoint)
-                .checked_mul(position.liquidity.into())
-                .ok_or(ARITHMETIC_OVERFLOW)?
-                .try_into()
-                .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
+        let reward_growth_inside = reward_growth
+            .wrapping_sub(reward_growth_below)
+            .wrapping_sub(reward_growth_above);
+
+        let reward_growth_delta: u64 = <U256>::from(reward_growth_inside)
+            .wrapping_sub(position.reward_infos[i].growth_inside_checkpoint.into())
+            .checked_mul(position.liquidity.into())
+            .ok_or(ARITHMETIC_OVERFLOW)?
+            .try_into()
+            .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
+
         let withdrawable_reward = position.reward_infos[i].amount_owed + reward_growth_delta;
-        let rewards_owed = try_apply_transfer_fee(withdrawable_reward, transfer_fees[i].unwrap_or_default())?;
-        reward_quotes[i] = CollectRewardQuote {
-            rewards_owed,
-        }
+        let rewards_owed =
+            try_apply_transfer_fee(withdrawable_reward, transfer_fees[i].unwrap_or_default())?;
+        reward_quotes[i] = CollectRewardQuote { rewards_owed }
     }
 
-    Ok(CollectRewardsQuote { rewards: reward_quotes })
+    Ok(CollectRewardsQuote {
+        rewards: reward_quotes,
+    })
 }
 
 #[cfg(all(test, not(feature = "wasm")))]

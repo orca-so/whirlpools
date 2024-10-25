@@ -1,5 +1,12 @@
 use crate::{
-    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee, try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance, try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a, try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee, ErrorCode, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade, TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW, INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT
+    sqrt_price_to_tick_index, tick_index_to_sqrt_price, try_apply_swap_fee, try_apply_transfer_fee,
+    try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance,
+    try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a,
+    try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee,
+    ErrorCode, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade,
+    TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
+    INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
+    SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT,
 };
 
 #[cfg(feature = "wasm")]
@@ -312,7 +319,8 @@ fn compute_swap_step(
         a_to_b,
         specified_input,
     );
-    let is_initial_amount_fixed_overflow = initial_amount_fixed_delta == Err(AMOUNT_EXCEEDS_MAX_U64);
+    let is_initial_amount_fixed_overflow =
+        initial_amount_fixed_delta == Err(AMOUNT_EXCEEDS_MAX_U64);
 
     let amount_calculated = if specified_input {
         try_apply_swap_fee(amount_remaining.into(), fee_rate)?

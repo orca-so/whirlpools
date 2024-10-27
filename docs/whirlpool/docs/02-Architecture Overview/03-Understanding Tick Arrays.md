@@ -1,5 +1,5 @@
 # Understanding Tick Arrays
-![TickArray Account Architecture](./img/tickarray-overview.png)
+![TickArray Account Architecture](../../static/img/02-Architecture%20Overview/tickarray-overview.png)
 
 A sequence of ticks are stored in individual **tick-array** accounts on chain. Each whirlpool has a sequence of tick-array accounts to host the entire tick range. 
 

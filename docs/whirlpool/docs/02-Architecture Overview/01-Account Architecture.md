@@ -1,7 +1,7 @@
 # Account Architecture
 
 ## Overview
-![Account Architecture](./img/architecture-overview.png)
+![Account Architecture](../../static/img/02-Architecture%20Overview/architecture-overview.png)
 
 ## WhirlpoolsConfig
 The owner of a Config account has the authority to define the many authorities over the pools that it owns (ex. default fees, collect protocol fees etc) . Whirlpools visible on the ORCA UI are all derived and controlled by a WhirlpoolsConfig account owned by the ORCA foundation. To learn more about managing pools, start [here](../03-Whirlpools%20SDK/02-Whirlpool%20Management/01-Create%20Pool.md).
@@ -16,7 +16,7 @@ WhirlpoolsConfig account may have WhirlpoolsConfigExtension account. WhirlpoolsC
 FeeTier is an account that defines the fee rate, defined per WhirlpoolsConfig and tick spacing.
 
 ## Whirlpool
-![Whirlpool Overview](./img/whirlpool-overview.png)
+![Whirlpool Overview](../../static/img/02-Architecture%20Overview/whirlpool-overview.png)
 A Whirlpool is a concentrated liquidity pool between a token pair (A & B).
 
 Each Whirlpool account hosts the necessary information to deal with the accounting of the pool. It also hosts the PDAs to the vaults. Only the Whirlpool program has authority to withdraw from the vault. No one, not even the program owner or WhirlpoolsConfig owner, has the authority to withdraw. 

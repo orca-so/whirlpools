@@ -1,0 +1,21 @@
+import DocCard from '@theme/DocCard';
+
+# Whirlpool Replayer
+Extracting Whirlpool related transactions, from Solana's vast transaction history, and recovering historical states from that data has been an insurmountable problem.
+
+However, developers using Whirlpool can use the whirlpool-replayer library to get the state of a Whirlpool on a given day and all the instructions that were executed in sequence through callbacks. Within the callback, developers can focus on extracting the data they need.
+
+Don't worry. There is no absolutely need to have a special machine; whirlpool-replayer replays only the Whirlpool Program. Therefore, it requires very few machine resources and will run reliably on a laptop computer.
+
+Many use cases for whirlpool-replayer come to mind.
+- Extracting OHLCV history
+- Extracting liquidity distribution history
+- Calculating profit over the life cycle of a position
+- Back-testing of trade strategies
+
+<DocCard item={{
+  type: 'link',
+  href: 'https://github.com/orca-so/whirlpool-tx-replayer',
+  label: 'Whirlpool TX Replayer',
+  description: 'https://github.com/orca-so/whirlpool-tx-replayer'
+}} />

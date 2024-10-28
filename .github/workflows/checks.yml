@@ -2,7 +2,7 @@ name: Checks
 
 on:
   pull_request:
-    branches: [main]
+    branches: "*"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
@@ -15,30 +15,33 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    - name: Build Packages
+    - name: Setup Anchor
       uses: ./.github/actions/anchor
-      with:
-        run: |
-          yarn build --output-style static
+    - name: Install dependencies
+      run: yarn install
+    - name: Build packages
+      run: yarn build --output-style static
 
   test:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    - name: Run Tests
+    - name: Setup Anchor
       uses: ./.github/actions/anchor
-      with:
-        run: |
-          yarn test --exclude legacy-sdk/whirlpool --output-style static
+    - name: Install dependencies
+      run: yarn install
+    - name: Run tests
+      run: yarn test --exclude legacy-sdk/whirlpool --output-style static
 
   lint:
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    - name: Run Lint
+    - name: Setup Anchor
       uses: ./.github/actions/anchor
-      with:
-        run: |
-          yarn lint --output-style static
+    - name: Install dependencies
+      run: yarn install
+    - name: Run Lint
+      run: yarn lint --output-style static

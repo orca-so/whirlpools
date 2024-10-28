@@ -35,7 +35,7 @@ describe("PositionImpl#collectFees()", () => {
   const tickSpacing = TickSpacing.Standard;
   const liquidityAmount = new BN(10_000_000);
 
-  before(() => {
+  beforeAll(() => {
     const provider = anchor.AnchorProvider.local(
       undefined,
       defaultConfirmOptions,
@@ -145,7 +145,7 @@ describe("PositionImpl#collectFees()", () => {
     assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
   }
 
-  context("when the whirlpool is SPL-only", () => {
+  describe("when the whirlpool is SPL-only", () => {
     it("should collect fees", async () => {
       const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init(
         {
@@ -340,7 +340,7 @@ describe("PositionImpl#collectFees()", () => {
     });
   });
 
-  context("when the whirlpool is SOL-SPL", () => {
+  describe("when the whirlpool is SOL-SPL", () => {
     it("should collect fees", async () => {
       const fixture = await new WhirlpoolTestFixture(testCtx.whirlpoolCtx).init(
         {
@@ -564,7 +564,7 @@ describe("PositionImpl#collectFees()", () => {
     assert.ok(quote.feeOwedA.gtn(0) || quote.feeOwedB.gtn(0));
   }
 
-  context("when the whirlpool is SPL-only (TokenExtension)", () => {
+  describe("when the whirlpool is SPL-only (TokenExtension)", () => {
     it("should collect fees", async () => {
       const fixture = await new WhirlpoolTestFixtureV2(
         testCtx.whirlpoolCtx,

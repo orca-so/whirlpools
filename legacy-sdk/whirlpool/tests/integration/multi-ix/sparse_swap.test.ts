@@ -55,7 +55,7 @@ describe("sparse swap tests", () => {
 
   let testCtx: SharedTestContext;
 
-  before(() => {
+  beforeAll(() => {
     anchor.setProvider(provider);
     const program = anchor.workspace.Whirlpool;
     const whirlpoolCtx = WhirlpoolContext.fromWorkspace(provider, program);
@@ -1203,7 +1203,7 @@ describe("sparse swap tests", () => {
       }
 
       let referenceResult: { quote: SwapQuote; poolData: WhirlpoolData };
-      before(async () => {
+      beforeAll(async () => {
         referenceResult = await runSwap(true, true, true, false);
       });
 
@@ -1366,7 +1366,7 @@ describe("sparse swap tests", () => {
       }
 
       let referenceResult: { quote: SwapQuote; poolData: WhirlpoolData };
-      before(async () => {
+      beforeAll(async () => {
         referenceResult = await runSwap(true, true, true, false);
       });
 
@@ -1687,7 +1687,7 @@ describe("sparse swap tests", () => {
         quote1: SwapQuote;
         poolData1: WhirlpoolData;
       };
-      before(async () => {
+      beforeAll(async () => {
         referenceResult = await runSwap(true, true, true, false);
       });
 
@@ -2022,7 +2022,7 @@ describe("sparse swap tests", () => {
         quote1: SwapQuote;
         poolData1: WhirlpoolData;
       };
-      before(async () => {
+      beforeAll(async () => {
         referenceResult = await runSwap(true, true, true, false);
       });
 

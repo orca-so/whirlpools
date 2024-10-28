@@ -24,3 +24,4 @@ generated
 .docusaurus
 .cache-loader
 .devcontainer
+**/Cargo.lock

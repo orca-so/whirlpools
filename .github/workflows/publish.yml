@@ -10,7 +10,7 @@ jobs:
   npm:
     strategy:
       matrix:
-        package: [client, core, whirlpool]
+        package: [core, client, whirlpool]
       max-parallel: 1
       fail-fast: true
     runs-on: ubuntu-latest
@@ -39,7 +39,7 @@ jobs:
   cargo:
     strategy:
       matrix:
-        package: [macros, client, core]
+        package: [macros, core, client]
       max-parallel: 1
       fail-fast: true
     runs-on: ubuntu-latest

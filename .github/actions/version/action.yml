@@ -46,7 +46,7 @@ runs:
           .version = $version
         ' ${{ inputs.manifest-file }} > tmp.json && mv tmp.json ${{ inputs.manifest-file }}
         jq --arg version "${{ steps.version.outputs.VERSION }}" '
-          .dependencies |= (with_entries(if .value == "*" then .value = $version else . end) // .)
+          if .dependencies then .dependencies |= with_entries(if .value == "*" then .value = $version else . end) else . end
         ' ${{ inputs.manifest-file }} > tmp.json && mv tmp.json ${{ inputs.manifest-file }}
       shell: bash
     - name: Update Cargo Packages

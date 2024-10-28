@@ -42,14 +42,22 @@ runs:
     - name: Update npm Packages
       if: ${{ steps.env.outputs.ENV == 'npm' }}
       run: |
-        sed -i 's/"version": ".*"/"version": "${{ steps.version.outputs.VERSION }}"/' ${{ inputs.manifest-file }}
-        # TODO: Following should only happen in dependencies and not devDependencies
-        # sed -i 's/"\*"/"${{ steps.version.outputs.VERSION }}"/' ${{ inputs.manifest-file }}
+        jq --arg version "${{ steps.version.outputs.VERSION }}" '
+          .version = $version
+        ' ${{ inputs.manifest-file }} > tmp.json && mv tmp.json ${{ inputs.manifest-file }}
+        jq --arg version "${{ steps.version.outputs.VERSION }}" '
+          .dependencies |= with_entries(if .value == "*" then .value = $version else . end)
+        ' ${{ inputs.manifest-file }} > tmp.json && mv tmp.json ${{ inputs.manifest-file }}
       shell: bash
     - name: Update Cargo Packages
       if: ${{ steps.env.outputs.ENV == 'cargo' }}
       run: |
-        sed -i 's/^version = ".*"$/version = "${{ steps.version.outputs.VERSION }}"/' ${{ inputs.manifest-file }}
-        # TODO: Following should only happen in dependencies and not dev-dependencies
-        # sed -i 's/path = ".*"/version = "${{ steps.version.outputs.VERSION }}"/' ${{ inputs.manifest-file }}
+        awk -v version="${{ steps.version.outputs.VERSION }}" '
+          /^version = / { sub(/".*"/, "\"" version "\"") } { print }
+        ' ${{ inputs.manifest-file }} > tmp.toml && mv tmp.toml ${{ inputs.manifest-file }}
+        awk -v version="${{ steps.version.outputs.VERSION }}" '
+          /^\[dependencies\]/ { in_dependencies=1 }
+          /^\[/ && !/^\[dependencies\]/ { in_dependencies=0 }
+          in_dependencies && /path = ".*"/ { sub(/path = ".*"/, "version = \"" version "\"") } { print }
+        ' ${{ inputs.manifest-file }} > tmp.toml && mv tmp.toml ${{ inputs.manifest-file }}
       shell: bash

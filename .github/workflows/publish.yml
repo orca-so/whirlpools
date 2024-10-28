@@ -39,7 +39,7 @@ jobs:
   cargo:
     strategy:
       matrix:
-        package: [client]
+        package: [client, core]
       max-parallel: 1
       fail-fast: true
     runs-on: ubuntu-latest

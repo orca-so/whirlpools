@@ -28,6 +28,8 @@ jobs:
         manifest-file: ts-sdk/${{ matrix.package }}/package.json
     - name: Setup npm
       run: npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPM_TOKEN }}
+    - name: Setup yarn
+      run: yarn config set enableHardenedMode false
     - name: Install dependencies
       run: yarn install
     - name: Build package

@@ -3133,7 +3133,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-monorepo@workspace:."
   dependencies:
-    "@types/node": "npm:^22.7.9"
+    "@types/node": "npm:^22.8.1"
     husky: "npm:^9.1.6"
     lint-staged: "npm:^15.2.10"
     nx: "npm:^20.0.5"
@@ -4604,12 +4604,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.7.9":
-  version: 22.7.9
-  resolution: "@types/node@npm:22.7.9"
+"@types/node@npm:^22.8.1":
+  version: 22.8.1
+  resolution: "@types/node@npm:22.8.1"
   dependencies:
-    undici-types: "npm:~6.19.2"
-  checksum: 10c0/2d1917702b9d9ede8e4d8151cd8b1af8bc147d543486474ffbe0742e38764ea73105939e6a767addf7a4c39e842e16eae762bff90617d7b7f9ee3fbbb2d23bfa
+    undici-types: "npm:~6.19.8"
+  checksum: 10c0/83550fdf72a7db5b55eceac3f4fb038844eaee20202bdd2297a8248370cfa08317bda1605b781a8043eda4f173b75e73632e652fc85509eb14dfef78fa17337f
   languageName: node
   linkType: hard
 
@@ -15396,7 +15396,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici-types@npm:~6.19.2":
+"undici-types@npm:~6.19.2, undici-types@npm:~6.19.8":
   version: 6.19.8
   resolution: "undici-types@npm:6.19.8"
   checksum: 10c0/078afa5990fba110f6824823ace86073b4638f1d5112ee26e790155f481f2a868cc3e0615505b6f4282bdf74a3d8caad715fd809e870c2bb0704e3ea6082f344

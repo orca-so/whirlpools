@@ -31,7 +31,7 @@
     "@orca-so/whirlpools-core": "*",
     "@solana-program/memo": "^0.5.0",
     "@solana-program/system": "^0.5.0",
-    "@solana-program/token": "^0.2.1",
+    "@solana-program/token": "^0.3.3",
     "@solana-program/token-2022": "^0.1.0"
   },
   "peerDependencies": {

@@ -27,4 +27,4 @@ tsify = { version = "^0.4", features = ["js"], optional = true }
 
 [dev-dependencies]
 print-no-std = { version = "^0.1"}
-approx = { version = "^0.3" }
+approx = { version = "^0.5" }

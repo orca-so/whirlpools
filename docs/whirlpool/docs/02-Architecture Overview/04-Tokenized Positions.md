@@ -12,7 +12,7 @@ There are 3 main accounts used to represent a Tokenized Position on Whirlpool.
 The program will verify that a user owns a position by checking whether the wallet provided has the correct position token in it.
 
 ### Creating a Position
-Positions are created using the [open_position](https://github.com/orca-so/whirlpools/blob/2c9366a74edc9fefd10caa3de28ba8a06d03fc1e/programs/whirlpool/src/instructions/open_position.rs) instruction and it does the following:
+Positions are created using the [open_position_with_token_extensions](https://github.com/orca-so/whirlpools/blob/main/programs/whirlpool/src/instructions/open_position_with_token_extensions.rs) instruction and it does the following:
 1. Caller will provide a brand new token mint and the PDA of the [Position](https://github.com/orca-so/whirlpools/blob/2c9366a74edc9fefd10caa3de28ba8a06d03fc1e/programs/whirlpool/src/state/position.rs) account derived from the Whirlpool.
 2. `open_position` will initialize the mint, mint 1 token to the `position_token_account` and immediately burn the mint authority of this mint. 
 3. The position account is initialized with the set tick range and is ready to receive new liquidity via the [increase_liquidity](https://github.com/orca-so/whirlpools/blob/2c9366a74edc9fefd10caa3de28ba8a06d03fc1e/programs/whirlpool/src/instructions/increase_liquidity.rs) instruction.

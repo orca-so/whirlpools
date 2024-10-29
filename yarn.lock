@@ -3071,7 +3071,6 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-docs-legacy@workspace:docs/legacy"
   dependencies:
-    "@orca-so/whirlpools": "npm:*"
     "@orca-so/whirlpools-sdk": "npm:*"
     typedoc: "npm:^0.26.10"
     typescript: "npm:^5.6.3"
@@ -3083,6 +3082,8 @@ __metadata:
   resolution: "@orca-so/whirlpools-docs-rust@workspace:docs/rust"
   dependencies:
     "@orca-so/whirlpools-rust": "npm:*"
+    "@orca-so/whirlpools-rust-client": "npm:*"
+    "@orca-so/whirlpools-rust-core": "npm:*"
   languageName: unknown
   linkType: soft
 
@@ -3091,8 +3092,10 @@ __metadata:
   resolution: "@orca-so/whirlpools-docs-ts@workspace:docs/ts"
   dependencies:
     "@orca-so/whirlpools": "npm:*"
-    "@orca-so/whirlpools-sdk": "npm:*"
+    "@orca-so/whirlpools-client": "npm:*"
+    "@orca-so/whirlpools-core": "npm:*"
     typedoc: "npm:^0.26.10"
+    typedoc-plugin-merge-modules: "npm:^6.0.3"
     typescript: "npm:^5.6.3"
   languageName: unknown
   linkType: soft
@@ -15545,6 +15548,15 @@ __metadata:
   dependencies:
     is-typedarray: "npm:^1.0.0"
   checksum: 10c0/4ac5b7a93d604edabf3ac58d3a2f7e07487e9f6e98195a080e81dbffdc4127817f470f219d794a843b87052cedef102b53ac9b539855380b8c2172054b7d5027
+  languageName: node
+  linkType: hard
+
+"typedoc-plugin-merge-modules@npm:^6.0.3":
+  version: 6.0.3
+  resolution: "typedoc-plugin-merge-modules@npm:6.0.3"
+  peerDependencies:
+    typedoc: 0.26.x
+  checksum: 10c0/1a1687c1dcbe521e7868384d1a58c05a9f1ebf210f55d89b6e5f386ced5d04219464909b809d29008314bf826af5e194ff75f417605497e2673c659242f16a7e
   languageName: node
   linkType: hard
 

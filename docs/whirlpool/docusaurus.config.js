@@ -49,7 +49,7 @@ export default {
       items: [
         { to: "/", label: "Docs", position: "left" },
         {
-          href: "/orca_whirlpools/",
+          href: "/orca_whirlpools_docs/",
           label: "Rust SDK Reference",
           position: "left",
           target: "_blank",

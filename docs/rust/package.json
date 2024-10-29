@@ -3,11 +3,13 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "build": "cd ../../rust-sdk/whirlpool && cargo doc --lib --no-deps && cp -rf target/doc/. ../../docs/rust/dist",
-    "start": "cd ../../rust-sdk/whirlpool && cargo doc --lib --no-deps --open",
+    "build": "cargo doc --lib --no-deps && cp -rf target/doc/. dist",
+    "start": "cargo doc --lib --no-deps --open",
     "clean": "rimraf dist"
   },
   "devDependencies": {
-    "@orca-so/whirlpools-rust": "*"
+    "@orca-so/whirlpools-rust": "*",
+    "@orca-so/whirlpools-rust-client": "*",
+    "@orca-so/whirlpools-rust-core": "*"
   }
 }

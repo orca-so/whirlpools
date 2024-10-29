@@ -1,0 +1,5 @@
+{
+  "entryPoints": [
+    "./dist/nodejs/orca_whirlpools_core_js_bindings.d.ts"
+  ]
+}

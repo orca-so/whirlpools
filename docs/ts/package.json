@@ -9,8 +9,10 @@
   },
   "devDependencies": {
     "@orca-so/whirlpools": "*",
-    "@orca-so/whirlpools-sdk": "*",
+    "@orca-so/whirlpools-client": "*",
+    "@orca-so/whirlpools-core": "*",
     "typedoc": "^0.26.10",
+    "typedoc-plugin-merge-modules": "^6.0.3",
     "typescript": "^5.6.3"
   }
 }

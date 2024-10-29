@@ -136,7 +136,7 @@ describe("set_reward_authority", () => {
 });
 
 function generateKeypairs(n: number): anchor.web3.Keypair[] {
-  const keypairs = [];
+  const keypairs: anchor.web3.Keypair[] = [];
   for (let i = 0; i < n; i++) {
     keypairs.push(anchor.web3.Keypair.generate());
   }

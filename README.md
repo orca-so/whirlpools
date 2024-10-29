@@ -20,13 +20,11 @@ The program has been audited several times by different security firms.
 
 ***The new whirlpool SDKs are still in development and are not recommended for production use yet. Please see [Legacy](#legacy)***
 
-This repository contains several libraries that can be used to interact with the Whirlpools contract. For most purposes you can use the full library (`@orca-so/whirlpools` and `orca-whirlpools`).
+This repository contains several libraries that can be used to interact with the Whirlpools contract. For most purposes you can use the full library (`@orca-so/whirlpools` and `orca_whirlpools`).
 
 For specific use-cases you can opt for integrating with lower level packages such as:
-* `@orca-so/whirlpools-client` & `orca-whirlpools-client` - auto-generated client for the Whirlpools program that contains account, instruction and error parsing.
-* `@orca-so/whirlpools-quoting` & `orca-whirlpools-quoting` - math lib used to calculate a quote for a given trade or liquidity action.
-* `@orca-so/whirlpools-composite` & `orca-whirlpools-composite` - helper package for compositing instructions together for executing common actions.
-* `@orca-so/whirlpools-utils` & `orca-whirlpools-utils` - utility and math functions used by other packages.
+* `@orca-so/whirlpools-client` & `orca_whirlpools_client` - auto-generated client for the Whirlpools program that contains account, instruction and error parsing.
+* `@orca-so/whirlpools-core` & `orca_whirlpools_core` - utility, math and quoting functions used by other packages.
 
 ### Legacy
 
@@ -90,8 +88,6 @@ Below is a (non-exhaustive) list of available commands:
 If you look closely, the commands just call individual commands specified in the component's `package.json` file. These commands should not be run by themselves as it will not resolve the right dependencies and will not execute the prerequisites. Instead you can specify which package to run with `yarn build programs/whirlpool`, `yarn test legacy-sdk/whirlpool`, etc.
 
 If you want to stream the logs of a specific command you can add the `--output-style stream` flag to the command. This allows you to view the logs of the command as they are being produced which can be useful for longer running tasks like integration tests.
-
----
 
 # Support
 

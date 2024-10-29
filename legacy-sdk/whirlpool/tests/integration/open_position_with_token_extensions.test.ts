@@ -61,7 +61,7 @@ describe("open_position_with_token_extensions", () => {
   let whirlpoolPda: PDA;
   const funderKeypair = anchor.web3.Keypair.generate();
 
-  before(async () => {
+  beforeAll(async () => {
     poolInitInfo = (await initTestPool(ctx, TickSpacing.Standard)).poolInitInfo;
     whirlpoolPda = poolInitInfo.whirlpoolPda;
     await systemTransferTx(
@@ -411,7 +411,7 @@ describe("open_position_with_token_extensions", () => {
     let defaultParams: OpenPositionWithTokenExtensionsParams;
     let defaultMint: Keypair;
 
-    before(async () => {
+    beforeAll(async () => {
       const { params, mint } = await generateDefaultOpenPositionWithTokenExtensionsParams(
         ctx,
         whirlpoolPda.publicKey,

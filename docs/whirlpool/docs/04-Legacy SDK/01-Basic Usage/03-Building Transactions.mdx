@@ -1,0 +1,33 @@
+import DocCard from '@theme/DocCard';
+
+# Building Transactions
+
+The Typescript SDK provides multiple ways for you to create the transaction needed to execute specific actions on the Whirlpool contract.
+
+## 1. Composing your own Transaction
+Use the TransactionBuilder class to construct and compose your own Transactions to perform actions on the Whirlpools contract.
+
+### Whirlpools Instruction Set
+
+<DocCard item={{
+  type: 'link',
+  href: 'https://orca-so.github.io/whirlpools/legacy/classes/WhirlpoolIx.html',
+  label: 'Whirlpools Instruction Set',
+  description: 'https://orca-so.github.io/whirlpools/legacy/classes/WhirlpoolIx.html'
+}} />
+
+```tsx
+const txBuilder = new TransactionBuilder(ctx.provider);
+txBuilder.addInstruction(WhirlpoolIx.initializeConfigIx(ctx, configParams));
+...
+txBuilder.addInstruction(otherIx).addSigner(otherSigner);
+...
+await txBuilder.buildAndExecute();
+```
+
+Use to `toTx` function if you only have one transaction to send out
+
+```tsx
+const tx = toTx(ctx, WhirlpoolIx.initializeConfigIx(ctx.program, configParams));
+await txBuilder.buildAndExecute();
+```

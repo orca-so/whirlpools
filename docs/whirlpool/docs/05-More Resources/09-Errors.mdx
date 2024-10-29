@@ -1,0 +1,34 @@
+import DocCard from '@theme/DocCard';
+
+# Errors
+Whirlpool errors are emitted as a hexadecimal number (ex. 0x1771).
+
+Convert this value back to decimal to determine where the error is coming from.
+
+## Anchor Errors (error code < 6000)
+
+Anchor 
+- \>= 100 Instruction error codes
+- \>= 1000 IDL error codes
+- \>= 2000 constraint error codes
+- \>= 3000 account error codes
+- = 4000 state error code
+- \>= 4100 misc error codes
+- = 5000 deprecated error code
+
+<DocCard item={{
+  type: 'link',
+  href: 'https://docs.rs/anchor-lang/latest/anchor_lang/error/enum.ErrorCode.html',
+  label: 'Anchor Errors',
+  description: 'https://docs.rs/anchor-lang/latest/anchor_lang/error/enum.ErrorCode.html'
+}} />
+
+## Whirlpool Errors (error code >= 6000)
+Match your error hex code with this page to find your Whirlpool errors.
+
+<DocCard item={{
+  type: 'link',
+  href: 'https://github.com/orca-so/whirlpools/blob/main/programs/whirlpool/src/errors.rs',
+  label: 'Whirlpools Anchor Errors',
+  description: 'https://github.com/orca-so/whirlpools/blob/main/programs/whirlpool/src/errors.rs'
+}} />

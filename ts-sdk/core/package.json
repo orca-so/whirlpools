@@ -21,7 +21,8 @@
   "scripts": {
     "build": "wasm-pack build --out-dir ./dist/web --target web && wasm-pack build --out-dir ./dist/nodejs --target nodejs",
     "test": "tsc --noEmit && vitest run tests",
-    "clean": "cargo clean && rimraf dist"
+    "clean": "cargo clean && rimraf dist",
+    "prepublishOnly": "rimraf dist/web/.gitignore dist/nodejs/.gitignore"
   },
   "devDependencies": {
     "@orca-so/whirlpools-client": "*",

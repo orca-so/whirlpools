@@ -32,7 +32,7 @@
     "@solana-program/memo": "^0.5.0",
     "@solana-program/system": "^0.5.0",
     "@solana-program/token": "^0.3.3",
-    "@solana-program/token-2022": "^0.1.0"
+    "@solana-program/token-2022": "^0.2.1"
   },
   "peerDependencies": {
     "@solana/web3.js": "^2.0.0-rc.1"

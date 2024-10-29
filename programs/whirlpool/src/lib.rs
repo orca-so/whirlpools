@@ -169,10 +169,11 @@ pub mod whirlpool {
     ///                        the tick-spacing in this pool.
     pub fn open_position(
         ctx: Context<OpenPosition>,
+        bumps: crate::state::OpenPositionBumps,
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
-        return instructions::open_position::handler(ctx, tick_lower_index, tick_upper_index);
+        return instructions::open_position::handler(ctx, bumps, tick_lower_index, tick_upper_index);
     }
 
     /// Open a position in a Whirlpool. A unique token will be minted to represent the position

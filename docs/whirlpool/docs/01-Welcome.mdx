@@ -1,0 +1,47 @@
+---
+sidebar_position: 1
+slug: /
+---
+import DocCard from '@theme/DocCard';
+
+# Welcome
+
+Whirlpools is an open-sourced concentrated liquidity automated market maker (CLAMM) program built for the Solana ecosystem.
+
+<DocCard item={{
+  type: 'link',
+  href: 'https://github.com/orca-so/whirlpools',
+  label: 'Whirlpools Program',
+  description: 'https://github.com/orca-so/whirlpools'
+}} />
+
+## Introduction to Solana.
+
+On Solana, all data is stored in what is referred to as accounts. The way accounts are organized on Solana is similar to a key-value store, where each entry in the database is called an account. The key is the account's address, and the value is the data stored in the account.
+
+Some accounts only store data, such as a token account for your favorite token. Other accounts store programs. For example, there is a Token Program responsible for managing token accounts and transfers. Every time you send a token, you're sending a transaction to the Token Program, which updates the balances of the accounts involved.
+
+The Whirlpools Program is also a program. It can create new data accounts if you instruct it to, and even set you as the owner of those accounts. Accounts that you can own include Splash Pools, Concentrated Liquidity Pools, and liquidity positions. For these accounts, you'll pay rent. But here's the good part: this is no ordinary rent—you get the full rent back if you decide to close the account! You only pay the transaction costs on the Solana network, which, as you may know, are very low. You can also instruct the program to swap tokens against one of the many liquidity pools that hold the tokens you'd like to trade.
+
+You interact with the Solana network by sending transactions to interact with accounts. Transactions are a sequence of instructions that are executed atomically on the network. The execution logic for these instructions is stored in programs (smart contracts) that run on the network.
+
+Interacting with the Solana network and its many existing programs is easier than you might think. There are several SDKs available to simplify the process.
+
+## Whirlpools SDK
+
+The Whirlpools SDK is an open-source library that allows developers to interact with the Whirlpools Program and is intended to be used in conjunction with the Solana SDK. Simply put, you use the Whirlpools SDK to create instructions, and the Solana SDK to send them to the network.
+
+Some of the main features are:
+- Create instructions to set up a new pool, open positions, add or remove liquidity, and swap tokens.
+- Get quotes for swaps.
+- Query the state of pools to retrieve information about asset prices, liquidity, and fees.
+
+## How to use this documentation
+
+In the next section you will find information about the Whirlpools Program and its architecture.
+
+In the following sections you will find information about the Whirlpools SDK and how to use it to interact with the program.
+
+We also provide start-to-end tutorials for specific use cases combining the Whirlpools SDK with the Solana SDK.
+
+If you have any questions or need help, feel free to reach out to us on the [Discord](https://discord.orca.so).

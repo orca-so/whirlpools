@@ -19,20 +19,17 @@ export default {
     locales: ["en"],
   },
 
-  markdown: {
-    format: "md",
-  },
-
   staticDirectories: ["static", "../ts/dist", "../legacy/dist", "../rust/dist"],
 
   presets: [
     [
-      "classic",
+      "@docusaurus/preset-classic",
       {
         docs: {
           routeBasePath: "/",
           sidebarPath: "./sidebars.js",
-          editUrl: "https://github.com/orca-so/whirlpools/tree/main/docs/whirlpool",
+          editUrl:
+            "https://github.com/orca-so/whirlpools/tree/main/docs/whirlpool",
         },
         theme: {
           customCss: "./static/index.css",

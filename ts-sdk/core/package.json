@@ -10,9 +10,12 @@
     "./dist/web/snippets/*"
   ],
   "files": [
-    "./dist/*/orca_whirlpools_core_js_bindings_bg.wasm",
-    "./dist/*/orca_whirlpools_core_js_bindings.js",
-    "./dist/*/orca_whirlpools_core_js_bindings.d.ts",
+    "dist/nodejs/orca_whirlpools_core_js_bindings_bg.wasm",
+    "dist/nodejs/orca_whirlpools_core_js_bindings.js",
+    "dist/nodejs/orca_whirlpools_core_js_bindings.d.ts",
+    "dist/web/orca_whirlpools_core_js_bindings_bg.wasm",
+    "dist/web/orca_whirlpools_core_js_bindings.js",
+    "dist/web/orca_whirlpools_core_js_bindings.d.ts",
     "README.md"
   ],
   "scripts": {

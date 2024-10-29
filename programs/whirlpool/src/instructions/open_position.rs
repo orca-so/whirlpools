@@ -48,6 +48,7 @@ pub struct OpenPosition<'info> {
 */
 pub fn handler(
     ctx: Context<OpenPosition>,
+    _bumps: crate::state::OpenPositionBumps,
     tick_lower_index: i32,
     tick_upper_index: i32,
 ) -> Result<()> {

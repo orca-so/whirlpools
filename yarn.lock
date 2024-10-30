@@ -3063,7 +3063,7 @@ __metadata:
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
     typescript: "npm:^5.6.3"
-    wasm-pack: "npm:^0.13.0"
+    wasm-pack: "npm:^0.13.1"
   languageName: unknown
   linkType: soft
 
@@ -16031,14 +16031,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"wasm-pack@npm:^0.13.0":
-  version: 0.13.0
-  resolution: "wasm-pack@npm:0.13.0"
+"wasm-pack@npm:^0.13.1":
+  version: 0.13.1
+  resolution: "wasm-pack@npm:0.13.1"
   dependencies:
     binary-install: "npm:^1.0.1"
   bin:
     wasm-pack: run.js
-  checksum: 10c0/71ed64c9b0082d51098ec71041ce68a9323d7a0027e3a9c0b694c5931f83ce2a58f1df7255c68239ca4ab702e2daf5c550a7886f8af048f0cb76945a510268b6
+  checksum: 10c0/46fc5309f46377d6dd09890cd642640ddb40d654bfdae5c9be66b50bf5ea27b0953916dd14d718b13a3b3dbad1351d4007ef040ef3778053625130ccef6f7cd6
   languageName: node
   linkType: hard
 

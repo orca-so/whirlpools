@@ -49,16 +49,20 @@ export default {
       items: [
         { to: "/", label: "Docs", position: "left" },
         {
-          href: "/orca_whirlpools_docs/",
-          label: "Rust SDK Reference",
+          label: "Whirlpools SDK Reference",
           position: "left",
-          target: "_blank",
-        },
-        {
-          href: "/ts/",
-          label: "TS SDK Reference",
-          position: "left",
-          target: "_blank",
+          items: [
+            {
+              href: "/ts/",
+              label: "TS SDK Reference",
+              target: "_blank",
+            },
+            {
+              href: "/orca_whirlpools_docs/",
+              label: "Rust SDK Reference",
+              target: "_blank",
+            },
+          ],
         },
         {
           href: "/legacy/",

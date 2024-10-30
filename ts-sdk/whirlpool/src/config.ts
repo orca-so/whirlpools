@@ -51,16 +51,14 @@ export let WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Address =
 export async function setWhirlpoolsConfig(
   config: Address | keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES,
 ): Promise<void> {
-  let whirlpoolsConfigAddress: Address;
   if (isAddress(config)) {
-    whirlpoolsConfigAddress = config;
+    WHIRLPOOLS_CONFIG_ADDRESS = config;
   } else {
-    whirlpoolsConfigAddress = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES];
+    WHIRLPOOLS_CONFIG_ADDRESS = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES];
   }
 
-  WHIRLPOOLS_CONFIG_ADDRESS = whirlpoolsConfigAddress;
   WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
-    await getWhirlpoolsConfigExtensionAddress(whirlpoolsConfigAddress).then(
+    await getWhirlpoolsConfigExtensionAddress(WHIRLPOOLS_CONFIG_ADDRESS).then(
       (x) => x[0],
     );
 }

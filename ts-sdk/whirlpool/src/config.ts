@@ -1,6 +1,6 @@
 import { getWhirlpoolsConfigExtensionAddress } from "@orca-so/whirlpools-client";
 import type { Address, TransactionSigner } from "@solana/web3.js";
-import { address, createNoopSigner } from "@solana/web3.js";
+import { address, createNoopSigner, isAddress } from "@solana/web3.js";
 
 /**
  * The default (null) address.
@@ -8,11 +8,20 @@ import { address, createNoopSigner } from "@solana/web3.js";
 export const DEFAULT_ADDRESS = address("11111111111111111111111111111111");
 
 /**
+ * The WhirlpoolsConfig addresses for various networks.
+ */
+export const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES = {
+  solanaMainnet: address("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ"),
+  solanaDevnet: address("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR"),
+  eclipseMainnet: address("FVG4oDbGv16hqTUbovjyGmtYikn6UBEnazz6RVDMEFwv"),
+  eclipseTestnet: address("FPydDjRdZu9sT7HVd6ANhfjh85KLq21Pefr5YWWMRPFp"),
+};
+
+/**
  * The default WhirlpoolsConfig address.
  */
-export const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS = address(
-  "2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ",
-);
+export const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS =
+  DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet;
 
 /**
  * The default WhirlpoolsConfigExtension address.
@@ -36,15 +45,20 @@ export let WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Address =
 /**
  * Updates the WhirlpoolsConfig and WhirlpoolsConfigExtension addresses.
  *
- * @param {Address} whirlpoolsConfigAddress - A WhirlpoolsConfig address.
+ * @param {Address | keyof typeof NETWORK_ADDRESSES} config - A WhirlpoolsConfig address or a network name.
  * @returns {Promise<void>} - Resolves when the addresses have been updated.
  */
 export async function setWhirlpoolsConfig(
-  whirlpoolsConfigAddress: Address,
+  config: Address | keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES,
 ): Promise<void> {
-  WHIRLPOOLS_CONFIG_ADDRESS = whirlpoolsConfigAddress;
+  if (isAddress(config)) {
+    WHIRLPOOLS_CONFIG_ADDRESS = config;
+  } else {
+    WHIRLPOOLS_CONFIG_ADDRESS = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES];
+  }
+
   WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
-    await getWhirlpoolsConfigExtensionAddress(whirlpoolsConfigAddress).then(
+    await getWhirlpoolsConfigExtensionAddress(WHIRLPOOLS_CONFIG_ADDRESS).then(
       (x) => x[0],
     );
 }

@@ -74,10 +74,10 @@ describe("derive program accounts", () => {
   });
 
   it("TickArray", async () => {
-    const address = await getTickArrayAddress(TEST_WHIRLPOOL_ADDRESS, -2894848);
+    const address = await getTickArrayAddress(TEST_WHIRLPOOL_ADDRESS, 0);
     assert.strictEqual(
       address[0],
-      "7me8W7puQ5tNA15r7ocNX9tFQD9pwtzFDTSdHMMSmDRt",
+      "8PhPzk7n4wU98Z6XCbVtPai2LtXSxYnfjkmgWuoAU8Zy",
     );
   });
 

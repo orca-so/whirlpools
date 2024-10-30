@@ -97,10 +97,12 @@ export function tryGetAmountDeltaA(
     roundUp && !remainder.eq(ZERO) ? quotient.add(new BN(1)) : quotient;
 
   if (result.gt(U64_MAX)) {
-    return AmountDeltaU64.fromExceedsMax(new WhirlpoolsError(
-      "Results larger than U64",
-      TokenErrorCode.TokenMaxExceeded,
-    ));
+    return AmountDeltaU64.fromExceedsMax(
+      new WhirlpoolsError(
+        "Results larger than U64",
+        TokenErrorCode.TokenMaxExceeded,
+      ),
+    );
   }
 
   return AmountDeltaU64.fromValid(result);
@@ -145,18 +147,22 @@ export function tryGetAmountDeltaB(
   // we check the overflow in the next step and return wrapped error if it happens.
   const p = BitMath.mul(n0, n1, limit * 2);
   if (BitMath.isOverLimit(p, limit)) {
-    return AmountDeltaU64.fromExceedsMax(new WhirlpoolsError(
-      `MulShiftRight overflowed u${limit}.`,
-      MathErrorCode.MultiplicationShiftRightOverflow,
-    ));
+    return AmountDeltaU64.fromExceedsMax(
+      new WhirlpoolsError(
+        `MulShiftRight overflowed u${limit}.`,
+        MathErrorCode.MultiplicationShiftRightOverflow,
+      ),
+    );
   }
   const result = MathUtil.fromX64_BN(p);
   const shouldRound = roundUp && p.and(U64_MAX).gt(ZERO);
   if (shouldRound && result.eq(U64_MAX)) {
-    return AmountDeltaU64.fromExceedsMax(new WhirlpoolsError(
-      `MulShiftRight overflowed u${limit}.`,
-      MathErrorCode.MultiplicationOverflow,
-    ));
+    return AmountDeltaU64.fromExceedsMax(
+      new WhirlpoolsError(
+        `MulShiftRight overflowed u${limit}.`,
+        MathErrorCode.MultiplicationOverflow,
+      ),
+    );
   }
 
   return AmountDeltaU64.fromValid(shouldRound ? result.add(ONE) : result);

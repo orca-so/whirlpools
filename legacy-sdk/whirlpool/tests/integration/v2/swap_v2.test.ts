@@ -5,7 +5,12 @@ import type { PDA } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import { BN } from "bn.js";
 import Decimal from "decimal.js";
-import type { InitPoolV2Params, SwapV2Params, TickArrayData, WhirlpoolData } from "../../../src";
+import type {
+  InitPoolV2Params,
+  SwapV2Params,
+  TickArrayData,
+  WhirlpoolData,
+} from "../../../src";
 import {
   MAX_SQRT_PRICE,
   MAX_SQRT_PRICE_BN,
@@ -2371,14 +2376,13 @@ describe("swap_v2", () => {
       let oraclePda: PDA;
 
       beforeEach(async () => {
-        const init =
-          await initTestPoolWithTokensV2(
-            ctx,
-            {isToken2022: true},
-            {isToken2022: true},
-            tickSpacing,
-            PriceMath.tickIndexToSqrtPriceX64(439296 + 1),
-            new BN("10000000000000000000000")
+        const init = await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: true },
+          { isToken2022: true },
+          tickSpacing,
+          PriceMath.tickIndexToSqrtPriceX64(439296 + 1),
+          new BN("10000000000000000000000"),
         );
 
         poolInitInfo = init.poolInitInfo;
@@ -2396,7 +2400,7 @@ describe("swap_v2", () => {
           tickSpacing,
           aToB,
         );
-    
+
         // a: 1 (round up)
         // b: 223379095563402706 (to get 1, need >= 223379095563402706)
         const fundParams: FundedPositionV2Params[] = [
@@ -2406,7 +2410,7 @@ describe("swap_v2", () => {
             tickUpperIndex: 439552,
           },
         ];
-    
+
         await fundPositionsV2(
           ctx,
           poolInitInfo,
@@ -2418,16 +2422,10 @@ describe("swap_v2", () => {
 
       async function getTokenBalances(): Promise<[anchor.BN, anchor.BN]> {
         const tokenVaultA = new anchor.BN(
-          await getTokenBalance(
-            provider,
-            tokenAccountA,
-          ),
+          await getTokenBalance(provider, tokenAccountA),
         );
         const tokenVaultB = new anchor.BN(
-          await getTokenBalance(
-            provider,
-            tokenAccountB,
-          ),
+          await getTokenBalance(provider, tokenAccountB),
         );
         return [tokenVaultA, tokenVaultB];
       }
@@ -2436,7 +2434,7 @@ describe("swap_v2", () => {
       it("ExactIn, sqrt_price_limit = 0", async () => {
         const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
         const whirlpoolData = whirlpool.getData();
-    
+
         const amount = new BN("223379095563402706");
         const quote = await swapQuoteByInputToken(
           whirlpool,
@@ -2449,7 +2447,7 @@ describe("swap_v2", () => {
         );
 
         const [preA, preB] = await getTokenBalances();
-    
+
         await toTx(
           ctx,
           WhirlpoolIx.swapV2Ix(ctx.program, {
@@ -2486,7 +2484,7 @@ describe("swap_v2", () => {
       it("ExactIn, sqrt_price_limit = MAX_SQRT_PRICE", async () => {
         const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
         const whirlpoolData = whirlpool.getData();
-    
+
         const amount = new BN("223379095563402706");
         const quote = await swapQuoteByInputToken(
           whirlpool,
@@ -2499,7 +2497,7 @@ describe("swap_v2", () => {
         );
 
         const [preA, preB] = await getTokenBalances();
-    
+
         await toTx(
           ctx,
           WhirlpoolIx.swapV2Ix(ctx.program, {
@@ -2536,7 +2534,7 @@ describe("swap_v2", () => {
       it("Fails ExactOut, sqrt_price_limit = 0", async () => {
         const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
         const whirlpoolData = whirlpool.getData();
-    
+
         const amount = new BN("1");
         const quote = await swapQuoteByOutputToken(
           whirlpool,
@@ -2564,7 +2562,7 @@ describe("swap_v2", () => {
               tokenMintB: whirlpoolData.tokenMintB,
               tokenProgramA: TEST_TOKEN_2022_PROGRAM_ID,
               tokenProgramB: TEST_TOKEN_2022_PROGRAM_ID,
-  
+
               // sqrt_price_limit = 0
               sqrtPriceLimit: ZERO_BN,
               amount, // 1
@@ -2579,7 +2577,7 @@ describe("swap_v2", () => {
       it("ExactOut, sqrt_price_limit = MAX_SQRT_PRICE", async () => {
         const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
         const whirlpoolData = whirlpool.getData();
-    
+
         const amount = new BN("1");
         const quote = await swapQuoteByOutputToken(
           whirlpool,
@@ -2592,7 +2590,7 @@ describe("swap_v2", () => {
         );
 
         const [preA, preB] = await getTokenBalances();
-    
+
         await toTx(
           ctx,
           WhirlpoolIx.swapV2Ix(ctx.program, {
@@ -2640,15 +2638,14 @@ describe("swap_v2", () => {
       let oraclePda: PDA;
 
       beforeEach(async () => {
-        const init =
-          await initTestPoolWithTokensV2(
-            ctx,
-            {isToken2022: true},
-            {isToken2022: true},
-            tickSpacing,
-            PriceMath.tickIndexToSqrtPriceX64(-439296 - 1),
-            new BN("10000000000000000000000")
-          );
+        const init = await initTestPoolWithTokensV2(
+          ctx,
+          { isToken2022: true },
+          { isToken2022: true },
+          tickSpacing,
+          PriceMath.tickIndexToSqrtPriceX64(-439296 - 1),
+          new BN("10000000000000000000000"),
+        );
 
         poolInitInfo = init.poolInitInfo;
         whirlpoolPda = poolInitInfo.whirlpoolPda;
@@ -2665,7 +2662,7 @@ describe("swap_v2", () => {
           tickSpacing,
           aToB,
         );
-    
+
         // a: 223379098170764880 (to get 1, need >= 223379098170764880)
         // b: 1 (round up)
         const fundParams: FundedPositionV2Params[] = [
@@ -2675,28 +2672,22 @@ describe("swap_v2", () => {
             tickUpperIndex: -439424,
           },
         ];
-    
+
         await fundPositionsV2(
           ctx,
           poolInitInfo,
           tokenAccountA,
           tokenAccountB,
           fundParams,
-        );      
+        );
       });
 
       async function getTokenBalances(): Promise<[anchor.BN, anchor.BN]> {
         const tokenVaultA = new anchor.BN(
-          await getTokenBalance(
-            provider,
-            tokenAccountA,
-          ),
+          await getTokenBalance(provider, tokenAccountA),
         );
         const tokenVaultB = new anchor.BN(
-          await getTokenBalance(
-            provider,
-            tokenAccountB,
-          ),
+          await getTokenBalance(provider, tokenAccountB),
         );
         return [tokenVaultA, tokenVaultB];
       }
@@ -2705,7 +2696,7 @@ describe("swap_v2", () => {
       it("ExactIn, sqrt_price_limit = 0", async () => {
         const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
         const whirlpoolData = whirlpool.getData();
-    
+
         const amount = new BN("223379098170764880");
         const quote = await swapQuoteByInputToken(
           whirlpool,
@@ -2718,7 +2709,7 @@ describe("swap_v2", () => {
         );
 
         const [preA, preB] = await getTokenBalances();
-    
+
         await toTx(
           ctx,
           WhirlpoolIx.swapV2Ix(ctx.program, {
@@ -2755,7 +2746,7 @@ describe("swap_v2", () => {
       it("ExactIn, sqrt_price_limit = MIN_SQRT_PRICE", async () => {
         const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
         const whirlpoolData = whirlpool.getData();
-    
+
         const amount = new BN("223379098170764880");
         const quote = await swapQuoteByInputToken(
           whirlpool,
@@ -2768,7 +2759,7 @@ describe("swap_v2", () => {
         );
 
         const [preA, preB] = await getTokenBalances();
-    
+
         await toTx(
           ctx,
           WhirlpoolIx.swapV2Ix(ctx.program, {
@@ -2805,7 +2796,7 @@ describe("swap_v2", () => {
       it("Fails ExactOut, sqrt_price_limit = 0", async () => {
         const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
         const whirlpoolData = whirlpool.getData();
-    
+
         const amount = new BN("1");
         const quote = await swapQuoteByOutputToken(
           whirlpool,
@@ -2833,7 +2824,7 @@ describe("swap_v2", () => {
               tokenMintB: whirlpoolData.tokenMintB,
               tokenProgramA: TEST_TOKEN_2022_PROGRAM_ID,
               tokenProgramB: TEST_TOKEN_2022_PROGRAM_ID,
-  
+
               // sqrt_price_limit = 0
               sqrtPriceLimit: ZERO_BN,
               amount, // 1
@@ -2848,7 +2839,7 @@ describe("swap_v2", () => {
       it("ExactOut, sqrt_price_limit = MAX_SQRT_PRICE", async () => {
         const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
         const whirlpoolData = whirlpool.getData();
-    
+
         const amount = new BN("1");
         const quote = await swapQuoteByOutputToken(
           whirlpool,
@@ -2861,7 +2852,7 @@ describe("swap_v2", () => {
         );
 
         const [preA, preB] = await getTokenBalances();
-    
+
         await toTx(
           ctx,
           WhirlpoolIx.swapV2Ix(ctx.program, {
@@ -2894,7 +2885,6 @@ describe("swap_v2", () => {
         assert.ok(diffB.isZero()); // no output (round up is not used to calculate output)
         assert.ok(postWhirlpoolData.sqrtPrice.eq(MIN_SQRT_PRICE_BN)); // hit min
       });
-
     });
   });
 

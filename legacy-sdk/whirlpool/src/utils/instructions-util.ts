@@ -5,7 +5,10 @@ import {
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
 import { SystemProgram } from "@solana/web3.js";
-import type { OpenPositionParams, OpenPositionWithTokenExtensionsParams } from "../instructions";
+import type {
+  OpenPositionParams,
+  OpenPositionWithTokenExtensionsParams,
+} from "../instructions";
 
 export function openPositionAccounts(params: OpenPositionParams) {
   const {
@@ -30,7 +33,9 @@ export function openPositionAccounts(params: OpenPositionParams) {
   };
 }
 
-export function openPositionWithTokenExtensionsAccounts(params: OpenPositionWithTokenExtensionsParams) {
+export function openPositionWithTokenExtensionsAccounts(
+  params: OpenPositionWithTokenExtensionsParams,
+) {
   const {
     funder,
     owner,

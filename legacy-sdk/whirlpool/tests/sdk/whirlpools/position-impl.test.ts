@@ -1,9 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import { Percentage } from "@orca-so/common-sdk";
-import {
-  getAssociatedTokenAddressSync,
-  TOKEN_2022_PROGRAM_ID,
-} from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import {
@@ -144,8 +141,8 @@ describe("position-impl", () => {
             ctx.wallet.publicKey,
           )
         )
-          .prependInstruction(useMaxCU()) // TransferHook require much CU
-          .buildAndExecute();
+        .prependInstruction(useMaxCU())  // TransferHook require much CU
+        .buildAndExecute();
 
         const postIncreaseData = await position.refreshData();
         const expectedPostIncreaseLiquidity = preIncreaseData.liquidity.add(
@@ -173,8 +170,8 @@ describe("position-impl", () => {
         await (
           await position.decreaseLiquidity(decrease_quote, false)
         )
-          .prependInstruction(useMaxCU()) // TransferHook require much CU
-          .buildAndExecute();
+        .prependInstruction(useMaxCU())  // TransferHook require much CU
+        .buildAndExecute();
 
         const postWithdrawData = await position.refreshData();
         const expectedPostWithdrawLiquidity = postIncreaseData.liquidity.sub(
@@ -261,8 +258,8 @@ describe("position-impl", () => {
         await (
           await position.increaseLiquidity(increase_quote, false)
         )
-          .prependInstruction(useMaxCU()) // TransferHook require much CU
-          .buildAndExecute();
+        .prependInstruction(useMaxCU())  // TransferHook require much CU
+        .buildAndExecute();
 
         const postIncreaseData = await position.refreshData();
         const expectedPostIncreaseLiquidity = preIncreaseData.liquidity.add(
@@ -340,7 +337,7 @@ describe("position-impl", () => {
           )
         )
           .addSigner(otherWallet)
-          .prependInstruction(useMaxCU()) // TransferHook require much CU
+          .prependInstruction(useMaxCU())  // TransferHook require much CU
           .buildAndExecute();
 
         const postSecondIncreaseData = await position.refreshData();
@@ -356,7 +353,7 @@ describe("position-impl", () => {
           )
         )
           .addSigner(otherWallet)
-          .prependInstruction(useMaxCU()) // TransferHook require much CU
+          .prependInstruction(useMaxCU())  // TransferHook require much CU
           .buildAndExecute();
 
         const postWithdrawData = await position.refreshData();
@@ -428,10 +425,7 @@ describe("position-impl", () => {
         );
 
         // Verify position mint is owned by Token-2022
-        const positionMint = await fetcher.getMintInfo(
-          position.getData().positionMint,
-          IGNORE_CACHE,
-        );
+        const positionMint = await fetcher.getMintInfo(position.getData().positionMint, IGNORE_CACHE);
         assert.ok(positionMint?.tokenProgram.equals(TOKEN_2022_PROGRAM_ID));
 
         const preIncreaseData = position.getData();
@@ -457,8 +451,8 @@ describe("position-impl", () => {
             ctx.wallet.publicKey,
           )
         )
-          .prependInstruction(useMaxCU()) // TransferHook require much CU
-          .buildAndExecute();
+        .prependInstruction(useMaxCU())  // TransferHook require much CU
+        .buildAndExecute();
 
         const postIncreaseData = await position.refreshData();
         const expectedPostIncreaseLiquidity = preIncreaseData.liquidity.add(
@@ -486,8 +480,8 @@ describe("position-impl", () => {
         await (
           await position.decreaseLiquidity(decrease_quote, false)
         )
-          .prependInstruction(useMaxCU()) // TransferHook require much CU
-          .buildAndExecute();
+        .prependInstruction(useMaxCU())  // TransferHook require much CU
+        .buildAndExecute();
 
         const postWithdrawData = await position.refreshData();
         const expectedPostWithdrawLiquidity = postIncreaseData.liquidity.sub(

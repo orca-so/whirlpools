@@ -1074,8 +1074,8 @@ function getAccountLenForMintHack(mintData: Mint): number {
   return (
     getAccountLen(
       extensionTypes
-        .filter((type) => type !== (16 as ExtensionType))
-        .map(getAccountTypeOfMintType),
+      .filter((type) => type !== (16 as ExtensionType))
+      .map(getAccountTypeOfMintType),
     ) + confidentialTransferFeeAmountLen
   );
 }

@@ -340,11 +340,7 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     await tx.buildAndExecute();
   }
 
-  async function baseTestSenario(
-    tokenAIsNative: boolean,
-    ataExists: boolean,
-    includeTokenExtensionBasedPosition: boolean,
-  ) {
+  async function baseTestSenario(tokenAIsNative: boolean, ataExists: boolean, includeTokenExtensionBasedPosition: boolean) {
     const fixtures: WhirlpoolTestFixture[] = [];
     const positions: FundedPositionInfo[] = [];
     const numOfPool = 3;
@@ -356,26 +352,9 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
           tickSpacing,
           positions: [
             // 3 Positions / pool
-            {
-              tickLowerIndex,
-              tickUpperIndex,
-              liquidityAmount,
-              isTokenExtensionsBasedPosition:
-                includeTokenExtensionBasedPosition,
-            }, // In range position
-            {
-              tickLowerIndex,
-              tickUpperIndex,
-              liquidityAmount,
-              isTokenExtensionsBasedPosition: false,
-            }, // In range position
-            {
-              tickLowerIndex,
-              tickUpperIndex,
-              liquidityAmount,
-              isTokenExtensionsBasedPosition:
-                includeTokenExtensionBasedPosition,
-            }, // In range position
+            { tickLowerIndex, tickUpperIndex, liquidityAmount, isTokenExtensionsBasedPosition: includeTokenExtensionBasedPosition }, // In range position
+            { tickLowerIndex, tickUpperIndex, liquidityAmount, isTokenExtensionsBasedPosition: false }, // In range position
+            { tickLowerIndex, tickUpperIndex, liquidityAmount, isTokenExtensionsBasedPosition: includeTokenExtensionBasedPosition }, // In range position
           ],
           rewards: [
             {
@@ -399,35 +378,12 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
     }
 
     const positionMints = positions.map((p) => p.mintKeypair.publicKey);
-    const positionMintInfos = await testCtx.whirlpoolCtx.fetcher.getMintInfos(
-      positionMints,
-      IGNORE_CACHE,
-    );
+    const positionMintInfos = await testCtx.whirlpoolCtx.fetcher.getMintInfos(positionMints, IGNORE_CACHE);
     for (let i = 0; i < numOfPool; i++) {
       const base = i * 3;
-      assert.ok(
-        positionMintInfos
-          .get(positionMints[base + 0].toBase58())
-          ?.tokenProgram.equals(
-            includeTokenExtensionBasedPosition
-              ? TOKEN_2022_PROGRAM_ID
-              : TOKEN_PROGRAM_ID,
-          ),
-      );
-      assert.ok(
-        positionMintInfos
-          .get(positionMints[base + 1].toBase58())
-          ?.tokenProgram.equals(TOKEN_PROGRAM_ID),
-      );
-      assert.ok(
-        positionMintInfos
-          .get(positionMints[base + 2].toBase58())
-          ?.tokenProgram.equals(
-            includeTokenExtensionBasedPosition
-              ? TOKEN_2022_PROGRAM_ID
-              : TOKEN_PROGRAM_ID,
-          ),
-      );
+      assert.ok(positionMintInfos.get(positionMints[base+0].toBase58())?.tokenProgram.equals(includeTokenExtensionBasedPosition ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID));
+      assert.ok(positionMintInfos.get(positionMints[base+1].toBase58())?.tokenProgram.equals(TOKEN_PROGRAM_ID));
+      assert.ok(positionMintInfos.get(positionMints[base+2].toBase58())?.tokenProgram.equals(includeTokenExtensionBasedPosition ? TOKEN_2022_PROGRAM_ID : TOKEN_PROGRAM_ID));
     }
 
     await sleep(2); // accrueRewards
@@ -673,8 +629,8 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
           )),
         }),
       )
-        .prependInstruction(useMaxCU()) // TransferHook require much CU
-        .buildAndExecute();
+      .prependInstruction(useMaxCU()) // TransferHook require much CU
+      .buildAndExecute();
 
       // Accrue fees in token B
       await toTx(
@@ -711,8 +667,8 @@ describe("WhirlpoolImpl#collectFeesAndRewardsForPositions()", () => {
           )),
         }),
       )
-        .prependInstruction(useMaxCU()) // TransferHook require much CU
-        .buildAndExecute();
+      .prependInstruction(useMaxCU())  // TransferHook require much CU
+      .buildAndExecute();
 
       const poolData = await pool.refreshData();
       const positionData = await position.refreshData();

@@ -64,16 +64,15 @@ export function computeSwapStep(
     aToB,
   );
 
-  let amountFixedDelta =
-    !isMaxSwap || initialAmountFixedDelta.exceedsMax()
-      ? getAmountFixedDelta(
-          currSqrtPrice,
-          nextSqrtPrice,
-          currLiquidity,
-          amountSpecifiedIsInput,
-          aToB,
-        )
-      : initialAmountFixedDelta.value();
+  let amountFixedDelta = (!isMaxSwap || initialAmountFixedDelta.exceedsMax())
+    ? getAmountFixedDelta(
+        currSqrtPrice,
+        nextSqrtPrice,
+        currLiquidity,
+        amountSpecifiedIsInput,
+        aToB,
+      )
+    : initialAmountFixedDelta.value();
 
   let amountIn = amountSpecifiedIsInput ? amountFixedDelta : amountUnfixedDelta;
   let amountOut = amountSpecifiedIsInput

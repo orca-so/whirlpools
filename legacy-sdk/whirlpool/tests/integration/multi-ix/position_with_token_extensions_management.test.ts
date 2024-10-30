@@ -12,7 +12,11 @@ import {
   WhirlpoolIx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { sleep, TickSpacing, ZERO_BN } from "../../utils";
+import {
+  sleep,
+  TickSpacing,
+  ZERO_BN,
+} from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixtureV2 } from "../../utils/v2/fixture-v2";
 import { createTokenAccountV2 } from "../../utils/v2/token-2022";
@@ -40,7 +44,10 @@ describe("position with token extensions management tests", () => {
   }
 
   async function checkClosed(address: PublicKey): Promise<void> {
-    assert.equal(await provider.connection.getAccountInfo(address), undefined);
+    assert.equal(
+      await provider.connection.getAccountInfo(address),
+      undefined,
+    );
   }
 
   const isToken2022Variations = [false, true];
@@ -102,21 +109,18 @@ describe("position with token extensions management tests", () => {
       );
 
       // open position
-      const { params, mint } =
-        await generateDefaultOpenPositionWithTokenExtensionsParams(
-          ctx,
-          whirlpoolPda.publicKey,
-          true,
-          tickLowerIndex,
-          tickUpperIndex,
-          provider.wallet.publicKey,
-        );
+      const { params, mint } = await generateDefaultOpenPositionWithTokenExtensionsParams(
+        ctx,
+        whirlpoolPda.publicKey,
+        true,
+        tickLowerIndex,
+        tickUpperIndex,
+        provider.wallet.publicKey,
+      );
       await toTx(
         ctx,
         WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
-      )
-        .addSigner(mint)
-        .buildAndExecute();
+      ).addSigner(mint).buildAndExecute();
 
       const position = params.positionPda.publicKey;
       const positionTokenAccount = params.positionTokenAccount;
@@ -150,20 +154,20 @@ describe("position with token extensions management tests", () => {
       await toTx(
         ctx,
         isToken2022
-          ? // test V2
-            WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
-              liquidityAmount: depositQuote.liquidityAmount,
-              tokenMaxA: depositQuote.tokenMaxA,
-              tokenMaxB: depositQuote.tokenMaxB,
-              ...baseParams,
-            })
-          : // test V1
-            WhirlpoolIx.increaseLiquidityIx(ctx.program, {
-              liquidityAmount: depositQuote.liquidityAmount,
-              tokenMaxA: depositQuote.tokenMaxA,
-              tokenMaxB: depositQuote.tokenMaxB,
-              ...baseParams,
-            }),
+        // test V2
+        ? WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
+          liquidityAmount: depositQuote.liquidityAmount,
+          tokenMaxA: depositQuote.tokenMaxA,
+          tokenMaxB: depositQuote.tokenMaxB,
+          ...baseParams,
+        })
+        // test V1
+        : WhirlpoolIx.increaseLiquidityIx(ctx.program, {
+          liquidityAmount: depositQuote.liquidityAmount,
+          tokenMaxA: depositQuote.tokenMaxA,
+          tokenMaxB: depositQuote.tokenMaxB,
+          ...baseParams,
+        })
       ).buildAndExecute();
 
       const positionStep1 = await fetcher.getPosition(position, IGNORE_CACHE);
@@ -249,20 +253,20 @@ describe("position with token extensions management tests", () => {
       await toTx(
         ctx,
         isToken2022
-          ? // test V2
-            WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
-              liquidityAmount: depositQuote.liquidityAmount,
-              tokenMinA: ZERO_BN,
-              tokenMinB: ZERO_BN,
-              ...baseParams,
-            })
-          : // test V1
-            WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
-              liquidityAmount: depositQuote.liquidityAmount,
-              tokenMinA: ZERO_BN,
-              tokenMinB: ZERO_BN,
-              ...baseParams,
-            }),
+        // test V2
+        ? WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
+          liquidityAmount: depositQuote.liquidityAmount,
+          tokenMinA: ZERO_BN,
+          tokenMinB: ZERO_BN,
+          ...baseParams,
+        })
+        // test V1
+        : WhirlpoolIx.decreaseLiquidityIx(ctx.program, {
+          liquidityAmount: depositQuote.liquidityAmount,
+          tokenMinA: ZERO_BN,
+          tokenMinB: ZERO_BN,
+          ...baseParams,
+        })
       ).buildAndExecute();
 
       const positionStep4 = await fetcher.getPosition(position, IGNORE_CACHE);
@@ -284,18 +288,18 @@ describe("position with token extensions management tests", () => {
       await toTx(
         ctx,
         isToken2022
-          ? // test V2
-            WhirlpoolIx.collectFeesV2Ix(ctx.program, {
-              ...baseParams,
-              tokenOwnerAccountA: feeAccountA,
-              tokenOwnerAccountB: feeAccountB,
-            })
-          : // test V1
-            WhirlpoolIx.collectFeesIx(ctx.program, {
-              ...baseParams,
-              tokenOwnerAccountA: feeAccountA,
-              tokenOwnerAccountB: feeAccountB,
-            }),
+        // test V2
+        ? WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+          ...baseParams,
+          tokenOwnerAccountA: feeAccountA,
+          tokenOwnerAccountB: feeAccountB,
+        })
+        // test V1
+        : WhirlpoolIx.collectFeesIx(ctx.program, {
+          ...baseParams,
+          tokenOwnerAccountA: feeAccountA,
+          tokenOwnerAccountB: feeAccountB,
+        })
       ).buildAndExecute();
 
       const positionStep5 = await fetcher.getPosition(position, IGNORE_CACHE);
@@ -312,24 +316,24 @@ describe("position with token extensions management tests", () => {
       await toTx(
         ctx,
         isToken2022
-          ? // test V2
-            WhirlpoolIx.collectRewardV2Ix(ctx.program, {
-              ...baseParams,
-              rewardIndex: 0,
-              rewardMint: pool.getData().rewardInfos[0].mint,
-              rewardOwnerAccount: rewardAccount,
-              rewardVault: pool.getData().rewardInfos[0].vault,
-              rewardTokenProgram: TOKEN_PROGRAM_ID,
-            })
-          : // test V1
-            WhirlpoolIx.collectRewardIx(ctx.program, {
-              ...baseParams,
-              rewardIndex: 0,
-              rewardOwnerAccount: rewardAccount,
-              rewardVault: pool.getData().rewardInfos[0].vault,
-            }),
+        // test V2
+        ? WhirlpoolIx.collectRewardV2Ix(ctx.program, {
+          ...baseParams,
+          rewardIndex: 0,
+          rewardMint: pool.getData().rewardInfos[0].mint,
+          rewardOwnerAccount: rewardAccount,
+          rewardVault: pool.getData().rewardInfos[0].vault,
+          rewardTokenProgram: TOKEN_PROGRAM_ID,
+        })
+        // test V1
+        : WhirlpoolIx.collectRewardIx(ctx.program, {
+          ...baseParams,
+          rewardIndex: 0,
+          rewardOwnerAccount: rewardAccount,
+          rewardVault: pool.getData().rewardInfos[0].vault,
+        })
       ).buildAndExecute();
-
+      
       const positionStep6 = await fetcher.getPosition(position, IGNORE_CACHE);
       assert.ok(positionStep6!.rewardInfos[0].amountOwed.isZero());
 
@@ -343,7 +347,8 @@ describe("position with token extensions management tests", () => {
           positionMint: params.positionMint,
           positionTokenAccount: params.positionTokenAccount,
         }),
-      ).buildAndExecute();
+      )
+      .buildAndExecute();
 
       checkClosed(params.positionPda.publicKey);
     });
@@ -359,32 +364,27 @@ describe("position with token extensions management tests", () => {
     const receiver = Keypair.generate();
 
     // open
-    const { params, mint } =
-      await generateDefaultOpenPositionWithTokenExtensionsParams(
-        ctx,
-        poolInitInfo.whirlpoolPda.publicKey,
-        true,
-        tickLowerIndex,
-        tickUpperIndex,
-        provider.wallet.publicKey,
-      );
+    const { params, mint } = await generateDefaultOpenPositionWithTokenExtensionsParams(
+      ctx,
+      poolInitInfo.whirlpoolPda.publicKey,
+      true,
+      tickLowerIndex,
+      tickUpperIndex,
+      provider.wallet.publicKey,
+    );
 
     builder
-      .addInstruction(
-        WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
-      )
-      .addSigner(mint);
+    .addInstruction(WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params))
+    .addSigner(mint);
 
     // close
-    builder.addInstruction(
-      WhirlpoolIx.closePositionWithTokenExtensionsIx(ctx.program, {
-        positionAuthority: ctx.wallet.publicKey,
-        receiver: receiver.publicKey,
-        position: params.positionPda.publicKey,
-        positionMint: params.positionMint,
-        positionTokenAccount: params.positionTokenAccount,
-      }),
-    );
+    builder.addInstruction(WhirlpoolIx.closePositionWithTokenExtensionsIx(ctx.program, {
+      positionAuthority: ctx.wallet.publicKey,
+      receiver: receiver.publicKey,
+      position: params.positionPda.publicKey,
+      positionMint: params.positionMint,
+      positionTokenAccount: params.positionTokenAccount,
+    }));
 
     await builder.buildAndExecute();
 
@@ -406,35 +406,30 @@ describe("position with token extensions management tests", () => {
     const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
     const receiver = Keypair.generate();
 
-    const { params, mint } =
-      await generateDefaultOpenPositionWithTokenExtensionsParams(
-        ctx,
-        poolInitInfo.whirlpoolPda.publicKey,
-        true,
-        tickLowerIndex,
-        tickUpperIndex,
-        provider.wallet.publicKey,
-      );
+    const { params, mint } = await generateDefaultOpenPositionWithTokenExtensionsParams(
+      ctx,
+      poolInitInfo.whirlpoolPda.publicKey,
+      true,
+      tickLowerIndex,
+      tickUpperIndex,
+      provider.wallet.publicKey,
+    );
 
     const numRepeat = 3;
     for (let i = 0; i < numRepeat; i++) {
       // open
       builder
-        .addInstruction(
-          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
-        )
-        .addSigner(mint);
+      .addInstruction(WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params))
+      .addSigner(mint);
 
       // close
-      builder.addInstruction(
-        WhirlpoolIx.closePositionWithTokenExtensionsIx(ctx.program, {
-          positionAuthority: ctx.wallet.publicKey,
-          receiver: receiver.publicKey,
-          position: params.positionPda.publicKey,
-          positionMint: params.positionMint,
-          positionTokenAccount: params.positionTokenAccount,
-        }),
-      );
+      builder.addInstruction(WhirlpoolIx.closePositionWithTokenExtensionsIx(ctx.program, {
+        positionAuthority: ctx.wallet.publicKey,
+        receiver: receiver.publicKey,
+        position: params.positionPda.publicKey,
+        positionMint: params.positionMint,
+        positionTokenAccount: params.positionTokenAccount,
+      }));
     }
 
     await builder.buildAndExecute();
@@ -454,45 +449,40 @@ describe("position with token extensions management tests", () => {
     const tickLowerIndex = 0;
     const tickUpperIndex = 128;
 
-    const { params, mint } =
-      await generateDefaultOpenPositionWithTokenExtensionsParams(
-        ctx,
-        poolInitInfo.whirlpoolPda.publicKey,
-        true,
-        tickLowerIndex,
-        tickUpperIndex,
-        provider.wallet.publicKey,
-      );
+    const { params, mint } = await generateDefaultOpenPositionWithTokenExtensionsParams(
+      ctx,
+      poolInitInfo.whirlpoolPda.publicKey,
+      true,
+      tickLowerIndex,
+      tickUpperIndex,
+      provider.wallet.publicKey,
+    );
 
     const numRepeat = 3;
     for (let i = 0; i < numRepeat; i++) {
       const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
       const receiver = Keypair.generate();
-
+  
       // open
       builder
-        .addInstruction(
-          WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
-        )
-        .addSigner(mint);
+      .addInstruction(WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params))
+      .addSigner(mint);
 
       // close
-      builder.addInstruction(
-        WhirlpoolIx.closePositionWithTokenExtensionsIx(ctx.program, {
-          positionAuthority: ctx.wallet.publicKey,
-          receiver: receiver.publicKey,
-          position: params.positionPda.publicKey,
-          positionMint: params.positionMint,
-          positionTokenAccount: params.positionTokenAccount,
-        }),
-      );
+      builder.addInstruction(WhirlpoolIx.closePositionWithTokenExtensionsIx(ctx.program, {
+        positionAuthority: ctx.wallet.publicKey,
+        receiver: receiver.publicKey,
+        position: params.positionPda.publicKey,
+        positionMint: params.positionMint,
+        positionTokenAccount: params.positionTokenAccount,
+      }));
 
-      await builder.buildAndExecute(undefined, { skipPreflight: true });
+      await builder.buildAndExecute(undefined, {skipPreflight: true});
 
       checkClosed(params.positionPda.publicKey);
       checkClosed(params.positionMint);
       checkClosed(params.positionTokenAccount);
-
+  
       // receiver received the rent (= transaction have been executed)
       const received = await getRent(receiver.publicKey);
       assert.ok(received > 0);

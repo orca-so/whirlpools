@@ -1187,7 +1187,7 @@ describe("collect_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
           }),
         ).buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -1241,7 +1241,7 @@ describe("collect_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
           }),
         ).buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -1349,7 +1349,7 @@ describe("collect_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
           }),
         ).buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 
@@ -1403,7 +1403,7 @@ describe("collect_fees_v2", () => {
             tokenVaultB: tokenVaultBKeypair.publicKey,
           }),
         ).buildAndExecute(),
-        /0x7dc/, // ConstraintAddress
+        /0x7dc/ // ConstraintAddress
       );
     });
 

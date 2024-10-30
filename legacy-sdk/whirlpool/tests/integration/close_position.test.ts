@@ -544,21 +544,20 @@ describe("close_position", () => {
       const { poolInitInfo } = fixture.getInfos();
 
       // open position with TokenExtensions
-      const { params, mint } =
-        await generateDefaultOpenPositionWithTokenExtensionsParams(
-          ctx,
-          poolInitInfo.whirlpoolPda.publicKey,
-          true,
-          0,
-          poolInitInfo.tickSpacing,
-          provider.wallet.publicKey,
-        );
+      const { params, mint } = await generateDefaultOpenPositionWithTokenExtensionsParams(
+        ctx,
+        poolInitInfo.whirlpoolPda.publicKey,
+        true,
+        0,
+        poolInitInfo.tickSpacing,
+        provider.wallet.publicKey,
+      );
       await toTx(
         ctx,
         WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
       )
-        .addSigner(mint)
-        .buildAndExecute();
+      .addSigner(mint)
+      .buildAndExecute();
 
       // try to close bundled position
       await assert.rejects(

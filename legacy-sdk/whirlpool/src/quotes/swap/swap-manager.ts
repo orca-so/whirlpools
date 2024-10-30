@@ -69,7 +69,7 @@ export function computeSwap(
       throw new WhirlpoolsError(
         "Amount remaining is negative.",
         SwapErrorCode.AmountRemainingOverflow,
-      );
+      );  
     }
     if (amountCalculated.gt(U64_MAX)) {
       throw new WhirlpoolsError(

@@ -8,11 +8,7 @@ import {
   ZERO,
   resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
-import {
-  getAssociatedTokenAddressSync,
-  TOKEN_2022_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
-} from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import invariant from "tiny-invariant";
@@ -319,8 +315,7 @@ export class WhirlpoolImpl implements Whirlpool {
       "tickUpper is out of bounds.",
     );
     invariant(
-      tokenProgramId.equals(TOKEN_PROGRAM_ID) ||
-        tokenProgramId.equals(TOKEN_2022_PROGRAM_ID),
+      tokenProgramId.equals(TOKEN_PROGRAM_ID) || tokenProgramId.equals(TOKEN_2022_PROGRAM_ID),
       "tokenProgramId must be either TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID",
     );
 
@@ -385,18 +380,15 @@ export class WhirlpoolImpl implements Whirlpool {
     };
     const positionIx = tokenProgramId.equals(TOKEN_2022_PROGRAM_ID)
       ? openPositionWithTokenExtensionsIx(this.ctx.program, {
-          ...params,
-          positionMint: positionMintPubkey,
-          withTokenMetadataExtension: withMetadata,
-        })
-      : (withMetadata ? openPositionWithMetadataIx : openPositionIx)(
-          this.ctx.program,
-          {
-            ...params,
-            positionMintAddress: positionMintPubkey,
-            metadataPda,
-          },
-        );
+        ...params,
+        positionMint: positionMintPubkey,
+        withTokenMetadataExtension: withMetadata,
+      })
+      : (withMetadata ? openPositionWithMetadataIx : openPositionIx)(this.ctx.program, {
+        ...params,
+        positionMintAddress: positionMintPubkey,
+        metadataPda,
+      });
     txBuilder.addInstruction(positionIx);
 
     if (positionMint === undefined) {
@@ -819,12 +811,7 @@ export class WhirlpoolImpl implements Whirlpool {
       };
 
       if (positionMint.tokenProgram.equals(TOKEN_2022_PROGRAM_ID)) {
-        return [
-          closePositionWithTokenExtensionsIx(
-            this.ctx.program,
-            closePositionParams,
-          ),
-        ];
+        return [closePositionWithTokenExtensionsIx(this.ctx.program, closePositionParams)]
       } else {
         return [closePositionIx(this.ctx.program, closePositionParams)];
       }

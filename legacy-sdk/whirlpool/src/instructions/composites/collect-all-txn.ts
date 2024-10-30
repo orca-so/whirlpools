@@ -167,9 +167,7 @@ export async function collectAllForPositionsTxns(
       );
     }
 
-    const positionMintInfo = positionMintInfos.get(
-      position.positionMint.toBase58(),
-    );
+    const positionMintInfo = positionMintInfos.get(position.positionMint.toBase58());
     if (!positionMintInfo) {
       throw new Error(
         `Unable to process positionMint ${position.positionMint.toBase58()} - missing mint info`,

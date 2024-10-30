@@ -69,7 +69,7 @@ const feeRateVariants = [
   [0, 0],
 ];
 const tickSpacingVariantsForConcentratedPool = [1, 8, 128];
-const tickSpacingVariantsForSplashPool = [32768 + 1, 32768 + 64, 32768 + 128];
+const tickSpacingVariantsForSplashPool = [32768+1, 32768+64, 32768+128];
 const liquidityVariantsForConcentratedPool = [
   LiquiditySetup.MaxLiquidity,
   LiquiditySetup.ThirdQuartile,
@@ -122,7 +122,7 @@ function main() {
     currTickVariants,
     tradeAmountVariants,
     exactInputVariants,
-    aToBVariants,
+    aToBVariants
   );
 
   // SplashPool
@@ -135,7 +135,7 @@ function main() {
     currTickVariants,
     tradeAmountVariants,
     exactInputVariants,
-    aToBVariants,
+    aToBVariants
   );
 }
 
@@ -173,7 +173,7 @@ function generateTests(
                   tickSpacingVariant,
                   tradeAmount,
                   exactInputVariant,
-                  aToB,
+                  aToB
                 );
                 testCases.push({
                   testId,
@@ -185,7 +185,7 @@ function generateTests(
                     currTickVariant,
                     tradeAmount,
                     exactInputVariant,
-                    aToB,
+                    aToB
                   ),
                   tickSpacing: tickSpacingVariant,
                   feeRate: feeRateVariant[0],
@@ -204,7 +204,10 @@ function generateTests(
       });
     });
   });
-  writeJson(testCaseOutputFilePath, testCases);
+  writeJson(
+    testCaseOutputFilePath,
+    testCases
+  );
 }
 
 function generateExpectation(
@@ -215,7 +218,7 @@ function generateExpectation(
   tickSpacing: number,
   tradeAmount: Decimal,
   exactInput: boolean,
-  aToB: boolean,
+  aToB: boolean
 ): TestCaseExpectationJSON {
   try {
     let tradeInfo = getTradeInfo(
@@ -225,12 +228,12 @@ function generateExpectation(
       tradeAmount,
       feeRate,
       exactInput,
-      aToB,
+      aToB
     );
     let nextFees = getFeeIncrements(
       tradeInfo.feeAmount,
       protocolRate,
-      liquidity,
+      liquidity
     );
     return {
       exception: "",
@@ -267,14 +270,14 @@ function getTradeInfo(
   tradeAmount: Decimal,
   feeRate: number,
   exactInput: boolean,
-  aToB: boolean,
+  aToB: boolean
 ) {
   let feeAmount = new Decimal(0);
 
   let currSqrtPrice = toDecimal(tickIndexToSqrtPriceX64(currTick));
   let nextSqrtPrice: Decimal;
   let targetSqrtPrice: Decimal = toDecimal(
-    tickIndexToSqrtPriceX64(getLastTickInSequence(currTick, tickSpacing, aToB)),
+    tickIndexToSqrtPriceX64(getLastTickInSequence(currTick, tickSpacing, aToB))
   );
 
   if (tradeAmount.eq(0)) {
@@ -296,16 +299,13 @@ function getTradeInfo(
       : tryGetAmountBDelta(targetSqrtPrice, currSqrtPrice, liquidity, true);
 
     // Note(yugure): original script used tradeAmount, but postFeeTradeAmount should be used.
-    if (
-      tryAmountIn.type === "ExceedsMax" ||
-      (tryAmountIn.type === "Valid" && tryAmountIn.value.gt(postFeeTradeAmount))
-    ) {
+    if (tryAmountIn.type === "ExceedsMax" || (tryAmountIn.type === "Valid" && tryAmountIn.value.gt(postFeeTradeAmount))) {
       nextSqrtPrice = getNextSqrtPriceFromInput(
         currSqrtPrice,
         liquidity,
         postFeeTradeAmount,
         exactInput,
-        aToB,
+        aToB
       );
     } else {
       nextSqrtPrice = targetSqrtPrice;
@@ -315,16 +315,13 @@ function getTradeInfo(
       ? tryGetAmountBDelta(targetSqrtPrice, currSqrtPrice, liquidity, false)
       : tryGetAmountADelta(targetSqrtPrice, currSqrtPrice, liquidity, false);
 
-    if (
-      tryAmountOut.type === "ExceedsMax" ||
-      (tryAmountOut.type === "Valid" && tryAmountOut.value.gt(tradeAmount))
-    ) {
+    if (tryAmountOut.type === "ExceedsMax" || (tryAmountOut.type === "Valid" && tryAmountOut.value.gt(tradeAmount))) {
       nextSqrtPrice = getNextSqrtPriceFromOutput(
         currSqrtPrice,
         liquidity,
         tradeAmount,
         exactInput,
-        aToB,
+        aToB
       );
     } else {
       nextSqrtPrice = targetSqrtPrice;
@@ -333,7 +330,7 @@ function getTradeInfo(
 
   nextSqrtPrice = Decimal.min(
     Decimal.max(nextSqrtPrice, MIN_SQRT_PRICE),
-    MAX_SQRT_PRICE,
+    MAX_SQRT_PRICE
   );
 
   let maxSwap = nextSqrtPrice.eq(targetSqrtPrice);
@@ -421,7 +418,7 @@ function getTradeInfo(
 function getFeeIncrements(
   feeAmount: Decimal,
   protocolRate: number,
-  currLiquidity: Decimal,
+  currLiquidity: Decimal
 ) {
   let globalFee = feeAmount,
     protocolFee = new Decimal(0);
@@ -452,7 +449,7 @@ function getFeeIncrements(
 function getLastTickInSequence(
   currTick: number,
   tickSpacing: number,
-  aToB: boolean,
+  aToB: boolean
 ) {
   const numTicksInArray = TICK_ARRAY_SIZE * tickSpacing;
   const startTick = getStartTick(currTick, tickSpacing);
@@ -478,20 +475,20 @@ function getNextSqrtPriceFromInput(
   liquidity: Decimal,
   tradeAmount: Decimal,
   exactIn: boolean,
-  aToB: boolean,
+  aToB: boolean
 ) {
   return aToB
     ? getNextSqrtPriceFromTokenARoundingUp(
         currSqrtPrice,
         liquidity,
         tradeAmount,
-        true,
+        true
       )
     : getNextSqrtPriceFromTokenBRoundingDown(
         currSqrtPrice,
         liquidity,
         tradeAmount,
-        true,
+        true
       );
 }
 
@@ -500,20 +497,20 @@ function getNextSqrtPriceFromOutput(
   liquidity: Decimal,
   tradeAmount: Decimal,
   exactIn: boolean,
-  aToB: boolean,
+  aToB: boolean
 ) {
   return aToB
     ? getNextSqrtPriceFromTokenBRoundingDown(
         currSqrtPrice,
         liquidity,
         tradeAmount,
-        false,
+        false
       )
     : getNextSqrtPriceFromTokenARoundingUp(
         currSqrtPrice,
         liquidity,
         tradeAmount,
-        false,
+        false
       );
 }
 
@@ -522,7 +519,7 @@ function getNextSqrtPriceFromTokenARoundingUp(
   currSqrtPrice: Decimal,
   liquidity: Decimal,
   tradeAmount: Decimal,
-  add: boolean,
+  add: boolean
 ) {
   if (tradeAmount.eq(0) || liquidity.eq(0)) {
     return currSqrtPrice;
@@ -558,7 +555,7 @@ function getNextSqrtPriceFromTokenBRoundingDown(
   currSqrtPrice: Decimal,
   liquidity: Decimal,
   tradeAmount: Decimal,
-  add: boolean,
+  add: boolean
 ) {
   if (tradeAmount.eq(0) || liquidity.eq(0)) {
     return currSqrtPrice;
@@ -585,9 +582,14 @@ function getAmountADelta(
   sqrtPrice1: Decimal,
   sqrtPrice2: Decimal,
   liquidity: Decimal,
-  round: boolean,
+  round: boolean
 ): Decimal {
-  const result = tryGetAmountADelta(sqrtPrice1, sqrtPrice2, liquidity, round);
+  const result = tryGetAmountADelta(
+    sqrtPrice1,
+    sqrtPrice2,
+    liquidity,
+    round
+  );
   if (result.type === "ExceedsMax") {
     throw result.error;
   }
@@ -598,17 +600,17 @@ type AmountDeltaU64 = AmountDeltaU64Valid | AmountDeltaU64ExceedsMax;
 type AmountDeltaU64Valid = {
   type: "Valid";
   value: Decimal;
-};
+}
 type AmountDeltaU64ExceedsMax = {
   type: "ExceedsMax";
   error: Error;
-};
+}
 
 function tryGetAmountADelta(
   sqrtPrice1: Decimal,
   sqrtPrice2: Decimal,
   liquidity: Decimal,
-  round: boolean,
+  round: boolean
 ): AmountDeltaU64 {
   let sqrtPriceLower = Decimal.min(sqrtPrice1, sqrtPrice2);
   let sqrtPriceUpper = Decimal.max(sqrtPrice1, sqrtPrice2);
@@ -620,7 +622,7 @@ function tryGetAmountADelta(
 
   // eslint-disable-next-line no-console
   console.log(
-    `liquidity - ${liquidity.toFixed(0, 1)}, diff - ${diff.toFixed(0, 1)}`,
+    `liquidity - ${liquidity.toFixed(0, 1)}, diff - ${diff.toFixed(0, 1)}`
   );
   // eslint-disable-next-line no-console
   console.log(`product - ${product.toFixed(0, 1)} >192 - ${num.gt(U256_MAX)}`);
@@ -633,7 +635,7 @@ function tryGetAmountADelta(
   if (result.gt(U128_MAX)) {
     return {
       type: "ExceedsMax",
-      error: new Error("NumberDownCastError"),
+      error: new Error("NumberDownCastError")
     };
   }
 
@@ -642,13 +644,13 @@ function tryGetAmountADelta(
     console.log(`result exceed token - ${result.toFixed(0, 1)}`);
     return {
       type: "ExceedsMax",
-      error: new Error("TokenMaxExceeded"),
+      error: new Error("TokenMaxExceeded")
     };
   }
 
   return {
     type: "Valid",
-    value: result,
+    value: result
   };
 }
 
@@ -656,9 +658,14 @@ function getAmountBDelta(
   sqrtPrice1: Decimal,
   sqrtPrice2: Decimal,
   liquidity: Decimal,
-  round: boolean,
+  round: boolean
 ): Decimal {
-  const result = tryGetAmountBDelta(sqrtPrice1, sqrtPrice2, liquidity, round);
+  const result = tryGetAmountBDelta(
+    sqrtPrice1,
+    sqrtPrice2,
+    liquidity,
+    round
+  );
   if (result.type === "ExceedsMax") {
     throw result.error;
   }
@@ -669,7 +676,7 @@ function tryGetAmountBDelta(
   sqrtPrice1: Decimal,
   sqrtPrice2: Decimal,
   liquidity: Decimal,
-  round: boolean,
+  round: boolean
 ): AmountDeltaU64 {
   let sqrtPriceLower = Decimal.min(sqrtPrice1, sqrtPrice2);
   let sqrtPriceUpper = Decimal.max(sqrtPrice1, sqrtPrice2);
@@ -680,7 +687,7 @@ function tryGetAmountBDelta(
   if (product.gt(U128_MAX)) {
     return {
       type: "ExceedsMax",
-      error: new Error("MultiplicationShiftRightOverflow"),
+      error: new Error("MultiplicationShiftRightOverflow")
     };
   }
 
@@ -688,7 +695,7 @@ function tryGetAmountBDelta(
 
   return {
     type: "Valid",
-    value: round ? result.ceil() : result.floor(),
+    value: round ? result.ceil() : result.floor()
   };
 }
 
@@ -704,7 +711,7 @@ function getDescription(
   currTick: CurrTickSetup,
   tradeAmount: Decimal,
   exactInput: boolean,
-  aToB: boolean,
+  aToB: boolean
 ) {
   let feeRateText = getFeeRateText(feeRate, protocolRate);
   let tradeInfoText = getTokenDirectionText(tradeAmount, exactInput, aToB);
@@ -716,7 +723,7 @@ function getDescription(
 function getTokenDirectionText(
   tradeAmount: Decimal,
   exactInput: boolean,
-  aToB: boolean,
+  aToB: boolean
 ) {
   let tradeAmountString = tradeAmount.toString();
   if (exactInput && aToB) {
@@ -755,7 +762,7 @@ function getFeeRateText(feeRate: number, protocolRate: number) {
 
 function poolSetupText(liquiditySetup: LiquiditySetup, tickSpacing: number) {
   return `In a ts_${tickSpacing} pool with ${getLiquiditySetupText(
-    liquiditySetup,
+    liquiditySetup
   )} liquidity, `;
 }
 
@@ -823,7 +830,7 @@ function tickIndexToSqrtPriceX64(tickIndex: number): BN {
 }
 
 function panic() {
-   
+  // eslint-disable-next-line no-console
   console.error("PANIC!");
   process.exit(1);
 }

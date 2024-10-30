@@ -8,20 +8,11 @@ import { address, createNoopSigner } from "@solana/web3.js";
 export const DEFAULT_ADDRESS = address("11111111111111111111111111111111");
 
 /**
- * The WhirlpoolsConfig addresses for various networks.
- */
-export const WHIRLPOOLS_CONFIG_ADDRESSES = {
-  SolanaMainnet: address("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ"),
-  SolanaDevnet: address("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR"),
-  EclipseMainnet: address("FVG4oDbGv16hqTUbovjyGmtYikn6UBEnazz6RVDMEFwv"),
-  EclipseTestnet: address("FPydDjRdZu9sT7HVd6ANhfjh85KLq21Pefr5YWWMRPFp"),
-};
-
-/**
  * The default WhirlpoolsConfig address.
  */
-export const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS =
-  WHIRLPOOLS_CONFIG_ADDRESSES.SolanaMainnet;
+export const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS = address(
+  "2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ",
+);
 
 /**
  * The default WhirlpoolsConfigExtension address.
@@ -56,18 +47,6 @@ export async function setWhirlpoolsConfig(
     await getWhirlpoolsConfigExtensionAddress(whirlpoolsConfigAddress).then(
       (x) => x[0],
     );
-}
-
-/**
- * Sets the WhirlpoolsConfig address based on the selected network.
- *
- * @param {keyof typeof WHIRLPOOLS_CONFIG_ADDRESSES} network - The network to set. Valid options are: SolanaMainnet, SolanaDevnet, EclipseMainnet, EclipseTestnet.
- * @throws {Error} If the network is invalid.
- */
-export async function setNetwork(
-  network: keyof typeof WHIRLPOOLS_CONFIG_ADDRESSES,
-): Promise<void> {
-  await setWhirlpoolsConfig(WHIRLPOOLS_CONFIG_ADDRESSES[network]);
 }
 
 /**

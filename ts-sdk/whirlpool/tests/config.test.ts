@@ -15,8 +15,7 @@ import {
   DEFAULT_SOL_WRAPPING_STRATEGY,
   DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS,
   DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
-  setNetwork,
-  WHIRLPOOLS_CONFIG_ADDRESSES,
+  DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES,
 } from "../src/config";
 import assert from "assert";
 import {
@@ -45,11 +44,11 @@ describe("Configuration", () => {
     );
   });
 
-  it("Should be able to set the network", async () => {
-    await setNetwork("EclipseTestnet");
+  it("Should be able to set whirlpools config based on network", async () => {
+    await setWhirlpoolsConfig("eclipseTestnet");
     assert.strictEqual(
       WHIRLPOOLS_CONFIG_ADDRESS,
-      WHIRLPOOLS_CONFIG_ADDRESSES.EclipseTestnet,
+      DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.eclipseTestnet,
     );
     assert.strictEqual(
       WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,

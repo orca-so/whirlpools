@@ -19,8 +19,6 @@ Due to compute cost and rent constraints, it is often not economical for a Whirl
 
 A tick-spacing of 5 means that liquidity can be deposited into tick-index that are a multiple of 5. (ex. [...-10, -5, 0, 5, 10...]).
 
-Whirlpool supports a tick-spacing between 1 and 256, preferably a value that is a power of 2 for better compute-budget optimization. 
-
 As a general rule, the smaller the expected volatility of a pool is, the smaller tick-spacing should be. To help you decide on the best tick-spacing for your whirlpool, consider the following attributes.
 
 ### 1. Granularity of user definable price ranges
@@ -52,4 +50,4 @@ Whirlpool's swap operates by iterating through each ticks with initialized liqui
 A low tick-spacing pool undergoing a massive price movement may require multiple swap instructions to complete the price movement. Therefore, more volatile pairs that often has large price swings should look at higher tick-spacing to mitigate this pain point for their pool users.
 
 ### 3. Account rent cost for users
-On Solana, accounting information requires account space. The more information a program hosts, the more rent is required to store. The larger the tick-spacing, the less ticks it needs for the program to keep track of liquidity across a set price range. Subsequently, the less money it takes to rent space on Solana.
+On-chain storage requires account space, and the more data a program needs to store, the higher the rent required. With larger tick-spacing, fewer ticks are needed to manage liquidity across a set price range, reducing the storage cost for users.

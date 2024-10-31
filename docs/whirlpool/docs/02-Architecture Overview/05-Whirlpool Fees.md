@@ -1,6 +1,6 @@
 # Understanding Whirlpool Fees
 
-When a user performs a swap on a Whirlpool, a % portion of the swap input amount can be taken as a fee for the liquidity providers and pool treasury.
+When a user performs a swap on a Whirlpool, a percentage of the swap input amount may be taken as a fee, allocated between liquidity providers and a protocol fee.
 
 ## Total Fee
 
@@ -28,6 +28,3 @@ The liquidity providers get all of the remaining fees once the protocol fee is s
 $$
 \text{LP\_fee} = \text{swap\_fee} - \text{protocol\_fee}
 $$
-
-## Managing Pool Fee Rates
-You can read more on how to manage the default rate of Whirlpools in your group and individual Whirlpools below.

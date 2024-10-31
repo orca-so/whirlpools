@@ -1,16 +1,11 @@
 # TokenExtensions
 
-At slot `268396603` (May 28, 2024 07:08:16 UTC), Whirlpool program have been upgraded to support TokenExtensions (aka Token-2022 program).
-
-The same program has been deployed on Devnet. So you can try it on Devnet.
-
-> ℹ️ Now Orca UI doesn't show whirlpools with TokenExtensions, so it is "contract level" support only at the moment.
-The only exception is PYUSD, which is supported in the UI.
+On May 28th, Whirlpool program has been upgraded to support TokenExtensions (aka Token-2022 program).
 
 ## Extension List
 **Supported**
 - TransferFee
-- InterestBearing (supported at slot 294954598 (Oct 11, 2024 06:26:42 UTC))
+- InterestBearing (supported since Oct 11th)
 - MemoTransfer
 - MetadataPointer
 - TokenMetadata
@@ -26,7 +21,6 @@ The only exception is PYUSD, which is supported in the UI.
 It should be disabled unless there is a reasonable reason (e.g., legal compliance). FreezeAuthority rejection does not apply to TokenProgram tokens, but does apply to TokenExtensions tokens. 
 
 **Not Supported**
-- InterestBearing -> supported at slot 294954598 (Oct 11, 2024 06:26:42 UTC)
 - Group, GroupPointer
 - Member, MemberPointer
 - NonTransferable
@@ -37,7 +31,7 @@ It should be disabled unless there is a reasonable reason (e.g., legal complianc
 V2 instructions have been added to handle tokens owned by Token-2022 program.
 
 - V1 instructions don’t work for pools with Token-2022 tokens.
-- V2 instructions work for pools with the following combinations. So V2 encompasses V1; an implementation that always uses V2 is simple, but the downside is increased transaction size if ALT is not used because of the large number of accounts required.
+- V2 instructions work for pools with the following combinations. So V2 encompasses V1; an implementation that always uses V2 is simple, but the downside is increased transaction size if ALT is not used because of the larger number of accounts required.
     - Token / Token
     - Token-2022 / Token
     - Token / Token-2022
@@ -79,13 +73,11 @@ V2 instructions have been added to handle tokens owned by Token-2022 program.
 - delete_token_badge
 
 ## Token Badge
-It was determined that the ability to freely create pools with tokens that have functions that may malfunction the pools, such as PermanentDelegate, has more disadvantages for abuse than advantages. However, several stable coins already have PermanentDelegate extension.
+Allowing unrestricted pool creation with tokens that have certain extensions, like PermanentDelegate, was found to pose more risks than benefits. To safely support these types of tokens, the TokenBadge was introduced as a whitelist mechanism.
 
-If tokens with features such as PermanentDelegate are used to create pools or initialize rewards, some whitelist mechanism is required, which is TokenBadge.
+A TokenBadge is a PDA which allows pools and rewards to be initialized for such tokens. Each wirlpool config can independently whitelist tokens using a TokenBadge account
 
-TokenBadge is a PDA whose seed is WhirlpoolsConfig and Mint, and each WhirlpoolsConfig can control whether or not to create TokenBadge in its space.
-
-The TokenBadge itself only records the WhirlpoolsConfig and Mint used at initialization, and has no other additional information at the moment.
+The TokenBadge itself only records the WhirlpoolsConfig and Mint used at initialization, without any additional information. Its existence signifies that pools and rewards can be initialized for the associated token.
 
 ![TokenBadge](../../static/img/02-Architecture%20Overview/token-badge.png)
 
@@ -119,10 +111,9 @@ ExactOut (`amount_specified_is_input = false`)
 - `amount`: transfer fee Excluded amount (will be received at user's token account)
 - `otherAmountThreshold`: transfer fee Included amount (will be sent from user's token account)
 
-The user can set conditions on the amount actually going out of and coming into the token account, regardless of the amount of fees.
+The user can set conditions on the exact amount going out of and coming into the token account, regardless of fees.
 
-No additional parameters are added to limit the amount of fees.
-If the fee will be changed, it is forced to be activated two epochs after, so there is no possibility of the fee suddenly going up. The edge case is when the fee change is scheduled (new epoch is coming) in less than transaction life time. In this case, the UI may need to alert users, but in any case, transactions that exceed the outgoing and incoming amount thresholds will fail.
+No additional parameters are added to limit the amount of fees. If the fee is changed, the new rate is delayed by two epochs to prevent sudden increases. In the edge case where a fee change is scheduled to take effect within the transaction’s lifetime, transactions that exceed the outgoing and incoming amount thresholds will fail.
 
 #### `minA/B`, `maxA/B`
 Increase Liquidity: `maxA`, `maxB`
@@ -145,17 +136,17 @@ To clarify the context of accounts passed as `remaining_accounts`, the v2 instru
 - Token-2022 program remove signer and writable flag of the source, destination and owner when calling the TransferHo[ok program even if they are passed as extra accounts. The source and destination are not updated and the owner's signature is not used unintentionally.
 
 #### TokenBadge request
-TransferHook extension is a relatively new feature in the ecosystem and it is still unknown how it will be used.
+The TransferHook extension is a relatively new feature in the ecosystem, and its use cases are still being explored.
 
-It remains to be decided what kind of TransferHook tokens TokenBadge will be issued for, but it is important that they have the following characteristics
+While it’s still undecided which types of TransferHook tokens will be eligible for a TokenBadge, the following best practices should guide selection:
 
 - The code of the TransferHook program is publicly available.
-- Verifiable Build has been done to ensure the code and programme match.
+- Verifiable Build has been done to ensure the code and program match.
 - Upgrade authority have been disabled (ideal, but not required)
 - Only perform processes that pose no risk to the user (e.g. logging)
 - TransferHook must not block the transfer of tokens, or that the criteria for blocking are clearly declared, fair and reasonable.
 - TransferHook must not interfere with the operation of the pool. It must not interfere with the trade, deposit, withdraw and harvest.
 - Extensions that block transactions based on the amount of tokens to be transferred are undesirable because they cause transactions to fail in ways that are surprising to pool users. On the other hand, failing transfers to sanctioned wallets according to some public standard will not obstruct pool usage for many users.
 - TransferHook must not request large numbers of accounts that would increase transaction size.
-- TransferHook must not execute any token transfers (including WSOL and native SOL).
-- TransferHook must not impose any kind of additional fees.
+- TransferHook should not attempt any token transfers (including WSOL and native SOL).
+- TransferHook should not attempt imposing any kind of additional fees.

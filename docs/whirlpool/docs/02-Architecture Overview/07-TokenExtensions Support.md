@@ -1,11 +1,11 @@
 # TokenExtensions
 
-On May 28th, Whirlpool program has been upgraded to support TokenExtensions (aka Token-2022 program).
+On May 28th 2024, Whirlpool program has been upgraded to support TokenExtensions (aka Token-2022 program).
 
 ## Extension List
 **Supported**
 - TransferFee
-- InterestBearing (supported since Oct 11th)
+- InterestBearing (supported since Oct 11th 2024)
 - MemoTransfer
 - MetadataPointer
 - TokenMetadata

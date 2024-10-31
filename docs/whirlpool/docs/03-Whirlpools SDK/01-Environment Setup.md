@@ -32,7 +32,7 @@ Initialize the project as a TypeScript project:
 npx tsc --init
 ```
 
-## 3. Wallet Creation
+## 2. Wallet Creation
 
 You can create a wallet using `generateKeyPairSigner()` from the Solana SDK.
 
@@ -43,6 +43,24 @@ const wallet = await generateKeyPairSigner();
 ```
 
 > ⚠️ Important: Never share your private key publicly.
+
+## 3. Configure the Whirlpools SDK for Your Network
+Orca's Whirlpools SDK supports several networks: Solana Mainnet, Solana Devnet, Eclipse Mainnet, and Eclipse Testnet. To select a network, use the `setWhirlpoolsConfig` function. This ensures compatibility with the network you’re deploying on.
+
+#### Example: Setting the SDK Configuration to Solana Devnet
+```tsx
+import { setWhirlpoolsConfig } from '@orca-so/whirlpools';
+
+await setWhirlpoolsConfig('solanaDevnet');
+```
+Available networks are:
+
+- solanaMainnet
+- solanaDevnet
+- eclipseMainnet
+- eclipseTestnet
+
+> ℹ️ The `setWhirlpoolsConfig` function accepts either one of Orca's default network keys or a custom `Address`. This allows you to specify a WhirlpoolsConfig account of your choice, including configurations not owned by Orca. To learn more about WhirlpoolsConfig read our [Account Architecture](../02-Architecture%20Overview/01-Account%20Architecture.md) documentation.
 
 ## 4. Airdrop SOL to Your Wallet
 

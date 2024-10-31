@@ -17,7 +17,7 @@ import type {
   GetTokenAccountsByOwnerApi,
   Rpc,
 } from "@solana/web3.js";
-import { getBase58Encoder } from "@solana/web3.js";
+import { getBase64Encoder } from "@solana/web3.js";
 
 /**
  * Represents a Position account.
@@ -93,19 +93,19 @@ export async function fetchPositionsForOwner(
 ): Promise<PositionData[]> {
   const [tokenAccounts, token2022Accounts] = await Promise.all([
     rpc
-      .getTokenAccountsByOwner(owner, { programId: TOKEN_PROGRAM_ADDRESS })
+      .getTokenAccountsByOwner(owner, { programId: TOKEN_PROGRAM_ADDRESS }, { encoding: "base64" })
       .send(),
     rpc
-      .getTokenAccountsByOwner(owner, { programId: TOKEN_2022_PROGRAM_ADDRESS })
+      .getTokenAccountsByOwner(owner, { programId: TOKEN_2022_PROGRAM_ADDRESS }, { encoding: "base64" })
       .send(),
   ]);
 
-  const encoder = getBase58Encoder();
+  const encoder = getBase64Encoder();
   const decoder = getTokenDecoder();
 
   const potentialTokens = [...tokenAccounts.value, ...token2022Accounts.value]
     .map((x) => ({
-      ...decoder.decode(encoder.encode(x.account.data)),
+      ...decoder.decode(encoder.encode(x.account.data[0])),
       owner: x.account.owner,
     }))
     .filter((x) => x.amount === 1n);

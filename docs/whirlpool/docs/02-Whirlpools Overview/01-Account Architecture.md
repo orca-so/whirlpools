@@ -1,3 +1,0 @@
-# Account Architecture
-
-Coming soon

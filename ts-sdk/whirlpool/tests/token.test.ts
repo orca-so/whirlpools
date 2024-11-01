@@ -1,18 +1,11 @@
 import { describe, it, afterEach, vi, beforeAll, afterAll } from "vitest";
-import {
-  deleteAccount,
-  rpc,
-  signer,
-} from "./utils/mockRpc";
+import { deleteAccount, rpc, signer } from "./utils/mockRpc";
 import {
   findAssociatedTokenPda,
   TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
 import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
-import {
-  resetConfiguration,
-  setSolWrappingStrategy,
-} from "../src/config";
+import { resetConfiguration, setSolWrappingStrategy } from "../src/config";
 import { NATIVE_MINT, prepareTokenAccountsInstructions } from "../src/token";
 import assert from "assert";
 import {
@@ -24,9 +17,9 @@ import {
   assertSolTransferInstruction,
   assertSyncNativeInstruction,
 } from "./utils/assertInstruction";
-import { Address } from "@solana/web3.js";
+import type { Address } from "@solana/web3.js";
 import { setupAta, setupMint } from "./utils/token";
-import { setupAtaTE, setupMintTE } from "./utils/tokenExtensions";
+import { setupMintTE } from "./utils/tokenExtensions";
 
 describe("Token Account Creation", () => {
   let mintA: Address;
@@ -76,14 +69,8 @@ describe("Token Account Creation", () => {
     ]);
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 2);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
     assert.strictEqual(result.createInstructions.length, 1);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -100,14 +87,8 @@ describe("Token Account Creation", () => {
     });
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 2);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
     assert.strictEqual(result.createInstructions.length, 1);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -122,20 +103,11 @@ describe("Token Account Creation", () => {
       mintTE,
     ]);
 
-    const tokenAddress = await findAssociatedTokenPda({
-      owner: signer.address,
-      mint: mintTE,
-      tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
-    }).then((x) => x[0]);
-
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintTE],
-      tokenAddress,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintTE], ataTE);
     assert.strictEqual(result.createInstructions.length, 1);
     assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: tokenAddress,
+      ata: ataTE,
       owner: signer.address,
       mint: mintTE,
       tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
@@ -153,18 +125,9 @@ describe("Token Account Creation", () => {
     ]);
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[NATIVE_MINT],
-      ataNative,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
     assert.strictEqual(result.createInstructions.length, 2);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -189,18 +152,9 @@ describe("Token Account Creation", () => {
     });
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[NATIVE_MINT],
-      ataNative,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
     assert.strictEqual(result.createInstructions.length, 2);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -225,18 +179,9 @@ describe("Token Account Creation", () => {
     ]);
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[NATIVE_MINT],
-      ataNative,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
     assert.strictEqual(result.createInstructions.length, 2);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -266,18 +211,9 @@ describe("Token Account Creation", () => {
     ]);
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[NATIVE_MINT],
-      ataNative,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
     assert.strictEqual(result.createInstructions.length, 1);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -297,18 +233,9 @@ describe("Token Account Creation", () => {
     });
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[NATIVE_MINT],
-      ataNative,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
     assert.strictEqual(result.createInstructions.length, 4);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -346,18 +273,9 @@ describe("Token Account Creation", () => {
     });
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[NATIVE_MINT],
-      ataNative,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
     assert.strictEqual(result.createInstructions.length, 3);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -385,18 +303,9 @@ describe("Token Account Creation", () => {
     ]);
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
-    assert.notStrictEqual(
-      result.tokenAccountAddresses[NATIVE_MINT],
-      ataNative,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.notStrictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
     assert.strictEqual(result.createInstructions.length, 3);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -431,18 +340,9 @@ describe("Token Account Creation", () => {
     });
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
-    assert.notStrictEqual(
-      result.tokenAccountAddresses[NATIVE_MINT],
-      ataNative,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.notStrictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
     assert.strictEqual(result.createInstructions.length, 5);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -485,18 +385,9 @@ describe("Token Account Creation", () => {
     ]);
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
-    assert.notStrictEqual(
-      result.tokenAccountAddresses[NATIVE_MINT],
-      ataNative,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.notStrictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
     assert.strictEqual(result.createInstructions.length, 3);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,
@@ -530,18 +421,9 @@ describe("Token Account Creation", () => {
     });
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintA],
-      ataA,
-    );
-    assert.strictEqual(
-      result.tokenAccountAddresses[mintB],
-      ataB,
-    );
-    assert.notStrictEqual(
-      result.tokenAccountAddresses[NATIVE_MINT],
-      ataNative,
-    );
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.notStrictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
     assert.strictEqual(result.createInstructions.length, 5);
     assertCreateAtaInstruction(result.createInstructions[0], {
       ata: ataB,

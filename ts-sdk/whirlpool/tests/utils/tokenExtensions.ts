@@ -1,9 +1,20 @@
-import { findAssociatedTokenPda, TOKEN_2022_PROGRAM_ADDRESS, getCreateAssociatedTokenIdempotentInstruction, getMintToInstruction, getMintSize, getInitializeMint2Instruction } from "@solana-program/token-2022";
-import { Address, generateKeyPairSigner, IInstruction } from "@solana/web3.js";
+import {
+  findAssociatedTokenPda,
+  TOKEN_2022_PROGRAM_ADDRESS,
+  getCreateAssociatedTokenIdempotentInstruction,
+  getMintToInstruction,
+  getMintSize,
+  getInitializeMint2Instruction,
+} from "@solana-program/token-2022";
+import type { Address, IInstruction } from "@solana/web3.js";
+import { generateKeyPairSigner } from "@solana/web3.js";
 import { sendTransaction, signer } from "./mockRpc";
 import { getCreateAccountInstruction } from "@solana-program/system";
 
-export async function setupAtaTE(mint: Address, config: { amount?: number | bigint } = {}): Promise<Address> {
+export async function setupAtaTE(
+  mint: Address,
+  config: { amount?: number | bigint } = {},
+): Promise<Address> {
   const ata = await findAssociatedTokenPda({
     mint,
     owner: signer.address,
@@ -38,7 +49,9 @@ export async function setupAtaTE(mint: Address, config: { amount?: number | bigi
   return ata[0];
 }
 
-export async function setupMintTE(config: { decimals?: number } = {}): Promise<Address> {
+export async function setupMintTE(
+  config: { decimals?: number } = {},
+): Promise<Address> {
   const keypair = await generateKeyPairSigner();
   const instructions: IInstruction[] = [];
 
@@ -66,12 +79,16 @@ export async function setupMintTE(config: { decimals?: number } = {}): Promise<A
   return keypair.address;
 }
 
-export async function setupMintTEFee(config: { decimals?: number } = {}): Promise<Address> {
+export async function setupMintTEFee(
+  config: { decimals?: number } = {},
+): Promise<Address> {
   // TODO: Implement fee
- return setupMintTE(config);
+  return setupMintTE(config);
 }
 
-export async function setupMintTEHook(config: { decimals?: number } = {}): Promise<Address> {
+export async function setupMintTEHook(
+  config: { decimals?: number } = {},
+): Promise<Address> {
   // TODO: Implement hook
   return setupMintTE(config);
 }

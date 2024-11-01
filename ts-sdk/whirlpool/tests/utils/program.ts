@@ -1,7 +1,17 @@
-import { getFeeTierAddress, getInitializeConfigInstruction, getInitializeFeeTierInstruction, getInitializePoolInstruction, getPositionAddress, getWhirlpoolAddress } from "@orca-so/whirlpools-client";
-import { Address, generateKeyPairSigner, IInstruction } from "@solana/web3.js";
+import {
+  getFeeTierAddress,
+  getInitializeConfigInstruction,
+  getInitializeFeeTierInstruction,
+  getInitializePoolInstruction,
+  getWhirlpoolAddress,
+} from "@orca-so/whirlpools-client";
+import type { Address, IInstruction } from "@solana/web3.js";
+import { generateKeyPairSigner } from "@solana/web3.js";
 import { sendTransaction, signer } from "./mockRpc";
-import { SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS } from "../../src/config";
+import {
+  SPLASH_POOL_TICK_SPACING,
+  WHIRLPOOLS_CONFIG_ADDRESS,
+} from "../../src/config";
 import { tickIndexToSqrtPrice } from "@orca-so/whirlpools-core";
 
 export async function setupConfigAndFeeTiers(): Promise<Address> {
@@ -27,7 +37,7 @@ export async function setupConfigAndFeeTiers(): Promise<Address> {
       funder: signer,
       feeAuthority: signer,
       tickSpacing: 128,
-      defaultFeeRate: 1000
+      defaultFeeRate: 1000,
     }),
   );
 
@@ -39,11 +49,14 @@ export async function setupConfigAndFeeTiers(): Promise<Address> {
       funder: signer,
       feeAuthority: signer,
       tickSpacing: 64,
-      defaultFeeRate: 300
+      defaultFeeRate: 300,
     }),
   );
 
-  const splashFeeTierPda = await getFeeTierAddress(keypair.address, SPLASH_POOL_TICK_SPACING);
+  const splashFeeTierPda = await getFeeTierAddress(
+    keypair.address,
+    SPLASH_POOL_TICK_SPACING,
+  );
   instructions.push(
     getInitializeFeeTierInstruction({
       config: keypair.address,
@@ -51,7 +64,7 @@ export async function setupConfigAndFeeTiers(): Promise<Address> {
       funder: signer,
       feeAuthority: signer,
       tickSpacing: SPLASH_POOL_TICK_SPACING,
-      defaultFeeRate: 1000
+      defaultFeeRate: 1000,
     }),
   );
 
@@ -59,10 +72,22 @@ export async function setupConfigAndFeeTiers(): Promise<Address> {
   return keypair.address;
 }
 
-
-export async function setupWhirlpool(tokenA: Address, tokenB: Address, tickSpacing: number, config: { initialSqrtPrice?: bigint } = {}): Promise<Address> {
-  const feeTierAddress = await getFeeTierAddress(WHIRLPOOLS_CONFIG_ADDRESS, tickSpacing);
-  const whirlpoolAddress = await getWhirlpoolAddress(WHIRLPOOLS_CONFIG_ADDRESS, tokenA, tokenB, tickSpacing);
+export async function setupWhirlpool(
+  tokenA: Address,
+  tokenB: Address,
+  tickSpacing: number,
+  config: { initialSqrtPrice?: bigint } = {},
+): Promise<Address> {
+  const feeTierAddress = await getFeeTierAddress(
+    WHIRLPOOLS_CONFIG_ADDRESS,
+    tickSpacing,
+  );
+  const whirlpoolAddress = await getWhirlpoolAddress(
+    WHIRLPOOLS_CONFIG_ADDRESS,
+    tokenA,
+    tokenB,
+    tickSpacing,
+  );
   const vaultA = await generateKeyPairSigner();
   const vaultB = await generateKeyPairSigner();
 
@@ -90,17 +115,29 @@ export async function setupWhirlpool(tokenA: Address, tokenB: Address, tickSpaci
   return whirlpoolAddress[0];
 }
 
-export async function setupPosition(whirlpool: Address, config: { tickLower?: number, tickUpper?: number, liquidity?: bigint } = {}): Promise<Address> {
+export async function setupPosition(
+  whirlpool: Address,
+  config: { tickLower?: number; tickUpper?: number; liquidity?: bigint } = {},
+): Promise<Address> {
   // TODO: implement when solana-bankrun supports gpa
+  const _ = config;
   return whirlpool;
 }
 
-export async function setupTEPosition(whirlpool: Address, config: { tickLower?: number, tickUpper?: number, liquidity?: bigint } = {}): Promise<Address> {
+export async function setupTEPosition(
+  whirlpool: Address,
+  config: { tickLower?: number; tickUpper?: number; liquidity?: bigint } = {},
+): Promise<Address> {
   // TODO: implement when solana-bankrun supports gpa
+  const _ = config;
   return whirlpool;
 }
 
-export async function setupPositionBundle(whirlpool: Address, config: { tickLower?: number, tickUpper?: number, liquidity?: bigint }[] = []): Promise<Address> {
+export async function setupPositionBundle(
+  whirlpool: Address,
+  config: { tickLower?: number; tickUpper?: number; liquidity?: bigint }[] = [],
+): Promise<Address> {
   // TODO: implement when solana-bankrun supports gpa
+  const _ = config;
   return whirlpool;
 }

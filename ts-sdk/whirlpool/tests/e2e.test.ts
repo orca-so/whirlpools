@@ -7,10 +7,7 @@ import {
   openFullRangePositionInstructions,
   increaseLiquidityInstructions,
 } from "../src/increaseLiquidity";
-import {
-  sendTransaction,
-  rpc,
-} from "./utils/mockRpc";
+import { sendTransaction, rpc } from "./utils/mockRpc";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 import { swapInstructions } from "../src/swap";
 import type { Address } from "@solana/web3.js";
@@ -19,9 +16,7 @@ import {
   decreaseLiquidityInstructions,
   closePositionInstructions,
 } from "../src/decreaseLiquidity";
-import {
-  fetchToken,
-} from "@solana-program/token";
+import { fetchToken } from "@solana-program/token";
 import {
   fetchPosition,
   fetchWhirlpool,
@@ -39,7 +34,8 @@ describe("e2e", () => {
   beforeAll(async () => {
     const mint1 = await setupMint({ decimals: 9 });
     const mint2 = await setupMint({ decimals: 6 });
-    [mintA, mintB] = Buffer.from(mint1) < Buffer.from(mint2) ? [mint1, mint2] : [mint2, mint1];
+    [mintA, mintB] =
+      Buffer.from(mint1) < Buffer.from(mint2) ? [mint1, mint2] : [mint2, mint1];
     ataA = await setupAta(mintA, { amount: 500e9 });
     ataB = await setupAta(mintB, { amount: 500e9 });
   });
@@ -64,12 +60,7 @@ describe("e2e", () => {
 
   const testInitConcentratedLiquidityPool = async () => {
     const { instructions: createPoolInstructions, poolAddress } =
-      await createConcentratedLiquidityPoolInstructions(
-        rpc,
-        mintA,
-        mintB,
-        128,
-      );
+      await createConcentratedLiquidityPoolInstructions(rpc, mintA, mintB, 128);
     await sendTransaction(createPoolInstructions);
 
     const pool = await fetchWhirlpool(rpc, poolAddress);

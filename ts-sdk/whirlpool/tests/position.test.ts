@@ -1,7 +1,13 @@
-import { Address, generateKeyPairSigner } from "@solana/web3.js";
+import type { Address} from "@solana/web3.js";
+import { generateKeyPairSigner } from "@solana/web3.js";
 import { assert, beforeAll, describe, it } from "vitest";
 import { setupAta, setupMint } from "./utils/token";
-import { setupPosition, setupPositionBundle, setupTEPosition, setupWhirlpool } from "./utils/program";
+import {
+  setupPosition,
+  setupPositionBundle,
+  setupTEPosition,
+  setupWhirlpool,
+} from "./utils/program";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 import { fetchPositionsForOwner } from "../src/position";
 import { rpc, signer } from "./utils/mockRpc";
@@ -9,17 +15,16 @@ import { rpc, signer } from "./utils/mockRpc";
 describe("Fetch Position", () => {
   let mintA: Address;
   let mintB: Address;
-  let ataA: Address;
-  let ataB: Address;
   let pool: Address;
   let splashPool: Address;
 
   beforeAll(async () => {
     const mint1 = await setupMint();
     const mint2 = await setupMint();
-    [mintA, mintB] = Buffer.from(mint1) < Buffer.from(mint2) ? [mint1, mint2] : [mint2, mint1];
-    ataA = await setupAta(mintA);
-    ataB = await setupAta(mintB);
+    [mintA, mintB] =
+      Buffer.from(mint1) < Buffer.from(mint2) ? [mint1, mint2] : [mint2, mint1];
+    await setupAta(mintA, { amount: 500e9 });
+    await setupAta(mintB, { amount: 500e9 });
     pool = await setupWhirlpool(mintA, mintB, 128);
     splashPool = await setupWhirlpool(mintA, mintB, SPLASH_POOL_TICK_SPACING);
     await setupPosition(pool);
@@ -41,5 +46,4 @@ describe("Fetch Position", () => {
     const positions = await fetchPositionsForOwner(rpc, other.address);
     assert.strictEqual(positions.length, 0);
   });
-
 });

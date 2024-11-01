@@ -1,10 +1,20 @@
 import { getCreateAccountInstruction } from "@solana-program/system";
-import { getMintSize, getInitializeMint2Instruction, TOKEN_PROGRAM_ADDRESS, getCreateAssociatedTokenIdempotentInstruction, findAssociatedTokenPda, getMintToInstruction } from "@solana-program/token";
-import { Address, generateKeyPairSigner, IInstruction } from "@solana/web3.js";
+import {
+  getMintSize,
+  getInitializeMint2Instruction,
+  TOKEN_PROGRAM_ADDRESS,
+  getCreateAssociatedTokenIdempotentInstruction,
+  findAssociatedTokenPda,
+  getMintToInstruction,
+} from "@solana-program/token";
+import type { Address, IInstruction } from "@solana/web3.js";
+import { generateKeyPairSigner } from "@solana/web3.js";
 import { signer, sendTransaction } from "./mockRpc";
 
-
-export async function setupAta(mint: Address, config: { amount?: number | bigint } = {}): Promise<Address> {
+export async function setupAta(
+  mint: Address,
+  config: { amount?: number | bigint } = {},
+): Promise<Address> {
   const ata = await findAssociatedTokenPda({
     mint,
     owner: signer.address,
@@ -39,7 +49,9 @@ export async function setupAta(mint: Address, config: { amount?: number | bigint
   return ata[0];
 }
 
-export async function setupMint(config: { decimals?: number } = {}): Promise<Address> {
+export async function setupMint(
+  config: { decimals?: number } = {},
+): Promise<Address> {
   const keypair = await generateKeyPairSigner();
   const instructions: IInstruction[] = [];
 
@@ -66,4 +78,3 @@ export async function setupMint(config: { decimals?: number } = {}): Promise<Add
 
   return keypair.address;
 }
-

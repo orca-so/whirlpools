@@ -26,9 +26,7 @@ import assert from "assert";
 import type { ProgramTestContext } from "solana-bankrun/dist/internal";
 import { Account, startAnchor } from "solana-bankrun/dist/internal";
 import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
-import {
-  WHIRLPOOL_PROGRAM_ADDRESS,
-} from "@orca-so/whirlpools-client";
+import { WHIRLPOOL_PROGRAM_ADDRESS } from "@orca-so/whirlpools-client";
 import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
 import { setupConfigAndFeeTiers } from "./program";
 
@@ -45,13 +43,18 @@ export async function getTestContext(): Promise<ProgramTestContext> {
     _testContext = await startAnchor(
       "../../",
       [["whirlpool", toBytes(WHIRLPOOL_PROGRAM_ADDRESS)]],
-      [[toBytes(signer.address), new Account(
-        BigInt(100e9),
-        new Uint8Array(),
-        toBytes(SYSTEM_PROGRAM_ADDRESS),
-        false,
-        0n,
-      )]],
+      [
+        [
+          toBytes(signer.address),
+          new Account(
+            BigInt(100e9),
+            new Uint8Array(),
+            toBytes(SYSTEM_PROGRAM_ADDRESS),
+            false,
+            0n,
+          ),
+        ],
+      ],
     );
 
     const configAddress = await setupConfigAndFeeTiers();
@@ -74,9 +77,7 @@ export async function deleteAccount(address: Address) {
   );
 }
 
-export async function sendTransaction(
-  ixs: IInstruction[],
-) {
+export async function sendTransaction(ixs: IInstruction[]) {
   const blockhash = await rpc.getLatestBlockhash().send();
   const transaction = await pipe(
     createTransactionMessage({ version: 0 }),
@@ -185,7 +186,9 @@ async function mockTransport<T>(
     case "getProgramAccounts":
       throw new Error("gpa is not yet exposed through solana-bankrun");
     case "getTokenAccountsByOwner":
-      throw new Error("getTokenAccountsByOwner is not yet exposed through solana-bankrun");
+      throw new Error(
+        "getTokenAccountsByOwner is not yet exposed through solana-bankrun",
+      );
     case "getMinimumBalanceForRentExemption":
       const space = config.payload.params[0];
       assert(typeof space === "number");

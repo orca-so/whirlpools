@@ -1,9 +1,16 @@
 import { describe, it, beforeAll } from "vitest";
-import { fetchConcentratedLiquidityPool, fetchSplashPool, fetchWhirlpoolsForTokenPair } from "../src/pool";
+import {
+  fetchConcentratedLiquidityPool,
+  fetchSplashPool,
+  fetchWhirlpoolsForTokenPair,
+} from "../src/pool";
 import { rpc } from "./utils/mockRpc";
 import assert from "assert";
-import { SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS } from "../src/config";
-import { Address } from "@solana/web3.js";
+import {
+  SPLASH_POOL_TICK_SPACING,
+  WHIRLPOOLS_CONFIG_ADDRESS,
+} from "../src/config";
+import type { Address } from "@solana/web3.js";
 import { setupMint } from "./utils/token";
 import { setupWhirlpool } from "./utils/program";
 import { getWhirlpoolAddress } from "@orca-so/whirlpools-client";
@@ -18,9 +25,15 @@ describe("Fetch Pool", () => {
   beforeAll(async () => {
     const mint1 = await setupMint();
     const mint2 = await setupMint();
-    [mintA, mintB] = Buffer.from(mint1) < Buffer.from(mint2) ? [mint1, mint2] : [mint2, mint1];
+    [mintA, mintB] =
+      Buffer.from(mint1) < Buffer.from(mint2) ? [mint1, mint2] : [mint2, mint1];
     concentratedPool = await setupWhirlpool(mintA, mintB, 64);
-    defaultPool = await getWhirlpoolAddress(WHIRLPOOLS_CONFIG_ADDRESS, mintA, mintB, 128).then(x => x[0]);
+    defaultPool = await getWhirlpoolAddress(
+      WHIRLPOOLS_CONFIG_ADDRESS,
+      mintA,
+      mintB,
+      128,
+    ).then((x) => x[0]);
     splashPool = await setupWhirlpool(mintA, mintB, SPLASH_POOL_TICK_SPACING);
   });
 

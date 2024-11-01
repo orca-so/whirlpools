@@ -29,7 +29,7 @@ export interface Wallet {
 ```
 
 ```tsx
-const connection = new Connection(url, "singleGossip");
+const connection = new Connection(url, "confirmed"};
 const wallet = new Wallet()
 const ctx = WhirlpoolContext.from(connection, wallet, whirlpoolProgramId);
 ```

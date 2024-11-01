@@ -25,6 +25,8 @@ Users of these instructions must provide the tick-arrays that contain the specif
 ### Swap
 Swap users will have to provide the series of tick-arrays that the swap will traverse across.
 
-The first tick-array in the sequence typically houses the Whirlpool's current tick index, though this is not always required. In some cases, such as with the new swap instruction, users can pass in up to six tick-arrays, with only three arrays being crossed during a swap. For example, the Whirlpools SDK preemptively provides the tick-array containing the current price, along with two arrays below and two above it, ensuring adequate coverage for different price ranges.
+The first tick-array in the sequence typically houses the Whirlpool's current tick index, though this is not always required. 
 
 The second and third tick arrays are the next tick-arrays in the swap direction. If the user knows the swap will not traverse to the next tick-array, or it's simply not possible at both ends of the price range, they can just put in any tick-array public key.
+
+In some cases, such as with the new swap instruction, users can pass in up to six tick-arrays, with only three arrays being crossed during a swap. For example, the Whirlpools SDK preemptively provides the tick-array containing the current price, along with two arrays below and two above it, ensuring adequate coverage for different price ranges.

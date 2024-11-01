@@ -42,6 +42,17 @@ import { generateKeyPairSigner } from '@solana/web3.js';
 const wallet = await generateKeyPairSigner();
 ```
 
+Alternatively, if you have your wallet stored as a 64-byte private key in a `wallet.json` file, you can load it using `createKeyPairSignerFromBytes`.
+
+```tsx
+import { createKeyPairSignerFromBytes } from '@solana/web3.js';
+import fs from 'fs';
+
+const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
+
+const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
+```
+
 > ⚠️ Important: Never share your private key publicly.
 
 ## 3. Configure the Whirlpools SDK for Your Network

@@ -4,25 +4,21 @@
   "version": "0.0.1",
   "main": "./dist/nodejs/orca_whirlpools_core_js_bindings.js",
   "types": "./dist/nodejs/orca_whirlpools_core_js_bindings.d.ts",
-  "browser": "./dist/web/orca_whirlpools_core_js_bindings.js",
+  "browser": "./dist/browser/orca_whirlpools_core_js_bindings.js",
   "type": "module",
   "sideEffects": [
-    "./dist/web/snippets/*"
+    "./dist/browser/snippets/*",
+    "./dist/browser/orca_whirlpools_core_js_bindings.js"
   ],
   "files": [
-    "dist/nodejs/orca_whirlpools_core_js_bindings_bg.wasm",
-    "dist/nodejs/orca_whirlpools_core_js_bindings.js",
-    "dist/nodejs/orca_whirlpools_core_js_bindings.d.ts",
-    "dist/web/orca_whirlpools_core_js_bindings_bg.wasm",
-    "dist/web/orca_whirlpools_core_js_bindings.js",
-    "dist/web/orca_whirlpools_core_js_bindings.d.ts",
+    "dist",
     "README.md"
   ],
   "scripts": {
-    "build": "wasm-pack build --out-dir ./dist/web --target web && wasm-pack build --out-dir ./dist/nodejs --target nodejs",
+    "build": "wasm-pack build --out-dir ./dist/nodejs --target nodejs && wasm-pack build --out-dir ./dist/browser --target browser",
     "test": "tsc --noEmit && vitest run tests",
     "clean": "cargo clean && rimraf dist",
-    "prepublishOnly": "rimraf dist/web/.gitignore dist/nodejs/.gitignore"
+    "prepublishOnly": "rimraf dist/nodejs/.gitignore dist/browser/.gitignore"
   },
   "devDependencies": {
     "@orca-so/whirlpools-client": "*",

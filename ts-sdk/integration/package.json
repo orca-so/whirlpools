@@ -1,0 +1,16 @@
+{
+  "name": "@orca-so/whirlpools-integration",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run index.test.ts"
+  },
+  "dependencies": {
+    "@orca-so/whirlpools": "*"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.0",
+    "typescript": "^5.6.3"
+  }
+}

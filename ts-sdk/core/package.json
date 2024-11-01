@@ -2,23 +2,23 @@
   "name": "@orca-so/whirlpools-core",
   "description": "Orca's core typescript package.",
   "version": "0.0.1",
-  "main": "./dist/orca_whirlpools_core_js_bindings.js",
-  "types": "./dist/orca_whirlpools_core_js_bindings.d.ts",
+  "main": "./dist/nodejs/orca_whirlpools_core_js_bindings.js",
+  "types": "./dist/nodejs/orca_whirlpools_core_js_bindings.d.ts",
+  "browser": "./dist/browser/orca_whirlpools_core_js_bindings.js",
   "type": "module",
   "sideEffects": [
-    "./dist/snippets/*"
+    "./dist/browser/snippets/*",
+    "./dist/browser/orca_whirlpools_core_js_bindings.js"
   ],
   "files": [
-    "dist/orca_whirlpools_core_js_bindings_bg.wasm",
-    "dist/orca_whirlpools_core_js_bindings.js",
-    "dist/orca_whirlpools_core_js_bindings.d.ts",
+    "dist",
     "README.md"
   ],
   "scripts": {
-    "build": "wasm-pack build --out-dir ./dist --target web",
+    "build": "wasm-pack build --out-dir ./dist/nodejs --target nodejs && wasm-pack build --out-dir ./dist/browser --target browser",
     "test": "tsc --noEmit && vitest run tests",
     "clean": "cargo clean && rimraf dist",
-    "prepublishOnly": "rimraf dist/.gitignore"
+    "prepublishOnly": "rimraf dist/nodejs/.gitignore dist/browser/.gitignore"
   },
   "devDependencies": {
     "@orca-so/whirlpools-client": "*",

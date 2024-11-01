@@ -22,4 +22,4 @@ Positions are created using the [open_position_with_token_extensions](https://gi
 - Position tokens can be freely transferred. Whoever holds the token in their wallet has the authority to manage the position account, allowing them to increase or decrease liquidity, harvest fees, and close the position.
 
 ## NFT Metadata
-Whirlpools utilizes the Token2022 program for position NFTs, leveraging the MetadataPointer and TokenMetadata extensions to eliminate the need for Metaplex metadata accounts and associated costs. Advanced users can also choose to exclude metadata entirely.
+Whirlpools utilizes the Token2022 program for position NFTs, leveraging the MetadataPointer and TokenMetadata extensions to make all rent refundable and eliminate Metaplex creation fees. Advanced users can also choose to exclude metadata entirely.

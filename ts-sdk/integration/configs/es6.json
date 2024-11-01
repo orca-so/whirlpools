@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "module": "ES6",
+    "moduleResolution": "Node",
+    "target": "ESNext",
+    "skipLibCheck": true
+  },
+  "include": ["../index.ts"]
+}

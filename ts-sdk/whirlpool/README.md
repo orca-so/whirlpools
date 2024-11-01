@@ -77,8 +77,15 @@ await setWhirlpoolsConfig('solanaDevnet');
 const wallet = await generateKeyPairSigner();
 await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
 
-const poolAddress = "POOL_ADDRESS";
-const mintAddress = "TOKEN_MINT";
+/* Example Devnet Addresses:
+ * -------------------------
+ * SOL/devUSDC Whirlpool: 3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt
+ * SOL Token Address: So11111111111111111111111111111111111111112
+ * devUSDC Token Address: 3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt
+ */
+
+const poolAddress = "3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt";
+const mintAddress = "So11111111111111111111111111111111111111112";
 const amount = 1_000_000n;
 const slippageTolerance = 100; // 1bps
 

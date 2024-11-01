@@ -43,7 +43,7 @@ Available networks are:
 - eclipseMainnet
 - eclipseTestnet
 
-> ℹ️ ℹ️ The setWhirlpoolsConfig function accepts either one of Orca's default network keys or a custom Address. This allows you to specify a custom configuration if needed.
+> ℹ️ The setWhirlpoolsConfig function accepts either one of Orca's default network keys or a custom Address. This allows you to specify a custom configuration if needed.
 
 ### 3. Create the Swap Instructions
 After configuring the SDK, you can perform a swap. Here is an example of how to perform a token swap using the Whirlpools SDK:

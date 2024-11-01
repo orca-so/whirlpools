@@ -191,7 +191,7 @@ export async function fetchConcentratedLiquidityPool(
  *   tokenMintTwo
  * );
  */
-export async function fetchWhirlpools(
+export async function fetchWhirlpoolsForTokenPair(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,

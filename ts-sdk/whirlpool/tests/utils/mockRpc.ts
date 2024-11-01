@@ -1,14 +1,9 @@
-import { getMintEncoder, TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
-import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
 import type {
   Address,
   IInstruction,
-  ReadonlyUint8Array,
-  TransactionSigner,
   VariableSizeDecoder,
 } from "@solana/web3.js";
 import {
-  address,
   appendTransactionMessageInstructions,
   assertIsAddress,
   createSolanaRpcFromTransport,
@@ -30,178 +25,19 @@ import {
 import assert from "assert";
 import type { ProgramTestContext } from "solana-bankrun/dist/internal";
 import { Account, startAnchor } from "solana-bankrun/dist/internal";
-import {
-  DEFAULT_ADDRESS,
-  SPLASH_POOL_TICK_SPACING,
-  WHIRLPOOLS_CONFIG_ADDRESS,
-} from "../src/config";
-import { NATIVE_MINT } from "../src/token";
 import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
 import {
-  getFeeTierEncoder,
-  getWhirlpoolsConfigEncoder,
   WHIRLPOOL_PROGRAM_ADDRESS,
 } from "@orca-so/whirlpools-client";
+import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
+import { setupConfigAndFeeTiers } from "./program";
 
-export const [
-  TOKEN_MINT_1,
-  TOKEN_MINT_2,
-  TOKEN_2022_MINT,
-  TOKEN_2022_MINT_TRANSFER_FEE,
-  TOKEN_2022_MINT_TRANSFER_HOOK,
-] = [...Array(25).keys()].map((i) => {
-  const bytes = Array.from({ length: 32 }, () => i + 1);
-  return getAddressDecoder().decode(new Uint8Array(bytes));
-});
-
-export const CONCENTRATED_POOL_FEE_TIER = address(
-  "BGnhGXT9CCt5WYS23zg9sqsAT2MGXkq7VSwch9pML82W",
-);
-export const SPLASH_POOL_FEE_TIER = address(
-  "zVmMsL5qGh7txhTHFgGZcFQpSsxSx6DBLJ3u113PBer",
-);
+export const signer = await generateKeyPairSigner();
+setDefaultFunder(signer);
 
 function toBytes(address: Address): Uint8Array {
   return new Uint8Array(getAddressEncoder().encode(address));
 }
-
-function systemAccount(): Account {
-  return new Account(
-    BigInt(1e9),
-    new Uint8Array(),
-    toBytes(SYSTEM_PROGRAM_ADDRESS),
-    false,
-    0n,
-  );
-}
-
-function toAccount(data: ReadonlyUint8Array | null, owner?: Address): Account {
-  const bytes = data ?? new Uint8Array();
-  return new Account(
-    BigInt(bytes.length ?? 0) * 10n,
-    new Uint8Array(bytes),
-    toBytes(owner ?? SYSTEM_PROGRAM_ADDRESS),
-    false,
-    0n,
-  );
-}
-
-const initialAccounts: [Uint8Array, Account][] = [
-  [
-    toBytes(TOKEN_MINT_1),
-    toAccount(
-      getMintEncoder().encode({
-        mintAuthority: DEFAULT_ADDRESS,
-        supply: 1000000000,
-        decimals: 6,
-        isInitialized: true,
-        freezeAuthority: null,
-      }),
-      TOKEN_PROGRAM_ADDRESS,
-    ),
-  ],
-  [
-    toBytes(TOKEN_MINT_2),
-    toAccount(
-      getMintEncoder().encode({
-        mintAuthority: DEFAULT_ADDRESS,
-        supply: 1000000000,
-        decimals: 9,
-        isInitialized: true,
-        freezeAuthority: null,
-      }),
-      TOKEN_PROGRAM_ADDRESS,
-    ),
-  ],
-  [
-    toBytes(NATIVE_MINT),
-    toAccount(
-      getMintEncoder().encode({
-        mintAuthority: DEFAULT_ADDRESS,
-        supply: 1000000000,
-        decimals: 9,
-        isInitialized: true,
-        freezeAuthority: null,
-      }),
-      TOKEN_PROGRAM_ADDRESS,
-    ),
-  ],
-  [
-    toBytes(TOKEN_2022_MINT),
-    toAccount(
-      getMintEncoder().encode({
-        mintAuthority: DEFAULT_ADDRESS,
-        supply: 1000000000,
-        decimals: 9,
-        isInitialized: true,
-        freezeAuthority: null,
-      }),
-      TOKEN_2022_PROGRAM_ADDRESS,
-    ),
-  ],
-  [
-    toBytes(TOKEN_2022_MINT_TRANSFER_FEE),
-    toAccount(
-      getMintEncoder().encode({
-        mintAuthority: DEFAULT_ADDRESS,
-        supply: 1000000000,
-        decimals: 9,
-        isInitialized: true,
-        freezeAuthority: null,
-        // TODO: <- transfer fee config
-      }),
-      TOKEN_2022_PROGRAM_ADDRESS,
-    ),
-  ],
-  [
-    toBytes(TOKEN_2022_MINT_TRANSFER_HOOK),
-    toAccount(
-      getMintEncoder().encode({
-        mintAuthority: DEFAULT_ADDRESS,
-        supply: 1000000000,
-        decimals: 9,
-        isInitialized: true,
-        freezeAuthority: null,
-        // TODO: <- transfer hook config
-      }),
-      TOKEN_2022_PROGRAM_ADDRESS,
-    ),
-  ],
-  [
-    toBytes(WHIRLPOOLS_CONFIG_ADDRESS),
-    toAccount(
-      getWhirlpoolsConfigEncoder().encode({
-        feeAuthority: DEFAULT_ADDRESS,
-        collectProtocolFeesAuthority: DEFAULT_ADDRESS,
-        rewardEmissionsSuperAuthority: DEFAULT_ADDRESS,
-        defaultProtocolFeeRate: 100,
-      }),
-      WHIRLPOOL_PROGRAM_ADDRESS,
-    ),
-  ],
-  [
-    toBytes(CONCENTRATED_POOL_FEE_TIER),
-    toAccount(
-      getFeeTierEncoder().encode({
-        whirlpoolsConfig: WHIRLPOOLS_CONFIG_ADDRESS,
-        tickSpacing: 128,
-        defaultFeeRate: 10000,
-      }),
-      WHIRLPOOL_PROGRAM_ADDRESS,
-    ),
-  ],
-  [
-    toBytes(SPLASH_POOL_FEE_TIER),
-    toAccount(
-      getFeeTierEncoder().encode({
-        whirlpoolsConfig: WHIRLPOOLS_CONFIG_ADDRESS,
-        tickSpacing: SPLASH_POOL_TICK_SPACING,
-        defaultFeeRate: 10000,
-      }),
-      WHIRLPOOL_PROGRAM_ADDRESS,
-    ),
-  ],
-];
 
 let _testContext: ProgramTestContext | null = null;
 export async function getTestContext(): Promise<ProgramTestContext> {
@@ -209,37 +45,43 @@ export async function getTestContext(): Promise<ProgramTestContext> {
     _testContext = await startAnchor(
       "../../",
       [["whirlpool", toBytes(WHIRLPOOL_PROGRAM_ADDRESS)]],
-      initialAccounts,
+      [[toBytes(signer.address), new Account(
+        BigInt(100e9),
+        new Uint8Array(),
+        toBytes(SYSTEM_PROGRAM_ADDRESS),
+        false,
+        0n,
+      )]],
     );
+
+    const configAddress = await setupConfigAndFeeTiers();
+    setWhirlpoolsConfig(configAddress);
   }
   return _testContext;
 }
 
-export async function setAccount(
-  address: Address,
-  data: ReadonlyUint8Array | null,
-  owner?: Address,
-) {
+export async function deleteAccount(address: Address) {
   const testContext = await getTestContext();
-  testContext.setAccount(toBytes(address), toAccount(data, owner));
-}
-
-export async function initPayer(): Promise<TransactionSigner> {
-  const payer = await generateKeyPairSigner();
-  const testContext = await getTestContext();
-  testContext.setAccount(toBytes(payer.address), systemAccount());
-  return payer;
+  testContext.setAccount(
+    toBytes(address),
+    new Account(
+      BigInt(0),
+      new Uint8Array(),
+      toBytes(SYSTEM_PROGRAM_ADDRESS),
+      false,
+      0n,
+    ),
+  );
 }
 
 export async function sendTransaction(
   ixs: IInstruction[],
-  payer: TransactionSigner,
 ) {
   const blockhash = await rpc.getLatestBlockhash().send();
   const transaction = await pipe(
     createTransactionMessage({ version: 0 }),
     (x) => appendTransactionMessageInstructions(ixs, x),
-    (x) => setTransactionMessageFeePayerSigner(payer, x),
+    (x) => setTransactionMessageFeePayerSigner(signer, x),
     (x) => setTransactionMessageLifetimeUsingBlockhash(blockhash.value, x),
     (x) => signTransactionMessageWithSigners(x),
   );
@@ -274,9 +116,11 @@ async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
   assertIsAddress(address);
   const testContext = await getTestContext();
   const account = await testContext.banksClient.getAccount(toBytes(address));
+
   if (account == null || account.lamports === 0n) {
     return null as T;
   }
+
   return {
     data: [decoder.decode(account.data), encoding],
     executable: false,
@@ -338,6 +182,10 @@ async function mockTransport<T>(
         addresses.map((x) => getAccountData(x, opts)),
       );
       return getResponseWithContext<T>(accountsData);
+    case "getProgramAccounts":
+      throw new Error("gpa is not yet exposed through solana-bankrun");
+    case "getTokenAccountsByOwner":
+      throw new Error("getTokenAccountsByOwner is not yet exposed through solana-bankrun");
     case "getMinimumBalanceForRentExemption":
       const space = config.payload.params[0];
       assert(typeof space === "number");

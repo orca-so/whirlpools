@@ -49,7 +49,7 @@ fn main() {
     let slippage_tolerance_bps = 100u16;
     let current_sqrt_price = 7437568627975669726u128;
     let tick_index_1 = -18568;
-    let tick_index_2 = 17668;
+    let tick_index_2 = -17668;
     let transfer_fee_a = Some(TransferFee::new(200));
     let transfer_fee_b = None;
 
@@ -70,10 +70,10 @@ fn main() {
 Expected output:
 ```
 IncreaseLiquidityQuote {
-    liquidity_delta: 474158756,
-    token_est_a: 999999999,
-    token_est_b: 3787371,
-    token_max_a: 1009999999,
-    token_max_b: 3825245,
+    liquidity_delta: 16011047470,
+    token_est_a: 1000000000,
+    token_est_b: 127889169,
+    token_max_a: 1010000000,
+    token_max_b: 129168061,
 }
 ```

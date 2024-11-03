@@ -3,7 +3,7 @@
 ## Overview
 This package provides developers with low-level functionalities for interacting with the Whirlpool Program on Solana. It serves as a foundational tool that allows developers to manage and integrate detailed operations into their Solana projects, particularly those related to Orca's Whirlpool Program. This package offers granular control for advanced use cases.
 
-> NOTE: To ensure compatibility, use version 1.17.22 of the `solana-program` crate, which matches the version used to build the Whirlpool program.
+> NOTE: To ensure compatibility, use version 1.17.22 of the `solana-sdk` crate, which matches the version used to build the Whirlpool program.
 
 ## Key Features
 - **Codama IDL Integration**: The package includes a set of generated client code based on Codama IDL, which provides a standardized representation of the Whirlpool Program. This ensures all the necessary program information is easily accessible in a structured format and handles all decoding and encoding of instructions and account data, making it much easier to interact with the program.
@@ -22,7 +22,7 @@ To derive a PDA for a Whirlpool account, you can use the get_whirlpool_address P
 
 ```rust
 use orca_whirlpools_client::get_whirlpool_address;
-use solana_program::pubkey::Pubkey;
+use solana_sdk::pubkey::Pubkey;
 
 fn main() {
     let whirlpool_config_address = Pubkey::try_from("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR").unwrap();

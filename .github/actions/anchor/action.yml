@@ -15,7 +15,7 @@ inputs:
     required: false
   rustc-version:
     description: 'The version of rustc to use.'
-    default: 'v1.78.0'
+    default: 'v1.82.0'
   node-version:
     description: 'The version of node to use.'
     default: 'v22.8.0'

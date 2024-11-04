@@ -149,7 +149,7 @@ function getIncreaseLiquidityQuote(
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity. Can specify liquidity, Token A, or Token B amounts.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
  * @param {TransactionSigner} [authority=FUNDER] - The account that authorizes the transaction.
- * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions, quote, position mint address, and initialization costs for increasing liquidity.
+ * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
  * import { increaseLiquidityInstructions } from '@orca-so/whirlpools';
@@ -464,7 +464,7 @@ async function internalOpenPositionInstructions(
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity, where one of `liquidity`, `tokenA`, or `tokenB` must be specified. The SDK will compute the others.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
  * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
- * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions, quote, position mint address, and initialization costs for increasing liquidity.
+ * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing the instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
  * import { openFullRangePositionInstructions } from '@orca-so/whirlpools';
@@ -530,7 +530,7 @@ export async function openFullRangePositionInstructions(
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The slippage tolerance for adding liquidity, in basis points (BPS).
  * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
  *
- * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions, quote, position mint address, and initialization costs for increasing liquidity.
+ * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
  * import { openPositionInstructions } from '@orca-so/whirlpools';

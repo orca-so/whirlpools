@@ -66,7 +66,6 @@ export type CreatePoolInstructions = {
  * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
  * const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
  * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2";

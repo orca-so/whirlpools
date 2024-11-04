@@ -34,7 +34,7 @@ npx tsc --init
 
 ## 2. Wallet Creation
 
-You can [generate a file system wallet using the Solana CLI](https://docs.solanalabs.com/cli/wallets/file-system). You can load it using `createKeyPairSignerFromBytes`.
+You can [generate a file system wallet using the Solana CLI](https://docs.solanalabs.com/cli/wallets/file-system) and load it using `createKeyPairSignerFromBytes`.
 
 ```tsx
 import { createKeyPairSignerFromBytes } from '@solana/web3.js';

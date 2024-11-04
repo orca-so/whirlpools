@@ -22,7 +22,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "node ./kinobi.js && tsup src/index.ts --format cjs,esm --dts --sourcemap",
+    "build": "node ./codama.js && tsup src/index.ts --format cjs,esm --dts --sourcemap",
     "test": "vitest run tests",
     "clean": "rimraf dist src/generated"
   },
@@ -30,11 +30,11 @@
     "@solana/web3.js": "^2.0.0-rc.1"
   },
   "devDependencies": {
-    "@kinobi-so/nodes-from-anchor": "^0.22.0",
-    "@kinobi-so/renderers-js": "^0.22.0",
+    "@codama/nodes-from-anchor": "^1.0.0",
+    "@codama/renderers-js": "^1.0.1",
     "@orca-so/whirlpools-program": "*",
     "@solana/web3.js": "^2.0.0-rc.1",
-    "kinobi": "^0.22.0",
+    "codama": "^1.0.0",
     "typescript": "^5.6.3"
   },
   "repository": {

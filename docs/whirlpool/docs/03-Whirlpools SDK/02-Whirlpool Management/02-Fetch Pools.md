@@ -58,7 +58,7 @@ const poolInfo = await fetchConcentratedLiquidityPool(
 2. **Fetch Pool Details**: Use the appropriate function to fetch the details of the specified pools.
 
 ```tsx
-const pools = await fetchWhirlPools(
+const pools = await fetchWhirlPoolsByTokenPair(
   rpc,
   tokenMintOne,
   tokenMintTwo

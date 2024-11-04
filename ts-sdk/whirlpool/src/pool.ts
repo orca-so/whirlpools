@@ -17,6 +17,7 @@ import type {
   GetProgramAccountsApi,
 } from "@solana/web3.js";
 import { SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS } from "./config";
+import { orderMints } from "./token";
 
 /**
  * Type representing a pool that is not yet initialized.
@@ -123,10 +124,7 @@ export async function fetchConcentratedLiquidityPool(
   tokenMintTwo: Address,
   tickSpacing: number,
 ): Promise<PoolInfo> {
-  const [tokenMintA, tokenMintB] =
-    Buffer.from(tokenMintOne) < Buffer.from(tokenMintTwo)
-      ? [tokenMintOne, tokenMintTwo]
-      : [tokenMintTwo, tokenMintOne];
+  const [tokenMintA, tokenMintB] = orderMints(tokenMintOne, tokenMintTwo);
   const feeTierAddress = await getFeeTierAddress(
     WHIRLPOOLS_CONFIG_ADDRESS,
     tickSpacing,
@@ -196,11 +194,7 @@ export async function fetchWhirlpools(
   tokenMintOne: Address,
   tokenMintTwo: Address,
 ): Promise<PoolInfo[]> {
-  const [tokenMintA, tokenMintB] =
-    Buffer.from(tokenMintOne) < Buffer.from(tokenMintTwo)
-      ? [tokenMintOne, tokenMintTwo]
-      : [tokenMintTwo, tokenMintOne];
-
+  const [tokenMintA, tokenMintB] = orderMints(tokenMintOne, tokenMintTwo);
   const feeTierAccounts = await fetchAllFeeTierWithFilter(
     rpc,
     feeTierWhirlpoolsConfigFilter(WHIRLPOOLS_CONFIG_ADDRESS),

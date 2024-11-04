@@ -279,3 +279,14 @@ export function getCurrentTransferFee(
     maxFee: transferFee.maximumFee,
   };
 }
+
+/**
+ * Orders two mints by canonical byte order.
+ * @param {Address} mint1
+ * @param {Address} mint2
+ * @returns {[Address, Address]} [mint1, mint2] if mint1 should come first, [mint2, mint1] otherwise
+ */
+export function orderMints(mint1: Address, mint2: Address): [Address, Address] {
+  const encoder = getAddressEncoder();
+  return encoder.encode(mint1) < encoder.encode(mint2) ? [mint1, mint2] : [mint2, mint1];
+}

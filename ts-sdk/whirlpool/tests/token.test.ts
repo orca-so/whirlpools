@@ -19,8 +19,8 @@ import {
   setSolWrappingStrategy,
 } from "../src/config";
 import type { Address, TransactionSigner } from "@solana/web3.js";
-import { createNoopSigner, generateKeyPairSigner } from "@solana/web3.js";
-import { NATIVE_MINT, prepareTokenAccountsInstructions } from "../src/token";
+import { address, createNoopSigner, generateKeyPairSigner } from "@solana/web3.js";
+import { NATIVE_MINT, orderMints, prepareTokenAccountsInstructions } from "../src/token";
 import assert from "assert";
 import {
   assertCloseAccountInstruction,
@@ -599,5 +599,17 @@ describe("Token Account Creation", () => {
       account: result.tokenAccountAddresses[NATIVE_MINT],
       owner: signer.address,
     });
+  });
+
+  it("Should order mints by canonical byte order", () => {
+    const mint1 = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
+    const mint2 = address("Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa");
+    const [mintA, mintB] = orderMints(mint1, mint2);
+    assert.strictEqual(mintA, mint1);
+    assert.strictEqual(mintB, mint2);
+
+    const [mintC, mintD] = orderMints(mint2, mint1);
+    assert.strictEqual(mintC, mint1);
+    assert.strictEqual(mintD, mint2);
   });
 });

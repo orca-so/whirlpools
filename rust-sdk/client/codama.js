@@ -1,5 +1,5 @@
 import { createFromRoot } from "codama";
-import { renderVisitor } from "@codama/renderers-ts";
+import { renderVisitor } from "@codama/renderers-rust";
 import { rootNodeFromAnchor } from "@codama/nodes-from-anchor";
 import { readFileSync } from "fs";
 

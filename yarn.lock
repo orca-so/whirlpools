@@ -3010,6 +3010,63 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@docusaurus/core@npm:3.6.0":
+  version: 3.6.0
+  resolution: "@docusaurus/core@npm:3.6.0"
+  dependencies:
+    "@docusaurus/babel": "npm:3.6.0"
+    "@docusaurus/bundler": "npm:3.6.0"
+    "@docusaurus/logger": "npm:3.6.0"
+    "@docusaurus/mdx-loader": "npm:3.6.0"
+    "@docusaurus/utils": "npm:3.6.0"
+    "@docusaurus/utils-common": "npm:3.6.0"
+    "@docusaurus/utils-validation": "npm:3.6.0"
+    boxen: "npm:^6.2.1"
+    chalk: "npm:^4.1.2"
+    chokidar: "npm:^3.5.3"
+    cli-table3: "npm:^0.6.3"
+    combine-promises: "npm:^1.1.0"
+    commander: "npm:^5.1.0"
+    core-js: "npm:^3.31.1"
+    del: "npm:^6.1.1"
+    detect-port: "npm:^1.5.1"
+    escape-html: "npm:^1.0.3"
+    eta: "npm:^2.2.0"
+    eval: "npm:^0.1.8"
+    fs-extra: "npm:^11.1.1"
+    html-tags: "npm:^3.3.1"
+    html-webpack-plugin: "npm:^5.6.0"
+    leven: "npm:^3.1.0"
+    lodash: "npm:^4.17.21"
+    p-map: "npm:^4.0.0"
+    prompts: "npm:^2.4.2"
+    react-dev-utils: "npm:^12.0.1"
+    react-helmet-async: "npm:^1.3.0"
+    react-loadable: "npm:@docusaurus/react-loadable@6.0.0"
+    react-loadable-ssr-addon-v5-slorber: "npm:^1.0.1"
+    react-router: "npm:^5.3.4"
+    react-router-config: "npm:^5.1.1"
+    react-router-dom: "npm:^5.3.4"
+    rtl-detect: "npm:^1.0.4"
+    semver: "npm:^7.5.4"
+    serve-handler: "npm:^6.1.6"
+    shelljs: "npm:^0.8.5"
+    tslib: "npm:^2.6.0"
+    update-notifier: "npm:^6.0.2"
+    webpack: "npm:^5.95.0"
+    webpack-bundle-analyzer: "npm:^4.10.2"
+    webpack-dev-server: "npm:^4.15.2"
+    webpack-merge: "npm:^6.0.1"
+  peerDependencies:
+    "@mdx-js/react": ^3.0.0
+    react: ^18.0.0
+    react-dom: ^18.0.0
+  bin:
+    docusaurus: bin/docusaurus.mjs
+  checksum: 10c0/e687344dd41e0f2efd2fac3cc23021c442631615c2a520f9a37d34b5465d4a621d8febb3bc4b09e2ae62e7b8f3b884cf65a22019b91468db3ff89a7cfec5a4b4
+  languageName: node
+  linkType: hard
+
 "@docusaurus/cssnano-preset@npm:3.5.2":
   version: 3.5.2
   resolution: "@docusaurus/cssnano-preset@npm:3.5.2"
@@ -4750,7 +4807,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-docs@workspace:docs/whirlpool"
   dependencies:
-    "@docusaurus/core": "npm:3.5.2"
+    "@docusaurus/core": "npm:3.6.0"
     "@docusaurus/module-type-aliases": "npm:^3.5.2"
     "@docusaurus/preset-classic": "npm:3.6.0"
     "@docusaurus/tsconfig": "npm:^3.6.0"

@@ -6,7 +6,7 @@ This package provides developers with low-level functionalities for interacting 
 > **Note:** This SDK uses Solana Web3.js SDK v2, which is currently in Release Candidate (RC) status. It is not compatible with the widely used v1.x.x version.
 
 ## Key Features
-- **Codama IDL Integration**: The package includes a set of generated client code based on the Whirlpool Program IDL. This ensures all the necessary program information is easily accessible in a structured format and handles all decoding and encoding of instructions and account data, making it much easier to interact with the program.
+- **Codama Client**: The package includes a set of generated client code based on the Whirlpool Program IDL. This ensures all the necessary program information is easily accessible in a structured format and handles all decoding and encoding of instructions and account data, making it much easier to interact with the program.
 - **GPA (Get Program Accounts) Filters**: This feature contains utilities to add filters to program accounts, allowing developers to fetch program account data more selectively and efficiently.
 - **PDA (Program Derived Addresses) Utilities**: This feature contains utility functions that help derive Program Derived Addresses (PDAs) for accounts within the Whirlpool Program, simplifying address generation for developers.
 

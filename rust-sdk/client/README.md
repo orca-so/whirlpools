@@ -6,7 +6,7 @@ This package provides developers with low-level functionalities for interacting 
 > NOTE: To ensure compatibility, use version 1.17.22 of the `solana-sdk` crate, which matches the version used to build the Whirlpool program.
 
 ## Key Features
-- **Codama IDL Integration**: The package includes a set of generated client code based on Codama IDL, which provides a standardized representation of the Whirlpool Program. This ensures all the necessary program information is easily accessible in a structured format and handles all decoding and encoding of instructions and account data, making it much easier to interact with the program.
+- **Codama IDL Integration**: The package includes a set of generated client code based on Codama IDL, which provides a standardized representation of the Whirlpool Program. This ensures all the necessary program information is easily accessible in a structured format. It handles all decoding and encoding of instructions and account data, making it much easier to interact with the program.
 - **PDA (Program Derived Addresses) Utilities**: This feature contains utility functions that help derive Program Derived Addresses (PDAs) for accounts within the Whirlpool Program, simplifying address generation for developers.
 
 ## Installation
@@ -18,7 +18,7 @@ cargo add orca_whirlpools_client
 Here are some basic examples of how to use the package:
 
 ### Deriving a PDA
-To derive a PDA for a Whirlpool account, you can use the get_whirlpool_address PDA utility.
+To derive a PDA for a Whirlpool account, you can use the `get_whirlpool_address` PDA utility.
 
 ```rust
 use orca_whirlpools_client::get_whirlpool_address;

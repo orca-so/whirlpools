@@ -4,7 +4,7 @@ This package provides developers with advanced functionalities for interacting w
 
 ## Key Features
 
-- **Math Library**: Contains a variety of functions to perform different math operations related to bundles, positions, prices, ticks, and tokens, including calculations like determining position status or price conversions.
+- **Math Library**: Contains a variety of functions for math operations related to bundles, positions, prices, ticks, and tokens, including calculations such as determining position status or price conversions.
 - **Quote Library**: Provides utility functions for generating quotes, such as increasing liquidity, collecting fees or rewards, and swapping, enabling precise and optimized decision-making in liquidity management.
 
 ## Installation

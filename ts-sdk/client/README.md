@@ -29,7 +29,7 @@ import { fetchAllWhirlpoolWithFilter, whirlpoolTokenMintAFilter } from "@orca-so
 
 const rpc = createSolanaRpc(devnet("https://api.devnet.solana.com"));
 
-const tokenMintA = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k") //DevUSDC
+const tokenMintA = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); //DevUSDC
 const filter = whirlpoolTokenMintAFilter(tokenMintA);
 
 const accounts = await fetchAllWhirlpoolWithFilter(rpc, filter);
@@ -42,9 +42,9 @@ To derive a PDA for a Whirlpool account, you can use the `getWhirlpoolAddress` P
 import { getWhirlpoolAddress } from "@orca-so/whirlpools-client";
 import { address } from '@solana/web3.js';
 
-const whirlpoolConfigAddress = address("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR")
-const tokenMintA = address("So11111111111111111111111111111111111111112") //wSOL
-const tokenMintB = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k") //DevUSDC
+const whirlpoolConfigAddress = address("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR");
+const tokenMintA = address("So11111111111111111111111111111111111111112"); //wSOL
+const tokenMintB = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); //DevUSDC
 const tickSpacing = 64;
 
 const whirlpoolPda = await getWhirlpoolAddress(
@@ -69,7 +69,7 @@ const tokenMintA = address("So11111111111111111111111111111111111111112"); // wS
 const tokenMintB = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // DevUSDC
 const wallet = await generateKeyPairSigner();
 const tickSpacing = 8;
-const whirlpool = await getWhirlpoolAddress(whirlpoolConfigAddress, tokenMintA, tokenMintB, tickSpacing)
+const whirlpool = await getWhirlpoolAddress(whirlpoolConfigAddress, tokenMintA, tokenMintB, tickSpacing);
 const tokenVaultA = await generateKeyPairSigner();
 const tokenVaultB = await generateKeyPairSigner();
 const feeTier = await getFeeTierAddress(whirlpoolConfigAddress, tickSpacing);

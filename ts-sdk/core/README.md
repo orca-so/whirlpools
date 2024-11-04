@@ -3,8 +3,8 @@ This package provides developers with advanced functionalities for interacting w
 
 ## Key Features
 - **WebAssembly Integration**: The original Rust-based SDK is compiled to Wasm, allowing it to be used in JavaScript and TypeScript projects for easy integration with web-based environments.
-- **Math Library**: Contains functions for performing math operations related to bundles, positions, prices, ticks, and tokens, including calculations like determining position status or price conversions.
-- **Quote Library**: Provides utility functions for generating quotes, such as increasing liquidity, collecting fees or rewards, and swapping, helping developers make informed decisions in liquidity management.
+- **Math Library**: Contains a variety of functions for math operations related to bundles, positions, prices, ticks, and tokens, including calculations such as determining position status or price conversions.
+- **Quote Library**: Provides utility functions for generating quotes, such as increasing liquidity, collecting fees or rewards, and swapping, to help developers make informed decisions regarding liquidity management.
 
 ## Installation
 You can install the package via npm:
@@ -26,7 +26,7 @@ const tickIndex1 = -18304;
 const tickIndex2 = -17956;
 
 const inRange = isPositionInRange(currentSqrtPrice, tickIndex1, tickIndex2);
-console.log("Position in range?", inRange);
+console.log("Position in range:", inRange);
 ```
 
 Expected output:
@@ -46,7 +46,6 @@ const currentSqrtPrice = 7437568627975669726n;
 const tickIndex1 = -18568;
 const tickIndex2 = -17668;
 const transferFeeA = { feeBps: 200, maxFee: 1000000000n };
-const transferFeeB = undefined;
 
 const quote = increaseLiquidityQuoteA(
   tokenAmountA,
@@ -55,7 +54,6 @@ const quote = increaseLiquidityQuoteA(
   tickIndex1,
   tickIndex2,
   transferFeeA,
-  transferFeeB
 );
 
 console.log(quote);

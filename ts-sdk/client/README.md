@@ -1,4 +1,4 @@
-# Whirlpools Program Client - Low-Level SDK
+# Orca Whirlpools Client SDK
 
 ## Overview
 This package provides developers with low-level functionalities for interacting with the Whirlpool Program on Solana. It serves as a foundational tool that allows developers to manage and integrate detailed operations into their Typescript projects, particularly those related to Orca's Whirlpool Program. While a high-level SDK is available for easier integration, [@orca-so/whirlpools](https://www.npmjs.com/package/@orca-so/whirlpools), this package offers more granular control for advanced use cases.

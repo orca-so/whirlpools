@@ -1,8 +1,7 @@
 # Orca Whirlpools Core SDK (WebAssembly)
-This package provides developers with advanced functionalities for interacting with the Whirlpool Program on Solana. Originally written in Rust, it has been compiled to WebAssembly (Wasm). This compilation makes the SDK accessible in JavaScript/TypeScript environments, offering developers the same core features and calculations for their Solana projects. The SDK exposes convenient methods for math calculations, quotes, and other utilities, enabling seamless integration within web-based projects.
+This package provides developers with advanced functionalities for interacting with the Whirlpool Program on Solana. Originally written in Rust, it has been compiled to WebAssembly (Wasm). This compilation makes the SDK accessible in JavaScript/TypeScript environments, offering developers the same core features and calculations for their Typescript projects. The SDK exposes convenient methods for math calculations, quotes, and other utilities, enabling seamless integration within web-based projects.
 
 ## Key Features
-- **WebAssembly Integration**: The original Rust-based SDK is compiled to Wasm, allowing it to be used in JavaScript and TypeScript projects for easy integration with web-based environments.
 - **Math Library**: Contains a variety of functions for math operations related to bundles, positions, prices, ticks, and tokens, including calculations such as determining position status or price conversions.
 - **Quote Library**: Provides utility functions for generating quotes, such as increasing liquidity, collecting fees or rewards, and swapping, to help developers make informed decisions regarding liquidity management.
 

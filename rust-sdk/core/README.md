@@ -1,6 +1,6 @@
 # Orca Whirlpools Core SDK
 
-This package provides developers with advanced functionalities for interacting with the Whirlpool Program on Solana. The Core SDK offers convenient methods for math calculations, quotes, and other utilities, making it easier to manage complex liquidity and swap operations within Solana projects. It serves as the foundation for the High-Level SDK, providing key building blocks that enable developers to perform sophisticated actions while maintaining control over core details.
+This package provides developers with advanced functionalities for interacting with the Whirlpool Program on Solana. The Core SDK offers convenient methods for math calculations, quotes, and other utilities, making it easier to manage complex liquidity and swap operations within Rust projects. It serves as the foundation for the High-Level SDK, providing key building blocks that enable developers to perform sophisticated actions while maintaining control over core details.
 
 ## Key Features
 

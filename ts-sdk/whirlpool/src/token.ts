@@ -132,7 +132,10 @@ export async function prepareTokenAccountsInstructions(
   if (!Array.isArray(spec)) {
     for (let i = 0; i < mints.length; i++) {
       const mint = mints[i];
-      if (mint.address === NATIVE_MINT && NATIVE_MINT_WRAPPING_STRATEGY !== "none") {
+      if (
+        mint.address === NATIVE_MINT &&
+        NATIVE_MINT_WRAPPING_STRATEGY !== "none"
+      ) {
         continue;
       }
       const tokenAccount = tokenAccounts[i];
@@ -360,4 +363,3 @@ export function orderMints(mint1: Address, mint2: Address): [Address, Address] {
     ? [mint1, mint2]
     : [mint2, mint1];
 }
-

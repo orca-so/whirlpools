@@ -5,11 +5,24 @@ import {
   findAssociatedTokenPda,
   TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
-import { fetchMint, TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
-import { resetConfiguration, setNativeMintWrappingStrategy } from "../src/config";
-import { getAccountExtensions, getCurrentTransferFee, NATIVE_MINT, orderMints, prepareTokenAccountsInstructions } from "../src/token";
+import {
+  fetchMint,
+  TOKEN_2022_PROGRAM_ADDRESS,
+} from "@solana-program/token-2022";
+import {
+  resetConfiguration,
+  setNativeMintWrappingStrategy,
+} from "../src/config";
+import {
+  getAccountExtensions,
+  getCurrentTransferFee,
+  NATIVE_MINT,
+  orderMints,
+  prepareTokenAccountsInstructions,
+} from "../src/token";
 import assert from "assert";
-import { address, Address } from "@solana/web3.js";
+import type { Address } from "@solana/web3.js";
+import { address } from "@solana/web3.js";
 import { setupAta, setupMint } from "./utils/token";
 import { setupMintTEFee } from "./utils/tokenExtensions";
 
@@ -222,7 +235,6 @@ describe("Token Account Creation", () => {
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
 
-
     await sendTransaction(result.createInstructions);
 
     const ataNativeAfterCreate = await fetchMaybeToken(rpc, ataNative);
@@ -299,7 +311,6 @@ describe("Token Account Creation", () => {
     assert.strictEqual(result.cleanupInstructions.length, 0);
   });
 
-
   it("Native mint and wrapping is ata but already exists with balances and existing balance", async () => {
     await setupAta(NATIVE_MINT, { amount: 500n });
     setNativeMintWrappingStrategy("ata");
@@ -332,13 +343,19 @@ describe("Token Account Creation", () => {
 
     await sendTransaction(result.createInstructions);
 
-    const nativeAccountAfterCreate = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    const nativeAccountAfterCreate = await fetchMaybeToken(
+      rpc,
+      result.tokenAccountAddresses[NATIVE_MINT],
+    );
     assert(nativeAccountAfterCreate.exists);
     assert.strictEqual(nativeAccountAfterCreate.data.amount, 0n);
 
     await sendTransaction(result.cleanupInstructions);
 
-    const nativeAccountAfterCleanup = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    const nativeAccountAfterCleanup = await fetchMaybeToken(
+      rpc,
+      result.tokenAccountAddresses[NATIVE_MINT],
+    );
     assert(!nativeAccountAfterCleanup.exists);
   });
 
@@ -354,13 +371,19 @@ describe("Token Account Creation", () => {
 
     await sendTransaction(result.createInstructions);
 
-    const nativeAccountAfterCreate = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    const nativeAccountAfterCreate = await fetchMaybeToken(
+      rpc,
+      result.tokenAccountAddresses[NATIVE_MINT],
+    );
     assert(nativeAccountAfterCreate.exists);
     assert.strictEqual(nativeAccountAfterCreate.data.amount, 250n);
 
     await sendTransaction(result.cleanupInstructions);
 
-    const nativeAccountAfterCleanup = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    const nativeAccountAfterCleanup = await fetchMaybeToken(
+      rpc,
+      result.tokenAccountAddresses[NATIVE_MINT],
+    );
     assert(!nativeAccountAfterCleanup.exists);
   });
 
@@ -376,13 +399,19 @@ describe("Token Account Creation", () => {
 
     await sendTransaction(result.createInstructions);
 
-    const nativeAccountAfterCreate = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    const nativeAccountAfterCreate = await fetchMaybeToken(
+      rpc,
+      result.tokenAccountAddresses[NATIVE_MINT],
+    );
     assert(nativeAccountAfterCreate.exists);
     assert.strictEqual(nativeAccountAfterCreate.data.amount, 0n);
 
     await sendTransaction(result.cleanupInstructions);
 
-    const nativeAccountAfterCleanup = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    const nativeAccountAfterCleanup = await fetchMaybeToken(
+      rpc,
+      result.tokenAccountAddresses[NATIVE_MINT],
+    );
     assert(!nativeAccountAfterCleanup.exists);
   });
 
@@ -398,13 +427,19 @@ describe("Token Account Creation", () => {
 
     await sendTransaction(result.createInstructions);
 
-    const nativeAccountAfterCreate = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    const nativeAccountAfterCreate = await fetchMaybeToken(
+      rpc,
+      result.tokenAccountAddresses[NATIVE_MINT],
+    );
     assert(nativeAccountAfterCreate.exists);
     assert.strictEqual(nativeAccountAfterCreate.data.amount, 250n);
 
     await sendTransaction(result.cleanupInstructions);
 
-    const nativeAccountAfterCleanup = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    const nativeAccountAfterCleanup = await fetchMaybeToken(
+      rpc,
+      result.tokenAccountAddresses[NATIVE_MINT],
+    );
     assert(!nativeAccountAfterCleanup.exists);
   });
 
@@ -442,4 +477,3 @@ describe("Token Account Creation", () => {
     assert.strictEqual(extensions[0].__kind, "TransferFeeAmount");
   });
 });
-

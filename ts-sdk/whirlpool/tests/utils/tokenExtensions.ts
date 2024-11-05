@@ -1,3 +1,4 @@
+import type { ExtensionArgs } from "@solana-program/token-2022";
 import {
   findAssociatedTokenPda,
   TOKEN_2022_PROGRAM_ADDRESS,
@@ -5,7 +6,6 @@ import {
   getMintToInstruction,
   getMintSize,
   getInitializeMint2Instruction,
-  ExtensionArgs,
   getInitializeTransferFeeConfigInstruction,
   getSetTransferFeeInstruction,
 } from "@solana-program/token-2022";
@@ -54,7 +54,7 @@ export async function setupAtaTE(
 }
 
 export async function setupMintTE(
-  config: { decimals?: number, extensions?: ExtensionArgs[] } = {},
+  config: { decimals?: number; extensions?: ExtensionArgs[] } = {},
 ): Promise<Address> {
   const keypair = await generateKeyPairSigner();
   const instructions: IInstruction[] = [];
@@ -72,13 +72,16 @@ export async function setupMintTE(
   for (const extension of config.extensions ?? []) {
     switch (extension.__kind) {
       case "TransferFeeConfig":
-        instructions.push(getInitializeTransferFeeConfigInstruction({
-          mint: keypair.address,
-          transferFeeConfigAuthority: signer.address,
-          withdrawWithheldAuthority: signer.address,
-          transferFeeBasisPoints: extension.olderTransferFee.transferFeeBasisPoints,
-          maximumFee: extension.olderTransferFee.maximumFee,
-        }));
+        instructions.push(
+          getInitializeTransferFeeConfigInstruction({
+            mint: keypair.address,
+            transferFeeConfigAuthority: signer.address,
+            withdrawWithheldAuthority: signer.address,
+            transferFeeBasisPoints:
+              extension.olderTransferFee.transferFeeBasisPoints,
+            maximumFee: extension.olderTransferFee.maximumFee,
+          }),
+        );
     }
   }
 
@@ -94,12 +97,15 @@ export async function setupMintTE(
   for (const extension of config.extensions ?? []) {
     switch (extension.__kind) {
       case "TransferFeeConfig":
-        instructions.push(getSetTransferFeeInstruction({
-          mint: keypair.address,
-          transferFeeConfigAuthority: signer.address,
-          transferFeeBasisPoints: extension.newerTransferFee.transferFeeBasisPoints,
-          maximumFee: extension.newerTransferFee.maximumFee,
-        }));
+        instructions.push(
+          getSetTransferFeeInstruction({
+            mint: keypair.address,
+            transferFeeConfigAuthority: signer.address,
+            transferFeeBasisPoints:
+              extension.newerTransferFee.transferFeeBasisPoints,
+            maximumFee: extension.newerTransferFee.maximumFee,
+          }),
+        );
     }
   }
 

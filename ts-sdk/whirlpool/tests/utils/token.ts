@@ -1,4 +1,7 @@
-import { getCreateAccountInstruction, getTransferSolInstruction } from "@solana-program/system";
+import {
+  getCreateAccountInstruction,
+  getTransferSolInstruction,
+} from "@solana-program/system";
 import {
   getMintSize,
   getInitializeMint2Instruction,

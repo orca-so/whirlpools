@@ -85,7 +85,7 @@ export async function sendTransaction(ixs: IInstruction[]) {
   // so that we can fire two seemingly identical transactions in a row.
   const memo = getAddMemoInstruction({
     memo: randomUUID().toString(),
-  })
+  });
   const transaction = await pipe(
     createTransactionMessage({ version: 0 }),
     (x) => appendTransactionMessageInstructions([memo, ...ixs], x),

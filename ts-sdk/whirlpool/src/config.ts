@@ -54,7 +54,10 @@ export async function setWhirlpoolsConfig(
   if (isAddress(config)) {
     WHIRLPOOLS_CONFIG_ADDRESS = config;
   } else {
-    WHIRLPOOLS_CONFIG_ADDRESS = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES];
+    WHIRLPOOLS_CONFIG_ADDRESS =
+      DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[
+        config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES
+      ];
   }
 
   WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
@@ -140,7 +143,8 @@ export type NativeMintWrappingStrategy = "keypair" | "seed" | "ata" | "none";
 /**
  * The default native mint wrapping strategy.
  */
-export const DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY: NativeMintWrappingStrategy = "keypair";
+export const DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY: NativeMintWrappingStrategy =
+  "keypair";
 
 /**
  * The currently selected native mint wrapping strategy.
@@ -153,7 +157,9 @@ export let NATIVE_MINT_WRAPPING_STRATEGY: NativeMintWrappingStrategy =
  *
  * @param {NativeMintWrappingStrategy} strategy - The native mint wrapping strategy.
  */
-export function setNativeMintWrappingStrategy(strategy: NativeMintWrappingStrategy): void {
+export function setNativeMintWrappingStrategy(
+  strategy: NativeMintWrappingStrategy,
+): void {
   NATIVE_MINT_WRAPPING_STRATEGY = strategy;
 }
 

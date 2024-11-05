@@ -116,7 +116,7 @@ export function setDefaultSlippageToleranceBps(
 }
 
 /**
- * Defines the strategy for handling SOL wrapping in a transaction.
+ * Defines the strategy for handling Native Mint wrapping in a transaction.
  *
  * - **Keypair**:
  *   Creates an auxiliary token account using a keypair. Optionally adds funds to the account. Closes it at the end of the transaction.
@@ -128,28 +128,28 @@ export function setDefaultSlippageToleranceBps(
  *   Creates an associated token account (ATA) for `NATIVE_MINT` if necessary. Optionally adds funds to the ATA. Closes it at the end of the transaction if it was newly created.
  *
  * - **None**:
- *   Uses or creates the ATA without performing any SOL wrapping or unwrapping.
+ *   Uses or creates the ATA without performing any Native Mint wrapping or unwrapping.
  */
-export type SolWrappingStrategy = "keypair" | "seed" | "ata" | "none";
+export type NativeMintWrappingStrategy = "keypair" | "seed" | "ata" | "none";
 
 /**
- * The default sol wrapping strategy.
+ * The default native mint wrapping strategy.
  */
-export const DEFAULT_SOL_WRAPPING_STRATEGY: SolWrappingStrategy = "keypair";
+export const DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY: NativeMintWrappingStrategy = "keypair";
 
 /**
- * The currently selected sol wrapping strategy.
+ * The currently selected native mint wrapping strategy.
  */
-export let SOL_WRAPPING_STRATEGY: SolWrappingStrategy =
-  DEFAULT_SOL_WRAPPING_STRATEGY;
+export let NATIVE_MINT_WRAPPING_STRATEGY: NativeMintWrappingStrategy =
+  DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
 
 /**
- * Sets the sol wrapping strategy.
+ * Sets the native mint wrapping strategy.
  *
- * @param {SolWrappingStrategy} strategy - The sol wrapping strategy.
+ * @param {NativeMintWrappingStrategy} strategy - The native mint wrapping strategy.
  */
-export function setSolWrappingStrategy(strategy: SolWrappingStrategy): void {
-  SOL_WRAPPING_STRATEGY = strategy;
+export function setNativeMintWrappingStrategy(strategy: NativeMintWrappingStrategy): void {
+  NATIVE_MINT_WRAPPING_STRATEGY = strategy;
 }
 
 /**
@@ -163,5 +163,5 @@ export function resetConfiguration() {
     DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
   FUNDER = DEFAULT_FUNDER;
   SLIPPAGE_TOLERANCE_BPS = DEFAULT_SLIPPAGE_TOLERANCE_BPS;
-  SOL_WRAPPING_STRATEGY = DEFAULT_SOL_WRAPPING_STRATEGY;
+  NATIVE_MINT_WRAPPING_STRATEGY = DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
 }

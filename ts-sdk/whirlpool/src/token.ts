@@ -26,7 +26,7 @@ import {
   getAddressDecoder,
   getAddressEncoder,
 } from "@solana/web3.js";
-import { SOL_WRAPPING_STRATEGY } from "./config";
+import { NATIVE_MINT_WRAPPING_STRATEGY } from "./config";
 import {
   getCreateAccountInstruction,
   getCreateAccountWithSeedInstruction,
@@ -57,7 +57,10 @@ type TokenAccountInstructions = {
 };
 
 function mintFilter(x: Address) {
-  if (SOL_WRAPPING_STRATEGY === "none" || SOL_WRAPPING_STRATEGY === "ata") {
+  if (
+    NATIVE_MINT_WRAPPING_STRATEGY === "none" ||
+    NATIVE_MINT_WRAPPING_STRATEGY === "ata"
+  ) {
     return true;
   }
   return x != NATIVE_MINT;
@@ -69,7 +72,7 @@ function mintFilter(x: Address) {
  * ATAs for the supplied mints.
  *
  * The NATIVE_MINT is a special case where this function will optionally wrap/unwrap
- * SOL based on the SOL_WRAPPING_STRATEGY.
+ * Native Mint based on the NATIVE_MINT_WRAPPING_STRATEGY.
  *
  * @param rpc
  * @param owner the owner to create token accounts for
@@ -88,8 +91,8 @@ export async function prepareTokenAccountsInstructions(
   const mintAddresses = Array.isArray(spec)
     ? spec
     : (Object.keys(spec) as Address[]);
-  const solMintIndex = mintAddresses.indexOf(NATIVE_MINT);
-  const hasSolMint = solMintIndex !== -1;
+  const nativeMintIndex = mintAddresses.indexOf(NATIVE_MINT);
+  const hasNativeMint = nativeMintIndex !== -1;
   const mints = await fetchAllMint(rpc, mintAddresses.filter(mintFilter));
   const tokenAddresses = await Promise.all(
     mints.map((mint) =>
@@ -124,7 +127,7 @@ export async function prepareTokenAccountsInstructions(
     );
   }
 
-  if (hasSolMint && SOL_WRAPPING_STRATEGY === "keypair") {
+  if (hasNativeMint && NATIVE_MINT_WRAPPING_STRATEGY === "keypair") {
     const keypair = await generateKeyPairSigner();
     const space = getTokenSize();
     const lamports = await rpc
@@ -154,7 +157,7 @@ export async function prepareTokenAccountsInstructions(
     tokenAccountAddresses[NATIVE_MINT] = keypair.address;
   }
 
-  if (hasSolMint && SOL_WRAPPING_STRATEGY === "seed") {
+  if (hasNativeMint && NATIVE_MINT_WRAPPING_STRATEGY === "seed") {
     const space = getTokenSize();
     const amount = await rpc
       .getMinimumBalanceForRentExemption(BigInt(space))
@@ -203,8 +206,8 @@ export async function prepareTokenAccountsInstructions(
     );
   }
 
-  if (hasSolMint && SOL_WRAPPING_STRATEGY === "ata") {
-    const account = tokenAccounts[solMintIndex];
+  if (hasNativeMint && NATIVE_MINT_WRAPPING_STRATEGY === "ata") {
+    const account = tokenAccounts[nativeMintIndex];
     if (!account.exists) {
       cleanupInstructions.push(
         getCloseAccountInstruction({
@@ -217,10 +220,10 @@ export async function prepareTokenAccountsInstructions(
   }
 
   if (
-    hasSolMint &&
+    hasNativeMint &&
     !Array.isArray(spec) &&
     spec[NATIVE_MINT] > 0 &&
-    SOL_WRAPPING_STRATEGY !== "none"
+    NATIVE_MINT_WRAPPING_STRATEGY !== "none"
   ) {
     createInstructions.push(
       getTransferSolInstruction({

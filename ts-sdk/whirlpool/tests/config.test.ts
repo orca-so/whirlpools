@@ -6,13 +6,13 @@ import {
   resetConfiguration,
   setDefaultFunder,
   setDefaultSlippageToleranceBps,
-  setSolWrappingStrategy,
+  setNativeMintWrappingStrategy,
   setWhirlpoolsConfig,
-  SOL_WRAPPING_STRATEGY,
+  NATIVE_MINT_WRAPPING_STRATEGY,
   WHIRLPOOLS_CONFIG_ADDRESS,
   WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
   DEFAULT_SLIPPAGE_TOLERANCE_BPS,
-  DEFAULT_SOL_WRAPPING_STRATEGY,
+  DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY,
   DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS,
   DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS,
   DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES,
@@ -73,9 +73,9 @@ describe("Configuration", () => {
     assert.strictEqual(SLIPPAGE_TOLERANCE_BPS, 200);
   });
 
-  it("Should be able to set the sol wrapping strategy", () => {
-    setSolWrappingStrategy("ata");
-    assert.strictEqual(SOL_WRAPPING_STRATEGY, "ata");
+  it("Should be able to set the native mint wrapping strategy", () => {
+    setNativeMintWrappingStrategy("ata");
+    assert.strictEqual(NATIVE_MINT_WRAPPING_STRATEGY, "ata");
   });
 
   it("Should be able to reset the configuration", () => {
@@ -90,6 +90,9 @@ describe("Configuration", () => {
     );
     assert.strictEqual(FUNDER.address, DEFAULT_ADDRESS);
     assert.strictEqual(SLIPPAGE_TOLERANCE_BPS, DEFAULT_SLIPPAGE_TOLERANCE_BPS);
-    assert.strictEqual(SOL_WRAPPING_STRATEGY, DEFAULT_SOL_WRAPPING_STRATEGY);
+    assert.strictEqual(
+      NATIVE_MINT_WRAPPING_STRATEGY,
+      DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY,
+    );
   });
 });

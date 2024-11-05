@@ -32,6 +32,7 @@ import {
 } from "@orca-so/whirlpools-core";
 import { fetchAllMint, getTokenSize } from "@solana-program/token";
 import assert from "assert";
+import { orderMints } from "./token";
 
 /**
  * Represents the instructions and metadata for creating a pool.
@@ -144,7 +145,7 @@ export async function createConcentratedLiquidityPoolInstructions(
     "Either supply a funder or set the default funder",
   );
   assert(
-    Buffer.from(tokenMintA) < Buffer.from(tokenMintB),
+    orderMints(tokenMintA, tokenMintB)[0] === tokenMintA,
     "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)",
   );
   const instructions: IInstruction[] = [];

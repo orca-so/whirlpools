@@ -62,7 +62,7 @@ For more details, refer to our [Environment Setup Guide](../01-Environment%20Set
 4. **Funder**: This can be your wallet, which will fund the pool initialization. If the funder is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
 5. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
     ```tsx
-    const { quote, instructions, initializationCost } = await openPositionInstructions(
+    const { quote, instructions, initializationCost, positionMint } = await openPositionInstructions(
         rpc,
         poolAddress,
         param, 

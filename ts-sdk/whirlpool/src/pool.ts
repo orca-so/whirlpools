@@ -62,11 +62,9 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  *
  * @example
  * import { fetchSplashPool } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ONE";
  * const tokenMintTwo = "TOKEN_MINT_TWO";
@@ -101,11 +99,9 @@ export async function fetchSplashPool(
  *
  * @example
  * import { fetchPool } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ONE";
  * const tokenMintTwo = "TOKEN_MINT_TWO";
@@ -174,11 +170,9 @@ export async function fetchConcentratedLiquidityPool(
  *
  * @example
  * import { fetchWhirlpoolsByTokenPair } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ONE";
  * const tokenMintTwo = "TOKEN_MINT_TWO";

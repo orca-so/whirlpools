@@ -32,7 +32,15 @@ Adjusting liquidity in an existing position can be done as follows:
 5. **Funder**: This can be your wallet, which will fund the pool initialization. If a funder is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
 6. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
     ```tsx
-    const {quote, instructions, initializationCost} = await increaseLiquidityInstructions(
+    const { quote, instructions, initializationCost, positionMint } = await increaseLiquidityInstructions(
+        rpc, 
+        positionMint, 
+        param, 
+        slippageTolerance, 
+        wallet
+    )
+
+    const { quote, instructions } = await decreaseLiquidityInstructions(
         rpc, 
         positionMint, 
         param, 

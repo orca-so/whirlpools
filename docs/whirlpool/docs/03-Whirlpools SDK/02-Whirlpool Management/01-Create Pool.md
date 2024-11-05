@@ -38,7 +38,7 @@ Splash Pools are the easiest way to get started:
     ```tsx
     import { createSplashPoolInstructions } from '@orca-so/whirlpools'
 
-    const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
+    const { poolAddress, instructions, estInitializationCost } = await createSplashPoolInstructions(
         rpc,
         tokenMintOne,
         tokenMintTwo,
@@ -60,7 +60,7 @@ Concentrated Liquidity Pools offer more flexibility:
     ```tsx
     import { createConcentratedLiquidityPool } from '@orca-so/whirlpools'
 
-    const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPool(
+    const { poolAddress, instructions, estInitializationCost } = await createConcentratedLiquidityPool(
         rpc,
         tokenMintOne,
         tokenMintTwo,

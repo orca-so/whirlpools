@@ -61,17 +61,18 @@ export type CreatePoolInstructions = {
  *
  * @example
  * import { createSplashPoolInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
+ * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
  * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2";
  * const initialPrice = 0.01;
  *
- * const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
+ * const { poolAddress, instructions, estInitializationCost } = await createSplashPoolInstructions(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo,
@@ -110,10 +111,11 @@ export function createSplashPoolInstructions(
  *
  * @example
  * import { createConcentratedLiquidityPool } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
+ * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
@@ -121,7 +123,7 @@ export function createSplashPoolInstructions(
  * const tickSpacing = 64;
  * const initialPrice = 0.01;
  *
- * const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPool(
+ * const { poolAddress, instructions, estInitializationCost } = await createConcentratedLiquidityPool(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo,

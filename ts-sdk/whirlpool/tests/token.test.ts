@@ -6,7 +6,7 @@ import {
 } from "@solana-program/token";
 import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
 import { resetConfiguration, setSolWrappingStrategy } from "../src/config";
-import { NATIVE_MINT, prepareTokenAccountsInstructions } from "../src/token";
+import { NATIVE_MINT, prepareTokenAccountsInstructions, orderMints } from "../src/token";
 import assert from "assert";
 import {
   assertCloseAccountInstruction,
@@ -17,7 +17,7 @@ import {
   assertSolTransferInstruction,
   assertSyncNativeInstruction,
 } from "./utils/assertInstruction";
-import type { Address } from "@solana/web3.js";
+import { address, type Address } from "@solana/web3.js";
 import { setupAta, setupMint } from "./utils/token";
 import { setupMintTE } from "./utils/tokenExtensions";
 
@@ -453,5 +453,17 @@ describe("Token Account Creation", () => {
       account: result.tokenAccountAddresses[NATIVE_MINT],
       owner: signer.address,
     });
+  });
+
+  it("Should order mints by canonical byte order", () => {
+    const mint1 = address("Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa");
+    const mint2 = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
+    const [mintA, mintB] = orderMints(mint1, mint2);
+    assert.strictEqual(mintA, mint1);
+    assert.strictEqual(mintB, mint2);
+
+    const [mintC, mintD] = orderMints(mint2, mint1);
+    assert.strictEqual(mintC, mint1);
+    assert.strictEqual(mintD, mint2);
   });
 });

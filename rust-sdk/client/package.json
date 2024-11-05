@@ -3,16 +3,17 @@
   "version": "0.0.1",
   "type": "module",
   "scripts": {
-    "build": "node ./kinobi.js && cargo build",
+    "build": "node ./codama.js && cargo build",
     "test": "cargo test --lib",
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
     "lint": "cargo clippy",
     "clean": "cargo clean"
   },
   "devDependencies": {
-    "@kinobi-so/nodes-from-anchor": "^0.22.0",
-    "@kinobi-so/renderers-rust": "^0.22.0",
+    "@codama/nodes-from-anchor": "^1.0.0",
+    "@codama/renderers-rust": "^1.0.3",
     "@orca-so/whirlpools-program": "*",
-    "@orca-so/whirlpools-rust-core": "*"
+    "@orca-so/whirlpools-rust-core": "*",
+    "codama": "^1.0.0"
   }
 }

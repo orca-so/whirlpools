@@ -2,7 +2,7 @@ import { describe, it, beforeAll } from "vitest";
 import {
   fetchConcentratedLiquidityPool,
   fetchSplashPool,
-  fetchWhirlpoolsForTokenPair,
+  fetchWhirlpoolsByTokenPair,
 } from "../src/pool";
 import { rpc } from "./utils/mockRpc";
 import assert from "assert";
@@ -14,6 +14,7 @@ import type { Address } from "@solana/web3.js";
 import { setupMint } from "./utils/token";
 import { setupWhirlpool } from "./utils/program";
 import { getWhirlpoolAddress } from "@orca-so/whirlpools-client";
+import { orderMints } from "../src/token";
 
 describe("Fetch Pool", () => {
   let mintA: Address;
@@ -25,8 +26,7 @@ describe("Fetch Pool", () => {
   beforeAll(async () => {
     const mint1 = await setupMint();
     const mint2 = await setupMint();
-    [mintA, mintB] =
-      Buffer.from(mint1) < Buffer.from(mint2) ? [mint1, mint2] : [mint2, mint1];
+    [mintA, mintB] = orderMints(mint1, mint2);
     concentratedPool = await setupWhirlpool(mintA, mintB, 64);
     defaultPool = await getWhirlpoolAddress(
       WHIRLPOOLS_CONFIG_ADDRESS,
@@ -77,7 +77,7 @@ describe("Fetch Pool", () => {
 
   // TODO: Enable this test once solana-bankrun exposes getProgramAccounts
   it.skip("Should be able to fetch all pools for a pair", async () => {
-    const pools = await fetchWhirlpoolsForTokenPair(rpc, mintA, mintB);
+    const pools = await fetchWhirlpoolsByTokenPair(rpc, mintA, mintB);
     assert.strictEqual(pools.length, 3);
     assert.strictEqual(pools[0].initialized, true);
     assert.strictEqual(pools[0].tickSpacing, 64);

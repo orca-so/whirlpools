@@ -149,21 +149,22 @@ function getIncreaseLiquidityQuote(
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity. Can specify liquidity, Token A, or Token B amounts.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
  * @param {TransactionSigner} [authority=FUNDER] - The account that authorizes the transaction.
- * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for increasing liquidity.
+ * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
  * import { increaseLiquidityInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
+ * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const positionMint = "POSITION_MINT";
  *
  * const param = { tokenA: 1_000_000n };
  *
- * const { quote, instructions, initializationCost } = await increaseLiquidityInstructions(
+ * const { quote, instructions, initializationCost, positionMint } = await increaseLiquidityInstructions(
  *   devnetRpc,
  *   positionMint,
  *   param,
@@ -464,21 +465,22 @@ async function internalOpenPositionInstructions(
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity, where one of `liquidity`, `tokenA`, or `tokenB` must be specified. The SDK will compute the others.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
  * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
- * @returns {Promise<IncreaseLiquidityInstructions>} - Instructions and quote for opening a full-range position.
+ * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing the instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
  * import { openFullRangePositionInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
+ * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const poolAddress = "POOL_ADDRESS";
  *
  * const param = { tokenA: 1_000_000n };
  *
- * const { quote, instructions, initializationCost } = await openFullRangePositionInstructions(
+ * const { quote, instructions, initializationCost, positionMint } = await openFullRangePositionInstructions(
  *   devnetRpc,
  *   poolAddress,
  *   param,
@@ -530,7 +532,7 @@ export async function openFullRangePositionInstructions(
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The slippage tolerance for adding liquidity, in basis points (BPS).
  * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
  *
- * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing liquidity information and the list of instructions needed to open the position.
+ * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
  * import { openPositionInstructions } from '@orca-so/whirlpools';
@@ -546,7 +548,7 @@ export async function openFullRangePositionInstructions(
  * const lowerPrice = 0.00005;
  * const upperPrice = 0.00015;
  *
- * const { quote, instructions, initializationCost } = await openPositionInstructions(
+ * const { quote, instructions, initializationCost, positionMint } = await openPositionInstructions(
  *   devnetRpc,
  *   poolAddress,
  *   param,

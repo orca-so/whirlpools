@@ -32,24 +32,15 @@ Initialize the project as a TypeScript project:
 npx tsc --init
 ```
 
-## 2. Wallet Creation
+## 2. Wallet Management
 
-You can create a wallet using `generateKeyPairSigner()` from the Solana SDK.
-
-```tsx
-import { generateKeyPairSigner } from '@solana/web3.js';
-
-const wallet = await generateKeyPairSigner();
-```
-
-Alternatively, if you have your wallet stored as a 64-byte private key in a `wallet.json` file, you can load it using `createKeyPairSignerFromBytes`.
+You can [generate a file system wallet using the Solana CLI](https://docs.solanalabs.com/cli/wallets/file-system) and load it using `createKeyPairSignerFromBytes`.
 
 ```tsx
 import { createKeyPairSignerFromBytes } from '@solana/web3.js';
 import fs from 'fs';
 
 const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
-
 const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
 ```
 

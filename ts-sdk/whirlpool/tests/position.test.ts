@@ -11,6 +11,7 @@ import {
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 import { fetchPositionsForOwner } from "../src/position";
 import { rpc, signer } from "./utils/mockRpc";
+import { orderMints } from "../src/token";
 
 describe("Fetch Position", () => {
   let mintA: Address;
@@ -21,8 +22,7 @@ describe("Fetch Position", () => {
   beforeAll(async () => {
     const mint1 = await setupMint();
     const mint2 = await setupMint();
-    [mintA, mintB] =
-      Buffer.from(mint1) < Buffer.from(mint2) ? [mint1, mint2] : [mint2, mint1];
+    [mintA, mintB] = orderMints(mint1, mint2);
     await setupAta(mintA, { amount: 500e9 });
     await setupAta(mintB, { amount: 500e9 });
     pool = await setupWhirlpool(mintA, mintB, 128);

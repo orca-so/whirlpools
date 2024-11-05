@@ -17,6 +17,7 @@ import type {
   GetProgramAccountsApi,
 } from "@solana/web3.js";
 import { SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS } from "./config";
+import { orderMints } from "./token";
 
 /**
  * Type representing a pool that is not yet initialized.
@@ -61,11 +62,9 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  *
  * @example
  * import { fetchSplashPool } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ONE";
  * const tokenMintTwo = "TOKEN_MINT_TWO";
@@ -100,11 +99,9 @@ export async function fetchSplashPool(
  *
  * @example
  * import { fetchPool } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ONE";
  * const tokenMintTwo = "TOKEN_MINT_TWO";
@@ -123,10 +120,7 @@ export async function fetchConcentratedLiquidityPool(
   tokenMintTwo: Address,
   tickSpacing: number,
 ): Promise<PoolInfo> {
-  const [tokenMintA, tokenMintB] =
-    Buffer.from(tokenMintOne) < Buffer.from(tokenMintTwo)
-      ? [tokenMintOne, tokenMintTwo]
-      : [tokenMintTwo, tokenMintOne];
+  const [tokenMintA, tokenMintB] = orderMints(tokenMintOne, tokenMintTwo);
   const feeTierAddress = await getFeeTierAddress(
     WHIRLPOOLS_CONFIG_ADDRESS,
     tickSpacing,
@@ -175,32 +169,26 @@ export async function fetchConcentratedLiquidityPool(
  * @returns {Promise<PoolInfo[]>} - A promise that resolves to an array of pool information for each pool between the two tokens.
  *
  * @example
- * import { fetchWhirlpools } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { fetchWhirlpoolsByTokenPair } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ONE";
  * const tokenMintTwo = "TOKEN_MINT_TWO";
  *
- * const pools = await fetchWhirlpools(
+ * const pools = await fetchWhirlpoolsByTokenPair(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo
  * );
  */
-export async function fetchWhirlpoolsForTokenPair(
+export async function fetchWhirlpoolsByTokenPair(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,
 ): Promise<PoolInfo[]> {
-  const [tokenMintA, tokenMintB] =
-    Buffer.from(tokenMintOne) < Buffer.from(tokenMintTwo)
-      ? [tokenMintOne, tokenMintTwo]
-      : [tokenMintTwo, tokenMintOne];
-
+  const [tokenMintA, tokenMintB] = orderMints(tokenMintOne, tokenMintTwo);
   const feeTierAccounts = await fetchAllFeeTierWithFilter(
     rpc,
     feeTierWhirlpoolsConfigFilter(WHIRLPOOLS_CONFIG_ADDRESS),

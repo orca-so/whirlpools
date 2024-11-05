@@ -24,6 +24,7 @@ import {
 } from "@orca-so/whirlpools-client";
 import assert from "assert";
 import { setupAta, setupMint } from "./utils/token";
+import { orderMints } from "../src/token";
 
 describe("e2e", () => {
   let mintA: Address;
@@ -34,8 +35,7 @@ describe("e2e", () => {
   beforeAll(async () => {
     const mint1 = await setupMint({ decimals: 9 });
     const mint2 = await setupMint({ decimals: 6 });
-    [mintA, mintB] =
-      Buffer.from(mint1) < Buffer.from(mint2) ? [mint1, mint2] : [mint2, mint1];
+    [mintA, mintB] = orderMints(mint1, mint2);
     ataA = await setupAta(mintA, { amount: 500e9 });
     ataB = await setupAta(mintB, { amount: 500e9 });
   });

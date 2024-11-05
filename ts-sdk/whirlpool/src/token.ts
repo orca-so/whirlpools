@@ -33,7 +33,7 @@ import {
   getCreateAccountWithSeedInstruction,
   getTransferSolInstruction,
 } from "@solana-program/system";
-import type { Mint } from "@solana-program/token-2022";
+import type { ExtensionArgs, Mint } from "@solana-program/token-2022";
 import type { TransferFee } from "@orca-so/whirlpools-core";
 import assert from "assert";
 
@@ -309,7 +309,45 @@ export function getCurrentTransferFee(
 }
 
 /**
+ * Builds the required account extensions for a given mint.
+ *
+ * https://github.com/solana-labs/solana-program-library/blob/3844bfac50990c1aa4dfb30f244f8c13178fc3fa/token/program-2022/src/extension/mod.rs#L1276
+ *
+ * @param {Mint} mint - The mint account to build extensions for.
+ * @returns {ExtensionArgs[]} An array of extension arguments.
+ */
+export function getAccountExtensions(mint: Mint): ExtensionArgs[] {
+  if (mint.extensions.__option === "None") {
+    return [];
+  }
+  const extensions: ExtensionArgs[] = [];
+  for (const extension of mint.extensions.value) {
+    switch (extension.__kind) {
+      case "TransferFeeConfig":
+        extensions.push({
+          __kind: "TransferFeeAmount",
+          withheldAmount: 0n,
+        });
+        break;
+      case "NonTransferable":
+        extensions.push({
+          __kind: "NonTransferableAccount",
+        });
+        break;
+      case "TransferHook":
+        extensions.push({
+          __kind: "TransferHookAccount",
+          transferring: false,
+        });
+        break;
+    }
+  }
+  return extensions;
+}
+
+/**
  * Orders two mints by canonical byte order.
+ *
  * @param {Address} mint1
  * @param {Address} mint2
  * @returns {[Address, Address]} [mint1, mint2] if mint1 should come first, [mint2, mint1] otherwise
@@ -322,3 +360,4 @@ export function orderMints(mint1: Address, mint2: Address): [Address, Address] {
     ? [mint1, mint2]
     : [mint2, mint1];
 }
+

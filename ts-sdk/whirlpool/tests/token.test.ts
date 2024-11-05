@@ -7,7 +7,7 @@ import {
 } from "@solana-program/token";
 import { fetchMint, TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
 import { resetConfiguration, setNativeMintWrappingStrategy } from "../src/config";
-import { getCurrentTransferFee, NATIVE_MINT, orderMints, prepareTokenAccountsInstructions } from "../src/token";
+import { getAccountExtensions, getCurrentTransferFee, NATIVE_MINT, orderMints, prepareTokenAccountsInstructions } from "../src/token";
 import assert from "assert";
 import { address, Address } from "@solana/web3.js";
 import { setupAta, setupMint } from "./utils/token";
@@ -433,6 +433,13 @@ describe("Token Account Creation", () => {
     const noFee = await fetchMint(rpc, mintA);
     const noFeeResult = getCurrentTransferFee(noFee, 0n);
     assert.strictEqual(noFeeResult, undefined);
+  });
+
+  it("Should get the correct account extensions", async () => {
+    const mint = await fetchMint(rpc, mintTE);
+    const extensions = getAccountExtensions(mint.data);
+    assert.strictEqual(extensions.length, 1);
+    assert.strictEqual(extensions[0].__kind, "TransferFeeAmount");
   });
 });
 

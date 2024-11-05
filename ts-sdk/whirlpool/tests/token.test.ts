@@ -602,8 +602,8 @@ describe("Token Account Creation", () => {
   });
 
   it("Should order mints by canonical byte order", () => {
-    const mint1 = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
-    const mint2 = address("Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa");
+    const mint1 = address("Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa");
+    const mint2 = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
     const [mintA, mintB] = orderMints(mint1, mint2);
     assert.strictEqual(mintA, mint1);
     assert.strictEqual(mintB, mint2);

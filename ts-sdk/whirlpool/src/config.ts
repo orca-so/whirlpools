@@ -18,12 +18,6 @@ export const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES = {
 };
 
 /**
- * The default WhirlpoolsConfig address.
- */
-export const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS =
-  DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet;
-
-/**
  * The default WhirlpoolsConfigExtension address.
  */
 export const DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS = address(
@@ -34,7 +28,7 @@ export const DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS = address(
  * The WhirlpoolsConfig address.
  */
 export let WHIRLPOOLS_CONFIG_ADDRESS: Address =
-  DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS;
+  DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet;
 
 /**
  * The WhirlpoolsConfigExtension address.

@@ -163,7 +163,7 @@ export function setNativeMintWrappingStrategy(
  * @returns {Promise<void>} - Resolves when the configuration has been reset.
  */
 export function resetConfiguration() {
-  WHIRLPOOLS_CONFIG_ADDRESS = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS;
+  WHIRLPOOLS_CONFIG_ADDRESS = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet;
   WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
     DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
   FUNDER = DEFAULT_FUNDER;

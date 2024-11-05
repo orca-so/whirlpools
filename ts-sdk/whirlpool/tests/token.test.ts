@@ -1,25 +1,17 @@
 import { describe, it, afterEach, vi, beforeAll, afterAll } from "vitest";
-import { deleteAccount, rpc, signer } from "./utils/mockRpc";
+import { deleteAccount, rpc, sendTransaction, signer } from "./utils/mockRpc";
 import {
+  fetchMaybeToken,
   findAssociatedTokenPda,
   TOKEN_PROGRAM_ADDRESS,
 } from "@solana-program/token";
-import { TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
-import { resetConfiguration, setSolWrappingStrategy } from "../src/config";
-import { NATIVE_MINT, prepareTokenAccountsInstructions, orderMints } from "../src/token";
+import { fetchMint, TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
+import { resetConfiguration, setNativeMintWrappingStrategy } from "../src/config";
+import { getCurrentTransferFee, NATIVE_MINT, orderMints, prepareTokenAccountsInstructions } from "../src/token";
 import assert from "assert";
-import {
-  assertCloseAccountInstruction,
-  assertCreateAccountInstruction,
-  assertCreateAccountWithSeedInstruction,
-  assertCreateAtaInstruction,
-  assertInitializeAccountInstruction,
-  assertSolTransferInstruction,
-  assertSyncNativeInstruction,
-} from "./utils/assertInstruction";
-import { address, type Address } from "@solana/web3.js";
+import { address, Address } from "@solana/web3.js";
 import { setupAta, setupMint } from "./utils/token";
-import { setupMintTE } from "./utils/tokenExtensions";
+import { setupMintTEFee } from "./utils/tokenExtensions";
 
 describe("Token Account Creation", () => {
   let mintA: Address;
@@ -34,8 +26,8 @@ describe("Token Account Creation", () => {
     vi.useFakeTimers();
     mintA = await setupMint();
     mintB = await setupMint();
-    mintTE = await setupMintTE();
-    ataA = await setupAta(mintA);
+    mintTE = await setupMintTEFee();
+    ataA = await setupAta(mintA, { amount: 100n });
     ataB = await findAssociatedTokenPda({
       mint: mintB,
       owner: signer.address,
@@ -62,6 +54,13 @@ describe("Token Account Creation", () => {
     vi.useRealTimers();
   });
 
+  it("No tokens", async () => {
+    const result = await prepareTokenAccountsInstructions(rpc, signer, []);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 0);
+    assert.strictEqual(result.createInstructions.length, 0);
+    assert.strictEqual(result.cleanupInstructions.length, 0);
+  });
+
   it("No native mint", async () => {
     const result = await prepareTokenAccountsInstructions(rpc, signer, [
       mintA,
@@ -71,388 +70,342 @@ describe("Token Account Creation", () => {
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 2);
     assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
     assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
-    assert.strictEqual(result.createInstructions.length, 1);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
+
+    await sendTransaction(result.createInstructions);
+
+    const ataBAfterCreate = await fetchMaybeToken(rpc, ataB);
+    assert(ataBAfterCreate.exists);
+    assert.strictEqual(ataBAfterCreate.data.amount, 0n);
     assert.strictEqual(result.cleanupInstructions.length, 0);
   });
 
   it("No native mint with balances", async () => {
     const result = await prepareTokenAccountsInstructions(rpc, signer, {
-      [mintA]: 100n,
-      [mintB]: 100n,
+      [mintA]: 0n,
+      [mintB]: 0n,
     });
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 2);
     assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
     assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
-    assert.strictEqual(result.createInstructions.length, 1);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
+
+    await sendTransaction(result.createInstructions);
+
+    const ataBAfterCreate = await fetchMaybeToken(rpc, ataB);
+    assert(ataBAfterCreate.exists);
+    assert.strictEqual(ataBAfterCreate.data.amount, 0n);
     assert.strictEqual(result.cleanupInstructions.length, 0);
   });
 
-  it("Token 2022 token", async () => {
+  it("Required balance is already met", async () => {
+    const result = await prepareTokenAccountsInstructions(rpc, signer, {
+      [mintA]: 100n,
+    });
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
+    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
+
+    assert.strictEqual(result.createInstructions.length, 0);
+    assert.strictEqual(result.cleanupInstructions.length, 0);
+  });
+
+  it("Required balance but current balance is insufficient", async () => {
+    const result = prepareTokenAccountsInstructions(rpc, signer, {
+      [mintA]: 250n,
+    });
+    await assert.rejects(result);
+  });
+
+  it("Required balance but no token account exists", async () => {
+    const result = prepareTokenAccountsInstructions(rpc, signer, {
+      [mintB]: 250n,
+    });
+    await assert.rejects(result);
+  });
+
+  it("Token 2022 token that requires larger token accounts", async () => {
     const result = await prepareTokenAccountsInstructions(rpc, signer, [
       mintTE,
     ]);
 
     assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.strictEqual(result.tokenAccountAddresses[mintTE], ataTE);
-    assert.strictEqual(result.createInstructions.length, 1);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataTE,
-      owner: signer.address,
-      mint: mintTE,
-      tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
-    });
+
+    await sendTransaction(result.createInstructions);
+    const ataTEAfterCreate = await fetchMaybeToken(rpc, ataTE);
+    assert(ataTEAfterCreate.exists);
+    assert.strictEqual(ataTEAfterCreate.data.amount, 0n);
+
     assert.strictEqual(result.cleanupInstructions.length, 0);
   });
 
   it("Native mint and wrapping is none", async () => {
-    setSolWrappingStrategy("none");
+    setNativeMintWrappingStrategy("none");
 
     const result = await prepareTokenAccountsInstructions(rpc, signer, [
-      mintA,
-      mintB,
       NATIVE_MINT,
     ]);
 
-    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
-    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
-    assert.strictEqual(result.createInstructions.length, 2);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
-    assertCreateAtaInstruction(result.createInstructions[1], {
-      ata: ataNative,
-      owner: signer.address,
-      mint: NATIVE_MINT,
-    });
+
+    await sendTransaction(result.createInstructions);
+    const ataNativeAfterCreate = await fetchMaybeToken(rpc, ataNative);
+    assert(ataNativeAfterCreate.exists);
+    assert.strictEqual(ataNativeAfterCreate.data.amount, 0n);
+
     assert.strictEqual(result.cleanupInstructions.length, 0);
   });
 
   it("Native mint and wrapping is none with balances", async () => {
-    setSolWrappingStrategy("none");
+    setNativeMintWrappingStrategy("none");
 
     const result = await prepareTokenAccountsInstructions(rpc, signer, {
-      [mintA]: 100n,
-      [mintB]: 100n,
-      [NATIVE_MINT]: 100n,
+      [NATIVE_MINT]: 0n,
     });
 
-    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
-    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
-    assert.strictEqual(result.createInstructions.length, 2);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
-    assertCreateAtaInstruction(result.createInstructions[1], {
-      ata: ataNative,
-      owner: signer.address,
-      mint: NATIVE_MINT,
-    });
+
+    await sendTransaction(result.createInstructions);
+
+    const ataNativeAfterCreate = await fetchMaybeToken(rpc, ataNative);
+    assert(ataNativeAfterCreate.exists);
+    assert.strictEqual(ataNativeAfterCreate.data.amount, 0n);
     assert.strictEqual(result.cleanupInstructions.length, 0);
   });
 
+  it("Native mint and wrapping is none with balances but no token account exists", async () => {
+    setNativeMintWrappingStrategy("none");
+
+    const result = prepareTokenAccountsInstructions(rpc, signer, {
+      [NATIVE_MINT]: 250n,
+    });
+    await assert.rejects(result);
+  });
+
+  it("Native mint and wrapping is none with balances but already exists", async () => {
+    await setupAta(NATIVE_MINT, { amount: 250n });
+    setNativeMintWrappingStrategy("none");
+
+    const result = await prepareTokenAccountsInstructions(rpc, signer, {
+      [NATIVE_MINT]: 250n,
+    });
+
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
+    assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
+
+    await sendTransaction(result.createInstructions);
+
+    const ataNativeAfterCreate = await fetchMaybeToken(rpc, ataNative);
+    assert(ataNativeAfterCreate.exists);
+    assert.strictEqual(ataNativeAfterCreate.data.amount, 250n);
+    assert.strictEqual(result.cleanupInstructions.length, 0);
+  });
+
+  it("Native mint and wrapping is none with balances but current balance is insufficient", async () => {
+    await setupAta(NATIVE_MINT);
+    setNativeMintWrappingStrategy("none");
+
+    const result = prepareTokenAccountsInstructions(rpc, signer, {
+      [NATIVE_MINT]: 250n,
+    });
+    await assert.rejects(result);
+  });
+
   it("Native mint and wrapping is ata", async () => {
-    setSolWrappingStrategy("ata");
+    setNativeMintWrappingStrategy("ata");
 
     const result = await prepareTokenAccountsInstructions(rpc, signer, [
-      mintA,
-      mintB,
       NATIVE_MINT,
     ]);
 
-    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
-    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
-    assert.strictEqual(result.createInstructions.length, 2);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
-    assertCreateAtaInstruction(result.createInstructions[1], {
-      ata: ataNative,
-      owner: signer.address,
-      mint: NATIVE_MINT,
-    });
-    assert.strictEqual(result.cleanupInstructions.length, 1);
-    assertCloseAccountInstruction(result.cleanupInstructions[0], {
-      account: ataNative,
-      owner: signer.address,
-    });
+
+
+    await sendTransaction(result.createInstructions);
+
+    const ataNativeAfterCreate = await fetchMaybeToken(rpc, ataNative);
+    assert(ataNativeAfterCreate.exists);
+    assert.strictEqual(ataNativeAfterCreate.data.amount, 0n);
+
+    await sendTransaction(result.cleanupInstructions);
+
+    const ataNativeAfterCleanup = await fetchMaybeToken(rpc, ataNative);
+    assert(!ataNativeAfterCleanup.exists);
   });
 
   it("Native mint and wrapping is ata but already exists", async () => {
     await setupAta(NATIVE_MINT);
-    setSolWrappingStrategy("ata");
+    setNativeMintWrappingStrategy("ata");
 
     const result = await prepareTokenAccountsInstructions(rpc, signer, [
-      mintA,
-      mintB,
       NATIVE_MINT,
     ]);
 
-    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
-    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
-    assert.strictEqual(result.createInstructions.length, 1);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
-    assert.strictEqual(result.cleanupInstructions.length, 0);
+
+    await sendTransaction(result.createInstructions);
+
+    const ataNativeAfterCreate = await fetchMaybeToken(rpc, ataNative);
+    assert(ataNativeAfterCreate.exists);
+    assert.strictEqual(ataNativeAfterCreate.data.amount, 0n);
+
+    await sendTransaction(result.cleanupInstructions);
+
+    const ataNativeAfterCleanup = await fetchMaybeToken(rpc, ataNative);
+    assert(ataNativeAfterCleanup.exists);
   });
 
   it("Native mint and wrapping is ata with balances", async () => {
-    setSolWrappingStrategy("ata");
+    setNativeMintWrappingStrategy("ata");
 
     const result = await prepareTokenAccountsInstructions(rpc, signer, {
-      [mintA]: 100n,
-      [mintB]: 100n,
-      [NATIVE_MINT]: 100n,
+      [NATIVE_MINT]: 250n,
     });
 
-    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
-    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
-    assert.strictEqual(result.createInstructions.length, 4);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
-    assertCreateAtaInstruction(result.createInstructions[1], {
-      ata: ataNative,
-      owner: signer.address,
-      mint: NATIVE_MINT,
-    });
-    assertSolTransferInstruction(result.createInstructions[2], {
-      from: signer.address,
-      to: result.tokenAccountAddresses[NATIVE_MINT],
-      amount: 100n,
-    });
-    assertSyncNativeInstruction(result.createInstructions[3], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-    });
-    assert.strictEqual(result.cleanupInstructions.length, 1);
-    assertCloseAccountInstruction(result.cleanupInstructions[0], {
-      account: ataNative,
-      owner: signer.address,
-    });
+
+    await sendTransaction(result.createInstructions);
+
+    const ataNativeAfterCreate = await fetchMaybeToken(rpc, ataNative);
+    assert(ataNativeAfterCreate.exists);
+    assert.strictEqual(ataNativeAfterCreate.data.amount, 250n);
+
+    await sendTransaction(result.cleanupInstructions);
+    const ataNativeAfterCleanup = await fetchMaybeToken(rpc, ataNative);
+    assert(!ataNativeAfterCleanup.exists);
   });
 
   it("Native mint and wrapping is ata but already exists with balances", async () => {
-    await setupAta(NATIVE_MINT);
-    setSolWrappingStrategy("ata");
+    await setupAta(NATIVE_MINT, { amount: 100n });
+    setNativeMintWrappingStrategy("ata");
 
     const result = await prepareTokenAccountsInstructions(rpc, signer, {
-      [mintA]: 100n,
-      [mintB]: 100n,
-      [NATIVE_MINT]: 100n,
+      [NATIVE_MINT]: 250n,
     });
 
-    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
-    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
-    assert.strictEqual(result.createInstructions.length, 3);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
+
+    await sendTransaction(result.createInstructions);
+
+    const ataNativeAfterCreate = await fetchMaybeToken(rpc, ataNative);
+    assert(ataNativeAfterCreate.exists);
+    assert.strictEqual(ataNativeAfterCreate.data.amount, 250n);
+
+    assert.strictEqual(result.cleanupInstructions.length, 0);
+  });
+
+
+  it("Native mint and wrapping is ata but already exists with balances and existing balance", async () => {
+    await setupAta(NATIVE_MINT, { amount: 500n });
+    setNativeMintWrappingStrategy("ata");
+
+    const result = await prepareTokenAccountsInstructions(rpc, signer, {
+      [NATIVE_MINT]: 250n,
     });
-    assertSolTransferInstruction(result.createInstructions[1], {
-      from: signer.address,
-      to: result.tokenAccountAddresses[NATIVE_MINT],
-      amount: 100n,
-    });
-    assertSyncNativeInstruction(result.createInstructions[2], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-    });
+
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
+    assert.strictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
+
+    await sendTransaction(result.createInstructions);
+
+    const ataNativeAfterCreate = await fetchMaybeToken(rpc, ataNative);
+    assert(ataNativeAfterCreate.exists);
+    assert.strictEqual(ataNativeAfterCreate.data.amount, 500n);
+
     assert.strictEqual(result.cleanupInstructions.length, 0);
   });
 
   it("Native mint and wrapping is seed", async () => {
-    setSolWrappingStrategy("seed");
+    setNativeMintWrappingStrategy("seed");
 
     const result = await prepareTokenAccountsInstructions(rpc, signer, [
-      mintA,
-      mintB,
       NATIVE_MINT,
     ]);
 
-    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
-    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.notStrictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
-    assert.strictEqual(result.createInstructions.length, 3);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
-    assertCreateAccountWithSeedInstruction(result.createInstructions[1], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      payer: signer.address,
-      owner: TOKEN_PROGRAM_ADDRESS,
-      seed: Date.now().toString(),
-    });
-    assertInitializeAccountInstruction(result.createInstructions[2], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      mint: NATIVE_MINT,
-      owner: signer.address,
-    });
-    assert.strictEqual(result.cleanupInstructions.length, 1);
-    assertCloseAccountInstruction(result.cleanupInstructions[0], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      owner: signer.address,
-    });
+
+    await sendTransaction(result.createInstructions);
+
+    const nativeAccountAfterCreate = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    assert(nativeAccountAfterCreate.exists);
+    assert.strictEqual(nativeAccountAfterCreate.data.amount, 0n);
+
+    await sendTransaction(result.cleanupInstructions);
+
+    const nativeAccountAfterCleanup = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    assert(!nativeAccountAfterCleanup.exists);
   });
 
   it("Native mint and wrapping is seed with balances", async () => {
-    setSolWrappingStrategy("seed");
+    setNativeMintWrappingStrategy("seed");
 
     const result = await prepareTokenAccountsInstructions(rpc, signer, {
-      [mintA]: 100n,
-      [mintB]: 100n,
-      [NATIVE_MINT]: 100n,
+      [NATIVE_MINT]: 250n,
     });
 
-    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
-    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.notStrictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
-    assert.strictEqual(result.createInstructions.length, 5);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
-    assertCreateAccountWithSeedInstruction(result.createInstructions[1], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      payer: signer.address,
-      owner: TOKEN_PROGRAM_ADDRESS,
-      seed: Date.now().toString(),
-    });
-    assertInitializeAccountInstruction(result.createInstructions[2], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      mint: NATIVE_MINT,
-      owner: signer.address,
-    });
-    assertSolTransferInstruction(result.createInstructions[3], {
-      from: signer.address,
-      to: result.tokenAccountAddresses[NATIVE_MINT],
-      amount: 100n,
-    });
-    assertSyncNativeInstruction(result.createInstructions[4], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-    });
-    assert.strictEqual(result.cleanupInstructions.length, 1);
-    assertCloseAccountInstruction(result.cleanupInstructions[0], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      owner: signer.address,
-    });
+
+    await sendTransaction(result.createInstructions);
+
+    const nativeAccountAfterCreate = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    assert(nativeAccountAfterCreate.exists);
+    assert.strictEqual(nativeAccountAfterCreate.data.amount, 250n);
+
+    await sendTransaction(result.cleanupInstructions);
+
+    const nativeAccountAfterCleanup = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    assert(!nativeAccountAfterCleanup.exists);
   });
 
   it("Native mint and wrapping is keypair", async () => {
-    setSolWrappingStrategy("keypair");
+    setNativeMintWrappingStrategy("keypair");
 
     const result = await prepareTokenAccountsInstructions(rpc, signer, [
-      mintA,
-      mintB,
       NATIVE_MINT,
     ]);
 
-    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
-    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.notStrictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
-    assert.strictEqual(result.createInstructions.length, 3);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
-    assertCreateAccountInstruction(result.createInstructions[1], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      payer: signer.address,
-      owner: TOKEN_PROGRAM_ADDRESS,
-    });
-    assertInitializeAccountInstruction(result.createInstructions[2], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      mint: NATIVE_MINT,
-      owner: signer.address,
-    });
-    assert.strictEqual(result.cleanupInstructions.length, 1);
-    assertCloseAccountInstruction(result.cleanupInstructions[0], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      owner: signer.address,
-    });
+
+    await sendTransaction(result.createInstructions);
+
+    const nativeAccountAfterCreate = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    assert(nativeAccountAfterCreate.exists);
+    assert.strictEqual(nativeAccountAfterCreate.data.amount, 0n);
+
+    await sendTransaction(result.cleanupInstructions);
+
+    const nativeAccountAfterCleanup = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    assert(!nativeAccountAfterCleanup.exists);
   });
 
   it("Native mint and wrapping is keypair with balances", async () => {
-    setSolWrappingStrategy("keypair");
+    setNativeMintWrappingStrategy("keypair");
 
     const result = await prepareTokenAccountsInstructions(rpc, signer, {
-      [mintA]: 100n,
-      [mintB]: 100n,
-      [NATIVE_MINT]: 100n,
+      [NATIVE_MINT]: 250n,
     });
 
-    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 3);
-    assert.strictEqual(result.tokenAccountAddresses[mintA], ataA);
-    assert.strictEqual(result.tokenAccountAddresses[mintB], ataB);
+    assert.strictEqual(Object.keys(result.tokenAccountAddresses).length, 1);
     assert.notStrictEqual(result.tokenAccountAddresses[NATIVE_MINT], ataNative);
-    assert.strictEqual(result.createInstructions.length, 5);
-    assertCreateAtaInstruction(result.createInstructions[0], {
-      ata: ataB,
-      owner: signer.address,
-      mint: mintB,
-    });
-    assertCreateAccountInstruction(result.createInstructions[1], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      payer: signer.address,
-      owner: TOKEN_PROGRAM_ADDRESS,
-    });
-    assertInitializeAccountInstruction(result.createInstructions[2], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      mint: NATIVE_MINT,
-      owner: signer.address,
-    });
-    assertSolTransferInstruction(result.createInstructions[3], {
-      from: signer.address,
-      to: result.tokenAccountAddresses[NATIVE_MINT],
-      amount: 100n,
-    });
-    assertSyncNativeInstruction(result.createInstructions[4], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-    });
-    assert.strictEqual(result.cleanupInstructions.length, 1);
-    assertCloseAccountInstruction(result.cleanupInstructions[0], {
-      account: result.tokenAccountAddresses[NATIVE_MINT],
-      owner: signer.address,
-    });
+
+    await sendTransaction(result.createInstructions);
+
+    const nativeAccountAfterCreate = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    assert(nativeAccountAfterCreate.exists);
+    assert.strictEqual(nativeAccountAfterCreate.data.amount, 250n);
+
+    await sendTransaction(result.cleanupInstructions);
+
+    const nativeAccountAfterCleanup = await fetchMaybeToken(rpc, result.tokenAccountAddresses[NATIVE_MINT]);
+    assert(!nativeAccountAfterCleanup.exists);
   });
 
   it("Should order mints by canonical byte order", () => {
@@ -466,4 +419,20 @@ describe("Token Account Creation", () => {
     assert.strictEqual(mintC, mint1);
     assert.strictEqual(mintD, mint2);
   });
+
+  it("Should derive the correct transfer fee", async () => {
+    const withFee = await fetchMint(rpc, mintTE);
+    const older = getCurrentTransferFee(withFee, 0n);
+    assert.strictEqual(older?.feeBps, 100);
+    assert.strictEqual(older?.maxFee, 1000000000n);
+
+    const newer = getCurrentTransferFee(withFee, 2n);
+    assert.strictEqual(newer?.feeBps, 150);
+    assert.strictEqual(newer?.maxFee, 1000000000n);
+
+    const noFee = await fetchMint(rpc, mintA);
+    const noFeeResult = getCurrentTransferFee(noFee, 0n);
+    assert.strictEqual(noFeeResult, undefined);
+  });
 });
+

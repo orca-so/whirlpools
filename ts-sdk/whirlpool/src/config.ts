@@ -119,13 +119,18 @@ export function setDefaultSlippageToleranceBps(
  * Defines the strategy for handling Native Mint wrapping in a transaction.
  *
  * - **Keypair**:
- *   Creates an auxiliary token account using a keypair. Optionally adds funds to the account. Closes it at the end of the transaction.
+ *   Creates an auxiliary token account using a keypair.
+ *   Optionally adds funds to the account.
+ *   Closes it at the end of the transaction.
  *
  * - **Seed**:
  *   Functions similarly to Keypair, but uses a seed account instead.
  *
  * - **ATA**:
- *   Creates an associated token account (ATA) for `NATIVE_MINT` if necessary. Optionally adds funds to the ATA. Closes it at the end of the transaction if it was newly created.
+ *   Treats the native balance and associated token account (ATA) for `NATIVE_MINT` as one.
+ *   Will create the ATA if it doesn't exist.
+ *   Optionally adds funds to the account.
+ *   Closes it at the end of the transaction if it did not exist before.
  *
  * - **None**:
  *   Uses or creates the ATA without performing any Native Mint wrapping or unwrapping.

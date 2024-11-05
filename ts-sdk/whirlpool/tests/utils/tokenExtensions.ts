@@ -5,11 +5,15 @@ import {
   getMintToInstruction,
   getMintSize,
   getInitializeMint2Instruction,
+  ExtensionArgs,
+  getInitializeTransferFeeConfigInstruction,
+  getSetTransferFeeInstruction,
 } from "@solana-program/token-2022";
 import type { Address, IInstruction } from "@solana/web3.js";
 import { generateKeyPairSigner } from "@solana/web3.js";
 import { sendTransaction, signer } from "./mockRpc";
 import { getCreateAccountInstruction } from "@solana-program/system";
+import { DEFAULT_ADDRESS } from "../../src/config";
 
 export async function setupAtaTE(
   mint: Address,
@@ -50,7 +54,7 @@ export async function setupAtaTE(
 }
 
 export async function setupMintTE(
-  config: { decimals?: number } = {},
+  config: { decimals?: number, extensions?: ExtensionArgs[] } = {},
 ): Promise<Address> {
   const keypair = await generateKeyPairSigner();
   const instructions: IInstruction[] = [];
@@ -60,10 +64,23 @@ export async function setupMintTE(
       payer: signer,
       newAccount: keypair,
       lamports: 1e8,
-      space: getMintSize(),
+      space: getMintSize(config.extensions),
       programAddress: TOKEN_2022_PROGRAM_ADDRESS,
     }),
   );
+
+  for (const extension of config.extensions ?? []) {
+    switch (extension.__kind) {
+      case "TransferFeeConfig":
+        instructions.push(getInitializeTransferFeeConfigInstruction({
+          mint: keypair.address,
+          transferFeeConfigAuthority: signer.address,
+          withdrawWithheldAuthority: signer.address,
+          transferFeeBasisPoints: extension.olderTransferFee.transferFeeBasisPoints,
+          maximumFee: extension.olderTransferFee.maximumFee,
+        }));
+    }
+  }
 
   instructions.push(
     getInitializeMint2Instruction({
@@ -74,6 +91,18 @@ export async function setupMintTE(
     }),
   );
 
+  for (const extension of config.extensions ?? []) {
+    switch (extension.__kind) {
+      case "TransferFeeConfig":
+        instructions.push(getSetTransferFeeInstruction({
+          mint: keypair.address,
+          transferFeeConfigAuthority: signer.address,
+          transferFeeBasisPoints: extension.newerTransferFee.transferFeeBasisPoints,
+          maximumFee: extension.newerTransferFee.maximumFee,
+        }));
+    }
+  }
+
   await sendTransaction(instructions);
 
   return keypair.address;
@@ -82,13 +111,25 @@ export async function setupMintTE(
 export async function setupMintTEFee(
   config: { decimals?: number } = {},
 ): Promise<Address> {
-  // TODO: Implement fee
-  return setupMintTE(config);
-}
-
-export async function setupMintTEHook(
-  config: { decimals?: number } = {},
-): Promise<Address> {
-  // TODO: Implement hook
-  return setupMintTE(config);
+  return setupMintTE({
+    ...config,
+    extensions: [
+      {
+        __kind: "TransferFeeConfig",
+        transferFeeConfigAuthority: DEFAULT_ADDRESS,
+        withdrawWithheldAuthority: DEFAULT_ADDRESS,
+        withheldAmount: 0n,
+        olderTransferFee: {
+          epoch: 0n,
+          maximumFee: 1e9,
+          transferFeeBasisPoints: 100,
+        },
+        newerTransferFee: {
+          epoch: 10n,
+          maximumFee: 1e9,
+          transferFeeBasisPoints: 150,
+        },
+      },
+    ],
+  });
 }

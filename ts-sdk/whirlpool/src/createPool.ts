@@ -60,11 +60,11 @@ export type CreatePoolInstructions = {
  *
  * @example
  * import { createSplashPoolInstructions } from '@orca-so/whirlpools';
- * import { createKeyPairSignerFromBytes, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
- * const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
@@ -110,11 +110,11 @@ export function createSplashPoolInstructions(
  *
  * @example
  * import { createConcentratedLiquidityPool } from '@orca-so/whirlpools';
- * import { createKeyPairSignerFromBytes, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
- * const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";

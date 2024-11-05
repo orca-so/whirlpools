@@ -42,8 +42,9 @@ The following example demonstrates how to create an `InitializePool` instruction
 
 ```rust
 use orca_whirlpools_client::{
-    instructions::InitializePoolBuilder,
+    instructions::InitializePoolV2Builder,
     get_fee_tier_address,
+    get_token_badge_address,
     get_whirlpool_address,
 };
 use solana_sdk::{
@@ -56,28 +57,35 @@ fn main() {
     let whirlpool_config_address = Pubkey::from_str("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR").unwrap();
     let token_mint_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap(); // wSOL
     let token_mint_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // DevUSDC
-    let wallet = Keypair::new();
+    let (token_badge_a, _bump) = get_token_badge_address(&whirlpool_config_address, &token_mint_a).unwrap();
+    let (token_badge_b, _bump) = get_token_badge_address(&whirlpool_config_address, &token_mint_b).unwrap();
+    let wallet = Keypair::new(); // CAUTION: this wallet is not persistent
     let tick_spacing = 8;
     let (whirlpool_pda, _bump) = get_whirlpool_address(&whirlpool_config_address, &token_mint_a, &token_mint_b, tick_spacing).unwrap();
     let token_vault_a = Keypair::new();
     let token_vault_b = Keypair::new();
     let (fee_tier, _bump) = get_fee_tier_address(&whirlpool_config_address, tick_spacing).unwrap();
-    let initial_sqrt_price = 7459106261056563200u128;
+    let token_program_a = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
+    let token_program_b = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
+    let initial_sqrt_price = 7459106261056563200u128;    
 
-    let initialize_pool_instruction = InitializePoolBuilder::new()
+    let initialize_pool_v2_instruction = InitializePoolV2Builder::new()
         .whirlpools_config(whirlpool_config_address)
         .token_mint_a(token_mint_a)
         .token_mint_b(token_mint_b)
+        .token_badge_a(token_badge_a)
+        .token_badge_b(token_badge_b)
         .funder(wallet.pubkey())
         .whirlpool(whirlpool_pda)
         .token_vault_a(token_vault_a.pubkey())
         .token_vault_b(token_vault_b.pubkey())
         .fee_tier(fee_tier)
-        .whirlpool_bump(1)
+        .token_program_a(token_program_a)
+        .token_program_b(token_program_b)
         .tick_spacing(tick_spacing)
         .initial_sqrt_price(initial_sqrt_price)
         .instruction();
 
-    println!("{:?}", initialize_pool_instruction);
+    println!("{:?}", initialize_pool_v2_instruction);
 }
 ```

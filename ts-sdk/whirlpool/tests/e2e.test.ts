@@ -7,87 +7,37 @@ import {
   openFullRangePositionInstructions,
   increaseLiquidityInstructions,
 } from "../src/increaseLiquidity";
-import {
-  TOKEN_MINT_1,
-  TOKEN_MINT_2,
-  sendTransaction,
-  rpc,
-  initPayer,
-  setAccount,
-} from "./mockRpc";
-import { setDefaultFunder, SPLASH_POOL_TICK_SPACING } from "../src/config";
+import { sendTransaction, rpc } from "./utils/mockRpc";
+import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 import { swapInstructions } from "../src/swap";
-import type { Address, TransactionSigner } from "@solana/web3.js";
+import type { Address } from "@solana/web3.js";
 import { harvestPositionInstructions } from "../src/harvest";
 import {
   decreaseLiquidityInstructions,
   closePositionInstructions,
 } from "../src/decreaseLiquidity";
-import {
-  AccountState,
-  fetchToken,
-  findAssociatedTokenPda,
-  getTokenEncoder,
-  TOKEN_PROGRAM_ADDRESS,
-} from "@solana-program/token";
+import { fetchToken } from "@solana-program/token";
 import {
   fetchPosition,
   fetchWhirlpool,
   getPositionAddress,
 } from "@orca-so/whirlpools-client";
 import assert from "assert";
+import { setupAta, setupMint } from "./utils/token";
+import { orderMints } from "../src/token";
 
 describe("e2e", () => {
+  let mintA: Address;
+  let mintB: Address;
   let ataA: Address;
   let ataB: Address;
-  let payer: TransactionSigner;
 
   beforeAll(async () => {
-    payer = await initPayer();
-    setDefaultFunder(payer);
-
-    [ataA, ataB] = await Promise.all([
-      findAssociatedTokenPda({
-        mint: TOKEN_MINT_1,
-        owner: payer.address,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
-      }).then((x) => x[0]),
-      findAssociatedTokenPda({
-        mint: TOKEN_MINT_2,
-        owner: payer.address,
-        tokenProgram: TOKEN_PROGRAM_ADDRESS,
-      }).then((x) => x[0]),
-    ]);
-
-    setAccount(
-      ataA,
-      getTokenEncoder().encode({
-        mint: TOKEN_MINT_1,
-        owner: payer.address,
-        amount: 500e9,
-        delegate: null,
-        state: AccountState.Initialized,
-        isNative: null,
-        delegatedAmount: 0,
-        closeAuthority: null,
-      }),
-      TOKEN_PROGRAM_ADDRESS,
-    );
-
-    setAccount(
-      ataB,
-      getTokenEncoder().encode({
-        mint: TOKEN_MINT_2,
-        owner: payer.address,
-        amount: 500e9,
-        delegate: null,
-        state: AccountState.Initialized,
-        isNative: null,
-        delegatedAmount: 0,
-        closeAuthority: null,
-      }),
-      TOKEN_PROGRAM_ADDRESS,
-    );
+    const mint1 = await setupMint({ decimals: 9 });
+    const mint2 = await setupMint({ decimals: 6 });
+    [mintA, mintB] = orderMints(mint1, mint2);
+    ataA = await setupAta(mintA, { amount: 500e9 });
+    ataB = await setupAta(mintB, { amount: 500e9 });
   });
 
   const fetchPositionByMint = async (positionMint: Address) => {
@@ -97,12 +47,12 @@ describe("e2e", () => {
 
   const testInitSplashPool = async () => {
     const { instructions: createPoolInstructions, poolAddress } =
-      await createSplashPoolInstructions(rpc, TOKEN_MINT_1, TOKEN_MINT_2);
-    await sendTransaction(createPoolInstructions, payer);
+      await createSplashPoolInstructions(rpc, mintA, mintB);
+    await sendTransaction(createPoolInstructions);
 
     const pool = await fetchWhirlpool(rpc, poolAddress);
-    assert.strictEqual(pool.data.tokenMintA, TOKEN_MINT_1);
-    assert.strictEqual(pool.data.tokenMintB, TOKEN_MINT_2);
+    assert.strictEqual(pool.data.tokenMintA, mintA);
+    assert.strictEqual(pool.data.tokenMintB, mintB);
     assert.strictEqual(pool.data.tickSpacing, SPLASH_POOL_TICK_SPACING);
 
     return poolAddress;
@@ -110,17 +60,12 @@ describe("e2e", () => {
 
   const testInitConcentratedLiquidityPool = async () => {
     const { instructions: createPoolInstructions, poolAddress } =
-      await createConcentratedLiquidityPoolInstructions(
-        rpc,
-        TOKEN_MINT_1,
-        TOKEN_MINT_2,
-        128,
-      );
-    await sendTransaction(createPoolInstructions, payer);
+      await createConcentratedLiquidityPoolInstructions(rpc, mintA, mintB, 128);
+    await sendTransaction(createPoolInstructions);
 
     const pool = await fetchWhirlpool(rpc, poolAddress);
-    assert.strictEqual(pool.data.tokenMintA, TOKEN_MINT_1);
-    assert.strictEqual(pool.data.tokenMintB, TOKEN_MINT_2);
+    assert.strictEqual(pool.data.tokenMintA, mintA);
+    assert.strictEqual(pool.data.tokenMintB, mintB);
     assert.strictEqual(pool.data.tickSpacing, 128);
 
     return poolAddress;
@@ -134,7 +79,7 @@ describe("e2e", () => {
       await openFullRangePositionInstructions(rpc, poolAddress, {
         liquidity: 1000000000n,
       });
-    await sendTransaction(instructions, payer);
+    await sendTransaction(instructions);
 
     const positionAfter = await fetchPositionByMint(positionMint);
     const tokenAAfter = await fetchToken(rpc, ataA);
@@ -162,7 +107,7 @@ describe("e2e", () => {
       positionMint,
       { liquidity: 10000n },
     );
-    await sendTransaction(instructions, payer);
+    await sendTransaction(instructions);
 
     const positionAfter = await fetchPositionByMint(positionMint);
     const tokenAAfter = await fetchToken(rpc, ataA);
@@ -191,7 +136,7 @@ describe("e2e", () => {
       positionMint,
       { liquidity: 10000n },
     );
-    await sendTransaction(instructions, payer);
+    await sendTransaction(instructions);
 
     const positionAfter = await fetchPositionByMint(positionMint);
     const tokenAAfter = await fetchToken(rpc, ataA);
@@ -218,7 +163,7 @@ describe("e2e", () => {
       rpc,
       positionMint,
     );
-    await sendTransaction(instructions, payer);
+    await sendTransaction(instructions);
 
     const tokenAAfter = await fetchToken(rpc, ataA);
     const tokenBAfter = await fetchToken(rpc, ataB);
@@ -241,7 +186,7 @@ describe("e2e", () => {
       positionMint,
       { liquidity: 1000000000n },
     );
-    await sendTransaction(instructions, payer);
+    await sendTransaction(instructions);
 
     const positionAfter = await rpc.getMultipleAccounts([positionMint]).send();
     const tokenAAfter = await fetchToken(rpc, ataA);
@@ -263,10 +208,10 @@ describe("e2e", () => {
 
     const { instructions, quote } = await swapInstructions(
       rpc,
-      { inputAmount: 100n, mint: TOKEN_MINT_1 },
+      { inputAmount: 100n, mint: mintA },
       poolAddress,
     );
-    await sendTransaction(instructions, payer);
+    await sendTransaction(instructions);
 
     const tokenAAfter = await fetchToken(rpc, ataA);
     const tokenBAfter = await fetchToken(rpc, ataB);
@@ -287,10 +232,10 @@ describe("e2e", () => {
 
     const { instructions, quote } = await swapInstructions(
       rpc,
-      { outputAmount: 100n, mint: TOKEN_MINT_1 },
+      { outputAmount: 100n, mint: mintA },
       poolAddress,
     );
-    await sendTransaction(instructions, payer);
+    await sendTransaction(instructions);
 
     const tokenAAfter = await fetchToken(rpc, ataA);
     const tokenBAfter = await fetchToken(rpc, ataB);
@@ -311,10 +256,10 @@ describe("e2e", () => {
 
     const { instructions, quote } = await swapInstructions(
       rpc,
-      { inputAmount: 100000n, mint: TOKEN_MINT_2 },
+      { inputAmount: 100000n, mint: mintB },
       poolAddress,
     );
-    await sendTransaction(instructions, payer);
+    await sendTransaction(instructions);
 
     const tokenAAfter = await fetchToken(rpc, ataA);
     const tokenBAfter = await fetchToken(rpc, ataB);
@@ -335,10 +280,10 @@ describe("e2e", () => {
 
     const { instructions, quote } = await swapInstructions(
       rpc,
-      { outputAmount: 100000n, mint: TOKEN_MINT_2 },
+      { outputAmount: 100000n, mint: mintB },
       poolAddress,
     );
-    await sendTransaction(instructions, payer);
+    await sendTransaction(instructions);
 
     const tokenAAfter = await fetchToken(rpc, ataA);
     const tokenBAfter = await fetchToken(rpc, ataB);

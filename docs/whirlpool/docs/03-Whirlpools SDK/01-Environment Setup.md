@@ -32,7 +32,7 @@ Initialize the project as a TypeScript project:
 npx tsc --init
 ```
 
-## 2. Wallet Creation
+## 2. Wallet Management
 
 You can [generate a file system wallet using the Solana CLI](https://docs.solanalabs.com/cli/wallets/file-system) and load it using `createKeyPairSignerFromBytes`.
 

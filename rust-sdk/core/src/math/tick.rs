@@ -4,8 +4,7 @@ use ethnum::U256;
 use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
-    TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX,
-    TICK_ARRAY_SIZE, U128,
+    CoreError, TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, U128
 };
 
 const LOG_B_2_X32: i128 = 59543866431248i128;
@@ -301,14 +300,24 @@ pub fn is_full_range_only(tick_spacing: u16) -> bool {
 /// - `tick_spacing` - A u16 integer representing the tick spacing
 ///
 /// # Returns
-/// - A i32 integer representing the tick index in the tick array
+/// - A u32 integer representing the tick index in the tick array
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_tick_index_in_array(
     tick_index: i32,
     tick_array_start_index: i32,
     tick_spacing: u16,
-) -> i32 {
-    (tick_index - tick_array_start_index) / tick_spacing as i32
+) -> Result<u32, CoreError> {
+    let tick_spacing_i32 = tick_spacing as i32;
+    if tick_index < tick_array_start_index {
+        return Err(TICK_INDEX_NOT_IN_ARRAY);
+    }
+    if tick_index >= tick_array_start_index + (TICK_ARRAY_SIZE as i32) * tick_spacing_i32 {
+        return Err(TICK_INDEX_NOT_IN_ARRAY);
+    }
+    let result = (tick_index - tick_array_start_index)
+        .div_euclid(tick_spacing_i32)
+        .unsigned_abs();
+    Ok(result)
 }
 
 // Private functions
@@ -589,5 +598,16 @@ mod tests {
         assert!(!is_full_range_only(
             FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD - 1
         ));
+    }
+
+    #[test]
+    fn test_get_tick_index_in_array() {
+        assert_eq!(get_tick_index_in_array(880, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
+        assert_eq!(get_tick_index_in_array(100, 0, 10), Ok(10));
+        assert_eq!(get_tick_index_in_array(50, 0, 10), Ok(5));
+        assert_eq!(get_tick_index_in_array(0, 0, 10), Ok(0));
+        assert_eq!(get_tick_index_in_array(-830, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
+        assert_eq!(get_tick_index_in_array(-830, -880, 10), Ok(5));
+        assert_eq!(get_tick_index_in_array(-780, -880, 10), Ok(10));
     }
 }

@@ -4,7 +4,7 @@ use ethnum::U256;
 use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
-    CoreError, TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, U128
+    ErrorCode, TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, U128
 };
 
 const LOG_B_2_X32: i128 = 59543866431248i128;
@@ -306,7 +306,7 @@ pub fn get_tick_index_in_array(
     tick_index: i32,
     tick_array_start_index: i32,
     tick_spacing: u16,
-) -> Result<u32, CoreError> {
+) -> Result<u32, ErrorCode> {
     let tick_spacing_i32 = tick_spacing as i32;
     if tick_index < tick_array_start_index {
         return Err(TICK_INDEX_NOT_IN_ARRAY);
@@ -606,8 +606,9 @@ mod tests {
         assert_eq!(get_tick_index_in_array(100, 0, 10), Ok(10));
         assert_eq!(get_tick_index_in_array(50, 0, 10), Ok(5));
         assert_eq!(get_tick_index_in_array(0, 0, 10), Ok(0));
-        assert_eq!(get_tick_index_in_array(-830, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
+        assert_eq!(get_tick_index_in_array(-1, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
         assert_eq!(get_tick_index_in_array(-830, -880, 10), Ok(5));
         assert_eq!(get_tick_index_in_array(-780, -880, 10), Ok(10));
+        assert_eq!(get_tick_index_in_array(-881, -880, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
     }
 }

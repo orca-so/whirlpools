@@ -33,9 +33,8 @@ To close a position and withdraw all liquidity, follow these steps:
   const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
     rpc,
     positionMint,
-    param,
-    slippageTolerance, 
-    wallet 
+    slippageTolerance,
+    wallet
   );
   ```
 7. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK.

@@ -280,7 +280,6 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  *
  * @param {SolanaRpc} rpc - A Solana RPC client for fetching accounts and pool data.
  * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position to be closed.
- * @param {DecreaseLiquidityQuoteParam} param - The parameters for removing liquidity (liquidity, tokenA, or tokenB).
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
  * @param {TransactionSigner} [authority=FUNDER] - The account authorizing the transaction.
  *

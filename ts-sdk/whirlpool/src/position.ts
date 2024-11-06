@@ -93,10 +93,18 @@ export async function fetchPositionsForOwner(
 ): Promise<PositionData[]> {
   const [tokenAccounts, token2022Accounts] = await Promise.all([
     rpc
-      .getTokenAccountsByOwner(owner, { programId: TOKEN_PROGRAM_ADDRESS }, { encoding: "base64" })
+      .getTokenAccountsByOwner(
+        owner,
+        { programId: TOKEN_PROGRAM_ADDRESS },
+        { encoding: "base64" },
+      )
       .send(),
     rpc
-      .getTokenAccountsByOwner(owner, { programId: TOKEN_2022_PROGRAM_ADDRESS }, { encoding: "base64" })
+      .getTokenAccountsByOwner(
+        owner,
+        { programId: TOKEN_2022_PROGRAM_ADDRESS },
+        { encoding: "base64" },
+      )
       .send(),
   ]);
 

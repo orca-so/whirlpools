@@ -29,6 +29,8 @@ import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "@orca-so/whirlpools-client";
 import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
 import { setupConfigAndFeeTiers } from "./program";
+import { getAddMemoInstruction } from "@solana-program/memo";
+import { randomUUID } from "crypto";
 
 export const signer = await generateKeyPairSigner();
 setDefaultFunder(signer);
@@ -79,9 +81,14 @@ export async function deleteAccount(address: Address) {
 
 export async function sendTransaction(ixs: IInstruction[]) {
   const blockhash = await rpc.getLatestBlockhash().send();
+  // Sine blockhash is not guaranteed to be unique, we need to add a random memo to the tx
+  // so that we can fire two seemingly identical transactions in a row.
+  const memo = getAddMemoInstruction({
+    memo: randomUUID().toString(),
+  });
   const transaction = await pipe(
     createTransactionMessage({ version: 0 }),
-    (x) => appendTransactionMessageInstructions(ixs, x),
+    (x) => appendTransactionMessageInstructions([memo, ...ixs], x),
     (x) => setTransactionMessageFeePayerSigner(signer, x),
     (x) => setTransactionMessageLifetimeUsingBlockhash(blockhash.value, x),
     (x) => signTransactionMessageWithSigners(x),
@@ -192,7 +199,9 @@ async function mockTransport<T>(
     case "getMinimumBalanceForRentExemption":
       const space = config.payload.params[0];
       assert(typeof space === "number");
-      return getResponse<T>(space * 10);
+      const rent = await testContext.banksClient.getRent();
+      const exemptAmount = rent.minimumBalance(BigInt(space));
+      return getResponse<T>(exemptAmount);
     case "getLatestBlockhash":
       const blockhash = await testContext.banksClient.getLatestBlockhash();
       assert(blockhash != null);

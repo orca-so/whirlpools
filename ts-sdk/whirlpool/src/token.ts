@@ -25,15 +25,17 @@ import {
   generateKeyPairSigner,
   getAddressDecoder,
   getAddressEncoder,
+  lamports,
 } from "@solana/web3.js";
-import { SOL_WRAPPING_STRATEGY } from "./config";
+import { NATIVE_MINT_WRAPPING_STRATEGY } from "./config";
 import {
   getCreateAccountInstruction,
   getCreateAccountWithSeedInstruction,
   getTransferSolInstruction,
 } from "@solana-program/system";
-import type { Mint } from "@solana-program/token-2022";
+import type { ExtensionArgs, Mint } from "@solana-program/token-2022";
 import type { TransferFee } from "@orca-so/whirlpools-core";
+import assert from "assert";
 
 // This file is not exported through the barrel file
 
@@ -57,7 +59,10 @@ type TokenAccountInstructions = {
 };
 
 function mintFilter(x: Address) {
-  if (SOL_WRAPPING_STRATEGY === "none" || SOL_WRAPPING_STRATEGY === "ata") {
+  if (
+    NATIVE_MINT_WRAPPING_STRATEGY === "none" ||
+    NATIVE_MINT_WRAPPING_STRATEGY === "ata"
+  ) {
     return true;
   }
   return x != NATIVE_MINT;
@@ -69,7 +74,7 @@ function mintFilter(x: Address) {
  * ATAs for the supplied mints.
  *
  * The NATIVE_MINT is a special case where this function will optionally wrap/unwrap
- * SOL based on the SOL_WRAPPING_STRATEGY.
+ * Native Mint based on the NATIVE_MINT_WRAPPING_STRATEGY.
  *
  * @param rpc
  * @param owner the owner to create token accounts for
@@ -88,8 +93,8 @@ export async function prepareTokenAccountsInstructions(
   const mintAddresses = Array.isArray(spec)
     ? spec
     : (Object.keys(spec) as Address[]);
-  const solMintIndex = mintAddresses.indexOf(NATIVE_MINT);
-  const hasSolMint = solMintIndex !== -1;
+  const nativeMintIndex = mintAddresses.indexOf(NATIVE_MINT);
+  const hasNativeMint = nativeMintIndex !== -1;
   const mints = await fetchAllMint(rpc, mintAddresses.filter(mintFilter));
   const tokenAddresses = await Promise.all(
     mints.map((mint) =>
@@ -124,17 +129,42 @@ export async function prepareTokenAccountsInstructions(
     );
   }
 
-  if (hasSolMint && SOL_WRAPPING_STRATEGY === "keypair") {
+  if (!Array.isArray(spec)) {
+    for (let i = 0; i < mints.length; i++) {
+      const mint = mints[i];
+      if (
+        mint.address === NATIVE_MINT &&
+        NATIVE_MINT_WRAPPING_STRATEGY !== "none"
+      ) {
+        continue;
+      }
+      const tokenAccount = tokenAccounts[i];
+      const existingBalance = tokenAccount.exists
+        ? tokenAccount.data.amount
+        : 0n;
+      assert(
+        BigInt(spec[mint.address]) <= existingBalance,
+        `Token account for ${mint.address} does not have the required balance`,
+      );
+    }
+  }
+
+  if (hasNativeMint && NATIVE_MINT_WRAPPING_STRATEGY === "keypair") {
     const keypair = await generateKeyPairSigner();
     const space = getTokenSize();
-    const lamports = await rpc
+    let amount = await rpc
       .getMinimumBalanceForRentExemption(BigInt(space))
       .send();
+
+    if (!Array.isArray(spec)) {
+      amount = lamports(amount + BigInt(spec[NATIVE_MINT]));
+    }
+
     createInstructions.push(
       getCreateAccountInstruction({
         payer: owner,
         newAccount: keypair,
-        lamports,
+        lamports: amount,
         space,
         programAddress: TOKEN_PROGRAM_ADDRESS,
       }),
@@ -154,11 +184,15 @@ export async function prepareTokenAccountsInstructions(
     tokenAccountAddresses[NATIVE_MINT] = keypair.address;
   }
 
-  if (hasSolMint && SOL_WRAPPING_STRATEGY === "seed") {
+  if (hasNativeMint && NATIVE_MINT_WRAPPING_STRATEGY === "seed") {
     const space = getTokenSize();
-    const amount = await rpc
+    let amount = await rpc
       .getMinimumBalanceForRentExemption(BigInt(space))
       .send();
+
+    if (!Array.isArray(spec)) {
+      amount = lamports(amount + BigInt(spec[NATIVE_MINT]));
+    }
 
     // Generating secure seed takes longer and is not really needed here.
     // With date, it should only create collisions if the same owner
@@ -203,8 +237,23 @@ export async function prepareTokenAccountsInstructions(
     );
   }
 
-  if (hasSolMint && SOL_WRAPPING_STRATEGY === "ata") {
-    const account = tokenAccounts[solMintIndex];
+  if (hasNativeMint && NATIVE_MINT_WRAPPING_STRATEGY === "ata") {
+    const account = tokenAccounts[nativeMintIndex];
+    const existingBalance = account.exists ? account.data.amount : 0n;
+
+    if (!Array.isArray(spec) && existingBalance < BigInt(spec[NATIVE_MINT])) {
+      createInstructions.push(
+        getTransferSolInstruction({
+          source: owner,
+          destination: tokenAccountAddresses[NATIVE_MINT],
+          amount: BigInt(spec[NATIVE_MINT]) - existingBalance,
+        }),
+        getSyncNativeInstruction({
+          account: tokenAccountAddresses[NATIVE_MINT],
+        }),
+      );
+    }
+
     if (!account.exists) {
       cleanupInstructions.push(
         getCloseAccountInstruction({
@@ -214,24 +263,6 @@ export async function prepareTokenAccountsInstructions(
         }),
       );
     }
-  }
-
-  if (
-    hasSolMint &&
-    !Array.isArray(spec) &&
-    spec[NATIVE_MINT] > 0 &&
-    SOL_WRAPPING_STRATEGY !== "none"
-  ) {
-    createInstructions.push(
-      getTransferSolInstruction({
-        source: owner,
-        destination: tokenAccountAddresses[NATIVE_MINT],
-        amount: spec[NATIVE_MINT],
-      }),
-      getSyncNativeInstruction({
-        account: tokenAccountAddresses[NATIVE_MINT],
-      }),
-    );
   }
 
   return {
@@ -281,7 +312,46 @@ export function getCurrentTransferFee(
 }
 
 /**
+ * Builds the required account extensions for a given mint. This should only be used
+ * for non-ATA token accounts since ATA accounts should also add the ImmutableOwner extension.
+ *
+ * https://github.com/solana-labs/solana-program-library/blob/3844bfac50990c1aa4dfb30f244f8c13178fc3fa/token/program-2022/src/extension/mod.rs#L1276
+ *
+ * @param {Mint} mint - The mint account to build extensions for.
+ * @returns {ExtensionArgs[]} An array of extension arguments.
+ */
+export function getAccountExtensions(mint: Mint): ExtensionArgs[] {
+  if (mint.extensions.__option === "None") {
+    return [];
+  }
+  const extensions: ExtensionArgs[] = [];
+  for (const extension of mint.extensions.value) {
+    switch (extension.__kind) {
+      case "TransferFeeConfig":
+        extensions.push({
+          __kind: "TransferFeeAmount",
+          withheldAmount: 0n,
+        });
+        break;
+      case "NonTransferable":
+        extensions.push({
+          __kind: "NonTransferableAccount",
+        });
+        break;
+      case "TransferHook":
+        extensions.push({
+          __kind: "TransferHookAccount",
+          transferring: false,
+        });
+        break;
+    }
+  }
+  return extensions;
+}
+
+/**
  * Orders two mints by canonical byte order.
+ *
  * @param {Address} mint1
  * @param {Address} mint2
  * @returns {[Address, Address]} [mint1, mint2] if mint1 should come first, [mint2, mint1] otherwise

@@ -300,13 +300,13 @@ pub fn is_full_range_only(tick_spacing: u16) -> bool {
 /// - `tick_spacing` - A u16 integer representing the tick spacing
 ///
 /// # Returns
-/// - A u32 integer representing the tick index in the tick array
+/// - A u16 integer representing the tick index in the tick array
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_tick_index_in_array(
     tick_index: i32,
     tick_array_start_index: i32,
     tick_spacing: u16,
-) -> Result<u32, ErrorCode> {
+) -> Result<u16, ErrorCode> {
     let tick_spacing_i32 = tick_spacing as i32;
     if tick_index < tick_array_start_index {
         return Err(TICK_INDEX_NOT_IN_ARRAY);
@@ -314,10 +314,9 @@ pub fn get_tick_index_in_array(
     if tick_index >= tick_array_start_index + (TICK_ARRAY_SIZE as i32) * tick_spacing_i32 {
         return Err(TICK_INDEX_NOT_IN_ARRAY);
     }
-    let result = (tick_index - tick_array_start_index)
-        .div_euclid(tick_spacing_i32)
-        .unsigned_abs();
-    Ok(result)
+    let offset = (tick_index - tick_array_start_index)
+        .unsigned_abs() as u16;
+    Ok(offset / tick_spacing)
 }
 
 // Private functions

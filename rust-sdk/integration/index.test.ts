@@ -9,7 +9,7 @@ type RustConfig = {
 };
 
 // Make sure client package work with a wide range of solana/anchor versions
-const rustConfigs: RustConfig[] = [
+const versionConfigs: RustConfig[] = [
   { solana: "1.17.11" },
   { solana: "1.18.26" },
   { solana: "1.17.11", anchor: "0.29.0" },
@@ -24,7 +24,7 @@ describe("Integration", () => {
     }
   })
 
-  rustConfigs.forEach((config) => {
+  versionConfigs.forEach((config) => {
     it(`Build using '${JSON.stringify(config)}'`, () => {
       let features = "";
       if (config.anchor) {

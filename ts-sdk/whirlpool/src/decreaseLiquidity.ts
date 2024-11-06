@@ -297,12 +297,10 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  *
  * const positionMint = "POSITION_MINT";
  *
- * const param = { liquidity: 500_000n };
  *
  * const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
  *   devnetRpc,
  *   positionMint,
- *   param,
  *   100,
  *   wallet
  * );
@@ -314,7 +312,6 @@ export async function closePositionInstructions(
       GetMinimumBalanceForRentExemptionApi
   >,
   positionMintAddress: Address,
-  param: DecreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
   authority: TransactionSigner = FUNDER,
 ): Promise<ClosePositionInstructions> {
@@ -348,7 +345,7 @@ export async function closePositionInstructions(
   const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
 
   const quote = getDecreaseLiquidityQuote(
-    param,
+    { liquidity: position.data.liquidity },
     whirlpool.data,
     position.data,
     slippageToleranceBps,

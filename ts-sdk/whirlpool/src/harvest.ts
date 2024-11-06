@@ -190,14 +190,11 @@ export async function harvestPositionInstructions(
     requiredMints.push(whirlpool.data.tokenMintA);
     requiredMints.push(whirlpool.data.tokenMintB);
   }
-  if (rewardsQuote.rewards[0].rewardsOwed > 0n) {
-    requiredMints.push(whirlpool.data.rewardInfos[0].mint);
-  }
-  if (rewardsQuote.rewards[1].rewardsOwed > 0n) {
-    requiredMints.push(whirlpool.data.rewardInfos[1].mint);
-  }
-  if (rewardsQuote.rewards[2].rewardsOwed > 0n) {
-    requiredMints.push(whirlpool.data.rewardInfos[2].mint);
+
+  for (let i = 0; i < rewardsQuote.rewards.length; i++) {
+    if (rewardsQuote.rewards[i].rewardsOwed > 0n) {
+      requiredMints.push(whirlpool.data.rewardInfos[i].mint);
+    }
   }
 
   const { createInstructions, cleanupInstructions, tokenAccountAddresses } =

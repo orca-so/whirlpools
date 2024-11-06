@@ -312,7 +312,8 @@ export function getCurrentTransferFee(
 }
 
 /**
- * Builds the required account extensions for a given mint.
+ * Builds the required account extensions for a given mint. This should only be used
+ * for non-ATA token accounts since ATA accounts should also add the ImmutableOwner extension.
  *
  * https://github.com/solana-labs/solana-program-library/blob/3844bfac50990c1aa4dfb30f244f8c13178fc3fa/token/program-2022/src/extension/mod.rs#L1276
  *

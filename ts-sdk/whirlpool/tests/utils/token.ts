@@ -1,4 +1,7 @@
-import { getCreateAccountInstruction } from "@solana-program/system";
+import {
+  getCreateAccountInstruction,
+  getTransferSolInstruction,
+} from "@solana-program/system";
 import {
   getMintSize,
   getInitializeMint2Instruction,
@@ -6,10 +9,12 @@ import {
   getCreateAssociatedTokenIdempotentInstruction,
   findAssociatedTokenPda,
   getMintToInstruction,
+  getSyncNativeInstruction,
 } from "@solana-program/token";
 import type { Address, IInstruction } from "@solana/web3.js";
 import { generateKeyPairSigner } from "@solana/web3.js";
 import { signer, sendTransaction } from "./mockRpc";
+import { NATIVE_MINT } from "../../src/token";
 
 export async function setupAta(
   mint: Address,
@@ -34,14 +39,29 @@ export async function setupAta(
   );
 
   if (config.amount) {
-    instructions.push(
-      getMintToInstruction({
-        mint,
-        token: ata[0],
-        mintAuthority: signer,
-        amount: config.amount,
-      }),
-    );
+    if (mint === NATIVE_MINT) {
+      instructions.push(
+        getTransferSolInstruction({
+          source: signer,
+          destination: ata[0],
+          amount: config.amount,
+        }),
+      );
+      instructions.push(
+        getSyncNativeInstruction({
+          account: ata[0],
+        }),
+      );
+    } else {
+      instructions.push(
+        getMintToInstruction({
+          mint,
+          token: ata[0],
+          mintAuthority: signer,
+          amount: config.amount,
+        }),
+      );
+    }
   }
 
   await sendTransaction(instructions);

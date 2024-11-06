@@ -18,6 +18,8 @@ import type {
 } from "@solana/web3.js";
 import { SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS } from "./config";
 import { orderMints } from "./token";
+import { sqrtPriceToPrice } from "@orca-so/whirlpools-core";
+import { fetchAllMint } from "@solana-program/token";
 
 /**
  * Type representing a pool that is not yet initialized.
@@ -42,6 +44,7 @@ export type InitializablePool = {
 export type InitializedPool = {
   /** Indicates the pool is initialized. */
   initialized: true;
+  price: number;
 } & Whirlpool;
 
 /**
@@ -76,7 +79,7 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  * );
  */
 export async function fetchSplashPool(
-  rpc: Rpc<GetAccountInfoApi>,
+  rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,
 ): Promise<PoolInfo> {
@@ -115,7 +118,7 @@ export async function fetchSplashPool(
  * );
  */
 export async function fetchConcentratedLiquidityPool(
-  rpc: Rpc<GetAccountInfoApi>,
+  rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintOne: Address,
   tokenMintTwo: Address,
   tickSpacing: number,
@@ -139,10 +142,18 @@ export async function fetchConcentratedLiquidityPool(
     fetchMaybeWhirlpool(rpc, poolAddress),
   ]);
 
+  const [mintA, mintB] = await fetchAllMint(rpc, [tokenMintA, tokenMintB]);
+
   if (poolAccount.exists) {
+    const poolPrice = sqrtPriceToPrice(
+      poolAccount.data.sqrtPrice,
+      mintA.data.decimals,
+      mintB.data.decimals,
+    );
     return {
       initialized: true,
       address: poolAddress,
+      price: poolPrice,
       ...poolAccount.data,
     };
   } else {
@@ -213,6 +224,8 @@ export async function fetchWhirlpoolsByTokenPair(
     fetchAllMaybeWhirlpool(rpc, poolAddresses),
   ]);
 
+  const [mintA, mintB] = await fetchAllMint(rpc, [tokenMintA, tokenMintB]);
+
   const pools: PoolInfo[] = [];
   for (let i = 0; i < supportedTickSpacings.length; i++) {
     const tickSpacing = supportedTickSpacings[i];
@@ -221,9 +234,15 @@ export async function fetchWhirlpoolsByTokenPair(
     const poolAddress = poolAddresses[i];
 
     if (poolAccount.exists) {
+      const poolPrice = sqrtPriceToPrice(
+        poolAccount.data.sqrtPrice,
+        mintA.data.decimals,
+        mintB.data.decimals,
+      );
       pools.push({
         initialized: true,
         address: poolAddress,
+        price: poolPrice,
         ...poolAccount.data,
       });
     } else {

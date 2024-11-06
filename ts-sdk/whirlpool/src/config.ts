@@ -18,12 +18,6 @@ export const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES = {
 };
 
 /**
- * The default WhirlpoolsConfig address.
- */
-export const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS =
-  DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet;
-
-/**
  * The default WhirlpoolsConfigExtension address.
  */
 export const DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS = address(
@@ -34,7 +28,7 @@ export const DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS = address(
  * The WhirlpoolsConfig address.
  */
 export let WHIRLPOOLS_CONFIG_ADDRESS: Address =
-  DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS;
+  DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet;
 
 /**
  * The WhirlpoolsConfigExtension address.
@@ -54,7 +48,10 @@ export async function setWhirlpoolsConfig(
   if (isAddress(config)) {
     WHIRLPOOLS_CONFIG_ADDRESS = config;
   } else {
-    WHIRLPOOLS_CONFIG_ADDRESS = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES];
+    WHIRLPOOLS_CONFIG_ADDRESS =
+      DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES[
+        config as keyof typeof DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES
+      ];
   }
 
   WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
@@ -116,40 +113,48 @@ export function setDefaultSlippageToleranceBps(
 }
 
 /**
- * Defines the strategy for handling SOL wrapping in a transaction.
+ * Defines the strategy for handling Native Mint wrapping in a transaction.
  *
  * - **Keypair**:
- *   Creates an auxiliary token account using a keypair. Optionally adds funds to the account. Closes it at the end of the transaction.
+ *   Creates an auxiliary token account using a keypair.
+ *   Optionally adds funds to the account.
+ *   Closes it at the end of the transaction.
  *
  * - **Seed**:
  *   Functions similarly to Keypair, but uses a seed account instead.
  *
  * - **ATA**:
- *   Creates an associated token account (ATA) for `NATIVE_MINT` if necessary. Optionally adds funds to the ATA. Closes it at the end of the transaction if it was newly created.
+ *   Treats the native balance and associated token account (ATA) for `NATIVE_MINT` as one.
+ *   Will create the ATA if it doesn't exist.
+ *   Optionally adds funds to the account.
+ *   Closes it at the end of the transaction if it did not exist before.
  *
  * - **None**:
- *   Uses or creates the ATA without performing any SOL wrapping or unwrapping.
+ *   Uses or creates the ATA without performing any Native Mint wrapping or unwrapping.
  */
-export type SolWrappingStrategy = "keypair" | "seed" | "ata" | "none";
+export type NativeMintWrappingStrategy = "keypair" | "seed" | "ata" | "none";
 
 /**
- * The default sol wrapping strategy.
+ * The default native mint wrapping strategy.
  */
-export const DEFAULT_SOL_WRAPPING_STRATEGY: SolWrappingStrategy = "keypair";
+export const DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY: NativeMintWrappingStrategy =
+  "keypair";
 
 /**
- * The currently selected sol wrapping strategy.
+ * The currently selected native mint wrapping strategy.
  */
-export let SOL_WRAPPING_STRATEGY: SolWrappingStrategy =
-  DEFAULT_SOL_WRAPPING_STRATEGY;
+export let NATIVE_MINT_WRAPPING_STRATEGY: NativeMintWrappingStrategy =
+  DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
 
 /**
- * Sets the sol wrapping strategy.
+ * Sets the native mint wrapping strategy.
  *
- * @param {SolWrappingStrategy} strategy - The sol wrapping strategy.
+ * @param {NativeMintWrappingStrategy} strategy - The native mint wrapping strategy.
  */
-export function setSolWrappingStrategy(strategy: SolWrappingStrategy): void {
-  SOL_WRAPPING_STRATEGY = strategy;
+export function setNativeMintWrappingStrategy(
+  strategy: NativeMintWrappingStrategy,
+): void {
+  NATIVE_MINT_WRAPPING_STRATEGY = strategy;
 }
 
 /**
@@ -158,10 +163,10 @@ export function setSolWrappingStrategy(strategy: SolWrappingStrategy): void {
  * @returns {Promise<void>} - Resolves when the configuration has been reset.
  */
 export function resetConfiguration() {
-  WHIRLPOOLS_CONFIG_ADDRESS = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS;
+  WHIRLPOOLS_CONFIG_ADDRESS = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES.solanaMainnet;
   WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS =
     DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
   FUNDER = DEFAULT_FUNDER;
   SLIPPAGE_TOLERANCE_BPS = DEFAULT_SLIPPAGE_TOLERANCE_BPS;
-  SOL_WRAPPING_STRATEGY = DEFAULT_SOL_WRAPPING_STRATEGY;
+  NATIVE_MINT_WRAPPING_STRATEGY = DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
 }

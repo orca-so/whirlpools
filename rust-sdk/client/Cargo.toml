@@ -28,4 +28,4 @@ orca_whirlpools_core = { path = "../core", optional = true }
 serde = { version = "^1", features = ["derive"], optional = true }
 serde_with = { version = "^3.10", optional = true }
 solana-program = { version = "^1.18" }
-thiserror = { version = "^1" }
+thiserror = { version = "^2" }

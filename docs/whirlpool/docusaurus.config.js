@@ -62,7 +62,7 @@ export default {
       items: [
         { to: "/", label: "Docs", position: "left" },
         {
-          label: "Whirlpools SDK Reference",
+          label: "Whirlpools SDKs Reference",
           position: "left",
           items: [
             {

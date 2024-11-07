@@ -18,17 +18,15 @@ The program has been audited several times by different security firms.
 
 ## Usage
 
-***The new whirlpool SDKs are still in development and are not recommended for production use yet. Please see [Legacy](#legacy)***
-
-This repository contains several libraries that can be used to interact with the Whirlpools contract. For most purposes you can use the full library (`@orca-so/whirlpools` and `orca_whirlpools`).
+This repository contains several libraries that can be used to interact with the Whirlpools contract. For most purposes you can use our high-level SDKs, `@orca-so/whirlpools` for Typescript projects, and `orca_whirlpools` (currently in development) for Rust projects.
 
 For specific use-cases you can opt for integrating with lower level packages such as:
 * `@orca-so/whirlpools-client` & `orca_whirlpools_client` - auto-generated client for the Whirlpools program that contains account, instruction and error parsing.
 * `@orca-so/whirlpools-core` & `orca_whirlpools_core` - utility, math and quoting functions used by other packages.
 
-### Legacy
+The legacy Typescript SDK (`@orca-so/whirlpools-sdk`) is still available for use.
 
-The legacy Typescript SDK (`@orca-so/whirlpools-sdk`) is still available for use. Documentation can be found on the [Orca Developer Portal](https://orca-so.gitbook.io/orca-developer-portal/orca/welcome). While the new packages are still in development the legacy sdk is still the recommended way to interact with the Whirlpools program.
+For a more detailed overview of our SDK suite and usage examples, visit our [developer documentation](https://orca-so.github.io/whirlpools/) site.
 
 ## Local Development
 

@@ -15,16 +15,15 @@ wasm = ["dep:wasm-bindgen", "dep:serde", "dep:serde-big-array", "dep:serde-wasm-
 floats = ["dep:libm"]
 
 [dependencies]
-ethnum = { version = "^1.5" }
-libm = { version = "^0.2", optional = true }
+ethnum = { version = "^1" }
+libm = { version = "^0", optional = true }
 orca_whirlpools_macros = { path = "../macros" }
-wasm-bindgen = { version = "^0.2", optional = true }
+wasm-bindgen = { version = "^0", optional = true }
 serde = { version = "^1", features = ["derive"], optional = true }
-serde-big-array = { version = "^0.5", optional = true }
-serde-wasm-bindgen = { version = "^0.6", optional = true }
-js-sys = { version = "^0.3", optional = true }
-tsify = { version = "^0.4", features = ["js"], optional = true }
+serde-big-array = { version = "^0", optional = true }
+serde-wasm-bindgen = { version = "^0", optional = true }
+js-sys = { version = "^0", optional = true }
+tsify = { version = "^0", features = ["js"], optional = true }
 
 [dev-dependencies]
-print-no-std = { version = "^0.2"}
-approx = { version = "^0.5" }
+approx = { version = "^0" }

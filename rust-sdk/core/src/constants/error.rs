@@ -43,3 +43,6 @@ pub const INVALID_TRANSFER_FEE: ErrorCode = 9011;
 
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub const INVALID_SLIPPAGE_TOLERANCE: ErrorCode = 9012;
+
+#[cfg_attr(feature = "wasm", wasm_expose)]
+pub const TICK_INDEX_NOT_IN_ARRAY: ErrorCode = 9013;

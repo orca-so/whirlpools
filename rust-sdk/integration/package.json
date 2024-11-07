@@ -1,0 +1,13 @@
+{
+  "name": "@orca-so/whirlpools-rust-integration",
+  "version": "0.0.1",
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit",
+    "test": "vitest run index.test.ts"
+  },
+  "devDependencies": {
+    "@orca-so/whirlpools-rust-client": "*",
+    "typescript": "^5.5.4"
+  }
+}

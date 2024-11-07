@@ -1,0 +1,10 @@
+[package]
+name = "orca_whirlpools_integration"
+edition = "2021"
+
+[features]
+default = []
+anchor = ["orca_whirlpools_client/anchor"]
+
+[dependencies]
+orca_whirlpools_client = { path = "../client" }

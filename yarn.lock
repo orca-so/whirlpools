@@ -4352,72 +4352,72 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-arm64@npm:20.0.8":
-  version: 20.0.8
-  resolution: "@nx/nx-darwin-arm64@npm:20.0.8"
+"@nx/nx-darwin-arm64@npm:20.0.10":
+  version: 20.0.10
+  resolution: "@nx/nx-darwin-arm64@npm:20.0.10"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-x64@npm:20.0.8":
-  version: 20.0.8
-  resolution: "@nx/nx-darwin-x64@npm:20.0.8"
+"@nx/nx-darwin-x64@npm:20.0.10":
+  version: 20.0.10
+  resolution: "@nx/nx-darwin-x64@npm:20.0.10"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-freebsd-x64@npm:20.0.8":
-  version: 20.0.8
-  resolution: "@nx/nx-freebsd-x64@npm:20.0.8"
+"@nx/nx-freebsd-x64@npm:20.0.10":
+  version: 20.0.10
+  resolution: "@nx/nx-freebsd-x64@npm:20.0.10"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm-gnueabihf@npm:20.0.8":
-  version: 20.0.8
-  resolution: "@nx/nx-linux-arm-gnueabihf@npm:20.0.8"
+"@nx/nx-linux-arm-gnueabihf@npm:20.0.10":
+  version: 20.0.10
+  resolution: "@nx/nx-linux-arm-gnueabihf@npm:20.0.10"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-gnu@npm:20.0.8":
-  version: 20.0.8
-  resolution: "@nx/nx-linux-arm64-gnu@npm:20.0.8"
+"@nx/nx-linux-arm64-gnu@npm:20.0.10":
+  version: 20.0.10
+  resolution: "@nx/nx-linux-arm64-gnu@npm:20.0.10"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-musl@npm:20.0.8":
-  version: 20.0.8
-  resolution: "@nx/nx-linux-arm64-musl@npm:20.0.8"
+"@nx/nx-linux-arm64-musl@npm:20.0.10":
+  version: 20.0.10
+  resolution: "@nx/nx-linux-arm64-musl@npm:20.0.10"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-gnu@npm:20.0.8":
-  version: 20.0.8
-  resolution: "@nx/nx-linux-x64-gnu@npm:20.0.8"
+"@nx/nx-linux-x64-gnu@npm:20.0.10":
+  version: 20.0.10
+  resolution: "@nx/nx-linux-x64-gnu@npm:20.0.10"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-musl@npm:20.0.8":
-  version: 20.0.8
-  resolution: "@nx/nx-linux-x64-musl@npm:20.0.8"
+"@nx/nx-linux-x64-musl@npm:20.0.10":
+  version: 20.0.10
+  resolution: "@nx/nx-linux-x64-musl@npm:20.0.10"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-arm64-msvc@npm:20.0.8":
-  version: 20.0.8
-  resolution: "@nx/nx-win32-arm64-msvc@npm:20.0.8"
+"@nx/nx-win32-arm64-msvc@npm:20.0.10":
+  version: 20.0.10
+  resolution: "@nx/nx-win32-arm64-msvc@npm:20.0.10"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-x64-msvc@npm:20.0.8":
-  version: 20.0.8
-  resolution: "@nx/nx-win32-x64-msvc@npm:20.0.8"
+"@nx/nx-win32-x64-msvc@npm:20.0.10":
+  version: 20.0.10
+  resolution: "@nx/nx-win32-x64-msvc@npm:20.0.10"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -4545,7 +4545,7 @@ __metadata:
     "@types/node": "npm:^22.9.0"
     husky: "npm:^9.1.6"
     lint-staged: "npm:^15.2.10"
-    nx: "npm:^20.0.8"
+    nx: "npm:^20.0.10"
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.3.5"
     vitest: "npm:^2.1.4"
@@ -4575,6 +4575,15 @@ __metadata:
   resolution: "@orca-so/whirlpools-rust-core@workspace:rust-sdk/core"
   dependencies:
     "@orca-so/whirlpools-rust-macros": "npm:*"
+  languageName: unknown
+  linkType: soft
+
+"@orca-so/whirlpools-rust-integration@workspace:rust-sdk/integration":
+  version: 0.0.0-use.local
+  resolution: "@orca-so/whirlpools-rust-integration@workspace:rust-sdk/integration"
+  dependencies:
+    "@orca-so/whirlpools-rust-client": "npm:*"
+    typescript: "npm:^5.5.4"
   languageName: unknown
   linkType: soft
 
@@ -4634,7 +4643,7 @@ __metadata:
   dependencies:
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"
-    "@solana-program/memo": "npm:^0.5.4"
+    "@solana-program/memo": "npm:^0.6.0"
     "@solana-program/system": "npm:^0.6.1"
     "@solana-program/token": "npm:^0.4.0"
     "@solana-program/token-2022": "npm:^0.3.0"
@@ -5055,12 +5064,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/memo@npm:^0.5.4":
-  version: 0.5.4
-  resolution: "@solana-program/memo@npm:0.5.4"
+"@solana-program/memo@npm:^0.6.0":
+  version: 0.6.0
+  resolution: "@solana-program/memo@npm:0.6.0"
   peerDependencies:
-    "@solana/web3.js": 2.0.0-rc.1
-  checksum: 10c0/890e51ddbfc6ca750b5445872b9b135b0a8b5b37fa1970bee6a45f50711e60294ec98154c9ca088a257d8e8fa8e832fd20ef1ef68ae448f49ae715e8eacc56c7
+    "@solana/web3.js": 2.0.0-rc.4
+  checksum: 10c0/cad5b69ca0199dde0f93d121e4ffd8bc6044ff536b517232cf14c0f088419291b82fee23cd6c903421bd8fa29ffbbd4a9b12558f5bf658a0614356b1baacf101
   languageName: node
   linkType: hard
 
@@ -6756,13 +6765,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@yarnpkg/parsers@npm:3.0.0-rc.46":
-  version: 3.0.0-rc.46
-  resolution: "@yarnpkg/parsers@npm:3.0.0-rc.46"
+"@yarnpkg/parsers@npm:3.0.2":
+  version: 3.0.2
+  resolution: "@yarnpkg/parsers@npm:3.0.2"
   dependencies:
     js-yaml: "npm:^3.10.0"
     tslib: "npm:^2.4.0"
-  checksum: 10c0/c7f421c6885142f351459031c093fb2e79abcce6f4a89765a10e600bb7ab122949c54bcea2b23de9572a2b34ba29f822b17831c1c43ba50373ceb8cb5b336667
+  checksum: 10c0/a0c340e13129643162423d7e666061c0b39b143bfad3fc5a74c7d92a30fd740f6665d41cd4e61832c20375889d793eea1d1d103cacb39ed68f7acd168add8c53
   languageName: node
   linkType: hard
 
@@ -13745,23 +13754,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nx@npm:^20.0.8":
-  version: 20.0.8
-  resolution: "nx@npm:20.0.8"
+"nx@npm:^20.0.10":
+  version: 20.0.10
+  resolution: "nx@npm:20.0.10"
   dependencies:
     "@napi-rs/wasm-runtime": "npm:0.2.4"
-    "@nx/nx-darwin-arm64": "npm:20.0.8"
-    "@nx/nx-darwin-x64": "npm:20.0.8"
-    "@nx/nx-freebsd-x64": "npm:20.0.8"
-    "@nx/nx-linux-arm-gnueabihf": "npm:20.0.8"
-    "@nx/nx-linux-arm64-gnu": "npm:20.0.8"
-    "@nx/nx-linux-arm64-musl": "npm:20.0.8"
-    "@nx/nx-linux-x64-gnu": "npm:20.0.8"
-    "@nx/nx-linux-x64-musl": "npm:20.0.8"
-    "@nx/nx-win32-arm64-msvc": "npm:20.0.8"
-    "@nx/nx-win32-x64-msvc": "npm:20.0.8"
+    "@nx/nx-darwin-arm64": "npm:20.0.10"
+    "@nx/nx-darwin-x64": "npm:20.0.10"
+    "@nx/nx-freebsd-x64": "npm:20.0.10"
+    "@nx/nx-linux-arm-gnueabihf": "npm:20.0.10"
+    "@nx/nx-linux-arm64-gnu": "npm:20.0.10"
+    "@nx/nx-linux-arm64-musl": "npm:20.0.10"
+    "@nx/nx-linux-x64-gnu": "npm:20.0.10"
+    "@nx/nx-linux-x64-musl": "npm:20.0.10"
+    "@nx/nx-win32-arm64-msvc": "npm:20.0.10"
+    "@nx/nx-win32-x64-msvc": "npm:20.0.10"
     "@yarnpkg/lockfile": "npm:^1.1.0"
-    "@yarnpkg/parsers": "npm:3.0.0-rc.46"
+    "@yarnpkg/parsers": "npm:3.0.2"
     "@zkochan/js-yaml": "npm:0.0.7"
     axios: "npm:^1.7.4"
     chalk: "npm:^4.1.0"
@@ -13823,7 +13832,7 @@ __metadata:
   bin:
     nx: bin/nx.js
     nx-cloud: bin/nx-cloud.js
-  checksum: 10c0/2af6292e48e365a47b3351bdc13bc853698b4b492555f6511a3a1b2eb068bbf3ab0828f79097c7cd30ffdcc7e836206911b9d14bb898328246b631344f7a22f9
+  checksum: 10c0/289ba9c077ca89fe6a331f9a6bbcaa0f150a00d382a183f13f6d7a836e4ea84dd3b4d9a8a576854cf975d347fc196669186d9b1cbe0770dca9bbf80d872a355f
   languageName: node
   linkType: hard
 
@@ -17347,7 +17356,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.6.3":
+"typescript@npm:^5.5.4, typescript@npm:^5.6.3":
   version: 5.6.3
   resolution: "typescript@npm:5.6.3"
   bin:
@@ -17357,7 +17366,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.6.3#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.5.4#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.6.3#optional!builtin<compat/typescript>":
   version: 5.6.3
   resolution: "typescript@patch:typescript@npm%3A5.6.3#optional!builtin<compat/typescript>::version=5.6.3&hash=8c6c40"
   bin:

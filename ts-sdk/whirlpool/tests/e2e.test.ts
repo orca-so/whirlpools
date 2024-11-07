@@ -184,7 +184,6 @@ describe("e2e", () => {
     const { instructions, quote, feesQuote } = await closePositionInstructions(
       rpc,
       positionMint,
-      { liquidity: 1000000000n },
     );
     await sendTransaction(instructions);
 

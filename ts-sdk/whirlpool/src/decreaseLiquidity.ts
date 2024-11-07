@@ -280,7 +280,6 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  *
  * @param {SolanaRpc} rpc - A Solana RPC client for fetching accounts and pool data.
  * @param {Address} positionMintAddress - The mint address of the NFT that represents ownership of the position to be closed.
- * @param {DecreaseLiquidityQuoteParam} param - The parameters for removing liquidity (liquidity, tokenA, or tokenB).
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The acceptable slippage tolerance in basis points.
  * @param {TransactionSigner} [authority=FUNDER] - The account authorizing the transaction.
  *
@@ -297,12 +296,10 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  *
  * const positionMint = "POSITION_MINT";
  *
- * const param = { liquidity: 500_000n };
  *
  * const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
  *   devnetRpc,
  *   positionMint,
- *   param,
  *   100,
  *   wallet
  * );
@@ -314,7 +311,6 @@ export async function closePositionInstructions(
       GetMinimumBalanceForRentExemptionApi
   >,
   positionMintAddress: Address,
-  param: DecreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
   authority: TransactionSigner = FUNDER,
 ): Promise<ClosePositionInstructions> {
@@ -348,7 +344,7 @@ export async function closePositionInstructions(
   const transferFeeB = getCurrentTransferFee(mintB, currentEpoch.epoch);
 
   const quote = getDecreaseLiquidityQuote(
-    param,
+    { liquidity: position.data.liquidity },
     whirlpool.data,
     position.data,
     slippageToleranceBps,
@@ -431,18 +427,13 @@ export async function closePositionInstructions(
     requiredMints.push(whirlpool.data.tokenMintA);
     requiredMints.push(whirlpool.data.tokenMintB);
   }
-  if (rewardsQuote.rewards[0].rewardsOwed > 0n) {
-    requiredMints.push(whirlpool.data.rewardInfos[0].mint);
-  }
-  if (rewardsQuote.rewards[1].rewardsOwed > 0n) {
-    requiredMints.push(whirlpool.data.rewardInfos[1].mint);
-  }
-  if (rewardsQuote.rewards[2].rewardsOwed > 0n) {
-    requiredMints.push(whirlpool.data.rewardInfos[2].mint);
+
+  for (let i = 0; i < rewardsQuote.rewards.length; i++) {
+    if (rewardsQuote.rewards[i].rewardsOwed > 0n) {
+      requiredMints.push(whirlpool.data.rewardInfos[i].mint);
+    }
   }
 
-  // FIXME: this creates the accounts even if they are not actually needed
-  // (no rewards, fees, to decrease liquidity, etc.)
   const { createInstructions, cleanupInstructions, tokenAccountAddresses } =
     await prepareTokenAccountsInstructions(rpc, authority, requiredMints);
 

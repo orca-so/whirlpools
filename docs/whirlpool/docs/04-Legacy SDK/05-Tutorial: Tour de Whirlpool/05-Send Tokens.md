@@ -86,7 +86,7 @@ If you are unable to find the transaction, make sure that you have the network d
 - You can also verify transaction transactions executed on Devnet using SolScan.
 
 ### APIs Used
-https://solana-labs.github.io/solana-web3.js/classes/SystemProgram.html#transfer
+https://solana-labs.github.io/solana-web3.js/v1.x/classes/SystemProgram.html#transfer
 
 ## Sending Tokens
 Next, let's try sending Tokens from a program.

@@ -35,7 +35,7 @@ async function main() {
 
   // Obtain the SOL balance
   // Use the getBalance method from the Connection class
-  // https://solana-labs.github.io/solana-web3.js/classes/Connection.html#getBalance
+  // https://solana-labs.github.io/solana-web3.js/v1.x/classes/Connection.html#getBalance
   const sol_balance = await connection.getBalance(keypair.publicKey);
 
   // Display the SOL balance
@@ -70,7 +70,7 @@ SOL: 2.191782899
 - 1 SOL = 1,000,000,000 lamports
 
 ### API Used
-- https://solana-labs.github.io/solana-web3.js/classes/Connection.html#getBalance
+- https://solana-labs.github.io/solana-web3.js/v1.x/classes/Connection.html#getBalance
 
 ## Checking Token Balances
 Next, let's check token balances from a program.
@@ -213,7 +213,7 @@ Since one TokenAccount can only store one token balance, the account structure l
 ![token-account-structure](../../../static/img/04-Legacy%20SDK/05-Tour%20de%20Whirlpool/token-account-structure.png)
 
 ### APIs Used
-- https://solana-labs.github.io/solana-web3.js/classes/Connection.html#getTokenAccountsByOwner
+- https://solana-labs.github.io/solana-web3.js/v1.x/classes/Connection.html#getTokenAccountsByOwner
 - TokenUtil.deserializeTokenAccount
 - DecimalUtil.fromU64
 

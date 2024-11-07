@@ -197,7 +197,7 @@ async function createMintInstructions(
 
     // ConfidentialTransfer
     // [March 6, 2024] getTypeLen(ExtensionType.ConfidentialTransferMint) return 97, but 65 (2 pubkey + 1 bool) is valid
-    // https://github.com/solana-labs/solana-program-library/blob/master/token/js/src/extensions/extensionType.ts#L80
+    // https://github.com/solana-labs/solana-program-library/blob/d72289c79a04411c69a8bf1054f7156b6196f9b3/token/js/src/extensions/extensionType.ts#L74
     let confidentialTransferMintSizePatch = 0;
     if (tokenTrait.hasConfidentialTransferExtension) {
       fixedLengthExtensions.push(ExtensionType.ConfidentialTransferMint);

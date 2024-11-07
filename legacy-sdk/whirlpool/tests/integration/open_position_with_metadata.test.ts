@@ -413,7 +413,7 @@ describe("open_position_with_metadata", () => {
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // InvalidProgramId
-        // https://github.com/coral-xyz/anchor/blob/master/lang/src/error.rs#L231
+        // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L178-L180
         /0xbc0/,
       );
     });
@@ -432,7 +432,7 @@ describe("open_position_with_metadata", () => {
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // InvalidProgramId
-        // https://github.com/coral-xyz/anchor/blob/eee03bc7c31ddc99bf3dbe1630283d9226aa7b9c/lang/src/error.rs#L231
+        // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L178-L180
         /0xbc0/,
       );
     });
@@ -452,7 +452,7 @@ describe("open_position_with_metadata", () => {
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // ConstraintAddress
-        // https://github.com/coral-xyz/anchor/blob/eee03bc7c31ddc99bf3dbe1630283d9226aa7b9c/lang/src/error.rs#L92C5-L92C22
+        // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L89-L91
         /0x7dc/,
       );
     });

@@ -14,7 +14,7 @@ A position in a liquidity pool represents your contribution of liquidity, which 
 
 - **Concentrated Liquidity Pools**: Allow you to provide liquidity within a specified price range, enabling higher capital efficiency but requiring more advanced management.
 
-Upon creation of the position, an NFT will be minted to represent ownership of the position. This NFT is used by the program to verify your ownership when adjusting liquidity, harvesting rewards, or closing the position. For more information, refer to [Tokenized Positions](../../02-Architecture%20Overview/04-Tokenized%20Positions.md).
+Upon creation of the position, an NFT will be minted to represent ownership of the position. This NFT is used by the program to verify your ownership when adjusting liquidity, harvesting rewards, or closing the position. For more information, refer to [Tokenized Positions](../../../02-Architecture%20Overview/04-Tokenized%20Positions.md).
 
 > ⚠️ **Risk of Divergence loss**: The ratio of Token A to Token B that you deposit as liquidity is determined by several factors, including the current price. As trades occur against the pool, the amounts of Token A and Token B in the pool — and in your position — will change, which affects the price of the tokens relative to each other. This can work to your advantage, but it may also result in the combined value of your tokens (including any earned fees and rewards) being lower than when you initially provided liquidity.
  
@@ -27,7 +27,7 @@ Before opening a position, ensure you have completed the environment setup:
 - **Wallet Creation**: Create a wallet to interact with the Solana network.
 - **Devnet Airdrop**: Fund your wallet with a Solana Devnet airdrop to cover transaction fees.
 
-For more details, refer to our [Environment Setup Guide](../01-Environment%20Setup.md)
+For more details, refer to our [Environment Setup Guide](../02-Environment%20Setup.md)
 
 ### Opening a Position in Splash Pools
 

@@ -1,4 +1,4 @@
-# Orca Whirlpools Typescript SDK
+# Orca Whirlpools SDK
 
 Orca Whirlpools is an open-source concentrated liquidity AMM contract on the Solana and Eclipse blockchain. This SDK allows developers to interact with the Whirlpools program on both chains, enabling the creation and management of liquidity pools and positions, as well as performing swaps.
 

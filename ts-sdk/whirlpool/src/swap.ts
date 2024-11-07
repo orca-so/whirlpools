@@ -2,6 +2,7 @@ import type {
   Account,
   Address,
   GetAccountInfoApi,
+  GetEpochInfoApi,
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
   IInstruction,
@@ -225,7 +226,8 @@ export async function swapInstructions<T extends SwapParams>(
   rpc: Rpc<
     GetAccountInfoApi &
       GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi
+      GetMinimumBalanceForRentExemptionApi &
+      GetEpochInfoApi
   >,
   params: T,
   poolAddress: Address,

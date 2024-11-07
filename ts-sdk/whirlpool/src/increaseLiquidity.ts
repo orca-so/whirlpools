@@ -31,10 +31,11 @@ import type {
   Account,
   Address,
   GetAccountInfoApi,
+  GetEpochInfoApi,
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
   IInstruction,
-  LamportsUnsafeBeyond2Pow53Minus1,
+  Lamports,
   Rpc,
   TransactionSigner,
 } from "@solana/web3.js";
@@ -91,7 +92,7 @@ export type IncreaseLiquidityInstructions = {
   quote: IncreaseLiquidityQuote;
 
   /** The initialization cost for liquidity in lamports. */
-  initializationCost: LamportsUnsafeBeyond2Pow53Minus1;
+  initializationCost: Lamports;
 
   /** The mint address of the position NFT. */
   positionMint: Address;
@@ -176,7 +177,8 @@ export async function increaseLiquidityInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
       GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi
+      GetMinimumBalanceForRentExemptionApi &
+      GetEpochInfoApi
   >,
   positionMintAddress: Address,
   param: IncreaseLiquidityQuoteParam,
@@ -283,7 +285,8 @@ async function internalOpenPositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
       GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi
+      GetMinimumBalanceForRentExemptionApi &
+      GetEpochInfoApi
   >,
   whirlpool: Account<Whirlpool>,
   param: IncreaseLiquidityQuoteParam,
@@ -492,7 +495,8 @@ export async function openFullRangePositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
       GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi
+      GetMinimumBalanceForRentExemptionApi &
+      GetEpochInfoApi
   >,
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,
@@ -562,7 +566,8 @@ export async function openPositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
       GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi
+      GetMinimumBalanceForRentExemptionApi &
+      GetEpochInfoApi
   >,
   poolAddress: Address,
   param: IncreaseLiquidityQuoteParam,

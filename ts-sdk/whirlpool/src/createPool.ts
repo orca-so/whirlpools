@@ -13,7 +13,7 @@ import type {
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
   IInstruction,
-  LamportsUnsafeBeyond2Pow53Minus1,
+  Lamports,
   Rpc,
   TransactionSigner,
 } from "@solana/web3.js";
@@ -42,7 +42,7 @@ export type CreatePoolInstructions = {
   instructions: IInstruction[];
 
   /** The estimated rent exemption cost for initializing the pool, in lamports. */
-  estInitializationCost: LamportsUnsafeBeyond2Pow53Minus1;
+  estInitializationCost: Lamports;
 
   /** The address of the newly created pool. */
   poolAddress: Address;

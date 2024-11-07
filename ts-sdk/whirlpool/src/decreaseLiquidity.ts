@@ -33,6 +33,7 @@ import {
 import type {
   Address,
   GetAccountInfoApi,
+  GetEpochInfoApi,
   GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
   IInstruction,
@@ -166,7 +167,8 @@ export async function decreaseLiquidityInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
       GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi
+      GetMinimumBalanceForRentExemptionApi &
+      GetEpochInfoApi
   >,
   positionMintAddress: Address,
   param: DecreaseLiquidityQuoteParam,
@@ -311,7 +313,8 @@ export async function closePositionInstructions(
   rpc: Rpc<
     GetAccountInfoApi &
       GetMultipleAccountsApi &
-      GetMinimumBalanceForRentExemptionApi
+      GetMinimumBalanceForRentExemptionApi &
+      GetEpochInfoApi
   >,
   positionMintAddress: Address,
   param: DecreaseLiquidityQuoteParam,

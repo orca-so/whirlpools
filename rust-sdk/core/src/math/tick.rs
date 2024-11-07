@@ -600,15 +600,24 @@ mod tests {
 
     #[test]
     fn test_get_tick_index_in_array() {
-        assert_eq!(get_tick_index_in_array(2861952, 0, 32896), Ok(87));
-        assert_eq!(get_tick_index_in_array(880, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
+        // Zero tick index
+        assert_eq!(get_tick_index_in_array(0, 0, 10), Ok(0));
+
+        // Positive tick index
         assert_eq!(get_tick_index_in_array(100, 0, 10), Ok(10));
         assert_eq!(get_tick_index_in_array(50, 0, 10), Ok(5));
-        assert_eq!(get_tick_index_in_array(0, 0, 10), Ok(0));
-        assert_eq!(get_tick_index_in_array(-1, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
+
+        // Negative tick index
         assert_eq!(get_tick_index_in_array(-830, -880, 10), Ok(5));
         assert_eq!(get_tick_index_in_array(-780, -880, 10), Ok(10));
+
+        // Outside of the tick array
+        assert_eq!(get_tick_index_in_array(880, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
+        assert_eq!(get_tick_index_in_array(-1, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
         assert_eq!(get_tick_index_in_array(-881, -880, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
+
+        // Splash pool tick spacing
+        assert_eq!(get_tick_index_in_array(2861952, 0, 32896), Ok(87));
         assert_eq!(get_tick_index_in_array(-32896, -2894848, 32896), Ok(87));
     }
 }

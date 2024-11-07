@@ -74,7 +74,7 @@ export class WhirlpoolAccountFetcher
 
   async getAccountRentExempt(refresh: boolean = false): Promise<number> {
     // This value should be relatively static or at least not break according to spec
-    // https://docs.solana.com/developing/programming-model/accounts#rent-exemption
+    // https://solana.com/docs/terminology#rent-exempt
     if (!this._accountRentExempt || refresh) {
       this._accountRentExempt =
         await this.connection.getMinimumBalanceForRentExemption(

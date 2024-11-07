@@ -62,7 +62,7 @@ Available networks are:
 - eclipseMainnet
 - eclipseTestnet
 
-> ℹ️ The `setWhirlpoolsConfig` function accepts either one of Orca's default network keys or a custom `Address`. This allows you to specify a WhirlpoolsConfig account of your choice, including configurations not owned by Orca. To learn more about WhirlpoolsConfig read our [Account Architecture](../02-Architecture%20Overview/01-Account%20Architecture.md) documentation.
+> ℹ️ The `setWhirlpoolsConfig` function accepts either one of Orca's default network keys or a custom `Address`. This allows you to specify a WhirlpoolsConfig account of your choice, including configurations not owned by Orca. To learn more about WhirlpoolsConfig read our [Account Architecture](../../02-Architecture%20Overview/01-Account%20Architecture.md) documentation.
 
 ## 4. Airdrop SOL to Your Wallet
 

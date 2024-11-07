@@ -25,7 +25,7 @@ Before creating a Splash Pool or a Concentrated Liquidity Pool, ensure you have 
 - **Wallet Creation**: Create a wallet to interact with the Solana network.
 - **Devnet Airdrop**: Fund your wallet with a Solana devnet airdrop to cover transaction fees.
 
-For more details, refer to our [Environment Setup Guide](../01-Environment%20Setup.md)
+For more details, refer to our [Environment Setup Guide](../02-Environment%20Setup.md)
 
 ### Creating Splash Pools
 

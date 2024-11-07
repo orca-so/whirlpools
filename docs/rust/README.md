@@ -1,6 +1,6 @@
 # Orca Whirlpools SDKs
 
-![Overview of Orca Whirlpools SDK suite](https://raw.githubusercontent.com/orca-so/whirlpools/refs/heads/main/docs/whirlpool/static/img/01-Welcome/orca-sdks-overview-rustdocs.png)
+![Overview of Orca Whirlpools SDK suite](/../whirlpools/img/01-Welcome/orca-sdks-overview-rustdocs.png)
 
 The Whirlpools SDKs are our primary set of SDKs designed to provide enhanced, modular interaction with the Whirlpool Program on Solana and Eclipse. Whether you are managing liquidity, building applications that require pool infrastructure, or building automation tools that interact with the program, our SDKs cover a spectrum of functionality from low-level granular control to high-level abstractions. This offering is divided into three main components:
 

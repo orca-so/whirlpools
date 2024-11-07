@@ -393,7 +393,7 @@ describe("open_position_with_metadata", () => {
           .addSigner(defaultMint)
           .buildAndExecute(),
         // Invalid Metadata Key
-        // https://github.com/metaplex-foundation/mpl-token-metadata/blob/2f93406c62e791ee93435644c1a3507e910a116b/programs/token-metadata/program/src/error.rs#L32
+        // https://github.com/metaplex-foundation/mpl-token-metadata/blob/main/programs/token-metadata/program/src/error.rs#L34-L36
         /0x5/,
       );
     });
@@ -413,7 +413,7 @@ describe("open_position_with_metadata", () => {
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // InvalidProgramId
-        // https://github.com/coral-xyz/anchor/blob/eee03bc7c31ddc99bf3dbe1630283d9226aa7b9c/lang/src/error.rs#L231
+        // https://github.com/coral-xyz/anchor/blob/master/lang/src/error.rs#L231
         /0xbc0/,
       );
     });

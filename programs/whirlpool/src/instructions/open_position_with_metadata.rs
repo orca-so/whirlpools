@@ -32,7 +32,7 @@ pub struct OpenPositionWithMetadata<'info> {
     pub position_mint: Account<'info, Mint>,
 
     /// CHECK: checked via the Metadata CPI call
-    /// https://github.com/metaplex-foundation/mpl-token-metadata/blob/2f93406c62e791ee93435644c1a3507e910a116b/programs/token-metadata/program/src/utils/metadata.rs#L78C5-L78C39
+    /// https://github.com/metaplex-foundation/mpl-token-metadata/blob/2f93406c62e791ee93435644c1a3507e910a116b/programs/token-metadata/program/src/utils/metadata.rs#L78
     #[account(mut)]
     pub position_metadata_account: UncheckedAccount<'info>,
 

@@ -300,23 +300,22 @@ pub fn is_full_range_only(tick_spacing: u16) -> bool {
 /// - `tick_spacing` - A u16 integer representing the tick spacing
 ///
 /// # Returns
-/// - A u16 integer representing the tick index in the tick array
+/// - A u32 integer representing the tick index in the tick array
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub fn get_tick_index_in_array(
     tick_index: i32,
     tick_array_start_index: i32,
     tick_spacing: u16,
-) -> Result<u16, ErrorCode> {
-    let tick_spacing_i32 = tick_spacing as i32;
+) -> Result<u32, ErrorCode> {
     if tick_index < tick_array_start_index {
         return Err(TICK_INDEX_NOT_IN_ARRAY);
     }
-    if tick_index >= tick_array_start_index + (TICK_ARRAY_SIZE as i32) * tick_spacing_i32 {
+    if tick_index >= tick_array_start_index + (TICK_ARRAY_SIZE as i32) * (tick_spacing as i32) {
         return Err(TICK_INDEX_NOT_IN_ARRAY);
     }
-    let offset = (tick_index - tick_array_start_index)
-        .unsigned_abs() as u16;
-    Ok(offset / tick_spacing)
+    let result = (tick_index - tick_array_start_index)
+        .unsigned_abs() / (tick_spacing as u32);
+    Ok(result)
 }
 
 // Private functions
@@ -601,6 +600,7 @@ mod tests {
 
     #[test]
     fn test_get_tick_index_in_array() {
+        assert_eq!(get_tick_index_in_array(2861952, 0, 32896), Ok(87));
         assert_eq!(get_tick_index_in_array(880, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
         assert_eq!(get_tick_index_in_array(100, 0, 10), Ok(10));
         assert_eq!(get_tick_index_in_array(50, 0, 10), Ok(5));
@@ -609,5 +609,6 @@ mod tests {
         assert_eq!(get_tick_index_in_array(-830, -880, 10), Ok(5));
         assert_eq!(get_tick_index_in_array(-780, -880, 10), Ok(10));
         assert_eq!(get_tick_index_in_array(-881, -880, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
+        assert_eq!(get_tick_index_in_array(-32896, -2894848, 32896), Ok(87));
     }
 }

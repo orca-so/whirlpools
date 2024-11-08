@@ -1,10 +1,11 @@
 use crate::errors::ErrorCode;
 use crate::state::*;
+use crate::util::ProxiedTickArray;
 use anchor_lang::prelude::*;
 use std::cell::RefMut;
 
 pub struct SwapTickSequence<'info> {
-    arrays: Vec<RefMut<'info, TickArray>>,
+    arrays: Vec<ProxiedTickArray<'info>>,
 }
 
 impl<'info> SwapTickSequence<'info> {
@@ -13,13 +14,25 @@ impl<'info> SwapTickSequence<'info> {
         ta1: Option<RefMut<'info, TickArray>>,
         ta2: Option<RefMut<'info, TickArray>>,
     ) -> Self {
+        Self::new_with_proxy(
+            ProxiedTickArray::new_initialized(ta0),
+            ta1.map(ProxiedTickArray::new_initialized),
+            ta2.map(ProxiedTickArray::new_initialized),
+        )
+    }
+
+    pub(crate) fn new_with_proxy(
+        ta0: ProxiedTickArray<'info>,
+        ta1: Option<ProxiedTickArray<'info>>,
+        ta2: Option<ProxiedTickArray<'info>>,
+    ) -> Self {
         let mut vec = Vec::with_capacity(3);
         vec.push(ta0);
-        if ta1.is_some() {
-            vec.push(ta1.unwrap());
+        if let Some(ta1) = ta1 {
+            vec.push(ta1);
         }
-        if ta2.is_some() {
-            vec.push(ta2.unwrap());
+        if let Some(ta2) = ta2 {
+            vec.push(ta2);
         }
         Self { arrays: vec }
     }
@@ -140,9 +153,9 @@ impl<'info> SwapTickSequence<'info> {
                     // If we are at the last tick array in the sequencer, return the last tick
                     if array_index + 1 == self.arrays.len() {
                         if a_to_b {
-                            return Ok((array_index, next_array.start_tick_index));
+                            return Ok((array_index, next_array.start_tick_index()));
                         } else {
-                            let last_tick = next_array.start_tick_index + ticks_in_array - 1;
+                            let last_tick = next_array.start_tick_index() + ticks_in_array - 1;
                             return Ok((array_index, last_tick));
                         }
                     }
@@ -150,9 +163,9 @@ impl<'info> SwapTickSequence<'info> {
                     // No initialized index found. Move the search-index to the 1st search position
                     // of the next array in sequence.
                     search_index = if a_to_b {
-                        next_array.start_tick_index - 1
+                        next_array.start_tick_index() - 1
                     } else {
-                        next_array.start_tick_index + ticks_in_array - 1
+                        next_array.start_tick_index() + ticks_in_array - 1
                     };
 
                     array_index += 1;
@@ -175,13 +188,16 @@ mod swap_tick_sequence_tests {
         start_tick_index: i32,
         initialized_offsets: Vec<usize>,
     ) -> RefCell<TickArray> {
-        let mut array = TickArray::default();
-        array.start_tick_index = start_tick_index;
+        let mut array = TickArray {
+            start_tick_index,
+            ..TickArray::default()
+        };
 
         for offset in initialized_offsets {
-            let mut new_tick = Tick::default();
-            new_tick.initialized = true;
-            array.ticks[offset] = new_tick;
+            array.ticks[offset] = Tick {
+                initialized: true,
+                ..Tick::default()
+            };
         }
 
         RefCell::new(array)
@@ -208,8 +224,8 @@ mod swap_tick_sequence_tests {
                 let tick_index = 11264 - array_index as i32 * TS_128 as i32 * TICK_ARRAY_SIZE
                     + init_tick_offset.1 * TS_128 as i32;
                 let result = swap_tick_sequence.get_tick(array_index, tick_index, TS_128);
-                assert_eq!(result.is_ok(), true);
-                assert_eq!(result.unwrap().initialized, true);
+                assert!(result.is_ok());
+                assert!(result.unwrap().initialized);
 
                 let update_result = swap_tick_sequence.update_tick(
                     array_index,
@@ -221,7 +237,7 @@ mod swap_tick_sequence_tests {
                         ..Default::default()
                     },
                 );
-                assert_eq!(update_result.is_ok(), true);
+                assert!(update_result.is_ok());
 
                 let get_updated_result = swap_tick_sequence
                     .get_tick(array_index, tick_index, TS_128)
@@ -287,7 +303,7 @@ mod swap_tick_sequence_tests {
                     TS_128,
                 );
 
-                assert_eq!(result.unwrap().initialized, false);
+                assert!(!result.unwrap().initialized);
 
                 let update_result = swap_tick_sequence.update_tick(
                     uninitializable_search_tick.0,
@@ -299,7 +315,7 @@ mod swap_tick_sequence_tests {
                         ..Default::default()
                     },
                 );
-                assert_eq!(update_result.is_ok(), true);
+                assert!(update_result.is_ok());
 
                 let get_updated_result = swap_tick_sequence
                     .get_tick(
@@ -308,7 +324,7 @@ mod swap_tick_sequence_tests {
                         TS_128,
                     )
                     .unwrap();
-                assert_eq!(get_updated_result.initialized, true);
+                assert!(get_updated_result.initialized);
                 let liq_net = get_updated_result.liquidity_net;
                 assert_eq!(liq_net, 1500);
             }
@@ -369,7 +385,7 @@ mod swap_tick_sequence_tests {
             assert_eq!(start_range_array_index, 2);
 
             // Verify search is ok at the last tick-index in array
-            let last_tick_in_array = (TICK_ARRAY_SIZE as i32 * TS_128 as i32) - 1;
+            let last_tick_in_array = (TICK_ARRAY_SIZE * TS_128 as i32) - 1;
             let expected_last_usable_tick_index = LAST_TICK_OFFSET as i32 * TS_128 as i32;
             let (end_range_array_index, end_range_result_index) = swap_tick_sequence
                 .get_next_initialized_tick_index(last_tick_in_array, TS_128, true, 2)
@@ -414,7 +430,7 @@ mod swap_tick_sequence_tests {
                 Some(ta2.borrow_mut()),
             );
 
-            let last_tick_in_array_plus_one = TICK_ARRAY_SIZE as i32 * TS_8 as i32;
+            let last_tick_in_array_plus_one = TICK_ARRAY_SIZE * TS_8 as i32;
             let (_, _) = swap_tick_sequence
                 .get_next_initialized_tick_index(last_tick_in_array_plus_one, TS_8, true, 1)
                 .unwrap();
@@ -450,7 +466,7 @@ mod swap_tick_sequence_tests {
 
             // Verify start range is ok at start-tick-index
             let (start_range_array_index, start_range_result_index) = swap_tick_sequence
-                .get_next_initialized_tick_index(TS_8 as i32 * -1, TS_8, false, 0)
+                .get_next_initialized_tick_index(-(TS_8 as i32), TS_8, false, 0)
                 .unwrap();
             assert_eq!(start_range_result_index, 0);
             assert_eq!(start_range_array_index, 0);
@@ -491,7 +507,7 @@ mod swap_tick_sequence_tests {
             let swap_tick_sequence = SwapTickSequence::new(ta0.borrow_mut(), None, None);
 
             let (_, _) = swap_tick_sequence
-                .get_next_initialized_tick_index(TS_8 as i32 * -1 - 1, TS_8, false, 0)
+                .get_next_initialized_tick_index(-(TS_8 as i32) - 1, TS_8, false, 0)
                 .unwrap();
         }
     }
@@ -564,7 +580,7 @@ mod swap_tick_sequence_tests {
         let tick = swap_tick_sequence
             .get_tick(array_index, index, TS_128)
             .unwrap();
-        assert_eq!(tick.initialized, true);
+        assert!(tick.initialized);
     }
 
     #[test]
@@ -595,18 +611,18 @@ mod swap_tick_sequence_tests {
             (-9216, 2, false),
         ];
 
-        for i in 0..expectation.len() {
+        for expected in expectation.iter() {
             let (array_index, index) = swap_tick_sequence
                 .get_next_initialized_tick_index(search_index, TS_128, true, curr_array_index)
                 .unwrap();
 
-            assert_eq!(index, expectation[i].0);
-            assert_eq!(array_index, expectation[i].1);
+            assert_eq!(index, expected.0);
+            assert_eq!(array_index, expected.1);
 
             let tick = swap_tick_sequence
                 .get_tick(array_index, index, TS_128)
                 .unwrap();
-            assert_eq!(tick.initialized, expectation[i].2);
+            assert_eq!(tick.initialized, expected.2);
 
             // users on a_to_b search must manually decrement since a_to_b is inclusive of current-tick
             search_index = index - 1;
@@ -645,13 +661,13 @@ mod swap_tick_sequence_tests {
             (2111, 2, false),
         ];
 
-        for i in 0..expectation.len() {
+        for expected in expectation.iter() {
             let (array_index, index) = swap_tick_sequence
                 .get_next_initialized_tick_index(search_index, TS_8, false, curr_array_index)
                 .unwrap();
 
-            assert_eq!(index, expectation[i].0);
-            assert_eq!(array_index, expectation[i].1);
+            assert_eq!(index, expected.0);
+            assert_eq!(array_index, expected.1);
 
             let mut tick_initialized = false;
             if Tick::check_is_usable_tick(index, TS_8) {
@@ -660,7 +676,7 @@ mod swap_tick_sequence_tests {
                     .unwrap()
                     .initialized;
             };
-            assert_eq!(tick_initialized, expectation[i].2);
+            assert_eq!(tick_initialized, expected.2);
 
             search_index = index;
             curr_array_index = array_index;
@@ -716,18 +732,18 @@ mod swap_tick_sequence_tests {
         let mut curr_array_index = 0;
         let expectation = [(776, 0, true), (576, 0, false), (80, 0, true)];
 
-        for i in 0..expectation.len() {
+        for expected in expectation.iter() {
             let (array_index, index) = swap_tick_sequence
                 .get_next_initialized_tick_index(search_index, TS_8, true, curr_array_index)
                 .unwrap();
 
-            assert_eq!(index, expectation[i].0);
-            assert_eq!(array_index, expectation[i].1);
+            assert_eq!(index, expected.0);
+            assert_eq!(array_index, expected.1);
 
             let tick = swap_tick_sequence
                 .get_tick(array_index, index, TS_8)
                 .unwrap();
-            assert_eq!(tick.initialized, expectation[i].2);
+            assert_eq!(tick.initialized, expected.2);
 
             search_index = index - 1;
             curr_array_index = array_index;

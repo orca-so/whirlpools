@@ -14,7 +14,7 @@ pub const TICK_ARRAY_SIZE: i32 = 88;
 pub const TICK_ARRAY_SIZE_USIZE: usize = 88;
 
 #[zero_copy(unsafe)]
-#[repr(packed)]
+#[repr(C, packed)]
 #[derive(Default, Debug, PartialEq)]
 pub struct Tick {
     // Total 137 bytes
@@ -56,7 +56,7 @@ impl Tick {
     /// - `true`: The tick index is not within the range supported by this contract
     /// - `false`: The tick index is within the range supported by this contract
     pub fn check_is_out_of_bounds(tick_index: i32) -> bool {
-        tick_index > MAX_TICK_INDEX || tick_index < MIN_TICK_INDEX
+        !(MIN_TICK_INDEX..=MAX_TICK_INDEX).contains(&tick_index)
     }
 
     /// Check that the tick index is a valid start tick for a tick array in this whirlpool
@@ -103,6 +103,12 @@ impl Tick {
         tick_index % tick_spacing as i32 == 0
     }
 
+    pub fn full_range_indexes(tick_spacing: u16) -> (i32, i32) {
+        let lower_index = MIN_TICK_INDEX / tick_spacing as i32 * tick_spacing as i32;
+        let upper_index = MAX_TICK_INDEX / tick_spacing as i32 * tick_spacing as i32;
+        (lower_index, upper_index)
+    }
+
     /// Bound a tick-index value to the max & min index value for this protocol
     ///
     /// # Parameters
@@ -111,7 +117,7 @@ impl Tick {
     /// # Returns
     /// - `i32` The input tick index value but bounded by the max/min value of this protocol.
     pub fn bound_tick_index(tick_index: i32) -> i32 {
-        tick_index.max(MIN_TICK_INDEX).min(MAX_TICK_INDEX)
+        tick_index.clamp(MIN_TICK_INDEX, MAX_TICK_INDEX)
     }
 }
 
@@ -138,8 +144,88 @@ impl TickUpdate {
     }
 }
 
+pub trait TickArrayType {
+    fn start_tick_index(&self) -> i32;
+
+    fn get_next_init_tick_index(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+        a_to_b: bool,
+    ) -> Result<Option<i32>>;
+
+    fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick>;
+
+    fn update_tick(
+        &mut self,
+        tick_index: i32,
+        tick_spacing: u16,
+        update: &TickUpdate,
+    ) -> Result<()>;
+
+    /// Checks that this array holds the next tick index for the current tick index, given the pool's tick spacing & search direction.
+    ///
+    /// unshifted checks on [start, start + TICK_ARRAY_SIZE * tick_spacing)
+    /// shifted checks on [start - tick_spacing, start + (TICK_ARRAY_SIZE - 1) * tick_spacing) (adjusting range by -tick_spacing)
+    ///
+    /// shifted == !a_to_b
+    ///
+    /// For a_to_b swaps, price moves left. All searchable ticks in this tick-array's range will end up in this tick's usable ticks.
+    /// The search range is therefore the range of the tick-array.
+    ///
+    /// For b_to_a swaps, this tick-array's left-most ticks can be the 'next' usable tick-index of the previous tick-array.
+    /// The right-most ticks also points towards the next tick-array. The search range is therefore shifted by 1 tick-spacing.
+    fn in_search_range(&self, tick_index: i32, tick_spacing: u16, shifted: bool) -> bool {
+        let mut lower = self.start_tick_index();
+        let mut upper = self.start_tick_index() + TICK_ARRAY_SIZE * tick_spacing as i32;
+        if shifted {
+            lower -= tick_spacing as i32;
+            upper -= tick_spacing as i32;
+        }
+        tick_index >= lower && tick_index < upper
+    }
+
+    fn check_in_array_bounds(&self, tick_index: i32, tick_spacing: u16) -> bool {
+        self.in_search_range(tick_index, tick_spacing, false)
+    }
+
+    fn is_min_tick_array(&self) -> bool {
+        self.start_tick_index() <= MIN_TICK_INDEX
+    }
+
+    fn is_max_tick_array(&self, tick_spacing: u16) -> bool {
+        self.start_tick_index() + TICK_ARRAY_SIZE * (tick_spacing as i32) > MAX_TICK_INDEX
+    }
+
+    fn tick_offset(&self, tick_index: i32, tick_spacing: u16) -> Result<isize> {
+        if tick_spacing == 0 {
+            return Err(ErrorCode::InvalidTickSpacing.into());
+        }
+
+        Ok(get_offset(
+            tick_index,
+            self.start_tick_index(),
+            tick_spacing,
+        ))
+    }
+}
+
+fn get_offset(tick_index: i32, start_tick_index: i32, tick_spacing: u16) -> isize {
+    // TODO: replace with i32.div_floor once not experimental
+    let lhs = tick_index - start_tick_index;
+    let rhs = tick_spacing as i32;
+    let d = lhs / rhs;
+    let r = lhs % rhs;
+    let o = if (r > 0 && rhs < 0) || (r < 0 && rhs > 0) {
+        d - 1
+    } else {
+        d
+    };
+    o as isize
+}
+
 #[account(zero_copy(unsafe))]
-#[repr(packed)]
+#[repr(C, packed)]
 pub struct TickArray {
     pub start_tick_index: i32,
     pub ticks: [Tick; TICK_ARRAY_SIZE_USIZE],
@@ -159,58 +245,6 @@ impl Default for TickArray {
 
 impl TickArray {
     pub const LEN: usize = 8 + 36 + (Tick::LEN * TICK_ARRAY_SIZE_USIZE);
-
-    /// Search for the next initialized tick in this array.
-    ///
-    /// # Parameters
-    /// - `tick_index` - A i32 integer representing the tick index to start searching for
-    /// - `tick_spacing` - A u8 integer of the tick spacing for this whirlpool
-    /// - `a_to_b` - If the trade is from a_to_b, the search will move to the left and the starting search tick is inclusive.
-    ///              If the trade is from b_to_a, the search will move to the right and the starting search tick is not inclusive.
-    ///
-    /// # Returns
-    /// - `Some(i32)`: The next initialized tick index of this array
-    /// - `None`: An initialized tick index was not found in this array
-    /// - `InvalidTickArraySequence` - error if `tick_index` is not a valid search tick for the array
-    /// - `InvalidTickSpacing` - error if the provided tick spacing is 0
-    pub fn get_next_init_tick_index(
-        &self,
-        tick_index: i32,
-        tick_spacing: u16,
-        a_to_b: bool,
-    ) -> Result<Option<i32>> {
-        if !self.in_search_range(tick_index, tick_spacing, !a_to_b) {
-            return Err(ErrorCode::InvalidTickArraySequence.into());
-        }
-
-        let mut curr_offset = match self.tick_offset(tick_index, tick_spacing) {
-            Ok(value) => value as i32,
-            Err(e) => return Err(e),
-        };
-
-        // For a_to_b searches, the search moves to the left. The next possible init-tick can be the 1st tick in the current offset
-        // For b_to_a searches, the search moves to the right. The next possible init-tick cannot be within the current offset
-        if !a_to_b {
-            curr_offset += 1;
-        }
-
-        while curr_offset >= 0 && curr_offset < TICK_ARRAY_SIZE {
-            let curr_tick = self.ticks[curr_offset as usize];
-            if curr_tick.initialized {
-                return Ok(Some(
-                    (curr_offset * tick_spacing as i32) + self.start_tick_index,
-                ));
-            }
-
-            curr_offset = if a_to_b {
-                curr_offset - 1
-            } else {
-                curr_offset + 1
-            };
-        }
-
-        Ok(None)
-    }
 
     /// Initialize the TickArray object
     ///
@@ -233,6 +267,64 @@ impl TickArray {
         self.start_tick_index = start_tick_index;
         Ok(())
     }
+}
+
+impl TickArrayType for TickArray {
+    fn start_tick_index(&self) -> i32 {
+        self.start_tick_index
+    }
+
+    /// Search for the next initialized tick in this array.
+    ///
+    /// # Parameters
+    /// - `tick_index` - A i32 integer representing the tick index to start searching for
+    /// - `tick_spacing` - A u8 integer of the tick spacing for this whirlpool
+    /// - `a_to_b` - If the trade is from a_to_b, the search will move to the left and the starting search tick is inclusive.
+    ///              If the trade is from b_to_a, the search will move to the right and the starting search tick is not inclusive.
+    ///
+    /// # Returns
+    /// - `Some(i32)`: The next initialized tick index of this array
+    /// - `None`: An initialized tick index was not found in this array
+    /// - `InvalidTickArraySequence` - error if `tick_index` is not a valid search tick for the array
+    /// - `InvalidTickSpacing` - error if the provided tick spacing is 0
+    fn get_next_init_tick_index(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+        a_to_b: bool,
+    ) -> Result<Option<i32>> {
+        if !self.in_search_range(tick_index, tick_spacing, !a_to_b) {
+            return Err(ErrorCode::InvalidTickArraySequence.into());
+        }
+
+        let mut curr_offset = match self.tick_offset(tick_index, tick_spacing) {
+            Ok(value) => value as i32,
+            Err(e) => return Err(e),
+        };
+
+        // For a_to_b searches, the search moves to the left. The next possible init-tick can be the 1st tick in the current offset
+        // For b_to_a searches, the search moves to the right. The next possible init-tick cannot be within the current offset
+        if !a_to_b {
+            curr_offset += 1;
+        }
+
+        while (0..TICK_ARRAY_SIZE).contains(&curr_offset) {
+            let curr_tick = self.ticks[curr_offset as usize];
+            if curr_tick.initialized {
+                return Ok(Some(
+                    (curr_offset * tick_spacing as i32) + self.start_tick_index,
+                ));
+            }
+
+            curr_offset = if a_to_b {
+                curr_offset - 1
+            } else {
+                curr_offset + 1
+            };
+        }
+
+        Ok(None)
+    }
 
     /// Get the Tick object at the given tick-index & tick-spacing
     ///
@@ -243,7 +335,7 @@ impl TickArray {
     /// # Returns
     /// - `&Tick`: A reference to the desired Tick object
     /// - `TickNotFound`: - The provided tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
-    pub fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
+    fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
         if !self.check_in_array_bounds(tick_index, tick_spacing)
             || !Tick::check_is_usable_tick(tick_index, tick_spacing)
         {
@@ -265,7 +357,7 @@ impl TickArray {
     ///
     /// # Errors
     /// - `TickNotFound`: - The provided tick-index is not an initializable tick index in this Whirlpool w/ this tick-spacing.
-    pub fn update_tick(
+    fn update_tick(
         &mut self,
         tick_index: i32,
         tick_spacing: u16,
@@ -283,63 +375,66 @@ impl TickArray {
         self.ticks.get_mut(offset as usize).unwrap().update(update);
         Ok(())
     }
+}
 
-    /// Checks that this array holds the next tick index for the current tick index, given the pool's tick spacing & search direction.
-    ///
-    /// unshifted checks on [start, start + TICK_ARRAY_SIZE * tick_spacing)
-    /// shifted checks on [start - tick_spacing, start + (TICK_ARRAY_SIZE - 1) * tick_spacing) (adjusting range by -tick_spacing)
-    ///
-    /// shifted == !a_to_b
-    ///
-    /// For a_to_b swaps, price moves left. All searchable ticks in this tick-array's range will end up in this tick's usable ticks.
-    /// The search range is therefore the range of the tick-array.
-    ///
-    /// For b_to_a swaps, this tick-array's left-most ticks can be the 'next' usable tick-index of the previous tick-array.
-    /// The right-most ticks also points towards the next tick-array. The search range is therefore shifted by 1 tick-spacing.
-    pub fn in_search_range(&self, tick_index: i32, tick_spacing: u16, shifted: bool) -> bool {
-        let mut lower = self.start_tick_index;
-        let mut upper = self.start_tick_index + TICK_ARRAY_SIZE * tick_spacing as i32;
-        if shifted {
-            lower = lower - tick_spacing as i32;
-            upper = upper - tick_spacing as i32;
+pub(crate) struct ZeroedTickArray {
+    pub start_tick_index: i32,
+    zeroed_tick: Tick,
+}
+
+impl ZeroedTickArray {
+    pub fn new(start_tick_index: i32) -> Self {
+        ZeroedTickArray {
+            start_tick_index,
+            zeroed_tick: Tick::default(),
         }
-        tick_index >= lower && tick_index < upper
-    }
-
-    pub fn check_in_array_bounds(&self, tick_index: i32, tick_spacing: u16) -> bool {
-        self.in_search_range(tick_index, tick_spacing, false)
-    }
-
-    pub fn is_min_tick_array(&self) -> bool {
-        self.start_tick_index <= MIN_TICK_INDEX
-    }
-
-    pub fn is_max_tick_array(&self, tick_spacing: u16) -> bool {
-        self.start_tick_index + TICK_ARRAY_SIZE * (tick_spacing as i32) > MAX_TICK_INDEX
-    }
-
-    // Calculates an offset from a tick index that can be used to access the tick data
-    pub fn tick_offset(&self, tick_index: i32, tick_spacing: u16) -> Result<isize> {
-        if tick_spacing == 0 {
-            return Err(ErrorCode::InvalidTickSpacing.into());
-        }
-
-        Ok(get_offset(tick_index, self.start_tick_index, tick_spacing))
     }
 }
 
-fn get_offset(tick_index: i32, start_tick_index: i32, tick_spacing: u16) -> isize {
-    // TODO: replace with i32.div_floor once not experimental
-    let lhs = tick_index - start_tick_index;
-    let rhs = tick_spacing as i32;
-    let d = lhs / rhs;
-    let r = lhs % rhs;
-    let o = if (r > 0 && rhs < 0) || (r < 0 && rhs > 0) {
-        d - 1
-    } else {
-        d
-    };
-    return o as isize;
+impl TickArrayType for ZeroedTickArray {
+    fn start_tick_index(&self) -> i32 {
+        self.start_tick_index
+    }
+
+    fn get_next_init_tick_index(
+        &self,
+        tick_index: i32,
+        tick_spacing: u16,
+        a_to_b: bool,
+    ) -> Result<Option<i32>> {
+        if !self.in_search_range(tick_index, tick_spacing, !a_to_b) {
+            return Err(ErrorCode::InvalidTickArraySequence.into());
+        }
+
+        self.tick_offset(tick_index, tick_spacing)?;
+
+        // no initialized tick
+        Ok(None)
+    }
+
+    fn get_tick(&self, tick_index: i32, tick_spacing: u16) -> Result<&Tick> {
+        if !self.check_in_array_bounds(tick_index, tick_spacing)
+            || !Tick::check_is_usable_tick(tick_index, tick_spacing)
+        {
+            return Err(ErrorCode::TickNotFound.into());
+        }
+        let offset = self.tick_offset(tick_index, tick_spacing)?;
+        if offset < 0 {
+            return Err(ErrorCode::TickNotFound.into());
+        }
+
+        // always return the zeroed tick
+        Ok(&self.zeroed_tick)
+    }
+
+    fn update_tick(
+        &mut self,
+        _tick_index: i32,
+        _tick_spacing: u16,
+        _update: &TickUpdate,
+    ) -> Result<()> {
+        panic!("ZeroedTickArray must not be updated");
+    }
 }
 
 #[cfg(test)]
@@ -417,8 +512,10 @@ mod fuzz_tests {
             tick_spacing in 1u16..u16::MAX,
             a_to_b in proptest::bool::ANY,
         ) {
-            let mut array = TickArray::default();
-            array.start_tick_index = start_tick_index;
+            let array = TickArray {
+                start_tick_index,
+                ..TickArray::default()
+            };
 
             let in_search = array.in_search_range(tick_index, tick_spacing, !a_to_b);
 
@@ -430,10 +527,10 @@ mod fuzz_tests {
             // If we are doing b_to_a, we shift the index bounds by -tick_spacing
             // and the offset bounds by -1
             if !a_to_b {
-                lower_bound = lower_bound - tick_spacing as i32;
-                upper_bound = upper_bound - tick_spacing as i32;
+                lower_bound -= tick_spacing as i32;
+                upper_bound -= tick_spacing as i32;
                 offset_lower = -1;
-                offset_upper = offset_upper - 1;
+                offset_upper -= 1;
             }
 
             // in_bounds should be identical to search
@@ -473,37 +570,37 @@ mod check_is_valid_start_tick_tests {
 
     #[test]
     fn test_start_tick_is_zero() {
-        assert_eq!(Tick::check_is_valid_start_tick(0, TS_8), true);
+        assert!(Tick::check_is_valid_start_tick(0, TS_8));
     }
 
     #[test]
     fn test_start_tick_is_valid_ts8() {
-        assert_eq!(Tick::check_is_valid_start_tick(704, TS_8), true);
+        assert!(Tick::check_is_valid_start_tick(704, TS_8));
     }
 
     #[test]
     fn test_start_tick_is_valid_ts128() {
-        assert_eq!(Tick::check_is_valid_start_tick(337920, TS_128), true);
+        assert!(Tick::check_is_valid_start_tick(337920, TS_128));
     }
 
     #[test]
     fn test_start_tick_is_valid_negative_ts8() {
-        assert_eq!(Tick::check_is_valid_start_tick(-704, TS_8), true);
+        assert!(Tick::check_is_valid_start_tick(-704, TS_8));
     }
 
     #[test]
     fn test_start_tick_is_valid_negative_ts128() {
-        assert_eq!(Tick::check_is_valid_start_tick(-337920, TS_128), true);
+        assert!(Tick::check_is_valid_start_tick(-337920, TS_128));
     }
 
     #[test]
     fn test_start_tick_is_not_valid_ts8() {
-        assert_eq!(Tick::check_is_valid_start_tick(2353573, TS_8), false);
+        assert!(!Tick::check_is_valid_start_tick(2353573, TS_8));
     }
 
     #[test]
     fn test_start_tick_is_not_valid_ts128() {
-        assert_eq!(Tick::check_is_valid_start_tick(-2353573, TS_128), false);
+        assert!(!Tick::check_is_valid_start_tick(-2353573, TS_128));
     }
 
     #[test]
@@ -511,10 +608,10 @@ mod check_is_valid_start_tick_tests {
         let expected_array_index: i32 = (MIN_TICK_INDEX / TICK_ARRAY_SIZE / TS_8 as i32) - 1;
         let expected_start_index_for_last_array: i32 =
             expected_array_index * TICK_ARRAY_SIZE * TS_8 as i32;
-        assert_eq!(
-            Tick::check_is_valid_start_tick(expected_start_index_for_last_array, TS_8),
-            true
-        )
+        assert!(Tick::check_is_valid_start_tick(
+            expected_start_index_for_last_array,
+            TS_8
+        ))
     }
 
     #[test]
@@ -522,10 +619,10 @@ mod check_is_valid_start_tick_tests {
         let expected_array_index: i32 = (MIN_TICK_INDEX / TICK_ARRAY_SIZE / TS_8 as i32) - 2;
         let expected_start_index_for_last_array: i32 =
             expected_array_index * TICK_ARRAY_SIZE * TS_8 as i32;
-        assert_eq!(
-            Tick::check_is_valid_start_tick(expected_start_index_for_last_array, TS_8),
-            false
-        )
+        assert!(!Tick::check_is_valid_start_tick(
+            expected_start_index_for_last_array,
+            TS_8
+        ))
     }
 
     #[test]
@@ -533,10 +630,10 @@ mod check_is_valid_start_tick_tests {
         let expected_array_index: i32 = (MIN_TICK_INDEX / TICK_ARRAY_SIZE / TS_128 as i32) - 1;
         let expected_start_index_for_last_array: i32 =
             expected_array_index * TICK_ARRAY_SIZE * TS_128 as i32;
-        assert_eq!(
-            Tick::check_is_valid_start_tick(expected_start_index_for_last_array, TS_128),
-            true
-        )
+        assert!(Tick::check_is_valid_start_tick(
+            expected_start_index_for_last_array,
+            TS_128
+        ))
     }
 
     #[test]
@@ -544,10 +641,10 @@ mod check_is_valid_start_tick_tests {
         let expected_array_index: i32 = (MIN_TICK_INDEX / TICK_ARRAY_SIZE / TS_128 as i32) - 2;
         let expected_start_index_for_last_array: i32 =
             expected_array_index * TICK_ARRAY_SIZE * TS_128 as i32;
-        assert_eq!(
-            Tick::check_is_valid_start_tick(expected_start_index_for_last_array, TS_128),
-            false
-        )
+        assert!(!Tick::check_is_valid_start_tick(
+            expected_start_index_for_last_array,
+            TS_128
+        ))
     }
 }
 
@@ -557,22 +654,55 @@ mod check_is_out_of_bounds_tests {
 
     #[test]
     fn test_min_tick_index() {
-        assert_eq!(Tick::check_is_out_of_bounds(MIN_TICK_INDEX), false);
+        assert!(!Tick::check_is_out_of_bounds(MIN_TICK_INDEX));
     }
 
     #[test]
     fn test_max_tick_index() {
-        assert_eq!(Tick::check_is_out_of_bounds(MAX_TICK_INDEX), false);
+        assert!(!Tick::check_is_out_of_bounds(MAX_TICK_INDEX));
     }
 
     #[test]
     fn test_min_tick_index_sub_1() {
-        assert_eq!(Tick::check_is_out_of_bounds(MIN_TICK_INDEX - 1), true);
+        assert!(Tick::check_is_out_of_bounds(MIN_TICK_INDEX - 1));
     }
 
     #[test]
     fn test_max_tick_index_add_1() {
-        assert_eq!(Tick::check_is_out_of_bounds(MAX_TICK_INDEX + 1), true);
+        assert!(Tick::check_is_out_of_bounds(MAX_TICK_INDEX + 1));
+    }
+}
+
+#[cfg(test)]
+mod full_range_indexes_tests {
+    use crate::math::FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD;
+
+    use super::*;
+
+    #[test]
+    fn test_min_tick_spacing() {
+        assert_eq!(
+            Tick::full_range_indexes(1),
+            (MIN_TICK_INDEX, MAX_TICK_INDEX)
+        );
+    }
+
+    #[test]
+    fn test_standard_tick_spacing() {
+        assert_eq!(Tick::full_range_indexes(128), (-443520, 443520));
+    }
+
+    #[test]
+    fn test_full_range_only_tick_spacing() {
+        assert_eq!(
+            Tick::full_range_indexes(FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD),
+            (-425984, 425984)
+        );
+    }
+
+    #[test]
+    fn test_max_tick_spacing() {
+        assert_eq!(Tick::full_range_indexes(u16::MAX), (-393210, 393210));
     }
 }
 
@@ -620,5 +750,88 @@ mod array_update_tests {
         };
         let result = array.get_tick(tick_index, tick_spacing).unwrap();
         assert_eq!(*result, expected);
+    }
+}
+
+#[cfg(test)]
+mod data_layout_tests {
+    use super::*;
+
+    #[test]
+    fn test_tick_array_data_layout() {
+        let tick_array_start_tick_index = 0x70e0d0c0i32;
+        let tick_array_whirlpool = Pubkey::new_unique();
+
+        let tick_initialized = true;
+        let tick_liquidity_net = 0x11002233445566778899aabbccddeeffi128;
+        let tick_liquidity_gross = 0xff00eeddccbbaa998877665544332211u128;
+        let tick_fee_growth_outside_a = 0x11220033445566778899aabbccddeeffu128;
+        let tick_fee_growth_outside_b = 0xffee00ddccbbaa998877665544332211u128;
+        let tick_reward_growths_outside = [
+            0x11223300445566778899aabbccddeeffu128,
+            0x11223344005566778899aabbccddeeffu128,
+            0x11223344550066778899aabbccddeeffu128,
+        ];
+
+        // manually build the expected Tick data layout
+        let mut tick_data = [0u8; Tick::LEN];
+        let mut offset = 0;
+        tick_data[offset] = tick_initialized as u8;
+        offset += 1;
+        tick_data[offset..offset + 16].copy_from_slice(&tick_liquidity_net.to_le_bytes());
+        offset += 16;
+        tick_data[offset..offset + 16].copy_from_slice(&tick_liquidity_gross.to_le_bytes());
+        offset += 16;
+        tick_data[offset..offset + 16].copy_from_slice(&tick_fee_growth_outside_a.to_le_bytes());
+        offset += 16;
+        tick_data[offset..offset + 16].copy_from_slice(&tick_fee_growth_outside_b.to_le_bytes());
+        offset += 16;
+        for i in 0..NUM_REWARDS {
+            tick_data[offset..offset + 16]
+                .copy_from_slice(&tick_reward_growths_outside[i].to_le_bytes());
+            offset += 16;
+        }
+
+        // manually build the expected TickArray data layout
+        // note: no discriminator
+        let mut tick_array_data = [0u8; TickArray::LEN - 8];
+        let mut offset = 0;
+        tick_array_data[offset..offset + 4]
+            .copy_from_slice(&tick_array_start_tick_index.to_le_bytes());
+        offset += 4;
+        for _ in 0..TICK_ARRAY_SIZE_USIZE {
+            tick_array_data[offset..offset + Tick::LEN].copy_from_slice(&tick_data);
+            offset += Tick::LEN;
+        }
+        tick_array_data[offset..offset + 32].copy_from_slice(&tick_array_whirlpool.to_bytes());
+        offset += 32;
+
+        assert_eq!(offset, tick_array_data.len());
+        assert_eq!(tick_array_data.len(), core::mem::size_of::<TickArray>());
+
+        // cast from bytes to TickArray (re-interpret)
+        let tick_array: &TickArray = bytemuck::from_bytes(&tick_array_data);
+
+        // check that the data layout matches the expected layout
+        let read_start_tick_index = tick_array.start_tick_index;
+        assert_eq!(read_start_tick_index, tick_array_start_tick_index);
+        for i in 0..TICK_ARRAY_SIZE_USIZE {
+            let read_tick = tick_array.ticks[i];
+
+            let read_initialized = read_tick.initialized;
+            assert_eq!(read_initialized, tick_initialized);
+            let read_liquidity_net = read_tick.liquidity_net;
+            assert_eq!(read_liquidity_net, tick_liquidity_net);
+            let read_liquidity_gross = read_tick.liquidity_gross;
+            assert_eq!(read_liquidity_gross, tick_liquidity_gross);
+            let read_fee_growth_outside_a = read_tick.fee_growth_outside_a;
+            assert_eq!(read_fee_growth_outside_a, tick_fee_growth_outside_a);
+            let read_fee_growth_outside_b = read_tick.fee_growth_outside_b;
+            assert_eq!(read_fee_growth_outside_b, tick_fee_growth_outside_b);
+            let read_reward_growths_outside = read_tick.reward_growths_outside;
+            assert_eq!(read_reward_growths_outside, tick_reward_growths_outside);
+        }
+        let read_whirlpool = tick_array.whirlpool;
+        assert_eq!(read_whirlpool, tick_array_whirlpool);
     }
 }

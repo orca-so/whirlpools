@@ -19,7 +19,7 @@
 /// U256 reference:
 /// https://crates.parity.io/sp_core/struct.U256.html
 ///
-use borsh::{BorshDeserialize, BorshSerialize};
+use borsh09::{BorshDeserialize, BorshSerialize};
 use std::borrow::BorrowMut;
 use std::convert::TryInto;
 use std::io::{Error, ErrorKind, Write};
@@ -54,12 +54,6 @@ macro_rules! impl_borsh_deserialize_for_bn {
                 let res = $type::from_le_bytes(buf[..size_of::<$type>()].try_into().unwrap());
                 *buf = &buf[size_of::<$type>()..];
                 Ok(res)
-            }
-
-            fn deserialize_reader<R: std::io::Read>(reader: &mut R) -> std::io::Result<Self> {
-                let mut buf = [0u8; size_of::<$type>()];
-                reader.read_exact(&mut buf)?;
-                Ok($type::from_le_bytes(buf))
             }
         }
     };
@@ -115,7 +109,7 @@ mod test_u256 {
         let b = U256::from(u128::MAX);
         let sum = a + b;
         let c: Result<u128, ErrorCode> = sum.try_into_u128();
-        assert_eq!(c.is_err(), true);
+        assert!(c.is_err());
     }
 
     #[test]
@@ -151,7 +145,7 @@ mod test_u256 {
         let b = U256::from(u64::MAX);
         let sum = a + b;
         let c: Result<u64, ErrorCode> = sum.try_into_u64();
-        assert_eq!(c.is_err(), true);
+        assert!(c.is_err());
     }
 
     #[test]

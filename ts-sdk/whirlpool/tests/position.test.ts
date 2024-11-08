@@ -9,7 +9,7 @@ import {
   setupWhirlpool,
 } from "./utils/program";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
-import { fetchPositionsForOwner, fetchPositionsForWhirlpool } from "../src/position";
+import { fetchPositionsForOwner, fetchPositionsInWhirlpool } from "../src/position";
 import { rpc, signer } from "./utils/mockRpc";
 import { orderMints } from "../src/token";
 
@@ -49,7 +49,7 @@ describe("Fetch Position", () => {
 
   // TODO: enable this when solana-bankrun supports gpa
   it.skip("Should fetch positions for a whirlpool", async () => {
-    const positions = await fetchPositionsForWhirlpool(rpc, pool);
+    const positions = await fetchPositionsInWhirlpool(rpc, pool);
     assert.strictEqual(positions.length, 3);
   });
 });

@@ -183,7 +183,7 @@ export async function fetchPositionsForOwner(
   return positionsOrBundles;
 }
 
-export async function fetchPositionsForWhirlpool(
+export async function fetchPositionsInWhirlpool(
   rpc: Rpc<GetProgramAccountsApi>,
   whirlpool: Address,
 ): Promise<HydratedPosition[]> {

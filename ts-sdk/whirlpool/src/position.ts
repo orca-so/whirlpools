@@ -3,7 +3,6 @@ import {
   fetchAllMaybePosition,
   fetchAllMaybePositionBundle,
   fetchAllPosition,
-  fetchAllPositionBundleWithFilter,
   fetchAllPositionWithFilter,
   getBundledPositionAddress,
   getPositionAddress,
@@ -204,7 +203,10 @@ export async function fetchPositionsInWhirlpool(
   rpc: Rpc<GetProgramAccountsApi>,
   whirlpool: Address,
 ): Promise<HydratedPosition[]> {
-  const positions = await fetchAllPositionWithFilter(rpc, positionWhirlpoolFilter(whirlpool));
+  const positions = await fetchAllPositionWithFilter(
+    rpc,
+    positionWhirlpoolFilter(whirlpool),
+  );
   return positions.map((x) => ({
     ...x,
     isPositionBundle: false,

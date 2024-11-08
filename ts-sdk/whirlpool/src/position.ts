@@ -3,9 +3,12 @@ import {
   fetchAllMaybePosition,
   fetchAllMaybePositionBundle,
   fetchAllPosition,
+  fetchAllPositionBundleWithFilter,
+  fetchAllPositionWithFilter,
   getBundledPositionAddress,
   getPositionAddress,
   getPositionBundleAddress,
+  positionWhirlpoolFilter,
 } from "@orca-so/whirlpools-client";
 import { _POSITION_BUNDLE_SIZE } from "@orca-so/whirlpools-core";
 import { getTokenDecoder, TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
@@ -14,6 +17,7 @@ import type {
   Account,
   Address,
   GetMultipleAccountsApi,
+  GetProgramAccountsApi,
   GetTokenAccountsByOwnerApi,
   Rpc,
 } from "@solana/web3.js";
@@ -177,4 +181,15 @@ export async function fetchPositionsForOwner(
   }
 
   return positionsOrBundles;
+}
+
+export async function fetchPositionsForWhirlpool(
+  rpc: Rpc<GetProgramAccountsApi>,
+  whirlpool: Address,
+): Promise<HydratedPosition[]> {
+  const positions = await fetchAllPositionWithFilter(rpc, positionWhirlpoolFilter(whirlpool));
+  return positions.map((x) => ({
+    ...x,
+    isPositionBundle: false,
+  }));
 }

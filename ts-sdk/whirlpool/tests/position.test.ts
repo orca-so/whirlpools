@@ -9,7 +9,7 @@ import {
   setupWhirlpool,
 } from "./utils/program";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
-import { fetchPositionsForOwner } from "../src/position";
+import { fetchPositionsForOwner, fetchPositionsForWhirlpool } from "../src/position";
 import { rpc, signer } from "./utils/mockRpc";
 import { orderMints } from "../src/token";
 
@@ -45,5 +45,11 @@ describe("Fetch Position", () => {
     const other = await generateKeyPairSigner();
     const positions = await fetchPositionsForOwner(rpc, other.address);
     assert.strictEqual(positions.length, 0);
+  });
+
+  // TODO: enable this when solana-bankrun supports gpa
+  it.skip("Should fetch positions for a whirlpool", async () => {
+    const positions = await fetchPositionsForWhirlpool(rpc, pool);
+    assert.strictEqual(positions.length, 3);
   });
 });

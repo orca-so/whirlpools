@@ -9,7 +9,7 @@
     "@coral-xyz/anchor": "~0.29.0",
     "@orca-so/common-sdk": "0.6.3",
     "@solana/spl-token": "^0.4.8",
-    "@solana/web3.js": "^1.90.0",
+    "@solana/web3.js": "^2.0.0",
     "decimal.js": "^10.4.3"
   },
   "dependencies": {
@@ -20,7 +20,7 @@
     "@orca-so/common-sdk": "0.6.3",
     "@orca-so/whirlpools-program": "*",
     "@solana/spl-token": "^0.4.8",
-    "@solana/web3.js": "^1.90.0",
+    "@solana/web3.js": "^2.0.0",
     "@types/bn.js": "~5.1.6",
     "@types/jest": "^29.5.14",
     "decimal.js": "^10.4.3",

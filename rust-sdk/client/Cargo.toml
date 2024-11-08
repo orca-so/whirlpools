@@ -21,7 +21,7 @@ serde = ["dep:serde", "dep:serde_with"]
 
 [dependencies]
 anchor-lang = { version = "^0", optional = true }
-borsh = { version = "^0" }
+borsh = { version = "^1" }
 num-derive = { version = "^0" }
 num-traits = { version = "^0" }
 orca_whirlpools_core = { path = "../core", optional = true }

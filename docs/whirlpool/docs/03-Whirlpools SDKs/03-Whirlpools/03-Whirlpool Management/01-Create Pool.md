@@ -53,7 +53,7 @@ Splash Pools are the easiest way to get started:
 Concentrated Liquidity Pools offer more flexibility:
 
 1. **Token Mint Addresses**: Provide the two token mints.
-2. **Tick Spacing**: Set the tick spacing, which defines the intervals for price ticks. Visit [this link](https://orca-so.gitbook.io/orca-developer-portal/whirlpools/interacting-with-the-protocol/orca-whirlpools-parameters#initialized-feetier-and-tickspacing) to learn more about the available values of tick spacing and their corresponding fee rates.
+2. **Tick Spacing**: Set the tick spacing, which defines the intervals for price ticks. Visit the [Whirlpools Parameters](../../../02-Architecture%20Overview/06-Whirlpool%20Parameters.mdx) page to learn more about the available values of tick spacing and their corresponding fee rates.
 3. **Initial Price**: Specify the initial price of token 1 in terms of token 2.
 4. **Funder**: This can be your wallet, which will fund the pool initialization. If the funder is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
 5. **Create instructions**: Use the appropriate function to create the pool.

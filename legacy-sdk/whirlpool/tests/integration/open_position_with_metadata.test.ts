@@ -393,7 +393,7 @@ describe("open_position_with_metadata", () => {
           .addSigner(defaultMint)
           .buildAndExecute(),
         // Invalid Metadata Key
-        // https://github.com/metaplex-foundation/metaplex-program-library/blob/master/token-metadata/program/src/error.rs#L36
+        // https://github.com/metaplex-foundation/mpl-token-metadata/blob/main/programs/token-metadata/program/src/error.rs#L34-L36
         /0x5/,
       );
     });
@@ -413,7 +413,7 @@ describe("open_position_with_metadata", () => {
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // InvalidProgramId
-        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L180
+        // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L178-L180
         /0xbc0/,
       );
     });
@@ -432,7 +432,7 @@ describe("open_position_with_metadata", () => {
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
         // InvalidProgramId
-        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L180
+        // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L178-L180
         /0xbc0/,
       );
     });
@@ -451,8 +451,8 @@ describe("open_position_with_metadata", () => {
 
       await assert.rejects(
         tx.addSigner(defaultMint).buildAndExecute(),
-        // AddressConstraint
-        // https://github.com/project-serum/anchor/blob/master/lang/src/error.rs#L84
+        // ConstraintAddress
+        // https://github.com/coral-xyz/anchor/blob/v0.29.0/lang/src/error.rs#L89-L91
         /0x7dc/,
       );
     });

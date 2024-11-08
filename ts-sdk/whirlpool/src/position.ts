@@ -3,9 +3,11 @@ import {
   fetchAllMaybePosition,
   fetchAllMaybePositionBundle,
   fetchAllPosition,
+  fetchAllPositionWithFilter,
   getBundledPositionAddress,
   getPositionAddress,
   getPositionBundleAddress,
+  positionWhirlpoolFilter,
 } from "@orca-so/whirlpools-client";
 import { _POSITION_BUNDLE_SIZE } from "@orca-so/whirlpools-core";
 import { getTokenDecoder, TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
@@ -14,6 +16,7 @@ import type {
   Account,
   Address,
   GetMultipleAccountsApi,
+  GetProgramAccountsApi,
   GetTokenAccountsByOwnerApi,
   Rpc,
 } from "@solana/web3.js";
@@ -177,4 +180,35 @@ export async function fetchPositionsForOwner(
   }
 
   return positionsOrBundles;
+}
+
+/**
+ * Fetches all positions for a given Whirlpool.
+ *
+ * @param {SolanaRpc} rpc - The Solana RPC client used to fetch positions.
+ * @param {Address} whirlpool - The address of the Whirlpool.
+ * @returns {Promise<HydratedPosition[]>} - A promise that resolves to an array of hydrated positions.
+ *
+ * @example
+ * import { fetchPositionsInWhirlpool } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ *
+ * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+ * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ *
+ * const whirlpool = address("Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE");
+ * const positions = await fetchPositionsInWhirlpool(devnetRpc, whirlpool);
+ */
+export async function fetchPositionsInWhirlpool(
+  rpc: Rpc<GetProgramAccountsApi>,
+  whirlpool: Address,
+): Promise<HydratedPosition[]> {
+  const positions = await fetchAllPositionWithFilter(
+    rpc,
+    positionWhirlpoolFilter(whirlpool),
+  );
+  return positions.map((x) => ({
+    ...x,
+    isPositionBundle: false,
+  }));
 }

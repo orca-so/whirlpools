@@ -2339,7 +2339,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@docusaurus/types@npm:3.6.0, @docusaurus/types@npm:^3.6.0":
+"@docusaurus/types@npm:3.6.0":
   version: 3.6.0
   resolution: "@docusaurus/types@npm:3.6.0"
   dependencies:
@@ -2359,7 +2359,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@docusaurus/types@npm:3.6.1":
+"@docusaurus/types@npm:3.6.1, @docusaurus/types@npm:^3.6.1":
   version: 3.6.1
   resolution: "@docusaurus/types@npm:3.6.1"
   dependencies:
@@ -3472,7 +3472,7 @@ __metadata:
     "@docusaurus/module-type-aliases": "npm:^3.6.1"
     "@docusaurus/preset-classic": "npm:^3.6.0"
     "@docusaurus/tsconfig": "npm:^3.6.1"
-    "@docusaurus/types": "npm:^3.6.0"
+    "@docusaurus/types": "npm:^3.6.1"
     "@mdx-js/react": "npm:^3.1.0"
     "@orca-so/whirlpools-docs-legacy": "npm:*"
     "@orca-so/whirlpools-docs-rust": "npm:*"

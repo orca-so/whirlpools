@@ -2314,10 +2314,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@docusaurus/tsconfig@npm:^3.6.0":
-  version: 3.6.0
-  resolution: "@docusaurus/tsconfig@npm:3.6.0"
-  checksum: 10c0/5ff75afa1c9a8bff6a1c4722517a05827bb87a689ad99e5d9ccc5c7eeef0c1fff7d8d71fea1d0b4c3eb6e7b1aeea618c109512dc5443736e8ba4dcdd5456e3c4
+"@docusaurus/tsconfig@npm:^3.6.1":
+  version: 3.6.1
+  resolution: "@docusaurus/tsconfig@npm:3.6.1"
+  checksum: 10c0/4f8f283c4e7896b327f3ffcf032f8ef1cfde43c28ab6d4c2ff107f4057e59d90486927429e948a274004d12f742165b88fc80fdc6352a9cf25e48cbca51d7f0f
   languageName: node
   linkType: hard
 
@@ -3433,7 +3433,7 @@ __metadata:
     "@docusaurus/core": "npm:^3.6.0"
     "@docusaurus/module-type-aliases": "npm:^3.6.0"
     "@docusaurus/preset-classic": "npm:^3.6.0"
-    "@docusaurus/tsconfig": "npm:^3.6.0"
+    "@docusaurus/tsconfig": "npm:^3.6.1"
     "@docusaurus/types": "npm:^3.6.0"
     "@mdx-js/react": "npm:^3.1.0"
     "@orca-so/whirlpools-docs-legacy": "npm:*"

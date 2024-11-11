@@ -7,7 +7,7 @@ import {
   WhirlpoolContext,
   buildWhirlpoolClient,
   swapQuoteByInputToken,
-  swapQuoteByOutputToken
+  swapQuoteByOutputToken,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
 import { defaultConfirmOptions } from "../../../utils/const";
@@ -35,23 +35,24 @@ describe("swap edge case test", () => {
       const tickLowerIndex = -3904;
       const liquidityAmount = new BN(100000000000);
 
-      return new WhirlpoolTestFixture(ctx).init(
-        {
-          tokenAIsNative: true, // build pool which is similar to SOL/mSOL
-          initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(tickInitialIndex),
-          tickSpacing,
-          positions: [
-            { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
-          ],
-        },
-      );
+      return new WhirlpoolTestFixture(ctx).init({
+        tokenAIsNative: true, // build pool which is similar to SOL/mSOL
+        initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(tickInitialIndex),
+        tickSpacing,
+        positions: [
+          { tickLowerIndex, tickUpperIndex, liquidityAmount }, // In range position
+        ],
+      });
     }
 
     it("ExactIn, SOL is input token", async () => {
       const fixture = await buildTestFixture();
       const poolInitInfo = fixture.getInfos().poolInitInfo;
 
-      const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      const pool = await client.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
       assert.ok(pool.getData().tokenMintA.equals(NATIVE_MINT));
 
       const quote = await swapQuoteByInputToken(
@@ -88,7 +89,10 @@ describe("swap edge case test", () => {
       const fixture = await buildTestFixture();
       const poolInitInfo = fixture.getInfos().poolInitInfo;
 
-      const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      const pool = await client.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
       assert.ok(pool.getData().tokenMintA.equals(NATIVE_MINT));
 
       const quote = await swapQuoteByOutputToken(
@@ -115,7 +119,8 @@ describe("swap edge case test", () => {
       const createAccountIx = tx.compressIx(true).instructions[0];
       const decoded = SystemInstruction.decodeCreateAccount(createAccountIx);
       const tokenAccountRent = await fetcher.getAccountRentExempt(true);
-      const lamportsExpected = quote.otherAmountThreshold.addn(tokenAccountRent);
+      const lamportsExpected =
+        quote.otherAmountThreshold.addn(tokenAccountRent);
       assert.ok(lamportsExpected.eq(new BN(decoded.lamports)));
 
       await tx.buildAndExecute();
@@ -125,7 +130,10 @@ describe("swap edge case test", () => {
       const fixture = await buildTestFixture();
       const poolInitInfo = fixture.getInfos().poolInitInfo;
 
-      const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      const pool = await client.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
       assert.ok(pool.getData().tokenMintA.equals(NATIVE_MINT));
 
       const quote = await swapQuoteByOutputToken(
@@ -150,9 +158,11 @@ describe("swap edge case test", () => {
         pool.swap({
           ...quote,
           // use default otherAmountThreshold (U64_MAX)
-          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(quote.amountSpecifiedIsInput),
+          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+            quote.amountSpecifiedIsInput,
+          ),
         }),
-        /Wrapping U64_MAX amount of SOL is not possible/
+        /Wrapping U64_MAX amount of SOL is not possible/,
       );
     });
   });

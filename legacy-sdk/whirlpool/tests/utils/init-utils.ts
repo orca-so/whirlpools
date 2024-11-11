@@ -1,7 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import type { PDA } from "@orca-so/common-sdk";
 import { AddressUtil, MathUtil } from "@orca-so/common-sdk";
-import { NATIVE_MINT, TOKEN_2022_PROGRAM_ID, TOKEN_PROGRAM_ID, getAssociatedTokenAddressSync } from "@solana/spl-token";
+import {
+  NATIVE_MINT,
+  TOKEN_2022_PROGRAM_ID,
+  TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
+} from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
 import type BN from "bn.js";
@@ -544,8 +549,8 @@ export async function openPosition(
         positionMintAddress: result.params.positionMint,
         // add metadata
         metadataPda: PDAUtil.getPositionMetadata(result.params.positionMint),
-      }
-    }
+      },
+    };
   }
 
   return openPositionWithOptMetadata(
@@ -615,16 +620,20 @@ async function openPositionWithTokenExtensions(
   owner: PublicKey = ctx.provider.wallet.publicKey,
   funder?: Keypair,
 ) {
-  const { params, mint } = await generateDefaultOpenPositionWithTokenExtensionsParams(
+  const { params, mint } =
+    await generateDefaultOpenPositionWithTokenExtensionsParams(
+      ctx,
+      whirlpool,
+      withMetadata,
+      tickLowerIndex,
+      tickUpperIndex,
+      owner,
+      funder?.publicKey || ctx.provider.wallet.publicKey,
+    );
+  let tx = toTx(
     ctx,
-    whirlpool,
-    withMetadata,
-    tickLowerIndex,
-    tickUpperIndex,
-    owner,
-    funder?.publicKey || ctx.provider.wallet.publicKey,
+    WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params),
   );
-  let tx = toTx(ctx, WhirlpoolIx.openPositionWithTokenExtensionsIx(ctx.program, params));
   tx.addSigner(mint);
   if (funder) {
     tx.addSigner(funder);
@@ -853,9 +862,10 @@ export async function fundPositionsWithClient(
         true,
       );
 
-      const tokenProgramId = (param.isTokenExtensionsBasedPosition ?? false)
-        ? TOKEN_2022_PROGRAM_ID
-        : TOKEN_PROGRAM_ID;
+      const tokenProgramId =
+        (param.isTokenExtensionsBasedPosition ?? false)
+          ? TOKEN_2022_PROGRAM_ID
+          : TOKEN_PROGRAM_ID;
 
       const { tx } = await whirlpool.openPosition(
         param.tickLowerIndex,

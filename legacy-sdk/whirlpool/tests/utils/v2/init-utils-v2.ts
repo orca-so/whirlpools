@@ -794,7 +794,7 @@ export async function fundPositionsV2(
             poolInitInfo.tokenMintB,
             tokenAccountB,
             tokenVaultBKeypair.publicKey,
-            ctx.provider.wallet.publicKey,            
+            ctx.provider.wallet.publicKey,
           );
 
         await toTx(

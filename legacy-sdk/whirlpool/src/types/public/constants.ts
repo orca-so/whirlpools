@@ -21,7 +21,7 @@ export const ORCA_WHIRLPOOLS_CONFIG = new PublicKey(
  * Orca's WhirlpoolsConfig PublicKey for Eclipse
  * @category Constants
  */
-export const ORCA_WHIRLPOOLS_ECLIPSE_CONFIG = new PublicKey(
+export const ORCA_WHIRLPOOLS_CONFIG_ECLIPSE = new PublicKey(
     "FVG4oDbGv16hqTUbovjyGmtYikn6UBEnazz6RVDMEFwv",
 );
 

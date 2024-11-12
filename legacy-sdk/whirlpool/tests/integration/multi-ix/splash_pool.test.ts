@@ -3,9 +3,7 @@ import { DecimalUtil, Percentage, U64_MAX } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
-import type {
-  WhirlpoolClient,
-} from "../../../src";
+import type { WhirlpoolClient } from "../../../src";
 import {
   MAX_SQRT_PRICE_BN,
   MAX_TICK_INDEX,
@@ -26,9 +24,7 @@ import {
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { defaultConfirmOptions } from "../../utils/const";
-import {
-  initTestPoolWithTokens,
-} from "../../utils/init-utils";
+import { initTestPoolWithTokens } from "../../utils/init-utils";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
 import { MAX_U64, getTokenBalance } from "../../utils";
 
@@ -96,7 +92,8 @@ describe("splash pool tests", () => {
 
       // ExactIn, BtoA, min to ...
       {
-        figure: "(toB) |-----mS----l**********T*********|********************u-----x-----| (toA)",
+        figure:
+          "(toB) |-----mS----l**********T*********|********************u-----x-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MIN_TICK_INDEX + 1,
         poolLiquidity: powBN(2, 33),
@@ -106,7 +103,8 @@ describe("splash pool tests", () => {
         expectedPartialFill: false,
       },
       {
-        figure: "(toB) |-----mS----l********************|**********T*********u-----x-----| (toA)",
+        figure:
+          "(toB) |-----mS----l********************|**********T*********u-----x-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MIN_TICK_INDEX + 1,
         poolLiquidity: powBN(2, 33),
@@ -116,7 +114,8 @@ describe("splash pool tests", () => {
         expectedPartialFill: false,
       },
       {
-        figure: "(toB) |-----mS----l********************|********************u----Tx-----| (toA)",
+        figure:
+          "(toB) |-----mS----l********************|********************u----Tx-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MIN_TICK_INDEX + 1,
         poolLiquidity: powBN(2, 33),
@@ -128,7 +127,8 @@ describe("splash pool tests", () => {
 
       // ExactIn, AtoB, max to ...
       {
-        figure: "(toB) |-----m-----l********************|**********T*********u----Sx-----| (toA)",
+        figure:
+          "(toB) |-----m-----l********************|**********T*********u----Sx-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MAX_TICK_INDEX - 1,
         poolLiquidity: powBN(2, 33),
@@ -138,7 +138,8 @@ describe("splash pool tests", () => {
         expectedPartialFill: false,
       },
       {
-        figure: "(toB) |-----m-----l**********T*********|********************u----Sx-----| (toA)",
+        figure:
+          "(toB) |-----m-----l**********T*********|********************u----Sx-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MAX_TICK_INDEX - 1,
         poolLiquidity: powBN(2, 33),
@@ -148,7 +149,8 @@ describe("splash pool tests", () => {
         expectedPartialFill: false,
       },
       {
-        figure: "(toB) |-----mT----l********************|********************u----Sx-----| (toA)",
+        figure:
+          "(toB) |-----mT----l********************|********************u----Sx-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MAX_TICK_INDEX - 1,
         poolLiquidity: powBN(2, 33),
@@ -160,7 +162,8 @@ describe("splash pool tests", () => {
 
       // ExactIn, BtoA, 1 to ...
       {
-        figure: "(toB) |-----m-----l********************|S****T**************u-----x-----| (toA)",
+        figure:
+          "(toB) |-----m-----l********************|S****T**************u-----x-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: 0,
         poolLiquidity: powBN(2, 63), // to use the remaining 2^63 amount in the trade
@@ -172,7 +175,8 @@ describe("splash pool tests", () => {
 
       // ExactIn, AtoB, 1 to ...
       {
-        figure: "(toB) |-----m-----l**************T****S|********************u-----x-----| (toA)",
+        figure:
+          "(toB) |-----m-----l**************T****S|********************u-----x-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: 0,
         poolLiquidity: powBN(2, 63), // to use the remaining 2^63 amount in the trade
@@ -188,7 +192,8 @@ describe("splash pool tests", () => {
 
       // ExactOut, BtoA, min to ...
       {
-        figure: "(toB) |-----mS----l**********T*********|********************u-----x-----| (toA)",
+        figure:
+          "(toB) |-----mS----l**********T*********|********************u-----x-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MIN_TICK_INDEX + 1,
         poolLiquidity: powBN(2, 33),
@@ -198,7 +203,8 @@ describe("splash pool tests", () => {
         expectedPartialFill: false,
       },
       {
-        figure: "(toB) |-----mS----l********************|**********T*********u-----x-----| (toA)",
+        figure:
+          "(toB) |-----mS----l********************|**********T*********u-----x-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MIN_TICK_INDEX + 1,
         poolLiquidity: powBN(2, 33),
@@ -208,7 +214,8 @@ describe("splash pool tests", () => {
         expectedPartialFill: false,
       },
       {
-        figure: "(toB) |-----mS----l********************|********************u----Tx-----| (toA)",
+        figure:
+          "(toB) |-----mS----l********************|********************u----Tx-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MIN_TICK_INDEX + 1,
         poolLiquidity: powBN(2, 33),
@@ -220,7 +227,8 @@ describe("splash pool tests", () => {
 
       // ExactOut, AtoB, max to ...
       {
-        figure: "(toB) |-----m-----l********************|**********T*********u----Sx-----| (toA)",
+        figure:
+          "(toB) |-----m-----l********************|**********T*********u----Sx-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MAX_TICK_INDEX - 1,
         poolLiquidity: powBN(2, 33),
@@ -230,7 +238,8 @@ describe("splash pool tests", () => {
         expectedPartialFill: false,
       },
       {
-        figure: "(toB) |-----m-----l**********T*********|********************u----Sx-----| (toA)",
+        figure:
+          "(toB) |-----m-----l**********T*********|********************u----Sx-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MAX_TICK_INDEX - 1,
         poolLiquidity: powBN(2, 33),
@@ -240,7 +249,8 @@ describe("splash pool tests", () => {
         expectedPartialFill: false,
       },
       {
-        figure: "(toB) |-----mT----l********************|********************u----Sx-----| (toA)",
+        figure:
+          "(toB) |-----mT----l********************|********************u----Sx-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: MAX_TICK_INDEX - 1,
         poolLiquidity: powBN(2, 33),
@@ -252,7 +262,8 @@ describe("splash pool tests", () => {
 
       // ExactOut, BtoA, 1 to ...
       {
-        figure: "(toB) |-----m-----l********************|S****T**************u-----x-----| (toA)",
+        figure:
+          "(toB) |-----m-----l********************|S****T**************u-----x-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: 0,
         poolLiquidity: powBN(2, 63), // to use the remaining 2^63 amount in the trade
@@ -264,7 +275,8 @@ describe("splash pool tests", () => {
 
       // ExactOut, AtoB, 1 to ...
       {
-        figure: "(toB) |-----m-----l**************T****S|********************u-----x-----| (toA)",
+        figure:
+          "(toB) |-----m-----l**************T****S|********************u-----x-----| (toA)",
         poolTickSpacing: 32768 + 128,
         poolInitialTickIndex: 0,
         poolLiquidity: powBN(2, 63), // to use the remaining 2^63 amount in the trade
@@ -291,24 +303,24 @@ describe("splash pool tests", () => {
         const tradeAToB = tradeDirection === "AtoB";
 
         const { whirlpoolPda, tokenAccountA, tokenAccountB } =
-        await initTestPoolWithTokens(
-          testCtx.whirlpoolCtx,
-          poolTickSpacing,
-          PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex), 
-          MAX_U64,
-        );
-    
+          await initTestPoolWithTokens(
+            testCtx.whirlpoolCtx,
+            poolTickSpacing,
+            PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex),
+            MAX_U64,
+          );
+
         const pool = await testCtx.whirlpoolClient.getPool(
           whirlpoolPda.publicKey,
         );
-    
+
         // SplashPool has only 2 TickArrays for negative and positive ticks
-        await (await pool.initTickArrayForTicks([
-          -1, +1
-        ]))!.buildAndExecute();
-    
-        const fullRange = TickUtil.getFullRangeTickIndex(pool.getData().tickSpacing);
-    
+        await (await pool.initTickArrayForTicks([-1, +1]))!.buildAndExecute();
+
+        const fullRange = TickUtil.getFullRangeTickIndex(
+          pool.getData().tickSpacing,
+        );
+
         // provide liquidity
         const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
           liquidity: poolLiquidity,
@@ -319,61 +331,95 @@ describe("splash pool tests", () => {
           tickUpperIndex: fullRange[1],
           tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
         });
-        const txAndMint = await pool.openPosition(fullRange[0], fullRange[1], depositQuote);
+        const txAndMint = await pool.openPosition(
+          fullRange[0],
+          fullRange[1],
+          depositQuote,
+        );
         await txAndMint.tx.buildAndExecute();
         await pool.refreshData(); // reflect new liquidity
 
-        debug(`pool state: tick = ${pool.getData().tickCurrentIndex}, liquidity = ${depositQuote.liquidityAmount.toString()}, tokenA = ${depositQuote.tokenEstA.toString()}, tokenB = ${depositQuote.tokenEstB.toString()}`);
+        debug(
+          `pool state: tick = ${pool.getData().tickCurrentIndex}, liquidity = ${depositQuote.liquidityAmount.toString()}, tokenA = ${depositQuote.tokenEstA.toString()}, tokenB = ${depositQuote.tokenEstB.toString()}`,
+        );
 
-        const swapQuote = swapQuoteWithParams({
-          amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
-          aToB: tradeAToB,
-          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(tradeAmountSpecifiedIsInput),
-          sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
-          tickArrays: await SwapUtils.getTickArrays(
-            pool.getData().tickCurrentIndex,
-            pool.getData().tickSpacing,
-            tradeAToB,
-            testCtx.whirlpoolCtx.program.programId,
-            pool.getAddress(),
-            testCtx.whirlpoolCtx.fetcher,
-            IGNORE_CACHE,
-          ),
-          tokenAmount: tradeTokenAmount,
-          whirlpoolData: pool.getData(),
-          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-        }, Percentage.fromFraction(0, 100));
+        const swapQuote = swapQuoteWithParams(
+          {
+            amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+            aToB: tradeAToB,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+              tradeAmountSpecifiedIsInput,
+            ),
+            sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+            tickArrays: await SwapUtils.getTickArrays(
+              pool.getData().tickCurrentIndex,
+              pool.getData().tickSpacing,
+              tradeAToB,
+              testCtx.whirlpoolCtx.program.programId,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
+            tokenAmount: tradeTokenAmount,
+            whirlpoolData: pool.getData(),
+            tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+          },
+          Percentage.fromFraction(0, 100),
+        );
 
         const preTickIndex = pool.getData().tickCurrentIndex;
-        const [preOwnerA, preOwnerB] = await getTokenBalances(tokenAccountA, tokenAccountB);
-        const [preVaultA, preVaultB] = await getTokenBalances(pool.getData().tokenVaultA, pool.getData().tokenVaultB);
+        const [preOwnerA, preOwnerB] = await getTokenBalances(
+          tokenAccountA,
+          tokenAccountB,
+        );
+        const [preVaultA, preVaultB] = await getTokenBalances(
+          pool.getData().tokenVaultA,
+          pool.getData().tokenVaultB,
+        );
 
         await toTx(
           testCtx.whirlpoolCtx,
-          WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, SwapUtils.getSwapParamsFromQuote(
-            swapQuote,
-            testCtx.whirlpoolCtx,
-            pool,
-            swapQuote.aToB ? tokenAccountA : tokenAccountB,
-            swapQuote.aToB ? tokenAccountB : tokenAccountA,
-            testCtx.provider.wallet.publicKey,
-          )),
+          WhirlpoolIx.swapIx(
+            testCtx.whirlpoolCtx.program,
+            SwapUtils.getSwapParamsFromQuote(
+              swapQuote,
+              testCtx.whirlpoolCtx,
+              pool,
+              swapQuote.aToB ? tokenAccountA : tokenAccountB,
+              swapQuote.aToB ? tokenAccountB : tokenAccountA,
+              testCtx.provider.wallet.publicKey,
+            ),
+          ),
         ).buildAndExecute();
         await pool.refreshData(); // reflect new tickCurrentIndex
 
         const postTickIndex = pool.getData().tickCurrentIndex;
-        const [postOwnerA, postOwnerB] = await getTokenBalances(tokenAccountA, tokenAccountB);
-        const [postVaultA, postVaultB] = await getTokenBalances(pool.getData().tokenVaultA, pool.getData().tokenVaultB);
+        const [postOwnerA, postOwnerB] = await getTokenBalances(
+          tokenAccountA,
+          tokenAccountB,
+        );
+        const [postVaultA, postVaultB] = await getTokenBalances(
+          pool.getData().tokenVaultA,
+          pool.getData().tokenVaultB,
+        );
 
         // display pre & post
         debug(`amount: ${tradeTokenAmount.toString()}`);
-        debug(`estimate: ${swapQuote.estimatedAmountIn.toString()} --> ${swapQuote.estimatedAmountOut.toString()}`);
-        debug(`owner: A = ${preOwnerA.toString()} -> ${postOwnerA.toString()}, B = ${preOwnerB.toString()} -> ${postOwnerB.toString()}`);
-        debug(`vault: A = ${preVaultA.toString()} -> ${postVaultA.toString()}, B = ${preVaultB.toString()} -> ${postVaultB.toString()}`);
+        debug(
+          `estimate: ${swapQuote.estimatedAmountIn.toString()} --> ${swapQuote.estimatedAmountOut.toString()}`,
+        );
+        debug(
+          `owner: A = ${preOwnerA.toString()} -> ${postOwnerA.toString()}, B = ${preOwnerB.toString()} -> ${postOwnerB.toString()}`,
+        );
+        debug(
+          `vault: A = ${preVaultA.toString()} -> ${postVaultA.toString()}, B = ${preVaultB.toString()} -> ${postVaultB.toString()}`,
+        );
         debug(`tick index: ${preTickIndex} --> ${postTickIndex}`);
 
         // verify: partial fill
-        const actualAmount = swapQuote.amountSpecifiedIsInput ? swapQuote.estimatedAmountIn : swapQuote.estimatedAmountOut;
+        const actualAmount = swapQuote.amountSpecifiedIsInput
+          ? swapQuote.estimatedAmountIn
+          : swapQuote.estimatedAmountOut;
         if (variation.expectedPartialFill) {
           assert.ok(actualAmount.lt(tradeTokenAmount));
         } else {
@@ -385,32 +431,49 @@ describe("splash pool tests", () => {
         const diffOwnerB = postOwnerB.sub(preOwnerB);
         const diffVaultA = postVaultA.sub(preVaultA);
         const diffVaultB = postVaultB.sub(preVaultB);
-        debug(`diff: owner A = ${diffOwnerA.toString()}, owner B = ${diffOwnerB.toString()}`);
-        debug(`estimated: in = ${swapQuote.estimatedAmountIn.toString()}, out = ${swapQuote.estimatedAmountOut.toString()}`);
-        debug(`sqrtPrice: quote = ${swapQuote.estimatedEndSqrtPrice.toString()}, pool = ${pool.getData().sqrtPrice.toString()}`);
+        debug(
+          `diff: owner A = ${diffOwnerA.toString()}, owner B = ${diffOwnerB.toString()}`,
+        );
+        debug(
+          `estimated: in = ${swapQuote.estimatedAmountIn.toString()}, out = ${swapQuote.estimatedAmountOut.toString()}`,
+        );
+        debug(
+          `sqrtPrice: quote = ${swapQuote.estimatedEndSqrtPrice.toString()}, pool = ${pool.getData().sqrtPrice.toString()}`,
+        );
 
         assert.ok(diffOwnerA.eq(diffVaultA.neg()));
         assert.ok(diffOwnerB.eq(diffVaultB.neg()));
-        assert.ok(diffOwnerA.eq(tradeAToB ? swapQuote.estimatedAmountIn.neg() : swapQuote.estimatedAmountOut));
-        assert.ok(diffOwnerB.eq(tradeAToB ? swapQuote.estimatedAmountOut : swapQuote.estimatedAmountIn.neg()));
+        assert.ok(
+          diffOwnerA.eq(
+            tradeAToB
+              ? swapQuote.estimatedAmountIn.neg()
+              : swapQuote.estimatedAmountOut,
+          ),
+        );
+        assert.ok(
+          diffOwnerB.eq(
+            tradeAToB
+              ? swapQuote.estimatedAmountOut
+              : swapQuote.estimatedAmountIn.neg(),
+          ),
+        );
         assert.ok(swapQuote.estimatedEndSqrtPrice.eq(pool.getData().sqrtPrice));
-        assert.ok(swapQuote.estimatedEndTickIndex === pool.getData().tickCurrentIndex);
+        assert.ok(
+          swapQuote.estimatedEndTickIndex === pool.getData().tickCurrentIndex,
+        );
       });
     });
   });
 
-  async function getTokenBalances(tokenAccountA: PublicKey, tokenAccountB: PublicKey): Promise<[BN, BN]> {
+  async function getTokenBalances(
+    tokenAccountA: PublicKey,
+    tokenAccountB: PublicKey,
+  ): Promise<[BN, BN]> {
     const tokenVaultA = new anchor.BN(
-      await getTokenBalance(
-        provider,
-        tokenAccountA,
-      ),
+      await getTokenBalance(provider, tokenAccountA),
     );
     const tokenVaultB = new anchor.BN(
-      await getTokenBalance(
-        provider,
-        tokenAccountB,
-      ),
+      await getTokenBalance(provider, tokenAccountB),
     );
     return [tokenVaultA, tokenVaultB];
   }
@@ -428,23 +491,23 @@ describe("splash pool tests", () => {
       const tradeAToB = false;
 
       const { whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(
-        testCtx.whirlpoolCtx,
-        poolTickSpacing,
-        PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex), 
-        MAX_U64,
-      );
-  
+        await initTestPoolWithTokens(
+          testCtx.whirlpoolCtx,
+          poolTickSpacing,
+          PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex),
+          MAX_U64,
+        );
+
       const pool = await testCtx.whirlpoolClient.getPool(
         whirlpoolPda.publicKey,
       );
-  
-      await (await pool.initTickArrayForTicks([
-        -1, +1
-      ]))!.buildAndExecute();
-  
-      const fullRange = TickUtil.getFullRangeTickIndex(pool.getData().tickSpacing);
-  
+
+      await (await pool.initTickArrayForTicks([-1, +1]))!.buildAndExecute();
+
+      const fullRange = TickUtil.getFullRangeTickIndex(
+        pool.getData().tickSpacing,
+      );
+
       // provide liquidity
       const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
         liquidity: poolLiquidity,
@@ -455,32 +518,43 @@ describe("splash pool tests", () => {
         tickUpperIndex: fullRange[1],
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
       });
-      const txAndMint = await pool.openPosition(fullRange[0], fullRange[1], depositQuote);
+      const txAndMint = await pool.openPosition(
+        fullRange[0],
+        fullRange[1],
+        depositQuote,
+      );
       await txAndMint.tx.buildAndExecute();
       await pool.refreshData(); // reflect new liquidity
 
       // try to output all tokenA
       const tradeTokenAmount = depositQuote.tokenEstA;
-      
-      await assert.rejects(async () => swapQuoteWithParams({
-          amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
-          aToB: tradeAToB,
-          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(tradeAmountSpecifiedIsInput),
-          sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
-          tickArrays: await SwapUtils.getTickArrays(
-            pool.getData().tickCurrentIndex,
-            pool.getData().tickSpacing,
-            tradeAToB,
-            testCtx.whirlpoolCtx.program.programId,
-            pool.getAddress(),
-            testCtx.whirlpoolCtx.fetcher,
-            IGNORE_CACHE,
+
+      await assert.rejects(
+        async () =>
+          swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+              aToB: tradeAToB,
+              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+                tradeAmountSpecifiedIsInput,
+              ),
+              sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+              tickArrays: await SwapUtils.getTickArrays(
+                pool.getData().tickCurrentIndex,
+                pool.getData().tickSpacing,
+                tradeAToB,
+                testCtx.whirlpoolCtx.program.programId,
+                pool.getAddress(),
+                testCtx.whirlpoolCtx.fetcher,
+                IGNORE_CACHE,
+              ),
+              tokenAmount: tradeTokenAmount,
+              whirlpoolData: pool.getData(),
+              tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            },
+            Percentage.fromFraction(0, 100),
           ),
-          tokenAmount: tradeTokenAmount,
-          whirlpoolData: pool.getData(),
-          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-        }, Percentage.fromFraction(0, 100)),
-        /MulShiftRight overflowed u128/ // at getAmountUnfixedDelta for tokenB (too much tokenB is required)
+        /MulShiftRight overflowed u128/, // at getAmountUnfixedDelta for tokenB (too much tokenB is required)
       );
 
       await assert.rejects(
@@ -498,14 +572,32 @@ describe("splash pool tests", () => {
             tokenVaultA: pool.getData().tokenVaultA,
             tokenVaultB: pool.getData().tokenVaultB,
             whirlpool: pool.getAddress(),
-            tickArray0: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId).publicKey,
-            tickArray1: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId).publicKey,
-            tickArray2: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId).publicKey,
-            oracle: PDAUtil.getOracle(testCtx.whirlpoolCtx.program.programId, pool.getAddress()).publicKey,
-          })
+            tickArray0: PDAUtil.getTickArrayFromTickIndex(
+              0,
+              poolTickSpacing,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.program.programId,
+            ).publicKey,
+            tickArray1: PDAUtil.getTickArrayFromTickIndex(
+              0,
+              poolTickSpacing,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.program.programId,
+            ).publicKey,
+            tickArray2: PDAUtil.getTickArrayFromTickIndex(
+              0,
+              poolTickSpacing,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.program.programId,
+            ).publicKey,
+            oracle: PDAUtil.getOracle(
+              testCtx.whirlpoolCtx.program.programId,
+              pool.getAddress(),
+            ).publicKey,
+          }),
         ).buildAndExecute(),
-        /MultiplicationShiftRightOverflow/ // at get_amount_unfixed_delta for tokenB (too much tokenB is required)
-      );  
+        /MultiplicationShiftRightOverflow/, // at get_amount_unfixed_delta for tokenB (too much tokenB is required)
+      );
     });
 
     // A to B (too much tokenA is required)
@@ -517,23 +609,23 @@ describe("splash pool tests", () => {
       const tradeAToB = true;
 
       const { whirlpoolPda, tokenAccountA, tokenAccountB } =
-      await initTestPoolWithTokens(
-        testCtx.whirlpoolCtx,
-        poolTickSpacing,
-        PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex), 
-        MAX_U64,
-      );
-  
+        await initTestPoolWithTokens(
+          testCtx.whirlpoolCtx,
+          poolTickSpacing,
+          PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex),
+          MAX_U64,
+        );
+
       const pool = await testCtx.whirlpoolClient.getPool(
         whirlpoolPda.publicKey,
       );
-  
-      await (await pool.initTickArrayForTicks([
-        -1, +1
-      ]))!.buildAndExecute();
-  
-      const fullRange = TickUtil.getFullRangeTickIndex(pool.getData().tickSpacing);
-  
+
+      await (await pool.initTickArrayForTicks([-1, +1]))!.buildAndExecute();
+
+      const fullRange = TickUtil.getFullRangeTickIndex(
+        pool.getData().tickSpacing,
+      );
+
       // provide liquidity
       const depositQuote = increaseLiquidityQuoteByLiquidityWithParams({
         liquidity: poolLiquidity,
@@ -544,32 +636,43 @@ describe("splash pool tests", () => {
         tickUpperIndex: fullRange[1],
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
       });
-      const txAndMint = await pool.openPosition(fullRange[0], fullRange[1], depositQuote);
+      const txAndMint = await pool.openPosition(
+        fullRange[0],
+        fullRange[1],
+        depositQuote,
+      );
       await txAndMint.tx.buildAndExecute();
       await pool.refreshData(); // reflect new liquidity
 
       // try to output all tokenB
       const tradeTokenAmount = depositQuote.tokenEstB;
-      
-      await assert.rejects(async () => swapQuoteWithParams({
-          amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
-          aToB: tradeAToB,
-          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(tradeAmountSpecifiedIsInput),
-          sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
-          tickArrays: await SwapUtils.getTickArrays(
-            pool.getData().tickCurrentIndex,
-            pool.getData().tickSpacing,
-            tradeAToB,
-            testCtx.whirlpoolCtx.program.programId,
-            pool.getAddress(),
-            testCtx.whirlpoolCtx.fetcher,
-            IGNORE_CACHE,
+
+      await assert.rejects(
+        async () =>
+          swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+              aToB: tradeAToB,
+              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+                tradeAmountSpecifiedIsInput,
+              ),
+              sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+              tickArrays: await SwapUtils.getTickArrays(
+                pool.getData().tickCurrentIndex,
+                pool.getData().tickSpacing,
+                tradeAToB,
+                testCtx.whirlpoolCtx.program.programId,
+                pool.getAddress(),
+                testCtx.whirlpoolCtx.fetcher,
+                IGNORE_CACHE,
+              ),
+              tokenAmount: tradeTokenAmount,
+              whirlpoolData: pool.getData(),
+              tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            },
+            Percentage.fromFraction(0, 100),
           ),
-          tokenAmount: tradeTokenAmount,
-          whirlpoolData: pool.getData(),
-          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-        }, Percentage.fromFraction(0, 100)),
-        /Results larger than U64/ // at getAmountUnfixedDelta for tokenA (too much tokenA is required)
+        /Results larger than U64/, // at getAmountUnfixedDelta for tokenA (too much tokenA is required)
       );
 
       await assert.rejects(
@@ -587,14 +690,34 @@ describe("splash pool tests", () => {
             tokenVaultA: pool.getData().tokenVaultA,
             tokenVaultB: pool.getData().tokenVaultB,
             whirlpool: pool.getAddress(),
-            tickArray0: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId).publicKey,
-            tickArray1: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId, -1).publicKey,
-            tickArray2: PDAUtil.getTickArrayFromTickIndex(0, poolTickSpacing, pool.getAddress(), testCtx.whirlpoolCtx.program.programId, -1).publicKey,
-            oracle: PDAUtil.getOracle(testCtx.whirlpoolCtx.program.programId, pool.getAddress()).publicKey,
-          })
+            tickArray0: PDAUtil.getTickArrayFromTickIndex(
+              0,
+              poolTickSpacing,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.program.programId,
+            ).publicKey,
+            tickArray1: PDAUtil.getTickArrayFromTickIndex(
+              0,
+              poolTickSpacing,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.program.programId,
+              -1,
+            ).publicKey,
+            tickArray2: PDAUtil.getTickArrayFromTickIndex(
+              0,
+              poolTickSpacing,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.program.programId,
+              -1,
+            ).publicKey,
+            oracle: PDAUtil.getOracle(
+              testCtx.whirlpoolCtx.program.programId,
+              pool.getAddress(),
+            ).publicKey,
+          }),
         ).buildAndExecute(),
-        /TokenMaxExceeded/ // at get_amount_unfixed_delta for tokenA (too much tokenA is required)
-      );  
+        /TokenMaxExceeded/, // at get_amount_unfixed_delta for tokenA (too much tokenA is required)
+      );
     });
   });
 
@@ -602,24 +725,24 @@ describe("splash pool tests", () => {
     const tickSpacingSplash128 = 32768 + 128;
 
     const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
-    await initTestPoolWithTokens(
-      testCtx.whirlpoolCtx,
-      tickSpacingSplash128,
-      PriceMath.tickIndexToSqrtPriceX64(0), // 1 B/A
-      new BN(2_000_000_000),
-    );
+      await initTestPoolWithTokens(
+        testCtx.whirlpoolCtx,
+        tickSpacingSplash128,
+        PriceMath.tickIndexToSqrtPriceX64(0), // 1 B/A
+        new BN(2_000_000_000),
+      );
 
-    const pool = await testCtx.whirlpoolClient.getPool(
-      whirlpoolPda.publicKey,
-    );
+    const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
 
     // [-2,894,848   ][0            ][
     await (await pool.initTickArrayForTicks([
       // SplashPool has only 2 TickArrays for negative and positive ticks
-      -1, +1
+      -1, +1,
     ]))!.buildAndExecute();
 
-    const fullRange = TickUtil.getFullRangeTickIndex(pool.getData().tickSpacing);
+    const fullRange = TickUtil.getFullRangeTickIndex(
+      pool.getData().tickSpacing,
+    );
 
     // create 2 position (small & large)
     const depositQuoteSmall = increaseLiquidityQuoteByInputToken(
@@ -631,7 +754,11 @@ describe("splash pool tests", () => {
       pool,
       NO_TOKEN_EXTENSION_CONTEXT,
     );
-    const small = await pool.openPosition(fullRange[0], fullRange[1], depositQuoteSmall);
+    const small = await pool.openPosition(
+      fullRange[0],
+      fullRange[1],
+      depositQuoteSmall,
+    );
     await small.tx.buildAndExecute();
 
     const depositQuoteLarge = increaseLiquidityQuoteByInputToken(
@@ -643,7 +770,11 @@ describe("splash pool tests", () => {
       pool,
       NO_TOKEN_EXTENSION_CONTEXT,
     );
-    const large = await pool.openPosition(fullRange[0], fullRange[1], depositQuoteLarge);
+    const large = await pool.openPosition(
+      fullRange[0],
+      fullRange[1],
+      depositQuoteLarge,
+    );
     await large.tx.buildAndExecute();
 
     await pool.refreshData();
@@ -671,7 +802,10 @@ describe("splash pool tests", () => {
     );
 
     // close large position
-    const largePosition = PDAUtil.getPosition(testCtx.whirlpoolCtx.program.programId, large.positionMint).publicKey;
+    const largePosition = PDAUtil.getPosition(
+      testCtx.whirlpoolCtx.program.programId,
+      large.positionMint,
+    ).publicKey;
 
     const closeTx = await pool.closePosition(
       largePosition,
@@ -714,14 +848,13 @@ describe("splash pool tests", () => {
 
     await pool.refreshData();
 
-    // input (partial) 
+    // input (partial)
     assert.ok(preA.sub(postA).lt(swapQuote.estimatedAmountIn));
     // output (partial)
     assert.ok(postB.sub(preB).lt(swapQuote.estimatedAmountOut));
     // hit min
     assert.ok(pool.getData().sqrtPrice.eq(MIN_SQRT_PRICE_BN));
   });
-
 });
 
 function powBN(base: number, exp: number): BN {

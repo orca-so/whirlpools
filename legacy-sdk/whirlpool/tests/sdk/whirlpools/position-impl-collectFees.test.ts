@@ -1,7 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
 import { MathUtil } from "@orca-so/common-sdk";
-import { getAssociatedTokenAddressSync, TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
+import {
+  getAssociatedTokenAddressSync,
+  TOKEN_2022_PROGRAM_ID,
+} from "@solana/spl-token";
 import * as assert from "assert";
 import Decimal from "decimal.js";
 import type { Whirlpool, WhirlpoolClient } from "../../../src";
@@ -14,7 +17,12 @@ import {
   toTx,
 } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
-import { MAX_U64, TEST_TOKEN_2022_PROGRAM_ID, TickSpacing, ZERO_BN } from "../../utils";
+import {
+  MAX_U64,
+  TEST_TOKEN_2022_PROGRAM_ID,
+  TickSpacing,
+  ZERO_BN,
+} from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { WhirlpoolTestFixture } from "../../utils/fixture";
 import { TokenExtensionUtil } from "../../../src/utils/public/token-extension-util";
@@ -253,18 +261,30 @@ describe("PositionImpl#collectFees()", () => {
       );
 
       // open TokenExtensions based position
-      const positionWithTokenExtensions = await pool.openPosition(tickLowerIndex, tickUpperIndex, {
-        liquidityAmount,
-        tokenMaxA: MAX_U64,
-        tokenMaxB: MAX_U64,
-      }, undefined, undefined, undefined, TOKEN_2022_PROGRAM_ID);
-      await positionWithTokenExtensions.tx.buildAndExecute();
-      const positionAddress = PDAUtil.getPosition(testCtx.whirlpoolCtx.program.programId, positionWithTokenExtensions.positionMint).publicKey;
-
-      const position = await testCtx.whirlpoolClient.getPosition(
-        positionAddress
+      const positionWithTokenExtensions = await pool.openPosition(
+        tickLowerIndex,
+        tickUpperIndex,
+        {
+          liquidityAmount,
+          tokenMaxA: MAX_U64,
+          tokenMaxB: MAX_U64,
+        },
+        undefined,
+        undefined,
+        undefined,
+        TOKEN_2022_PROGRAM_ID,
       );
-      assert.ok(position.getPositionMintTokenProgramId().equals(TOKEN_2022_PROGRAM_ID));
+      await positionWithTokenExtensions.tx.buildAndExecute();
+      const positionAddress = PDAUtil.getPosition(
+        testCtx.whirlpoolCtx.program.programId,
+        positionWithTokenExtensions.positionMint,
+      ).publicKey;
+
+      const position =
+        await testCtx.whirlpoolClient.getPosition(positionAddress);
+      assert.ok(
+        position.getPositionMintTokenProgramId().equals(TOKEN_2022_PROGRAM_ID),
+      );
 
       await accrueFees(fixture);
 
@@ -503,8 +523,8 @@ describe("PositionImpl#collectFees()", () => {
         )),
       }),
     )
-    .prependInstruction(useMaxCU())  // TransferHook require much CU
-    .buildAndExecute();
+      .prependInstruction(useMaxCU()) // TransferHook require much CU
+      .buildAndExecute();
 
     // Accrue fees in token B
     await toTx(
@@ -541,8 +561,8 @@ describe("PositionImpl#collectFees()", () => {
         )),
       }),
     )
-    .prependInstruction(useMaxCU())  // TransferHook require much CU
-    .buildAndExecute();
+      .prependInstruction(useMaxCU()) // TransferHook require much CU
+      .buildAndExecute();
 
     const poolData = await pool.refreshData();
     const positionData = await position.refreshData();

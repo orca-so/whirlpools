@@ -117,7 +117,7 @@ export async function fetchPositionsForOwner(
   const potentialTokens = [...tokenAccounts.value, ...token2022Accounts.value]
     .map((x) => ({
       ...decoder.decode(encoder.encode(x.account.data[0])),
-      owner: x.account.owner,
+      tokenProgram: x.account.owner,
     }))
     .filter((x) => x.amount === 1n);
 
@@ -162,7 +162,7 @@ export async function fetchPositionsForOwner(
     if (position.exists) {
       positionsOrBundles.push({
         ...position,
-        tokenProgram: token.owner,
+        tokenProgram: token.tokenProgram,
         isPositionBundle: false,
       });
     }
@@ -173,7 +173,7 @@ export async function fetchPositionsForOwner(
       positionsOrBundles.push({
         ...positionBundle,
         positions,
-        tokenProgram: token.owner,
+        tokenProgram: token.tokenProgram,
         isPositionBundle: true,
       });
     }

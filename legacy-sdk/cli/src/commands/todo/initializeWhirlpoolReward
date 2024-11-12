@@ -1,0 +1,38 @@
+import { Provider } from "@project-serum/anchor";
+import { OrcaNetwork, OrcaWhirlpoolClient } from "@orca-so/whirlpool-sdk";
+
+const SOLANA_NETWORK_URL = "https://api.devnet.solana.com";
+
+async function run() {
+  // @ts-expect-error this script doesn't work with latest anchor version
+  const provider = Provider.local(SOLANA_NETWORK_URL);
+
+  const rewardAuthority = "81dVYq6RgX6Jt1TEDWpLkYUMWesNq3GMSYLKaKsopUqi";
+  const poolAddress = "75dykYVKVj15kHEYiK4p9XEy8XpkrnfWMR8q3pbiC9Uo";
+  const rewardMint = "orcarKHSqC5CDDsGbho8GKvwExejWHxTqGzXgcewB9L";
+
+  const client = new OrcaWhirlpoolClient({
+    network: OrcaNetwork.DEVNET,
+  });
+
+  const { tx, rewardVault } = client.admin.getInitRewardTx({
+    provider,
+    rewardAuthority,
+    poolAddress,
+    rewardMint,
+    rewardIndex: 0,
+  });
+
+  const txId = await tx.buildAndExecute();
+
+  console.log("txId", txId);
+  console.log("rewardVault", rewardVault.toBase58());
+}
+
+run()
+  .then(() => {
+    console.log("Success");
+  })
+  .catch((e) => {
+    console.error(e);
+  });

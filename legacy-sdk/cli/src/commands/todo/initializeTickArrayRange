@@ -1,0 +1,379 @@
+import type { PDA} from "@orca-so/common-sdk";
+import { TransactionBuilder } from "@orca-so/common-sdk";
+import type {
+  AccountFetcher,
+  WhirlpoolData} from "@orca-so/whirlpools-sdk";
+import {
+  MAX_TICK_INDEX,
+  MIN_TICK_INDEX,
+  ORCA_WHIRLPOOL_PROGRAM_ID,
+  PriceMath,
+  TickArrayUtil,
+  TickUtil,
+  TICK_ARRAY_SIZE,
+  WhirlpoolContext,
+  WhirlpoolIx,
+} from "@orca-so/whirlpools-sdk";
+import NodeWallet from "@project-serum/anchor/dist/cjs/nodewallet";
+import type { MintInfo } from "@solana/spl-token";
+import type { Connection, PublicKey } from "@solana/web3.js";
+import Decimal from "decimal.js";
+import prompts from "prompts";
+import { getConnectionFromEnv } from "../connection";
+import { getOwnerKeypair } from "../loadAccounts";
+import { promptForNetwork, promptForWhirlpool } from "./whirlpool-script-utils";
+const SOL_9_DEC = new Decimal(10).pow(9);
+const TICK_ARRAYS_TO_FETCH_PER_TX = 5;
+
+async function run() {
+  const owner = await getOwnerKeypair();
+  const network = await promptForNetwork();
+  const connection = await getConnectionFromEnv(network);
+  console.log(`Connected to RPC - ${connection.rpcEndpoint}`);
+
+  const ctx = WhirlpoolContext.from(
+    connection,
+    new NodeWallet(owner),
+    ORCA_WHIRLPOOL_PROGRAM_ID,
+  );
+  const fetcher = ctx.fetcher;
+
+  // Derive Whirlpool address
+  const { key: whirlpoolAddr, tokenKeyInverted } = await promptForWhirlpool();
+  if (tokenKeyInverted) {
+    console.log(`NOTE: tokenMintA & B order had been inverted.`);
+  }
+  console.log(`Fetching Whirlpool at address - ${whirlpoolAddr.toBase58()}`);
+  console.log(`...`);
+
+  const acct = await fetchWhirlpoolAccounts(fetcher, whirlpoolAddr);
+
+  const { lowerTick, upperTick } = await promptForTickRange(acct);
+
+  console.log(
+    `Script will initialize arrays range [${lowerTick} -> ${upperTick}] (start-indices). Current tick is at ${
+      acct.data.tickCurrentIndex
+    } / price - $${PriceMath.sqrtPriceX64ToPrice(
+      acct.data.sqrtPrice,
+      acct.tokenA.decimals,
+      acct.tokenB.decimals,
+    ).toDecimalPlaces(5)}`,
+  );
+  console.log(`Fetching tick-array data...`);
+  const tickArrayInfo = await getTickArrays(
+    fetcher,
+    connection,
+    whirlpoolAddr,
+    acct,
+    lowerTick,
+    upperTick,
+  );
+
+  console.log(``);
+  console.log(
+    `There are ${tickArrayInfo.numTickArraysInRange} arrays in range, with ${tickArrayInfo.numTickArraysToInit} arrays that needs to be initialized.`,
+  );
+
+  if (tickArrayInfo.numTickArraysToInit > 0) {
+    await checkWalletBalance(
+      connection,
+      owner.publicKey,
+      tickArrayInfo.costToInit,
+    );
+    await executeInitialization(ctx, whirlpoolAddr, tickArrayInfo.pdasToInit);
+  }
+
+  console.log("Complete.");
+}
+
+async function executeInitialization(
+  ctx: WhirlpoolContext,
+  addr: PublicKey,
+  arraysToInit: { startIndex: number; pda: PDA }[],
+) {
+  const response = await prompts([
+    {
+      type: "select",
+      name: "execute",
+      message: "Execute?",
+      choices: [
+        { title: "yes", value: "yes" },
+        { title: "no", value: "no" },
+      ],
+    },
+  ]);
+
+  if (response.execute === "no") {
+    return;
+  }
+
+  let start = 0;
+  let end = TICK_ARRAYS_TO_FETCH_PER_TX;
+
+  do {
+    const chunk = arraysToInit.slice(start, end);
+
+    const startIndicies = chunk.map((val) => val.startIndex);
+    console.log(
+      `Executing initializations for array w/ start indices [${startIndicies}]...`,
+    );
+    const txBuilder = new TransactionBuilder(ctx.connection, ctx.wallet);
+    for (const tickArray of chunk) {
+      txBuilder.addInstruction(
+        WhirlpoolIx.initTickArrayIx(ctx.program, {
+          startTick: tickArray.startIndex,
+          tickArrayPda: tickArray.pda,
+          whirlpool: addr,
+          funder: ctx.wallet.publicKey,
+        }),
+      );
+    }
+
+    const txId = await txBuilder.buildAndExecute();
+    console.log(`Tx executed at ${txId}`);
+
+    start = end;
+    end = end + TICK_ARRAYS_TO_FETCH_PER_TX;
+  } while (start < arraysToInit.length);
+}
+
+async function checkWalletBalance(
+  connection: Connection,
+  ownerKey: PublicKey,
+  costToInit: Decimal,
+) {
+  const walletBalance = new Decimal(await connection.getBalance(ownerKey)).div(
+    SOL_9_DEC,
+  );
+  console.log(
+    `Wallet balance (${ownerKey.toBase58()}) - ${walletBalance} SOL. Est. cost - ${costToInit} SOL`,
+  );
+  if (walletBalance.lessThan(costToInit)) {
+    throw new Error("Wallet has insufficent SOL to complete this operation.");
+  }
+}
+
+async function getTickArrays(
+  fetcher: AccountFetcher,
+  connection: Connection,
+  whirlpool: PublicKey,
+  acct: WhirlpoolAccounts,
+  lowerTick: number,
+  upperTick: number,
+) {
+  const lowerStartTick = TickUtil.getStartTickIndex(
+    lowerTick,
+    acct.data.tickSpacing,
+  );
+  const upperStartTick = TickUtil.getStartTickIndex(
+    upperTick,
+    acct.data.tickSpacing,
+  );
+  const numTickArraysInRange =
+    Math.ceil(
+      (upperStartTick - lowerStartTick) /
+        acct.data.tickSpacing /
+        TICK_ARRAY_SIZE,
+    ) + 1;
+  const arrayStartIndicies = [...Array(numTickArraysInRange).keys()].map(
+    (index) => lowerStartTick + index * acct.data.tickSpacing * TICK_ARRAY_SIZE,
+  );
+
+  const initArrayKeys = await TickArrayUtil.getUninitializedArraysPDAs(
+    arrayStartIndicies,
+    ORCA_WHIRLPOOL_PROGRAM_ID,
+    whirlpool,
+    acct.data.tickSpacing,
+    fetcher,
+    true,
+  );
+
+  // TickArray = Tick.LEN(113) * Array_SIZE (88) + 36 + 8 = 9988
+  const rentExemptPerAcct =
+    await connection.getMinimumBalanceForRentExemption(9988);
+
+  const costToInit = new Decimal(initArrayKeys.length * rentExemptPerAcct).div(
+    SOL_9_DEC,
+  );
+
+  return {
+    numTickArraysInRange,
+    numTickArraysToInit: initArrayKeys.length,
+    pdasToInit: initArrayKeys,
+    costToInit,
+  };
+}
+
+type WhirlpoolAccounts = {
+  tokenMintA: PublicKey;
+  tokenMintB: PublicKey;
+  tokenA: MintInfo;
+  tokenB: MintInfo;
+  data: WhirlpoolData;
+};
+async function fetchWhirlpoolAccounts(
+  fetcher: AccountFetcher,
+  whirlpoolAddr: PublicKey,
+): Promise<WhirlpoolAccounts> {
+  const pool = await fetcher.getPool(whirlpoolAddr, true);
+  if (!pool) {
+    throw new Error(
+      `Unable to fetch Whirlpool at addr - ${whirlpoolAddr.toBase58()}`,
+    );
+  }
+  const { tokenMintA, tokenMintB } = pool;
+  const [tokenA, tokenB] = await fetcher.listMintInfos(
+    [tokenMintA, tokenMintB],
+    true,
+  );
+
+  if (!tokenA) {
+    throw new Error(`Unable to fetch token - ${tokenMintA.toBase58()}`);
+  }
+
+  if (!tokenB) {
+    throw new Error(`Unable to fetch token - ${tokenMintB.toBase58()}`);
+  }
+
+  return {
+    tokenMintA,
+    tokenMintB,
+    tokenA,
+    tokenB,
+    data: pool,
+  };
+}
+
+type PriceRangeResponse = {
+  lowerTick: number;
+  upperTick: number;
+};
+async function promptForTickRange(
+  acct: WhirlpoolAccounts,
+): Promise<PriceRangeResponse> {
+  const provideTypeResponse = await prompts([
+    {
+      type: "select",
+      name: "provideType",
+      message: "How would you like to provide the price range?",
+      choices: [
+        { title: "Full Range", value: "fullRange" },
+        { title: "By Price", value: "price" },
+        { title: "By tick", value: "tick" },
+        { title: "Current Price", value: "currentPrice" },
+      ],
+    },
+  ]);
+
+  let lowerTick = 0,
+    upperTick = 0;
+  switch (provideTypeResponse.provideType) {
+    case "fullRange": {
+      lowerTick = MIN_TICK_INDEX;
+      upperTick = MAX_TICK_INDEX;
+      break;
+    }
+    case "price": {
+      const priceResponse = await prompts([
+        {
+          type: "number",
+          name: "lowerPrice",
+          message: `Lower Price for ${acct.tokenMintB.toBase58()}/${acct.tokenMintB.toBase58()}`,
+        },
+        {
+          type: "number",
+          name: "upperPrice",
+          message: `Upper Price for ${acct.tokenMintB.toBase58()}/${acct.tokenMintB.toBase58()}`,
+        },
+      ]);
+      lowerTick = PriceMath.priceToTickIndex(
+        new Decimal(priceResponse.lowerPrice),
+        acct.tokenA.decimals,
+        acct.tokenB.decimals,
+      );
+      upperTick = PriceMath.priceToTickIndex(
+        new Decimal(priceResponse.upperPrice),
+        acct.tokenA.decimals,
+        acct.tokenB.decimals,
+      );
+      break;
+    }
+    case "tick": {
+      const tickResponse = await prompts([
+        {
+          type: "text",
+          name: "lowerTick",
+          message: `Lower Tick for ${acct.tokenMintB.toBase58()}/${acct.tokenMintB.toBase58()}`,
+        },
+        {
+          type: "text",
+          name: "upperTick",
+          message: `Upper Tick for ${acct.tokenMintB.toBase58()}/${acct.tokenMintB.toBase58()}`,
+        },
+      ]);
+
+      lowerTick = new Decimal(tickResponse.lowerTick)
+        .toDecimalPlaces(0)
+        .toNumber();
+      upperTick = new Decimal(tickResponse.upperTick)
+        .toDecimalPlaces(0)
+        .toNumber();
+      break;
+    }
+    case "currentPrice": {
+      const currPriceResponse = await prompts([
+        {
+          type: "number",
+          name: "expandBy",
+          message: `Current price is ${PriceMath.sqrtPriceX64ToPrice(
+            acct.data.sqrtPrice,
+            acct.tokenA.decimals,
+            acct.tokenB.decimals,
+          ).toDecimalPlaces(9)} / tick - ${
+            acct.data.tickCurrentIndex
+          }. How many tick arrays on each direction would you like to initialize?`,
+        },
+      ]);
+      const currTick = TickUtil.getInitializableTickIndex(
+        acct.data.tickCurrentIndex,
+        acct.data.tickSpacing,
+      );
+      const expandByTick =
+        currPriceResponse.expandBy * acct.data.tickSpacing * TICK_ARRAY_SIZE;
+      lowerTick = currTick - expandByTick;
+      upperTick = currTick + expandByTick;
+      break;
+    }
+  }
+
+  if (lowerTick < MIN_TICK_INDEX || lowerTick > MAX_TICK_INDEX) {
+    throw new Error(
+      `Lower tick - ${lowerTick} is lower than MIN allowed [(${MIN_TICK_INDEX}, ${MAX_TICK_INDEX}]`,
+    );
+  }
+
+  if (upperTick < MIN_TICK_INDEX || upperTick > MAX_TICK_INDEX) {
+    throw new Error(
+      `Upper tick - ${lowerTick} is not within bounds [${MIN_TICK_INDEX}, ${MAX_TICK_INDEX}]`,
+    );
+  }
+
+  if (lowerTick >= upperTick) {
+    throw new Error(
+      `Upper tick ${upperTick} must be higher than lower tick - ${lowerTick}`,
+    );
+  }
+
+  return {
+    lowerTick: TickUtil.getInitializableTickIndex(
+      lowerTick,
+      acct.data.tickSpacing,
+    ),
+    upperTick: TickUtil.getInitializableTickIndex(
+      upperTick,
+      acct.data.tickSpacing,
+    ),
+  };
+}
+
+run();

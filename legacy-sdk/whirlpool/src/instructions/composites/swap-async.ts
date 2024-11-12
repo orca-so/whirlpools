@@ -33,7 +33,8 @@ export async function swapAsync(
   _opts: WhirlpoolAccountFetchOptions,
 ): Promise<TransactionBuilder> {
   const { wallet, whirlpool, swapInput } = params;
-  const { aToB, amount, otherAmountThreshold, amountSpecifiedIsInput } = swapInput;
+  const { aToB, amount, otherAmountThreshold, amountSpecifiedIsInput } =
+    swapInput;
   const txBuilder = new TransactionBuilder(
     ctx.connection,
     ctx.wallet,
@@ -60,8 +61,14 @@ export async function swapAsync(
     ctx.connection,
     wallet,
     [
-      { tokenMint: data.tokenMintA, wrappedSolAmountIn: aToB ? maxInputAmount : ZERO },
-      { tokenMint: data.tokenMintB, wrappedSolAmountIn: !aToB ? maxInputAmount : ZERO },
+      {
+        tokenMint: data.tokenMintA,
+        wrappedSolAmountIn: aToB ? maxInputAmount : ZERO,
+      },
+      {
+        tokenMint: data.tokenMintB,
+        wrappedSolAmountIn: !aToB ? maxInputAmount : ZERO,
+      },
     ],
     () => ctx.fetcher.getAccountRentExempt(),
     undefined, // use default

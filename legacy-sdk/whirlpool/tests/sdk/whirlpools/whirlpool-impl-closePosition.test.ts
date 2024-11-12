@@ -93,8 +93,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
         tickArray2: tickArrayPda.publicKey,
       })
     )
-    .prependInstruction(useMaxCU()) // TransferHook require much CU
-    .buildAndExecute();
+      .prependInstruction(useMaxCU()) // TransferHook require much CU
+      .buildAndExecute();
 
     // Accrue fees in token B
     await (
@@ -109,8 +109,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
         tickArray2: tickArrayPda.publicKey,
       })
     )
-    .prependInstruction(useMaxCU())  // TransferHook require much CU
-    .buildAndExecute();
+      .prependInstruction(useMaxCU()) // TransferHook require much CU
+      .buildAndExecute();
 
     // accrue rewards
     await sleep(2000);
@@ -146,8 +146,8 @@ describe("WhirlpoolImpl#closePosition()", () => {
 
     const tx = await position.decreaseLiquidity(liquidityCollectedQuote);
 
-     // TransferHook require much CU
-     tx.prependInstruction(useMaxCU());
+    // TransferHook require much CU
+    tx.prependInstruction(useMaxCU());
 
     await tx.buildAndExecute();
   }
@@ -162,9 +162,11 @@ describe("WhirlpoolImpl#closePosition()", () => {
       IGNORE_CACHE,
     );
     const hasL = !position.getData().liquidity.isZero();
-    await (await position.collectFees(hasL))
-    .prependInstruction(useMaxCU()) // TransferHook require much CU
-    .buildAndExecute();
+    await (
+      await position.collectFees(hasL)
+    )
+      .prependInstruction(useMaxCU()) // TransferHook require much CU
+      .buildAndExecute();
   }
 
   async function testClosePosition(

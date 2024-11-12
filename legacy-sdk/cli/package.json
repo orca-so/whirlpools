@@ -15,7 +15,7 @@
     "@solana/spl-token": "0.4.1",
     "@solana/web3.js": "^1.90.0",
     "@types/bn.js": "^5.1.0",
-    "bs58": "^5.0.0",
+    "bs58": "^6.0.0",
     "decimal.js": "^10.4.3",
     "js-convert-case": "^4.2.0",
     "prompts": "^2.4.2"

@@ -59,13 +59,10 @@ export async function getTestContext(): Promise<ProgramTestContext> {
         ]
       ],
     );
+
     const configAddress = await setupConfigAndFeeTiers();
     setWhirlpoolsConfig(configAddress);
   }
-
-  const rent = new Rent(3480n, 2, 100)
-
-  _testContext.setRent(rent);
   return _testContext;
 }
 
@@ -240,14 +237,6 @@ async function mockTransport<T>(
         slotsInEpoch: 32n,
         transactionCount: 0n,
       });
-    // case "getBalance":
-    //   assert(typeof config.payload.params[0] === "string");
-    //   const account = await getAccountData(
-    //     config.payload.params[0],
-    //     config.payload.params[1],
-    //   );
-    //   assert(account != null && typeof account === "object" && "lamports" in account);
-    //   return getResponse<T>(account.lamports);
   }
   return Promise.reject(
     `Method ${config.payload.method} not supported in mock transport`,

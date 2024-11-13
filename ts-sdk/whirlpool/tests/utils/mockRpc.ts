@@ -55,7 +55,7 @@ export async function getTestContext(): Promise<ProgramTestContext> {
             false,
             0n,
           ),
-        ]
+        ],
       ],
     );
 

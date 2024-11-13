@@ -4,7 +4,6 @@ import type {
   VariableSizeDecoder,
 } from "@solana/web3.js";
 import {
-  address,
   appendTransactionMessageInstructions,
   assertIsAddress,
   createSolanaRpcFromTransport,
@@ -25,7 +24,7 @@ import {
 } from "@solana/web3.js";
 import assert from "assert";
 import type { ProgramTestContext } from "solana-bankrun/dist/internal";
-import { Account, BanksClient, Rent, startAnchor } from "solana-bankrun/dist/internal";
+import { Account, startAnchor } from "solana-bankrun/dist/internal";
 import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "@orca-so/whirlpools-client";
 import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";

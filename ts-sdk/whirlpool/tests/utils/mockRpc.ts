@@ -25,7 +25,7 @@ import {
 } from "@solana/web3.js";
 import assert from "assert";
 import type { ProgramTestContext } from "solana-bankrun/dist/internal";
-import { Account, BanksClient, startAnchor } from "solana-bankrun/dist/internal";
+import { Account, BanksClient, Rent, startAnchor } from "solana-bankrun/dist/internal";
 import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "@orca-so/whirlpools-client";
 import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
@@ -56,25 +56,16 @@ export async function getTestContext(): Promise<ProgramTestContext> {
             false,
             0n,
           ),
-        ],
-        [
-          toBytes(address("SysvarFees111111111111111111111111111111111")),
-          new Account(
-            BigInt(946600),
-            new Uint8Array(8),
-            toBytes(address("Sysvar1111111111111111111111111111111111111")),
-            false,
-            0n,
-          )
         ]
       ],
     );
-
     const configAddress = await setupConfigAndFeeTiers();
     setWhirlpoolsConfig(configAddress);
   }
-  // Object.defineProperty(_testContext.genesisConfig.feeRateGovernor, 'lamportsPerSignature', { value: BigInt(0) });
-  // _testContext.banksClient.getFeeForMessage = async () => 0n;
+
+  const rent = new Rent(3480n, 2, 100)
+
+  _testContext.setRent(rent);
   return _testContext;
 }
 

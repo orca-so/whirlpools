@@ -17,7 +17,7 @@ import type {
   Rpc,
   TransactionSigner,
 } from "@solana/web3.js";
-import { generateKeyPairSigner } from "@solana/web3.js";
+import { generateKeyPairSigner, lamports } from "@solana/web3.js";
 import {
   DEFAULT_ADDRESS,
   FUNDER,
@@ -30,7 +30,8 @@ import {
   priceToSqrtPrice,
   sqrtPriceToTickIndex,
 } from "@orca-so/whirlpools-core";
-import { fetchAllMint, getTokenSize } from "@solana-program/token-2022";
+import { fetchAllMint, getTokenSize, TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
+import { TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
 import assert from "assert";
 import { getAccountExtensions, orderMints } from "./token";
 
@@ -149,7 +150,7 @@ export async function createConcentratedLiquidityPoolInstructions(
     "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)",
   );
   const instructions: IInstruction[] = [];
-  let stateSpace = 0;
+  let stateSpaces = [];
 
   // Since TE mint data is an extension of T mint data, we can use the same fetch function
   const [mintA, mintB] = await fetchAllMint(rpc, [tokenMintA, tokenMintB]);
@@ -204,9 +205,17 @@ export async function createConcentratedLiquidityPoolInstructions(
     }),
   );
 
-  stateSpace += getTokenSize(getAccountExtensions(mintA.data));
-  stateSpace += getTokenSize(getAccountExtensions(mintB.data));
-  stateSpace += getWhirlpoolSize();
+  stateSpaces.push(
+    tokenProgramA === TOKEN_2022_PROGRAM_ADDRESS
+      ? getTokenSize(getAccountExtensions(mintA.data))
+      : getTokenSize()
+  );
+  stateSpaces.push(
+    tokenProgramB === TOKEN_2022_PROGRAM_ADDRESS
+      ? getTokenSize(getAccountExtensions(mintB.data))
+      : getTokenSize()
+  );
+  stateSpaces.push(getWhirlpoolSize());
 
   const fullRange = getFullRangeTickIndexes(tickSpacing);
   const lowerTickIndex = getTickArrayStartTickIndex(
@@ -242,12 +251,17 @@ export async function createConcentratedLiquidityPoolInstructions(
         startTickIndex: tickArrayIndexes[i],
       }),
     );
-    stateSpace += getTickArraySize();
+    stateSpaces.push(getTickArraySize());
   }
 
-  const nonRefundableRent = await rpc
-    .getMinimumBalanceForRentExemption(BigInt(stateSpace))
-    .send();
+  const nonRefundableRents: Lamports[] = await Promise.all(
+    stateSpaces.map(async (space) => {
+      const rentExemption = await rpc.getMinimumBalanceForRentExemption(BigInt(space)).send();
+      return rentExemption;
+    })
+  );
+  
+  const nonRefundableRent = lamports(nonRefundableRents.reduce((a, b) => a + b, 0n));
 
   return {
     instructions,

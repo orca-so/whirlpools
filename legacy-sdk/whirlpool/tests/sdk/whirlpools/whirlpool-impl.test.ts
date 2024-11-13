@@ -912,8 +912,8 @@ describe("whirlpool-impl", () => {
             )),
           }),
         )
-        .prependInstruction(useMaxCU())  // TransferHook require much CU
-        .buildAndExecute();
+          .prependInstruction(useMaxCU()) // TransferHook require much CU
+          .buildAndExecute();
 
         // Accrue fees in token B
         await toTx(
@@ -950,8 +950,8 @@ describe("whirlpool-impl", () => {
             )),
           }),
         )
-        .prependInstruction(useMaxCU())  // TransferHook require much CU
-        .buildAndExecute();
+          .prependInstruction(useMaxCU()) // TransferHook require much CU
+          .buildAndExecute();
 
         // accrue rewards
         // closePosition does not attempt to create an ATA unless reward has accumulated.
@@ -1109,159 +1109,172 @@ describe("whirlpool-impl", () => {
     const withMetadataVariations = [true, false];
 
     withMetadataVariations.forEach((withMetadata) => {
-      it(withMetadata ? "openPositionWithMetadata" : "openPosition", async () => {
-        const funderKeypair = anchor.web3.Keypair.generate();
-        await systemTransferTx(
-          provider,
-          funderKeypair.publicKey,
-          ONE_SOL,
-        ).buildAndExecute();
+      it(
+        withMetadata ? "openPositionWithMetadata" : "openPosition",
+        async () => {
+          const funderKeypair = anchor.web3.Keypair.generate();
+          await systemTransferTx(
+            provider,
+            funderKeypair.publicKey,
+            ONE_SOL,
+          ).buildAndExecute();
 
-        const { poolInitInfo } = await initTestPool(
-          ctx,
-          TickSpacing.Standard,
-          PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
-        );
-        const pool = await client.getPool(poolInitInfo.whirlpoolPda.publicKey);
-
-        // Verify token mint info is correct
-        const tokenAInfo = pool.getTokenAInfo();
-        const tokenBInfo = pool.getTokenBInfo();
-        assert.ok(tokenAInfo.mint.equals(poolInitInfo.tokenMintA));
-        assert.ok(tokenBInfo.mint.equals(poolInitInfo.tokenMintB));
-
-        // Create and mint tokens in this wallet
-        const mintedTokenAmount = 150_000_000;
-        const [userTokenAAccount, userTokenBAccount] =
-          await mintTokensToTestAccount(
-            ctx.provider,
-            tokenAInfo.mint,
-            mintedTokenAmount,
-            tokenBInfo.mint,
-            mintedTokenAmount,
+          const { poolInitInfo } = await initTestPool(
+            ctx,
+            TickSpacing.Standard,
+            PriceMath.priceToSqrtPriceX64(new Decimal(100), 6, 6),
+          );
+          const pool = await client.getPool(
+            poolInitInfo.whirlpoolPda.publicKey,
           );
 
-        // Open a position with no tick arrays initialized.
-        const lowerPrice = new Decimal(96);
-        const upperPrice = new Decimal(101);
-        const poolData = pool.getData();
-        const tokenADecimal = tokenAInfo.decimals;
-        const tokenBDecimal = tokenBInfo.decimals;
+          // Verify token mint info is correct
+          const tokenAInfo = pool.getTokenAInfo();
+          const tokenBInfo = pool.getTokenBInfo();
+          assert.ok(tokenAInfo.mint.equals(poolInitInfo.tokenMintA));
+          assert.ok(tokenBInfo.mint.equals(poolInitInfo.tokenMintB));
 
-        const tickLower = TickUtil.getInitializableTickIndex(
-          PriceMath.priceToTickIndex(lowerPrice, tokenADecimal, tokenBDecimal),
-          poolData.tickSpacing,
-        );
-        const tickUpper = TickUtil.getInitializableTickIndex(
-          PriceMath.priceToTickIndex(upperPrice, tokenADecimal, tokenBDecimal),
-          poolData.tickSpacing,
-        );
+          // Create and mint tokens in this wallet
+          const mintedTokenAmount = 150_000_000;
+          const [userTokenAAccount, userTokenBAccount] =
+            await mintTokensToTestAccount(
+              ctx.provider,
+              tokenAInfo.mint,
+              mintedTokenAmount,
+              tokenBInfo.mint,
+              mintedTokenAmount,
+            );
 
-        const inputTokenMint = poolData.tokenMintA;
-        const quote = increaseLiquidityQuoteByInputToken(
-          inputTokenMint,
-          new Decimal(50),
-          tickLower,
-          tickUpper,
-          Percentage.fromFraction(1, 100),
-          pool,
-          await TokenExtensionUtil.buildTokenExtensionContext(
-            fetcher,
-            poolData,
-            IGNORE_CACHE,
-          ),
-        );
+          // Open a position with no tick arrays initialized.
+          const lowerPrice = new Decimal(96);
+          const upperPrice = new Decimal(101);
+          const poolData = pool.getData();
+          const tokenADecimal = tokenAInfo.decimals;
+          const tokenBDecimal = tokenBInfo.decimals;
 
-        // [Action] Initialize Tick Arrays
-        const initTickArrayTx = (
-          await pool.initTickArrayForTicks(
-            [tickLower, tickUpper],
+          const tickLower = TickUtil.getInitializableTickIndex(
+            PriceMath.priceToTickIndex(
+              lowerPrice,
+              tokenADecimal,
+              tokenBDecimal,
+            ),
+            poolData.tickSpacing,
+          );
+          const tickUpper = TickUtil.getInitializableTickIndex(
+            PriceMath.priceToTickIndex(
+              upperPrice,
+              tokenADecimal,
+              tokenBDecimal,
+            ),
+            poolData.tickSpacing,
+          );
+
+          const inputTokenMint = poolData.tokenMintA;
+          const quote = increaseLiquidityQuoteByInputToken(
+            inputTokenMint,
+            new Decimal(50),
+            tickLower,
+            tickUpper,
+            Percentage.fromFraction(1, 100),
+            pool,
+            await TokenExtensionUtil.buildTokenExtensionContext(
+              fetcher,
+              poolData,
+              IGNORE_CACHE,
+            ),
+          );
+
+          // [Action] Initialize Tick Arrays
+          const initTickArrayTx = (
+            await pool.initTickArrayForTicks(
+              [tickLower, tickUpper],
+              funderKeypair.publicKey,
+            )
+          )?.addSigner(funderKeypair);
+
+          assert.ok(!!initTickArrayTx);
+
+          // [Action] Open Position (and increase L)
+          const openMethod = withMetadata
+            ? pool.openPositionWithMetadata.bind(pool)
+            : pool.openPosition.bind(pool);
+          const { positionMint, tx: openIx } = await openMethod(
+            tickLower,
+            tickUpper,
+            quote,
+            ctx.wallet.publicKey,
             funderKeypair.publicKey,
-          )
-        )?.addSigner(funderKeypair);
+            undefined,
+            TOKEN_2022_PROGRAM_ID,
+          );
+          openIx.addSigner(funderKeypair);
 
-        assert.ok(!!initTickArrayTx);
+          await initTickArrayTx.buildAndExecute();
+          await openIx.buildAndExecute();
 
-        // [Action] Open Position (and increase L)
-        const openMethod = withMetadata
-          ? pool.openPositionWithMetadata.bind(pool)
-          : pool.openPosition.bind(pool);
-        const { positionMint, tx: openIx } = await openMethod(
-          tickLower,
-          tickUpper,
-          quote,
-          ctx.wallet.publicKey,
-          funderKeypair.publicKey,
-          undefined,
-          TOKEN_2022_PROGRAM_ID,
-        );
-        openIx.addSigner(funderKeypair);
+          // Verify position exists and numbers fit input parameters
+          const positionAddress = PDAUtil.getPosition(
+            ctx.program.programId,
+            positionMint,
+          ).publicKey;
+          const position = await client.getPosition(
+            positionAddress,
+            IGNORE_CACHE,
+          );
+          const positionData = position.getData();
 
-        await initTickArrayTx.buildAndExecute();
-        await openIx.buildAndExecute();
+          const tickLowerIndex = TickUtil.getInitializableTickIndex(
+            PriceMath.priceToTickIndex(
+              lowerPrice,
+              tokenAInfo.decimals,
+              tokenBInfo.decimals,
+            ),
+            poolData.tickSpacing,
+          );
+          const tickUpperIndex = TickUtil.getInitializableTickIndex(
+            PriceMath.priceToTickIndex(
+              upperPrice,
+              tokenAInfo.decimals,
+              tokenBInfo.decimals,
+            ),
+            poolData.tickSpacing,
+          );
+          assert.ok(positionData.liquidity.eq(quote.liquidityAmount));
+          assert.ok(positionData.tickLowerIndex === tickLowerIndex);
+          assert.ok(positionData.tickUpperIndex === tickUpperIndex);
+          assert.ok(positionData.positionMint.equals(positionMint));
+          assert.ok(
+            positionData.whirlpool.equals(poolInitInfo.whirlpoolPda.publicKey),
+          );
 
-        // Verify position exists and numbers fit input parameters
-        const positionAddress = PDAUtil.getPosition(
-          ctx.program.programId,
-          positionMint,
-        ).publicKey;
-        const position = await client.getPosition(
-          positionAddress,
-          IGNORE_CACHE,
-        );
-        const positionData = position.getData();
+          // [Action] Close Position
+          const txs = await pool.closePosition(
+            positionAddress,
+            Percentage.fromFraction(1, 100),
+          );
 
-        const tickLowerIndex = TickUtil.getInitializableTickIndex(
-          PriceMath.priceToTickIndex(
-            lowerPrice,
-            tokenAInfo.decimals,
-            tokenBInfo.decimals,
-          ),
-          poolData.tickSpacing,
-        );
-        const tickUpperIndex = TickUtil.getInitializableTickIndex(
-          PriceMath.priceToTickIndex(
-            upperPrice,
-            tokenAInfo.decimals,
-            tokenBInfo.decimals,
-          ),
-          poolData.tickSpacing,
-        );
-        assert.ok(positionData.liquidity.eq(quote.liquidityAmount));
-        assert.ok(positionData.tickLowerIndex === tickLowerIndex);
-        assert.ok(positionData.tickUpperIndex === tickUpperIndex);
-        assert.ok(positionData.positionMint.equals(positionMint));
-        assert.ok(
-          positionData.whirlpool.equals(poolInitInfo.whirlpoolPda.publicKey),
-        );
+          for (const tx of txs) {
+            await tx.buildAndExecute();
+          }
 
-        // [Action] Close Position
-        const txs = await pool.closePosition(
-          positionAddress,
-          Percentage.fromFraction(1, 100),
-        );
+          // Verify position is closed and owner wallet has the tokens back
+          const postClosePosition = await fetcher.getPosition(
+            positionAddress,
+            IGNORE_CACHE,
+          );
+          assert.ok(postClosePosition === null);
 
-        for (const tx of txs) {
-          await tx.buildAndExecute();
-        }
-
-        // Verify position is closed and owner wallet has the tokens back
-        const postClosePosition = await fetcher.getPosition(
-          positionAddress,
-          IGNORE_CACHE,
-        );
-        assert.ok(postClosePosition === null);
-
-        // TODO: we are leaking 1 decimal place of token?
-        assert.equal(
-          await getTokenBalance(ctx.provider, userTokenAAccount),
-          mintedTokenAmount - 1,
-        );
-        assert.equal(
-          await getTokenBalance(ctx.provider, userTokenBAccount),
-          mintedTokenAmount - 1,
-        );
-      });
+          // TODO: we are leaking 1 decimal place of token?
+          assert.equal(
+            await getTokenBalance(ctx.provider, userTokenAAccount),
+            mintedTokenAmount - 1,
+          );
+          assert.equal(
+            await getTokenBalance(ctx.provider, userTokenBAccount),
+            mintedTokenAmount - 1,
+          );
+        },
+      );
     });
   });
 

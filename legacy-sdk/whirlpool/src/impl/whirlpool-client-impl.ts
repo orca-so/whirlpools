@@ -160,7 +160,10 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
       );
     }
 
-    const positionMint = await this.ctx.fetcher.getMintInfo(account.positionMint, opts);
+    const positionMint = await this.ctx.fetcher.getMintInfo(
+      account.positionMint,
+      opts,
+    );
     if (!positionMint) {
       throw new Error(
         `Unable to fetch Mint for Position at address at ${positionAddress}`,

@@ -3,9 +3,7 @@ import { BN } from "@coral-xyz/anchor";
 import type NodeWallet from "@coral-xyz/anchor/dist/cjs/nodewallet";
 import { Percentage } from "@orca-so/common-sdk";
 import * as assert from "assert";
-import type {
-  WhirlpoolData,
-} from "../../../../src";
+import type { WhirlpoolData } from "../../../../src";
 import {
   PDAUtil,
   swapQuoteWithParams,
@@ -15,7 +13,12 @@ import {
   WhirlpoolIx,
 } from "../../../../src";
 import { IGNORE_CACHE } from "../../../../src/network/public/fetcher";
-import { getTokenBalance, sleep, TEST_TOKEN_2022_PROGRAM_ID, TickSpacing } from "../../../utils";
+import {
+  getTokenBalance,
+  sleep,
+  TEST_TOKEN_2022_PROGRAM_ID,
+  TickSpacing,
+} from "../../../utils";
 import { defaultConfirmOptions } from "../../../utils/const";
 import {
   fundPositionsV2,
@@ -24,7 +27,10 @@ import {
 import type { PublicKey } from "@solana/web3.js";
 import { initTickArrayRange } from "../../../utils/init-utils";
 import { TokenExtensionUtil } from "../../../../src/utils/public/token-extension-util";
-import { amountToUiAmount, updateRateInterestBearingMint } from "@solana/spl-token";
+import {
+  amountToUiAmount,
+  updateRateInterestBearingMint,
+} from "@solana/spl-token";
 
 describe("TokenExtension/InterestBearing", () => {
   const provider = anchor.AnchorProvider.local(
@@ -37,8 +43,17 @@ describe("TokenExtension/InterestBearing", () => {
 
   const payer = (ctx.wallet as NodeWallet).payer;
 
-  async function rawAmountToUIAmount(mint: PublicKey, rawAmount: BN): Promise<string> {
-    const result = await amountToUiAmount(ctx.connection, payer, mint, rawAmount.toNumber(), TEST_TOKEN_2022_PROGRAM_ID);
+  async function rawAmountToUIAmount(
+    mint: PublicKey,
+    rawAmount: BN,
+  ): Promise<string> {
+    const result = await amountToUiAmount(
+      ctx.connection,
+      payer,
+      mint,
+      rawAmount.toNumber(),
+      TEST_TOKEN_2022_PROGRAM_ID,
+    );
     if (typeof result === "string") {
       return result;
     }
@@ -50,26 +65,44 @@ describe("TokenExtension/InterestBearing", () => {
 
   // |----------|-----*S*T*|****------| (*: liquidity, S: start, T: end)
   it("swap_v2 (covers both owner to vault and vault to owner transfer)", async () => {
-    const {
-      whirlpoolPda,
-      poolInitInfo,
-      tokenAccountA,
-      tokenAccountB,
-    } = await initTestPoolWithTokensV2(
-      ctx,
-      { isToken2022: true, hasInterestBearingExtension: true, interestBearingRate: 0 }, // 0%
-      { isToken2022: true, hasInterestBearingExtension: true, interestBearingRate: 0 }, // 0%
-      TickSpacing.Standard,
+    const { whirlpoolPda, poolInitInfo, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokensV2(
+        ctx,
+        {
+          isToken2022: true,
+          hasInterestBearingExtension: true,
+          interestBearingRate: 0,
+        }, // 0%
+        {
+          isToken2022: true,
+          hasInterestBearingExtension: true,
+          interestBearingRate: 0,
+        }, // 0%
+        TickSpacing.Standard,
+      );
+
+    const initialRawBalanceA = new BN(
+      await getTokenBalance(provider, tokenAccountA),
+    );
+    const initialRawBalanceB = new BN(
+      await getTokenBalance(provider, tokenAccountB),
+    );
+    const initialUIBalanceA = await rawAmountToUIAmount(
+      poolInitInfo.tokenMintA,
+      initialRawBalanceA,
+    );
+    const initialUIBalanceB = await rawAmountToUIAmount(
+      poolInitInfo.tokenMintB,
+      initialRawBalanceB,
     );
 
-    const initialRawBalanceA = new BN(await getTokenBalance(provider, tokenAccountA));
-    const initialRawBalanceB = new BN(await getTokenBalance(provider, tokenAccountB));
-    const initialUIBalanceA = await rawAmountToUIAmount(poolInitInfo.tokenMintA, initialRawBalanceA);
-    const initialUIBalanceB = await rawAmountToUIAmount(poolInitInfo.tokenMintB, initialRawBalanceB);
-
     // rate is 0%, so these values should be equal
-    assert.ok(initialRawBalanceA.eq(new BN(Number.parseInt(initialUIBalanceA))));
-    assert.ok(initialRawBalanceB.eq(new BN(Number.parseInt(initialUIBalanceB))));
+    assert.ok(
+      initialRawBalanceA.eq(new BN(Number.parseInt(initialUIBalanceA))),
+    );
+    assert.ok(
+      initialRawBalanceB.eq(new BN(Number.parseInt(initialUIBalanceB))),
+    );
 
     // set rate > 0%
     const sigA = await updateRateInterestBearingMint(
@@ -92,9 +125,15 @@ describe("TokenExtension/InterestBearing", () => {
     ]);
 
     await sleep(10 * 1000);
-  
-    const newUIBalanceA = await rawAmountToUIAmount(poolInitInfo.tokenMintA, initialRawBalanceA);
-    const newUIBalanceB = await rawAmountToUIAmount(poolInitInfo.tokenMintB, initialRawBalanceB);
+
+    const newUIBalanceA = await rawAmountToUIAmount(
+      poolInitInfo.tokenMintA,
+      initialRawBalanceA,
+    );
+    const newUIBalanceB = await rawAmountToUIAmount(
+      poolInitInfo.tokenMintB,
+      initialRawBalanceB,
+    );
 
     // rate is >0%, so these values should NOT be equal
     assert.ok(initialRawBalanceA.lt(new BN(Number.parseInt(newUIBalanceA))));
@@ -112,19 +151,13 @@ describe("TokenExtension/InterestBearing", () => {
       aToB,
     );
 
-    await fundPositionsV2(
-      ctx,
-      poolInitInfo,
-      tokenAccountA,
-      tokenAccountB,
-      [
-        {
-          liquidityAmount: new anchor.BN(10_000_000),
-          tickLowerIndex: 29440,
-          tickUpperIndex: 33536,
-        },  
-      ]
-    );
+    await fundPositionsV2(ctx, poolInitInfo, tokenAccountA, tokenAccountB, [
+      {
+        liquidityAmount: new anchor.BN(10_000_000),
+        tickLowerIndex: 29440,
+        tickUpperIndex: 33536,
+      },
+    ]);
 
     const oraclePubkey = PDAUtil.getOracle(
       ctx.program.programId,
@@ -155,12 +188,11 @@ describe("TokenExtension/InterestBearing", () => {
           fetcher,
           IGNORE_CACHE,
         ),
-        tokenExtensionCtx:
-          await TokenExtensionUtil.buildTokenExtensionContext(
-            fetcher,
-            whirlpoolData,
-            IGNORE_CACHE,
-          ),
+        tokenExtensionCtx: await TokenExtensionUtil.buildTokenExtensionContext(
+          fetcher,
+          whirlpoolData,
+          IGNORE_CACHE,
+        ),
       },
       Percentage.fromFraction(0, 100),
     );
@@ -195,5 +227,4 @@ describe("TokenExtension/InterestBearing", () => {
     assert.ok(diffA.eq(quoteBToA.estimatedAmountOut));
     assert.ok(diffB.eq(quoteBToA.estimatedAmountIn.neg()));
   });
-
 });

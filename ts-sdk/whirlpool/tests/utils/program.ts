@@ -16,7 +16,6 @@ import {
 } from "../../src/config";
 import { tickIndexToSqrtPrice } from "@orca-so/whirlpools-core";
 import { fetchMint } from "@solana-program/token";
-import { a } from "vitest/dist/chunks/suite.B2jumIFP.js";
 
 export async function setupConfigAndFeeTiers(): Promise<Address> {
   const keypair = await generateKeyPairSigner();

@@ -37,19 +37,19 @@ describe("Create Pool", () => {
     await assert.rejects(
       createConcentratedLiquidityPoolInstructions(rpc, mintA, mintB, 64, 1),
       {
-        name: 'AssertionError',
-        message: 'Either supply a funder or set the default funder'
+        name: "AssertionError",
+        message: "Either supply a funder or set the default funder"
       }
     );
     setDefaultFunder(signer);
   });
 
-  it("Should throw an error if token mints are not ordered", async () => {
+  it("Should throw an error if token mints are not ordered correctly", async () => {
     await assert.rejects(
       createConcentratedLiquidityPoolInstructions(rpc, mintB, mintA, 64, 1),
       {
-        name: 'AssertionError',
-        message: 'Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)'
+        name: "AssertionError",
+        message: "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)"
       }
     );
   })

@@ -31,7 +31,6 @@ import {
   sqrtPriceToTickIndex,
 } from "@orca-so/whirlpools-core";
 import { fetchAllMint, getTokenSize, TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
-import { TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
 import assert from "assert";
 import { getAccountExtensions, orderMints } from "./token";
 

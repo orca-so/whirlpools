@@ -4,6 +4,7 @@ import type {
   VariableSizeDecoder,
 } from "@solana/web3.js";
 import {
+  address,
   appendTransactionMessageInstructions,
   assertIsAddress,
   createSolanaRpcFromTransport,
@@ -24,7 +25,7 @@ import {
 } from "@solana/web3.js";
 import assert from "assert";
 import type { ProgramTestContext } from "solana-bankrun/dist/internal";
-import { Account, startAnchor } from "solana-bankrun/dist/internal";
+import { Account, BanksClient, startAnchor } from "solana-bankrun/dist/internal";
 import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "@orca-so/whirlpools-client";
 import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
@@ -56,12 +57,24 @@ export async function getTestContext(): Promise<ProgramTestContext> {
             0n,
           ),
         ],
+        [
+          toBytes(address("SysvarFees111111111111111111111111111111111")),
+          new Account(
+            BigInt(946600),
+            new Uint8Array(8),
+            toBytes(address("Sysvar1111111111111111111111111111111111111")),
+            false,
+            0n,
+          )
+        ]
       ],
     );
 
     const configAddress = await setupConfigAndFeeTiers();
     setWhirlpoolsConfig(configAddress);
   }
+  // Object.defineProperty(_testContext.genesisConfig.feeRateGovernor, 'lamportsPerSignature', { value: BigInt(0) });
+  // _testContext.banksClient.getFeeForMessage = async () => 0n;
   return _testContext;
 }
 
@@ -236,6 +249,14 @@ async function mockTransport<T>(
         slotsInEpoch: 32n,
         transactionCount: 0n,
       });
+    // case "getBalance":
+    //   assert(typeof config.payload.params[0] === "string");
+    //   const account = await getAccountData(
+    //     config.payload.params[0],
+    //     config.payload.params[1],
+    //   );
+    //   assert(account != null && typeof account === "object" && "lamports" in account);
+    //   return getResponse<T>(account.lamports);
   }
   return Promise.reject(
     `Method ${config.payload.method} not supported in mock transport`,

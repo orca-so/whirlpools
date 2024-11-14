@@ -9,19 +9,14 @@ import {
   SPLASH_POOL_TICK_SPACING,
 } from "../src/config";
 import { setupMint } from "./utils/token";
-import { setupMintTE, setupMintTEFee } from "./utils/tokenExtensions";
+import { setupMintTEFee } from "./utils/tokenExtensions";
 import { orderMints } from "../src/token";
 import { rpc, sendTransaction, signer } from "./utils/mockRpc";
-import {
-  fetchMaybeWhirlpool,
-} from "@orca-so/whirlpools-client";
+import { fetchMaybeWhirlpool } from "@orca-so/whirlpools-client";
 import assert from "assert";
 import type { Address } from "@solana/web3.js";
 import { assertAccountExists, lamports } from "@solana/web3.js";
-import {
-  _TICK_ARRAY_SIZE,
-  priceToSqrtPrice,
-} from "@orca-so/whirlpools-core";
+import { _TICK_ARRAY_SIZE, priceToSqrtPrice } from "@orca-so/whirlpools-core";
 
 describe("Create Pool", () => {
   let mintA: Address;
@@ -54,15 +49,11 @@ describe("Create Pool", () => {
     let signerAccount = await rpc.getAccountInfo(signer.address).send();
     const balanceBefore = signerAccount.value?.lamports ?? lamports(0n);
 
-    const { instructions, poolAddress, estInitializationCost } = await createSplashPoolInstructions(
-      rpc,
-      mintA,
-      mintB,
-      price,
-    );
+    const { instructions, poolAddress, estInitializationCost } =
+      await createSplashPoolInstructions(rpc, mintA, mintB, price);
 
     const maybePool = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(maybePool.exists, false)
+    assert.strictEqual(maybePool.exists, false);
 
     await sendTransaction(instructions);
 
@@ -92,15 +83,11 @@ describe("Create Pool", () => {
     let signerAccount = await rpc.getAccountInfo(signer.address).send();
     const balanceBefore = signerAccount.value?.lamports ?? lamports(0n);
 
-    const { instructions, poolAddress, estInitializationCost } = await createSplashPoolInstructions(
-      rpc,
-      mintC,
-      mintD,
-      price,
-    );
+    const { instructions, poolAddress, estInitializationCost } =
+      await createSplashPoolInstructions(rpc, mintC, mintD, price);
 
     const maybePool = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(maybePool.exists, false)
+    assert.strictEqual(maybePool.exists, false);
 
     await sendTransaction(instructions);
 
@@ -130,15 +117,11 @@ describe("Create Pool", () => {
     let signerAccount = await rpc.getAccountInfo(signer.address).send();
     const balanceBefore = signerAccount.value?.lamports ?? lamports(0n);
 
-    const { instructions, poolAddress, estInitializationCost } = await createSplashPoolInstructions(
-      rpc,
-      mintC,
-      mintD,
-      price,
-    );
+    const { instructions, poolAddress, estInitializationCost } =
+      await createSplashPoolInstructions(rpc, mintC, mintD, price);
 
     const maybePool = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(maybePool.exists, false)
+    assert.strictEqual(maybePool.exists, false);
 
     await sendTransaction(instructions);
 
@@ -159,23 +142,24 @@ describe("Create Pool", () => {
   });
 
   it("Should create concentrated liquidity pool", async () => {
-    const tickSpacing = 64
+    const tickSpacing = 64;
     const price = 10;
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
     let signerAccount = await rpc.getAccountInfo(signer.address).send();
     const balanceBefore = signerAccount.value?.lamports ?? lamports(0n);
 
-    const { instructions, poolAddress, estInitializationCost } = await createConcentratedLiquidityPoolInstructions(
-      rpc,
-      mintA,
-      mintB,
-      tickSpacing,
-      price,
-    );
+    const { instructions, poolAddress, estInitializationCost } =
+      await createConcentratedLiquidityPoolInstructions(
+        rpc,
+        mintA,
+        mintB,
+        tickSpacing,
+        price,
+      );
 
     const maybePool = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(maybePool.exists, false)
+    assert.strictEqual(maybePool.exists, false);
 
     await sendTransaction(instructions);
 
@@ -206,16 +190,17 @@ describe("Create Pool", () => {
     let signerAccount = await rpc.getAccountInfo(signer.address).send();
     const balanceBefore = signerAccount.value?.lamports ?? lamports(0n);
 
-    const { instructions, poolAddress, estInitializationCost } = await createConcentratedLiquidityPoolInstructions(
-      rpc,
-      mintC,
-      mintD,
-      tickSpacing,
-      price,
-    );
+    const { instructions, poolAddress, estInitializationCost } =
+      await createConcentratedLiquidityPoolInstructions(
+        rpc,
+        mintC,
+        mintD,
+        tickSpacing,
+        price,
+      );
 
     const maybePool = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(maybePool.exists, false)
+    assert.strictEqual(maybePool.exists, false);
 
     await sendTransaction(instructions);
 
@@ -246,16 +231,17 @@ describe("Create Pool", () => {
     let signerAccount = await rpc.getAccountInfo(signer.address).send();
     const balanceBefore = signerAccount.value?.lamports ?? lamports(0n);
 
-    const { instructions, poolAddress, estInitializationCost } = await createConcentratedLiquidityPoolInstructions(
-      rpc,
-      mintC,
-      mintD,
-      tickSpacing,
-      price,
-    );
+    const { instructions, poolAddress, estInitializationCost } =
+      await createConcentratedLiquidityPoolInstructions(
+        rpc,
+        mintC,
+        mintD,
+        tickSpacing,
+        price,
+      );
 
     const maybePool = await fetchMaybeWhirlpool(rpc, poolAddress);
-    assert.strictEqual(maybePool.exists, false)
+    assert.strictEqual(maybePool.exists, false);
 
     await sendTransaction(instructions);
 

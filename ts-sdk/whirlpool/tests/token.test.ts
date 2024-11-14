@@ -479,21 +479,21 @@ describe("Token Account Creation", () => {
   });
 
   it("Should get the correct token size for TOKEN_PROGRAM mint", async () => {
-    const mintAccount = await fetchMint(rpc, mintA)
-    const tokenSize = getTokenSizeForMint(mintAccount)
+    const mintAccount = await fetchMint(rpc, mintA);
+    const tokenSize = getTokenSizeForMint(mintAccount);
     assert.strictEqual(tokenSize, 165);
   });
 
   it("Should get the correct token size for TOKEN_2022_PROGRAM mint", async () => {
     const mint = await setupMintTE();
-    const mintAccount = await fetchMint(rpc, mint)
-    const tokenSize = getTokenSizeForMint(mintAccount)
+    const mintAccount = await fetchMint(rpc, mint);
+    const tokenSize = getTokenSizeForMint(mintAccount);
     assert.strictEqual(tokenSize, 165);
   });
 
   it("Should get the correct token size for TOKEN_2022_PROGRAM mint with", async () => {
-    const mintAccount = await fetchMint(rpc, mintTE)
-    const tokenSize = getTokenSizeForMint(mintAccount)
+    const mintAccount = await fetchMint(rpc, mintTE);
+    const tokenSize = getTokenSizeForMint(mintAccount);
     assert.strictEqual(tokenSize, 178);
   });
 });

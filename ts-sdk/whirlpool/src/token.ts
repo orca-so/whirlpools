@@ -33,7 +33,7 @@ import {
   getTransferSolInstruction,
 } from "@solana-program/system";
 import { getTokenSize } from "@solana-program/token";
-import { TOKEN_2022_PROGRAM_ADDRESS, getTokenSize as getToken22Size } from "@solana-program/token-2022"
+import { getTokenSize as getToken22Size } from "@solana-program/token-2022";
 import type { ExtensionArgs, Mint } from "@solana-program/token-2022";
 import type { TransferFee } from "@orca-so/whirlpools-core";
 import assert from "assert";

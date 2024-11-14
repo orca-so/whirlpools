@@ -11,7 +11,6 @@ import {
 import type {
   Address,
   GetAccountInfoApi,
-  GetMinimumBalanceForRentExemptionApi,
   GetMultipleAccountsApi,
   IInstruction,
   Lamports,
@@ -19,7 +18,6 @@ import type {
   TransactionSigner,
 } from "@solana/web3.js";
 import { generateKeyPairSigner, lamports } from "@solana/web3.js";
-import { fetchSysvarRent } from "@solana/sysvars"
 import {
   DEFAULT_ADDRESS,
   FUNDER,
@@ -252,10 +250,12 @@ export async function createConcentratedLiquidityPoolInstructions(
     stateSpaces.map(async (space) => {
       const rentExemption = await calculateMinimumBalance(rpc, space);
       return rentExemption;
-    })
+    }),
   );
-  
-  const nonRefundableRent = lamports(nonRefundableRents.reduce((a, b) => a + b, 0n));
+
+  const nonRefundableRent = lamports(
+    nonRefundableRents.reduce((a, b) => a + b, 0n),
+  );
 
   return {
     instructions,

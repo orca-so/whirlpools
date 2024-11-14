@@ -32,7 +32,8 @@ import {
   getCreateAccountWithSeedInstruction,
   getTransferSolInstruction,
 } from "@solana-program/system";
-import { TOKEN_2022_PROGRAM_ADDRESS, getTokenSize } from "@solana-program/token-2022"
+import { getTokenSize } from "@solana-program/token";
+import { TOKEN_2022_PROGRAM_ADDRESS, getTokenSize as getToken22Size } from "@solana-program/token-2022"
 import type { ExtensionArgs, Mint } from "@solana-program/token-2022";
 import type { TransferFee } from "@orca-so/whirlpools-core";
 import assert from "assert";
@@ -365,9 +366,13 @@ export function orderMints(mint1: Address, mint2: Address): [Address, Address] {
     : [mint2, mint1];
 }
 
-export function getTokenSizeByProgram(mint: Account<Mint>): number {
-  const tokenProgram = mint.programAddress;
-  return tokenProgram === TOKEN_2022_PROGRAM_ADDRESS
-      ? getTokenSize(getAccountExtensions(mint.data))
-      : getTokenSize()
+/**
+ * Returns the token size for a given mint account.
+ *
+ * @param {Account<Mint>} mint - The mint account to get the token size for.
+ * @returns {number} The token size for the given mint account.
+ */
+export function getTokenSizeForMint(mint: Account<Mint>): number {
+  const extensions = getAccountExtensions(mint.data);
+  return extensions.length === 0 ? getTokenSize() : getToken22Size(extensions);
 }

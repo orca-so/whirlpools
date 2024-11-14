@@ -16,7 +16,7 @@ import {
 import {
   getAccountExtensions,
   getCurrentTransferFee,
-  getTokenSizeByProgram,
+  getTokenSizeForMint,
   NATIVE_MINT,
   orderMints,
   prepareTokenAccountsInstructions,
@@ -25,7 +25,7 @@ import assert from "assert";
 import type { Address } from "@solana/web3.js";
 import { address } from "@solana/web3.js";
 import { setupAta, setupMint } from "./utils/token";
-import { setupMintTEFee } from "./utils/tokenExtensions";
+import { setupMintTE, setupMintTEFee } from "./utils/tokenExtensions";
 
 describe("Token Account Creation", () => {
   let mintA: Address;
@@ -478,15 +478,22 @@ describe("Token Account Creation", () => {
     assert.strictEqual(extensions[0].__kind, "TransferFeeAmount");
   });
 
-  it("Should get the correct token size for TOKEN_PROGRAM token", async () => {
+  it("Should get the correct token size for TOKEN_PROGRAM mint", async () => {
     const mintAccount = await fetchMint(rpc, mintA)
-    const tokenSize = getTokenSizeByProgram(mintAccount)
+    const tokenSize = getTokenSizeForMint(mintAccount)
     assert.strictEqual(tokenSize, 165);
   });
 
-  it("Should get the correct token size for TOKEN_2022_PROGRAM", async () => {
+  it("Should get the correct token size for TOKEN_2022_PROGRAM mint", async () => {
+    const mint = await setupMintTE();
+    const mintAccount = await fetchMint(rpc, mint)
+    const tokenSize = getTokenSizeForMint(mintAccount)
+    assert.strictEqual(tokenSize, 165);
+  });
+
+  it("Should get the correct token size for TOKEN_2022_PROGRAM mint with", async () => {
     const mintAccount = await fetchMint(rpc, mintTE)
-    const tokenSize = getTokenSizeByProgram(mintAccount)
+    const tokenSize = getTokenSizeForMint(mintAccount)
     assert.strictEqual(tokenSize, 178);
   });
 });

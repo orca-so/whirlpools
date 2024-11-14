@@ -19,10 +19,10 @@ export async function calculateMinimumBalance(
   dataSize: number,
 ): Promise<Lamports> {
   const rent = await fetchSysvarRent(rpc);
-  const actualDataLen = BigInt(dataSize + ACCOUNT_STORAGE_OVERHEAD);
-  const rentLamportsPerYear = rent.lamportsPerByteYear * actualDataLen;
+  const dataSizeForRent = BigInt(dataSize + ACCOUNT_STORAGE_OVERHEAD);
+  const rentLamportsPerYear = rent.lamportsPerByteYear * dataSizeForRent;
   const minimumBalance =
-    rentLamportsPerYear * BigInt(Math.floor(rent.exemptionThreshold));
+    rentLamportsPerYear * BigInt(rent.exemptionThreshold);
 
   return lamports(minimumBalance);
 }

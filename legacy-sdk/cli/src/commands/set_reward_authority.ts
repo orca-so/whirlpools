@@ -22,7 +22,7 @@ const updatableRewardIndexes: number[] = [];
 whirlpool.rewardInfos.forEach((ri, i) => {
   const updatable = ri.authority.equals(ctx.wallet.publicKey);
   if (updatable) updatableRewardIndexes.push(i);
-  console.log(`reward[${i}] authority: ${ri.authority.toBase58()} ${updatable ? " (Updatable)" : " (wallet is not authority)"}`);
+  console.info(`reward[${i}] authority: ${ri.authority.toBase58()} ${updatable ? " (Updatable)" : " (wallet is not authority)"}`);
 })
 
 if (updatableRewardIndexes.length === 0) {
@@ -40,7 +40,7 @@ for (let i=0; i<updatableRewardIndexes.length; i++) {
       throw new Error("newAuthority is same to the current authority");
     }
     newRewardAuthorities.push(newAuthority);
-  } catch(e) {
+  } catch(_e) {
     newRewardAuthorities.push(undefined);
   }
 }

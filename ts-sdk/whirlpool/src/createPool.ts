@@ -30,9 +30,9 @@ import {
   priceToSqrtPrice,
   sqrtPriceToTickIndex,
 } from "@orca-so/whirlpools-core";
-import { fetchAllMint, getTokenSize, TOKEN_2022_PROGRAM_ADDRESS } from "@solana-program/token-2022";
+import { fetchAllMint } from "@solana-program/token-2022";
 import assert from "assert";
-import { getAccountExtensions, orderMints } from "./token";
+import { getTokenSizeByProgram, orderMints } from "./token";
 
 /**
  * Represents the instructions and metadata for creating a pool.
@@ -204,16 +204,8 @@ export async function createConcentratedLiquidityPoolInstructions(
     }),
   );
 
-  stateSpaces.push(
-    tokenProgramA === TOKEN_2022_PROGRAM_ADDRESS
-      ? getTokenSize(getAccountExtensions(mintA.data))
-      : getTokenSize()
-  );
-  stateSpaces.push(
-    tokenProgramB === TOKEN_2022_PROGRAM_ADDRESS
-      ? getTokenSize(getAccountExtensions(mintB.data))
-      : getTokenSize()
-  );
+  stateSpaces.push(getTokenSizeByProgram(mintA));
+  stateSpaces.push(getTokenSizeByProgram(mintB));
   stateSpaces.push(getWhirlpoolSize());
 
   const fullRange = getFullRangeTickIndexes(tickSpacing);

@@ -2,7 +2,6 @@ import {
   getFeeTierAddress,
   getInitializeConfigInstruction,
   getInitializeFeeTierInstruction,
-  getInitializePoolInstruction,
   getInitializePoolV2Instruction,
   getTokenBadgeAddress,
   getWhirlpoolAddress,
@@ -95,10 +94,10 @@ export async function setupWhirlpool(
   const vaultB = await generateKeyPairSigner();
   const badgeA = await getTokenBadgeAddress(WHIRLPOOLS_CONFIG_ADDRESS, tokenA);
   const badgeB = await getTokenBadgeAddress(WHIRLPOOLS_CONFIG_ADDRESS, tokenB);
-  const mintA = await fetchMint(rpc, tokenA)
-  const mintB = await fetchMint(rpc, tokenB)
-  const programA = mintA.programAddress
-  const programB = mintB.programAddress
+  const mintA = await fetchMint(rpc, tokenA);
+  const mintB = await fetchMint(rpc, tokenB);
+  const programA = mintA.programAddress;
+  const programB = mintB.programAddress;
 
   const sqrtPrice = config.initialSqrtPrice ?? tickIndexToSqrtPrice(0);
 

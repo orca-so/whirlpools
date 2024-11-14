@@ -236,7 +236,7 @@ async function mockTransport<T>(
         slotsInEpoch: 32n,
         transactionCount: 0n,
       });
-  }
+    }
   return Promise.reject(
     `Method ${config.payload.method} not supported in mock transport`,
   );

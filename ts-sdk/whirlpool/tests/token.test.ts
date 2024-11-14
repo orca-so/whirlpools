@@ -16,6 +16,7 @@ import {
 import {
   getAccountExtensions,
   getCurrentTransferFee,
+  getTokenSizeByProgram,
   NATIVE_MINT,
   orderMints,
   prepareTokenAccountsInstructions,
@@ -475,5 +476,17 @@ describe("Token Account Creation", () => {
     const extensions = getAccountExtensions(mint.data);
     assert.strictEqual(extensions.length, 1);
     assert.strictEqual(extensions[0].__kind, "TransferFeeAmount");
+  });
+
+  it("Should get the correct token size for TOKEN_PROGRAM token", async () => {
+    const mintAccount = await fetchMint(rpc, mintA)
+    const tokenSize = getTokenSizeByProgram(mintAccount)
+    assert.strictEqual(tokenSize, 165);
+  });
+
+  it("Should get the correct token size for TOKEN_2022_PROGRAM", async () => {
+    const mintAccount = await fetchMint(rpc, mintTE)
+    const tokenSize = getTokenSizeByProgram(mintAccount)
+    assert.strictEqual(tokenSize, 178);
   });
 });

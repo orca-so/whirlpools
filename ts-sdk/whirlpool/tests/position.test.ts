@@ -9,7 +9,10 @@ import {
   setupWhirlpool,
 } from "./utils/program";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
-import { fetchPositionsForOwner, fetchPositionsInWhirlpool } from "../src/position";
+import {
+  fetchPositionsForOwner,
+  fetchPositionsInWhirlpool,
+} from "../src/position";
 import { rpc, signer } from "./utils/mockRpc";
 import { orderMints } from "../src/token";
 

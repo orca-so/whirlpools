@@ -3577,7 +3577,7 @@ __metadata:
     "@orca-so/whirlpools-core": "npm:*"
     "@solana-program/memo": "npm:^0.6.1"
     "@solana-program/system": "npm:^0.6.2"
-    "@solana-program/token": "npm:^0.4.0"
+    "@solana-program/token": "npm:^0.4.1"
     "@solana-program/token-2022": "npm:^0.3.1"
     "@solana/web3.js": "npm:^2.0.0"
     solana-bankrun: "npm:^0.4.0"
@@ -3888,12 +3888,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/token@npm:^0.4.0":
-  version: 0.4.0
-  resolution: "@solana-program/token@npm:0.4.0"
+"@solana-program/token@npm:^0.4.1":
+  version: 0.4.1
+  resolution: "@solana-program/token@npm:0.4.1"
   peerDependencies:
-    "@solana/web3.js": 2.0.0-rc.4
-  checksum: 10c0/55fecb391b1fa3609340d10f36af8922f3c2efa3e6e2dc3c846afbfd5ad0763630f239e4078f8969656d9dbb62ba68b12c8bdb25c41a81c7110c7ee444baca9b
+    "@solana/web3.js": ^2.0.0
+  checksum: 10c0/d7b8d64d67f50c2cfab71b55d77e0979725ecac44a8a0be73ebce2a5901ee0775f337c4564ce436ada138fac3decb121b848118849f6203323c2717b7ffb47bc
   languageName: node
   linkType: hard
 

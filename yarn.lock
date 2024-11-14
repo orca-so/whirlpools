@@ -3575,7 +3575,7 @@ __metadata:
   dependencies:
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"
-    "@solana-program/memo": "npm:^0.6.0"
+    "@solana-program/memo": "npm:^0.6.1"
     "@solana-program/system": "npm:^0.6.1"
     "@solana-program/token": "npm:^0.4.0"
     "@solana-program/token-2022": "npm:^0.3.0"
@@ -3861,12 +3861,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/memo@npm:^0.6.0":
-  version: 0.6.0
-  resolution: "@solana-program/memo@npm:0.6.0"
+"@solana-program/memo@npm:^0.6.1":
+  version: 0.6.1
+  resolution: "@solana-program/memo@npm:0.6.1"
   peerDependencies:
-    "@solana/web3.js": 2.0.0-rc.4
-  checksum: 10c0/cad5b69ca0199dde0f93d121e4ffd8bc6044ff536b517232cf14c0f088419291b82fee23cd6c903421bd8fa29ffbbd4a9b12558f5bf658a0614356b1baacf101
+    "@solana/web3.js": ^2.0.0
+  checksum: 10c0/b047d742c4320eeabe38ff32643f6c57a24c1582b1b7168525af457e4c94d15223c7ff4b13af081b63e02120530faa2cec4f2054577810996d866f327c7c8051
   languageName: node
   linkType: hard
 

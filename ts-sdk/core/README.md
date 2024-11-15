@@ -33,7 +33,7 @@ Expected output:
 Position in range? true
 ```
 
-### Quote Example
+### Adjust Liquidity Quote Example
 The following example demonstrates how to use the `increaseLiquidityQuoteA` function to calculate a quote for increasing liquidity given a token A amount.
 
 ```tsx

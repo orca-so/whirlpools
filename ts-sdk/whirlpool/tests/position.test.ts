@@ -9,9 +9,11 @@ import {
   setupWhirlpool,
 } from "./utils/program";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
-import { fetchPositionsForOwner, fetchPositionsInWhirlpool } from "../src/position";
+import {
+  fetchPositionsForOwner,
+  fetchPositionsInWhirlpool,
+} from "../src/position";
 import { rpc, signer } from "./utils/mockRpc";
-import { orderMints } from "../src/token";
 
 describe("Fetch Position", () => {
   let mintA: Address;
@@ -20,9 +22,8 @@ describe("Fetch Position", () => {
   let splashPool: Address;
 
   beforeAll(async () => {
-    const mint1 = await setupMint();
-    const mint2 = await setupMint();
-    [mintA, mintB] = orderMints(mint1, mint2);
+    mintA = await setupMint();
+    mintB = await setupMint();
     await setupAta(mintA, { amount: 500e9 });
     await setupAta(mintB, { amount: 500e9 });
     pool = await setupWhirlpool(mintA, mintB, 128);

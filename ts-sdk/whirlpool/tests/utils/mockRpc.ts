@@ -8,7 +8,6 @@ import {
   assertIsAddress,
   createSolanaRpcFromTransport,
   createTransactionMessage,
-  generateKeyPairSigner,
   getAddressDecoder,
   getAddressEncoder,
   getBase58Decoder,
@@ -31,8 +30,9 @@ import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
 import { setupConfigAndFeeTiers } from "./program";
 import { getAddMemoInstruction } from "@solana-program/memo";
 import { randomUUID } from "crypto";
+import { getNextKeypair } from "./keypair";
 
-export const signer = await generateKeyPairSigner();
+export const signer = getNextKeypair();
 setDefaultFunder(signer);
 
 function toBytes(address: Address): Uint8Array {
@@ -236,6 +236,18 @@ async function mockTransport<T>(
         slotsInEpoch: 32n,
         transactionCount: 0n,
       });
+    case "getBalance":
+      const addressForBalance = config.payload.params[0];
+      assert(typeof addressForBalance === "string");
+      const accountDataForBalance = await getAccountData(
+        addressForBalance,
+        config.payload.params[1],
+      );
+      assert(accountDataForBalance !== null);
+      assert(typeof accountDataForBalance === "object");
+      assert("lamports" in accountDataForBalance);
+      const lamports = accountDataForBalance.lamports;
+      return getResponseWithContext<T>(lamports);
   }
   return Promise.reject(
     `Method ${config.payload.method} not supported in mock transport`,

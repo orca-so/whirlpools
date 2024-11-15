@@ -10,14 +10,15 @@ import {
 } from "@orca-so/whirlpools-client";
 import type {
   Address,
-  GetMinimumBalanceForRentExemptionApi,
+  GetAccountInfoApi,
   GetMultipleAccountsApi,
   IInstruction,
   Lamports,
   Rpc,
   TransactionSigner,
 } from "@solana/web3.js";
-import { generateKeyPairSigner } from "@solana/web3.js";
+import { generateKeyPairSigner, lamports } from "@solana/web3.js";
+import { fetchSysvarRent } from "@solana/sysvars";
 import {
   DEFAULT_ADDRESS,
   FUNDER,
@@ -30,9 +31,10 @@ import {
   priceToSqrtPrice,
   sqrtPriceToTickIndex,
 } from "@orca-so/whirlpools-core";
-import { fetchAllMint, getTokenSize } from "@solana-program/token-2022";
+import { fetchAllMint } from "@solana-program/token-2022";
 import assert from "assert";
-import { getAccountExtensions, orderMints } from "./token";
+import { getTokenSizeForMint, orderMints } from "./token";
+import { calculateMinimumBalanceForRentExemption } from "./sysvar";
 
 /**
  * Represents the instructions and metadata for creating a pool.
@@ -81,7 +83,7 @@ export type CreatePoolInstructions = {
  * );
  */
 export function createSplashPoolInstructions(
-  rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
+  rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintA: Address,
   tokenMintB: Address,
   initialPrice: number = 1,
@@ -110,7 +112,7 @@ export function createSplashPoolInstructions(
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
  * @example
- * import { createConcentratedLiquidityPool } from '@orca-so/whirlpools';
+ * import { createConcentratedLiquidityPoolInstructions } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -123,7 +125,7 @@ export function createSplashPoolInstructions(
  * const tickSpacing = 64;
  * const initialPrice = 0.01;
  *
- * const { poolAddress, instructions, estInitializationCost } = await createConcentratedLiquidityPool(
+ * const { poolAddress, instructions, estInitializationCost } = await createConcentratedLiquidityPoolInstructions(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo,
@@ -133,7 +135,7 @@ export function createSplashPoolInstructions(
  * );
  */
 export async function createConcentratedLiquidityPoolInstructions(
-  rpc: Rpc<GetMultipleAccountsApi & GetMinimumBalanceForRentExemptionApi>,
+  rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
   tokenMintA: Address,
   tokenMintB: Address,
   tickSpacing: number,
@@ -149,7 +151,9 @@ export async function createConcentratedLiquidityPoolInstructions(
     "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)",
   );
   const instructions: IInstruction[] = [];
-  let stateSpace = 0;
+
+  const rent = await fetchSysvarRent(rpc);
+  let nonRefundableRent: bigint = 0n;
 
   // Since TE mint data is an extension of T mint data, we can use the same fetch function
   const [mintA, mintB] = await fetchAllMint(rpc, [tokenMintA, tokenMintB]);
@@ -204,9 +208,18 @@ export async function createConcentratedLiquidityPoolInstructions(
     }),
   );
 
-  stateSpace += getTokenSize(getAccountExtensions(mintA.data));
-  stateSpace += getTokenSize(getAccountExtensions(mintB.data));
-  stateSpace += getWhirlpoolSize();
+  nonRefundableRent += calculateMinimumBalanceForRentExemption(
+    rent,
+    getTokenSizeForMint(mintA),
+  );
+  nonRefundableRent += calculateMinimumBalanceForRentExemption(
+    rent,
+    getTokenSizeForMint(mintB),
+  );
+  nonRefundableRent += calculateMinimumBalanceForRentExemption(
+    rent,
+    getWhirlpoolSize(),
+  );
 
   const fullRange = getFullRangeTickIndexes(tickSpacing);
   const lowerTickIndex = getTickArrayStartTickIndex(
@@ -242,16 +255,15 @@ export async function createConcentratedLiquidityPoolInstructions(
         startTickIndex: tickArrayIndexes[i],
       }),
     );
-    stateSpace += getTickArraySize();
+    nonRefundableRent += calculateMinimumBalanceForRentExemption(
+      rent,
+      getTickArraySize(),
+    );
   }
-
-  const nonRefundableRent = await rpc
-    .getMinimumBalanceForRentExemption(BigInt(stateSpace))
-    .send();
 
   return {
     instructions,
     poolAddress,
-    estInitializationCost: nonRefundableRent,
+    estInitializationCost: lamports(nonRefundableRent),
   };
 }

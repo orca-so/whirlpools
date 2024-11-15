@@ -7,7 +7,7 @@ import {
 } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";
 import base58 from "bs58";
-import { promptConfirm, promptNumber } from "./prompt";
+import { promptConfirm, promptText } from "./prompt";
 
 export async function sendTransaction(
   builder: TransactionBuilder,
@@ -31,7 +31,7 @@ export async function sendTransaction(
     let priorityFeeInLamports = 0;
 
     while (true) {
-      const priorityFeeInSOL = await promptNumber("priorityFeeInSOL");
+      const priorityFeeInSOL = await promptText("priorityFeeInSOL");
       priorityFeeInLamports = DecimalUtil.toBN(
         new Decimal(priorityFeeInSOL),
         9,

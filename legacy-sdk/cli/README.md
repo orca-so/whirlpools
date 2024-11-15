@@ -29,7 +29,7 @@ Token-2022 tokens are acceptable 👍
 - `yarn start setDefaultProtocolFeeRate`: set new default protocol fee rate on WhirlpoolsConfig
 - `yarn start setFeeAuthority`: set new fee authority on WhirlpoolsConfig
 - `yarn start setCollectProtocolFeesAuthority`: set new collect protocol fees authority on WhirlpoolsConfig
-- TODO: set reward emissions super authority
+- `yarn start setRewardEmissionsSuperAuthority`: set new reward emissions super authority on WhirlpoolsConfig
 - TODO: set config extension authority
 
 ## Whirlpool & TickArray
@@ -41,6 +41,7 @@ Token-2022 tokens are acceptable 👍
 - `yarn start deleteTokenBadge`: delete TokenBadge account
 
 ## Reward
+- `yarn start setRewardAuthority`: set new reward authority of rewards on a whirlpool
 - `yarn start initializeReward`: initialize new reward for a whirlpool
 - TODO: set reward emission
 

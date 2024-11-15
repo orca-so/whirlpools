@@ -33,7 +33,7 @@ import {
   getTransferSolInstruction,
 } from "@solana-program/system";
 import { getTokenSize } from "@solana-program/token";
-import { getTokenSize as getToken22Size } from "@solana-program/token-2022";
+import { getTokenSize as getTokenSizeWithExtensions } from "@solana-program/token-2022";
 import type { ExtensionArgs, Mint } from "@solana-program/token-2022";
 import type { TransferFee } from "@orca-so/whirlpools-core";
 import assert from "assert";
@@ -374,5 +374,5 @@ export function orderMints(mint1: Address, mint2: Address): [Address, Address] {
  */
 export function getTokenSizeForMint(mint: Account<Mint>): number {
   const extensions = getAccountExtensions(mint.data);
-  return extensions.length === 0 ? getTokenSize() : getToken22Size(extensions);
+  return extensions.length === 0 ? getTokenSize() : getTokenSizeWithExtensions(extensions);
 }

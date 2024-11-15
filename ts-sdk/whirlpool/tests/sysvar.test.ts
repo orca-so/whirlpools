@@ -10,7 +10,6 @@ describe("Sysvar", () => {
     exemptionThreshold: 1.0,
     burnPercent: 0,
   };
-  const OVERHEAD = 128n;
 
   it("Should calculate the correct minimum balance for a token account", () => {
     const tokenSize = 165;
@@ -19,7 +18,7 @@ describe("Sysvar", () => {
       tokenSize,
     );
 
-    const expectedMinimumBalance = lamports((165n + OVERHEAD) * 10n);
+    const expectedMinimumBalance = lamports(2930n);
     assert.strictEqual(calcultatedMinimumBalance, expectedMinimumBalance);
   });
 
@@ -27,7 +26,7 @@ describe("Sysvar", () => {
     const dataSize = 0;
     const result = calculateMinimumBalanceForRentExemption(rent, dataSize);
 
-    const expectedMinimumBalance = lamports(OVERHEAD * 10n);
+    const expectedMinimumBalance = lamports(1280n);
     assert.strictEqual(result, expectedMinimumBalance);
   });
 });

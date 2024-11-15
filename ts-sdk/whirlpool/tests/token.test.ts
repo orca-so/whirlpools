@@ -491,7 +491,7 @@ describe("Token Account Creation", () => {
     assert.strictEqual(tokenSize, 165);
   });
 
-  it("Should get the correct token size for TOKEN_2022_PROGRAM mint with", async () => {
+  it("Should get the correct token size for TOKEN_2022_PROGRAM mint with Transfer Fee extension", async () => {
     const mintAccount = await fetchMint(rpc, mintTE);
     const tokenSize = getTokenSizeForMint(mintAccount);
     assert.strictEqual(tokenSize, 178);

@@ -12,9 +12,9 @@ import {
   getSyncNativeInstruction,
 } from "@solana-program/token";
 import type { Address, IInstruction } from "@solana/web3.js";
-import { generateKeyPairSigner } from "@solana/web3.js";
 import { signer, sendTransaction } from "./mockRpc";
 import { NATIVE_MINT } from "../../src/token";
+import { getNextKeypair } from "./keypair";
 
 export async function setupAta(
   mint: Address,
@@ -72,7 +72,7 @@ export async function setupAta(
 export async function setupMint(
   config: { decimals?: number } = {},
 ): Promise<Address> {
-  const keypair = await generateKeyPairSigner();
+  const keypair = getNextKeypair();
   const instructions: IInstruction[] = [];
 
   instructions.push(

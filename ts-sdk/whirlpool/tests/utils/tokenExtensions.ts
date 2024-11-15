@@ -10,10 +10,10 @@ import {
   getSetTransferFeeInstruction,
 } from "@solana-program/token-2022";
 import type { Address, IInstruction } from "@solana/web3.js";
-import { generateKeyPairSigner } from "@solana/web3.js";
 import { sendTransaction, signer } from "./mockRpc";
 import { getCreateAccountInstruction } from "@solana-program/system";
 import { DEFAULT_ADDRESS } from "../../src/config";
+import { getNextKeypair } from "./keypair";
 
 export async function setupAtaTE(
   mint: Address,
@@ -56,7 +56,7 @@ export async function setupAtaTE(
 export async function setupMintTE(
   config: { decimals?: number; extensions?: ExtensionArgs[] } = {},
 ): Promise<Address> {
-  const keypair = await generateKeyPairSigner();
+  const keypair = getNextKeypair();
   const instructions: IInstruction[] = [];
 
   instructions.push(

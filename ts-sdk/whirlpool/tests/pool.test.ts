@@ -14,7 +14,6 @@ import type { Address } from "@solana/web3.js";
 import { setupMint } from "./utils/token";
 import { setupWhirlpool } from "./utils/program";
 import { getWhirlpoolAddress } from "@orca-so/whirlpools-client";
-import { orderMints } from "../src/token";
 
 describe("Fetch Pool", () => {
   let mintA: Address;
@@ -24,9 +23,8 @@ describe("Fetch Pool", () => {
   let splashPool: Address;
 
   beforeAll(async () => {
-    const mint1 = await setupMint();
-    const mint2 = await setupMint();
-    [mintA, mintB] = orderMints(mint1, mint2);
+    mintA = await setupMint();
+    mintB = await setupMint();
     concentratedPool = await setupWhirlpool(mintA, mintB, 64);
     defaultPool = await getWhirlpoolAddress(
       WHIRLPOOLS_CONFIG_ADDRESS,

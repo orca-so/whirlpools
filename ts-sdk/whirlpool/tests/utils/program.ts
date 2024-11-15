@@ -7,7 +7,6 @@ import {
   getWhirlpoolAddress,
 } from "@orca-so/whirlpools-client";
 import type { Address, IInstruction } from "@solana/web3.js";
-import { generateKeyPairSigner } from "@solana/web3.js";
 import { rpc, sendTransaction, signer } from "./mockRpc";
 import {
   SPLASH_POOL_TICK_SPACING,
@@ -15,9 +14,10 @@ import {
 } from "../../src/config";
 import { tickIndexToSqrtPrice } from "@orca-so/whirlpools-core";
 import { fetchMint } from "@solana-program/token";
+import { getNextKeypair } from "./keypair";
 
 export async function setupConfigAndFeeTiers(): Promise<Address> {
-  const keypair = await generateKeyPairSigner();
+  const keypair = getNextKeypair();
   const instructions: IInstruction[] = [];
 
   instructions.push(
@@ -90,8 +90,8 @@ export async function setupWhirlpool(
     tokenB,
     tickSpacing,
   );
-  const vaultA = await generateKeyPairSigner();
-  const vaultB = await generateKeyPairSigner();
+  const vaultA = getNextKeypair();
+  const vaultB = getNextKeypair();
   const badgeA = await getTokenBadgeAddress(WHIRLPOOLS_CONFIG_ADDRESS, tokenA);
   const badgeB = await getTokenBadgeAddress(WHIRLPOOLS_CONFIG_ADDRESS, tokenB);
   const mintA = await fetchMint(rpc, tokenA);

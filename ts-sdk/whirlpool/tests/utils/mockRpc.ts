@@ -8,7 +8,6 @@ import {
   assertIsAddress,
   createSolanaRpcFromTransport,
   createTransactionMessage,
-  generateKeyPairSigner,
   getAddressDecoder,
   getAddressEncoder,
   getBase58Decoder,
@@ -31,8 +30,9 @@ import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
 import { setupConfigAndFeeTiers } from "./program";
 import { getAddMemoInstruction } from "@solana-program/memo";
 import { randomUUID } from "crypto";
+import { getNextKeypair } from "./keypair";
 
-export const signer = await generateKeyPairSigner();
+export const signer = getNextKeypair();
 setDefaultFunder(signer);
 
 function toBytes(address: Address): Uint8Array {
@@ -103,19 +103,7 @@ const decoders: Record<string, VariableSizeDecoder<string>> = {
   base64: getBase64Decoder(),
 };
 
-interface AccountData {
-  data: [string, string];
-  executable: boolean;
-  lamports: bigint;
-  owner: string;
-  rentEpoch: bigint;
-  space: number;
-}
-
-async function getAccountData(
-  address: unknown,
-  opts: unknown,
-): Promise<AccountData | null> {
+async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
   assert(typeof opts === "object");
   assert(opts != null);
 
@@ -138,7 +126,7 @@ async function getAccountData(
   const account = await testContext.banksClient.getAccount(toBytes(address));
 
   if (account == null || account.lamports === 0n) {
-    return null;
+    return null as T;
   }
 
   return {
@@ -148,7 +136,7 @@ async function getAccountData(
     owner: getAddressDecoder().decode(account.owner),
     rentEpoch: 0n,
     space: account.data.length,
-  };
+  } as T;
 }
 
 function getResponseWithContext<T>(value: unknown): T {
@@ -255,7 +243,10 @@ async function mockTransport<T>(
         addressForBalance,
         config.payload.params[1],
       );
-      const lamports = accountDataForBalance?.lamports;
+      assert(accountDataForBalance !== null);
+      assert(typeof accountDataForBalance === "object");
+      assert("lamports" in accountDataForBalance);
+      const lamports = accountDataForBalance.lamports;
       return getResponseWithContext<T>(lamports);
   }
   return Promise.reject(

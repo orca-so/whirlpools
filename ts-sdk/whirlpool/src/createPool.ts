@@ -34,7 +34,7 @@ import {
 import { fetchAllMint } from "@solana-program/token-2022";
 import assert from "assert";
 import { getTokenSizeForMint, orderMints } from "./token";
-import { calculateMinimumBalance } from "./sysvar";
+import { calculateMinimumBalanceForRentExemption } from "./sysvar";
 
 /**
  * Represents the instructions and metadata for creating a pool.
@@ -208,15 +208,18 @@ export async function createConcentratedLiquidityPoolInstructions(
     }),
   );
 
-  nonRefundableRent += calculateMinimumBalance(
+  nonRefundableRent += calculateMinimumBalanceForRentExemption(
     rent,
     getTokenSizeForMint(mintA),
   );
-  nonRefundableRent += calculateMinimumBalance(
+  nonRefundableRent += calculateMinimumBalanceForRentExemption(
     rent,
     getTokenSizeForMint(mintB),
   );
-  nonRefundableRent += calculateMinimumBalance(rent, getWhirlpoolSize());
+  nonRefundableRent += calculateMinimumBalanceForRentExemption(
+    rent,
+    getWhirlpoolSize(),
+  );
 
   const fullRange = getFullRangeTickIndexes(tickSpacing);
   const lowerTickIndex = getTickArrayStartTickIndex(
@@ -252,7 +255,10 @@ export async function createConcentratedLiquidityPoolInstructions(
         startTickIndex: tickArrayIndexes[i],
       }),
     );
-    nonRefundableRent += calculateMinimumBalance(rent, getTickArraySize());
+    nonRefundableRent += calculateMinimumBalanceForRentExemption(
+      rent,
+      getTickArraySize(),
+    );
   }
 
   return {

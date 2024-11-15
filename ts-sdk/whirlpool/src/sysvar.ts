@@ -12,7 +12,7 @@ const ACCOUNT_STORAGE_OVERHEAD = 128;
  * @param {number} dataSize - The size of the account data in bytes.
  * @returns {bigint} The minimum balance required for rent exemption in lamports.
  */
-export function calculateMinimumBalance(
+export function calculateMinimumBalanceForRentExemption(
   rent: SysvarRent,
   dataSize: number,
 ): bigint {

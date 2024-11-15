@@ -63,7 +63,7 @@ describe("Create Pool", () => {
     const price = 10;
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    const { instructions, poolAddress, estInitializationCost } =
+    const { instructions, poolAddress, initializationCost } =
       await createSplashPoolInstructions(rpc, mintA, mintB, price);
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
@@ -79,7 +79,7 @@ describe("Create Pool", () => {
     const minRentExempt = balanceChange - txFee;
 
     assertAccountExists(poolAfter);
-    assert.strictEqual(estInitializationCost, minRentExempt);
+    assert.strictEqual(initializationCost, minRentExempt);
     assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
     assert.strictEqual(mintA, poolAfter.data.tokenMintA);
     assert.strictEqual(mintB, poolAfter.data.tokenMintB);
@@ -90,7 +90,7 @@ describe("Create Pool", () => {
     const price = 10;
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    const { instructions, poolAddress, estInitializationCost } =
+    const { instructions, poolAddress, initializationCost } =
       await createSplashPoolInstructions(rpc, mintA, mintTEA, price);
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
@@ -106,7 +106,7 @@ describe("Create Pool", () => {
     const minRentExempt = balanceChange - txFee;
 
     assertAccountExists(poolAfter);
-    assert.strictEqual(estInitializationCost, minRentExempt);
+    assert.strictEqual(initializationCost, minRentExempt);
     assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
     assert.strictEqual(mintA, poolAfter.data.tokenMintA);
     assert.strictEqual(mintTEA, poolAfter.data.tokenMintB);
@@ -117,7 +117,7 @@ describe("Create Pool", () => {
     const price = 10;
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    const { instructions, poolAddress, estInitializationCost } =
+    const { instructions, poolAddress, initializationCost } =
       await createSplashPoolInstructions(rpc, mintTEA, mintTEB, price);
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
@@ -133,7 +133,7 @@ describe("Create Pool", () => {
     const minRentExempt = balanceChange - txFee;
 
     assertAccountExists(poolAfter);
-    assert.strictEqual(estInitializationCost, minRentExempt);
+    assert.strictEqual(initializationCost, minRentExempt);
     assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
     assert.strictEqual(mintTEA, poolAfter.data.tokenMintA);
     assert.strictEqual(mintTEB, poolAfter.data.tokenMintB);
@@ -144,7 +144,7 @@ describe("Create Pool", () => {
     const price = 10;
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    const { instructions, poolAddress, estInitializationCost } =
+    const { instructions, poolAddress, initializationCost } =
       await createSplashPoolInstructions(rpc, mintA, mintTEFee, price);
 
     const balanceBefore = await rpc.getBalance(signer.address).send();
@@ -160,7 +160,7 @@ describe("Create Pool", () => {
     const minRentExempt = balanceChange - txFee;
 
     assertAccountExists(poolAfter);
-    assert.strictEqual(estInitializationCost, minRentExempt);
+    assert.strictEqual(initializationCost, minRentExempt);
     assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
     assert.strictEqual(mintA, poolAfter.data.tokenMintA);
     assert.strictEqual(mintTEFee, poolAfter.data.tokenMintB);
@@ -171,7 +171,7 @@ describe("Create Pool", () => {
     const price = 10;
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    const { instructions, poolAddress, estInitializationCost } =
+    const { instructions, poolAddress, initializationCost } =
       await createConcentratedLiquidityPoolInstructions(
         rpc,
         mintA,
@@ -193,7 +193,7 @@ describe("Create Pool", () => {
     const minRentExempt = balanceChange - txFee;
 
     assertAccountExists(poolAfter);
-    assert.strictEqual(estInitializationCost, minRentExempt);
+    assert.strictEqual(initializationCost, minRentExempt);
     assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
     assert.strictEqual(mintA, poolAfter.data.tokenMintA);
     assert.strictEqual(mintB, poolAfter.data.tokenMintB);
@@ -204,7 +204,7 @@ describe("Create Pool", () => {
     const price = 10;
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    const { instructions, poolAddress, estInitializationCost } =
+    const { instructions, poolAddress, initializationCost } =
       await createConcentratedLiquidityPoolInstructions(
         rpc,
         mintA,
@@ -226,7 +226,7 @@ describe("Create Pool", () => {
     const minRentExempt = balanceChange - txFee;
 
     assertAccountExists(poolAfter);
-    assert.strictEqual(estInitializationCost, minRentExempt);
+    assert.strictEqual(initializationCost, minRentExempt);
     assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
     assert.strictEqual(mintA, poolAfter.data.tokenMintA);
     assert.strictEqual(mintTEA, poolAfter.data.tokenMintB);
@@ -237,7 +237,7 @@ describe("Create Pool", () => {
     const price = 10;
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    const { instructions, poolAddress, estInitializationCost } =
+    const { instructions, poolAddress, initializationCost } =
       await createConcentratedLiquidityPoolInstructions(
         rpc,
         mintTEA,
@@ -259,7 +259,7 @@ describe("Create Pool", () => {
     const minRentExempt = balanceChange - txFee;
 
     assertAccountExists(poolAfter);
-    assert.strictEqual(estInitializationCost, minRentExempt);
+    assert.strictEqual(initializationCost, minRentExempt);
     assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
     assert.strictEqual(mintTEA, poolAfter.data.tokenMintA);
     assert.strictEqual(mintTEB, poolAfter.data.tokenMintB);
@@ -270,7 +270,7 @@ describe("Create Pool", () => {
     const price = 10;
     const sqrtPrice = priceToSqrtPrice(price, 6, 6);
 
-    const { instructions, poolAddress, estInitializationCost } =
+    const { instructions, poolAddress, initializationCost } =
       await createConcentratedLiquidityPoolInstructions(
         rpc,
         mintA,
@@ -292,7 +292,7 @@ describe("Create Pool", () => {
     const minRentExempt = balanceChange - txFee;
 
     assertAccountExists(poolAfter);
-    assert.strictEqual(estInitializationCost, minRentExempt);
+    assert.strictEqual(initializationCost, minRentExempt);
     assert.strictEqual(sqrtPrice, poolAfter.data.sqrtPrice);
     assert.strictEqual(mintA, poolAfter.data.tokenMintA);
     assert.strictEqual(mintTEFee, poolAfter.data.tokenMintB);

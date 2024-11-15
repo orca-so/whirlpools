@@ -44,7 +44,7 @@ export type CreatePoolInstructions = {
   instructions: IInstruction[];
 
   /** The estimated rent exemption cost for initializing the pool, in lamports. */
-  estInitializationCost: Lamports;
+  initializationCost: Lamports;
 
   /** The address of the newly created pool. */
   poolAddress: Address;
@@ -74,7 +74,7 @@ export type CreatePoolInstructions = {
  * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2";
  * const initialPrice = 0.01;
  *
- * const { poolAddress, instructions, estInitializationCost } = await createSplashPoolInstructions(
+ * const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo,
@@ -125,7 +125,7 @@ export function createSplashPoolInstructions(
  * const tickSpacing = 64;
  * const initialPrice = 0.01;
  *
- * const { poolAddress, instructions, estInitializationCost } = await createConcentratedLiquidityPoolInstructions(
+ * const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPoolInstructions(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo,
@@ -264,6 +264,6 @@ export async function createConcentratedLiquidityPoolInstructions(
   return {
     instructions,
     poolAddress,
-    estInitializationCost: lamports(nonRefundableRent),
+    initializationCost: lamports(nonRefundableRent),
   };
 }

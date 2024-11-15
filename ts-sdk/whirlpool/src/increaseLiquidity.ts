@@ -279,19 +279,14 @@ export async function increaseLiquidityInstructions(
 
 /**
  * Represents the instructions and quote for opening a position.
+ * Extends IncreaseLiquidityInstructions with additional fields for position initialization.
  */
-export type OpenPositionInstructions = {
-  /** The quote object with details about the increase in liquidity, including the liquidity delta, estimated tokens, and maximum token amounts based on slippage tolerance. */
-  quote: IncreaseLiquidityQuote;
-
+export type OpenPositionInstructions = IncreaseLiquidityInstructions & {
   /** The initialization cost for opening the position in lamports. */
   initializationCost: Lamports;
 
   /** The mint address of the position NFT. */
   positionMint: Address;
-
-  /** List of Solana transaction instructions to execute. */
-  instructions: IInstruction[];
 };
 
 async function internalOpenPositionInstructions(

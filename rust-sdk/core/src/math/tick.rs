@@ -4,7 +4,8 @@ use ethnum::U256;
 use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
-    ErrorCode, TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, U128
+    ErrorCode, TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX,
+    TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, U128,
 };
 
 const LOG_B_2_X32: i128 = 59543866431248i128;
@@ -313,8 +314,7 @@ pub fn get_tick_index_in_array(
     if tick_index >= tick_array_start_index + (TICK_ARRAY_SIZE as i32) * (tick_spacing as i32) {
         return Err(TICK_INDEX_NOT_IN_ARRAY);
     }
-    let result = (tick_index - tick_array_start_index)
-        .unsigned_abs() / (tick_spacing as u32);
+    let result = (tick_index - tick_array_start_index).unsigned_abs() / (tick_spacing as u32);
     Ok(result)
 }
 
@@ -612,9 +612,18 @@ mod tests {
         assert_eq!(get_tick_index_in_array(-780, -880, 10), Ok(10));
 
         // Outside of the tick array
-        assert_eq!(get_tick_index_in_array(880, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
-        assert_eq!(get_tick_index_in_array(-1, 0, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
-        assert_eq!(get_tick_index_in_array(-881, -880, 10), Err(TICK_INDEX_NOT_IN_ARRAY));
+        assert_eq!(
+            get_tick_index_in_array(880, 0, 10),
+            Err(TICK_INDEX_NOT_IN_ARRAY)
+        );
+        assert_eq!(
+            get_tick_index_in_array(-1, 0, 10),
+            Err(TICK_INDEX_NOT_IN_ARRAY)
+        );
+        assert_eq!(
+            get_tick_index_in_array(-881, -880, 10),
+            Err(TICK_INDEX_NOT_IN_ARRAY)
+        );
 
         // Splash pool tick spacing
         assert_eq!(get_tick_index_in_array(2861952, 0, 32896), Ok(87));

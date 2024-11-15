@@ -18,6 +18,7 @@ import type {
   TransactionSigner,
 } from "@solana/web3.js";
 import { generateKeyPairSigner, lamports } from "@solana/web3.js";
+import { fetchSysvarRent } from "@solana/sysvars";
 import {
   DEFAULT_ADDRESS,
   FUNDER,
@@ -150,7 +151,9 @@ export async function createConcentratedLiquidityPoolInstructions(
     "Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)",
   );
   const instructions: IInstruction[] = [];
-  let stateSpaces = [];
+
+  const rent = await fetchSysvarRent(rpc);
+  let nonRefundableRent: bigint = 0n;
 
   // Since TE mint data is an extension of T mint data, we can use the same fetch function
   const [mintA, mintB] = await fetchAllMint(rpc, [tokenMintA, tokenMintB]);
@@ -205,9 +208,15 @@ export async function createConcentratedLiquidityPoolInstructions(
     }),
   );
 
-  stateSpaces.push(getTokenSizeForMint(mintA));
-  stateSpaces.push(getTokenSizeForMint(mintB));
-  stateSpaces.push(getWhirlpoolSize());
+  nonRefundableRent += calculateMinimumBalance(
+    rent,
+    getTokenSizeForMint(mintA),
+  );
+  nonRefundableRent += calculateMinimumBalance(
+    rent,
+    getTokenSizeForMint(mintB),
+  );
+  nonRefundableRent += calculateMinimumBalance(rent, getWhirlpoolSize());
 
   const fullRange = getFullRangeTickIndexes(tickSpacing);
   const lowerTickIndex = getTickArrayStartTickIndex(
@@ -243,23 +252,12 @@ export async function createConcentratedLiquidityPoolInstructions(
         startTickIndex: tickArrayIndexes[i],
       }),
     );
-    stateSpaces.push(getTickArraySize());
+    nonRefundableRent += calculateMinimumBalance(rent, getTickArraySize());
   }
-
-  const nonRefundableRents: Lamports[] = await Promise.all(
-    stateSpaces.map(async (space) => {
-      const rentExemption = await calculateMinimumBalance(rpc, space);
-      return rentExemption;
-    }),
-  );
-
-  const nonRefundableRent = lamports(
-    nonRefundableRents.reduce((a, b) => a + b, 0n),
-  );
 
   return {
     instructions,
     poolAddress,
-    estInitializationCost: nonRefundableRent,
+    estInitializationCost: lamports(nonRefundableRent),
   };
 }

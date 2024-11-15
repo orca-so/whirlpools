@@ -17,12 +17,11 @@ const versionConfigs: RustConfig[] = [
 ];
 
 describe("Integration", () => {
-
   beforeEach(() => {
     if (existsSync("Cargo.lock")) {
       rmSync("Cargo.lock");
     }
-  })
+  });
 
   versionConfigs.forEach((config) => {
     it(`Build using '${JSON.stringify(config)}'`, () => {

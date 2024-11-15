@@ -103,7 +103,19 @@ const decoders: Record<string, VariableSizeDecoder<string>> = {
   base64: getBase64Decoder(),
 };
 
-async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
+interface AccountData {
+  data: [string, string];
+  executable: boolean;
+  lamports: bigint;
+  owner: string;
+  rentEpoch: bigint;
+  space: number;
+}
+
+async function getAccountData(
+  address: unknown,
+  opts: unknown,
+): Promise<AccountData | null> {
   assert(typeof opts === "object");
   assert(opts != null);
 
@@ -126,7 +138,7 @@ async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
   const account = await testContext.banksClient.getAccount(toBytes(address));
 
   if (account == null || account.lamports === 0n) {
-    return null as T;
+    return null;
   }
 
   return {
@@ -136,7 +148,7 @@ async function getAccountData<T>(address: unknown, opts: unknown): Promise<T> {
     owner: getAddressDecoder().decode(account.owner),
     rentEpoch: 0n,
     space: account.data.length,
-  } as T;
+  };
 }
 
 function getResponseWithContext<T>(value: unknown): T {
@@ -236,6 +248,15 @@ async function mockTransport<T>(
         slotsInEpoch: 32n,
         transactionCount: 0n,
       });
+    case "getBalance":
+      const addressForBalance = config.payload.params[0];
+      assert(typeof addressForBalance === "string");
+      const accountDataForBalance = await getAccountData(
+        addressForBalance,
+        config.payload.params[1],
+      );
+      const lamports = accountDataForBalance?.lamports;
+      return getResponseWithContext<T>(lamports);
   }
   return Promise.reject(
     `Method ${config.payload.method} not supported in mock transport`,

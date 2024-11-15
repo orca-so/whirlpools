@@ -12,7 +12,6 @@ import {
 } from "@orca-so/whirlpools-client";
 import type {
   IncreaseLiquidityQuote,
-  TickRange,
   TransferFee,
 } from "@orca-so/whirlpools-core";
 import {
@@ -310,14 +309,11 @@ async function internalOpenPositionInstructions(
     "Either supply a funder or set the default funder",
   );
   const instructions: IInstruction[] = [];
-  
+
   const rent = await fetchSysvarRent(rpc);
   let nonRefundableRent: bigint = 0n;
 
-  const tickRange = orderTickIndexes(
-    lowerTickIndex,
-    upperTickIndex,
-  );
+  const tickRange = orderTickIndexes(lowerTickIndex, upperTickIndex);
 
   const initializableLowerTickIndex = getInitializableTickIndex(
     tickRange.tickLowerIndex,
@@ -397,7 +393,10 @@ async function internalOpenPositionInstructions(
         startTickIndex: lowerTickIndex,
       }),
     );
-    nonRefundableRent += calculateMinimumBalanceForRentExemption(rent, getTickArraySize());
+    nonRefundableRent += calculateMinimumBalanceForRentExemption(
+      rent,
+      getTickArraySize(),
+    );
   }
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
@@ -409,7 +408,10 @@ async function internalOpenPositionInstructions(
         startTickIndex: upperTickIndex,
       }),
     );
-    nonRefundableRent += calculateMinimumBalanceForRentExemption(rent, getTickArraySize());
+    nonRefundableRent += calculateMinimumBalanceForRentExemption(
+      rent,
+      getTickArraySize(),
+    );
   }
 
   instructions.push(

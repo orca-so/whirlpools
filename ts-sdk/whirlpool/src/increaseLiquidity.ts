@@ -12,7 +12,6 @@ import {
 } from "@orca-so/whirlpools-client";
 import type {
   IncreaseLiquidityQuote,
-  TickRange,
   TransferFee,
 } from "@orca-so/whirlpools-core";
 import {
@@ -40,6 +39,7 @@ import type {
   TransactionSigner,
 } from "@solana/web3.js";
 import { address, generateKeyPairSigner, lamports } from "@solana/web3.js";
+import { fetchSysvarRent } from "@solana/sysvars";
 import {
   DEFAULT_ADDRESS,
   FUNDER,
@@ -61,6 +61,7 @@ import {
 } from "@solana-program/token-2022";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
+import { calculateMinimumBalanceForRentExemption } from "./sysvar";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
@@ -91,12 +92,6 @@ export type IncreaseLiquidityInstructions = {
   /** The quote object with details about the increase in liquidity, including the liquidity delta, estimated tokens, and maximum token amounts based on slippage tolerance. */
   quote: IncreaseLiquidityQuote;
 
-  /** The initialization cost for liquidity in lamports. */
-  initializationCost: Lamports;
-
-  /** The mint address of the position NFT. */
-  positionMint: Address;
-
   /** List of Solana transaction instructions to execute. */
   instructions: IInstruction[];
 };
@@ -104,7 +99,8 @@ export type IncreaseLiquidityInstructions = {
 function getIncreaseLiquidityQuote(
   param: IncreaseLiquidityQuoteParam,
   pool: Whirlpool,
-  tickRange: TickRange,
+  tickLowerIndex: number,
+  tickUpperIndex: number,
   slippageToleranceBps: number,
   transferFeeA: TransferFee | undefined,
   transferFeeB: TransferFee | undefined,
@@ -114,8 +110,8 @@ function getIncreaseLiquidityQuote(
       param.liquidity,
       slippageToleranceBps,
       pool.sqrtPrice,
-      tickRange.tickLowerIndex,
-      tickRange.tickUpperIndex,
+      tickLowerIndex,
+      tickUpperIndex,
       transferFeeA,
       transferFeeB,
     );
@@ -124,8 +120,8 @@ function getIncreaseLiquidityQuote(
       param.tokenA,
       slippageToleranceBps,
       pool.sqrtPrice,
-      tickRange.tickLowerIndex,
-      tickRange.tickUpperIndex,
+      tickLowerIndex,
+      tickUpperIndex,
       transferFeeA,
       transferFeeB,
     );
@@ -134,8 +130,8 @@ function getIncreaseLiquidityQuote(
       param.tokenB,
       slippageToleranceBps,
       pool.sqrtPrice,
-      tickRange.tickLowerIndex,
-      tickRange.tickUpperIndex,
+      tickLowerIndex,
+      tickUpperIndex,
       transferFeeA,
       transferFeeB,
     );
@@ -206,7 +202,8 @@ export async function increaseLiquidityInstructions(
   const quote = getIncreaseLiquidityQuote(
     param,
     whirlpool.data,
-    position.data,
+    position.data.tickLowerIndex,
+    position.data.tickUpperIndex,
     slippageToleranceBps,
     transferFeeA,
     transferFeeB,
@@ -276,10 +273,20 @@ export async function increaseLiquidityInstructions(
   return {
     quote,
     instructions,
-    positionMint: positionMintAddress,
-    initializationCost: lamports(0n),
   };
 }
+
+/**
+ * Represents the instructions and quote for opening a position.
+ * Extends IncreaseLiquidityInstructions with additional fields for position initialization.
+ */
+export type OpenPositionInstructions = IncreaseLiquidityInstructions & {
+  /** The initialization cost for opening the position in lamports. */
+  initializationCost: Lamports;
+
+  /** The mint address of the position NFT. */
+  positionMint: Address;
+};
 
 async function internalOpenPositionInstructions(
   rpc: Rpc<
@@ -296,27 +303,27 @@ async function internalOpenPositionInstructions(
   mintB: Account<Mint>,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
   funder: TransactionSigner = FUNDER,
-): Promise<IncreaseLiquidityInstructions> {
+): Promise<OpenPositionInstructions> {
   assert(
     funder.address !== DEFAULT_ADDRESS,
     "Either supply a funder or set the default funder",
   );
   const instructions: IInstruction[] = [];
-  let nonReclaimableStateSpace = 0;
+
+  const rent = await fetchSysvarRent(rpc);
+  let nonRefundableRent: bigint = 0n;
+
+  const tickRange = orderTickIndexes(lowerTickIndex, upperTickIndex);
 
   const initializableLowerTickIndex = getInitializableTickIndex(
-    lowerTickIndex,
+    tickRange.tickLowerIndex,
     whirlpool.data.tickSpacing,
     false,
   );
   const initializableUpperTickIndex = getInitializableTickIndex(
-    upperTickIndex,
+    tickRange.tickUpperIndex,
     whirlpool.data.tickSpacing,
     true,
-  );
-  const tickRange = orderTickIndexes(
-    initializableLowerTickIndex,
-    initializableUpperTickIndex,
   );
 
   const currentEpoch = await rpc.getEpochInfo().send();
@@ -326,7 +333,8 @@ async function internalOpenPositionInstructions(
   const quote = getIncreaseLiquidityQuote(
     param,
     whirlpool.data,
-    tickRange,
+    initializableLowerTickIndex,
+    initializableUpperTickIndex,
     slippageToleranceBps,
     transferFeeA,
     transferFeeB,
@@ -335,11 +343,11 @@ async function internalOpenPositionInstructions(
   const positionMint = await generateKeyPairSigner();
 
   const lowerTickArrayIndex = getTickArrayStartTickIndex(
-    tickRange.tickLowerIndex,
+    initializableLowerTickIndex,
     whirlpool.data.tickSpacing,
   );
   const upperTickArrayIndex = getTickArrayStartTickIndex(
-    tickRange.tickUpperIndex,
+    initializableUpperTickIndex,
     whirlpool.data.tickSpacing,
   );
 
@@ -385,7 +393,10 @@ async function internalOpenPositionInstructions(
         startTickIndex: lowerTickIndex,
       }),
     );
-    nonReclaimableStateSpace += getTickArraySize();
+    nonRefundableRent += calculateMinimumBalanceForRentExemption(
+      rent,
+      getTickArraySize(),
+    );
   }
 
   if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
@@ -397,7 +408,10 @@ async function internalOpenPositionInstructions(
         startTickIndex: upperTickIndex,
       }),
     );
-    nonReclaimableStateSpace += getTickArraySize();
+    nonRefundableRent += calculateMinimumBalanceForRentExemption(
+      rent,
+      getTickArraySize(),
+    );
   }
 
   instructions.push(
@@ -409,8 +423,8 @@ async function internalOpenPositionInstructions(
       positionTokenAccount,
       whirlpool: whirlpool.address,
       associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-      tickLowerIndex: tickRange.tickLowerIndex,
-      tickUpperIndex: tickRange.tickUpperIndex,
+      tickLowerIndex: initializableLowerTickIndex,
+      tickUpperIndex: initializableUpperTickIndex,
       token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
       metadataUpdateAuth: address(
         "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
@@ -445,18 +459,11 @@ async function internalOpenPositionInstructions(
 
   instructions.push(...cleanupInstructions);
 
-  let nonRefundableRent = lamports(0n);
-  if (nonReclaimableStateSpace > 0) {
-    nonRefundableRent = await rpc
-      .getMinimumBalanceForRentExemption(BigInt(nonReclaimableStateSpace))
-      .send();
-  }
-
   return {
     instructions,
     quote,
     positionMint: positionMint.address,
-    initializationCost: nonRefundableRent,
+    initializationCost: lamports(nonRefundableRent),
   };
 }
 
@@ -468,7 +475,7 @@ async function internalOpenPositionInstructions(
  * @param {IncreaseLiquidityQuoteParam} param - The parameters for adding liquidity, where one of `liquidity`, `tokenA`, or `tokenB` must be specified. The SDK will compute the others.
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The maximum acceptable slippage, in basis points (BPS).
  * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
- * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing the instructions, quote, position mint address, and initialization costs for increasing liquidity.
+ * @returns {Promise<OpenPositionInstructions>} A promise that resolves to an object containing the instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
  * import { openFullRangePositionInstructions } from '@orca-so/whirlpools';
@@ -502,7 +509,7 @@ export async function openFullRangePositionInstructions(
   param: IncreaseLiquidityQuoteParam,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
   funder: TransactionSigner = FUNDER,
-): Promise<IncreaseLiquidityInstructions> {
+): Promise<OpenPositionInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   const tickRange = getFullRangeTickIndexes(whirlpool.data.tickSpacing);
   const [mintA, mintB] = await fetchAllMint(rpc, [
@@ -536,7 +543,7 @@ export async function openFullRangePositionInstructions(
  * @param {number} [slippageToleranceBps=SLIPPAGE_TOLERANCE_BPS] - The slippage tolerance for adding liquidity, in basis points (BPS).
  * @param {TransactionSigner} [funder=FUNDER] - The account funding the transaction.
  *
- * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing instructions, quote, position mint address, and initialization costs for increasing liquidity.
+ * @returns {Promise<OpenPositionInstructions>} A promise that resolves to an object containing instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
  * import { openPositionInstructions } from '@orca-so/whirlpools';
@@ -575,7 +582,7 @@ export async function openPositionInstructions(
   upperPrice: number,
   slippageToleranceBps: number = SLIPPAGE_TOLERANCE_BPS,
   funder: TransactionSigner = FUNDER,
-): Promise<IncreaseLiquidityInstructions> {
+): Promise<OpenPositionInstructions> {
   const whirlpool = await fetchWhirlpool(rpc, poolAddress);
   assert(
     whirlpool.data.tickSpacing !== SPLASH_POOL_TICK_SPACING,
@@ -588,21 +595,13 @@ export async function openPositionInstructions(
   const decimalsA = mintA.data.decimals;
   const decimalsB = mintB.data.decimals;
   const lowerTickIndex = priceToTickIndex(lowerPrice, decimalsA, decimalsB);
-  const lowerInitializableTickIndex = getInitializableTickIndex(
-    lowerTickIndex,
-    whirlpool.data.tickSpacing,
-  );
   const upperTickIndex = priceToTickIndex(upperPrice, decimalsA, decimalsB);
-  const upperInitializableTickIndex = getInitializableTickIndex(
-    upperTickIndex,
-    whirlpool.data.tickSpacing,
-  );
   return internalOpenPositionInstructions(
     rpc,
     whirlpool,
     param,
-    lowerInitializableTickIndex,
-    upperInitializableTickIndex,
+    lowerTickIndex,
+    upperTickIndex,
     mintA,
     mintB,
     slippageToleranceBps,

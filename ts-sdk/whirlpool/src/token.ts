@@ -374,5 +374,7 @@ export function orderMints(mint1: Address, mint2: Address): [Address, Address] {
  */
 export function getTokenSizeForMint(mint: Account<Mint>): number {
   const extensions = getAccountExtensions(mint.data);
-  return extensions.length === 0 ? getTokenSize() : getTokenSizeWithExtensions(extensions);
+  return extensions.length === 0
+    ? getTokenSize()
+    : getTokenSizeWithExtensions(extensions);
 }

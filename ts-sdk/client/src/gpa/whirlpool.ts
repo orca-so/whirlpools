@@ -196,6 +196,25 @@ export function whirlpoolRewardVault3Filter(
   } as WhirlpoolFilter;
 }
 
+/**
+ * Fetches all Whirlpool accounts with the specified filters.
+ *
+ * This function fetches all Whirlpool accounts from the blockchain that match the specified filters.
+ * It uses the Whirlpool discriminator to identify Whirlpool accounts and applies additional filters
+ * provided as arguments.
+ *
+ * @param {Rpc<GetProgramAccountsApi>} rpc - The Solana RPC client to fetch program accounts.
+ * @param {...WhirlpoolFilter[]} filters - The filters to apply when fetching Whirlpool accounts.
+ * @returns {Promise<Account<Whirlpool>[]>} A promise that resolves to an array of Whirlpool accounts.
+ *
+ * @example
+ * import { address, createSolanaRpc, devnet } from "@solana/web3.js";
+ * import { fetchAllWhirlpoolWithFilter, whirlpoolWhirlpoolConfigFilter } from "@orca-so/whirlpools-client";
+ *
+ * const rpcDevnet = createSolanaRpc(devnet("https://api.devnet.solana.com"));
+ * const WHIRLPOOLS_CONFIG_ADDRESS_DEVNET = address("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR");
+ * const whirlpools = await fetchAllWhirlpoolWithFilter(rpcDevnet, whirlpoolWhirlpoolConfigFilter(WHIRLPOOLS_CONFIG_ADDRESS_DEVNET));
+ */
 export async function fetchAllWhirlpoolWithFilter(
   rpc: Rpc<GetProgramAccountsApi>,
   ...filters: WhirlpoolFilter[]

@@ -1,15 +1,20 @@
 use std::error::Error;
 use std::str::FromStr;
 
-use orca_whirlpools_client::{get_position_address, get_tick_array_address, InitializeTickArray, InitializeTickArrayInstructionArgs, OpenPositionWithTokenExtensions, OpenPositionWithTokenExtensionsInstructionArgs, Position, TickArray, Whirlpool};
+use orca_whirlpools_client::{
+    get_position_address, get_tick_array_address, InitializeTickArray,
+    InitializeTickArrayInstructionArgs, OpenPositionWithTokenExtensions,
+    OpenPositionWithTokenExtensionsInstructionArgs, Position, TickArray, Whirlpool,
+};
 use orca_whirlpools_client::{IncreaseLiquidityV2, IncreaseLiquidityV2InstructionArgs};
 use orca_whirlpools_core::{
-    get_full_range_tick_indexes, get_initializable_tick_index, get_tick_array_start_tick_index, increase_liquidity_quote, increase_liquidity_quote_a, increase_liquidity_quote_b, order_tick_indexes, price_to_tick_index, IncreaseLiquidityQuote, TickRange, TransferFee
+    get_full_range_tick_indexes, get_initializable_tick_index, get_tick_array_start_tick_index,
+    increase_liquidity_quote, increase_liquidity_quote_a, increase_liquidity_quote_b,
+    order_tick_indexes, price_to_tick_index, IncreaseLiquidityQuote, TransferFee,
 };
 use solana_client::rpc_client::RpcClient;
 use solana_sdk::account::Account;
 use solana_sdk::program_pack::Pack;
-use solana_sdk::rent::Rent;
 use solana_sdk::signer::Signer;
 use solana_sdk::sysvar::Sysvar;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair};
@@ -23,7 +28,6 @@ use crate::{
 };
 
 // TODO: support transfer hooks
-
 
 fn get_increase_liquidity_quote(
     param: IncreaseLiquidityParam,
@@ -119,7 +123,14 @@ pub fn increase_liquidity_instructions(
     let transfer_fee_b = get_current_transfer_fee(Some(mint_b_info), current_epoch);
 
     let quote = get_increase_liquidity_quote(
-        param, slippage_tolerance_bps, &pool, position.tick_lower_index, position.tick_upper_index, transfer_fee_a, transfer_fee_b)?;
+        param,
+        slippage_tolerance_bps,
+        &pool,
+        position.tick_lower_index,
+        position.tick_upper_index,
+        transfer_fee_a,
+        transfer_fee_b,
+    )?;
 
     let mut instructions: Vec<Instruction> = Vec::new();
 
@@ -215,7 +226,8 @@ fn internal_open_position(
     funder: Option<Pubkey>,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
     let funder = funder.unwrap_or(*FUNDER.try_lock()?);
-    let slippage_tolerance_bps = slippage_tolerance_bps.unwrap_or(*SLIPPAGE_TOLERANCE_BPS.try_lock()?);
+    let slippage_tolerance_bps =
+        slippage_tolerance_bps.unwrap_or(*SLIPPAGE_TOLERANCE_BPS.try_lock()?);
     let rent = get_rent()?;
     if funder == Pubkey::default() {
         return Err("Funder must be provided".into());
@@ -244,20 +256,26 @@ fn internal_open_position(
     let transfer_fee_b = get_current_transfer_fee(Some(mint_b_info), epoch);
 
     let quote = get_increase_liquidity_quote(
-        param, slippage_tolerance_bps, &whirlpool, lower_initializable_tick_index, upper_initializable_tick_index, transfer_fee_a, transfer_fee_b)?;
+        param,
+        slippage_tolerance_bps,
+        &whirlpool,
+        lower_initializable_tick_index,
+        upper_initializable_tick_index,
+        transfer_fee_a,
+        transfer_fee_b,
+    )?;
 
     additional_signers.push(Keypair::new());
     let position_mint = additional_signers[0].pubkey();
 
-    let lower_tick_start_index = get_tick_array_start_tick_index(lower_initializable_tick_index, whirlpool.tick_spacing);
-    let upper_tick_start_index = get_tick_array_start_tick_index(upper_initializable_tick_index, whirlpool.tick_spacing);
+    let lower_tick_start_index =
+        get_tick_array_start_tick_index(lower_initializable_tick_index, whirlpool.tick_spacing);
+    let upper_tick_start_index =
+        get_tick_array_start_tick_index(upper_initializable_tick_index, whirlpool.tick_spacing);
 
     let position_address = get_position_address(&position_mint)?.0;
-    let position_token_account_address = get_associated_token_address_with_program_id(
-        &funder,
-        &position_mint,
-        &spl_token_2022::ID,
-    );
+    let position_token_account_address =
+        get_associated_token_address_with_program_id(&funder, &position_mint, &spl_token_2022::ID);
     let lower_tick_array_address = get_tick_array_address(&pool_address, lower_tick_start_index)?.0;
     let upper_tick_array_address = get_tick_array_address(&pool_address, upper_tick_start_index)?.0;
 
@@ -273,7 +291,8 @@ fn internal_open_position(
     instructions.extend(token_accounts.create_instructions);
     additional_signers.extend(token_accounts.additional_signers);
 
-    let tick_array_infos = rpc.get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address])?;
+    let tick_array_infos =
+        rpc.get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address])?;
 
     if tick_array_infos[0].is_none() {
         instructions.push(
@@ -310,7 +329,7 @@ fn internal_open_position(
         .get(&whirlpool.token_mint_a)
         .ok_or("Token A owner account not found")?;
     let token_owner_account_b = token_accounts
-    .token_account_addresses
+        .token_account_addresses
         .get(&whirlpool.token_mint_b)
         .ok_or("Token B owner account not found")?;
 
@@ -325,12 +344,13 @@ fn internal_open_position(
             token2022_program: spl_token_2022::ID,
             system_program: solana_sdk::system_program::id(),
             associated_token_program: spl_associated_token_account::ID,
-            metadata_update_auth: Pubkey::from_str("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr")?
-        }.instruction(OpenPositionWithTokenExtensionsInstructionArgs {
+            metadata_update_auth: Pubkey::from_str("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr")?,
+        }
+        .instruction(OpenPositionWithTokenExtensionsInstructionArgs {
             tick_lower_index: lower_initializable_tick_index,
             tick_upper_index: upper_initializable_tick_index,
             with_token_metadata_extension: true,
-        })
+        }),
     );
 
     instructions.push(
@@ -380,7 +400,8 @@ pub fn open_full_range_position_instructions(
     let whirlpool_info = rpc.get_account(&pool_address)?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     let tick_range = get_full_range_tick_indexes(whirlpool.tick_spacing);
-    let mint_infos = rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])?;
+    let mint_infos =
+        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])?;
     let mint_a_info = mint_infos[0]
         .as_ref()
         .ok_or("Token A mint info not found")?;
@@ -415,7 +436,8 @@ pub fn open_position_instructions(
     if whirlpool.tick_spacing == SPLASH_POOL_TICK_SPACING {
         return Err("Splash pools only support full range positions".into());
     }
-    let mint_infos = rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])?;
+    let mint_infos =
+        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])?;
     let mint_a_info = mint_infos[0]
         .as_ref()
         .ok_or("Token A mint info not found")?;

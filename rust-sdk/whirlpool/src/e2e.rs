@@ -6,7 +6,12 @@ use solana_sdk::{program_pack::Pack, pubkey::Pubkey};
 use spl_token_2022::state::Account;
 
 use crate::{
-    close_position_instructions, create_concentrated_liquidity_pool_instructions, create_splash_pool_instructions, decrease_liquidity_instructions, harvest_position_instructions, increase_liquidity_instructions, open_full_range_position_instructions, position, swap_instructions, tests::{send_transaction_with_signers, setup_ata_with_amount, setup_mint_with_decimals, RPC}, DecreaseLiquidityParam, IncreaseLiquidityParam, SwapQuote, SwapType, SPLASH_POOL_TICK_SPACING
+    close_position_instructions, create_concentrated_liquidity_pool_instructions,
+    create_splash_pool_instructions, decrease_liquidity_instructions,
+    harvest_position_instructions, increase_liquidity_instructions,
+    open_full_range_position_instructions, swap_instructions,
+    tests::{send_transaction_with_signers, setup_ata_with_amount, setup_mint_with_decimals, RPC},
+    DecreaseLiquidityParam, IncreaseLiquidityParam, SwapQuote, SwapType, SPLASH_POOL_TICK_SPACING,
 };
 
 lazy_static! {
@@ -50,243 +55,276 @@ fn init_concentrated_liquidity_pool() -> Result<Pubkey, Box<dyn Error>> {
 }
 
 fn open_position(pool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
-  let infos_before = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_before = Account::unpack(&infos_before[0].as_ref().unwrap().data)?;
-  let token_b_before = Account::unpack(&infos_before[1].as_ref().unwrap().data)?;
+    let infos_before = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_before = Account::unpack(&infos_before[0].as_ref().unwrap().data)?;
+    let token_b_before = Account::unpack(&infos_before[1].as_ref().unwrap().data)?;
 
-  let position = open_full_range_position_instructions(&RPC, pool, IncreaseLiquidityParam::Liquidity(1000000000), None, None)?;
+    let position = open_full_range_position_instructions(
+        &RPC,
+        pool,
+        IncreaseLiquidityParam::Liquidity(1000000000),
+        None,
+        None,
+    )?;
 
-  send_transaction_with_signers(position.instructions, position.additional_signers.iter().collect())?;
+    send_transaction_with_signers(
+        position.instructions,
+        position.additional_signers.iter().collect(),
+    )?;
 
-  let position_address = get_position_address(&position.position_mint)?.0;
-  let infos_after = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
-  let token_a_after = Account::unpack(&infos_after[0].as_ref().unwrap().data)?;
-  let token_b_after = Account::unpack(&infos_after[1].as_ref().unwrap().data)?;
-  let position_after = Position::from_bytes(&infos_after[2].as_ref().unwrap().data)?;
+    let position_address = get_position_address(&position.position_mint)?.0;
+    let infos_after = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
+    let token_a_after = Account::unpack(&infos_after[0].as_ref().unwrap().data)?;
+    let token_b_after = Account::unpack(&infos_after[1].as_ref().unwrap().data)?;
+    let position_after = Position::from_bytes(&infos_after[2].as_ref().unwrap().data)?;
 
-  assert_eq!(position.quote.liquidity_delta, position_after.liquidity);
-  assert_eq!(
-    token_a_before.amount - token_a_after.amount,
-    position.quote.token_est_a,
-  );
-  assert_eq!(
-    token_b_before.amount - token_b_after.amount,
-    position.quote.token_est_b,
-  );
+    assert_eq!(position.quote.liquidity_delta, position_after.liquidity);
+    assert_eq!(
+        token_a_before.amount - token_a_after.amount,
+        position.quote.token_est_a,
+    );
+    assert_eq!(
+        token_b_before.amount - token_b_after.amount,
+        position.quote.token_est_b,
+    );
 
-  Ok(position.position_mint)
+    Ok(position.position_mint)
 }
 
 fn increase_liquidity(position_mint: Pubkey) -> Result<(), Box<dyn Error>> {
-  let position_address = get_position_address(&position_mint)?.0;
-  let infos_before = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
-  let token_a_before = Account::unpack(&infos_before[0].as_ref().unwrap().data)?;
-  let token_b_before = Account::unpack(&infos_before[1].as_ref().unwrap().data)?;
-  let position_before = Position::from_bytes(&infos_before[2].as_ref().unwrap().data)?;
+    let position_address = get_position_address(&position_mint)?.0;
+    let infos_before = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
+    let token_a_before = Account::unpack(&infos_before[0].as_ref().unwrap().data)?;
+    let token_b_before = Account::unpack(&infos_before[1].as_ref().unwrap().data)?;
+    let position_before = Position::from_bytes(&infos_before[2].as_ref().unwrap().data)?;
 
-  let increase_liquidity = increase_liquidity_instructions(&RPC, position_mint, IncreaseLiquidityParam::Liquidity(1000000000), None, None)?;
-  send_transaction_with_signers(increase_liquidity.instructions, increase_liquidity.additional_signers.iter().collect())?;
+    let increase_liquidity = increase_liquidity_instructions(
+        &RPC,
+        position_mint,
+        IncreaseLiquidityParam::Liquidity(1000000000),
+        None,
+        None,
+    )?;
+    send_transaction_with_signers(
+        increase_liquidity.instructions,
+        increase_liquidity.additional_signers.iter().collect(),
+    )?;
 
-  let infos_after = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
-  let token_a_after = Account::unpack(&infos_after[0].as_ref().unwrap().data)?;
-  let token_b_after = Account::unpack(&infos_after[1].as_ref().unwrap().data)?;
-  let position_after = Position::from_bytes(&infos_after[2].as_ref().unwrap().data)?;
+    let infos_after = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
+    let token_a_after = Account::unpack(&infos_after[0].as_ref().unwrap().data)?;
+    let token_b_after = Account::unpack(&infos_after[1].as_ref().unwrap().data)?;
+    let position_after = Position::from_bytes(&infos_after[2].as_ref().unwrap().data)?;
 
-  assert_eq!(position_after.liquidity - position_before.liquidity, increase_liquidity.quote.liquidity_delta);
-  assert_eq!(
-    token_a_before.amount - token_a_after.amount,
-    increase_liquidity.quote.token_est_a,
-  );
-  assert_eq!(
-    token_b_before.amount - token_b_after.amount,
-    increase_liquidity.quote.token_est_b,
-  );
+    assert_eq!(
+        position_after.liquidity - position_before.liquidity,
+        increase_liquidity.quote.liquidity_delta
+    );
+    assert_eq!(
+        token_a_before.amount - token_a_after.amount,
+        increase_liquidity.quote.token_est_a,
+    );
+    assert_eq!(
+        token_b_before.amount - token_b_after.amount,
+        increase_liquidity.quote.token_est_b,
+    );
     Ok(())
 }
 
 fn decrease_liquidity(position_mint: Pubkey) -> Result<(), Box<dyn Error>> {
-  let position_address = get_position_address(&position_mint)?.0;
-  let infos_before = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
-  let token_a_before = Account::unpack(&infos_before[0].as_ref().unwrap().data)?;
-  let token_b_before = Account::unpack(&infos_before[1].as_ref().unwrap().data)?;
-  let position_before = Position::from_bytes(&infos_before[2].as_ref().unwrap().data)?;
+    let position_address = get_position_address(&position_mint)?.0;
+    let infos_before = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
+    let token_a_before = Account::unpack(&infos_before[0].as_ref().unwrap().data)?;
+    let token_b_before = Account::unpack(&infos_before[1].as_ref().unwrap().data)?;
+    let position_before = Position::from_bytes(&infos_before[2].as_ref().unwrap().data)?;
 
-  let decrease_liquidity = decrease_liquidity_instructions(&RPC, position_mint, DecreaseLiquidityParam::Liquidity(10000), None, None)?;
-  send_transaction_with_signers(decrease_liquidity.instructions, decrease_liquidity.additional_signers.iter().collect())?;
+    let decrease_liquidity = decrease_liquidity_instructions(
+        &RPC,
+        position_mint,
+        DecreaseLiquidityParam::Liquidity(10000),
+        None,
+        None,
+    )?;
+    send_transaction_with_signers(
+        decrease_liquidity.instructions,
+        decrease_liquidity.additional_signers.iter().collect(),
+    )?;
 
-  let infos_after = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
-  let token_a_after = Account::unpack(&infos_after[0].as_ref().unwrap().data)?;
-  let token_b_after = Account::unpack(&infos_after[1].as_ref().unwrap().data)?;
-  let position_after = Position::from_bytes(&infos_after[2].as_ref().unwrap().data)?;
+    let infos_after = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
+    let token_a_after = Account::unpack(&infos_after[0].as_ref().unwrap().data)?;
+    let token_b_after = Account::unpack(&infos_after[1].as_ref().unwrap().data)?;
+    let position_after = Position::from_bytes(&infos_after[2].as_ref().unwrap().data)?;
 
-  assert_eq!(position_before.liquidity - position_after.liquidity, decrease_liquidity.quote.liquidity_delta);
-  assert_eq!(
-    token_a_after.amount - token_a_before.amount,
-    decrease_liquidity.quote.token_est_a,
-  );
-  assert_eq!(
-    token_b_after.amount - token_b_before.amount,
-    decrease_liquidity.quote.token_est_b,
-  );
+    assert_eq!(
+        position_before.liquidity - position_after.liquidity,
+        decrease_liquidity.quote.liquidity_delta
+    );
+    assert_eq!(
+        token_a_after.amount - token_a_before.amount,
+        decrease_liquidity.quote.token_est_a,
+    );
+    assert_eq!(
+        token_b_after.amount - token_b_before.amount,
+        decrease_liquidity.quote.token_est_b,
+    );
     Ok(())
 }
 
 fn harvest_position(position_mint: Pubkey) -> Result<(), Box<dyn Error>> {
-  let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
-  let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
+    let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
+    let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
 
-  let harvest_position = harvest_position_instructions(&RPC, position_mint, None)?;
-  send_transaction_with_signers(harvest_position.instructions, harvest_position.additional_signers.iter().collect())?;
+    let harvest_position = harvest_position_instructions(&RPC, position_mint, None)?;
+    send_transaction_with_signers(
+        harvest_position.instructions,
+        harvest_position.additional_signers.iter().collect(),
+    )?;
 
-  let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
-  let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
+    let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
+    let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
 
-  assert_eq!(
-    token_a_after.amount - token_a_before.amount,
-    harvest_position.fees_quote.fee_owed_a,
-  );
-  assert_eq!(
-    token_b_after.amount - token_b_before.amount,
-    harvest_position.fees_quote.fee_owed_b,
-  );
-  Ok(())
+    assert_eq!(
+        token_a_after.amount - token_a_before.amount,
+        harvest_position.fees_quote.fee_owed_a,
+    );
+    assert_eq!(
+        token_b_after.amount - token_b_before.amount,
+        harvest_position.fees_quote.fee_owed_b,
+    );
+    Ok(())
 }
 
 fn close_position(position_mint: Pubkey) -> Result<(), Box<dyn Error>> {
-  let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
-  let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
+    let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
+    let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
 
-  let close_position = close_position_instructions(&RPC, position_mint, None, None)?;
-  send_transaction_with_signers(close_position.instructions, close_position.additional_signers.iter().collect())?;
+    let close_position = close_position_instructions(&RPC, position_mint, None, None)?;
+    send_transaction_with_signers(
+        close_position.instructions,
+        close_position.additional_signers.iter().collect(),
+    )?;
 
-  let position_address = get_position_address(&position_mint)?.0;
-  let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
-  let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
-  let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
+    let position_address = get_position_address(&position_mint)?.0;
+    let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])?;
+    let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
+    let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
 
-  assert_eq!(after_infos[2].is_none(), true);
-  assert_eq!(
-    token_a_after.amount - token_a_before.amount,
-    close_position.quote.token_est_a + close_position.fees_quote.fee_owed_a,
-  );
-  assert_eq!(
-    token_b_after.amount - token_b_before.amount,
-    close_position.quote.token_est_b + close_position.fees_quote.fee_owed_b,
-  );
+    assert!(after_infos[2].is_none());
+    assert_eq!(
+        token_a_after.amount - token_a_before.amount,
+        close_position.quote.token_est_a + close_position.fees_quote.fee_owed_a,
+    );
+    assert_eq!(
+        token_b_after.amount - token_b_before.amount,
+        close_position.quote.token_est_b + close_position.fees_quote.fee_owed_b,
+    );
     Ok(())
 }
 
 fn swap_a_exact_in(pool: Pubkey) -> Result<(), Box<dyn Error>> {
-  let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
-  let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
+    let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
+    let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
 
-  let swap = swap_instructions(&RPC, pool, 100000, *MINT_A, SwapType::ExactIn, None, None)?;
-  send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())?;
+    let swap = swap_instructions(&RPC, pool, 100000, *MINT_A, SwapType::ExactIn, None, None)?;
+    send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())?;
 
-  let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
-  let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
+    let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
+    let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
 
-  if let SwapQuote::ExactIn(quote) = swap.quote {
-    assert_eq!(
-      token_a_before.amount - token_a_after.amount,
-      quote.token_in,
-    );
-    assert_eq!(
-      token_b_after.amount - token_b_before.amount,
-      quote.token_est_out,
-    );
-  } else {
-    return Err("Swap quote is not ExactIn".into());
-  }
+    if let SwapQuote::ExactIn(quote) = swap.quote {
+        assert_eq!(token_a_before.amount - token_a_after.amount, quote.token_in,);
+        assert_eq!(
+            token_b_after.amount - token_b_before.amount,
+            quote.token_est_out,
+        );
+    } else {
+        return Err("Swap quote is not ExactIn".into());
+    }
 
     Ok(())
 }
 
 fn swap_a_exact_out(pool: Pubkey) -> Result<(), Box<dyn Error>> {
-  let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
-  let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
+    let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
+    let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
 
-  let swap = swap_instructions(&RPC, pool, 100000, *MINT_A, SwapType::ExactOut, None, None)?;
-  send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())?;
+    let swap = swap_instructions(&RPC, pool, 100000, *MINT_A, SwapType::ExactOut, None, None)?;
+    send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())?;
 
-  let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
-  let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
+    let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
+    let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
 
-  if let SwapQuote::ExactOut(quote) = swap.quote {
-    assert_eq!(
-      token_a_after.amount - token_a_before.amount,
-      quote.token_out,
-    );
-    assert_eq!(
-      token_b_before.amount - token_b_after.amount,
-      quote.token_est_in,
-    );
-  } else {
-    return Err("Swap quote is not ExactOut".into());
-  }
+    if let SwapQuote::ExactOut(quote) = swap.quote {
+        assert_eq!(
+            token_a_after.amount - token_a_before.amount,
+            quote.token_out,
+        );
+        assert_eq!(
+            token_b_before.amount - token_b_after.amount,
+            quote.token_est_in,
+        );
+    } else {
+        return Err("Swap quote is not ExactOut".into());
+    }
 
     Ok(())
 }
 
 fn swap_b_exact_in(pool: Pubkey) -> Result<(), Box<dyn Error>> {
-  let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
-  let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
+    let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
+    let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
 
-  let swap = swap_instructions(&RPC, pool, 100, *MINT_B, SwapType::ExactIn, None, None)?;
-  send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())?;
+    let swap = swap_instructions(&RPC, pool, 100, *MINT_B, SwapType::ExactIn, None, None)?;
+    send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())?;
 
-  let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
-  let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
+    let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
+    let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
 
-  if let SwapQuote::ExactIn(quote) = swap.quote {
-    assert_eq!(
-      token_a_after.amount - token_a_before.amount,
-      quote.token_est_out,
-    );
-    assert_eq!(
-      token_b_before.amount - token_b_after.amount,
-      quote.token_in,
-    );
-  } else {
-    return Err("Swap quote is not ExactIn".into());
-  }
+    if let SwapQuote::ExactIn(quote) = swap.quote {
+        assert_eq!(
+            token_a_after.amount - token_a_before.amount,
+            quote.token_est_out,
+        );
+        assert_eq!(token_b_before.amount - token_b_after.amount, quote.token_in,);
+    } else {
+        return Err("Swap quote is not ExactIn".into());
+    }
 
     Ok(())
 }
 
 fn swap_b_exact_out(pool: Pubkey) -> Result<(), Box<dyn Error>> {
-  let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
-  let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
+    let before_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_before = Account::unpack(&before_infos[0].as_ref().unwrap().data)?;
+    let token_b_before = Account::unpack(&before_infos[1].as_ref().unwrap().data)?;
 
-  let swap = swap_instructions(&RPC, pool, 100, *MINT_B, SwapType::ExactOut, None, None)?;
-  send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())?;
+    let swap = swap_instructions(&RPC, pool, 100, *MINT_B, SwapType::ExactOut, None, None)?;
+    send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())?;
 
-  let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
-  let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
-  let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
+    let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B])?;
+    let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
+    let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
 
-  if let SwapQuote::ExactOut(quote) = swap.quote {
-    assert_eq!(
-      token_a_before.amount - token_a_after.amount,
-      quote.token_est_in,
-    );
-    assert_eq!(
-      token_b_after.amount - token_b_before.amount,
-      quote.token_out,
-    );
-  } else {
-    return Err("Swap quote is not ExactOut".into());
-  }
+    if let SwapQuote::ExactOut(quote) = swap.quote {
+        assert_eq!(
+            token_a_before.amount - token_a_after.amount,
+            quote.token_est_in,
+        );
+        assert_eq!(
+            token_b_after.amount - token_b_before.amount,
+            quote.token_out,
+        );
+    } else {
+        return Err("Swap quote is not ExactOut".into());
+    }
     Ok(())
 }
 

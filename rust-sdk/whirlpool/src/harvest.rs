@@ -183,8 +183,8 @@ pub fn harvest_position_instructions(
             .get(&pool.token_mint_a)
             .ok_or("Token A owner account not found")?;
         let token_owner_account_b = token_accounts
-        .token_account_addresses
-        .get(&pool.token_mint_b)
+            .token_account_addresses
+            .get(&pool.token_mint_b)
             .ok_or("Token B owner account not found")?;
 
         instructions.push(

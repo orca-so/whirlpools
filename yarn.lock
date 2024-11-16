@@ -3506,7 +3506,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-rust-integration@workspace:rust-sdk/integration"
   dependencies:
+    "@orca-so/whirlpools-rust": "npm:*"
     "@orca-so/whirlpools-rust-client": "npm:*"
+    "@orca-so/whirlpools-rust-core": "npm:*"
     typescript: "npm:^5.5.4"
   languageName: unknown
   linkType: soft
@@ -3522,6 +3524,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-rust@workspace:rust-sdk/whirlpool"
   dependencies:
     "@orca-so/whirlpools-rust-client": "npm:*"
+    "@orca-so/whirlpools-rust-core": "npm:*"
   languageName: unknown
   linkType: soft
 

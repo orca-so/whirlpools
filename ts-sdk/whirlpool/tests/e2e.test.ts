@@ -205,7 +205,7 @@ describe("e2e", () => {
 
     const { instructions, quote } = await swapInstructions(
       rpc,
-      { inputAmount: 100n, mint: mintA },
+      { inputAmount: 100000n, mint: mintA },
       poolAddress,
     );
     await sendTransaction(instructions);
@@ -229,7 +229,7 @@ describe("e2e", () => {
 
     const { instructions, quote } = await swapInstructions(
       rpc,
-      { outputAmount: 100n, mint: mintA },
+      { outputAmount: 100000n, mint: mintA },
       poolAddress,
     );
     await sendTransaction(instructions);
@@ -253,7 +253,7 @@ describe("e2e", () => {
 
     const { instructions, quote } = await swapInstructions(
       rpc,
-      { inputAmount: 100000n, mint: mintB },
+      { inputAmount: 100n, mint: mintB },
       poolAddress,
     );
     await sendTransaction(instructions);
@@ -277,7 +277,7 @@ describe("e2e", () => {
 
     const { instructions, quote } = await swapInstructions(
       rpc,
-      { outputAmount: 100000n, mint: mintB },
+      { outputAmount: 100n, mint: mintB },
       poolAddress,
     );
     await sendTransaction(instructions);

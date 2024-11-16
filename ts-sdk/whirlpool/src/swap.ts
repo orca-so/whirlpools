@@ -100,6 +100,7 @@ function createUninitializedTickArray(
       ticks: Array(_TICK_ARRAY_SIZE()).fill({
         initialized: false,
         liquidityNet: 0n,
+        liquidityGross: 0n,
         feeGrowthOutsideA: 0n,
         feeGrowthOutsideB: 0n,
         rewardGrowthsOutside: [0n, 0n, 0n],

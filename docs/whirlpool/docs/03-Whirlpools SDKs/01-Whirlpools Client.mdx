@@ -18,13 +18,14 @@ This SDK provides developers with low-level functionalities for interacting with
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
-    **NOTE**: This SDK requires Solana Web3.js SDK v2, which is currently in Release Candidate (RC) status. It is not compatible with the widely used v1.x.x version.
+    **NOTE**: This SDK requires Solana Web3.js SDK v2. It is not compatible with the widely used v1.x.x version.
     ```bash
     npm install @orca-so/whirlpools-client
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">
-    **NOTE**: This SDK requires Solana Web3.js SDK v2.
+    **NOTE**: This SDK requires Solana SDK v1. You can use this crate for cross-program-invocation (CPI)
+    but you will have to disable the default features.
     ```bash
     cargo add orca_whirlpools_client
     ```
@@ -132,7 +133,7 @@ The following example demonstrates how to create an InitializePool instruction u
       tokenBadgeA,
       tokenBadgeB,
       funder: wallet,
-      whirlpool, 
+      whirlpool,
       tokenVaultA,
       tokenVaultB,
       feeTier,
@@ -174,7 +175,7 @@ The following example demonstrates how to create an InitializePool instruction u
         let (fee_tier, _bump) = get_fee_tier_address(&whirlpool_config_address, tick_spacing).unwrap();
         let token_program_a = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
         let token_program_b = Pubkey::from_str("TokenkegQfeZyiNwAJbNbGKPFXCWuBvf9Ss623VQ5DA").unwrap();
-        let initial_sqrt_price = 7459106261056563200u128;    
+        let initial_sqrt_price = 7459106261056563200u128;
 
         let initialize_pool_v2_instruction = InitializePoolV2Builder::new()
             .whirlpools_config(whirlpool_config_address)

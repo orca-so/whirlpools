@@ -16,7 +16,6 @@ use solana_client::rpc_client::RpcClient;
 use solana_sdk::account::Account;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::signer::Signer;
-use solana_sdk::sysvar::Sysvar;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair};
 use spl_associated_token_account::get_associated_token_address_with_program_id;
 use spl_token_2022::state::Mint;

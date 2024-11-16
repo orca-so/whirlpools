@@ -109,19 +109,6 @@ mod tests {
 
     #[test]
     #[serial]
-    fn test_default_addresses() {
-        let config = Pubkey::from_str("2LecshUwdy9xi7meFgHtFJQNSKk4KdTrcpvaB56dP2NQ").unwrap();
-        let extension = Pubkey::from_str("777H5H3Tp9U11uRVRzFwM8BinfiakbaLT8vQpeuhvEiH").unwrap();
-        assert_eq!(*WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(), config);
-        assert_eq!(
-            *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
-            extension
-        );
-        assert_eq!(*FUNDER.lock().unwrap(), Pubkey::default());
-    }
-
-    #[test]
-    #[serial]
     fn test_set_whirlpools_config_address() {
         let new_config = Pubkey::from_str("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E").unwrap();
         let new_extension =
@@ -132,6 +119,7 @@ mod tests {
             *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
             new_extension
         );
+        reset_configuration().unwrap();
     }
 
     #[test]
@@ -140,6 +128,7 @@ mod tests {
         let new_funder = Pubkey::from_str("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E").unwrap();
         set_funder(new_funder).unwrap();
         assert_eq!(*FUNDER.lock().unwrap(), new_funder);
+        reset_configuration().unwrap();
     }
 
     #[test]
@@ -148,6 +137,7 @@ mod tests {
         let new_strategy = NativeMintWrappingStrategy::Ata;
         set_native_mint_wrapping_strategy(new_strategy).unwrap();
         assert_eq!(*NATIVE_MINT_WRAPPING_STRATEGY.lock().unwrap(), new_strategy);
+        reset_configuration().unwrap();
     }
 
     #[test]
@@ -156,6 +146,7 @@ mod tests {
         let new_tolerance = 200;
         set_slippage_tolerance_bps(new_tolerance).unwrap();
         assert_eq!(*SLIPPAGE_TOLERANCE_BPS.lock().unwrap(), new_tolerance);
+        reset_configuration().unwrap();
     }
 
     #[test]

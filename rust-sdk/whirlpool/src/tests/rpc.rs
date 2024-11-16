@@ -3,6 +3,7 @@ use std::{error::Error, str::FromStr, time::Duration};
 use async_trait::async_trait;
 use futures::{executor::block_on, lock::Mutex};
 use lazy_static::lazy_static;
+use orca_whirlpools_client::{WHIRLPOOLS_CONFIG_DISCRIMINATOR, WHIRLPOOL_ID};
 use serde_json::{from_value, to_value, Value};
 use solana_account_decoder::{UiAccount, UiAccountEncoding};
 use solana_client::client_error::Result as ClientResult;
@@ -30,10 +31,9 @@ use solana_sdk::{
 use solana_version::Version;
 use spl_memo::build_memo;
 
-use crate::{
-    set_funder, set_whirlpools_config_address,
-    tests::{anchor_programs, setup_config_and_fee_tiers},
-};
+use crate::tests::setup_fee_tiers;
+use crate::WHIRLPOOLS_CONFIG_ADDRESS;
+use crate::{set_funder, tests::anchor_programs};
 
 lazy_static! {
     pub static ref SIGNER: Keypair = {
@@ -54,6 +54,23 @@ lazy_static! {
                 rent_epoch: 0,
             },
         );
+        test.add_account(
+            *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(),
+            Account {
+                lamports: 100_000_000_000,
+                data: [
+                    WHIRLPOOLS_CONFIG_DISCRIMINATOR,
+                    &SIGNER.pubkey().to_bytes(),
+                    &SIGNER.pubkey().to_bytes(),
+                    &SIGNER.pubkey().to_bytes(),
+                    &[0; 2],
+                ]
+                .concat(),
+                owner: WHIRLPOOL_ID,
+                executable: false,
+                rent_epoch: 0,
+            },
+        );
         let programs = anchor_programs("../..".to_string()).unwrap();
         for (name, pubkey) in programs {
             test.add_program(&name, pubkey, None);
@@ -69,14 +86,9 @@ lazy_static! {
             },
         )
     };
-    static ref CONFIG: Pubkey = {
-        let config = setup_config_and_fee_tiers().unwrap();
-        set_whirlpools_config_address(config).unwrap();
-        config
-    };
     pub static ref RPC: &'static RpcClient = {
         let rpc = &RPC_CLIENT;
-        set_whirlpools_config_address(*CONFIG).unwrap();
+        setup_fee_tiers().unwrap();
         rpc
     };
 }

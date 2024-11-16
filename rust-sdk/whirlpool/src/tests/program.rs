@@ -1,34 +1,23 @@
 use orca_whirlpools_client::{
-    get_fee_tier_address, InitializeConfig, InitializeConfigInstructionArgs, InitializeFeeTier,
-    InitializeFeeTierInstructionArgs,
+    get_fee_tier_address, InitializeFeeTier, InitializeFeeTierInstructionArgs,
 };
 use solana_program::system_program::ID as SYSTEM_PROGRAM_ID;
 use solana_sdk::{pubkey::Pubkey, signer::Signer};
 use std::error::Error;
 
-use crate::SPLASH_POOL_TICK_SPACING;
+use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
 
-use super::{get_next_keypair, send_transaction_with_signers, SIGNER};
+use super::{send_transaction, SIGNER};
 
-pub fn setup_config_and_fee_tiers() -> Result<Pubkey, Box<dyn Error>> {
-    let keypair = get_next_keypair();
+pub fn setup_fee_tiers() -> Result<(), Box<dyn Error>> {
+    let config = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
 
-    let mut instructions = vec![InitializeConfig {
-        config: keypair.pubkey(),
-        funder: SIGNER.pubkey(),
-        system_program: SYSTEM_PROGRAM_ID,
-    }
-    .instruction(InitializeConfigInstructionArgs {
-        fee_authority: SIGNER.pubkey(),
-        collect_protocol_fees_authority: SIGNER.pubkey(),
-        reward_emissions_super_authority: SIGNER.pubkey(),
-        default_protocol_fee_rate: 100,
-    })];
+    let mut instructions = Vec::new();
 
-    let default_fee_tier = get_fee_tier_address(&keypair.pubkey(), 128)?;
+    let default_fee_tier = get_fee_tier_address(&config, 128)?;
     instructions.push(
         InitializeFeeTier {
-            config: keypair.pubkey(),
+            config,
             fee_tier: default_fee_tier.0,
             funder: SIGNER.pubkey(),
             fee_authority: SIGNER.pubkey(),
@@ -40,10 +29,10 @@ pub fn setup_config_and_fee_tiers() -> Result<Pubkey, Box<dyn Error>> {
         }),
     );
 
-    let concentrated_fee_tier = get_fee_tier_address(&keypair.pubkey(), 64)?;
+    let concentrated_fee_tier = get_fee_tier_address(&config, 64)?;
     instructions.push(
         InitializeFeeTier {
-            config: keypair.pubkey(),
+            config,
             fee_tier: concentrated_fee_tier.0,
             funder: SIGNER.pubkey(),
             fee_authority: SIGNER.pubkey(),
@@ -55,10 +44,10 @@ pub fn setup_config_and_fee_tiers() -> Result<Pubkey, Box<dyn Error>> {
         }),
     );
 
-    let splash_fee_tier = get_fee_tier_address(&keypair.pubkey(), SPLASH_POOL_TICK_SPACING)?;
+    let splash_fee_tier = get_fee_tier_address(&config, SPLASH_POOL_TICK_SPACING)?;
     instructions.push(
         InitializeFeeTier {
-            config: keypair.pubkey(),
+            config,
             fee_tier: splash_fee_tier.0,
             funder: SIGNER.pubkey(),
             fee_authority: SIGNER.pubkey(),
@@ -70,9 +59,9 @@ pub fn setup_config_and_fee_tiers() -> Result<Pubkey, Box<dyn Error>> {
         }),
     );
 
-    send_transaction_with_signers(instructions, vec![keypair])?;
+    send_transaction(instructions)?;
 
-    Ok(keypair.pubkey())
+    Ok(())
 }
 
 pub fn setup_whirlpool() -> Result<Pubkey, Box<dyn Error>> {

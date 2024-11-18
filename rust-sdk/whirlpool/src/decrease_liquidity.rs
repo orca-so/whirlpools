@@ -49,10 +49,10 @@ pub struct DecreaseLiquidityInstruction {
     /// - Estimated amounts of Token A and Token B to withdraw.
     /// - Minimum token amounts based on the specified slippage tolerance.
     pub quote: DecreaseLiquidityQuote,
-    
+
     /// A vector of Solana instructions required to execute the decrease liquidity operation.
     pub instructions: Vec<Instruction>,
-    
+
     /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
 }
@@ -261,18 +261,18 @@ pub fn decrease_liquidity_instructions(
 pub struct ClosePositionInstruction {
     /// A vector of `Instruction` objects required to execute the position closure.
     pub instructions: Vec<Instruction>,
-    
+
     /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
-    
+
     /// The computed quote for decreasing liquidity, including liquidity delta, token estimates, and minimum tokens.
     pub quote: DecreaseLiquidityQuote,
-    
+
     /// Details of the fees available to collect from the position:
     /// - `fee_owed_a` - The amount of fees available to collect in token A.
     /// - `fee_owed_b` - The amount of fees available to collect in token B.
     pub fees_quote: CollectFeesQuote,
-    
+
     /// Details of the rewards available to collect from the position:
     /// - `rewards` - An array containing up to three `CollectRewardQuote` entries, one for each reward token.
     ///   - Each entry includes `rewards_owed`, the amount of the respective reward token available to collect.

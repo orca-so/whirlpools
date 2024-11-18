@@ -73,7 +73,6 @@ pub enum PositionOrBundle {
     PositionBundle(HydratedPositionBundle),
 }
 
-
 fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pubkey> {
     let mut positions: Vec<Pubkey> = Vec::new();
     for i in 0..POSITION_BUNDLE_SIZE {

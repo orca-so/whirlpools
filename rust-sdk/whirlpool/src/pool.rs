@@ -20,26 +20,25 @@ use crate::{token::order_mints, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDR
 pub struct UninitializedPool {
     /// The address of the pool.
     pub address: Pubkey,
-    
+
     /// The whirlpools_config address for the pool.
     pub whirlpools_config: Pubkey,
-    
+
     /// The spacing between ticks in the pool.
     pub tick_spacing: u16,
-    
+
     /// The fee rate applied to swaps in the pool.
     pub fee_rate: u16,
-    
+
     /// The protocol's share of fees.
     pub protocol_fee_rate: u16,
-    
+
     /// The mint address for token A in the pool.
     pub token_mint_a: Pubkey,
-    
+
     /// The mint address for token B in the pool.
     pub token_mint_b: Pubkey,
 }
-
 
 /// Represents an initialized pool.
 ///
@@ -48,14 +47,13 @@ pub struct UninitializedPool {
 pub struct InitializedPool {
     /// The address of the pool.
     pub address: Pubkey,
-    
+
     /// The `Whirlpool` struct containing the pool's state and configuration.
     pub data: Whirlpool,
-    
+
     /// The current price in the pool.
     pub price: f64,
 }
-
 
 impl InitializedPool {
     fn from_bytes(
@@ -83,7 +81,7 @@ pub enum PoolInfo {
     /// Represents a pool that has been initialized and contains its current state and price.
     /// - `InitializedPool` - The struct holding the initialized pool's data and price.
     Initialized(InitializedPool),
-    
+
     /// Represents a pool that has not been initialized yet but contains its configuration and token details.
     /// - `UninitializedPool` - The struct holding the uninitialized pool's configuration details.
     Uninitialized(UninitializedPool),

@@ -34,7 +34,8 @@ pub const SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Pubkey = Pubkey::n
 ]);
 
 /// The currently selected address for the Whirlpools program's config account.
-pub static WHIRLPOOLS_CONFIG_ADDRESS: Mutex<Pubkey> = Mutex::new(SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS);
+pub static WHIRLPOOLS_CONFIG_ADDRESS: Mutex<Pubkey> =
+    Mutex::new(SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS);
 
 /// The currently selected address for the Whirlpools program's config extension account.
 pub static WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Mutex<Pubkey> =
@@ -55,9 +56,9 @@ impl From<Pubkey> for WhirlpoolsConfigInput {
     }
 }
 
-impl Into<Pubkey> for WhirlpoolsConfigInput {
-    fn into(self) -> Pubkey {
-        match self {
+impl From<WhirlpoolsConfigInput> for Pubkey {
+    fn from(val: WhirlpoolsConfigInput) -> Self {
+        match val {
             WhirlpoolsConfigInput::Address(pubkey) => pubkey,
             WhirlpoolsConfigInput::SolanaMainnet => SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
             WhirlpoolsConfigInput::SolanaDevnet => SOLANA_DEVNET_WHIRLPOOLS_CONFIG_ADDRESS,
@@ -140,7 +141,8 @@ pub fn set_native_mint_wrapping_strategy(
 /// Resets the configuration to its default values.
 pub fn reset_configuration() -> Result<(), Box<dyn Error>> {
     *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()? = SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS;
-    *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.try_lock()? = SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
+    *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.try_lock()? =
+        SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
     *FUNDER.try_lock()? = DEFAULT_FUNDER;
     *NATIVE_MINT_WRAPPING_STRATEGY.try_lock()? = DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
     *SLIPPAGE_TOLERANCE_BPS.try_lock()? = DEFAULT_SLIPPAGE_TOLERANCE_BPS;

@@ -77,10 +77,10 @@ fn get_increase_liquidity_quote(
 pub enum IncreaseLiquidityParam {
     /// Specifies the amount of token A to add to the position.
     TokenA(u64),
-    
+
     /// Specifies the amount of token B to add to the position.
     TokenB(u64),
-    
+
     /// Specifies the amount of liquidity to add to the position.
     Liquidity(u128),
 }
@@ -98,10 +98,10 @@ pub struct IncreaseLiquidityInstruction {
     /// - `token_max_a` - The maximum allowable amount of token A based on slippage tolerance.
     /// - `token_max_b` - The maximum allowable amount of token B based on slippage tolerance.
     pub quote: IncreaseLiquidityQuote,
-    
+
     /// A vector of `Instruction` objects required to execute the liquidity increase.
     pub instructions: Vec<Instruction>,
-    
+
     /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
 }
@@ -291,17 +291,17 @@ pub fn increase_liquidity_instructions(
 pub struct OpenPositionInstruction {
     /// The public key of the position NFT that represents ownership of the newly opened position.
     pub position_mint: Pubkey,
-    
-    /// The computed quote for increasing liquidity, including liquidity delta, token estimates, 
+
+    /// The computed quote for increasing liquidity, including liquidity delta, token estimates,
     /// and maximum tokens based on slippage tolerance.
     pub quote: IncreaseLiquidityQuote,
-    
+
     /// A vector of `Instruction` objects required to execute the position opening.
     pub instructions: Vec<Instruction>,
-    
+
     /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
-    
+
     /// The cost of initializing the position, measured in lamports.
     pub initialization_cost: u64,
 }
@@ -575,7 +575,7 @@ pub fn open_full_range_position_instructions(
 
 /// Opens a position in a liquidity pool within a specific price range.
 ///
-/// This function creates a new position in the specified price range for a given pool. 
+/// This function creates a new position in the specified price range for a given pool.
 /// It allows for providing liquidity in a targeted range, optimizing capital efficiency.
 ///
 /// # Arguments

@@ -25,7 +25,7 @@ use crate::{
 /// This enum is used to specify whether the swap is an exact input or exact output type.
 ///
 /// # Variants
-/// 
+///
 /// * `ExactIn` - Indicates a swap where the input token amount is specified.
 /// * `ExactOut` - Indicates a swap where the output token amount is specified.
 #[derive(Debug, Clone, PartialEq)]

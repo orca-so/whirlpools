@@ -75,7 +75,7 @@ fn get_increase_liquidity_quote(
 /// The SDK will calculate the remaining values based on the provided input.
 ///
 /// # Variants
-/// 
+///
 /// * `TokenA(u64)` - Specifies the amount of token A to add to the position.
 /// * `TokenB(u64)` - Specifies the amount of token B to add to the position.
 /// * `Liquidity(u128)` - Specifies the amount of liquidity to add to the position.
@@ -487,7 +487,7 @@ fn internal_open_position(
 
 /// Opens a full-range position in a liquidity pool.
 ///
-/// This function creates a new position within the full price range for the specified pool, 
+/// This function creates a new position within the full price range for the specified pool,
 /// which is ideal for full-range liquidity provisioning, such as in Splash Pools.
 ///
 /// # Arguments

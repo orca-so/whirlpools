@@ -18,7 +18,7 @@ use crate::{token::order_mints, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDR
 /// This struct contains the configuration and token details necessary to initialize a pool.
 ///
 /// # Fields
-/// 
+///
 /// * `address` - The address of the pool.
 /// * `whirlpools_config` - The whirlpools_config address for the pool.
 /// * `tick_spacing` - The spacing between ticks in the pool.

@@ -27,27 +27,20 @@ const SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = DEFAULT_WHIRLPOOLS_CONF
 
 /// The Whirlpools program's config account address for Solana Devnet.
 const SOLANA_DEVNET_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
-    217,  51, 106,  61, 244, 143,  54,  30,
-     87,   6, 230, 156,  60, 182, 182, 217,
-     23, 116, 228, 121,  53, 200,  82, 109,
-    229, 160, 245, 159,  33,  90,  35, 106
+    217, 51, 106, 61, 244, 143, 54, 30, 87, 6, 230, 156, 60, 182, 182, 217, 23, 116, 228, 121, 53,
+    200, 82, 109, 229, 160, 245, 159, 33, 90, 35, 106,
 ]);
 
 /// The Whirlpools program's config account address for Eclipse Mainnet.
 const ECLIPSE_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
-    215,  64, 234,   8, 195,  52, 100, 209,
-     19, 230,  37, 101, 156, 135,  37,  41,
-    139, 254,  65, 104, 208, 137,  96,  39,
-     84,  13,  60, 221,  36, 203, 151,  49
+    215, 64, 234, 8, 195, 52, 100, 209, 19, 230, 37, 101, 156, 135, 37, 41, 139, 254, 65, 104, 208,
+    137, 96, 39, 84, 13, 60, 221, 36, 203, 151, 49,
 ]);
 
 /// The Whirlpools program's config account address for Eclipse Testnet.
 const ECLIPSE_TESTNET_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
-    213, 230, 107, 150, 137, 123, 254,
-    203, 164, 137,  81, 181,  70,  54,
-    172, 140, 176,  39,  16,  72, 150,
-     84, 130, 137, 232, 108,  97, 236,
-    197, 119, 201,  83
+    213, 230, 107, 150, 137, 123, 254, 203, 164, 137, 81, 181, 70, 54, 172, 140, 176, 39, 16, 72,
+    150, 84, 130, 137, 232, 108, 97, 236, 197, 119, 201, 83,
 ]);
 
 /// Input type for setting the Whirlpools configuration.
@@ -56,7 +49,7 @@ pub enum WhirlpoolsConfigInput {
     SolanaMainnet,
     SolanaDevnet,
     EclipseMainnet,
-    EclipseTestnet
+    EclipseTestnet,
 }
 
 impl From<Pubkey> for WhirlpoolsConfigInput {
@@ -177,8 +170,10 @@ mod tests {
     #[serial]
     fn test_set_whirlpools_config_address_by_network() {
         use std::str::FromStr;
-        let expected_config = Pubkey::from_str("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR").unwrap(); // Replace with actual base58 value for the array
-        let expected_extension = Pubkey::from_str("475EJ7JqnRpVLoFVzp2ruEYvWWMCf6Z8KMWRujtXXNSU").unwrap(); // Replace with the expected extension
+        let expected_config =
+            Pubkey::from_str("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR").unwrap(); // Replace with actual base58 value for the array
+        let expected_extension =
+            Pubkey::from_str("475EJ7JqnRpVLoFVzp2ruEYvWWMCf6Z8KMWRujtXXNSU").unwrap(); // Replace with the expected extension
         set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         assert_eq!(*WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(), expected_config);
         assert_eq!(

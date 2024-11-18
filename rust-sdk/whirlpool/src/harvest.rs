@@ -29,22 +29,22 @@ use crate::{
 ///
 /// This struct contains the instructions required to harvest a position, along with detailed
 /// information about the available fees and rewards to collect.
-///
-/// # Fields
-///
-/// * `instructions` - A vector of `Instruction` objects required to execute the harvesting process.
-/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
-/// * `fees_quote` - Details of the fees available to collect from the position:
-///   - `fee_owed_a` - The amount of fees available to collect in token A.
-///   - `fee_owed_b` - The amount of fees available to collect in token B.
-/// * `rewards_quote` - Details of the rewards available to collect from the position:
-///   - `rewards` - An array containing up to three `CollectRewardQuote` entries, one for each reward token.
-///     - Each entry includes `rewards_owed`, the amount of the respective reward token available to collect.
 #[derive(Debug)]
 pub struct HarvestPositionInstruction {
+    /// A vector of `Instruction` objects required to execute the harvesting process.
     pub instructions: Vec<Instruction>,
+    
+    /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
+    
+    /// Details of the fees available to collect from the position:
+    /// - `fee_owed_a` - The amount of fees available to collect in token A.
+    /// - `fee_owed_b` - The amount of fees available to collect in token B.
     pub fees_quote: CollectFeesQuote,
+    
+    /// Details of the rewards available to collect from the position:
+    /// - `rewards` - An array containing up to three `CollectRewardQuote` entries, one for each reward token.
+    ///   - Each entry includes `rewards_owed`, the amount of the respective reward token available to collect.
     pub rewards_quote: CollectRewardsQuote,
 }
 

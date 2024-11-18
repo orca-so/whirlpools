@@ -23,28 +23,24 @@ use crate::{
 /// Represents the type of a swap operation.
 ///
 /// This enum is used to specify whether the swap is an exact input or exact output type.
-///
-/// # Variants
-///
-/// * `ExactIn` - Indicates a swap where the input token amount is specified.
-/// * `ExactOut` - Indicates a swap where the output token amount is specified.
 #[derive(Debug, Clone, PartialEq)]
 pub enum SwapType {
+    /// Indicates a swap where the input token amount is specified.
     ExactIn,
+
+    /// Indicates a swap where the output token amount is specified.
     ExactOut,
 }
 
 /// Represents the quote for a swap operation.
 ///
 /// This enum contains the details of the swap quote based on the type of swap.
-///
-/// # Variants
-///
-/// * `ExactIn` - The quote for a swap with a specified input token amount.
-/// * `ExactOut` - The quote for a swap with a specified output token amount.
 #[derive(Debug, Clone)]
 pub enum SwapQuote {
+    /// The quote for a swap with a specified input token amount.
     ExactIn(ExactInSwapQuote),
+
+    /// The quote for a swap with a specified output token amount.
     ExactOut(ExactOutSwapQuote),
 }
 
@@ -52,16 +48,15 @@ pub enum SwapQuote {
 ///
 /// This struct contains the instructions required to perform the swap, along with the computed
 /// quote and any additional signers required.
-///
-/// # Fields
-///
-/// * `instructions` - A vector of `Instruction` objects required to execute the swap.
-/// * `quote` - A `SwapQuote` representing the details of the swap.
-/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
 #[derive(Debug)]
 pub struct SwapInstructions {
+    /// A vector of Solana `Instruction` objects required to execute the swap.
     pub instructions: Vec<Instruction>,
+
+    /// A `SwapQuote` representing the details of the swap.
     pub quote: SwapQuote,
+
+    /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
 }
 
@@ -151,15 +146,13 @@ fn fetch_tick_arrays_or_default(
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools::{
+/// use orca_whirlpools_sdk::{
 ///     swap_instructions, SwapType, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
-/// use std::str::FromStr;
 ///
-/// // Set Whirlpool configuration to Solana Devnet.
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-///
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
+///
 /// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
 /// let amount = 1_000_000; // Amount to swap.
 /// let specified_mint = Pubkey::from_str("SPECIFIED_MINT_ADDRESS").unwrap();

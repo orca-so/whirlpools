@@ -16,42 +16,46 @@ use crate::{token::order_mints, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDR
 /// Represents an uninitialized pool.
 ///
 /// This struct contains the configuration and token details necessary to initialize a pool.
-///
-/// # Fields
-///
-/// * `address` - The address of the pool.
-/// * `whirlpools_config` - The whirlpools_config address for the pool.
-/// * `tick_spacing` - The spacing between ticks in the pool.
-/// * `fee_rate` - The fee rate applied to swaps in the pool.
-/// * `protocol_fee_rate` - The protocol's share of fees.
-/// * `token_mint_a` - The mint address for token A in the pool.
-/// * `token_mint_b` - The mint address for token B in the pool.
 #[derive(Debug, Clone)]
 pub struct UninitializedPool {
+    /// The address of the pool.
     pub address: Pubkey,
+    
+    /// The whirlpools_config address for the pool.
     pub whirlpools_config: Pubkey,
+    
+    /// The spacing between ticks in the pool.
     pub tick_spacing: u16,
+    
+    /// The fee rate applied to swaps in the pool.
     pub fee_rate: u16,
+    
+    /// The protocol's share of fees.
     pub protocol_fee_rate: u16,
+    
+    /// The mint address for token A in the pool.
     pub token_mint_a: Pubkey,
+    
+    /// The mint address for token B in the pool.
     pub token_mint_b: Pubkey,
 }
+
 
 /// Represents an initialized pool.
 ///
 /// This struct contains the pool's address, data, and current price.
-///
-/// # Fields
-///
-/// * `address` - The address of the pool.
-/// * `data` - The `Whirlpool` struct containing the pool's state and configuration.
-/// * `price` - The current price in the pool.
 #[derive(Debug, Clone)]
 pub struct InitializedPool {
+    /// The address of the pool.
     pub address: Pubkey,
+    
+    /// The `Whirlpool` struct containing the pool's state and configuration.
     pub data: Whirlpool,
+    
+    /// The current price in the pool.
     pub price: f64,
 }
+
 
 impl InitializedPool {
     fn from_bytes(
@@ -74,17 +78,14 @@ impl InitializedPool {
 ///
 /// This enum provides a unified way to describe both initialized and uninitialized pools,
 /// encapsulating their specific data structures.
-///
-/// # Variants
-///
-/// * `Initialized` - Represents a pool that has been initialized and contains its current state and price.
-///   - `InitializedPool` - The struct holding the initialized pool's data and price.
-///
-/// * `Uninitialized` - Represents a pool that has not been initialized yet but contains its configuration and token details.
-///   - `UninitializedPool` - The struct holding the uninitialized pool's configuration details.
 #[derive(Debug, Clone)]
 pub enum PoolInfo {
+    /// Represents a pool that has been initialized and contains its current state and price.
+    /// - `InitializedPool` - The struct holding the initialized pool's data and price.
     Initialized(InitializedPool),
+    
+    /// Represents a pool that has not been initialized yet but contains its configuration and token details.
+    /// - `UninitializedPool` - The struct holding the uninitialized pool's configuration details.
     Uninitialized(UninitializedPool),
 }
 

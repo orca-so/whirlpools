@@ -85,7 +85,7 @@ function getPositionInBundleAddresses(
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner(); // USE YOUR OWN WALLET
+ * const wallet = address("INSERT_WALLET_ADDRESS");
  *
  * const positions = await fetchPositionsForOwner(devnetRpc, wallet.address);
  */

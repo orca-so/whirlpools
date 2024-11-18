@@ -16,16 +16,15 @@ use crate::{get_token_accounts_for_owner, RpcKeyedTokenAccount};
 /// This struct contains the address of the position NFT, its decoded data, and the token program
 /// associated with the position NFT, which can be either the standard SPL Token Program or
 /// the Token 2022 Program.
-///
-/// # Fields
-///
-/// * `address` - The public key of the Position account.
-/// * `data` - The decoded `Position` account data.
-/// * `token_program` - The public key of the token program associated with the position NFT (either SPL Token or Token 2022).
 #[derive(Debug)]
 pub struct HydratedPosition {
+    /// The public key of the Position account.
     pub address: Pubkey,
+
+    /// The decoded `Position` account data.
     pub data: Position,
+
+    /// The public key of the token program associated with the position NFT (either SPL Token or Token 2022).
     pub token_program: Pubkey,
 }
 
@@ -33,14 +32,12 @@ pub struct HydratedPosition {
 ///
 /// A bundled position is part of a larger `PositionBundle` and contains its own
 /// address and decoded position data.
-///
-/// # Fields
-///
-/// * `address` - The public key of the bundled position.
-/// * `data` - The decoded `Position` account data for the bundled position.
 #[derive(Debug)]
 pub struct HydratedBundledPosition {
+    /// The public key of the bundled position.
     pub address: Pubkey,
+
+    /// The decoded `Position` account data for the bundled position.
     pub data: Position,
 }
 
@@ -48,18 +45,18 @@ pub struct HydratedBundledPosition {
 ///
 /// This struct contains the address and decoded data of the `PositionBundle` account,
 /// along with the individual bundled positions and the associated token program.
-///
-/// # Fields
-///
-/// * `address` - The public key of the Position Bundle account.
-/// * `data` - The decoded `PositionBundle` account data.
-/// * `positions` - A vector of `HydratedBundledPosition` objects representing the bundled positions represented by the position NFT.
-/// * `token_program` - The public key of the token program associated with the position bundle NFT (either SPL Token or Token 2022).
 #[derive(Debug)]
 pub struct HydratedPositionBundle {
+    /// The public key of the Position Bundle account.
     pub address: Pubkey,
+
+    /// The decoded `PositionBundle` account data.
     pub data: PositionBundle,
+
+    /// A vector of `HydratedBundledPosition` objects representing the bundled positions represented by the position NFT.
     pub positions: Vec<HydratedBundledPosition>,
+
+    /// The public key of the token program associated with the position bundle NFT (either SPL Token or Token 2022).
     pub token_program: Pubkey,
 }
 
@@ -67,16 +64,15 @@ pub struct HydratedPositionBundle {
 ///
 /// This enum distinguishes between a single `HydratedPosition` and a `HydratedPositionBundle`,
 /// providing a unified type for handling both cases.
-///
-/// # Variants
-///
-/// * `Position` - A standalone `HydratedPosition`.
-/// * `PositionBundle` - A `HydratedPositionBundle` containing multiple bundled positions.
 #[derive(Debug)]
 pub enum PositionOrBundle {
+    /// A standalone `HydratedPosition`.
     Position(HydratedPosition),
+
+    /// A `HydratedPositionBundle` containing multiple bundled positions.
     PositionBundle(HydratedPositionBundle),
 }
+
 
 fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pubkey> {
     let mut positions: Vec<Pubkey> = Vec::new();

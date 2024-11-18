@@ -73,16 +73,15 @@ fn get_increase_liquidity_quote(
 ///
 /// You must choose one of the variants (`TokenA`, `TokenB`, or `Liquidity`).
 /// The SDK will calculate the remaining values based on the provided input.
-///
-/// # Variants
-///
-/// * `TokenA(u64)` - Specifies the amount of token A to add to the position.
-/// * `TokenB(u64)` - Specifies the amount of token B to add to the position.
-/// * `Liquidity(u128)` - Specifies the amount of liquidity to add to the position.
 #[derive(Debug, Clone)]
 pub enum IncreaseLiquidityParam {
+    /// Specifies the amount of token A to add to the position.
     TokenA(u64),
+    
+    /// Specifies the amount of token B to add to the position.
     TokenB(u64),
+    
+    /// Specifies the amount of liquidity to add to the position.
     Liquidity(u128),
 }
 
@@ -90,21 +89,20 @@ pub enum IncreaseLiquidityParam {
 ///
 /// This struct includes the necessary transaction instructions, as well as a detailed
 /// quote describing the liquidity increase.
-///
-/// # Fields
-///
-/// * `quote` - The computed quote for increasing liquidity, including:
-///   - `liquidity_delta` - The change in liquidity.
-///   - `token_est_a` - The estimated amount of token A required.
-///   - `token_est_b` - The estimated amount of token B required.
-///   - `token_max_a` - The maximum allowable amount of token A based on slippage tolerance.
-///   - `token_max_b` - The maximum allowable amount of token B based on slippage tolerance.
-/// * `instructions` - A vector of `Instruction` objects required to execute the liquidity increase.
-/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
 #[derive(Debug)]
 pub struct IncreaseLiquidityInstruction {
+    /// The computed quote for increasing liquidity, including:
+    /// - `liquidity_delta` - The change in liquidity.
+    /// - `token_est_a` - The estimated amount of token A required.
+    /// - `token_est_b` - The estimated amount of token B required.
+    /// - `token_max_a` - The maximum allowable amount of token A based on slippage tolerance.
+    /// - `token_max_b` - The maximum allowable amount of token B based on slippage tolerance.
     pub quote: IncreaseLiquidityQuote,
+    
+    /// A vector of `Instruction` objects required to execute the liquidity increase.
     pub instructions: Vec<Instruction>,
+    
+    /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
 }
 
@@ -289,20 +287,22 @@ pub fn increase_liquidity_instructions(
 /// This struct contains the instructions required to open a new position, along with detailed
 /// information about the liquidity increase, the cost of initialization, and the mint address
 /// of the position NFT.
-///
-/// # Fields
-///
-/// * `position_mint` - The public key of the position NFT that represents ownership of the newly opened position.
-/// * `quote` - The computed quote for increasing liquidity, including liquidity delta, token estimates, and maximum tokens based on slippage tolerance.
-/// * `instructions` - A vector of `Instruction` objects required to execute the position opening.
-/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
-/// * `initialization_cost` - The cost of initializing the position, measured in lamports.
 #[derive(Debug)]
 pub struct OpenPositionInstruction {
+    /// The public key of the position NFT that represents ownership of the newly opened position.
     pub position_mint: Pubkey,
+    
+    /// The computed quote for increasing liquidity, including liquidity delta, token estimates, 
+    /// and maximum tokens based on slippage tolerance.
     pub quote: IncreaseLiquidityQuote,
+    
+    /// A vector of `Instruction` objects required to execute the position opening.
     pub instructions: Vec<Instruction>,
+    
+    /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
+    
+    /// The cost of initializing the position, measured in lamports.
     pub initialization_cost: u64,
 }
 

@@ -65,31 +65,34 @@ pub struct CreatePoolInstructions {
 /// - The funder account is invalid.
 /// - Token mints are not found or have invalid data.
 /// - The token mint order does not match the canonical byte order.
-/// - Any blockchain request fails (e.g., RPC errors).
+/// - Any RPC request to the blockchain fails.
 ///
 /// # Example
 ///
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_sdk::{create_splash_pool_instructions, FUNDER};
+/// use orca_whirlpools_sdk::create_splash_pool_instructions
 ///
-/// set_whirlpools_config_address(WhirlpoolConfigInput::Network(Network::SolanaDevnet)).unwrap()
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap()
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
 /// let token_a = Pubkey::new_unique();
 /// let token_b = Pubkey::new_unique();
 /// let initial_price = Some(0.01);
 ///
-/// let instructions = create_splash_pool_instructions(
+/// let wallet = Keypair::new();
+/// let funder = Some(wallet.pubkey());
+///
+/// let create_pool_instructions = create_splash_pool_instructions(
 ///     &rpc,
 ///     token_a,
 ///     token_b,
 ///     initial_price,
-///     None,
+///     funder,
 /// ).unwrap();
 ///
-/// println!("Pool Address: {:?}", instructions.pool_address);
-/// println!("Initialization Cost: {} lamports", instructions.initialization_cost);
+/// println!("Pool Address: {:?}", create_pool_instructions.pool_address);
+/// println!("Initialization Cost: {} lamports", create_pool_instructions.initialization_cost);
 /// ```
 pub fn create_splash_pool_instructions(
     rpc: &RpcClient,
@@ -133,7 +136,7 @@ pub fn create_splash_pool_instructions(
 /// - The funder account is invalid.
 /// - Token mints are not found or have invalid data.
 /// - The token mint order does not match the canonical byte order.
-/// - Any blockchain request fails (e.g., RPC errors).
+/// - Any RPC request to the blockchain fails.
 ///
 /// # Example
 ///
@@ -142,24 +145,27 @@ pub fn create_splash_pool_instructions(
 /// use solana_sdk::pubkey::Pubkey;
 /// use orca_sdk::{create_concentrated_liquidity_pool_instructions, FUNDER};
 ///
-/// set_whirlpools_config_address(WhirlpoolConfigInput::Network(Network::SolanaDevnet)).unwrap()
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap()
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
 /// let token_a = Pubkey::new_unique();
 /// let token_b = Pubkey::new_unique();
 /// let tick_spacing = 64;
 /// let initial_price = Some(0.01);
 ///
-/// let instructions = create_concentrated_liquidity_pool_instructions(
+/// let wallet = Keypair::new();
+/// let funder = Some(wallet.pubkey());
+///
+/// let create_pool_instructions = create_concentrated_liquidity_pool_instructions(
 ///     &rpc,
 ///     token_a,
 ///     token_b,
 ///     tick_spacing,
 ///     initial_price,
-///     None,
+///     funder,
 /// ).unwrap();
 ///
-/// println!("Pool Address: {:?}", instructions.pool_address);
-/// println!("Initialization Cost: {} lamports", instructions.initialization_cost);
+/// println!("Pool Address: {:?}", create_pool_instructions.pool_address);
+/// println!("Initialization Cost: {} lamports", create_pool_instructions.initialization_cost);
 /// ```
 pub fn create_concentrated_liquidity_pool_instructions(
     rpc: &RpcClient,

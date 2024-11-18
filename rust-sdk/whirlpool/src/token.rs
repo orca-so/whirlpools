@@ -276,6 +276,32 @@ pub(crate) fn get_current_transfer_fee(
     None
 }
 
+/// Orders two mint addresses by their canonical byte order.
+///
+/// This function compares two Solana `Pubkey` values and returns an array where the first element
+/// is the smaller key in canonical byte order, and the second element is the larger key.
+///
+/// # Arguments
+///
+/// * `mint1` - The first mint address to compare.
+/// * `mint2` - The second mint address to compare.
+///
+/// # Returns
+///
+/// An array `[Pubkey, Pubkey]` where the first element is the smaller mint address and the second is the larger.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_program::pubkey::Pubkey;
+/// use orca_whirlpools_sdk::order_mints;
+///
+/// let mint1 = Pubkey::from_str("MintAddress1").unwrap();
+/// let mint2 = Pubkey::from_str("MintAddress2").unwrap();
+///
+/// let ordered_mints = order_mints(mint1, mint2);
+/// println!("Ordered mints: {:?}", ordered_mints);
+/// ```
 pub fn order_mints(mint1: Pubkey, mint2: Pubkey) -> [Pubkey; 2] {
     if mint1.lt(&mint2) {
         [mint1, mint2]

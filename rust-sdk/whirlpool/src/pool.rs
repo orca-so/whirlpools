@@ -13,6 +13,19 @@ use spl_token::state::Mint;
 
 use crate::{token::order_mints, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
 
+/// Represents an uninitialized pool.
+///
+/// This struct contains the configuration and token details necessary to initialize a pool.
+///
+/// # Fields
+/// 
+/// * `address` - The address of the pool.
+/// * `whirlpools_config` - The whirlpools_config address for the pool.
+/// * `tick_spacing` - The spacing between ticks in the pool.
+/// * `fee_rate` - The fee rate applied to swaps in the pool.
+/// * `protocol_fee_rate` - The protocol's share of fees.
+/// * `token_mint_a` - The mint address for token A in the pool.
+/// * `token_mint_b` - The mint address for token B in the pool.
 #[derive(Debug, Clone)]
 pub struct UninitializedPool {
     pub address: Pubkey,
@@ -24,6 +37,15 @@ pub struct UninitializedPool {
     pub token_mint_b: Pubkey,
 }
 
+/// Represents an initialized pool.
+///
+/// This struct contains the pool's address, data, and current price.
+///
+/// # Fields
+///
+/// * `address` - The address of the pool.
+/// * `data` - The `Whirlpool` struct containing the pool's state and configuration.
+/// * `price` - The current price in the pool.
 #[derive(Debug, Clone)]
 pub struct InitializedPool {
     pub address: Pubkey,
@@ -48,12 +70,65 @@ impl InitializedPool {
     }
 }
 
+/// Represents information about a pool, either initialized or uninitialized.
+///
+/// This enum provides a unified way to describe both initialized and uninitialized pools,
+/// encapsulating their specific data structures.
+///
+/// # Variants
+///
+/// * `Initialized` - Represents a pool that has been initialized and contains its current state and price.
+///   - `InitializedPool` - The struct holding the initialized pool's data and price.
+///
+/// * `Uninitialized` - Represents a pool that has not been initialized yet but contains its configuration and token details.
+///   - `UninitializedPool` - The struct holding the uninitialized pool's configuration details.
 #[derive(Debug, Clone)]
 pub enum PoolInfo {
     Initialized(InitializedPool),
     Uninitialized(UninitializedPool),
 }
 
+/// Fetches the details of a specific Splash Pool.
+///
+/// This function retrieves information about a pool with the predefined tick spacing for Splash Pools.
+/// It determines whether the pool is initialized or not and returns the corresponding details.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to the Solana RPC client.
+/// * `token_1` - The public key of the first token mint in the pool.
+/// * `token_2` - The public key of the second token mint in the pool.
+///
+/// # Returns
+///
+/// A `Result` containing `PoolInfo`:
+/// * `PoolInfo::Initialized` if the pool is initialized, including the pool's state and price.
+/// * `PoolInfo::Uninitialized` if the pool is not yet initialized, including configuration details.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - Any required account or mint information cannot be fetched.
+/// - The pool or its configuration details are invalid.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
+/// use orca_whirlpools_sdk::{fetch_splash_pool, PoolInfo, set_whirlpools_config_address, WhirlpoolsConfigInput};
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// let token_1 = Pubkey::from_str("TOKEN_MINT_ONE").unwrap();
+/// let token_2 = Pubkey::from_str("TOKEN_MINT_TWO").unwrap();
+///
+/// let pool_info = fetch_splash_pool(&rpc, token_1, token_2).unwrap();
+/// match pool_info {
+///     PoolInfo::Initialized(pool) => println!("Pool is initialized: {:?}", pool),
+///     PoolInfo::Uninitialized(pool) => println!("Pool is not initialized: {:?}", pool),
+/// }
+/// ```
 pub fn fetch_splash_pool(
     rpc: &RpcClient,
     token_1: Pubkey,
@@ -62,6 +137,49 @@ pub fn fetch_splash_pool(
     fetch_concentrated_liquidity_pool(rpc, token_1, token_2, SPLASH_POOL_TICK_SPACING)
 }
 
+/// Fetches the details of a specific Concentrated Liquidity Pool.
+///
+/// This function retrieves information about a pool for the specified tick spacing.
+/// It determines whether the pool is initialized or not and returns the corresponding details.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to the Solana RPC client.
+/// * `token_1` - The public key of the first token mint in the pool.
+/// * `token_2` - The public key of the second token mint in the pool.
+/// * `tick_spacing` - The tick spacing of the pool.
+///
+/// # Returns
+///
+/// A `Result` containing `PoolInfo`:
+/// * `PoolInfo::Initialized` if the pool is initialized, including the pool's state and price.
+/// * `PoolInfo::Uninitialized` if the pool is not yet initialized, including configuration details.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - Any required account or mint information cannot be fetched.
+/// - The pool or its configuration details are invalid.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
+/// use orca_whirlpools_sdk::{fetch_concentrated_liquidity_pool, PoolInfo, set_whirlpools_config_address, WhirlpoolsConfigInput};
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// let token_1 = Pubkey::from_str("TOKEN_MINT_ONE").unwrap();
+/// let token_2 = Pubkey::from_str("TOKEN_MINT_TWO").unwrap();
+/// let tick_spacing = 64;
+///
+/// let pool_info = fetch_concentrated_liquidity_pool(&rpc, token_1, token_2, tick_spacing).unwrap();
+/// match pool_info {
+///     PoolInfo::Initialized(pool) => println!("Pool is initialized: {:?}", pool),
+///     PoolInfo::Uninitialized(pool) => println!("Pool is not initialized: {:?}", pool),
+/// }
+/// ```
 pub fn fetch_concentrated_liquidity_pool(
     rpc: &RpcClient,
     token_1: Pubkey,
@@ -121,6 +239,52 @@ pub fn fetch_concentrated_liquidity_pool(
     }
 }
 
+/// Fetches all possible liquidity pools between two token mints in Orca Whirlpools.
+///
+/// This function retrieves information about all pools between the specified token mints,
+/// including both initialized and uninitialized pools. If a pool does not exist, it creates
+/// a placeholder account for the uninitialized pool with default configuration details.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to the Solana RPC client.
+/// * `token_1` - The public key of the first token mint in the pool.
+/// * `token_2` - The public key of the second token mint in the pool.
+///
+/// # Returns
+///
+/// A `Result` containing a `Vec<PoolInfo>`:
+/// * `PoolInfo::Initialized` for initialized pools, including pool state and price.
+/// * `PoolInfo::Uninitialized` for uninitialized pools, including configuration details.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - Any required account or mint information cannot be fetched.
+/// - The pool or its configuration details are invalid.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
+/// use orca_whirlpools_sdk::{
+///     fetch_whirlpools_by_token_pair, PoolInfo, set_whirlpools_config_address, WhirlpoolsConfigInput,
+/// };
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// let token_1 = Pubkey::from_str("TOKEN_MINT_ONE").unwrap();
+/// let token_2 = Pubkey::from_str("TOKEN_MINT_TWO").unwrap();
+///
+/// let pools = fetch_whirlpools_by_token_pair(&rpc, token_1, token_2).unwrap();
+/// for pool in pools {
+///     match pool {
+///         PoolInfo::Initialized(pool) => println!("Initialized Pool: {:?}", pool),
+///         PoolInfo::Uninitialized(pool) => println!("Uninitialized Pool: {:?}", pool),
+///     }
+/// }
+/// ```
 pub fn fetch_whirlpools_by_token_pair(
     rpc: &RpcClient,
     token_1: Pubkey,

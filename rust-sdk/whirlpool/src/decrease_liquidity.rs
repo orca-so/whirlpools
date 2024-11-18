@@ -27,6 +27,16 @@ use crate::{
 
 // TODO: support transfer hooks
 
+/// Represents the parameters for decreasing liquidity in a pool.
+/// 
+/// You must specify only one of the parameters (`TokenA`, `TokenB`, or `Liquidity`).
+/// Based on the provided value, the SDK computes the other two parameters.
+///
+/// # Variants
+///
+/// * `TokenA(u64)` - Specifies the amount of Token A to withdraw.
+/// * `TokenB(u64)` - Specifies the amount of Token B to withdraw.
+/// * `Liquidity(u128)` - Specifies the amount of liquidity to decrease.
 #[derive(Debug, Clone)]
 pub enum DecreaseLiquidityParam {
     TokenA(u64),
@@ -34,6 +44,16 @@ pub enum DecreaseLiquidityParam {
     Liquidity(u128),
 }
 
+/// Represents the instructions and quote for decreasing liquidity in a position.
+///
+/// # Fields
+///
+/// * `quote` - The quote details for decreasing liquidity, including:
+///   - The liquidity delta.
+///   - Estimated amounts of Token A and Token B to withdraw.
+///   - Minimum token amounts based on the specified slippage tolerance.
+/// * `instructions` - A vector of Solana instructions required to execute the decrease liquidity operation.
+/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
 #[derive(Debug)]
 pub struct DecreaseLiquidityInstruction {
     pub quote: DecreaseLiquidityQuote,
@@ -41,6 +61,61 @@ pub struct DecreaseLiquidityInstruction {
     pub additional_signers: Vec<Keypair>,
 }
 
+/// Generates instructions to decrease liquidity from an existing position.
+/// 
+/// This function computes the necessary quote and creates Solana instructions to reduce liquidity
+/// from an existing pool position, specified by the position's mint address.
+/// 
+/// # Arguments
+/// 
+/// * `rpc` - A reference to a Solana RPC client for fetching necessary accounts and pool data.
+/// * `position_mint_address` - The public key of the NFT mint address representing the pool position.
+/// * `param` - A variant of `DecreaseLiquidityParam` specifying the liquidity reduction method (by Token A, Token B, or liquidity amount).
+/// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
+/// * `authority` - An optional public key of the account authorizing the liquidity removal. Defaults to the global funder if not provided.
+/// 
+/// # Returns
+/// 
+/// A `Result` containing `DecreaseLiquidityInstruction` on success:
+/// 
+/// * `quote` - The computed quote for decreasing liquidity, including liquidity delta, token estimates, and minimum tokens.
+/// * `instructions` - A vector of Solana `Instruction` objects required to execute the decrease liquidity operation.
+/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
+/// 
+/// # Errors
+/// 
+/// This function will return an error if:
+/// - The `authority` account is invalid or missing.
+/// - The position or token mint accounts are not found or have invalid data.
+/// - Any RPC request to the blockchain fails.
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::{pubkey::Pubkey, signer::{keypair::Keypair, Signer}};
+/// use orca_whirlpools_sdk::{
+///     decrease_liquidity_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address, DecreaseLiquidityParam
+/// };
+/// 
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// 
+/// let position_mint_address = Pubkey::from_str("POSITION_NFT_MINT_ADDRESS").unwrap();
+/// let param = DecreaseLiquidityParam::Liquidity(500_000);
+/// let slippage_tolerance_bps = Some(100);
+/// 
+/// let result = decrease_liquidity_instructions(
+///     &rpc,
+///     position_mint_address,
+///     param,
+///     slippage_tolerance_bps,
+///     None, // USE GLOBAL FUNDER
+/// ).unwrap();
+/// 
+/// println!("Liquidity Decrease Quote: {:?}", result.quote);
+/// println!("Number of Instructions: {}", result.instructions.len());
+/// ```
 pub fn decrease_liquidity_instructions(
     rpc: &RpcClient,
     position_mint_address: Pubkey,
@@ -181,6 +256,22 @@ pub fn decrease_liquidity_instructions(
     })
 }
 
+/// Represents the instructions and quotes for closing a liquidity position.
+///
+/// This struct contains the instructions required to close a position, along with detailed
+/// information about the liquidity decrease, available fees to collect, and available rewards to collect.
+///
+/// # Fields
+///
+/// * `instructions` - A vector of Solana `Instruction` objects required to execute the position closure.
+/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
+/// * `quote` - The computed quote for decreasing liquidity, including liquidity delta, token estimates, and minimum tokens.
+/// * `fees_quote` - Details of the fees available to collect from the position:
+///   - `fee_owed_a` - The amount of fees available to collect in token A.
+///   - `fee_owed_b` - The amount of fees available to collect in token B.
+/// * `rewards_quote` - Details of the rewards available to collect from the position:
+///   - `rewards` - An array containing up to three `CollectRewardQuote` entries, one for each reward token.
+///     - Each entry includes `rewards_owed`, the amount of the respective reward token available to collect.
 #[derive(Debug)]
 pub struct ClosePositionInstruction {
     pub instructions: Vec<Instruction>,
@@ -190,6 +281,67 @@ pub struct ClosePositionInstruction {
     pub rewards_quote: CollectRewardsQuote,
 }
 
+/// Generates instructions to close a liquidity position.
+/// 
+/// This function collects all fees and rewards, removes any remaining liquidity, and closes
+/// the position. It returns the necessary instructions, quotes for fees and rewards, and the
+/// liquidity quote for the closed position.
+/// 
+/// # Arguments
+/// 
+/// * `rpc` - A reference to a Solana RPC client for fetching accounts and pool data.
+/// * `position_mint_address` - The public key of the NFT mint address representing the position to be closed.
+/// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
+/// * `authority` - An optional public key of the account authorizing the transaction. Defaults to the global funder if not provided.
+/// 
+/// # Returns
+/// 
+/// A `Result` containing `ClosePositionInstruction` on success:
+/// 
+/// * `instructions` - A vector of Solana `Instruction` objects required to execute the position closure.
+/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
+/// * `quote` - The computed quote for decreasing liquidity, including liquidity delta, token estimates, and minimum tokens.
+/// * `fees_quote` - Details of the fees available to collect from the position:
+///   - `fee_owed_a` - The amount of fees available to collect in token A.
+///   - `fee_owed_b` - The amount of fees available to collect in token B.
+/// * `rewards_quote` - Details of the rewards available to collect from the position:
+///   - `rewards` - An array containing up to three `CollectRewardQuote` entries, one for each reward token.
+///     - Each entry includes `rewards_owed`, the amount of the respective reward token available to collect.
+/// 
+/// # Errors
+/// 
+/// This function will return an error if:
+/// - The `authority` account is invalid or missing.
+/// - The position, token mint, or reward accounts are not found or have invalid data.
+/// - Any RPC request to the blockchain fails.
+/// 
+/// # Example
+/// 
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::{pubkey::Pubkey, signer::{keypair::Keypair, Signer}};
+/// use orca_whirlpools_sdk::{
+///     close_position_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address
+/// };
+/// 
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// 
+/// let position_mint_address = Pubkey::from_str("POSITION_NFT_MINT_ADDRESS").unwrap();
+/// let slippage_tolerance_bps = Some(100);
+/// 
+/// let result = close_position_instructions(
+///     &rpc,
+///     position_mint_address,
+///     slippage_tolerance_bps,
+///     None, // USE GLOBAL FUNDER
+/// ).unwrap();
+/// 
+/// println!("Instructions: {:?}", result.instructions);
+/// println!("Fees Quote: {:?}", result.fees_quote);
+/// println!("Rewards Quote: {:?}", result.rewards_quote);
+/// println!("Liquidity Decrease Quote: {:?}", result.quote);
+/// ```
 pub fn close_position_instructions(
     rpc: &RpcClient,
     position_mint_address: Pubkey,

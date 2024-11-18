@@ -11,6 +11,17 @@ use solana_sdk::pubkey::Pubkey;
 
 use crate::{get_token_accounts_for_owner, RpcKeyedTokenAccount};
 
+/// Represents a single Position account.
+///
+/// This struct contains the address of the position NFT, its decoded data, and the token program
+/// associated with the position NFT, which can be either the standard SPL Token Program or
+/// the Token 2022 Program.
+///
+/// # Fields
+///
+/// * `address` - The public key of the Position account.
+/// * `data` - The decoded `Position` account data.
+/// * `token_program` - The public key of the token program associated with the position NFT (either SPL Token or Token 2022).
 #[derive(Debug)]
 pub struct HydratedPosition {
     pub address: Pubkey,
@@ -18,12 +29,32 @@ pub struct HydratedPosition {
     pub token_program: Pubkey,
 }
 
+/// Represents a single bundled position within a `PositionBundle` account.
+///
+/// A bundled position is part of a larger `PositionBundle` and contains its own
+/// address and decoded position data.
+///
+/// # Fields
+///
+/// * `address` - The public key of the bundled position.
+/// * `data` - The decoded `Position` account data for the bundled position.
 #[derive(Debug)]
 pub struct HydratedBundledPosition {
     pub address: Pubkey,
     pub data: Position,
 }
 
+/// Represents a Position Bundle account, which includes multiple bundled positions.
+///
+/// This struct contains the address and decoded data of the `PositionBundle` account,
+/// along with the individual bundled positions and the associated token program.
+///
+/// # Fields
+///
+/// * `address` - The public key of the Position Bundle account.
+/// * `data` - The decoded `PositionBundle` account data.
+/// * `positions` - A vector of `HydratedBundledPosition` objects representing the bundled positions represented by the position NFT.
+/// * `token_program` - The public key of the token program associated with the position bundle NFT (either SPL Token or Token 2022).
 #[derive(Debug)]
 pub struct HydratedPositionBundle {
     pub address: Pubkey,
@@ -32,6 +63,15 @@ pub struct HydratedPositionBundle {
     pub token_program: Pubkey,
 }
 
+/// Represents either a standalone Position account or a Position Bundle account.
+///
+/// This enum distinguishes between a single `HydratedPosition` and a `HydratedPositionBundle`,
+/// providing a unified type for handling both cases.
+///
+/// # Variants
+///
+/// * `Position` - A standalone `HydratedPosition`.
+/// * `PositionBundle` - A `HydratedPositionBundle` containing multiple bundled positions.
 #[derive(Debug)]
 pub enum PositionOrBundle {
     Position(HydratedPosition),
@@ -54,6 +94,43 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
     positions
 }
 
+/// Fetches all positions owned by a given wallet in the Orca Whirlpools.
+///
+/// This function retrieves token accounts owned by the wallet, using both the SPL Token Program
+/// and Token 2022 Program. It identifies accounts holding exactly one token, which represent
+/// either a position or a position bundle. For each of these accounts, it fetches the corresponding
+/// position or bundle data, including any bundled positions, and returns them.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to the Solana RPC client.
+/// * `owner` - The public key of the wallet whose positions should be fetched.
+///
+/// # Returns
+///
+/// A `Result` containing a vector of `PositionOrBundle` objects, representing the decoded
+/// positions or position bundles owned by the given wallet.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - Token accounts cannot be fetched.
+/// - Position or position bundle addresses cannot be derived.
+/// - RPC calls fail when fetching account data.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
+/// use orca_whirlpools_sdk::get_positions_for_owner;
+///
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// let owner = Pubkey::from_str("OWNER_PUBLIC_KEY").unwrap();
+///
+/// let positions = get_positions_for_owner(&rpc, owner).unwrap();
+/// println!("{:?}", positions);
+/// ```
 pub fn get_positions_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
@@ -157,6 +234,40 @@ pub fn get_positions_for_owner(
     Ok(position_or_bundles)
 }
 
+/// Fetches all positions associated with a specific Whirlpool.
+///
+/// This function retrieves all positions linked to the given Whirlpool address using
+/// program filters. The positions are decoded and returned as a vector of hydrated position objects.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to the Solana RPC client.
+/// * `whirlpool` - The public key of the Whirlpool whose positions should be fetched.
+///
+/// # Returns
+///
+/// A `Result` containing a vector of `DecodedAccount<Position>` objects, representing the
+/// positions associated with the given Whirlpool.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - RPC calls fail while fetching filtered accounts.
+/// - Decoding the position data fails.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
+/// use orca_whirlpools_sdk::fetch_positions_in_whirlpool;
+///
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// let whirlpool = Pubkey::from_str("WHIRLPOOL_PUBLIC_KEY").unwrap();
+///
+/// let positions = fetch_positions_in_whirlpool(&rpc, whirlpool).unwrap();
+/// println!("{:?}", positions);
+/// ```
 pub fn fetch_positions_in_whirlpool(
     rpc: &RpcClient,
     whirlpool: Pubkey,

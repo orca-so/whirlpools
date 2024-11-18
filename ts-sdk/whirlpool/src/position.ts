@@ -85,8 +85,7 @@ function getPositionInBundleAddresses(
  * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * const wallet = await generateKeyPairSigner(); // USE YOUR OWN WALLET
  *
  * const positions = await fetchPositionsForOwner(devnetRpc, wallet.address);
  */
@@ -194,7 +193,6 @@ export async function fetchPositionsForOwner(
  * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
  * const whirlpool = address("Czfq3xZZDmsdGdUyrNLtRhGc47cXcZtLG4crryfu44zE");
  * const positions = await fetchPositionsInWhirlpool(devnetRpc, whirlpool);

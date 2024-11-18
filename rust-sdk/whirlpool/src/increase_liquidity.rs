@@ -69,6 +69,16 @@ fn get_increase_liquidity_quote(
     Ok(result)
 }
 
+/// Represents the parameters for increasing liquidity in a position.
+///
+/// You must choose one of the variants (`TokenA`, `TokenB`, or `Liquidity`).
+/// The SDK will calculate the remaining values based on the provided input.
+///
+/// # Variants
+/// 
+/// * `TokenA(u64)` - Specifies the amount of token A to add to the position.
+/// * `TokenB(u64)` - Specifies the amount of token B to add to the position.
+/// * `Liquidity(u128)` - Specifies the amount of liquidity to add to the position.
 #[derive(Debug, Clone)]
 pub enum IncreaseLiquidityParam {
     TokenA(u64),
@@ -76,6 +86,21 @@ pub enum IncreaseLiquidityParam {
     Liquidity(u128),
 }
 
+/// Represents the instructions and quote for increasing liquidity in a position.
+///
+/// This struct includes the necessary transaction instructions, as well as a detailed
+/// quote describing the liquidity increase.
+///
+/// # Fields
+///
+/// * `quote` - The computed quote for increasing liquidity, including:
+///   - `liquidity_delta` - The change in liquidity.
+///   - `token_est_a` - The estimated amount of token A required.
+///   - `token_est_b` - The estimated amount of token B required.
+///   - `token_max_a` - The maximum allowable amount of token A based on slippage tolerance.
+///   - `token_max_b` - The maximum allowable amount of token B based on slippage tolerance.
+/// * `instructions` - A vector of `Instruction` objects required to execute the liquidity increase.
+/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
 #[derive(Debug)]
 pub struct IncreaseLiquidityInstruction {
     pub quote: IncreaseLiquidityQuote,
@@ -83,6 +108,64 @@ pub struct IncreaseLiquidityInstruction {
     pub additional_signers: Vec<Keypair>,
 }
 
+/// Generates instructions to increase liquidity for an existing position.
+///
+/// This function computes the necessary quote and creates instructions to add liquidity
+/// to an existing pool position, specified by the position's mint address.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to a Solana RPC client for fetching necessary accounts and pool data.
+/// * `position_mint_address` - The public key of the NFT mint address representing the pool position.
+/// * `param` - A variant of `IncreaseLiquidityParam` specifying the liquidity addition method (by Token A, Token B, or liquidity amount).
+/// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
+/// * `authority` - An optional public key of the account authorizing the liquidity addition. Defaults to the global funder if not provided.
+///
+/// # Returns
+///
+/// A `Result` containing `IncreaseLiquidityInstruction` on success:
+///
+/// * `quote` - The computed quote for increasing liquidity, including liquidity delta, token estimates, and maximum tokens based on slippage tolerance.
+/// * `instructions` - A vector of `Instruction` objects required to execute the liquidity addition.
+/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - The `authority` account is invalid or missing.
+/// - The position or token mint accounts are not found or have invalid data.
+/// - Any RPC request to the blockchain fails.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::{pubkey::Pubkey, signer::{keypair::Keypair, Signer}};
+/// use orca_whirlpools_sdk::{
+///     increase_liquidity_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address, IncreaseLiquidityParam
+/// };
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+///
+/// let position_mint_address = Pubkey::from_str("POSITION_NFT_MINT_PUBKEY").unwrap();
+/// let param = IncreaseLiquidityParam::TokenA(1_000_000);
+/// let slippage_tolerance_bps = Some(100);
+///
+/// let wallet = Keypair::new();
+/// let authority = Some(wallet.pubkey());
+///
+/// let result = increase_liquidity_instructions(
+///     &rpc,
+///     position_mint_address,
+///     param,
+///     slippage_tolerance_bps,
+///     authority,
+/// ).unwrap();
+///
+/// println!("Liquidity Increase Quote: {:?}", result.quote);
+/// println!("Number of Instructions: {}", result.instructions.len());
+/// ```
 pub fn increase_liquidity_instructions(
     rpc: &RpcClient,
     position_mint_address: Pubkey,
@@ -203,6 +286,19 @@ pub fn increase_liquidity_instructions(
     })
 }
 
+/// Represents the instructions and quote for opening a liquidity position.
+///
+/// This struct contains the instructions required to open a new position, along with detailed
+/// information about the liquidity increase, the cost of initialization, and the mint address
+/// of the position NFT.
+///
+/// # Fields
+///
+/// * `position_mint` - The public key of the position NFT that represents ownership of the newly opened position.
+/// * `quote` - The computed quote for increasing liquidity, including liquidity delta, token estimates, and maximum tokens based on slippage tolerance.
+/// * `instructions` - A vector of `Instruction` objects required to execute the position opening.
+/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
+/// * `initialization_cost` - The cost of initializing the position, measured in lamports.
 #[derive(Debug)]
 pub struct OpenPositionInstruction {
     pub position_mint: Pubkey,
@@ -389,6 +485,63 @@ fn internal_open_position(
     })
 }
 
+/// Opens a full-range position in a liquidity pool.
+///
+/// This function creates a new position within the full price range for the specified pool, 
+/// which is ideal for full-range liquidity provisioning, such as in Splash Pools.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to the Solana RPC client.
+/// * `pool_address` - The public key of the liquidity pool.
+/// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
+/// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
+/// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
+///
+/// # Returns
+///
+/// Returns a `Result` containing an `OpenPositionInstruction` on success, which includes:
+/// * `position_mint` - The mint address of the position NFT.
+/// * `quote` - The computed liquidity quote, including liquidity delta, token estimates, and maximum tokens.
+/// * `instructions` - A vector of Solana `Instruction` objects required for creating the position.
+/// * `additional_signers` - A vector of `Keypair` objects for additional transaction signers.
+/// * `initialization_cost` - The cost of initializing the position, in lamports.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The funder account is invalid.
+/// - The pool or token mint accounts are not found or invalid.
+/// - Any RPC request fails.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
+/// use orca_whirlpools_sdk::{open_full_range_position_instructions, IncreaseLiquidityParam};
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+///
+/// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();;
+/// let param = IncreaseLiquidityParam::TokenA(1_000_000);
+/// let slippage_tolerance_bps = Some(100);
+///
+/// let wallet = Keypair::new();
+/// let funder = Some(wallet.pubkey());
+///
+/// let result = open_full_range_position_instructions(
+///     &rpc,
+///     whirlpool_pubkey,
+///     param,
+///     slippage_tolerance_bps,
+///     funder,
+/// ).unwrap();
+///
+/// println!("Position Mint: {:?}", result.position_mint);
+/// println!("Initialization Cost: {} lamports", result.initialization_cost);
+/// ```
 pub fn open_full_range_position_instructions(
     rpc: &RpcClient,
     pool_address: Pubkey,

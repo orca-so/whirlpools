@@ -5,6 +5,8 @@ branding:
   icon: trash-2
   color: red
 
+# https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
+
 runs:
   using: "composite"
   steps:

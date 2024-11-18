@@ -79,7 +79,7 @@ pub struct DecreaseLiquidityInstruction {
 /// A `Result` containing `DecreaseLiquidityInstruction` on success:
 ///
 /// * `quote` - The computed quote for decreasing liquidity, including liquidity delta, token estimates, and minimum tokens.
-/// * `instructions` - A vector of Solana `Instruction` objects required to execute the decrease liquidity operation.
+/// * `instructions` - A vector of `Instruction` objects required to execute the decrease liquidity operation.
 /// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
 ///
 /// # Errors
@@ -93,7 +93,7 @@ pub struct DecreaseLiquidityInstruction {
 ///
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signer::{keypair::Keypair, Signer}};
+/// use solana_sdk::pubkey::Pubkey;
 /// use orca_whirlpools::{
 ///     decrease_liquidity_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address, DecreaseLiquidityParam
 /// };
@@ -111,7 +111,7 @@ pub struct DecreaseLiquidityInstruction {
 ///     position_mint_address,
 ///     param,
 ///     slippage_tolerance_bps,
-///     None, // USE GLOBAL FUNDER
+///     None, // SET GLOBAL FUNDER
 /// ).unwrap();
 ///
 /// println!("Liquidity Decrease Quote: {:?}", result.quote);
@@ -264,7 +264,7 @@ pub fn decrease_liquidity_instructions(
 ///
 /// # Fields
 ///
-/// * `instructions` - A vector of Solana `Instruction` objects required to execute the position closure.
+/// * `instructions` - A vector of `Instruction` objects required to execute the position closure.
 /// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
 /// * `quote` - The computed quote for decreasing liquidity, including liquidity delta, token estimates, and minimum tokens.
 /// * `fees_quote` - Details of the fees available to collect from the position:
@@ -299,7 +299,7 @@ pub struct ClosePositionInstruction {
 ///
 /// A `Result` containing `ClosePositionInstruction` on success:
 ///
-/// * `instructions` - A vector of Solana `Instruction` objects required to execute the position closure.
+/// * `instructions` - A vector of `Instruction` objects required to execute the position closure.
 /// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
 /// * `quote` - The computed quote for decreasing liquidity, including liquidity delta, token estimates, and minimum tokens.
 /// * `fees_quote` - Details of the fees available to collect from the position:
@@ -320,7 +320,7 @@ pub struct ClosePositionInstruction {
 ///
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signer::{keypair::Keypair, Signer}};
+/// use solana_sdk::pubkey::Pubkey;
 /// use orca_whirlpools::{
 ///     close_position_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address
 /// };
@@ -336,7 +336,7 @@ pub struct ClosePositionInstruction {
 ///     &rpc,
 ///     position_mint_address,
 ///     slippage_tolerance_bps,
-///     None, // USE GLOBAL FUNDER
+///     None, // SET GLOBAL FUNDER
 /// ).unwrap();
 ///
 /// println!("Instructions: {:?}", result.instructions);

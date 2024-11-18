@@ -79,7 +79,7 @@ pub struct HarvestPositionInstruction {
 ///
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signer::{keypair::Keypair, Signer}};
+/// use solana_sdk::pubkey::Pubkey;
 /// use orca_whirlpools::{
 ///     harvest_position_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address
 /// };
@@ -93,7 +93,7 @@ pub struct HarvestPositionInstruction {
 /// let result = harvest_position_instructions(
 ///     &rpc,
 ///     position_mint_address,
-///     None, // USE GLOBAL FUNDER
+///     None, // SET GLOBAL FUNDER
 /// ).unwrap();
 ///
 /// println!("Fees Quote: {:?}", result.fees_quote);

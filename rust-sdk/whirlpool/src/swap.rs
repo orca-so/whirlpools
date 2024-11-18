@@ -55,7 +55,7 @@ pub enum SwapQuote {
 ///
 /// # Fields
 ///
-/// * `instructions` - A vector of Solana `Instruction` objects required to execute the swap.
+/// * `instructions` - A vector of `Instruction` objects required to execute the swap.
 /// * `quote` - A `SwapQuote` representing the details of the swap.
 /// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
 #[derive(Debug)]

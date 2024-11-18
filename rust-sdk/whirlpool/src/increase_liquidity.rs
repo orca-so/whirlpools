@@ -140,7 +140,7 @@ pub struct IncreaseLiquidityInstruction {
 ///
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signer::{keypair::Keypair, Signer}};
+/// use solana_sdk::pubkey::Pubkey;
 /// use orca_whirlpools::{
 ///     increase_liquidity_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address, IncreaseLiquidityParam
 /// };
@@ -153,15 +153,12 @@ pub struct IncreaseLiquidityInstruction {
 /// let param = IncreaseLiquidityParam::TokenA(1_000_000);
 /// let slippage_tolerance_bps = Some(100);
 ///
-/// let wallet = Keypair::new();
-/// let authority = Some(wallet.pubkey());
-///
 /// let result = increase_liquidity_instructions(
 ///     &rpc,
 ///     position_mint_address,
 ///     param,
 ///     slippage_tolerance_bps,
-///     authority,
+///     None, // SET GLOBAL FUNDER
 /// ).unwrap();
 ///
 /// println!("Liquidity Increase Quote: {:?}", result.quote);
@@ -504,7 +501,7 @@ fn internal_open_position(
 /// Returns a `Result` containing an `OpenPositionInstruction` on success, which includes:
 /// * `position_mint` - The mint address of the position NFT.
 /// * `quote` - The computed liquidity quote, including liquidity delta, token estimates, and maximum tokens.
-/// * `instructions` - A vector of Solana `Instruction` objects required for creating the position.
+/// * `instructions` - A vector of `Instruction` objects required for creating the position.
 /// * `additional_signers` - A vector of `Keypair` objects for additional transaction signers.
 /// * `initialization_cost` - The cost of initializing the position, in lamports.
 ///
@@ -519,7 +516,7 @@ fn internal_open_position(
 ///
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_sdk::{pubkey::Pubkey, signer::Keypair};
 /// use orca_whirlpools::{open_full_range_position_instructions, IncreaseLiquidityParam};
 /// use std::str::FromStr;
 ///
@@ -576,6 +573,71 @@ pub fn open_full_range_position_instructions(
     )
 }
 
+/// Opens a position in a liquidity pool within a specific price range.
+///
+/// This function creates a new position in the specified price range for a given pool. 
+/// It allows for providing liquidity in a targeted range, optimizing capital efficiency.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to the Solana RPC client.
+/// * `pool_address` - The public key of the liquidity pool.
+/// * `lower_price` - The lower bound of the price range for the position.
+/// * `upper_price` - The upper bound of the price range for the position.
+/// * `param` - Parameters for increasing liquidity, specified as `IncreaseLiquidityParam`.
+/// * `slippage_tolerance_bps` - An optional slippage tolerance in basis points. Defaults to the global slippage tolerance if not provided.
+/// * `funder` - An optional public key of the funder account. Defaults to the global funder if not provided.
+///
+/// # Returns
+///
+/// Returns a `Result` containing an `OpenPositionInstruction` on success, which includes:
+/// * `position_mint` - The mint address of the position NFT.
+/// * `quote` - The computed liquidity quote, including liquidity delta, token estimates, and maximum tokens.
+/// * `instructions` - A vector of `Instruction` objects required for creating the position.
+/// * `additional_signers` - A vector of `Keypair` objects for additional transaction signers.
+/// * `initialization_cost` - The cost of initializing the position, in lamports.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The funder account is invalid.
+/// - The pool or token mint accounts are not found or invalid.
+/// - Any RPC request fails.
+/// - The pool is a Splash Pool, as they only support full-range positions.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::{pubkey::Pubkey, signer::Keypair};
+/// use orca_whirlpools::{open_position_instructions, IncreaseLiquidityParam};
+/// use std::str::FromStr;
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+///
+/// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
+/// let lower_price = 0.00005;
+/// let upper_price = 0.00015;
+/// let param = IncreaseLiquidityParam::TokenA(1_000_000);
+/// let slippage_tolerance_bps = Some(100);
+///
+/// let wallet = Keypair::new();
+/// let funder = Some(wallet.pubkey());
+///
+/// let result = open_position_instructions(
+///     &rpc,
+///     whirlpool_pubkey,
+///     lower_price,
+///     upper_price,
+///     param,
+///     slippage_tolerance_bps,
+///     funder,
+/// ).unwrap();
+///
+/// println!("Position Mint: {:?}", result.position_mint);
+/// println!("Initialization Cost: {} lamports", result.initialization_cost);
+/// ```
 pub fn open_position_instructions(
     rpc: &RpcClient,
     pool_address: Pubkey,

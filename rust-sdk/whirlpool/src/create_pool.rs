@@ -71,7 +71,7 @@ pub struct CreatePoolInstructions {
 ///
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_sdk::{pubkey::Pubkey, signer::Keypair};
 /// use orca_whirlpools::create_splash_pool_instructions
 /// use std::str::FromStr;
 ///
@@ -143,7 +143,7 @@ pub fn create_splash_pool_instructions(
 ///
 /// ```
 /// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
+/// use solana_sdk::{pubkey::Pubkey, signer::Keypair};
 /// use orca_whirlpools::create_concentrated_liquidity_pool_instructions;
 /// use std::str::FromStr;
 ///

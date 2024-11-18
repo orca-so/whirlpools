@@ -94,9 +94,10 @@ pub struct DecreaseLiquidityInstruction {
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::{pubkey::Pubkey, signer::{keypair::Keypair, Signer}};
-/// use orca_whirlpools_sdk::{
+/// use orca_whirlpools::{
 ///     decrease_liquidity_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address, DecreaseLiquidityParam
 /// };
+/// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
@@ -320,9 +321,10 @@ pub struct ClosePositionInstruction {
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::{pubkey::Pubkey, signer::{keypair::Keypair, Signer}};
-/// use orca_whirlpools_sdk::{
+/// use orca_whirlpools::{
 ///     close_position_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address
 /// };
+/// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");

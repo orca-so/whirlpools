@@ -116,7 +116,8 @@ pub enum PoolInfo {
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools_sdk::{fetch_splash_pool, PoolInfo, set_whirlpools_config_address, WhirlpoolsConfigInput};
+/// use orca_whirlpools::{fetch_splash_pool, PoolInfo, set_whirlpools_config_address, WhirlpoolsConfigInput};
+/// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
@@ -166,7 +167,8 @@ pub fn fetch_splash_pool(
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools_sdk::{fetch_concentrated_liquidity_pool, PoolInfo, set_whirlpools_config_address, WhirlpoolsConfigInput};
+/// use orca_whirlpools::{fetch_concentrated_liquidity_pool, PoolInfo, set_whirlpools_config_address, WhirlpoolsConfigInput};
+/// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
@@ -268,9 +270,10 @@ pub fn fetch_concentrated_liquidity_pool(
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools_sdk::{
+/// use orca_whirlpools:{
 ///     fetch_whirlpools_by_token_pair, PoolInfo, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
+/// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");

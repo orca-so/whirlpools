@@ -151,9 +151,10 @@ fn fetch_tick_arrays_or_default(
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools_sdk::{
+/// use orca_whirlpools::{
 ///     swap_instructions, SwapType, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
+/// use std::str::FromStr;
 ///
 /// // Set Whirlpool configuration to Solana Devnet.
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();

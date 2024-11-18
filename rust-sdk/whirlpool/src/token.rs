@@ -295,6 +295,7 @@ pub(crate) fn get_current_transfer_fee(
 /// ```rust
 /// use solana_program::pubkey::Pubkey;
 /// use orca_whirlpools_sdk::order_mints;
+/// use std::str::FromStr;
 ///
 /// let mint1 = Pubkey::from_str("MintAddress1").unwrap();
 /// let mint2 = Pubkey::from_str("MintAddress2").unwrap();

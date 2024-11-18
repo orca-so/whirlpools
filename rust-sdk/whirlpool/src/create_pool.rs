@@ -41,7 +41,7 @@ pub struct CreatePoolInstructions {
     pub additional_signers: Vec<Keypair>,
 }
 
-/// Creates the necessary instructions to initialize a Splash Pool on Orca Whirlpools.
+/// Creates the necessary instructions to initialize a Splash Pool.
 ///
 /// # Arguments
 ///
@@ -72,12 +72,13 @@ pub struct CreatePoolInstructions {
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools_sdk::create_splash_pool_instructions
+/// use orca_whirlpools::create_splash_pool_instructions
+/// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap()
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
-/// let token_a = Pubkey::new_unique();
-/// let token_b = Pubkey::new_unique();
+/// let token_a = Pubkey::from_str("TOKEN_MINT_ADDRESS_A").unwrap();
+/// let token_b = Pubkey::from_str("TOKEN_MINT_ADDRESS_B").unwrap();
 /// let initial_price = Some(0.01);
 ///
 /// let wallet = Keypair::new();
@@ -111,7 +112,7 @@ pub fn create_splash_pool_instructions(
     )
 }
 
-/// Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM) on Orca Whirlpools.
+/// Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM).
 ///
 /// # Arguments
 ///
@@ -143,12 +144,13 @@ pub fn create_splash_pool_instructions(
 /// ```
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_sdk::{create_concentrated_liquidity_pool_instructions, FUNDER};
+/// use orca_whirlpools::create_concentrated_liquidity_pool_instructions;
+/// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap()
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
-/// let token_a = Pubkey::new_unique();
-/// let token_b = Pubkey::new_unique();
+/// let token_a = Pubkey::from_str("TOKEN_MINT_ADDRESS_A").unwrap();
+/// let token_b = Pubkey::from_str("TOKEN_MINT_ADDRESS_B").unwrap();
 /// let tick_spacing = 64;
 /// let initial_price = Some(0.01);
 ///

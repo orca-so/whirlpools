@@ -123,7 +123,8 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools_sdk::get_positions_for_owner;
+/// use orca_whirlpools::get_positions_for_owner;
+/// use std::str::FromStr;
 ///
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
 /// let owner = Pubkey::from_str("OWNER_PUBLIC_KEY").unwrap();
@@ -260,7 +261,8 @@ pub fn get_positions_for_owner(
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools_sdk::fetch_positions_in_whirlpool;
+/// use orca_whirlpools::fetch_positions_in_whirlpool;
+/// use std::str::FromStr;
 ///
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");
 /// let whirlpool = Pubkey::from_str("WHIRLPOOL_PUBLIC_KEY").unwrap();

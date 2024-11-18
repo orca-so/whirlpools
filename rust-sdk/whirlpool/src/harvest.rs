@@ -80,9 +80,10 @@ pub struct HarvestPositionInstruction {
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::{pubkey::Pubkey, signer::{keypair::Keypair, Signer}};
-/// use orca_whirlpools_sdk::{
+/// use orca_whirlpools::{
 ///     harvest_position_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address
 /// };
+/// use std::str::FromStr;
 ///
 /// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 /// let rpc = RpcClient::new("https://api.devnet.solana.com");

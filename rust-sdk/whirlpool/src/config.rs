@@ -28,7 +28,7 @@ const ECLIPSE_TESTNET_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array
 ]);
 
 /// The default address for the Whirlpools program's config extension account.
-pub const SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Pubkey = Pubkey::new_from_array([
+const SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Pubkey = Pubkey::new_from_array([
     90, 182, 180, 56, 174, 38, 113, 211, 112, 187, 90, 174, 90, 115, 121, 167, 83, 122, 96, 10,
     152, 57, 209, 52, 207, 240, 174, 74, 201, 7, 87, 54,
 ]);

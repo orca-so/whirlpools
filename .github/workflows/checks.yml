@@ -23,6 +23,9 @@ jobs:
       run: yarn build --output-style static
 
   test:
+    strategy:
+      matrix:
+        test: ["ts-sdk/*", "rust-sdk/*"]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
@@ -34,7 +37,7 @@ jobs:
     - name: Install dependencies
       run: yarn install
     - name: Run tests
-      run: yarn test --exclude legacy-sdk/whirlpool --output-style static
+      run: yarn test ${{ matrix.test }} --output-style static
 
   lint:
     runs-on: ubuntu-latest

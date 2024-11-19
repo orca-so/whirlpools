@@ -47,7 +47,7 @@ runs:
           ~/.cargo/registry/cache/
           ~/.cargo/git/db/
           **/target/
-        key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+        key: rust-cache-${{ inputs.rustc-version }}-${{ github.job }}-${{ hashFiles('**/Cargo.toml') }}
     - name: Setup node
       uses: actions/setup-node@v4
       with:

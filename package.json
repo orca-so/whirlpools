@@ -15,7 +15,6 @@
   "devDependencies": {
     "@types/node": "^22.9.0",
     "husky": "^9.1.7",
-    "lint-staged": "^15.2.10",
     "nx": "^20.1.2",
     "rimraf": "^6.0.1",
     "tsup": "^8.3.5",
@@ -27,8 +26,5 @@
     "ts-sdk/*",
     "legacy-sdk/*",
     "docs/*"
-  ],
-  "lint-staged": {
-    "*": "yarn format"
-  }
+  ]
 }

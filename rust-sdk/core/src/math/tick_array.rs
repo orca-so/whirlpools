@@ -30,8 +30,8 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
         for i in 0..tick_arrays.len() - 1 {
             let current_start_tick_index = start_tick_index(&tick_arrays[i]);
             let next_start_tick_index = start_tick_index(&tick_arrays[i + 1]);
-            if next_start_tick_index - current_start_tick_index != required_tick_array_spacing
-                && next_start_tick_index != <i32>::MAX
+            if next_start_tick_index != <i32>::MAX
+                && next_start_tick_index - current_start_tick_index != required_tick_array_spacing
             {
                 return Err(TICK_ARRAY_NOT_EVENLY_SPACED);
             }

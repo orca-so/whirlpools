@@ -67,7 +67,10 @@ const CATCHABLE_ERRORS: [(&str, ErrorCode); 10] = [
     ("NumberDownCastError", ErrorCode::NumberDownCastError),
     ("MultiplicationOverflow", ErrorCode::MultiplicationOverflow),
     // from swap_manager.rs
-    ("AmountRemainingOverflow", ErrorCode::AmountRemainingOverflow),
+    (
+        "AmountRemainingOverflow",
+        ErrorCode::AmountRemainingOverflow,
+    ),
     ("AmountCalcOverflow", ErrorCode::AmountCalcOverflow),
 ];
 
@@ -99,9 +102,7 @@ fn run_splash_pool_swap_integration_tests() {
     run_swap_integration_tests("src/tests/swap_test_cases_splash_pool.json");
 }
 
-fn run_swap_integration_tests(
-    test_cases_json_path: &str,
-) {
+fn run_swap_integration_tests(test_cases_json_path: &str) {
     let contents = fs::read_to_string(test_cases_json_path).expect("Failure to read the file.");
     let json: Vec<TestCase> = serde_json::from_str(&contents).expect("JSON was not well-formatted");
     let test_iterator = json.iter();

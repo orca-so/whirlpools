@@ -1,4 +1,14 @@
 #!/usr/bin/env sh
 . "$(dirname -- "$0")/_/husky.sh"
 
+# Get all staged files
+FILES=$(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g')
+[ -z "$FILES" ] && exit 0
+
+# Run formatters
 yarn format
+
+# Add back the modified/prettified files to staging
+echo "$FILES" | xargs git add
+
+exit 0

@@ -23,21 +23,16 @@ jobs:
       run: yarn build --output-style static
 
   test:
-    strategy:
-      matrix:
-        test: ["ts-sdk/*", "rust-sdk/*"]
     runs-on: ubuntu-latest
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
-    - name: Remove Unnecessary Files
-      uses: ./.github/actions/cleanup
     - name: Setup Anchor
       uses: ./.github/actions/anchor
     - name: Install dependencies
       run: yarn install
     - name: Run tests
-      run: yarn test ${{ matrix.test }} --output-style static
+      run: yarn test --exclude legacy-sdk/whirlpool --output-style static
 
   lint:
     runs-on: ubuntu-latest

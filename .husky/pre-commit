@@ -5,10 +5,10 @@
 FILES=$(git diff --cached --name-only --diff-filter=ACMR | sed 's| |\\ |g')
 [ -z "$FILES" ] && exit 0
 
-# Run formatters
+# Run all formatters
 yarn format
 
-# Add back the modified/prettified files to staging
+# Add back the modified files to staging
 echo "$FILES" | xargs git add
 
 exit 0

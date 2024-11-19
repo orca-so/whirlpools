@@ -35,6 +35,7 @@ runs:
         rustup toolchain install ${rust_version#v}
         rustup default ${rust_version#v}
         rustup component add rustfmt clippy
+        echo "RUST_LOG=" >> $GITHUB_ENV
       shell: bash
     - name: Setup node
       uses: actions/setup-node@v4

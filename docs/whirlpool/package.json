@@ -19,7 +19,7 @@
     "remark-math": "^6.0.0"
   },
   "devDependencies": {
-    "@docusaurus/module-type-aliases": "^3.6.1",
+    "@docusaurus/module-type-aliases": "^3.6.2",
     "@docusaurus/tsconfig": "^3.6.2",
     "@docusaurus/types": "^3.6.2",
     "@orca-so/whirlpools-docs-legacy": "*",

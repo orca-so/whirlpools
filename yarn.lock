@@ -3362,18 +3362,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@orca-so/orca-sdk@npm:0.2.0":
-  version: 0.2.0
-  resolution: "@orca-so/orca-sdk@npm:0.2.0"
-  peerDependencies:
-    "@orca-so/common-sdk": ^0.4.0
-    "@solana/web3.js": ^1.74.0
-    axios: ^1.6.5
-    decimal.js: ^10.3.1
-  checksum: 10c0/654d955c7a3295a768c294e5db571585d8951f8ce2aad151e092867e032a8f663ec7bb3b83ec9ca8581c323e08be4fed566dc1a38e311858bea61fa1c567b5ad
-  languageName: node
-  linkType: hard
-
 "@orca-so/whirlpools-client@npm:*, @orca-so/whirlpools-client@workspace:ts-sdk/client":
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-client@workspace:ts-sdk/client"
@@ -3545,8 +3533,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-sdk-cli@workspace:legacy-sdk/cli"
   dependencies:
     "@coral-xyz/anchor": "npm:0.29.0"
-    "@orca-so/common-sdk": "npm:0.6.4"
-    "@orca-so/orca-sdk": "npm:0.2.0"
+    "@orca-so/common-sdk": "npm:*"
     "@orca-so/whirlpools-sdk": "npm:*"
     "@solana/spl-token": "npm:0.4.1"
     "@solana/web3.js": "npm:^1.90.0"

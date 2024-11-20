@@ -9,8 +9,7 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.29.0",
-    "@orca-so/common-sdk": "0.6.4",
-    "@orca-so/orca-sdk": "0.2.0",
+    "@orca-so/common-sdk": "*",
     "@orca-so/whirlpools-sdk": "*",
     "@solana/spl-token": "0.4.1",
     "@solana/web3.js": "^1.90.0",

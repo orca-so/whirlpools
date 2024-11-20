@@ -20,7 +20,7 @@
   },
   "devDependencies": {
     "@docusaurus/module-type-aliases": "^3.6.1",
-    "@docusaurus/tsconfig": "^3.6.1",
+    "@docusaurus/tsconfig": "^3.6.2",
     "@docusaurus/types": "^3.6.1",
     "@orca-so/whirlpools-docs-legacy": "*",
     "@orca-so/whirlpools-docs-rust": "*",

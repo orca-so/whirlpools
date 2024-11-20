@@ -2,7 +2,7 @@
 import { fetchPositionsForOwner, PositionOrBundle } from "@orca-so/whirlpools";
 import { tickIndexToSqrtPrice } from "@orca-so/whirlpools-core";
 import { useCallback, useMemo, useState } from "react";
-import { createSolanaRpc, mainnet, address } from "@solana/web3.js";
+import { createSolanaRpc, mainnet, address, devnet } from "@solana/web3.js";
 
 export default function Page() {
   const [positions, setPositions] = useState<PositionOrBundle[]>([]);
@@ -12,7 +12,8 @@ export default function Page() {
 
   const rpc = useMemo(() => {
     if (!process.env.NEXT_PUBLIC_RPC_URL) {
-      throw new Error("NEXT_PUBLIC_RPC_URL is not set");
+      console.error("NEXT_PUBLIC_RPC_URL is not set");
+      return createSolanaRpc(devnet("https://api.devnet.solana.com"));
     }
     return createSolanaRpc(mainnet(process.env.NEXT_PUBLIC_RPC_URL));
   }, [process.env.NEXT_PUBLIC_RPC_URL]);

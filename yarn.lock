@@ -2002,7 +2002,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@docusaurus/module-type-aliases@npm:3.6.1, @docusaurus/module-type-aliases@npm:^3.6.1":
+"@docusaurus/module-type-aliases@npm:3.6.1":
   version: 3.6.1
   resolution: "@docusaurus/module-type-aliases@npm:3.6.1"
   dependencies:
@@ -2017,6 +2017,24 @@ __metadata:
     react: "*"
     react-dom: "*"
   checksum: 10c0/006a5414234bb26300e9240de519ba5bf53198869df953f090d9a28ccee99850e1a7384dffccb865ccd513bf1d090a8ab5887fa7583b921df1279b99613aa0b7
+  languageName: node
+  linkType: hard
+
+"@docusaurus/module-type-aliases@npm:^3.6.2":
+  version: 3.6.2
+  resolution: "@docusaurus/module-type-aliases@npm:3.6.2"
+  dependencies:
+    "@docusaurus/types": "npm:3.6.2"
+    "@types/history": "npm:^4.7.11"
+    "@types/react": "npm:*"
+    "@types/react-router-config": "npm:*"
+    "@types/react-router-dom": "npm:*"
+    react-helmet-async: "npm:*"
+    react-loadable: "npm:@docusaurus/react-loadable@6.0.0"
+  peerDependencies:
+    react: "*"
+    react-dom: "*"
+  checksum: 10c0/7e5582a7c6adcc6acc84c19297527a796f0cfaa486ff71efde7ab6286050db1a0ca70d7adc631a2d8e4d347dd0fec31e8cfddf47390e558700df3db951d67942
   languageName: node
   linkType: hard
 
@@ -2329,7 +2347,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@docusaurus/types@npm:^3.6.2":
+"@docusaurus/types@npm:3.6.2, @docusaurus/types@npm:^3.6.2":
   version: 3.6.2
   resolution: "@docusaurus/types@npm:3.6.2"
   dependencies:
@@ -3443,7 +3461,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-docs@workspace:docs/whirlpool"
   dependencies:
     "@docusaurus/core": "npm:^3.6.1"
-    "@docusaurus/module-type-aliases": "npm:^3.6.1"
+    "@docusaurus/module-type-aliases": "npm:^3.6.2"
     "@docusaurus/preset-classic": "npm:^3.6.1"
     "@docusaurus/tsconfig": "npm:^3.6.2"
     "@docusaurus/types": "npm:^3.6.2"

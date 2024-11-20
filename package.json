@@ -24,10 +24,9 @@
   "workspaces": [
     "programs/*",
     "rust-sdk/*",
-    "rust-sdk/examples/*",
     "ts-sdk/*",
-    "ts-sdk/examples/*",
     "legacy-sdk/*",
+    "examples/*",
     "docs/*"
   ],
   "lint-staged": {

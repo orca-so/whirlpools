@@ -3743,9 +3743,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/whirlpools-next-example@workspace:ts-sdk/examples/next":
+"@orca-so/whirlpools-next-example@workspace:examples/next":
   version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-next-example@workspace:ts-sdk/examples/next"
+  resolution: "@orca-so/whirlpools-next-example@workspace:examples/next"
   dependencies:
     "@next/bundle-analyzer": "npm:^15.0.3"
     "@orca-so/whirlpools": "npm:*"

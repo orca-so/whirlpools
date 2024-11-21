@@ -150,13 +150,31 @@ pub fn swap_quote_by_output_token(
 
 // Private functions
 
-struct SwapResult {
-    token_a: u64,
-    token_b: u64,
-    trade_fee: u64,
+pub struct SwapResult {
+    pub token_a: u64,
+    pub token_b: u64,
+    pub trade_fee: u64,
 }
 
-fn compute_swap<const SIZE: usize>(
+/// Computes the amounts of tokens A and B based on the current Whirlpool state and tick sequence.
+///
+/// # Arguments
+/// - `token_amount`: The input or output amount specified for the swap. Must be non-zero.
+/// - `sqrt_price_limit`: The price limit for the swap represented as a square root.
+///    If set to `0`, it defaults to the minimum or maximum sqrt price based on the direction of the swap.
+/// - `whirlpool`: The current state of the Whirlpool AMM, including liquidity, price, and tick information.
+/// - `tick_sequence`: A sequence of ticks used to determine price levels during the swap process.
+/// - `a_to_b`: Indicates the direction of the swap:
+///    - `true`: Swap from token A to token B.
+///    - `false`: Swap from token B to token A.
+/// - `specified_input`: Determines if the input amount is specified:
+///    - `true`: `token_amount` represents the input amount.
+///    - `false`: `token_amount` represents the output amount.
+/// - `_timestamp`: A placeholder for future full swap logic, currently ignored.
+///
+/// # Returns
+/// A `Result` containing a `SwapResult` struct if the swap is successful, or an `ErrorCode` if the computation fails.
+pub fn compute_swap<const SIZE: usize>(
     token_amount: u64,
     sqrt_price_limit: u128,
     whirlpool: WhirlpoolFacade,

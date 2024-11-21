@@ -9,35 +9,103 @@ import { setupMint, setupAta } from "./utils/token";
 import {
   fetchMaybePosition,
   fetchPosition,
+  fetchWhirlpool,
   getPositionAddress,
 } from "@orca-so/whirlpools-client";
-import type { Address } from "@solana/web3.js";
+import { fetchToken } from "@solana-program/token-2022";
+import { address, type Address } from "@solana/web3.js";
 import assert from "assert";
 import { setupPosition, setupTEPosition, setupWhirlpool } from "./utils/program";
 import { DEFAULT_FUNDER, setDefaultFunder } from "../src/config";
+import { setupAtaTE, setupMintTE, setupMintTEFee } from "./utils/tokenExtensions";
 
 describe("Increase Liquidity Instructions", () => {
-  let mintA: Address;
-  let mintB: Address;
-  let ataA: Address;
-  let ataB: Address;
-  let whirlpool: Address;
-  let positionMint: Address;
-  let positionTEMint: Address;
+  const tickSpacing = 64;
+  const tokenBalance = 1_000_000n;
+
+  let ataMap: Record<string, Address> = {};
+  let whirlpools: Record<string, Address> = {};
+  let positions: Record<string, Address[]> = {};
 
   beforeAll(async () => {
-    const tickSpacing = 64;
-    mintA = await setupMint();
-    mintB = await setupMint();
-    ataA = await setupAta(mintA, { amount: 1_000_000n });
-    ataB = await setupAta(mintB, { amount: 1_000_000n });
-    whirlpool = await setupWhirlpool(mintA, mintB, tickSpacing);
-    positionMint = await setupPosition(whirlpool);
-    positionTEMint = await setupTEPosition(whirlpool);
+    const mintA = await setupMint();
+    const mintB = await setupMint();
+    const mintTEA = await setupMintTE();
+    const mintTEB = await setupMintTE();
+    const mintTEFee = await setupMintTEFee();
+
+    ataMap[mintA] = await setupAta(mintA, { amount: tokenBalance });
+    ataMap[mintB] = await setupAta(mintB, { amount: tokenBalance });
+    ataMap[mintTEA] = await setupAtaTE(mintTEA, { amount: tokenBalance });
+    ataMap[mintTEB] = await setupAtaTE(mintTEB, { amount: tokenBalance });
+    ataMap[mintTEFee] = await setupAtaTE(mintTEFee, { amount: tokenBalance });
+
+    const whirlpoolCombinations: [Address, Address][] = [
+      [mintA, mintB],
+      [mintA, mintTEA],
+      [mintTEA, mintTEB],
+      [mintA, mintTEFee],
+    ];
+
+    for (const [tokenA, tokenB] of whirlpoolCombinations) {
+      const whirlpoolKey = `${tokenA.toString()}-${tokenB.toString()}`;
+
+      whirlpools[whirlpoolKey] = await setupWhirlpool(
+        tokenA,
+        tokenB,
+        tickSpacing
+      );
+
+      positions[whirlpoolKey] = [
+        await setupPosition(whirlpools[whirlpoolKey]),
+        await setupPosition(whirlpools[whirlpoolKey], {
+          tickLower: 100,
+          tickUpper: 200,
+        }),
+        await setupTEPosition(whirlpools[whirlpoolKey]),
+        await setupTEPosition(whirlpools[whirlpoolKey], {
+          tickLower: 100,
+          tickUpper: 200,
+        }),
+      ];
+    }
   });
+
+  const testLiquidityIncrease = async (
+    positionMint: Address,
+    tokenA: Address,
+    tokenB: Address,
+  ) => {
+    const amount = 10_000n;
+
+    const { quote, instructions } = await increaseLiquidityInstructions(
+      rpc,
+      positionMint,
+      { tokenA: amount }
+    );
+    console.log(quote, instructions);
+
+    const tokenBeforeA = await fetchToken(rpc, ataMap[tokenA]);
+    const tokenBeforeB = await fetchToken(rpc, ataMap[tokenB]);
+    await sendTransaction(instructions);
+    const positionAddress = await getPositionAddress(positionMint);
+    const position = await fetchPosition(rpc, positionAddress[0]);
+    const tokenAfterA = await fetchToken(rpc, ataMap[tokenA]);
+    const tokenAfterB = await fetchToken(rpc, ataMap[tokenB]);
+    const balanceChangeTokenA =
+      tokenBeforeA.data.amount - tokenAfterA.data.amount;
+    const balanceChangeTokenB =
+      tokenBeforeB.data.amount - tokenAfterB.data.amount;
+
+    assert.strictEqual(quote.tokenEstA, balanceChangeTokenA);
+    assert.strictEqual(quote.tokenEstB, balanceChangeTokenB);
+    assert.strictEqual(quote.liquidityDelta, position.data.liquidity);
+  };
 
   it("Should throw error if authority is default address", async () => {
     const tokenAAmount = 100_000n;
+    const firstWhirlpoolKey = Object.keys(positions)[0];
+    const positionMint = positions[firstWhirlpoolKey][0];
     setDefaultFunder(DEFAULT_FUNDER);
     await assert.rejects(
       increaseLiquidityInstructions(
@@ -49,40 +117,32 @@ describe("Increase Liquidity Instructions", () => {
     setDefaultFunder(signer);
   });
 
-  it("Should increase liquidity in a position with the correct amount", async () => {
-    const amount = 100_000n;
-
-    const { quote, instructions } = await increaseLiquidityInstructions(
-      rpc,
-      positionMint,
-      { tokenA: amount },
+  it("Should throw error increase liquidity amount by token is equal or greater than the token balance", async () => {
+    const tokenAAmount = 1_000_000n;
+    const firstWhirlpoolKey = Object.keys(positions)[0];
+    const positionMint = positions[firstWhirlpoolKey][0];
+    setDefaultFunder(DEFAULT_FUNDER);
+    await assert.rejects(
+      increaseLiquidityInstructions(
+        rpc,
+        positionMint,
+        { tokenA: tokenAAmount },
+      )
     );
-    
-    const positionAddress = await getPositionAddress(positionMint);
-    const positionBefore = await fetchPosition(rpc, positionAddress[0]);
-    await sendTransaction(instructions);
-    const positionAfter = await fetchPosition(rpc, positionAddress[0]);
-  
-    assert.strictEqual(positionBefore.data.liquidity, 0n);
-    assert.strictEqual(quote.liquidityDelta, positionAfter.data.liquidity);
+    setDefaultFunder(signer);
   });
 
-  it("Should increase liquidity in a TE position with the correct amount", async () => {
-    const tokenAAmount = 100_000n;
-
-    const { quote, instructions } = await increaseLiquidityInstructions(
-      rpc,
-      positionTEMint,
-      { tokenA: tokenAAmount },
-    );
-    
-    const positionAddress = await getPositionAddress(positionTEMint);
-    const positionBefore = await fetchPosition(rpc, positionAddress[0]);
-    await sendTransaction(instructions);
-    const positionAfter = await fetchPosition(rpc, positionAddress[0]);
-
-    assert.strictEqual(positionBefore.data.liquidity, 0n);
-    assert.strictEqual(quote.liquidityDelta, positionAfter.data.liquidity);
+  it("Should correctly handle liquidity increase for all precomputed combinations of Whirlpool and Position types", async () => {
+    for (const whirlpoolKey of Object.keys(whirlpools)) {
+      const [tokenA, tokenB] = whirlpoolKey.split("-");
+      for (const positionMint of positions[whirlpoolKey]) {
+        await testLiquidityIncrease(
+          positionMint,
+          address(tokenA),
+          address(tokenB),
+        );
+      }
+    }
   });
 });
 

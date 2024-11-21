@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use solana_client::{
-    rpc_client::RpcClient,
+    nonblocking::rpc_client::RpcClient,
     rpc_filter::{Memcmp, RpcFilterType},
 };
 use solana_sdk::pubkey::Pubkey;
@@ -78,7 +78,7 @@ impl From<WhirlpoolFilter> for RpcFilterType {
     }
 }
 
-pub fn fetch_all_whirlpool_with_filter(
+pub async fn fetch_all_whirlpool_with_filter(
     rpc: &RpcClient,
     filters: Vec<WhirlpoolFilter>,
 ) -> Result<Vec<DecodedAccount<Whirlpool>>, Box<dyn Error>> {
@@ -87,5 +87,5 @@ pub fn fetch_all_whirlpool_with_filter(
         0,
         WHIRLPOOL_DISCRIMINATOR.to_vec(),
     )));
-    fetch_decoded_program_accounts(rpc, filters)
+    fetch_decoded_program_accounts(rpc, filters).await
 }

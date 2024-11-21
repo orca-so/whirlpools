@@ -1,6 +1,7 @@
+use futures::executor::block_on;
 use solana_account_decoder::UiAccountEncoding;
 use solana_client::{
-    rpc_client::RpcClient,
+    nonblocking::rpc_client::RpcClient,
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
     rpc_filter::{Memcmp, RpcFilterType},
 };
@@ -19,7 +20,7 @@ pub struct RpcKeyedTokenAccount {
 // This is a little hacky but it is done this way because
 // the original get_token_accounts_for_owner uses json_parsed encoding
 // and we don't want to use serde_json in this crate.
-pub(crate) fn get_token_accounts_for_owner(
+pub(crate) async fn get_token_accounts_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
     program_id: Pubkey,
@@ -41,7 +42,7 @@ pub(crate) fn get_token_accounts_for_owner(
             },
             with_context: None,
         },
-    )?;
+    ).await?;
 
     let mut decoded_accounts: Vec<RpcKeyedTokenAccount> = Vec::new();
     for (address, account) in accounts {

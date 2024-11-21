@@ -9,7 +9,8 @@ use solana_account_decoder::{UiAccount, UiAccountEncoding};
 use solana_client::client_error::Result as ClientResult;
 use solana_client::{
     client_error::{ClientError, ClientErrorKind},
-    rpc_client::{RpcClient, RpcClientConfig, SerializableTransaction},
+    rpc_client::{RpcClientConfig, SerializableTransaction},
+    nonblocking::rpc_client::RpcClient,
     rpc_request::RpcRequest,
     rpc_response::{Response, RpcBlockhash, RpcResponseContext, RpcVersionInfo},
     rpc_sender::{RpcSender, RpcTransportStats},
@@ -88,7 +89,7 @@ lazy_static! {
     };
     pub static ref RPC: &'static RpcClient = {
         let rpc = &RPC_CLIENT;
-        setup_fee_tiers().unwrap();
+        block_on(setup_fee_tiers());
         rpc
     };
 }
@@ -237,21 +238,21 @@ impl RpcSender for MockRpcSender {
     }
 }
 
-pub fn delete_account(pubkey: &Pubkey) -> Result<(), Box<dyn Error>> {
-    let mut context = block_on(CONTEXT.lock());
+pub async fn delete_account(pubkey: &Pubkey) -> Result<(), Box<dyn Error>> {
+    let mut context = CONTEXT.lock().await;
     context.set_account(pubkey, &AccountSharedData::default());
     Ok(())
 }
 
-pub fn send_transaction(instructions: Vec<Instruction>) -> Result<Signature, Box<dyn Error>> {
-    send_transaction_with_signers(instructions, vec![])
+pub async fn send_transaction(instructions: Vec<Instruction>) -> Result<Signature, Box<dyn Error>> {
+    send_transaction_with_signers(instructions, vec![]).await
 }
 
-pub fn send_transaction_with_signers(
+pub async fn send_transaction_with_signers(
     instructions: Vec<Instruction>,
     signers: Vec<&Keypair>,
 ) -> Result<Signature, Box<dyn Error>> {
-    let blockhash = RPC_CLIENT.get_latest_blockhash()?;
+    let blockhash = RPC_CLIENT.get_latest_blockhash().await?;
     // Sine blockhash is not guaranteed to be unique, we need to add a random memo to the tx
     // so that we can fire two seemingly identical transactions in a row.
     let memo = Keypair::new().to_base58_string();
@@ -264,6 +265,6 @@ pub fn send_transaction_with_signers(
         blockhash,
     )?);
     let transaction = VersionedTransaction::try_new(message, &[signers, vec![&SIGNER]].concat())?;
-    let signature = RPC_CLIENT.send_transaction(&transaction)?;
+    let signature = RPC_CLIENT.send_transaction(&transaction).await?;
     Ok(signature)
 }

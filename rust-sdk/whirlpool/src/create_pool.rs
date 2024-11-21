@@ -1,6 +1,7 @@
 use std::collections::HashSet;
 use std::error::Error;
 
+use futures::executor::block_on;
 use orca_whirlpools_client::{
     get_fee_tier_address, get_tick_array_address, get_token_badge_address, get_whirlpool_address,
 };
@@ -13,7 +14,7 @@ use orca_whirlpools_core::{
     get_full_range_tick_indexes, get_tick_array_start_tick_index, price_to_sqrt_price,
     sqrt_price_to_tick_index,
 };
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_program::rent::Rent;
 use solana_program::system_program;
 use solana_program::sysvar::SysvarId;
@@ -41,7 +42,7 @@ pub struct CreatePoolInstructions {
     pub additional_signers: Vec<Keypair>,
 }
 
-pub fn create_splash_pool_instructions(
+pub async fn create_splash_pool_instructions(
     rpc: &RpcClient,
     token_a: Pubkey,
     token_b: Pubkey,
@@ -55,10 +56,10 @@ pub fn create_splash_pool_instructions(
         SPLASH_POOL_TICK_SPACING,
         initial_price,
         funder,
-    )
+    ).await
 }
 
-pub fn create_concentrated_liquidity_pool_instructions(
+pub async fn create_concentrated_liquidity_pool_instructions(
     rpc: &RpcClient,
     token_a: Pubkey,
     token_b: Pubkey,
@@ -77,7 +78,7 @@ pub fn create_concentrated_liquidity_pool_instructions(
 
     let rent = get_rent()?;
 
-    let account_infos = rpc.get_multiple_accounts(&[token_a, token_b])?;
+    let account_infos = rpc.get_multiple_accounts(&[token_a, token_b]).await?;
     let mint_a_info = account_infos[0]
         .as_ref()
         .ok_or(format!("Mint {} not found", token_a))?;

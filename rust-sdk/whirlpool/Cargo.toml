@@ -15,6 +15,7 @@ edition = "2021"
 default = []
 
 [dependencies]
+futures = { version = "^0.3", features = ["executor"] }
 solana-program = { version = "^1.18" }
 solana-client = { version = "^1.18" }
 solana-sdk = { version = "^1.18" }
@@ -31,7 +32,6 @@ serial_test = { version = "^3.1" }
 lazy_static = { version = "^1.5" }
 solana-program-test = { version = "^1.18" }
 solana-version = { version = "^1.18" }
-futures = { version = "^0.3", features = ["executor"] }
 serde_json = { version = "^1.0" }
 async-trait = { version = "^0.1" }
 bincode = { version = "^1.3" }

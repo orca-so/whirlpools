@@ -1,4 +1,4 @@
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_filter::Memcmp;
 use solana_client::rpc_filter::RpcFilterType;
 use solana_program::pubkey::Pubkey;
@@ -34,7 +34,7 @@ impl From<FeeTierFilter> for RpcFilterType {
     }
 }
 
-pub fn fetch_all_fee_tier_with_filter(
+pub async fn fetch_all_fee_tier_with_filter(
     rpc: &RpcClient,
     filters: Vec<FeeTierFilter>,
 ) -> Result<Vec<DecodedAccount<FeeTier>>, Box<dyn Error>> {
@@ -43,5 +43,5 @@ pub fn fetch_all_fee_tier_with_filter(
         0,
         FEE_TIER_DISCRIMINATOR.to_vec(),
     )));
-    fetch_decoded_program_accounts(rpc, filters)
+    fetch_decoded_program_accounts(rpc, filters).await
 }

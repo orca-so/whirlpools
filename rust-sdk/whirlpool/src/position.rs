@@ -1,11 +1,12 @@
 use std::{collections::HashMap, error::Error};
 
+use futures::executor::block_on;
 use orca_whirlpools_client::{
     fetch_all_position_with_filter, get_bundled_position_address, get_position_address,
     get_position_bundle_address, DecodedAccount, Position, PositionBundle, PositionFilter,
 };
 use orca_whirlpools_core::POSITION_BUNDLE_SIZE;
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::account::Account;
 use solana_sdk::pubkey::Pubkey;
 
@@ -54,12 +55,12 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
     positions
 }
 
-pub fn get_positions_for_owner(
+pub async fn get_positions_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
 ) -> Result<Vec<PositionOrBundle>, Box<dyn Error>> {
-    let token_accounts = get_token_accounts_for_owner(rpc, owner, spl_token::ID)?;
-    let token_extension_accounts = get_token_accounts_for_owner(rpc, owner, spl_token_2022::ID)?;
+    let token_accounts = get_token_accounts_for_owner(rpc, owner, spl_token::ID).await?;
+    let token_extension_accounts = get_token_accounts_for_owner(rpc, owner, spl_token_2022::ID).await?;
 
     let potiential_tokens: Vec<RpcKeyedTokenAccount> = [token_accounts, token_extension_accounts]
         .into_iter()
@@ -77,14 +78,14 @@ pub fn get_positions_for_owner(
         .map(|x| get_position_bundle_address(&x.token.mint).map(|x| x.0))
         .collect::<Result<Vec<Pubkey>, _>>()?;
 
-    let position_infos = rpc.get_multiple_accounts(&position_addresses)?;
+    let position_infos = rpc.get_multiple_accounts(&position_addresses).await?;
 
     let positions: Vec<Option<Position>> = position_infos
         .iter()
         .map(|x| x.as_ref().and_then(|x| Position::from_bytes(&x.data).ok()))
         .collect();
 
-    let position_bundle_infos = rpc.get_multiple_accounts(&position_bundle_addresses)?;
+    let position_bundle_infos = rpc.get_multiple_accounts(&position_bundle_addresses).await?;
 
     let position_bundles: Vec<Option<PositionBundle>> = position_bundle_infos
         .iter()
@@ -101,7 +102,8 @@ pub fn get_positions_for_owner(
         .collect();
 
     let bundled_positions_infos: Vec<Account> = rpc
-        .get_multiple_accounts(&bundled_positions_addresses)?
+        .get_multiple_accounts(&bundled_positions_addresses)
+        .await?
         .into_iter()
         .flatten()
         .collect();
@@ -157,10 +159,10 @@ pub fn get_positions_for_owner(
     Ok(position_or_bundles)
 }
 
-pub fn fetch_positions_in_whirlpool(
+pub async fn fetch_positions_in_whirlpool(
     rpc: &RpcClient,
     whirlpool: Pubkey,
 ) -> Result<Vec<DecodedAccount<Position>>, Box<dyn Error>> {
     let filters = vec![PositionFilter::Whirlpool(whirlpool)];
-    fetch_all_position_with_filter(rpc, filters)
+    fetch_all_position_with_filter(rpc, filters).await
 }

@@ -1,12 +1,13 @@
 use std::error::Error;
 
+use futures::executor::block_on;
 use orca_whirlpools_client::{
     fetch_all_fee_tier_with_filter, get_fee_tier_address, get_whirlpool_address, FeeTier,
     FeeTierFilter, Whirlpool, WhirlpoolsConfig,
 };
 
 use orca_whirlpools_core::sqrt_price_to_price;
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::{program_error::ProgramError, program_pack::Pack};
 use spl_token::state::Mint;
@@ -54,15 +55,15 @@ pub enum PoolInfo {
     Uninitialized(UninitializedPool),
 }
 
-pub fn fetch_splash_pool(
+pub async fn fetch_splash_pool(
     rpc: &RpcClient,
     token_1: Pubkey,
     token_2: Pubkey,
 ) -> Result<PoolInfo, Box<dyn Error>> {
-    fetch_concentrated_liquidity_pool(rpc, token_1, token_2, SPLASH_POOL_TICK_SPACING)
+    fetch_concentrated_liquidity_pool(rpc, token_1, token_2, SPLASH_POOL_TICK_SPACING).await
 }
 
-pub fn fetch_concentrated_liquidity_pool(
+pub async fn fetch_concentrated_liquidity_pool(
     rpc: &RpcClient,
     token_1: Pubkey,
     token_2: Pubkey,
@@ -81,7 +82,7 @@ pub fn fetch_concentrated_liquidity_pool(
         fee_tier_address.0,
         token_a,
         token_b,
-    ])?;
+    ]).await?;
 
     let whirlpools_config_info = account_infos[1].as_ref().ok_or(format!(
         "Whirlpools config {} not found",
@@ -121,7 +122,7 @@ pub fn fetch_concentrated_liquidity_pool(
     }
 }
 
-pub fn fetch_whirlpools_by_token_pair(
+pub async fn fetch_whirlpools_by_token_pair(
     rpc: &RpcClient,
     token_1: Pubkey,
     token_2: Pubkey,
@@ -135,7 +136,7 @@ pub fn fetch_whirlpools_by_token_pair(
     )?;
 
     let account_infos =
-        rpc.get_multiple_accounts(&[*whirlpools_config_address, token_a, token_b])?;
+        rpc.get_multiple_accounts(&[*whirlpools_config_address, token_a, token_b]).await?;
 
     let whirlpools_config_info = account_infos[0].as_ref().ok_or(format!(
         "Whirlpools config {} not found",
@@ -162,7 +163,7 @@ pub fn fetch_whirlpools_by_token_pair(
         .map(|x| x.map(|y| y.0))
         .collect::<Result<Vec<Pubkey>, ProgramError>>()?;
 
-    let whirlpool_infos = rpc.get_multiple_accounts(&whirlpool_addresses)?;
+    let whirlpool_infos = rpc.get_multiple_accounts(&whirlpool_addresses).await?;
 
     let mut whirlpools: Vec<PoolInfo> = Vec::new();
     for i in 0..whirlpool_infos.len() {

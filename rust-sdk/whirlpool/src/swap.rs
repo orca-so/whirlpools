@@ -8,7 +8,7 @@ use orca_whirlpools_core::{
     get_tick_array_start_tick_index, swap_quote_by_input_token, swap_quote_by_output_token,
     ExactInSwapQuote, ExactOutSwapQuote, TickArrayFacade, TickFacade, TICK_ARRAY_SIZE,
 };
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{
     instruction::AccountMeta, instruction::Instruction, pubkey::Pubkey, signature::Keypair,
 };
@@ -46,7 +46,7 @@ fn uninitialized_tick_array(start_tick_index: i32) -> TickArrayFacade {
     }
 }
 
-fn fetch_tick_arrays_or_default(
+async fn fetch_tick_arrays_or_default(
     rpc: &RpcClient,
     whirlpool_address: Pubkey,
     whirlpool: &Whirlpool,
@@ -68,7 +68,7 @@ fn fetch_tick_arrays_or_default(
         .map(|&x| get_tick_array_address(&whirlpool_address, x).map(|y| y.0))
         .collect::<Result<Vec<Pubkey>, _>>()?;
 
-    let tick_array_infos = rpc.get_multiple_accounts(&tick_array_addresses)?;
+    let tick_array_infos = rpc.get_multiple_accounts(&tick_array_addresses).await?;
 
     let maybe_tick_arrays: Vec<Option<TickArrayFacade>> = tick_array_infos
         .iter()
@@ -90,7 +90,7 @@ fn fetch_tick_arrays_or_default(
     Ok(result)
 }
 
-pub fn swap_instructions(
+pub async fn swap_instructions(
     rpc: &RpcClient,
     whirlpool_address: Pubkey,
     amount: u64,
@@ -106,16 +106,16 @@ pub fn swap_instructions(
         return Err("Signer must be provided".into());
     }
 
-    let whirlpool_info = rpc.get_account(&whirlpool_address)?;
+    let whirlpool_info = rpc.get_account(&whirlpool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     let specified_input = swap_type == SwapType::ExactIn;
     let specified_token_a = specified_mint == whirlpool.token_mint_a;
     let a_to_b = specified_token_a == specified_input;
 
-    let tick_arrays = fetch_tick_arrays_or_default(rpc, whirlpool_address, &whirlpool)?;
+    let tick_arrays = fetch_tick_arrays_or_default(rpc, whirlpool_address, &whirlpool).await?;
 
     let mint_infos =
-        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])?;
+        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b]).await?;
 
     let mint_a_info = mint_infos[0]
         .as_ref()
@@ -127,7 +127,7 @@ pub fn swap_instructions(
 
     let oracle_address = get_oracle_address(&whirlpool_address)?.0;
 
-    let current_epoch = rpc.get_epoch_info()?.epoch;
+    let current_epoch = rpc.get_epoch_info().await?.epoch;
     let transfer_fee_a = get_current_transfer_fee(Some(mint_a_info), current_epoch);
     let transfer_fee_b = get_current_transfer_fee(Some(mint_b_info), current_epoch);
 
@@ -170,7 +170,7 @@ pub fn swap_instructions(
     let mut instructions: Vec<Instruction> = Vec::new();
 
     let token_accounts =
-        prepare_token_accounts_instructions(rpc, signer, vec![token_a_spec, token_b_spec])?;
+        prepare_token_accounts_instructions(rpc, signer, vec![token_a_spec, token_b_spec]).await?;
 
     instructions.extend(token_accounts.create_instructions);
 

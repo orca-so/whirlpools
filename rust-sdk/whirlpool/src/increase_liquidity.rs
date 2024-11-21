@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::str::FromStr;
 
+use futures::executor::block_on;
 use orca_whirlpools_client::{
     get_position_address, get_tick_array_address, InitializeTickArray,
     InitializeTickArrayInstructionArgs, OpenPositionWithTokenExtensions,
@@ -12,7 +13,7 @@ use orca_whirlpools_core::{
     increase_liquidity_quote, increase_liquidity_quote_a, increase_liquidity_quote_b,
     order_tick_indexes, price_to_tick_index, IncreaseLiquidityQuote, TransferFee,
 };
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::account::Account;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::signer::Signer;
@@ -83,7 +84,7 @@ pub struct IncreaseLiquidityInstruction {
     pub additional_signers: Vec<Keypair>,
 }
 
-pub fn increase_liquidity_instructions(
+pub async fn increase_liquidity_instructions(
     rpc: &RpcClient,
     position_mint_address: Pubkey,
     param: IncreaseLiquidityParam,
@@ -98,14 +99,15 @@ pub fn increase_liquidity_instructions(
     }
 
     let position_address = get_position_address(&position_mint_address)?.0;
-    let position_info = rpc.get_account(&position_address)?;
+    let position_info = rpc.get_account(&position_address).await?;
     let position = Position::from_bytes(&position_info.data)?;
 
-    let pool_info = rpc.get_account(&position.whirlpool)?;
+    let pool_info = rpc.get_account(&position.whirlpool).await?;
     let pool = Whirlpool::from_bytes(&pool_info.data)?;
 
     let mint_infos =
-        rpc.get_multiple_accounts(&[pool.token_mint_a, pool.token_mint_b, position_mint_address])?;
+        rpc.get_multiple_accounts(&[pool.token_mint_a, pool.token_mint_b, position_mint_address])
+            .await?;
 
     let mint_a_info = mint_infos[0]
         .as_ref()
@@ -117,7 +119,7 @@ pub fn increase_liquidity_instructions(
         .as_ref()
         .ok_or("Position mint info not found")?;
 
-    let current_epoch = rpc.get_epoch_info()?.epoch;
+    let current_epoch = rpc.get_epoch_info().await?.epoch;
     let transfer_fee_a = get_current_transfer_fee(Some(mint_a_info), current_epoch);
     let transfer_fee_b = get_current_transfer_fee(Some(mint_b_info), current_epoch);
 
@@ -155,7 +157,7 @@ pub fn increase_liquidity_instructions(
             TokenAccountStrategy::WithBalance(pool.token_mint_a, quote.token_max_a),
             TokenAccountStrategy::WithBalance(pool.token_mint_b, quote.token_max_b),
         ],
-    )?;
+    ).await?;
 
     instructions.extend(token_accounts.create_instructions);
 
@@ -212,7 +214,7 @@ pub struct OpenPositionInstruction {
     pub initialization_cost: u64,
 }
 
-fn internal_open_position(
+async fn internal_open_position(
     rpc: &RpcClient,
     pool_address: Pubkey,
     whirlpool: Whirlpool,
@@ -250,7 +252,7 @@ fn internal_open_position(
     let mut non_refundable_rent: u64 = 0;
     let mut additional_signers: Vec<Keypair> = Vec::new();
 
-    let epoch = rpc.get_epoch_info()?.epoch;
+    let epoch = rpc.get_epoch_info().await?.epoch;
     let transfer_fee_a = get_current_transfer_fee(Some(mint_a_info), epoch);
     let transfer_fee_b = get_current_transfer_fee(Some(mint_b_info), epoch);
 
@@ -285,13 +287,14 @@ fn internal_open_position(
             TokenAccountStrategy::WithBalance(whirlpool.token_mint_a, quote.token_max_a),
             TokenAccountStrategy::WithBalance(whirlpool.token_mint_b, quote.token_max_b),
         ],
-    )?;
+    ).await?;
 
     instructions.extend(token_accounts.create_instructions);
     additional_signers.extend(token_accounts.additional_signers);
 
     let tick_array_infos =
-        rpc.get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address])?;
+        rpc.get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address])
+            .await?;
 
     if tick_array_infos[0].is_none() {
         instructions.push(
@@ -389,18 +392,18 @@ fn internal_open_position(
     })
 }
 
-pub fn open_full_range_position_instructions(
+pub async fn open_full_range_position_instructions(
     rpc: &RpcClient,
     pool_address: Pubkey,
     param: IncreaseLiquidityParam,
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
-    let whirlpool_info = rpc.get_account(&pool_address)?;
+    let whirlpool_info = rpc.get_account(&pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     let tick_range = get_full_range_tick_indexes(whirlpool.tick_spacing);
     let mint_infos =
-        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])?;
+        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b]).await?;
     let mint_a_info = mint_infos[0]
         .as_ref()
         .ok_or("Token A mint info not found")?;
@@ -418,10 +421,10 @@ pub fn open_full_range_position_instructions(
         mint_b_info,
         slippage_tolerance_bps,
         funder,
-    )
+    ).await
 }
 
-pub fn open_position_instructions(
+pub async fn open_position_instructions(
     rpc: &RpcClient,
     pool_address: Pubkey,
     lower_price: f64,
@@ -430,13 +433,13 @@ pub fn open_position_instructions(
     slippage_tolerance_bps: Option<u16>,
     funder: Option<Pubkey>,
 ) -> Result<OpenPositionInstruction, Box<dyn Error>> {
-    let whirlpool_info = rpc.get_account(&pool_address)?;
+    let whirlpool_info = rpc.get_account(&pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     if whirlpool.tick_spacing == SPLASH_POOL_TICK_SPACING {
         return Err("Splash pools only support full range positions".into());
     }
     let mint_infos =
-        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])?;
+        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b]).await?;
     let mint_a_info = mint_infos[0]
         .as_ref()
         .ok_or("Token A mint info not found")?;
@@ -463,5 +466,5 @@ pub fn open_position_instructions(
         mint_b_info,
         slippage_tolerance_bps,
         funder,
-    )
+    ).await
 }

@@ -76,7 +76,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
         return Err("Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)".into());
     }
 
-    let rent = get_rent()?;
+    let rent = get_rent(rpc)?;
 
     let account_infos = rpc.get_multiple_accounts(&[token_a, token_b]).await?;
     let mint_a_info = account_infos[0]

@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     error::Error,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -146,22 +147,23 @@ pub async fn harvest_position_instructions(
         get_current_transfer_fee(reward_infos[2].as_ref(), current_epoch),
     )?;
 
-    let mut required_mints: Vec<TokenAccountStrategy> = Vec::new();
+    let mut required_mints: HashSet<TokenAccountStrategy> = HashSet::new();
 
     if fees_quote.fee_owed_a > 0 || fees_quote.fee_owed_b > 0 {
-        required_mints.push(TokenAccountStrategy::WithoutBalance(pool.token_mint_a));
-        required_mints.push(TokenAccountStrategy::WithoutBalance(pool.token_mint_b));
+        required_mints.insert(TokenAccountStrategy::WithoutBalance(pool.token_mint_a));
+        required_mints.insert(TokenAccountStrategy::WithoutBalance(pool.token_mint_b));
     }
 
     for i in 0..3 {
         if rewards_quote.rewards[i].rewards_owed > 0 {
-            required_mints.push(TokenAccountStrategy::WithoutBalance(
+            required_mints.insert(TokenAccountStrategy::WithoutBalance(
                 pool.reward_infos[i].mint,
             ));
         }
     }
 
-    let token_accounts = prepare_token_accounts_instructions(rpc, authority, required_mints).await?;
+    let token_accounts =
+        prepare_token_accounts_instructions(rpc, authority, required_mints.into_iter().collect()).await?;
 
     let mut instructions: Vec<Instruction> = Vec::new();
     instructions.extend(token_accounts.create_instructions);

@@ -21,7 +21,7 @@ use std::{collections::HashMap, error::Error};
 
 use crate::{NativeMintWrappingStrategy, NATIVE_MINT_WRAPPING_STRATEGY};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum TokenAccountStrategy {
     WithoutBalance(Pubkey),
     WithBalance(Pubkey, u64),

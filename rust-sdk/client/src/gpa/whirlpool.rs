@@ -21,12 +21,12 @@ pub enum WhirlpoolFilter {
     TokenVaultA(Pubkey),
     TokenMintB(Pubkey),
     TokenVaultB(Pubkey),
+    RewardMint0(Pubkey),
+    RewardVault0(Pubkey),
     RewardMint1(Pubkey),
     RewardVault1(Pubkey),
     RewardMint2(Pubkey),
     RewardVault2(Pubkey),
-    RewardMint3(Pubkey),
-    RewardVault3(Pubkey),
 }
 
 impl From<WhirlpoolFilter> for RpcFilterType {
@@ -56,23 +56,23 @@ impl From<WhirlpoolFilter> for RpcFilterType {
             WhirlpoolFilter::TokenVaultB(token_vault_b) => RpcFilterType::Memcmp(
                 Memcmp::new_raw_bytes(213, token_vault_b.to_bytes().to_vec()),
             ),
+            WhirlpoolFilter::RewardMint0(reward_mint_0) => RpcFilterType::Memcmp(
+                Memcmp::new_raw_bytes(269, reward_mint_0.to_bytes().to_vec()),
+            ),
+            WhirlpoolFilter::RewardVault0(reward_vault_0) => RpcFilterType::Memcmp(
+                Memcmp::new_raw_bytes(301, reward_vault_0.to_bytes().to_vec()),
+            ),
             WhirlpoolFilter::RewardMint1(reward_mint_1) => RpcFilterType::Memcmp(
-                Memcmp::new_raw_bytes(269, reward_mint_1.to_bytes().to_vec()),
+                Memcmp::new_raw_bytes(397, reward_mint_1.to_bytes().to_vec()),
             ),
             WhirlpoolFilter::RewardVault1(reward_vault_1) => RpcFilterType::Memcmp(
-                Memcmp::new_raw_bytes(301, reward_vault_1.to_bytes().to_vec()),
+                Memcmp::new_raw_bytes(429, reward_vault_1.to_bytes().to_vec()),
             ),
             WhirlpoolFilter::RewardMint2(reward_mint_2) => RpcFilterType::Memcmp(
-                Memcmp::new_raw_bytes(397, reward_mint_2.to_bytes().to_vec()),
+                Memcmp::new_raw_bytes(525, reward_mint_2.to_bytes().to_vec()),
             ),
             WhirlpoolFilter::RewardVault2(reward_vault_2) => RpcFilterType::Memcmp(
-                Memcmp::new_raw_bytes(429, reward_vault_2.to_bytes().to_vec()),
-            ),
-            WhirlpoolFilter::RewardMint3(reward_mint_3) => RpcFilterType::Memcmp(
-                Memcmp::new_raw_bytes(525, reward_mint_3.to_bytes().to_vec()),
-            ),
-            WhirlpoolFilter::RewardVault3(reward_vault_3) => RpcFilterType::Memcmp(
-                Memcmp::new_raw_bytes(557, reward_vault_3.to_bytes().to_vec()),
+                Memcmp::new_raw_bytes(557, reward_vault_2.to_bytes().to_vec()),
             ),
         }
     }

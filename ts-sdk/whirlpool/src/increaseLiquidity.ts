@@ -390,7 +390,7 @@ async function internalOpenPositionInstructions(
         whirlpool: whirlpool.address,
         funder,
         tickArray: lowerTickArrayAddress,
-        startTickIndex: lowerTickIndex,
+        startTickIndex: lowerTickArrayIndex,
       }),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(
@@ -405,7 +405,7 @@ async function internalOpenPositionInstructions(
         whirlpool: whirlpool.address,
         funder,
         tickArray: upperTickArrayAddress,
-        startTickIndex: upperTickIndex,
+        startTickIndex: upperTickArrayIndex,
       }),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(

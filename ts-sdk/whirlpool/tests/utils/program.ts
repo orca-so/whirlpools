@@ -1,20 +1,30 @@
 import {
+  fetchAllMaybeTickArray,
+  fetchWhirlpool,
   getFeeTierAddress,
   getInitializeConfigInstruction,
   getInitializeFeeTierInstruction,
   getInitializePoolV2Instruction,
+  getInitializeTickArrayInstruction,
+  getOpenPositionInstruction,
+  getOpenPositionWithTokenExtensionsInstruction,
+  getPositionAddress,
+  getTickArrayAddress,
   getTokenBadgeAddress,
   getWhirlpoolAddress,
 } from "@orca-so/whirlpools-client";
-import type { Address, IInstruction } from "@solana/web3.js";
+import { address, type Address, type IInstruction } from "@solana/web3.js";
 import { rpc, sendTransaction, signer } from "./mockRpc";
 import {
   SPLASH_POOL_TICK_SPACING,
   WHIRLPOOLS_CONFIG_ADDRESS,
 } from "../../src/config";
-import { tickIndexToSqrtPrice } from "@orca-so/whirlpools-core";
-import { fetchMint } from "@solana-program/token";
+import { getInitializableTickIndex, getTickArrayStartTickIndex, orderTickIndexes, tickIndexToSqrtPrice } from "@orca-so/whirlpools-core";
+import { TOKEN_2022_PROGRAM_ADDRESS, ASSOCIATED_TOKEN_PROGRAM_ADDRESS, fetchMint, findAssociatedTokenPda } from "@solana-program/token-2022";
 import { getNextKeypair } from "./keypair";
+import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
+import { TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
+import { prepareTokenAccountsInstructions } from "../../src/token";
 
 export async function setupConfigAndFeeTiers(): Promise<Address> {
   const keypair = getNextKeypair();
@@ -130,18 +140,199 @@ export async function setupPosition(
   whirlpool: Address,
   config: { tickLower?: number; tickUpper?: number; liquidity?: bigint } = {},
 ): Promise<Address> {
-  // TODO: implement when solana-bankrun supports gpa
-  const _ = config;
-  return whirlpool;
+  const positionMint = getNextKeypair();
+  const whirlpoolAccount = await fetchWhirlpool(rpc, whirlpool);
+  const tickLower = config.tickLower ?? -100;
+  const tickUpper = config.tickLower ?? 100;
+
+  const initializableLowerTickIndex = getInitializableTickIndex(
+    tickLower,
+    whirlpoolAccount.data.tickSpacing,
+    false,
+  );
+  const initializableUpperTickIndex = getInitializableTickIndex(
+    tickUpper,
+    whirlpoolAccount.data.tickSpacing,
+    true,
+  );
+
+  const lowerTickArrayIndex = getTickArrayStartTickIndex(
+    initializableLowerTickIndex,
+    whirlpoolAccount.data.tickSpacing,
+  );
+  const upperTickArrayIndex = getTickArrayStartTickIndex(
+    initializableUpperTickIndex,
+    whirlpoolAccount.data.tickSpacing,
+  );
+
+  const [
+    positionAddress,
+    positionTokenAccount,
+    lowerTickArrayAddress,
+    upperTickArrayAddress,
+  ] = await Promise.all([
+    getPositionAddress(positionMint.address),
+    findAssociatedTokenPda({
+      owner: signer.address,
+      mint: positionMint.address,
+      tokenProgram: TOKEN_PROGRAM_ADDRESS,
+    }).then((x) => x[0]),
+    getTickArrayAddress(whirlpool, lowerTickArrayIndex).then(
+      (x) => x[0],
+    ),
+    getTickArrayAddress(whirlpool, upperTickArrayIndex).then(
+      (x) => x[0],
+    ),
+  ]);
+
+  const [lowerTickArray, upperTickArray] = await fetchAllMaybeTickArray(rpc, [
+    lowerTickArrayAddress,
+    upperTickArrayAddress,
+  ]);
+
+  const instructions: IInstruction[] = [];
+
+  if (!lowerTickArray.exists) {
+    instructions.push(
+      getInitializeTickArrayInstruction({
+        whirlpool: whirlpool,
+        funder: signer,
+        tickArray: lowerTickArrayAddress,
+        startTickIndex: lowerTickArrayIndex,
+      }),
+    );
+  }
+
+  if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
+    instructions.push(
+      getInitializeTickArrayInstruction({
+        whirlpool: whirlpool,
+        funder: signer,
+        tickArray: upperTickArrayAddress,
+        startTickIndex: upperTickArrayIndex,
+      }),
+    );
+  }
+
+  instructions.push(
+    getOpenPositionInstruction({
+      funder: signer,
+      owner: signer.address,
+      position: positionAddress[0],
+      positionMint: positionMint,
+      positionTokenAccount: positionTokenAccount,
+      whirlpool: whirlpool,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+      tickLowerIndex: initializableLowerTickIndex,
+      tickUpperIndex: initializableUpperTickIndex,
+      positionBump: positionAddress[1],
+    }),
+  );
+
+  await sendTransaction(instructions);
+
+  return positionMint.address;
 }
 
 export async function setupTEPosition(
   whirlpool: Address,
   config: { tickLower?: number; tickUpper?: number; liquidity?: bigint } = {},
 ): Promise<Address> {
-  // TODO: implement when solana-bankrun supports gpa
-  const _ = config;
-  return whirlpool;
+  const metadataUpdateAuth = address("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr")
+  const positionMint = getNextKeypair();
+  const whirlpoolAccount = await fetchWhirlpool(rpc, whirlpool);
+  const tickLower = config.tickLower ?? -100;
+  const tickUpper = config.tickLower ?? 100;
+
+  const initializableLowerTickIndex = getInitializableTickIndex(
+    tickLower,
+    whirlpoolAccount.data.tickSpacing,
+    false,
+  );
+  const initializableUpperTickIndex = getInitializableTickIndex(
+    tickUpper,
+    whirlpoolAccount.data.tickSpacing,
+    true,
+  );
+
+  const lowerTickArrayIndex = getTickArrayStartTickIndex(
+    initializableLowerTickIndex,
+    whirlpoolAccount.data.tickSpacing,
+  );
+  const upperTickArrayIndex = getTickArrayStartTickIndex(
+    initializableUpperTickIndex,
+    whirlpoolAccount.data.tickSpacing,
+  );
+
+  const [
+    positionAddress,
+    positionTokenAccount,
+    lowerTickArrayAddress,
+    upperTickArrayAddress,
+  ] = await Promise.all([
+    getPositionAddress(positionMint.address),
+    findAssociatedTokenPda({
+      owner: signer.address,
+      mint: positionMint.address,
+      tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
+    }).then((x) => x[0]),
+    getTickArrayAddress(whirlpool, lowerTickArrayIndex).then(
+      (x) => x[0],
+    ),
+    getTickArrayAddress(whirlpool, upperTickArrayIndex).then(
+      (x) => x[0],
+    ),
+  ]);
+
+  const [lowerTickArray, upperTickArray] = await fetchAllMaybeTickArray(rpc, [
+    lowerTickArrayAddress,
+    upperTickArrayAddress,
+  ]);
+
+  const instructions: IInstruction[] = [];
+
+  if (!lowerTickArray.exists) {
+    instructions.push(
+      getInitializeTickArrayInstruction({
+        whirlpool: whirlpool,
+        funder: signer,
+        tickArray: lowerTickArrayAddress,
+        startTickIndex: lowerTickArrayIndex,
+      }),
+    );
+  }
+
+  if (!upperTickArray.exists && lowerTickArrayIndex !== upperTickArrayIndex) {
+    instructions.push(
+      getInitializeTickArrayInstruction({
+        whirlpool: whirlpool,
+        funder: signer,
+        tickArray: upperTickArrayAddress,
+        startTickIndex: upperTickArrayIndex,
+      }),
+    );
+  }
+
+  instructions.push(
+    getOpenPositionWithTokenExtensionsInstruction({
+      funder: signer,
+      owner: signer.address,
+      position: positionAddress[0],
+      positionMint: positionMint,
+      positionTokenAccount: positionTokenAccount,
+      whirlpool: whirlpool,
+      token2022Program: TOKEN_2022_PROGRAM_ADDRESS,
+      associatedTokenProgram: ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+      metadataUpdateAuth: metadataUpdateAuth,
+      tickLowerIndex: initializableLowerTickIndex,
+      tickUpperIndex: initializableUpperTickIndex,
+      withTokenMetadataExtension: true,
+    }),
+  );
+
+  await sendTransaction(instructions);
+
+  return positionMint.address;
 }
 
 export async function setupPositionBundle(

@@ -1,7 +1,6 @@
 use std::collections::HashSet;
 use std::error::Error;
 
-use futures::executor::block_on;
 use orca_whirlpools_client::{
     get_fee_tier_address, get_tick_array_address, get_token_badge_address, get_whirlpool_address,
 };
@@ -56,7 +55,8 @@ pub async fn create_splash_pool_instructions(
         SPLASH_POOL_TICK_SPACING,
         initial_price,
         funder,
-    ).await
+    )
+    .await
 }
 
 pub async fn create_concentrated_liquidity_pool_instructions(
@@ -76,7 +76,7 @@ pub async fn create_concentrated_liquidity_pool_instructions(
         return Err("Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)".into());
     }
 
-    let rent = get_rent(rpc)?;
+    let rent = get_rent(rpc).await?;
 
     let account_infos = rpc.get_multiple_accounts(&[token_a, token_b]).await?;
     let mint_a_info = account_infos[0]

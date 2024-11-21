@@ -4,7 +4,6 @@ use std::{
     time::{SystemTime, UNIX_EPOCH},
 };
 
-use futures::executor::block_on;
 use orca_whirlpools_client::{
     get_position_address, get_tick_array_address, Position, TickArray, Whirlpool,
 };
@@ -64,8 +63,9 @@ pub async fn decrease_liquidity_instructions(
     let pool_info = rpc.get_account(&position.whirlpool).await?;
     let pool = Whirlpool::from_bytes(&pool_info.data)?;
 
-    let mint_infos =
-        rpc.get_multiple_accounts(&[pool.token_mint_a, pool.token_mint_b, position_mint_address]).await?;
+    let mint_infos = rpc
+        .get_multiple_accounts(&[pool.token_mint_a, pool.token_mint_b, position_mint_address])
+        .await?;
 
     let mint_a_info = mint_infos[0]
         .as_ref()
@@ -135,7 +135,8 @@ pub async fn decrease_liquidity_instructions(
             TokenAccountStrategy::WithoutBalance(pool.token_mint_a),
             TokenAccountStrategy::WithoutBalance(pool.token_mint_b),
         ],
-    ).await?;
+    )
+    .await?;
 
     instructions.extend(token_accounts.create_instructions);
 
@@ -212,14 +213,16 @@ pub async fn close_position_instructions(
     let pool_info = rpc.get_account(&position.whirlpool).await?;
     let pool = Whirlpool::from_bytes(&pool_info.data)?;
 
-    let mint_infos = rpc.get_multiple_accounts(&[
-        pool.token_mint_a,
-        pool.token_mint_b,
-        position_mint_address,
-        pool.reward_infos[0].mint,
-        pool.reward_infos[1].mint,
-        pool.reward_infos[2].mint,
-    ]).await?;
+    let mint_infos = rpc
+        .get_multiple_accounts(&[
+            pool.token_mint_a,
+            pool.token_mint_b,
+            position_mint_address,
+            pool.reward_infos[0].mint,
+            pool.reward_infos[1].mint,
+            pool.reward_infos[2].mint,
+        ])
+        .await?;
 
     let mint_a_info = mint_infos[0]
         .as_ref()
@@ -273,8 +276,9 @@ pub async fn close_position_instructions(
     let upper_tick_array_address =
         get_tick_array_address(&position.whirlpool, upper_tick_array_start_index)?.0;
 
-    let tick_array_infos =
-        rpc.get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address]).await?;
+    let tick_array_infos = rpc
+        .get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address])
+        .await?;
 
     let lower_tick_array_info = tick_array_infos[0]
         .as_ref()
@@ -333,7 +337,8 @@ pub async fn close_position_instructions(
     }
 
     let token_accounts =
-        prepare_token_accounts_instructions(rpc, authority, required_mints.into_iter().collect()).await?;
+        prepare_token_accounts_instructions(rpc, authority, required_mints.into_iter().collect())
+            .await?;
 
     let mut instructions: Vec<Instruction> = Vec::new();
     instructions.extend(token_accounts.create_instructions);

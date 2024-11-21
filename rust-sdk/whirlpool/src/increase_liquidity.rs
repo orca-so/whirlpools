@@ -1,7 +1,6 @@
 use std::error::Error;
 use std::str::FromStr;
 
-use futures::executor::block_on;
 use orca_whirlpools_client::{
     get_position_address, get_tick_array_address, InitializeTickArray,
     InitializeTickArrayInstructionArgs, OpenPositionWithTokenExtensions,
@@ -105,9 +104,9 @@ pub async fn increase_liquidity_instructions(
     let pool_info = rpc.get_account(&position.whirlpool).await?;
     let pool = Whirlpool::from_bytes(&pool_info.data)?;
 
-    let mint_infos =
-        rpc.get_multiple_accounts(&[pool.token_mint_a, pool.token_mint_b, position_mint_address])
-            .await?;
+    let mint_infos = rpc
+        .get_multiple_accounts(&[pool.token_mint_a, pool.token_mint_b, position_mint_address])
+        .await?;
 
     let mint_a_info = mint_infos[0]
         .as_ref()
@@ -157,7 +156,8 @@ pub async fn increase_liquidity_instructions(
             TokenAccountStrategy::WithBalance(pool.token_mint_a, quote.token_max_a),
             TokenAccountStrategy::WithBalance(pool.token_mint_b, quote.token_max_b),
         ],
-    ).await?;
+    )
+    .await?;
 
     instructions.extend(token_accounts.create_instructions);
 
@@ -229,7 +229,7 @@ async fn internal_open_position(
     let funder = funder.unwrap_or(*FUNDER.try_lock()?);
     let slippage_tolerance_bps =
         slippage_tolerance_bps.unwrap_or(*SLIPPAGE_TOLERANCE_BPS.try_lock()?);
-    let rent = get_rent(rpc)?;
+    let rent = get_rent(rpc).await?;
     if funder == Pubkey::default() {
         return Err("Funder must be provided".into());
     }
@@ -287,14 +287,15 @@ async fn internal_open_position(
             TokenAccountStrategy::WithBalance(whirlpool.token_mint_a, quote.token_max_a),
             TokenAccountStrategy::WithBalance(whirlpool.token_mint_b, quote.token_max_b),
         ],
-    ).await?;
+    )
+    .await?;
 
     instructions.extend(token_accounts.create_instructions);
     additional_signers.extend(token_accounts.additional_signers);
 
-    let tick_array_infos =
-        rpc.get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address])
-            .await?;
+    let tick_array_infos = rpc
+        .get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address])
+        .await?;
 
     if tick_array_infos[0].is_none() {
         instructions.push(
@@ -402,8 +403,9 @@ pub async fn open_full_range_position_instructions(
     let whirlpool_info = rpc.get_account(&pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
     let tick_range = get_full_range_tick_indexes(whirlpool.tick_spacing);
-    let mint_infos =
-        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b]).await?;
+    let mint_infos = rpc
+        .get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])
+        .await?;
     let mint_a_info = mint_infos[0]
         .as_ref()
         .ok_or("Token A mint info not found")?;
@@ -421,7 +423,8 @@ pub async fn open_full_range_position_instructions(
         mint_b_info,
         slippage_tolerance_bps,
         funder,
-    ).await
+    )
+    .await
 }
 
 pub async fn open_position_instructions(
@@ -438,8 +441,9 @@ pub async fn open_position_instructions(
     if whirlpool.tick_spacing == SPLASH_POOL_TICK_SPACING {
         return Err("Splash pools only support full range positions".into());
     }
-    let mint_infos =
-        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b]).await?;
+    let mint_infos = rpc
+        .get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])
+        .await?;
     let mint_a_info = mint_infos[0]
         .as_ref()
         .ok_or("Token A mint info not found")?;
@@ -466,5 +470,6 @@ pub async fn open_position_instructions(
         mint_b_info,
         slippage_tolerance_bps,
         funder,
-    ).await
+    )
+    .await
 }

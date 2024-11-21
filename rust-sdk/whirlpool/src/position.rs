@@ -1,6 +1,5 @@
 use std::{collections::HashMap, error::Error};
 
-use futures::executor::block_on;
 use orca_whirlpools_client::{
     fetch_all_position_with_filter, get_bundled_position_address, get_position_address,
     get_position_bundle_address, DecodedAccount, Position, PositionBundle, PositionFilter,
@@ -60,7 +59,8 @@ pub async fn get_positions_for_owner(
     owner: Pubkey,
 ) -> Result<Vec<PositionOrBundle>, Box<dyn Error>> {
     let token_accounts = get_token_accounts_for_owner(rpc, owner, spl_token::ID).await?;
-    let token_extension_accounts = get_token_accounts_for_owner(rpc, owner, spl_token_2022::ID).await?;
+    let token_extension_accounts =
+        get_token_accounts_for_owner(rpc, owner, spl_token_2022::ID).await?;
 
     let potiential_tokens: Vec<ParsedTokenAccount> = [token_accounts, token_extension_accounts]
         .into_iter()
@@ -85,7 +85,9 @@ pub async fn get_positions_for_owner(
         .map(|x| x.as_ref().and_then(|x| Position::from_bytes(&x.data).ok()))
         .collect();
 
-    let position_bundle_infos = rpc.get_multiple_accounts(&position_bundle_addresses).await?;
+    let position_bundle_infos = rpc
+        .get_multiple_accounts(&position_bundle_addresses)
+        .await?;
 
     let position_bundles: Vec<Option<PositionBundle>> = position_bundle_infos
         .iter()

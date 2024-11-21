@@ -44,8 +44,9 @@ pub(crate) async fn get_token_accounts_for_owner(
     owner: Pubkey,
     program_id: Pubkey,
 ) -> Result<Vec<ParsedTokenAccount>, Box<dyn Error>> {
-    let accounts =
-        rpc.get_token_accounts_by_owner(&owner, TokenAccountsFilter::ProgramId(program_id)).await?;
+    let accounts = rpc
+        .get_token_accounts_by_owner(&owner, TokenAccountsFilter::ProgramId(program_id))
+        .await?;
 
     let mut token_accounts: Vec<ParsedTokenAccount> = Vec::new();
     for account in accounts {
@@ -62,8 +63,8 @@ pub(crate) async fn get_token_accounts_for_owner(
     Ok(token_accounts)
 }
 
-pub(crate) fn get_rent(rpc: &RpcClient) -> Result<Rent, Box<dyn Error>> {
-    let rent = rpc.get_account(&Rent::id())?;
+pub(crate) async fn get_rent(rpc: &RpcClient) -> Result<Rent, Box<dyn Error>> {
+    let rent = rpc.get_account(&Rent::id()).await?;
     let rent: Rent = bincode::deserialize(&rent.data)?;
     Ok(rent)
 }

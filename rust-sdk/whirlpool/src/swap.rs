@@ -114,8 +114,9 @@ pub async fn swap_instructions(
 
     let tick_arrays = fetch_tick_arrays_or_default(rpc, whirlpool_address, &whirlpool).await?;
 
-    let mint_infos =
-        rpc.get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b]).await?;
+    let mint_infos = rpc
+        .get_multiple_accounts(&[whirlpool.token_mint_a, whirlpool.token_mint_b])
+        .await?;
 
     let mint_a_info = mint_infos[0]
         .as_ref()

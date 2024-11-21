@@ -27,11 +27,13 @@ lazy_static! {
 
 async fn init_splash_pool() -> Result<Pubkey, Box<dyn Error>> {
     let splash_pool =
-        create_splash_pool_instructions(&RPC, *MINT_A, *MINT_B, None, Some(SIGNER.pubkey())).await?;
+        create_splash_pool_instructions(&RPC, *MINT_A, *MINT_B, None, Some(SIGNER.pubkey()))
+            .await?;
     send_transaction_with_signers(
         splash_pool.instructions,
         splash_pool.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
 
     let whirlpool_info = RPC.get_account(&splash_pool.pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
@@ -50,11 +52,13 @@ async fn init_concentrated_liquidity_pool() -> Result<Pubkey, Box<dyn Error>> {
         128,
         None,
         Some(SIGNER.pubkey()),
-    ).await?;
+    )
+    .await?;
     send_transaction_with_signers(
         cl_pool.instructions,
         cl_pool.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
 
     let whirlpool_info = RPC.get_account(&cl_pool.pool_address).await?;
     let whirlpool = Whirlpool::from_bytes(&whirlpool_info.data)?;
@@ -76,15 +80,19 @@ async fn open_position(pool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
         IncreaseLiquidityParam::Liquidity(1000000000),
         None,
         Some(SIGNER.pubkey()),
-    ).await?;
+    )
+    .await?;
 
     send_transaction_with_signers(
         position.instructions,
         position.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
 
     let position_address = get_position_address(&position.position_mint)?.0;
-    let infos_after = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address]).await?;
+    let infos_after = RPC
+        .get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])
+        .await?;
     let token_a_after = Account::unpack(&infos_after[0].as_ref().unwrap().data)?;
     let token_b_after = Account::unpack(&infos_after[1].as_ref().unwrap().data)?;
     let position_after = Position::from_bytes(&infos_after[2].as_ref().unwrap().data)?;
@@ -104,7 +112,9 @@ async fn open_position(pool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
 
 async fn increase_liquidity(position_mint: Pubkey) -> Result<(), Box<dyn Error>> {
     let position_address = get_position_address(&position_mint)?.0;
-    let infos_before = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address]).await?;
+    let infos_before = RPC
+        .get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])
+        .await?;
     let token_a_before = Account::unpack(&infos_before[0].as_ref().unwrap().data)?;
     let token_b_before = Account::unpack(&infos_before[1].as_ref().unwrap().data)?;
     let position_before = Position::from_bytes(&infos_before[2].as_ref().unwrap().data)?;
@@ -115,13 +125,17 @@ async fn increase_liquidity(position_mint: Pubkey) -> Result<(), Box<dyn Error>>
         IncreaseLiquidityParam::Liquidity(1000000000),
         None,
         Some(SIGNER.pubkey()),
-    ).await?;
+    )
+    .await?;
     send_transaction_with_signers(
         increase_liquidity.instructions,
         increase_liquidity.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
 
-    let infos_after = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address]).await?;
+    let infos_after = RPC
+        .get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])
+        .await?;
     let token_a_after = Account::unpack(&infos_after[0].as_ref().unwrap().data)?;
     let token_b_after = Account::unpack(&infos_after[1].as_ref().unwrap().data)?;
     let position_after = Position::from_bytes(&infos_after[2].as_ref().unwrap().data)?;
@@ -143,7 +157,9 @@ async fn increase_liquidity(position_mint: Pubkey) -> Result<(), Box<dyn Error>>
 
 async fn decrease_liquidity(position_mint: Pubkey) -> Result<(), Box<dyn Error>> {
     let position_address = get_position_address(&position_mint)?.0;
-    let infos_before = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address]).await?;
+    let infos_before = RPC
+        .get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])
+        .await?;
     let token_a_before = Account::unpack(&infos_before[0].as_ref().unwrap().data)?;
     let token_b_before = Account::unpack(&infos_before[1].as_ref().unwrap().data)?;
     let position_before = Position::from_bytes(&infos_before[2].as_ref().unwrap().data)?;
@@ -154,13 +170,17 @@ async fn decrease_liquidity(position_mint: Pubkey) -> Result<(), Box<dyn Error>>
         DecreaseLiquidityParam::Liquidity(10000),
         None,
         Some(SIGNER.pubkey()),
-    ).await?;
+    )
+    .await?;
     send_transaction_with_signers(
         decrease_liquidity.instructions,
         decrease_liquidity.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
 
-    let infos_after = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address]).await?;
+    let infos_after = RPC
+        .get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])
+        .await?;
     let token_a_after = Account::unpack(&infos_after[0].as_ref().unwrap().data)?;
     let token_b_after = Account::unpack(&infos_after[1].as_ref().unwrap().data)?;
     let position_after = Position::from_bytes(&infos_after[2].as_ref().unwrap().data)?;
@@ -190,7 +210,8 @@ async fn harvest_position(position_mint: Pubkey) -> Result<(), Box<dyn Error>> {
     send_transaction_with_signers(
         harvest_position.instructions,
         harvest_position.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
 
     let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B]).await?;
     let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
@@ -217,10 +238,13 @@ async fn close_position(position_mint: Pubkey) -> Result<(), Box<dyn Error>> {
     send_transaction_with_signers(
         close_position.instructions,
         close_position.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
 
     let position_address = get_position_address(&position_mint)?.0;
-    let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B, position_address]).await?;
+    let after_infos = RPC
+        .get_multiple_accounts(&[*ATA_A, *ATA_B, position_address])
+        .await?;
     let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
     let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
 
@@ -249,11 +273,10 @@ async fn swap_a_exact_in(pool: Pubkey) -> Result<(), Box<dyn Error>> {
         SwapType::ExactIn,
         None,
         Some(SIGNER.pubkey()),
-    ).await?;
-    send_transaction_with_signers(
-        swap.instructions,
-        swap.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
+    send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())
+        .await?;
 
     let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B]).await?;
     let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
@@ -285,11 +308,10 @@ async fn swap_a_exact_out(pool: Pubkey) -> Result<(), Box<dyn Error>> {
         SwapType::ExactOut,
         None,
         Some(SIGNER.pubkey()),
-    ).await?;
-    send_transaction_with_signers(
-        swap.instructions,
-        swap.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
+    send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())
+        .await?;
 
     let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B]).await?;
     let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
@@ -324,11 +346,10 @@ async fn swap_b_exact_in(pool: Pubkey) -> Result<(), Box<dyn Error>> {
         SwapType::ExactIn,
         None,
         Some(SIGNER.pubkey()),
-    ).await?;
-    send_transaction_with_signers(
-        swap.instructions,
-        swap.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
+    send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())
+        .await?;
 
     let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B]).await?;
     let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
@@ -360,13 +381,12 @@ async fn swap_b_exact_out(pool: Pubkey) -> Result<(), Box<dyn Error>> {
         SwapType::ExactOut,
         None,
         Some(SIGNER.pubkey()),
-    ).await?;
-    send_transaction_with_signers(
-        swap.instructions,
-        swap.additional_signers.iter().collect(),
-    ).await?;
+    )
+    .await?;
+    send_transaction_with_signers(swap.instructions, swap.additional_signers.iter().collect())
+        .await?;
 
-    let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B]).await    ?;
+    let after_infos = RPC.get_multiple_accounts(&[*ATA_A, *ATA_B]).await?;
     let token_a_after = Account::unpack(&after_infos[0].as_ref().unwrap().data)?;
     let token_b_after = Account::unpack(&after_infos[1].as_ref().unwrap().data)?;
 

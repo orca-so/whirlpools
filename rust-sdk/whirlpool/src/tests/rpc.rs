@@ -9,8 +9,8 @@ use solana_account_decoder::{UiAccount, UiAccountEncoding};
 use solana_client::client_error::Result as ClientResult;
 use solana_client::{
     client_error::{ClientError, ClientErrorKind},
-    rpc_client::{RpcClientConfig, SerializableTransaction},
     nonblocking::rpc_client::RpcClient,
+    rpc_client::{RpcClientConfig, SerializableTransaction},
     rpc_request::RpcRequest,
     rpc_response::{Response, RpcBlockhash, RpcResponseContext, RpcVersionInfo},
     rpc_sender::{RpcSender, RpcTransportStats},

@@ -123,7 +123,9 @@ pub(crate) async fn prepare_token_accounts_instructions(
 
     if has_native_mint && native_mint_wrapping_strategy == NativeMintWrappingStrategy::Keypair {
         let keypair = Keypair::new();
-        let mut lamports = rpc.get_minimum_balance_for_rent_exemption(Account::LEN).await?;
+        let mut lamports = rpc
+            .get_minimum_balance_for_rent_exemption(Account::LEN)
+            .await?;
 
         if let TokenAccountStrategy::WithBalance(_, balance) = spec[native_mint_index.unwrap_or(0)]
         {
@@ -158,7 +160,9 @@ pub(crate) async fn prepare_token_accounts_instructions(
     }
 
     if has_native_mint && native_mint_wrapping_strategy == NativeMintWrappingStrategy::Seed {
-        let mut lamports = rpc.get_minimum_balance_for_rent_exemption(Account::LEN).await?;
+        let mut lamports = rpc
+            .get_minimum_balance_for_rent_exemption(Account::LEN)
+            .await?;
 
         if let TokenAccountStrategy::WithBalance(_, balance) = spec[native_mint_index.unwrap_or(0)]
         {

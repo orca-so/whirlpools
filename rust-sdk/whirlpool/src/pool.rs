@@ -1,6 +1,5 @@
 use std::error::Error;
 
-use futures::executor::block_on;
 use orca_whirlpools_client::{
     fetch_all_fee_tier_with_filter, get_fee_tier_address, get_whirlpool_address, FeeTier,
     FeeTierFilter, Whirlpool, WhirlpoolsConfig,
@@ -76,13 +75,15 @@ pub async fn fetch_concentrated_liquidity_pool(
 
     let fee_tier_address = get_fee_tier_address(whirlpools_config_address, tick_spacing)?;
 
-    let account_infos = rpc.get_multiple_accounts(&[
-        whirlpool_address,
-        *whirlpools_config_address,
-        fee_tier_address.0,
-        token_a,
-        token_b,
-    ]).await?;
+    let account_infos = rpc
+        .get_multiple_accounts(&[
+            whirlpool_address,
+            *whirlpools_config_address,
+            fee_tier_address.0,
+            token_a,
+            token_b,
+        ])
+        .await?;
 
     let whirlpools_config_info = account_infos[1].as_ref().ok_or(format!(
         "Whirlpools config {} not found",
@@ -133,10 +134,12 @@ pub async fn fetch_whirlpools_by_token_pair(
     let fee_tiers = fetch_all_fee_tier_with_filter(
         rpc,
         vec![FeeTierFilter::WhirlpoolsConfig(*whirlpools_config_address)],
-    )?;
+    )
+    .await?;
 
-    let account_infos =
-        rpc.get_multiple_accounts(&[*whirlpools_config_address, token_a, token_b]).await?;
+    let account_infos = rpc
+        .get_multiple_accounts(&[*whirlpools_config_address, token_a, token_b])
+        .await?;
 
     let whirlpools_config_info = account_infos[0].as_ref().ok_or(format!(
         "Whirlpools config {} not found",

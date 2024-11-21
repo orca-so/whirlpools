@@ -9,7 +9,7 @@ use solana_client::rpc_client::RpcClient;
 use solana_sdk::account::Account;
 use solana_sdk::pubkey::Pubkey;
 
-use crate::{get_token_accounts_for_owner, RpcKeyedTokenAccount};
+use crate::{get_token_accounts_for_owner, ParsedTokenAccount};
 
 #[derive(Debug)]
 pub struct HydratedPosition {
@@ -61,20 +61,20 @@ pub fn get_positions_for_owner(
     let token_accounts = get_token_accounts_for_owner(rpc, owner, spl_token::ID)?;
     let token_extension_accounts = get_token_accounts_for_owner(rpc, owner, spl_token_2022::ID)?;
 
-    let potiential_tokens: Vec<RpcKeyedTokenAccount> = [token_accounts, token_extension_accounts]
+    let potiential_tokens: Vec<ParsedTokenAccount> = [token_accounts, token_extension_accounts]
         .into_iter()
         .flatten()
-        .filter(|x| x.token.amount == 1)
+        .filter(|x| x.amount == 1)
         .collect();
 
     let position_addresses: Vec<Pubkey> = potiential_tokens
         .iter()
-        .map(|x| get_position_address(&x.token.mint).map(|x| x.0))
+        .map(|x| get_position_address(&x.mint).map(|x| x.0))
         .collect::<Result<Vec<Pubkey>, _>>()?;
 
     let position_bundle_addresses: Vec<Pubkey> = potiential_tokens
         .iter()
-        .map(|x| get_position_bundle_address(&x.token.mint).map(|x| x.0))
+        .map(|x| get_position_bundle_address(&x.mint).map(|x| x.0))
         .collect::<Result<Vec<Pubkey>, _>>()?;
 
     let position_infos = rpc.get_multiple_accounts(&position_addresses)?;

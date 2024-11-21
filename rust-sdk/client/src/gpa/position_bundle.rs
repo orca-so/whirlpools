@@ -12,18 +12,14 @@ pub const POSITION_BUNDLE_DISCRIMINATOR: &[u8] = &[129, 169, 175, 65, 185, 95, 3
 
 #[derive(Debug, Clone)]
 pub enum PositionBundleFilter {
-    Whirlpool(Pubkey),
     Mint(Pubkey),
 }
 
 impl From<PositionBundleFilter> for RpcFilterType {
     fn from(val: PositionBundleFilter) -> Self {
         match val {
-            PositionBundleFilter::Whirlpool(address) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(8, address.to_bytes().to_vec()))
-            }
             PositionBundleFilter::Mint(address) => {
-                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(40, address.to_bytes().to_vec()))
+                RpcFilterType::Memcmp(Memcmp::new_raw_bytes(8, address.to_bytes().to_vec()))
             }
         }
     }

@@ -227,7 +227,7 @@ fn internal_open_position(
     let funder = funder.unwrap_or(*FUNDER.try_lock()?);
     let slippage_tolerance_bps =
         slippage_tolerance_bps.unwrap_or(*SLIPPAGE_TOLERANCE_BPS.try_lock()?);
-    let rent = get_rent()?;
+    let rent = get_rent(rpc)?;
     if funder == Pubkey::default() {
         return Err("Funder must be provided".into());
     }
@@ -308,7 +308,7 @@ fn internal_open_position(
         non_refundable_rent += rent.minimum_balance(TickArray::LEN);
     }
 
-    if tick_array_infos[1].is_none() {
+    if tick_array_infos[1].is_none() && lower_tick_start_index != upper_tick_start_index {
         instructions.push(
             InitializeTickArray {
                 whirlpool: pool_address,

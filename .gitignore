@@ -25,3 +25,5 @@ generated
 .cache-loader
 .devcontainer
 **/Cargo.lock
+.next
+.env

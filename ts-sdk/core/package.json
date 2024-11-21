@@ -15,7 +15,7 @@
     "README.md"
   ],
   "scripts": {
-    "build": "wasm-pack build --out-dir ./dist/nodejs --target nodejs && wasm-pack build --out-dir ./dist/browser --target browser",
+    "build": "wasm-pack build --release --out-dir ./dist/nodejs --target nodejs && wasm-pack build --release --out-dir ./dist/browser --target browser",
     "test": "tsc --noEmit && vitest run tests",
     "clean": "cargo clean && rimraf dist",
     "prepublishOnly": "rimraf dist/nodejs/.gitignore dist/browser/.gitignore"

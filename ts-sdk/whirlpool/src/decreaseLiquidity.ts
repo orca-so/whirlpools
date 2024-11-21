@@ -10,7 +10,6 @@ import {
   getDecreaseLiquidityV2Instruction,
   getPositionAddress,
   getTickArrayAddress,
-  getUpdateFeesAndRewardsInstruction,
 } from "@orca-so/whirlpools-client";
 import type {
   CollectFeesQuote,

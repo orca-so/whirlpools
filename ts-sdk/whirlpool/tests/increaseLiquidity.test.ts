@@ -1,4 +1,4 @@
-import { describe, it, beforeAll, vi, expect } from "vitest";
+import { describe, it, beforeAll } from "vitest";
 import {
   increaseLiquidityInstructions,
   openPositionInstructions,
@@ -9,15 +9,26 @@ import { setupMint, setupAta } from "./utils/token";
 import {
   fetchMaybePosition,
   fetchPosition,
-  fetchWhirlpool,
   getPositionAddress,
 } from "@orca-so/whirlpools-client";
 import { fetchToken } from "@solana-program/token-2022";
 import { address, assertAccountExists, type Address } from "@solana/web3.js";
 import assert from "assert";
-import { setupPosition, setupTEPosition, setupWhirlpool } from "./utils/program";
-import { DEFAULT_FUNDER, setDefaultFunder, SPLASH_POOL_TICK_SPACING } from "../src/config";
-import { setupAtaTE, setupMintTE, setupMintTEFee } from "./utils/tokenExtensions";
+import {
+  setupPosition,
+  setupTEPosition,
+  setupWhirlpool,
+} from "./utils/program";
+import {
+  DEFAULT_FUNDER,
+  setDefaultFunder,
+  SPLASH_POOL_TICK_SPACING,
+} from "../src/config";
+import {
+  setupAtaTE,
+  setupMintTE,
+  setupMintTEFee,
+} from "./utils/tokenExtensions";
 
 describe("Increase Liquidity Instructions", () => {
   const tickSpacing = 64;
@@ -48,12 +59,12 @@ describe("Increase Liquidity Instructions", () => {
     whirlpools["Token-TE Token"] = await setupWhirlpool(
       mintA,
       mintTEA,
-      tickSpacing
+      tickSpacing,
     );
     whirlpools["TE Token-TE Token"] = await setupWhirlpool(
       mintTEA,
       mintTEB,
-      tickSpacing
+      tickSpacing,
     );
     whirlpools["Token-TE Token with Transfer Fee extension"] =
       await setupWhirlpool(mintA, mintTEFee, tickSpacing);
@@ -98,22 +109,25 @@ describe("Increase Liquidity Instructions", () => {
     ];
 
     positions["Token-TE Token with Transfer Fee extension"] = [
-      await setupPosition(whirlpools["Token-TE Token with Transfer Fee extension"]),
+      await setupPosition(
+        whirlpools["Token-TE Token with Transfer Fee extension"],
+      ),
       await setupPosition(
         whirlpools["Token-TE Token with Transfer Fee extension"],
         {
           tickLower: 100,
           tickUpper: 200,
-        }
+        },
       ),
       await setupTEPosition(
-        whirlpools["Token-TE Token with Transfer Fee extension"]),
+        whirlpools["Token-TE Token with Transfer Fee extension"],
+      ),
       await setupTEPosition(
         whirlpools["Token-TE Token with Transfer Fee extension"],
         {
           tickLower: 100,
           tickUpper: 200,
-        }
+        },
       ),
     ];
   });
@@ -121,14 +135,14 @@ describe("Increase Liquidity Instructions", () => {
   const testLiquidityIncrease = async (
     positionMint: Address,
     tokenA: Address,
-    tokenB: Address
+    tokenB: Address,
   ) => {
     const amount = 10_000n;
 
     const { quote, instructions } = await increaseLiquidityInstructions(
       rpc,
       positionMint,
-      { tokenA: amount }
+      { tokenA: amount },
     );
 
     const tokenBeforeA = await fetchToken(rpc, ataMap[tokenA]);
@@ -152,7 +166,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-Token"][0],
       address(mintA),
-      address(mintB)
+      address(mintB),
     );
   });
 
@@ -160,7 +174,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-Token"][1],
       address(mintA),
-      address(mintB)
+      address(mintB),
     );
   });
 
@@ -168,7 +182,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-Token"][2],
       address(mintA),
-      address(mintB)
+      address(mintB),
     );
   });
 
@@ -176,7 +190,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-Token"][3],
       address(mintA),
-      address(mintB)
+      address(mintB),
     );
   });
 
@@ -184,7 +198,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-TE Token"][0],
       address(mintA),
-      address(mintTEA)
+      address(mintTEA),
     );
   });
 
@@ -192,7 +206,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-TE Token"][1],
       address(mintA),
-      address(mintTEA)
+      address(mintTEA),
     );
   });
 
@@ -200,7 +214,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-TE Token"][2],
       address(mintA),
-      address(mintTEA)
+      address(mintTEA),
     );
   });
 
@@ -208,7 +222,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-TE Token"][3],
       address(mintA),
-      address(mintTEA)
+      address(mintTEA),
     );
   });
 
@@ -216,7 +230,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["TE Token-TE Token"][0],
       address(mintTEA),
-      address(mintTEB)
+      address(mintTEB),
     );
   });
 
@@ -224,7 +238,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["TE Token-TE Token"][1],
       address(mintTEA),
-      address(mintTEB)
+      address(mintTEB),
     );
   });
 
@@ -232,7 +246,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["TE Token-TE Token"][2],
       address(mintTEA),
-      address(mintTEB)
+      address(mintTEB),
     );
   });
 
@@ -240,7 +254,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["TE Token-TE Token"][3],
       address(mintTEA),
-      address(mintTEB)
+      address(mintTEB),
     );
   });
 
@@ -248,7 +262,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-TE Token with Transfer Fee extension"][0],
       address(mintA),
-      address(mintTEFee)
+      address(mintTEFee),
     );
   });
 
@@ -256,7 +270,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-TE Token with Transfer Fee extension"][1],
       address(mintA),
-      address(mintTEFee)
+      address(mintTEFee),
     );
   });
 
@@ -264,7 +278,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-TE Token with Transfer Fee extension"][2],
       address(mintA),
-      address(mintTEFee)
+      address(mintTEFee),
     );
   });
 
@@ -272,7 +286,7 @@ describe("Increase Liquidity Instructions", () => {
     await testLiquidityIncrease(
       positions["Token-TE Token with Transfer Fee extension"][3],
       address(mintA),
-      address(mintTEFee)
+      address(mintTEFee),
     );
   });
 
@@ -282,11 +296,9 @@ describe("Increase Liquidity Instructions", () => {
     const positionMint = positions[firstWhirlpoolKey][0];
     setDefaultFunder(DEFAULT_FUNDER);
     await assert.rejects(
-      increaseLiquidityInstructions(
-        rpc,
-        positionMint,
-        { tokenA: tokenAAmount },
-      )
+      increaseLiquidityInstructions(rpc, positionMint, {
+        tokenA: tokenAAmount,
+      }),
     );
     setDefaultFunder(signer);
   });
@@ -297,11 +309,9 @@ describe("Increase Liquidity Instructions", () => {
     const positionMint = positions[firstWhirlpoolKey][0];
     setDefaultFunder(DEFAULT_FUNDER);
     await assert.rejects(
-      increaseLiquidityInstructions(
-        rpc,
-        positionMint,
-        { tokenA: tokenAAmount },
-      )
+      increaseLiquidityInstructions(rpc, positionMint, {
+        tokenA: tokenAAmount,
+      }),
     );
     setDefaultFunder(signer);
   });
@@ -332,12 +342,12 @@ describe("Open Position Instructions", () => {
     whirlpools["Token-TE Token"] = await setupWhirlpool(
       mintA,
       mintTEA,
-      tickSpacing
+      tickSpacing,
     );
     whirlpools["TE Token-TE Token"] = await setupWhirlpool(
       mintTEA,
       mintTEB,
-      tickSpacing
+      tickSpacing,
     );
     whirlpools["Token-TE Token with Transfer Fee extension"] =
       await setupWhirlpool(mintA, mintTEFee, tickSpacing);
@@ -346,11 +356,11 @@ describe("Open Position Instructions", () => {
   const testOpenPosition = async (
     whirlpool: Address,
     lowerPrice?: number,
-    upperPrice?: number
+    upperPrice?: number,
   ) => {
     const param = { tokenA: 10_000n };
 
-    const { instructions, positionMint, quote } =
+    const { instructions, positionMint } =
       lowerPrice === undefined || upperPrice === undefined
         ? await openFullRangePositionInstructions(rpc, whirlpool, param)
         : await openPositionInstructions(
@@ -358,7 +368,7 @@ describe("Open Position Instructions", () => {
             whirlpool,
             param,
             lowerPrice,
-            upperPrice
+            upperPrice,
           );
     const positionAddress = await getPositionAddress(positionMint);
     const positionBefore = await fetchMaybePosition(rpc, positionAddress[0]);
@@ -384,7 +394,7 @@ describe("Open Position Instructions", () => {
 
   it("Should open a full-range position for whirlpool with tokenA=Token and tokenB=TE Token with Transfer Fee extension", async () => {
     await testOpenPosition(
-      whirlpools["Token-TE Token with Transfer Fee extension"]
+      whirlpools["Token-TE Token with Transfer Fee extension"],
     );
   });
 
@@ -403,7 +413,8 @@ describe("Open Position Instructions", () => {
   it("Should open a position with a specific price range for whirlpool with tokenA=Token and tokenB=TE Token with Transfer Fee extension", async () => {
     await testOpenPosition(
       whirlpools["Token-TE Token with Transfer Fee extension"],
-      0.95, 1.05
+      0.95,
+      1.05,
     );
   });
 
@@ -415,7 +426,7 @@ describe("Open Position Instructions", () => {
       whirlpools["Token-Token"],
       param,
       0.95,
-      1.05
+      1.05,
     );
 
     await sendTransaction(instructions);
@@ -431,7 +442,7 @@ describe("Open Position Instructions", () => {
       whirlpools["Token-Token"],
       param,
       0.05,
-      1.05
+      1.05,
     );
 
     await sendTransaction(instructions);
@@ -447,7 +458,7 @@ describe("Open Position Instructions", () => {
       whirlpools["Token-Token"],
       param,
       0.01,
-      5
+      5,
     );
 
     await sendTransaction(instructions);
@@ -457,15 +468,13 @@ describe("Open Position Instructions", () => {
 
   it("Should throw an error if openPositionInstructions is called on a splash pool", async () => {
     const param = { tokenA: 10_000n };
-    const splashPool = await setupWhirlpool(mintA, mintB, SPLASH_POOL_TICK_SPACING);
+    const splashPool = await setupWhirlpool(
+      mintA,
+      mintB,
+      SPLASH_POOL_TICK_SPACING,
+    );
     await assert.rejects(
-      openPositionInstructions(
-        rpc,
-        splashPool,
-        param,
-        0.01,
-        5
-      )
+      openPositionInstructions(rpc, splashPool, param, 0.01, 5),
     );
   });
 });

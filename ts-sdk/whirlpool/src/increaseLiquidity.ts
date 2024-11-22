@@ -57,7 +57,6 @@ import {
 import type { Mint } from "@solana-program/token-2022";
 import {
   fetchAllMint,
-  getTokenSize,
   TOKEN_2022_PROGRAM_ADDRESS,
 } from "@solana-program/token-2022";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";

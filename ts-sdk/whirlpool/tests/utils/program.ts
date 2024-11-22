@@ -19,12 +19,19 @@ import {
   SPLASH_POOL_TICK_SPACING,
   WHIRLPOOLS_CONFIG_ADDRESS,
 } from "../../src/config";
-import { getInitializableTickIndex, getTickArrayStartTickIndex, orderTickIndexes, tickIndexToSqrtPrice } from "@orca-so/whirlpools-core";
-import { TOKEN_2022_PROGRAM_ADDRESS, ASSOCIATED_TOKEN_PROGRAM_ADDRESS, fetchMint, findAssociatedTokenPda } from "@solana-program/token-2022";
+import {
+  getInitializableTickIndex,
+  getTickArrayStartTickIndex,
+  tickIndexToSqrtPrice,
+} from "@orca-so/whirlpools-core";
+import {
+  TOKEN_2022_PROGRAM_ADDRESS,
+  ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+  fetchMint,
+  findAssociatedTokenPda,
+} from "@solana-program/token-2022";
 import { getNextKeypair } from "./keypair";
-import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
 import { TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
-import { prepareTokenAccountsInstructions } from "../../src/token";
 
 export async function setupConfigAndFeeTiers(): Promise<Address> {
   const keypair = getNextKeypair();
@@ -177,12 +184,8 @@ export async function setupPosition(
       mint: positionMint.address,
       tokenProgram: TOKEN_PROGRAM_ADDRESS,
     }).then((x) => x[0]),
-    getTickArrayAddress(whirlpool, lowerTickArrayIndex).then(
-      (x) => x[0],
-    ),
-    getTickArrayAddress(whirlpool, upperTickArrayIndex).then(
-      (x) => x[0],
-    ),
+    getTickArrayAddress(whirlpool, lowerTickArrayIndex).then((x) => x[0]),
+    getTickArrayAddress(whirlpool, upperTickArrayIndex).then((x) => x[0]),
   ]);
 
   const [lowerTickArray, upperTickArray] = await fetchAllMaybeTickArray(rpc, [
@@ -238,7 +241,9 @@ export async function setupTEPosition(
   whirlpool: Address,
   config: { tickLower?: number; tickUpper?: number; liquidity?: bigint } = {},
 ): Promise<Address> {
-  const metadataUpdateAuth = address("3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr")
+  const metadataUpdateAuth = address(
+    "3axbTs2z5GBy6usVbNVoqEgZMng3vZvMnAoX29BFfwhr",
+  );
   const positionMint = getNextKeypair();
   const whirlpoolAccount = await fetchWhirlpool(rpc, whirlpool);
   const tickLower = config.tickLower ?? -100;
@@ -276,12 +281,8 @@ export async function setupTEPosition(
       mint: positionMint.address,
       tokenProgram: TOKEN_2022_PROGRAM_ADDRESS,
     }).then((x) => x[0]),
-    getTickArrayAddress(whirlpool, lowerTickArrayIndex).then(
-      (x) => x[0],
-    ),
-    getTickArrayAddress(whirlpool, upperTickArrayIndex).then(
-      (x) => x[0],
-    ),
+    getTickArrayAddress(whirlpool, lowerTickArrayIndex).then((x) => x[0]),
+    getTickArrayAddress(whirlpool, upperTickArrayIndex).then((x) => x[0]),
   ]);
 
   const [lowerTickArray, upperTickArray] = await fetchAllMaybeTickArray(rpc, [

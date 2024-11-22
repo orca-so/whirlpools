@@ -36,9 +36,6 @@ struct Amount {
     decimals: u8,
 }
 
-// This is a little hacky but it is done this way because
-// the original get_token_accounts_for_owner uses json_parsed encoding
-// and we don't want to use serde_json in this crate.
 pub(crate) async fn get_token_accounts_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,

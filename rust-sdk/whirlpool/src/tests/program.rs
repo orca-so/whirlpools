@@ -9,7 +9,7 @@ use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
 
 use super::{send_transaction, SIGNER};
 
-pub fn setup_fee_tiers() -> Result<(), Box<dyn Error>> {
+pub async fn setup_fee_tiers() -> Result<(), Box<dyn Error>> {
     let config = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
 
     let mut instructions = Vec::new();
@@ -59,23 +59,23 @@ pub fn setup_fee_tiers() -> Result<(), Box<dyn Error>> {
         }),
     );
 
-    send_transaction(instructions)?;
+    send_transaction(instructions).await?;
 
     Ok(())
 }
 
-pub fn setup_whirlpool() -> Result<Pubkey, Box<dyn Error>> {
+pub async fn setup_whirlpool() -> Result<Pubkey, Box<dyn Error>> {
     todo!()
 }
 
-pub fn setup_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
+pub async fn setup_position(_whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
     todo!()
 }
 
-pub fn setup_te_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
+pub async fn setup_te_position(_whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
     todo!()
 }
 
-pub fn setup_position_bundle(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
+pub async fn setup_position_bundle(_whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
     todo!()
 }

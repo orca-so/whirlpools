@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use serde_json::from_value;
 use solana_account_decoder::UiAccountData;
-use solana_client::{rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
+use solana_client::{nonblocking::rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
 use solana_program::pubkey::Pubkey;
 use solana_sdk::rent::Rent;
 use solana_sdk::sysvar::SysvarId;
@@ -36,13 +36,14 @@ struct Amount {
     decimals: u8,
 }
 
-pub(crate) fn get_token_accounts_for_owner(
+pub(crate) async fn get_token_accounts_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
     program_id: Pubkey,
 ) -> Result<Vec<ParsedTokenAccount>, Box<dyn Error>> {
-    let accounts =
-        rpc.get_token_accounts_by_owner(&owner, TokenAccountsFilter::ProgramId(program_id))?;
+    let accounts = rpc
+        .get_token_accounts_by_owner(&owner, TokenAccountsFilter::ProgramId(program_id))
+        .await?;
 
     let mut token_accounts: Vec<ParsedTokenAccount> = Vec::new();
     for account in accounts {
@@ -59,8 +60,8 @@ pub(crate) fn get_token_accounts_for_owner(
     Ok(token_accounts)
 }
 
-pub(crate) fn get_rent(rpc: &RpcClient) -> Result<Rent, Box<dyn Error>> {
-    let rent = rpc.get_account(&Rent::id())?;
+pub(crate) async fn get_rent(rpc: &RpcClient) -> Result<Rent, Box<dyn Error>> {
+    let rent = rpc.get_account(&Rent::id()).await?;
     let rent: Rent = bincode::deserialize(&rent.data)?;
     Ok(rent)
 }

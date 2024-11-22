@@ -30,7 +30,7 @@ For a more detailed overview of our SDK suite and usage examples, visit our [dev
 
 ## Local Development
 
-This monorepo contains all the code needed to build, deploy and interact the Whirlpools contract.
+This monorepo contains all the code needed to build, deploy and interact with the Whirlpools contract.
 
 ### Requirements
 

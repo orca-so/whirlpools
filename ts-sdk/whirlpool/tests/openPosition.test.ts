@@ -1,11 +1,22 @@
 import { describe, it, beforeAll } from "vitest";
-import { Address, assertAccountExists } from "@solana/web3.js";
+import type { Address} from "@solana/web3.js";
+import { assertAccountExists } from "@solana/web3.js";
 import { setupAta, setupMint } from "./utils/token";
-import { setupAtaTE, setupMintTE, setupMintTEFee } from "./utils/tokenExtensions";
+import {
+  setupAtaTE,
+  setupMintTE,
+  setupMintTEFee,
+} from "./utils/tokenExtensions";
 import { setupWhirlpool } from "./utils/program";
-import { openFullRangePositionInstructions, openPositionInstructions } from "../src/increaseLiquidity";
+import {
+  openFullRangePositionInstructions,
+  openPositionInstructions,
+} from "../src/increaseLiquidity";
 import { rpc, sendTransaction } from "./utils/mockRpc";
-import { fetchMaybePosition, getPositionAddress } from "@orca-so/whirlpools-client";
+import {
+  fetchMaybePosition,
+  getPositionAddress,
+} from "@orca-so/whirlpools-client";
 import assert from "assert";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 
@@ -60,7 +71,7 @@ describe("Open Position Instructions", () => {
   const testOpenPosition = async (
     poolName: string,
     lowerPrice?: number,
-    upperPrice?: number
+    upperPrice?: number,
   ) => {
     const whirlpool = pools.get(poolName)!;
     const param = { liquidity: 10_000n };
@@ -68,7 +79,13 @@ describe("Open Position Instructions", () => {
     const { instructions, positionMint } =
       lowerPrice === undefined || upperPrice === undefined
         ? await openFullRangePositionInstructions(rpc, whirlpool, param)
-        : await openPositionInstructions(rpc, whirlpool, param, lowerPrice, upperPrice);
+        : await openPositionInstructions(
+            rpc,
+            whirlpool,
+            param,
+            lowerPrice,
+            upperPrice,
+          );
 
     const positionAddress = await getPositionAddress(positionMint);
     const positionBefore = await fetchMaybePosition(rpc, positionAddress[0]);
@@ -98,7 +115,7 @@ describe("Open Position Instructions", () => {
       pools.get("A-B")!,
       param,
       0.95,
-      1.05
+      1.05,
     );
 
     await sendTransaction(instructions);
@@ -114,7 +131,7 @@ describe("Open Position Instructions", () => {
       pools.get("A-B")!,
       param,
       0.05,
-      1.05
+      1.05,
     );
 
     await sendTransaction(instructions);
@@ -130,7 +147,7 @@ describe("Open Position Instructions", () => {
       pools.get("A-B")!,
       param,
       0.01,
-      5
+      5,
     );
 
     await sendTransaction(instructions);
@@ -143,10 +160,10 @@ describe("Open Position Instructions", () => {
     const splashPool = await setupWhirlpool(
       mints.get("A")!,
       mints.get("B")!,
-      SPLASH_POOL_TICK_SPACING
+      SPLASH_POOL_TICK_SPACING,
     );
     await assert.rejects(
-      openPositionInstructions(rpc, splashPool, param, 0.01, 5)
+      openPositionInstructions(rpc, splashPool, param, 0.01, 5),
     );
   });
 });

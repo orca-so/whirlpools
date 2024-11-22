@@ -1,6 +1,6 @@
 use std::error::Error;
 
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_filter::{Memcmp, RpcFilterType};
 use solana_program::pubkey::Pubkey;
 
@@ -28,7 +28,7 @@ impl From<TickArrayFilter> for RpcFilterType {
     }
 }
 
-pub fn fetch_all_tick_array_with_filter(
+pub async fn fetch_all_tick_array_with_filter(
     rpc: &RpcClient,
     filters: Vec<TickArrayFilter>,
 ) -> Result<Vec<DecodedAccount<TickArray>>, Box<dyn Error>> {
@@ -37,5 +37,5 @@ pub fn fetch_all_tick_array_with_filter(
         0,
         TICK_ARRAY_DISCRIMINATOR.to_vec(),
     )));
-    fetch_decoded_program_accounts(rpc, filters)
+    fetch_decoded_program_accounts(rpc, filters).await
 }

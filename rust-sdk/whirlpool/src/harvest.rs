@@ -1,4 +1,5 @@
 use std::{
+    collections::HashSet,
     error::Error,
     time::{SystemTime, UNIX_EPOCH},
 };
@@ -14,7 +15,7 @@ use orca_whirlpools_core::{
     collect_fees_quote, collect_rewards_quote, get_tick_array_start_tick_index,
     get_tick_index_in_array, CollectFeesQuote, CollectRewardsQuote,
 };
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::{account::Account, instruction::Instruction, pubkey::Pubkey, signature::Keypair};
 use spl_associated_token_account::get_associated_token_address_with_program_id;
 
@@ -100,7 +101,7 @@ pub struct HarvestPositionInstruction {
 /// println!("Rewards Quote: {:?}", result.rewards_quote);
 /// println!("Number of Instructions: {}", result.instructions.len());
 /// ```
-pub fn harvest_position_instructions(
+pub async fn harvest_position_instructions(
     rpc: &RpcClient,
     position_mint_address: Pubkey,
     authority: Option<Pubkey>,
@@ -111,20 +112,22 @@ pub fn harvest_position_instructions(
     }
 
     let position_address = get_position_address(&position_mint_address)?.0;
-    let position_info = rpc.get_account(&position_address)?;
+    let position_info = rpc.get_account(&position_address).await?;
     let position = Position::from_bytes(&position_info.data)?;
 
-    let pool_info = rpc.get_account(&position.whirlpool)?;
+    let pool_info = rpc.get_account(&position.whirlpool).await?;
     let pool = Whirlpool::from_bytes(&pool_info.data)?;
 
-    let mint_infos = rpc.get_multiple_accounts(&[
-        pool.token_mint_a,
-        pool.token_mint_b,
-        position_mint_address,
-        pool.reward_infos[0].mint,
-        pool.reward_infos[1].mint,
-        pool.reward_infos[2].mint,
-    ])?;
+    let mint_infos = rpc
+        .get_multiple_accounts(&[
+            pool.token_mint_a,
+            pool.token_mint_b,
+            position_mint_address,
+            pool.reward_infos[0].mint,
+            pool.reward_infos[1].mint,
+            pool.reward_infos[2].mint,
+        ])
+        .await?;
 
     let mint_a_info = mint_infos[0]
         .as_ref()
@@ -149,7 +152,7 @@ pub fn harvest_position_instructions(
         })
         .collect();
 
-    let current_epoch = rpc.get_epoch_info()?.epoch;
+    let current_epoch = rpc.get_epoch_info().await?.epoch;
     let transfer_fee_a = get_current_transfer_fee(Some(mint_a_info), current_epoch);
     let transfer_fee_b = get_current_transfer_fee(Some(mint_b_info), current_epoch);
 
@@ -168,8 +171,9 @@ pub fn harvest_position_instructions(
     let upper_tick_array_address =
         get_tick_array_address(&position.whirlpool, upper_tick_array_start_index)?.0;
 
-    let tick_array_infos =
-        rpc.get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address])?;
+    let tick_array_infos = rpc
+        .get_multiple_accounts(&[lower_tick_array_address, upper_tick_array_address])
+        .await?;
 
     let lower_tick_array_info = tick_array_infos[0]
         .as_ref()
@@ -212,22 +216,24 @@ pub fn harvest_position_instructions(
         get_current_transfer_fee(reward_infos[2].as_ref(), current_epoch),
     )?;
 
-    let mut required_mints: Vec<TokenAccountStrategy> = Vec::new();
+    let mut required_mints: HashSet<TokenAccountStrategy> = HashSet::new();
 
     if fees_quote.fee_owed_a > 0 || fees_quote.fee_owed_b > 0 {
-        required_mints.push(TokenAccountStrategy::WithoutBalance(pool.token_mint_a));
-        required_mints.push(TokenAccountStrategy::WithoutBalance(pool.token_mint_b));
+        required_mints.insert(TokenAccountStrategy::WithoutBalance(pool.token_mint_a));
+        required_mints.insert(TokenAccountStrategy::WithoutBalance(pool.token_mint_b));
     }
 
     for i in 0..3 {
         if rewards_quote.rewards[i].rewards_owed > 0 {
-            required_mints.push(TokenAccountStrategy::WithoutBalance(
+            required_mints.insert(TokenAccountStrategy::WithoutBalance(
                 pool.reward_infos[i].mint,
             ));
         }
     }
 
-    let token_accounts = prepare_token_accounts_instructions(rpc, authority, required_mints)?;
+    let token_accounts =
+        prepare_token_accounts_instructions(rpc, authority, required_mints.into_iter().collect())
+            .await?;
 
     let mut instructions: Vec<Instruction> = Vec::new();
     instructions.extend(token_accounts.create_instructions);

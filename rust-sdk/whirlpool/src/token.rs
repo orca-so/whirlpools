@@ -1,5 +1,5 @@
 use orca_whirlpools_core::TransferFee;
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::account::Account as SolanaAccount;
 use solana_sdk::hash::hashv;
 use solana_sdk::program_error::ProgramError;
@@ -21,7 +21,7 @@ use std::{collections::HashMap, error::Error};
 
 use crate::{NativeMintWrappingStrategy, NATIVE_MINT_WRAPPING_STRATEGY};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq, Hash)]
 pub(crate) enum TokenAccountStrategy {
     WithoutBalance(Pubkey),
     WithBalance(Pubkey, u64),
@@ -35,7 +35,7 @@ pub(crate) struct TokenAccountInstructions {
     pub additional_signers: Vec<Keypair>,
 }
 
-pub(crate) fn prepare_token_accounts_instructions(
+pub(crate) async fn prepare_token_accounts_instructions(
     rpc: &RpcClient,
     owner: Pubkey,
     spec: Vec<TokenAccountStrategy>,
@@ -53,7 +53,7 @@ pub(crate) fn prepare_token_accounts_instructions(
         .position(|&x| x == spl_token::native_mint::ID);
     let has_native_mint = native_mint_index.is_some();
 
-    let maybe_mint_account_infos = rpc.get_multiple_accounts(&mint_addresses)?;
+    let maybe_mint_account_infos = rpc.get_multiple_accounts(&mint_addresses).await?;
     let mint_account_infos: Vec<&SolanaAccount> = maybe_mint_account_infos
         .iter()
         .map(|x| x.as_ref().ok_or(ProgramError::UninitializedAccount))
@@ -67,7 +67,7 @@ pub(crate) fn prepare_token_accounts_instructions(
         })
         .collect();
 
-    let ata_account_infos = rpc.get_multiple_accounts(&ata_addresses)?;
+    let ata_account_infos = rpc.get_multiple_accounts(&ata_addresses).await?;
 
     let mut token_account_addresses: HashMap<Pubkey, Pubkey> = HashMap::new();
     let mut create_instructions: Vec<Instruction> = Vec::new();
@@ -123,7 +123,9 @@ pub(crate) fn prepare_token_accounts_instructions(
 
     if has_native_mint && native_mint_wrapping_strategy == NativeMintWrappingStrategy::Keypair {
         let keypair = Keypair::new();
-        let mut lamports = rpc.get_minimum_balance_for_rent_exemption(Account::LEN)?;
+        let mut lamports = rpc
+            .get_minimum_balance_for_rent_exemption(Account::LEN)
+            .await?;
 
         if let TokenAccountStrategy::WithBalance(_, balance) = spec[native_mint_index.unwrap_or(0)]
         {
@@ -158,7 +160,9 @@ pub(crate) fn prepare_token_accounts_instructions(
     }
 
     if has_native_mint && native_mint_wrapping_strategy == NativeMintWrappingStrategy::Seed {
-        let mut lamports = rpc.get_minimum_balance_for_rent_exemption(Account::LEN)?;
+        let mut lamports = rpc
+            .get_minimum_balance_for_rent_exemption(Account::LEN)
+            .await?;
 
         if let TokenAccountStrategy::WithBalance(_, balance) = spec[native_mint_index.unwrap_or(0)]
         {

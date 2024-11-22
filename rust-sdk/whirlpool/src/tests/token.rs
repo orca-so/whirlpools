@@ -19,11 +19,11 @@ use spl_token::{
 
 use super::{get_next_keypair, send_transaction, send_transaction_with_signers, SIGNER};
 
-pub fn setup_ata(mint: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
-    setup_ata_with_amount(mint, 0)
+pub async fn setup_ata(mint: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
+    setup_ata_with_amount(mint, 0).await
 }
 
-pub fn setup_ata_with_amount(mint: Pubkey, amount: u64) -> Result<Pubkey, Box<dyn Error>> {
+pub async fn setup_ata_with_amount(mint: Pubkey, amount: u64) -> Result<Pubkey, Box<dyn Error>> {
     let ata =
         get_associated_token_address_with_program_id(&SIGNER.pubkey(), &mint, &TOKEN_PROGRAM_ID);
 
@@ -50,16 +50,16 @@ pub fn setup_ata_with_amount(mint: Pubkey, amount: u64) -> Result<Pubkey, Box<dy
         }
     }
 
-    send_transaction(instructions)?;
+    send_transaction(instructions).await?;
 
     Ok(ata)
 }
 
-pub fn setup_mint() -> Result<Pubkey, Box<dyn Error>> {
-    setup_mint_with_decimals(9)
+pub async fn setup_mint() -> Result<Pubkey, Box<dyn Error>> {
+    setup_mint_with_decimals(9).await
 }
 
-pub fn setup_mint_with_decimals(decimals: u8) -> Result<Pubkey, Box<dyn Error>> {
+pub async fn setup_mint_with_decimals(decimals: u8) -> Result<Pubkey, Box<dyn Error>> {
     let keypair = get_next_keypair();
 
     let instructions = vec![
@@ -79,7 +79,7 @@ pub fn setup_mint_with_decimals(decimals: u8) -> Result<Pubkey, Box<dyn Error>> 
         )?,
     ];
 
-    send_transaction_with_signers(instructions, vec![keypair])?;
+    send_transaction_with_signers(instructions, vec![keypair]).await?;
 
     Ok(keypair.pubkey())
 }

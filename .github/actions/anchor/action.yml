@@ -35,11 +35,24 @@ runs:
         rustup toolchain install ${rust_version#v}
         rustup default ${rust_version#v}
         rustup component add rustfmt clippy
+        echo "RUST_LOG=" >> $GITHUB_ENV
       shell: bash
+    - name: Cache rust
+      uses: actions/cache@v4
+      continue-on-error: false
+      with:
+        path: |
+          ~/.cargo/bin/
+          ~/.cargo/registry/index/
+          ~/.cargo/registry/cache/
+          ~/.cargo/git/db/
+          **/target/
+        key: rust-cache-${{ inputs.rustc-version }}-${{ github.job }}-${{ hashFiles('**/Cargo.toml') }}
     - name: Setup node
       uses: actions/setup-node@v4
       with:
         node-version: ${{ inputs.node-version }}
+        cache: 'yarn'
     - name: Install Solana CLI
       run: |
         wget -qO- "https://release.anza.xyz/${{ inputs.solana-version }}/solana-release-x86_64-unknown-linux-gnu.tar.bz2" | tar -xvj

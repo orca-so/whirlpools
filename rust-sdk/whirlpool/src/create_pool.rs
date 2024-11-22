@@ -13,7 +13,7 @@ use orca_whirlpools_core::{
     get_full_range_tick_indexes, get_tick_array_start_tick_index, price_to_sqrt_price,
     sqrt_price_to_tick_index,
 };
-use solana_client::rpc_client::RpcClient;
+use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_program::rent::Rent;
 use solana_program::system_program;
 use solana_program::sysvar::SysvarId;
@@ -95,7 +95,7 @@ pub struct CreatePoolInstructions {
 /// println!("Pool Address: {:?}", create_pool_instructions.pool_address);
 /// println!("Initialization Cost: {} lamports", create_pool_instructions.initialization_cost);
 /// ```
-pub fn create_splash_pool_instructions(
+pub async fn create_splash_pool_instructions(
     rpc: &RpcClient,
     token_a: Pubkey,
     token_b: Pubkey,
@@ -110,6 +110,7 @@ pub fn create_splash_pool_instructions(
         initial_price,
         funder,
     )
+    .await
 }
 
 /// Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM).
@@ -169,7 +170,7 @@ pub fn create_splash_pool_instructions(
 /// println!("Pool Address: {:?}", create_pool_instructions.pool_address);
 /// println!("Initialization Cost: {} lamports", create_pool_instructions.initialization_cost);
 /// ```
-pub fn create_concentrated_liquidity_pool_instructions(
+pub async fn create_concentrated_liquidity_pool_instructions(
     rpc: &RpcClient,
     token_a: Pubkey,
     token_b: Pubkey,
@@ -186,9 +187,9 @@ pub fn create_concentrated_liquidity_pool_instructions(
         return Err("Token order needs to be flipped to match the canonical ordering (i.e. sorted on the byte repr. of the mint pubkeys)".into());
     }
 
-    let rent = get_rent()?;
+    let rent = get_rent(rpc).await?;
 
-    let account_infos = rpc.get_multiple_accounts(&[token_a, token_b])?;
+    let account_infos = rpc.get_multiple_accounts(&[token_a, token_b]).await?;
     let mint_a_info = account_infos[0]
         .as_ref()
         .ok_or(format!("Mint {} not found", token_a))?;

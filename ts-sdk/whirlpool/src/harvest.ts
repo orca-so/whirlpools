@@ -182,20 +182,24 @@ export async function harvestPositionInstructions(
     getCurrentTransferFee(rewardMints[2], currentEpoch.epoch),
   );
 
-  const requiredMints: Address[] = [];
+  const requiredMints: Set<Address> = new Set();
   if (feesQuote.feeOwedA > 0n || feesQuote.feeOwedB > 0n) {
-    requiredMints.push(whirlpool.data.tokenMintA);
-    requiredMints.push(whirlpool.data.tokenMintB);
+    requiredMints.add(whirlpool.data.tokenMintA);
+    requiredMints.add(whirlpool.data.tokenMintB);
   }
 
   for (let i = 0; i < rewardsQuote.rewards.length; i++) {
     if (rewardsQuote.rewards[i].rewardsOwed > 0n) {
-      requiredMints.push(whirlpool.data.rewardInfos[i].mint);
+      requiredMints.add(whirlpool.data.rewardInfos[i].mint);
     }
   }
 
   const { createInstructions, cleanupInstructions, tokenAccountAddresses } =
-    await prepareTokenAccountsInstructions(rpc, authority, requiredMints);
+    await prepareTokenAccountsInstructions(
+      rpc,
+      authority,
+      Array.from(requiredMints),
+    );
 
   const instructions: IInstruction[] = [];
   instructions.push(...createInstructions);

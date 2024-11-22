@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use solana_client::{
-    rpc_client::RpcClient,
+    nonblocking::rpc_client::RpcClient,
     rpc_filter::{Memcmp, RpcFilterType},
 };
 use solana_sdk::pubkey::Pubkey;
@@ -39,7 +39,7 @@ impl From<PositionFilter> for RpcFilterType {
     }
 }
 
-pub fn fetch_all_position_with_filter(
+pub async fn fetch_all_position_with_filter(
     rpc: &RpcClient,
     filters: Vec<PositionFilter>,
 ) -> Result<Vec<DecodedAccount<Position>>, Box<dyn Error>> {
@@ -49,5 +49,5 @@ pub fn fetch_all_position_with_filter(
         0,
         discriminator,
     )));
-    fetch_decoded_program_accounts(rpc, filters)
+    fetch_decoded_program_accounts(rpc, filters).await
 }

@@ -3,27 +3,74 @@ use std::{error::Error, sync::Mutex};
 use orca_whirlpools_client::get_whirlpools_config_extension_address;
 use solana_program::pubkey::Pubkey;
 
-/// The default address for the Whirlpools program's config account.
-pub const DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
+/// The Whirlpools program's config account address for Solana Mainnet.
+const SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
     19, 228, 65, 248, 57, 19, 202, 104, 176, 99, 79, 176, 37, 253, 234, 168, 135, 55, 232, 65, 16,
     209, 37, 94, 53, 123, 51, 119, 221, 238, 28, 205,
 ]);
 
+/// The Whirlpools program's config account address for Solana Devnet.
+const SOLANA_DEVNET_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
+    217, 51, 106, 61, 244, 143, 54, 30, 87, 6, 230, 156, 60, 182, 182, 217, 23, 116, 228, 121, 53,
+    200, 82, 109, 229, 160, 245, 159, 33, 90, 35, 106,
+]);
+
+/// The Whirlpools program's config account address for Eclipse Mainnet.
+const ECLIPSE_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
+    215, 64, 234, 8, 195, 52, 100, 209, 19, 230, 37, 101, 156, 135, 37, 41, 139, 254, 65, 104, 208,
+    137, 96, 39, 84, 13, 60, 221, 36, 203, 151, 49,
+]);
+
+/// The Whirlpools program's config account address for Eclipse Testnet.
+const ECLIPSE_TESTNET_WHIRLPOOLS_CONFIG_ADDRESS: Pubkey = Pubkey::new_from_array([
+    213, 230, 107, 150, 137, 123, 254, 203, 164, 137, 81, 181, 70, 54, 172, 140, 176, 39, 16, 72,
+    150, 84, 130, 137, 232, 108, 97, 236, 197, 119, 201, 83,
+]);
+
 /// The default address for the Whirlpools program's config extension account.
-pub const DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Pubkey = Pubkey::new_from_array([
+const SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Pubkey = Pubkey::new_from_array([
     90, 182, 180, 56, 174, 38, 113, 211, 112, 187, 90, 174, 90, 115, 121, 167, 83, 122, 96, 10,
     152, 57, 209, 52, 207, 240, 174, 74, 201, 7, 87, 54,
 ]);
 
 /// The currently selected address for the Whirlpools program's config account.
-pub static WHIRLPOOLS_CONFIG_ADDRESS: Mutex<Pubkey> = Mutex::new(DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS);
+pub static WHIRLPOOLS_CONFIG_ADDRESS: Mutex<Pubkey> =
+    Mutex::new(SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS);
 
 /// The currently selected address for the Whirlpools program's config extension account.
 pub static WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS: Mutex<Pubkey> =
-    Mutex::new(DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS);
+    Mutex::new(SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS);
+
+/// Input type for setting the Whirlpools configuration.
+pub enum WhirlpoolsConfigInput {
+    Address(Pubkey),
+    SolanaMainnet,
+    SolanaDevnet,
+    EclipseMainnet,
+    EclipseTestnet,
+}
+
+impl From<Pubkey> for WhirlpoolsConfigInput {
+    fn from(val: Pubkey) -> Self {
+        WhirlpoolsConfigInput::Address(val)
+    }
+}
+
+impl From<WhirlpoolsConfigInput> for Pubkey {
+    fn from(val: WhirlpoolsConfigInput) -> Self {
+        match val {
+            WhirlpoolsConfigInput::Address(pubkey) => pubkey,
+            WhirlpoolsConfigInput::SolanaMainnet => SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
+            WhirlpoolsConfigInput::SolanaDevnet => SOLANA_DEVNET_WHIRLPOOLS_CONFIG_ADDRESS,
+            WhirlpoolsConfigInput::EclipseMainnet => ECLIPSE_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS,
+            WhirlpoolsConfigInput::EclipseTestnet => ECLIPSE_TESTNET_WHIRLPOOLS_CONFIG_ADDRESS,
+        }
+    }
+}
 
 /// Sets the currently selected address for the Whirlpools program's config account.
-pub fn set_whirlpools_config_address(address: Pubkey) -> Result<(), Box<dyn Error>> {
+pub fn set_whirlpools_config_address(input: WhirlpoolsConfigInput) -> Result<(), Box<dyn Error>> {
+    let address: Pubkey = input.into();
     *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()? = address;
     *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.try_lock()? =
         get_whirlpools_config_extension_address(&address)?.0;
@@ -93,8 +140,9 @@ pub fn set_native_mint_wrapping_strategy(
 
 /// Resets the configuration to its default values.
 pub fn reset_configuration() -> Result<(), Box<dyn Error>> {
-    *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()? = DEFAULT_WHIRLPOOLS_CONFIG_ADDRESS;
-    *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.try_lock()? = DEFAULT_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
+    *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()? = SOLANA_MAINNET_WHIRLPOOLS_CONFIG_ADDRESS;
+    *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.try_lock()? =
+        SOLANA_MAINNET_WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS;
     *FUNDER.try_lock()? = DEFAULT_FUNDER;
     *NATIVE_MINT_WRAPPING_STRATEGY.try_lock()? = DEFAULT_NATIVE_MINT_WRAPPING_STRATEGY;
     *SLIPPAGE_TOLERANCE_BPS.try_lock()? = DEFAULT_SLIPPAGE_TOLERANCE_BPS;
@@ -113,11 +161,28 @@ mod tests {
         let new_config = Pubkey::from_str("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E").unwrap();
         let new_extension =
             Pubkey::from_str("Ez4MMUVb7VrKFcTSbi9Yz2ivXwdwCqJicnDaRHbe96Yk").unwrap();
-        set_whirlpools_config_address(new_config).unwrap();
+        set_whirlpools_config_address(new_config.into()).unwrap();
         assert_eq!(*WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(), new_config);
         assert_eq!(
             *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
             new_extension
+        );
+        reset_configuration().unwrap();
+    }
+
+    #[test]
+    #[serial]
+    fn test_set_whirlpools_config_address_by_network() {
+        use std::str::FromStr;
+        let expected_config =
+            Pubkey::from_str("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR").unwrap(); // Replace with actual base58 value for the array
+        let expected_extension =
+            Pubkey::from_str("475EJ7JqnRpVLoFVzp2ruEYvWWMCf6Z8KMWRujtXXNSU").unwrap(); // Replace with the expected extension
+        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+        assert_eq!(*WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(), expected_config);
+        assert_eq!(
+            *WHIRLPOOLS_CONFIG_EXTENSION_ADDRESS.lock().unwrap(),
+            expected_extension
         );
         reset_configuration().unwrap();
     }

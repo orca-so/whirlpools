@@ -62,16 +62,15 @@ export type CreatePoolInstructions = {
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
  * @example
- * import { createSplashPoolInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { createSplashPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
  * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
- * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
- * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2";
+ * const tokenMintOne = address("TOKEN_MINT_ADDRESS_1");
+ * const tokenMintTwo = address("TOKEN_MINT_ADDRESS_2");
  * const initialPrice = 0.01;
  *
  * const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
@@ -112,16 +111,15 @@ export function createSplashPoolInstructions(
  * @returns {Promise<CreatePoolInstructions>} A promise that resolves to an object containing the pool creation instructions, the estimated initialization cost, and the pool address.
  *
  * @example
- * import { createConcentratedLiquidityPoolInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { createConcentratedLiquidityPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
  * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
- * const tokenMintOne = "TOKEN_MINT_ADDRESS_1";
- * const tokenMintTwo = "TOKEN_MINT_ADDRESS_2";
+ * const tokenMintOne = address("TOKEN_MINT_ADDRESS_1");
+ * const tokenMintTwo = address("TOKEN_MINT_ADDRESS_2");
  * const tickSpacing = 64;
  * const initialPrice = 0.01;
  *

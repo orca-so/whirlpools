@@ -20,22 +20,43 @@ use crate::{
 
 // TODO: transfer hooks
 
+/// Represents the type of a swap operation.
+///
+/// This enum is used to specify whether the swap is an exact input or exact output type.
 #[derive(Debug, Clone, PartialEq)]
 pub enum SwapType {
+    /// Indicates a swap where the input token amount is specified.
     ExactIn,
+
+    /// Indicates a swap where the output token amount is specified.
     ExactOut,
 }
 
+/// Represents the quote for a swap operation.
+///
+/// This enum contains the details of the swap quote based on the type of swap.
 #[derive(Debug, Clone)]
 pub enum SwapQuote {
+    /// The quote for a swap with a specified input token amount.
     ExactIn(ExactInSwapQuote),
+
+    /// The quote for a swap with a specified output token amount.
     ExactOut(ExactOutSwapQuote),
 }
 
+/// Represents the instructions and quote for executing a token swap.
+///
+/// This struct contains the instructions required to perform the swap, along with the computed
+/// quote and any additional signers required.
 #[derive(Debug)]
 pub struct SwapInstructions {
+    /// A vector of Solana `Instruction` objects required to execute the swap.
     pub instructions: Vec<Instruction>,
+
+    /// A `SwapQuote` representing the details of the swap.
     pub quote: SwapQuote,
+
+    /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
 }
 
@@ -90,6 +111,66 @@ async fn fetch_tick_arrays_or_default(
     Ok(result)
 }
 
+/// Generates the instructions necessary to execute a token swap.
+///
+/// This function generates instructions for executing swaps, supporting both exact input and exact output scenarios.
+/// It calculates the necessary accounts, tick arrays, and swap quote using the provided parameters.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to the Solana RPC client for fetching accounts and interacting with the blockchain.
+/// * `whirlpool_address` - The public key of the Whirlpool against which the swap will be executed.
+/// * `amount` - The token amount specified for the swap. For `SwapType::ExactIn`, this is the input token amount.
+///              For `SwapType::ExactOut`, this is the output token amount.
+/// * `specified_mint` - The public key of the token mint being swapped.
+/// * `swap_type` - The type of swap (`SwapType::ExactIn` or `SwapType::ExactOut`).
+/// * `slippage_tolerance_bps` - An optional slippage tolerance, in basis points (BPS). Defaults to the global setting if not provided.
+/// * `signer` - An optional public key of the wallet or account executing the swap. Defaults to the global funder if not provided.
+///
+/// # Returns
+///
+/// A `Result` containing `SwapInstructions` on success:
+/// * `instructions` - A vector of `Instruction` objects required to execute the swap.
+/// * `quote` - A `SwapQuote` providing the computed details of the swap.
+/// * `additional_signers` - A vector of `Keypair` objects representing any additional signers required for the instructions.
+///
+/// # Errors
+///
+/// Returns an error if:
+/// - The signer is invalid or missing.
+/// - The Whirlpool or token mint accounts are not found or have invalid data.
+/// - Any RPC request to the blockchain fails.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
+/// use orca_whirlpools_sdk::{
+///     swap_instructions, SwapType, set_whirlpools_config_address, WhirlpoolsConfigInput,
+/// };
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+///
+/// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
+/// let amount = 1_000_000; // Amount to swap.
+/// let specified_mint = Pubkey::from_str("SPECIFIED_MINT_ADDRESS").unwrap();
+/// let slippage_tolerance_bps = Some(100);
+///
+/// let swap_instructions = swap_instructions(
+///     &rpc,
+///     whirlpool_pubkey,
+///     amount,
+///     specified_mint,
+///     SwapType::ExactIn,
+///     slippage_tolerance_bps,
+///     None,
+/// ).unwrap();
+///
+/// println!("Number of Instructions: {}", swap_instructions.instructions.len());
+/// println!("Swap Quote: {:?}", swap_instructions.quote);
+/// ```
 pub async fn swap_instructions(
     rpc: &RpcClient,
     whirlpool_address: Pubkey,

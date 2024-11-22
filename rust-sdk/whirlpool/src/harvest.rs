@@ -26,14 +26,81 @@ use crate::{
 
 // TODO: support transfer hooks
 
+/// Represents the instructions and quotes for harvesting a position.
+///
+/// This struct contains the instructions required to harvest a position, along with detailed
+/// information about the available fees and rewards to collect.
 #[derive(Debug)]
 pub struct HarvestPositionInstruction {
+    /// A vector of `Instruction` objects required to execute the harvesting process.
     pub instructions: Vec<Instruction>,
+
+    /// A vector of `Keypair` objects representing additional signers required for the instructions.
     pub additional_signers: Vec<Keypair>,
+
+    /// Details of the fees available to collect from the position:
+    /// - `fee_owed_a` - The amount of fees available to collect in token A.
+    /// - `fee_owed_b` - The amount of fees available to collect in token B.
     pub fees_quote: CollectFeesQuote,
+
+    /// Details of the rewards available to collect from the position:
+    /// - `rewards` - An array containing up to three `CollectRewardQuote` entries, one for each reward token.
+    ///   - Each entry includes `rewards_owed`, the amount of the respective reward token available to collect.
     pub rewards_quote: CollectRewardsQuote,
 }
 
+/// Generates instructions to harvest a position.
+///
+/// Harvesting a position involves collecting any accumulated fees and rewards
+/// from the position. The position remains open, and liquidity is not removed.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to a Solana RPC client for fetching accounts and pool data.
+/// * `position_mint_address` - The public key of the NFT mint address representing the pool position.
+/// * `authority` - An optional public key of the account authorizing the harvesting process. Defaults to the global funder if not provided.
+///
+/// # Returns
+///
+/// A `Result` containing `HarvestPositionInstruction` on success:
+///
+/// * `fees_quote` - A breakdown of the fees owed to the position owner, including the amounts for Token A and Token B.
+/// * `rewards_quote` - A breakdown of the rewards owed, including up to three reward tokens.
+/// * `instructions` - A vector of `Instruction` objects required to execute the harvesting process.
+/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - The `authority` account is invalid or missing.
+/// - The position or token mint accounts are not found or have invalid data.
+/// - Any RPC request to the blockchain fails.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
+/// use orca_whirlpools::{
+///     harvest_position_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address
+/// };
+/// use std::str::FromStr;
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+///
+/// let position_mint_address = Pubkey::from_str("POSITION_NFT_MINT_PUBKEY").unwrap();;
+///
+/// let result = harvest_position_instructions(
+///     &rpc,
+///     position_mint_address,
+///     None, // SET GLOBAL FUNDER
+/// ).unwrap();
+///
+/// println!("Fees Quote: {:?}", result.fees_quote);
+/// println!("Rewards Quote: {:?}", result.rewards_quote);
+/// println!("Number of Instructions: {}", result.instructions.len());
+/// ```
 pub async fn harvest_position_instructions(
     rpc: &RpcClient,
     position_mint_address: Pubkey,

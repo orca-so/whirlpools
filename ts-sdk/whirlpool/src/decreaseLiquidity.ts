@@ -142,15 +142,13 @@ function getDecreaseLiquidityQuote(
  * @returns {Promise<DecreaseLiquidityInstructions>} A promise resolving to an object containing the decrease liquidity quote and instructions.
  *
  * @example
- * import { decreaseLiquidityInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { decreaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
- * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
- * const positionMint = "POSITION_MINT";
+ * const positionMint = address("POSITION_MINT");
  *
  * const param = { liquidity: 500_000n };
  *
@@ -159,7 +157,6 @@ function getDecreaseLiquidityQuote(
  *   positionMint,
  *   param,
  *   100,
- *   wallet
  * );
  */
 export async function decreaseLiquidityInstructions(
@@ -287,22 +284,18 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  * @returns {Promise<ClosePositionInstructions>} A promise resolving to an object containing instructions, fees quote, rewards quote, and the liquidity quote for the closed position.
  *
  * @example
- * import { closePositionInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { closePositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
- * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
- * const positionMint = "POSITION_MINT";
- *
+ * const positionMint = address("POSITION_MINT");
  *
  * const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
  *   devnetRpc,
  *   positionMint,
  *   100,
- *   wallet
  * );
  */
 export async function closePositionInstructions(

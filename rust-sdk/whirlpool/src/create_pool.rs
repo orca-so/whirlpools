@@ -41,6 +41,60 @@ pub struct CreatePoolInstructions {
     pub additional_signers: Vec<Keypair>,
 }
 
+/// Creates the necessary instructions to initialize a Splash Pool.
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to a Solana RPC client for communicating with the blockchain.
+/// * `token_a` - The public key of the first token mint address to include in the pool.
+/// * `token_b` - The public key of the second token mint address to include in the pool.
+/// * `initial_price` - An optional initial price of token A in terms of token B. Defaults to 1.0 if not provided.
+/// * `funder` - An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.
+///
+/// # Returns
+///
+/// A `Result` containing `CreatePoolInstructions` on success:
+/// * `instructions` - A vector of Solana instructions needed to initialize the pool.
+/// * `initialization_cost` - The estimated rent exemption cost for initializing the pool, in lamports.
+/// * `pool_address` - The public key of the newly created pool.
+/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - The funder account is invalid.
+/// - Token mints are not found or have invalid data.
+/// - The token mint order does not match the canonical byte order.
+/// - Any RPC request to the blockchain fails.
+///
+/// # Example
+///
+/// ```rust
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::{pubkey::Pubkey, signer::Keypair};
+/// use orca_whirlpools::create_splash_pool_instructions
+/// use std::str::FromStr;
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap()
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// let token_a = Pubkey::from_str("TOKEN_MINT_ADDRESS_A").unwrap();
+/// let token_b = Pubkey::from_str("TOKEN_MINT_ADDRESS_B").unwrap();
+/// let initial_price = Some(0.01);
+///
+/// let wallet = Keypair::new();
+/// let funder = Some(wallet.pubkey());
+///
+/// let create_pool_instructions = create_splash_pool_instructions(
+///     &rpc,
+///     token_a,
+///     token_b,
+///     initial_price,
+///     funder,
+/// ).unwrap();
+///
+/// println!("Pool Address: {:?}", create_pool_instructions.pool_address);
+/// println!("Initialization Cost: {} lamports", create_pool_instructions.initialization_cost);
+/// ```
 pub async fn create_splash_pool_instructions(
     rpc: &RpcClient,
     token_a: Pubkey,
@@ -59,6 +113,63 @@ pub async fn create_splash_pool_instructions(
     .await
 }
 
+/// Creates the necessary instructions to initialize a Concentrated Liquidity Pool (CLMM).
+///
+/// # Arguments
+///
+/// * `rpc` - A reference to a Solana RPC client for communicating with the blockchain.
+/// * `token_a` - The public key of the first token mint address to include in the pool.
+/// * `token_b` - The public key of the second token mint address to include in the pool.
+/// * `tick_spacing` - The spacing between price ticks for the pool.
+/// * `initial_price` - An optional initial price of token A in terms of token B. Defaults to 1.0 if not provided.
+/// * `funder` - An optional public key of the account funding the initialization process. Defaults to the global funder if not provided.
+///
+/// # Returns
+///
+/// A `Result` containing `CreatePoolInstructions` on success:
+/// * `instructions` - A vector of Solana instructions needed to initialize the pool.
+/// * `initialization_cost` - The estimated rent exemption cost for initializing the pool, in lamports.
+/// * `pool_address` - The public key of the newly created pool.
+/// * `additional_signers` - A vector of `Keypair` objects representing additional signers required for the instructions.
+///
+/// # Errors
+///
+/// This function will return an error if:
+/// - The funder account is invalid.
+/// - Token mints are not found or have invalid data.
+/// - The token mint order does not match the canonical byte order.
+/// - Any RPC request to the blockchain fails.
+///
+/// # Example
+///
+/// ```
+/// use solana_client::rpc_client::RpcClient;
+/// use solana_sdk::{pubkey::Pubkey, signer::Keypair};
+/// use orca_whirlpools::create_concentrated_liquidity_pool_instructions;
+/// use std::str::FromStr;
+///
+/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap()
+/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// let token_a = Pubkey::from_str("TOKEN_MINT_ADDRESS_A").unwrap();
+/// let token_b = Pubkey::from_str("TOKEN_MINT_ADDRESS_B").unwrap();
+/// let tick_spacing = 64;
+/// let initial_price = Some(0.01);
+///
+/// let wallet = Keypair::new();
+/// let funder = Some(wallet.pubkey());
+///
+/// let create_pool_instructions = create_concentrated_liquidity_pool_instructions(
+///     &rpc,
+///     token_a,
+///     token_b,
+///     tick_spacing,
+///     initial_price,
+///     funder,
+/// ).unwrap();
+///
+/// println!("Pool Address: {:?}", create_pool_instructions.pool_address);
+/// println!("Initialization Cost: {} lamports", create_pool_instructions.initialization_cost);
+/// ```
 pub async fn create_concentrated_liquidity_pool_instructions(
     rpc: &RpcClient,
     token_a: Pubkey,

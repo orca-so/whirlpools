@@ -148,8 +148,6 @@ pub fn swap_quote_by_output_token(
     })
 }
 
-// Private functions
-
 pub struct SwapResult {
     pub token_a: u64,
     pub token_b: u64,
@@ -174,6 +172,9 @@ pub struct SwapResult {
 ///
 /// # Returns
 /// A `Result` containing a `SwapResult` struct if the swap is successful, or an `ErrorCode` if the computation fails.
+/// # Notes
+/// - This function doesn't take into account slippage tolerance.
+/// - This function doesn't take into account transfer fee extension.
 pub fn compute_swap<const SIZE: usize>(
     token_amount: u64,
     sqrt_price_limit: u128,
@@ -292,6 +293,8 @@ pub fn compute_swap<const SIZE: usize>(
         trade_fee,
     })
 }
+
+// Private functions
 
 fn get_next_liquidity(
     current_liquidity: u128,

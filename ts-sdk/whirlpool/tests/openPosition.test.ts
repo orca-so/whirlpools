@@ -19,6 +19,7 @@ import {
 } from "@orca-so/whirlpools-client";
 import assert from "assert";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
+import { getFullRangeTickIndexes, getInitializableTickIndex, priceToTickIndex } from "@orca-so/whirlpools-core";
 
 const mintTypes = new Map([
   ["A", setupMint],
@@ -68,49 +69,94 @@ describe("Open Position Instructions", () => {
     }
   });
 
-  const testOpenPosition = async (
+  const testOpenPositionInstructions = async (
     poolName: string,
-    lowerPrice?: number,
-    upperPrice?: number,
+    lowerPrice: number,
+    upperPrice: number,
   ) => {
     const whirlpool = pools.get(poolName)!;
     const param = { liquidity: 10_000n };
-
-    const { instructions, positionMint } =
-      lowerPrice === undefined || upperPrice === undefined
-        ? await openFullRangePositionInstructions(rpc, whirlpool, param)
-        : await openPositionInstructions(
-            rpc,
-            whirlpool,
-            param,
-            lowerPrice,
-            upperPrice,
-          );
-
+  
+    const { instructions, positionMint } = await openPositionInstructions(
+      rpc,
+      whirlpool,
+      param,
+      lowerPrice,
+      upperPrice,
+    );
+  
     const positionAddress = await getPositionAddress(positionMint);
     const positionBefore = await fetchMaybePosition(rpc, positionAddress[0]);
-
+  
     await sendTransaction(instructions);
-
-    const positionAfter = await fetchMaybePosition(rpc, positionMint);
+  
+    const positionAfter = await fetchMaybePosition(rpc, positionAddress[0]);
     assert.strictEqual(positionBefore.exists, false);
     assertAccountExists(positionAfter);
+  
+    const expectedTickLowerIndex = priceToTickIndex(lowerPrice, 6, 6);
+    const expectedTickUpperIndex = priceToTickIndex(upperPrice, 6, 6);
+    const initializableLowerTickIndex = getInitializableTickIndex(
+      expectedTickLowerIndex,
+      tickSpacing,
+      false,
+    );
+    const initializableUpperTickIndex = getInitializableTickIndex(
+      expectedTickUpperIndex,
+      tickSpacing,
+      true,
+    );
+  
+    assert.strictEqual(positionAfter.data.tickLowerIndex, initializableLowerTickIndex);
+    assert.strictEqual(positionAfter.data.tickUpperIndex, initializableUpperTickIndex);
   };
 
+  const testOpenFullRangePositionInstructions = async (poolName: string) => {
+    const whirlpool = pools.get(poolName)!;
+    const param = { liquidity: 10_000n };
+  
+    const { instructions, positionMint } = await openFullRangePositionInstructions(rpc, whirlpool, param);
+  
+    const positionAddress = await getPositionAddress(positionMint);
+    const positionBefore = await fetchMaybePosition(rpc, positionAddress[0]);
+  
+    await sendTransaction(instructions);
+  
+    const positionAfter = await fetchMaybePosition(rpc, positionAddress[0]);
+    assert.strictEqual(positionBefore.exists, false);
+    assertAccountExists(positionAfter);
+  
+    const tickRange = getFullRangeTickIndexes(tickSpacing);
+    const initializableLowerTickIndex = getInitializableTickIndex(
+      tickRange.tickLowerIndex,
+      tickSpacing,
+      false,
+    );
+    const initializableUpperTickIndex = getInitializableTickIndex(
+      tickRange.tickUpperIndex,
+      tickSpacing,
+      true,
+    );
+  
+    assert.strictEqual(positionAfter.data.tickLowerIndex, initializableLowerTickIndex);
+    assert.strictEqual(positionAfter.data.tickUpperIndex, initializableUpperTickIndex);
+  };
+
+
   for (const poolName of poolTypes.keys()) {
-    it(`Should open a full-range position for ${poolName}`, async () => {
-      await testOpenPosition(poolName);
+    it(`Should open a position with a specific price range for ${poolName}`, async () => {
+      await testOpenPositionInstructions(poolName, 0.95, 1.05);
     });
 
-    it(`Should open a position with a specific price range for ${poolName}`, async () => {
-      await testOpenPosition(poolName, 0.95, 1.05);
+    it(`Should open a full-range position for ${poolName}`, async () => {
+      await testOpenFullRangePositionInstructions(poolName);
     });
   }
 
   it("Should compute correct initialization costs if both tick arrays are already initialized", async () => {
     const param = { liquidity: 10_000n };
 
-    const { instructions, initializationCost } = await openPositionInstructions(
+    const { initializationCost } = await openPositionInstructions(
       rpc,
       pools.get("A-B")!,
       param,
@@ -118,15 +164,13 @@ describe("Open Position Instructions", () => {
       1.05,
     );
 
-    await sendTransaction(instructions);
-
     assert.strictEqual(initializationCost, 0n);
   });
 
   it("Should compute correct initialization costs if 1 tick array is already initialized", async () => {
     const param = { liquidity: 10_000n };
 
-    const { instructions, initializationCost } = await openPositionInstructions(
+    const { initializationCost } = await openPositionInstructions(
       rpc,
       pools.get("A-B")!,
       param,
@@ -134,23 +178,19 @@ describe("Open Position Instructions", () => {
       1.05,
     );
 
-    await sendTransaction(instructions);
-
     assert.strictEqual(initializationCost, 70407360n);
   });
 
   it("Should compute correct initialization costs if no tick arrays are already initialized", async () => {
     const param = { liquidity: 10_000n };
 
-    const { instructions, initializationCost } = await openPositionInstructions(
+    const { initializationCost } = await openPositionInstructions(
       rpc,
       pools.get("A-B")!,
       param,
       0.01,
       5,
     );
-
-    await sendTransaction(instructions);
 
     assert.strictEqual(initializationCost, 140814720n);
   });
@@ -162,6 +202,7 @@ describe("Open Position Instructions", () => {
       mints.get("B")!,
       SPLASH_POOL_TICK_SPACING,
     );
+
     await assert.rejects(
       openPositionInstructions(rpc, splashPool, param, 0.01, 5),
     );

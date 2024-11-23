@@ -1,9 +1,9 @@
-use std::{error::Error, str::FromStr, time::Duration};
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::{error::Error, str::FromStr};
 
 use async_trait::async_trait;
-use futures::{executor::block_on, lock::Mutex};
-use lazy_static::lazy_static;
-use orca_whirlpools_client::{WHIRLPOOLS_CONFIG_DISCRIMINATOR, WHIRLPOOL_ID};
+use orca_whirlpools_client::{get_fee_tier_address, FEE_TIER_DISCRIMINATOR, WHIRLPOOLS_CONFIG_DISCRIMINATOR, WHIRLPOOL_ID};
 use serde_json::{from_value, to_value, Value};
 use solana_account_decoder::{UiAccount, UiAccountEncoding};
 use solana_client::client_error::Result as ClientResult;
@@ -15,12 +15,13 @@ use solana_client::{
     rpc_response::{Response, RpcBlockhash, RpcResponseContext, RpcVersionInfo},
     rpc_sender::{RpcSender, RpcTransportStats},
 };
+use solana_program_test::tokio::sync::Mutex;
 use solana_program_test::{ProgramTest, ProgramTestContext};
+use solana_sdk::bs58;
 use solana_sdk::epoch_info::EpochInfo;
 use solana_sdk::{
-    account::{Account, AccountSharedData},
-    bs58,
-    commitment_config::{CommitmentConfig, CommitmentLevel},
+    account::Account,
+    commitment_config::CommitmentLevel,
     instruction::Instruction,
     message::{v0::Message, VersionedMessage},
     pubkey::Pubkey,
@@ -32,21 +33,24 @@ use solana_sdk::{
 use solana_version::Version;
 use spl_memo::build_memo;
 
-use crate::tests::setup_fee_tiers;
-use crate::WHIRLPOOLS_CONFIG_ADDRESS;
-use crate::{set_funder, tests::anchor_programs};
+use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
+use crate::tests::anchor_programs;
 
-lazy_static! {
-    pub static ref SIGNER: Keypair = {
-        let keypair = Keypair::new();
-        set_funder(keypair.pubkey()).unwrap();
-        keypair
-    };
-    static ref CONTEXT: Mutex<ProgramTestContext> = {
+pub struct RpcContext {
+    pub rpc: RpcClient,
+    pub signer: Keypair,
+    keypairs: Vec<Keypair>,
+    keypair_index: AtomicUsize,
+}
+
+impl RpcContext {
+    pub async fn new() -> Self {
+        let signer = Keypair::new();
         let mut test = ProgramTest::default();
         test.prefer_bpf(true);
+
         test.add_account(
-            SIGNER.pubkey(),
+            signer.pubkey(),
             Account {
                 lamports: 100_000_000_000,
                 data: vec![],
@@ -55,15 +59,17 @@ lazy_static! {
                 rent_epoch: 0,
             },
         );
+
+        let config = *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap();
         test.add_account(
-            *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap(),
+            config,
             Account {
                 lamports: 100_000_000_000,
                 data: [
                     WHIRLPOOLS_CONFIG_DISCRIMINATOR,
-                    &SIGNER.pubkey().to_bytes(),
-                    &SIGNER.pubkey().to_bytes(),
-                    &SIGNER.pubkey().to_bytes(),
+                    &signer.pubkey().to_bytes(),
+                    &signer.pubkey().to_bytes(),
+                    &signer.pubkey().to_bytes(),
                     &[0; 2],
                 ]
                 .concat(),
@@ -72,26 +78,109 @@ lazy_static! {
                 rent_epoch: 0,
             },
         );
+
+        let default_fee_tier = get_fee_tier_address(&config, 128).unwrap().0;
+        test.add_account(
+            default_fee_tier,
+            Account {
+                lamports: 100_000_000_000,
+                data: [
+                    FEE_TIER_DISCRIMINATOR,
+                    &config.to_bytes(),
+                    &128u16.to_le_bytes(),
+                    &1000u16.to_le_bytes(),
+                ]
+                .concat(),
+                owner: WHIRLPOOL_ID,
+                executable: false,
+                rent_epoch: 0,
+            },
+        );
+
+        let concentrated_fee_tier = get_fee_tier_address(&config, 64).unwrap().0;
+        test.add_account(
+            concentrated_fee_tier,
+            Account {
+                lamports: 100_000_000_000,
+                data: [
+                    FEE_TIER_DISCRIMINATOR,
+                    &config.to_bytes(),
+                    &64u16.to_le_bytes(),
+                    &300u16.to_le_bytes(),
+                ]
+                .concat(),
+                owner: WHIRLPOOL_ID,
+                executable: false,
+                rent_epoch: 0,
+            },
+        );
+
+        let splash_fee_tier = get_fee_tier_address(&config, SPLASH_POOL_TICK_SPACING).unwrap().0;
+        test.add_account(
+            splash_fee_tier,
+            Account {
+                lamports: 100_000_000_000,
+                data: [
+                    FEE_TIER_DISCRIMINATOR,
+                    &config.to_bytes(),
+                    &SPLASH_POOL_TICK_SPACING.to_le_bytes(),
+                    &1000u16.to_le_bytes(),
+                ]
+                .concat(),
+                owner: WHIRLPOOL_ID,
+                executable: false,
+                rent_epoch: 0,
+            },
+        );
+
         let programs = anchor_programs("../..".to_string()).unwrap();
         for (name, pubkey) in programs {
             test.add_program(&name, pubkey, None);
         }
-        Mutex::new(block_on(test.start_with_context()))
-    };
-    static ref RPC_CLIENT: RpcClient = {
-        RpcClient::new_sender(
-            MockRpcSender {},
-            RpcClientConfig {
-                commitment_config: CommitmentConfig::processed(),
-                confirm_transaction_initial_timeout: Some(Duration::from_secs(10)),
-            },
-        )
-    };
-    pub static ref RPC: &'static RpcClient = {
-        let rpc = &RPC_CLIENT;
-        block_on(setup_fee_tiers());
-        rpc
-    };
+        let context = Mutex::new(test.start_with_context().await);
+        let rpc = RpcClient::new_sender(
+            MockRpcSender { context },
+            RpcClientConfig::default(),
+        );
+
+        let mut keypairs = (0..100).map(|_| Keypair::new()).collect::<Vec<_>>();
+        keypairs.sort_by_key(|x| x.pubkey());
+
+        Self { rpc, signer, keypairs, keypair_index: AtomicUsize::new(0) }
+    }
+
+    pub fn get_next_keypair(&self) -> &Keypair {
+        let index = self.keypair_index.fetch_add(1, Ordering::Relaxed);
+        &self.keypairs[index]
+    }
+
+    pub async fn send_transaction(
+        &self,
+        instructions: Vec<Instruction>,
+    ) -> Result<Signature, Box<dyn Error>> {
+        self.send_transaction_with_signers(instructions, vec![]).await
+    }
+
+    pub async fn send_transaction_with_signers(
+        &self,
+        instructions: Vec<Instruction>,
+        signers: Vec<&Keypair>,
+    ) -> Result<Signature, Box<dyn Error>> {
+        let blockhash = self.rpc.get_latest_blockhash().await?;
+        // Sine blockhash is not guaranteed to be unique, we need to add a random memo to the tx
+        // so that we can fire two seemingly identical transactions in a row.
+        let memo = Keypair::new().to_base58_string();
+        let instructions = [instructions, vec![build_memo(memo.as_bytes(), &[])]].concat();
+        let message = VersionedMessage::V0(Message::try_compile(
+            &self.signer.pubkey(),
+            &instructions,
+            &[],
+            blockhash,
+        )?);
+        let transaction = VersionedTransaction::try_new(message, &[signers, vec![&self.signer]].concat())?;
+        let signature = self.rpc.send_transaction(&transaction).await?;
+        Ok(signature.clone())
+    }
 }
 
 fn get_encoding(config: &Value) -> UiAccountEncoding {
@@ -116,16 +205,18 @@ fn to_wire_account(
     }
 }
 
-async fn send(method: &str, params: &Vec<Value>) -> Result<Value, Box<dyn Error>> {
-    let mut context = CONTEXT.lock().await;
+async fn send(
+    context: &mut ProgramTestContext,
+    method: &str,
+    params: &Vec<Value>,
+) -> Result<Value, Box<dyn Error>> {
     let slot = context.banks_client.get_root_slot().await?;
 
     let response = match method {
         "getAccountInfo" => {
             let address_str = params[0].as_str().unwrap_or_default();
             let address = Pubkey::from_str(address_str)?;
-            let account = context
-                .banks_client
+            let account = context.banks_client
                 .get_account_with_commitment(address, CommitmentLevel::Confirmed)
                 .await?;
             let encoding = get_encoding(&params[1]);
@@ -145,8 +236,7 @@ async fn send(method: &str, params: &Vec<Value>) -> Result<Value, Box<dyn Error>
             for address_str in addresses {
                 let address_str = address_str.as_str().unwrap_or_default();
                 let address = Pubkey::from_str(address_str)?;
-                let account = context
-                    .banks_client
+                let account = context.banks_client
                     .get_account_with_commitment(address, CommitmentLevel::Confirmed)
                     .await?;
                 accounts.push(to_wire_account(&address, account, encoding)?);
@@ -181,8 +271,7 @@ async fn send(method: &str, params: &Vec<Value>) -> Result<Value, Box<dyn Error>
             let transaction_base64 = params[0].as_str().unwrap_or_default();
             let transaction_bytes = base64::decode(transaction_base64)?;
             let transaction = bincode::deserialize::<VersionedTransaction>(&transaction_bytes)?;
-            let meta = context
-                .banks_client
+            let meta = context.banks_client
                 .process_transaction_with_metadata(transaction.clone())
                 .await?;
             if let Err(e) = meta.result {
@@ -213,7 +302,9 @@ async fn send(method: &str, params: &Vec<Value>) -> Result<Value, Box<dyn Error>
     Ok(response)
 }
 
-struct MockRpcSender;
+struct MockRpcSender {
+    context: Mutex<ProgramTestContext>,
+}
 
 #[async_trait]
 impl RpcSender for MockRpcSender {
@@ -222,7 +313,8 @@ impl RpcSender for MockRpcSender {
         let method = request_json["method"].as_str().unwrap_or_default();
         let default_params = Vec::new();
         let params = request_json["params"].as_array().unwrap_or(&default_params);
-        let response = send(method, params).await.map_err(|e| {
+        let mut context = self.context.lock().await;
+        let response = send(&mut context, method, params).await.map_err(|e| {
             ClientError::new_with_request(ClientErrorKind::Custom(e.to_string()), request)
         })?;
 
@@ -238,33 +330,3 @@ impl RpcSender for MockRpcSender {
     }
 }
 
-pub async fn delete_account(pubkey: &Pubkey) -> Result<(), Box<dyn Error>> {
-    let mut context = CONTEXT.lock().await;
-    context.set_account(pubkey, &AccountSharedData::default());
-    Ok(())
-}
-
-pub async fn send_transaction(instructions: Vec<Instruction>) -> Result<Signature, Box<dyn Error>> {
-    send_transaction_with_signers(instructions, vec![]).await
-}
-
-pub async fn send_transaction_with_signers(
-    instructions: Vec<Instruction>,
-    signers: Vec<&Keypair>,
-) -> Result<Signature, Box<dyn Error>> {
-    let blockhash = RPC_CLIENT.get_latest_blockhash().await?;
-    // Sine blockhash is not guaranteed to be unique, we need to add a random memo to the tx
-    // so that we can fire two seemingly identical transactions in a row.
-    let memo = Keypair::new().to_base58_string();
-    let instructions = [instructions, vec![build_memo(memo.as_bytes(), &[])]].concat();
-    let signer = SIGNER.pubkey();
-    let message = VersionedMessage::V0(Message::try_compile(
-        &signer,
-        &instructions,
-        &[],
-        blockhash,
-    )?);
-    let transaction = VersionedTransaction::try_new(message, &[signers, vec![&SIGNER]].concat())?;
-    let signature = RPC_CLIENT.send_transaction(&transaction).await?;
-    Ok(signature)
-}

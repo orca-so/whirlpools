@@ -271,7 +271,7 @@ pub async fn fetch_concentrated_liquidity_pool(
 /// ```rust
 /// use solana_client::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools:{
+/// use orca_whirlpools::{
 ///     fetch_whirlpools_by_token_pair, PoolInfo, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
 /// use std::str::FromStr;

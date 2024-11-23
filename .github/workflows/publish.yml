@@ -41,7 +41,7 @@ jobs:
   cargo:
     strategy:
       matrix:
-        package: [macros, core, client]
+        package: [macros, core, client, whirlpool]
       max-parallel: 1
       fail-fast: true
     runs-on: ubuntu-latest

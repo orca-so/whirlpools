@@ -100,6 +100,7 @@ function createUninitializedTickArray(
       ticks: Array(_TICK_ARRAY_SIZE()).fill({
         initialized: false,
         liquidityNet: 0n,
+        liquidityGross: 0n,
         feeGrowthOutsideA: 0n,
         feeGrowthOutsideB: 0n,
         rewardGrowthsOutside: [0n, 0n, 0n],
@@ -203,21 +204,20 @@ function getSwapQuote<T extends SwapParams>(
  *
  * @example
  * import { swapInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
  * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
- * const poolAddress = "POOL_ADDRESS";
- * const mintAddress = "TOKEN_MINT";
+ * const whirlpoolAddress = address("POOL_ADDRESS");
+ * const mintAddress = address("TOKEN_MINT");
  * const inputAmount = 1_000_000n;
  *
  * const { instructions, quote } = await swapInstructions(
  *   devnetRpc,
  *   { inputAmount, mint: mintAddress },
- *   poolAddress,
+ *   whirlpoolAddress,
  *   100,
  *   wallet
  * );

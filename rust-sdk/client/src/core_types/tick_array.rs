@@ -1,6 +1,6 @@
 use orca_whirlpools_core::{TickArrayFacade, TickFacade};
 
-use crate::{accounts::TickArray, generated::types::Tick};
+use crate::{Tick, TickArray};
 
 impl From<TickArray> for TickArrayFacade {
     fn from(val: TickArray) -> Self {

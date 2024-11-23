@@ -4,7 +4,7 @@ use ethnum::U256;
 use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
-    try_apply_transfer_fee, CollectFeesQuote, ErrorCode, PositionFacade, TickFacade, TransferFee,
+    try_apply_transfer_fee, CollectFeesQuote, CoreError, PositionFacade, TickFacade, TransferFee,
     WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
 };
 
@@ -29,7 +29,7 @@ pub fn collect_fees_quote(
     tick_upper: TickFacade,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
-) -> Result<CollectFeesQuote, ErrorCode> {
+) -> Result<CollectFeesQuote, CoreError> {
     let mut fee_growth_below_a: u128 = tick_lower.fee_growth_outside_a;
     let mut fee_growth_above_a: u128 = tick_upper.fee_growth_outside_a;
     let mut fee_growth_below_b: u128 = tick_lower.fee_growth_outside_b;

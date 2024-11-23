@@ -1,6 +1,6 @@
 use orca_whirlpools_core::{PositionFacade, PositionRewardInfoFacade};
 
-use crate::{accounts::Position, generated::types::PositionRewardInfo};
+use crate::{Position, PositionRewardInfo};
 
 impl From<Position> for PositionFacade {
     fn from(val: Position) -> Self {

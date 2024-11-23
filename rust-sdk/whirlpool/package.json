@@ -9,6 +9,7 @@
     "clean": "cargo clean"
   },
   "devDependencies": {
-    "@orca-so/whirlpools-rust-client": "*"
+    "@orca-so/whirlpools-rust-client": "*",
+    "@orca-so/whirlpools-rust-core": "*"
   }
 }

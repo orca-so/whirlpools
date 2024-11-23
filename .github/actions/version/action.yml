@@ -3,7 +3,7 @@ description: 'Set version of all packages in monorepo.'
 
 branding:
   icon: type
-  color: red
+  color: green
 
 inputs:
   version:

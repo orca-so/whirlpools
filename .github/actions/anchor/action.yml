@@ -39,7 +39,7 @@ runs:
       shell: bash
     - name: Cache rust
       uses: actions/cache@v4
-      continue-on-error: false
+      continue-on-error: true
       with:
         path: |
           ~/.cargo/bin/

@@ -142,7 +142,6 @@ describe("Open Position Instructions", () => {
     assert.strictEqual(positionAfter.data.tickUpperIndex, initializableUpperTickIndex);
   };
 
-
   for (const poolName of poolTypes.keys()) {
     it(`Should open a position with a specific price range for ${poolName}`, async () => {
       await testOpenPositionInstructions(poolName, 0.95, 1.05);

@@ -1,5 +1,5 @@
 import { describe, it, beforeAll } from "vitest";
-import type { Address} from "@solana/web3.js";
+import type { Address } from "@solana/web3.js";
 import { assertAccountExists } from "@solana/web3.js";
 import { setupAta, setupMint } from "./utils/token";
 import {
@@ -19,7 +19,11 @@ import {
 } from "@orca-so/whirlpools-client";
 import assert from "assert";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
-import { getFullRangeTickIndexes, getInitializableTickIndex, priceToTickIndex } from "@orca-so/whirlpools-core";
+import {
+  getFullRangeTickIndexes,
+  getInitializableTickIndex,
+  priceToTickIndex,
+} from "@orca-so/whirlpools-core";
 
 const mintTypes = new Map([
   ["A", setupMint],
@@ -76,7 +80,7 @@ describe("Open Position Instructions", () => {
   ) => {
     const whirlpool = pools.get(poolName)!;
     const param = { liquidity: 10_000n };
-  
+
     const { instructions, positionMint } = await openPositionInstructions(
       rpc,
       whirlpool,
@@ -84,16 +88,16 @@ describe("Open Position Instructions", () => {
       lowerPrice,
       upperPrice,
     );
-  
+
     const positionAddress = await getPositionAddress(positionMint);
     const positionBefore = await fetchMaybePosition(rpc, positionAddress[0]);
-  
+
     await sendTransaction(instructions);
-  
+
     const positionAfter = await fetchMaybePosition(rpc, positionAddress[0]);
     assert.strictEqual(positionBefore.exists, false);
     assertAccountExists(positionAfter);
-  
+
     const expectedTickLowerIndex = priceToTickIndex(lowerPrice, 6, 6);
     const expectedTickUpperIndex = priceToTickIndex(upperPrice, 6, 6);
     const initializableLowerTickIndex = getInitializableTickIndex(
@@ -106,26 +110,33 @@ describe("Open Position Instructions", () => {
       tickSpacing,
       true,
     );
-  
-    assert.strictEqual(positionAfter.data.tickLowerIndex, initializableLowerTickIndex);
-    assert.strictEqual(positionAfter.data.tickUpperIndex, initializableUpperTickIndex);
+
+    assert.strictEqual(
+      positionAfter.data.tickLowerIndex,
+      initializableLowerTickIndex,
+    );
+    assert.strictEqual(
+      positionAfter.data.tickUpperIndex,
+      initializableUpperTickIndex,
+    );
   };
 
   const testOpenFullRangePositionInstructions = async (poolName: string) => {
     const whirlpool = pools.get(poolName)!;
     const param = { liquidity: 10_000n };
-  
-    const { instructions, positionMint } = await openFullRangePositionInstructions(rpc, whirlpool, param);
-  
+
+    const { instructions, positionMint } =
+      await openFullRangePositionInstructions(rpc, whirlpool, param);
+
     const positionAddress = await getPositionAddress(positionMint);
     const positionBefore = await fetchMaybePosition(rpc, positionAddress[0]);
-  
+
     await sendTransaction(instructions);
-  
+
     const positionAfter = await fetchMaybePosition(rpc, positionAddress[0]);
     assert.strictEqual(positionBefore.exists, false);
     assertAccountExists(positionAfter);
-  
+
     const tickRange = getFullRangeTickIndexes(tickSpacing);
     const initializableLowerTickIndex = getInitializableTickIndex(
       tickRange.tickLowerIndex,
@@ -137,9 +148,15 @@ describe("Open Position Instructions", () => {
       tickSpacing,
       true,
     );
-  
-    assert.strictEqual(positionAfter.data.tickLowerIndex, initializableLowerTickIndex);
-    assert.strictEqual(positionAfter.data.tickUpperIndex, initializableUpperTickIndex);
+
+    assert.strictEqual(
+      positionAfter.data.tickLowerIndex,
+      initializableLowerTickIndex,
+    );
+    assert.strictEqual(
+      positionAfter.data.tickUpperIndex,
+      initializableUpperTickIndex,
+    );
   };
 
   for (const poolName of poolTypes.keys()) {

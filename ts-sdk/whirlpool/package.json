@@ -23,7 +23,7 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
-    "test": "vitest run tests/openPosition.test.ts",
+    "test": "vitest run tests",
     "clean": "rimraf dist"
   },
   "dependencies": {

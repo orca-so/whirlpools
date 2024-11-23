@@ -1,9 +1,10 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
 use std::{error::Error, str::FromStr};
 
 use async_trait::async_trait;
-use orca_whirlpools_client::{get_fee_tier_address, FEE_TIER_DISCRIMINATOR, WHIRLPOOLS_CONFIG_DISCRIMINATOR, WHIRLPOOL_ID};
+use orca_whirlpools_client::{
+    get_fee_tier_address, FEE_TIER_DISCRIMINATOR, WHIRLPOOLS_CONFIG_DISCRIMINATOR, WHIRLPOOL_ID,
+};
 use serde_json::{from_value, to_value, Value};
 use solana_account_decoder::{UiAccount, UiAccountEncoding};
 use solana_client::client_error::Result as ClientResult;
@@ -33,8 +34,8 @@ use solana_sdk::{
 use solana_version::Version;
 use spl_memo::build_memo;
 
-use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
 use crate::tests::anchor_programs;
+use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
 
 pub struct RpcContext {
     pub rpc: RpcClient,
@@ -115,7 +116,9 @@ impl RpcContext {
             },
         );
 
-        let splash_fee_tier = get_fee_tier_address(&config, SPLASH_POOL_TICK_SPACING).unwrap().0;
+        let splash_fee_tier = get_fee_tier_address(&config, SPLASH_POOL_TICK_SPACING)
+            .unwrap()
+            .0;
         test.add_account(
             splash_fee_tier,
             Account {
@@ -138,15 +141,17 @@ impl RpcContext {
             test.add_program(&name, pubkey, None);
         }
         let context = Mutex::new(test.start_with_context().await);
-        let rpc = RpcClient::new_sender(
-            MockRpcSender { context },
-            RpcClientConfig::default(),
-        );
+        let rpc = RpcClient::new_sender(MockRpcSender { context }, RpcClientConfig::default());
 
         let mut keypairs = (0..100).map(|_| Keypair::new()).collect::<Vec<_>>();
         keypairs.sort_by_key(|x| x.pubkey());
 
-        Self { rpc, signer, keypairs, keypair_index: AtomicUsize::new(0) }
+        Self {
+            rpc,
+            signer,
+            keypairs,
+            keypair_index: AtomicUsize::new(0),
+        }
     }
 
     pub fn get_next_keypair(&self) -> &Keypair {
@@ -158,7 +163,8 @@ impl RpcContext {
         &self,
         instructions: Vec<Instruction>,
     ) -> Result<Signature, Box<dyn Error>> {
-        self.send_transaction_with_signers(instructions, vec![]).await
+        self.send_transaction_with_signers(instructions, vec![])
+            .await
     }
 
     pub async fn send_transaction_with_signers(
@@ -177,9 +183,10 @@ impl RpcContext {
             &[],
             blockhash,
         )?);
-        let transaction = VersionedTransaction::try_new(message, &[signers, vec![&self.signer]].concat())?;
+        let transaction =
+            VersionedTransaction::try_new(message, &[signers, vec![&self.signer]].concat())?;
         let signature = self.rpc.send_transaction(&transaction).await?;
-        Ok(signature.clone())
+        Ok(signature)
     }
 }
 
@@ -216,7 +223,8 @@ async fn send(
         "getAccountInfo" => {
             let address_str = params[0].as_str().unwrap_or_default();
             let address = Pubkey::from_str(address_str)?;
-            let account = context.banks_client
+            let account = context
+                .banks_client
                 .get_account_with_commitment(address, CommitmentLevel::Confirmed)
                 .await?;
             let encoding = get_encoding(&params[1]);
@@ -236,7 +244,8 @@ async fn send(
             for address_str in addresses {
                 let address_str = address_str.as_str().unwrap_or_default();
                 let address = Pubkey::from_str(address_str)?;
-                let account = context.banks_client
+                let account = context
+                    .banks_client
                     .get_account_with_commitment(address, CommitmentLevel::Confirmed)
                     .await?;
                 accounts.push(to_wire_account(&address, account, encoding)?);
@@ -271,7 +280,8 @@ async fn send(
             let transaction_base64 = params[0].as_str().unwrap_or_default();
             let transaction_bytes = base64::decode(transaction_base64)?;
             let transaction = bincode::deserialize::<VersionedTransaction>(&transaction_bytes)?;
-            let meta = context.banks_client
+            let meta = context
+                .banks_client
                 .process_transaction_with_metadata(transaction.clone())
                 .await?;
             if let Err(e) = meta.result {
@@ -329,4 +339,3 @@ impl RpcSender for MockRpcSender {
         "MockRpcSender".to_string()
     }
 }
-

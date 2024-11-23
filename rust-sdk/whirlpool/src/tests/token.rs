@@ -23,9 +23,16 @@ pub async fn setup_ata(ctx: &RpcContext, mint: Pubkey) -> Result<Pubkey, Box<dyn
     setup_ata_with_amount(ctx, mint, 0).await
 }
 
-pub async fn setup_ata_with_amount(ctx: &RpcContext, mint: Pubkey, amount: u64) -> Result<Pubkey, Box<dyn Error>> {
-    let ata =
-        get_associated_token_address_with_program_id(&ctx.signer.pubkey(), &mint, &TOKEN_PROGRAM_ID);
+pub async fn setup_ata_with_amount(
+    ctx: &RpcContext,
+    mint: Pubkey,
+    amount: u64,
+) -> Result<Pubkey, Box<dyn Error>> {
+    let ata = get_associated_token_address_with_program_id(
+        &ctx.signer.pubkey(),
+        &mint,
+        &TOKEN_PROGRAM_ID,
+    );
 
     let mut instructions = vec![create_associated_token_account_idempotent(
         &ctx.signer.pubkey(),
@@ -59,7 +66,10 @@ pub async fn setup_mint(ctx: &RpcContext) -> Result<Pubkey, Box<dyn Error>> {
     setup_mint_with_decimals(ctx, 9).await
 }
 
-pub async fn setup_mint_with_decimals(ctx: &RpcContext, decimals: u8) -> Result<Pubkey, Box<dyn Error>> {
+pub async fn setup_mint_with_decimals(
+    ctx: &RpcContext,
+    decimals: u8,
+) -> Result<Pubkey, Box<dyn Error>> {
     let keypair = ctx.get_next_keypair();
 
     let instructions = vec![
@@ -79,7 +89,8 @@ pub async fn setup_mint_with_decimals(ctx: &RpcContext, decimals: u8) -> Result<
         )?,
     ];
 
-    ctx.send_transaction_with_signers(instructions, vec![keypair]).await?;
+    ctx.send_transaction_with_signers(instructions, vec![keypair])
+        .await?;
 
     Ok(keypair.pubkey())
 }

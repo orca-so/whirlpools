@@ -14,13 +14,6 @@ updates:
       program-dependencies:
         applies-to: version-updates
         dependency-type: production
-  - package-ecosystem: "cargo"
-    directories:
-      - "rust-sdk/*"
-      - "ts-sdk/*"
-    schedule:
-      interval: "daily"
-    labels: [ ]
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

@@ -3,7 +3,7 @@
 ## Overview
 This package provides developers with low-level functionalities for interacting with the Whirlpool Program on Solana. It serves as a foundational tool that allows developers to manage and integrate detailed operations into their Typescript projects, particularly those related to Orca's Whirlpool Program. While a high-level SDK is available for easier integration, [@orca-so/whirlpools](https://www.npmjs.com/package/@orca-so/whirlpools), this package offers more granular control for advanced use cases.
 
-> **Note:** This SDK uses Solana Web3.js SDK v2, which is currently in Release Candidate (RC) status. It is not compatible with the widely used v1.x.x version.
+> **Note:** This SDK uses Solana Web3.js SDK v2. It is not compatible with the widely used v1.x.x version.
 
 ## Key Features
 - **Codama Client**: The package includes a set of generated client code based on the Whirlpool Program IDL. This ensures all the necessary program information is easily accessible in a structured format and handles all decoding and encoding of instructions and account data, making it much easier to interact with the program.
@@ -86,7 +86,7 @@ const initializePoolInstruction = getInitializePoolV2Instruction({
   tokenBadgeA,
   tokenBadgeB,
   funder: wallet,
-  whirlpool, 
+  whirlpool,
   tokenVaultA,
   tokenVaultB,
   feeTier,

@@ -2,13 +2,37 @@
 name = "orca_whirlpools"
 version = "0.1.0"
 description = "Orca's high-level rust sdk to interact with Orca's on-chain Whirlpool program."
+include = ["src/*"]
 documentation = "https://orca-so.github.io/whirlpools/"
 homepage = "https://orca.so"
 repository = "https://github.com/orca-so/whirlpools"
 license = "Apache-2.0"
 keywords = ["solana", "crypto", "defi", "dex", "amm"]
+authors = ["team@orca.so"]
 edition = "2021"
 
+[features]
+default = []
+
 [dependencies]
-orca_whirlpools_core = { path = "../core" }
-orca_whirlpools_client = { path = "../client" }
+solana-program = { version = "^1.18" }
+solana-client = { version = "^1.18" }
+solana-sdk = { version = "^1.18" }
+solana-account-decoder = { version = "^1.18" }
+spl-token = { version = "^4.0" }
+spl-token-2022 = { version = "^3.0" }
+spl-memo = { version = "^4.0" }
+spl-associated-token-account = { version = "^3.0" }
+orca_whirlpools_core = { path = "../core", features = ["floats"] }
+orca_whirlpools_client = { path = "../client", features = ["core-types"] }
+bincode = { version = "^1.3" }
+serde = { version = "^1.0" }
+serde_json = { version = "^1.0" }
+
+[dev-dependencies]
+serial_test = { version = "^3.1" }
+solana-program-test = { version = "^1.18" }
+solana-version = { version = "^1.18" }
+async-trait = { version = "^0.1" }
+base64 = { version = "^0.20" }
+toml = { version = "^0.7" }

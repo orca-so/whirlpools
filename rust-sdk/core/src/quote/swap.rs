@@ -3,7 +3,7 @@ use crate::{
     try_get_amount_delta_a, try_get_amount_delta_b, try_get_max_amount_with_slippage_tolerance,
     try_get_min_amount_with_slippage_tolerance, try_get_next_sqrt_price_from_a,
     try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee,
-    ErrorCode, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade,
+    CoreError, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade,
     TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
     INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
     SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT,
@@ -34,7 +34,7 @@ pub fn swap_quote_by_input_token(
     tick_arrays: TickArrays,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
-) -> Result<ExactInSwapQuote, ErrorCode> {
+) -> Result<ExactInSwapQuote, CoreError> {
     let (transfer_fee_in, transfer_fee_out) = if specified_token_a {
         (transfer_fee_a, transfer_fee_b)
     } else {
@@ -102,7 +102,7 @@ pub fn swap_quote_by_output_token(
     tick_arrays: TickArrays,
     transfer_fee_a: Option<TransferFee>,
     transfer_fee_b: Option<TransferFee>,
-) -> Result<ExactOutSwapQuote, ErrorCode> {
+) -> Result<ExactOutSwapQuote, CoreError> {
     let (transfer_fee_in, transfer_fee_out) = if specified_token_a {
         (transfer_fee_b, transfer_fee_a)
     } else {
@@ -164,7 +164,7 @@ fn compute_swap<const SIZE: usize>(
     a_to_b: bool,
     specified_input: bool,
     _timestamp: u64, // currently ignored but needed for full swap logic
-) -> Result<SwapResult, ErrorCode> {
+) -> Result<SwapResult, CoreError> {
     let sqrt_price_limit = if sqrt_price_limit == 0 {
         if a_to_b {
             MIN_SQRT_PRICE
@@ -310,7 +310,7 @@ fn compute_swap_step(
     target_sqrt_price: u128,
     a_to_b: bool,
     specified_input: bool,
-) -> Result<SwapStepQuote, ErrorCode> {
+) -> Result<SwapStepQuote, CoreError> {
     // Any error that is not AMOUNT_EXCEEDS_MAX_U64 is not recoverable
     let initial_amount_fixed_delta = try_get_amount_fixed_delta(
         current_sqrt_price,
@@ -396,7 +396,7 @@ fn try_get_amount_fixed_delta(
     current_liquidity: u128,
     a_to_b: bool,
     specified_input: bool,
-) -> Result<u64, ErrorCode> {
+) -> Result<u64, CoreError> {
     if a_to_b == specified_input {
         try_get_amount_delta_a(
             current_sqrt_price.into(),
@@ -420,7 +420,7 @@ fn try_get_amount_unfixed_delta(
     current_liquidity: u128,
     a_to_b: bool,
     specified_input: bool,
-) -> Result<u64, ErrorCode> {
+) -> Result<u64, CoreError> {
     if specified_input == a_to_b {
         try_get_amount_delta_b(
             current_sqrt_price.into(),
@@ -444,7 +444,7 @@ fn try_get_next_sqrt_price(
     amount_calculated: u64,
     a_to_b: bool,
     specified_input: bool,
-) -> Result<u128, ErrorCode> {
+) -> Result<u128, CoreError> {
     if specified_input == a_to_b {
         try_get_next_sqrt_price_from_a(
             current_sqrt_price.into(),

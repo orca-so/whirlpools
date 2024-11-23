@@ -25,7 +25,6 @@ import assert from "assert";
 import type { ProgramTestContext } from "solana-bankrun/dist/internal";
 import { Account, startAnchor } from "solana-bankrun/dist/internal";
 import { SYSTEM_PROGRAM_ADDRESS } from "@solana-program/system";
-import { WHIRLPOOL_PROGRAM_ADDRESS } from "@orca-so/whirlpools-client";
 import { setDefaultFunder, setWhirlpoolsConfig } from "../../src/config";
 import { setupConfigAndFeeTiers } from "./program";
 import { getAddMemoInstruction } from "@solana-program/memo";
@@ -44,7 +43,7 @@ export async function getTestContext(): Promise<ProgramTestContext> {
   if (_testContext == null) {
     _testContext = await startAnchor(
       "../../",
-      [["whirlpool", toBytes(WHIRLPOOL_PROGRAM_ADDRESS)]],
+      [],
       [
         [
           toBytes(signer.address),

@@ -65,12 +65,13 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  *
  * @example
  * import { fetchSplashPool } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  *
- * const tokenMintOne = "TOKEN_MINT_ONE";
- * const tokenMintTwo = "TOKEN_MINT_TWO";
+ * const tokenMintOne = address("TOKEN_MINT_ONE");
+ * const tokenMintTwo = address("TOKEN_MINT_TWO");
  *
  * const poolInfo = await fetchSplashPool(
  *   devnetRpc,
@@ -102,12 +103,13 @@ export async function fetchSplashPool(
  *
  * @example
  * import { fetchPool } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  *
- * const tokenMintOne = "TOKEN_MINT_ONE";
- * const tokenMintTwo = "TOKEN_MINT_TWO";
+ * const tokenMintOne = address("TOKEN_MINT_ONE");
+ * const tokenMintTwo = address("TOKEN_MINT_TWO");
  * const tickSpacing = 64;
  *
  * const poolInfo = await fetchPool(
@@ -181,12 +183,13 @@ export async function fetchConcentratedLiquidityPool(
  *
  * @example
  * import { fetchWhirlpoolsByTokenPair } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  *
- * const tokenMintOne = "TOKEN_MINT_ONE";
- * const tokenMintTwo = "TOKEN_MINT_TWO";
+ * const tokenMintOne = address("TOKEN_MINT_ONE");
+ * const tokenMintTwo = address("TOKEN_MINT_TWO");
  *
  * const pools = await fetchWhirlpoolsByTokenPair(
  *   devnetRpc,

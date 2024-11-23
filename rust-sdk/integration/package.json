@@ -7,7 +7,9 @@
     "test": "vitest run index.test.ts"
   },
   "devDependencies": {
+    "@orca-so/whirlpools-rust": "*",
     "@orca-so/whirlpools-rust-client": "*",
+    "@orca-so/whirlpools-rust-core": "*",
     "typescript": "^5.5.4"
   }
 }

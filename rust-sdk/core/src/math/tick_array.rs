@@ -10,8 +10,8 @@ use super::{
 
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub struct TickArraySequence<const SIZE: usize> {
-    tick_arrays: [Option<TickArrayFacade>; SIZE],
-    tick_spacing: u16,
+    pub tick_arrays: [Option<TickArrayFacade>; SIZE],
+    pub tick_spacing: u16,
 }
 
 impl<const SIZE: usize> TickArraySequence<SIZE> {

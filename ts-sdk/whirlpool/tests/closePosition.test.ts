@@ -75,18 +75,18 @@ describe("Close Position Instructions", () => {
         tickUpper: 100,
         liquidity,
       });
-      positions.set(poolName, position);
+      positions.set(`position for ${poolName}`, position);
       const positionTE = await setupTEPosition(poolAddress, {
         tickLower: -100,
         tickUpper: 100,
         liquidity,
       });
-      positions.set(`${poolName} (TE position)`, positionTE);
+      positions.set(`TE position for ${poolName}`, positionTE);
     }
   });
 
-  const testClosePositionInstructions = async (poolName: string) => {
-    const positionMint = positions.get(poolName)!;
+  const testClosePositionInstructions = async (positionName: string) => {
+    const positionMint = positions.get(positionName)!;
     const positionAddress = await getPositionAddress(positionMint);
     const positionBefore = await fetchMaybePosition(rpc, positionAddress[0]);
 
@@ -101,10 +101,26 @@ describe("Close Position Instructions", () => {
   };
 
   for (const poolName of poolTypes.keys()) {
-    it(`Should close the position for ${poolName}`, async () => {
-      await testClosePositionInstructions(poolName);
+    const positioName = `position for ${poolName}`;
+    it(`Should close the ${positioName}`, async () => {
+      await testClosePositionInstructions(positioName);
+    });
+    const tePositionName = `TE position for ${poolName}`;
+    it(`Should close the ${tePositionName}`, async () => {
+      await testClosePositionInstructions(tePositionName);
     });
   }
+
+  it("Should close a position without liquidity", async () => {
+    const pool = pools.get("A-B")!;
+    const positionName = `position for A-B with 0 liquidity`;
+    positions.set(positionName, await setupPosition(pool, {
+      tickLower: -100,
+      tickUpper: 100,
+      liquidity: 0n,
+    }));
+    await testClosePositionInstructions(positionName);    
+  });
 
   it("Should throw an error if the position mint can not be found", async () => {
     const positionMint: Address = address(

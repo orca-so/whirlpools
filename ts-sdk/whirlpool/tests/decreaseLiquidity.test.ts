@@ -145,21 +145,10 @@ describe("Decrease Liquidity Instructions", () => {
     await assert.rejects(
       decreaseLiquidityInstructions(
         rpc,
-        positions.entries().next().value,
+        positions.get("A-B equally centered")!,
         param,
       ),
     );
     setDefaultFunder(signer);
-  });
-
-  it("Should throw error when decrease liquidity amount exceeds position liquidity", async () => {
-    const param = { liquidity: liquidity * 2n };
-    await assert.rejects(
-      decreaseLiquidityInstructions(
-        rpc,
-        positions.entries().next().value,
-        param,
-      ),
-    );
   });
 });

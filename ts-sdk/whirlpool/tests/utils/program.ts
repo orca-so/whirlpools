@@ -34,7 +34,6 @@ import {
 } from "@solana-program/token-2022";
 import { getNextKeypair } from "./keypair";
 import { TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
-import { assert } from "console";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 
 export async function setupConfigAndFeeTiers(): Promise<Address> {

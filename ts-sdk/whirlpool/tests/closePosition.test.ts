@@ -7,7 +7,11 @@ import {
   setupMintTE,
   setupMintTEFee,
 } from "./utils/tokenExtensions";
-import { setupWhirlpool, setupPosition, setupTEPosition } from "./utils/program";
+import {
+  setupWhirlpool,
+  setupPosition,
+  setupTEPosition,
+} from "./utils/program";
 import { closePositionInstructions } from "../src/decreaseLiquidity";
 import { rpc, sendTransaction } from "./utils/mockRpc";
 import {
@@ -103,9 +107,9 @@ describe("Close Position Instructions", () => {
   }
 
   it("Should throw an error if the position mint can not be found", async () => {
-    const positionMint: Address = address("123456789abcdefghijkmnopqrstuvwxABCDEFGHJKL");
-    await assert.rejects(
-      closePositionInstructions(rpc, positionMint)
-    )
+    const positionMint: Address = address(
+      "123456789abcdefghijkmnopqrstuvwxABCDEFGHJKL",
+    );
+    await assert.rejects(closePositionInstructions(rpc, positionMint));
   });
 });

@@ -120,7 +120,10 @@ describe("Decrease Liquidity Instructions", () => {
 
     assert.strictEqual(quote.tokenEstA, balanceChangeTokenA);
     assert.strictEqual(quote.tokenEstB, balanceChangeTokenB);
-    assert.strictEqual(liquidity - quote.liquidityDelta, position.data.liquidity);
+    assert.strictEqual(
+      liquidity - quote.liquidityDelta,
+      position.data.liquidity,
+    );
   };
 
   for (const poolName of poolTypes.keys()) {
@@ -160,4 +163,3 @@ describe("Decrease Liquidity Instructions", () => {
     );
   });
 });
-

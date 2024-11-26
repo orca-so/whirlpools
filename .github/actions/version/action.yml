@@ -58,6 +58,6 @@ runs:
         awk -v version="${{ steps.version.outputs.VERSION }}" '
           /^\[dependencies\]/ { in_dependencies=1 }
           /^\[/ && !/^\[dependencies\]/ { in_dependencies=0 }
-          in_dependencies && /path = ".*"/ { sub(/path = ".*"/, "version = \"" version "\"") } { print }
+          in_dependencies && /path = "[^"]*"/ { sub(/path = "[^"]*"/, "version = \"" version "\"") } { print }
         ' ${{ inputs.manifest-file }} > tmp.toml && mv tmp.toml ${{ inputs.manifest-file }}
       shell: bash

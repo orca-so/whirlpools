@@ -3977,7 +3977,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-docs-legacy@workspace:docs/legacy"
   dependencies:
     "@orca-so/whirlpools-sdk": "npm:*"
-    typedoc: "npm:^0.27.0"
+    typedoc: "npm:^0.27.1"
     typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
@@ -3999,7 +3999,7 @@ __metadata:
     "@orca-so/whirlpools": "npm:*"
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"
-    typedoc: "npm:^0.27.0"
+    typedoc: "npm:^0.27.1"
     typedoc-plugin-merge-modules: "npm:^6.0.3"
     typescript: "npm:^5.7.2"
   languageName: unknown
@@ -17511,9 +17511,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typedoc@npm:^0.27.0":
-  version: 0.27.0
-  resolution: "typedoc@npm:0.27.0"
+"typedoc@npm:^0.27.1":
+  version: 0.27.1
+  resolution: "typedoc@npm:0.27.1"
   dependencies:
     "@gerrit0/mini-shiki": "npm:^1.23.2"
     lunr: "npm:^2.3.9"
@@ -17524,7 +17524,7 @@ __metadata:
     typescript: 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x || 5.7.x
   bin:
     typedoc: bin/typedoc
-  checksum: 10c0/e2bd48f2053ce783f3ff09f7101336c6edc96e9eb3bb081d2f563013a677aa4e3296548956129f99b3a6f10c4231ad6cead7f642e7ae87ac3ef95daec92399c2
+  checksum: 10c0/28e62707c7157c1f07a24e5422143de5e8f6ed0967a7fb4f76ae220824e14d79d43589ec963ed6b7327eb4e5066c7037adad7a1a523a7d4a6aab259ef0f22570
   languageName: node
   linkType: hard
 

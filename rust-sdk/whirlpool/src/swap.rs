@@ -144,32 +144,39 @@ async fn fetch_tick_arrays_or_default(
 /// # Example
 ///
 /// ```rust
-/// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools_sdk::{
-///     swap_instructions, SwapType, set_whirlpools_config_address, WhirlpoolsConfigInput,
+/// use crate::utils::load_wallet;
+/// use orca_whirlpools::{
+///     set_whirlpools_config_address, swap_instructions, SwapType, WhirlpoolsConfigInput,
 /// };
-///
-/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-/// let rpc = RpcClient::new("https://api.devnet.solana.com");
-///
-/// let whirlpool_pubkey = Pubkey::from_str("WHIRLPOOL_ADDRESS").unwrap();
-/// let amount = 1_000_000; // Amount to swap.
-/// let specified_mint = Pubkey::from_str("SPECIFIED_MINT_ADDRESS").unwrap();
-/// let slippage_tolerance_bps = Some(100);
-///
-/// let swap_instructions = swap_instructions(
-///     &rpc,
-///     whirlpool_pubkey,
-///     amount,
-///     specified_mint,
-///     SwapType::ExactIn,
-///     slippage_tolerance_bps,
-///     None,
-/// ).unwrap();
-///
-/// println!("Number of Instructions: {}", swap_instructions.instructions.len());
-/// println!("Swap Quote: {:?}", swap_instructions.quote);
+/// use solana_client::nonblocking::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
+/// use std::str::FromStr;
+/// 
+/// #[tokio::main]
+/// async fn main() {
+///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+///     let wallet = load_wallet();
+///     let whirlpool_address =
+///         Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
+///     let mint_address = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap();
+///     let input_amount = 1_000_000;
+/// 
+///     let result = swap_instructions(
+///         &rpc,
+///         whirlpool_address,
+///         input_amount,
+///         mint_address,
+///         SwapType::ExactIn,
+///         Some(100),
+///         Some(wallet.pubkey()),
+///     )
+///     .await
+///     .unwrap();
+/// 
+///     println!("Quote estimated token out: {:?}", result.quote);
+///     println!("Number of Instructions: {}", result.instructions.len());
+/// }
 /// ```
 pub async fn swap_instructions(
     rpc: &RpcClient,

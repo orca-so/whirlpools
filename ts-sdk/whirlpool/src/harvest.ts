@@ -69,17 +69,22 @@ export type HarvestPositionInstructions = {
  *    A promise that resolves to an object containing the instructions, fees, and rewards quotes.
  * @example
  * import { harvestPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { createKeyPairSignerFromBytes , createSolanaRpc, devnet, address } from '@solana/web3.js';
- *
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { loadWallet } from './utils';
+ * 
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- *
- * const positionMint = address("POSITION_MINT");
- *
+ * const wallet = await loadWallet();
+ * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
+ * 
  * const { feesQuote, rewardsQuote, instructions } = await harvestPositionInstructions(
  *   devnetRpc,
  *   positionMint,
+ *   wallet
  * );
+ * 
+ * console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
+ * console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);
  */
 export async function harvestPositionInstructions(
   rpc: Rpc<

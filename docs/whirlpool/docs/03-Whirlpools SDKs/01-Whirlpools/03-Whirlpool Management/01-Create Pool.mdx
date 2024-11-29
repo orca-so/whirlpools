@@ -83,15 +83,15 @@ Splash Pools are the easiest way to get started:
                 let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
                 let funder = Some(wallet.pubkey());
 
-                let create_pool_instructions =
+                let result =
                     create_splash_pool_instructions(&rpc, token_a, token_b, initial_price, funder)
                         .await
                         .unwrap();
 
-                println!("Pool Address: {:?}", create_pool_instructions.pool_address);
+                println!("Pool Address: {:?}", result.pool_address);
                 println!(
                     "Initialization Cost: {} lamports",
-                    create_pool_instructions.initialization_cost
+                    result.initialization_cost
                 );
             } 
             ```
@@ -158,7 +158,7 @@ Concentrated Liquidity Pools offer more flexibility:
                 let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
                 let funder = Some(wallet.pubkey());
 
-                let create_pool_instructions = create_concentrated_liquidity_pool_instructions(
+                let result = create_concentrated_liquidity_pool_instructions(
                     &rpc,
                     token_a,
                     token_b,
@@ -169,10 +169,10 @@ Concentrated Liquidity Pools offer more flexibility:
                 .await
                 .unwrap();
 
-                println!("Pool Address: {:?}", create_pool_instructions.pool_address);
+                println!("Pool Address: {:?}", result.pool_address);
                 println!(
                     "Initialization Cost: {} lamports",
-                    create_pool_instructions.initialization_cost
+                    result.initialization_cost
                 );
             }
             ```

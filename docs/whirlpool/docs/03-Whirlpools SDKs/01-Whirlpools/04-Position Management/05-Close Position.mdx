@@ -1,15 +1,15 @@
 ---
 sidebar_label: Close Position
 ---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 
 # Close a Position
-
 Once you've provided liquidity in a pool, there may come a time when you want to close your position entirely. The SDK allows you to fully remove liquidity from the pool, collect any outstanding fees and rewards, and close the position. This is useful when you want to exit the pool, either to realize profits or to reallocate capital to other opportunities.
 
 This guide explains how to use the SDK to close a position.
 
 ## 1. Overview of Closing a Position
-
 When using the SDK to fully close a liquidity position, you generate all the necessary instructions. It performs the following key actions:
 
 1. Collect Fees: Retrieves any fees earned from trades involving your liquidity.
@@ -19,9 +19,7 @@ When using the SDK to fully close a liquidity position, you generate all the nec
 
 
 ## 2. Getting Started Guide
-
 ### Closing a Position
-
 To close a position and withdraw all liquidity, follow these steps:
 1. **RPC Client**: Use a Solana RPC client to interact with the blockchain.
 2. **Position Mint**: Provide the mint address of the NFT representing your position. This NFT serves as proof of ownership and represents the liquidity in the position.
@@ -29,6 +27,67 @@ To close a position and withdraw all liquidity, follow these steps:
 4. **Slippage Tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected token amounts you receive when closing a position and the actual amounts returned to your wallet. A lower slippage tolerance reduces the risk of receiving fewer tokens than expected but may lead to failed transactions if the market moves too quickly. For example, if you expect to receive 100 units of Token A and 1,000 units of Token B when closing your position, with a 1% slippage tolerance, the minimum amounts returned would be 99 Token A and 990 Token B.
 5. **Authority**: This can be your wallet, which will fund the pool initialization. If the authority is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
 6. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
+<Tabs groupId="programming-languages">
+  <TabItem value="ts" label="Typescript" default>
+    ```tsx
+    import { closePositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+    import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+    import { loadWallet } from './utils';
+
+    await setWhirlpoolsConfig('solanaDevnet');
+    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+    const wallet = await loadWallet();
+    const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
+
+    const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
+      devnetRpc,
+      positionMint,
+      100,
+      wallet
+    );
+
+    console.log(`Quote token max B: ${quote.tokenEstB}`);
+    console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
+    console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);
+    console.log(`Number of instructions:, ${instructions.length}`);
+    ```
+  </TabItem>
+  <TabItem value="rust" label="Rust">
+    ```rust
+    use crate::utils::load_wallet;
+    use orca_whirlpools::{
+        close_position_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
+    };
+    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
+
+    #[tokio::main]
+    async fn main() {
+        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+        let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+        let wallet = load_wallet();
+
+        let position_mint_address =
+            Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
+
+        let result = close_position_instructions(
+            &rpc,
+            position_mint_address,
+            Some(100),
+            Some(wallet.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        println!("Quote token max B: {:?}", result.quote.token_est_b);
+        println!("Fees Quote: {:?}", result.fees_quote);
+        println!("Rewards Quote: {:?}", result.rewards_quote);
+        println!("Number of Instructions: {}", result.instructions.len());
+    }
+    ```
+  </TabItem>
+</Tabs>
   ```tsx
   const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
     rpc,
@@ -40,5 +99,4 @@ To close a position and withdraw all liquidity, follow these steps:
 7. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK.
 
 ## 3. Usage Example
-
 Suppose your trading strategy predicts that the current price range will lead to divergence loss, and you need to close the position to avoid further losses. Using the SDK, you can generate the instructions to collect all accumulated fees, rewards, and remove liquidity to prevent further losses.

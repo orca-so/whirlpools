@@ -132,6 +132,7 @@ Once your wallet is created, you will need some SOL to pay for transactions. You
   <TabItem value="rust" label="Rust">
     ```rust
     use solana_client::rpc_client::RpcClient;
+    use solana_sdk::signature::Signer;
 
     fn main() {
       // Rest of the code
@@ -167,7 +168,6 @@ After funding your wallet, you can set the wallet as the **FUNDER** for future t
     ```
   </TabItem>
 </Tabs>
-
 
 ## Next steps
 Once you’ve completed the setup, you can move on to building more complex functionalities using the Orca SDK, such as creating and managing pools, providing liquidity, etc. Refer to individual function documentation to use this wallet setup in action.

@@ -150,23 +150,23 @@ function getIncreaseLiquidityQuote(
  *
  * @example
  * import { increaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
- *
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { loadWallet } from './utils';
+ * 
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- *
- * const positionMint = "POSITION_MINT";
- *
- * const param = { tokenA: 1_000_000n };
- *
- * const { quote, instructions, initializationCost, positionMint } = await increaseLiquidityInstructions(
+ * const wallet = await loadWallet();
+ * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
+ * const param = { tokenA: 10n };
+ * const { quote, instructions } = await increaseLiquidityInstructions(
  *   devnetRpc,
  *   positionMint,
  *   param,
  *   100,
  *   wallet
  * );
+ * 
+ * console.log(`Quote token max B: ${quote.tokenEstB}`);
  */
 export async function increaseLiquidityInstructions(
   rpc: Rpc<

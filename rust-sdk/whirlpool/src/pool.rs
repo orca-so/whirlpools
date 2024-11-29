@@ -119,16 +119,16 @@ pub enum PoolInfo {
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
 /// use std::str::FromStr;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
-/// 
+///
 ///     let pool_info = fetch_splash_pool(&rpc, token_a, token_b).await.unwrap();
-/// 
+///
 ///     match pool_info {
 ///         PoolInfo::Initialized(pool) => println!("Pool is initialized: {:?}", pool),
 ///         PoolInfo::Uninitialized(pool) => println!("Pool is not initialized: {:?}", pool),
@@ -177,7 +177,7 @@ pub async fn fetch_splash_pool(
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
 /// use std::str::FromStr;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
@@ -185,11 +185,11 @@ pub async fn fetch_splash_pool(
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
 ///     let tick_spacing = 64;
-/// 
+///
 ///     let pool_info = fetch_concentrated_liquidity_pool(&rpc, token_a, token_b, tick_spacing)
 ///         .await
 ///         .unwrap();
-/// 
+///
 ///     match pool_info {
 ///         PoolInfo::Initialized(pool) => println!("Pool is initialized: {:?}", pool),
 ///         PoolInfo::Uninitialized(pool) => println!("Pool is not initialized: {:?}", pool),
@@ -290,18 +290,18 @@ pub async fn fetch_concentrated_liquidity_pool(
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
 /// use std::str::FromStr;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
 ///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
-/// 
+///
 ///     let pool_infos = fetch_whirlpools_by_token_pair(&rpc, token_a, token_b)
 ///         .await
 ///         .unwrap();
-/// 
+///
 ///     for pool_info in pool_infos {
 ///         match pool_info {
 ///             PoolInfo::Initialized(pool) => println!("Pool is initialized: {:?}", pool),

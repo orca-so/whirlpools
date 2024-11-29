@@ -145,7 +145,7 @@ function getDecreaseLiquidityQuote(
  * import { decreaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  * import { loadWallet } from './utils';
- * 
+ *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await loadWallet();
@@ -158,7 +158,7 @@ function getDecreaseLiquidityQuote(
  *   100,
  *   wallet
  * );
- * 
+ *
  * console.log(`Quote token max B: ${quote.tokenEstB}`);
  */
 export async function decreaseLiquidityInstructions(
@@ -289,19 +289,19 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  * import { closePositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  * import { loadWallet } from './utils';
- * 
+ *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await loadWallet();
  * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
- * 
+ *
  * const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
  *   devnetRpc,
  *   positionMint,
  *   100,
  *   wallet
  * );
- * 
+ *
  * console.log(`Quote token max B: ${quote.tokenEstB}`);
  * console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
  * console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);

@@ -71,18 +71,18 @@ export type HarvestPositionInstructions = {
  * import { harvestPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  * import { loadWallet } from './utils';
- * 
+ *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await loadWallet();
  * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
- * 
+ *
  * const { feesQuote, rewardsQuote, instructions } = await harvestPositionInstructions(
  *   devnetRpc,
  *   positionMint,
  *   wallet
  * );
- * 
+ *
  * console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
  * console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);
  */

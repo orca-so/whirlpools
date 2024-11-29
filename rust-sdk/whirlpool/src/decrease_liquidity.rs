@@ -96,7 +96,7 @@ pub struct DecreaseLiquidityInstruction {
 /// use solana_sdk::pubkey::Pubkey;
 /// use std::str::FromStr;
 /// use crate::utils::load_wallet;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
@@ -328,16 +328,16 @@ pub struct ClosePositionInstruction {
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
 /// use std::str::FromStr;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
 ///     let wallet = load_wallet();
-/// 
+///
 ///     let position_mint_address =
 ///         Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
-/// 
+///
 ///     let result = close_position_instructions(
 ///         &rpc,
 ///         position_mint_address,
@@ -346,7 +346,7 @@ pub struct ClosePositionInstruction {
 ///     )
 ///     .await
 ///     .unwrap();
-/// 
+///
 ///     println!("Quote token max B: {:?}", result.quote.token_est_b);
 ///     println!("Fees Quote: {:?}", result.fees_quote);
 ///     println!("Rewards Quote: {:?}", result.rewards_quote);

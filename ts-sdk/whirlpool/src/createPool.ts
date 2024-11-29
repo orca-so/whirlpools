@@ -64,15 +64,15 @@ export type CreatePoolInstructions = {
  * @example
  * import { createSplashPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
- * 
+ *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- * 
+ *
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
  * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
  * const initialPrice = 0.01;
- * 
+ *
  * const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
  *     devnetRpc,
  *     tokenMintOne,
@@ -80,7 +80,7 @@ export type CreatePoolInstructions = {
  *     initialPrice,
  *     wallet
  * );
- * 
+ *
  * console.log(`Pool Address: ${poolAddress}`);
  * console.log(`Initialization Cost: ${initializationCost} lamports`);
  */
@@ -116,16 +116,16 @@ export function createSplashPoolInstructions(
  * @example
  * import { createConcentratedLiquidityPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
  * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
- * 
+ *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- * 
+ *
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
  * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
  * const tickSpacing = 64;
  * const initialPrice = 0.01;
- * 
+ *
  * const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPoolInstructions(
  *     devnetRpc,
  *     tokenMintOne,
@@ -134,7 +134,7 @@ export function createSplashPoolInstructions(
  *     initialPrice,
  *     wallet
  * );
- * 
+ *
  * console.log(`Pool Address: ${poolAddress}`);
  * console.log(`Initialization Cost: ${initializationCost} lamports`);
  */

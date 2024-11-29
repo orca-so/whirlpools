@@ -66,18 +66,18 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  * @example
  * import { fetchSplashPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
- * 
+ *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
  * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); //devUSDC
- * 
+ *
  * const poolInfo = await fetchSplashPool(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo
  * );
- * 
+ *
  * if (poolInfo.initialized) {
  *   console.log("Pool is initialized:", poolInfo);
  * } else {
@@ -109,21 +109,21 @@ export async function fetchSplashPool(
  * @example
  * import { fetchConcentratedLiquidityPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
- * 
+ *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * 
+ *
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
  * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
  * const tickSpacing = 64;
- * 
+ *
  * const poolInfo = await fetchConcentratedLiquidityPool(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo,
  *   tickSpacing
  * );
- * 
+ *
  * if (poolInfo.initialized) {
  *   console.log("Pool is initialized:", poolInfo);
  * } else {
@@ -195,19 +195,19 @@ export async function fetchConcentratedLiquidityPool(
  * @example
  * import { fetchWhirlpoolsByTokenPair, setWhirlpoolsConfig } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
- * 
+ *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * 
+ *
  * const tokenMintOne = address("So11111111111111111111111111111111111111112");
  * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
- * 
+ *
  * const poolInfos = await fetchWhirlpoolsByTokenPair(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo
  * );
- * 
+ *
  * poolInfos.forEach((poolInfo) => {
  *   if (poolInfo.initialized) {
  *     console.log("Pool is initialized:", poolInfo);

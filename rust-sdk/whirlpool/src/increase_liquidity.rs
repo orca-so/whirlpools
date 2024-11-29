@@ -145,7 +145,7 @@ pub struct IncreaseLiquidityInstruction {
 /// use solana_sdk::pubkey::Pubkey;
 /// use std::str::FromStr;
 /// use crate::utils::load_wallet;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
@@ -153,7 +153,7 @@ pub struct IncreaseLiquidityInstruction {
 ///     let wallet = load_wallet();
 ///     let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
 ///     let param = IncreaseLiquidityParam::TokenA(1_000_000);
-/// 
+///
 ///     let result = increase_liquidity_instructions(
 ///         &rpc,
 ///         position_mint_address,
@@ -162,7 +162,7 @@ pub struct IncreaseLiquidityInstruction {
 ///         Some(wallet.pubkey()),
 ///     )
 ///     .await.unwrap();
-/// 
+///
 ///     println!("Liquidity Increase Quote: {:?}", result.quote);
 ///     println!("Number of Instructions: {}", result.instructions.len());
 /// }

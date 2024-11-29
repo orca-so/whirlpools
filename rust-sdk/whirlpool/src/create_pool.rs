@@ -76,7 +76,7 @@ pub struct CreatePoolInstructions {
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
 /// use std::str::FromStr;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
@@ -86,12 +86,12 @@ pub struct CreatePoolInstructions {
 ///     let initial_price = Some(0.01);
 ///     let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
 ///     let funder = Some(wallet.pubkey());
-/// 
+///
 ///     let create_pool_instructions =
 ///         create_splash_pool_instructions(&rpc, token_a, token_b, initial_price, funder)
 ///             .await
 ///             .unwrap();
-/// 
+///
 ///     println!("Pool Address: {:?}", create_pool_instructions.pool_address);
 ///     println!(
 ///         "Initialization Cost: {} lamports",
@@ -154,7 +154,7 @@ pub async fn create_splash_pool_instructions(
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
 /// use std::str::FromStr;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
@@ -165,7 +165,7 @@ pub async fn create_splash_pool_instructions(
 ///     let initial_price = Some(0.01);
 ///     let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
 ///     let funder = Some(wallet.pubkey());
-/// 
+///
 ///     let create_pool_instructions = create_concentrated_liquidity_pool_instructions(
 ///         &rpc,
 ///         token_a,
@@ -176,7 +176,7 @@ pub async fn create_splash_pool_instructions(
 ///     )
 ///     .await
 ///     .unwrap();
-/// 
+///
 ///     println!("Pool Address: {:?}", create_pool_instructions.pool_address);
 ///     println!(
 ///         "Initialization Cost: {} lamports",

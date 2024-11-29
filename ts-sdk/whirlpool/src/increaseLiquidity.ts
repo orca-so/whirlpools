@@ -152,7 +152,7 @@ function getIncreaseLiquidityQuote(
  * import { increaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
  * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  * import { loadWallet } from './utils';
- * 
+ *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await loadWallet();
@@ -165,7 +165,7 @@ function getIncreaseLiquidityQuote(
  *   100,
  *   wallet
  * );
- * 
+ *
  * console.log(`Quote token max B: ${quote.tokenEstB}`);
  */
 export async function increaseLiquidityInstructions(

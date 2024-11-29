@@ -151,7 +151,7 @@ async fn fetch_tick_arrays_or_default(
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
 /// use std::str::FromStr;
-/// 
+///
 /// #[tokio::main]
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
@@ -161,7 +161,7 @@ async fn fetch_tick_arrays_or_default(
 ///         Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
 ///     let mint_address = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap();
 ///     let input_amount = 1_000_000;
-/// 
+///
 ///     let result = swap_instructions(
 ///         &rpc,
 ///         whirlpool_address,
@@ -173,7 +173,7 @@ async fn fetch_tick_arrays_or_default(
 ///     )
 ///     .await
 ///     .unwrap();
-/// 
+///
 ///     println!("Quote estimated token out: {:?}", result.quote);
 ///     println!("Number of Instructions: {}", result.instructions.len());
 /// }

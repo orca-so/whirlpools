@@ -4,6 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+clap = { version = "4.5.21", features = ["derive"] }
 orca_whirlpools = "0.4.0"
 orca_whirlpools_client = "0.4.3"
 orca_whirlpools_core = "0.4.3"

@@ -27,3 +27,4 @@ generated
 **/Cargo.lock
 .next
 .env
+wallet.json

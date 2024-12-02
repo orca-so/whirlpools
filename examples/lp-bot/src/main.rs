@@ -1,5 +1,6 @@
 mod cli;
 mod position_manager;
+mod utils;
 mod wallet;
 
 use std::str::FromStr;

@@ -1,30 +1,27 @@
-use std::error::Error;
 use std::collections::HashMap;
+use std::error::Error;
 
 use solana_sdk::{
+    hash::hashv,
     instruction::Instruction,
     program_pack::Pack,
     pubkey::Pubkey,
-    signer::{Signer, keypair::Keypair},
+    signer::{keypair::Keypair, Signer},
     system_instruction::{create_account, create_account_with_seed, transfer},
-    hash::hashv,
 };
 use spl_associated_token_account::{
     get_associated_token_address_with_program_id,
     instruction::{create_associated_token_account, create_associated_token_account_idempotent},
 };
 use spl_token::{
-    instruction::{initialize_mint2, mint_to, sync_native, initialize_account3, close_account},
+    instruction::{close_account, initialize_account3, initialize_mint2, mint_to, sync_native},
     native_mint,
     state::{Account as TokenAccount, Mint as SplMint},
     ID as TOKEN_PROGRAM_ID,
 };
 use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 
-use crate::{
-    NATIVE_MINT_WRAPPING_STRATEGY,
-    NativeMintWrappingStrategy,
-};
+use crate::{NativeMintWrappingStrategy, NATIVE_MINT_WRAPPING_STRATEGY};
 
 use super::rpc::RpcContext;
 
@@ -139,7 +136,8 @@ pub async fn prepare_token_accounts_instructions(
     let has_native_mint = native_mint_index.is_some();
 
     // Skip native mint if wrapping strategy is not 'none' or 'ata'
-    let use_native_mint_ata = *NATIVE_MINT_WRAPPING_STRATEGY.lock().unwrap() == NativeMintWrappingStrategy::Ata
+    let use_native_mint_ata = *NATIVE_MINT_WRAPPING_STRATEGY.lock().unwrap()
+        == NativeMintWrappingStrategy::Ata
         || *NATIVE_MINT_WRAPPING_STRATEGY.lock().unwrap() == NativeMintWrappingStrategy::None;
 
     for (i, spec) in specs.iter().enumerate() {
@@ -158,27 +156,17 @@ pub async fn prepare_token_accounts_instructions(
 
         // Create ATA instruction using appropriate token program
         let ata = if is_token_2022 {
-            get_associated_token_address_with_program_id(
-                &owner,
-                &mint,
-                &TOKEN_2022_PROGRAM_ID,
-            )
+            get_associated_token_address_with_program_id(&owner, &mint, &TOKEN_2022_PROGRAM_ID)
         } else {
-            get_associated_token_address_with_program_id(
-                &owner,
-                &mint,
-                &TOKEN_PROGRAM_ID,
-            )
+            get_associated_token_address_with_program_id(&owner, &mint, &TOKEN_PROGRAM_ID)
         };
 
-        create_instructions.push(
-            create_associated_token_account(
-                &owner,
-                &owner,
-                &mint,
-                &mint_account.owner,
-            ),
-        );
+        create_instructions.push(create_associated_token_account(
+            &owner,
+            &owner,
+            &mint,
+            &mint_account.owner,
+        ));
 
         token_account_addresses.insert(mint, ata);
     }
@@ -188,48 +176,52 @@ pub async fn prepare_token_accounts_instructions(
         match *NATIVE_MINT_WRAPPING_STRATEGY.lock().unwrap() {
             NativeMintWrappingStrategy::Keypair => {
                 let keypair = Keypair::new();
-                let mut lamports = rpc.rpc.get_minimum_balance_for_rent_exemption(TokenAccount::LEN).await?;
+                let mut lamports = rpc
+                    .rpc
+                    .get_minimum_balance_for_rent_exemption(TokenAccount::LEN)
+                    .await?;
 
-                if let Some(TokenAccountStrategy::WithBalance(_, balance)) = specs.get(native_mint_index.unwrap()) {
+                if let Some(TokenAccountStrategy::WithBalance(_, balance)) =
+                    specs.get(native_mint_index.unwrap())
+                {
                     lamports += balance;
                 }
 
-                create_instructions.push(
-                    create_account(
-                        &owner,
-                        &keypair.pubkey(),
-                        lamports,
-                        TokenAccount::LEN as u64,
-                        &TOKEN_PROGRAM_ID,
-                    ),
-                );
+                create_instructions.push(create_account(
+                    &owner,
+                    &keypair.pubkey(),
+                    lamports,
+                    TokenAccount::LEN as u64,
+                    &TOKEN_PROGRAM_ID,
+                ));
 
-                create_instructions.push(
-                    initialize_account3(
-                        &TOKEN_PROGRAM_ID,
-                        &keypair.pubkey(),
-                        &native_mint::ID,
-                        &owner,
-                    )?,
-                );
+                create_instructions.push(initialize_account3(
+                    &TOKEN_PROGRAM_ID,
+                    &keypair.pubkey(),
+                    &native_mint::ID,
+                    &owner,
+                )?);
 
-                cleanup_instructions.push(
-                    close_account(
-                        &TOKEN_PROGRAM_ID,
-                        &keypair.pubkey(),
-                        &owner,
-                        &owner,
-                        &[],
-                    )?,
-                );
+                cleanup_instructions.push(close_account(
+                    &TOKEN_PROGRAM_ID,
+                    &keypair.pubkey(),
+                    &owner,
+                    &owner,
+                    &[],
+                )?);
 
                 token_account_addresses.insert(native_mint::ID, keypair.pubkey());
                 additional_signers.push(keypair);
-            },
+            }
             NativeMintWrappingStrategy::Seed => {
-                let mut lamports = rpc.rpc.get_minimum_balance_for_rent_exemption(TokenAccount::LEN).await?;
+                let mut lamports = rpc
+                    .rpc
+                    .get_minimum_balance_for_rent_exemption(TokenAccount::LEN)
+                    .await?;
 
-                if let Some(TokenAccountStrategy::WithBalance(_, balance)) = specs.get(native_mint_index.unwrap()) {
+                if let Some(TokenAccountStrategy::WithBalance(_, balance)) =
+                    specs.get(native_mint_index.unwrap())
+                {
                     lamports += balance;
                 }
 
@@ -243,61 +235,47 @@ pub async fn prepare_token_accounts_instructions(
                         owner.to_bytes().as_ref(),
                         seed.as_bytes(),
                         TOKEN_PROGRAM_ID.to_bytes().as_ref(),
-                    ]).to_bytes(),
+                    ])
+                    .to_bytes(),
                 );
 
-                create_instructions.push(
-                    create_account_with_seed(
-                        &owner,
-                        &pubkey,
-                        &owner,
-                        &seed,
-                        lamports,
-                        TokenAccount::LEN as u64,
-                        &TOKEN_PROGRAM_ID,
-                    ),
-                );
+                create_instructions.push(create_account_with_seed(
+                    &owner,
+                    &pubkey,
+                    &owner,
+                    &seed,
+                    lamports,
+                    TokenAccount::LEN as u64,
+                    &TOKEN_PROGRAM_ID,
+                ));
 
-                create_instructions.push(
-                    initialize_account3(
-                        &TOKEN_PROGRAM_ID,
-                        &pubkey,
-                        &native_mint::ID,
-                        &owner,
-                    )?,
-                );
+                create_instructions.push(initialize_account3(
+                    &TOKEN_PROGRAM_ID,
+                    &pubkey,
+                    &native_mint::ID,
+                    &owner,
+                )?);
 
-                cleanup_instructions.push(
-                    close_account(
-                        &TOKEN_PROGRAM_ID,
-                        &pubkey,
-                        &owner,
-                        &owner,
-                        &[],
-                    )?,
-                );
+                cleanup_instructions.push(close_account(
+                    &TOKEN_PROGRAM_ID,
+                    &pubkey,
+                    &owner,
+                    &owner,
+                    &[],
+                )?);
 
                 token_account_addresses.insert(native_mint::ID, pubkey);
-            },
+            }
             NativeMintWrappingStrategy::Ata => {
-                if let Some(TokenAccountStrategy::WithBalance(_, balance)) = specs.get(native_mint_index.unwrap()) {
+                if let Some(TokenAccountStrategy::WithBalance(_, balance)) =
+                    specs.get(native_mint_index.unwrap())
+                {
                     let ata = token_account_addresses.get(&native_mint::ID).unwrap();
-                    create_instructions.push(
-                        transfer(
-                            &owner,
-                            ata,
-                            *balance,
-                        ),
-                    );
-                    create_instructions.push(
-                        sync_native(
-                            &TOKEN_PROGRAM_ID,
-                            ata,
-                        )?,
-                    );
+                    create_instructions.push(transfer(&owner, ata, *balance));
+                    create_instructions.push(sync_native(&TOKEN_PROGRAM_ID, ata)?);
                 }
-            },
-            NativeMintWrappingStrategy::None => {},
+            }
+            NativeMintWrappingStrategy::None => {}
         }
     }
 

@@ -1,5 +1,5 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::{error::Error, str::FromStr, collections::HashMap, sync::Arc};
+use std::{collections::HashMap, error::Error, str::FromStr, sync::Arc};
 use tokio::sync::{Mutex, RwLock};
 
 use async_trait::async_trait;
@@ -16,32 +16,28 @@ use solana_client::{
     rpc_response::{Response, RpcBlockhash, RpcResponseContext, RpcVersionInfo},
     rpc_sender::{RpcSender, RpcTransportStats},
 };
+use solana_program::program_option::COption;
+use solana_program::program_pack::Pack;
 use solana_program_test::{ProgramTest, ProgramTestContext};
 use solana_sdk::{
     account::Account,
+    bs58,
     commitment_config::CommitmentLevel,
+    epoch_info::EpochInfo,
     instruction::Instruction,
     message::{v0::Message, VersionedMessage},
     pubkey::Pubkey,
     signature::{Keypair, Signature},
     signer::Signer,
-    system_instruction,
-    system_program,
+    system_instruction, system_program,
     transaction::VersionedTransaction,
-    bs58,
-    epoch_info::EpochInfo,
 };
-use solana_program::program_pack::Pack;
-use solana_program::program_option::COption;
 use solana_version::Version;
 use spl_memo::build_memo;
-use spl_token::{
-    state::Account as TokenAccount,
-    ID as TOKEN_PROGRAM_ID,
-};
+use spl_token::{state::Account as TokenAccount, ID as TOKEN_PROGRAM_ID};
 use spl_token_2022::{
     extension::{
-        transfer_fee::{TransferFeeConfig, TransferFee},
+        transfer_fee::{TransferFee, TransferFeeConfig},
         ExtensionType,
     },
     state::Mint,
@@ -160,12 +156,12 @@ impl RpcContext {
         }
         let context = Arc::new(Mutex::new(test.start_with_context().await));
         let accounts = Arc::new(RwLock::new(HashMap::new()));
-        
+
         let rpc = RpcClient::new_sender(
-            MockRpcSender { 
+            MockRpcSender {
                 context: Arc::clone(&context),
-            }, 
-            RpcClientConfig::default()
+            },
+            RpcClientConfig::default(),
         );
 
         let mut keypairs = (0..100).map(|_| Keypair::new()).collect::<Vec<_>>();
@@ -201,9 +197,9 @@ impl RpcContext {
         instructions: Vec<Instruction>,
         signers: Vec<&Keypair>,
     ) -> Result<Signature, Box<dyn Error>> {
-        // Sine blockhash is not guaranteed to be unique, we need to add a random memo to the tx
-        // so that we can fire two seemingly identical transactions in a row.
         let blockhash = self.rpc.get_latest_blockhash().await?;
+        // Since blockhash is not guaranteed to be unique, we need to add a random memo to the tx
+        // so that we can fire two seemingly identical transactions in a row.
         let memo = Keypair::new().to_base58_string();
         let instructions = [instructions, vec![build_memo(memo.as_bytes(), &[])]].concat();
         let message = VersionedMessage::V0(Message::try_compile(
@@ -222,11 +218,15 @@ impl RpcContext {
         &self,
         extensions: &[ExtensionType],
     ) -> Result<Pubkey, Box<dyn Error>> {
-        self.track_token_call("create_token_2022_mint".to_string()).await;
+        self.track_token_call("create_token_2022_mint".to_string())
+            .await;
 
         let mint = Keypair::new();
         let space = ExtensionType::try_calculate_account_len::<Mint>(extensions)?;
-        let rent = self.rpc.get_minimum_balance_for_rent_exemption(space).await?;
+        let rent = self
+            .rpc
+            .get_minimum_balance_for_rent_exemption(space)
+            .await?;
 
         let create_account = system_instruction::create_account(
             &self.signer.pubkey(),
@@ -257,15 +257,15 @@ impl RpcContext {
         let mut context = self.context.lock().await;
         context.set_account(
             &mint.pubkey(),
-            &solana_sdk::account::AccountSharedData::from(new_account.clone())
+            &solana_sdk::account::AccountSharedData::from(new_account.clone()),
         );
 
         let mut accounts = self.accounts.write().await;
         accounts.insert(mint.pubkey(), new_account);
-        self.token_responses.write().await.insert(
-            format!("mint_{}", mint.pubkey()),
-            data,
-        );
+        self.token_responses
+            .write()
+            .await
+            .insert(format!("mint_{}", mint.pubkey()), data);
 
         Ok(mint.pubkey())
     }
@@ -303,23 +303,8 @@ async fn send(
     params: &Vec<Value>,
 ) -> Result<Value, Box<dyn Error>> {
     let slot = context.banks_client.get_root_slot().await?;
-    
+
     let response = match method {
-        "sendTransaction" => {
-            let transaction_base64 = params[0].as_str().unwrap_or_default();
-            let transaction_bytes = base64::decode(transaction_base64)?;
-            let transaction = bincode::deserialize::<VersionedTransaction>(&transaction_bytes)?;
-            let meta = context
-                .banks_client
-                .process_transaction_with_metadata(transaction.clone())
-                .await?;
-            if let Err(e) = meta.result {
-                return Err(e.to_string().into());
-            }
-            let signature = transaction.get_signature();
-            let signature_base58 = bs58::encode(signature).into_string();
-            to_value(signature_base58)?
-        }
         "getAccountInfo" => {
             let address_str = params[0].as_str().unwrap_or_default();
             let address = Pubkey::from_str(address_str)?;
@@ -375,6 +360,21 @@ async fn send(
                     last_valid_block_height: slot + 150,
                 },
             })?
+        }
+        "sendTransaction" => {
+            let transaction_base64 = params[0].as_str().unwrap_or_default();
+            let transaction_bytes = base64::decode(transaction_base64)?;
+            let transaction = bincode::deserialize::<VersionedTransaction>(&transaction_bytes)?;
+            let meta = context
+                .banks_client
+                .process_transaction_with_metadata(transaction.clone())
+                .await?;
+            if let Err(e) = meta.result {
+                return Err(e.to_string().into());
+            }
+            let signature = transaction.get_signature();
+            let signature_base58 = bs58::encode(signature).into_string();
+            to_value(signature_base58)?
         }
         "getEpochInfo" => to_value(EpochInfo {
             epoch: slot / 32,

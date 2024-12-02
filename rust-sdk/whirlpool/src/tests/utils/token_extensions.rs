@@ -1,9 +1,6 @@
 use std::error::Error;
 
-use solana_sdk::{
-    pubkey::Pubkey,
-    signer::Signer,
-};
+use solana_sdk::{pubkey::Pubkey, signer::Signer};
 use spl_associated_token_account::{
     get_associated_token_address_with_program_id,
     instruction::create_associated_token_account_idempotent,
@@ -33,13 +30,13 @@ pub async fn setup_mint_te(
     config: Option<SetupMintConfig>,
 ) -> Result<Pubkey, Box<dyn Error>> {
     let config = config.unwrap_or_default();
-    
+
     let mint = if let Some(extensions) = &config.extensions {
         ctx.create_token_2022_mint(extensions).await?
     } else {
         ctx.create_token_2022_mint(&[]).await?
     };
-    
+
     Ok(mint)
 }
 
@@ -49,12 +46,12 @@ pub async fn setup_mint_te_fee(
     config: Option<SetupMintConfig>,
 ) -> Result<Pubkey, Box<dyn Error>> {
     let mut config = config.unwrap_or_default();
-    
+
     let extensions = config.extensions.get_or_insert_with(Vec::new);
     extensions.push(ExtensionType::TransferFeeConfig);
-    
+
     let mint = setup_mint_te(ctx, Some(config)).await?;
-    
+
     Ok(mint)
 }
 
@@ -71,26 +68,22 @@ pub async fn setup_ata_te(
         &TOKEN_2022_PROGRAM_ID,
     );
 
-    let mut instructions = vec![
-        create_associated_token_account_idempotent(
-            &ctx.signer.pubkey(),
-            &ctx.signer.pubkey(),
-            &mint,
-            &TOKEN_2022_PROGRAM_ID,
-        ),
-    ];
+    let mut instructions = vec![create_associated_token_account_idempotent(
+        &ctx.signer.pubkey(),
+        &ctx.signer.pubkey(),
+        &mint,
+        &TOKEN_2022_PROGRAM_ID,
+    )];
 
     if let Some(amount) = config.amount {
-        instructions.push(
-            mint_to(
-                &TOKEN_2022_PROGRAM_ID,
-                &mint,
-                &ata,
-                &ctx.signer.pubkey(),
-                &[],
-                amount,
-            )?,
-        );
+        instructions.push(mint_to(
+            &TOKEN_2022_PROGRAM_ID,
+            &mint,
+            &ata,
+            &ctx.signer.pubkey(),
+            &[],
+            amount,
+        )?);
     }
 
     ctx.send_transaction(instructions).await?;

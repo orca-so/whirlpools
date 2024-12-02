@@ -1,0 +1,111 @@
+2,3c2
+< use std::{error::Error, str::FromStr, collections::HashMap, sync::Arc};
+< use tokio::sync::{Mutex, RwLock};
+---
+> use std::{error::Error, str::FromStr};
+10a10
+> use solana_client::client_error::Result as ClientResult;
+12c12
+<     client_error::{ClientError, ClientErrorKind, Result as ClientResult},
+---
+>     client_error::{ClientError, ClientErrorKind},
+18a19
+> use solana_program_test::tokio::sync::Mutex;
+19a21,22
+> use solana_sdk::bs58;
+> use solana_sdk::epoch_info::EpochInfo;
+28d30
+<     system_instruction,
+31,32d32
+<     bs58,
+<     epoch_info::EpochInfo,
+34,35d33
+< use solana_program::program_pack::Pack;
+< use solana_program::program_option::COption;
+38,49d35
+< use spl_token::{
+<     state::Account as TokenAccount,
+<     ID as TOKEN_PROGRAM_ID,
+< };
+< use spl_token_2022::{
+<     extension::{
+<         transfer_fee::{TransferFeeConfig, TransferFee},
+<         ExtensionType,
+<     },
+<     state::Mint,
+<     ID as TOKEN_2022_PROGRAM_ID,
+< };
+51c37
+< use super::anchor::anchor_programs;
+---
+> use crate::tests::anchor_programs;
+59,60d44
+<     context: Arc<Mutex<ProgramTestContext>>,
+<     accounts: Arc<RwLock<HashMap<Pubkey, Account>>>,
+161,169c145,146
+<         let context = Arc::new(Mutex::new(test.start_with_context().await));
+<         let accounts = Arc::new(RwLock::new(HashMap::new()));
+<         
+<         let rpc = RpcClient::new_sender(
+<             MockRpcSender { 
+<                 context: Arc::clone(&context),
+<             }, 
+<             RpcClientConfig::default()
+<         );
+---
+>         let context = Mutex::new(test.start_with_context().await);
+>         let rpc = RpcClient::new_sender(MockRpcSender { context }, RpcClientConfig::default());
+179,180d155
+<             context,
+<             accounts,
+203a179
+>         let blockhash = self.rpc.get_latest_blockhash().await?;
+206d181
+<         let blockhash = self.rpc.get_latest_blockhash().await?;
+220a196
+> 
+306c282
+<     
+---
+> 
+308,322d283
+<         "sendTransaction" => {
+<             let transaction_base64 = params[0].as_str().unwrap_or_default();
+<             let transaction_bytes = base64::decode(transaction_base64)?;
+<             let transaction = bincode::deserialize::<VersionedTransaction>(&transaction_bytes)?;
+<             let meta = context
+<                 .banks_client
+<                 .process_transaction_with_metadata(transaction.clone())
+<                 .await?;
+<             if let Err(e) = meta.result {
+<                 return Err(e.to_string().into());
+<             }
+<             let signature = transaction.get_signature();
+<             let signature_base58 = bs58::encode(signature).into_string();
+<             to_value(signature_base58)?
+<         }
+378a340,354
+>         "sendTransaction" => {
+>             let transaction_base64 = params[0].as_str().unwrap_or_default();
+>             let transaction_bytes = base64::decode(transaction_base64)?;
+>             let transaction = bincode::deserialize::<VersionedTransaction>(&transaction_bytes)?;
+>             let meta = context
+>                 .banks_client
+>                 .process_transaction_with_metadata(transaction.clone())
+>                 .await?;
+>             if let Err(e) = meta.result {
+>                 return Err(e.to_string().into());
+>             }
+>             let signature = transaction.get_signature();
+>             let signature_base58 = bs58::encode(signature).into_string();
+>             to_value(signature_base58)?
+>         }
+401c377
+<     context: Arc<Mutex<ProgramTestContext>>,
+---
+>     context: Mutex<ProgramTestContext>,
+426c402
+< }
+\ No newline at end of file
+---
+> }

@@ -11,7 +11,11 @@ use crate::{
     create_splash_pool_instructions, decrease_liquidity_instructions,
     harvest_position_instructions, increase_liquidity_instructions,
     open_full_range_position_instructions, swap_instructions,
-    tests::{setup_ata_with_amount, setup_mint_with_decimals, RpcContext},
+    tests::utils::{
+        rpc::RpcContext,
+        token::setup_ata_with_amount,
+        token::setup_mint_with_decimals,
+    },
     DecreaseLiquidityParam, IncreaseLiquidityParam, SwapQuote, SwapType, SPLASH_POOL_TICK_SPACING,
 };
 

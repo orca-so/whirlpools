@@ -12,11 +12,11 @@ use solana_client::{
     client_error::{ClientError, ClientErrorKind},
     nonblocking::rpc_client::RpcClient,
     rpc_client::{RpcClientConfig, SerializableTransaction},
+    rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
+    rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
     rpc_request::RpcRequest,
     rpc_response::{Response, RpcBlockhash, RpcResponseContext, RpcVersionInfo},
     rpc_sender::{RpcSender, RpcTransportStats},
-    rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
-    rpc_filter::{Memcmp, MemcmpEncodedBytes, RpcFilterType},
 };
 use solana_program_test::tokio::sync::Mutex;
 use solana_program_test::{ProgramTest, ProgramTestContext};
@@ -128,7 +128,9 @@ impl RpcContext {
         test.add_account(concentrated_fee_tier, concentrated_fee_tier_account.clone());
         accounts_write.insert(concentrated_fee_tier, concentrated_fee_tier_account);
 
-        let splash_fee_tier = get_fee_tier_address(&config, SPLASH_POOL_TICK_SPACING).unwrap().0;
+        let splash_fee_tier = get_fee_tier_address(&config, SPLASH_POOL_TICK_SPACING)
+            .unwrap()
+            .0;
         let splash_fee_tier_account = Account {
             lamports: 100_000_000_000,
             data: [
@@ -267,7 +269,11 @@ impl RpcContext {
         self.token_calls.write().await.push(call);
     }
 
-    pub async fn set_account(&self, address: &Pubkey, account: Account) -> Result<(), Box<dyn Error>> {
+    pub async fn set_account(
+        &self,
+        address: &Pubkey,
+        account: Account,
+    ) -> Result<(), Box<dyn Error>> {
         let mut context = self.context.lock().await;
         context.set_account(
             address,
@@ -425,7 +431,8 @@ async fn send(
                                 match &compare.bytes {
                                     MemcmpEncodedBytes::Binary(bytes) => {
                                         if offset + bytes.len() <= account.data.len() {
-                                            let account_bytes = &account.data[offset..offset + bytes.len()];
+                                            let account_bytes =
+                                                &account.data[offset..offset + bytes.len()];
                                             account_bytes == bytes.as_bytes()
                                         } else {
                                             false
@@ -433,7 +440,8 @@ async fn send(
                                     }
                                     MemcmpEncodedBytes::Bytes(bytes) => {
                                         if offset + bytes.len() <= account.data.len() {
-                                            let account_bytes = &account.data[offset..offset + bytes.len()];
+                                            let account_bytes =
+                                                &account.data[offset..offset + bytes.len()];
                                             account_bytes == bytes.as_slice()
                                         } else {
                                             false
@@ -442,7 +450,8 @@ async fn send(
                                     MemcmpEncodedBytes::Base58(s) => {
                                         if let Ok(filter_bytes) = bs58::decode(s).into_vec() {
                                             if offset + filter_bytes.len() <= account.data.len() {
-                                                let account_bytes = &account.data[offset..offset + filter_bytes.len()];
+                                                let account_bytes = &account.data
+                                                    [offset..offset + filter_bytes.len()];
                                                 account_bytes == filter_bytes.as_slice()
                                             } else {
                                                 false
@@ -454,7 +463,8 @@ async fn send(
                                     MemcmpEncodedBytes::Base64(s) => {
                                         if let Ok(filter_bytes) = base64::decode(s) {
                                             if offset + filter_bytes.len() <= account.data.len() {
-                                                let account_bytes = &account.data[offset..offset + filter_bytes.len()];
+                                                let account_bytes = &account.data
+                                                    [offset..offset + filter_bytes.len()];
                                                 account_bytes == filter_bytes.as_slice()
                                             } else {
                                                 false
@@ -509,7 +519,8 @@ impl RpcSender for MockRpcSender {
         let default_params = Vec::new();
         let params = request_json["params"].as_array().unwrap_or(&default_params);
         let mut context = self.context.lock().await;
-        let response = send(&mut context, &self.accounts, method, params).await  // accounts 맵 전달
+        let response = send(&mut context, &self.accounts, method, params)
+            .await // accounts 맵 전달
             .map_err(|e| {
                 ClientError::new_with_request(ClientErrorKind::Custom(e.to_string()), request)
             })?;

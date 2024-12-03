@@ -2,8 +2,8 @@ use solana_sdk::{pubkey::Pubkey, signer::Signer, system_program};
 use std::error::Error;
 
 use orca_whirlpools_client::{
-    get_fee_tier_address, get_token_badge_address, get_whirlpool_address,
-    InitializePoolV2, InitializePoolV2InstructionArgs,
+    get_fee_tier_address, get_token_badge_address, get_whirlpool_address, InitializePoolV2,
+    InitializePoolV2InstructionArgs,
 };
 use orca_whirlpools_core::{price_to_sqrt_price, tick_index_to_sqrt_price};
 use solana_program::sysvar::rent::ID as RENT_PROGRAM_ID;
@@ -33,28 +33,26 @@ pub async fn setup_whirlpool(
     // Default initial price of 1.0
     let sqrt_price = tick_index_to_sqrt_price(0);
 
-    let instructions = vec![
-        InitializePoolV2 {
-            whirlpool,
-            fee_tier,
-            token_mint_a: token_a,
-            token_mint_b: token_b,
-            whirlpools_config: config,
-            funder: ctx.signer.pubkey(),
-            token_vault_a: vault_a.pubkey(),
-            token_vault_b: vault_b.pubkey(),
-            token_badge_a,
-            token_badge_b,
-            token_program_a: mint_a_info.owner,
-            token_program_b: mint_b_info.owner,
-            system_program: system_program::id(),
-            rent: RENT_PROGRAM_ID,
-        }
-        .instruction(InitializePoolV2InstructionArgs {
-            tick_spacing,
-            initial_sqrt_price: sqrt_price,
-        }),
-    ];
+    let instructions = vec![InitializePoolV2 {
+        whirlpool,
+        fee_tier,
+        token_mint_a: token_a,
+        token_mint_b: token_b,
+        whirlpools_config: config,
+        funder: ctx.signer.pubkey(),
+        token_vault_a: vault_a.pubkey(),
+        token_vault_b: vault_b.pubkey(),
+        token_badge_a,
+        token_badge_b,
+        token_program_a: mint_a_info.owner,
+        token_program_b: mint_b_info.owner,
+        system_program: system_program::id(),
+        rent: RENT_PROGRAM_ID,
+    }
+    .instruction(InitializePoolV2InstructionArgs {
+        tick_spacing,
+        initial_sqrt_price: sqrt_price,
+    })];
 
     ctx.send_transaction_with_signers(instructions, vec![&vault_a, &vault_b])
         .await?;

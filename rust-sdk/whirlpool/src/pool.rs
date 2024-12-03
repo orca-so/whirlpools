@@ -323,7 +323,6 @@ pub async fn fetch_whirlpools_by_token_pair(
         vec![FeeTierFilter::WhirlpoolsConfig(*whirlpools_config_address)],
     )
     .await?;
-    println!("fee_tiers: {:?}", fee_tiers);
     let account_infos = rpc
         .get_multiple_accounts(&[*whirlpools_config_address, token_a, token_b])
         .await?;

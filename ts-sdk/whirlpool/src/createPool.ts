@@ -69,17 +69,20 @@ export type CreatePoolInstructions = {
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  *
- * const tokenMintOne = address("TOKEN_MINT_ADDRESS_1");
- * const tokenMintTwo = address("TOKEN_MINT_ADDRESS_2");
+ * const tokenMintOne = address("So11111111111111111111111111111111111111112");
+ * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
  * const initialPrice = 0.01;
  *
  * const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
- *   devnetRpc,
- *   tokenMintOne,
- *   tokenMintTwo,
- *   initialPrice,
- *   wallet
+ *     devnetRpc,
+ *     tokenMintOne,
+ *     tokenMintTwo,
+ *     initialPrice,
+ *     wallet
  * );
+ *
+ * console.log(`Pool Address: ${poolAddress}`);
+ * console.log(`Initialization Cost: ${initializationCost} lamports`);
  */
 export function createSplashPoolInstructions(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
@@ -118,19 +121,22 @@ export function createSplashPoolInstructions(
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  *
- * const tokenMintOne = address("TOKEN_MINT_ADDRESS_1");
- * const tokenMintTwo = address("TOKEN_MINT_ADDRESS_2");
+ * const tokenMintOne = address("So11111111111111111111111111111111111111112");
+ * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
  * const tickSpacing = 64;
  * const initialPrice = 0.01;
  *
  * const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPoolInstructions(
- *   devnetRpc,
- *   tokenMintOne,
- *   tokenMintTwo,
- *   tickSpacing,
- *   initialPrice,
- *   wallet
+ *     devnetRpc,
+ *     tokenMintOne,
+ *     tokenMintTwo,
+ *     tickSpacing,
+ *     initialPrice,
+ *     wallet
  * );
+ *
+ * console.log(`Pool Address: ${poolAddress}`);
+ * console.log(`Initialization Cost: ${initializationCost} lamports`);
  */
 export async function createConcentratedLiquidityPoolInstructions(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,

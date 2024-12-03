@@ -143,21 +143,23 @@ function getDecreaseLiquidityQuote(
  *
  * @example
  * import { decreaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { loadWallet } from './utils';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- *
- * const positionMint = address("POSITION_MINT");
- *
- * const param = { liquidity: 500_000n };
- *
+ * const wallet = await loadWallet();
+ * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
+ * const param = { tokenA: 10n };
  * const { quote, instructions } = await decreaseLiquidityInstructions(
  *   devnetRpc,
  *   positionMint,
  *   param,
  *   100,
+ *   wallet
  * );
+ *
+ * console.log(`Quote token max B: ${quote.tokenEstB}`);
  */
 export async function decreaseLiquidityInstructions(
   rpc: Rpc<
@@ -285,18 +287,25 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  *
  * @example
  * import { closePositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { loadWallet } from './utils';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- *
- * const positionMint = address("POSITION_MINT");
+ * const wallet = await loadWallet();
+ * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
  *
  * const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
  *   devnetRpc,
  *   positionMint,
  *   100,
+ *   wallet
  * );
+ *
+ * console.log(`Quote token max B: ${quote.tokenEstB}`);
+ * console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
+ * console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);
+ * console.log(`Number of instructions:, ${instructions.length}`);
  */
 export async function closePositionInstructions(
   rpc: Rpc<

@@ -70,30 +70,34 @@ pub struct CreatePoolInstructions {
 /// # Example
 ///
 /// ```rust
-/// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signer::Keypair};
-/// use orca_whirlpools::create_splash_pool_instructions
+/// use orca_whirlpools::{
+///     create_splash_pool_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
+/// };
+/// use solana_client::nonblocking::rpc_client::RpcClient;
+/// use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
 /// use std::str::FromStr;
 ///
-/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap()
-/// let rpc = RpcClient::new("https://api.devnet.solana.com");
-/// let token_a = Pubkey::from_str("TOKEN_MINT_ADDRESS_A").unwrap();
-/// let token_b = Pubkey::from_str("TOKEN_MINT_ADDRESS_B").unwrap();
-/// let initial_price = Some(0.01);
+/// #[tokio::main]
+/// async fn main() {
+///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
+///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
+///     let initial_price = Some(0.01);
+///     let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
+///     let funder = Some(wallet.pubkey());
 ///
-/// let wallet = Keypair::new();
-/// let funder = Some(wallet.pubkey());
+///     let create_pool_instructions =
+///         create_splash_pool_instructions(&rpc, token_a, token_b, initial_price, funder)
+///             .await
+///             .unwrap();
 ///
-/// let create_pool_instructions = create_splash_pool_instructions(
-///     &rpc,
-///     token_a,
-///     token_b,
-///     initial_price,
-///     funder,
-/// ).unwrap();
-///
-/// println!("Pool Address: {:?}", create_pool_instructions.pool_address);
-/// println!("Initialization Cost: {} lamports", create_pool_instructions.initialization_cost);
+///     println!("Pool Address: {:?}", create_pool_instructions.pool_address);
+///     println!(
+///         "Initialization Cost: {} lamports",
+///         create_pool_instructions.initialization_cost
+///     );
+/// }
 /// ```
 pub async fn create_splash_pool_instructions(
     rpc: &RpcClient,
@@ -143,32 +147,42 @@ pub async fn create_splash_pool_instructions(
 /// # Example
 ///
 /// ```
-/// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::{pubkey::Pubkey, signer::Keypair};
-/// use orca_whirlpools::create_concentrated_liquidity_pool_instructions;
+/// use orca_whirlpools::{
+///     create_concentrated_liquidity_pool_instructions, set_whirlpools_config_address,
+///     WhirlpoolsConfigInput,
+/// };
+/// use solana_client::nonblocking::rpc_client::RpcClient;
+/// use solana_sdk::{pubkey::Pubkey, signature::Signer, signer::keypair::Keypair};
 /// use std::str::FromStr;
 ///
-/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap()
-/// let rpc = RpcClient::new("https://api.devnet.solana.com");
-/// let token_a = Pubkey::from_str("TOKEN_MINT_ADDRESS_A").unwrap();
-/// let token_b = Pubkey::from_str("TOKEN_MINT_ADDRESS_B").unwrap();
-/// let tick_spacing = 64;
-/// let initial_price = Some(0.01);
+/// #[tokio::main]
+/// async fn main() {
+///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+///     let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
+///     let token_b = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap(); // devUSDC
+///     let tick_spacing = 64;
+///     let initial_price = Some(0.01);
+///     let wallet = Keypair::new(); // CAUTION: This wallet is not persistent.
+///     let funder = Some(wallet.pubkey());
 ///
-/// let wallet = Keypair::new();
-/// let funder = Some(wallet.pubkey());
+///     let create_pool_instructions = create_concentrated_liquidity_pool_instructions(
+///         &rpc,
+///         token_a,
+///         token_b,
+///         tick_spacing,
+///         initial_price,
+///         funder,
+///     )
+///     .await
+///     .unwrap();
 ///
-/// let create_pool_instructions = create_concentrated_liquidity_pool_instructions(
-///     &rpc,
-///     token_a,
-///     token_b,
-///     tick_spacing,
-///     initial_price,
-///     funder,
-/// ).unwrap();
-///
-/// println!("Pool Address: {:?}", create_pool_instructions.pool_address);
-/// println!("Initialization Cost: {} lamports", create_pool_instructions.initialization_cost);
+///     println!("Pool Address: {:?}", create_pool_instructions.pool_address);
+///     println!(
+///         "Initialization Cost: {} lamports",
+///         create_pool_instructions.initialization_cost
+///     );
+/// }
 /// ```
 pub async fn create_concentrated_liquidity_pool_instructions(
     rpc: &RpcClient,

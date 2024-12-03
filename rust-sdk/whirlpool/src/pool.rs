@@ -323,7 +323,7 @@ pub async fn fetch_whirlpools_by_token_pair(
         vec![FeeTierFilter::WhirlpoolsConfig(*whirlpools_config_address)],
     )
     .await?;
-
+    println!("fee_tiers: {:?}", fee_tiers);
     let account_infos = rpc
         .get_multiple_accounts(&[*whirlpools_config_address, token_a, token_b])
         .await?;
@@ -356,9 +356,9 @@ pub async fn fetch_whirlpools_by_token_pair(
     let whirlpool_infos = rpc.get_multiple_accounts(&whirlpool_addresses).await?;
 
     let mut whirlpools: Vec<PoolInfo> = Vec::new();
-    for i in 0..whirlpool_infos.len() {
+    for i in 0..whirlpool_addresses.len() {
         let pool_address = whirlpool_addresses[i];
-        let pool_info = whirlpool_infos[i].as_ref();
+        let pool_info = whirlpool_infos.get(i).and_then(|x| x.as_ref());
         let fee_tier = &fee_tiers[i];
 
         if let Some(pool_info) = pool_info {

@@ -16,7 +16,7 @@ export default function Root({ children }) {
           },
           autoClose: 0,
           doNotShowAfterSubmit: true,
-        }
+        },
       };
 
       const script = document.createElement("script");

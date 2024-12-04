@@ -66,6 +66,8 @@ Run the bot with the following arguments
   - `medium`: Median prioritization fee (default).
   - `high`: Upper 75th quartile prioritization fee.
   - `turbo`: Upper 95th quartile prioritization fee.
+- `max_priority_fee_lamports` (optional): Maximum total priority fee in lamports. Default: 10_000_000 (0.01 SOL).
+- `slippage_tolerance_bps` (optional): Slippage tolerance in basis points (bps). Default: 100.
 
 ### Example Usage
 Monitor and rebalance with default settings:

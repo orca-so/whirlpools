@@ -1,0 +1,19 @@
+name: 'Setup Version in monorepo'
+description: 'Set version of all packages in monorepo.'
+
+branding:
+  icon: trash-2
+  color: red
+
+# https://github.com/actions/runner-images/issues/2840#issuecomment-790492173
+
+runs:
+  using: "composite"
+  steps:
+    - name: Remove Unnecessary Files
+      run: |
+        sudo rm -rf /usr/share/dotnet
+        sudo rm -rf /opt/ghc
+        sudo rm -rf "/usr/local/share/boost"
+        sudo rm -rf "$AGENT_TOOLSDIRECTORY"
+      shell: bash

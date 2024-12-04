@@ -1,7 +1,33 @@
 use crate::types::TickArrayFacade;
 
 #[cfg(not(feature = "wasm"))]
-pub struct TickArrays([Option<TickArrayFacade>; 6]);
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum TickArrays {
+    One(TickArrayFacade),
+    Two(TickArrayFacade, TickArrayFacade),
+    Three(TickArrayFacade, TickArrayFacade, TickArrayFacade),
+    Four(
+        TickArrayFacade,
+        TickArrayFacade,
+        TickArrayFacade,
+        TickArrayFacade,
+    ),
+    Five(
+        TickArrayFacade,
+        TickArrayFacade,
+        TickArrayFacade,
+        TickArrayFacade,
+        TickArrayFacade,
+    ),
+    Six(
+        TickArrayFacade,
+        TickArrayFacade,
+        TickArrayFacade,
+        TickArrayFacade,
+        TickArrayFacade,
+        TickArrayFacade,
+    ),
+}
 
 #[cfg(feature = "wasm")]
 use core::fmt::{Debug, Formatter, Result as FmtResult};
@@ -47,76 +73,110 @@ impl From<TickArrays> for [Option<TickArrayFacade>; 6] {
 #[cfg(not(feature = "wasm"))]
 impl From<TickArrays> for [Option<TickArrayFacade>; 6] {
     fn from(val: TickArrays) -> Self {
-        val.0
+        match val {
+            TickArrays::One(tick_array) => [Some(tick_array), None, None, None, None, None],
+            TickArrays::Two(tick_array_1, tick_array_2) => [
+                Some(tick_array_1),
+                Some(tick_array_2),
+                None,
+                None,
+                None,
+                None,
+            ],
+            TickArrays::Three(tick_array_1, tick_array_2, tick_array_3) => [
+                Some(tick_array_1),
+                Some(tick_array_2),
+                Some(tick_array_3),
+                None,
+                None,
+                None,
+            ],
+            TickArrays::Four(tick_array_1, tick_array_2, tick_array_3, tick_array_4) => [
+                Some(tick_array_1),
+                Some(tick_array_2),
+                Some(tick_array_3),
+                Some(tick_array_4),
+                None,
+                None,
+            ],
+            TickArrays::Five(
+                tick_array_1,
+                tick_array_2,
+                tick_array_3,
+                tick_array_4,
+                tick_array_5,
+            ) => [
+                Some(tick_array_1),
+                Some(tick_array_2),
+                Some(tick_array_3),
+                Some(tick_array_4),
+                Some(tick_array_5),
+                None,
+            ],
+            TickArrays::Six(
+                tick_array_1,
+                tick_array_2,
+                tick_array_3,
+                tick_array_4,
+                tick_array_5,
+                tick_array_6,
+            ) => [
+                Some(tick_array_1),
+                Some(tick_array_2),
+                Some(tick_array_3),
+                Some(tick_array_4),
+                Some(tick_array_5),
+                Some(tick_array_6),
+            ],
+        }
     }
 }
 
 #[cfg(not(feature = "wasm"))]
 impl From<TickArrayFacade> for TickArrays {
     fn from(val: TickArrayFacade) -> Self {
-        TickArrays([Some(val), None, None, None, None, None])
+        TickArrays::One(val)
     }
 }
 
 #[cfg(not(feature = "wasm"))]
 impl From<[TickArrayFacade; 1]> for TickArrays {
     fn from(val: [TickArrayFacade; 1]) -> Self {
-        TickArrays([Some(val[0]), None, None, None, None, None])
+        TickArrays::One(val[0])
     }
 }
 
 #[cfg(not(feature = "wasm"))]
 impl From<[TickArrayFacade; 2]> for TickArrays {
     fn from(val: [TickArrayFacade; 2]) -> Self {
-        TickArrays([Some(val[0]), Some(val[1]), None, None, None, None])
+        TickArrays::Two(val[0], val[1])
     }
 }
 
 #[cfg(not(feature = "wasm"))]
 impl From<[TickArrayFacade; 3]> for TickArrays {
     fn from(val: [TickArrayFacade; 3]) -> Self {
-        TickArrays([Some(val[0]), Some(val[1]), Some(val[2]), None, None, None])
+        TickArrays::Three(val[0], val[1], val[2])
     }
 }
 
 #[cfg(not(feature = "wasm"))]
 impl From<[TickArrayFacade; 4]> for TickArrays {
     fn from(val: [TickArrayFacade; 4]) -> Self {
-        TickArrays([
-            Some(val[0]),
-            Some(val[1]),
-            Some(val[2]),
-            Some(val[3]),
-            None,
-            None,
-        ])
+        TickArrays::Four(val[0], val[1], val[2], val[3])
     }
 }
 
 #[cfg(not(feature = "wasm"))]
 impl From<[TickArrayFacade; 5]> for TickArrays {
     fn from(val: [TickArrayFacade; 5]) -> Self {
-        TickArrays([
-            Some(val[0]),
-            Some(val[1]),
-            Some(val[2]),
-            Some(val[3]),
-            Some(val[4]),
-            None,
-        ])
+        TickArrays::Five(val[0], val[1], val[2], val[3], val[4])
     }
 }
 
 #[cfg(not(feature = "wasm"))]
 impl From<[TickArrayFacade; 6]> for TickArrays {
     fn from(val: [TickArrayFacade; 6]) -> Self {
-        TickArrays([
-            Some(val[0]),
-            Some(val[1]),
-            Some(val[2]),
-            Some(val[3]),
-            Some(val[4]),
-            Some(val[5]),
-        ])
+        TickArrays::Six(val[0], val[1], val[2], val[3], val[4], val[5])
     }
 }

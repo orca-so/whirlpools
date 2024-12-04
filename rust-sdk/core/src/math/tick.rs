@@ -4,7 +4,7 @@ use ethnum::U256;
 use orca_whirlpools_macros::wasm_expose;
 
 use crate::{
-    ErrorCode, TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX,
+    CoreError, TickRange, FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD, MAX_TICK_INDEX, MIN_TICK_INDEX,
     TICK_ARRAY_SIZE, TICK_INDEX_NOT_IN_ARRAY, U128,
 };
 
@@ -307,7 +307,7 @@ pub fn get_tick_index_in_array(
     tick_index: i32,
     tick_array_start_index: i32,
     tick_spacing: u16,
-) -> Result<u32, ErrorCode> {
+) -> Result<u32, CoreError> {
     if tick_index < tick_array_start_index {
         return Err(TICK_INDEX_NOT_IN_ARRAY);
     }

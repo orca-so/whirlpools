@@ -100,6 +100,7 @@ function createUninitializedTickArray(
       ticks: Array(_TICK_ARRAY_SIZE()).fill({
         initialized: false,
         liquidityNet: 0n,
+        liquidityGross: 0n,
         feeGrowthOutsideA: 0n,
         feeGrowthOutsideB: 0n,
         rewardGrowthsOutside: [0n, 0n, 0n],
@@ -202,25 +203,27 @@ function getSwapQuote<T extends SwapParams>(
  * @returns {Promise<SwapInstructions<T>>} - A promise that resolves to an object containing the swap instructions and the swap quote.
  *
  * @example
- * import { swapInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { setWhirlpoolsConfig, swapInstructions } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { loadWallet } from './utils';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
- * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- *
- * const poolAddress = "POOL_ADDRESS";
- * const mintAddress = "TOKEN_MINT";
+ * const wallet = await loadWallet(); // CAUTION: This wallet is not persistent.
+ * const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
+ * const mintAddress = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
  * const inputAmount = 1_000_000n;
  *
  * const { instructions, quote } = await swapInstructions(
  *   devnetRpc,
  *   { inputAmount, mint: mintAddress },
- *   poolAddress,
+ *   whirlpoolAddress,
  *   100,
  *   wallet
  * );
+ *
+ * console.log(`Quote estimated token out: ${quote.tokenEstOut}`);
+ * console.log(`Number of instructions:, ${instructions.length}`);
  */
 export async function swapInstructions<T extends SwapParams>(
   rpc: Rpc<

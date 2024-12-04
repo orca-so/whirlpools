@@ -13,18 +13,19 @@
     "prepare": "husky install"
   },
   "devDependencies": {
-    "@types/node": "^22.9.0",
+    "@types/node": "^22.10.1",
     "husky": "^9.1.7",
-    "nx": "^20.1.2",
+    "nx": "^20.1.4",
     "rimraf": "^6.0.1",
     "tsup": "^8.3.5",
-    "vitest": "^2.1.5"
+    "vitest": "^2.1.8"
   },
   "workspaces": [
     "programs/*",
     "rust-sdk/*",
     "ts-sdk/*",
     "legacy-sdk/*",
+    "examples/*",
     "docs/*"
   ]
 }

@@ -68,21 +68,23 @@ export type HarvestPositionInstructions = {
  * @returns {Promise<HarvestPositionInstructions>}
  *    A promise that resolves to an object containing the instructions, fees, and rewards quotes.
  * @example
- * import { harvestPositionInstructions } from '@orca-so/whirlpools';
- * import { createKeyPairSignerFromBytes , createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { harvestPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { loadWallet } from './utils';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
- * const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- *
- * const positionMint = "POSITION_MINT";
+ * const wallet = await loadWallet();
+ * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
  *
  * const { feesQuote, rewardsQuote, instructions } = await harvestPositionInstructions(
  *   devnetRpc,
  *   positionMint,
  *   wallet
  * );
+ *
+ * console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
+ * console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);
  */
 export async function harvestPositionInstructions(
   rpc: Rpc<
@@ -185,20 +187,24 @@ export async function harvestPositionInstructions(
     getCurrentTransferFee(rewardMints[2], currentEpoch.epoch),
   );
 
-  const requiredMints: Address[] = [];
+  const requiredMints: Set<Address> = new Set();
   if (feesQuote.feeOwedA > 0n || feesQuote.feeOwedB > 0n) {
-    requiredMints.push(whirlpool.data.tokenMintA);
-    requiredMints.push(whirlpool.data.tokenMintB);
+    requiredMints.add(whirlpool.data.tokenMintA);
+    requiredMints.add(whirlpool.data.tokenMintB);
   }
 
   for (let i = 0; i < rewardsQuote.rewards.length; i++) {
     if (rewardsQuote.rewards[i].rewardsOwed > 0n) {
-      requiredMints.push(whirlpool.data.rewardInfos[i].mint);
+      requiredMints.add(whirlpool.data.rewardInfos[i].mint);
     }
   }
 
   const { createInstructions, cleanupInstructions, tokenAccountAddresses } =
-    await prepareTokenAccountsInstructions(rpc, authority, requiredMints);
+    await prepareTokenAccountsInstructions(
+      rpc,
+      authority,
+      Array.from(requiredMints),
+    );
 
   const instructions: IInstruction[] = [];
   instructions.push(...createInstructions);

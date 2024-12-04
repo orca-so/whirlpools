@@ -1,6 +1,6 @@
 use orca_whirlpools_core::{WhirlpoolFacade, WhirlpoolRewardInfoFacade};
 
-use crate::{accounts::Whirlpool, generated::types::WhirlpoolRewardInfo};
+use crate::{Whirlpool, WhirlpoolRewardInfo};
 
 impl From<Whirlpool> for WhirlpoolFacade {
     fn from(val: Whirlpool) -> Self {

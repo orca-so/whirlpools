@@ -149,25 +149,24 @@ function getIncreaseLiquidityQuote(
  * @returns {Promise<IncreaseLiquidityInstructions>} A promise that resolves to an object containing instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
- * import { increaseLiquidityInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { increaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { loadWallet } from './utils';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
- * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
- *
- * const positionMint = "POSITION_MINT";
- *
- * const param = { tokenA: 1_000_000n };
- *
- * const { quote, instructions, initializationCost, positionMint } = await increaseLiquidityInstructions(
+ * const wallet = await loadWallet();
+ * const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
+ * const param = { tokenA: 10n };
+ * const { quote, instructions } = await increaseLiquidityInstructions(
  *   devnetRpc,
  *   positionMint,
  *   param,
  *   100,
  *   wallet
  * );
+ *
+ * console.log(`Quote token max B: ${quote.tokenEstB}`);
  */
 export async function increaseLiquidityInstructions(
   rpc: Rpc<
@@ -390,7 +389,7 @@ async function internalOpenPositionInstructions(
         whirlpool: whirlpool.address,
         funder,
         tickArray: lowerTickArrayAddress,
-        startTickIndex: lowerTickIndex,
+        startTickIndex: lowerTickArrayIndex,
       }),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(
@@ -405,7 +404,7 @@ async function internalOpenPositionInstructions(
         whirlpool: whirlpool.address,
         funder,
         tickArray: upperTickArrayAddress,
-        startTickIndex: upperTickIndex,
+        startTickIndex: upperTickArrayIndex,
       }),
     );
     nonRefundableRent += calculateMinimumBalanceForRentExemption(
@@ -478,21 +477,20 @@ async function internalOpenPositionInstructions(
  * @returns {Promise<OpenPositionInstructions>} A promise that resolves to an object containing the instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
- * import { openFullRangePositionInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, lamports } from '@solana/web3.js';
+ * import { openFullRangePositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
  * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
  *
- * const poolAddress = "POOL_ADDRESS";
+ * const whirlpoolAddress = address("POOL_ADDRESS");
  *
  * const param = { tokenA: 1_000_000n };
  *
  * const { quote, instructions, initializationCost, positionMint } = await openFullRangePositionInstructions(
  *   devnetRpc,
- *   poolAddress,
+ *   whirlpoolAddress,
  *   param,
  *   100,
  *   wallet
@@ -546,14 +544,14 @@ export async function openFullRangePositionInstructions(
  * @returns {Promise<OpenPositionInstructions>} A promise that resolves to an object containing instructions, quote, position mint address, and initialization costs for increasing liquidity.
  *
  * @example
- * import { openPositionInstructions } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { openPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- * const wallet = await generateKeyPairSigner();
- * await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
+ * const wallet = await generateKeyPairSigner(); // CAUTION: This wallet is not persistent.
  *
- * const poolAddress = "POOL_ADDRESS";
+ * const whirlpoolAddress = address("POOL_ADDRESS");
  *
  * const param = { tokenA: 1_000_000n };
  * const lowerPrice = 0.00005;
@@ -561,7 +559,7 @@ export async function openFullRangePositionInstructions(
  *
  * const { quote, instructions, initializationCost, positionMint } = await openPositionInstructions(
  *   devnetRpc,
- *   poolAddress,
+ *   whirlpoolAddress,
  *   param,
  *   lowerPrice,
  *   upperPrice,

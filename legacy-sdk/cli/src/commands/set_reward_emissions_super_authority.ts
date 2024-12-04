@@ -67,7 +67,8 @@ const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
 builder.addInstruction(
   WhirlpoolIx.setRewardEmissionsSuperAuthorityIx(ctx.program, {
     whirlpoolsConfig: whirlpoolsConfigPubkey,
-    rewardEmissionsSuperAuthority: whirlpoolsConfig.rewardEmissionsSuperAuthority,
+    rewardEmissionsSuperAuthority:
+      whirlpoolsConfig.rewardEmissionsSuperAuthority,
     newRewardEmissionsSuperAuthority: newRewardEmissionsSuperAuthorityPubkey,
   }),
 );

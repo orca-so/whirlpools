@@ -6,7 +6,7 @@
     "build": "anchor build -p whirlpool",
     "test": "cargo test -p whirlpool --lib",
     "format": "cargo clippy -p whirlpool --fix --allow-dirty --allow-staged && cargo fmt -p whirlpool",
-    "lint": "cargo clippy -p whirlpool",
+    "lint": "cargo clippy -p whirlpool && cargo fmt --check -p whirlpool",
     "clean": "anchor clean"
   }
 }

@@ -1,9 +1,9 @@
 use crate::errors::ErrorCode;
-use crate::math::{Q64_RESOLUTION, Q64_MASK};
+use crate::math::{Q64_MASK, Q64_RESOLUTION};
 
 use super::{
-    div_round_up_if, div_round_up_if_u256, mul_u256,
-    U256Muldiv, MAX_SQRT_PRICE_X64, MIN_SQRT_PRICE_X64,
+    div_round_up_if, div_round_up_if_u256, mul_u256, U256Muldiv, MAX_SQRT_PRICE_X64,
+    MIN_SQRT_PRICE_X64,
 };
 
 // Fee rate is represented as hundredths of a basis point.
@@ -110,13 +110,12 @@ pub fn try_get_amount_delta_a(
             if result > u64::MAX as u128 {
                 return Ok(AmountDeltaU64::ExceedsMax(ErrorCode::TokenMaxExceeded));
             }
-    
-            Ok(AmountDeltaU64::Valid(result as u64))    
-        },
+
+            Ok(AmountDeltaU64::Valid(result as u64))
+        }
         Err(err) => Ok(AmountDeltaU64::ExceedsMax(err)),
     }
 }
-
 
 //
 // Get change in token_b corresponding to a change in price
@@ -162,12 +161,20 @@ pub fn try_get_amount_delta_b(
 
         let should_round = round_up && (p & Q64_MASK > 0);
         if should_round && result == u64::MAX {
-            return Ok(AmountDeltaU64::ExceedsMax(ErrorCode::MultiplicationOverflow));
+            return Ok(AmountDeltaU64::ExceedsMax(
+                ErrorCode::MultiplicationOverflow,
+            ));
         }
-    
-        Ok(AmountDeltaU64::Valid(if should_round { result + 1 } else { result }))
+
+        Ok(AmountDeltaU64::Valid(if should_round {
+            result + 1
+        } else {
+            result
+        }))
     } else {
-        Ok(AmountDeltaU64::ExceedsMax(ErrorCode::MultiplicationShiftRightOverflow))
+        Ok(AmountDeltaU64::ExceedsMax(
+            ErrorCode::MultiplicationShiftRightOverflow,
+        ))
     }
 }
 

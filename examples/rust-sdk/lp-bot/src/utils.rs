@@ -1,4 +1,5 @@
 use clap::ValueEnum;
+use orca_whirlpools::close_position_instructions;
 use orca_whirlpools_client::{Position, Whirlpool};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
@@ -8,45 +9,93 @@ use solana_sdk::{
 };
 use spl_token_2022::state::Mint;
 use std::future::Future;
+use std::str::FromStr;
 use tokio::time::sleep;
 use tokio::time::Duration;
 
 const MAX_RETRIES: usize = 3;
 const INITIAL_RETRY_DELAY: Duration = Duration::from_millis(100);
 
-// pub async fn display_wallet_balances(
-//     rpc: &RpcClient,
-//     token_a_address: &Pubkey,
-//     token_b_address: &Pubkey,
-// ) -> Result<(), Box<dyn std::error::Error>> {
-//     let token_a_balance = fetch_token_balance(rpc, token_a_address).await?;
-//     let token_b_balance = fetch_token_balance(rpc, token_b_address).await?;
+pub async fn display_position_balances(
+    rpc: &RpcClient,
+    position: &Position,
+    token_mint_a_address: &Pubkey,
+    token_mint_b_address: &Pubkey,
+    decimals_a: u8,
+    decimals_b: u8,
+    slippage_tolerance_bps: u16,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let close_position_instructions = close_position_instructions(
+        &rpc,
+        position.position_mint,
+        Some(slippage_tolerance_bps),
+        None,
+    )
+    .await?;
 
-//     println!(
-//         "Wallet Balances: \n\
-//         - Token A ({:?}): {} \n\
-//         - Token B ({:?}): {}",
-//         token_a_address, token_a_balance, token_b_address, token_b_balance
-//     );
+    let positon_balance_token_a =
+        close_position_instructions.quote.token_est_a as f64 / 10u64.pow(decimals_a as u32) as f64;
+    let positon_balance_token_b =
+        close_position_instructions.quote.token_est_b as f64 / 10u64.pow(decimals_b as u32) as f64;
 
-//     Ok(())
-// }
+    println!(
+        "Position Balances: \n\
+        - Token A ({:?}): {} \n\
+        - Token B ({:?}): {} \n",
+        token_mint_a_address,
+        positon_balance_token_a,
+        token_mint_b_address,
+        positon_balance_token_b
+    );
 
-// async fn fetch_token_balance(
-//     rpc: &RpcClient,
-//     token_address: &Pubkey,
-// ) -> Result<String, Box<dyn std::error::Error>> {
-//     retry_async(
-//         || async {
-//             let balance = rpc.get_token_account_balance(token_address).await?;
-//             Ok(balance.ui_amount_string)
-//         },
-//         MAX_RETRIES,
-//         INITIAL_RETRY_DELAY,
-//         "fetch token balance",
-//     )
-//     .await
-// }
+    Ok(())
+}
+
+pub async fn display_wallet_balances(
+    rpc: &RpcClient,
+    wallet_address: &Pubkey,
+    token_mint_a_address: &Pubkey,
+    token_mint_b_address: &Pubkey,
+) -> Result<(), Box<dyn std::error::Error>> {
+    let token_a_balance = fetch_token_balance(rpc, wallet_address, token_mint_a_address).await?;
+    let token_b_balance = fetch_token_balance(rpc, wallet_address, token_mint_b_address).await?;
+
+    println!(
+        "Wallet Balances: \n\
+        - Token A ({:?}): {} \n\
+        - Token B ({:?}): {}",
+        token_mint_a_address, token_a_balance, token_mint_b_address, token_b_balance
+    );
+
+    Ok(())
+}
+
+async fn fetch_token_balance(
+    rpc: &RpcClient,
+    wallet_address: &Pubkey,
+    token_mint_address: &Pubkey,
+) -> Result<String, Box<dyn std::error::Error>> {
+    retry_async(
+        || async {
+            let mint_account = rpc.get_account(token_mint_address).await?;
+            let mint_owner_id = mint_account.owner;
+            let (token_address, _) = Pubkey::find_program_address(
+                &[
+                    &wallet_address.to_bytes(),
+                    &mint_owner_id.to_bytes(),
+                    &token_mint_address.to_bytes(),
+                ],
+                &Pubkey::from_str("ATokenGPvbdGVxr1b2hvZbsiqW5xWH25efTNsLJA8knL").unwrap(),
+            );
+            let balance = rpc.get_token_account_balance(&token_address).await?;
+            Ok(balance.ui_amount_string)
+        },
+        MAX_RETRIES,
+        INITIAL_RETRY_DELAY,
+        "fetch token balance",
+    )
+    .await
+}
 
 pub async fn fetch_position(
     rpc: &RpcClient,
@@ -177,7 +226,7 @@ async fn get_priority_fee_instruction(
                 compute_unit_price = (max_priority_fee_lamports * 1_000_000) / units_consumed;
             }
 
-            print_priority_fee_details(
+            display_priority_fee_details(
                 compute_unit_price,
                 units_consumed,
                 (units_consumed as u64 * compute_unit_price) / 1_000_000,
@@ -190,7 +239,7 @@ async fn get_priority_fee_instruction(
     Ok(None)
 }
 
-fn print_priority_fee_details(
+fn display_priority_fee_details(
     compute_unit_price: u64,
     units_consumed: u64,
     total_priority_fee_lamports: u64,
@@ -199,7 +248,7 @@ fn print_priority_fee_details(
         "Priority Fee Details:\n\
         - Compute Unit Price: {} microlamports\n\
         - Compute Units Consumed: {}\n\
-        - Total Priority Fee: {} lamports\n",
+        - Total Priority Fee: {} lamports",
         compute_unit_price, units_consumed, total_priority_fee_lamports
     );
 }
@@ -213,18 +262,21 @@ async fn calculate_priority_fee(
     if prioritization_fees.is_empty() || matches!(tier, PriorityFeeTier::None) {
         return Ok(None);
     }
-
-    let mut fees: Vec<u64> = prioritization_fees
+    let mut non_zero_fees: Vec<u64> = prioritization_fees
         .iter()
         .map(|fee| fee.prioritization_fee)
+        .filter(|&fee| fee > 0) // Keep only non-zero fees
         .collect();
-    fees.sort_unstable();
+    if non_zero_fees.is_empty() {
+        return Ok(Some(0));
+    }
+    non_zero_fees.sort_unstable();
 
     let fee = match tier {
-        PriorityFeeTier::Low => fees.get(fees.len() / 4).cloned(),
-        PriorityFeeTier::Medium => fees.get(fees.len() / 2).cloned(),
-        PriorityFeeTier::High => fees.get((fees.len() * 3) / 4).cloned(),
-        PriorityFeeTier::Turbo => fees.get((fees.len() * 95) / 100).cloned(),
+        PriorityFeeTier::Low => non_zero_fees.get(non_zero_fees.len() / 4).cloned(),
+        PriorityFeeTier::Medium => non_zero_fees.get(non_zero_fees.len() / 2).cloned(),
+        PriorityFeeTier::High => non_zero_fees.get((non_zero_fees.len() * 3) / 4).cloned(),
+        PriorityFeeTier::Turbo => non_zero_fees.get((non_zero_fees.len() * 95) / 100).cloned(),
         PriorityFeeTier::None => None,
     };
 

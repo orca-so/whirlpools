@@ -49,4 +49,12 @@ pub struct Args {
         help = "Maximum total priority fee in lamports.\n"
     )]
     pub max_priority_fee_lamports: u64,
+
+    #[arg(
+        short = 's',
+        long,
+        default_value_t = 100,
+        help = "Slippage tolerance in basis points (bps).\n"
+    )]
+    pub slippage_tolerance_bps: u16,
 }

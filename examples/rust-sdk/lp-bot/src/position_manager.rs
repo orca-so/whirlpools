@@ -1,39 +1,32 @@
 use crate::{
     cli::Args,
-    utils::{fetch_mint, fetch_position, fetch_whirlpool, send_transaction},
-    RPC_URL,
+    utils::{
+        display_position_balances, display_wallet_balances, fetch_position, fetch_whirlpool,
+        send_transaction,
+    },
 };
+use colored::Colorize;
 use orca_whirlpools::{
-    close_position_instructions, open_position_instructions, set_funder,
-    set_whirlpools_config_address, IncreaseLiquidityParam, WhirlpoolsConfigInput,
+    close_position_instructions, open_position_instructions, IncreaseLiquidityParam,
 };
-use orca_whirlpools_client::get_position_address;
+use orca_whirlpools_client::{get_position_address, Position};
 use orca_whirlpools_core::{sqrt_price_to_price, tick_index_to_price};
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::{pubkey::Pubkey, signer::Signer};
+use solana_sdk::signer::Signer;
+use spl_token_2022::state::Mint;
 
 pub async fn run_position_manager(
+    rpc: &RpcClient,
     args: &Args,
     wallet: &Box<dyn Signer>,
-    position_mint_address: &mut Pubkey,
+    position: &mut Position,
+    token_mint_a: &Mint,
+    token_mint_b: &Mint,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaMainnet).unwrap();
-    let rpc = RpcClient::new(RPC_URL.to_string());
-    set_funder(wallet.pubkey()).unwrap();
-
     println!("Checking position...");
-    let (position_address, _) = get_position_address(&position_mint_address).unwrap();
-    let position = fetch_position(&rpc, &position_address).await?;
 
     let whirlpool_address = position.whirlpool;
     let whirlpool = fetch_whirlpool(&rpc, &whirlpool_address).await?;
-
-    // let token_a_pubkey = whirlpool.token_mint_a;
-    // let token_b_pubkey = whirlpool.token_mint_b;
-    // display_wallet_balances(&rpc, &token_a_pubkey, &token_b_pubkey).await?;
-
-    let token_mint_a = fetch_mint(&rpc, &whirlpool.token_mint_a).await?;
-    let token_mint_b = fetch_mint(&rpc, &whirlpool.token_mint_b).await?;
 
     let current_price = sqrt_price_to_price(
         whirlpool.sqrt_price,
@@ -62,10 +55,20 @@ pub async fn run_position_manager(
     println!("Price deviation from center: {:.2}%", deviation);
 
     if deviation >= args.threshold {
-        println!("Deviation exceeds threshold. Rebalancing position...");
+        println!(
+            "{}",
+            "Deviation exceeds threshold. Rebalancing position."
+                .to_string()
+                .yellow()
+        );
 
-        let close_position_instructions =
-            close_position_instructions(&rpc, *position_mint_address, Some(100), None).await?;
+        let close_position_instructions = close_position_instructions(
+            &rpc,
+            position.position_mint,
+            Some(args.slippage_tolerance_bps),
+            None,
+        )
+        .await?;
 
         let new_lower_price = current_price - (position_upper_price - position_lower_price) / 2.0;
         let new_upper_price = current_price + (position_upper_price - position_lower_price) / 2.0;
@@ -106,13 +109,41 @@ pub async fn run_position_manager(
         .await?;
         println!("Rebalancing transaction signature: {}", signature);
 
-        *position_mint_address = open_position_instructions.position_mint;
+        let position_mint_address = open_position_instructions.position_mint;
+        let (position_address, _) = get_position_address(&position_mint_address)?;
+        *position = fetch_position(&rpc, &position_address).await?;
         println!(
             "New position mint address: {}",
             open_position_instructions.position_mint
         );
+
+        display_wallet_balances(
+            &rpc,
+            &wallet.pubkey(),
+            &whirlpool.token_mint_a,
+            &whirlpool.token_mint_b,
+        )
+        .await
+        .unwrap();
+
+        display_position_balances(
+            &rpc,
+            &position,
+            &whirlpool.token_mint_a,
+            &whirlpool.token_mint_b,
+            token_mint_a.decimals,
+            token_mint_b.decimals,
+            args.slippage_tolerance_bps,
+        )
+        .await
+        .unwrap();
     } else {
-        println!("Current price is within range. No repositioning needed.");
+        println!(
+            "{}",
+            "Current price is within range. No repositioning needed."
+                .to_string()
+                .green()
+        );
     }
     Ok(())
 }

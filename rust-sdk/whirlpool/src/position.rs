@@ -116,7 +116,7 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 /// # Example
 /// ```rust
 /// use orca_whirlpools::{
-///     get_positions_for_owner, set_whirlpools_config_address, WhirlpoolsConfigInput
+///     fetch_positions_for_owner, set_whirlpools_config_address, WhirlpoolsConfigInput
 /// };
 /// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
@@ -129,14 +129,14 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 ///     let whirlpool_address =
 ///         Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
 ///
-///     let positions = get_positions_for_owner(&rpc, whirlpool_address)
+///     let positions = fetch_positions_for_owner(&rpc, whirlpool_address)
 ///         .await
 ///         .unwrap();
 ///
 ///     println!("Positions: {:?}", positions);
 /// }
 /// ```
-pub async fn get_positions_for_owner(
+pub async fn fetch_positions_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
 ) -> Result<Vec<PositionOrBundle>, Box<dyn Error>> {

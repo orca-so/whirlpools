@@ -137,30 +137,35 @@ pub struct IncreaseLiquidityInstruction {
 /// # Example
 ///
 /// ```rust
-/// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
 /// use orca_whirlpools::{
-///     increase_liquidity_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address, IncreaseLiquidityParam
+///     increase_liquidity_instructions, set_whirlpools_config_address, IncreaseLiquidityParam,
+///     WhirlpoolsConfigInput,
 /// };
+/// use solana_client::nonblocking::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
 /// use std::str::FromStr;
+/// use crate::utils::load_wallet;
 ///
-/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// #[tokio::main]
+/// async fn main() {
+///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+///     let wallet = load_wallet();
+///     let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
+///     let param = IncreaseLiquidityParam::TokenA(1_000_000);
 ///
-/// let position_mint_address = Pubkey::from_str("POSITION_NFT_MINT_PUBKEY").unwrap();
-/// let param = IncreaseLiquidityParam::TokenA(1_000_000);
-/// let slippage_tolerance_bps = Some(100);
+///     let result = increase_liquidity_instructions(
+///         &rpc,
+///         position_mint_address,
+///         param,
+///         Some(100),
+///         Some(wallet.pubkey()),
+///     )
+///     .await.unwrap();
 ///
-/// let result = increase_liquidity_instructions(
-///     &rpc,
-///     position_mint_address,
-///     param,
-///     slippage_tolerance_bps,
-///     None, // SET GLOBAL FUNDER
-/// ).unwrap();
-///
-/// println!("Liquidity Increase Quote: {:?}", result.quote);
-/// println!("Number of Instructions: {}", result.instructions.len());
+///     println!("Liquidity Increase Quote: {:?}", result.quote);
+///     println!("Number of Instructions: {}", result.instructions.len());
+/// }
 /// ```
 pub async fn increase_liquidity_instructions(
     rpc: &RpcClient,

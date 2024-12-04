@@ -6,7 +6,7 @@ Orca Whirlpools is an open-source concentrated liquidity AMM contract on the Sol
 
 The Orca Whirlpools SDK provides a comprehensive set of tools to interact with the Whirlpools program on Solana and Eclipse.
 
-> **Note:** This SDK uses Solana Web3.js SDK v2, which is currently in Release Candidate (RC) status. It is not compatible with the widely used v1.x.x version.
+> **Note:** This SDK uses Solana Web3.js SDK v2. It is not compatible with the widely used v1.x.x version.
 
 ## Installation
 
@@ -30,7 +30,7 @@ const wallet = await generateKeyPairSigner();
 ### 2. Configure the Whirlpools SDK for Your Network
 Orca's Whirlpools SDK supports several networks: Solana Mainnet, Solana Devnet, Eclipse Mainnet, and Eclipse Testnet. To select a network, use the `setWhirlpoolsConfig` function. This ensures compatibility with the network you’re deploying on.
 
-Example: Setting the SDK Configuration to Solana Devnet. 
+Example: Setting the SDK Configuration to Solana Devnet.
 ```tsx
 import { setWhirlpoolsConfig } from '@orca-so/whirlpools';
 
@@ -57,10 +57,10 @@ const slippageTolerance = 100; // 1bps
 
 const { instructions, quote } = await swapInstructions(
     devnetRpc,
-    { 
-        inputAmount: amount, 
+    {
+        inputAmount: amount,
         mint: mintAddress
-    }, 
+    },
     poolAddress,
     slippageTolerance,
     wallet
@@ -91,10 +91,10 @@ const slippageTolerance = 100; // 1bps
 
 const { instructions, quote } = await swapInstructions(
     devnetRpc,
-    { 
-        inputAmount: amount, 
+    {
+        inputAmount: amount,
         mint: mintAddress
-    }, 
+    },
     poolAddress,
     slippageTolerance,
     wallet

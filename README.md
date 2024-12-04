@@ -18,7 +18,7 @@ The program has been audited several times by different security firms.
 
 ## Usage
 
-This repository contains several libraries that can be used to interact with the Whirlpools contract. For most purposes you can use our high-level SDKs, `@orca-so/whirlpools` for Typescript projects, and `orca_whirlpools` (currently in development) for Rust projects.
+This repository contains several libraries that can be used to interact with the Whirlpools contract. For most purposes you can use our high-level SDKs, `@orca-so/whirlpools` for Typescript projects, and `orca_whirlpools` for Rust projects.
 
 For specific use-cases you can opt for integrating with lower level packages such as:
 * `@orca-so/whirlpools-client` & `orca_whirlpools_client` - auto-generated client for the Whirlpools program that contains account, instruction and error parsing.
@@ -30,10 +30,11 @@ For a more detailed overview of our SDK suite and usage examples, visit our [dev
 
 ## Local Development
 
-This monorepo contains all the code needed to build, deploy and interact the Whirlpools contract.
+This monorepo contains all the code needed to build, deploy and interact with the Whirlpools contract.
 
 ### Requirements
 
+- Rust 1.78.0
 - Anchor v0.29.0
 - Solana v1.17.22
 

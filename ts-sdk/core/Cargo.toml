@@ -12,3 +12,4 @@ orca_whirlpools_core = { path = "../../rust-sdk/core", features = ["wasm", "floa
 
 [profile.release]
 opt-level = "s"
+strip = true

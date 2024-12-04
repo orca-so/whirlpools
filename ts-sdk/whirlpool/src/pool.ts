@@ -64,19 +64,25 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  * @returns {Promise<PoolInfo>} - A promise that resolves to the pool information, which includes whether the pool is initialized or not.
  *
  * @example
- * import { fetchSplashPool } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { fetchSplashPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
- *
- * const tokenMintOne = "TOKEN_MINT_ONE";
- * const tokenMintTwo = "TOKEN_MINT_TWO";
+ * const tokenMintOne = address("So11111111111111111111111111111111111111112");
+ * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); //devUSDC
  *
  * const poolInfo = await fetchSplashPool(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo
  * );
+ *
+ * if (poolInfo.initialized) {
+ *   console.log("Pool is initialized:", poolInfo);
+ * } else {
+ *   console.log("Pool is not initialized:", poolInfo);
+ * };
  */
 export async function fetchSplashPool(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
@@ -101,21 +107,28 @@ export async function fetchSplashPool(
  * @returns {Promise<PoolInfo>} - A promise that resolves to the pool information, which includes whether the pool is initialized or not.
  *
  * @example
- * import { fetchPool } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { fetchConcentratedLiquidityPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  *
- * const tokenMintOne = "TOKEN_MINT_ONE";
- * const tokenMintTwo = "TOKEN_MINT_TWO";
+ * const tokenMintOne = address("So11111111111111111111111111111111111111112");
+ * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
  * const tickSpacing = 64;
  *
- * const poolInfo = await fetchPool(
+ * const poolInfo = await fetchConcentratedLiquidityPool(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo,
  *   tickSpacing
  * );
+ *
+ * if (poolInfo.initialized) {
+ *   console.log("Pool is initialized:", poolInfo);
+ * } else {
+ *   console.log("Pool is not initialized:", poolInfo);
+ * };
  */
 export async function fetchConcentratedLiquidityPool(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi>,
@@ -180,19 +193,28 @@ export async function fetchConcentratedLiquidityPool(
  * @returns {Promise<PoolInfo[]>} - A promise that resolves to an array of pool information for each pool between the two tokens.
  *
  * @example
- * import { fetchWhirlpoolsByTokenPair } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { fetchWhirlpoolsByTokenPair, setWhirlpoolsConfig } from '@orca-so/whirlpools';
+ * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
  *
+ * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  *
- * const tokenMintOne = "TOKEN_MINT_ONE";
- * const tokenMintTwo = "TOKEN_MINT_TWO";
+ * const tokenMintOne = address("So11111111111111111111111111111111111111112");
+ * const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
  *
- * const pools = await fetchWhirlpoolsByTokenPair(
+ * const poolInfos = await fetchWhirlpoolsByTokenPair(
  *   devnetRpc,
  *   tokenMintOne,
  *   tokenMintTwo
  * );
+ *
+ * poolInfos.forEach((poolInfo) => {
+ *   if (poolInfo.initialized) {
+ *     console.log("Pool is initialized:", poolInfo);
+ *   } else {
+ *     console.log("Pool is not initialized:", poolInfo);
+ *   }
+ * });
  */
 export async function fetchWhirlpoolsByTokenPair(
   rpc: Rpc<GetAccountInfoApi & GetMultipleAccountsApi & GetProgramAccountsApi>,

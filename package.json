@@ -9,8 +9,7 @@
     "test": "nx run-many --target test --projects",
     "format": "nx run-many --target format --projects",
     "lint": "nx run-many --target lint --projects",
-    "clean": "nx reset && nx run-many --target clean --projects",
-    "prepare": "husky install"
+    "clean": "nx reset && nx run-many --target clean --projects"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",

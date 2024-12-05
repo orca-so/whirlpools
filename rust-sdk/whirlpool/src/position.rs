@@ -114,20 +114,29 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 /// - RPC calls fail when fetching account data.
 ///
 /// # Example
-///
 /// ```rust
-/// use solana_client::rpc_client::RpcClient;
+/// use orca_whirlpools::{
+///     fetch_positions_for_owner, set_whirlpools_config_address, WhirlpoolsConfigInput
+/// };
+/// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools::get_positions_for_owner;
 /// use std::str::FromStr;
 ///
-/// let rpc = RpcClient::new("https://api.devnet.solana.com");
-/// let owner = Pubkey::from_str("OWNER_PUBLIC_KEY").unwrap();
+/// #[tokio::main]
+/// async fn main() {
+///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+///     let whirlpool_address =
+///         Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
 ///
-/// let positions = get_positions_for_owner(&rpc, owner).unwrap();
-/// println!("{:?}", positions);
+///     let positions = fetch_positions_for_owner(&rpc, whirlpool_address)
+///         .await
+///         .unwrap();
+///
+///     println!("Positions: {:?}", positions);
+/// }
 /// ```
-pub async fn get_positions_for_owner(
+pub async fn fetch_positions_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
 ) -> Result<Vec<PositionOrBundle>, Box<dyn Error>> {
@@ -258,16 +267,26 @@ pub async fn get_positions_for_owner(
 /// # Example
 ///
 /// ```rust
-/// use solana_client::rpc_client::RpcClient;
+/// use orca_whirlpools::{
+///     fetch_positions_in_whirlpool, set_whirlpools_config_address, WhirlpoolsConfigInput,
+/// };
+/// use solana_client::nonblocking::rpc_client::RpcClient;
 /// use solana_sdk::pubkey::Pubkey;
-/// use orca_whirlpools::fetch_positions_in_whirlpool;
 /// use std::str::FromStr;
 ///
-/// let rpc = RpcClient::new("https://api.devnet.solana.com");
-/// let whirlpool = Pubkey::from_str("WHIRLPOOL_PUBLIC_KEY").unwrap();
+/// #[tokio::main]
+/// async fn main() {
+///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+///     let whirlpool_address =
+///         Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
 ///
-/// let positions = fetch_positions_in_whirlpool(&rpc, whirlpool).unwrap();
-/// println!("{:?}", positions);
+///     let positions = fetch_positions_in_whirlpool(&rpc, whirlpool_address)
+///         .await
+///         .unwrap();
+///
+///     println!("Positions: {:?}", positions);
+/// }
 /// ```
 pub async fn fetch_positions_in_whirlpool(
     rpc: &RpcClient,

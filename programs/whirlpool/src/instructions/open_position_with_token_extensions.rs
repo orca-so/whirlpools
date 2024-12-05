@@ -84,7 +84,7 @@ pub fn handler(
 
     if with_token_metadata {
         let (name, symbol, uri) = build_position_token_metadata(position_mint, position, whirlpool);
-    
+
         initialize_token_metadata_extension(
             name,
             symbol,

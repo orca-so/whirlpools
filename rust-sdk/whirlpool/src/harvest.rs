@@ -79,27 +79,31 @@ pub struct HarvestPositionInstruction {
 /// # Example
 ///
 /// ```rust
-/// use solana_client::rpc_client::RpcClient;
-/// use solana_sdk::pubkey::Pubkey;
 /// use orca_whirlpools::{
-///     harvest_position_instructions, WhirlpoolsConfigInput, set_whirlpools_config_address
+///     harvest_position_instructions, set_whirlpools_config_address, WhirlpoolsConfigInput,
 /// };
+/// use solana_client::nonblocking::rpc_client::RpcClient;
+/// use solana_sdk::pubkey::Pubkey;
 /// use std::str::FromStr;
+/// use crate::utils::load_wallet;
 ///
-/// set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-/// let rpc = RpcClient::new("https://api.devnet.solana.com");
+/// #[tokio::main]
+/// async fn main() {
+///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+///     let wallet = load_wallet();
 ///
-/// let position_mint_address = Pubkey::from_str("POSITION_NFT_MINT_PUBKEY").unwrap();;
+///     let position_mint_address =
+///         Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
 ///
-/// let result = harvest_position_instructions(
-///     &rpc,
-///     position_mint_address,
-///     None, // SET GLOBAL FUNDER
-/// ).unwrap();
+///     let result = harvest_position_instructions(&rpc, position_mint_address, Some(wallet.pubkey()))
+///         .await
+///         .unwrap();
 ///
-/// println!("Fees Quote: {:?}", result.fees_quote);
-/// println!("Rewards Quote: {:?}", result.rewards_quote);
-/// println!("Number of Instructions: {}", result.instructions.len());
+///     println!("Fees Quote: {:?}", result.fees_quote);
+///     println!("Rewards Quote: {:?}", result.rewards_quote);
+///     println!("Number of Instructions: {}", result.instructions.len());
+/// }
 /// ```
 pub async fn harvest_position_instructions(
     rpc: &RpcClient,

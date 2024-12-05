@@ -1,7 +1,5 @@
 import { PublicKey } from "@solana/web3.js";
-import {
-  WhirlpoolIx,
-} from "@orca-so/whirlpools-sdk";
+import { WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { sendTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
@@ -22,25 +20,31 @@ const updatableRewardIndexes: number[] = [];
 whirlpool.rewardInfos.forEach((ri, i) => {
   const updatable = ri.authority.equals(ctx.wallet.publicKey);
   if (updatable) updatableRewardIndexes.push(i);
-  console.info(`reward[${i}] authority: ${ri.authority.toBase58()} ${updatable ? " (Updatable)" : " (wallet is not authority)"}`);
-})
+  console.info(
+    `reward[${i}] authority: ${ri.authority.toBase58()} ${updatable ? " (Updatable)" : " (wallet is not authority)"}`,
+  );
+});
 
 if (updatableRewardIndexes.length === 0) {
   throw new Error("This wallet is NOT reward authority for all reward indexes");
 }
 
-console.info("\nEnter new reward authority\n* If you don't want to update it, just type SKIP\n");
+console.info(
+  "\nEnter new reward authority\n* If you don't want to update it, just type SKIP\n",
+);
 
-const newRewardAuthorities: (PublicKey|undefined)[] = [];
-for (let i=0; i<updatableRewardIndexes.length; i++) {
-  const newRewardAuthority = await promptText(`newRewardAuthority for reward[${updatableRewardIndexes[i]}]`);
+const newRewardAuthorities: (PublicKey | undefined)[] = [];
+for (let i = 0; i < updatableRewardIndexes.length; i++) {
+  const newRewardAuthority = await promptText(
+    `newRewardAuthority for reward[${updatableRewardIndexes[i]}]`,
+  );
   try {
     const newAuthority = new PublicKey(newRewardAuthority);
     if (newAuthority.equals(ctx.wallet.publicKey)) {
       throw new Error("newAuthority is same to the current authority");
     }
     newRewardAuthorities.push(newAuthority);
-  } catch(_e) {
+  } catch (_e) {
     newRewardAuthorities.push(undefined);
   }
 }
@@ -50,11 +54,15 @@ if (newRewardAuthorities.every((a) => a === undefined)) {
 }
 
 console.info("setting...");
-for (let i=0; i<updatableRewardIndexes.length; i++) {
+for (let i = 0; i < updatableRewardIndexes.length; i++) {
   if (newRewardAuthorities[i]) {
-    console.info(`\treward[${updatableRewardIndexes[i]}] ${whirlpool.rewardInfos[updatableRewardIndexes[i]].authority.toBase58()} -> ${newRewardAuthorities[i]!.toBase58()}`);
+    console.info(
+      `\treward[${updatableRewardIndexes[i]}] ${whirlpool.rewardInfos[updatableRewardIndexes[i]].authority.toBase58()} -> ${newRewardAuthorities[i]!.toBase58()}`,
+    );
   } else {
-    console.info(`\treward[${updatableRewardIndexes[i]}] ${whirlpool.rewardInfos[updatableRewardIndexes[i]].authority.toBase58()} (unchanged)`);
+    console.info(
+      `\treward[${updatableRewardIndexes[i]}] ${whirlpool.rewardInfos[updatableRewardIndexes[i]].authority.toBase58()} (unchanged)`,
+    );
   }
 }
 console.info("\nif the above is OK, enter YES");
@@ -64,19 +72,19 @@ if (!yesno) {
 }
 
 const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
-for (let i=0; i<updatableRewardIndexes.length; i++) {
-    const rewardIndex = updatableRewardIndexes[i];
-    const newRewardAuthority = newRewardAuthorities[i];
-    if (newRewardAuthority) {
-      builder.addInstruction(
-        WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
-          whirlpool: whirlpoolPubkey,
-          rewardIndex,
-          rewardAuthority: ctx.wallet.publicKey,
-          newRewardAuthority,
-        }),
-      );
-    }
+for (let i = 0; i < updatableRewardIndexes.length; i++) {
+  const rewardIndex = updatableRewardIndexes[i];
+  const newRewardAuthority = newRewardAuthorities[i];
+  if (newRewardAuthority) {
+    builder.addInstruction(
+      WhirlpoolIx.setRewardAuthorityIx(ctx.program, {
+        whirlpool: whirlpoolPubkey,
+        rewardIndex,
+        rewardAuthority: ctx.wallet.publicKey,
+        newRewardAuthority,
+      }),
+    );
+  }
 }
 
 await sendTransaction(builder);

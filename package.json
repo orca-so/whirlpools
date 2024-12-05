@@ -9,17 +9,14 @@
     "test": "nx run-many --target test --projects",
     "format": "nx run-many --target format --projects",
     "lint": "nx run-many --target lint --projects",
-    "clean": "nx reset && nx run-many --target clean --projects",
-    "prepare": "husky install"
+    "clean": "nx reset && nx run-many --target clean --projects"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
-    "husky": "^9.1.7",
-    "lint-staged": "^15.2.10",
-    "nx": "^20.1.3",
+    "nx": "^20.1.4",
     "rimraf": "^6.0.1",
     "tsup": "^8.3.5",
-    "vitest": "^2.1.6"
+    "vitest": "^2.1.8"
   },
   "workspaces": [
     "programs/*",
@@ -28,8 +25,5 @@
     "legacy-sdk/*",
     "examples/*",
     "docs/*"
-  ],
-  "lint-staged": {
-    "*": "yarn format"
-  }
+  ]
 }

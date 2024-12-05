@@ -5,7 +5,7 @@
     "build": "cargo build -p orca_whirlpools_core",
     "test": "cargo test -p orca_whirlpools_core --lib",
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
-    "lint": "cargo clippy",
+    "lint": "cargo clippy && cargo fmt --check",
     "clean": "cargo clean -p orca_whirlpools_core"
   },
   "devDependencies": {

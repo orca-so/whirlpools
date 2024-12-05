@@ -22,7 +22,7 @@ export const ORCA_WHIRLPOOLS_CONFIG = new PublicKey(
  * @category Constants
  */
 export const ORCA_WHIRLPOOLS_CONFIG_ECLIPSE = new PublicKey(
-    "FVG4oDbGv16hqTUbovjyGmtYikn6UBEnazz6RVDMEFwv",
+  "FVG4oDbGv16hqTUbovjyGmtYikn6UBEnazz6RVDMEFwv",
 );
 
 /**

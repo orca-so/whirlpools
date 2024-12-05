@@ -401,7 +401,7 @@ mod tests {
             &native_mint::ID,
             &TOKEN_PROGRAM_ID,
         );
-        
+
         // Initially account should not exist
         let result = ctx.rpc.get_account(&ata).await;
         assert!(result.is_err(), "Account should not exist initially");
@@ -415,9 +415,9 @@ mod tests {
         .unwrap();
 
         // When strategy is None, we still map the address but don't create instructions
-        assert_eq!(result.create_instructions.len(), 1);  // ATA creation is allowed
+        assert_eq!(result.create_instructions.len(), 1); // ATA creation is allowed
         assert_eq!(result.cleanup_instructions.len(), 0);
-        assert_eq!(result.token_account_addresses.len(), 1);  // Address is mapped
+        assert_eq!(result.token_account_addresses.len(), 1); // Address is mapped
 
         // Execute instructions
         ctx.send_transaction_with_signers(
@@ -431,8 +431,11 @@ mod tests {
         let result = ctx.rpc.get_account(&ata).await;
         assert!(result.is_err(), "Account should not exist after execution");
         if let Err(err) = result {
-            assert!(err.to_string().contains("AccountNotFound"), 
-                "Expected AccountNotFound error, got: {}", err);
+            assert!(
+                err.to_string().contains("AccountNotFound"),
+                "Expected AccountNotFound error, got: {}",
+                err
+            );
         }
     }
 

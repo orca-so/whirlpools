@@ -18,6 +18,7 @@ use spl_token_2022::extension::{BaseStateWithExtensions, StateWithExtensions};
 use spl_token_2022::state::{Account, Mint};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{collections::HashMap, error::Error};
+use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 
 use crate::{NativeMintWrappingStrategy, NATIVE_MINT_WRAPPING_STRATEGY};
 
@@ -268,9 +269,15 @@ pub(crate) fn get_current_transfer_fee(
     current_epoch: u64,
 ) -> Option<TransferFee> {
     let token_mint_data = &mint_account_info?.data;
+    println!("Token mint data length: {}, {:?}", token_mint_data.len(), token_mint_data);
+    
     let token_mint_unpacked = StateWithExtensions::<Mint>::unpack(token_mint_data).ok()?;
+    println!("Successfully unpacked token mint data");
+    
     if let Ok(transfer_fee_config) = token_mint_unpacked.get_extension::<TransferFeeConfig>() {
+        println!("Found transfer fee config extension");
         let fee = transfer_fee_config.get_epoch_fee(current_epoch);
+            
         return Some(TransferFee {
             fee_bps: fee.transfer_fee_basis_points.into(),
             max_fee: fee.maximum_fee.into(),
@@ -319,6 +326,10 @@ pub fn order_mints(mint1: Pubkey, mint2: Pubkey) -> [Pubkey; 2] {
 mod tests {
     use super::*;
     use std::str::FromStr;
+    use solana_program::program_option::COption;
+    use spl_token_2022::extension::ExtensionType;
+    use crate::tests::{RpcContext, setup_mint_te, setup_mint_te_fee};
+    use serial_test::serial;
 
     #[test]
     fn test_order_mints() {
@@ -332,5 +343,133 @@ mod tests {
         let [mint_c, mint_d] = order_mints(mint2, mint1);
         assert_eq!(mint_c, mint1);
         assert_eq!(mint_d, mint2);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_token_2022_extensions() {
+        let ctx = RpcContext::new().await;
+
+        // Create Token-2022 mint with transfer fee
+        let mint_te = setup_mint_te_fee(&ctx).await.unwrap();
+        let mint_account = ctx.rpc.get_account(&mint_te).await.unwrap();
+
+        // Test transfer fee at epoch 0
+        let older = get_current_transfer_fee(Some(&mint_account), 0).unwrap();
+        assert_eq!(older.fee_bps, 100);  // 1%
+        assert_eq!(older.max_fee, 1_000_000_000);  // 1 token
+
+        // Test transfer fee at epoch 2
+        let newer = get_current_transfer_fee(Some(&mint_account), 2).unwrap();
+        assert_eq!(newer.fee_bps, 150);  // 1.5%
+        assert_eq!(newer.max_fee, 1_000_000_000);  // 1 token
+
+        // Test with no fee
+        let no_fee_result = get_current_transfer_fee(None, 0);
+        assert!(no_fee_result.is_none());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_token_2022_account() {
+        let ctx = RpcContext::new().await;
+        
+        // Create basic Token-2022 mint (without transfer fee)
+        let mint = setup_mint_te(&ctx, &[]).await.unwrap();
+        let mint_account = ctx.rpc.get_account(&mint).await.unwrap();
+        
+        // Verify account data
+        assert_eq!(mint_account.data.len(), 82);  
+        assert_eq!(mint_account.owner, TOKEN_2022_PROGRAM_ID);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_token_2022_with_transfer_fee() {
+        let ctx = RpcContext::new().await;
+        
+        // Create Token-2022 mint with transfer fee
+        let mint = setup_mint_te_fee(&ctx).await.unwrap();
+        
+        // Verify account data
+        let account = ctx.rpc.get_account(&mint).await.unwrap();
+        assert!(account.data.len() > 82);  // Size is larger due to extension
+        assert_eq!(account.owner, TOKEN_2022_PROGRAM_ID);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_no_tokens() {
+        let ctx = RpcContext::new().await;
+        let result = prepare_token_accounts_instructions(&ctx.rpc, ctx.signer.pubkey(), vec![])
+            .await
+            .unwrap();
+
+        assert_eq!(result.create_instructions.len(), 0);
+        assert_eq!(result.cleanup_instructions.len(), 0);
+        assert_eq!(result.token_account_addresses.len(), 0);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_native_mint_wrapping_none() {
+        let ctx = RpcContext::new().await;
+        crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::None).unwrap();
+
+        let result = prepare_token_accounts_instructions(
+            &ctx.rpc,
+            ctx.signer.pubkey(),
+            vec![TokenAccountStrategy::WithoutBalance(native_mint::ID)],
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result.create_instructions.len(), 1); // Create ATA
+        assert_eq!(result.cleanup_instructions.len(), 0);
+        assert_eq!(result.token_account_addresses.len(), 1);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_native_mint_wrapping_ata() {
+        let ctx = RpcContext::new().await;
+        crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::Ata).unwrap();
+    
+        let result = prepare_token_accounts_instructions(
+            &ctx.rpc,
+            ctx.signer.pubkey(),
+            vec![TokenAccountStrategy::WithBalance(
+                native_mint::ID,
+                1_000_000,
+            )],
+        )
+        .await
+        .unwrap();
+    
+        assert_eq!(result.create_instructions.len(), 3); // Create ATA + transfer + sync_native
+        assert_eq!(result.token_account_addresses.len(), 1);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_native_mint_wrapping_keypair() {
+        let ctx = RpcContext::new().await;
+        crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::Keypair).unwrap();
+
+        let result = prepare_token_accounts_instructions(
+            &ctx.rpc,
+            ctx.signer.pubkey(),
+            vec![TokenAccountStrategy::WithBalance(
+                native_mint::ID,
+                1_000_000,
+            )],
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(result.create_instructions.len(), 2); // create + initialize
+        assert_eq!(result.cleanup_instructions.len(), 1); // close
+        assert_eq!(result.token_account_addresses.len(), 1);
+        assert_eq!(result.additional_signers.len(), 1);
     }
 }

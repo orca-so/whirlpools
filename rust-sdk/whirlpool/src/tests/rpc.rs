@@ -37,12 +37,19 @@ use spl_memo::build_memo;
 use spl_token::{state::Account as TokenAccount, ID as TOKEN_PROGRAM_ID};
 use spl_token_2022::{
     extension::{
-        transfer_fee::{TransferFee, TransferFeeConfig},
+        transfer_fee::{
+            instruction::{initialize_transfer_fee_config, set_transfer_fee},
+            TransferFee, 
+            TransferFeeConfig,
+        },
         ExtensionType,
+        StateWithExtensionsMut,
     },
+    instruction::initialize_mint2,
     state::Mint,
     ID as TOKEN_2022_PROGRAM_ID,
 };
+use spl_pod::optional_keys::OptionalNonZeroPubkey;
 
 use super::anchor::anchor_programs;
 use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
@@ -212,66 +219,6 @@ impl RpcContext {
             VersionedTransaction::try_new(message, &[signers, vec![&self.signer]].concat())?;
         let signature = self.rpc.send_transaction(&transaction).await?;
         Ok(signature)
-    }
-
-    pub async fn create_token_2022_mint(
-        &self,
-        extensions: &[ExtensionType],
-    ) -> Result<Pubkey, Box<dyn Error>> {
-        self.track_token_call("create_token_2022_mint".to_string())
-            .await;
-
-        let mint = Keypair::new();
-        let space = ExtensionType::try_calculate_account_len::<Mint>(extensions)?;
-        let rent = self
-            .rpc
-            .get_minimum_balance_for_rent_exemption(space)
-            .await?;
-
-        let create_account = system_instruction::create_account(
-            &self.signer.pubkey(),
-            &mint.pubkey(),
-            rent,
-            space as u64,
-            &TOKEN_2022_PROGRAM_ID,
-        );
-
-        let mut data = vec![0; space];
-        let mint_data = Mint {
-            mint_authority: COption::Some(self.signer.pubkey()),
-            supply: 0,
-            decimals: 6,
-            is_initialized: true,
-            freeze_authority: COption::None,
-        };
-        Mint::pack(mint_data, &mut data[0..Mint::get_packed_len()])?;
-
-        let new_account = Account {
-            lamports: rent,
-            data: data.clone(),
-            owner: TOKEN_2022_PROGRAM_ID,
-            executable: false,
-            rent_epoch: 0,
-        };
-
-        let mut context = self.context.lock().await;
-        context.set_account(
-            &mint.pubkey(),
-            &solana_sdk::account::AccountSharedData::from(new_account.clone()),
-        );
-
-        let mut accounts = self.accounts.write().await;
-        accounts.insert(mint.pubkey(), new_account);
-        self.token_responses
-            .write()
-            .await
-            .insert(format!("mint_{}", mint.pubkey()), data);
-
-        Ok(mint.pubkey())
-    }
-
-    async fn track_token_call(&self, call: String) {
-        self.token_calls.write().await.push(call);
     }
 }
 

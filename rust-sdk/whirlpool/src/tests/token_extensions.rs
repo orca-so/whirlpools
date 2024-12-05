@@ -1,7 +1,6 @@
-use std::error::Error;
 use solana_sdk::{
     pubkey::Pubkey,
-    signer::{Signer, keypair::Keypair},
+    signer::{keypair::Keypair, Signer},
     system_instruction,
 };
 use spl_associated_token_account::{
@@ -10,16 +9,14 @@ use spl_associated_token_account::{
 };
 use spl_token_2022::{
     extension::{
+        transfer_fee::instruction::{initialize_transfer_fee_config, set_transfer_fee},
         ExtensionType,
-        transfer_fee::instruction::{
-            initialize_transfer_fee_config,
-            set_transfer_fee,
-        },
     },
     instruction::{initialize_mint2, mint_to},
     state::Mint,
     ID as TOKEN_2022_PROGRAM_ID,
 };
+use std::error::Error;
 
 use super::rpc::RpcContext;
 
@@ -52,44 +49,39 @@ pub async fn setup_mint_te(
 
     // 2. Initialize extensions
     if extensions.contains(&ExtensionType::TransferFeeConfig) {
-        instructions.push(
-            initialize_transfer_fee_config(
-                &TOKEN_2022_PROGRAM_ID,
-                &mint.pubkey(),
-                Some(&ctx.signer.pubkey()),
-                Some(&ctx.signer.pubkey()),
-                100,  // 1% (matching program)
-                1_000_000_000,  // 1 token (matching program)
-            )?,
-        );
+        instructions.push(initialize_transfer_fee_config(
+            &TOKEN_2022_PROGRAM_ID,
+            &mint.pubkey(),
+            Some(&ctx.signer.pubkey()),
+            Some(&ctx.signer.pubkey()),
+            100,           // 1% (matching program)
+            1_000_000_000, // 1 token (matching program)
+        )?);
     }
 
     // 3. Initialize mint
-    instructions.push(
-        initialize_mint2(
-            &TOKEN_2022_PROGRAM_ID,
-            &mint.pubkey(),
-            &ctx.signer.pubkey(),
-            None,  // freeze_authority
-            6,    // decimals
-        )?,
-    );
+    instructions.push(initialize_mint2(
+        &TOKEN_2022_PROGRAM_ID,
+        &mint.pubkey(),
+        &ctx.signer.pubkey(),
+        None, // freeze_authority
+        6,    // decimals
+    )?);
 
     // 4. Set newer transfer fee if needed
     if extensions.contains(&ExtensionType::TransferFeeConfig) {
-        instructions.push(
-            set_transfer_fee(
-                &TOKEN_2022_PROGRAM_ID,
-                &mint.pubkey(),
-                &ctx.signer.pubkey(),
-                &[],
-                150,  // 1.5% (matching program)
-                1_000_000_000,  // 1 token
-            )?,
-        );
+        instructions.push(set_transfer_fee(
+            &TOKEN_2022_PROGRAM_ID,
+            &mint.pubkey(),
+            &ctx.signer.pubkey(),
+            &[],
+            150,           // 1.5% (matching program)
+            1_000_000_000, // 1 token
+        )?);
     }
 
-    ctx.send_transaction_with_signers(instructions, vec![&mint]).await?;
+    ctx.send_transaction_with_signers(instructions, vec![&mint])
+        .await?;
     Ok(mint.pubkey())
 }
 

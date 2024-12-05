@@ -1,6 +1,5 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
-use std::{collections::HashMap, error::Error, str::FromStr, sync::Arc};
-use tokio::sync::{Mutex, RwLock};
+use std::{error::Error, str::FromStr};
 
 use async_trait::async_trait;
 use orca_whirlpools_client::{
@@ -8,50 +7,34 @@ use orca_whirlpools_client::{
 };
 use serde_json::{from_value, to_value, Value};
 use solana_account_decoder::{UiAccount, UiAccountEncoding};
+use solana_client::client_error::Result as ClientResult;
 use solana_client::{
-    client_error::{ClientError, ClientErrorKind, Result as ClientResult},
+    client_error::{ClientError, ClientErrorKind},
     nonblocking::rpc_client::RpcClient,
     rpc_client::{RpcClientConfig, SerializableTransaction},
     rpc_request::RpcRequest,
     rpc_response::{Response, RpcBlockhash, RpcResponseContext, RpcVersionInfo},
     rpc_sender::{RpcSender, RpcTransportStats},
 };
-use solana_program::program_option::COption;
-use solana_program::program_pack::Pack;
+use solana_program_test::tokio::sync::Mutex;
 use solana_program_test::{ProgramTest, ProgramTestContext};
+use solana_sdk::bs58;
+use solana_sdk::epoch_info::EpochInfo;
 use solana_sdk::{
     account::Account,
-    bs58,
     commitment_config::CommitmentLevel,
-    epoch_info::EpochInfo,
     instruction::Instruction,
     message::{v0::Message, VersionedMessage},
     pubkey::Pubkey,
     signature::{Keypair, Signature},
     signer::Signer,
-    system_instruction, system_program,
+    system_program,
     transaction::VersionedTransaction,
 };
 use solana_version::Version;
 use spl_memo::build_memo;
-use spl_token::{state::Account as TokenAccount, ID as TOKEN_PROGRAM_ID};
-use spl_token_2022::{
-    extension::{
-        transfer_fee::{
-            instruction::{initialize_transfer_fee_config, set_transfer_fee},
-            TransferFee, 
-            TransferFeeConfig,
-        },
-        ExtensionType,
-        StateWithExtensionsMut,
-    },
-    instruction::initialize_mint2,
-    state::Mint,
-    ID as TOKEN_2022_PROGRAM_ID,
-};
-use spl_pod::optional_keys::OptionalNonZeroPubkey;
 
-use super::anchor::anchor_programs;
+use crate::tests::anchor_programs;
 use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
 
 pub struct RpcContext {
@@ -59,10 +42,6 @@ pub struct RpcContext {
     pub signer: Keypair,
     keypairs: Vec<Keypair>,
     keypair_index: AtomicUsize,
-    context: Arc<Mutex<ProgramTestContext>>,
-    accounts: Arc<RwLock<HashMap<Pubkey, Account>>>,
-    pub token_calls: Arc<RwLock<Vec<String>>>,
-    token_responses: Arc<RwLock<HashMap<String, Vec<u8>>>>,
 }
 
 impl RpcContext {
@@ -161,15 +140,8 @@ impl RpcContext {
         for (name, pubkey) in programs {
             test.add_program(&name, pubkey, None);
         }
-        let context = Arc::new(Mutex::new(test.start_with_context().await));
-        let accounts = Arc::new(RwLock::new(HashMap::new()));
-
-        let rpc = RpcClient::new_sender(
-            MockRpcSender {
-                context: Arc::clone(&context),
-            },
-            RpcClientConfig::default(),
-        );
+        let context = Mutex::new(test.start_with_context().await);
+        let rpc = RpcClient::new_sender(MockRpcSender { context }, RpcClientConfig::default());
 
         let mut keypairs = (0..100).map(|_| Keypair::new()).collect::<Vec<_>>();
         keypairs.sort_by_key(|x| x.pubkey());
@@ -179,10 +151,6 @@ impl RpcContext {
             signer,
             keypairs,
             keypair_index: AtomicUsize::new(0),
-            context,
-            accounts,
-            token_calls: Arc::new(RwLock::new(Vec::new())),
-            token_responses: Arc::new(RwLock::new(HashMap::new())),
         }
     }
 
@@ -205,7 +173,7 @@ impl RpcContext {
         signers: Vec<&Keypair>,
     ) -> Result<Signature, Box<dyn Error>> {
         let blockhash = self.rpc.get_latest_blockhash().await?;
-        // Since blockhash is not guaranteed to be unique, we need to add a random memo to the tx
+        // Sine blockhash is not guaranteed to be unique, we need to add a random memo to the tx
         // so that we can fire two seemingly identical transactions in a row.
         let memo = Keypair::new().to_base58_string();
         let instructions = [instructions, vec![build_memo(memo.as_bytes(), &[])]].concat();
@@ -345,7 +313,7 @@ async fn send(
 }
 
 struct MockRpcSender {
-    context: Arc<Mutex<ProgramTestContext>>,
+    context: Mutex<ProgramTestContext>,
 }
 
 #[async_trait]

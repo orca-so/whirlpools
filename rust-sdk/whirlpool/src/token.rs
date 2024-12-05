@@ -5,7 +5,7 @@ use solana_sdk::hash::hashv;
 use solana_sdk::program_error::ProgramError;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
-use solana_sdk::system_instruction::create_account_with_seed;
+use solana_sdk::system_instruction::{create_account, create_account_with_seed, transfer};
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_instruction};
 use spl_associated_token_account::{
     get_associated_token_address_with_program_id, instruction::create_associated_token_account,
@@ -16,9 +16,9 @@ use spl_token::{native_mint, ID as TOKEN_PROGRAM_ID};
 use spl_token_2022::extension::transfer_fee::TransferFeeConfig;
 use spl_token_2022::extension::{BaseStateWithExtensions, StateWithExtensions};
 use spl_token_2022::state::{Account, Mint};
+use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 use std::{collections::HashMap, error::Error};
-use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 
 use crate::{NativeMintWrappingStrategy, NATIVE_MINT_WRAPPING_STRATEGY};
 
@@ -133,7 +133,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
             lamports += balance;
         }
 
-        create_instructions.push(system_instruction::create_account(
+        create_instructions.push(create_account(
             &owner,
             &keypair.pubkey(),
             lamports,
@@ -233,7 +233,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
         };
 
         if existing_balance < required_balance {
-            create_instructions.push(system_instruction::transfer(
+            create_instructions.push(transfer(
                 &owner,
                 &token_account_addresses[&native_mint::ID],
                 required_balance - existing_balance,
@@ -269,15 +269,10 @@ pub(crate) fn get_current_transfer_fee(
     current_epoch: u64,
 ) -> Option<TransferFee> {
     let token_mint_data = &mint_account_info?.data;
-    println!("Token mint data length: {}, {:?}", token_mint_data.len(), token_mint_data);
-    
     let token_mint_unpacked = StateWithExtensions::<Mint>::unpack(token_mint_data).ok()?;
-    println!("Successfully unpacked token mint data");
-    
+
     if let Ok(transfer_fee_config) = token_mint_unpacked.get_extension::<TransferFeeConfig>() {
-        println!("Found transfer fee config extension");
         let fee = transfer_fee_config.get_epoch_fee(current_epoch);
-            
         return Some(TransferFee {
             fee_bps: fee.transfer_fee_basis_points.into(),
             max_fee: fee.maximum_fee.into(),
@@ -325,11 +320,14 @@ pub fn order_mints(mint1: Pubkey, mint2: Pubkey) -> [Pubkey; 2] {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::str::FromStr;
+    use crate::tests::{
+        setup_ata, setup_ata_with_amount, setup_mint, setup_mint_te, setup_mint_te_fee,
+        setup_mint_with_decimals, RpcContext,
+    };
+    use serial_test::serial;
     use solana_program::program_option::COption;
     use spl_token_2022::extension::ExtensionType;
-    use crate::tests::{RpcContext, setup_mint_te, setup_mint_te_fee};
-    use serial_test::serial;
+    use std::str::FromStr;
 
     #[test]
     fn test_order_mints() {
@@ -356,13 +354,13 @@ mod tests {
 
         // Test transfer fee at epoch 0
         let older = get_current_transfer_fee(Some(&mint_account), 0).unwrap();
-        assert_eq!(older.fee_bps, 100);  // 1%
-        assert_eq!(older.max_fee, 1_000_000_000);  // 1 token
+        assert_eq!(older.fee_bps, 100); // 1%
+        assert_eq!(older.max_fee, 1_000_000_000); // 1 token
 
         // Test transfer fee at epoch 2
         let newer = get_current_transfer_fee(Some(&mint_account), 2).unwrap();
-        assert_eq!(newer.fee_bps, 150);  // 1.5%
-        assert_eq!(newer.max_fee, 1_000_000_000);  // 1 token
+        assert_eq!(newer.fee_bps, 150); // 1.5%
+        assert_eq!(newer.max_fee, 1_000_000_000); // 1 token
 
         // Test with no fee
         let no_fee_result = get_current_transfer_fee(None, 0);
@@ -373,13 +371,13 @@ mod tests {
     #[serial]
     async fn test_token_2022_account() {
         let ctx = RpcContext::new().await;
-        
+
         // Create basic Token-2022 mint (without transfer fee)
         let mint = setup_mint_te(&ctx, &[]).await.unwrap();
         let mint_account = ctx.rpc.get_account(&mint).await.unwrap();
-        
+
         // Verify account data
-        assert_eq!(mint_account.data.len(), 82);  
+        assert_eq!(mint_account.data.len(), 82);
         assert_eq!(mint_account.owner, TOKEN_2022_PROGRAM_ID);
     }
 
@@ -387,13 +385,13 @@ mod tests {
     #[serial]
     async fn test_token_2022_with_transfer_fee() {
         let ctx = RpcContext::new().await;
-        
+
         // Create Token-2022 mint with transfer fee
         let mint = setup_mint_te_fee(&ctx).await.unwrap();
-        
+
         // Verify account data
         let account = ctx.rpc.get_account(&mint).await.unwrap();
-        assert!(account.data.len() > 82);  // Size is larger due to extension
+        assert!(account.data.len() > 82); // Size is larger due to extension
         assert_eq!(account.owner, TOKEN_2022_PROGRAM_ID);
     }
 
@@ -434,19 +432,31 @@ mod tests {
     async fn test_native_mint_wrapping_ata() {
         let ctx = RpcContext::new().await;
         crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::Ata).unwrap();
-    
+
+        // Create native token account with balance using token.rs helpers
+        let amount = 1_000_000u64;
+        let ata = setup_ata_with_amount(&ctx, native_mint::ID, amount)
+            .await
+            .unwrap();
+
+        // Verify the account was created correctly
+        let account = ctx.rpc.get_account(&ata).await.unwrap();
+        let token_account = Account::unpack(&account.data).unwrap();
+        assert_eq!(token_account.amount, amount);
+        assert_eq!(token_account.mint, native_mint::ID);
+
+        // Now test prepare_token_accounts_instructions
         let result = prepare_token_accounts_instructions(
             &ctx.rpc,
             ctx.signer.pubkey(),
-            vec![TokenAccountStrategy::WithBalance(
-                native_mint::ID,
-                1_000_000,
-            )],
+            vec![TokenAccountStrategy::WithBalance(native_mint::ID, amount)],
         )
         .await
         .unwrap();
-    
-        assert_eq!(result.create_instructions.len(), 3); // Create ATA + transfer + sync_native
+
+        // Should not create new instructions for existing account
+        assert_eq!(result.create_instructions.len(), 0);
+        assert_eq!(result.cleanup_instructions.len(), 0);
         assert_eq!(result.token_account_addresses.len(), 1);
     }
 
@@ -471,5 +481,94 @@ mod tests {
         assert_eq!(result.cleanup_instructions.len(), 1); // close
         assert_eq!(result.token_account_addresses.len(), 1);
         assert_eq!(result.additional_signers.len(), 1);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_token_account_with_balance() {
+        let ctx = RpcContext::new().await;
+
+        // Create a mint and token account with balance using token.rs helpers
+        let mint = setup_mint(&ctx).await.unwrap(); // Using setup_mint instead of setup_mint_with_decimals
+        let amount = 1_000_000u64;
+        let ata = setup_ata_with_amount(&ctx, mint, amount).await.unwrap();
+
+        // Verify initial state
+        let account = ctx.rpc.get_account(&ata).await.unwrap();
+        let token_account = Account::unpack(&account.data).unwrap();
+        assert_eq!(token_account.amount, amount);
+
+        // Try to prepare instructions for existing account
+        let result = prepare_token_accounts_instructions(
+            &ctx.rpc,
+            ctx.signer.pubkey(),
+            vec![TokenAccountStrategy::WithBalance(mint, amount)],
+        )
+        .await
+        .unwrap();
+
+        // Should not create new instructions for existing account with sufficient balance
+        assert_eq!(result.create_instructions.len(), 0);
+        assert_eq!(result.cleanup_instructions.len(), 0);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_insufficient_balance() {
+        let ctx = RpcContext::new().await;
+
+        // Create a mint and token account with small balance using token.rs helpers
+        let mint = setup_mint(&ctx).await.unwrap();
+        let initial_amount = 1_000u64;
+        let ata = setup_ata_with_amount(&ctx, mint, initial_amount)
+            .await
+            .unwrap();
+
+        // Try to prepare instructions requiring more balance
+        let required_amount = 2_000u64;
+        let result = prepare_token_accounts_instructions(
+            &ctx.rpc,
+            ctx.signer.pubkey(),
+            vec![TokenAccountStrategy::WithBalance(mint, required_amount)],
+        )
+        .await;
+
+        // Should fail due to insufficient balance
+        assert!(result.is_err());
+        assert!(result
+            .unwrap_err()
+            .to_string()
+            .contains("Insufficient balance"));
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_existing_token_account() {
+        let ctx = RpcContext::new().await;
+
+        // Create a mint and token account using token.rs helpers
+        let mint = setup_mint(&ctx).await.unwrap();
+        let ata = setup_ata(&ctx, mint).await.unwrap(); // Using setup_ata for zero balance
+
+        // Verify initial state
+        let initial_account = ctx.rpc.get_account(&ata).await.unwrap();
+        assert!(Account::unpack(&initial_account.data).is_ok());
+
+        // Try to prepare instructions for existing account
+        let result = prepare_token_accounts_instructions(
+            &ctx.rpc,
+            ctx.signer.pubkey(),
+            vec![TokenAccountStrategy::WithoutBalance(mint)],
+        )
+        .await
+        .unwrap();
+
+        // Should not create new instructions for existing account
+        assert_eq!(result.create_instructions.len(), 0);
+        assert_eq!(result.cleanup_instructions.len(), 0);
+
+        // Verify account wasn't modified
+        let final_account = ctx.rpc.get_account(&ata).await.unwrap();
+        assert_eq!(initial_account.data, final_account.data);
     }
 }

@@ -25,7 +25,7 @@
     "@orca-so/whirlpools-docs-legacy": "*",
     "@orca-so/whirlpools-docs-rust": "*",
     "@orca-so/whirlpools-docs-ts": "*",
-    "@types/react": "^18.3.12"
+    "@types/react": "^18.3.13"
   },
   "browserslist": {
     "production": [

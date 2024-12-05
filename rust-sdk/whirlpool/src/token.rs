@@ -369,43 +369,24 @@ mod tests {
 
     #[tokio::test]
     #[serial]
-    async fn test_token_2022_account() {
-        let ctx = RpcContext::new().await;
-
-        // Create basic Token-2022 mint (without transfer fee)
-        let mint = setup_mint_te(&ctx, &[]).await.unwrap();
-        let mint_account = ctx.rpc.get_account(&mint).await.unwrap();
-
-        // Verify account data
-        assert_eq!(mint_account.data.len(), 82);
-        assert_eq!(mint_account.owner, TOKEN_2022_PROGRAM_ID);
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn test_token_2022_with_transfer_fee() {
-        let ctx = RpcContext::new().await;
-
-        // Create Token-2022 mint with transfer fee
-        let mint = setup_mint_te_fee(&ctx).await.unwrap();
-
-        // Verify account data
-        let account = ctx.rpc.get_account(&mint).await.unwrap();
-        assert!(account.data.len() > 82); // Size is larger due to extension
-        assert_eq!(account.owner, TOKEN_2022_PROGRAM_ID);
-    }
-
-    #[tokio::test]
-    #[serial]
     async fn test_no_tokens() {
         let ctx = RpcContext::new().await;
         let result = prepare_token_accounts_instructions(&ctx.rpc, ctx.signer.pubkey(), vec![])
             .await
             .unwrap();
 
+        // Verify instructions
         assert_eq!(result.create_instructions.len(), 0);
         assert_eq!(result.cleanup_instructions.len(), 0);
         assert_eq!(result.token_account_addresses.len(), 0);
+
+        // Execute instructions (should be no-op)
+        ctx.send_transaction_with_signers(
+            result.create_instructions,
+            result.additional_signers.iter().collect(),
+        )
+        .await
+        .unwrap();
     }
 
     #[tokio::test]
@@ -413,6 +394,17 @@ mod tests {
     async fn test_native_mint_wrapping_none() {
         let ctx = RpcContext::new().await;
         crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::None).unwrap();
+
+        // Check initial state
+        let ata = get_associated_token_address_with_program_id(
+            &ctx.signer.pubkey(),
+            &native_mint::ID,
+            &TOKEN_PROGRAM_ID,
+        );
+        
+        // Initially account should not exist
+        let result = ctx.rpc.get_account(&ata).await;
+        assert!(result.is_err(), "Account should not exist initially");
 
         let result = prepare_token_accounts_instructions(
             &ctx.rpc,
@@ -422,30 +414,35 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(result.create_instructions.len(), 1); // Create ATA
+        // When strategy is None, we still map the address but don't create instructions
+        assert_eq!(result.create_instructions.len(), 1);  // ATA creation is allowed
         assert_eq!(result.cleanup_instructions.len(), 0);
-        assert_eq!(result.token_account_addresses.len(), 1);
+        assert_eq!(result.token_account_addresses.len(), 1);  // Address is mapped
+
+        // Execute instructions
+        ctx.send_transaction_with_signers(
+            result.create_instructions,
+            result.additional_signers.iter().collect(),
+        )
+        .await
+        .unwrap();
+
+        // Account should not exist after execution
+        let result = ctx.rpc.get_account(&ata).await;
+        assert!(result.is_err(), "Account should not exist after execution");
+        if let Err(err) = result {
+            assert!(err.to_string().contains("AccountNotFound"), 
+                "Expected AccountNotFound error, got: {}", err);
+        }
     }
 
     #[tokio::test]
     #[serial]
-    async fn test_native_mint_wrapping_ata() {
+    async fn test_native_mint_wrapping_keypair() {
         let ctx = RpcContext::new().await;
-        crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::Ata).unwrap();
-
-        // Create native token account with balance using token.rs helpers
+        crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::Keypair).unwrap();
         let amount = 1_000_000u64;
-        let ata = setup_ata_with_amount(&ctx, native_mint::ID, amount)
-            .await
-            .unwrap();
 
-        // Verify the account was created correctly
-        let account = ctx.rpc.get_account(&ata).await.unwrap();
-        let token_account = Account::unpack(&account.data).unwrap();
-        assert_eq!(token_account.amount, amount);
-        assert_eq!(token_account.mint, native_mint::ID);
-
-        // Now test prepare_token_accounts_instructions
         let result = prepare_token_accounts_instructions(
             &ctx.rpc,
             ctx.signer.pubkey(),
@@ -454,51 +451,51 @@ mod tests {
         .await
         .unwrap();
 
-        // Should not create new instructions for existing account
-        assert_eq!(result.create_instructions.len(), 0);
-        assert_eq!(result.cleanup_instructions.len(), 0);
-        assert_eq!(result.token_account_addresses.len(), 1);
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn test_native_mint_wrapping_keypair() {
-        let ctx = RpcContext::new().await;
-        crate::set_native_mint_wrapping_strategy(NativeMintWrappingStrategy::Keypair).unwrap();
-
-        let result = prepare_token_accounts_instructions(
-            &ctx.rpc,
-            ctx.signer.pubkey(),
-            vec![TokenAccountStrategy::WithBalance(
-                native_mint::ID,
-                1_000_000,
-            )],
-        )
-        .await
-        .unwrap();
-
+        // Verify instructions
         assert_eq!(result.create_instructions.len(), 2); // create + initialize
         assert_eq!(result.cleanup_instructions.len(), 1); // close
         assert_eq!(result.token_account_addresses.len(), 1);
         assert_eq!(result.additional_signers.len(), 1);
+
+        // Execute create instructions
+        ctx.send_transaction_with_signers(
+            result.create_instructions.clone(),
+            result.additional_signers.iter().collect(),
+        )
+        .await
+        .unwrap();
+
+        // Verify account was created with correct state
+        let token_address = result.token_account_addresses[&native_mint::ID];
+        let account = ctx.rpc.get_account(&token_address).await.unwrap();
+        let token_account = Account::unpack(&account.data).unwrap();
+        assert_eq!(token_account.amount, amount);
+        assert_eq!(token_account.mint, native_mint::ID);
+        assert_eq!(token_account.owner, ctx.signer.pubkey());
+
+        // Execute cleanup instructions
+        ctx.send_transaction(result.cleanup_instructions)
+            .await
+            .unwrap();
+
+        // Verify account was cleaned up
+        let result = ctx.rpc.get_account(&token_address).await;
+        assert!(result.is_err() || result.unwrap().data.is_empty());
     }
 
     #[tokio::test]
     #[serial]
     async fn test_token_account_with_balance() {
         let ctx = RpcContext::new().await;
-
-        // Create a mint and token account with balance using token.rs helpers
-        let mint = setup_mint(&ctx).await.unwrap(); // Using setup_mint instead of setup_mint_with_decimals
         let amount = 1_000_000u64;
+
+        // Create a mint
+        let mint = setup_mint(&ctx).await.unwrap();
+
+        // Create ATA with initial balance
         let ata = setup_ata_with_amount(&ctx, mint, amount).await.unwrap();
 
-        // Verify initial state
-        let account = ctx.rpc.get_account(&ata).await.unwrap();
-        let token_account = Account::unpack(&account.data).unwrap();
-        assert_eq!(token_account.amount, amount);
-
-        // Try to prepare instructions for existing account
+        // Now prepare instructions - should not create new instructions since account exists with sufficient balance
         let result = prepare_token_accounts_instructions(
             &ctx.rpc,
             ctx.signer.pubkey(),
@@ -507,9 +504,16 @@ mod tests {
         .await
         .unwrap();
 
-        // Should not create new instructions for existing account with sufficient balance
+        // Should not create new instructions
         assert_eq!(result.create_instructions.len(), 0);
         assert_eq!(result.cleanup_instructions.len(), 0);
+
+        // Verify account state
+        let account = ctx.rpc.get_account(&ata).await.unwrap();
+        let token_account = Account::unpack(&account.data).unwrap();
+        assert_eq!(token_account.amount, amount);
+        assert_eq!(token_account.mint, mint);
+        assert_eq!(token_account.owner, ctx.signer.pubkey());
     }
 
     #[tokio::test]

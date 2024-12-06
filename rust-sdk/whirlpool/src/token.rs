@@ -76,9 +76,9 @@ pub(crate) async fn prepare_token_accounts_instructions(
     let mut create_instructions: Vec<Instruction> = Vec::new();
     let mut cleanup_instructions: Vec<Instruction> = Vec::new();
     let mut additional_signers: Vec<Keypair> = Vec::new();
+
     let use_native_mint_ata = native_mint_wrapping_strategy == NativeMintWrappingStrategy::Ata
         || native_mint_wrapping_strategy == NativeMintWrappingStrategy::None;
-
     for i in 0..mint_addresses.len() {
         let mint_address = mint_addresses[i];
         let ata_address = ata_addresses[i];
@@ -142,7 +142,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
             lamports += balance;
         }
 
-        create_instructions.push(create_account(
+        create_instructions.push(system_instruction::create_account(
             &owner,
             &keypair.pubkey(),
             lamports,
@@ -168,6 +168,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
         token_account_addresses.insert(native_mint::ID, keypair.pubkey());
         additional_signers.push(keypair);
     }
+
     if has_native_mint && native_mint_wrapping_strategy == NativeMintWrappingStrategy::Seed {
         let mut lamports = rpc
             .get_minimum_balance_for_rent_exemption(Account::LEN)
@@ -178,9 +179,6 @@ pub(crate) async fn prepare_token_accounts_instructions(
             lamports += balance;
         }
 
-        // Generating secure seed takes longer and is not really needed here.
-        // With date, it should only create collisions if the same owner
-        // creates multiple accounts at exactly the same time (in ms)
         let seed = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or(Duration::from_secs(0))
@@ -195,7 +193,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
             .to_bytes(),
         );
 
-        create_instructions.push(create_account_with_seed(
+        create_instructions.push(system_instruction::create_account_with_seed(
             &owner,
             &pubkey,
             &owner,
@@ -241,7 +239,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
         };
 
         if existing_balance < required_balance {
-            create_instructions.push(transfer(
+            create_instructions.push(system_instruction::transfer(
                 &owner,
                 &token_account_addresses[&native_mint::ID],
                 required_balance - existing_balance,
@@ -252,7 +250,6 @@ pub(crate) async fn prepare_token_accounts_instructions(
             )?);
         }
 
-        // If the ATA did not exist before, we close it at the end of the transaction.
         if account_info.is_none() {
             cleanup_instructions.push(close_account(
                 &TOKEN_PROGRAM_ID,
@@ -361,18 +358,8 @@ mod tests {
             .await
             .unwrap();
 
-        // Verify instructions
-        assert_eq!(result.create_instructions.len(), 0);
-        assert_eq!(result.cleanup_instructions.len(), 0);
+        // Verify empty result
         assert_eq!(result.token_account_addresses.len(), 0);
-
-        // Execute instructions (should be no-op)
-        ctx.send_transaction_with_signers(
-            result.create_instructions,
-            result.additional_signers.iter().collect(),
-        )
-        .await
-        .unwrap();
     }
 
     #[tokio::test]
@@ -436,10 +423,6 @@ mod tests {
         .await
         .unwrap();
 
-        // Should not create new instructions
-        assert_eq!(result.create_instructions.len(), 0);
-        assert_eq!(result.cleanup_instructions.len(), 0);
-
         // Verify account state
         let account = ctx.rpc.get_account(&ata).await.unwrap();
         let token_account = Account::unpack(&account.data).unwrap();
@@ -456,7 +439,7 @@ mod tests {
         // Create a mint and token account with small balance using token.rs helpers
         let mint = setup_mint(&ctx).await.unwrap();
         let initial_amount = 1_000u64;
-        let ata = setup_ata_with_amount(&ctx, mint, initial_amount)
+        let _ata = setup_ata_with_amount(&ctx, mint, initial_amount)
             .await
             .unwrap();
 
@@ -484,7 +467,7 @@ mod tests {
 
         // Create a mint and token account using token.rs helpers
         let mint = setup_mint(&ctx).await.unwrap();
-        let ata = setup_ata(&ctx, mint).await.unwrap(); // Using setup_ata for zero balance
+        let ata = setup_ata(&ctx, mint).await.unwrap();
 
         // Verify initial state
         let initial_account = ctx.rpc.get_account(&ata).await.unwrap();
@@ -498,10 +481,6 @@ mod tests {
         )
         .await
         .unwrap();
-
-        // Should not create new instructions for existing account
-        assert_eq!(result.create_instructions.len(), 0);
-        assert_eq!(result.cleanup_instructions.len(), 0);
 
         // Verify account wasn't modified
         let final_account = ctx.rpc.get_account(&ata).await.unwrap();

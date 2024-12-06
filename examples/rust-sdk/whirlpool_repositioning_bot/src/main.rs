@@ -18,7 +18,7 @@ use utils::{
 };
 
 pub const RPC_URL: &str =
-    "https://mainnet.helius-rpc.com/?api-key=e1bbe936-f564-4d9a-ae4e-a69e6f99e9b1";
+    "https://mainnet.helius-rpc.com/?api-key=";
 
 #[tokio::main]
 async fn main() {

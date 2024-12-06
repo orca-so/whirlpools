@@ -1,5 +1,7 @@
 use std::sync::atomic::{AtomicUsize, Ordering};
 use std::{error::Error, str::FromStr};
+use std::sync::{Arc, RwLock};
+use std::collections::HashMap;
 
 use async_trait::async_trait;
 use orca_whirlpools_client::{
@@ -31,10 +33,18 @@ use solana_sdk::{
     signature::{Keypair, Signature},
     signer::Signer,
     system_program,
+    system_instruction,
     transaction::VersionedTransaction,
+    program_pack::Pack,
 };
 use solana_version::Version;
 use spl_memo::build_memo;
+use spl_token_2022::{
+    extension::ExtensionType,
+    state::Mint,
+    ID as TOKEN_2022_PROGRAM_ID,
+};
+use solana_program::program_option::COption;
 
 use crate::tests::anchor_programs;
 use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
@@ -60,7 +70,7 @@ impl RpcContext {
 
         // Initialize accounts map for RPC mocking
         let accounts = Arc::new(RwLock::new(HashMap::new()));
-        let mut accounts_write = accounts.write().await;
+        let mut accounts_write = accounts.write().unwrap();
 
         // Add accounts to both ProgramTest and accounts map for consistency
         let signer_account = Account {
@@ -166,11 +176,18 @@ impl RpcContext {
         let mut keypairs = (0..100).map(|_| Keypair::new()).collect::<Vec<_>>();
         keypairs.sort_by_key(|x| x.pubkey());
 
+        let token_calls = Arc::new(RwLock::new(Vec::new()));
+        let token_responses = Arc::new(RwLock::new(HashMap::new()));
+
         Self {
             rpc,
             signer,
             keypairs,
             keypair_index: AtomicUsize::new(0),
+            context,
+            accounts,
+            token_calls,
+            token_responses,
         }
     }
 
@@ -213,8 +230,7 @@ impl RpcContext {
         &self,
         extensions: &[ExtensionType],
     ) -> Result<Pubkey, Box<dyn Error>> {
-        self.track_token_call("create_token_2022_mint".to_string())
-            .await;
+        self.track_token_call("create_token_2022_mint".to_string());
 
         let mint = Keypair::new();
         let space = ExtensionType::try_calculate_account_len::<Mint>(extensions)?;
@@ -255,18 +271,17 @@ impl RpcContext {
             &solana_sdk::account::AccountSharedData::from(new_account.clone()),
         );
 
-        let mut accounts = self.accounts.write().await;
+        let mut accounts = self.accounts.write().unwrap();
         accounts.insert(mint.pubkey(), new_account);
         self.token_responses
-            .write()
-            .await
+            .write().unwrap()
             .insert(format!("mint_{}", mint.pubkey()), data);
 
         Ok(mint.pubkey())
     }
 
     async fn track_token_call(&self, call: String) {
-        self.token_calls.write().await.push(call);
+        self.token_calls.write().unwrap().push(call);
     }
 
     pub async fn set_account(
@@ -280,7 +295,7 @@ impl RpcContext {
             &solana_sdk::account::AccountSharedData::from(account.clone()),
         );
 
-        let mut accounts = self.accounts.write().await;
+        let mut accounts = self.accounts.write().unwrap();
         accounts.insert(*address, account);
         Ok(())
     }
@@ -412,7 +427,7 @@ async fn send(
             let config = serde_json::from_value::<RpcProgramAccountsConfig>(params[1].clone())?;
             let encoding = get_encoding(&serde_json::to_value(&config.account_config)?);
 
-            let accounts = accounts.read().await;
+            let accounts = accounts.read().unwrap();
             let mut program_accounts: Vec<(Pubkey, Account)> = accounts
                 .iter()
                 .filter(|(_, account)| account.owner == program_id)
@@ -520,7 +535,7 @@ impl RpcSender for MockRpcSender {
         let params = request_json["params"].as_array().unwrap_or(&default_params);
         let mut context = self.context.lock().await;
         let response = send(&mut context, &self.accounts, method, params)
-            .await // accounts 맵 전달
+            .await // accounts ��� 전달
             .map_err(|e| {
                 ClientError::new_with_request(ClientErrorKind::Custom(e.to_string()), request)
             })?;

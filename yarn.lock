@@ -4179,10 +4179,10 @@ __metadata:
     "@orca-so/whirlpools-docs-legacy": "npm:*"
     "@orca-so/whirlpools-docs-rust": "npm:*"
     "@orca-so/whirlpools-docs-ts": "npm:*"
-    "@types/react": "npm:^18.3.13"
+    "@types/react": "npm:^19.0.1"
     clsx: "npm:^2.1.1"
     prism-react-renderer: "npm:^2.4.0"
-    react: "npm:^18.3.1"
+    react: "npm:^19.0.0"
     react-dom: "npm:^18.3.1"
     rehype-katex: "npm:^7.0.1"
     remark-math: "npm:^6.0.0"
@@ -4230,10 +4230,10 @@ __metadata:
     "@orca-so/whirlpools": "npm:*"
     "@solana/web3.js": "npm:^2.0.0"
     "@types/node": "npm:^22.10.1"
-    "@types/react": "npm:^18.3.13"
+    "@types/react": "npm:^19.0.1"
     copy-webpack-plugin: "npm:^12.0.2"
     next: "npm:^15.0.4"
-    react: "npm:^18.3.1"
+    react: "npm:^19.0.0"
     react-dom: "npm:^18.3.1"
     typescript: "npm:^5.7.2"
   languageName: unknown
@@ -6125,13 +6125,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:^18.3.13":
-  version: 18.3.13
-  resolution: "@types/react@npm:18.3.13"
+"@types/react@npm:^19.0.1":
+  version: 19.0.1
+  resolution: "@types/react@npm:19.0.1"
   dependencies:
-    "@types/prop-types": "npm:*"
     csstype: "npm:^3.0.2"
-  checksum: 10c0/91815e00157deb179fa670aa2dfc491952698b7743ffddca0e3e0f16e7a18454f3f5ef72321a07386c49e721563b9d280dbbdfae039face764e2fdd8ad949d4b
+  checksum: 10c0/25eb69114abb9a6d5fc4414ee584388275bbc9ac32976449cf58b95fe9880efe6b3f936c3842be9bed8c571546a9752e8d3e2095288381e9c809269f5f574f2e
   languageName: node
   linkType: hard
 
@@ -15391,12 +15390,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@npm:^18.3.1":
-  version: 18.3.1
-  resolution: "react@npm:18.3.1"
-  dependencies:
-    loose-envify: "npm:^1.1.0"
-  checksum: 10c0/283e8c5efcf37802c9d1ce767f302dd569dd97a70d9bb8c7be79a789b9902451e0d16334b05d73299b20f048cbc3c7d288bbbde10b701fa194e2089c237dbea3
+"react@npm:^19.0.0":
+  version: 19.0.0
+  resolution: "react@npm:19.0.0"
+  checksum: 10c0/9cad8f103e8e3a16d15cb18a0d8115d8bd9f9e1ce3420310aea381eb42aa0a4f812cf047bb5441349257a05fba8a291515691e3cb51267279b2d2c3253f38471
   languageName: node
   linkType: hard
 

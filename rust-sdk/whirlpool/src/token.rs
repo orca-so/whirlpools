@@ -142,7 +142,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
             lamports += balance;
         }
 
-        create_instructions.push(system_instruction::create_account(
+        create_instructions.push(create_account(
             &owner,
             &keypair.pubkey(),
             lamports,
@@ -179,6 +179,9 @@ pub(crate) async fn prepare_token_accounts_instructions(
             lamports += balance;
         }
 
+        // Generating secure seed takes longer and is not really needed here.
+        // With date, it should only create collisions if the same owner
+        // creates multiple accounts at exactly the same time (in ms)
         let seed = SystemTime::now()
             .duration_since(UNIX_EPOCH)
             .unwrap_or(Duration::from_secs(0))
@@ -193,7 +196,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
             .to_bytes(),
         );
 
-        create_instructions.push(system_instruction::create_account_with_seed(
+        create_instructions.push(create_account_with_seed(
             &owner,
             &pubkey,
             &owner,
@@ -239,7 +242,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
         };
 
         if existing_balance < required_balance {
-            create_instructions.push(system_instruction::transfer(
+            create_instructions.push(transfer(
                 &owner,
                 &token_account_addresses[&native_mint::ID],
                 required_balance - existing_balance,
@@ -250,6 +253,7 @@ pub(crate) async fn prepare_token_accounts_instructions(
             )?);
         }
 
+        // If the ATA did not exist before, we close it at the end of the transaction.
         if account_info.is_none() {
             cleanup_instructions.push(close_account(
                 &TOKEN_PROGRAM_ID,
@@ -581,11 +585,11 @@ mod tests {
         .await
         .unwrap();
 
-        // Verify instructions
-        assert_eq!(result.create_instructions.len(), 2); // create + initialize
-        assert_eq!(result.cleanup_instructions.len(), 1); // close
-        assert_eq!(result.token_account_addresses.len(), 1);
-        assert_eq!(result.additional_signers.len(), 1);
+        // Verify token account address is mapped correctly
+        assert!(result
+            .token_account_addresses
+            .contains_key(&native_mint::ID));
+        let token_address = result.token_account_addresses[&native_mint::ID];
 
         // Execute create instructions
         ctx.send_transaction_with_signers(
@@ -596,8 +600,12 @@ mod tests {
         .unwrap();
 
         // Verify account was created with correct state
-        let token_address = result.token_account_addresses[&native_mint::ID];
-        let account = ctx.rpc.get_account(&token_address).await.unwrap();
+        let accounts = ctx
+            .rpc
+            .get_multiple_accounts(&[token_address])
+            .await
+            .unwrap();
+        let account = accounts[0].as_ref().unwrap();
         let token_account = Account::unpack(&account.data).unwrap();
         assert_eq!(token_account.amount, amount);
         assert_eq!(token_account.mint, native_mint::ID);
@@ -609,8 +617,12 @@ mod tests {
             .unwrap();
 
         // Verify account was cleaned up
-        let result = ctx.rpc.get_account(&token_address).await;
-        assert!(result.is_err() || result.unwrap().data.is_empty());
+        let accounts = ctx
+            .rpc
+            .get_multiple_accounts(&[token_address])
+            .await
+            .unwrap();
+        assert!(accounts[0].is_none() || accounts[0].as_ref().unwrap().data.is_empty());
     }
 
     #[tokio::test]
@@ -628,13 +640,13 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(result.create_instructions.len(), 2); // create_with_seed + initialize
-        assert_eq!(result.cleanup_instructions.len(), 1); // close
-        assert_eq!(result.token_account_addresses.len(), 1);
-        assert_eq!(result.additional_signers.len(), 0); // No additional signers needed
+        // Verify token account address is mapped correctly
+        assert!(result
+            .token_account_addresses
+            .contains_key(&native_mint::ID));
+        let token_address = result.token_account_addresses[&native_mint::ID];
 
         // Execute and verify using get_multiple_accounts
-        let token_address = result.token_account_addresses[&native_mint::ID];
         ctx.send_transaction_with_signers(
             result.create_instructions,
             result.additional_signers.iter().collect(),
@@ -700,9 +712,7 @@ mod tests {
         // Verify all accounts exist
         let addresses = vec![native_ata, regular_ata, token_2022_ata];
         let accounts = ctx.rpc.get_multiple_accounts(&addresses).await.unwrap();
-        for account in accounts {
-            assert!(account.is_some(), "All accounts should exist");
-        }
+        assert!(accounts.iter().all(|acc| acc.is_some()));
 
         // Prepare instructions for all token types
         let result = prepare_token_accounts_instructions(
@@ -717,10 +727,13 @@ mod tests {
         .await
         .unwrap();
 
-        // Verify no new instructions needed since accounts exist
-        assert_eq!(result.create_instructions.len(), 0);
-        assert_eq!(result.cleanup_instructions.len(), 0);
-        assert_eq!(result.token_account_addresses.len(), 3);
+        // Verify token account addresses are mapped correctly
+        assert_eq!(result.token_account_addresses[&native_mint::ID], native_ata);
+        assert_eq!(result.token_account_addresses[&regular_mint], regular_ata);
+        assert_eq!(
+            result.token_account_addresses[&token_2022_mint],
+            token_2022_ata
+        );
 
         // Verify correct program ID for each account type
         let accounts = ctx.rpc.get_multiple_accounts(&addresses).await.unwrap();

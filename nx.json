@@ -15,5 +15,6 @@
       "dependsOn": ["build"]
     }
   },
-  "$schema": "./node_modules/nx/schemas/nx-schema.json"
+  "$schema": "./node_modules/nx/schemas/nx-schema.json",
+  "defaultBase": "main"
 }

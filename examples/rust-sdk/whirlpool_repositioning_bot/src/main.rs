@@ -17,17 +17,20 @@ use utils::{
     display_position_balances, display_wallet_balances, fetch_mint, fetch_position, fetch_whirlpool,
 };
 
-pub const RPC_URL: &str = "https://api.mainnet-beta.solana.com";
+pub const RPC_URL: &str =
+    "https://mainnet.helius-rpc.com/?api-key=e1bbe936-f564-4d9a-ae4e-a69e6f99e9b1";
 
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
-    set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaMainnet).unwrap();
+    set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaMainnet)
+        .expect("Failed to set Whirlpools config address for specified network.");
     let rpc = RpcClient::new(RPC_URL.to_string());
     let wallet = wallet::load_wallet();
-    set_funder(wallet.pubkey()).unwrap();
+    set_funder(wallet.pubkey()).expect("Failed to set funder address.");
 
-    let position_mint_address = Pubkey::from_str(&args.position_mint_address).unwrap();
+    let position_mint_address = Pubkey::from_str(&args.position_mint_address)
+        .expect("Invalid position mint address provided.");
 
     println!(
         "\n\
@@ -43,14 +46,20 @@ async fn main() {
 
     println!("-------------------------------------\n");
 
-    let (position_address, _) = get_position_address(&position_mint_address).unwrap();
-    let mut position = fetch_position(&rpc, &position_address).await.unwrap();
-
-    let whirlpool_address = position.whirlpool;
-    let whirlpool = fetch_whirlpool(&rpc, &whirlpool_address).await.unwrap();
-
-    let token_mint_a = fetch_mint(&rpc, &whirlpool.token_mint_a).await.unwrap();
-    let token_mint_b = fetch_mint(&rpc, &whirlpool.token_mint_b).await.unwrap();
+    let (position_address, _) =
+        get_position_address(&position_mint_address).expect("Failed to derive position address.");
+    let mut position = fetch_position(&rpc, &position_address)
+        .await
+        .expect("Failed to fetch position data.");
+    let whirlpool = fetch_whirlpool(&rpc, &position.whirlpool)
+        .await
+        .expect("Failed to fetch Whirlpool data.");
+    let token_mint_a = fetch_mint(&rpc, &whirlpool.token_mint_a)
+        .await
+        .expect("Failed to fetch Token Mint A data.");
+    let token_mint_b = fetch_mint(&rpc, &whirlpool.token_mint_b)
+        .await
+        .expect("Failed to fetch Token Mint B data.");
 
     display_wallet_balances(
         &rpc,
@@ -59,7 +68,7 @@ async fn main() {
         &whirlpool.token_mint_b,
     )
     .await
-    .unwrap();
+    .expect("Failed to display wallet balances.");
 
     display_position_balances(
         &rpc,
@@ -71,7 +80,7 @@ async fn main() {
         args.slippage_tolerance_bps,
     )
     .await
-    .unwrap();
+    .expect("Failed to display position balances.");
 
     loop {
         if let Err(err) = run_position_manager(

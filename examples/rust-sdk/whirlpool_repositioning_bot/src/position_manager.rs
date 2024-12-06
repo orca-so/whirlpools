@@ -23,10 +23,12 @@ pub async fn run_position_manager(
     token_mint_a: &Mint,
     token_mint_b: &Mint,
 ) -> Result<(), Box<dyn std::error::Error>> {
-    println!("Checking position...");
+    println!("Checking position.");
 
     let whirlpool_address = position.whirlpool;
-    let whirlpool = fetch_whirlpool(&rpc, &whirlpool_address).await?;
+    let whirlpool = fetch_whirlpool(&rpc, &whirlpool_address)
+        .await
+        .expect("Failed to fetch Whirlpool data.");
 
     let current_price = sqrt_price_to_price(
         whirlpool.sqrt_price,
@@ -68,7 +70,8 @@ pub async fn run_position_manager(
             Some(args.slippage_tolerance_bps),
             None,
         )
-        .await?;
+        .await
+        .expect("Failed to generate close position instructions.");
 
         let new_lower_price = current_price - (position_upper_price - position_lower_price) / 2.0;
         let new_upper_price = current_price + (position_upper_price - position_lower_price) / 2.0;
@@ -84,7 +87,8 @@ pub async fn run_position_manager(
             Some(100),
             None,
         )
-        .await?;
+        .await
+        .expect("Failed to generate open position instructions.");
 
         let mut all_instructions = vec![];
         all_instructions.extend(close_position_instructions.instructions);
@@ -93,6 +97,12 @@ pub async fn run_position_manager(
         let mut signers: Vec<&dyn Signer> = vec![wallet.as_ref()];
         signers.extend(
             open_position_instructions
+                .additional_signers
+                .iter()
+                .map(|kp| kp as &dyn Signer),
+        );
+        signers.extend(
+            close_position_instructions
                 .additional_signers
                 .iter()
                 .map(|kp| kp as &dyn Signer),
@@ -106,16 +116,17 @@ pub async fn run_position_manager(
             args.priority_fee_tier,
             args.max_priority_fee_lamports,
         )
-        .await?;
+        .await
+        .expect("Failed to send rebalancing transaction.");
         println!("Rebalancing transaction signature: {}", signature);
 
         let position_mint_address = open_position_instructions.position_mint;
-        let (position_address, _) = get_position_address(&position_mint_address)?;
-        *position = fetch_position(&rpc, &position_address).await?;
-        println!(
-            "New position mint address: {}",
-            open_position_instructions.position_mint
-        );
+        println!("New position mint address: {}", position_mint_address);
+        let (position_address, _) = get_position_address(&position_mint_address)
+            .expect("Failed to derive new position address.");
+        *position = fetch_position(&rpc, &position_address)
+            .await
+            .expect("Failed to fetch new position data.");
 
         display_wallet_balances(
             &rpc,
@@ -124,7 +135,7 @@ pub async fn run_position_manager(
             &whirlpool.token_mint_b,
         )
         .await
-        .unwrap();
+        .expect("Failed to display wallet balances.");
 
         display_position_balances(
             &rpc,
@@ -136,7 +147,7 @@ pub async fn run_position_manager(
             args.slippage_tolerance_bps,
         )
         .await
-        .unwrap();
+        .expect("Failed to display position balances.");
     } else {
         println!(
             "{}",

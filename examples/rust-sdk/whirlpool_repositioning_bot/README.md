@@ -33,6 +33,12 @@ A Rust-based CLI bot for interacting with the Orca Whirlpools program on Solana.
   ```
 3. The executable will be located in target/release/lp-bot
 
+> NOTE: This project uses the local version of the dependency. If you want to move this example project outside of this monorepo, make sure you install the necessary dependecies:
+  ```bash
+  cargo add orca_whirlpools orca_whirlpools_client orca_whirlpools_core
+  ```
+
+
 ---
 
 ## RPC Configuration
@@ -42,7 +48,7 @@ The bot connects to Solana Mainnet Beta by default using:
 const RPC_URL: &str = "https://api.mainnet-beta.solana.com";
 ```
 
-To modify this, update the RPC_URL constant in main.rs.
+It is strongly recommended to modify this with URL from an RPC provider like Helius or Quicknod. You can update the RPC_URL constant in main.rs.
 
 ---
 

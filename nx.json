@@ -16,5 +16,12 @@
     }
   },
   "$schema": "./node_modules/nx/schemas/nx-schema.json",
-  "defaultBase": "main"
+  "defaultBase": "main",
+  "projects": {
+    "whirlpools-example-rust-repositioning-bot": {
+      "root": "examples/rust-sdk/whirlpools-example-rust-repositioning-bot",
+      "sourceRoot": "examples/rust-sdk/whirlpools-example-rust-repositioning-bot",
+      "projectType": "application"
+    }
+  }
 }

@@ -1,0 +1,18 @@
+[package]
+name = "whirlpool_repositioning_bot"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+clap = { version = "^4.5.21", features = ["derive"] }
+colored = { version = "^2.0" }
+orca_whirlpools = { path = '../../../rust-sdk/whirlpool' }
+orca_whirlpools_client = { path = '../../../rust-sdk/client' }
+orca_whirlpools_core = { path = '../../../rust-sdk/core' }
+serde_json = { version = "^1.0" }
+solana-client = { version = "^1.18" }
+solana-sdk = { version = "^1.18" }
+spl-token-2022 = { version = "^3.0" }
+spl-associated-token-account = { version = "^3.0" }
+tokio = { version = "^1.41.1" }
+tokio-retry = { version = "^0.3.0" }

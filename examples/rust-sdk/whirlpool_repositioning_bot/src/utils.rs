@@ -2,6 +2,8 @@ use clap::ValueEnum;
 use orca_whirlpools::close_position_instructions;
 use orca_whirlpools_client::{Position, Whirlpool};
 use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_client::rpc_config::RpcSendTransactionConfig;
+use solana_sdk::commitment_config::CommitmentLevel;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 use solana_sdk::{
     message::Message, program_pack::Pack, pubkey::Pubkey, signature::Signature, signer::Signer,
@@ -10,7 +12,7 @@ use solana_sdk::{
 use spl_associated_token_account::get_associated_token_address_with_program_id;
 use spl_token_2022::state::Mint;
 use std::error::Error;
-use tokio::time::Duration;
+use tokio::time::{sleep, Duration, Instant};
 use tokio_retry::strategy::ExponentialBackoff;
 use tokio_retry::Retry;
 
@@ -161,10 +163,37 @@ pub async fn send_transaction(
         all_signers.extend(additional_signers.clone());
 
         let transaction = Transaction::new(&all_signers, message, recent_blockhash);
-        let signature = rpc.send_and_confirm_transaction(&transaction).await?;
-        Ok(signature)
+        let transaction_config = RpcSendTransactionConfig {
+            skip_preflight: true,
+            preflight_commitment: Some(CommitmentLevel::Confirmed),
+            ..Default::default()
+        };
+        let signature = rpc.send_transaction_with_config(&transaction, transaction_config).await?;
+        confirm_transaction(rpc, &signature, 60).await
     })
     .await
+}
+
+async fn confirm_transaction(
+    rpc: &RpcClient,
+    signature: &Signature,
+    timeout_secs: u64,
+) -> Result<Signature, Box<dyn Error>> {
+    let start_time = Instant::now();
+    let timeout = Duration::from_secs(timeout_secs);
+
+    loop {
+        match rpc.get_signature_status(signature).await? {
+            Some(Ok(())) => return Ok(*signature),
+            Some(Err(err)) => return Err(format!("Transaction failed: {:?}", err).into()),
+            None => {
+                if start_time.elapsed() >= timeout {
+                    return Err("Transaction confirmation timed out".into());
+                }
+                sleep(Duration::from_secs(1)).await;
+            }
+        }
+    }
 }
 
 pub async fn get_compute_unit_instructions(
@@ -195,16 +224,16 @@ pub async fn get_compute_unit_instructions(
         if let Some(priority_fee_micro_lamports) = calculate_priority_fee(rpc, tier).await? {
             let mut compute_unit_price = priority_fee_micro_lamports;
             let total_priority_fee_lamports =
-                (units_consumed as u64 * priority_fee_micro_lamports) / 1_000_000;
+                (units_consumed_safe as u64 * priority_fee_micro_lamports) / 1_000_000;
 
             if total_priority_fee_lamports > max_priority_fee_lamports {
-                compute_unit_price = (max_priority_fee_lamports * 1_000_000) / units_consumed;
+                compute_unit_price = (max_priority_fee_lamports * 1_000_000) / units_consumed_safe as u64;
             }
 
             display_priority_fee_details(
                 compute_unit_price,
-                units_consumed,
-                (units_consumed as u64 * compute_unit_price) / 1_000_000,
+                units_consumed_safe,
+                (units_consumed_safe as u64 * compute_unit_price) / 1_000_000,
             );
 
             let priority_fee_instruction =
@@ -218,7 +247,7 @@ pub async fn get_compute_unit_instructions(
 
 fn display_priority_fee_details(
     compute_unit_price: u64,
-    units_consumed: u64,
+    units_consumed: u32,
     total_priority_fee_lamports: u64,
 ) {
     println!(

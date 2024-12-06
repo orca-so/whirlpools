@@ -10,7 +10,7 @@ use orca_whirlpools::{
     close_position_instructions, open_position_instructions, IncreaseLiquidityParam,
 };
 use orca_whirlpools_client::{get_position_address, Position};
-use orca_whirlpools_core::{sqrt_price_to_price, tick_index_to_price};
+use orca_whirlpools_core::{sqrt_price_to_price, tick_index_to_price, tick_index_to_sqrt_price};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::signer::Signer;
 use spl_token_2022::state::Mint;
@@ -30,6 +30,13 @@ pub async fn run_position_manager(
         .await
         .expect("Failed to fetch Whirlpool data.");
 
+    let current_price_sqrt = whirlpool.sqrt_price;
+    let position_lower_price_sqrt = tick_index_to_sqrt_price(position.tick_lower_index);
+    let position_upper_price_sqrt = tick_index_to_sqrt_price(position.tick_upper_index);
+    let position_center_price_sqrt = (position_lower_price_sqrt + position_upper_price_sqrt) / 2;
+    let deviation_sqrt = (current_price_sqrt as i128 - position_center_price_sqrt as i128).abs() as u128;
+    let deviation_float = (deviation_sqrt as f64 * 100.0) / (position_center_price_sqrt as f64);
+    
     let current_price = sqrt_price_to_price(
         whirlpool.sqrt_price,
         token_mint_a.decimals,
@@ -47,16 +54,15 @@ pub async fn run_position_manager(
     );
     let position_center_price = (position_lower_price + position_upper_price) / 2.0;
 
-    let deviation = ((current_price - position_center_price).abs() / position_center_price) * 100.0;
     println!("Current pool price: {:.6}", current_price);
     println!(
         "Position price range: [{:.6}, {:.6}]",
         position_lower_price, position_upper_price
     );
     println!("Position center price: {:.6}", position_center_price);
-    println!("Price deviation from center: {:.2}%", deviation);
+    println!("Price deviation from center: {:.2}%", deviation_float);
 
-    if deviation >= args.threshold {
+    if deviation_float >= args.threshold {
         println!(
             "{}",
             "Deviation exceeds threshold. Rebalancing position."

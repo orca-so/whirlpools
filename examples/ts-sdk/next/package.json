@@ -1,5 +1,5 @@
 {
-  "name": "@orca-so/whirlpools-next-example",
+  "name": "@orca-so/whirlpools-example-ts-next",
   "version": "0.1.0",
   "type": "module",
   "scripts": {

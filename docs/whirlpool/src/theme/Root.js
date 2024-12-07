@@ -12,7 +12,7 @@ export default function Root({ children }) {
     border: "1px solid #13174D",
     borderRadius: "8px",
     cursor: "pointer",
-    boxShadow: "0 6px 12px rgba(0, 0, 0, 0.2)",
+    boxShadow: "3px 2px 6px rgba(0, 0, 0, 0.3)",
     transition: "transform 0.2s ease, box-shadow 0.2s ease",
     ...(isHovered && {
       transform: "translate(2px, 1px)",

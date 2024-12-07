@@ -24,9 +24,7 @@ export default function Root({ children }) {
   return (
     <>
       {children}
-      <Script
-        src="https://tally.so/widgets/embed.js"
-      />
+      <Script src="https://tally.so/widgets/embed.js" />
       <div
         style={{
           position: "fixed",

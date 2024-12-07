@@ -13,7 +13,7 @@ const nextConfig = {
       new CopyWebpackPlugin({
         patterns: [
           {
-            from: "../../ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings_bg.wasm",
+            from: "../../../ts-sdk/core/dist/nodejs/orca_whirlpools_core_js_bindings_bg.wasm",
             to: "./server/app",
           },
         ],

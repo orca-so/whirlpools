@@ -23,7 +23,8 @@
     "rust-sdk/*",
     "ts-sdk/*",
     "legacy-sdk/*",
-    "examples/*",
+    "examples/ts-sdk/*",
+    "examples/rust-sdk/*",
     "docs/*"
   ]
 }

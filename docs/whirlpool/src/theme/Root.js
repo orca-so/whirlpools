@@ -1,4 +1,5 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
+import Script from "next/script";
 
 export default function Root({ children }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -20,20 +21,12 @@ export default function Root({ children }) {
     }),
   };
 
-  useEffect(() => {
-    const script = document.createElement("script");
-    script.src = "https://tally.so/widgets/embed.js";
-    script.async = true;
-    document.body.appendChild(script);
-
-    return () => {
-      document.body.removeChild(script);
-    };
-  }, []);
-
   return (
     <>
       {children}
+      <Script
+        src="https://tally.so/widgets/embed.js"
+      />
       <div
         style={{
           position: "fixed",

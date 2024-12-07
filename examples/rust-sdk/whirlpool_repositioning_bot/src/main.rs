@@ -3,29 +3,30 @@ mod position_manager;
 mod utils;
 mod wallet;
 
-use std::str::FromStr;
-
 use clap::Parser;
 use cli::Args;
+use colored::Colorize;
+use dotenv::dotenv;
 use orca_whirlpools::{set_funder, set_whirlpools_config_address, WhirlpoolsConfigInput};
 use orca_whirlpools_client::get_position_address;
 use position_manager::run_position_manager;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::pubkey::Pubkey;
+use std::env;
+use std::str::FromStr;
 use tokio::time::{sleep, Duration};
 use utils::{
     display_position_balances, display_wallet_balances, fetch_mint, fetch_position, fetch_whirlpool,
 };
 
-pub const RPC_URL: &str =
-    "https://mainnet.helius-rpc.com/?api-key=";
-
 #[tokio::main]
 async fn main() {
     let args = Args::parse();
+    dotenv().ok();
+    let rpc_url = env::var("RPC_URL").unwrap();
+    let rpc = RpcClient::new(rpc_url.to_string());
     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaMainnet)
         .expect("Failed to set Whirlpools config address for specified network.");
-    let rpc = RpcClient::new(RPC_URL.to_string());
     let wallet = wallet::load_wallet();
     set_funder(wallet.pubkey()).expect("Failed to set funder address.");
 
@@ -93,7 +94,7 @@ async fn main() {
         )
         .await
         {
-            eprintln!("Error: {}", err);
+            eprintln!("{}", format!("Error: {}", err).to_string().red());
         }
         sleep(Duration::from_secs(args.interval)).await;
     }

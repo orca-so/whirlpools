@@ -15,10 +15,10 @@ pub struct Args {
     #[arg(
         short = 't',
         long,
-        default_value_t = 1.0,
-        help = "Threshold for repositioning in percentage.\n"
+        default_value_t = 100,
+        help = "Threshold for repositioning in bps.\n"
     )]
-    pub threshold: f64,
+    pub threshold: u16,
 
     #[arg(
         short = 'i',
@@ -37,8 +37,8 @@ pub struct Args {
                 - `none`: No priority fee\n  \
                 - `low`: Lower 25th quartile prioritization fee\n  \
                 - `medium`: Median prioritization fee\n  \
-                - `high`: Upper 75th quartile prioritization fee\n  \
-                - `turbo`: Upper 95th quartile prioritization fee\n"
+                - `high`: Upper 80th quartile prioritization fee\n  \
+                - `turbo`: Upper 99th quartile prioritization fee\n"
     )]
     pub priority_fee_tier: PriorityFeeTier,
 

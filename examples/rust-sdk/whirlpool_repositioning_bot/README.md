@@ -42,13 +42,11 @@ A Rust-based CLI bot for interacting with the Orca Whirlpools program on Solana.
 ---
 
 ## RPC Configuration
-The bot connects to Solana Mainnet Beta by default using:
+The bot connects to an SVM network by using an RPC URL. Make a local copy of `.env.template` to `.env` and set your RPC URL there. It is strongly recommended to you use a URL from an RPC provider, or your own RPC node.
 
-```rust
-const RPC_URL: &str = "https://api.mainnet-beta.solana.com";
+```bash
+RPC_URL="https://your-rpc-url.com"
 ```
-
-It is strongly recommended to modify this with URL from an RPC provider like Helius or Quicknod. You can update the RPC_URL constant in main.rs.
 
 ---
 
@@ -70,8 +68,8 @@ Run the bot with the following arguments
   - `none`: No priority fee.
   - `low`: Lower 25th quartile prioritization fee.
   - `medium`: Median prioritization fee (default).
-  - `high`: Upper 75th quartile prioritization fee.
-  - `turbo`: Upper 95th quartile prioritization fee.
+  - `high`: Upper 80th quartile prioritization fee.
+  - `turbo`: Upper 99th quartile prioritization fee.
 - `max_priority_fee_lamports` (optional): Maximum total priority fee in lamports. Default: 10_000_000 (0.01 SOL).
 - `slippage_tolerance_bps` (optional): Slippage tolerance in basis points (bps). Default: 100.
 

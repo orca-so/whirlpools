@@ -16,3 +16,4 @@ spl-token-2022 = { version = "^3.0" }
 spl-associated-token-account = { version = "^3.0" }
 tokio = { version = "^1.41.1" }
 tokio-retry = { version = "^0.3.0" }
+dotenv = { version = "^0.15.0"}

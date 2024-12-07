@@ -3,7 +3,6 @@
   "version": "0.0.1",
   "scripts": {
     "build": "cargo build",
-    "test": "cargo test --lib",
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
     "lint": "cargo clippy",
     "clean": "cargo clean"

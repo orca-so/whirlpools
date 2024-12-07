@@ -3875,74 +3875,74 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@next/bundle-analyzer@npm:^15.0.3":
-  version: 15.0.3
-  resolution: "@next/bundle-analyzer@npm:15.0.3"
+"@next/bundle-analyzer@npm:^15.0.4":
+  version: 15.0.4
+  resolution: "@next/bundle-analyzer@npm:15.0.4"
   dependencies:
     webpack-bundle-analyzer: "npm:4.10.1"
-  checksum: 10c0/072beda4d1dd795e8adea66318b7a2957990407be7c003ab66f493baa376404b8f5ecf1479ac3d1f563f7492b1558f4397db6a0cbf46c8b0cdf805c77b2af075
+  checksum: 10c0/cbeddac527697faee19de87a84ff2b2a3a9986562ef4986b255c219d51eb78277350a63219472eaf6754183c2c9e8208139cbb2949d9c5aed7a37b07893554a2
   languageName: node
   linkType: hard
 
-"@next/env@npm:15.0.3":
-  version: 15.0.3
-  resolution: "@next/env@npm:15.0.3"
-  checksum: 10c0/63582fed80d6a28fff102c935095da71fd57ddf6b5f5d564e85ebdefdeb93298f7f7cf7d813c75b460c6627106717ea959b4c232939e7abb97d73d8b8467d4cd
+"@next/env@npm:15.0.4":
+  version: 15.0.4
+  resolution: "@next/env@npm:15.0.4"
+  checksum: 10c0/114f5404798017ab9438ed9e90cb0057d8a42167995cf702ba938613e869e59869e55d7cebdbb19a5f5f89aa5d1899bc8849ea20e0902101196c66f63f5580fb
   languageName: node
   linkType: hard
 
-"@next/swc-darwin-arm64@npm:15.0.3":
-  version: 15.0.3
-  resolution: "@next/swc-darwin-arm64@npm:15.0.3"
+"@next/swc-darwin-arm64@npm:15.0.4":
+  version: 15.0.4
+  resolution: "@next/swc-darwin-arm64@npm:15.0.4"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@next/swc-darwin-x64@npm:15.0.3":
-  version: 15.0.3
-  resolution: "@next/swc-darwin-x64@npm:15.0.3"
+"@next/swc-darwin-x64@npm:15.0.4":
+  version: 15.0.4
+  resolution: "@next/swc-darwin-x64@npm:15.0.4"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@next/swc-linux-arm64-gnu@npm:15.0.3":
-  version: 15.0.3
-  resolution: "@next/swc-linux-arm64-gnu@npm:15.0.3"
+"@next/swc-linux-arm64-gnu@npm:15.0.4":
+  version: 15.0.4
+  resolution: "@next/swc-linux-arm64-gnu@npm:15.0.4"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@next/swc-linux-arm64-musl@npm:15.0.3":
-  version: 15.0.3
-  resolution: "@next/swc-linux-arm64-musl@npm:15.0.3"
+"@next/swc-linux-arm64-musl@npm:15.0.4":
+  version: 15.0.4
+  resolution: "@next/swc-linux-arm64-musl@npm:15.0.4"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@next/swc-linux-x64-gnu@npm:15.0.3":
-  version: 15.0.3
-  resolution: "@next/swc-linux-x64-gnu@npm:15.0.3"
+"@next/swc-linux-x64-gnu@npm:15.0.4":
+  version: 15.0.4
+  resolution: "@next/swc-linux-x64-gnu@npm:15.0.4"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@next/swc-linux-x64-musl@npm:15.0.3":
-  version: 15.0.3
-  resolution: "@next/swc-linux-x64-musl@npm:15.0.3"
+"@next/swc-linux-x64-musl@npm:15.0.4":
+  version: 15.0.4
+  resolution: "@next/swc-linux-x64-musl@npm:15.0.4"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@next/swc-win32-arm64-msvc@npm:15.0.3":
-  version: 15.0.3
-  resolution: "@next/swc-win32-arm64-msvc@npm:15.0.3"
+"@next/swc-win32-arm64-msvc@npm:15.0.4":
+  version: 15.0.4
+  resolution: "@next/swc-win32-arm64-msvc@npm:15.0.4"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@next/swc-win32-x64-msvc@npm:15.0.3":
-  version: 15.0.3
-  resolution: "@next/swc-win32-x64-msvc@npm:15.0.3"
+"@next/swc-win32-x64-msvc@npm:15.0.4":
+  version: 15.0.4
+  resolution: "@next/swc-win32-x64-msvc@npm:15.0.4"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -4012,72 +4012,72 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-arm64@npm:20.1.4":
-  version: 20.1.4
-  resolution: "@nx/nx-darwin-arm64@npm:20.1.4"
+"@nx/nx-darwin-arm64@npm:20.2.0":
+  version: 20.2.0
+  resolution: "@nx/nx-darwin-arm64@npm:20.2.0"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-x64@npm:20.1.4":
-  version: 20.1.4
-  resolution: "@nx/nx-darwin-x64@npm:20.1.4"
+"@nx/nx-darwin-x64@npm:20.2.0":
+  version: 20.2.0
+  resolution: "@nx/nx-darwin-x64@npm:20.2.0"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-freebsd-x64@npm:20.1.4":
-  version: 20.1.4
-  resolution: "@nx/nx-freebsd-x64@npm:20.1.4"
+"@nx/nx-freebsd-x64@npm:20.2.0":
+  version: 20.2.0
+  resolution: "@nx/nx-freebsd-x64@npm:20.2.0"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm-gnueabihf@npm:20.1.4":
-  version: 20.1.4
-  resolution: "@nx/nx-linux-arm-gnueabihf@npm:20.1.4"
+"@nx/nx-linux-arm-gnueabihf@npm:20.2.0":
+  version: 20.2.0
+  resolution: "@nx/nx-linux-arm-gnueabihf@npm:20.2.0"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-gnu@npm:20.1.4":
-  version: 20.1.4
-  resolution: "@nx/nx-linux-arm64-gnu@npm:20.1.4"
+"@nx/nx-linux-arm64-gnu@npm:20.2.0":
+  version: 20.2.0
+  resolution: "@nx/nx-linux-arm64-gnu@npm:20.2.0"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-musl@npm:20.1.4":
-  version: 20.1.4
-  resolution: "@nx/nx-linux-arm64-musl@npm:20.1.4"
+"@nx/nx-linux-arm64-musl@npm:20.2.0":
+  version: 20.2.0
+  resolution: "@nx/nx-linux-arm64-musl@npm:20.2.0"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-gnu@npm:20.1.4":
-  version: 20.1.4
-  resolution: "@nx/nx-linux-x64-gnu@npm:20.1.4"
+"@nx/nx-linux-x64-gnu@npm:20.2.0":
+  version: 20.2.0
+  resolution: "@nx/nx-linux-x64-gnu@npm:20.2.0"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-musl@npm:20.1.4":
-  version: 20.1.4
-  resolution: "@nx/nx-linux-x64-musl@npm:20.1.4"
+"@nx/nx-linux-x64-musl@npm:20.2.0":
+  version: 20.2.0
+  resolution: "@nx/nx-linux-x64-musl@npm:20.2.0"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-arm64-msvc@npm:20.1.4":
-  version: 20.1.4
-  resolution: "@nx/nx-win32-arm64-msvc@npm:20.1.4"
+"@nx/nx-win32-arm64-msvc@npm:20.2.0":
+  version: 20.2.0
+  resolution: "@nx/nx-win32-arm64-msvc@npm:20.2.0"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-x64-msvc@npm:20.1.4":
-  version: 20.1.4
-  resolution: "@nx/nx-win32-x64-msvc@npm:20.1.4"
+"@nx/nx-win32-x64-msvc@npm:20.2.0":
+  version: 20.2.0
+  resolution: "@nx/nx-win32-x64-msvc@npm:20.2.0"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -4179,7 +4179,7 @@ __metadata:
     "@orca-so/whirlpools-docs-legacy": "npm:*"
     "@orca-so/whirlpools-docs-rust": "npm:*"
     "@orca-so/whirlpools-docs-ts": "npm:*"
-    "@types/react": "npm:^18.3.12"
+    "@types/react": "npm:^18.3.13"
     clsx: "npm:^2.1.1"
     prism-react-renderer: "npm:^2.4.0"
     react: "npm:^18.3.1"
@@ -4215,7 +4215,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-monorepo@workspace:."
   dependencies:
     "@types/node": "npm:^22.10.1"
-    nx: "npm:^20.1.4"
+    nx: "npm:^20.2.0"
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.3.5"
     vitest: "npm:^2.1.8"
@@ -4226,13 +4226,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-next-example@workspace:examples/next"
   dependencies:
-    "@next/bundle-analyzer": "npm:^15.0.3"
+    "@next/bundle-analyzer": "npm:^15.0.4"
     "@orca-so/whirlpools": "npm:*"
     "@solana/web3.js": "npm:^2.0.0"
     "@types/node": "npm:^22.10.1"
-    "@types/react": "npm:^18.3.12"
+    "@types/react": "npm:^18.3.13"
     copy-webpack-plugin: "npm:^12.0.2"
-    next: "npm:^15.0.3"
+    next: "npm:^15.0.4"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
     typescript: "npm:^5.7.2"
@@ -6115,13 +6115,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/react@npm:*, @types/react@npm:^18.3.12":
+"@types/react@npm:*":
   version: 18.3.12
   resolution: "@types/react@npm:18.3.12"
   dependencies:
     "@types/prop-types": "npm:*"
     csstype: "npm:^3.0.2"
   checksum: 10c0/8bae8d9a41619804561574792e29112b413044eb0d53746dde2b9720c1f9a59f71c895bbd7987cd8ce9500b00786e53bc032dced38cddf42910458e145675290
+  languageName: node
+  linkType: hard
+
+"@types/react@npm:^18.3.13":
+  version: 18.3.13
+  resolution: "@types/react@npm:18.3.13"
+  dependencies:
+    "@types/prop-types": "npm:*"
+    csstype: "npm:^3.0.2"
+  checksum: 10c0/91815e00157deb179fa670aa2dfc491952698b7743ffddca0e3e0f16e7a18454f3f5ef72321a07386c49e721563b9d280dbbdfae039face764e2fdd8ad949d4b
   languageName: node
   linkType: hard
 
@@ -13275,19 +13285,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"next@npm:^15.0.3":
-  version: 15.0.3
-  resolution: "next@npm:15.0.3"
+"next@npm:^15.0.4":
+  version: 15.0.4
+  resolution: "next@npm:15.0.4"
   dependencies:
-    "@next/env": "npm:15.0.3"
-    "@next/swc-darwin-arm64": "npm:15.0.3"
-    "@next/swc-darwin-x64": "npm:15.0.3"
-    "@next/swc-linux-arm64-gnu": "npm:15.0.3"
-    "@next/swc-linux-arm64-musl": "npm:15.0.3"
-    "@next/swc-linux-x64-gnu": "npm:15.0.3"
-    "@next/swc-linux-x64-musl": "npm:15.0.3"
-    "@next/swc-win32-arm64-msvc": "npm:15.0.3"
-    "@next/swc-win32-x64-msvc": "npm:15.0.3"
+    "@next/env": "npm:15.0.4"
+    "@next/swc-darwin-arm64": "npm:15.0.4"
+    "@next/swc-darwin-x64": "npm:15.0.4"
+    "@next/swc-linux-arm64-gnu": "npm:15.0.4"
+    "@next/swc-linux-arm64-musl": "npm:15.0.4"
+    "@next/swc-linux-x64-gnu": "npm:15.0.4"
+    "@next/swc-linux-x64-musl": "npm:15.0.4"
+    "@next/swc-win32-arm64-msvc": "npm:15.0.4"
+    "@next/swc-win32-x64-msvc": "npm:15.0.4"
     "@swc/counter": "npm:0.1.3"
     "@swc/helpers": "npm:0.5.13"
     busboy: "npm:1.6.0"
@@ -13299,8 +13309,8 @@ __metadata:
     "@opentelemetry/api": ^1.1.0
     "@playwright/test": ^1.41.2
     babel-plugin-react-compiler: "*"
-    react: ^18.2.0 || 19.0.0-rc-66855b96-20241106
-    react-dom: ^18.2.0 || 19.0.0-rc-66855b96-20241106
+    react: ^18.2.0 || 19.0.0-rc-66855b96-20241106 || ^19.0.0
+    react-dom: ^18.2.0 || 19.0.0-rc-66855b96-20241106 || ^19.0.0
     sass: ^1.3.0
   dependenciesMeta:
     "@next/swc-darwin-arm64":
@@ -13332,7 +13342,7 @@ __metadata:
       optional: true
   bin:
     next: dist/bin/next
-  checksum: 10c0/c5f6a57acb5f29063abc82d4d4417a048d0c2d5216d6ded6aa3fe32d60bb4835ed57dd34e2ef8fdda15579e97205820dc25bf34556b1d942a01a33d9ae7f88db
+  checksum: 10c0/80b2296f33d865bf4f30f5df3d6fa461de13ef383dd9e32f33f5c05f21c766eb7f7573431235b9f3d51a5f09614cf431f8fcf925272b9524faced802961ff37b
   languageName: node
   linkType: hard
 
@@ -13511,21 +13521,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nx@npm:^20.1.4":
-  version: 20.1.4
-  resolution: "nx@npm:20.1.4"
+"nx@npm:^20.2.0":
+  version: 20.2.0
+  resolution: "nx@npm:20.2.0"
   dependencies:
     "@napi-rs/wasm-runtime": "npm:0.2.4"
-    "@nx/nx-darwin-arm64": "npm:20.1.4"
-    "@nx/nx-darwin-x64": "npm:20.1.4"
-    "@nx/nx-freebsd-x64": "npm:20.1.4"
-    "@nx/nx-linux-arm-gnueabihf": "npm:20.1.4"
-    "@nx/nx-linux-arm64-gnu": "npm:20.1.4"
-    "@nx/nx-linux-arm64-musl": "npm:20.1.4"
-    "@nx/nx-linux-x64-gnu": "npm:20.1.4"
-    "@nx/nx-linux-x64-musl": "npm:20.1.4"
-    "@nx/nx-win32-arm64-msvc": "npm:20.1.4"
-    "@nx/nx-win32-x64-msvc": "npm:20.1.4"
+    "@nx/nx-darwin-arm64": "npm:20.2.0"
+    "@nx/nx-darwin-x64": "npm:20.2.0"
+    "@nx/nx-freebsd-x64": "npm:20.2.0"
+    "@nx/nx-linux-arm-gnueabihf": "npm:20.2.0"
+    "@nx/nx-linux-arm64-gnu": "npm:20.2.0"
+    "@nx/nx-linux-arm64-musl": "npm:20.2.0"
+    "@nx/nx-linux-x64-gnu": "npm:20.2.0"
+    "@nx/nx-linux-x64-musl": "npm:20.2.0"
+    "@nx/nx-win32-arm64-msvc": "npm:20.2.0"
+    "@nx/nx-win32-x64-msvc": "npm:20.2.0"
     "@yarnpkg/lockfile": "npm:^1.1.0"
     "@yarnpkg/parsers": "npm:3.0.2"
     "@zkochan/js-yaml": "npm:0.0.7"
@@ -13589,7 +13599,7 @@ __metadata:
   bin:
     nx: bin/nx.js
     nx-cloud: bin/nx-cloud.js
-  checksum: 10c0/a9407ea70ecf9b2f465c94552124ef01d90828025540fa5733e1d3d35e6adab41adfe0c0545ebed37b0e7059e4dfee972351949fd9b643adb13e6daba4dd0214
+  checksum: 10c0/6c03afc6a3edffff7d737d7a668d8ea83dcba52e77a7fa591aca377dde4a45851971823fa453772c8a610235aa8c2e70d040bf1390ee96cb234cd1a4f40680ff
   languageName: node
   linkType: hard
 

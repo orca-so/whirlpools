@@ -20,7 +20,10 @@ const nextConfig = {
 
     // The following supresses a warning about using top-level-await and is optional
     if (!isServer) {
-      config.output.environment = { ...config.output.environment, asyncFunction: true };
+      config.output.environment = {
+        ...config.output.environment,
+        asyncFunction: true,
+      };
     }
 
     return config;

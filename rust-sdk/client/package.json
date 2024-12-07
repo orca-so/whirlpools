@@ -6,7 +6,7 @@
     "build": "node ./codama.js && cargo build",
     "test": "cargo test --lib",
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
-    "lint": "cargo clippy",
+    "lint": "cargo clippy && cargo fmt --check",
     "clean": "cargo clean"
   },
   "devDependencies": {

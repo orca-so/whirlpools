@@ -1,6 +1,8 @@
 use anchor_lang::prelude::*;
 use anchor_spl::associated_token::{self, AssociatedToken};
-use anchor_spl::token_2022::spl_token_2022::extension::{BaseStateWithExtensions, StateWithExtensions};
+use anchor_spl::token_2022::spl_token_2022::extension::{
+    BaseStateWithExtensions, StateWithExtensions,
+};
 use anchor_spl::token_2022::spl_token_2022::{
     self, extension::ExtensionType, instruction::AuthorityType,
 };
@@ -10,8 +12,7 @@ use solana_program::program::{invoke, invoke_signed};
 use solana_program::system_instruction::{create_account, transfer};
 
 use crate::constants::{
-    WP_2022_METADATA_NAME_PREFIX, WP_2022_METADATA_SYMBOL,
-    WP_2022_METADATA_URI_BASE,
+    WP_2022_METADATA_NAME_PREFIX, WP_2022_METADATA_SYMBOL, WP_2022_METADATA_URI_BASE,
 };
 use crate::state::*;
 
@@ -137,20 +138,15 @@ pub fn initialize_token_metadata_extension<'info>(
     let token_mint_data = position_mint.try_borrow_data()?;
     let token_mint_unpacked =
         StateWithExtensions::<spl_token_2022::state::Mint>::unpack(&token_mint_data)?;
-    let new_account_len = token_mint_unpacked.try_get_new_account_len::<spl_token_metadata_interface::state::TokenMetadata>(
-        &metadata,
-    )?;
+    let new_account_len = token_mint_unpacked
+        .try_get_new_account_len::<spl_token_metadata_interface::state::TokenMetadata>(&metadata)?;
     let new_rent_exempt_minimum = Rent::get()?.minimum_balance(new_account_len);
     let additional_rent = new_rent_exempt_minimum.saturating_sub(position_mint.lamports());
     drop(token_mint_data); // CPI call will borrow the account data
 
     // transfer additional rent
     invoke(
-        &transfer(
-            funder.key,
-            position_mint.key,
-            additional_rent,
-        ),
+        &transfer(funder.key, position_mint.key, additional_rent),
         &[
             funder.to_account_info(),
             position_mint.to_account_info(),

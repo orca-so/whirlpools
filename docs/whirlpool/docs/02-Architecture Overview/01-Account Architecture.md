@@ -4,7 +4,7 @@
 ![Account Architecture](../../static/img/02-Architecture%20Overview/architecture-overview.png)
 
 ## WhirlpoolsConfig
-The owner of a Config account has the authority to define the many authorities over the pools that it owns (ex. default fees, collect protocol fees etc) . Whirlpools visible on the ORCA UI are all derived and controlled by a WhirlpoolsConfig account owned by the ORCA foundation. To learn more about managing pools, start [here](../03-Whirlpools%20SDKs/03-Whirlpools/03-Whirlpool%20Management/01-Create%20Pool.md).
+The owner of a Config account has the authority to define the many authorities over the pools that it owns (ex. default fees, collect protocol fees etc) . Whirlpools visible on the ORCA UI are all derived and controlled by a WhirlpoolsConfig account owned by the ORCA foundation. To learn more about managing pools, start [here](../03-Whirlpools%20SDKs/01-Whirlpools/03-Whirlpool%20Management/01-Create%20Pool.mdx).
 
 Users and other protocols are free to deploy their own WhirlpoolsConfig account on our Whirlpool program to spawn their own set of liquidity pools.
 

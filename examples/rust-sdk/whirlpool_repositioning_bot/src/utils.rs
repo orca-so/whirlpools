@@ -26,7 +26,7 @@ pub async fn display_position_balances(
     slippage_tolerance_bps: u16,
 ) -> Result<(), Box<dyn Error>> {
     let close_position_instructions = close_position_instructions(
-        &rpc,
+        rpc,
         position.position_mint,
         Some(slippage_tolerance_bps),
         None,

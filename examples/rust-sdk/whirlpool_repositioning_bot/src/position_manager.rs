@@ -26,7 +26,7 @@ pub async fn run_position_manager(
     println!("Checking position.");
 
     let whirlpool_address = position.whirlpool;
-    let whirlpool = fetch_whirlpool(&rpc, &whirlpool_address)
+    let whirlpool = fetch_whirlpool(rpc, &whirlpool_address)
         .await
         .map_err(|_| "Failed to fetch Whirlpool data.")?;
 
@@ -75,7 +75,7 @@ pub async fn run_position_manager(
         );
 
         let close_position_instructions = close_position_instructions(
-            &rpc,
+            rpc,
             position.position_mint,
             Some(args.slippage_tolerance_bps),
             None,
@@ -89,7 +89,7 @@ pub async fn run_position_manager(
         let increase_liquidity_param =
             IncreaseLiquidityParam::Liquidity(close_position_instructions.quote.liquidity_delta);
         let open_position_instructions = open_position_instructions(
-            &rpc,
+            rpc,
             whirlpool_address,
             new_lower_price,
             new_upper_price,
@@ -119,7 +119,7 @@ pub async fn run_position_manager(
         );
 
         let signature = send_transaction(
-            &rpc,
+            rpc,
             wallet.as_ref(),
             &whirlpool_address,
             all_instructions,
@@ -135,12 +135,12 @@ pub async fn run_position_manager(
         println!("New position mint address: {}", position_mint_address);
         let (position_address, _) = get_position_address(&position_mint_address)
             .map_err(|_| "Failed to derive new position address.")?;
-        *position = fetch_position(&rpc, &position_address)
+        *position = fetch_position(rpc, &position_address)
             .await
             .map_err(|_| "Failed to fetch new position data.")?;
 
         display_wallet_balances(
-            &rpc,
+            rpc,
             &wallet.pubkey(),
             &whirlpool.token_mint_a,
             &whirlpool.token_mint_b,
@@ -149,8 +149,8 @@ pub async fn run_position_manager(
         .map_err(|_| "Failed to display wallet balances.")?;
 
         display_position_balances(
-            &rpc,
-            &position,
+            rpc,
+            position,
             &whirlpool.token_mint_a,
             &whirlpool.token_mint_b,
             token_mint_a.decimals,

@@ -183,10 +183,11 @@ pub async fn send_transaction(
         sleep(Duration::from_millis(100)).await;
     };
     send_transaction_result.and_then(|(status, signature)| {
-        status
-            .status
-            .map(|_| signature)
-            .map_err(|e| Box::new(e) as Box<dyn std::error::Error>)
+        if status.err.is_none() {
+            Ok(signature)
+        } else {
+            Err(Box::new(status.err.unwrap()))
+        }
     })
 }
 

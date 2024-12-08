@@ -183,10 +183,10 @@ pub async fn send_transaction(
         sleep(Duration::from_millis(100)).await;
     };
     send_transaction_result.and_then(|(status, signature)| {
-        if status.err.is_none() {
-            Ok(signature)
+        if let Some(err) = status.err {
+            Err(Box::new(err))
         } else {
-            Err(Box::new(status.err.unwrap()))
+            Ok(signature)
         }
     })
 }

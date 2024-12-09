@@ -37,7 +37,7 @@ export default function Page() {
           onChange={(e) => setTickIndex(e.target.value)}
         />{" "}
         <button onClick={() => convertTickIndex()}>Convert</button>{" "}
-        {sqrtPrice && <>Sqrt Price: {sqrtPrice.toString()}</>}
+        {sqrtPrice !== undefined && <>Sqrt Price: {sqrtPrice.toString()}</>}
       </p>
       <p>
         <input

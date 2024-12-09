@@ -664,15 +664,34 @@ mod tests {
         assert_eq!(token_account.amount, amount);
     }
 
+    #[tokio::test]
+    #[serial]
+    async fn test_native_token_balance() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+        let amount = 1_000_000_000; // 1 SOL
+
+        // Setup native token (wSOL) account with balance using helper function
+        let wsol_ata = setup_ata_with_amount(&ctx, native_mint::ID, amount).await?;
+
+        // Verify the account was created and funded
+        let account = ctx.rpc.get_account(&wsol_ata).await?;
+        let token_account = Account::unpack(&account.data)?;
+        assert_eq!(token_account.amount, amount);
+        assert_eq!(token_account.mint, native_mint::ID);
+        assert_eq!(token_account.owner, ctx.signer.pubkey());
+
+        Ok(())
+    }
+
     // 4. Token-2022 Tests
     #[tokio::test]
     #[serial]
-    async fn test_token_2022_extensions() {
+    async fn test_token_2022_extensions() -> Result<(), Box<dyn Error>> {
         let ctx = RpcContext::new().await;
 
         // Create Token-2022 mint with transfer fee
-        let mint_te = setup_mint_te_fee(&ctx).await.unwrap();
-        let mint_account = ctx.rpc.get_account(&mint_te).await.unwrap();
+        let mint_te = setup_mint_te_fee(&ctx).await?;
+        let mint_account = ctx.rpc.get_account(&mint_te).await?;
 
         // Test transfer fee at epoch 0
         let older = get_current_transfer_fee(Some(&mint_account), 0).unwrap();
@@ -687,6 +706,8 @@ mod tests {
         // Test with no fee
         let no_fee_result = get_current_transfer_fee(None, 0);
         assert!(no_fee_result.is_none());
+
+        Ok(())
     }
 
     // 5. Mixed Token Types Test

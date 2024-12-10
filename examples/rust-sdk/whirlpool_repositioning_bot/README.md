@@ -1,4 +1,4 @@
-# LP Bot - position rebalance
+# Whirlpool Repositioning Bot
 A Rust-based CLI bot for interacting with the Orca Whirlpools program on Solana. This bot monitors and rebalances a liquidity position by closing and reopening positions when price deviations exceed a user-defined threshold.
 
 ---

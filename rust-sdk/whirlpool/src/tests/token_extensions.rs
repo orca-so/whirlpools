@@ -47,16 +47,21 @@ pub async fn setup_mint_te(
         &TOKEN_2022_PROGRAM_ID,
     ));
 
-    // 2. Initialize extensions
-    if extensions.contains(&ExtensionType::TransferFeeConfig) {
-        instructions.push(initialize_transfer_fee_config(
-            &TOKEN_2022_PROGRAM_ID,
-            &mint.pubkey(),
-            Some(&ctx.signer.pubkey()),
-            Some(&ctx.signer.pubkey()),
-            100,           // 1% (matching program)
-            1_000_000_000, // 1 token (matching program)
-        )?);
+    // 2. Initialize extensions first
+    for extension in extensions {
+        match extension {
+            ExtensionType::TransferFeeConfig => {
+                instructions.push(initialize_transfer_fee_config(
+                    &TOKEN_2022_PROGRAM_ID,
+                    &mint.pubkey(),
+                    Some(&ctx.signer.pubkey()),
+                    Some(&ctx.signer.pubkey()),
+                    100,           // 1% (matching program)
+                    1_000_000_000, // 1 token (matching program)
+                )?);
+            }
+            _ => {} // Handle other extension types here if needed
+        }
     }
 
     // 3. Initialize mint
@@ -68,16 +73,21 @@ pub async fn setup_mint_te(
         6,    // decimals
     )?);
 
-    // 4. Set newer transfer fee if needed
-    if extensions.contains(&ExtensionType::TransferFeeConfig) {
-        instructions.push(set_transfer_fee(
-            &TOKEN_2022_PROGRAM_ID,
-            &mint.pubkey(),
-            &ctx.signer.pubkey(),
-            &[],
-            150,           // 1.5% (matching program)
-            1_000_000_000, // 1 token
-        )?);
+    // 4. Set extension configurations
+    for extension in extensions {
+        match extension {
+            ExtensionType::TransferFeeConfig => {
+                instructions.push(set_transfer_fee(
+                    &TOKEN_2022_PROGRAM_ID,
+                    &mint.pubkey(),
+                    &ctx.signer.pubkey(),
+                    &[],
+                    150,           // 1.5% (matching program)
+                    1_000_000_000, // 1 token
+                )?);
+            }
+            _ => {} // Handle other extension types here if needed
+        }
     }
 
     ctx.send_transaction_with_signers(instructions, vec![&mint])

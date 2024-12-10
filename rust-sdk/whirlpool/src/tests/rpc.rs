@@ -1,7 +1,7 @@
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::{error::Error, str::FromStr};
-use std::sync::{Arc, RwLock};
 use std::collections::HashMap;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::{Arc, RwLock};
+use std::{error::Error, str::FromStr};
 
 use async_trait::async_trait;
 use orca_whirlpools_client::{
@@ -20,6 +20,7 @@ use solana_client::{
     rpc_response::{Response, RpcBlockhash, RpcResponseContext, RpcVersionInfo},
     rpc_sender::{RpcSender, RpcTransportStats},
 };
+use solana_program::program_option::COption;
 use solana_program_test::tokio::sync::Mutex;
 use solana_program_test::{ProgramTest, ProgramTestContext};
 use solana_sdk::bs58;
@@ -29,22 +30,16 @@ use solana_sdk::{
     commitment_config::CommitmentLevel,
     instruction::Instruction,
     message::{v0::Message, VersionedMessage},
+    program_pack::Pack,
     pubkey::Pubkey,
     signature::{Keypair, Signature},
     signer::Signer,
-    system_program,
-    system_instruction,
+    system_instruction, system_program,
     transaction::VersionedTransaction,
-    program_pack::Pack,
 };
 use solana_version::Version;
 use spl_memo::build_memo;
-use spl_token_2022::{
-    extension::ExtensionType,
-    state::Mint,
-    ID as TOKEN_2022_PROGRAM_ID,
-};
-use solana_program::program_option::COption;
+use spl_token_2022::{extension::ExtensionType, state::Mint, ID as TOKEN_2022_PROGRAM_ID};
 
 use crate::tests::anchor_programs;
 use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
@@ -274,7 +269,8 @@ impl RpcContext {
         let mut accounts = self.accounts.write().unwrap();
         accounts.insert(mint.pubkey(), new_account);
         self.token_responses
-            .write().unwrap()
+            .write()
+            .unwrap()
             .insert(format!("mint_{}", mint.pubkey()), data);
 
         Ok(mint.pubkey())

@@ -384,14 +384,12 @@ pub async fn fetch_whirlpools_by_token_pair(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::tests::{
+        setup_ata_with_amount, setup_mint_with_decimals, setup_whirlpool, RpcContext,
+    };
+    use serial_test::serial;
     use solana_program_test::tokio;
     use solana_sdk::signer::Signer;
-    use serial_test::serial;
-    use crate::tests::{
-        setup_whirlpool,
-        RpcContext,
-        setup_ata_with_amount, setup_mint_with_decimals,
-    };
 
     struct TestContext {
         ctx: RpcContext,
@@ -429,9 +427,10 @@ mod tests {
         .await
         .unwrap();
 
-        if let PoolInfo::Initialized(pool) = fetch_splash_pool(&test_ctx.ctx.rpc, test_ctx.mint_a, test_ctx.mint_b)
-            .await
-            .unwrap()
+        if let PoolInfo::Initialized(pool) =
+            fetch_splash_pool(&test_ctx.ctx.rpc, test_ctx.mint_a, test_ctx.mint_b)
+                .await
+                .unwrap()
         {
             assert_eq!(pool.data.liquidity, 0);
             assert_eq!(pool.data.tick_spacing, SPLASH_POOL_TICK_SPACING);
@@ -449,14 +448,19 @@ mod tests {
     #[serial]
     async fn test_fetch_concentrated_liquidity_pool() {
         let test_ctx = TestContext::new().await.unwrap();
-        let concentrated_pool = setup_whirlpool(&test_ctx.ctx, test_ctx.mint_a, test_ctx.mint_b, 64)
-            .await
-            .unwrap();
-
-        if let PoolInfo::Initialized(pool) =
-            fetch_concentrated_liquidity_pool(&test_ctx.ctx.rpc, test_ctx.mint_a, test_ctx.mint_b, 64)
+        let concentrated_pool =
+            setup_whirlpool(&test_ctx.ctx, test_ctx.mint_a, test_ctx.mint_b, 64)
                 .await
-                .unwrap()
+                .unwrap();
+
+        if let PoolInfo::Initialized(pool) = fetch_concentrated_liquidity_pool(
+            &test_ctx.ctx.rpc,
+            test_ctx.mint_a,
+            test_ctx.mint_b,
+            64,
+        )
+        .await
+        .unwrap()
         {
             assert_eq!(pool.data.liquidity, 0);
             assert_eq!(pool.data.tick_spacing, 64);
@@ -475,10 +479,14 @@ mod tests {
     async fn test_fetch_non_existent_pool() {
         let test_ctx = TestContext::new().await.unwrap();
 
-        if let PoolInfo::Uninitialized(pool) =
-            fetch_concentrated_liquidity_pool(&test_ctx.ctx.rpc, test_ctx.mint_a, test_ctx.mint_b, 128)
-                .await
-                .unwrap()
+        if let PoolInfo::Uninitialized(pool) = fetch_concentrated_liquidity_pool(
+            &test_ctx.ctx.rpc,
+            test_ctx.mint_a,
+            test_ctx.mint_b,
+            128,
+        )
+        .await
+        .unwrap()
         {
             assert_eq!(pool.tick_spacing, 128);
             assert_eq!(pool.token_mint_a, test_ctx.mint_a);
@@ -496,9 +504,10 @@ mod tests {
         let test_ctx = TestContext::new().await.unwrap();
 
         // Create pools with different tick spacings
-        let concentrated_pool = setup_whirlpool(&test_ctx.ctx, test_ctx.mint_a, test_ctx.mint_b, 64)
-            .await
-            .unwrap();
+        let concentrated_pool =
+            setup_whirlpool(&test_ctx.ctx, test_ctx.mint_a, test_ctx.mint_b, 64)
+                .await
+                .unwrap();
         let splash_pool = setup_whirlpool(
             &test_ctx.ctx,
             test_ctx.mint_a,
@@ -508,9 +517,10 @@ mod tests {
         .await
         .unwrap();
 
-        let pools = fetch_whirlpools_by_token_pair(&test_ctx.ctx.rpc, test_ctx.mint_a, test_ctx.mint_b)
-            .await
-            .unwrap();
+        let pools =
+            fetch_whirlpools_by_token_pair(&test_ctx.ctx.rpc, test_ctx.mint_a, test_ctx.mint_b)
+                .await
+                .unwrap();
 
         assert_eq!(pools.len(), 3); // 2 initialized + 1 uninitialized (128 tick spacing)
 

@@ -27,4 +27,5 @@ generated
 **/Cargo.lock
 .next
 .env
+wallet.json
 solana-release

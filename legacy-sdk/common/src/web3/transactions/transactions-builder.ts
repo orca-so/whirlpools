@@ -90,7 +90,7 @@ type ComputeBudgetOption =
       computeLimitMargin?: number;
       computePricePercentile?: number;
       getPriorityFeePerUnit?: (
-        lockedWritableAccounts: PublicKey[]
+        lockedWritableAccounts: PublicKey[],
       ) => Promise<RecentPrioritizationFees[]>;
     };
 
@@ -132,7 +132,7 @@ export class TransactionBuilder {
   constructor(
     readonly connection: Connection,
     readonly wallet: Wallet,
-    defaultOpts?: TransactionBuilderOptions
+    defaultOpts?: TransactionBuilderOptions,
   ) {
     this.instructions = [];
     this.signers = [];
@@ -267,7 +267,7 @@ export class TransactionBuilder {
         DEFAULT_MAX_COMPUTE_UNIT_LIMIT;
       const microLamports = Math.floor(
         (computeBudgetOption.priorityFeeLamports * MICROLAMPORTS_PER_LAMPORT) /
-          computeLimit
+          computeLimit,
       );
 
       prependInstructions = [
@@ -279,14 +279,14 @@ export class TransactionBuilder {
         prependInstructions.push(
           ComputeBudgetProgram.setComputeUnitPrice({
             microLamports,
-          })
+          }),
         );
       }
       if (computeBudgetOption.accountDataSizeLimit) {
         prependInstructions.push(
           setLoadedAccountsDataSizeLimitInstruction(
-            computeBudgetOption.accountDataSizeLimit
-          )
+            computeBudgetOption.accountDataSizeLimit,
+          ),
         );
       }
       if (
@@ -298,7 +298,7 @@ export class TransactionBuilder {
             fromPubkey: this.wallet.publicKey,
             toPubkey: getJitoTipAddress(),
             lamports: computeBudgetOption.jitoTipLamports,
-          })
+          }),
         );
       }
     }
@@ -318,8 +318,8 @@ export class TransactionBuilder {
       if (computeBudgetOption.accountDataSizeLimit) {
         prependInstructions.push(
           setLoadedAccountsDataSizeLimitInstruction(
-            computeBudgetOption.accountDataSizeLimit
-          )
+            computeBudgetOption.accountDataSizeLimit,
+          ),
         );
       }
       if (
@@ -331,7 +331,7 @@ export class TransactionBuilder {
             fromPubkey: this.wallet.publicKey,
             toPubkey: getJitoTipAddress(),
             lamports: computeBudgetOption.jitoTipLamports,
-          })
+          }),
         );
       }
     }
@@ -386,18 +386,18 @@ export class TransactionBuilder {
    */
   async estimateFee(
     getPriorityFeePerUnit?: (
-      lockedWritableAccounts: PublicKey[]
+      lockedWritableAccounts: PublicKey[],
     ) => Promise<RecentPrioritizationFees[]>,
     computeLimitMargin?: number,
     selectionPercentile?: number,
-    lookupTableAccounts?: AddressLookupTableAccount[]
+    lookupTableAccounts?: AddressLookupTableAccount[],
   ) {
     const estConsumedComputeUnits = await estimateComputeBudgetLimit(
       this.connection,
       this.instructions,
       lookupTableAccounts,
       this.wallet.publicKey,
-      computeLimitMargin ?? 0.1
+      computeLimitMargin ?? 0.1,
     );
 
     const lockedWritableAccounts = getLockWritableAccounts(this.instructions);
@@ -413,7 +413,7 @@ export class TransactionBuilder {
       estConsumedComputeUnits,
       lockedWritableAccounts,
       selectionPercentile ?? DEFAULT_PRIORITY_FEE_PERCENTILE,
-      getPriorityFeePerUnit
+      getPriorityFeePerUnit,
     );
 
     return {
@@ -429,7 +429,7 @@ export class TransactionBuilder {
    * @returns a TransactionPayload object that can be excuted or agregated into other transactions
    */
   async build(
-    userOptions?: Partial<BuildOptions>
+    userOptions?: Partial<BuildOptions>,
   ): Promise<TransactionPayload> {
     const finalOptions = { ...this.opts.defaultBuildOption, ...userOptions };
     const { latestBlockhash, blockhashCommitment, computeBudgetOption } =
@@ -452,7 +452,7 @@ export class TransactionBuilder {
         this.instructions,
         lookupTableAccounts,
         this.wallet.publicKey,
-        finalComputeBudgetOption.computeLimitMargin ?? 0.1
+        finalComputeBudgetOption.computeLimitMargin ?? 0.1,
       );
       const percentile =
         finalComputeBudgetOption.computePricePercentile ??
@@ -462,7 +462,7 @@ export class TransactionBuilder {
         computeBudgetLimit,
         getLockWritableAccounts(this.instructions),
         percentile,
-        finalComputeBudgetOption.getPriorityFeePerUnit
+        finalComputeBudgetOption.getPriorityFeePerUnit,
       );
       const maxPriorityFeeLamports =
         finalComputeBudgetOption.maxPriorityFeeLamports ??
@@ -472,7 +472,7 @@ export class TransactionBuilder {
         DEFAULT_MIN_PRIORITY_FEE_LAMPORTS;
       const priorityFeeLamports = Math.max(
         Math.min(priorityFee, maxPriorityFeeLamports),
-        minPriorityFeeLamports
+        minPriorityFeeLamports,
       );
       finalComputeBudgetOption = {
         type: "fixed",
@@ -490,7 +490,7 @@ export class TransactionBuilder {
         this.instructions,
         lookupTableAccounts,
         this.wallet.publicKey,
-        0.1
+        0.1,
       );
       finalComputeBudgetOption = {
         ...finalComputeBudgetOption,
@@ -514,7 +514,7 @@ export class TransactionBuilder {
   async buildAndExecute(
     options?: Partial<BuildOptions>,
     sendOptions?: Partial<SendOptions>,
-    confirmCommitment?: Commitment
+    confirmCommitment?: Commitment,
   ): Promise<string> {
     const sendOpts = { ...this.opts.defaultSendOption, ...sendOptions };
     const btx = await this.build(options);
@@ -534,7 +534,7 @@ export class TransactionBuilder {
         .forEach((keypair) => signedTxn.partialSign(keypair));
       txId = await this.connection.sendRawTransaction(
         signedTxn.serialize(),
-        sendOpts
+        sendOpts,
       );
     }
 
@@ -543,7 +543,7 @@ export class TransactionBuilder {
         signature: txId,
         ...btx.recentBlockhash,
       },
-      resolvedConfirmCommitment
+      resolvedConfirmCommitment,
     );
 
     const confirmTxErr = result.value.err;
@@ -561,7 +561,7 @@ export class TransactionBuilder {
  * @returns True if the transaction is a versioned transaction.
  */
 export const isVersionedTransaction = (
-  tx: Transaction | VersionedTransaction
+  tx: Transaction | VersionedTransaction,
 ): tx is VersionedTransaction => {
   return "version" in tx;
 };
@@ -578,7 +578,7 @@ function measureLegacyTx(tx: Transaction): number {
   }
   if (uniqueKeys.size > LEGACY_TX_UNIQUE_KEYS_LIMIT) {
     throw new Error(
-      "Unable to measure transaction size. Too many unique keys in transaction."
+      "Unable to measure transaction size. Too many unique keys in transaction.",
     );
   }
 
@@ -590,7 +590,7 @@ function measureLegacyTx(tx: Transaction): number {
     return serialized.length;
   } catch {
     throw new Error(
-      "Unable to measure transaction size. Unable to serialize transaction."
+      "Unable to measure transaction size. Unable to serialize transaction.",
     );
   }
 }
@@ -601,7 +601,7 @@ function measureV0Tx(tx: VersionedTransaction): number {
     serialized = tx.serialize();
   } catch {
     throw new Error(
-      "Unable to measure transaction size. Unable to serialize transaction."
+      "Unable to measure transaction size. Unable to serialize transaction.",
     );
   }
 
@@ -615,7 +615,7 @@ function measureV0Tx(tx: VersionedTransaction): number {
   // as a successful result, so we need to check it here.
   if (serialized.length > PACKET_DATA_SIZE) {
     throw new Error(
-      "Unable to measure transaction size. Transaction too large."
+      "Unable to measure transaction size. Transaction too large.",
     );
   }
 

@@ -41,7 +41,7 @@ async fn main() {
     );
     println!("Configuration:");
     println!(
-        "  Position Mint Address: {}\n  Threshold: {:.2}%\n  Interval: {} seconds\n  Priority Fee Tier: {:?}\n  Slippage tolerance bps: {:?}\n",
+        "  Position Mint Address: {}\n  Threshold: {:.2}bps\n  Interval: {} seconds\n  Priority Fee Tier: {:?}\n  Slippage tolerance bps: {:?}\n",
         args.position_mint_address, args.threshold, args.interval, args.priority_fee_tier, args.slippage_tolerance_bps
     );
 

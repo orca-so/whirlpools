@@ -30,16 +30,16 @@ pub async fn run_position_manager(
         .await
         .map_err(|_| "Failed to fetch Whirlpool data.")?;
 
-    let current_price_sqrt = whirlpool.sqrt_price;
-    let position_lower_price_sqrt = tick_index_to_sqrt_price(position.tick_lower_index);
-    let position_upper_price_sqrt = tick_index_to_sqrt_price(position.tick_upper_index);
-    let position_center_price_sqrt = (position_lower_price_sqrt + position_upper_price_sqrt) / 2;
-    let deviation_amount_sqrt = if current_price_sqrt > position_center_price_sqrt {
-        current_price_sqrt - position_center_price_sqrt
+    let current_sqrt_price = whirlpool.sqrt_price;
+    let position_lower_sqrt_price = tick_index_to_sqrt_price(position.tick_lower_index);
+    let position_upper_sqrt_price = tick_index_to_sqrt_price(position.tick_upper_index);
+    let position_center_sqrt_price = (position_lower_sqrt_price + position_upper_sqrt_price) / 2;
+    let deviation_amount_sqrt = if current_sqrt_price > position_center_sqrt_price {
+        current_sqrt_price - position_center_sqrt_price
     } else {
-        position_center_price_sqrt - current_price_sqrt
+        position_center_sqrt_price - current_sqrt_price
     };
-    let deviation_bps = (deviation_amount_sqrt * 10000) / (position_center_price_sqrt);
+    let deviation_bps = (deviation_amount_sqrt * 10000) / (position_center_sqrt_price);
 
     let current_price = sqrt_price_to_price(
         whirlpool.sqrt_price,

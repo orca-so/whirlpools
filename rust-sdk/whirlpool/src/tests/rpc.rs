@@ -53,8 +53,6 @@ pub struct RpcContext {
     context: Arc<Mutex<ProgramTestContext>>,
     // Stores accounts that can be queried via getProgramAccounts
     accounts: Arc<RwLock<HashMap<Pubkey, Account>>>,
-    pub token_calls: Arc<RwLock<Vec<String>>>,
-    token_responses: Arc<RwLock<HashMap<String, Vec<u8>>>>,
 }
 
 impl RpcContext {
@@ -80,7 +78,6 @@ impl RpcContext {
 
         // Initialize whirlpool config account
         let config = *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap();
-        println!("Config bytes: {:?}", config.to_bytes());
         let config_account = Account {
             lamports: 100_000_000_000,
             data: [
@@ -171,9 +168,6 @@ impl RpcContext {
         let mut keypairs = (0..100).map(|_| Keypair::new()).collect::<Vec<_>>();
         keypairs.sort_by_key(|x| x.pubkey());
 
-        let token_calls = Arc::new(RwLock::new(Vec::new()));
-        let token_responses = Arc::new(RwLock::new(HashMap::new()));
-
         Self {
             rpc,
             signer,
@@ -181,8 +175,6 @@ impl RpcContext {
             keypair_index: AtomicUsize::new(0),
             context,
             accounts,
-            token_calls,
-            token_responses,
         }
     }
 
@@ -219,65 +211,6 @@ impl RpcContext {
             VersionedTransaction::try_new(message, &[signers, vec![&self.signer]].concat())?;
         let signature = self.rpc.send_transaction(&transaction).await?;
         Ok(signature)
-    }
-
-    pub async fn create_token_2022_mint(
-        &self,
-        extensions: &[ExtensionType],
-    ) -> Result<Pubkey, Box<dyn Error>> {
-        self.track_token_call("create_token_2022_mint".to_string());
-
-        let mint = Keypair::new();
-        let space = ExtensionType::try_calculate_account_len::<Mint>(extensions)?;
-        let rent = self
-            .rpc
-            .get_minimum_balance_for_rent_exemption(space)
-            .await?;
-
-        let create_account = system_instruction::create_account(
-            &self.signer.pubkey(),
-            &mint.pubkey(),
-            rent,
-            space as u64,
-            &TOKEN_2022_PROGRAM_ID,
-        );
-
-        let mut data = vec![0; space];
-        let mint_data = Mint {
-            mint_authority: COption::Some(self.signer.pubkey()),
-            supply: 0,
-            decimals: 6,
-            is_initialized: true,
-            freeze_authority: COption::None,
-        };
-        Mint::pack(mint_data, &mut data[0..Mint::get_packed_len()])?;
-
-        let new_account = Account {
-            lamports: rent,
-            data: data.clone(),
-            owner: TOKEN_2022_PROGRAM_ID,
-            executable: false,
-            rent_epoch: 0,
-        };
-
-        let mut context = self.context.lock().await;
-        context.set_account(
-            &mint.pubkey(),
-            &solana_sdk::account::AccountSharedData::from(new_account.clone()),
-        );
-
-        let mut accounts = self.accounts.write().unwrap();
-        accounts.insert(mint.pubkey(), new_account);
-        self.token_responses
-            .write()
-            .unwrap()
-            .insert(format!("mint_{}", mint.pubkey()), data);
-
-        Ok(mint.pubkey())
-    }
-
-    async fn track_token_call(&self, call: String) {
-        self.token_calls.write().unwrap().push(call);
     }
 
     pub async fn set_account(
@@ -531,7 +464,7 @@ impl RpcSender for MockRpcSender {
         let params = request_json["params"].as_array().unwrap_or(&default_params);
         let mut context = self.context.lock().await;
         let response = send(&mut context, &self.accounts, method, params)
-            .await // accounts ��� 전달
+            .await
             .map_err(|e| {
                 ClientError::new_with_request(ClientErrorKind::Custom(e.to_string()), request)
             })?;

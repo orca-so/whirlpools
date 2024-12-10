@@ -395,6 +395,8 @@ mod tests {
         ctx: RpcContext,
         mint_a: Pubkey,
         mint_b: Pubkey,
+        splash_pool: Pubkey,
+        concentrated_pool: Pubkey,
     }
 
     impl TestContext {
@@ -406,10 +408,17 @@ mod tests {
             setup_ata_with_amount(&ctx, mint_a, 500_000_000_000).await?;
             setup_ata_with_amount(&ctx, mint_b, 500_000_000_000).await?;
 
+            // Setup all pools
+            let concentrated_pool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
+            let splash_pool =
+                setup_whirlpool(&ctx, mint_a, mint_b, SPLASH_POOL_TICK_SPACING).await?;
+
             Ok(Self {
                 ctx,
                 mint_a,
                 mint_b,
+                splash_pool,
+                concentrated_pool,
             })
         }
     }
@@ -418,14 +427,6 @@ mod tests {
     #[serial]
     async fn test_fetch_splash_pool() {
         let test_ctx = TestContext::new().await.unwrap();
-        let splash_pool = setup_whirlpool(
-            &test_ctx.ctx,
-            test_ctx.mint_a,
-            test_ctx.mint_b,
-            SPLASH_POOL_TICK_SPACING,
-        )
-        .await
-        .unwrap();
 
         if let PoolInfo::Initialized(pool) =
             fetch_splash_pool(&test_ctx.ctx.rpc, test_ctx.mint_a, test_ctx.mint_b)
@@ -434,7 +435,7 @@ mod tests {
         {
             assert_eq!(pool.data.liquidity, 0);
             assert_eq!(pool.data.tick_spacing, SPLASH_POOL_TICK_SPACING);
-            assert_eq!(pool.address, splash_pool);
+            assert_eq!(pool.address, test_ctx.splash_pool);
             assert_eq!(pool.data.token_mint_a, test_ctx.mint_a);
             assert_eq!(pool.data.token_mint_b, test_ctx.mint_b);
             assert_eq!(pool.data.fee_rate, 1000);
@@ -448,10 +449,6 @@ mod tests {
     #[serial]
     async fn test_fetch_concentrated_liquidity_pool() {
         let test_ctx = TestContext::new().await.unwrap();
-        let concentrated_pool =
-            setup_whirlpool(&test_ctx.ctx, test_ctx.mint_a, test_ctx.mint_b, 64)
-                .await
-                .unwrap();
 
         if let PoolInfo::Initialized(pool) = fetch_concentrated_liquidity_pool(
             &test_ctx.ctx.rpc,
@@ -464,7 +461,7 @@ mod tests {
         {
             assert_eq!(pool.data.liquidity, 0);
             assert_eq!(pool.data.tick_spacing, 64);
-            assert_eq!(pool.address, concentrated_pool);
+            assert_eq!(pool.address, test_ctx.concentrated_pool);
             assert_eq!(pool.data.token_mint_a, test_ctx.mint_a);
             assert_eq!(pool.data.token_mint_b, test_ctx.mint_b);
             assert_eq!(pool.data.fee_rate, 300);
@@ -500,22 +497,9 @@ mod tests {
 
     #[tokio::test]
     #[serial]
+    #[ignore = "Skipped until solana-bankrun supports getProgramAccounts"]
     async fn test_fetch_all_pools_for_pair() {
         let test_ctx = TestContext::new().await.unwrap();
-
-        // Create pools with different tick spacings
-        let concentrated_pool =
-            setup_whirlpool(&test_ctx.ctx, test_ctx.mint_a, test_ctx.mint_b, 64)
-                .await
-                .unwrap();
-        let splash_pool = setup_whirlpool(
-            &test_ctx.ctx,
-            test_ctx.mint_a,
-            test_ctx.mint_b,
-            SPLASH_POOL_TICK_SPACING,
-        )
-        .await
-        .unwrap();
 
         let pools =
             fetch_whirlpools_by_token_pair(&test_ctx.ctx.rpc, test_ctx.mint_a, test_ctx.mint_b)
@@ -533,7 +517,7 @@ mod tests {
             })
             .unwrap();
         if let PoolInfo::Initialized(pool) = concentrated {
-            assert_eq!(pool.address, concentrated_pool);
+            assert_eq!(pool.address, test_ctx.concentrated_pool);
             assert_eq!(pool.data.fee_rate, 300);
         }
 
@@ -546,7 +530,7 @@ mod tests {
             })
             .unwrap();
         if let PoolInfo::Initialized(pool) = splash {
-            assert_eq!(pool.address, splash_pool);
+            assert_eq!(pool.address, test_ctx.splash_pool);
             assert_eq!(pool.data.fee_rate, 1000);
         }
 

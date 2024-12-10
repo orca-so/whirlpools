@@ -35,21 +35,17 @@ export default function Page() {
           type="number"
           value={tickIndex}
           onChange={(e) => setTickIndex(e.target.value)}
-        />
-        {" "}
-        <button onClick={() => convertTickIndex()}>Convert</button>
-        {" "}
-        {sqrtPrice && <>Sqrt Price: {sqrtPrice.toString()}</>}
+        />{" "}
+        <button onClick={() => convertTickIndex()}>Convert</button>{" "}
+        {sqrtPrice !== undefined && <>Sqrt Price: {sqrtPrice.toString()}</>}
       </p>
       <p>
         <input
           type="text"
           value={owner}
           onChange={(e) => setOwner(e.target.value)}
-        />
-        {" "}
-        <button onClick={() => fetchPositions()}>Fetch Positions</button>
-        {" "}
+        />{" "}
+        <button onClick={() => fetchPositions()}>Fetch Positions</button>{" "}
         {positions.length > 0 && <>{positions.length} positions found</>}
       </p>
     </div>

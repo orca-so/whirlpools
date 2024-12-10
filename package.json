@@ -9,14 +9,11 @@
     "test": "nx run-many --target test --projects",
     "format": "nx run-many --target format --projects",
     "lint": "nx run-many --target lint --projects",
-    "clean": "nx reset && nx run-many --target clean --projects",
-    "prepare": "husky install"
+    "clean": "nx reset && nx run-many --target clean --projects"
   },
   "devDependencies": {
     "@types/node": "^22.10.1",
-    "husky": "^9.1.7",
-    "lint-staged": "^15.2.10",
-    "nx": "^20.1.4",
+    "nx": "^20.2.0",
     "rimraf": "^6.0.1",
     "tsup": "^8.3.5",
     "vitest": "^2.1.8"
@@ -26,10 +23,8 @@
     "rust-sdk/*",
     "ts-sdk/*",
     "legacy-sdk/*",
-    "examples/*",
+    "examples/ts-sdk/*",
+    "examples/rust-sdk/*",
     "docs/*"
-  ],
-  "lint-staged": {
-    "*": "yarn format"
-  }
+  ]
 }

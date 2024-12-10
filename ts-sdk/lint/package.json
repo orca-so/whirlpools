@@ -4,12 +4,12 @@
   "type": "module",
   "scripts": {
     "format": "cd ../.. && prettier './**/*.{js,jsx,ts,tsx,json}' --write && eslint -c ts-sdk/lint/eslint.config.js --fix",
-    "lint": "cd ../.. && eslint -c ts-sdk/lint/eslint.config.js"
+    "lint": "cd ../.. && prettier --check './**/*.{js,jsx,ts,tsx,json}' && eslint -c ts-sdk/lint/eslint.config.js"
   },
   "devDependencies": {
     "eslint": "^9.16.0",
     "prettier": "^3.4.2",
     "typescript": "^5.7.2",
-    "typescript-eslint": "^8.17.0"
+    "typescript-eslint": "^8.18.0"
   }
 }

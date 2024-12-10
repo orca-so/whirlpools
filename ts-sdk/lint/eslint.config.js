@@ -13,6 +13,7 @@ export default [
       "**/artifacts",
       "**/generated",
       "**/.docusaurus",
+      "**/.next",
     ],
   },
   {

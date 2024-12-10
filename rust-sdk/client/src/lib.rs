@@ -1,4 +1,6 @@
+#[rustfmt::skip]
 mod generated;
+
 mod pda;
 
 #[cfg(feature = "fetch")]

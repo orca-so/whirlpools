@@ -12,7 +12,7 @@
     "clean": "nx reset && nx run-many --target clean --projects"
   },
   "devDependencies": {
-    "@types/node": "^22.10.1",
+    "@types/node": "^22.10.2",
     "nx": "^20.2.0",
     "rimraf": "^6.0.1",
     "tsup": "^8.3.5",

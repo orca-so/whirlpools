@@ -8,7 +8,7 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "0.29.0",
+    "@coral-xyz/anchor": "0.30.1",
     "@orca-so/common-sdk": "0.6.4",
     "@orca-so/orca-sdk": "0.2.0",
     "@orca-so/whirlpools-sdk": "*",

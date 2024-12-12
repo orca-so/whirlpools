@@ -1,0 +1,15 @@
+{
+  "name": "@orca-so/whirlpools-docs-rust",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build": "cargo doc --lib --no-deps && cp -rf target/doc/. dist",
+    "start": "cargo doc --lib --no-deps --open",
+    "clean": "rimraf dist"
+  },
+  "devDependencies": {
+    "@orca-so/whirlpools-rust": "*",
+    "@orca-so/whirlpools-rust-client": "*",
+    "@orca-so/whirlpools-rust-core": "*"
+  }
+}

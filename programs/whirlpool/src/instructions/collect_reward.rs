@@ -1,9 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount};
+use anchor_spl::token_interface::TokenAccount as TokenAccountInterface;
 
 use crate::{
     state::*,
-    util::{transfer_from_vault_to_owner, verify_position_authority},
+    util::{transfer_from_vault_to_owner, verify_position_authority_interface},
 };
 
 #[derive(Accounts)]
@@ -19,7 +20,7 @@ pub struct CollectReward<'info> {
         constraint = position_token_account.mint == position.position_mint,
         constraint = position_token_account.amount == 1
     )]
-    pub position_token_account: Box<Account<'info, TokenAccount>>,
+    pub position_token_account: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
     #[account(mut,
         constraint = reward_owner_account.mint == whirlpool.reward_infos[reward_index as usize].mint
@@ -46,8 +47,8 @@ pub struct CollectReward<'info> {
 /// - `Ok`: Reward tokens at the specified reward index have been successfully harvested
 /// - `Err`: `RewardNotInitialized` if the specified reward has not been initialized
 ///          `InvalidRewardIndex` if the reward index is not 0, 1, or 2
-pub fn handler(ctx: Context<CollectReward>, reward_index: u8) -> ProgramResult {
-    verify_position_authority(
+pub fn handler(ctx: Context<CollectReward>, reward_index: u8) -> Result<()> {
+    verify_position_authority_interface(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;
@@ -62,13 +63,13 @@ pub fn handler(ctx: Context<CollectReward>, reward_index: u8) -> ProgramResult {
 
     position.update_reward_owed(index, updated_amount_owed);
 
-    Ok(transfer_from_vault_to_owner(
+    transfer_from_vault_to_owner(
         &ctx.accounts.whirlpool,
         &ctx.accounts.reward_vault,
         &ctx.accounts.reward_owner_account,
         &ctx.accounts.token_program,
         transfer_amount,
-    )?)
+    )
 }
 
 fn calculate_collect_reward(position_reward: PositionRewardInfo, vault_amount: u64) -> (u64, u64) {

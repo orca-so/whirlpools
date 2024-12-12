@@ -1,0 +1,13 @@
+[package]
+name = "orca_whirlpools_client_integration_solana_v1_17"
+edition = "2021"
+
+[lib]
+path = "../../lib.rs"
+
+[dependencies]
+solana-program = { version = "~1.17" }
+solana-sdk = { version = "~1.17" }
+solana-client = { version = "~1.17" }
+solana-account-decoder = { version = "~1.17" }
+orca_whirlpools_client = { path = "../../../client" }

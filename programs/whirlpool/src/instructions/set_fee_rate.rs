@@ -13,6 +13,6 @@ pub struct SetFeeRate<'info> {
     pub fee_authority: Signer<'info>,
 }
 
-pub fn handler(ctx: Context<SetFeeRate>, fee_rate: u16) -> ProgramResult {
-    Ok(ctx.accounts.whirlpool.update_fee_rate(fee_rate)?)
+pub fn handler(ctx: Context<SetFeeRate>, fee_rate: u16) -> Result<()> {
+    ctx.accounts.whirlpool.update_fee_rate(fee_rate)
 }

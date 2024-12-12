@@ -1,14 +1,23 @@
 {
- "exclude": [
-   "/**/tests/**",
-   "/**/dist/**"
-],
- "references": [
-  {
-     "path": "./sdk/src"
-  },
-  {
-     "path": "./scripts"
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["DOM", "DOM.Iterable", "ESNext"],
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "jsx": "preserve",
+    "strict": true,
+    "removeComments": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "experimentalDecorators": true,
+    "declaration": true,
+    "sourceMap": true,
+    "allowJs": true
   }
-]
 }

@@ -27,9 +27,8 @@ pub fn handler(
     ctx: Context<InitializeFeeTier>,
     tick_spacing: u16,
     default_fee_rate: u16,
-) -> ProgramResult {
-    Ok(ctx
-        .accounts
+) -> Result<()> {
+    ctx.accounts
         .fee_tier
-        .initialize(&ctx.accounts.config, tick_spacing, default_fee_rate)?)
+        .initialize(&ctx.accounts.config, tick_spacing, default_fee_rate)
 }

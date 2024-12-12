@@ -5,9 +5,11 @@ use crate::manager::liquidity_manager::{
     calculate_liquidity_token_deltas, calculate_modify_liquidity, sync_modify_liquidity_values,
 };
 use crate::math::convert_to_liquidity_delta;
-use crate::util::{to_timestamp_u64, transfer_from_vault_to_owner, verify_position_authority};
+use crate::util::{
+    to_timestamp_u64, transfer_from_vault_to_owner, verify_position_authority_interface,
+};
 
-use super::ModifyLiquidity;
+use super::increase_liquidity::ModifyLiquidity;
 
 /*
   Removes liquidity from an existing Whirlpool Position.
@@ -17,8 +19,8 @@ pub fn handler(
     liquidity_amount: u128,
     token_min_a: u64,
     token_min_b: u64,
-) -> ProgramResult {
-    verify_position_authority(
+) -> Result<()> {
+    verify_position_authority_interface(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;
@@ -56,9 +58,7 @@ pub fn handler(
         liquidity_delta,
     )?;
 
-    if delta_a < token_min_a {
-        return Err(ErrorCode::TokenMinSubceeded.into());
-    } else if delta_b < token_min_b {
+    if delta_a < token_min_a || delta_b < token_min_b {
         return Err(ErrorCode::TokenMinSubceeded.into());
     }
 

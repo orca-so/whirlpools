@@ -1,9 +1,10 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount};
+use anchor_spl::token_interface::TokenAccount as TokenAccountInterface;
 
 use crate::{
     state::*,
-    util::{transfer_from_vault_to_owner, verify_position_authority},
+    util::{transfer_from_vault_to_owner, verify_position_authority_interface},
 };
 
 #[derive(Accounts)]
@@ -18,7 +19,7 @@ pub struct CollectFees<'info> {
         constraint = position_token_account.mint == position.position_mint,
         constraint = position_token_account.amount == 1
     )]
-    pub position_token_account: Box<Account<'info, TokenAccount>>,
+    pub position_token_account: Box<InterfaceAccount<'info, TokenAccountInterface>>,
 
     #[account(mut, constraint = token_owner_account_a.mint == whirlpool.token_mint_a)]
     pub token_owner_account_a: Box<Account<'info, TokenAccount>>,
@@ -34,8 +35,8 @@ pub struct CollectFees<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<CollectFees>) -> ProgramResult {
-    verify_position_authority(
+pub fn handler(ctx: Context<CollectFees>) -> Result<()> {
+    verify_position_authority_interface(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;

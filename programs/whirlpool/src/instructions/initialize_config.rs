@@ -19,13 +19,13 @@ pub fn handler(
     collect_protocol_fees_authority: Pubkey,
     reward_emissions_super_authority: Pubkey,
     default_protocol_fee_rate: u16,
-) -> ProgramResult {
+) -> Result<()> {
     let config = &mut ctx.accounts.config;
 
-    Ok(config.initialize(
+    config.initialize(
         fee_authority,
         collect_protocol_fees_authority,
         reward_emissions_super_authority,
         default_protocol_fee_rate,
-    )?)
+    )
 }

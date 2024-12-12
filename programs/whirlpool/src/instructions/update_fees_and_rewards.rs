@@ -1,5 +1,3 @@
-use anchor_lang::prelude::ProgramResult;
-
 use anchor_lang::prelude::*;
 
 use crate::{
@@ -20,7 +18,7 @@ pub struct UpdateFeesAndRewards<'info> {
     pub tick_array_upper: AccountLoader<'info, TickArray>,
 }
 
-pub fn handler(ctx: Context<UpdateFeesAndRewards>) -> ProgramResult {
+pub fn handler(ctx: Context<UpdateFeesAndRewards>) -> Result<()> {
     let whirlpool = &mut ctx.accounts.whirlpool;
     let position = &mut ctx.accounts.position;
     let clock = Clock::get()?;

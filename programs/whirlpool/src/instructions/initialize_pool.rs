@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Mint, Token, TokenAccount};
 
 #[derive(Accounts)]
+// now we don't use bumps, but we must list args in the same order to use tick_spacing arg.
 #[instruction(bumps: WhirlpoolBumps, tick_spacing: u16)]
 pub struct InitializePool<'info> {
     pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
@@ -21,7 +22,7 @@ pub struct InitializePool<'info> {
         token_mint_b.key().as_ref(),
         tick_spacing.to_le_bytes().as_ref()
       ],
-      bump = bumps.whirlpool_bump,
+      bump,
       payer = funder,
       space = Whirlpool::LEN)]
     pub whirlpool: Box<Account<'info, Whirlpool>>,
@@ -38,7 +39,7 @@ pub struct InitializePool<'info> {
       token::authority = whirlpool)]
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
 
-    #[account(has_one = whirlpools_config)]
+    #[account(has_one = whirlpools_config, constraint = fee_tier.tick_spacing == tick_spacing)]
     pub fee_tier: Account<'info, FeeTier>,
 
     #[account(address = token::ID)]
@@ -49,10 +50,10 @@ pub struct InitializePool<'info> {
 
 pub fn handler(
     ctx: Context<InitializePool>,
-    bumps: WhirlpoolBumps,
+    _bumps: WhirlpoolBumps,
     tick_spacing: u16,
     initial_sqrt_price: u128,
-) -> ProgramResult {
+) -> Result<()> {
     let token_mint_a = ctx.accounts.token_mint_a.key();
     let token_mint_b = ctx.accounts.token_mint_b.key();
 
@@ -61,9 +62,12 @@ pub fn handler(
 
     let default_fee_rate = ctx.accounts.fee_tier.default_fee_rate;
 
-    Ok(whirlpool.initialize(
+    // ignore the bump passed and use one Anchor derived
+    let bump = ctx.bumps.whirlpool;
+
+    whirlpool.initialize(
         whirlpools_config,
-        bumps.whirlpool_bump,
+        bump,
         tick_spacing,
         initial_sqrt_price,
         default_fee_rate,
@@ -71,5 +75,5 @@ pub fn handler(
         ctx.accounts.token_vault_a.key(),
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
-    )?)
+    )
 }

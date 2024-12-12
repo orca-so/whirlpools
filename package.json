@@ -1,11 +1,30 @@
 {
-  "name": "orca-whirlpools",
+  "name": "@orca-so/whirlpools-monorepo",
   "private": true,
-  "workspaces": [
-    "sdk",
-    "scripts"
-  ],
+  "packageManager": "yarn@4.5.1",
+  "type": "module",
   "scripts": {
-    "idl": "anchor build -i $INIT_CWD/sdk/src/artifacts -t $INIT_CWD/sdk/src/artifacts"
-  }
+    "build": "nx run-many --target build --projects",
+    "start": "nx run-many --target start --projects",
+    "test": "nx run-many --target test --projects",
+    "format": "nx run-many --target format --projects",
+    "lint": "nx run-many --target lint --projects",
+    "clean": "nx reset && nx run-many --target clean --projects"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.1",
+    "nx": "^20.2.0",
+    "rimraf": "^6.0.1",
+    "tsup": "^8.3.5",
+    "vitest": "^2.1.8"
+  },
+  "workspaces": [
+    "programs/*",
+    "rust-sdk/*",
+    "ts-sdk/*",
+    "legacy-sdk/*",
+    "examples/ts-sdk/*",
+    "examples/rust-sdk/*",
+    "docs/*"
+  ]
 }

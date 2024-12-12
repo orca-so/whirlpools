@@ -3,6 +3,7 @@ use crate::errors::ErrorCode;
 use super::U256Muldiv;
 
 pub const Q64_RESOLUTION: u8 = 64;
+pub const Q64_MASK: u128 = 0xFFFF_FFFF_FFFF_FFFF;
 pub const TO_Q64: u128 = 1u128 << Q64_RESOLUTION;
 
 pub fn checked_mul_div(n0: u128, n1: u128, d: u128) -> Result<u128, ErrorCode> {
@@ -33,8 +34,6 @@ pub fn checked_mul_shift_right(n0: u128, n1: u128) -> Result<u64, ErrorCode> {
     checked_mul_shift_right_round_up_if(n0, n1, false)
 }
 
-const Q64_MASK: u128 = 0xFFFF_FFFF_FFFF_FFFF;
-
 /// Multiplies an integer u128 and a Q64.64 fixed point number.
 /// Returns a product represented as a u64 integer.
 pub fn checked_mul_shift_right_round_up_if(
@@ -42,6 +41,8 @@ pub fn checked_mul_shift_right_round_up_if(
     n1: u128,
     round_up: bool,
 ) -> Result<u64, ErrorCode> {
+    // customized this function is used in try_get_amount_delta_b (token_math.rs)
+
     if n0 == 0 || n1 == 0 {
         return Ok(0);
     }
@@ -57,11 +58,7 @@ pub fn checked_mul_shift_right_round_up_if(
         return Err(ErrorCode::MultiplicationOverflow);
     }
 
-    Ok(if should_round {
-        result + 1
-    } else {
-        result
-    })
+    Ok(if should_round { result + 1 } else { result })
 }
 
 pub fn div_round_up(n: u128, d: u128) -> Result<u128, ErrorCode> {
@@ -91,7 +88,7 @@ pub fn div_round_up_if_u256(
         quotient
     };
 
-    Ok(result.try_into_u128()?)
+    result.try_into_u128()
 }
 
 #[cfg(test)]
@@ -112,8 +109,8 @@ mod fuzz_tests {
                 assert!(rounded.is_err());
             } else {
                 let unrounded = n / d;
-                let div_unrounded = div_round_up_if(n, d, false)?;
-                let diff = rounded? - unrounded;
+                let div_unrounded = div_round_up_if(n, d, false).unwrap();
+                let diff = rounded.unwrap() - unrounded;
                 assert!(unrounded == div_unrounded);
                 assert!(diff <= 1);
                 assert!((diff == 1) == (n % d > 0));
@@ -143,7 +140,7 @@ mod fuzz_tests {
                 let other_remainder = other_dividend % other_divisor;
 
                 let unrounded = div_round_up_if_u256(dividend, divisor, false);
-                assert!(unrounded? == other_quotient.try_into_u128()?);
+                assert!(unrounded.unwrap() == other_quotient.try_into_u128().unwrap());
 
                 let diff = rounded.unwrap() - unrounded.unwrap();
                 assert!(diff <= 1);
@@ -155,9 +152,7 @@ mod fuzz_tests {
         fn test_checked_mul_div_round_up_if(n0 in 0..u128::MAX, n1 in 0..u128::MAX, d in 0..u128::MAX) {
             let result = checked_mul_div_round_up_if(n0, n1, d, true);
 
-            if d == 0 {
-                assert!(result.is_err());
-            } else if n0.checked_mul(n1).is_none() {
+            if d == 0 || n0.checked_mul(n1).is_none() {
                 assert!(result.is_err());
             } else {
                 let other_n0 = U256::from(n0);
@@ -166,7 +161,7 @@ mod fuzz_tests {
                 let other_d = U256::from(d);
                 let other_result = other_p / other_d;
 
-                let unrounded = checked_mul_div_round_up_if(n0, n1, d, false)?;
+                let unrounded = checked_mul_div_round_up_if(n0, n1, d, false).unwrap();
                 assert!(U256::from(unrounded) == other_result);
 
                 let diff = U256::from(result.unwrap()) - other_result;
@@ -182,12 +177,12 @@ mod fuzz_tests {
             if n0.checked_mul(n1).is_none() {
                 assert!(result.is_err());
             } else {
-                let p = (U256::from(n0) * U256::from(n1)).try_into_u128()?;
+                let p = (U256::from(n0) * U256::from(n1)).try_into_u128().unwrap();
 
                 let i = (p >> 64) as u64;
 
 
-                assert!(i == checked_mul_shift_right_round_up_if(n0, n1, false)?);
+                assert!(i == checked_mul_shift_right_round_up_if(n0, n1, false).unwrap());
 
                 if i == u64::MAX && (p & Q64_MASK > 0) {
                     assert!(result.is_err());
@@ -315,7 +310,6 @@ mod test_bit_math {
             );
             assert_eq!(div_round_up(u128::MAX - 1, u128::MAX).unwrap(), 1);
         }
-
     }
 
     mod test_mult_shift_right_round_up {
@@ -323,21 +317,59 @@ mod test_bit_math {
 
         #[test]
         fn test_mul_shift_right_ok() {
-            assert_eq!(checked_mul_shift_right_round_up_if(u64::MAX as u128, 1, false).unwrap(), 0);
-            assert_eq!(checked_mul_shift_right_round_up_if(u64::MAX as u128, 1, true).unwrap(), 1);
-            assert_eq!(checked_mul_shift_right_round_up_if(u64::MAX as u128 + 1, 1, false).unwrap(), 1);
-            assert_eq!(checked_mul_shift_right_round_up_if(u64::MAX as u128 + 1, 1, true).unwrap(), 1);
-            assert_eq!(checked_mul_shift_right_round_up_if(u32::MAX as u128, u32::MAX as u128, false).unwrap(), 0);
-            assert_eq!(checked_mul_shift_right_round_up_if(u32::MAX as u128, u32::MAX as u128, true).unwrap(), 1);
-            assert_eq!(checked_mul_shift_right_round_up_if(u32::MAX as u128 + 1, u32::MAX as u128 + 2, false).unwrap(), 1);
-            assert_eq!(checked_mul_shift_right_round_up_if(u32::MAX as u128 + 1, u32::MAX as u128 + 2, true).unwrap(), 2);
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u64::MAX as u128, 1, false).unwrap(),
+                0
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u64::MAX as u128, 1, true).unwrap(),
+                1
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u64::MAX as u128 + 1, 1, false).unwrap(),
+                1
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u64::MAX as u128 + 1, 1, true).unwrap(),
+                1
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u32::MAX as u128, u32::MAX as u128, false)
+                    .unwrap(),
+                0
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u32::MAX as u128, u32::MAX as u128, true)
+                    .unwrap(),
+                1
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(
+                    u32::MAX as u128 + 1,
+                    u32::MAX as u128 + 2,
+                    false
+                )
+                .unwrap(),
+                1
+            );
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(
+                    u32::MAX as u128 + 1,
+                    u32::MAX as u128 + 2,
+                    true
+                )
+                .unwrap(),
+                2
+            );
         }
 
         #[test]
         fn test_mul_shift_right_u64_max() {
             assert!(checked_mul_shift_right_round_up_if(u128::MAX, 1, true).is_err());
-            assert_eq!(checked_mul_shift_right_round_up_if(u128::MAX, 1, false).unwrap(), u64::MAX);
+            assert_eq!(
+                checked_mul_shift_right_round_up_if(u128::MAX, 1, false).unwrap(),
+                u64::MAX
+            );
         }
-
     }
 }

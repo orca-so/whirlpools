@@ -31,12 +31,12 @@ pub struct InitializeReward<'info> {
     pub rent: Sysvar<'info, Rent>,
 }
 
-pub fn handler(ctx: Context<InitializeReward>, reward_index: u8) -> ProgramResult {
+pub fn handler(ctx: Context<InitializeReward>, reward_index: u8) -> Result<()> {
     let whirlpool = &mut ctx.accounts.whirlpool;
 
-    Ok(whirlpool.initialize_reward(
+    whirlpool.initialize_reward(
         reward_index as usize,
         ctx.accounts.reward_mint.key(),
         ctx.accounts.reward_vault.key(),
-    )?)
+    )
 }

@@ -15,18 +15,19 @@ pub fn next_tick_cross_update(
     update.fee_growth_outside_a = fee_growth_global_a.wrapping_sub(tick.fee_growth_outside_a);
     update.fee_growth_outside_b = fee_growth_global_b.wrapping_sub(tick.fee_growth_outside_b);
 
-    for i in 0..NUM_REWARDS {
-        if !reward_infos[i].initialized() {
+    for (i, reward_info) in reward_infos.iter().enumerate() {
+        if !reward_info.initialized() {
             continue;
         }
 
-        update.reward_growths_outside[i] = reward_infos[i]
+        update.reward_growths_outside[i] = reward_info
             .growth_global_x64
             .wrapping_sub(tick.reward_growths_outside[i]);
     }
     Ok(update)
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn next_tick_modify_liquidity_update(
     tick: &Tick,
     tick_index: i32,
@@ -149,7 +150,7 @@ pub fn next_reward_growths_inside(
     tick_upper: &Tick,
     tick_upper_index: i32,
     reward_infos: &[WhirlpoolRewardInfo; NUM_REWARDS],
-) -> ([u128; NUM_REWARDS]) {
+) -> [u128; NUM_REWARDS] {
     let mut reward_growths_inside = [0; NUM_REWARDS];
 
     for i in 0..NUM_REWARDS {
@@ -436,14 +437,14 @@ mod tick_manager_tests {
                 &test.reward_infos,
             );
 
-            for i in 0..NUM_REWARDS {
+            for (i, result) in results.iter().enumerate() {
                 assert_eq!(
-                    results[i], test.expected_reward_growths_inside[i],
+                    *result, test.expected_reward_growths_inside[i],
                     "[{}] {} - reward growth value not equal",
                     i, test.name
                 );
                 assert_eq!(
-                    results[i], test.expected_reward_growths_inside[i],
+                    *result, test.expected_reward_growths_inside[i],
                     "[{}] {} - reward growth initialized flag not equal",
                     i, test.name
                 );
@@ -529,7 +530,6 @@ mod tick_manager_tests {
                         100 << Q64_RESOLUTION,
                     ],
                 },
-                ..Default::default()
             },
             Test {
                 name: "lower tick +liquidity already initialized, growths not set",
@@ -551,7 +551,6 @@ mod tick_manager_tests {
                     liquidity_gross: 42169,
                     ..Default::default()
                 },
-                ..Default::default()
             },
             Test {
                 name: "upper tick +liquidity already initialized, growths not set, liquidity net should be subtracted",
@@ -661,8 +660,7 @@ mod tick_manager_tests {
                     fee_growth_outside_b: 100,
                     liquidity_net: 42069,
                     liquidity_gross: 42069,
-                    reward_growths_outside: [0, 250, 0],
-                    ..Default::default()
+                    reward_growths_outside: [0, 250, 0]
                 },
             }
         ] {

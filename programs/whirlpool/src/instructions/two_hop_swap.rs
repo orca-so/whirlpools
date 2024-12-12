@@ -4,12 +4,8 @@ use anchor_spl::token::{self, Token, TokenAccount};
 use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
-    state::{TickArray, Whirlpool},
-    util::{
-        to_timestamp_u64,
-        SwapTickSequence,
-        update_and_swap_whirlpool,
-    },
+    state::Whirlpool,
+    util::{to_timestamp_u64, update_and_swap_whirlpool, SparseSwapTickSequenceBuilder},
 };
 
 #[derive(Accounts)]
@@ -45,33 +41,40 @@ pub struct TwoHopSwap<'info> {
     #[account(mut, address = whirlpool_two.token_vault_b)]
     pub token_vault_two_b: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, constraint = tick_array_one_0.load()?.whirlpool == whirlpool_one.key())]
-    pub tick_array_one_0: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_one_0: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = tick_array_one_1.load()?.whirlpool == whirlpool_one.key())]
-    pub tick_array_one_1: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_one_1: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = tick_array_one_2.load()?.whirlpool == whirlpool_one.key())]
-    pub tick_array_one_2: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_one_2: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = tick_array_two_0.load()?.whirlpool == whirlpool_two.key())]
-    pub tick_array_two_0: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_two_0: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = tick_array_two_1.load()?.whirlpool == whirlpool_two.key())]
-    pub tick_array_two_1: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_two_1: UncheckedAccount<'info>,
 
-    #[account(mut, constraint = tick_array_two_2.load()?.whirlpool == whirlpool_two.key())]
-    pub tick_array_two_2: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_two_2: UncheckedAccount<'info>,
 
     #[account(seeds = [b"oracle", whirlpool_one.key().as_ref()],bump)]
-    /// Oracle is currently unused and will be enabled on subsequent updates
+    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_one: UncheckedAccount<'info>,
 
     #[account(seeds = [b"oracle", whirlpool_two.key().as_ref()],bump)]
-    /// Oracle is currently unused and will be enabled on subsequent updates
+    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_two: UncheckedAccount<'info>,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn handler(
     ctx: Context<TwoHopSwap>,
     amount: u64,
@@ -81,7 +84,7 @@ pub fn handler(
     a_to_b_two: bool,
     sqrt_price_limit_one: u128,
     sqrt_price_limit_two: u128,
-) -> ProgramResult {
+) -> Result<()> {
     let clock = Clock::get()?;
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
@@ -109,17 +112,29 @@ pub fn handler(
         return Err(ErrorCode::InvalidIntermediaryMint.into());
     }
 
-    let mut swap_tick_sequence_one = SwapTickSequence::new(
-        ctx.accounts.tick_array_one_0.load_mut().unwrap(),
-        ctx.accounts.tick_array_one_1.load_mut().ok(),
-        ctx.accounts.tick_array_one_2.load_mut().ok(),
-    );
+    let builder_one = SparseSwapTickSequenceBuilder::try_from(
+        whirlpool_one,
+        a_to_b_one,
+        vec![
+            ctx.accounts.tick_array_one_0.to_account_info(),
+            ctx.accounts.tick_array_one_1.to_account_info(),
+            ctx.accounts.tick_array_one_2.to_account_info(),
+        ],
+        None,
+    )?;
+    let mut swap_tick_sequence_one = builder_one.build()?;
 
-    let mut swap_tick_sequence_two= SwapTickSequence::new(
-        ctx.accounts.tick_array_two_0.load_mut().unwrap(),
-        ctx.accounts.tick_array_two_1.load_mut().ok(),
-        ctx.accounts.tick_array_two_2.load_mut().ok(),
-    );
+    let builder_two = SparseSwapTickSequenceBuilder::try_from(
+        whirlpool_two,
+        a_to_b_two,
+        vec![
+            ctx.accounts.tick_array_two_0.to_account_info(),
+            ctx.accounts.tick_array_two_1.to_account_info(),
+            ctx.accounts.tick_array_two_2.to_account_info(),
+        ],
+        None,
+    )?;
+    let mut swap_tick_sequence_two = builder_two.build()?;
 
     // TODO: WLOG, we could extend this to N-swaps, but the account inputs to the instruction would
     // need to be jankier and we may need to programatically map/verify rather than using anchor constraints
@@ -128,7 +143,7 @@ pub fn handler(
         // and the swap calculations occur from Swap 1 => Swap 2
         // and the swaps occur from Swap 1 => Swap 2
         let swap_calc_one = swap(
-            &whirlpool_one,
+            whirlpool_one,
             &mut swap_tick_sequence_one,
             amount,
             sqrt_price_limit_one,
@@ -145,7 +160,7 @@ pub fn handler(
         };
 
         let swap_calc_two = swap(
-            &whirlpool_two,
+            whirlpool_two,
             &mut swap_tick_sequence_two,
             swap_two_input_amount,
             sqrt_price_limit_two,
@@ -159,7 +174,7 @@ pub fn handler(
         // and the swap calculations occur from Swap 2 => Swap 1
         // but the actual swaps occur from Swap 1 => Swap 2 (to ensure that the intermediate token exists in the account)
         let swap_calc_two = swap(
-            &whirlpool_two,
+            whirlpool_two,
             &mut swap_tick_sequence_two,
             amount,
             sqrt_price_limit_two,
@@ -176,7 +191,7 @@ pub fn handler(
         };
 
         let swap_calc_one = swap(
-            &whirlpool_one,
+            whirlpool_one,
             &mut swap_tick_sequence_one,
             swap_one_output_amount,
             sqrt_price_limit_one,
@@ -186,6 +201,21 @@ pub fn handler(
         )?;
         (swap_calc_one, swap_calc_two)
     };
+
+    // All output token should be consumed by the second swap
+    let swap_calc_one_output = if a_to_b_one {
+        swap_update_one.amount_b
+    } else {
+        swap_update_one.amount_a
+    };
+    let swap_calc_two_input = if a_to_b_two {
+        swap_update_two.amount_a
+    } else {
+        swap_update_two.amount_b
+    };
+    if swap_calc_one_output != swap_calc_two_input {
+        return Err(ErrorCode::IntermediateTokenAmountMismatch.into());
+    }
 
     if amount_specified_is_input {
         // If amount_specified_is_input == true, then we have a variable amount of output

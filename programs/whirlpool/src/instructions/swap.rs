@@ -4,12 +4,8 @@ use anchor_spl::token::{self, Token, TokenAccount};
 use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
-    state::{TickArray, Whirlpool},
-    util::{
-        to_timestamp_u64,
-        SwapTickSequence,
-        update_and_swap_whirlpool
-    },
+    state::Whirlpool,
+    util::{to_timestamp_u64, update_and_swap_whirlpool, SparseSwapTickSequenceBuilder},
 };
 
 #[derive(Accounts)]
@@ -32,17 +28,20 @@ pub struct Swap<'info> {
     #[account(mut, address = whirlpool.token_vault_b)]
     pub token_vault_b: Box<Account<'info, TokenAccount>>,
 
-    #[account(mut, has_one = whirlpool)]
-    pub tick_array_0: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_0: UncheckedAccount<'info>,
 
-    #[account(mut, has_one = whirlpool)]
-    pub tick_array_1: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_1: UncheckedAccount<'info>,
 
-    #[account(mut, has_one = whirlpool)]
-    pub tick_array_2: AccountLoader<'info, TickArray>,
+    #[account(mut)]
+    /// CHECK: checked in the handler
+    pub tick_array_2: UncheckedAccount<'info>,
 
     #[account(seeds = [b"oracle", whirlpool.key().as_ref()],bump)]
-    /// Oracle is currently unused and will be enabled on subsequent updates
+    /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle: UncheckedAccount<'info>,
 }
 
@@ -53,19 +52,26 @@ pub fn handler(
     sqrt_price_limit: u128,
     amount_specified_is_input: bool,
     a_to_b: bool, // Zero for one
-) -> ProgramResult {
+) -> Result<()> {
     let whirlpool = &mut ctx.accounts.whirlpool;
     let clock = Clock::get()?;
     // Update the global reward growth which increases as a function of time.
     let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
-    let mut swap_tick_sequence = SwapTickSequence::new(
-        ctx.accounts.tick_array_0.load_mut().unwrap(),
-        ctx.accounts.tick_array_1.load_mut().ok(),
-        ctx.accounts.tick_array_2.load_mut().ok(),
-    );
+
+    let builder = SparseSwapTickSequenceBuilder::try_from(
+        whirlpool,
+        a_to_b,
+        vec![
+            ctx.accounts.tick_array_0.to_account_info(),
+            ctx.accounts.tick_array_1.to_account_info(),
+            ctx.accounts.tick_array_2.to_account_info(),
+        ],
+        None,
+    )?;
+    let mut swap_tick_sequence = builder.build()?;
 
     let swap_update = swap(
-        &whirlpool,
+        whirlpool,
         &mut swap_tick_sequence,
         amount,
         sqrt_price_limit,
@@ -80,12 +86,10 @@ pub fn handler(
         {
             return Err(ErrorCode::AmountOutBelowMinimum.into());
         }
-    } else {
-        if (a_to_b && other_amount_threshold < swap_update.amount_a)
-            || (!a_to_b && other_amount_threshold < swap_update.amount_b)
-        {
-            return Err(ErrorCode::AmountInAboveMaximum.into());
-        }
+    } else if (a_to_b && other_amount_threshold < swap_update.amount_a)
+        || (!a_to_b && other_amount_threshold < swap_update.amount_b)
+    {
+        return Err(ErrorCode::AmountInAboveMaximum.into());
     }
 
     update_and_swap_whirlpool(

@@ -28,7 +28,7 @@ pub struct CollectProtocolFees<'info> {
     pub token_program: Program<'info, Token>,
 }
 
-pub fn handler(ctx: Context<CollectProtocolFees>) -> ProgramResult {
+pub fn handler(ctx: Context<CollectProtocolFees>) -> Result<()> {
     let whirlpool = &ctx.accounts.whirlpool;
 
     transfer_from_vault_to_owner(
@@ -47,5 +47,6 @@ pub fn handler(ctx: Context<CollectProtocolFees>) -> ProgramResult {
         whirlpool.protocol_fee_owed_b,
     )?;
 
-    Ok(ctx.accounts.whirlpool.reset_protocol_fees_owed())
+    ctx.accounts.whirlpool.reset_protocol_fees_owed();
+    Ok(())
 }

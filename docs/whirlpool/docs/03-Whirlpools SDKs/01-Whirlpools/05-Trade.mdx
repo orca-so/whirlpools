@@ -41,18 +41,20 @@ To execute a token swap in an Orca Whirlpool, follow these steps:
   <TabItem value="ts" label="Typescript" default>
     ```tsx
     import { setWhirlpoolsConfig, swapInstructions } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+    import { createSolanaRpc, address, createTransactionMessage, pipe, setTransactionMessageFeePayer, setTransactionMessageLifetimeUsingBlockhash, getComputeUnitEstimateForTransactionMessageFactory, appendTransactionMessageInstructions, prependTransactionMessageInstructions, signTransactionMessageWithSigners, getBase64EncodedWireTransaction } from '@solana/web3.js';
     import { loadWallet } from './utils';
+    import { getSetComputeUnitLimitInstruction, getSetComputeUnitPriceInstruction } from '@solana-program/compute-budget';
 
-    await setWhirlpoolsConfig('solanaDevnet');
-    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
-    const wallet = await loadWallet(); // CAUTION: This wallet is not persistent.
-    const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
-    const mintAddress = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
-    const inputAmount = 1_000_000n;
+    await setWhirlpoolsConfig("solanaMainnet");
+    const rpc = createSolanaRpc("<RPC_URL>");
+    const wallet = await loadWallet();
+    const whirlpoolAddress = address("5Z66YYYaTmmx1R4mATAGLSc8aV4Vfy5tNdJQzk1GP9RF"); // ORCA/USDC
+    const mintAddress = address("orcaEKTdK7LKz57vaAYr9QeNsVEPfiu6QeMU1kektZE"); // ORCA
+    const inputAmount = 100_000n; // 0.1 ORCA
 
+    // Get instructions
     const { instructions, quote } = await swapInstructions(
-      devnetRpc,
+      rpc,
       { inputAmount, mint: mintAddress },
       whirlpoolAddress,
       100,
@@ -60,7 +62,53 @@ To execute a token swap in an Orca Whirlpool, follow these steps:
     );
 
     console.log(`Quote estimated token out: ${quote.tokenEstOut}`);
-    console.log(`Number of instructions:, ${instructions.length}`);
+    console.log(`Number of instructions: ${instructions.length}`);
+
+    // Create encoded transaction message
+    const latestBlockHash = await rpc.getLatestBlockhash().send();
+    const transactionMessage = await pipe(
+      createTransactionMessage({ version: 0}),
+      tx => setTransactionMessageFeePayer(wallet.address, tx),
+      tx => setTransactionMessageLifetimeUsingBlockhash(latestBlockHash.value, tx),
+      tx => appendTransactionMessageInstructions(instructions, tx)
+    )
+    const getComputeUnitEstimateForTransactionMessage = 
+      getComputeUnitEstimateForTransactionMessageFactory({
+        rpc
+      });
+    const computeUnitEstimate = await getComputeUnitEstimateForTransactionMessage(transactionMessage) + 100_000;
+    const medianPrioritizationFee = await rpc.getRecentPrioritizationFees()
+      .send()
+      .then(fees => fees[Math.floor(fees.length / 2)].prioritizationFee)
+    const transactionMessageWithComputeUnitInstructions = await prependTransactionMessageInstructions([
+      getSetComputeUnitLimitInstruction({ units: computeUnitEstimate }),
+      getSetComputeUnitPriceInstruction({ microLamports: medianPrioritizationFee })
+    ], transactionMessage);
+    const signedTransaction = await signTransactionMessageWithSigners(transactionMessageWithComputeUnitInstructions)
+    const base64EncodedWireTransaction = getBase64EncodedWireTransaction(signedTransaction);
+
+    // Submit transaction with client-side retry
+    let blockHashLifetime = 150n;
+    let currentBlockHeight = latestBlockHash.value.lastValidBlockHeight - blockHashLifetime;
+    while (latestBlockHash.value.lastValidBlockHeight >= currentBlockHeight) {
+      const signature = await rpc.sendTransaction(base64EncodedWireTransaction, {
+        maxRetries: 0n,
+        skipPreflight: true,
+        encoding: 'base64'
+      }).send();
+      const statuses = await rpc.getSignatureStatuses([signature]).send();
+      if (statuses.value[0]) {
+        if (!statuses.value[0].err) {
+          console.log(`Transaction confirmed: ${signature}`);
+          break;
+        } else {
+          console.error(`Transaction failed: ${statuses.value[0].err.toString()}`);
+          break;
+        }
+      }
+      currentBlockHeight = await rpc.getBlockHeight().send();
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">

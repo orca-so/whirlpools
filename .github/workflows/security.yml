@@ -1,12 +1,13 @@
 name: Security
 
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
-  schedule:
-    - cron: '0 8 * * *'
+  workflow_dispatch:
+#  pull_request:
+#    branches: [main]
+#  push:
+#    branches: [main]
+#  schedule:
+#    - cron: '0 8 * * *'
 
 jobs:
 

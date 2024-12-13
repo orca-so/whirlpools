@@ -598,16 +598,18 @@ export class WhirlpoolImpl implements Whirlpool {
     const shouldDecreaseLiquidity = positionData.liquidity.gtn(0);
 
     const rewardsToCollect = this.data.rewardInfos
-        .map((info, i) => ({ info, index: i }))
-        .filter(({ info, index }) => {
-            if (info.mint.equals(PublicKey.default)) {
-                return false;
-            }
-            return (
-                (rewardsQuote.rewardOwed[index] ?? ZERO).gtn(0) ||
-                (rewardsQuote.transferFee.deductedFromRewardOwed[index] ?? ZERO).gtn(0)
-            );
-        });
+      .map((info, i) => ({ info, index: i }))
+      .filter(({ info, index }) => {
+        if (info.mint.equals(PublicKey.default)) {
+          return false;
+        }
+        return (
+          (rewardsQuote.rewardOwed[index] ?? ZERO).gtn(0) ||
+          (rewardsQuote.transferFee.deductedFromRewardOwed[index] ?? ZERO).gtn(
+            0,
+          )
+        );
+      });
 
     const shouldCollectRewards = rewardsToCollect.length > 0;
 
@@ -758,51 +760,49 @@ export class WhirlpoolImpl implements Whirlpool {
     }
 
     if (shouldCollectRewards) {
-        for (const { info, index: rewardIndex } of rewardsToCollect) {
-            await builder.addInstructions(async (resolveTokenAccount) => {
-                const rewardOwnerAccount = resolveTokenAccount(
-                    info.mint.toBase58(),
-                );
+      for (const { info, index: rewardIndex } of rewardsToCollect) {
+        await builder.addInstructions(async (resolveTokenAccount) => {
+          const rewardOwnerAccount = resolveTokenAccount(info.mint.toBase58());
 
-                const collectRewardBaseParams = {
-                    whirlpool: positionData.whirlpool,
-                    position: positionAddress,
-                    positionAuthority: positionWallet,
-                    positionTokenAccount,
-                    rewardIndex,
-                    rewardOwnerAccount,
-                    rewardVault: whirlpool.rewardInfos[rewardIndex].vault,
-                };
+          const collectRewardBaseParams = {
+            whirlpool: positionData.whirlpool,
+            position: positionAddress,
+            positionAuthority: positionWallet,
+            positionTokenAccount,
+            rewardIndex,
+            rewardOwnerAccount,
+            rewardVault: whirlpool.rewardInfos[rewardIndex].vault,
+          };
 
-                const ix = !TokenExtensionUtil.isV2IxRequiredReward(
-                    tokenExtensionCtx,
-                    rewardIndex,
-                )
-                    ? WhirlpoolIx.collectRewardIx(
-                        this.ctx.program,
-                        collectRewardBaseParams,
-                    )
-                    : WhirlpoolIx.collectRewardV2Ix(this.ctx.program, {
-                        ...collectRewardBaseParams,
-                        rewardMint:
-                            tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!
-                                .address,
-                        rewardTokenProgram:
-                            tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!
-                                .tokenProgram,
-                        rewardTransferHookAccounts:
-                            await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-                                this.ctx.connection,
-                                tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!,
-                                collectRewardBaseParams.rewardVault,
-                                collectRewardBaseParams.rewardOwnerAccount,
-                                collectRewardBaseParams.whirlpool, // vault to owner, so pool is authority
-                            ),
-                    });
+          const ix = !TokenExtensionUtil.isV2IxRequiredReward(
+            tokenExtensionCtx,
+            rewardIndex,
+          )
+            ? WhirlpoolIx.collectRewardIx(
+                this.ctx.program,
+                collectRewardBaseParams,
+              )
+            : WhirlpoolIx.collectRewardV2Ix(this.ctx.program, {
+                ...collectRewardBaseParams,
+                rewardMint:
+                  tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!
+                    .address,
+                rewardTokenProgram:
+                  tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!
+                    .tokenProgram,
+                rewardTransferHookAccounts:
+                  await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+                    this.ctx.connection,
+                    tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!,
+                    collectRewardBaseParams.rewardVault,
+                    collectRewardBaseParams.rewardOwnerAccount,
+                    collectRewardBaseParams.whirlpool, // vault to owner, so pool is authority
+                  ),
+              });
 
-                return [ix];
-            });
-        }
+          return [ix];
+        });
+      }
     }
 
     /* Close position */

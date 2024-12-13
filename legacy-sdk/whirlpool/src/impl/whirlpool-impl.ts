@@ -13,7 +13,8 @@ import {
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
-import { PublicKey, Keypair } from "@solana/web3.js";
+import type { PublicKey} from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import invariant from "tiny-invariant";
 import type { WhirlpoolContext } from "../context";
 import type {

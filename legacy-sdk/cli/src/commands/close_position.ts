@@ -3,7 +3,6 @@ import { WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import {
   getAssociatedTokenAddressSync,
-  createAssociatedTokenAccountInstruction,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
 } from "@solana/spl-token";
@@ -30,135 +29,25 @@ if (!position.liquidity.isZero()) {
   throw new Error("position is not empty (liquidity is not zero)");
 }
 
-// Collect fees and rewards before closing
+if (!position.feeOwedA.isZero() || !position.feeOwedB.isZero()) {
+  throw new Error("position has collectable fees");
+}
+
+if (!position.rewardInfos.every((r) => r.amountOwed.isZero())) {
+  throw new Error("position has collectable rewards");
+}
+
 const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
-
-const whirlpoolPubkey = position.whirlpool;
-const whirlpool = await ctx.fetcher.getPool(whirlpoolPubkey);
-if (!whirlpool) {
-  throw new Error("whirlpool not found");
-}
-const tickSpacing = whirlpool.tickSpacing;
-
-const tokenMintAPubkey = whirlpool.tokenMintA;
-const tokenMintBPubkey = whirlpool.tokenMintB;
-const mintA = await ctx.fetcher.getMintInfo(tokenMintAPubkey);
-const mintB = await ctx.fetcher.getMintInfo(tokenMintBPubkey);
-if (!mintA || !mintB) {
-  throw new Error("token mint not found");
-}
-
-const tokenOwnerAccountA = getAssociatedTokenAddressSync(
-  tokenMintAPubkey,
-  ctx.wallet.publicKey,
-  undefined,
-  mintA.tokenProgram,
-);
-const tokenOwnerAccountB = getAssociatedTokenAddressSync(
-  tokenMintBPubkey,
-  ctx.wallet.publicKey,
-  undefined,
-  mintB.tokenProgram,
-);
-
-// Collect Fees
-builder.addInstruction(
-  WhirlpoolIx.collectFeesV2Ix(ctx.program, {
-    position: positionPubkey,
-    positionAuthority: ctx.wallet.publicKey,
-    tokenMintA: tokenMintAPubkey,
-    tokenMintB: tokenMintBPubkey,
-    positionTokenAccount: getAssociatedTokenAddressSync(
-      position.positionMint,
-      ctx.wallet.publicKey,
-      undefined,
-      positionMint.tokenProgram,
-    ),
-    tokenOwnerAccountA,
-    tokenOwnerAccountB,
-    tokenProgramA: mintA.tokenProgram,
-    tokenProgramB: mintB.tokenProgram,
-    tokenVaultA: whirlpool.tokenVaultA,
-    tokenVaultB: whirlpool.tokenVaultB,
-    whirlpool: whirlpoolPubkey,
-    tokenTransferHookAccountsA: [],
-    tokenTransferHookAccountsB: [],
-  }),
-);
-
-// Collect Rewards
-for (let i = 0; i < whirlpool.rewardInfos.length; i++) {
-  if (!whirlpool.rewardInfos[i].mint.equals(PublicKey.default)) {
-    const rewardMintPubkey = whirlpool.rewardInfos[i].mint;
-    const rewardMint = await ctx.fetcher.getMintInfo(rewardMintPubkey);
-    if (!rewardMint) {
-      continue;
-    }
-
-    const rewardOwnerAccount = getAssociatedTokenAddressSync(
-      rewardMintPubkey,
-      ctx.wallet.publicKey,
-      undefined,
-      rewardMint.tokenProgram,
-    );
-
-    // Ensure the reward owner account exists
-    const rewardAccountInfo = await ctx.connection.getAccountInfo(
-      rewardOwnerAccount,
-    );
-    if (!rewardAccountInfo) {
-      // Create the ATA for the reward token (e.g., WSOL)
-      builder.addInstruction({
-        instructions: [
-          createAssociatedTokenAccountInstruction(
-            ctx.wallet.publicKey,
-            rewardOwnerAccount,
-            ctx.wallet.publicKey,
-            rewardMintPubkey,
-            rewardMint.tokenProgram,
-          ),
-        ],
-        cleanupInstructions: [],
-        signers: [],
-      });
-    }
-
-    builder.addInstruction(
-      WhirlpoolIx.collectRewardV2Ix(ctx.program, {
-        position: positionPubkey,
-        positionAuthority: ctx.wallet.publicKey,
-        rewardIndex: i,
-        rewardMint: rewardMintPubkey,
-        rewardVault: whirlpool.rewardInfos[i].vault,
-        rewardTokenProgram: rewardMint.tokenProgram,
-        rewardOwnerAccount,
-        positionTokenAccount: getAssociatedTokenAddressSync(
-          position.positionMint,
-          ctx.wallet.publicKey,
-          undefined,
-          positionMint.tokenProgram,
-        ),
-        whirlpool: whirlpoolPubkey,
-        rewardTransferHookAccounts: [],
-      }),
-    );
-  }
-}
-
-// Proceed to close the position
-const positionTokenAccount = getAssociatedTokenAddressSync(
-  position.positionMint,
-  ctx.wallet.publicKey,
-  undefined,
-  positionMint.tokenProgram,
-);
 
 if (positionMint.tokenProgram.equals(TOKEN_PROGRAM_ID)) {
   builder.addInstruction(
     WhirlpoolIx.closePositionIx(ctx.program, {
       position: positionPubkey,
       positionAuthority: ctx.wallet.publicKey,
-      positionTokenAccount,
+      positionTokenAccount: getAssociatedTokenAddressSync(
+        position.positionMint,
+        ctx.wallet.publicKey,
+      ),
       positionMint: position.positionMint,
       receiver: ctx.wallet.publicKey,
     }),
@@ -168,7 +57,12 @@ if (positionMint.tokenProgram.equals(TOKEN_PROGRAM_ID)) {
     WhirlpoolIx.closePositionWithTokenExtensionsIx(ctx.program, {
       position: positionPubkey,
       positionAuthority: ctx.wallet.publicKey,
-      positionTokenAccount,
+      positionTokenAccount: getAssociatedTokenAddressSync(
+        position.positionMint,
+        ctx.wallet.publicKey,
+        undefined,
+        TOKEN_2022_PROGRAM_ID,
+      ),
       positionMint: position.positionMint,
       receiver: ctx.wallet.publicKey,
     }),

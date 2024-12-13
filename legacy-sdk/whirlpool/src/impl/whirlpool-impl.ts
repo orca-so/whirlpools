@@ -60,6 +60,7 @@ import {
 import type { Whirlpool } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
+import { PoolUtil } from "../../src/utils/public/pool-utils";
 
 export class WhirlpoolImpl implements Whirlpool {
   private data: WhirlpoolData;
@@ -598,9 +599,8 @@ export class WhirlpoolImpl implements Whirlpool {
     const shouldDecreaseLiquidity = positionData.liquidity.gtn(0);
 
     const rewardsToCollect = this.data.rewardInfos
-      .map((info, i) => ({ info, index: i }))
-      .filter(({ info, index }) => {
-        if (info.mint.equals(PublicKey.default)) {
+      .filter((info, index) => {
+        if (!PoolUtil.isRewardInitialized(info)) {
           return false;
         }
         return (
@@ -609,7 +609,8 @@ export class WhirlpoolImpl implements Whirlpool {
             0,
           )
         );
-      });
+      })
+      .map((info, index) => ({ info, index }));
 
     const shouldCollectRewards = rewardsToCollect.length > 0;
 

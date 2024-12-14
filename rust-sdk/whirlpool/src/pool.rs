@@ -389,7 +389,6 @@ mod tests {
     };
     use serial_test::serial;
     use solana_program_test::tokio;
-    use solana_sdk::signer::Signer;
 
     struct TestContext {
         ctx: RpcContext,

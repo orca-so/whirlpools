@@ -19,15 +19,21 @@ function check(path: string) {
   const versions = exec(`awk '/version = "[^"]*"/' '${path}/Cargo.toml'`);
   exec(`cargo generate-lockfile --manifest-path '${path}/Cargo.toml'`);
   for (const version of versions.split("\n")) {
-    const match = version.match(/([a-zA-Z0-9-_]+)\s*=\s*{\s*version\s*=\s*"~([^"]+)"/);
+    const match = version.match(
+      /([a-zA-Z0-9-_]+)\s*=\s*{\s*version\s*=\s*"~([^"]+)"/,
+    );
     if (!match) continue;
-    const rawExistingVersions = exec(`awk '/"${match[1]} [0-9]+.[0-9]+.[0-9]+"/' '${path}/Cargo.lock'`);
-    const existingVersions = new Set(rawExistingVersions.split("\n").filter(x => x));
+    const rawExistingVersions = exec(
+      `awk '/"${match[1]} [0-9]+.[0-9]+.[0-9]+"/' '${path}/Cargo.lock'`,
+    );
+    const existingVersions = new Set(
+      rawExistingVersions.split("\n").filter((x) => x),
+    );
     for (const existingVersion of existingVersions) {
-      const specifier = existingVersion
-        .slice(2, -2)
-        .replaceAll(" ", ":")
-      exec(`cargo update ${specifier} --precise ${match[2]} --manifest-path '${path}/Cargo.toml'`);
+      const specifier = existingVersion.slice(2, -2).replaceAll(" ", ":");
+      exec(
+        `cargo update ${specifier} --precise ${match[2]} --manifest-path '${path}/Cargo.toml'`,
+      );
     }
   }
   exec(`cargo check --manifest-path '${path}/Cargo.toml' --locked`);
@@ -35,14 +41,20 @@ function check(path: string) {
 
 describe("Integration", () => {
   clientConfigs.forEach((config) => {
-    it.concurrent(`Build client using ${config}`, () => check(`./client/${config}`));
+    it.concurrent(`Build client using ${config}`, () =>
+      check(`./client/${config}`),
+    );
   });
 
   coreConfigs.forEach((config) => {
-    it.concurrent(`Build core using ${config}`, () => check(`./core/${config}`));
+    it.concurrent(`Build core using ${config}`, () =>
+      check(`./core/${config}`),
+    );
   });
 
   whirlpoolConfigs.forEach((config) => {
-    it.concurrent(`Build whirlpool using ${config}`, () => check(`./whirlpool/${config}`));
+    it.concurrent(`Build whirlpool using ${config}`, () =>
+      check(`./whirlpool/${config}`),
+    );
   });
 });

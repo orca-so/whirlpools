@@ -6,5 +6,5 @@ edition = "2021"
 path = "../../lib.rs"
 
 [dependencies]
-ethnum = { version = "~1.4" }
+ethnum = { version = "~1.4.0" }
 orca_whirlpools_core = { path = "../../../core" }

@@ -6,5 +6,5 @@ edition = "2021"
 path = "../../lib.rs"
 
 [dependencies]
-libm = { version = "~0.2" }
-orca_whirlpools_core = { path = "../../../core", features = ["floats"] }
+libm = { version = "~0.2.11" }
+orca_whirlpools_core = { path = "../../../core" }

@@ -6,16 +6,14 @@ use solana_sdk::program_error::ProgramError;
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
 use solana_sdk::system_instruction::{create_account, create_account_with_seed, transfer};
-use solana_sdk::{instruction::Instruction, pubkey::Pubkey, system_instruction};
+use solana_sdk::{instruction::Instruction, pubkey::Pubkey};
 use spl_associated_token_account::{
-    get_associated_token_address_with_program_id,
-    instruction::{create_associated_token_account, create_associated_token_account_idempotent},
+    get_associated_token_address_with_program_id, instruction::create_associated_token_account,
 };
 use spl_token::instruction::{close_account, initialize_account3, sync_native};
 use spl_token::solana_program::program_pack::Pack;
 use spl_token::{native_mint, ID as TOKEN_PROGRAM_ID};
 use spl_token_2022::extension::transfer_fee::TransferFeeConfig;
-use spl_token_2022::extension::ExtensionType;
 use spl_token_2022::extension::{BaseStateWithExtensions, StateWithExtensions};
 use spl_token_2022::state::{Account, Mint};
 use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
@@ -331,11 +329,12 @@ mod tests {
     use super::*;
     use crate::tests::{
         setup_ata, setup_ata_te, setup_ata_with_amount, setup_mint, setup_mint_te,
-        setup_mint_te_fee, setup_mint_with_decimals, RpcContext,
+        setup_mint_te_fee, RpcContext,
     };
     use serial_test::serial;
-    use solana_program::program_option::COption;
-    use spl_token_2022::extension::ExtensionType;
+
+    use spl_associated_token_account::instruction::create_associated_token_account_idempotent;
+
     use std::str::FromStr;
 
     // 1. Basic Utility Tests

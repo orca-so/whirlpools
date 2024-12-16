@@ -6,8 +6,8 @@ edition = "2021"
 path = "../../lib.rs"
 
 [dependencies]
-solana-program = { version = "~1.18" }
-solana-sdk = { version = "~1.18" }
-solana-client = { version = "~1.18" }
-solana-account-decoder = { version = "~1.18" }
+solana-program = { version = "~1.18.26" }
+solana-sdk = { version = "~1.18.26" }
+solana-client = { version = "~1.18.26" }
+solana-account-decoder = { version = "~1.18.26" }
 orca_whirlpools_client = { path = "../../../client" }

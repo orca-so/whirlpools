@@ -5,7 +5,7 @@ use orca_whirlpools_client::{
     get_fee_tier_address, get_token_badge_address, get_whirlpool_address, InitializePoolV2,
     InitializePoolV2InstructionArgs,
 };
-use orca_whirlpools_core::{price_to_sqrt_price, tick_index_to_sqrt_price};
+use orca_whirlpools_core::tick_index_to_sqrt_price;
 use solana_program::sysvar::rent::ID as RENT_PROGRAM_ID;
 
 use crate::WHIRLPOOLS_CONFIG_ADDRESS;

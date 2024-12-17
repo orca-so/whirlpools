@@ -18,7 +18,7 @@ floats = ["dep:libm"]
 
 [dependencies]
 ethnum = { version = "^1.1" }
-libm = { version = "^0.1", optional = true }
+libm = { version = ">=0.1, <0.3", optional = true }
 orca_whirlpools_macros = { path = "../macros" }
 wasm-bindgen = { version = "^0.2", optional = true }
 serde = { version = "^1.0", features = ["derive"], optional = true }

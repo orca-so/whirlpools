@@ -4,7 +4,7 @@ sidebar_label: Send Transactions
 import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
-# Sending and Landing Transactions using the Solana SDK | Rust & TypeScript
+# Sending and Landing Transactions
 In this guide, we'll explore how to use the Whirlpools SDK in conjunction with the Solana SDK to send and successfully land transactions on the Solana blockchain. We'll cover key features such as:
 
 - Client-side retry
@@ -16,19 +16,37 @@ For this example, we'll demonstrate how to open a position with liquidity on a W
 Make sure you check out [this doc](./02-Environment%20Setup.mdx) to set up your environment.
 
 ## Code Overview
-### Imports
-Let's start by importing the necessary dependencies, making it easier to copy and paste the code.
+### Dependencies
+Let's start by importing the necessary dependencies.
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
-    ```tsx
+    ```json title="package.json"
+    "dependencies": {
+      "@orca-so/whirlpools": "^1.0.0",
+      "@solana-program/compute-budget": "^0.6.1",
+      "@solana/web3.js": "^2.0.0",
+      "tsx": "^4.19.2",
+      "typescript": "^5.7.2"
+    },
+    ```
+    ```tsx title="sendTransaction.ts"
     import { openPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
     import { createSolanaRpc, address, pipe, createTransactionMessage, setTransactionMessageFeePayer, setTransactionMessageLifetimeUsingBlockhash, appendTransactionMessageInstructions, getComputeUnitEstimateForTransactionMessageFactory, prependTransactionMessageInstructions, signTransactionMessageWithSigners, getBase64EncodedWireTransaction, setTransactionMessageFeePayerSigner } from '@solana/web3.js';
     import { getSetComputeUnitLimitInstruction, getSetComputeUnitPriceInstruction } from '@solana-program/compute-budget';
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">
-  ```rust
+    ```toml title="Cargo.toml"
+    orca_whirlpools_client = "^1"
+    orca_whirlpools_core = "^1"
+    orca_whirlpools = "^1"
+    serde_json = { version = "^1.0" }
+    solana-client = { version = "^1.18" }
+    solana-sdk = { version = "^1.18" }
+    tokio = { version = "^1.41.1" }
+    ```
+    ```rust title="main.rs"
     use orca_whirlpools::{
       open_position_instructions, set_whirlpools_config_address, IncreaseLiquidityParam,
       WhirlpoolsConfigInput,
@@ -55,15 +73,19 @@ To reliably land transactions, avoid using publicly available RPC nodes such as 
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
-    ```tsx
+    ```tsx title="sendTransaction.ts"
     const rpc = createSolanaRpc("<RPC_URL>");
     await setWhirlpoolsConfig("solanaMainnet");
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">
-    ```rust
-    let rpc = RpcClient::new("<RPC_URL>".to_string());
-    set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaMainnet).unwrap();
+    ```rust title="main.rs"
+    #[tokio::main]
+    async fn main() {
+      let rpc = RpcClient::new("<RPC_URL>".to_string());
+      set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaMainnet).unwrap();
+      // Rest of the code
+    }
     ```
   </TabItem>
 </Tabs>
@@ -85,16 +107,21 @@ You can [generate a file system wallet using the Solana CLI](https://docs.solana
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
-    ```tsx
+    ```tsx title="sendTransaction.ts"
     const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
     const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">
-    ```rust
-    let wallet_string = fs::read_to_string("wallet.json").unwrap();
-    let keypair_bytes: Vec<u8> = serde_json::from_str(&wallet_string).unwrap();
-    let wallet = Keypair::from_bytes(&keypair_bytes).unwrap();
+    ```rust title="main.rs"
+    #[tokio::main]
+    async fn main() {
+      // ...
+      let wallet_string = fs::read_to_string("wallet.json").unwrap();
+      let keypair_bytes: Vec<u8> = serde_json::from_str(&wallet_string).unwrap();
+      let wallet = Keypair::from_bytes(&keypair_bytes).unwrap();
+      // ...
+    }
     ```
   </TabItem>
 </Tabs>
@@ -113,7 +140,7 @@ Here's how the swap instructions and quote are generated:
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
-    ```tsx
+    ```tsx title="sendTransaction.ts"
     const whirlpoolAddress = address("5Z66YYYaTmmx1R4mATAGLSc8aV4Vfy5tNdJQzk1GP9RF"); 
     const param = { tokenB: 100_000n };
 
@@ -134,22 +161,27 @@ Here's how the swap instructions and quote are generated:
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">
-    ```rust
-    let whirlpool_address =
+    ```rust title="main.rs"
+    #[tokio::main]
+    async fn main() {
+      // ...
+      let whirlpool_address =
       Pubkey::from_str("Hxw77h9fEx598afiiZunwHaX3vYu9UskDk9EpPNZp1mG").unwrap();
 
-    let increase_liquidity_param = IncreaseLiquidityParam::TokenB(100_000);
-    let open_position_instructions = open_position_instructions(
-      &rpc,
-      whirlpool_address,
-      30.0,
-      70.0,
-      increase_liquidity_param,
-      Some(100),
-      Some(wallet.pubkey()),
-    )
-    .await
-    .unwrap();
+      let increase_liquidity_param = IncreaseLiquidityParam::TokenB(100_000);
+      let open_position_instructions = open_position_instructions(
+        &rpc,
+        whirlpool_address,
+        30.0,
+        70.0,
+        increase_liquidity_param,
+        Some(100),
+        Some(wallet.pubkey()),
+      )
+      .await
+      .unwrap();
+      // ...
+    }
     ```
   </TabItem>
 </Tabs>
@@ -161,7 +193,7 @@ Here's how the transaction message is created:
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
-    ```tsx
+    ```tsx title="sendTransaction.ts"
     const latestBlockHash = await rpc.getLatestBlockhash().send();
     const transactionMessage = await pipe(
       createTransactionMessage({ version: 0}),
@@ -172,20 +204,25 @@ Here's how the transaction message is created:
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">
-    ```rust
-    let message = Message::new(
-      &open_position_instructions.instructions,
-      Some(&wallet.pubkey()),
-    );
-    let mut signers: Vec<&dyn Signer> = vec![&wallet];
-    signers.extend(
-      open_position_instructions
-        .additional_signers
-        .iter()
-        .map(|kp| kp as &dyn Signer),
-    );
-    let recent_blockhash = rpc.get_latest_blockhash().await.unwrap();
-    let transaction = Transaction::new(&signers, message, recent_blockhash);
+    ```rust title="main.rs"
+    #[tokio::main]
+    async fn main() {
+      // ...
+      let message = Message::new(
+        &open_position_instructions.instructions,
+        Some(&wallet.pubkey()),
+      );
+      let mut signers: Vec<&dyn Signer> = vec![&wallet];
+      signers.extend(
+        open_position_instructions
+          .additional_signers
+          .iter()
+          .map(|kp| kp as &dyn Signer),
+      );
+      let recent_blockhash = rpc.get_latest_blockhash().await.unwrap();
+      let transaction = Transaction::new(&signers, message, recent_blockhash);
+      // ...
+    }
     ```
   </TabItem>
 </Tabs>
@@ -199,7 +236,7 @@ The prioritization fee incentivizes validators to prioritize your transaction, e
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
-    ```tsx
+    ```tsx title="sendTransaction.ts"
     const getComputeUnitEstimateForTransactionMessage = 
       getComputeUnitEstimateForTransactionMessageFactory({
         rpc
@@ -215,34 +252,39 @@ The prioritization fee incentivizes validators to prioritize your transaction, e
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">
-    ```rust
-    let simulated_transaction = rpc.simulate_transaction(&transaction).await.unwrap();
+    ```rust title="main.rs"
+    #[tokio::main]
+    async fn main() {
+      // ...
+      let simulated_transaction = rpc.simulate_transaction(&transaction).await.unwrap();
 
-    let mut all_instructions = vec![];
-    if let Some(units_consumed) = simulated_transaction.value.units_consumed {
-      let units_consumed_safe = units_consumed as u32 + 100_000;
-      let compute_limit_instruction =
-        ComputeBudgetInstruction::set_compute_unit_limit(units_consumed_safe);
-      all_instructions.push(compute_limit_instruction);
+      let mut all_instructions = vec![];
+      if let Some(units_consumed) = simulated_transaction.value.units_consumed {
+        let units_consumed_safe = units_consumed as u32 + 100_000;
+        let compute_limit_instruction =
+          ComputeBudgetInstruction::set_compute_unit_limit(units_consumed_safe);
+        all_instructions.push(compute_limit_instruction);
 
-      let prioritization_fees = rpc
-        .get_recent_prioritization_fees(&[whirlpool_address])
-        .await
-        .unwrap();
-      let mut prioritization_fees_array: Vec<u64> = prioritization_fees
-        .iter()
-        .map(|fee| fee.prioritization_fee)
-        .collect();
-      prioritization_fees_array.sort_unstable();
-      let prioritization_fee = prioritization_fees_array
-        .get(prioritization_fees_array.len() / 2)
-        .cloned();
+        let prioritization_fees = rpc
+          .get_recent_prioritization_fees(&[whirlpool_address])
+          .await
+          .unwrap();
+        let mut prioritization_fees_array: Vec<u64> = prioritization_fees
+          .iter()
+          .map(|fee| fee.prioritization_fee)
+          .collect();
+        prioritization_fees_array.sort_unstable();
+        let prioritization_fee = prioritization_fees_array
+          .get(prioritization_fees_array.len() / 2)
+          .cloned();
 
-      if let Some(prioritization_fee) = prioritization_fee {
-        let priority_fee_instruction =
-          ComputeBudgetInstruction::set_compute_unit_price(prioritization_fee);
-        all_instructions.push(priority_fee_instruction);
+        if let Some(prioritization_fee) = prioritization_fee {
+          let priority_fee_instruction =
+            ComputeBudgetInstruction::set_compute_unit_price(prioritization_fee);
+          all_instructions.push(priority_fee_instruction);
+        }
       }
+      // ...
     }
     ```
   </TabItem>
@@ -253,7 +295,7 @@ Finally, the transaction is signed, encoded, and submitted to the network. A cli
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
-    ```tsx
+    ```tsx title="sendTransaction.ts"
     const signedTransaction = await signTransactionMessageWithSigners(transactionMessageWithComputeUnitInstructions)
     const base64EncodedWireTransaction = getBase64EncodedWireTransaction(signedTransaction);
 
@@ -281,46 +323,50 @@ Finally, the transaction is signed, encoded, and submitted to the network. A cli
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">
-    ```rust
-    all_instructions.extend(open_position_instructions.instructions);
-    let message = Message::new(&all_instructions, Some(&wallet.pubkey()));
+    ```rust title="main.rs"
+    #[tokio::main]
+    async fn main() {
+      // ...
+      all_instructions.extend(open_position_instructions.instructions);
+      let message = Message::new(&all_instructions, Some(&wallet.pubkey()));
 
-    let transaction = Transaction::new(&signers, message, recent_blockhash);
-    let transaction_config = RpcSendTransactionConfig {
-      skip_preflight: true,
-      preflight_commitment: Some(CommitmentLevel::Confirmed),
-      max_retries: Some(0),
-      ..Default::default()
-    };
-    let start_time = Instant::now();
-    let timeout = Duration::from_secs(90);
+      let transaction = Transaction::new(&signers, message, recent_blockhash);
+      let transaction_config = RpcSendTransactionConfig {
+        skip_preflight: true,
+        preflight_commitment: Some(CommitmentLevel::Confirmed),
+        max_retries: Some(0),
+        ..Default::default()
+      };
+      let start_time = Instant::now();
+      let timeout = Duration::from_secs(90);
 
-    let send_transaction_result = loop {
-      if start_time.elapsed() >= timeout {
-        break Err(Box::<dyn std::error::Error>::from("Transaction timed out"));
-      }
-      let signature: Signature = rpc
-        .send_transaction_with_config(&transaction, transaction_config)
-        .await
-        .unwrap();
-      let statuses = rpc
-        .get_signature_statuses(&[signature])
-        .await
-        .unwrap()
-        .value;
-      if let Some(status) = statuses[0].clone() {
-        break Ok((status, signature));
-      }
-      sleep(Duration::from_millis(100)).await;
-    };
-    let signature = send_transaction_result.and_then(|(status, signature)| {
-      if let Some(err) = status.err {
-        Err(Box::new(err))
-      } else {
-        Ok(signature)
-      }
-    });
-    println!("Result: {:?}", signature);
+      let send_transaction_result = loop {
+        if start_time.elapsed() >= timeout {
+          break Err(Box::<dyn std::error::Error>::from("Transaction timed out"));
+        }
+        let signature: Signature = rpc
+          .send_transaction_with_config(&transaction, transaction_config)
+          .await
+          .unwrap();
+        let statuses = rpc
+          .get_signature_statuses(&[signature])
+          .await
+          .unwrap()
+          .value;
+        if let Some(status) = statuses[0].clone() {
+          break Ok((status, signature));
+        }
+        sleep(Duration::from_millis(100)).await;
+      };
+      let signature = send_transaction_result.and_then(|(status, signature)| {
+        if let Some(err) = status.err {
+          Err(Box::new(err))
+        } else {
+          Ok(signature)
+        }
+      });
+      println!("Result: {:?}", signature);
+    }
     ```
   </TabItem>
 </Tabs>

@@ -46,7 +46,7 @@ To execute a token swap in an Orca Whirlpool, follow these steps:
 
     await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
-    const wallet = await loadWallet(); // CAUTION: This wallet is not persistent.
+    const wallet = await loadWallet();
     const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
     const mintAddress = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
     const inputAmount = 1_000_000n;

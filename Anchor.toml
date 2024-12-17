@@ -9,7 +9,7 @@ cluster = "localnet"
 wallet = "~/.config/solana/id.json"
 
 [scripts]
-test = "yarn vitest run --test-timeout 1000000 --no-file-parallelism --globals legacy-sdk/whirlpool/tests"
+test = "yarn vitest run --test-timeout 1000000 --no-file-parallelism --globals legacy-sdk"
 
 [test.validator]
 slots_per_epoch = "33"

@@ -9,9 +9,9 @@ import {
   resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
 import {
-  getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
@@ -48,7 +48,7 @@ import type {
   WhirlpoolRewardInfo,
 } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
-import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
+import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { TokenExtensionUtil } from "../utils/public/token-extension-util";
 import {
   MultipleTransactionBuilderFactoryWithAccountResolver,
@@ -61,7 +61,6 @@ import {
 import type { Whirlpool } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
-import { PoolUtil } from "../../src/utils/public/pool-utils";
 
 export class WhirlpoolImpl implements Whirlpool {
   private data: WhirlpoolData;

@@ -9,9 +9,9 @@ import {
   resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
 import {
-  getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
@@ -48,7 +48,7 @@ import type {
   WhirlpoolRewardInfo,
 } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
-import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
+import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { TokenExtensionUtil } from "../utils/public/token-extension-util";
 import {
   MultipleTransactionBuilderFactoryWithAccountResolver,
@@ -61,7 +61,6 @@ import {
 import type { Whirlpool } from "../whirlpool-client";
 import { PositionImpl } from "./position-impl";
 import { getRewardInfos, getTokenVaultAccountInfos } from "./util";
-import { PoolUtil } from "../../src/utils/public/pool-utils";
 
 export class WhirlpoolImpl implements Whirlpool {
   private data: WhirlpoolData;
@@ -321,7 +320,7 @@ export class WhirlpoolImpl implements Whirlpool {
     );
     invariant(
       tokenProgramId.equals(TOKEN_PROGRAM_ID) ||
-        tokenProgramId.equals(TOKEN_2022_PROGRAM_ID),
+      tokenProgramId.equals(TOKEN_2022_PROGRAM_ID),
       "tokenProgramId must be either TOKEN_PROGRAM_ID or TOKEN_2022_PROGRAM_ID",
     );
 
@@ -386,18 +385,18 @@ export class WhirlpoolImpl implements Whirlpool {
     };
     const positionIx = tokenProgramId.equals(TOKEN_2022_PROGRAM_ID)
       ? openPositionWithTokenExtensionsIx(this.ctx.program, {
-          ...params,
-          positionMint: positionMintPubkey,
-          withTokenMetadataExtension: withMetadata,
-        })
+        ...params,
+        positionMint: positionMintPubkey,
+        withTokenMetadataExtension: withMetadata,
+      })
       : (withMetadata ? openPositionWithMetadataIx : openPositionIx)(
-          this.ctx.program,
-          {
-            ...params,
-            positionMintAddress: positionMintPubkey,
-            metadataPda,
-          },
-        );
+        this.ctx.program,
+        {
+          ...params,
+          positionMintAddress: positionMintPubkey,
+          metadataPda,
+        },
+      );
     txBuilder.addInstruction(positionIx);
 
     if (positionMint === undefined) {
@@ -457,22 +456,22 @@ export class WhirlpoolImpl implements Whirlpool {
     )
       ? increaseLiquidityIx(this.ctx.program, baseParams)
       : increaseLiquidityV2Ix(this.ctx.program, {
-          ...baseParams,
-          tokenMintA: whirlpool.tokenMintA,
-          tokenMintB: whirlpool.tokenMintB,
-          tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
-          tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-          ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
-            this.ctx.connection,
-            tokenExtensionCtx,
-            baseParams.tokenOwnerAccountA,
-            baseParams.tokenVaultA,
-            baseParams.positionAuthority,
-            baseParams.tokenOwnerAccountB,
-            baseParams.tokenVaultB,
-            baseParams.positionAuthority,
-          )),
-        });
+        ...baseParams,
+        tokenMintA: whirlpool.tokenMintA,
+        tokenMintB: whirlpool.tokenMintB,
+        tokenProgramA: tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+        tokenProgramB: tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+        ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+          this.ctx.connection,
+          tokenExtensionCtx,
+          baseParams.tokenOwnerAccountA,
+          baseParams.tokenVaultA,
+          baseParams.positionAuthority,
+          baseParams.tokenOwnerAccountB,
+          baseParams.tokenVaultB,
+          baseParams.positionAuthority,
+        )),
+      });
     txBuilder.addInstruction(liquidityIx);
 
     return {
@@ -670,8 +669,8 @@ export class WhirlpoolImpl implements Whirlpool {
         };
         const decreaseLiqQuote = usePriceSlippage
           ? decreaseLiquidityQuoteByLiquidityWithParamsUsingPriceSlippage(
-              params,
-            )
+            params,
+          )
           : decreaseLiquidityQuoteByLiquidityWithParams(params);
 
         const baseParams = {
@@ -692,24 +691,24 @@ export class WhirlpoolImpl implements Whirlpool {
         const ix = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
           ? WhirlpoolIx.decreaseLiquidityIx(this.ctx.program, baseParams)
           : WhirlpoolIx.decreaseLiquidityV2Ix(this.ctx.program, {
-              ...baseParams,
-              tokenMintA: whirlpool.tokenMintA,
-              tokenMintB: whirlpool.tokenMintB,
-              tokenProgramA:
-                tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
-              tokenProgramB:
-                tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-              ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
-                this.ctx.connection,
-                tokenExtensionCtx,
-                baseParams.tokenVaultA,
-                baseParams.tokenOwnerAccountA,
-                baseParams.whirlpool, // vault to owner, so pool is authority
-                baseParams.tokenVaultB,
-                baseParams.tokenOwnerAccountB,
-                baseParams.whirlpool, // vault to owner, so pool is authority
-              )),
-            });
+            ...baseParams,
+            tokenMintA: whirlpool.tokenMintA,
+            tokenMintB: whirlpool.tokenMintB,
+            tokenProgramA:
+              tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+            tokenProgramB:
+              tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+            ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+              this.ctx.connection,
+              tokenExtensionCtx,
+              baseParams.tokenVaultA,
+              baseParams.tokenOwnerAccountA,
+              baseParams.whirlpool, // vault to owner, so pool is authority
+              baseParams.tokenVaultB,
+              baseParams.tokenOwnerAccountB,
+              baseParams.whirlpool, // vault to owner, so pool is authority
+            )),
+          });
 
         return [ix];
       });
@@ -738,24 +737,24 @@ export class WhirlpoolImpl implements Whirlpool {
         const ix = !TokenExtensionUtil.isV2IxRequiredPool(tokenExtensionCtx)
           ? WhirlpoolIx.collectFeesIx(this.ctx.program, collectFeesBaseParams)
           : WhirlpoolIx.collectFeesV2Ix(this.ctx.program, {
-              ...collectFeesBaseParams,
-              tokenMintA: tokenExtensionCtx.tokenMintWithProgramA.address,
-              tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
-              tokenProgramA:
-                tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
-              tokenProgramB:
-                tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
-              ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
-                this.ctx.connection,
-                tokenExtensionCtx,
-                collectFeesBaseParams.tokenVaultA,
-                collectFeesBaseParams.tokenOwnerAccountA,
-                collectFeesBaseParams.whirlpool, // vault to owner, so pool is authority
-                collectFeesBaseParams.tokenVaultB,
-                collectFeesBaseParams.tokenOwnerAccountB,
-                collectFeesBaseParams.whirlpool, // vault to owner, so pool is authority
-              )),
-            });
+            ...collectFeesBaseParams,
+            tokenMintA: tokenExtensionCtx.tokenMintWithProgramA.address,
+            tokenMintB: tokenExtensionCtx.tokenMintWithProgramB.address,
+            tokenProgramA:
+              tokenExtensionCtx.tokenMintWithProgramA.tokenProgram,
+            tokenProgramB:
+              tokenExtensionCtx.tokenMintWithProgramB.tokenProgram,
+            ...(await TokenExtensionUtil.getExtraAccountMetasForTransferHookForPool(
+              this.ctx.connection,
+              tokenExtensionCtx,
+              collectFeesBaseParams.tokenVaultA,
+              collectFeesBaseParams.tokenOwnerAccountA,
+              collectFeesBaseParams.whirlpool, // vault to owner, so pool is authority
+              collectFeesBaseParams.tokenVaultB,
+              collectFeesBaseParams.tokenOwnerAccountB,
+              collectFeesBaseParams.whirlpool, // vault to owner, so pool is authority
+            )),
+          });
 
         return [ix];
       });
@@ -781,26 +780,26 @@ export class WhirlpoolImpl implements Whirlpool {
             rewardIndex,
           )
             ? WhirlpoolIx.collectRewardIx(
-                this.ctx.program,
-                collectRewardBaseParams,
-              )
+              this.ctx.program,
+              collectRewardBaseParams,
+            )
             : WhirlpoolIx.collectRewardV2Ix(this.ctx.program, {
-                ...collectRewardBaseParams,
-                rewardMint:
-                  tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!
-                    .address,
-                rewardTokenProgram:
-                  tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!
-                    .tokenProgram,
-                rewardTransferHookAccounts:
-                  await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
-                    this.ctx.connection,
-                    tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!,
-                    collectRewardBaseParams.rewardVault,
-                    collectRewardBaseParams.rewardOwnerAccount,
-                    collectRewardBaseParams.whirlpool, // vault to owner, so pool is authority
-                  ),
-              });
+              ...collectRewardBaseParams,
+              rewardMint:
+                tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!
+                  .address,
+              rewardTokenProgram:
+                tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!
+                  .tokenProgram,
+              rewardTransferHookAccounts:
+                await TokenExtensionUtil.getExtraAccountMetasForTransferHook(
+                  this.ctx.connection,
+                  tokenExtensionCtx.rewardTokenMintsWithProgram[rewardIndex]!,
+                  collectRewardBaseParams.rewardVault,
+                  collectRewardBaseParams.rewardOwnerAccount,
+                  collectRewardBaseParams.whirlpool, // vault to owner, so pool is authority
+                ),
+            });
 
           return [ix];
         });

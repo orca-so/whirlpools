@@ -190,8 +190,6 @@ Here's how the transaction message is created:
   </TabItem>
 </Tabs>
 
-
-
 ### Step 5: Estimating Compute Unit Limit and Prioritization Fee
 When preparing a transaction, it's important to set a compute unit limit and an appropriate prioritization fee. Setting the compute units too low and the transaction will fail. Setting it too high will make the transaction less favorable for validators to process..
 
@@ -249,8 +247,6 @@ The prioritization fee incentivizes validators to prioritize your transaction, e
     ```
   </TabItem>
 </Tabs>
-
-
 
 ### Step 6: Sign and Submit Transaction
 Finally, the transaction is signed, encoded, and submitted to the network. A client-side retry mechanism ensures that the transaction is repeatedly sent until it is confirmed or the blockhash expires. The same signed transaction is sent in a loop with retries at fixed intervals (100ms), while polling the status using getSignatureStatuses.

@@ -68,7 +68,7 @@ Let's start by importing the necessary dependencies.
 </Tabs>
 
 
-### Step 1: Configure RPC Client and SDK
+### 1: Configure RPC Client and SDK
 To reliably land transactions, avoid using publicly available RPC nodes such as https://api.mainnet-beta.solana.com. Instead, consider using an RPC provider like Helius, Titan, or others. Many providers offer free tiers, which can be sufficient for testing purposes. You may need to adjust the retry mechanism in your code, specifically the waiting time between retries, to accommodate rate limits.
 
 <Tabs groupId="programming-languages">
@@ -102,7 +102,7 @@ All Whirlpools visible on the Orca UI are derived from and controlled by a `Whir
 
 The `RPC_URL` should match the network where the specific WhirlpoolsConfig is deployed. For example, if you are working with a `WhirlpoolsConfig` on Solana Mainnet, ensure that the RPC endpoint points to a Solana Mainnet node.
 
-### Step 2: Load Wallet
+### 2: Load Wallet
 You can [generate a file system wallet using the Solana CLI](https://docs.solanalabs.com/cli/wallets/file-system), which stores a keypair as a JSON file,  and load it in your program. You can load the wallet using the following code:
 
 <Tabs groupId="programming-languages">
@@ -127,7 +127,7 @@ You can [generate a file system wallet using the Solana CLI](https://docs.solana
 </Tabs>
 
 
-### Step 3: Generate Instructions
+### 3: Generate Instructions
 Next, we generate the necessary instructions for opening a position in a Whirlpool. In this example, we're opening a position with liquidity in the 0.5% fee tier SOL/ORCA pool. We'll be adding 0.1 ORCA (Token B) to the position. Based on the current price of the pool and the price range of the position, the SDK will calculate the estimated amount of SOL needed to match the input amount of ORCA.
 
 The `openPositionInstructions` function generates the transaction instructions and provides additional details about the operation, including:
@@ -186,7 +186,7 @@ Here's how the swap instructions and quote are generated:
   </TabItem>
 </Tabs>
 
-### Step 4: Create Transaction Message
+### 4: Create Transaction Message
 To send a transaction on Solana, you need to include a blockhash. A blockhash acts as a timestamp and ensures the transaction has a limited lifetime. Validators use the blockhash to verify the recency of a transaction before including it in a block. A transaction referencing a blockhash is only valid for 150 slots (~1-2 minutes, depending on slot time). After that, the blockhash expires, and the transaction will be rejected.
 
 Here's how the transaction message is created:
@@ -227,7 +227,7 @@ Here's how the transaction message is created:
   </TabItem>
 </Tabs>
 
-### Step 5: Estimating Compute Unit Limit and Prioritization Fee
+### 5: Estimating Compute Unit Limit and Prioritization Fee
 When preparing a transaction, it's important to set a compute unit limit and an appropriate prioritization fee. Setting the compute units too low and the transaction will fail. Setting it too high will make the transaction less favorable for validators to process..
 
 You can get an estimation of the compute units by simulating the transaction on the RPC. To avoid transaction failures caused by underestimating this limit, an additional 100,000 compute units are added, but you can adjust this based on your own tests.
@@ -290,7 +290,7 @@ The prioritization fee incentivizes validators to prioritize your transaction, e
   </TabItem>
 </Tabs>
 
-### Step 6: Sign and Submit Transaction
+### 6: Sign and Submit Transaction
 Finally, the transaction is signed, encoded, and submitted to the network. A client-side retry mechanism ensures that the transaction is repeatedly sent until it is confirmed or the blockhash expires. The same signed transaction is sent in a loop with retries at fixed intervals (100ms), while polling the status using getSignatureStatuses.
 
 <Tabs groupId="programming-languages">

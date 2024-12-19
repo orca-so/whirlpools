@@ -695,3 +695,82 @@ pub async fn open_position_instructions(
     )
     .await
 }
+
+#[cfg(test)]
+mod tests {
+    use serial_test::serial;
+    use solana_program_test::tokio;
+    use solana_sdk::pubkey::Pubkey;
+    use spl_token::state::Account as TokenAccount;
+    use std::collections::HashMap;
+
+    use crate::{
+        tests::{
+            setup_ata_te, setup_ata_with_amount, setup_config_and_fee_tiers, setup_mint_te,
+            setup_mint_te_fee, setup_mint_with_decimals, setup_position, setup_te_position,
+            setup_whirlpool, RpcContext, SetupAtaConfig,
+        },
+        DEFAULT_FUNDER, WHIRLPOOLS_CONFIG_ADDRESS,
+    };
+
+    use super::*;
+
+    // Helper functions
+    async fn fetch_token(rpc: &RpcClient, address: Pubkey) -> Result<TokenAccount, Box<dyn Error>> {
+        let account = rpc.get_account(&address).await?;
+        TokenAccount::unpack(&account.data).map_err(|e| e.into())
+    }
+
+    async fn fetch_position(rpc: &RpcClient, address: Pubkey) -> Result<Position, Box<dyn Error>> {
+        let account = rpc.get_account(&address).await?;
+        Position::from_bytes(&account.data).map_err(|e| e.into())
+    }
+
+    const TEST_SLIPPAGE_TOLERANCE: u16 = 100; // 1%
+
+    #[tokio::test]
+    #[serial]
+    async fn test_increase_liquidity() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+
+        // setup and initialize
+        setup_config_and_fee_tiers(&ctx).await?;
+        let mint_a_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_b_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
+        let token_balance: u64 = 1_000_000;
+        setup_ata_with_amount(&ctx, mint_a_pubkey, token_balance).await?;
+        setup_ata_with_amount(&ctx, mint_b_pubkey, token_balance).await?;
+
+        // setup pool and position
+        let tick_spacing = 64;
+        let pool_pubkey =
+            setup_whirlpool(&ctx, ctx.config, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
+
+        let position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((-100, 100)),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+
+        // test increase liquidity
+        let param = IncreaseLiquidityParam::Liquidity(10_000);
+        let increase_ix = increase_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            param,
+            Some(TEST_SLIPPAGE_TOLERANCE),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+
+        // send transaction
+        let signers: Vec<&Keypair> = increase_ix.additional_signers.iter().collect();
+
+        ctx.send_transaction_with_signers(increase_ix.instructions, signers)
+            .await?;
+
+        Ok(())
+    }
+}

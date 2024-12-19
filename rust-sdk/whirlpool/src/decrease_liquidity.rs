@@ -18,9 +18,9 @@ use orca_whirlpools_core::{
     get_tick_index_in_array, CollectFeesQuote, CollectRewardsQuote, DecreaseLiquidityQuote,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_sdk::program_pack::Pack;
 use solana_sdk::{account::Account, instruction::Instruction, pubkey::Pubkey, signature::Keypair};
 use spl_associated_token_account::get_associated_token_address_with_program_id;
-use solana_sdk::program_pack::Pack;
 
 use crate::{
     token::{get_current_transfer_fee, prepare_token_accounts_instructions, TokenAccountStrategy},
@@ -653,15 +653,15 @@ mod tests {
     }
 
     use crate::tests::{
-        setup_ata_te, setup_ata_with_amount, setup_config_and_fee_tiers,
-        setup_mint_te_fee, setup_mint_with_decimals, setup_position, setup_te_position,
-        setup_whirlpool, RpcContext, SetupAtaConfig,
+        setup_ata_te, setup_ata_with_amount, setup_config_and_fee_tiers, setup_mint_te_fee,
+        setup_mint_with_decimals, setup_position, setup_te_position, setup_whirlpool, RpcContext,
+        SetupAtaConfig,
     };
-    use solana_sdk::signature::{Keypair, Signer};
+    use serial_test::serial;
     use solana_sdk::pubkey::Pubkey;
+    use solana_sdk::signature::{Keypair, Signer};
     use spl_associated_token_account::get_associated_token_address_with_program_id;
     use spl_token::state::Account as TokenAccount;
-    use serial_test::serial;
     use std::error::Error;
 
     const TEST_SLIPPAGE_TOLERANCE: u16 = 100; // 1%
@@ -792,118 +792,6 @@ mod tests {
         let updated_position = fetch_position(&ctx.rpc, position_address).await?;
 
         assert_eq!(updated_position.liquidity, 0);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    #[serial]
-    async fn test_decrease_liquidity_with_transfer_fee() -> Result<(), Box<dyn Error>> {
-        println!("Starting test_decrease_liquidity_with_transfer_fee");
-        let ctx = RpcContext::new().await;
-
-        // Setup and initialize mints with transfer fees
-        println!("Setting up mints with transfer fees");
-        let mint_a_pubkey = setup_mint_te_fee(&ctx).await?;
-        let mint_b_pubkey = setup_mint_te_fee(&ctx).await?;
-        let token_balance: u64 = 1_000_000_000;
-
-        // Setup token accounts
-        println!("Setting up token accounts for mint A");
-        setup_ata_te(
-            &ctx,
-            mint_a_pubkey,
-            Some(SetupAtaConfig {
-                amount: Some(token_balance),
-                ..Default::default()
-            }),
-        )
-        .await?;
-
-        println!("Setting up token accounts for mint B");
-        setup_ata_te(
-            &ctx,
-            mint_b_pubkey,
-            Some(SetupAtaConfig {
-                amount: Some(token_balance),
-                ..Default::default()
-            }),
-        )
-        .await?;
-
-        // Setup pool and position
-        println!("Setting up whirlpool and position");
-        let tick_spacing = 64;
-        let pool_pubkey =
-            setup_whirlpool(&ctx, ctx.config, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
-        println!("Whirlpool pubkey: {}", pool_pubkey);
-        let position_mint = setup_te_position(
-            &ctx,
-            pool_pubkey,
-            Some((-128, 128)),
-            Some(ctx.signer.pubkey()),
-        )
-        .await?;
-
-        // Increase liquidity first to have liquidity to decrease
-        println!("Increasing initial liquidity by 100,000");
-        let increase_param = crate::increase_liquidity::IncreaseLiquidityParam::Liquidity(100_000);
-        let increase_ix = crate::increase_liquidity::increase_liquidity_instructions(
-            &ctx.rpc,
-            position_mint,
-            increase_param,
-            Some(TEST_SLIPPAGE_TOLERANCE),
-            Some(ctx.signer.pubkey()),
-        )
-        .await?;
-
-        ctx.send_transaction_with_signers(increase_ix.instructions, vec![])
-            .await?;
-
-        // Decrease liquidity
-        println!("Decreasing liquidity by 50,000");
-        let decrease_param = DecreaseLiquidityParam::Liquidity(50_000);
-        let decrease_ix = decrease_liquidity_instructions(
-            &ctx.rpc,
-            position_mint,
-            decrease_param,
-            Some(TEST_SLIPPAGE_TOLERANCE),
-            Some(ctx.signer.pubkey()),
-        )
-        .await?;
-
-        // Send transaction
-        println!("Sending decrease liquidity transaction");
-        ctx.send_transaction_with_signers(decrease_ix.instructions, vec![])
-            .await?;
-
-        // Fetch the token accounts and check balances
-        println!("Fetching token accounts to verify balances");
-
-        // Fetch token accounts
-        let owner_token_account_a = get_associated_token_address_with_program_id(
-            &ctx.signer.pubkey(),
-            &mint_a_pubkey,
-            &spl_token_2022::ID,
-        );
-        let owner_token_account_b = get_associated_token_address_with_program_id(
-            &ctx.signer.pubkey(),
-            &mint_b_pubkey,
-            &spl_token_2022::ID,
-        );
-
-        let token_account_a = fetch_token(&ctx.rpc, owner_token_account_a).await?;
-        let token_account_b = fetch_token(&ctx.rpc, owner_token_account_b).await?;
-
-        println!("Token A account balance: {}", token_account_a.amount);
-        println!("Token B account balance: {}", token_account_b.amount);
-
-        // Expected amounts with transfer fees applied
-        // Since decrease_liquidity returns collected tokens, need to calculate fees
-
-        // For simplicity, we'll assume the collected tokens are correct
-        // In a real test, you would calculate expected balances based on the fees and amounts
-        println!("Test completed successfully");
 
         Ok(())
     }

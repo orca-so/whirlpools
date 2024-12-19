@@ -17,8 +17,8 @@ use solana_sdk::{
     system_instruction, system_program,
 };
 use spl_associated_token_account::{
-    get_associated_token_address, instruction::create_associated_token_account,
-    get_associated_token_address_with_program_id,
+    get_associated_token_address, get_associated_token_address_with_program_id,
+    instruction::create_associated_token_account,
 };
 use spl_token::ID as TOKEN_PROGRAM_ID;
 use spl_token_2022::{state::Mint as Token2022Mint, ID as TOKEN_2022_PROGRAM_ID};
@@ -49,10 +49,7 @@ pub async fn setup_whirlpool(
     let vault_a = ctx.get_next_keypair();
     let vault_b = ctx.get_next_keypair();
 
-    let mint_infos = ctx
-        .rpc
-        .get_multiple_accounts(&[token_a, token_b])
-        .await?;
+    let mint_infos = ctx.rpc.get_multiple_accounts(&[token_a, token_b]).await?;
     let mint_a_info = mint_infos[0]
         .as_ref()
         .ok_or("Token A mint info not found")?;
@@ -197,7 +194,10 @@ pub async fn setup_te_position(
     let tick_spacing = whirlpool_account.tick_spacing as i32;
     let tick_lower_aligned = (tick_lower / tick_spacing) * tick_spacing;
     let tick_upper_aligned = (tick_upper / tick_spacing) * tick_spacing;
-    println!("Aligned ticks: lower={}, upper={}", tick_lower_aligned, tick_upper_aligned);
+    println!(
+        "Aligned ticks: lower={}, upper={}",
+        tick_lower_aligned, tick_upper_aligned
+    );
 
     // Initialize tick arrays if needed
     let tick_arrays = [
@@ -259,12 +259,11 @@ pub async fn setup_te_position(
         0,
     )?;
 
-    let position_token_account =
-        get_associated_token_address_with_program_id(
-            &ctx.signer.pubkey(),
-            &position_mint.pubkey(),
-            &TOKEN_2022_PROGRAM_ID,
-        );
+    let position_token_account = get_associated_token_address_with_program_id(
+        &ctx.signer.pubkey(),
+        &position_mint.pubkey(),
+        &TOKEN_2022_PROGRAM_ID,
+    );
 
     let create_ata_ix = create_associated_token_account(
         &ctx.signer.pubkey(),

@@ -10,7 +10,7 @@
   "dependencies": {
     "@orca-so/whirlpools": "*",
     "@solana/web3.js": "^2.0.0",
-    "next": "^15.1.0",
+    "next": "^15.1.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

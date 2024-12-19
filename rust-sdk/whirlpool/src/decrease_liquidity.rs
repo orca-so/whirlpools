@@ -18,6 +18,7 @@ use orca_whirlpools_core::{
     get_tick_index_in_array, CollectFeesQuote, CollectRewardsQuote, DecreaseLiquidityQuote,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_sdk::program_pack::Pack;
 use solana_sdk::{account::Account, instruction::Instruction, pubkey::Pubkey, signature::Keypair};
 use spl_associated_token_account::get_associated_token_address_with_program_id;
 
@@ -226,20 +227,20 @@ pub async fn decrease_liquidity_instructions(
     instructions.push(
         DecreaseLiquidityV2 {
             whirlpool: position.whirlpool,
-            token_program_a: mint_a_info.owner,
-            token_program_b: mint_b_info.owner,
-            memo_program: spl_memo::ID,
             position_authority: authority,
             position: position_address,
             position_token_account: position_token_account_address,
-            token_mint_a: pool.token_mint_a,
-            token_mint_b: pool.token_mint_b,
             token_owner_account_a: *token_owner_account_a,
             token_owner_account_b: *token_owner_account_b,
             token_vault_a: pool.token_vault_a,
             token_vault_b: pool.token_vault_b,
+            token_mint_a: pool.token_mint_a,
+            token_mint_b: pool.token_mint_b,
+            token_program_a: mint_a_info.owner,
+            token_program_b: mint_b_info.owner,
             tick_array_lower: lower_tick_array_address,
             tick_array_upper: upper_tick_array_address,
+            memo_program: spl_memo::ID,
         }
         .instruction(DecreaseLiquidityV2InstructionArgs {
             liquidity_amount: quote.liquidity_delta,
@@ -516,20 +517,20 @@ pub async fn close_position_instructions(
         instructions.push(
             DecreaseLiquidityV2 {
                 whirlpool: position.whirlpool,
-                token_program_a: mint_a_info.owner,
-                token_program_b: mint_b_info.owner,
-                memo_program: spl_memo::ID,
                 position_authority: authority,
                 position: position_address,
                 position_token_account: position_token_account_address,
-                token_mint_a: pool.token_mint_a,
-                token_mint_b: pool.token_mint_b,
                 token_owner_account_a: *token_owner_account_a,
                 token_owner_account_b: *token_owner_account_b,
                 token_vault_a: pool.token_vault_a,
                 token_vault_b: pool.token_vault_b,
+                token_mint_a: pool.token_mint_a,
+                token_mint_b: pool.token_mint_b,
+                token_program_a: mint_a_info.owner,
+                token_program_b: mint_b_info.owner,
                 tick_array_lower: lower_tick_array_address,
                 tick_array_upper: upper_tick_array_address,
+                memo_program: spl_memo::ID,
             }
             .instruction(DecreaseLiquidityV2InstructionArgs {
                 liquidity_amount: quote.liquidity_delta,
@@ -581,8 +582,8 @@ pub async fn close_position_instructions(
                 position: position_address,
                 position_token_account: position_token_account_address,
                 reward_owner_account: *reward_owner,
-                reward_vault: pool.reward_infos[i].vault,
                 reward_mint: pool.reward_infos[i].mint,
+                reward_vault: pool.reward_infos[i].vault,
                 reward_token_program: reward_info.owner,
                 memo_program: spl_memo::ID,
             }
@@ -634,4 +635,164 @@ pub async fn close_position_instructions(
         fees_quote,
         rewards_quote,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Helper functions
+    async fn fetch_token(rpc: &RpcClient, address: Pubkey) -> Result<TokenAccount, Box<dyn Error>> {
+        let account = rpc.get_account(&address).await?;
+        TokenAccount::unpack(&account.data).map_err(|e| e.into())
+    }
+
+    async fn fetch_position(rpc: &RpcClient, address: Pubkey) -> Result<Position, Box<dyn Error>> {
+        let account = rpc.get_account(&address).await?;
+        Position::from_bytes(&account.data).map_err(|e| e.into())
+    }
+
+    use crate::tests::{
+        setup_ata_te, setup_ata_with_amount, setup_config_and_fee_tiers, setup_mint_te_fee,
+        setup_mint_with_decimals, setup_position, setup_te_position, setup_whirlpool, RpcContext,
+        SetupAtaConfig,
+    };
+    use serial_test::serial;
+    use solana_sdk::pubkey::Pubkey;
+    use solana_sdk::signature::{Keypair, Signer};
+    use spl_associated_token_account::get_associated_token_address_with_program_id;
+    use spl_token::state::Account as TokenAccount;
+    use std::error::Error;
+
+    const TEST_SLIPPAGE_TOLERANCE: u16 = 100; // 1%
+
+    #[tokio::test]
+    #[serial]
+    async fn test_decrease_liquidity() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+
+        // Setup and initialize
+        setup_config_and_fee_tiers(&ctx).await?;
+        let mint_a_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_b_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
+        let token_balance: u64 = 1_000_000_000;
+        setup_ata_with_amount(&ctx, mint_a_pubkey, token_balance).await?;
+        setup_ata_with_amount(&ctx, mint_b_pubkey, token_balance).await?;
+
+        // Setup pool and position
+        let tick_spacing = 64;
+        let pool_pubkey =
+            setup_whirlpool(&ctx, ctx.config, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
+
+        let position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((-128, 128)),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+
+        // Increase liquidity first to have liquidity to decrease
+        let increase_param = crate::increase_liquidity::IncreaseLiquidityParam::Liquidity(100_000);
+        let increase_ix = crate::increase_liquidity::increase_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            increase_param,
+            Some(TEST_SLIPPAGE_TOLERANCE),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+
+        ctx.send_transaction_with_signers(increase_ix.instructions, vec![])
+            .await?;
+
+        // Test Decrease Liquidity
+        let decrease_param = DecreaseLiquidityParam::Liquidity(50_000);
+        let decrease_ix = decrease_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            decrease_param,
+            Some(TEST_SLIPPAGE_TOLERANCE),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+
+        // Send transaction
+        ctx.send_transaction_with_signers(decrease_ix.instructions, vec![])
+            .await?;
+
+        // Fetch the updated position and check liquidity
+        let position_address = get_position_address(&position_mint)?.0;
+        let updated_position = fetch_position(&ctx.rpc, position_address).await?;
+
+        assert_eq!(updated_position.liquidity, 50_000);
+
+        Ok(())
+    }
+
+    // Additional test cases based on decreaseLiquidity.test.ts
+
+    #[tokio::test]
+    #[serial]
+    async fn test_decrease_liquidity_to_zero() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+
+        // Setup and initialize
+        setup_config_and_fee_tiers(&ctx).await?;
+        let mint_a_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_b_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
+        let token_balance: u64 = 1_000_000_000;
+        setup_ata_with_amount(&ctx, mint_a_pubkey, token_balance).await?;
+        setup_ata_with_amount(&ctx, mint_b_pubkey, token_balance).await?;
+
+        // Setup pool and position
+        let tick_spacing = 64;
+        let pool_pubkey =
+            setup_whirlpool(&ctx, ctx.config, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
+
+        let position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((-128, 128)),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+
+        // Increase liquidity first to have liquidity to decrease
+        let increase_param = crate::increase_liquidity::IncreaseLiquidityParam::Liquidity(100_000);
+        let increase_ix = crate::increase_liquidity::increase_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            increase_param,
+            Some(TEST_SLIPPAGE_TOLERANCE),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+
+        ctx.send_transaction_with_signers(increase_ix.instructions, vec![])
+            .await?;
+
+        // Decrease liquidity to zero
+        let decrease_param = DecreaseLiquidityParam::Liquidity(100_000);
+        let decrease_ix = decrease_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            decrease_param,
+            Some(TEST_SLIPPAGE_TOLERANCE),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+
+        // Send transaction
+        ctx.send_transaction_with_signers(decrease_ix.instructions, vec![])
+            .await?;
+
+        // Fetch the updated position and check liquidity
+        let position_address = get_position_address(&position_mint)?.0;
+        let updated_position = fetch_position(&ctx.rpc, position_address).await?;
+
+        assert_eq!(updated_position.liquidity, 0);
+
+        Ok(())
+    }
 }

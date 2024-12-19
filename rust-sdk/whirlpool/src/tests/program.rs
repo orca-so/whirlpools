@@ -18,8 +18,8 @@ use solana_sdk::{
 };
 use spl_associated_token_account::{
     get_associated_token_address, instruction::create_associated_token_account,
+    get_associated_token_address_with_program_id,
 };
-use spl_token::instruction::initialize_mint2;
 use spl_token::ID as TOKEN_PROGRAM_ID;
 use spl_token_2022::{state::Mint as Token2022Mint, ID as TOKEN_2022_PROGRAM_ID};
 use std::error::Error;
@@ -43,31 +43,41 @@ pub async fn setup_whirlpool(
 ) -> Result<Pubkey, Box<dyn Error>> {
     let fee_tier = get_fee_tier_address(&config, tick_spacing)?.0;
     let whirlpool = get_whirlpool_address(&config, &token_a, &token_b, tick_spacing)?.0;
-    let token_badge_a = get_token_badge_address(&config, &token_a)?.0;
-    let token_badge_b = get_token_badge_address(&config, &token_b)?.0;
+    let (token_badge_a, _) = get_token_badge_address(&config, &token_a)?;
+    let (token_badge_b, _) = get_token_badge_address(&config, &token_b)?;
 
     let vault_a = ctx.get_next_keypair();
     let vault_b = ctx.get_next_keypair();
 
-    let mint_a_info = ctx.rpc.get_account(&token_a).await?;
-    let mint_b_info = ctx.rpc.get_account(&token_b).await?;
+    let mint_infos = ctx
+        .rpc
+        .get_multiple_accounts(&[token_a, token_b])
+        .await?;
+    let mint_a_info = mint_infos[0]
+        .as_ref()
+        .ok_or("Token A mint info not found")?;
+    let mint_b_info = mint_infos[1]
+        .as_ref()
+        .ok_or("Token B mint info not found")?;
 
-    // Default initial price of 1.0
+    let token_program_a = mint_a_info.owner;
+    let token_program_b = mint_b_info.owner;
+
     let sqrt_price = tick_index_to_sqrt_price(0);
 
     let instructions = vec![InitializePoolV2 {
-        whirlpool,
-        fee_tier,
+        whirlpools_config: config,
         token_mint_a: token_a,
         token_mint_b: token_b,
-        whirlpools_config: config,
+        token_badge_a: token_badge_a,
+        token_badge_b: token_badge_b,
         funder: ctx.signer.pubkey(),
+        whirlpool,
         token_vault_a: vault_a.pubkey(),
         token_vault_b: vault_b.pubkey(),
-        token_badge_a,
-        token_badge_b,
-        token_program_a: mint_a_info.owner,
-        token_program_b: mint_b_info.owner,
+        fee_tier: fee_tier,
+        token_program_a: token_program_a,
+        token_program_b: token_program_b,
         system_program: system_program::id(),
         rent: RENT_PROGRAM_ID,
     }
@@ -174,27 +184,31 @@ pub async fn setup_te_position(
     tick_range: Option<(i32, i32)>,
     owner: Option<Pubkey>,
 ) -> Result<Pubkey, Box<dyn Error>> {
+    println!("Starting setup_te_position");
     let owner = owner.unwrap_or_else(|| ctx.signer.pubkey());
     let whirlpool_data = ctx.rpc.get_account(&whirlpool).await?;
     let whirlpool_account = Whirlpool::from_bytes(&whirlpool_data.data)?;
 
     // Get tick range
-    let (tick_lower, tick_upper) = tick_range.unwrap_or((-100, 100));
+    let (tick_lower, tick_upper) = tick_range.unwrap_or((-128, 128));
+    println!("Tick range: lower={}, upper={}", tick_lower, tick_upper);
 
-    // Get initializable tick indexes
-    let lower_tick_index =
-        get_initializable_tick_index(tick_lower, whirlpool_account.tick_spacing, None);
-    let upper_tick_index =
-        get_initializable_tick_index(tick_upper, whirlpool_account.tick_spacing, None);
+    // Tick Index를 Tick Spacing에 맞게 정렬
+    let tick_spacing = whirlpool_account.tick_spacing as i32;
+    let tick_lower_aligned = (tick_lower / tick_spacing) * tick_spacing;
+    let tick_upper_aligned = (tick_upper / tick_spacing) * tick_spacing;
+    println!("Aligned ticks: lower={}, upper={}", tick_lower_aligned, tick_upper_aligned);
 
-    // Initialize tick arrays if needed (재사용)
+    // Initialize tick arrays if needed
     let tick_arrays = [
-        get_tick_array_start_tick_index(lower_tick_index, whirlpool_account.tick_spacing),
-        get_tick_array_start_tick_index(upper_tick_index, whirlpool_account.tick_spacing),
+        get_tick_array_start_tick_index(tick_lower_aligned, whirlpool_account.tick_spacing),
+        get_tick_array_start_tick_index(tick_upper_aligned, whirlpool_account.tick_spacing),
     ];
+    println!("Tick array start indices: {:?}", tick_arrays);
 
     for start_tick in tick_arrays.iter() {
         let (tick_array_address, _) = get_tick_array_address(&whirlpool, *start_tick)?;
+        println!("Processing tick array at index {}", start_tick);
 
         let account_result = ctx.rpc.get_account(&tick_array_address).await;
         let needs_init = match account_result {
@@ -203,6 +217,7 @@ pub async fn setup_te_position(
         };
 
         if needs_init {
+            println!("Initializing tick array at index {}", start_tick);
             let init_tick_array_ix = InitializeTickArray {
                 whirlpool,
                 funder: ctx.signer.pubkey(),
@@ -214,10 +229,14 @@ pub async fn setup_te_position(
             });
 
             ctx.send_transaction(vec![init_tick_array_ix]).await?;
+            println!("Tick array initialized successfully");
+        } else {
+            println!("Tick array already initialized");
         }
     }
 
     // Create Token-2022 position
+    println!("Creating Token-2022 position");
     let position_mint = Keypair::new();
     let lamports = ctx
         .rpc
@@ -241,7 +260,11 @@ pub async fn setup_te_position(
     )?;
 
     let position_token_account =
-        get_associated_token_address(&ctx.signer.pubkey(), &position_mint.pubkey());
+        get_associated_token_address_with_program_id(
+            &ctx.signer.pubkey(),
+            &position_mint.pubkey(),
+            &TOKEN_2022_PROGRAM_ID,
+        );
 
     let create_ata_ix = create_associated_token_account(
         &ctx.signer.pubkey(),
@@ -251,6 +274,7 @@ pub async fn setup_te_position(
     );
 
     let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey())?;
+    println!("Position PDA: {}", position_pubkey);
 
     let open_position_ix = OpenPosition {
         funder: ctx.signer.pubkey(),
@@ -265,8 +289,8 @@ pub async fn setup_te_position(
         rent: RENT_PROGRAM_ID,
     }
     .instruction(OpenPositionInstructionArgs {
-        tick_lower_index: lower_tick_index,
-        tick_upper_index: upper_tick_index,
+        tick_lower_index: tick_lower_aligned,
+        tick_upper_index: tick_upper_aligned,
         position_bump,
     });
 
@@ -281,6 +305,7 @@ pub async fn setup_te_position(
         vec![&position_mint],
     )
     .await?;
+    println!("Transaction completed successfully");
 
     Ok(position_pubkey)
 }

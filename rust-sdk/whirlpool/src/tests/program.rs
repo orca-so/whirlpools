@@ -1,10 +1,14 @@
 use orca_whirlpools_client::{
     get_bundled_position_address, get_fee_tier_address, get_position_address,
-    get_position_bundle_address, get_token_badge_address, get_whirlpool_address, InitializePoolV2,
-    InitializePoolV2InstructionArgs, InitializePositionBundle, OpenBundledPosition,
-    OpenBundledPositionInstructionArgs, OpenPosition, OpenPositionInstructionArgs,
+    get_position_bundle_address, get_tick_array_address, get_token_badge_address,
+    get_whirlpool_address, InitializePoolV2, InitializePoolV2InstructionArgs,
+    InitializePositionBundle, InitializeTickArray, InitializeTickArrayInstructionArgs,
+    OpenBundledPosition, OpenBundledPositionInstructionArgs, OpenPosition,
+    OpenPositionInstructionArgs, Whirlpool,
 };
-use orca_whirlpools_core::tick_index_to_sqrt_price;
+use orca_whirlpools_core::{
+    get_initializable_tick_index, get_tick_array_start_tick_index, tick_index_to_sqrt_price,
+};
 use solana_program::program_pack::Pack;
 use solana_program::sysvar::rent::ID as RENT_PROGRAM_ID;
 use solana_sdk::{
@@ -13,27 +17,30 @@ use solana_sdk::{
     system_instruction, system_program,
 };
 use spl_associated_token_account::{
-    get_associated_token_address, get_associated_token_address_with_program_id,
-    instruction::create_associated_token_account,
+    get_associated_token_address, instruction::create_associated_token_account,
 };
-use spl_token::{state::Mint, ID as TOKEN_PROGRAM_ID};
+use spl_token::instruction::initialize_mint2;
+use spl_token::ID as TOKEN_PROGRAM_ID;
 use spl_token_2022::{state::Mint as Token2022Mint, ID as TOKEN_2022_PROGRAM_ID};
 use std::error::Error;
 
+use crate::tests::token::{setup_ata, setup_mint_with_decimals};
 use crate::WHIRLPOOLS_CONFIG_ADDRESS;
 
 use super::rpc::RpcContext;
 
-use crate::tests::token::{setup_ata, setup_mint_with_decimals};
 use crate::tests::token_extensions::setup_mint_te;
+
+use solana_program::system_instruction::create_account;
+use spl_token::state::Mint;
 
 pub async fn setup_whirlpool(
     ctx: &RpcContext,
+    config: Pubkey,
     token_a: Pubkey,
     token_b: Pubkey,
     tick_spacing: u16,
 ) -> Result<Pubkey, Box<dyn Error>> {
-    let config = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
     let fee_tier = get_fee_tier_address(&config, tick_spacing)?.0;
     let whirlpool = get_whirlpool_address(&config, &token_a, &token_b, tick_spacing)?.0;
     let token_badge_a = get_token_badge_address(&config, &token_a)?.0;
@@ -75,20 +82,74 @@ pub async fn setup_whirlpool(
     Ok(whirlpool)
 }
 
-pub async fn setup_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
-    let ctx = RpcContext::new().await;
+pub async fn setup_position(
+    ctx: &RpcContext,
+    whirlpool: Pubkey,
+    tick_range: Option<(i32, i32)>,
+    owner: Option<Pubkey>,
+) -> Result<Pubkey, Box<dyn Error>> {
+    let owner = owner.unwrap_or_else(|| ctx.signer.pubkey());
+    let whirlpool_data = ctx.rpc.get_account(&whirlpool).await?;
+    let whirlpool_account = Whirlpool::from_bytes(&whirlpool_data.data)?;
 
-    // Use token utility functions
-    let position_mint = setup_mint_with_decimals(&ctx, 0).await?;
-    let position_token_account = setup_ata(&ctx, position_mint).await?;
+    let (tick_lower, tick_upper) = tick_range.unwrap_or((-100, 100));
 
-    let (position_pubkey, position_bump) = get_position_address(&position_mint)?;
+    let lower_tick_index = get_initializable_tick_index(
+        tick_lower - (tick_lower % whirlpool_account.tick_spacing as i32),
+        whirlpool_account.tick_spacing,
+        None,
+    );
+    let upper_tick_index = get_initializable_tick_index(
+        tick_upper - (tick_upper % whirlpool_account.tick_spacing as i32),
+        whirlpool_account.tick_spacing,
+        None,
+    );
 
+    // Initialize tick arrays if needed
+    let tick_arrays = [
+        get_tick_array_start_tick_index(lower_tick_index, whirlpool_account.tick_spacing),
+        get_tick_array_start_tick_index(upper_tick_index, whirlpool_account.tick_spacing),
+    ];
+
+    for start_tick in tick_arrays.iter() {
+        let (tick_array_address, _) = get_tick_array_address(&whirlpool, *start_tick)?;
+
+        let account_result = ctx.rpc.get_account(&tick_array_address).await;
+        let needs_init = match account_result {
+            Ok(account) => account.data.is_empty(),
+            Err(_) => true,
+        };
+
+        if needs_init {
+            let init_tick_array_ix = InitializeTickArray {
+                whirlpool,
+                funder: ctx.signer.pubkey(),
+                tick_array: tick_array_address,
+                system_program: system_program::id(),
+            }
+            .instruction(InitializeTickArrayInstructionArgs {
+                start_tick_index: *start_tick,
+            });
+
+            ctx.send_transaction(vec![init_tick_array_ix]).await?;
+        }
+    }
+
+    // Create position mint
+    let position_mint = Keypair::new();
+
+    // Calculate position PDA
+    let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey())?;
+
+    // Calculate position token account
+    let position_token_account = get_associated_token_address(&owner, &position_mint.pubkey());
+
+    // Create OpenPosition instruction
     let open_position_ix = OpenPosition {
         funder: ctx.signer.pubkey(),
-        owner: ctx.signer.pubkey(),
+        owner: owner,
         position: position_pubkey,
-        position_mint,
+        position_mint: position_mint.pubkey(),
         position_token_account,
         whirlpool,
         token_program: TOKEN_PROGRAM_ID,
@@ -97,19 +158,66 @@ pub async fn setup_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>>
         rent: RENT_PROGRAM_ID,
     }
     .instruction(OpenPositionInstructionArgs {
-        tick_lower_index: -128,
-        tick_upper_index: 128,
+        tick_lower_index: lower_tick_index,
+        tick_upper_index: upper_tick_index,
         position_bump,
     });
 
-    ctx.send_transaction(vec![open_position_ix]).await?;
+    ctx.send_transaction_with_signers(vec![open_position_ix], vec![&position_mint])
+        .await?;
 
-    Ok(position_pubkey)
+    Ok(position_mint.pubkey())
 }
+pub async fn setup_te_position(
+    ctx: &RpcContext,
+    whirlpool: Pubkey,
+    tick_range: Option<(i32, i32)>,
+    owner: Option<Pubkey>,
+) -> Result<Pubkey, Box<dyn Error>> {
+    let owner = owner.unwrap_or_else(|| ctx.signer.pubkey());
+    let whirlpool_data = ctx.rpc.get_account(&whirlpool).await?;
+    let whirlpool_account = Whirlpool::from_bytes(&whirlpool_data.data)?;
 
-pub async fn setup_te_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
-    let ctx = RpcContext::new().await;
+    // Get tick range
+    let (tick_lower, tick_upper) = tick_range.unwrap_or((-100, 100));
 
+    // Get initializable tick indexes
+    let lower_tick_index =
+        get_initializable_tick_index(tick_lower, whirlpool_account.tick_spacing, None);
+    let upper_tick_index =
+        get_initializable_tick_index(tick_upper, whirlpool_account.tick_spacing, None);
+
+    // Initialize tick arrays if needed (재사용)
+    let tick_arrays = [
+        get_tick_array_start_tick_index(lower_tick_index, whirlpool_account.tick_spacing),
+        get_tick_array_start_tick_index(upper_tick_index, whirlpool_account.tick_spacing),
+    ];
+
+    for start_tick in tick_arrays.iter() {
+        let (tick_array_address, _) = get_tick_array_address(&whirlpool, *start_tick)?;
+
+        let account_result = ctx.rpc.get_account(&tick_array_address).await;
+        let needs_init = match account_result {
+            Ok(account) => account.data.is_empty(),
+            Err(_) => true,
+        };
+
+        if needs_init {
+            let init_tick_array_ix = InitializeTickArray {
+                whirlpool,
+                funder: ctx.signer.pubkey(),
+                tick_array: tick_array_address,
+                system_program: system_program::id(),
+            }
+            .instruction(InitializeTickArrayInstructionArgs {
+                start_tick_index: *start_tick,
+            });
+
+            ctx.send_transaction(vec![init_tick_array_ix]).await?;
+        }
+    }
+
+    // Create Token-2022 position
     let position_mint = Keypair::new();
     let lamports = ctx
         .rpc
@@ -144,12 +252,9 @@ pub async fn setup_te_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Erro
 
     let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey())?;
 
-    let tick_lower_index: i32 = -128;
-    let tick_upper_index: i32 = 128;
-
     let open_position_ix = OpenPosition {
         funder: ctx.signer.pubkey(),
-        owner: ctx.signer.pubkey(),
+        owner: owner,
         position: position_pubkey,
         position_mint: position_mint.pubkey(),
         position_token_account,
@@ -160,11 +265,12 @@ pub async fn setup_te_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Erro
         rent: RENT_PROGRAM_ID,
     }
     .instruction(OpenPositionInstructionArgs {
-        tick_lower_index,
-        tick_upper_index,
+        tick_lower_index: lower_tick_index,
+        tick_upper_index: upper_tick_index,
         position_bump,
     });
 
+    println!("Sending transaction with instructions...");
     ctx.send_transaction_with_signers(
         vec![
             create_mint_ix,
@@ -172,7 +278,7 @@ pub async fn setup_te_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Erro
             create_ata_ix,
             open_position_ix,
         ],
-        vec![&position_mint],
+        vec![&position_mint], // position_mint는 keypair signer가 필요합니다
     )
     .await?;
 
@@ -236,4 +342,14 @@ pub async fn setup_position_bundle(
     }
 
     Ok(position_bundle_address)
+}
+
+pub async fn setup_config_and_fee_tiers(ctx: &RpcContext) -> Result<(), Box<dyn Error>> {
+    // Set funder first
+    crate::set_funder(ctx.signer.pubkey());
+
+    // Then setup config using ctx.config
+    crate::set_whirlpools_config_address(crate::WhirlpoolsConfigInput::SolanaDevnet)?;
+
+    Ok(())
 }

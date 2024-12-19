@@ -308,6 +308,8 @@ mod tests {
     use solana_program_test::tokio;
     use std::error::Error;
 
+    const DEFAULT_TICK_RANGE: (i32, i32) = (-100, 100);
+
     #[tokio::test]
     #[serial]
     #[ignore = "Skipped until solana-bankrun supports gpa"]
@@ -332,8 +334,9 @@ mod tests {
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
 
-        let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
-        let position_pubkey = setup_position(whirlpool).await?;
+        let whirlpool = setup_whirlpool(&ctx, ctx.config, mint_a, mint_b, 64).await?;
+        let position_pubkey =
+            setup_position(&ctx, whirlpool, Some(DEFAULT_TICK_RANGE), None).await?;
 
         let owner = ctx.signer.pubkey();
         let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
@@ -362,8 +365,9 @@ mod tests {
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
-        let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
-        let _position_pubkey = setup_position(whirlpool).await?;
+        let whirlpool = setup_whirlpool(&ctx, ctx.config, mint_a, mint_b, 64).await?;
+        let _position_pubkey =
+            setup_position(&ctx, whirlpool, Some(DEFAULT_TICK_RANGE), None).await?;
 
         let positions = fetch_positions_in_whirlpool(&ctx.rpc, whirlpool).await?;
         assert_eq!(

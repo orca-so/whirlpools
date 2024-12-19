@@ -18,7 +18,6 @@ use solana_sdk::program_pack::Pack;
 use solana_sdk::signer::Signer;
 use solana_sdk::{instruction::Instruction, pubkey::Pubkey, signature::Keypair};
 use spl_associated_token_account::get_associated_token_address_with_program_id;
-use spl_token::state::Account as TokenAccount;
 use spl_token_2022::state::Mint;
 
 use crate::{get_rent, SPLASH_POOL_TICK_SPACING};
@@ -26,6 +25,7 @@ use crate::{
     token::{get_current_transfer_fee, prepare_token_accounts_instructions, TokenAccountStrategy},
     FUNDER, SLIPPAGE_TOLERANCE_BPS,
 };
+
 // TODO: support transfer hooks
 
 fn get_increase_liquidity_quote(

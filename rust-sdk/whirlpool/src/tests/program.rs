@@ -278,7 +278,7 @@ pub async fn setup_te_position(
             create_ata_ix,
             open_position_ix,
         ],
-        vec![&position_mint], // position_mint는 keypair signer가 필요합니다
+        vec![&position_mint],
     )
     .await?;
 

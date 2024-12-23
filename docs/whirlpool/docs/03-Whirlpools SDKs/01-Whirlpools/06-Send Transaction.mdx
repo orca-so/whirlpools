@@ -5,52 +5,57 @@ import Tabs from '@theme/Tabs';
 import TabItem from '@theme/TabItem';
 
 # Sending and Landing Transactions
-In this guide, we'll explore how to use the Whirlpools SDK in conjunction with the Solana SDK to send and successfully land transactions on the Solana blockchain. We'll cover key features such as:
+In this guide, we'll explore how to send the instructions using the Solana SDK - both in Typescript and Rust. We'll cover the following key topics:
 
 - Client-side retry
 - Prioritization fees
 - Compute budget estimation
 
-For this example, we'll demonstrate how to open a position with liquidity on a Whirlpool. However, you can use the same approach to send transactions for other purposes as well, such as swaps, adding/removing liquidity, and more.
+We also go over some aspects related to sending transactions in web apps when working with wallet extensions and provided additional steps you can take to improve transaction landing.
 
 Make sure you check out [this doc](./02-Environment%20Setup.mdx) to set up your environment.
 
 ## Code Overview
-### Dependencies
-Let's start by importing the necessary dependencies.
+### 1. Dependencies
+Let's start by importing the necessary dependencies from Solana's SDKs.
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
     ```json title="package.json"
     "dependencies": {
-      "@orca-so/whirlpools": "^1.0.0",
       "@solana-program/compute-budget": "^0.6.1",
       "@solana/web3.js": "^2.0.0",
-      "tsx": "^4.19.2",
-      "typescript": "^5.7.2"
     },
     ```
     ```tsx title="sendTransaction.ts"
-    import { openPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, address, pipe, createTransactionMessage, setTransactionMessageFeePayer, setTransactionMessageLifetimeUsingBlockhash, appendTransactionMessageInstructions, getComputeUnitEstimateForTransactionMessageFactory, prependTransactionMessageInstructions, signTransactionMessageWithSigners, getBase64EncodedWireTransaction, setTransactionMessageFeePayerSigner } from '@solana/web3.js';
-    import { getSetComputeUnitLimitInstruction, getSetComputeUnitPriceInstruction } from '@solana-program/compute-budget';
+    import { 
+      createSolanaRpc, 
+      address, 
+      pipe, 
+      createTransactionMessage, 
+      setTransactionMessageFeePayer, 
+      setTransactionMessageLifetimeUsingBlockhash, 
+      appendTransactionMessageInstructions, 
+      prependTransactionMessageInstructions, 
+      signTransactionMessageWithSigners, 
+      getComputeUnitEstimateForTransactionMessageFactory, 
+      getBase64EncodedWireTransaction, 
+      setTransactionMessageFeePayerSigner 
+    } from '@solana/web3.js';
+    import { 
+      getSetComputeUnitLimitInstruction, 
+      getSetComputeUnitPriceInstruction 
+    } from '@solana-program/compute-budget';
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">
     ```toml title="Cargo.toml"
-    orca_whirlpools_client = "^1"
-    orca_whirlpools_core = "^1"
-    orca_whirlpools = "^1"
     serde_json = { version = "^1.0" }
     solana-client = { version = "^1.18" }
     solana-sdk = { version = "^1.18" }
     tokio = { version = "^1.41.1" }
     ```
     ```rust title="main.rs"
-    use orca_whirlpools::{
-      open_position_instructions, set_whirlpools_config_address, IncreaseLiquidityParam,
-      WhirlpoolsConfigInput,
-    };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_client::rpc_config::RpcSendTransactionConfig;
     use solana_sdk::commitment_config::CommitmentLevel;
@@ -67,133 +72,17 @@ Let's start by importing the necessary dependencies.
   </TabItem>
 </Tabs>
 
+### 2. Create Transaction Message From Instructions
+To send a transaction on Solana, you need to include a blockhash to the transaction. A blockhash acts as a timestamp and ensures the transaction has a limited lifetime. Validators use the blockhash to verify the recency of a transaction before including it in a block. A transaction referencing a blockhash is only valid for 150 blocks (~1-2 minutes, depending on slot time). After that, the blockhash expires, and the transaction will be rejected.
 
-### 1: Configure RPC Client and SDK
-To reliably land transactions, avoid using publicly available RPC nodes such as https://api.mainnet-beta.solana.com. Instead, consider using an RPC provider like Helius, Titan, or others. Many providers offer free tiers, which can be sufficient for testing purposes. You may need to adjust the retry mechanism in your code, specifically the waiting time between retries, to accommodate rate limits.
-
-<Tabs groupId="programming-languages">
-  <TabItem value="ts" label="Typescript" default>
-    ```tsx title="sendTransaction.ts"
-    const rpc = createSolanaRpc("<RPC_URL>");
-    await setWhirlpoolsConfig("solanaMainnet");
-    ```
-  </TabItem>
-  <TabItem value="rust" label="Rust">
-    ```rust title="main.rs"
-    #[tokio::main]
-    async fn main() {
-      let rpc = RpcClient::new("<RPC_URL>".to_string());
-      set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaMainnet).unwrap();
-      // Rest of the code
-    }
-    ```
-  </TabItem>
-</Tabs>
-
-
-#### What is WhirlpoolsConfig?
-The `WhirlpoolsConfig` account is the top-level configuration account that governs the pools it owns. The owner of a WhirlpoolsConfig account can define key parameters such as:
-
-- Default pool fees
-- Protocol fee collection authorities
-- Other operational parameters for the pools
-
-All Whirlpools visible on the Orca UI are derived from and controlled by a `WhirlpoolsConfig` account owned by the Orca Foundation.
-
-The `RPC_URL` should match the network where the specific WhirlpoolsConfig is deployed. For example, if you are working with a `WhirlpoolsConfig` on Solana Mainnet, ensure that the RPC endpoint points to a Solana Mainnet node.
-
-### 2: Load Wallet
-You can [generate a file system wallet using the Solana CLI](https://docs.solanalabs.com/cli/wallets/file-system), which stores a keypair as a JSON file,  and load it in your program. You can load the wallet using the following code:
-
-<Tabs groupId="programming-languages">
-  <TabItem value="ts" label="Typescript" default>
-    ```tsx title="sendTransaction.ts"
-    const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
-    const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
-    ```
-  </TabItem>
-  <TabItem value="rust" label="Rust">
-    ```rust title="main.rs"
-    #[tokio::main]
-    async fn main() {
-      // ...
-      let wallet_string = fs::read_to_string("wallet.json").unwrap();
-      let keypair_bytes: Vec<u8> = serde_json::from_str(&wallet_string).unwrap();
-      let wallet = Keypair::from_bytes(&keypair_bytes).unwrap();
-      // ...
-    }
-    ```
-  </TabItem>
-</Tabs>
-
-
-### 3: Generate Instructions
-Next, we generate the necessary instructions for opening a position in a Whirlpool. In this example, we're opening a position with liquidity in the 0.5% fee tier SOL/ORCA pool. We'll be adding 0.1 ORCA (Token B) to the position. Based on the current price of the pool and the price range of the position, the SDK will calculate the estimated amount of SOL needed to match the input amount of ORCA.
-
-The `openPositionInstructions` function generates the transaction instructions and provides additional details about the operation, including:
-
-- **Estimated Amount Token A**: This is the estimated maximum amount of SOL that you will deposit into the pool when opening the position. This value reflects the expected result based on the current state of the pool.
-- **Initialization  Cost**: The one-time non-refundable cost required to initialize the position. You can incur these costs if at least one of the boundaries of the position lies in a tick array account that has not been initialized yet (Read more [here](../../02-Architecture%20Overview/03-Understanding%20Tick%20Arrays.md)).
-- **Position Mint**: The mint address for the new liquidity position. Each position has a unique mint that represents the position as an NFT. This keypair must sign the transaction for the position to be successfully initialized. This is done automatically by the Solana web3.js SDK V2, but requires additional steps using the Solana Rust SDK (Step 4).
-
-Here's how the swap instructions and quote are generated:
-
-<Tabs groupId="programming-languages">
-  <TabItem value="ts" label="Typescript" default>
-    ```tsx title="sendTransaction.ts"
-    const whirlpoolAddress = address("5Z66YYYaTmmx1R4mATAGLSc8aV4Vfy5tNdJQzk1GP9RF"); 
-    const param = { tokenB: 100_000n };
-
-    const { quote, instructions, initializationCost, positionMint } = await openPositionInstructions(
-      rpc,
-      whirlpoolAddress,
-      param,
-      30, // ORCA/SOL
-      70,
-      100,
-      wallet
-    );
-
-    console.log(`Quote estimated token max B: ${quote.tokenEstB}`);
-    console.log(`Initialization cost: ${initializationCost}`);
-    console.log(`Position mint: ${positionMint}`);
-    console.log(`Number of instructions: ${instructions.length}`);
-    ```
-  </TabItem>
-  <TabItem value="rust" label="Rust">
-    ```rust title="main.rs"
-    #[tokio::main]
-    async fn main() {
-      // ...
-      let whirlpool_address =
-      Pubkey::from_str("Hxw77h9fEx598afiiZunwHaX3vYu9UskDk9EpPNZp1mG").unwrap();
-
-      let increase_liquidity_param = IncreaseLiquidityParam::TokenB(100_000);
-      let open_position_instructions = open_position_instructions(
-        &rpc,
-        whirlpool_address,
-        30.0,
-        70.0,
-        increase_liquidity_param,
-        Some(100),
-        Some(wallet.pubkey()),
-      )
-      .await
-      .unwrap();
-      // ...
-    }
-    ```
-  </TabItem>
-</Tabs>
-
-### 4: Create Transaction Message
-To send a transaction on Solana, you need to include a blockhash. A blockhash acts as a timestamp and ensures the transaction has a limited lifetime. Validators use the blockhash to verify the recency of a transaction before including it in a block. A transaction referencing a blockhash is only valid for 150 slots (~1-2 minutes, depending on slot time). After that, the blockhash expires, and the transaction will be rejected.
+You also need to add the signers to the transactions. With Solana web3.js v2, you can create instructions and add additional signers as `TransactionSigner` to the instructions. The Typescript Whirlpools SDK leverages this functioanlity and appends all additional signers to the instructions for you. In Rust, this feautures is not available. Therefore, the Rust Whirlpools SDK may return `instruction_result.additional_signers` if there are any, and you need to manually append them to the transaction.
 
 Here's how the transaction message is created:
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
     ```tsx title="sendTransaction.ts"
+    const { instructions } = // get instructions from Whirlpools SDK
     const latestBlockHash = await rpc.getLatestBlockhash().send();
     const transactionMessage = await pipe(
       createTransactionMessage({ version: 0}),
@@ -208,13 +97,14 @@ Here's how the transaction message is created:
     #[tokio::main]
     async fn main() {
       // ...
+      let instructions_result = // get instructions from Whirlpools SDK
       let message = Message::new(
-        &open_position_instructions.instructions,
+        &instructions_result.instructions,
         Some(&wallet.pubkey()),
       );
       let mut signers: Vec<&dyn Signer> = vec![&wallet];
       signers.extend(
-        open_position_instructions
+        instructions_result
           .additional_signers
           .iter()
           .map(|kp| kp as &dyn Signer),
@@ -227,12 +117,15 @@ Here's how the transaction message is created:
   </TabItem>
 </Tabs>
 
-### 5: Estimating Compute Unit Limit and Prioritization Fee
-When preparing a transaction, it's important to set a compute unit limit and an appropriate prioritization fee. Setting the compute units too low and the transaction will fail. Setting it too high will make the transaction less favorable for validators to process..
+### 3. Estimating Compute Unit Limit and Prioritization Fee
+Before sending a transaction, it's important to set a compute unit limit and an appropriate prioritization fee.
 
-You can get an estimation of the compute units by simulating the transaction on the RPC. To avoid transaction failures caused by underestimating this limit, an additional 100,000 compute units are added, but you can adjust this based on your own tests.
+Transactions that request fewer compute units get high priority for the same amount of prioritization fee (which is defined per compute unit). Setting the compute units too low will result in a failed transaction.
 
-The prioritization fee incentivizes validators to prioritize your transaction, especially during times of network congestion. You can get a list of recently paid prioritization fees, sorting them and selecting a value from that list. In this example, we select the median of the sorted list. The prioritization fee is provided in micro-lamports per compute unit. The estimated total priority fee is calculated as `estimated compute units * prioritization fee`. However, the actual fee charged will depend on the compute units your transaction ultimately consumes.
+You can get an estimate of the compute units by simulating the transaction on the RPC. To avoid transaction failures caused by underestimating this limit, you can add an additional 100,000 compute units, but you can adjust this based on your own tests.
+
+The prioritization fee per compute unit also incentivizes validators to prioritize your transaction, especially during times of network congestion. You can get a list of recently paid prioritization fees, sort them and select a value from that list. In this example, we select the 50th percentile, but you can adjust this if needed. The prioritization fee is provided in micro-lamports per compute unit. The total priority fee in lamports you will pay is calculated as $(\text{estimated compute units} \cdot \text{prioritization fee}) / 10^6$.
+
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
@@ -290,8 +183,10 @@ The prioritization fee incentivizes validators to prioritize your transaction, e
   </TabItem>
 </Tabs>
 
-### 6: Sign and Submit Transaction
-Finally, the transaction is signed, encoded, and submitted to the network. A client-side retry mechanism ensures that the transaction is repeatedly sent until it is confirmed or the blockhash expires. The same signed transaction is sent in a loop with retries at fixed intervals (100ms), while polling the status using getSignatureStatuses.
+### 4. Sign and Submit Transaction
+Finally, the transaction needs to be signed, encoded, and submitted to the network. A client-side time-base retry mechanism ensures that the transaction is repeatedly sent until it is confirmed or the time runs out. We use a time-based loop, because we know that the lifetime of a transaction is 150 blocks, which on average takes about 79-80 seconds. The signing of the transactions is an idempotent operation and produces a transaction hash, which acts as the transaction ID. Since transactions can be added only once to the block chain, we can keep sending the transaction during the lifetime of the trnsaction.
+
+You're probably wondering why we don't just use the widely used `sendAndConfirm` method. This is because the retry mechanism of the `sendAndConfirm` method is executed on the RPC. By default, RPC nodes will try to forward (rebroadcast) transactions to leaders every two seconds until either the transaction is finalized, or the transaction's blockhash expires. If the outstanding rebroadcast queue size is greater than 10,000 transaction, newly submitted transactions are dropped. This means that at times of congestion, your transaction might not even arrive at the RPC in the first place. Moreover, the `confirmTransaction` RPC method that `sendAndConfirm` calls is deprecated.
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
@@ -299,14 +194,18 @@ Finally, the transaction is signed, encoded, and submitted to the network. A cli
     const signedTransaction = await signTransactionMessageWithSigners(transactionMessageWithComputeUnitInstructions)
     const base64EncodedWireTransaction = getBase64EncodedWireTransaction(signedTransaction);
 
-    let blockHashLifetime = 150n;
-    let currentBlockHeight = latestBlockHash.value.lastValidBlockHeight - blockHashLifetime;
-    while (latestBlockHash.value.lastValidBlockHeight >= currentBlockHeight) {
+    const timeoutMs = 90000;
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < timeoutMs) {
+      const transactionStartTime = Date.now();
+
       const signature = await rpc.sendTransaction(base64EncodedWireTransaction, {
         maxRetries: 0n,
         skipPreflight: true,
         encoding: 'base64'
       }).send();
+
       const statuses = await rpc.getSignatureStatuses([signature]).send();
       if (statuses.value[0]) {
         if (!statuses.value[0].err) {
@@ -317,8 +216,12 @@ Finally, the transaction is signed, encoded, and submitted to the network. A cli
           break;
         }
       }
-      currentBlockHeight = await rpc.getBlockHeight().send();
-      await new Promise(resolve => setTimeout(resolve, 100));
+
+      const elapsedTime = Date.now() - transactionStartTime;
+      const remainingTime = Math.max(0, 1000 - elapsedTime);
+      if (remainingTime > 0) {
+        await new Promise(resolve => setTimeout(resolve, remainingTime));
+      }
     }
     ```
   </TabItem>
@@ -330,20 +233,22 @@ Finally, the transaction is signed, encoded, and submitted to the network. A cli
       all_instructions.extend(open_position_instructions.instructions);
       let message = Message::new(&all_instructions, Some(&wallet.pubkey()));
 
-      let transaction = Transaction::new(&signers, message, recent_blockhash);
+      let transaction = Transaction::new(& , message, recent_blockhash);
       let transaction_config = RpcSendTransactionConfig {
         skip_preflight: true,
         preflight_commitment: Some(CommitmentLevel::Confirmed),
         max_retries: Some(0),
         ..Default::default()
       };
+
       let start_time = Instant::now();
       let timeout = Duration::from_secs(90);
-
       let send_transaction_result = loop {
         if start_time.elapsed() >= timeout {
           break Err(Box::<dyn std::error::Error>::from("Transaction timed out"));
         }
+        let transaction_start_time = Instant::now();
+        
         let signature: Signature = rpc
           .send_transaction_with_config(&transaction, transaction_config)
           .await
@@ -353,11 +258,18 @@ Finally, the transaction is signed, encoded, and submitted to the network. A cli
           .await
           .unwrap()
           .value;
+        
         if let Some(status) = statuses[0].clone() {
           break Ok((status, signature));
         }
-        sleep(Duration::from_millis(100)).await;
+
+        let elapsed_time = transaction_start_time.elapsed();
+        let remaining_time = Duration::from_millis(1000).saturating_sub(elapsed_time);
+        if remaining_time > Duration::ZERO {
+          sleep(remaining_time).await;
+        }
       };
+
       let signature = send_transaction_result.and_then(|(status, signature)| {
         if let Some(err) = status.err {
           Err(Box::new(err))
@@ -370,3 +282,18 @@ Finally, the transaction is signed, encoded, and submitted to the network. A cli
     ```
   </TabItem>
 </Tabs>
+
+## Handling transactions with Wallets in web apps.
+#### Creating Noop Signers
+When sending transactions from your web application, users need to sign the transaction using their wallet. Since the transaction needs to assembled beforehand, you can create a `noopSigner` (no-operation signer). This will act as a placeholder for you instructions, indicating that a given account is a signer and the signature wil be added later. After the user of your web app signs the transaction with their wallet, you need to manually add that signature to the transaction.
+
+#### Prioritization Fees
+Browser wallets, like Phantom, will calculate and apply priority fees for your transactions, provided:
+- The transaction does not already have signatures present.
+- The transaction does not have existing compute-budget instructions.
+- The transactions will still be less than the maximum transaction size fo 1232 bytes, after applying compute-budget instructions.
+
+## Additional Improvements for Landing Transactions
+- You could send your transaction to multiple RPC nodes at the same time, all within each iteration of the time-based loop.
+- At the time of writing, 85% of Solana validators are Jito validators. Jito validators happily accept an additional tip, in the form a SOL transfer, to prioritize a transaction. A good place to get familiarized with Jito is here: https://www.jito.network/blog/jito-solana-is-now-open-source/
+- Solana gives staked validators more reliable performance when sending transactions by routing them through prioritized connections. This mechanism is referred to as stake-weighted Quality of Service (swQoS). Validators can extend this service to RPC nodes, essentially giving staked connections to RPC nodes as if they were validators with that much stake in the network. RPC providers, like Helius and Titan, expose such peered RPC nodes to paid users, allowing users to send transactions to RPC nodes which use the validator's staked connections. From the RPC, the transaction is then sent over the staked connection with a lower likelihood of being delayed or dropped.

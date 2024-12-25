@@ -137,7 +137,10 @@ The prioritization fee per compute unit also incentivizes validators to prioriti
     const computeUnitEstimate = await getComputeUnitEstimateForTransactionMessage(transactionMessage) + 100_000;
     const medianPrioritizationFee = await rpc.getRecentPrioritizationFees()
       .send()
-      .then(fees => fees[Math.floor(fees.length / 2)].prioritizationFee)
+      .then(fees =>
+        fees.sort((a, b) => a.prioritizationFee - b.prioritizationFee)
+        [Math.floor(fees.length / 2)].prioritizationFee
+      )
     const transactionMessageWithComputeUnitInstructions = await prependTransactionMessageInstructions([
       getSetComputeUnitLimitInstruction({ units: computeUnitEstimate }),
       getSetComputeUnitPriceInstruction({ microLamports: medianPrioritizationFee })

@@ -408,9 +408,9 @@ mod tests {
             setup_ata_with_amount(&ctx, mint_b, 500_000_000_000).await?;
 
             // Setup all pools
-            let concentrated_pool = setup_whirlpool(&ctx, ctx.config, mint_a, mint_b, 64).await?;
+            let concentrated_pool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
             let splash_pool =
-                setup_whirlpool(&ctx, ctx.config, mint_a, mint_b, SPLASH_POOL_TICK_SPACING).await?;
+                setup_whirlpool(&ctx, mint_a, mint_b, SPLASH_POOL_TICK_SPACING).await?;
 
             Ok(Self {
                 ctx,

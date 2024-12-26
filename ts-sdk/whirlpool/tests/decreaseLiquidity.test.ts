@@ -1,16 +1,8 @@
 import { describe, it, beforeAll } from "vitest";
 import { decreaseLiquidityInstructions } from "../src/decreaseLiquidity";
-import {
-  rpc,
-  signer,
-  sendTransaction,
-  deleteAccount,
-} from "./utils/mockRpc";
+import { rpc, signer, sendTransaction, deleteAccount } from "./utils/mockRpc";
 import { setupMint, setupAta } from "./utils/token";
-import {
-  fetchPosition,
-  getPositionAddress,
-} from "@orca-so/whirlpools-client";
+import { fetchPosition, getPositionAddress } from "@orca-so/whirlpools-client";
 import { increaseLiquidityInstructions } from "../src/increaseLiquidity";
 import { fetchToken } from "@solana-program/token-2022";
 import type { Address } from "@solana/web3.js";
@@ -20,11 +12,7 @@ import {
   setupTEPosition,
   setupWhirlpool,
 } from "./utils/program";
-import {
-  DEFAULT_FUNDER,
-  FUNDER,
-  setDefaultFunder,
-} from "../src/config";
+import { DEFAULT_FUNDER, FUNDER, setDefaultFunder } from "../src/config";
 import {
   setupAtaTE,
   setupMintTE,
@@ -45,7 +33,10 @@ const mintTypes = new Map<string, () => Promise<Address>>([
 /**
  * Maps the "type" labels for token accounts to the function that creates them (ATA vs ATA with token-2022).
  */
-const ataTypes = new Map<string, (mint: Address, cfg: { amount?: bigint | number }) => Promise<Address>>([
+const ataTypes = new Map<
+  string,
+  (mint: Address, cfg: { amount?: bigint | number }) => Promise<Address>
+>([
   ["A", setupAta],
   ["B", setupAta],
   ["TEA", setupAtaTE],
@@ -56,7 +47,10 @@ const ataTypes = new Map<string, (mint: Address, cfg: { amount?: bigint | number
 /**
  * Maps labels like "A-B" to the function that creates a concentrated-liquidity pool.
  */
-const poolTypes = new Map<string, (mintA: Address, mintB: Address, tickSpacing: number) => Promise<Address>>([
+const poolTypes = new Map<
+  string,
+  (mintA: Address, mintB: Address, tickSpacing: number) => Promise<Address>
+>([
   ["A-B", setupWhirlpool],
   ["A-TEA", setupWhirlpool],
   ["TEA-TEB", setupWhirlpool],
@@ -66,11 +60,13 @@ const poolTypes = new Map<string, (mintA: Address, mintB: Address, tickSpacing: 
 /**
  * A few typical position layouts (tick ranges).
  */
-const positionTypes = new Map<string, { tickLower: number; tickUpper: number }>([
-  ["equally centered", { tickLower: -100, tickUpper: 100 }],
-  ["one sided A", { tickLower: -100, tickUpper: -1 }],
-  ["one sided B", { tickLower: 1, tickUpper: 100 }],
-]);
+const positionTypes = new Map<string, { tickLower: number; tickUpper: number }>(
+  [
+    ["equally centered", { tickLower: -100, tickUpper: 100 }],
+    ["one sided A", { tickLower: -100, tickUpper: -1 }],
+    ["one sided B", { tickLower: 1, tickUpper: 100 }],
+  ],
+);
 
 describe("Decrease Liquidity Instructions", () => {
   const tickSpacing = 64;
@@ -143,8 +139,8 @@ describe("Decrease Liquidity Instructions", () => {
         rpc,
         posAddr,
         { liquidity: 20_000n }, // param
-        100,                   // slippage
-        signer                 // authority
+        100, // slippage
+        signer, // authority
       );
 
       await sendTransaction(instructions);
@@ -182,8 +178,8 @@ describe("Decrease Liquidity Instructions", () => {
       rpc,
       positionMint,
       param,
-      100,     // slippageToleranceBps
-      signer,  // authority
+      100, // slippageToleranceBps
+      signer, // authority
     );
 
     // Send them
@@ -193,19 +189,33 @@ describe("Decrease Liquidity Instructions", () => {
     const tokenAfterA = await fetchToken(rpc, ataA);
     const tokenAfterB = await fetchToken(rpc, ataB);
 
-    const balanceChangeTokenA = tokenAfterA.data.amount - tokenBeforeA.data.amount;
-    const balanceChangeTokenB = tokenAfterB.data.amount - tokenBeforeB.data.amount;
+    const balanceChangeTokenA =
+      tokenAfterA.data.amount - tokenBeforeA.data.amount;
+    const balanceChangeTokenB =
+      tokenAfterB.data.amount - tokenBeforeB.data.amount;
 
     // Check that the actual token changes match the quote
-    assert.strictEqual(quote.tokenEstA, balanceChangeTokenA, "token A mismatch");
-    assert.strictEqual(quote.tokenEstB, balanceChangeTokenB, "token B mismatch");
+    assert.strictEqual(
+      quote.tokenEstA,
+      balanceChangeTokenA,
+      "token A mismatch",
+    );
+    assert.strictEqual(
+      quote.tokenEstB,
+      balanceChangeTokenB,
+      "token B mismatch",
+    );
 
     // Check that position liquidity is decreased accordingly
     const [positionAddrPda] = await getPositionAddress(positionMint);
     const position = await fetchPosition(rpc, positionAddrPda);
     const liquidityDiff = 20_000n - position.data.liquidity; // we seeded 20k earlier
 
-    assert.strictEqual(quote.liquidityDelta, liquidityDiff, "liquidityDelta mismatch");
+    assert.strictEqual(
+      quote.liquidityDelta,
+      liquidityDiff,
+      "liquidityDelta mismatch",
+    );
   };
 
   for (const poolName of poolTypes.keys()) {
@@ -216,14 +226,17 @@ describe("Decrease Liquidity Instructions", () => {
       const positionNameTE = `TE ${poolName} ${positionTypeName}`;
 
       it(`Decrease liquidity by 'liquidity' for ${positionName}`, async () => {
-        await testDecreaseLiquidity(positionName, poolName, { liquidity: 100n });
+        await testDecreaseLiquidity(positionName, poolName, {
+          liquidity: 100n,
+        });
       });
 
       // same set for TE position
       it(`Decrease liquidity by 'liquidity' for ${positionNameTE}`, async () => {
-        await testDecreaseLiquidity(positionNameTE, poolName, { liquidity: 100n });
+        await testDecreaseLiquidity(positionNameTE, poolName, {
+          liquidity: 100n,
+        });
       });
-
     }
   }
 
@@ -253,12 +266,12 @@ describe("Decrease Liquidity Instructions", () => {
           positionMint,
           { liquidity: 100_000n },
           100,
-          signer
+          signer,
         );
         // 2) attempt to send them (should fail on-chain)
         await sendTransaction(instructions);
       })(),
-      /custom program error: 0x177f/
+      /custom program error: 0x177f/,
     );
   });
 });

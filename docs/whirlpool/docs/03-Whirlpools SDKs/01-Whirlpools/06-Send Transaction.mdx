@@ -75,6 +75,8 @@ Let's start by importing the necessary dependencies from Solana's SDKs.
 ### 2. Create Transaction Message From Instructions
 To send a transaction on Solana, you need to include a blockhash to the transaction. A blockhash acts as a timestamp and ensures the transaction has a limited lifetime. Validators use the blockhash to verify the recency of a transaction before including it in a block. A transaction referencing a blockhash is only valid for 150 blocks (~1-2 minutes, depending on slot time). After that, the blockhash expires, and the transaction will be rejected.
 
+> **Durable Nonces**: In some cases, you might need a transaction to remain valid for longer than the typical blockhash lifespan, such as when scheduling future payments or collecting multi-signature approvals over time. In that case, you can use [durable nonces](https://solana.com/developers/courses/offline-transactions/durable-nonces) to sign the transaction, which includes a nonce in place of a recent blockhash.
+
 You also need to add the signers to the transactions. With Solana web3.js v2, you can create instructions and add additional signers as `TransactionSigner` to the instructions. The Typescript Whirlpools SDK leverages this functioanlity and appends all additional signers to the instructions for you. In Rust, this feautures is not available. Therefore, the Rust Whirlpools SDK may return `instruction_result.additional_signers` if there are any, and you need to manually append them to the transaction.
 
 Here's how the transaction message is created:
@@ -124,7 +126,7 @@ Transactions that request fewer compute units get high priority for the same amo
 
 You can get an estimate of the compute units by simulating the transaction on the RPC. To avoid transaction failures caused by underestimating this limit, you can add an additional 100,000 compute units, but you can adjust this based on your own tests.
 
-The prioritization fee per compute unit also incentivizes validators to prioritize your transaction, especially during times of network congestion. You can get a list of recently paid prioritization fees, sort them and select a value from that list. In this example, we select the 50th percentile, but you can adjust this if needed. The prioritization fee is provided in micro-lamports per compute unit. The total priority fee in lamports you will pay is calculated as $(\text{estimated compute units} \cdot \text{prioritization fee}) / 10^6$.
+The prioritization fee per compute unit also incentivizes validators to prioritize your transaction, especially during times of network congestion. You can call the `getRecentPrioritizationFees` RPC method to retrieve an array of 150 values, where each value represents the lowest priority fee paid for transactions that landed in each of the past 150 blocks. In this example, we sort that list and select the 50th percentile, but you can adjust this if needed. The prioritization fee is provided in micro-lamports per compute unit. The total priority fee in lamports you will pay is calculated as $(\text{estimated compute units} \cdot \text{prioritization fee}) / 10^6$.
 
 
 <Tabs groupId="programming-languages">
@@ -236,7 +238,7 @@ You're probably wondering why we don't just use the widely used `sendAndConfirm`
       all_instructions.extend(open_position_instructions.instructions);
       let message = Message::new(&all_instructions, Some(&wallet.pubkey()));
 
-      let transaction = Transaction::new(& , message, recent_blockhash);
+      let transaction = Transaction::new(&signers ,message , recent_blockhash);
       let transaction_config = RpcSendTransactionConfig {
         skip_preflight: true,
         preflight_commitment: Some(CommitmentLevel::Confirmed),
@@ -288,10 +290,10 @@ You're probably wondering why we don't just use the widely used `sendAndConfirm`
 
 ## Handling transactions with Wallets in web apps.
 #### Creating Noop Signers
-When sending transactions from your web application, users need to sign the transaction using their wallet. Since the transaction needs to assembled beforehand, you can create a `noopSigner` (no-operation signer). This will act as a placeholder for you instructions, indicating that a given account is a signer and the signature wil be added later. After the user of your web app signs the transaction with their wallet, you need to manually add that signature to the transaction.
+When sending transactions from your web application, users need to sign the transaction using their wallet. Since the transaction needs to assembled beforehand, you can create a `noopSigner` (no-operation signer) and add it to the instructions. This will act as a placeholder for you instructions, indicating that a given account is a signer and the signature wil be added later. After assembling the transaction you can pass it to the wallet extension. If the user signs, it will return a serialized transaction with the added signature.
 
 #### Prioritization Fees
-Browser wallets, like Phantom, will calculate and apply priority fees for your transactions, provided:
+Some wallets will calculate and apply priority fees for your transactions, provided:
 - The transaction does not already have signatures present.
 - The transaction does not have existing compute-budget instructions.
 - The transactions will still be less than the maximum transaction size fo 1232 bytes, after applying compute-budget instructions.

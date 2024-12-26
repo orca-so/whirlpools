@@ -1,6 +1,6 @@
 import { describe, it, beforeAll } from "vitest";
 import { decreaseLiquidityInstructions } from "../src/decreaseLiquidity";
-import { rpc, signer, sendTransaction, deleteAccount } from "./utils/mockRpc";
+import { rpc, signer, sendTransaction } from "./utils/mockRpc";
 import { setupMint, setupAta } from "./utils/token";
 import { fetchPosition, getPositionAddress } from "@orca-so/whirlpools-client";
 import { increaseLiquidityInstructions } from "../src/increaseLiquidity";
@@ -12,7 +12,7 @@ import {
   setupTEPosition,
   setupWhirlpool,
 } from "./utils/program";
-import { DEFAULT_FUNDER, FUNDER, setDefaultFunder } from "../src/config";
+import { DEFAULT_FUNDER, setDefaultFunder } from "../src/config";
 import {
   setupAtaTE,
   setupMintTE,
@@ -133,7 +133,7 @@ describe("Decrease Liquidity Instructions", () => {
      * 5. We add some initial liquidity (so that we have something to decrease!)
      *    For each position minted above, let's add 20,000 liquidity.
      */
-    for (const [posKey, posAddr] of positions.entries()) {
+    for (const [, posAddr] of positions.entries()) {
       // We'll just add 20k liquidity. This is enough to test partial decreases, etc.
       const { instructions } = await increaseLiquidityInstructions(
         rpc,

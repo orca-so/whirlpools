@@ -103,10 +103,6 @@ export function decreaseLiquidityQuoteByLiquidityWithParams(
     TickUtil.checkTickInBounds(params.tickUpperIndex),
     "tickUpperIndex is out of bounds.",
   );
-  invariant(
-    TickUtil.checkTickInBounds(params.tickCurrentIndex),
-    "tickCurrentIndex is out of bounds.",
-  );
 
   if (params.liquidity.eq(ZERO)) {
     return {

@@ -1691,6 +1691,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@codama/renderers-core@npm:1.0.2":
+  version: 1.0.2
+  resolution: "@codama/renderers-core@npm:1.0.2"
+  dependencies:
+    "@codama/errors": "npm:1.2.0"
+    "@codama/nodes": "npm:1.2.0"
+    "@codama/visitors-core": "npm:1.2.0"
+  checksum: 10c0/e98c816faabbeee4126c1f5a7e2740aea45eccfd0ef9b6c2366496d8047ef00c67ded58cd7738928d920acf6bea220bb7b0343c5fbf913dd7feae5767643eee8
+  languageName: node
+  linkType: hard
+
 "@codama/renderers-js@npm:^1.0.1":
   version: 1.1.0
   resolution: "@codama/renderers-js@npm:1.1.0"
@@ -1707,17 +1718,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/renderers-rust@npm:^1.0.3":
-  version: 1.0.4
-  resolution: "@codama/renderers-rust@npm:1.0.4"
+"@codama/renderers-rust@npm:^1.0.5":
+  version: 1.0.5
+  resolution: "@codama/renderers-rust@npm:1.0.5"
   dependencies:
-    "@codama/errors": "npm:1.1.0"
-    "@codama/nodes": "npm:1.1.0"
-    "@codama/renderers-core": "npm:1.0.1"
-    "@codama/visitors-core": "npm:1.1.0"
+    "@codama/errors": "npm:1.2.0"
+    "@codama/nodes": "npm:1.2.0"
+    "@codama/renderers-core": "npm:1.0.2"
+    "@codama/visitors-core": "npm:1.2.0"
     "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
-  checksum: 10c0/55df1d7c1a48d0b4f4ecdc93c7bf6caa15d8ba63c9605d8243a95a2d2e3f065523b893397551148733f780ff2fcacdb3832f22c92624e563ff0892912cc4feb7
+  checksum: 10c0/d9715eb4f34c682a6fb92e7b58ead923f3e4d3dd744bf30e53a8471c9329e07694e3180a4c24aa7cc7b639e536b83aecf747319ea390a244cbefce67aa3897da
   languageName: node
   linkType: hard
 
@@ -4309,7 +4320,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
     "@codama/nodes-from-anchor": "npm:^1.0.0"
-    "@codama/renderers-rust": "npm:^1.0.3"
+    "@codama/renderers-rust": "npm:^1.0.5"
     "@orca-so/whirlpools-program": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
     codama: "npm:^1.2.0"

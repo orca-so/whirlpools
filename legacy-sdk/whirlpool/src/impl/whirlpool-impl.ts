@@ -599,7 +599,8 @@ export class WhirlpoolImpl implements Whirlpool {
     const shouldDecreaseLiquidity = positionData.liquidity.gtn(0);
 
     const rewardsToCollect = this.data.rewardInfos
-      .filter((info, index) => {
+      .map((info, index) => ({ info, index }))
+      .filter(({ info, index }) => {
         if (!PoolUtil.isRewardInitialized(info)) {
           return false;
         }
@@ -609,8 +610,7 @@ export class WhirlpoolImpl implements Whirlpool {
             0,
           )
         );
-      })
-      .map((info, index) => ({ info, index }));
+      });
 
     const shouldCollectRewards = rewardsToCollect.length > 0;
 
@@ -772,7 +772,7 @@ export class WhirlpoolImpl implements Whirlpool {
             positionTokenAccount,
             rewardIndex,
             rewardOwnerAccount,
-            rewardVault: whirlpool.rewardInfos[rewardIndex].vault,
+            rewardVault: info.vault,
           };
 
           const ix = !TokenExtensionUtil.isV2IxRequiredReward(

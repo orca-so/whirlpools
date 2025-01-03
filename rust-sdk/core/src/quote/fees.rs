@@ -63,11 +63,9 @@ pub fn collect_fees_quote(
         .wrapping_sub(fee_growth_below_b)
         .wrapping_sub(fee_growth_above_b);
 
-    let fee_growth_delta_a = fee_growth_inside_a
-        .wrapping_sub(position.fee_growth_checkpoint_a);
+    let fee_growth_delta_a = fee_growth_inside_a.wrapping_sub(position.fee_growth_checkpoint_a);
 
-    let fee_growth_delta_b = fee_growth_inside_b
-        .wrapping_sub(position.fee_growth_checkpoint_b);
+    let fee_growth_delta_b = fee_growth_inside_b.wrapping_sub(position.fee_growth_checkpoint_b);
 
     let fee_owed_delta_a: U256 = <U256>::from(fee_growth_delta_a)
         .checked_mul(position.liquidity.into())
@@ -254,8 +252,8 @@ mod tests {
             ..TickFacade::default()
         };
 
-        let result = collect_fees_quote(whirlpool, position, tick_lower, tick_upper, None, None)
-            .unwrap();
+        let result =
+            collect_fees_quote(whirlpool, position, tick_lower, tick_upper, None, None).unwrap();
         assert_eq!(result.fee_owed_a, 58500334);
         assert_eq!(result.fee_owed_b, 334966494);
     }

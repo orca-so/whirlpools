@@ -65,8 +65,8 @@ pub fn collect_rewards_quote(
             .wrapping_sub(reward_growth_below)
             .wrapping_sub(reward_growth_above);
 
-        let reward_growth_delta = reward_growth_inside
-            .wrapping_sub(position.reward_infos[i].growth_inside_checkpoint);
+        let reward_growth_delta =
+            reward_growth_inside.wrapping_sub(position.reward_infos[i].growth_inside_checkpoint);
 
         let reward_owed_delta: u64 = <U256>::from(reward_growth_delta)
             .checked_mul(position.liquidity.into())
@@ -299,14 +299,7 @@ mod tests {
         };
 
         let result = collect_rewards_quote(
-            whirlpool,
-            position,
-            tick_lower,
-            tick_upper,
-            10,
-            None,
-            None,
-            None,
+            whirlpool, position, tick_lower, tick_upper, 10, None, None, None,
         )
         .unwrap();
         assert_eq!(result.rewards[0].rewards_owed, 5115848802120);

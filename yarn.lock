@@ -4142,6 +4142,22 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@orca-so/common-sdk@npm:*, @orca-so/common-sdk@workspace:legacy-sdk/common":
+  version: 0.0.0-use.local
+  resolution: "@orca-so/common-sdk@workspace:legacy-sdk/common"
+  dependencies:
+    "@solana/spl-token": "npm:^0.4.1"
+    "@solana/web3.js": "npm:^1.90.0"
+    decimal.js: "npm:^10.4.3"
+    tiny-invariant: "npm:^1.3.1"
+    typescript: "npm:^5.6.3"
+  peerDependencies:
+    "@solana/spl-token": ^0.4.1
+    "@solana/web3.js": ^1.90.0
+    decimal.js: ^10.4.3
+  languageName: unknown
+  linkType: soft
+
 "@orca-so/common-sdk@npm:0.6.4":
   version: 0.6.4
   resolution: "@orca-so/common-sdk@npm:0.6.4"
@@ -4152,18 +4168,6 @@ __metadata:
     "@solana/web3.js": ^1.90.0
     decimal.js: ^10.4.3
   checksum: 10c0/c0a3ce78616537b96a25bb70415e5e60642a9cc1f08e73fb5b0ca571e38db2fd05ed1740024dc65d0c68ce58193072d120f3cdbe2578ad2aa6662ab8386d1a8d
-  languageName: node
-  linkType: hard
-
-"@orca-so/orca-sdk@npm:0.2.0":
-  version: 0.2.0
-  resolution: "@orca-so/orca-sdk@npm:0.2.0"
-  peerDependencies:
-    "@orca-so/common-sdk": ^0.4.0
-    "@solana/web3.js": ^1.74.0
-    axios: ^1.6.5
-    decimal.js: ^10.3.1
-  checksum: 10c0/654d955c7a3295a768c294e5db571585d8951f8ce2aad151e092867e032a8f663ec7bb3b83ec9ca8581c323e08be4fed566dc1a38e311858bea61fa1c567b5ad
   languageName: node
   linkType: hard
 
@@ -4367,8 +4371,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-sdk-cli@workspace:legacy-sdk/cli"
   dependencies:
     "@coral-xyz/anchor": "npm:0.29.0"
-    "@orca-so/common-sdk": "npm:0.6.4"
-    "@orca-so/orca-sdk": "npm:0.2.0"
+    "@orca-so/common-sdk": "npm:*"
     "@orca-so/whirlpools-sdk": "npm:*"
     "@solana/spl-token": "npm:0.4.1"
     "@solana/web3.js": "npm:^1.90.0"
@@ -4380,6 +4383,15 @@ __metadata:
     prompts: "npm:^2.4.2"
     tsx: "npm:^4.19.0"
     typescript: "npm:^5.7.2"
+  languageName: unknown
+  linkType: soft
+
+"@orca-so/whirlpools-sdk-integration@workspace:legacy-sdk/integration":
+  version: 0.0.0-use.local
+  resolution: "@orca-so/whirlpools-sdk-integration@workspace:legacy-sdk/integration"
+  dependencies:
+    "@orca-so/common-sdk": "npm:*"
+    "@orca-so/whirlpools-sdk": "npm:*"
   languageName: unknown
   linkType: soft
 
@@ -5321,7 +5333,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/spl-token@npm:^0.4.8":
+"@solana/spl-token@npm:^0.4.1, @solana/spl-token@npm:^0.4.8":
   version: 0.4.9
   resolution: "@solana/spl-token@npm:0.4.9"
   dependencies:
@@ -17511,7 +17523,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@npm:^5.7.2":
+"typescript@npm:^5.6.3, typescript@npm:^5.7.2":
   version: 5.7.2
   resolution: "typescript@npm:5.7.2"
   bin:
@@ -17521,7 +17533,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typescript@patch:typescript@npm%3A^5.7.2#optional!builtin<compat/typescript>":
+"typescript@patch:typescript@npm%3A^5.6.3#optional!builtin<compat/typescript>, typescript@patch:typescript@npm%3A^5.7.2#optional!builtin<compat/typescript>":
   version: 5.7.2
   resolution: "typescript@patch:typescript@npm%3A5.7.2#optional!builtin<compat/typescript>::version=5.7.2&hash=cef18b"
   bin:

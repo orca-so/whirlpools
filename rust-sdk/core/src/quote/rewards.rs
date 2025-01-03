@@ -247,7 +247,7 @@ mod tests {
     }
 
     #[test]
-    fn test_cyclic_checkpoint_growth() {
+    fn test_cyclic_growth_checkpoint() {
         let position = PositionFacade {
             liquidity: 91354442895,
             tick_lower_index: 15168,

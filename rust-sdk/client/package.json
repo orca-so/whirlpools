@@ -10,7 +10,7 @@
     "clean": "cargo clean"
   },
   "devDependencies": {
-    "@codama/nodes-from-anchor": "^1.0.0",
+    "@codama/nodes-from-anchor": "^1.1.0",
     "@codama/renderers-rust": "^1.0.5",
     "@orca-so/whirlpools-program": "*",
     "@orca-so/whirlpools-rust-core": "*",

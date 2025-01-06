@@ -21,7 +21,6 @@
     "prepublishOnly": "rimraf dist/nodejs/.gitignore dist/browser/.gitignore"
   },
   "devDependencies": {
-    "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-rust-core": "*",
     "typescript": "^5.7.2",
     "wasm-pack": "^0.13.1"

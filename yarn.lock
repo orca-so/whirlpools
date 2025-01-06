@@ -3993,6 +3993,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-core@workspace:ts-sdk/core"
   dependencies:
+    "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
     typescript: "npm:^5.7.2"
     wasm-pack: "npm:^0.13.1"

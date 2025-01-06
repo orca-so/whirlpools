@@ -9,8 +9,8 @@ const node = rootNodeFromAnchor({
   ...idl,
   metadata: {
     address: "whirLbMiicVdio4qvUfM5KAg6Ct8VwpYzGff3uctyCc",
-    origin: "anchor"
-  }
+    origin: "anchor",
+  },
 });
 const visitor = renderVisitor("./src/generated");
 const codama = createFromRoot(node);

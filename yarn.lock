@@ -4232,7 +4232,7 @@ __metadata:
     "@solana-program/memo": "npm:^0.6.1"
     "@solana-program/system": "npm:^0.6.2"
     "@solana-program/token": "npm:^0.4.1"
-    "@solana-program/token-2022": "npm:^0.3.1"
+    "@solana-program/token-2022": "npm:^0.3.4"
     "@solana/web3.js": "npm:^2.0.0"
     solana-bankrun: "npm:^0.4.0"
     typescript: "npm:^5.7.2"
@@ -4522,12 +4522,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/token-2022@npm:^0.3.1":
-  version: 0.3.1
-  resolution: "@solana-program/token-2022@npm:0.3.1"
+"@solana-program/token-2022@npm:^0.3.4":
+  version: 0.3.4
+  resolution: "@solana-program/token-2022@npm:0.3.4"
   peerDependencies:
     "@solana/web3.js": ^2.0.0
-  checksum: 10c0/a0cc4cea9bdf3ac1191b7b4204fa8f610bb9556699ad245a8c5c100a7c80c03734794dda0b6db48a1af95d06851e050cd9aae4a26942979d040e5356ef2f370b
+  checksum: 10c0/2f8060e0e6a8b7baaf3f797ca73b1cfd5661b242b30058b82c5e193ca9884b2aa18622144be9b21c75f9976487b32c440cb0bab5653a0e2111e2699dc1a9b76d
   languageName: node
   linkType: hard
 

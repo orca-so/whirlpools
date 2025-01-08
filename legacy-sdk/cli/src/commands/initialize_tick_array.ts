@@ -12,7 +12,7 @@ import { TransactionBuilder } from "@orca-so/common-sdk";
 import type Decimal from "decimal.js";
 import { sendTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
-import { promptText } from "../utils/prompt";
+import { promptConfirm, promptText } from "../utils/prompt";
 
 console.info("initialize TickArray...");
 
@@ -125,47 +125,54 @@ tickArrayInfos.push({
   isFullRange: true,
 });
 
-const checkInitialized = await ctx.fetcher.getTickArrays(
-  tickArrayInfos.map((info) => info.pda.publicKey),
-  IGNORE_CACHE,
-);
-checkInitialized.forEach((ta, i) => (tickArrayInfos[i].isInitialized = !!ta));
+while (true) {
+  const checkInitialized = await ctx.fetcher.getTickArrays(
+    tickArrayInfos.map((info) => info.pda.publicKey),
+    IGNORE_CACHE,
+  );
+  checkInitialized.forEach((ta, i) => (tickArrayInfos[i].isInitialized = !!ta));
 
-console.info("neighring tickarrays & fullrange tickarrays...");
-tickArrayInfos.forEach((ta) =>
-  console.info(
-    ta.isCurrent ? ">>" : "  ",
-    ta.pda.publicKey.toBase58().padEnd(45, " "),
-    ta.isInitialized ? "    initialized" : "NOT INITIALIZED",
-    "start",
-    ta.startTickIndex.toString().padStart(10, " "),
-    "covered range",
-    ta.startPrice.toSignificantDigits(6),
-    "-",
-    ta.endPrice.toSignificantDigits(6),
-    ta.isFullRange ? "(FULL)" : "",
-  ),
-);
+  console.info("neighring tickarrays & fullrange tickarrays...");
+  tickArrayInfos.forEach((ta) =>
+    console.info(
+      ta.isCurrent ? ">>" : "  ",
+      ta.pda.publicKey.toBase58().padEnd(45, " "),
+      ta.isInitialized ? "    initialized" : "NOT INITIALIZED",
+      "start",
+      ta.startTickIndex.toString().padStart(10, " "),
+      "covered range",
+      ta.startPrice.toSignificantDigits(6),
+      "-",
+      ta.endPrice.toSignificantDigits(6),
+      ta.isFullRange ? "(FULL)" : "",
+    ),
+  );
 
-const tickArrayPubkeyStr = await promptText("tickArrayPubkey");
-const tickArrayPubkey = new PublicKey(tickArrayPubkeyStr);
-const which = tickArrayInfos.filter((ta) =>
-  ta.pda.publicKey.equals(tickArrayPubkey),
-)[0];
+  const tickArrayPubkeyStr = await promptText("tickArrayPubkey");
+  const tickArrayPubkey = new PublicKey(tickArrayPubkeyStr);
+  const which = tickArrayInfos.filter((ta) =>
+    ta.pda.publicKey.equals(tickArrayPubkey),
+  )[0];
 
-const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
-builder.addInstruction(
-  WhirlpoolIx.initTickArrayIx(ctx.program, {
-    funder: ctx.wallet.publicKey,
-    whirlpool: whirlpoolPubkey,
-    startTick: which.startTickIndex,
-    tickArrayPda: which.pda,
-  }),
-);
+  const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
+  builder.addInstruction(
+    WhirlpoolIx.initTickArrayIx(ctx.program, {
+      funder: ctx.wallet.publicKey,
+      whirlpool: whirlpoolPubkey,
+      startTick: which.startTickIndex,
+      tickArrayPda: which.pda,
+    }),
+  );
 
-const landed = await sendTransaction(builder);
-if (landed) {
-  console.info("initialized tickArray address:", tickArrayPubkey.toBase58());
+  const landed = await sendTransaction(builder);
+  if (landed) {
+    console.info("initialized tickArray address:", tickArrayPubkey.toBase58());
+  }
+
+  const more = await promptConfirm("initialize more tickArray ?");
+  if (!more) {
+    break;
+  }
 }
 
 /*

@@ -78,18 +78,14 @@ pub async fn setup_whirlpool(
 pub async fn setup_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
     let ctx = RpcContext::new().await;
 
-    // Use token utility functions
-    let position_mint = setup_mint_with_decimals(&ctx, 0).await?;
-    let position_token_account = setup_ata(&ctx, position_mint).await?;
-
-    let (position_pubkey, position_bump) = get_position_address(&position_mint)?;
+    let (position_pubkey, position_bump) = get_position_address(&Pubkey::new_unique())?;
 
     let open_position_ix = OpenPosition {
         funder: ctx.signer.pubkey(),
         owner: ctx.signer.pubkey(),
         position: position_pubkey,
-        position_mint,
-        position_token_account,
+        position_mint: Pubkey::new_unique(),
+        position_token_account: Pubkey::default(),
         whirlpool,
         token_program: TOKEN_PROGRAM_ID,
         system_program: system_program::id(),

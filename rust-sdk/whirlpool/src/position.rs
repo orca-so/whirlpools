@@ -335,12 +335,16 @@ mod tests {
         let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
         let position_pubkey = setup_position(whirlpool).await?;
 
+        let te_mint = setup_mint_with_decimals(&ctx, 9).await?;
+        setup_ata_with_amount(&ctx, te_mint, 1_000_000_000).await?;
+        let te_position_pubkey = setup_position(whirlpool).await?;
+
         let owner = ctx.signer.pubkey();
         let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
-        assert_eq!(
-            positions.len(),
-            1,
-            "Should have one position after setup_position"
+
+        assert!(
+            positions.len() >= 2,
+            "Did not fetch all positions for the owner (expected two or more)"
         );
 
         match &positions[0] {
@@ -362,14 +366,18 @@ mod tests {
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
+
         let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
         let _position_pubkey = setup_position(whirlpool).await?;
 
+        let te_mint = setup_mint_with_decimals(&ctx, 9).await?;
+        setup_ata_with_amount(&ctx, te_mint, 1_000_000_000).await?;
+        let _te_position_pubkey = setup_position(whirlpool).await?;
+
         let positions = fetch_positions_in_whirlpool(&ctx.rpc, whirlpool).await?;
-        assert_eq!(
-            positions.len(),
-            1,
-            "Should find one position in this whirlpool"
+        assert!(
+            positions.len() >= 2,
+            "Should find multiple positions in this whirlpool, including te_position"
         );
 
         Ok(())

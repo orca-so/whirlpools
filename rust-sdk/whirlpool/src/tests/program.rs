@@ -343,13 +343,3 @@ pub async fn setup_position_bundle(
 
     Ok(position_bundle_address)
 }
-
-pub async fn setup_config_and_fee_tiers(ctx: &RpcContext) -> Result<(), Box<dyn Error>> {
-    // Set funder first
-    crate::set_funder(ctx.signer.pubkey());
-
-    // Then setup config using ctx.config
-    crate::set_whirlpools_config_address(crate::WhirlpoolsConfigInput::SolanaDevnet)?;
-
-    Ok(())
-}

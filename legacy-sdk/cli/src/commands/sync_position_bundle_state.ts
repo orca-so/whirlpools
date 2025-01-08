@@ -1,12 +1,12 @@
-import { PublicKey } from "@solana/web3.js";
-import { collectFeesQuote, CollectFeesQuote, collectRewardsQuote, CollectRewardsQuote, DecreaseLiquidityQuote, decreaseLiquidityQuoteByLiquidityWithParams, IGNORE_CACHE, IncreaseLiquidityQuote, IncreaseLiquidityQuoteByLiquidityParam, increaseLiquidityQuoteByLiquidityWithParams, MAX_TICK_INDEX, MIN_TICK_INDEX, NO_TOKEN_EXTENSION_CONTEXT, PDAUtil, PoolUtil, POSITION_BUNDLE_SIZE, PositionBundleData, PositionBundleUtil, PositionData, PREFER_CACHE, TickArrayData, TickArrayUtil, TickUtil, TokenExtensionUtil, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
-import { DecimalUtil, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
+import { AddressLookupTableAccount, ComputeBudgetInstruction, ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
+import { collectFeesQuote, CollectFeesQuote, collectRewardsQuote, CollectRewardsQuote, DecreaseLiquidityQuote, decreaseLiquidityQuoteByLiquidityWithParams, IGNORE_CACHE, IncreaseLiquidityQuote, IncreaseLiquidityQuoteByLiquidityParam, increaseLiquidityQuoteByLiquidityWithParams, MAX_TICK_INDEX, MIN_TICK_INDEX, NO_TOKEN_EXTENSION_CONTEXT, PDAUtil, PoolUtil, POSITION_BUNDLE_SIZE, PositionBundleData, PositionBundleUtil, PositionData, PREFER_CACHE, TickArrayData, TickArrayUtil, TickUtil, TokenExtensionUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
+import { DecimalUtil, MEASUREMENT_BLOCKHASH, MintWithTokenProgram, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { sendTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
 import { promptConfirm, promptText } from "../utils/prompt";
 import { readFileSync } from "fs";
 import BN from "bn.js";
-import { getAssociatedTokenAddressSync } from "@solana/spl-token";
+import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { adjustForSlippage } from "@orca-so/whirlpools-sdk/dist/utils/position-util";
 import Decimal from "decimal.js";
 
@@ -15,14 +15,22 @@ async function main() {
 
   // prompt
   console.warn("using test values");
-  const positionBundlePubkeyStr = "3XmaBcpvHdNTv6u35M13w55SpJKVhxSahTkzMiVRVsqC";
+  const positionBundlePubkeyStr = "qHbk42b2ub8K6Rw6p7t1aUoJpwGZ6xpzDC75CQ4QgPD";
   //const positionBundlePubkeyStr = await promptText("positionBundlePubkey");
   const positionBundlePubkey = new PublicKey(positionBundlePubkeyStr);
   const whirlpoolPubkeyStr = "95XaJMqCLiWtUwF9DtSvDpDbPYhEHoVyCeeNwmUD7cwr";
   //const whirlpoolPubkeyStr = await promptText("whirlpoolPubkey");
   const whirlpoolPubkey = new PublicKey(whirlpoolPubkeyStr);
-  const positionBundleTargetStateCsvPath = "position_bundle_target_state.csv";
+  const positionBundleTargetStateCsvPath = "position_bundle_target_state_open.csv";
   //const positionBundleTargetStateCsvPath = await promptText("positionBundleTargetStateCsvPath");
+
+  const sharedALTPubkeyStr = "7Vyx1y8vG9e9Q1MedmXpopRC6ZhVaZzGcvYh5Z3Cs75i";
+  const sharedALTPubkey = new PublicKey(sharedALTPubkeyStr);
+  const sharedALTResponse = await ctx.connection.getAddressLookupTable(sharedALTPubkey);
+  if (!sharedALTResponse || !sharedALTResponse.value) {
+    throw new Error("shared ALT not found");
+  }
+  const sharedALT = sharedALTResponse.value;
 
   console.info("check positionBundle...");
   const positionBundle = await ctx.fetcher.getPositionBundle(positionBundlePubkey, IGNORE_CACHE);
@@ -62,67 +70,318 @@ async function main() {
     if (difference.noDifference.length === POSITION_BUNDLE_SIZE) {
       console.info("synced");
       break;
-    } else {
-      if (!firstIteration) {
-        console.warn("There are still differences between the current state and the target state (some transaction may have failed)");
-      }
-
-      // TODO: param
-      const slippage = Percentage.fromFraction(1, 100); // 1%
-      const quotes = await getQuotesToSync(ctx, whirlpoolPubkey, positionBundleTargetState, difference, slippage);
-      const balanceDifference = calcBalanceDifference(quotes);
-
-      const { tokenABalance, tokenBBalance } = await getWalletATABalance(ctx, whirlpool);
-
-      console.info([
-        "Position state changes:\n",
-        "\n",
-        `    close position:     ${difference.shouldBeClosed.length.toString().padStart(3, " ")} position(s)\n`,
-        `    open  position:     ${difference.shouldBeOpened.length.toString().padStart(3, " ")} position(s)\n`,
-        `    withdraw liquidity: ${difference.shouldBeDecreased.length.toString().padStart(3, " ")} position(s)\n`,
-        `    deposit  liquidity: ${difference.shouldBeIncreased.length.toString().padStart(3, " ")} position(s)\n`,
-        "\n",
-        "Balance changes:\n",
-        "\n",
-        `    tokenA withdrawn (est): ${toDecimalAmountA(balanceDifference.tokenAWithdrawnEst)}\n`,
-        `    tokenB withdrawn (est): ${toDecimalAmountB(balanceDifference.tokenBWithdrawnEst)}\n`,
-        `    tokenA withdrawn (min): ${toDecimalAmountA(balanceDifference.tokenAWithdrawnMin)}\n`,
-        `    tokenB withdrawn (min): ${toDecimalAmountB(balanceDifference.tokenBWithdrawnMin)}\n`,
-        `    tokenA collected:       ${toDecimalAmountA(balanceDifference.tokenACollected)}\n`,
-        `    tokenB collected:       ${toDecimalAmountB(balanceDifference.tokenBCollected)}\n`,
-        `    rewards collected:      ${balanceDifference.rewardsCollected.map((reward, i) => reward ? toDecimalAmountReward(reward, i).toString() : "no reward").join(", ")}\n`,
-        `    tokenA deposited (est): ${toDecimalAmountA(balanceDifference.tokenADepositedEst)}\n`,
-        `    tokenB deposited (est): ${toDecimalAmountB(balanceDifference.tokenBDepositedEst)}\n`,
-        `    tokenA deposited (max): ${toDecimalAmountA(balanceDifference.tokenADepositedMax)}\n`,
-        `    tokenB deposited (max): ${toDecimalAmountB(balanceDifference.tokenBDepositedMax)}\n`,
-        "\n",
-        `    tokenA balance delta (est): ${toDecimalAmountA(balanceDifference.tokenABalanceDeltaEst)}\n`,
-        `    tokenB balance delta (est): ${toDecimalAmountB(balanceDifference.tokenBBalanceDeltaEst)}\n`,
-        "\n",
-        "    * negative balance delta means deposited more than withdrawn\n",
-        "\n",
-        "Wallet balances:\n",
-        "\n",
-        `    tokenA: ${toDecimalAmountA(tokenABalance)}\n`,
-        `    tokenB: ${toDecimalAmountB(tokenBBalance)}\n`,
-      ].join(""));
-
-      // prompt for confirmation
-      const confirmed = await promptConfirm("proceed?");
-      if (!confirmed) {
-        console.info("aborted");
-        break;
-      }
     }
 
-    console.info("syncing...");
+    if (!firstIteration) {
+      console.warn("There are still differences between the current state and the target state (some transaction may have failed)");
+    }
 
+    // TODO: param
+    const slippage = Percentage.fromFraction(1, 100); // 1%
+    const quotes = await getQuotesToSync(ctx, whirlpoolPubkey, positionBundleTargetState, difference, slippage);
+    const balanceDifference = calcBalanceDifference(quotes);
+
+    const { tokenABalance, tokenBBalance } = await getWalletATABalance(ctx, whirlpool);
+
+    console.info("building transactions...");
+    const transactions = await buildTransactions(ctx, [sharedALT], positionBundlePubkey, whirlpoolPubkey, difference, positionBundleTargetState, quotes);
+
+    console.info([
+      "Position state changes:\n",
+      "\n",
+      `    close position:     ${difference.shouldBeClosed.length.toString().padStart(3, " ")} position(s)\n`,
+      `    open  position:     ${difference.shouldBeOpened.length.toString().padStart(3, " ")} position(s)\n`,
+      `    withdraw liquidity: ${difference.shouldBeDecreased.length.toString().padStart(3, " ")} position(s)\n`,
+      `    deposit  liquidity: ${difference.shouldBeIncreased.length.toString().padStart(3, " ")} position(s)\n`,
+      "\n",
+      "Balance changes:\n",
+      "\n",
+      `    tokenA withdrawn (est): ${toDecimalAmountA(balanceDifference.tokenAWithdrawnEst)}\n`,
+      `    tokenB withdrawn (est): ${toDecimalAmountB(balanceDifference.tokenBWithdrawnEst)}\n`,
+      `    tokenA withdrawn (min): ${toDecimalAmountA(balanceDifference.tokenAWithdrawnMin)}\n`,
+      `    tokenB withdrawn (min): ${toDecimalAmountB(balanceDifference.tokenBWithdrawnMin)}\n`,
+      `    tokenA collected:       ${toDecimalAmountA(balanceDifference.tokenACollected)}\n`,
+      `    tokenB collected:       ${toDecimalAmountB(balanceDifference.tokenBCollected)}\n`,
+      `    rewards collected:      ${balanceDifference.rewardsCollected.map((reward, i) => reward ? toDecimalAmountReward(reward, i).toString() : "no reward").join(", ")}\n`,
+      `    tokenA deposited (est): ${toDecimalAmountA(balanceDifference.tokenADepositedEst)}\n`,
+      `    tokenB deposited (est): ${toDecimalAmountB(balanceDifference.tokenBDepositedEst)}\n`,
+      `    tokenA deposited (max): ${toDecimalAmountA(balanceDifference.tokenADepositedMax)}\n`,
+      `    tokenB deposited (max): ${toDecimalAmountB(balanceDifference.tokenBDepositedMax)}\n`,
+      "\n",
+      `    tokenA balance delta (est): ${toDecimalAmountA(balanceDifference.tokenABalanceDeltaEst)}\n`,
+      `    tokenB balance delta (est): ${toDecimalAmountB(balanceDifference.tokenBBalanceDeltaEst)}\n`,
+      "\n",
+      "    * negative balance delta means deposited more than withdrawn\n",
+      "\n",
+      "Wallet balances:\n",
+      "\n",
+      `    tokenA: ${toDecimalAmountA(tokenABalance)}\n`,
+      `    tokenB: ${toDecimalAmountB(tokenBBalance)}\n`,
+      "\n",
+      "Transactions:\n",
+      "\n",
+      `    withdraw: ${transactions.withdrawTransactions.length} transaction(s)\n`,
+      `    deposit:  ${transactions.depositTransactions.length} transaction(s)\n`,
+    ].join(""));
+
+    if (balanceDifference.tokenABalanceDeltaEst.isNeg() && balanceDifference.tokenABalanceDeltaEst.abs().gt(tokenABalance)) {
+      console.warn("WARNING: tokenA balance delta exceeds the wallet balance, some deposits may fail\n");
+    }
+    if (balanceDifference.tokenBBalanceDeltaEst.isNeg() && balanceDifference.tokenBBalanceDeltaEst.abs().gt(tokenBBalance)) {
+      console.warn("WARNING: tokenB balance delta exceeds the wallet balance, some deposits may fail\n");
+    }
+
+
+    // prompt for confirmation
+    const confirmed = await promptConfirm("proceed?");
+    if (!confirmed) {
+      console.info("canceled");
+      break;
+    }
+
+    const defaultPriorityFeeInLamports = 10_000; // 0.00001 SOL
+    await sendTransactions(ctx, [sharedALT], transactions.withdrawTransactions, defaultPriorityFeeInLamports);
+    await sendTransactions(ctx, [sharedALT], transactions.depositTransactions, defaultPriorityFeeInLamports);
 
     firstIteration = false;
   }
 }
 
 main();
+
+////////////////////////////////////////////////////////////////////////////////
+
+async function sendTransactions(ctx: WhirlpoolContext, alts: AddressLookupTableAccount[], transactions: TransactionBuilder[], defaultPriorityFeeInLamports: number) {
+  for (const tx of transactions) {
+    const landed = await sendTransaction(tx, defaultPriorityFeeInLamports, alts);
+    if (!landed) {
+      throw new Error("transaction failed");
+    }
+  }
+}
+
+async function buildTransactions(
+  ctx: WhirlpoolContext,
+  alts: AddressLookupTableAccount[],
+  positionBundlePubkey: PublicKey,
+  whirlpoolPubkey: PublicKey,
+  difference: PositionBundleStateDifference,
+  positionBundleTargetState: PositionBundleStateItem[],
+  quotes: QuotesToSync,
+): Promise<{
+  withdrawTransactions: TransactionBuilder[];
+  depositTransactions: TransactionBuilder[];
+}> {
+  const { quotesForDecrease, quotesForClose, quotesForOpen, quotesForIncrease } = quotes;
+
+  const whirlpool = await ctx.fetcher.getPool(whirlpoolPubkey, PREFER_CACHE) as WhirlpoolData;
+  const mintA = await ctx.fetcher.getMintInfo(whirlpool.tokenMintA, PREFER_CACHE) as MintWithTokenProgram;
+  const mintB = await ctx.fetcher.getMintInfo(whirlpool.tokenMintB, PREFER_CACHE) as MintWithTokenProgram;
+
+  const ataA = getAssociatedTokenAddressSync(whirlpool.tokenMintA, ctx.wallet.publicKey, true, mintA.tokenProgram);
+  const ataB = getAssociatedTokenAddressSync(whirlpool.tokenMintB, ctx.wallet.publicKey, true, mintB.tokenProgram);
+  const ataPositionBundle = getAssociatedTokenAddressSync(difference.positionBundle.positionBundleMint, ctx.wallet.publicKey, true, TOKEN_PROGRAM_ID);
+
+  const baseParams = {
+    positionAuthority: ctx.wallet.publicKey,
+    positionTokenAccount: ataPositionBundle,
+    tokenMintA: whirlpool.tokenMintA,
+    tokenMintB: whirlpool.tokenMintB,
+    tokenOwnerAccountA: ataA,
+    tokenOwnerAccountB: ataB,
+    tokenProgramA: mintA.tokenProgram,
+    tokenProgramB: mintB.tokenProgram,
+    tokenVaultA: whirlpool.tokenVaultA,
+    tokenVaultB: whirlpool.tokenVaultB,
+    whirlpool: whirlpoolPubkey,
+  };
+
+  const rewardParams = await Promise.all(whirlpool.rewardInfos.filter((rewardInfo) => PoolUtil.isRewardInitialized(rewardInfo)).map(async (rewardInfo) => {
+    const mint = await ctx.fetcher.getMintInfo(rewardInfo.mint) as MintWithTokenProgram;
+    const ata = getAssociatedTokenAddressSync(rewardInfo.mint, ctx.wallet.publicKey, true, mint.tokenProgram);
+    return {
+      mint,
+      rewardInfo,
+      ata,
+    };
+  }));
+
+  const getBundledPositionPDA = (bundleIndex: number) => {
+    return PDAUtil.getBundledPosition(ctx.program.programId, difference.positionBundle.positionBundleMint, bundleIndex);
+  }
+  const getBundledPositionPubkey = (bundleIndex: number) => {
+    return getBundledPositionPDA(bundleIndex).publicKey;
+  };
+  const getTickArrayPubkey = (tickIndex: number) => {
+    return PDAUtil.getTickArrayFromTickIndex(tickIndex, whirlpool.tickSpacing, whirlpoolPubkey, ctx.program.programId).publicKey;
+  };
+
+  const withdrawTransactions: TransactionBuilder[] = [];
+  for (const { bundleIndex, decrease } of quotesForDecrease) {
+    withdrawTransactions.push(toTx(ctx, WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
+      ...baseParams,
+      ...decrease,
+      position: getBundledPositionPubkey(bundleIndex),
+      tickArrayLower: getTickArrayPubkey(difference.bundledPositions[bundleIndex]!.tickLowerIndex),
+      tickArrayUpper: getTickArrayPubkey(difference.bundledPositions[bundleIndex]!.tickUpperIndex),
+    })));
+  }
+  for (const { bundleIndex, decrease } of quotesForClose) {
+    const tx = new TransactionBuilder(ctx.connection, ctx.wallet);
+    if (decrease) {
+      tx.addInstruction(WhirlpoolIx.decreaseLiquidityV2Ix(ctx.program, {
+        ...baseParams,
+        ...decrease,
+        position: getBundledPositionPubkey(bundleIndex),
+        tickArrayLower: getTickArrayPubkey(difference.bundledPositions[bundleIndex]!.tickLowerIndex),
+        tickArrayUpper: getTickArrayPubkey(difference.bundledPositions[bundleIndex]!.tickUpperIndex),
+      }));
+    }
+    tx.addInstruction(WhirlpoolIx.collectFeesV2Ix(ctx.program, {
+      ...baseParams,
+      position: getBundledPositionPubkey(bundleIndex),
+    }));
+
+    rewardParams.forEach(({ mint, rewardInfo, ata }, rewardIndex) => {
+      tx.addInstruction(WhirlpoolIx.collectRewardV2Ix(ctx.program, {
+        ...baseParams,
+        position: getBundledPositionPubkey(bundleIndex),
+        rewardIndex,
+        rewardMint: mint.address,
+        rewardOwnerAccount: ata,
+        rewardTokenProgram: mint.tokenProgram,
+        rewardVault: rewardInfo.vault,
+      }));
+    });
+
+    tx.addInstruction(WhirlpoolIx.closeBundledPositionIx(ctx.program, {
+      bundleIndex,
+      bundledPosition: getBundledPositionPubkey(bundleIndex),
+      positionBundle: positionBundlePubkey,
+      positionBundleAuthority: ctx.wallet.publicKey,
+      positionBundleTokenAccount: ataPositionBundle,
+      receiver: ctx.wallet.publicKey,
+    }));
+
+    withdrawTransactions.push(tx);
+  }
+
+  const depositTransactions: TransactionBuilder[] = [];
+  for (const { bundleIndex, increase } of quotesForOpen) {
+    const tx = new TransactionBuilder(ctx.connection, ctx.wallet);
+    const targetState = positionBundleTargetState[bundleIndex] as PositionBundleOpenState;
+
+    tx.addInstruction(WhirlpoolIx.openBundledPositionIx(ctx.program, {
+      positionBundle: positionBundlePubkey,
+      bundleIndex,
+      bundledPositionPda: getBundledPositionPDA(bundleIndex),
+      positionBundleAuthority: ctx.wallet.publicKey,
+      funder: ctx.wallet.publicKey,
+      positionBundleTokenAccount: ataPositionBundle,
+      tickLowerIndex: targetState.lowerTickIndex,
+      tickUpperIndex: targetState.upperTickIndex,
+      whirlpool: whirlpoolPubkey,
+    }));
+
+    if (increase) {
+      tx.addInstruction(WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
+        ...baseParams,
+        ...increase,
+        position: getBundledPositionPubkey(bundleIndex),
+        tickArrayLower: getTickArrayPubkey(targetState.lowerTickIndex),
+        tickArrayUpper: getTickArrayPubkey(targetState.upperTickIndex),
+      }));
+    }
+
+    depositTransactions.push(tx);
+  }
+  for (const { bundleIndex, increase } of quotesForIncrease) {
+    const targetState = positionBundleTargetState[bundleIndex] as PositionBundleOpenState;
+    depositTransactions.push(toTx(ctx, WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
+      ...baseParams,
+      ...increase,
+      position: getBundledPositionPubkey(bundleIndex),
+      tickArrayLower: getTickArrayPubkey(targetState.lowerTickIndex),
+      tickArrayUpper: getTickArrayPubkey(targetState.upperTickIndex),
+    })));
+  }
+
+  const mergedWithdrawTransactions = mergeTransactionBuilders(ctx, withdrawTransactions, alts);
+  const mergedDepositTransactions = mergeTransactionBuilders(ctx, depositTransactions, alts);
+
+  return {
+    withdrawTransactions: mergedWithdrawTransactions,
+    depositTransactions: mergedDepositTransactions
+  };
+}
+
+function mergeTransactionBuilders(ctx: WhirlpoolContext, txs: TransactionBuilder[], alts: AddressLookupTableAccount[]): TransactionBuilder[] {
+  const merged: TransactionBuilder[] = [];
+  let tx: TransactionBuilder | undefined = undefined;
+  let cursor = 0;
+  while (cursor < txs.length) {
+    if (!tx) {
+      tx = new TransactionBuilder(ctx.connection, ctx.wallet);
+      // reserve space for ComputeBudgetProgram
+      tx.addInstruction({
+        instructions: [
+          ComputeBudgetProgram.setComputeUnitLimit({units: 0}), // dummy ix
+          ComputeBudgetProgram.setComputeUnitPrice({microLamports: 0}), // dummy ix
+        ],
+        cleanupInstructions: [],
+        signers: [],
+      })
+    }
+
+    const mergeable = checkMergedTransactionSizeIsValid(ctx, [tx, txs[cursor]], alts);
+    if (mergeable) {
+      tx.addInstruction(txs[cursor].compressIx(true));
+      cursor++;
+    } else {
+      merged.push(tx);
+      tx = undefined;
+    }
+  }
+
+  if (tx) {
+    merged.push(tx);
+  }
+
+  // remove dummy ComputeBudgetProgram ixs
+  return merged.map((tx) => {
+    const newTx = new TransactionBuilder(ctx.connection, ctx.wallet);
+    const ix = tx.compressIx(true);
+    ix.instructions = ix.instructions.slice(2); // remove dummy ComputeBudgetProgram ixs
+    newTx.addInstruction(ix);
+    return newTx;
+  });
+}
+
+function checkMergedTransactionSizeIsValid(
+  ctx: WhirlpoolContext,
+  builders: TransactionBuilder[],
+  alts: AddressLookupTableAccount[],
+): boolean {
+  const merged = new TransactionBuilder(
+    ctx.connection,
+    ctx.wallet,
+    ctx.txBuilderOpts,
+  );
+  builders.forEach((builder) =>
+    merged.addInstruction(builder.compressIx(true)),
+  );
+  try {
+    merged.txnSize({
+      latestBlockhash: MEASUREMENT_BLOCKHASH,
+      maxSupportedTransactionVersion: 0,
+      lookupTableAccounts: alts,
+    });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 
@@ -231,9 +490,9 @@ async function checkPositionBundleStateDifference(
           // close and reopen
           shouldBeClosed.push(bundleIndex);
           shouldBeOpened.push(bundleIndex);
-        } else if (!currentPosition.liquidity.lt(targetState.liquidity)) {
+        } else if (currentPosition.liquidity.lt(targetState.liquidity)) {
           shouldBeIncreased.push(bundleIndex);
-        } else if (!currentPosition.liquidity.gt(targetState.liquidity)) {
+        } else if (currentPosition.liquidity.gt(targetState.liquidity)) {
           shouldBeDecreased.push(bundleIndex);
         } else {
           // nop

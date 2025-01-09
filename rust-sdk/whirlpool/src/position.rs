@@ -301,8 +301,8 @@ pub async fn fetch_positions_in_whirlpool(
 mod tests {
     use super::*;
     use crate::tests::{
-        setup_ata_with_amount, setup_mint_with_decimals, setup_position, setup_whirlpool,
-        RpcContext,
+        setup_ata_with_amount, setup_mint_with_decimals, setup_position, setup_position_bundle,
+        setup_te_position, setup_whirlpool, RpcContext,
     };
     use serial_test::serial;
     use solana_program_test::tokio;
@@ -335,6 +335,7 @@ mod tests {
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
 
         let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
+<<<<<<< HEAD
         let position_pubkey =
             setup_position(&ctx, whirlpool, Some(DEFAULT_TICK_RANGE), None).await?;
 
@@ -342,20 +343,31 @@ mod tests {
         setup_ata_with_amount(&ctx, te_mint, 1_000_000_000).await?;
         let _te_position_pubkey =
             setup_position(&ctx, whirlpool, Some(DEFAULT_TICK_RANGE), None).await?;
+=======
+        let normal_position_pubkey = setup_position(whirlpool).await?;
+
+        // 1) Add a te_position (uses token-2022)
+        let te_position_pubkey = setup_te_position(whirlpool).await?;
+
+        // 2) Add a position bundle, optionally with multiple bundled positions
+        let position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
+>>>>>>> cdefdca0e4db43aa95691f4163eb73e48ded6006
 
         let owner = ctx.signer.pubkey();
         let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
 
+        // Expect at least 3: normal, te_position, and a bundle
         assert!(
-            positions.len() >= 2,
-            "Did not fetch all positions for the owner (expected two or more)"
+            positions.len() >= 3,
+            "Did not find all positions for the owner (expected normal, te_position, bundle)"
         );
 
+        // Existing checks remain...
         match &positions[0] {
             PositionOrBundle::Position(pos) => {
-                assert_eq!(pos.address, position_pubkey);
+                assert_eq!(pos.address, normal_position_pubkey);
             }
-            _ => panic!("Expected a single position, but found a bundle"),
+            _ => panic!("Expected a single position, but found a bundle!"),
         }
 
         Ok(())
@@ -371,6 +383,7 @@ mod tests {
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
         let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
+<<<<<<< HEAD
         let _position_pubkey =
             setup_position(&ctx, whirlpool, Some(DEFAULT_TICK_RANGE), None).await?;
 
@@ -378,11 +391,22 @@ mod tests {
         setup_ata_with_amount(&ctx, te_mint, 1_000_000_000).await?;
         let _te_position_pubkey =
             setup_position(&ctx, whirlpool, Some(DEFAULT_TICK_RANGE), None).await?;
+=======
+        let _normal_position_pubkey = setup_position(whirlpool).await?;
+
+        // 1) te_position
+        let _te_position_pubkey = setup_te_position(whirlpool).await?;
+
+        // 2) position bundle
+        let _position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
+>>>>>>> cdefdca0e4db43aa95691f4163eb73e48ded6006
 
         let positions = fetch_positions_in_whirlpool(&ctx.rpc, whirlpool).await?;
+
+        // Expect at least 3: normal + te_position + bundle
         assert!(
-            positions.len() >= 2,
-            "Should find multiple positions in this whirlpool, including te_position"
+            positions.len() >= 3,
+            "Should find multiple positions in this whirlpool, including te_position & bundle"
         );
 
         Ok(())

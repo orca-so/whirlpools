@@ -23,7 +23,7 @@
   "devDependencies": {
     "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-rust-core": "*",
-    "typescript": "^5.7.2",
+    "typescript": "^5.7.3",
     "wasm-pack": "^0.13.1"
   },
   "repository": {

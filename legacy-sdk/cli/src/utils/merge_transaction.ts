@@ -3,7 +3,11 @@ import type { AddressLookupTableAccount } from "@solana/web3.js";
 import type { WhirlpoolContext } from "@orca-so/whirlpools-sdk";
 import { MEASUREMENT_BLOCKHASH, TransactionBuilder } from "@orca-so/common-sdk";
 
-export function mergeTransactionBuilders(ctx: WhirlpoolContext, txs: TransactionBuilder[], alts: AddressLookupTableAccount[]): TransactionBuilder[] {
+export function mergeTransactionBuilders(
+  ctx: WhirlpoolContext,
+  txs: TransactionBuilder[],
+  alts: AddressLookupTableAccount[],
+): TransactionBuilder[] {
   const merged: TransactionBuilder[] = [];
   let tx: TransactionBuilder | undefined = undefined;
   let cursor = 0;
@@ -13,15 +17,19 @@ export function mergeTransactionBuilders(ctx: WhirlpoolContext, txs: Transaction
       // reserve space for ComputeBudgetProgram
       tx.addInstruction({
         instructions: [
-          ComputeBudgetProgram.setComputeUnitLimit({units: 0}), // dummy ix
-          ComputeBudgetProgram.setComputeUnitPrice({microLamports: 0}), // dummy ix
+          ComputeBudgetProgram.setComputeUnitLimit({ units: 0 }), // dummy ix
+          ComputeBudgetProgram.setComputeUnitPrice({ microLamports: 0 }), // dummy ix
         ],
         cleanupInstructions: [],
         signers: [],
-      })
+      });
     }
 
-    const mergeable = checkMergedTransactionSizeIsValid(ctx, [tx, txs[cursor]], alts);
+    const mergeable = checkMergedTransactionSizeIsValid(
+      ctx,
+      [tx, txs[cursor]],
+      alts,
+    );
     if (mergeable) {
       tx.addInstruction(txs[cursor].compressIx(true));
       cursor++;

@@ -1,4 +1,8 @@
-import type { AddressLookupTableAccount, Keypair, VersionedTransaction } from "@solana/web3.js";
+import type {
+  AddressLookupTableAccount,
+  Keypair,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import { ComputeBudgetProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   DecimalUtil,
@@ -27,7 +31,8 @@ export async function sendTransaction(
   );
   console.info("estimatedComputeUnits:", estimatedComputeUnits);
 
-  let useDefaultPriorityFeeInLamports = defaultPriorityFeeInLamports !== undefined;
+  let useDefaultPriorityFeeInLamports =
+    defaultPriorityFeeInLamports !== undefined;
 
   let landed = false;
   let success = false;
@@ -37,8 +42,7 @@ export async function sendTransaction(
     if (useDefaultPriorityFeeInLamports) {
       priorityFeeInLamports = defaultPriorityFeeInLamports!;
       useDefaultPriorityFeeInLamports = false;
-    }
-    else {
+    } else {
       while (true) {
         const priorityFeeInSOL = await promptText("priorityFeeInSOL");
         priorityFeeInLamports = DecimalUtil.toBN(
@@ -56,14 +60,14 @@ export async function sendTransaction(
           const ok = await promptConfirm("OK");
           if (!ok) continue;
         }
-  
+
         console.info(
           "Priority fee:",
           priorityFeeInLamports / LAMPORTS_PER_SOL,
           "SOL",
         );
         break;
-      }  
+      }
     }
 
     const builderWithPriorityFee = new TransactionBuilder(
@@ -125,7 +129,10 @@ async function send(
   const wallet = builder.wallet;
 
   // manual build
-  const built = await builder.build({ maxSupportedTransactionVersion: 0, lookupTableAccounts: alts });
+  const built = await builder.build({
+    maxSupportedTransactionVersion: 0,
+    lookupTableAccounts: alts,
+  });
 
   const blockhash = await connection.getLatestBlockhashAndContext("confirmed");
   const blockHeight = await connection.getBlockHeight({

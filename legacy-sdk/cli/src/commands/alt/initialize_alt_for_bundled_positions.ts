@@ -1,5 +1,10 @@
 import { AddressLookupTableProgram, PublicKey } from "@solana/web3.js";
-import { IGNORE_CACHE, PDAUtil, POSITION_BUNDLE_SIZE, toTx } from "@orca-so/whirlpools-sdk";
+import {
+  IGNORE_CACHE,
+  PDAUtil,
+  POSITION_BUNDLE_SIZE,
+  toTx,
+} from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { sendTransaction } from "../../utils/transaction_sender";
 import { ctx } from "../../utils/provider";
@@ -11,7 +16,10 @@ console.info("initialize ALT for bundled positions...");
 const positionBundlePubkeyStr = await promptText("positionBundlePubkey");
 const positionBundlePubkey = new PublicKey(positionBundlePubkeyStr);
 
-const positionBundle = await ctx.fetcher.getPositionBundle(positionBundlePubkey, IGNORE_CACHE);
+const positionBundle = await ctx.fetcher.getPositionBundle(
+  positionBundlePubkey,
+  IGNORE_CACHE,
+);
 if (!positionBundle) {
   throw new Error("positionBundle not found");
 }
@@ -19,26 +27,36 @@ if (!positionBundle) {
 const bundledPositionAddresses: PublicKey[] = [];
 for (let bundleIndex = 0; bundleIndex < POSITION_BUNDLE_SIZE; bundleIndex++) {
   bundledPositionAddresses.push(
-    PDAUtil.getBundledPosition(ctx.program.programId, positionBundle.positionBundleMint, bundleIndex).publicKey
+    PDAUtil.getBundledPosition(
+      ctx.program.programId,
+      positionBundle.positionBundleMint,
+      bundleIndex,
+    ).publicKey,
   );
 }
 
 const txs: TransactionBuilder[] = [];
 let altAddressPubkey: PublicKey;
-let altAddressPubkeyStr = await promptText("altAddressPubkey", "create new ALT");
+let altAddressPubkeyStr = await promptText(
+  "altAddressPubkey",
+  "create new ALT",
+);
 let altEntries = 0;
 if (altAddressPubkeyStr === "create new ALT") {
-  const [createLookupTableIx, alt] = AddressLookupTableProgram.createLookupTable({
-    authority: ctx.wallet.publicKey,
-    payer: ctx.wallet.publicKey,
-    recentSlot: await ctx.connection.getSlot({commitment: "confirmed"}),
-  });
+  const [createLookupTableIx, alt] =
+    AddressLookupTableProgram.createLookupTable({
+      authority: ctx.wallet.publicKey,
+      payer: ctx.wallet.publicKey,
+      recentSlot: await ctx.connection.getSlot({ commitment: "confirmed" }),
+    });
   altAddressPubkey = alt;
-  txs.push(toTx(ctx, {
-    instructions: [createLookupTableIx],
-    cleanupInstructions: [],
-    signers: [],
-  }));
+  txs.push(
+    toTx(ctx, {
+      instructions: [createLookupTableIx],
+      cleanupInstructions: [],
+      signers: [],
+    }),
+  );
 } else {
   altAddressPubkey = new PublicKey(altAddressPubkeyStr);
   const res = await ctx.connection.getAddressLookupTable(altAddressPubkey);
@@ -50,16 +68,27 @@ if (altAddressPubkeyStr === "create new ALT") {
 
 console.info("ALT address:", altAddressPubkey.toBase58());
 
-for (let bundleIndexStart = altEntries; bundleIndexStart < POSITION_BUNDLE_SIZE; bundleIndexStart += 16) {
+for (
+  let bundleIndexStart = altEntries;
+  bundleIndexStart < POSITION_BUNDLE_SIZE;
+  bundleIndexStart += 16
+) {
   const extendLookupTableIx = AddressLookupTableProgram.extendLookupTable({
     lookupTable: altAddressPubkey,
     authority: ctx.wallet.publicKey,
     payer: ctx.wallet.publicKey,
-    addresses: bundledPositionAddresses.slice(bundleIndexStart, bundleIndexStart + 16),
+    addresses: bundledPositionAddresses.slice(
+      bundleIndexStart,
+      bundleIndexStart + 16,
+    ),
   });
 
   const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
-  builder.addInstruction({ instructions: [extendLookupTableIx], cleanupInstructions: [], signers: [] });
+  builder.addInstruction({
+    instructions: [extendLookupTableIx],
+    cleanupInstructions: [],
+    signers: [],
+  });
   txs.push(builder);
 }
 

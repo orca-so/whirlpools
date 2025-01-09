@@ -1,5 +1,13 @@
 import { AddressLookupTableProgram, PublicKey } from "@solana/web3.js";
-import { IGNORE_CACHE, MAX_TICK_INDEX, MIN_TICK_INDEX, PDAUtil, PoolUtil, TICK_ARRAY_SIZE, TickUtil } from "@orca-so/whirlpools-sdk";
+import {
+  IGNORE_CACHE,
+  MAX_TICK_INDEX,
+  MIN_TICK_INDEX,
+  PDAUtil,
+  PoolUtil,
+  TICK_ARRAY_SIZE,
+  TickUtil,
+} from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import type { MintWithTokenProgram } from "@orca-so/common-sdk";
 import { sendTransaction } from "../../utils/transaction_sender";
@@ -17,8 +25,12 @@ const whirlpool = await ctx.fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE);
 if (!whirlpool) {
   throw new Error("whirlpool not found");
 }
-const mintA = await ctx.fetcher.getMintInfo(whirlpool.tokenMintA) as MintWithTokenProgram;
-const mintB = await ctx.fetcher.getMintInfo(whirlpool.tokenMintB) as MintWithTokenProgram;
+const mintA = (await ctx.fetcher.getMintInfo(
+  whirlpool.tokenMintA,
+)) as MintWithTokenProgram;
+const mintB = (await ctx.fetcher.getMintInfo(
+  whirlpool.tokenMintB,
+)) as MintWithTokenProgram;
 
 // 8 keys
 const addresses: PublicKey[] = [
@@ -29,31 +41,76 @@ const addresses: PublicKey[] = [
   whirlpool.tokenVaultA,
   whirlpool.tokenVaultB,
   // This ALT is just for ctx.wallet
-  getAssociatedTokenAddressSync(whirlpool.tokenMintA, ctx.wallet.publicKey, true, mintA.tokenProgram),
-  getAssociatedTokenAddressSync(whirlpool.tokenMintB, ctx.wallet.publicKey, true, mintB.tokenProgram),
+  getAssociatedTokenAddressSync(
+    whirlpool.tokenMintA,
+    ctx.wallet.publicKey,
+    true,
+    mintA.tokenProgram,
+  ),
+  getAssociatedTokenAddressSync(
+    whirlpool.tokenMintB,
+    ctx.wallet.publicKey,
+    true,
+    mintB.tokenProgram,
+  ),
 ];
 // max 9 keys
-for (const rewardInfo of whirlpool.rewardInfos.filter((rewardInfo) => PoolUtil.isRewardInitialized(rewardInfo))) {
-  const mint = await ctx.fetcher.getMintInfo(rewardInfo.mint) as MintWithTokenProgram;
+for (const rewardInfo of whirlpool.rewardInfos.filter((rewardInfo) =>
+  PoolUtil.isRewardInitialized(rewardInfo),
+)) {
+  const mint = (await ctx.fetcher.getMintInfo(
+    rewardInfo.mint,
+  )) as MintWithTokenProgram;
 
   addresses.push(rewardInfo.mint);
   addresses.push(rewardInfo.vault);
   // This ALT is just for ctx.wallet
-  addresses.push(getAssociatedTokenAddressSync(rewardInfo.mint, ctx.wallet.publicKey, true, mint.tokenProgram));
+  addresses.push(
+    getAssociatedTokenAddressSync(
+      rewardInfo.mint,
+      ctx.wallet.publicKey,
+      true,
+      mint.tokenProgram,
+    ),
+  );
 }
 // 1 key
-addresses.push(PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey).publicKey);
+addresses.push(
+  PDAUtil.getOracle(ctx.program.programId, whirlpoolPubkey).publicKey,
+);
 
 // at most 11 TickArrays (previous 5 + current + next 5)
-const minStartTickIndex = TickUtil.getStartTickIndex(MIN_TICK_INDEX, whirlpool.tickSpacing);
-const maxStartTickIndex = TickUtil.getStartTickIndex(MAX_TICK_INDEX, whirlpool.tickSpacing);
-const currentStartTickIndex = TickUtil.getStartTickIndex(whirlpool.tickCurrentIndex, whirlpool.tickSpacing);
+const minStartTickIndex = TickUtil.getStartTickIndex(
+  MIN_TICK_INDEX,
+  whirlpool.tickSpacing,
+);
+const maxStartTickIndex = TickUtil.getStartTickIndex(
+  MAX_TICK_INDEX,
+  whirlpool.tickSpacing,
+);
+const currentStartTickIndex = TickUtil.getStartTickIndex(
+  whirlpool.tickCurrentIndex,
+  whirlpool.tickSpacing,
+);
 const ticksInArray = whirlpool.tickSpacing * TICK_ARRAY_SIZE;
 
-const firstStartTickIndex = Math.max(minStartTickIndex, currentStartTickIndex - 5*ticksInArray);
-const lastStartTickIndex = Math.min(maxStartTickIndex, currentStartTickIndex + 5*ticksInArray);
-for (let startTickIndex = firstStartTickIndex; startTickIndex <= lastStartTickIndex; startTickIndex += ticksInArray) {
-  addresses.push(PDAUtil.getTickArray(ctx.program.programId, whirlpoolPubkey, startTickIndex).publicKey);
+const firstStartTickIndex = Math.max(
+  minStartTickIndex,
+  currentStartTickIndex - 5 * ticksInArray,
+);
+const lastStartTickIndex = Math.min(
+  maxStartTickIndex,
+  currentStartTickIndex + 5 * ticksInArray,
+);
+for (
+  let startTickIndex = firstStartTickIndex;
+  startTickIndex <= lastStartTickIndex;
+  startTickIndex += ticksInArray
+) {
+  addresses.push(
+    PDAUtil.getTickArray(ctx.program.programId, whirlpoolPubkey, startTickIndex)
+      .publicKey,
+  );
 }
 
 // at most 29 entries (8 + 9 + 1 + 11)
@@ -62,7 +119,7 @@ for (let startTickIndex = firstStartTickIndex; startTickIndex <= lastStartTickIn
 const [createLookupTableIx, alt] = AddressLookupTableProgram.createLookupTable({
   authority: ctx.wallet.publicKey,
   payer: ctx.wallet.publicKey,
-  recentSlot: await ctx.connection.getSlot({commitment: "confirmed"}),
+  recentSlot: await ctx.connection.getSlot({ commitment: "confirmed" }),
 });
 
 const extendLookupTableIx = AddressLookupTableProgram.extendLookupTable({
@@ -73,7 +130,11 @@ const extendLookupTableIx = AddressLookupTableProgram.extendLookupTable({
 });
 
 const builder = new TransactionBuilder(ctx.connection, ctx.wallet);
-builder.addInstruction({ instructions: [createLookupTableIx, extendLookupTableIx], cleanupInstructions: [], signers: [] });
+builder.addInstruction({
+  instructions: [createLookupTableIx, extendLookupTableIx],
+  cleanupInstructions: [],
+  signers: [],
+});
 
 const landed = await sendTransaction(builder);
 if (landed) {

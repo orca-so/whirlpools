@@ -1,11 +1,20 @@
 import type { PublicKey } from "@solana/web3.js";
-import { IGNORE_CACHE, PDAUtil, POSITION_BUNDLE_SIZE, PositionBundleUtil } from "@orca-so/whirlpools-sdk";
-import type { PositionBundleData, PositionData, WhirlpoolContext } from "@orca-so/whirlpools-sdk";
+import {
+  IGNORE_CACHE,
+  PDAUtil,
+  POSITION_BUNDLE_SIZE,
+  PositionBundleUtil,
+} from "@orca-so/whirlpools-sdk";
+import type {
+  PositionBundleData,
+  PositionData,
+  WhirlpoolContext,
+} from "@orca-so/whirlpools-sdk";
 import type { PositionBundleStateItem } from "./csv";
 
 export type PositionBundleStateDifference = {
   positionBundle: PositionBundleData;
-  bundledPositions: (PositionData|undefined)[];
+  bundledPositions: (PositionData | undefined)[];
   noDifference: number[];
   shouldBeDecreased: number[];
   shouldBeClosed: number[];
@@ -20,12 +29,21 @@ export async function checkPositionBundleStateDifference(
   positionBundleTargetState: PositionBundleStateItem[],
 ): Promise<PositionBundleStateDifference> {
   // fetch all bundled positions
-  const positionBundle = await ctx.fetcher.getPositionBundle(positionBundlePubkey, IGNORE_CACHE) as PositionBundleData;
+  const positionBundle = (await ctx.fetcher.getPositionBundle(
+    positionBundlePubkey,
+    IGNORE_CACHE,
+  )) as PositionBundleData;
   const bundledPositions = await fetchBundledPositions(ctx, positionBundle);
 
   // ensure that all bundled positions belong to the provided whirlpool
-  if (bundledPositions.some((position) => position && !position.whirlpool.equals(whirlpoolPubkey))) {
-    throw new Error(`not all bundled positions belong to the whirlpool(${whirlpoolPubkey.toBase58()})`);
+  if (
+    bundledPositions.some(
+      (position) => position && !position.whirlpool.equals(whirlpoolPubkey),
+    )
+  ) {
+    throw new Error(
+      `not all bundled positions belong to the whirlpool(${whirlpoolPubkey.toBase58()})`,
+    );
   }
 
   // check differences between current state and target state
@@ -79,12 +97,23 @@ export async function checkPositionBundleStateDifference(
   };
 }
 
-async function fetchBundledPositions(ctx: WhirlpoolContext, positionBundle: PositionBundleData): Promise<(PositionData|undefined)[]> {
-  const openBundleIndexes = PositionBundleUtil.getOccupiedBundleIndexes(positionBundle);
-  const bundledPositions: (PositionData|undefined)[] = new Array(POSITION_BUNDLE_SIZE).fill(undefined);
+async function fetchBundledPositions(
+  ctx: WhirlpoolContext,
+  positionBundle: PositionBundleData,
+): Promise<(PositionData | undefined)[]> {
+  const openBundleIndexes =
+    PositionBundleUtil.getOccupiedBundleIndexes(positionBundle);
+  const bundledPositions: (PositionData | undefined)[] = new Array(
+    POSITION_BUNDLE_SIZE,
+  ).fill(undefined);
 
-  const addresses = openBundleIndexes.map((index) =>
-    PDAUtil.getBundledPosition(ctx.program.programId, positionBundle.positionBundleMint, index).publicKey
+  const addresses = openBundleIndexes.map(
+    (index) =>
+      PDAUtil.getBundledPosition(
+        ctx.program.programId,
+        positionBundle.positionBundleMint,
+        index,
+      ).publicKey,
   );
   const positions = await ctx.fetcher.getPositions(addresses, IGNORE_CACHE);
 

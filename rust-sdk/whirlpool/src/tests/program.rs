@@ -113,7 +113,6 @@ pub async fn setup_position(
 
     for start_tick in tick_arrays.iter() {
         let (tick_array_address, _) = get_tick_array_address(&whirlpool, *start_tick)?;
-
         let account_result = ctx.rpc.get_account(&tick_array_address).await;
         let needs_init = match account_result {
             Ok(account) => account.data.is_empty(),

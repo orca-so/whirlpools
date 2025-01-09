@@ -11,19 +11,16 @@ import { checkATAInitialization, checkTickArrayInitialization, checkPositionBund
 console.info("sync PositionBundle state...");
 
 // prompt
-console.warn("using test values");
-const positionBundlePubkeyStr = "qHbk42b2ub8K6Rw6p7t1aUoJpwGZ6xpzDC75CQ4QgPD";
-//const positionBundlePubkeyStr = await promptText("positionBundlePubkey");
+const positionBundlePubkeyStr = await promptText("positionBundlePubkey");
 const positionBundlePubkey = new PublicKey(positionBundlePubkeyStr);
-const whirlpoolPubkeyStr = "95XaJMqCLiWtUwF9DtSvDpDbPYhEHoVyCeeNwmUD7cwr";
-//const whirlpoolPubkeyStr = await promptText("whirlpoolPubkey");
+const whirlpoolPubkeyStr = await promptText("whirlpoolPubkey");
 const whirlpoolPubkey = new PublicKey(whirlpoolPubkeyStr);
-const positionBundleTargetStateCsvPath = "position_bundle_target_state_close.csv";
-//const positionBundleTargetStateCsvPath = await promptText("positionBundleTargetStateCsvPath");
 
-const commaSeparatedAltPubkeyStrs = "7Vyx1y8vG9e9Q1MedmXpopRC6ZhVaZzGcvYh5Z3Cs75i , AnXmyHSfuAaWkCxaUuTW39SN5H5ztH8bBxm647uESgTd, FjTZwDecYM3G66VKFuAaLgw3rY1QitziKdM5Ng4EpoKd";
-//const commaSeparatedAltPubkeyStrs = await promptText("commaSeparatedAltPubkeys");
-const altPubkeyStrs = commaSeparatedAltPubkeyStrs.split(",").map((str) => str.trim()).filter((str) => str.length > 0);
+const positionBundleTargetStateCsvPath = await promptText("positionBundleTargetStateCsvPath");
+
+const commaSeparatedAltPubkeyStrs = await promptText("commaSeparatedAltPubkeys", "no ALTs");
+const noAlts = commaSeparatedAltPubkeyStrs === "no ALTs";
+const altPubkeyStrs = noAlts ? [] : commaSeparatedAltPubkeyStrs.split(",").map((str) => str.trim()).filter((str) => str.length > 0);
 const altPubkeys = altPubkeyStrs.map((str) => new PublicKey(str));
 
 console.info("check positionBundle...");
@@ -98,8 +95,9 @@ while (true) {
   console.info([
     "\n📝 ACTION SUMMARY\n",
     "\n",
-    `Pool: ${whirlpoolPubkey.toBase58()}\n`,
+    `Pool:           ${whirlpoolPubkey.toBase58()}\n`,
     `PositionBundle: ${positionBundlePubkey.toBase58()}\n`,
+    `Target state:   ${positionBundleTargetStateCsvPath}\n`,
     "\n",
     "Position state changes:\n",
     "\n",
@@ -224,6 +222,89 @@ async function getWalletATABalance(ctx: WhirlpoolContext, whirlpool: WhirlpoolDa
 
 SAMPLE EXECUTION LOG
 
+connection endpoint http://localhost:8899
+wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
+sync PositionBundle state...
+✔ positionBundlePubkey … qHbk42b2ub8K6Rw6p7t1aUoJpwGZ6xpzDC75CQ4QgPD
+✔ whirlpoolPubkey … 95XaJMqCLiWtUwF9DtSvDpDbPYhEHoVyCeeNwmUD7cwr
+✔ positionBundleTargetStateCsvPath … sample/position_bundle_state/open.csv
+✔ commaSeparatedAltPubkeys … 7Vyx1y8vG9e9Q1MedmXpopRC6ZhVaZzGcvYh5Z3Cs75i, AnXmyHSfuAaWkCxaUuTW39SN5H5ztH8bBxm647uESgTd, FjTZwDecYM3G66VKFuAaLgw3rY1QitziKdM5Ng4EpoKd
+check positionBundle...
+check whirlpool...
+check ALTs...
+    loaded ALT 7Vyx1y8vG9e9Q1MedmXpopRC6ZhVaZzGcvYh5Z3Cs75i, 254 entries
+    loaded ALT AnXmyHSfuAaWkCxaUuTW39SN5H5ztH8bBxm647uESgTd, 256 entries
+    loaded ALT FjTZwDecYM3G66VKFuAaLgw3rY1QitziKdM5Ng4EpoKd, 20 entries
+read position bundle target state...
+check if required TickArrays are initialized...
+check if required ATAs are initialized...
+check position bundle state difference...
+building transactions...
 
+📝 ACTION SUMMARY
+
+Pool:           95XaJMqCLiWtUwF9DtSvDpDbPYhEHoVyCeeNwmUD7cwr
+PositionBundle: qHbk42b2ub8K6Rw6p7t1aUoJpwGZ6xpzDC75CQ4QgPD
+Target state:   sample/position_bundle_target_state_open.csv
+
+Position state changes:
+
+    close position:       0 position(s)
+    open  position:     126 position(s)
+    withdraw liquidity:   0 position(s)
+    deposit  liquidity:   0 position(s)
+
+Balance changes:
+
+    slippage: 1 %
+
+    tokenA withdrawn (est): 0
+    tokenB withdrawn (est): 0
+    tokenA withdrawn (min): 0
+    tokenB withdrawn (min): 0
+    tokenA collected:       0
+    tokenB collected:       0
+    rewards collected:      no reward, no reward, no reward
+    tokenA deposited (est): 0
+    tokenB deposited (est): 711326.515908
+    tokenA deposited (max): 0
+    tokenB deposited (max): 718439.781001
+
+    tokenA balance delta (est): 0
+    tokenB balance delta (est): -711326.515908
+
+    * negative balance delta means deposited more than withdrawn
+
+Wallet balances:
+
+    tokenA: 1000000000
+    tokenB: 999999999.999622
+
+Transactions:
+
+    withdraw: 0 transaction(s)
+    deposit:  14 transaction(s)
+
+✔ proceed? › Yes
+
+estimatedComputeUnits: 1400000
+process transaction...
+transaction is still valid, 151 blocks left (at most)
+sending...
+confirming...
+✅successfully landed
+signature 3K2nYSwpSCcHNvNtUCQZ9UCbpeR64BL7GGf2xdW1RMLim1wU53Ju9rfEYv1qLbhmm1vMYRvtV3g2CYxnoz4MQWTT
+...
+...
+...
+estimatedComputeUnits: 1400000
+process transaction...
+transaction is still valid, 151 blocks left (at most)
+sending...
+confirming...
+✅successfully landed
+signature 2U1SLJSQnH434DgTTiAQw52YrSMBKUELJ73knfvNMV2KbMofSTk94w4DKY1fEuMe8rD2bTPT8V6C1qavBYMB2JCc
+check position bundle state difference...
+synced
 
 */

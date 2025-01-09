@@ -87,7 +87,6 @@ if (landed) {
 
 SAMPLE EXECUTION LOG
 
-$ yarn start initializeAltForWhirlpool
 connection endpoint http://localhost:8899
 wallet r21Gamwd9DtyjHeGywsneoQYR39C1VDwrw7tWxHAwh6
 initialize ALT for whirlpool...

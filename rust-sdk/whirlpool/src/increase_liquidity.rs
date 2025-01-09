@@ -726,6 +726,13 @@ mod tests {
         Position::from_bytes(&account.data).map_err(|e| e.into())
     }
 
+    async fn get_token_balance(rpc: &RpcClient, address: Pubkey) -> Result<u64, Box<dyn Error>> {
+        // For an SPL account that we already know, just fetch + unpack
+        let account_data = rpc.get_account(&address).await?;
+        let token_account = spl_token::state::Account::unpack(&account_data.data)?;
+        Ok(token_account.amount)
+    }
+
     const TEST_SLIPPAGE_TOLERANCE: u16 = 100; // 1%
 
     #[tokio::test]
@@ -768,6 +775,76 @@ mod tests {
 
         ctx.send_transaction_with_signers(increase_ix.instructions, signers)
             .await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn test_increase_liquidity_with_quote_verification() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+
+        let mint_a_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_b_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
+
+        let token_balance: u64 = 1_000_000;
+        let user_ata_a = setup_ata_with_amount(&ctx, mint_a_pubkey, token_balance).await?;
+        let user_ata_b = setup_ata_with_amount(&ctx, mint_b_pubkey, token_balance).await?;
+
+        let pool_pubkey = setup_whirlpool(&ctx, mint_a_pubkey, mint_b_pubkey, 64).await?;
+        let position_mint = setup_position(
+            &ctx,
+            pool_pubkey,
+            Some((-128, 128)), // or any range
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+
+        let param = IncreaseLiquidityParam::TokenA(100_000);
+        let increase_ix = increase_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            param.clone(),
+            Some(100), // 1% slippage
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+
+        let quote = &increase_ix.quote;
+
+        let before_a = get_token_balance(&ctx.rpc, user_ata_a).await?;
+        let before_b = get_token_balance(&ctx.rpc, user_ata_b).await?;
+
+        let signers: Vec<&Keypair> = increase_ix.additional_signers.iter().collect();
+        ctx.send_transaction_with_signers(increase_ix.instructions, signers)
+            .await?;
+
+        let after_a = get_token_balance(&ctx.rpc, user_ata_a).await?;
+        let after_b = get_token_balance(&ctx.rpc, user_ata_b).await?;
+        let used_a = before_a.saturating_sub(after_a);
+        let used_b = before_b.saturating_sub(after_b);
+
+        assert!(
+            used_a >= quote.token_est_a && used_a <= quote.token_max_a,
+            "token A usage out of expected range: used={} estimate={}..{}",
+            used_a,
+            quote.token_est_a,
+            quote.token_max_a
+        );
+        assert!(
+            used_b >= quote.token_est_b && used_b <= quote.token_max_b,
+            "token B usage out of expected range: used={} estimate={}..{}",
+            used_b,
+            quote.token_est_b,
+            quote.token_max_b
+        );
+
+        let position_pubkey = get_position_address(&position_mint).unwrap().0;
+        let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
+
+        assert_eq!(
+            position_data.liquidity, quote.liquidity_delta,
+            "Position liquidity does not match the quote"
+        );
 
         Ok(())
     }

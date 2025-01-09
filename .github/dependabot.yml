@@ -4,7 +4,6 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    labels: [ ]
     groups:
       docusaurus:
         applies-to: version-updates
@@ -13,7 +12,6 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    labels: [ ]
     groups:
       program-dependencies:
         applies-to: version-updates
@@ -22,4 +20,3 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    labels: [ ]

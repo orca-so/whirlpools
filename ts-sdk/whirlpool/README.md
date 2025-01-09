@@ -13,18 +13,20 @@ The Orca Whirlpools SDK provides a comprehensive set of tools to interact with t
 To install the SDK, use the following command:
 
 ```sh
-npm install @orca-so/whirlpools
+npm install @orca-so/whirlpools @solana/web3.js@2
 ```
 
 ## Basic Usage
 
 ### 1. Wallet Creation
-You can create a wallet using `generateKeyPairSigner()` from the Solana SDK.
+You can [generate a file system wallet using the Solana CLI](https://docs.solanalabs.com/cli/wallets/file-system) and load it in your program.
 
 ```tsx
-import { generateKeyPairSigner } from '@solana/web3.js';
+import { createKeyPairSignerFromBytes } from '@solana/web3.js';
+import fs from 'fs';
 
-const wallet = await generateKeyPairSigner();
+const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
+const wallet = await createKeyPairSignerFromBytes(keyPairBytes);
 ```
 
 ### 2. Configure the Whirlpools SDK for Your Network
@@ -53,7 +55,7 @@ import { swapInstructions } from '@orca-so/whirlpools';
 const poolAddress = "POOL_ADDRESS";
 const mintAddress = "TOKEN_MINT";
 const amount = 1_000_000n;
-const slippageTolerance = 100; // 1bps
+const slippageTolerance = 100; // 100 bps = 1%
 
 const { instructions, quote } = await swapInstructions(
     devnetRpc,
@@ -74,7 +76,7 @@ import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js'
 
 const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
 await setWhirlpoolsConfig('solanaDevnet');
-const wallet = await generateKeyPairSigner();
+const wallet = loadWallet();
 await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
 
 /* Example Devnet Addresses:
@@ -86,8 +88,8 @@ await devnetRpc.requestAirdrop(wallet.address, lamports(1000000000n)).send();
 
 const poolAddress = "3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt";
 const mintAddress = "So11111111111111111111111111111111111111112";
-const amount = 1_000_000n;
-const slippageTolerance = 100; // 1bps
+const amount = 1_000_000n; // 0.001 WSOL (SOL has 9 decimals)
+const slippageTolerance = 100; // 100bps = 1%
 
 const { instructions, quote } = await swapInstructions(
     devnetRpc,

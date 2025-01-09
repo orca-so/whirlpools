@@ -41,7 +41,7 @@ Fetching positions is a straightforward process:
   <TabItem value="rust" label="Rust">
     ```rust
     use orca_whirlpools::{
-        get_positions_for_owner, set_whirlpools_config_address, WhirlpoolsConfigInput
+        fetch_positions_for_owner, set_whirlpools_config_address, WhirlpoolsConfigInput
     };
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
@@ -54,7 +54,7 @@ Fetching positions is a straightforward process:
         let whirlpool_address =
             Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
 
-        let positions = get_positions_for_owner(&rpc, whirlpool_address)
+        let positions = fetch_positions_for_owner(&rpc, whirlpool_address)
             .await
             .unwrap();
 

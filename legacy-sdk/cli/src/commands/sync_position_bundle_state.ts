@@ -24,13 +24,10 @@ async function main() {
   const positionBundleTargetStateCsvPath = "position_bundle_target_state_open.csv";
   //const positionBundleTargetStateCsvPath = await promptText("positionBundleTargetStateCsvPath");
 
-  const sharedALTPubkeyStr = "7Vyx1y8vG9e9Q1MedmXpopRC6ZhVaZzGcvYh5Z3Cs75i";
-  const sharedALTPubkey = new PublicKey(sharedALTPubkeyStr);
-  const sharedALTResponse = await ctx.connection.getAddressLookupTable(sharedALTPubkey);
-  if (!sharedALTResponse || !sharedALTResponse.value) {
-    throw new Error("shared ALT not found");
-  }
-  const sharedALT = sharedALTResponse.value;
+  const commaSeparatedAltPubkeyStrs = "7Vyx1y8vG9e9Q1MedmXpopRC6ZhVaZzGcvYh5Z3Cs75i , AnXmyHSfuAaWkCxaUuTW39SN5H5ztH8bBxm647uESgTd, FjTZwDecYM3G66VKFuAaLgw3rY1QitziKdM5Ng4EpoKd";
+  //const commaSeparatedAltPubkeyStrs = await promptText("commaSeparatedAltPubkeys");
+  const altPubkeyStrs = commaSeparatedAltPubkeyStrs.split(",").map((str) => str.trim()).filter((str) => str.length > 0);
+  const altPubkeys = altPubkeyStrs.map((str) => new PublicKey(str));
 
   console.info("check positionBundle...");
   const positionBundle = await ctx.fetcher.getPositionBundle(positionBundlePubkey, IGNORE_CACHE);
@@ -41,6 +38,19 @@ async function main() {
   const whirlpool = await ctx.fetcher.getPool(whirlpoolPubkey, IGNORE_CACHE);
   if (!whirlpool) {
     throw new Error("whirlpool not found");
+  }
+  const alts: AddressLookupTableAccount[] = [];
+  if (altPubkeys.length > 0) {
+    console.info("check ALTs...");
+    for (const altPubkey of altPubkeys) {
+      const res = await ctx.connection.getAddressLookupTable(altPubkey);
+      if (!res || !res.value) {
+        throw new Error(`altAddress not found: ${altPubkey.toBase58()}`);
+      } else {
+        console.info(`    loaded ALT ${altPubkey.toBase58()}, ${res.value.state.addresses.length} entries`);
+      }
+      alts.push(res.value);
+    }  
   }
 
   // read position bundle target state
@@ -84,9 +94,14 @@ async function main() {
     const { tokenABalance, tokenBBalance } = await getWalletATABalance(ctx, whirlpool);
 
     console.info("building transactions...");
-    const transactions = await buildTransactions(ctx, [sharedALT], positionBundlePubkey, whirlpoolPubkey, difference, positionBundleTargetState, quotes);
+    const transactions = await buildTransactions(ctx, alts, positionBundlePubkey, whirlpoolPubkey, difference, positionBundleTargetState, quotes);
 
     console.info([
+      "\n📝 ACTION SUMMARY\n",
+      "\n",
+      `Pool: ${whirlpoolPubkey.toBase58()}\n`,
+      `PositionBundle: ${positionBundlePubkey.toBase58()}\n`,
+      "\n",
       "Position state changes:\n",
       "\n",
       `    close position:     ${difference.shouldBeClosed.length.toString().padStart(3, " ")} position(s)\n`,
@@ -140,8 +155,8 @@ async function main() {
     }
 
     const defaultPriorityFeeInLamports = 10_000; // 0.00001 SOL
-    await sendTransactions(ctx, [sharedALT], transactions.withdrawTransactions, defaultPriorityFeeInLamports);
-    await sendTransactions(ctx, [sharedALT], transactions.depositTransactions, defaultPriorityFeeInLamports);
+    await sendTransactions(ctx, alts, transactions.withdrawTransactions, defaultPriorityFeeInLamports);
+    await sendTransactions(ctx, alts, transactions.depositTransactions, defaultPriorityFeeInLamports);
 
     firstIteration = false;
   }

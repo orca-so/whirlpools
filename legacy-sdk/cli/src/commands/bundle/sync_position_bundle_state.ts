@@ -1,4 +1,4 @@
-import { AddressLookupTableAccount, ComputeBudgetInstruction, ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
+import { AddressLookupTableAccount, ComputeBudgetProgram, PublicKey } from "@solana/web3.js";
 import { collectFeesQuote, CollectFeesQuote, collectRewardsQuote, CollectRewardsQuote, DecreaseLiquidityQuote, decreaseLiquidityQuoteByLiquidityWithParams, IGNORE_CACHE, IncreaseLiquidityQuote, IncreaseLiquidityQuoteByLiquidityParam, increaseLiquidityQuoteByLiquidityWithParams, MAX_TICK_INDEX, MIN_TICK_INDEX, NO_TOKEN_EXTENSION_CONTEXT, PDAUtil, PoolUtil, POSITION_BUNDLE_SIZE, PositionBundleData, PositionBundleUtil, PositionData, PREFER_CACHE, TickArrayData, TickArrayUtil, TickUtil, TokenExtensionUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { DecimalUtil, MEASUREMENT_BLOCKHASH, MintWithTokenProgram, Percentage, TransactionBuilder } from "@orca-so/common-sdk";
 import { sendTransaction } from "../../utils/transaction_sender";
@@ -21,7 +21,7 @@ async function main() {
   const whirlpoolPubkeyStr = "95XaJMqCLiWtUwF9DtSvDpDbPYhEHoVyCeeNwmUD7cwr";
   //const whirlpoolPubkeyStr = await promptText("whirlpoolPubkey");
   const whirlpoolPubkey = new PublicKey(whirlpoolPubkeyStr);
-  const positionBundleTargetStateCsvPath = "position_bundle_target_state_open.csv";
+  const positionBundleTargetStateCsvPath = "position_bundle_target_state_close.csv";
   //const positionBundleTargetStateCsvPath = await promptText("positionBundleTargetStateCsvPath");
 
   const commaSeparatedAltPubkeyStrs = "7Vyx1y8vG9e9Q1MedmXpopRC6ZhVaZzGcvYh5Z3Cs75i , AnXmyHSfuAaWkCxaUuTW39SN5H5ztH8bBxm647uESgTd, FjTZwDecYM3G66VKFuAaLgw3rY1QitziKdM5Ng4EpoKd";
@@ -86,10 +86,10 @@ async function main() {
       console.warn("There are still differences between the current state and the target state (some transaction may have failed)");
     }
 
-    // TODO: param
+    // TODO: prompt
     const slippage = Percentage.fromFraction(1, 100); // 1%
-    const quotes = await getQuotesToSync(ctx, whirlpoolPubkey, positionBundleTargetState, difference, slippage);
-    const balanceDifference = calcBalanceDifference(quotes);
+    const quotes = await generateQuotesToSync(ctx, whirlpoolPubkey, positionBundleTargetState, difference, slippage);
+    const balanceDifference = calculateBalanceDifference(quotes);
 
     const { tokenABalance, tokenBBalance } = await getWalletATABalance(ctx, whirlpool);
 
@@ -110,6 +110,8 @@ async function main() {
       `    deposit  liquidity: ${difference.shouldBeIncreased.length.toString().padStart(3, " ")} position(s)\n`,
       "\n",
       "Balance changes:\n",
+      "\n",
+      `    slippage: ${slippage.toDecimal().mul(100).toString()} %\n`,
       "\n",
       `    tokenA withdrawn (est): ${toDecimalAmountA(balanceDifference.tokenAWithdrawnEst)}\n`,
       `    tokenB withdrawn (est): ${toDecimalAmountB(balanceDifference.tokenBWithdrawnEst)}\n`,
@@ -146,7 +148,6 @@ async function main() {
       console.warn("WARNING: tokenB balance delta exceeds the wallet balance, some deposits may fail\n");
     }
 
-
     // prompt for confirmation
     const confirmed = await promptConfirm("proceed?");
     if (!confirmed) {
@@ -154,6 +155,7 @@ async function main() {
       break;
     }
 
+    // TODO: prompt for priority fee
     const defaultPriorityFeeInLamports = 10_000; // 0.00001 SOL
     await sendTransactions(ctx, alts, transactions.withdrawTransactions, defaultPriorityFeeInLamports);
     await sendTransactions(ctx, alts, transactions.depositTransactions, defaultPriorityFeeInLamports);
@@ -541,7 +543,7 @@ type QuotesToSync = {
   quotesForIncrease: QuotesForIncrease[];
 };
 
-async function getQuotesToSync(
+async function generateQuotesToSync(
   ctx: WhirlpoolContext,
   whirlpoolPubkey: PublicKey,
   positionBundleTargetState: PositionBundleStateItem[],
@@ -742,15 +744,13 @@ type BalanceDifference = {
   tokenBBalanceDeltaEst: BN; // no consideration of fees and rewards
 };
 
-function calcBalanceDifference(quotes: QuotesToSync): BalanceDifference {
+function calculateBalanceDifference(quotes: QuotesToSync): BalanceDifference {
   const {
     quotesForDecrease,
     quotesForClose,
     quotesForOpen,
     quotesForIncrease,
   } = quotes;
-
-
 
   let tokenAWithdrawnEst = new BN(0);
   let tokenBWithdrawnEst = new BN(0);

@@ -310,6 +310,8 @@ mod tests {
 
     const DEFAULT_TICK_RANGE: (i32, i32) = (-100, 100);
 
+    const DEFAULT_TICK_RANGE: (i32, i32) = (-100, 100);
+
     #[tokio::test]
     #[serial]
     #[ignore = "Skipped until solana-bankrun supports gpa"]
@@ -335,15 +337,6 @@ mod tests {
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
 
         let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
-<<<<<<< HEAD
-        let position_pubkey =
-            setup_position(&ctx, whirlpool, Some(DEFAULT_TICK_RANGE), None).await?;
-
-        let te_mint = setup_mint_with_decimals(&ctx, 9).await?;
-        setup_ata_with_amount(&ctx, te_mint, 1_000_000_000).await?;
-        let _te_position_pubkey =
-            setup_position(&ctx, whirlpool, Some(DEFAULT_TICK_RANGE), None).await?;
-=======
         let normal_position_pubkey = setup_position(whirlpool).await?;
 
         // 1) Add a te_position (uses token-2022)
@@ -351,7 +344,6 @@ mod tests {
 
         // 2) Add a position bundle, optionally with multiple bundled positions
         let position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
->>>>>>> cdefdca0e4db43aa95691f4163eb73e48ded6006
 
         let owner = ctx.signer.pubkey();
         let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
@@ -382,16 +374,8 @@ mod tests {
         let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
         setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
-        let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
-<<<<<<< HEAD
-        let _position_pubkey =
-            setup_position(&ctx, whirlpool, Some(DEFAULT_TICK_RANGE), None).await?;
 
-        let te_mint = setup_mint_with_decimals(&ctx, 9).await?;
-        setup_ata_with_amount(&ctx, te_mint, 1_000_000_000).await?;
-        let _te_position_pubkey =
-            setup_position(&ctx, whirlpool, Some(DEFAULT_TICK_RANGE), None).await?;
-=======
+        let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
         let _normal_position_pubkey = setup_position(whirlpool).await?;
 
         // 1) te_position
@@ -399,7 +383,6 @@ mod tests {
 
         // 2) position bundle
         let _position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
->>>>>>> cdefdca0e4db43aa95691f4163eb73e48ded6006
 
         let positions = fetch_positions_in_whirlpool(&ctx.rpc, whirlpool).await?;
 

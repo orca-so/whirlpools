@@ -653,7 +653,7 @@ mod tests {
     }
 
     use crate::tests::{
-        setup_ata_te, setup_ata_with_amount, setup_config_and_fee_tiers, setup_mint_te_fee,
+        setup_ata_te, setup_ata_with_amount, setup_mint_te_fee,
         setup_mint_with_decimals, setup_position, setup_te_position, setup_whirlpool, RpcContext,
         SetupAtaConfig,
     };
@@ -672,7 +672,6 @@ mod tests {
         let ctx = RpcContext::new().await;
 
         // Setup and initialize
-        setup_config_and_fee_tiers(&ctx).await?;
         let mint_a_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
         let token_balance: u64 = 1_000_000_000;
@@ -682,7 +681,7 @@ mod tests {
         // Setup pool and position
         let tick_spacing = 64;
         let pool_pubkey =
-            setup_whirlpool(&ctx, ctx.config, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
+            setup_whirlpool(&ctx, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
 
         let position_mint = setup_position(
             &ctx,
@@ -736,7 +735,6 @@ mod tests {
         let ctx = RpcContext::new().await;
 
         // Setup and initialize
-        setup_config_and_fee_tiers(&ctx).await?;
         let mint_a_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
         let token_balance: u64 = 1_000_000_000;
@@ -746,7 +744,7 @@ mod tests {
         // Setup pool and position
         let tick_spacing = 64;
         let pool_pubkey =
-            setup_whirlpool(&ctx, ctx.config, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
+            setup_whirlpool(&ctx, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
 
         let position_mint = setup_position(
             &ctx,

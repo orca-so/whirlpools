@@ -17,9 +17,9 @@ use solana_sdk::{
     system_instruction, system_program,
 };
 use spl_associated_token_account::{
-    get_associated_token_address, get_associated_token_address_with_program_id,
-    instruction::create_associated_token_account,
+    get_associated_token_address, instruction::create_associated_token_account,
 };
+use spl_token::instruction::initialize_mint2;
 use spl_token::ID as TOKEN_PROGRAM_ID;
 use spl_token_2022::{state::Mint as Token2022Mint, ID as TOKEN_2022_PROGRAM_ID};
 use std::error::Error;
@@ -36,45 +36,38 @@ use spl_token::state::Mint;
 
 pub async fn setup_whirlpool(
     ctx: &RpcContext,
-    config: Pubkey,
     token_a: Pubkey,
     token_b: Pubkey,
     tick_spacing: u16,
 ) -> Result<Pubkey, Box<dyn Error>> {
+    let config = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
     let fee_tier = get_fee_tier_address(&config, tick_spacing)?.0;
     let whirlpool = get_whirlpool_address(&config, &token_a, &token_b, tick_spacing)?.0;
-    let (token_badge_a, _) = get_token_badge_address(&config, &token_a)?;
-    let (token_badge_b, _) = get_token_badge_address(&config, &token_b)?;
+    let token_badge_a = get_token_badge_address(&config, &token_a)?.0;
+    let token_badge_b = get_token_badge_address(&config, &token_b)?.0;
 
     let vault_a = ctx.get_next_keypair();
     let vault_b = ctx.get_next_keypair();
 
-    let mint_infos = ctx.rpc.get_multiple_accounts(&[token_a, token_b]).await?;
-    let mint_a_info = mint_infos[0]
-        .as_ref()
-        .ok_or("Token A mint info not found")?;
-    let mint_b_info = mint_infos[1]
-        .as_ref()
-        .ok_or("Token B mint info not found")?;
+    let mint_a_info = ctx.rpc.get_account(&token_a).await?;
+    let mint_b_info = ctx.rpc.get_account(&token_b).await?;
 
-    let token_program_a = mint_a_info.owner;
-    let token_program_b = mint_b_info.owner;
-
+    // Default initial price of 1.0
     let sqrt_price = tick_index_to_sqrt_price(0);
 
     let instructions = vec![InitializePoolV2 {
-        whirlpools_config: config,
+        whirlpool,
+        fee_tier,
         token_mint_a: token_a,
         token_mint_b: token_b,
-        token_badge_a: token_badge_a,
-        token_badge_b: token_badge_b,
+        whirlpools_config: config,
         funder: ctx.signer.pubkey(),
-        whirlpool,
         token_vault_a: vault_a.pubkey(),
         token_vault_b: vault_b.pubkey(),
-        fee_tier: fee_tier,
-        token_program_a: token_program_a,
-        token_program_b: token_program_b,
+        token_badge_a,
+        token_badge_b,
+        token_program_a: mint_a_info.owner,
+        token_program_b: mint_b_info.owner,
         system_program: system_program::id(),
         rent: RENT_PROGRAM_ID,
     }
@@ -184,15 +177,18 @@ pub async fn setup_te_position(
     let whirlpool_data = ctx.rpc.get_account(&whirlpool).await?;
     let whirlpool_account = Whirlpool::from_bytes(&whirlpool_data.data)?;
 
-    let (tick_lower, tick_upper) = tick_range.unwrap_or((-128, 128));
+    // Get tick range
+    let (tick_lower, tick_upper) = tick_range.unwrap_or((-100, 100));
 
-    let tick_spacing = whirlpool_account.tick_spacing as i32;
-    let tick_lower_aligned = (tick_lower / tick_spacing) * tick_spacing;
-    let tick_upper_aligned = (tick_upper / tick_spacing) * tick_spacing;
+    // Get initializable tick indexes
+    let lower_tick_index =
+        get_initializable_tick_index(tick_lower, whirlpool_account.tick_spacing, None);
+    let upper_tick_index =
+        get_initializable_tick_index(tick_upper, whirlpool_account.tick_spacing, None);
 
     let tick_arrays = [
-        get_tick_array_start_tick_index(tick_lower_aligned, whirlpool_account.tick_spacing),
-        get_tick_array_start_tick_index(tick_upper_aligned, whirlpool_account.tick_spacing),
+        get_tick_array_start_tick_index(lower_tick_index, whirlpool_account.tick_spacing),
+        get_tick_array_start_tick_index(upper_tick_index, whirlpool_account.tick_spacing),
     ];
 
     for start_tick in tick_arrays.iter() {
@@ -219,6 +215,7 @@ pub async fn setup_te_position(
         }
     }
 
+    // Create Token-2022 position
     let position_mint = Keypair::new();
     let lamports = ctx
         .rpc
@@ -241,11 +238,8 @@ pub async fn setup_te_position(
         0,
     )?;
 
-    let position_token_account = get_associated_token_address_with_program_id(
-        &ctx.signer.pubkey(),
-        &position_mint.pubkey(),
-        &TOKEN_2022_PROGRAM_ID,
-    );
+    let position_token_account =
+        get_associated_token_address(&ctx.signer.pubkey(), &position_mint.pubkey());
 
     let create_ata_ix = create_associated_token_account(
         &ctx.signer.pubkey(),
@@ -269,8 +263,8 @@ pub async fn setup_te_position(
         rent: RENT_PROGRAM_ID,
     }
     .instruction(OpenPositionInstructionArgs {
-        tick_lower_index: tick_lower_aligned,
-        tick_upper_index: tick_upper_aligned,
+        tick_lower_index: lower_tick_index,
+        tick_upper_index: upper_tick_index,
         position_bump,
     });
 

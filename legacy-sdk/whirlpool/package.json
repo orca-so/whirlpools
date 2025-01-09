@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-sdk",
-  "version": "0.13.12",
+  "version": "0.13.13",
   "description": "Typescript SDK to interact with Orca's Whirlpool program.",
   "license": "Apache-2.0",
   "main": "dist/index.js",
@@ -29,7 +29,7 @@
   "scripts": {
     "build": "mkdir -p ./src/artifacts && cp -f ../../target/idl/whirlpool.json ./src/artifacts/whirlpool.json && cp -f ../../target/types/whirlpool.ts ./src/artifacts/whirlpool.ts && tsc",
     "clean": "rimraf dist",
-    "test": "anchor test --skip-build"
+    "prepublishOnly": "cd ../.. && yarn build legacy-sdk/whirlpool"
   },
   "files": [
     "dist",

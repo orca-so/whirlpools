@@ -65,14 +65,16 @@ pub fn collect_rewards_quote(
             .wrapping_sub(reward_growth_below)
             .wrapping_sub(reward_growth_above);
 
-        let reward_growth_delta: u64 = <U256>::from(reward_growth_inside)
-            .wrapping_sub(position.reward_infos[i].growth_inside_checkpoint.into())
+        let reward_growth_delta =
+            reward_growth_inside.wrapping_sub(position.reward_infos[i].growth_inside_checkpoint);
+
+        let reward_owed_delta: u64 = <U256>::from(reward_growth_delta)
             .checked_mul(position.liquidity.into())
             .ok_or(ARITHMETIC_OVERFLOW)?
             .try_into()
             .map_err(|_| AMOUNT_EXCEEDS_MAX_U64)?;
 
-        let withdrawable_reward = position.reward_infos[i].amount_owed + reward_growth_delta;
+        let withdrawable_reward = position.reward_infos[i].amount_owed + reward_owed_delta;
         let rewards_owed =
             try_apply_transfer_fee(withdrawable_reward, transfer_fees[i].unwrap_or_default())?;
         reward_quotes[i] = CollectRewardQuote { rewards_owed }
@@ -242,5 +244,66 @@ mod tests {
         assert_eq!(quote.map(|x| x.rewards[0].rewards_owed), Ok(21690));
         assert_eq!(quote.map(|x| x.rewards[1].rewards_owed), Ok(22560));
         assert_eq!(quote.map(|x| x.rewards[2].rewards_owed), Ok(22610));
+    }
+
+    #[test]
+    fn test_cyclic_growth_checkpoint() {
+        let position = PositionFacade {
+            liquidity: 91354442895,
+            tick_lower_index: 15168,
+            tick_upper_index: 19648,
+            reward_infos: [
+                PositionRewardInfoFacade {
+                    growth_inside_checkpoint: 340282366920938463463374607431768211400,
+                    amount_owed: 0,
+                },
+                PositionRewardInfoFacade {
+                    growth_inside_checkpoint: 340282366920938463463374607431768211000,
+                    amount_owed: 0,
+                },
+                PositionRewardInfoFacade {
+                    growth_inside_checkpoint: 0,
+                    amount_owed: 0,
+                },
+            ],
+            ..PositionFacade::default()
+        };
+
+        let whirlpool = WhirlpoolFacade {
+            tick_current_index: 18158,
+            reward_infos: [
+                WhirlpoolRewardInfoFacade {
+                    growth_global_x64: 0,
+                    emissions_per_second_x64: 0,
+                },
+                WhirlpoolRewardInfoFacade {
+                    growth_global_x64: 0,
+                    emissions_per_second_x64: 0,
+                },
+                WhirlpoolRewardInfoFacade {
+                    growth_global_x64: 0,
+                    emissions_per_second_x64: 0,
+                },
+            ],
+            ..WhirlpoolFacade::default()
+        };
+
+        let tick_lower = TickFacade {
+            reward_growths_outside: [0, 0, 0],
+            ..TickFacade::default()
+        };
+
+        let tick_upper = TickFacade {
+            reward_growths_outside: [0, 0, 0],
+            ..TickFacade::default()
+        };
+
+        let result = collect_rewards_quote(
+            whirlpool, position, tick_lower, tick_upper, 10, None, None, None,
+        )
+        .unwrap();
+        assert_eq!(result.rewards[0].rewards_owed, 5115848802120);
+        assert_eq!(result.rewards[1].rewards_owed, 41657625960120);
+        assert_eq!(result.rewards[2].rewards_owed, 0);
     }
 }

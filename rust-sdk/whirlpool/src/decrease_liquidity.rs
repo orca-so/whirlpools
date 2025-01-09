@@ -730,7 +730,6 @@ mod tests {
         Ok(())
     }
 
-
     #[tokio::test]
     #[serial]
     async fn test_decrease_liquidity_to_zero() -> Result<(), Box<dyn Error>> {

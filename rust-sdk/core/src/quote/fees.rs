@@ -63,14 +63,16 @@ pub fn collect_fees_quote(
         .wrapping_sub(fee_growth_below_b)
         .wrapping_sub(fee_growth_above_b);
 
-    let fee_owed_delta_a: U256 = <U256>::from(fee_growth_inside_a)
-        .wrapping_sub(position.fee_growth_checkpoint_a.into())
+    let fee_growth_delta_a = fee_growth_inside_a.wrapping_sub(position.fee_growth_checkpoint_a);
+
+    let fee_growth_delta_b = fee_growth_inside_b.wrapping_sub(position.fee_growth_checkpoint_b);
+
+    let fee_owed_delta_a: U256 = <U256>::from(fee_growth_delta_a)
         .checked_mul(position.liquidity.into())
         .ok_or(ARITHMETIC_OVERFLOW)?
         >> 64;
 
-    let fee_owed_delta_b: U256 = <U256>::from(fee_growth_inside_b)
-        .wrapping_sub(position.fee_growth_checkpoint_b.into())
+    let fee_owed_delta_b: U256 = <U256>::from(fee_growth_delta_b)
         .checked_mul(position.liquidity.into())
         .ok_or(ARITHMETIC_OVERFLOW)?
         >> 64;
@@ -218,5 +220,41 @@ mod tests {
         .unwrap();
         assert_eq!(result.fee_owed_a, 623);
         assert_eq!(result.fee_owed_b, 560);
+    }
+
+    #[test]
+    fn test_cyclic_growth_checkpoint() {
+        let position = PositionFacade {
+            liquidity: 91354442895,
+            tick_lower_index: 15168,
+            tick_upper_index: 19648,
+            fee_growth_checkpoint_a: 340282366920938463463368367551765494643,
+            fee_growth_checkpoint_b: 340282366920938463463235752370561182038,
+            ..PositionFacade::default()
+        };
+
+        let whirlpool = WhirlpoolFacade {
+            tick_current_index: 18158,
+            fee_growth_global_a: 388775621815491196,
+            fee_growth_global_b: 2114651338550574490,
+            ..WhirlpoolFacade::default()
+        };
+
+        let tick_lower = TickFacade {
+            fee_growth_outside_a: 334295763697402279,
+            fee_growth_outside_b: 1816428862338027402,
+            ..TickFacade::default()
+        };
+
+        let tick_upper = TickFacade {
+            fee_growth_outside_a: 48907059211668900,
+            fee_growth_outside_b: 369439434559592375,
+            ..TickFacade::default()
+        };
+
+        let result =
+            collect_fees_quote(whirlpool, position, tick_lower, tick_upper, None, None).unwrap();
+        assert_eq!(result.fee_owed_a, 58500334);
+        assert_eq!(result.fee_owed_b, 334966494);
     }
 }

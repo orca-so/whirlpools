@@ -186,7 +186,6 @@ pub async fn setup_te_position(
     let upper_tick_index =
         get_initializable_tick_index(tick_upper, whirlpool_account.tick_spacing, None);
 
-    // Initialize tick arrays if needed (재사용)
     let tick_arrays = [
         get_tick_array_start_tick_index(lower_tick_index, whirlpool_account.tick_spacing),
         get_tick_array_start_tick_index(upper_tick_index, whirlpool_account.tick_spacing),

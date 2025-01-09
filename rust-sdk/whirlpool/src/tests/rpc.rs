@@ -62,7 +62,6 @@ impl RpcContext {
         );
 
         let config = *WHIRLPOOLS_CONFIG_ADDRESS.lock().unwrap();
-
         test.add_account(
             config,
             Account {

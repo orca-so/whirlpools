@@ -120,7 +120,6 @@ pub async fn setup_position(
 
     for start_tick in tick_arrays.iter() {
         let (tick_array_address, _) = get_tick_array_address(&whirlpool, *start_tick)?;
-
         let account_result = ctx.rpc.get_account(&tick_array_address).await;
         let needs_init = match account_result {
             Ok(account) => account.data.is_empty(),
@@ -346,14 +345,4 @@ pub async fn setup_position_bundle(
     }
 
     Ok(position_bundle_address)
-}
-
-pub async fn setup_config_and_fee_tiers(ctx: &RpcContext) -> Result<(), Box<dyn Error>> {
-    // Set funder first
-    crate::set_funder(ctx.signer.pubkey());
-
-    // Then setup config using ctx.config
-    crate::set_whirlpools_config_address(crate::WhirlpoolsConfigInput::SolanaDevnet)?;
-
-    Ok(())
 }

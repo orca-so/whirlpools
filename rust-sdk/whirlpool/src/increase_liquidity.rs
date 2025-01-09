@@ -706,7 +706,7 @@ mod tests {
 
     use crate::{
         tests::{
-            setup_ata_te, setup_ata_with_amount, setup_config_and_fee_tiers, setup_mint_te,
+            setup_ata_te, setup_ata_with_amount, setup_mint_te,
             setup_mint_te_fee, setup_mint_with_decimals, setup_position, setup_te_position,
             setup_whirlpool, RpcContext, SetupAtaConfig,
         },
@@ -734,7 +734,6 @@ mod tests {
         let ctx = RpcContext::new().await;
 
         // setup and initialize
-        setup_config_and_fee_tiers(&ctx).await?;
         let mint_a_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
         let mint_b_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
         let token_balance: u64 = 1_000_000;

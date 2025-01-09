@@ -301,10 +301,8 @@ pub async fn fetch_positions_in_whirlpool(
 mod tests {
     use super::*;
     use crate::tests::{
-        setup_ata_with_amount, setup_mint_with_decimals, setup_position, setup_whirlpool,
-        RpcContext,
-        setup_te_position,
-        setup_position_bundle,
+        setup_ata_with_amount, setup_mint_with_decimals, setup_position, setup_position_bundle,
+        setup_te_position, setup_whirlpool, RpcContext,
     };
     use serial_test::serial;
     use solana_program_test::tokio;

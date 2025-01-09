@@ -706,9 +706,9 @@ mod tests {
 
     use crate::{
         tests::{
-            setup_ata_te, setup_ata_with_amount, setup_mint_te,
-            setup_mint_te_fee, setup_mint_with_decimals, setup_position, setup_te_position,
-            setup_whirlpool, RpcContext, SetupAtaConfig,
+            setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
+            setup_mint_with_decimals, setup_position, setup_te_position, setup_whirlpool,
+            RpcContext, SetupAtaConfig,
         },
         DEFAULT_FUNDER, WHIRLPOOLS_CONFIG_ADDRESS,
     };
@@ -742,8 +742,7 @@ mod tests {
 
         // setup pool and position
         let tick_spacing = 64;
-        let pool_pubkey =
-            setup_whirlpool(&ctx, ctx.config, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
+        let pool_pubkey = setup_whirlpool(&ctx, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
 
         let position_mint = setup_position(
             &ctx,

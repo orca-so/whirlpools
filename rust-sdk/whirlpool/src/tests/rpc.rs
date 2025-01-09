@@ -40,7 +40,6 @@ use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
 pub struct RpcContext {
     pub rpc: RpcClient,
     pub signer: Keypair,
-    pub config: Pubkey,
     keypairs: Vec<Keypair>,
     keypair_index: AtomicUsize,
 }
@@ -151,7 +150,6 @@ impl RpcContext {
         Self {
             rpc,
             signer,
-            config,
             keypairs,
             keypair_index: AtomicUsize::new(0),
         }

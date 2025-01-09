@@ -36,11 +36,11 @@ use spl_token::state::Mint;
 
 pub async fn setup_whirlpool(
     ctx: &RpcContext,
-    config: Pubkey,
     token_a: Pubkey,
     token_b: Pubkey,
     tick_spacing: u16,
 ) -> Result<Pubkey, Box<dyn Error>> {
+    let config = *WHIRLPOOLS_CONFIG_ADDRESS.try_lock()?;
     let fee_tier = get_fee_tier_address(&config, tick_spacing)?.0;
     let whirlpool = get_whirlpool_address(&config, &token_a, &token_b, tick_spacing)?.0;
     let token_badge_a = get_token_badge_address(&config, &token_a)?.0;
@@ -269,7 +269,6 @@ pub async fn setup_te_position(
         position_bump,
     });
 
-    println!("Sending transaction with instructions...");
     ctx.send_transaction_with_signers(
         vec![
             create_mint_ix,

@@ -24,7 +24,7 @@
     "@types/bn.js": "~5.1.6",
     "@types/jest": "^29.5.14",
     "decimal.js": "^10.4.3",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.3"
   },
   "scripts": {
     "build": "mkdir -p ./src/artifacts && cp -f ../../target/idl/whirlpool.json ./src/artifacts/whirlpool.json && cp -f ../../target/types/whirlpool.ts ./src/artifacts/whirlpool.ts && tsc",

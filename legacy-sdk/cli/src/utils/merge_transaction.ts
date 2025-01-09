@@ -1,5 +1,6 @@
-import { AddressLookupTableAccount, ComputeBudgetProgram } from "@solana/web3.js";
-import { WhirlpoolContext } from "@orca-so/whirlpools-sdk";
+import { ComputeBudgetProgram } from "@solana/web3.js";
+import type { AddressLookupTableAccount } from "@solana/web3.js";
+import type { WhirlpoolContext } from "@orca-so/whirlpools-sdk";
 import { MEASUREMENT_BLOCKHASH, TransactionBuilder } from "@orca-so/common-sdk";
 
 export function mergeTransactionBuilders(ctx: WhirlpoolContext, txs: TransactionBuilder[], alts: AddressLookupTableAccount[]): TransactionBuilder[] {

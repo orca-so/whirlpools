@@ -1,11 +1,13 @@
-import { AddressLookupTableAccount, PublicKey } from "@solana/web3.js";
-import { IGNORE_CACHE, PoolUtil, POSITION_BUNDLE_SIZE, WhirlpoolContext, WhirlpoolData } from "@orca-so/whirlpools-sdk";
+import type { AddressLookupTableAccount } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
+import { IGNORE_CACHE, PoolUtil, POSITION_BUNDLE_SIZE } from "@orca-so/whirlpools-sdk";
+import type { WhirlpoolContext, WhirlpoolData } from "@orca-so/whirlpools-sdk";
 import { DecimalUtil, Percentage } from "@orca-so/common-sdk";
 import { ctx } from "../../utils/provider";
 import { promptConfirm, promptText } from "../../utils/prompt";
 import BN from "bn.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import Decimal from "decimal.js";
+import type Decimal from "decimal.js";
 import { checkATAInitialization, checkTickArrayInitialization, checkPositionBundleStateDifference, generateQuotesToSync, buildTransactions, sendTransactions, calculateBalanceDifference, readPositionBundleStateCsv } from "./sync_position_bundle_state_impl";
 
 console.info("sync PositionBundle state...");

@@ -1,9 +1,8 @@
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 import { PDAUtil, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
 import { sendTransaction } from "../utils/transaction_sender";
 import { ctx } from "../utils/provider";
-import { promptConfirm, promptText } from "../utils/prompt";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 console.info("initialize PositionBundle...");

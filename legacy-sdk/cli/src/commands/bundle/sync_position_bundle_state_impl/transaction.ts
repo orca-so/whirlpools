@@ -1,12 +1,14 @@
-import { AddressLookupTableAccount, PublicKey } from "@solana/web3.js";
-import { PDAUtil, PoolUtil, PREFER_CACHE, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
-import { MintWithTokenProgram, TransactionBuilder } from "@orca-so/common-sdk";
+import type { AddressLookupTableAccount, PublicKey } from "@solana/web3.js";
+import { PDAUtil, PoolUtil, PREFER_CACHE, toTx, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
+import type { WhirlpoolContext, WhirlpoolData } from "@orca-so/whirlpools-sdk";
+import { TransactionBuilder } from "@orca-so/common-sdk";
+import type { MintWithTokenProgram } from "@orca-so/common-sdk";
 import { sendTransaction } from "../../../utils/transaction_sender";
 import { getAssociatedTokenAddressSync, TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { mergeTransactionBuilders } from "../../../utils/merge_transaction";
-import { PositionBundleOpenState, PositionBundleStateItem } from "./csv";
-import { PositionBundleStateDifference } from "./state_difference";
-import { QuotesToSync } from "./quote";
+import type { PositionBundleOpenState, PositionBundleStateItem } from "./csv";
+import type { PositionBundleStateDifference } from "./state_difference";
+import type { QuotesToSync } from "./quote";
 
 export async function sendTransactions(ctx: WhirlpoolContext, alts: AddressLookupTableAccount[], transactions: TransactionBuilder[], defaultPriorityFeeInLamports: number) {
   for (const tx of transactions) {

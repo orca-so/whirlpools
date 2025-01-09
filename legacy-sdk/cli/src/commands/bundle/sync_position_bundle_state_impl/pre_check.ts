@@ -1,7 +1,8 @@
 import { PublicKey } from "@solana/web3.js";
-import { IGNORE_CACHE, TickArrayUtil, TickUtil, WhirlpoolContext, WhirlpoolData, PDAUtil, PoolUtil } from "@orca-so/whirlpools-sdk";
+import { IGNORE_CACHE, TickArrayUtil, TickUtil, PDAUtil, PoolUtil } from "@orca-so/whirlpools-sdk";
+import type { WhirlpoolContext, WhirlpoolData } from "@orca-so/whirlpools-sdk";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { PositionBundleStateItem } from "./csv";
+import type { PositionBundleStateItem } from "./csv";
 
 export async function checkTickArrayInitialization(ctx: WhirlpoolContext, whirlpoolPubkey: PublicKey, positionBundleTargetState: PositionBundleStateItem[]) {
   const whirlpool = await ctx.fetcher.getPool(whirlpoolPubkey) as WhirlpoolData; // tickSpacing is immutable

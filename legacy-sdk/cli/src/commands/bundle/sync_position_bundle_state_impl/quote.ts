@@ -1,10 +1,11 @@
-import { PublicKey } from "@solana/web3.js";
-import { collectFeesQuote, CollectFeesQuote, collectRewardsQuote, CollectRewardsQuote, DecreaseLiquidityQuote, decreaseLiquidityQuoteByLiquidityWithParams, IGNORE_CACHE, IncreaseLiquidityQuote, IncreaseLiquidityQuoteByLiquidityParam, increaseLiquidityQuoteByLiquidityWithParams, MAX_TICK_INDEX, MIN_TICK_INDEX, NO_TOKEN_EXTENSION_CONTEXT, PDAUtil, PoolUtil, POSITION_BUNDLE_SIZE, PositionBundleData, PositionBundleUtil, PositionData, PREFER_CACHE, TickArrayData, TickArrayUtil, TickUtil, TokenExtensionUtil, toTx, WhirlpoolContext, WhirlpoolData, WhirlpoolIx } from "@orca-so/whirlpools-sdk";
+import type { PublicKey } from "@solana/web3.js";
+import { collectFeesQuote, collectRewardsQuote, decreaseLiquidityQuoteByLiquidityWithParams, IGNORE_CACHE, increaseLiquidityQuoteByLiquidityWithParams, NO_TOKEN_EXTENSION_CONTEXT, PDAUtil, PREFER_CACHE, TickArrayUtil, TickUtil, TokenExtensionUtil } from "@orca-so/whirlpools-sdk";
+import type { CollectFeesQuote, CollectRewardsQuote, DecreaseLiquidityQuote, IncreaseLiquidityQuote, IncreaseLiquidityQuoteByLiquidityParam, PositionData, TickArrayData, WhirlpoolContext, WhirlpoolData } from "@orca-so/whirlpools-sdk";
 import { Percentage } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import { adjustForSlippage } from "@orca-so/whirlpools-sdk/dist/utils/position-util";
-import { PositionBundleOpenState, PositionBundleStateItem } from "./csv";
-import { PositionBundleStateDifference } from "./state_difference";
+import type { PositionBundleOpenState, PositionBundleStateItem } from "./csv";
+import type { PositionBundleStateDifference } from "./state_difference";
 
 export type QuotesForDecrease = { bundleIndex: number; decrease: DecreaseLiquidityQuote; };
 export type QuotesForClose = { bundleIndex: number; decrease: DecreaseLiquidityQuote|undefined; collectFees: CollectFeesQuote; collectRewards: CollectRewardsQuote; };

@@ -1,6 +1,7 @@
-import { PublicKey } from "@solana/web3.js";
-import { IGNORE_CACHE, PDAUtil, POSITION_BUNDLE_SIZE, PositionBundleData, PositionBundleUtil, PositionData, WhirlpoolContext } from "@orca-so/whirlpools-sdk";
-import { PositionBundleStateItem } from "./csv";
+import type { PublicKey } from "@solana/web3.js";
+import { IGNORE_CACHE, PDAUtil, POSITION_BUNDLE_SIZE, PositionBundleUtil } from "@orca-so/whirlpools-sdk";
+import type { PositionBundleData, PositionData, WhirlpoolContext } from "@orca-so/whirlpools-sdk";
+import type { PositionBundleStateItem } from "./csv";
 
 export type PositionBundleStateDifference = {
   positionBundle: PositionBundleData;

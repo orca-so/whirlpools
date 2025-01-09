@@ -181,34 +181,23 @@ pub async fn setup_te_position(
     tick_range: Option<(i32, i32)>,
     owner: Option<Pubkey>,
 ) -> Result<Pubkey, Box<dyn Error>> {
-    println!("Starting setup_te_position");
     let owner = owner.unwrap_or_else(|| ctx.signer.pubkey());
     let whirlpool_data = ctx.rpc.get_account(&whirlpool).await?;
     let whirlpool_account = Whirlpool::from_bytes(&whirlpool_data.data)?;
 
-    // Get tick range
     let (tick_lower, tick_upper) = tick_range.unwrap_or((-128, 128));
-    println!("Tick range: lower={}, upper={}", tick_lower, tick_upper);
 
-    // Tick Index를 Tick Spacing에 맞게 정렬
     let tick_spacing = whirlpool_account.tick_spacing as i32;
     let tick_lower_aligned = (tick_lower / tick_spacing) * tick_spacing;
     let tick_upper_aligned = (tick_upper / tick_spacing) * tick_spacing;
-    println!(
-        "Aligned ticks: lower={}, upper={}",
-        tick_lower_aligned, tick_upper_aligned
-    );
 
-    // Initialize tick arrays if needed
     let tick_arrays = [
         get_tick_array_start_tick_index(tick_lower_aligned, whirlpool_account.tick_spacing),
         get_tick_array_start_tick_index(tick_upper_aligned, whirlpool_account.tick_spacing),
     ];
-    println!("Tick array start indices: {:?}", tick_arrays);
 
     for start_tick in tick_arrays.iter() {
         let (tick_array_address, _) = get_tick_array_address(&whirlpool, *start_tick)?;
-        println!("Processing tick array at index {}", start_tick);
 
         let account_result = ctx.rpc.get_account(&tick_array_address).await;
         let needs_init = match account_result {
@@ -217,7 +206,6 @@ pub async fn setup_te_position(
         };
 
         if needs_init {
-            println!("Initializing tick array at index {}", start_tick);
             let init_tick_array_ix = InitializeTickArray {
                 whirlpool,
                 funder: ctx.signer.pubkey(),
@@ -229,14 +217,9 @@ pub async fn setup_te_position(
             });
 
             ctx.send_transaction(vec![init_tick_array_ix]).await?;
-            println!("Tick array initialized successfully");
-        } else {
-            println!("Tick array already initialized");
         }
     }
 
-    // Create Token-2022 position
-    println!("Creating Token-2022 position");
     let position_mint = Keypair::new();
     let lamports = ctx
         .rpc
@@ -273,7 +256,6 @@ pub async fn setup_te_position(
     );
 
     let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey())?;
-    println!("Position PDA: {}", position_pubkey);
 
     let open_position_ix = OpenPosition {
         funder: ctx.signer.pubkey(),
@@ -293,7 +275,6 @@ pub async fn setup_te_position(
         position_bump,
     });
 
-    println!("Sending transaction with instructions...");
     ctx.send_transaction_with_signers(
         vec![
             create_mint_ix,
@@ -304,7 +285,6 @@ pub async fn setup_te_position(
         vec![&position_mint],
     )
     .await?;
-    println!("Transaction completed successfully");
 
     Ok(position_pubkey)
 }

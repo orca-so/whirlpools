@@ -1,9 +1,3 @@
-use std::{
-    collections::HashSet,
-    error::Error,
-    time::{SystemTime, UNIX_EPOCH},
-};
-
 use orca_whirlpools_client::{
     get_position_address, get_tick_array_address, Position, TickArray, Whirlpool,
 };
@@ -21,6 +15,11 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::program_pack::Pack;
 use solana_sdk::{account::Account, instruction::Instruction, pubkey::Pubkey, signature::Keypair};
 use spl_associated_token_account::get_associated_token_address_with_program_id;
+use std::{
+    collections::HashSet,
+    error::Error,
+    time::{SystemTime, UNIX_EPOCH},
+};
 
 use crate::{
     token::{get_current_transfer_fee, prepare_token_accounts_instructions, TokenAccountStrategy},
@@ -227,20 +226,20 @@ pub async fn decrease_liquidity_instructions(
     instructions.push(
         DecreaseLiquidityV2 {
             whirlpool: position.whirlpool,
+            token_program_a: mint_a_info.owner,
+            token_program_b: mint_b_info.owner,
+            memo_program: spl_memo::ID,
             position_authority: authority,
             position: position_address,
             position_token_account: position_token_account_address,
+            token_mint_a: pool.token_mint_a,
+            token_mint_b: pool.token_mint_b,
             token_owner_account_a: *token_owner_account_a,
             token_owner_account_b: *token_owner_account_b,
             token_vault_a: pool.token_vault_a,
             token_vault_b: pool.token_vault_b,
-            token_mint_a: pool.token_mint_a,
-            token_mint_b: pool.token_mint_b,
-            token_program_a: mint_a_info.owner,
-            token_program_b: mint_b_info.owner,
             tick_array_lower: lower_tick_array_address,
             tick_array_upper: upper_tick_array_address,
-            memo_program: spl_memo::ID,
         }
         .instruction(DecreaseLiquidityV2InstructionArgs {
             liquidity_amount: quote.liquidity_delta,
@@ -517,20 +516,20 @@ pub async fn close_position_instructions(
         instructions.push(
             DecreaseLiquidityV2 {
                 whirlpool: position.whirlpool,
+                token_program_a: mint_a_info.owner,
+                token_program_b: mint_b_info.owner,
+                memo_program: spl_memo::ID,
                 position_authority: authority,
                 position: position_address,
                 position_token_account: position_token_account_address,
+                token_mint_a: pool.token_mint_a,
+                token_mint_b: pool.token_mint_b,
                 token_owner_account_a: *token_owner_account_a,
                 token_owner_account_b: *token_owner_account_b,
                 token_vault_a: pool.token_vault_a,
                 token_vault_b: pool.token_vault_b,
-                token_mint_a: pool.token_mint_a,
-                token_mint_b: pool.token_mint_b,
-                token_program_a: mint_a_info.owner,
-                token_program_b: mint_b_info.owner,
                 tick_array_lower: lower_tick_array_address,
                 tick_array_upper: upper_tick_array_address,
-                memo_program: spl_memo::ID,
             }
             .instruction(DecreaseLiquidityV2InstructionArgs {
                 liquidity_amount: quote.liquidity_delta,
@@ -582,8 +581,8 @@ pub async fn close_position_instructions(
                 position: position_address,
                 position_token_account: position_token_account_address,
                 reward_owner_account: *reward_owner,
-                reward_mint: pool.reward_infos[i].mint,
                 reward_vault: pool.reward_infos[i].vault,
+                reward_mint: pool.reward_infos[i].mint,
                 reward_token_program: reward_info.owner,
                 memo_program: spl_memo::ID,
             }
@@ -653,9 +652,8 @@ mod tests {
     }
 
     use crate::tests::{
-        setup_ata_te, setup_ata_with_amount, setup_mint_te_fee,
-        setup_mint_with_decimals, setup_position, setup_te_position, setup_whirlpool, RpcContext,
-        SetupAtaConfig,
+        setup_ata_te, setup_ata_with_amount, setup_mint_te_fee, setup_mint_with_decimals,
+        setup_position, setup_te_position, setup_whirlpool, RpcContext, SetupAtaConfig,
     };
     use serial_test::serial;
     use solana_sdk::pubkey::Pubkey;
@@ -680,8 +678,7 @@ mod tests {
 
         // Setup pool and position
         let tick_spacing = 64;
-        let pool_pubkey =
-            setup_whirlpool(&ctx, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
+        let pool_pubkey = setup_whirlpool(&ctx, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
 
         let position_mint = setup_position(
             &ctx,
@@ -743,8 +740,7 @@ mod tests {
 
         // Setup pool and position
         let tick_spacing = 64;
-        let pool_pubkey =
-            setup_whirlpool(&ctx, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
+        let pool_pubkey = setup_whirlpool(&ctx, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
 
         let position_mint = setup_position(
             &ctx,

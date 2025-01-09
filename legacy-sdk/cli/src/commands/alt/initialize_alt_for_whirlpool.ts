@@ -1,9 +1,9 @@
 import { AddressLookupTableProgram, PublicKey } from "@solana/web3.js";
 import { IGNORE_CACHE, MAX_TICK_INDEX, MIN_TICK_INDEX, PDAUtil, PoolUtil, TICK_ARRAY_SIZE, TickUtil } from "@orca-so/whirlpools-sdk";
 import { MintWithTokenProgram, TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
-import { ctx } from "../utils/provider";
-import { promptText } from "../utils/prompt";
+import { sendTransaction } from "../../utils/transaction_sender";
+import { ctx } from "../../utils/provider";
+import { promptText } from "../../utils/prompt";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
 
 console.info("initialize ALT for whirlpool...");

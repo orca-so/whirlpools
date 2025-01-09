@@ -1,9 +1,9 @@
 import { AddressLookupTableProgram, PublicKey } from "@solana/web3.js";
 import { IGNORE_CACHE, PDAUtil, POSITION_BUNDLE_SIZE, toTx } from "@orca-so/whirlpools-sdk";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { sendTransaction } from "../utils/transaction_sender";
-import { ctx } from "../utils/provider";
-import { promptText } from "../utils/prompt";
+import { sendTransaction } from "../../utils/transaction_sender";
+import { ctx } from "../../utils/provider";
+import { promptText } from "../../utils/prompt";
 
 console.info("initialize ALT for bundled positions...");
 

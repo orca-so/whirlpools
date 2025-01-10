@@ -105,34 +105,9 @@ pub async fn setup_position(
         None,
     );
 
-    // Initialize tick arrays if needed
-    let tick_arrays = [
-        get_tick_array_start_tick_index(lower_tick_index, whirlpool_account.tick_spacing),
-        get_tick_array_start_tick_index(upper_tick_index, whirlpool_account.tick_spacing),
-    ];
+    let position_mint = ctx.get_next_keypair();
 
-    for start_tick in tick_arrays.iter() {
-        let (tick_array_address, _) = get_tick_array_address(&whirlpool, *start_tick)?;
-        let account_result = ctx.rpc.get_account(&tick_array_address).await;
-        let needs_init = match account_result {
-            Ok(account) => account.data.is_empty(),
-            Err(_) => true,
-        };
-
-        if needs_init {
-            let init_tick_array_ix = InitializeTickArray {
-                whirlpool,
-                funder: ctx.signer.pubkey(),
-                tick_array: tick_array_address,
-                system_program: system_program::id(),
-            }
-            .instruction(InitializeTickArrayInstructionArgs {
-                start_tick_index: *start_tick,
-            });
-
-            ctx.send_transaction(vec![init_tick_array_ix]).await?;
-        }
-    }
+    let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey())?;
 
     // Create position mint
     let position_mint = Keypair::new();
@@ -149,9 +124,9 @@ pub async fn setup_position(
         owner: owner,
         position: position_pubkey,
         position_mint: position_mint.pubkey(),
-        position_token_account,
+        position_token_account: Pubkey::default(), // instruction will create
         whirlpool,
-        token_program: TOKEN_PROGRAM_ID,
+        token_program: TOKEN_PROGRAM_ID, // or TOKEN_2022_PROGRAM_ID if needed
         system_program: system_program::id(),
         associated_token_program: spl_associated_token_account::id(),
         rent: RENT_PROGRAM_ID,
@@ -215,92 +190,54 @@ pub async fn setup_te_position(
         }
     }
 
-    // Create Token-2022 position
-    let position_mint = Keypair::new();
-    let lamports = ctx
-        .rpc
-        .get_minimum_balance_for_rent_exemption(Token2022Mint::LEN)
-        .await?;
+    // 1) Keypair for the TE position mint
+    let te_position_mint = ctx.get_next_keypair();
 
-    let create_mint_ix = system_instruction::create_account(
-        &ctx.signer.pubkey(),
-        &position_mint.pubkey(),
-        lamports,
-        Token2022Mint::LEN as u64,
-        &TOKEN_2022_PROGRAM_ID,
-    );
+    // 2) Derive the position PDA
+    let (position_pubkey, position_bump) = get_position_address(&te_position_mint.pubkey())?;
 
-    let init_mint_ix = spl_token_2022::instruction::initialize_mint(
-        &TOKEN_2022_PROGRAM_ID,
-        &position_mint.pubkey(),
-        &ctx.signer.pubkey(),
-        None,
-        0,
-    )?;
-
-    let position_token_account =
-        get_associated_token_address(&ctx.signer.pubkey(), &position_mint.pubkey());
-
-    let create_ata_ix = create_associated_token_account(
-        &ctx.signer.pubkey(),
-        &ctx.signer.pubkey(),
-        &position_mint.pubkey(),
-        &TOKEN_2022_PROGRAM_ID,
-    );
-
-    let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey())?;
-
+    // 3) Build an OpenPosition instruction with token_program = TOKEN_2022_PROGRAM_ID
     let open_position_ix = OpenPosition {
         funder: ctx.signer.pubkey(),
         owner: owner,
         position: position_pubkey,
-        position_mint: position_mint.pubkey(),
-        position_token_account,
+        position_mint: te_position_mint.pubkey(),
+        position_token_account: Pubkey::default(),
         whirlpool,
-        token_program: TOKEN_2022_PROGRAM_ID,
+        token_program: TOKEN_2022_PROGRAM_ID, // TE uses token-2022
         system_program: system_program::id(),
         associated_token_program: spl_associated_token_account::id(),
         rent: RENT_PROGRAM_ID,
     }
     .instruction(OpenPositionInstructionArgs {
-        tick_lower_index: lower_tick_index,
-        tick_upper_index: upper_tick_index,
+        tick_lower_index: -128,
+        tick_upper_index: 128,
         position_bump,
     });
 
-    ctx.send_transaction_with_signers(
-        vec![
-            create_mint_ix,
-            init_mint_ix,
-            create_ata_ix,
-            open_position_ix,
-        ],
-        vec![&position_mint],
-    )
-    .await?;
+    // 4) The instruction itself will create the mint & ATA
+    ctx.send_transaction_with_signers(vec![open_position_ix], vec![&te_position_mint])
+        .await?;
 
+    // 5) Return the position PDA
     Ok(position_pubkey)
 }
 
-/// Creates a Position Bundle and initializes the specified number of bundled positions
-/// Calls `OpenBundledPosition` for each position specified in `bundle_positions`
 pub async fn setup_position_bundle(
     whirlpool: Pubkey,
     bundle_positions: Option<Vec<()>>,
 ) -> Result<Pubkey, Box<dyn Error>> {
     let ctx = RpcContext::new().await;
 
-    // Use token utility functions
-    let position_bundle_mint = setup_mint_with_decimals(&ctx, 0).await?;
-    let position_bundle_token_account = setup_ata(&ctx, position_bundle_mint).await?;
-
-    let (position_bundle_address, _) = get_position_bundle_address(&position_bundle_mint)?;
+    let position_bundle_mint = ctx.get_next_keypair();
+    let (position_bundle_address, _bundle_bump) =
+        get_position_bundle_address(&position_bundle_mint.pubkey())?;
 
     let open_bundle_ix = InitializePositionBundle {
         funder: ctx.signer.pubkey(),
         position_bundle: position_bundle_address,
-        position_bundle_mint,
-        position_bundle_token_account,
+        position_bundle_mint: position_bundle_mint.pubkey(),
+        position_bundle_token_account: Pubkey::default(),
         position_bundle_owner: ctx.signer.pubkey(),
         token_program: TOKEN_PROGRAM_ID,
         system_program: system_program::id(),
@@ -309,21 +246,21 @@ pub async fn setup_position_bundle(
     }
     .instruction();
 
-    ctx.send_transaction(vec![open_bundle_ix]).await?;
+    ctx.send_transaction_with_signers(vec![open_bundle_ix], vec![&position_bundle_mint])
+        .await?;
 
-    // Initialize bundled positions
     if let Some(positions) = bundle_positions {
         for (i, _) in positions.iter().enumerate() {
             let bundle_index = i as u16;
             let (bundled_position_address, _) =
-                get_bundled_position_address(&position_bundle_mint, bundle_index as u8)?;
+                get_bundled_position_address(&position_bundle_mint.pubkey(), bundle_index as u8)?;
 
             let open_bundled_ix = OpenBundledPosition {
                 funder: ctx.signer.pubkey(),
                 bundled_position: bundled_position_address,
                 position_bundle: position_bundle_address,
                 position_bundle_authority: ctx.signer.pubkey(),
-                position_bundle_token_account,
+                position_bundle_token_account: Pubkey::default(),
                 whirlpool,
                 system_program: system_program::id(),
                 rent: RENT_PROGRAM_ID,

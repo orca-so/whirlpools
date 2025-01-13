@@ -17,7 +17,8 @@ use solana_sdk::{
     system_instruction, system_program,
 };
 use spl_associated_token_account::{
-    get_associated_token_address, instruction::create_associated_token_account,
+    get_associated_token_address, get_associated_token_address_with_program_id,
+    instruction::create_associated_token_account,
 };
 use spl_token::instruction::initialize_mint2;
 use spl_token::ID as TOKEN_PROGRAM_ID;
@@ -147,8 +148,6 @@ pub async fn setup_position(
         &TOKEN_PROGRAM_ID,
     );
     let owner_pubkey = owner.unwrap_or(ctx.signer.pubkey());
-    let position_token_account =
-        get_associated_token_address(&owner_pubkey, &position_mint.pubkey());
 
     let open_position_ix = OpenPosition {
         funder: ctx.signer.pubkey(),
@@ -163,8 +162,8 @@ pub async fn setup_position(
         rent: RENT_PROGRAM_ID,
     }
     .instruction(OpenPositionInstructionArgs {
-        tick_lower_index: -128,
-        tick_upper_index: 128,
+        tick_lower_index: lower_tick_index,
+        tick_upper_index: upper_tick_index,
         position_bump,
     });
     instructions.push(
@@ -192,9 +191,6 @@ pub async fn setup_position(
 
     Ok(position_mint.pubkey())
 }
-
-pub async fn setup_te_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
-    let ctx = RpcContext::new().await;
 
 pub async fn setup_te_position(
     ctx: &RpcContext,
@@ -265,20 +261,17 @@ pub async fn setup_te_position(
         position_token_account: te_position_token_account,
         whirlpool,
         token_program: TOKEN_2022_PROGRAM_ID,
-        token_program: TOKEN_PROGRAM_ID,
         system_program: system_program::id(),
         associated_token_program: spl_associated_token_account::id(),
         rent: RENT_PROGRAM_ID,
     }
     .instruction(OpenPositionInstructionArgs {
-        tick_lower_index: -128,
-        tick_upper_index: 128,
+        tick_lower_index: lower_tick_index,
+        tick_upper_index: upper_tick_index,
         position_bump,
     });
 
     ctx.send_transaction_with_signers(vec![open_position_ix], vec![&te_position_mint])
-    let tx_result = ctx
-        .send_transaction_with_signers(vec![open_position_ix], vec![&te_position_mint])
         .await?;
 
     Ok(position_pubkey)

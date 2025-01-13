@@ -1,7 +1,7 @@
 {
   "name": "@orca-so/whirlpools-monorepo",
   "private": true,
-  "packageManager": "yarn@4.5.1",
+  "packageManager": "yarn@4.6.0",
   "type": "module",
   "scripts": {
     "build": "nx run-many --target build --projects",

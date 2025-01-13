@@ -102,6 +102,8 @@ console.info(
   "setting...",
   "\n\twhirlpoolsConfig",
   whirlpoolsConfigPubkey.toBase58(),
+  "\n\twhirlpool",
+  pda.publicKey.toBase58(),
   "\n\ttokenMintA",
   tokenMintAPubkey.toBase58(),
   `(${tokenProgramA})`,

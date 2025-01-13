@@ -53,14 +53,29 @@ Token-2022 tokens are acceptable 👍
 - `yarn start collectRewards`: collect rewards from a position
 - `yarn start closePosition`: close an empty position
 
+## PositionBundle
+- `yarn start initializePositionBundle`: create a new position bundle
+- `yarn start syncPositionBundleState`: update the state of a position bundle based on an input CSV file
+
 ## Swap
 - `yarn start pushPrice`: adjust pool price (possible if pool liquidity is zero or very small)
 
 ## WSOL and ATA creation
 TODO: WSOL handling & create ATA if needed (workaround exists, please see the following)
 
+## ALT
+### Shared ALT
+Shared ALT contains well-known program ID and WhirlpoolsConfig address and mint addresses.
+
+Solana: `7Vyx1y8vG9e9Q1MedmXpopRC6ZhVaZzGcvYh5Z3Cs75i`
+Eclipse: `Fsq7DQa13Lx9FvR5QheHigaccRkjiNqfnHQouXyFsg4z`
+
+### Custom ALT
+- `yarn start initializeAltForWhirlpool`: create ALT containing whirlpool address, mint address, vault address, some TickArray addresses and ATAs
+- `yarn start initializeAltForBundledPositions`: create ALT containing all (256) bundled position addresses
+
 ### workaround for WSOL
-`whirlpool-mgmt-tools` works well with ATA, so using WSOL on ATA is workaround.
+CLI works well with ATA, so using WSOL on ATA is workaround.
 
 - wrap 1 SOL: `spl-token wrap 1` (ATA for WSOL will be initialized with 1 SOL)
 - unwrap: `spl-token unwrap` (ATA for WSOL will be closed)

@@ -159,11 +159,17 @@ pub async fn setup_position_bundle(
     let (position_bundle_address, _bundle_bump) =
         get_position_bundle_address(&position_bundle_mint.pubkey())?;
 
+    let position_token_account = get_associated_token_address_with_program_id(
+        &ctx.signer.pubkey(),
+        &position_bundle_mint.pubkey(),
+        &TOKEN_PROGRAM_ID,
+    );
+
     let open_bundle_ix = InitializePositionBundle {
         funder: ctx.signer.pubkey(),
         position_bundle: position_bundle_address,
         position_bundle_mint: position_bundle_mint.pubkey(),
-        position_bundle_token_account: Pubkey::default(),
+        position_bundle_token_account: position_token_account,
         position_bundle_owner: ctx.signer.pubkey(),
         token_program: TOKEN_PROGRAM_ID,
         system_program: system_program::id(),

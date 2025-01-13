@@ -698,76 +698,201 @@ pub async fn open_position_instructions(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashMap;
+    use std::error::Error;
+    use std::time::Duration;
+
+    use orca_whirlpools_client::{get_position_address, Position};
     use serial_test::serial;
     use solana_program_test::tokio;
-    use solana_sdk::pubkey::Pubkey;
+    use solana_sdk::{
+        program_pack::Pack,
+        pubkey::Pubkey,
+        signer::{keypair::Keypair, Signer},
+    };
     use spl_token::state::Account as TokenAccount;
-    use std::collections::HashMap;
+    use spl_token_2022::{
+        extension::{ExtensionType, StateWithExtensionsOwned},
+        state::Account as TokenAccount2022,
+        ID as TOKEN_2022_PROGRAM_ID,
+    };
 
     use crate::{
+        increase_liquidity_instructions,
         tests::{
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_te_position, setup_whirlpool,
             RpcContext, SetupAtaConfig,
         },
-        DEFAULT_FUNDER, WHIRLPOOLS_CONFIG_ADDRESS,
+        IncreaseLiquidityParam,
     };
 
-    use super::*;
-
-    // Helper functions
-    async fn fetch_token(rpc: &RpcClient, address: Pubkey) -> Result<TokenAccount, Box<dyn Error>> {
-        let account = rpc.get_account(&address).await?;
-        TokenAccount::unpack(&account.data).map_err(|e| e.into())
-    }
-
+    // SPL Token 2022 or SPL Token
+    use solana_client::nonblocking::rpc_client::RpcClient;
     async fn fetch_position(rpc: &RpcClient, address: Pubkey) -> Result<Position, Box<dyn Error>> {
         let account = rpc.get_account(&address).await?;
         Position::from_bytes(&account.data).map_err(|e| e.into())
     }
 
-    const TEST_SLIPPAGE_TOLERANCE: u16 = 100; // 1%
+    async fn get_token_balance(rpc: &RpcClient, address: Pubkey) -> Result<u64, Box<dyn Error>> {
+        let account_data = rpc.get_account(&address).await?;
+
+        if account_data.owner == TOKEN_2022_PROGRAM_ID {
+            // Token-2022 + (possibly) extension
+            let state = StateWithExtensionsOwned::<TokenAccount2022>::unpack(account_data.data)?;
+            Ok(state.base.amount)
+        } else {
+            // SPL Token
+            let token_account = TokenAccount::unpack(&account_data.data)?;
+            Ok(token_account.amount)
+        }
+    }
+
+    async fn verify_increase_liquidity(
+        ctx: &RpcContext,
+        increase_ix: &crate::IncreaseLiquidityInstruction,
+        token_a_account: Pubkey,
+        token_b_account: Pubkey,
+        position_mint: Pubkey,
+    ) -> Result<(), Box<dyn Error>> {
+        let before_a = get_token_balance(&ctx.rpc, token_a_account).await?;
+        let before_b = get_token_balance(&ctx.rpc, token_b_account).await?;
+
+        let signers: Vec<&Keypair> = increase_ix.additional_signers.iter().collect();
+        ctx.send_transaction_with_signers(increase_ix.instructions.clone(), signers)
+            .await?;
+
+        let after_a = get_token_balance(&ctx.rpc, token_a_account).await?;
+        let after_b = get_token_balance(&ctx.rpc, token_b_account).await?;
+        let used_a = before_a.saturating_sub(after_a);
+        let used_b = before_b.saturating_sub(after_b);
+
+        let quote = &increase_ix.quote;
+        assert!(
+            used_a >= quote.token_est_a && used_a <= quote.token_max_a,
+            "Token A usage out of range: used={}, est={}..{}",
+            used_a,
+            quote.token_est_a,
+            quote.token_max_a
+        );
+        assert!(
+            used_b >= quote.token_est_b && used_b <= quote.token_max_b,
+            "Token B usage out of range: used={}, est={}..{}",
+            used_b,
+            quote.token_est_b,
+            quote.token_max_b
+        );
+
+        let position_pubkey = get_position_address(&position_mint)?.0;
+        let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
+        assert_eq!(
+            position_data.liquidity, quote.liquidity_delta,
+            "Position liquidity mismatch! expected={}, got={}",
+            quote.liquidity_delta, position_data.liquidity
+        );
+
+        Ok(())
+    }
 
     #[tokio::test]
     #[serial]
-    async fn test_increase_liquidity() -> Result<(), Box<dyn Error>> {
+    async fn test_increase_liquidity_multiple_combos() -> Result<(), Box<dyn Error>> {
         let ctx = RpcContext::new().await;
 
-        // setup and initialize
-        let mint_a_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
-        let mint_b_pubkey = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_te_a = setup_mint_te(&ctx, &[]).await?; // Token-2022
+        let mint_te_b = setup_mint_te(&ctx, &[]).await?; // Token-2022
+        let mint_te_fee = setup_mint_te_fee(&ctx).await?; // Token-2022 + transfer-fee
+
         let token_balance: u64 = 1_000_000;
-        setup_ata_with_amount(&ctx, mint_a_pubkey, token_balance).await?;
-        setup_ata_with_amount(&ctx, mint_b_pubkey, token_balance).await?;
-
-        // setup pool and position
-        let tick_spacing = 64;
-        let pool_pubkey = setup_whirlpool(&ctx, mint_a_pubkey, mint_b_pubkey, tick_spacing).await?;
-
-        let position_mint = setup_position(
+        let user_ata_a = setup_ata_with_amount(&ctx, mint_a, token_balance).await?;
+        let user_ata_b = setup_ata_with_amount(&ctx, mint_b, token_balance).await?;
+        let user_ata_te_a = setup_ata_te(
             &ctx,
-            pool_pubkey,
-            Some((-100, 100)),
-            Some(ctx.signer.pubkey()),
+            mint_te_a,
+            Some(SetupAtaConfig {
+                amount: Some(token_balance),
+            }),
+        )
+        .await?;
+        let user_ata_te_b = setup_ata_te(
+            &ctx,
+            mint_te_b,
+            Some(SetupAtaConfig {
+                amount: Some(token_balance),
+            }),
+        )
+        .await?;
+        let user_ata_tefee = setup_ata_te(
+            &ctx,
+            mint_te_fee,
+            Some(SetupAtaConfig {
+                amount: Some(token_balance),
+            }),
         )
         .await?;
 
-        // test increase liquidity
-        let param = IncreaseLiquidityParam::Liquidity(10_000);
-        let increase_ix = increase_liquidity_instructions(
-            &ctx.rpc,
-            position_mint,
-            param,
-            Some(TEST_SLIPPAGE_TOLERANCE),
-            Some(ctx.signer.pubkey()),
-        )
-        .await?;
+        let mut minted: HashMap<&str, Pubkey> = HashMap::new();
+        minted.insert("A", mint_a);
+        minted.insert("B", mint_b);
+        minted.insert("TEA", mint_te_a);
+        minted.insert("TEB", mint_te_b);
+        minted.insert("TEFee", mint_te_fee);
 
-        // send transaction
-        let signers: Vec<&Keypair> = increase_ix.additional_signers.iter().collect();
+        let mut user_atas: HashMap<&str, Pubkey> = HashMap::new();
+        user_atas.insert("A", user_ata_a);
+        user_atas.insert("B", user_ata_b);
+        user_atas.insert("TEA", user_ata_te_a);
+        user_atas.insert("TEB", user_ata_te_b);
+        user_atas.insert("TEFee", user_ata_tefee);
 
-        ctx.send_transaction_with_signers(increase_ix.instructions, signers)
-            .await?;
+        let pool_combos = vec![
+            ("A-B", ("A", "B")),
+            ("A-TEA", ("A", "TEA")),
+            ("TEA-TEB", ("TEA", "TEB")),
+            ("A-TEFee", ("A", "TEFee")),
+        ];
+
+        let position_ranges = vec![
+            ("equally centered", (-100, 100)),
+            ("one sided A", (-100, -1)),
+            ("one sided B", (1, 100)),
+        ];
+
+        let tick_spacing = 64;
+
+        for (pool_name, (mint_a_key, mint_b_key)) in &pool_combos {
+            let pubkey_a = *minted.get(mint_a_key).unwrap();
+            let pubkey_b = *minted.get(mint_b_key).unwrap();
+
+            let pool_pubkey = setup_whirlpool(&ctx, pubkey_a, pubkey_b, tick_spacing).await?;
+
+            for (range_name, (lower, upper)) in &position_ranges {
+                let position_mint =
+                    setup_position(&ctx, pool_pubkey, Some((*lower, *upper)), None).await?;
+
+                let param = IncreaseLiquidityParam::Liquidity(10_000);
+                let increase_ix = increase_liquidity_instructions(
+                    &ctx.rpc,
+                    position_mint,
+                    param,
+                    Some(100), // 1% slippage
+                    Some(ctx.signer.pubkey()),
+                )
+                .await?;
+
+                let ata_a = *user_atas.get(mint_a_key).unwrap();
+                let ata_b = *user_atas.get(mint_b_key).unwrap();
+
+                verify_increase_liquidity(&ctx, &increase_ix, ata_a, ata_b, position_mint).await?;
+
+                println!(
+                    "[combo={}, range={}] position={} => used token A/B within quote, liquidity ok",
+                    pool_name, range_name, position_mint
+                );
+            }
+        }
 
         Ok(())
     }

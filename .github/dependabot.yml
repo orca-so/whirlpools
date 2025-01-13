@@ -8,7 +8,8 @@ updates:
     groups:
       docusaurus:
         applies-to: version-updates
-        patterns: "@docusaurus/*"
+        patterns:
+          - "@docusaurus/*"
   - package-ecosystem: "cargo"
     directory: "/"
     schedule:

@@ -82,14 +82,20 @@ pub async fn setup_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>>
 
     let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey())?;
 
+    let position_token_account = get_associated_token_address_with_program_id(
+        &ctx.signer.pubkey(),
+        &position_mint.pubkey(),
+        &TOKEN_PROGRAM_ID,
+    );
+
     let open_position_ix = OpenPosition {
         funder: ctx.signer.pubkey(),
         owner: ctx.signer.pubkey(),
         position: position_pubkey,
         position_mint: position_mint.pubkey(),
-        position_token_account: Pubkey::default(), // instruction will create
+        position_token_account,
         whirlpool,
-        token_program: TOKEN_PROGRAM_ID, // or TOKEN_2022_PROGRAM_ID if needed
+        token_program: TOKEN_PROGRAM_ID,
         system_program: system_program::id(),
         associated_token_program: spl_associated_token_account::id(),
         rent: RENT_PROGRAM_ID,
@@ -109,13 +115,16 @@ pub async fn setup_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>>
 pub async fn setup_te_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
     let ctx = RpcContext::new().await;
 
-    // 1) Keypair for the TE position mint
     let te_position_mint = ctx.get_next_keypair();
 
-    // 2) Derive the position PDA
     let (position_pubkey, position_bump) = get_position_address(&te_position_mint.pubkey())?;
 
-    // 3) Build an OpenPosition instruction with token_program = TOKEN_2022_PROGRAM_ID
+    let position_token_account = get_associated_token_address_with_program_id(
+        &ctx.signer.pubkey(),
+        &te_position_mint.pubkey(),
+        &TOKEN_2022_PROGRAM_ID,
+    );
+
     let open_position_ix = OpenPosition {
         funder: ctx.signer.pubkey(),
         owner: ctx.signer.pubkey(),
@@ -123,7 +132,7 @@ pub async fn setup_te_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Erro
         position_mint: te_position_mint.pubkey(),
         position_token_account: Pubkey::default(),
         whirlpool,
-        token_program: TOKEN_2022_PROGRAM_ID, // TE uses token-2022
+        token_program: TOKEN_2022_PROGRAM_ID,
         system_program: system_program::id(),
         associated_token_program: spl_associated_token_account::id(),
         rent: RENT_PROGRAM_ID,
@@ -134,11 +143,9 @@ pub async fn setup_te_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Erro
         position_bump,
     });
 
-    // 4) The instruction itself will create the mint & ATA
     ctx.send_transaction_with_signers(vec![open_position_ix], vec![&te_position_mint])
         .await?;
 
-    // 5) Return the position PDA
     Ok(position_pubkey)
 }
 

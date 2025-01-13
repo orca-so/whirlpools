@@ -19,7 +19,8 @@ use solana_sdk::{
     system_instruction, system_program,
 };
 use spl_associated_token_account::{
-    get_associated_token_address, instruction::create_associated_token_account,
+    get_associated_token_address, get_associated_token_address_with_program_id,
+    instruction::create_associated_token_account,
 };
 use spl_token::instruction::initialize_mint2;
 use spl_token::ID as TOKEN_PROGRAM_ID;
@@ -206,10 +207,31 @@ pub async fn setup_position(
     }
 
     let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey())?;
-    let owner_pubkey = owner.unwrap_or(ctx.signer.pubkey());
-    let position_token_account =
-        get_associated_token_address(&owner_pubkey, &position_mint.pubkey());
 
+    let position_token_account = get_associated_token_address_with_program_id(
+        &ctx.signer.pubkey(),
+        &position_mint.pubkey(),
+        &TOKEN_PROGRAM_ID,
+    );
+    let owner_pubkey = owner.unwrap_or(ctx.signer.pubkey());
+
+    let open_position_ix = OpenPosition {
+        funder: ctx.signer.pubkey(),
+        owner: ctx.signer.pubkey(),
+        position: position_pubkey,
+        position_mint: position_mint.pubkey(),
+        position_token_account,
+        whirlpool,
+        token_program: TOKEN_PROGRAM_ID,
+        system_program: system_program::id(),
+        associated_token_program: spl_associated_token_account::id(),
+        rent: RENT_PROGRAM_ID,
+    }
+    .instruction(OpenPositionInstructionArgs {
+        tick_lower_index: lower_tick_index,
+        tick_upper_index: upper_tick_index,
+        position_bump,
+    });
     instructions.push(
         OpenPosition {
             funder: ctx.signer.pubkey(),
@@ -297,6 +319,12 @@ pub async fn setup_te_position(
 
     let (position_pubkey, position_bump) = get_position_address(&te_position_mint.pubkey())?;
 
+    let position_token_account = get_associated_token_address_with_program_id(
+        &ctx.signer.pubkey(),
+        &te_position_mint.pubkey(),
+        &TOKEN_2022_PROGRAM_ID,
+    );
+
     let te_position_token_account =
         get_associated_token_address(&owner, &te_position_mint.pubkey());
 
@@ -318,8 +346,7 @@ pub async fn setup_te_position(
         with_token_metadata_extension: true,
     });
 
-    let tx_result = ctx
-        .send_transaction_with_signers(vec![open_position_ix], vec![&te_position_mint])
+    ctx.send_transaction_with_signers(vec![open_position_ix], vec![&te_position_mint])
         .await?;
 
     Ok(position_pubkey)

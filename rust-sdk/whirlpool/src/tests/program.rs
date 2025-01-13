@@ -140,10 +140,33 @@ pub async fn setup_position(
     }
 
     let (position_pubkey, position_bump) = get_position_address(&position_mint.pubkey())?;
+
+    let position_token_account = get_associated_token_address_with_program_id(
+        &ctx.signer.pubkey(),
+        &position_mint.pubkey(),
+        &TOKEN_PROGRAM_ID,
+    );
     let owner_pubkey = owner.unwrap_or(ctx.signer.pubkey());
     let position_token_account =
         get_associated_token_address(&owner_pubkey, &position_mint.pubkey());
 
+    let open_position_ix = OpenPosition {
+        funder: ctx.signer.pubkey(),
+        owner: ctx.signer.pubkey(),
+        position: position_pubkey,
+        position_mint: position_mint.pubkey(),
+        position_token_account,
+        whirlpool,
+        token_program: TOKEN_PROGRAM_ID,
+        system_program: system_program::id(),
+        associated_token_program: spl_associated_token_account::id(),
+        rent: RENT_PROGRAM_ID,
+    }
+    .instruction(OpenPositionInstructionArgs {
+        tick_lower_index: -128,
+        tick_upper_index: 128,
+        position_bump,
+    });
     instructions.push(
         OpenPosition {
             funder: ctx.signer.pubkey(),
@@ -169,6 +192,10 @@ pub async fn setup_position(
 
     Ok(position_mint.pubkey())
 }
+
+pub async fn setup_te_position(whirlpool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
+    let ctx = RpcContext::new().await;
+
 pub async fn setup_te_position(
     ctx: &RpcContext,
     whirlpool: Pubkey,
@@ -221,6 +248,12 @@ pub async fn setup_te_position(
 
     let (position_pubkey, position_bump) = get_position_address(&te_position_mint.pubkey())?;
 
+    let position_token_account = get_associated_token_address_with_program_id(
+        &ctx.signer.pubkey(),
+        &te_position_mint.pubkey(),
+        &TOKEN_2022_PROGRAM_ID,
+    );
+
     let te_position_token_account =
         get_associated_token_address(&owner, &te_position_mint.pubkey());
 
@@ -231,6 +264,7 @@ pub async fn setup_te_position(
         position_mint: te_position_mint.pubkey(),
         position_token_account: te_position_token_account,
         whirlpool,
+        token_program: TOKEN_2022_PROGRAM_ID,
         token_program: TOKEN_PROGRAM_ID,
         system_program: system_program::id(),
         associated_token_program: spl_associated_token_account::id(),
@@ -242,6 +276,7 @@ pub async fn setup_te_position(
         position_bump,
     });
 
+    ctx.send_transaction_with_signers(vec![open_position_ix], vec![&te_position_mint])
     let tx_result = ctx
         .send_transaction_with_signers(vec![open_position_ix], vec![&te_position_mint])
         .await?;

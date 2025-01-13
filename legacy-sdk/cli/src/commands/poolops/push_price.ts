@@ -22,10 +22,10 @@ import {
 } from "@orca-so/common-sdk";
 import BN from "bn.js";
 import { getAssociatedTokenAddressSync } from "@solana/spl-token";
-import { sendTransaction } from "../utils/transaction_sender";
+import { sendTransaction } from "../../utils/transaction_sender";
 import Decimal from "decimal.js";
-import { ctx } from "../utils/provider";
-import { promptConfirm, promptText } from "../utils/prompt";
+import { ctx } from "../../utils/provider";
+import { promptConfirm, promptText } from "../../utils/prompt";
 
 const SIGNIFICANT_DIGITS = 9;
 

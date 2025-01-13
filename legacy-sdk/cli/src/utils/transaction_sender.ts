@@ -1,4 +1,8 @@
-import type { Keypair, VersionedTransaction } from "@solana/web3.js";
+import type {
+  AddressLookupTableAccount,
+  Keypair,
+  VersionedTransaction,
+} from "@solana/web3.js";
 import { ComputeBudgetProgram, LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   DecimalUtil,
@@ -11,6 +15,8 @@ import { promptConfirm, promptText } from "./prompt";
 
 export async function sendTransaction(
   builder: TransactionBuilder,
+  defaultPriorityFeeInLamports?: number,
+  alts?: AddressLookupTableAccount[],
 ): Promise<boolean> {
   const instructions = builder.compressIx(true);
   // HACK: to clone TransactionBuilder
@@ -25,35 +31,43 @@ export async function sendTransaction(
   );
   console.info("estimatedComputeUnits:", estimatedComputeUnits);
 
+  let useDefaultPriorityFeeInLamports =
+    defaultPriorityFeeInLamports !== undefined;
+
   let landed = false;
   let success = false;
   while (true) {
     let priorityFeeInLamports = 0;
 
-    while (true) {
-      const priorityFeeInSOL = await promptText("priorityFeeInSOL");
-      priorityFeeInLamports = DecimalUtil.toBN(
-        new Decimal(priorityFeeInSOL),
-        9,
-      ).toNumber();
-      if (priorityFeeInLamports > LAMPORTS_PER_SOL) {
-        console.info("> 1 SOL is obviously too much for priority fee");
-        continue;
-      }
-      if (priorityFeeInLamports > 5_000_000) {
-        console.info(
-          `Is it okay to use ${priorityFeeInLamports / LAMPORTS_PER_SOL} SOL for priority fee ? (if it is OK, enter OK)`,
-        );
-        const ok = await promptConfirm("OK");
-        if (!ok) continue;
-      }
+    if (useDefaultPriorityFeeInLamports) {
+      priorityFeeInLamports = defaultPriorityFeeInLamports!;
+      useDefaultPriorityFeeInLamports = false;
+    } else {
+      while (true) {
+        const priorityFeeInSOL = await promptText("priorityFeeInSOL");
+        priorityFeeInLamports = DecimalUtil.toBN(
+          new Decimal(priorityFeeInSOL),
+          9,
+        ).toNumber();
+        if (priorityFeeInLamports > LAMPORTS_PER_SOL) {
+          console.info("> 1 SOL is obviously too much for priority fee");
+          continue;
+        }
+        if (priorityFeeInLamports > 5_000_000) {
+          console.info(
+            `Is it okay to use ${priorityFeeInLamports / LAMPORTS_PER_SOL} SOL for priority fee ? (if it is OK, enter OK)`,
+          );
+          const ok = await promptConfirm("OK");
+          if (!ok) continue;
+        }
 
-      console.info(
-        "Priority fee:",
-        priorityFeeInLamports / LAMPORTS_PER_SOL,
-        "SOL",
-      );
-      break;
+        console.info(
+          "Priority fee:",
+          priorityFeeInLamports / LAMPORTS_PER_SOL,
+          "SOL",
+        );
+        break;
+      }
     }
 
     const builderWithPriorityFee = new TransactionBuilder(
@@ -83,7 +97,7 @@ export async function sendTransaction(
     let withDifferentPriorityFee = false;
     while (true) {
       console.info("process transaction...");
-      const result = await send(builderWithPriorityFee);
+      const result = await send(builderWithPriorityFee, alts);
       landed = result.landed;
       success = result.success;
       if (landed) break;
@@ -109,12 +123,16 @@ export async function sendTransaction(
 
 async function send(
   builder: TransactionBuilder,
+  alts: AddressLookupTableAccount[] = [],
 ): Promise<{ landed: boolean; success: boolean }> {
   const connection = builder.connection;
   const wallet = builder.wallet;
 
   // manual build
-  const built = await builder.build({ maxSupportedTransactionVersion: 0 });
+  const built = await builder.build({
+    maxSupportedTransactionVersion: 0,
+    lookupTableAccounts: alts,
+  });
 
   const blockhash = await connection.getLatestBlockhashAndContext("confirmed");
   const blockHeight = await connection.getBlockHeight({

@@ -1,7 +1,7 @@
 {
   "name": "@orca-so/whirlpools-monorepo",
   "private": true,
-  "packageManager": "yarn@4.5.1",
+  "packageManager": "yarn@4.6.0",
   "type": "module",
   "scripts": {
     "build": "nx run-many --target build --projects",
@@ -13,7 +13,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.10.5",
-    "nx": "^9999.0.1",
+    "nx": "^20.2.2",
     "rimraf": "^6.0.1",
     "tsup": "^8.3.5",
     "vitest": "^2.1.8"

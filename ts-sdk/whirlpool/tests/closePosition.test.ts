@@ -1,18 +1,20 @@
-import { fetchPosition, getPositionAddress } from "@orca-so/whirlpools-client";
-import { fetchToken } from "@solana-program/token-2022";
-import type { Address } from "@solana/web3.js";
+import {
+  fetchMaybePosition,
+  fetchPosition,
+  getPositionAddress,
+} from "@orca-so/whirlpools-client";
+import { fetchToken } from "@solana-program/token";
+import { Address, address } from "@solana/web3.js";
 import assert from "assert";
 import { beforeAll, describe, it } from "vitest";
-import { DEFAULT_FUNDER, setDefaultFunder } from "../src/config";
-import { decreaseLiquidityInstructions } from "../src/decreaseLiquidity";
-import { rpc, sendTransaction, signer } from "./utils/mockRpc";
+import { closePositionInstructions } from "../src/decreaseLiquidity";
+import { rpc, sendTransaction } from "./utils/mockRpc";
 import {
   setupPosition,
   setupTEPosition,
   setupWhirlpool,
 } from "./utils/program";
 import { setupAta, setupMint } from "./utils/token";
-
 import {
   setupAtaTE,
   setupMintTE,
@@ -48,7 +50,7 @@ const positionTypes = new Map([
   ["one sided B", { tickLower: 1, tickUpper: 100 }],
 ]);
 
-describe("Decrease Liquidity", () => {
+describe("Close Position", () => {
   const atas: Map<string, Address> = new Map();
   const initialLiquidity = 100_000n;
   const mints: Map<string, Address> = new Map();
@@ -91,77 +93,86 @@ describe("Decrease Liquidity", () => {
     }
   });
 
-  const testDecreaseLiquidity = async (
+  const testClosePositionInstructions = async (
     poolName: string,
     positionName: string,
   ) => {
     const [mintAName, mintBName] = poolName.split("-");
     const ataAAddress = atas.get(mintAName)!;
     const ataBAddress = atas.get(mintBName)!;
-    const liquidityToDecrease = 10_000n;
+    const tokenABefore = await fetchToken(rpc, ataAAddress);
+    const tokenBBefore = await fetchToken(rpc, ataBAddress);
+
     const positionMintAddress = positions.get(positionName)!;
+    const [positionAddress, _] = await getPositionAddress(positionMintAddress);
+    const positionBefore = await fetchPosition(rpc, positionAddress);
 
-    const { quote, instructions } = await decreaseLiquidityInstructions(
-      rpc,
-      positionMintAddress,
-      {
-        liquidity: liquidityToDecrease,
-      },
-    );
-
-    const tokenBeforeA = await fetchToken(rpc, ataAAddress);
-    const tokenBeforeB = await fetchToken(rpc, ataBAddress);
-
+    const { instructions, quote, feesQuote, rewardsQuote } =
+      await closePositionInstructions(rpc, positionMintAddress);
     await sendTransaction(instructions);
 
-    const tokenAfterA = await fetchToken(rpc, ataAAddress);
-    const tokenAfterB = await fetchToken(rpc, ataBAddress);
+    const positionAfter = await fetchMaybePosition(rpc, positionAddress);
+    const tokenAAfter = await fetchToken(rpc, ataAAddress);
+    const tokenBAfter = await fetchToken(rpc, ataBAddress);
+
+    assert.strictEqual(positionAfter.exists, false);
 
     assert.strictEqual(
-      quote.tokenEstA,
-      tokenAfterA.data.amount - tokenBeforeA.data.amount,
-    );
-    assert.strictEqual(
-      quote.tokenEstB,
-      tokenAfterB.data.amount - tokenBeforeB.data.amount,
+      quote.tokenEstA + feesQuote.feeOwedA,
+      tokenAAfter.data.amount - tokenABefore.data.amount,
     );
 
-    const positionAddress = await getPositionAddress(positionMintAddress);
-    const position = await fetchPosition(rpc, positionAddress[0]);
-
     assert.strictEqual(
-      initialLiquidity - quote.liquidityDelta,
-      position.data.liquidity,
+      quote.tokenEstB + feesQuote.feeOwedB,
+      tokenBAfter.data.amount - tokenBBefore.data.amount,
     );
+
+    for (let i = 0; i < positionBefore.data.rewardInfos.length; i++) {
+      assert.strictEqual(
+        positionBefore.data.rewardInfos[i].amountOwed,
+        rewardsQuote.rewards[i].rewardsOwed,
+      );
+    }
   };
 
   for (const poolName of poolTypes.keys()) {
     for (const positionTypeName of positionTypes.keys()) {
       const positionName = `${poolName} ${positionTypeName}`;
-      it(`Should decrease liquidity for ${positionName}`, async () => {
-        await testDecreaseLiquidity(poolName, positionName);
+      it(`Should close a position for ${positionName}`, async () => {
+        await testClosePositionInstructions(poolName, positionName);
       });
 
       const positionNameTE = `TE ${poolName} ${positionTypeName}`;
-      it(`Should decrease liquidity for ${positionNameTE}`, async () => {
-        await testDecreaseLiquidity(poolName, positionNameTE);
+      it(`Should close a position for ${positionNameTE}`, async () => {
+        await testClosePositionInstructions(poolName, positionNameTE);
       });
     }
   }
 
-  it("Should throw an error if the signer is not valid", async () => {
-    const liquidityToDecrease = 10_000n;
+  it("Should close a position without liquidity", async () => {
+    const poolName = "A-B";
+    const pool = pools.get(poolName)!;
+    const positionName = "A-B with 0 liquidity";
 
-    setDefaultFunder(DEFAULT_FUNDER);
-
-    await assert.rejects(
-      decreaseLiquidityInstructions(
-        rpc,
-        positions.get("A-B equally centered")!,
-        { liquidity: liquidityToDecrease },
-      ),
+    positions.set(
+      positionName,
+      await setupPosition(pool, {
+        tickLower: -100,
+        tickUpper: 100,
+        liquidity: 0n,
+      }),
     );
 
-    setDefaultFunder(signer);
+    await assert.doesNotReject(
+      testClosePositionInstructions(poolName, positionName),
+    );
+  });
+
+  it("Should throw an error if the position mint can not be found", async () => {
+    const positionMintAddress: Address = address(
+      "123456789abcdefghijkmnopqrstuvwxABCDEFGHJKL",
+    );
+
+    await assert.rejects(closePositionInstructions(rpc, positionMintAddress));
   });
 });

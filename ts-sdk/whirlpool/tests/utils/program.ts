@@ -2,6 +2,7 @@ import {
   fetchAllMaybeTickArray,
   fetchWhirlpool,
   getFeeTierAddress,
+  getIncreaseLiquidityV2Instruction,
   getInitializeConfigInstruction,
   getInitializeFeeTierInstruction,
   getInitializePoolV2Instruction,
@@ -13,25 +14,27 @@ import {
   getTokenBadgeAddress,
   getWhirlpoolAddress,
 } from "@orca-so/whirlpools-client";
+import {
+  getInitializableTickIndex,
+  getTickArrayStartTickIndex,
+  increaseLiquidityQuote,
+  tickIndexToSqrtPrice,
+} from "@orca-so/whirlpools-core";
+import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
+import { TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
+import {
+  ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
+  fetchMint,
+  findAssociatedTokenPda,
+  TOKEN_2022_PROGRAM_ADDRESS,
+} from "@solana-program/token-2022";
 import { address, type Address, type IInstruction } from "@solana/web3.js";
-import { rpc, sendTransaction, signer } from "./mockRpc";
 import {
   SPLASH_POOL_TICK_SPACING,
   WHIRLPOOLS_CONFIG_ADDRESS,
 } from "../../src/config";
-import {
-  getInitializableTickIndex,
-  getTickArrayStartTickIndex,
-  tickIndexToSqrtPrice,
-} from "@orca-so/whirlpools-core";
-import {
-  TOKEN_2022_PROGRAM_ADDRESS,
-  ASSOCIATED_TOKEN_PROGRAM_ADDRESS,
-  fetchMint,
-  findAssociatedTokenPda,
-} from "@solana-program/token-2022";
 import { getNextKeypair } from "./keypair";
-import { TOKEN_PROGRAM_ADDRESS } from "@solana-program/token";
+import { rpc, sendTransaction, signer } from "./mockRpc";
 
 export async function setupConfigAndFeeTiers(): Promise<Address> {
   const keypair = getNextKeypair();
@@ -232,6 +235,54 @@ export async function setupPosition(
     }),
   );
 
+  if (config.liquidity) {
+    const tokenMintA = await fetchMint(rpc, whirlpoolAccount.data.tokenMintA);
+    const tokenOwnerAccountA = await findAssociatedTokenPda({
+      owner: signer.address,
+      mint: whirlpoolAccount.data.tokenMintA,
+      tokenProgram: tokenMintA.programAddress,
+    }).then((x) => x[0]);
+
+    const tokenMintB = await fetchMint(rpc, whirlpoolAccount.data.tokenMintB);
+    const tokenOwnerAccountB = await findAssociatedTokenPda({
+      owner: signer.address,
+      mint: whirlpoolAccount.data.tokenMintB,
+      tokenProgram: tokenMintB.programAddress,
+    }).then((x) => x[0]);
+
+    const quote = increaseLiquidityQuote(
+      config.liquidity,
+      100,
+      whirlpoolAccount.data.sqrtPrice,
+      initializableLowerTickIndex,
+      initializableUpperTickIndex,
+    );
+
+    instructions.push(
+      getIncreaseLiquidityV2Instruction({
+        whirlpool: whirlpool,
+        positionAuthority: signer,
+        position: positionAddress[0],
+        positionTokenAccount,
+        tokenOwnerAccountA: tokenOwnerAccountA,
+        tokenOwnerAccountB: tokenOwnerAccountB,
+        tokenVaultA: whirlpoolAccount.data.tokenVaultA,
+        tokenVaultB: whirlpoolAccount.data.tokenVaultB,
+        tokenMintA: whirlpoolAccount.data.tokenMintA,
+        tokenMintB: whirlpoolAccount.data.tokenMintB,
+        tokenProgramA: tokenMintA.programAddress,
+        tokenProgramB: tokenMintB.programAddress,
+        tickArrayLower: lowerTickArrayAddress,
+        tickArrayUpper: upperTickArrayAddress,
+        liquidityAmount: quote.liquidityDelta,
+        tokenMaxA: quote.tokenMaxA,
+        tokenMaxB: quote.tokenMaxB,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        remainingAccountsInfo: null,
+      }),
+    );
+  }
+
   await sendTransaction(instructions);
 
   return positionMint.address;
@@ -330,6 +381,54 @@ export async function setupTEPosition(
       withTokenMetadataExtension: true,
     }),
   );
+
+  if (config.liquidity) {
+    const tokenMintA = await fetchMint(rpc, whirlpoolAccount.data.tokenMintA);
+    const tokenOwnerAccountA = await findAssociatedTokenPda({
+      owner: signer.address,
+      mint: whirlpoolAccount.data.tokenMintA,
+      tokenProgram: tokenMintA.programAddress,
+    }).then((x) => x[0]);
+
+    const tokenMintB = await fetchMint(rpc, whirlpoolAccount.data.tokenMintB);
+    const tokenOwnerAccountB = await findAssociatedTokenPda({
+      owner: signer.address,
+      mint: whirlpoolAccount.data.tokenMintB,
+      tokenProgram: tokenMintB.programAddress,
+    }).then((x) => x[0]);
+
+    const quote = increaseLiquidityQuote(
+      config.liquidity,
+      100,
+      whirlpoolAccount.data.sqrtPrice,
+      initializableLowerTickIndex,
+      initializableUpperTickIndex,
+    );
+
+    instructions.push(
+      getIncreaseLiquidityV2Instruction({
+        whirlpool: whirlpool,
+        positionAuthority: signer,
+        position: positionAddress[0],
+        positionTokenAccount,
+        tokenOwnerAccountA: tokenOwnerAccountA,
+        tokenOwnerAccountB: tokenOwnerAccountB,
+        tokenVaultA: whirlpoolAccount.data.tokenVaultA,
+        tokenVaultB: whirlpoolAccount.data.tokenVaultB,
+        tokenMintA: whirlpoolAccount.data.tokenMintA,
+        tokenMintB: whirlpoolAccount.data.tokenMintB,
+        tokenProgramA: tokenMintA.programAddress,
+        tokenProgramB: tokenMintB.programAddress,
+        tickArrayLower: lowerTickArrayAddress,
+        tickArrayUpper: upperTickArrayAddress,
+        liquidityAmount: quote.liquidityDelta,
+        tokenMaxA: quote.tokenMaxA,
+        tokenMaxB: quote.tokenMaxB,
+        memoProgram: MEMO_PROGRAM_ADDRESS,
+        remainingAccountsInfo: null,
+      }),
+    );
+  }
 
   await sendTransaction(instructions);
 

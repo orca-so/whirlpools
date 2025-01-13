@@ -325,3 +325,203 @@ pub async fn harvest_position_instructions(
         rewards_quote,
     })
 }
+
+#[cfg(test)]
+mod tests {
+    use orca_whirlpools_client::get_position_address;
+    use orca_whirlpools_client::Position;
+    use serial_test::serial;
+    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_program_test::tokio;
+    use solana_sdk::{
+        program_pack::Pack,
+        pubkey::Pubkey,
+        signer::{keypair::Keypair, Signer},
+    };
+    use std::collections::HashMap;
+    use std::error::Error;
+
+    use crate::{
+        harvest_position_instructions, increase_liquidity_instructions, swap_instructions,
+        tests::{
+            setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
+            setup_mint_with_decimals, setup_position, setup_te_position, setup_whirlpool,
+            RpcContext, SetupAtaConfig,
+        },
+        HarvestPositionInstruction, IncreaseLiquidityParam, SwapType,
+    };
+
+    use spl_token::state::Account as TokenAccount;
+    use spl_token_2022::{
+        extension::StateWithExtensionsOwned, state::Account as TokenAccount2022,
+        ID as TOKEN_2022_PROGRAM_ID,
+    };
+
+    async fn fetch_position(
+        rpc: &solana_client::nonblocking::rpc_client::RpcClient,
+        position_pubkey: Pubkey,
+    ) -> Result<Position, Box<dyn Error>> {
+        let account = rpc.get_account(&position_pubkey).await?;
+        Ok(Position::from_bytes(&account.data)?)
+    }
+
+    async fn get_token_balance(rpc: &RpcClient, address: Pubkey) -> Result<u64, Box<dyn Error>> {
+        let account_data = rpc.get_account(&address).await?;
+
+        if account_data.owner == TOKEN_2022_PROGRAM_ID {
+            let state = StateWithExtensionsOwned::<TokenAccount2022>::unpack(account_data.data)?;
+            Ok(state.base.amount)
+        } else {
+            let token_account = TokenAccount::unpack(&account_data.data)?;
+            Ok(token_account.amount)
+        }
+    }
+
+    async fn verify_harvest_position(
+        ctx: &RpcContext,
+        harvest_ix: &HarvestPositionInstruction,
+        ata_a: Pubkey,
+        ata_b: Pubkey,
+
+        position_mint: Pubkey,
+    ) -> Result<(), Box<dyn Error>> {
+        let before_a = get_token_balance(&ctx.rpc, ata_a).await?;
+        let before_b = get_token_balance(&ctx.rpc, ata_b).await?;
+
+        let signers: Vec<&Keypair> = harvest_ix.additional_signers.iter().collect();
+        ctx.send_transaction_with_signers(harvest_ix.instructions.clone(), signers)
+            .await?;
+
+        let after_a = get_token_balance(&ctx.rpc, ata_a).await?;
+        let after_b = get_token_balance(&ctx.rpc, ata_b).await?;
+        let gained_a = after_a.saturating_sub(before_a);
+        let gained_b = after_b.saturating_sub(before_b);
+
+        let fees_quote = &harvest_ix.fees_quote;
+        assert!(
+            gained_a >= fees_quote.fee_owed_a,
+            "Less token A than expected from harvest. got={}, expected={}",
+            gained_a,
+            fees_quote.fee_owed_a
+        );
+        assert!(
+            gained_b >= fees_quote.fee_owed_b,
+            "Less token B than expected from harvest. got={}, expected={}",
+            gained_b,
+            fees_quote.fee_owed_b
+        );
+
+        let position_pubkey = get_position_address(&position_mint)?.0;
+        let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_harvest_position_with_swap() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+
+        let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_te_a = setup_mint_te(&ctx, &[]).await?; // Token-2022
+        let mint_te_fee = setup_mint_te_fee(&ctx).await?; // Token-2022 + fee extension
+
+        let user_ata_a = setup_ata_with_amount(&ctx, mint_a, 1_000_000).await?;
+        let user_ata_b = setup_ata_with_amount(&ctx, mint_b, 1_000_000).await?;
+        let user_ata_te_a = setup_ata_te(
+            &ctx,
+            mint_te_a,
+            Some(SetupAtaConfig {
+                amount: Some(1_000_000),
+            }),
+        )
+        .await?;
+        let user_ata_te_fee = setup_ata_te(
+            &ctx,
+            mint_te_fee,
+            Some(SetupAtaConfig {
+                amount: Some(1_000_000),
+            }),
+        )
+        .await?;
+
+        let minted_map = HashMap::from([
+            ("A", mint_a),
+            ("B", mint_b),
+            ("TEA", mint_te_a),
+            ("TEFee", mint_te_fee),
+        ]);
+        let user_atas_map = HashMap::from([
+            ("A", user_ata_a),
+            ("B", user_ata_b),
+            ("TEA", user_ata_te_a),
+            ("TEFee", user_ata_te_fee),
+        ]);
+
+        let pool_combos = vec![("A-B", ("A", "B")), ("A-TEA", ("A", "TEA"))];
+        let position_ranges = vec![
+            ("equally centered", (-100, 100)),
+            ("one sided A", (-100, -1)),
+        ];
+        let tick_spacing = 64;
+
+        for (pool_name, (mkey_a, mkey_b)) in &pool_combos {
+            let pubkey_a = minted_map[mkey_a];
+            let pubkey_b = minted_map[mkey_b];
+            let pool_pubkey = setup_whirlpool(&ctx, pubkey_a, pubkey_b, tick_spacing).await?;
+
+            for (range_name, (lower, upper)) in &position_ranges {
+                let position_mint =
+                    setup_position(&ctx, pool_pubkey, Some((*lower, *upper)), None).await?;
+
+                let inc_liq_ix = increase_liquidity_instructions(
+                    &ctx.rpc,
+                    position_mint,
+                    IncreaseLiquidityParam::Liquidity(50_000),
+                    Some(100),
+                    Some(ctx.signer.pubkey()),
+                )
+                .await?;
+                ctx.send_transaction_with_signers(inc_liq_ix.instructions, vec![])
+                    .await?;
+
+                let swap_a_10 = swap_instructions(
+                    &ctx.rpc,
+                    pool_pubkey,
+                    10,
+                    pubkey_a,
+                    SwapType::ExactIn,
+                    Some(100), // 1%
+                    Some(ctx.signer.pubkey()),
+                )
+                .await?;
+                ctx.send_transaction_with_signers(
+                    swap_a_10.instructions,
+                    swap_a_10.additional_signers.iter().collect(),
+                )
+                .await?;
+
+                let harvest_ix = harvest_position_instructions(
+                    &ctx.rpc,
+                    position_mint,
+                    Some(ctx.signer.pubkey()),
+                )
+                .await?;
+
+                // 검증
+                let ata_a = user_atas_map[mkey_a];
+                let ata_b = user_atas_map[mkey_b];
+
+                verify_harvest_position(&ctx, &harvest_ix, ata_a, ata_b, position_mint).await?;
+
+                println!(
+                    "[harvest w/ swap] pool={}, range={}, pos={} => fees & rewards harvested OK",
+                    pool_name, range_name, position_mint
+                );
+            }
+        }
+
+        Ok(())
+    }
+}

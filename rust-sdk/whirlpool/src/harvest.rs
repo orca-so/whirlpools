@@ -328,8 +328,7 @@ pub async fn harvest_position_instructions(
 
 #[cfg(test)]
 mod tests {
-    use orca_whirlpools_client::get_position_address;
-    use orca_whirlpools_client::Position;
+    use orca_whirlpools_client::{get_position_address, Position};
     use serial_test::serial;
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_program_test::tokio;
@@ -338,23 +337,33 @@ mod tests {
         pubkey::Pubkey,
         signer::{keypair::Keypair, Signer},
     };
-    use std::collections::HashMap;
-    use std::error::Error;
-
-    use crate::{
-        harvest_position_instructions, increase_liquidity_instructions, swap_instructions,
-        tests::{
-            setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
-            setup_mint_with_decimals, setup_position, setup_te_position, setup_whirlpool,
-            RpcContext, SetupAtaConfig,
-        },
-        HarvestPositionInstruction, IncreaseLiquidityParam, SwapType,
-    };
-
     use spl_token::state::Account as TokenAccount;
     use spl_token_2022::{
-        extension::StateWithExtensionsOwned, state::Account as TokenAccount2022,
+        extension::StateWithExtensionsOwned,
+        state::Account as TokenAccount2022,
         ID as TOKEN_2022_PROGRAM_ID,
+    };
+    use std::{collections::HashMap, error::Error};
+
+    use crate::{
+        harvest_position_instructions,
+        increase_liquidity_instructions,
+        swap_instructions,
+        tests::{
+            setup_ata_te,
+            setup_ata_with_amount,
+            setup_mint_te,
+            setup_mint_te_fee,
+            setup_mint_with_decimals,
+            setup_position,
+            setup_te_position,
+            setup_whirlpool,
+            RpcContext,
+            SetupAtaConfig,
+        },
+        HarvestPositionInstruction,
+        IncreaseLiquidityParam,
+        SwapType,
     };
 
     async fn fetch_position(
@@ -509,7 +518,6 @@ mod tests {
                 )
                 .await?;
 
-                // 검증
                 let ata_a = user_atas_map[mkey_a];
                 let ata_b = user_atas_map[mkey_b];
 

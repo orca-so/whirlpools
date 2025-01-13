@@ -310,8 +310,6 @@ mod tests {
 
     const DEFAULT_TICK_RANGE: (i32, i32) = (-100, 100);
 
-    const DEFAULT_TICK_RANGE: (i32, i32) = (-100, 100);
-
     #[tokio::test]
     #[serial]
     #[ignore = "Skipped until solana-bankrun supports gpa"]
@@ -337,10 +335,10 @@ mod tests {
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
 
         let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
-        let normal_position_pubkey = setup_position(whirlpool).await?;
+        let normal_position_pubkey = setup_position(&ctx, whirlpool, None, None).await?;
 
         // 1) Add a te_position (uses token-2022)
-        let te_position_pubkey = setup_te_position(whirlpool).await?;
+        let te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
 
         // 2) Add a position bundle, optionally with multiple bundled positions
         let position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
@@ -376,10 +374,10 @@ mod tests {
         setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
 
         let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
-        let _normal_position_pubkey = setup_position(whirlpool).await?;
+        let _normal_position_pubkey = setup_position(&ctx, whirlpool, None, None).await?;
 
         // 1) te_position
-        let _te_position_pubkey = setup_te_position(whirlpool).await?;
+        let _te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
 
         // 2) position bundle
         let _position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;

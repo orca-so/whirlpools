@@ -4076,7 +4076,7 @@ __metadata:
     "@next/bundle-analyzer": "npm:^15.1.4"
     "@orca-so/whirlpools": "npm:*"
     "@solana/web3.js": "npm:^2.0.0"
-    "@types/node": "npm:^22.10.5"
+    "@types/node": "npm:^22.10.6"
     "@types/react": "npm:^18.3.13"
     copy-webpack-plugin: "npm:^12.0.2"
     next: "npm:^15.1.4"
@@ -4112,7 +4112,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-monorepo@workspace:."
   dependencies:
-    "@types/node": "npm:^22.10.5"
+    "@types/node": "npm:^22.10.6"
     nx: "npm:^20.2.2"
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.3.5"
@@ -5814,12 +5814,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.10.5":
-  version: 22.10.5
-  resolution: "@types/node@npm:22.10.5"
+"@types/node@npm:^22.10.6":
+  version: 22.10.6
+  resolution: "@types/node@npm:22.10.6"
   dependencies:
     undici-types: "npm:~6.20.0"
-  checksum: 10c0/6a0e7d1fe6a86ef6ee19c3c6af4c15542e61aea2f4cee655b6252efb356795f1f228bc8299921e82924e80ff8eca29b74d9dd0dd5cc1a90983f892f740b480df
+  checksum: 10c0/8b67affc211e5f9c74f7949cda04ca669721e50b83d71b8772a7bed7a4a3c41d663b3a794413f618e763ca6c5da8c234c25ffebcb0737983fc3e7415818ab9a7
   languageName: node
   linkType: hard
 

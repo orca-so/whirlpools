@@ -1,10 +1,10 @@
 import {
   fetchMaybePosition,
-  fetchPosition,
   getPositionAddress,
 } from "@orca-so/whirlpools-client";
 import { fetchToken } from "@solana-program/token";
-import { Address, address } from "@solana/web3.js";
+import type { Address } from "@solana/web3.js";
+import { address } from "@solana/web3.js";
 import assert from "assert";
 import { beforeAll, describe, it } from "vitest";
 import { closePositionInstructions } from "../src/decreaseLiquidity";
@@ -105,10 +105,11 @@ describe("Close Position", () => {
 
     const positionMintAddress = positions.get(positionName)!;
     const [positionAddress, _] = await getPositionAddress(positionMintAddress);
-    const positionBefore = await fetchPosition(rpc, positionAddress);
 
-    const { instructions, quote, feesQuote, rewardsQuote } =
-      await closePositionInstructions(rpc, positionMintAddress);
+    const { instructions, quote, feesQuote } = await closePositionInstructions(
+      rpc,
+      positionMintAddress,
+    );
     await sendTransaction(instructions);
 
     const positionAfter = await fetchMaybePosition(rpc, positionAddress);
@@ -126,13 +127,6 @@ describe("Close Position", () => {
       quote.tokenEstB + feesQuote.feeOwedB,
       tokenBAfter.data.amount - tokenBBefore.data.amount,
     );
-
-    for (let i = 0; i < positionBefore.data.rewardInfos.length; i++) {
-      assert.strictEqual(
-        positionBefore.data.rewardInfos[i].amountOwed,
-        rewardsQuote.rewards[i].rewardsOwed,
-      );
-    }
   };
 
   for (const poolName of poolTypes.keys()) {

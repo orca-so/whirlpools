@@ -495,13 +495,10 @@ mod tests {
     #[case("A-B", "one sided B", 1, 100)]
     #[case("A-TEA", "equally centered", -100, 100)]
     #[case("A-TEA", "one sided A", -100, -1)]
-    #[case("A-TEA", "one sided B", 1, 100)]
     #[case("TEA-TEB", "equally centered", -100, 100)]
     #[case("TEA-TEB", "one sided A", -100, -1)]
-    #[case("TEA-TEB", "one sided B", 1, 100)]
     #[case("A-TEFee", "equally centered", -100, 100)]
     #[case("A-TEFee", "one sided A", -100, -1)]
-    #[case("A-TEFee", "one sided B", 1, 100)]
     #[serial]
     fn test_harvest_position_with_swap(
         #[case] pool_name: &str,

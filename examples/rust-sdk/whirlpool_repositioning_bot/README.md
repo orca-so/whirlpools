@@ -25,7 +25,7 @@ A Rust-based CLI bot for interacting with the Orca Whirlpools program on Solana.
 1. Clone this repository:
   ```bash
   git clone https://github.com/orca-so/whirlpools.git
-  cd examples/rust-sdk/lp-bot
+  cd examples/rust-sdk/whirlpool_repositioning_bot
   ```
 2. Build the bot:
   ```bash

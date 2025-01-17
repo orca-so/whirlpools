@@ -951,11 +951,6 @@ mod tests {
             )
             .await
             .unwrap();
-
-            println!(
-                "[combo={}, pos_range={}] => position={} => success!",
-                pool_name, position_name, position_mint
-            );
         });
     }
 

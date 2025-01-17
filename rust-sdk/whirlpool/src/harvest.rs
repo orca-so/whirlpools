@@ -594,11 +594,6 @@ mod tests {
             verify_harvest_position(&ctx, &harvest_ix, *ata_a, *ata_b, position_mint)
                 .await
                 .unwrap();
-
-            println!(
-                "[harvest w/ swap] pool={}, range=({},{}), pos={} => fees & rewards harvested OK",
-                pool_name, lower_tick, upper_tick, position_mint
-            );
         });
     }
 }

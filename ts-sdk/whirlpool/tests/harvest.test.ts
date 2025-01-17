@@ -87,6 +87,43 @@ describe("Harvest", () => {
         positions.set(`TE ${poolName} ${positionTypeName}`, positionTE);
       }
     }
+
+    for (const [poolName, poolAddress] of pools) {
+      const [mintAName, mintBName] = poolName.split("-");
+      const mintAAddress = mints.get(mintAName)!;
+      const mintBAddress = mints.get(mintBName)!;
+
+      let { instructions: swap_instructions } = await swapInstructions(
+        rpc,
+        { inputAmount: 100n, mint: mintAAddress },
+        poolAddress,
+      );
+      await sendTransaction(swap_instructions);
+
+      // Do another swap to generate more fees
+      ({ instructions: swap_instructions } = await swapInstructions(
+        rpc,
+        { outputAmount: 100n, mint: mintAAddress },
+        poolAddress,
+      ));
+      await sendTransaction(swap_instructions);
+
+      // Do another swap to generate more fees
+      ({ instructions: swap_instructions } = await swapInstructions(
+        rpc,
+        { inputAmount: 100n, mint: mintBAddress },
+        poolAddress,
+      ));
+      await sendTransaction(swap_instructions);
+
+      // Do another swap to generate more fees
+      ({ instructions: swap_instructions } = await swapInstructions(
+        rpc,
+        { outputAmount: 100n, mint: mintBAddress },
+        poolAddress,
+      ));
+      await sendTransaction(swap_instructions);
+    }
   });
 
   const testHarvestPositionInstructions = async (
@@ -94,44 +131,10 @@ describe("Harvest", () => {
     positionName: string,
   ) => {
     const [mintAName, mintBName] = poolName.split("-");
-    const mintAAddress = mints.get(mintAName)!;
-    const mintBAddress = mints.get(mintBName)!;
     const ataAAddress = atas.get(mintAName)!;
     const ataBAddress = atas.get(mintBName)!;
 
-    const poolAddress = pools.get(poolName)!;
     const positionMintAddress = positions.get(positionName)!;
-
-    let { instructions: swap_instructions } = await swapInstructions(
-      rpc,
-      { inputAmount: 100n, mint: mintAAddress },
-      poolAddress,
-    );
-    await sendTransaction(swap_instructions);
-
-    // Do another swap to generate more fees
-    ({ instructions: swap_instructions } = await swapInstructions(
-      rpc,
-      { outputAmount: 100n, mint: mintAAddress },
-      poolAddress,
-    ));
-    await sendTransaction(swap_instructions);
-
-    // Do another swap to generate more fees
-    ({ instructions: swap_instructions } = await swapInstructions(
-      rpc,
-      { inputAmount: 100n, mint: mintBAddress },
-      poolAddress,
-    ));
-    await sendTransaction(swap_instructions);
-
-    // Do another swap to generate more fees
-    ({ instructions: swap_instructions } = await swapInstructions(
-      rpc,
-      { outputAmount: 100n, mint: mintBAddress },
-      poolAddress,
-    ));
-    await sendTransaction(swap_instructions);
 
     const tokenABefore = await fetchToken(rpc, ataAAddress);
     const tokenBBefore = await fetchToken(rpc, ataBAddress);
@@ -172,6 +175,20 @@ describe("Harvest", () => {
   for (const poolName of poolTypes.keys()) {
     for (const positionTypeName of positionTypes.keys()) {
       const positionName = `${poolName} ${positionTypeName}`;
+      it(`Should harvest a position for ${positionName}`, async () => {
+        await testHarvestPositionInstructions(poolName, positionName);
+      });
+
+      const positionNameTE = `TE ${poolName} ${positionTypeName}`;
+      it(`Should harvest a position for ${positionNameTE}`, async () => {
+        await testHarvestPositionInstructions(poolName, positionNameTE);
+      });
+    }
+  }
+
+  for (const poolName of poolTypes.keys()) {
+    for (const positionTypeName of positionTypes.keys()) {
+      const positionName = `${poolName} ${positionTypeName}`;
       it(`Should harvest a position without fees for ${positionName}`, async () => {
         await testHarvestPositionInstructionsWithoutFees(
           poolName,
@@ -185,20 +202,6 @@ describe("Harvest", () => {
           poolName,
           positionNameTE,
         );
-      });
-    }
-  }
-
-  for (const poolName of poolTypes.keys()) {
-    for (const positionTypeName of positionTypes.keys()) {
-      const positionName = `${poolName} ${positionTypeName}`;
-      it(`Should harvest a position for ${positionName}`, async () => {
-        await testHarvestPositionInstructions(poolName, positionName);
-      });
-
-      const positionNameTE = `TE ${poolName} ${positionTypeName}`;
-      it(`Should harvest a position for ${positionNameTE}`, async () => {
-        await testHarvestPositionInstructions(poolName, positionNameTE);
       });
     }
   }

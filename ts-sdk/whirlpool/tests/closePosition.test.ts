@@ -8,6 +8,7 @@ import { address } from "@solana/web3.js";
 import assert from "assert";
 import { beforeAll, describe, it } from "vitest";
 import { closePositionInstructions } from "../src/decreaseLiquidity";
+import { swapInstructions } from "../src/swap";
 import { rpc, sendTransaction } from "./utils/mockRpc";
 import {
   setupPosition,
@@ -91,6 +92,43 @@ describe("Close Position", () => {
         positions.set(`TE ${poolName} ${positionTypeName}`, positionTE);
       }
     }
+
+    for (const [poolName, poolAddress] of pools) {
+      const [mintAName, mintBName] = poolName.split("-");
+      const mintAAddress = mints.get(mintAName)!;
+      const mintBAddress = mints.get(mintBName)!;
+
+      let { instructions: swap_instructions } = await swapInstructions(
+        rpc,
+        { inputAmount: 100n, mint: mintAAddress },
+        poolAddress,
+      );
+      await sendTransaction(swap_instructions);
+
+      // Do another swap to generate more fees
+      ({ instructions: swap_instructions } = await swapInstructions(
+        rpc,
+        { outputAmount: 100n, mint: mintAAddress },
+        poolAddress,
+      ));
+      await sendTransaction(swap_instructions);
+
+      // Do another swap to generate more fees
+      ({ instructions: swap_instructions } = await swapInstructions(
+        rpc,
+        { inputAmount: 100n, mint: mintBAddress },
+        poolAddress,
+      ));
+      await sendTransaction(swap_instructions);
+
+      // Do another swap to generate more fees
+      ({ instructions: swap_instructions } = await swapInstructions(
+        rpc,
+        { outputAmount: 100n, mint: mintBAddress },
+        poolAddress,
+      ));
+      await sendTransaction(swap_instructions);
+    }
   });
 
   const testClosePositionInstructions = async (
@@ -100,11 +138,12 @@ describe("Close Position", () => {
     const [mintAName, mintBName] = poolName.split("-");
     const ataAAddress = atas.get(mintAName)!;
     const ataBAddress = atas.get(mintBName)!;
-    const tokenABefore = await fetchToken(rpc, ataAAddress);
-    const tokenBBefore = await fetchToken(rpc, ataBAddress);
 
     const positionMintAddress = positions.get(positionName)!;
     const [positionAddress, _] = await getPositionAddress(positionMintAddress);
+
+    const tokenABefore = await fetchToken(rpc, ataAAddress);
+    const tokenBBefore = await fetchToken(rpc, ataBAddress);
 
     const { instructions, quote, feesQuote } = await closePositionInstructions(
       rpc,

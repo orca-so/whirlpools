@@ -367,7 +367,6 @@ mod tests {
 
     async fn get_token_balance(rpc: &RpcClient, address: Pubkey) -> Result<u64, Box<dyn Error>> {
         let account_data = rpc.get_account(&address).await?;
-
         if account_data.owner == TOKEN_2022_PROGRAM_ID {
             let parsed = StateWithExtensionsOwned::<TokenAccount2022>::unpack(account_data.data)?;
             Ok(parsed.base.amount)
@@ -382,7 +381,6 @@ mod tests {
         harvest_ix: &HarvestPositionInstruction,
         ata_a: Pubkey,
         ata_b: Pubkey,
-
         position_mint: Pubkey,
     ) -> Result<(), Box<dyn Error>> {
         let before_a = get_token_balance(&ctx.rpc, ata_a).await?;

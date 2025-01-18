@@ -16,6 +16,7 @@ export const buildTransaction = async (
   payerKey: PublicKey,
   priorityConfig: PrioritizationConfig,
   estimatedComputeUnits: number,
+  lookupTables?: AddressLookupTableAccount[],
   signatures?: Array<Uint8Array>
 ) => {
   const ixs = [] as TransactionInstruction[];
@@ -41,7 +42,7 @@ export const buildTransaction = async (
     payerKey,
     recentBlockhash,
     instructions: ixs,
-  }).compileToV0Message();
+  }).compileToV0Message(lookupTables);
 
   const tx = new VersionedTransaction(messageV0, signatures);
   if (signatures) {

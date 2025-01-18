@@ -28,8 +28,8 @@ export const buildTx = async (
   feePayer: PublicKey,
   connectionOrRpcUrl: Connection | string,
   priorityConfig: PrioritizationConfig = DEFAULT_PRIORITIZATION,
-  lookupTables?: AddressLookupTableAccount[],
-  signatures?: Array<Uint8Array>
+  signatures?: Array<Uint8Array>,
+  lookupTables?: AddressLookupTableAccount[]
 ): Promise<VersionedTransaction> => {
   const cx = connection(connectionOrRpcUrl);
   const { blockhash } = await cx.getLatestBlockhash({
@@ -48,6 +48,7 @@ export const buildTx = async (
     feePayer,
     priorityConfig,
     computeUnits,
+    lookupTables,
     signatures
   );
 };
@@ -87,8 +88,8 @@ export const buildAndSendTransaction = async (
     feePayer,
     connectionOrRpcUrl,
     priorityConfig,
-    lookupTables,
-    signatures
+    signatures,
+    lookupTables
   );
   return signAndSendTransaction(tx, wallet, connectionOrRpcUrl);
 };

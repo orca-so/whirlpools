@@ -8,6 +8,7 @@ use orca_whirlpools_core::POSITION_BUNDLE_SIZE;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::account::Account;
 use solana_sdk::pubkey::Pubkey;
+use solana_sdk::signer::Signer;
 
 use crate::{get_token_accounts_for_owner, ParsedTokenAccount};
 
@@ -294,4 +295,101 @@ pub async fn fetch_positions_in_whirlpool(
 ) -> Result<Vec<DecodedAccount<Position>>, Box<dyn Error>> {
     let filters = vec![PositionFilter::Whirlpool(whirlpool)];
     fetch_all_position_with_filter(rpc, filters).await
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::tests::{
+        setup_ata_with_amount, setup_mint_with_decimals, setup_position, setup_position_bundle,
+        setup_te_position, setup_whirlpool, RpcContext,
+    };
+    use serial_test::serial;
+    use solana_program_test::tokio;
+    use std::error::Error;
+
+    const DEFAULT_TICK_RANGE: (i32, i32) = (-100, 100);
+
+    #[tokio::test]
+    #[serial]
+    #[ignore = "Skipped until solana-bankrun supports gpa"]
+    async fn test_fetch_positions_for_owner_no_positions() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+        let owner = ctx.signer.pubkey();
+        let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
+        assert!(
+            positions.is_empty(),
+            "No positions should exist for a new owner"
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial]
+    #[ignore = "Skipped until solana-bankrun supports gpa"]
+    async fn test_fetch_positions_for_owner_with_position() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+        let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
+        setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
+        setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
+
+        let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
+        let normal_position_pubkey = setup_position(&ctx, whirlpool, None, None).await?;
+
+        // 1) Add a te_position (uses token-2022)
+        let te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
+
+        // 2) Add a position bundle, optionally with multiple bundled positions
+        let position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
+
+        let owner = ctx.signer.pubkey();
+        let positions = fetch_positions_for_owner(&ctx.rpc, owner).await?;
+
+        // Expect at least 3: normal, te_position, and a bundle
+        assert!(
+            positions.len() >= 3,
+            "Did not find all positions for the owner (expected normal, te_position, bundle)"
+        );
+
+        // Existing checks remain...
+        match &positions[0] {
+            PositionOrBundle::Position(pos) => {
+                assert_eq!(pos.address, normal_position_pubkey);
+            }
+            _ => panic!("Expected a single position, but found a bundle!"),
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial]
+    #[ignore = "Skipped until solana-bankrun supports gpa"]
+    async fn test_fetch_positions_in_whirlpool() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+        let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
+        let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
+        setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
+        setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
+
+        let whirlpool = setup_whirlpool(&ctx, mint_a, mint_b, 64).await?;
+        let _normal_position_pubkey = setup_position(&ctx, whirlpool, None, None).await?;
+
+        // 1) te_position
+        let _te_position_pubkey = setup_te_position(&ctx, whirlpool, None, None).await?;
+
+        // 2) position bundle
+        let _position_bundle_pubkey = setup_position_bundle(whirlpool, Some(vec![(), ()])).await?;
+
+        let positions = fetch_positions_in_whirlpool(&ctx.rpc, whirlpool).await?;
+
+        // Expect at least 3: normal + te_position + bundle
+        assert!(
+            positions.len() >= 3,
+            "Should find multiple positions in this whirlpool, including te_position & bundle"
+        );
+
+        Ok(())
+    }
 }

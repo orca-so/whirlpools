@@ -38,3 +38,4 @@ base64 = { version = "^0.20" }
 toml = { version = "^0.7" }
 tokio = { version = "^1.0", features = ["sync"] }
 spl-pod = { version = "^0.1" }
+rstest = "0.18.2"

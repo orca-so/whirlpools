@@ -695,3 +695,339 @@ pub async fn open_position_instructions(
     )
     .await
 }
+
+#[cfg(test)]
+mod tests {
+    use std::collections::HashMap;
+    use std::error::Error;
+    use std::time::Duration;
+
+    use orca_whirlpools_client::{get_position_address, Position};
+    use rstest::rstest;
+    use serial_test::serial;
+    use solana_program_test::tokio;
+    use solana_sdk::{
+        program_pack::Pack,
+        pubkey::Pubkey,
+        signer::{keypair::Keypair, Signer},
+    };
+    use spl_token::state::Account as TokenAccount;
+    use spl_token_2022::{
+        extension::{ExtensionType, StateWithExtensionsOwned},
+        state::Account as TokenAccount2022,
+        ID as TOKEN_2022_PROGRAM_ID,
+    };
+
+    use crate::{
+        increase_liquidity_instructions,
+        tests::{
+            setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
+            setup_mint_with_decimals, setup_position, setup_te_position, setup_whirlpool,
+            RpcContext, SetupAtaConfig,
+        },
+        IncreaseLiquidityParam,
+    };
+
+    use solana_client::nonblocking::rpc_client::RpcClient;
+    async fn fetch_position(rpc: &RpcClient, address: Pubkey) -> Result<Position, Box<dyn Error>> {
+        let account = rpc.get_account(&address).await?;
+        Position::from_bytes(&account.data).map_err(|e| e.into())
+    }
+
+    async fn get_token_balance(rpc: &RpcClient, address: Pubkey) -> Result<u64, Box<dyn Error>> {
+        let account_data = rpc.get_account(&address).await?;
+
+        if account_data.owner == TOKEN_2022_PROGRAM_ID {
+            let state = StateWithExtensionsOwned::<TokenAccount2022>::unpack(account_data.data)?;
+            Ok(state.base.amount)
+        } else {
+            let token_account = TokenAccount::unpack(&account_data.data)?;
+            Ok(token_account.amount)
+        }
+    }
+
+    async fn verify_increase_liquidity(
+        ctx: &RpcContext,
+        increase_ix: &crate::IncreaseLiquidityInstruction,
+        token_a_account: Pubkey,
+        token_b_account: Pubkey,
+        position_mint: Pubkey,
+    ) -> Result<(), Box<dyn Error>> {
+        let before_a = get_token_balance(&ctx.rpc, token_a_account).await?;
+        let before_b = get_token_balance(&ctx.rpc, token_b_account).await?;
+
+        let signers: Vec<&Keypair> = increase_ix.additional_signers.iter().collect();
+        ctx.send_transaction_with_signers(increase_ix.instructions.clone(), signers)
+            .await?;
+
+        let after_a = get_token_balance(&ctx.rpc, token_a_account).await?;
+        let after_b = get_token_balance(&ctx.rpc, token_b_account).await?;
+        let used_a = before_a.saturating_sub(after_a);
+        let used_b = before_b.saturating_sub(after_b);
+
+        let quote = &increase_ix.quote;
+        assert!(
+            used_a >= quote.token_est_a && used_a <= quote.token_max_a,
+            "Token A usage out of range: used={}, est={}..{}",
+            used_a,
+            quote.token_est_a,
+            quote.token_max_a
+        );
+        assert!(
+            used_b >= quote.token_est_b && used_b <= quote.token_max_b,
+            "Token B usage out of range: used={}, est={}..{}",
+            used_b,
+            quote.token_est_b,
+            quote.token_max_b
+        );
+
+        let position_pubkey = get_position_address(&position_mint)?.0;
+        let position_data = fetch_position(&ctx.rpc, position_pubkey).await?;
+        assert_eq!(
+            position_data.liquidity, quote.liquidity_delta,
+            "Position liquidity mismatch! expected={}, got={}",
+            quote.liquidity_delta, position_data.liquidity
+        );
+
+        Ok(())
+    }
+
+    async fn setup_all_mints(
+        ctx: &RpcContext,
+    ) -> Result<HashMap<&'static str, Pubkey>, Box<dyn Error>> {
+        let mint_a = setup_mint_with_decimals(ctx, 9).await?;
+        let mint_b = setup_mint_with_decimals(ctx, 9).await?;
+        let mint_te_a = setup_mint_te(ctx, &[]).await?;
+        let mint_te_b = setup_mint_te(ctx, &[]).await?;
+        let mint_te_fee = setup_mint_te_fee(ctx).await?;
+
+        let mut out = HashMap::new();
+        out.insert("A", mint_a);
+        out.insert("B", mint_b);
+        out.insert("TEA", mint_te_a);
+        out.insert("TEB", mint_te_b);
+        out.insert("TEFee", mint_te_fee);
+
+        Ok(out)
+    }
+
+    async fn setup_all_atas(
+        ctx: &RpcContext,
+        minted: &HashMap<&str, Pubkey>,
+    ) -> Result<HashMap<&'static str, Pubkey>, Box<dyn Error>> {
+        let token_balance = 1_000_000_000;
+        let user_ata_a =
+            setup_ata_with_amount(ctx, *minted.get("A").unwrap(), token_balance).await?;
+        let user_ata_b =
+            setup_ata_with_amount(ctx, *minted.get("B").unwrap(), token_balance).await?;
+        let user_ata_te_a = setup_ata_te(
+            ctx,
+            *minted.get("TEA").unwrap(),
+            Some(SetupAtaConfig {
+                amount: Some(token_balance),
+            }),
+        )
+        .await?;
+        let user_ata_te_b = setup_ata_te(
+            ctx,
+            *minted.get("TEB").unwrap(),
+            Some(SetupAtaConfig {
+                amount: Some(token_balance),
+            }),
+        )
+        .await?;
+        let user_ata_tefee = setup_ata_te(
+            ctx,
+            *minted.get("TEFee").unwrap(),
+            Some(SetupAtaConfig {
+                amount: Some(token_balance),
+            }),
+        )
+        .await?;
+
+        let mut out = HashMap::new();
+        out.insert("A", user_ata_a);
+        out.insert("B", user_ata_b);
+        out.insert("TEA", user_ata_te_a);
+        out.insert("TEB", user_ata_te_b);
+        out.insert("TEFee", user_ata_tefee);
+
+        Ok(out)
+    }
+
+    fn is_te_scenario(pool_name: &str, position_name: &str) -> bool {
+        pool_name.contains("TE") || position_name.contains("TE")
+    }
+
+    pub fn parse_pool_name(pool_name: &str) -> (&'static str, &'static str) {
+        match pool_name {
+            "A-B" => ("A", "B"),
+            "A-TEA" => ("A", "TEA"),
+            "TEA-TEB" => ("TEA", "TEB"),
+            "A-TEFee" => ("A", "TEFee"),
+
+            _ => panic!("Unknown pool name: {}", pool_name),
+        }
+    }
+
+    #[rstest]
+    #[case("A-B", "equally centered", -100, 100)]
+    #[case("A-B", "one sided A", -100, -1)]
+    #[case("A-B", "one sided B", 1, 100)]
+    #[case("A-TEA", "equally centered", -100, 100)]
+    #[case("A-TEA", "one sided A", -100, -1)]
+    #[case("A-TEA", "one sided B", 1, 100)]
+    #[case("TEA-TEB", "equally centered", -100, 100)]
+    #[case("TEA-TEB", "one sided A", -100, -1)]
+    #[case("TEA-TEB", "one sided B", 1, 100)]
+    #[case("A-TEFee", "equally centered", -100, 100)]
+    #[case("A-TEFee", "one sided A", -100, -1)]
+    #[case("A-TEFee", "one sided B", 1, 100)]
+    fn test_increase_liquidity_cases(
+        #[case] pool_name: &str,
+        #[case] position_name: &str,
+        #[case] lower_tick: i32,
+        #[case] upper_tick: i32,
+    ) {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let ctx = RpcContext::new().await;
+
+            let minted = setup_all_mints(&ctx).await.unwrap();
+            let user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
+
+            let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
+            let pubkey_a = minted.get(mint_a_key).unwrap();
+            let pubkey_b = minted.get(mint_b_key).unwrap();
+            let (mint_a_key, mint_b_key) = parse_pool_name(pool_name);
+            let pubkey_a = *minted.get(mint_a_key).unwrap();
+            let pubkey_b = *minted.get(mint_b_key).unwrap();
+
+            let (final_a, final_b) = if pubkey_a < pubkey_b {
+                (pubkey_a, pubkey_b)
+            } else {
+                (pubkey_b, pubkey_a)
+            };
+
+            // prevent flaky test by ordering the tokens correctly by lexical order
+            let tick_spacing = 64;
+            let swapped = pubkey_a > pubkey_b;
+            let pool_pubkey = setup_whirlpool(&ctx, final_a, final_b, tick_spacing)
+                .await
+                .unwrap();
+            let user_ata_for_token_a = if swapped {
+                user_atas.get(mint_b_key).unwrap()
+            } else {
+                user_atas.get(mint_a_key).unwrap()
+            };
+            let user_ata_for_token_b = if swapped {
+                user_atas.get(mint_a_key).unwrap()
+            } else {
+                user_atas.get(mint_b_key).unwrap()
+            };
+
+            let position_mint =
+                setup_position(&ctx, pool_pubkey, Some((lower_tick, upper_tick)), None)
+                    .await
+                    .unwrap();
+
+            let param = IncreaseLiquidityParam::Liquidity(10_000);
+            let inc_ix = increase_liquidity_instructions(
+                &ctx.rpc,
+                position_mint,
+                param,
+                Some(100), // slippage
+                Some(ctx.signer.pubkey()),
+            )
+            .await
+            .unwrap();
+
+            verify_increase_liquidity(
+                &ctx,
+                &inc_ix,
+                *user_ata_for_token_a,
+                *user_ata_for_token_b,
+                position_mint,
+            )
+            .await
+            .unwrap();
+        });
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_increase_liquidity_fails_if_authority_is_default() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+
+        let minted = setup_all_mints(&ctx).await?;
+        let user_atas = setup_all_atas(&ctx, &minted).await?;
+
+        let mint_a_key = minted.get("A").unwrap();
+        let mint_b_key = minted.get("B").unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+
+        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+
+        use solana_sdk::pubkey::Pubkey;
+        let param = IncreaseLiquidityParam::Liquidity(100_000);
+        let res = increase_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            param,
+            Some(100), // slippage
+            Some(Pubkey::default()),
+        )
+        .await;
+
+        assert!(res.is_err(), "Should have failed with default authority");
+        let err_str = format!("{:?}", res.err().unwrap());
+        assert!(
+            err_str.contains("Authority must be provided")
+                || err_str.contains("Signer must be provided"),
+            "Error string was: {}",
+            err_str
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_increase_liquidity_fails_if_deposit_exceeds_user_balance(
+    ) -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+
+        let minted = setup_all_mints(&ctx).await?;
+        let user_atas = setup_all_atas(&ctx, &minted).await?;
+
+        let mint_a_key = minted.get("A").unwrap();
+        let mint_b_key = minted.get("B").unwrap();
+        let pool_pubkey = setup_whirlpool(&ctx, *mint_a_key, *mint_b_key, 64).await?;
+
+        let position_mint = setup_position(&ctx, pool_pubkey, Some((-100, 100)), None).await?;
+
+        // Attempt
+        let res = increase_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            IncreaseLiquidityParam::TokenA(2_000_000_000),
+            Some(100),
+            Some(ctx.signer.pubkey()),
+        )
+        .await;
+
+        assert!(
+            res.is_err(),
+            "Should fail if user tries depositing more than balance"
+        );
+        let err_str = format!("{:?}", res.err().unwrap());
+        assert!(
+            err_str.contains("Insufficient balance")
+                || err_str.contains("Error processing Instruction 0"),
+            "Unexpected error message: {}",
+            err_str
+        );
+
+        Ok(())
+    }
+}

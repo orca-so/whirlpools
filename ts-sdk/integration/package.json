@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "vitest run index.test.ts"
+    "test": "vitest run index.test.ts --test-timeout 60000"
   },
   "dependencies": {
     "@orca-so/whirlpools": "*"

@@ -3876,72 +3876,72 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-arm64@npm:20.2.2":
-  version: 20.2.2
-  resolution: "@nx/nx-darwin-arm64@npm:20.2.2"
+"@nx/nx-darwin-arm64@npm:20.3.2":
+  version: 20.3.2
+  resolution: "@nx/nx-darwin-arm64@npm:20.3.2"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-x64@npm:20.2.2":
-  version: 20.2.2
-  resolution: "@nx/nx-darwin-x64@npm:20.2.2"
+"@nx/nx-darwin-x64@npm:20.3.2":
+  version: 20.3.2
+  resolution: "@nx/nx-darwin-x64@npm:20.3.2"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-freebsd-x64@npm:20.2.2":
-  version: 20.2.2
-  resolution: "@nx/nx-freebsd-x64@npm:20.2.2"
+"@nx/nx-freebsd-x64@npm:20.3.2":
+  version: 20.3.2
+  resolution: "@nx/nx-freebsd-x64@npm:20.3.2"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm-gnueabihf@npm:20.2.2":
-  version: 20.2.2
-  resolution: "@nx/nx-linux-arm-gnueabihf@npm:20.2.2"
+"@nx/nx-linux-arm-gnueabihf@npm:20.3.2":
+  version: 20.3.2
+  resolution: "@nx/nx-linux-arm-gnueabihf@npm:20.3.2"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-gnu@npm:20.2.2":
-  version: 20.2.2
-  resolution: "@nx/nx-linux-arm64-gnu@npm:20.2.2"
+"@nx/nx-linux-arm64-gnu@npm:20.3.2":
+  version: 20.3.2
+  resolution: "@nx/nx-linux-arm64-gnu@npm:20.3.2"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-musl@npm:20.2.2":
-  version: 20.2.2
-  resolution: "@nx/nx-linux-arm64-musl@npm:20.2.2"
+"@nx/nx-linux-arm64-musl@npm:20.3.2":
+  version: 20.3.2
+  resolution: "@nx/nx-linux-arm64-musl@npm:20.3.2"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-gnu@npm:20.2.2":
-  version: 20.2.2
-  resolution: "@nx/nx-linux-x64-gnu@npm:20.2.2"
+"@nx/nx-linux-x64-gnu@npm:20.3.2":
+  version: 20.3.2
+  resolution: "@nx/nx-linux-x64-gnu@npm:20.3.2"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-musl@npm:20.2.2":
-  version: 20.2.2
-  resolution: "@nx/nx-linux-x64-musl@npm:20.2.2"
+"@nx/nx-linux-x64-musl@npm:20.3.2":
+  version: 20.3.2
+  resolution: "@nx/nx-linux-x64-musl@npm:20.3.2"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-arm64-msvc@npm:20.2.2":
-  version: 20.2.2
-  resolution: "@nx/nx-win32-arm64-msvc@npm:20.2.2"
+"@nx/nx-win32-arm64-msvc@npm:20.3.2":
+  version: 20.3.2
+  resolution: "@nx/nx-win32-arm64-msvc@npm:20.3.2"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-x64-msvc@npm:20.2.2":
-  version: 20.2.2
-  resolution: "@nx/nx-win32-x64-msvc@npm:20.2.2"
+"@nx/nx-win32-x64-msvc@npm:20.3.2":
+  version: 20.3.2
+  resolution: "@nx/nx-win32-x64-msvc@npm:20.3.2"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -4113,7 +4113,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-monorepo@workspace:."
   dependencies:
     "@types/node": "npm:^22.10.7"
-    nx: "npm:^20.2.2"
+    nx: "npm:^20.3.2"
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.3.5"
     vitest: "npm:^2.1.8"
@@ -11584,13 +11584,13 @@ __metadata:
   linkType: hard
 
 "katex@npm:^0.16.0":
-  version: 0.16.11
-  resolution: "katex@npm:0.16.11"
+  version: 0.16.21
+  resolution: "katex@npm:0.16.21"
   dependencies:
     commander: "npm:^8.3.0"
   bin:
     katex: cli.js
-  checksum: 10c0/be405d45d7228bbfeecd491e0f74d9da0066b5e7b457e3f1dc833de5b63f9e98e40d2ef6b46e1cbe577490a43338c043851da032c45aeec0cc03ad431ef6fd83
+  checksum: 10c0/e2e4139ba72a13f2393308fbb2b4c5511611a19a40a6e39d956cf775e553af3517dbfd0a54477faaf401c923e4654e32296347846b8ff15dfa579f88ff8579bb
   languageName: node
   linkType: hard
 
@@ -13365,21 +13365,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"nx@npm:^20.2.2":
-  version: 20.2.2
-  resolution: "nx@npm:20.2.2"
+"nx@npm:^20.3.2":
+  version: 20.3.2
+  resolution: "nx@npm:20.3.2"
   dependencies:
     "@napi-rs/wasm-runtime": "npm:0.2.4"
-    "@nx/nx-darwin-arm64": "npm:20.2.2"
-    "@nx/nx-darwin-x64": "npm:20.2.2"
-    "@nx/nx-freebsd-x64": "npm:20.2.2"
-    "@nx/nx-linux-arm-gnueabihf": "npm:20.2.2"
-    "@nx/nx-linux-arm64-gnu": "npm:20.2.2"
-    "@nx/nx-linux-arm64-musl": "npm:20.2.2"
-    "@nx/nx-linux-x64-gnu": "npm:20.2.2"
-    "@nx/nx-linux-x64-musl": "npm:20.2.2"
-    "@nx/nx-win32-arm64-msvc": "npm:20.2.2"
-    "@nx/nx-win32-x64-msvc": "npm:20.2.2"
+    "@nx/nx-darwin-arm64": "npm:20.3.2"
+    "@nx/nx-darwin-x64": "npm:20.3.2"
+    "@nx/nx-freebsd-x64": "npm:20.3.2"
+    "@nx/nx-linux-arm-gnueabihf": "npm:20.3.2"
+    "@nx/nx-linux-arm64-gnu": "npm:20.3.2"
+    "@nx/nx-linux-arm64-musl": "npm:20.3.2"
+    "@nx/nx-linux-x64-gnu": "npm:20.3.2"
+    "@nx/nx-linux-x64-musl": "npm:20.3.2"
+    "@nx/nx-win32-arm64-msvc": "npm:20.3.2"
+    "@nx/nx-win32-x64-msvc": "npm:20.3.2"
     "@yarnpkg/lockfile": "npm:^1.1.0"
     "@yarnpkg/parsers": "npm:3.0.2"
     "@zkochan/js-yaml": "npm:0.0.7"
@@ -13403,6 +13403,7 @@ __metadata:
     npm-run-path: "npm:^4.0.1"
     open: "npm:^8.4.0"
     ora: "npm:5.3.0"
+    resolve.exports: "npm:2.0.3"
     semver: "npm:^7.5.3"
     string-width: "npm:^4.2.3"
     tar-stream: "npm:~2.2.0"
@@ -13444,7 +13445,7 @@ __metadata:
   bin:
     nx: bin/nx.js
     nx-cloud: bin/nx-cloud.js
-  checksum: 10c0/2046068295be6d33fe11505978ec1a770af272c959ef9aba5341c343f590dbed634958a07dc365d90e9feb0b62b9a06289c7cf3d88090e13062ece13e187b6f3
+  checksum: 10c0/e84b748f45cdce3f57a17b99627a8d2d7ff9c41a4eaa9b88775576b03e3dcd9d0f707f28303b05483fe9478dce58f2d7ecf9a29e8a12902a8247e73a4ae48755
   languageName: node
   linkType: hard
 
@@ -15674,6 +15675,13 @@ __metadata:
   version: 1.0.0
   resolution: "resolve-pkg-maps@npm:1.0.0"
   checksum: 10c0/fb8f7bbe2ca281a73b7ef423a1cbc786fb244bd7a95cbe5c3fba25b27d327150beca8ba02f622baea65919a57e061eb5005204daa5f93ed590d9b77463a567ab
+  languageName: node
+  linkType: hard
+
+"resolve.exports@npm:2.0.3":
+  version: 2.0.3
+  resolution: "resolve.exports@npm:2.0.3"
+  checksum: 10c0/1ade1493f4642a6267d0a5e68faeac20b3d220f18c28b140343feb83694d8fed7a286852aef43689d16042c61e2ddb270be6578ad4a13990769e12065191200d
   languageName: node
   linkType: hard
 

@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc --noEmit",
     "test": "vitest run index.test.ts --test-timeout 60000",
-    "clean": "rimraf --glob ./**/Cargo.lock ./**/target"
+    "clean": "rimraf --glob ./**/Cargo.lock ./**/target || true"
   },
   "devDependencies": {
     "@orca-so/whirlpools-rust": "*",

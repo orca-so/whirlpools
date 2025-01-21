@@ -326,264 +326,282 @@ pub async fn swap_instructions(
 
 #[cfg(test)]
 mod tests {
-    use serial_test::serial;
-    use solana_client::nonblocking::rpc_client::RpcClient;
-    use solana_sdk::{program_pack::Pack, pubkey::Pubkey, signer::Signer};
-    use spl_token::state::Account as TokenAccount;
-    use spl_token_2022::state::Account as TokenAccount2022;
-    use spl_token_2022::{extension::StateWithExtensionsOwned, ID as TOKEN_2022_PROGRAM_ID};
+    use std::collections::HashMap;
     use std::error::Error;
 
-    use crate::{
-        create_concentrated_liquidity_pool_instructions, create_splash_pool_instructions,
-        increase_liquidity_instructions, open_full_range_position_instructions, swap_instructions,
-        tests::{setup_ata_with_amount, setup_mint_with_decimals, RpcContext},
-        IncreaseLiquidityParam, SwapQuote, SwapType,
+    use rstest::rstest;
+    use serial_test::serial;
+    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_program_test::tokio;
+    use solana_sdk::{
+        program_pack::Pack,
+        pubkey::Pubkey,
+        signer::{keypair::Keypair, Signer},
+    };
+    use spl_token::state::Account as TokenAccount;
+    use spl_token_2022::{
+        extension::StateWithExtensionsOwned, state::Account as TokenAccount2022,
+        ID as TOKEN_2022_PROGRAM_ID,
     };
 
-    struct SwapTestContext {
-        pub ctx: RpcContext,
+    use crate::{
+        increase_liquidity_instructions, swap_instructions,
+        tests::{
+            setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
+            setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
+        },
+        IncreaseLiquidityParam, SwapInstructions, SwapQuote, SwapType,
+    };
 
-        pub mint_a: Pubkey,
-        pub mint_b: Pubkey,
-        pub ata_a: Pubkey,
-        pub ata_b: Pubkey,
-    }
-
-    impl SwapTestContext {
-        pub async fn new() -> Result<Self, Box<dyn Error>> {
-            let ctx = RpcContext::new().await;
-
-            let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
-            let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
-
-            let ata_a = setup_ata_with_amount(&ctx, mint_a, 1_000_000_000).await?;
-            let ata_b = setup_ata_with_amount(&ctx, mint_b, 1_000_000_000).await?;
-
-            Ok(Self {
-                ctx,
-                mint_a,
-                mint_b,
-                ata_a,
-                ata_b,
-            })
-        }
-
-        async fn get_token_balance(&self, address: Pubkey) -> Result<u64, Box<dyn Error>> {
-            let account_data = self.ctx.rpc.get_account(&address).await?;
-            if account_data.owner == TOKEN_2022_PROGRAM_ID {
-                let parsed =
-                    StateWithExtensionsOwned::<TokenAccount2022>::unpack(account_data.data)?;
-                Ok(parsed.base.amount)
-            } else {
-                let parsed = TokenAccount::unpack(&account_data.data)?;
-                Ok(parsed.amount)
-            }
-        }
-
-        pub async fn init_pool(&self, is_splash: bool) -> Result<Pubkey, Box<dyn Error>> {
-            if is_splash {
-                let pool = create_splash_pool_instructions(
-                    &self.ctx.rpc,
-                    self.mint_a,
-                    self.mint_b,
-                    None,
-                    Some(self.ctx.signer.pubkey()),
-                )
-                .await?;
-                self.ctx
-                    .send_transaction_with_signers(
-                        pool.instructions,
-                        pool.additional_signers.iter().collect(),
-                    )
-                    .await?;
-                Ok(pool.pool_address)
-            } else {
-                let cl_pool = create_concentrated_liquidity_pool_instructions(
-                    &self.ctx.rpc,
-                    self.mint_a,
-                    self.mint_b,
-                    128,
-                    None,
-                    Some(self.ctx.signer.pubkey()),
-                )
-                .await?;
-                self.ctx
-                    .send_transaction_with_signers(
-                        cl_pool.instructions,
-                        cl_pool.additional_signers.iter().collect(),
-                    )
-                    .await?;
-                Ok(cl_pool.pool_address)
-            }
-        }
-
-        pub async fn open_position_with_liquidity(
-            &self,
-            pool_pubkey: Pubkey,
-        ) -> Result<Pubkey, Box<dyn Error>> {
-            let position = open_full_range_position_instructions(
-                &self.ctx.rpc,
-                pool_pubkey,
-                IncreaseLiquidityParam::Liquidity(50_000_000),
-                None,
-                Some(self.ctx.signer.pubkey()),
-            )
-            .await?;
-            self.ctx
-                .send_transaction_with_signers(
-                    position.instructions,
-                    position.additional_signers.iter().collect(),
-                )
-                .await?;
-
-            Ok(position.position_mint)
-        }
-
-        pub async fn do_swap(
-            &self,
-            pool_pubkey: Pubkey,
-            a_to_b: bool,
-            swap_type: SwapType,
-            amount: u64,
-        ) -> Result<(), Box<dyn Error>> {
-            let specified_mint = if a_to_b { self.mint_a } else { self.mint_b };
-
-            let before_a = self.get_token_balance(self.ata_a).await?;
-            let before_b = self.get_token_balance(self.ata_b).await?;
-
-            let swap_ix = swap_instructions(
-                &self.ctx.rpc,
-                pool_pubkey,
-                amount,
-                specified_mint,
-                swap_type.clone(),
-                Some(100), // 1% slippage
-                Some(self.ctx.signer.pubkey()),
-            )
-            .await?;
-
-            self.ctx
-                .send_transaction_with_signers(
-                    swap_ix.instructions,
-                    swap_ix.additional_signers.iter().collect(),
-                )
-                .await?;
-
-            let after_a = self.get_token_balance(self.ata_a).await?;
-            let after_b = self.get_token_balance(self.ata_b).await?;
-
-            let used_a = before_a.saturating_sub(after_a);
-            let used_b = before_b.saturating_sub(after_b);
-            let gained_a = after_a.saturating_sub(before_a);
-            let gained_b = after_b.saturating_sub(before_b);
-
-            match swap_ix.quote {
-                SwapQuote::ExactIn(q) => {
-                    if a_to_b {
-                        // used A, gained B
-                        assert_eq!(used_a, q.token_in, "Used A mismatch");
-                        assert_eq!(gained_b, q.token_est_out, "Gained B mismatch");
-                    } else {
-                        // used B, gained A
-                        assert_eq!(used_b, q.token_in, "Used B mismatch");
-                        assert_eq!(gained_a, q.token_est_out, "Gained A mismatch");
-                    }
-                }
-                SwapQuote::ExactOut(q) => {
-                    if a_to_b {
-                        // gained B, used A
-                        assert_eq!(gained_b, q.token_out, "Gained B mismatch");
-                        assert_eq!(used_a, q.token_est_in, "Used A mismatch");
-                    } else {
-                        // gained A, used B
-                        assert_eq!(gained_a, q.token_out, "Gained A mismatch");
-                        assert_eq!(used_b, q.token_est_in, "Used B mismatch");
-                    }
-                }
-            }
-            println!(
-                "swap result => a_to_b={}, used_a={}, used_b={}, gained_a={}, gained_b={}",
-                a_to_b, used_a, used_b, gained_a, gained_b
-            );
-
-            Ok(())
+    async fn get_token_balance(rpc: &RpcClient, address: Pubkey) -> Result<u64, Box<dyn Error>> {
+        let account_data = rpc.get_account(&address).await?;
+        if account_data.owner == TOKEN_2022_PROGRAM_ID {
+            let parsed = StateWithExtensionsOwned::<TokenAccount2022>::unpack(account_data.data)?;
+            Ok(parsed.base.amount)
+        } else {
+            let parsed = TokenAccount::unpack(&account_data.data)?;
+            Ok(parsed.amount)
         }
     }
 
-    #[tokio::test]
-    async fn test_swap_for_multiple_pools() -> Result<(), Box<dyn Error>> {
-        let stx = SwapTestContext::new().await?;
+    async fn setup_all_mints(
+        ctx: &RpcContext,
+    ) -> Result<HashMap<&'static str, Pubkey>, Box<dyn Error>> {
+        let mint_a = setup_mint_with_decimals(ctx, 9).await?;
+        let mint_b = setup_mint_with_decimals(ctx, 9).await?;
+        let mint_te_a = setup_mint_te(ctx, &[]).await?;
+        let mint_te_b = setup_mint_te(ctx, &[]).await?;
+        let mint_tefee = setup_mint_te_fee(ctx).await?;
 
-        let ctx = &stx.ctx;
+        let mut out = HashMap::new();
+        out.insert("A", mint_a);
+        out.insert("B", mint_b);
+        out.insert("TEA", mint_te_a);
+        out.insert("TEB", mint_te_b);
+        out.insert("TEFee", mint_tefee);
+        Ok(out)
+    }
 
-        let mint_a = setup_mint_with_decimals(&ctx, 9).await?;
-        let mint_b = setup_mint_with_decimals(&ctx, 9).await?;
-        let ata_a = setup_ata_with_amount(&ctx, mint_a, 500_000_000).await?;
-        let ata_b = setup_ata_with_amount(&ctx, mint_b, 500_000_000).await?;
+    async fn setup_all_atas(
+        ctx: &RpcContext,
+        minted: &HashMap<&str, Pubkey>,
+    ) -> Result<HashMap<&'static str, Pubkey>, Box<dyn Error>> {
+        // Give each user ATA a large balance
+        let token_balance = 1_000_000_000;
 
-        let pool = create_concentrated_liquidity_pool_instructions(
-            &ctx.rpc,
-            mint_a,
-            mint_b,
-            128,
-            None,
-            Some(ctx.signer.pubkey()),
+        let ata_a = setup_ata_with_amount(ctx, minted["A"], token_balance).await?;
+        let ata_b = setup_ata_with_amount(ctx, minted["B"], token_balance).await?;
+        let ata_te_a = setup_ata_te(
+            ctx,
+            minted["TEA"],
+            Some(SetupAtaConfig {
+                amount: Some(token_balance),
+            }),
         )
         .await?;
-        ctx.send_transaction_with_signers(
-            pool.instructions,
-            pool.additional_signers.iter().collect(),
+        let ata_te_b = setup_ata_te(
+            ctx,
+            minted["TEB"],
+            Some(SetupAtaConfig {
+                amount: Some(token_balance),
+            }),
         )
         .await?;
-
-        let pool_pubkey = pool.pool_address;
-
-        let position = open_full_range_position_instructions(
-            &ctx.rpc,
-            pool_pubkey,
-            IncreaseLiquidityParam::Liquidity(50_000_000),
-            None,
-            Some(ctx.signer.pubkey()),
-        )
-        .await?;
-        ctx.send_transaction_with_signers(
-            position.instructions,
-            position.additional_signers.iter().collect(),
-        )
-        .await?;
-
-        let swap_ix = swap_instructions(
-            &ctx.rpc,
-            pool_pubkey,
-            10_000,
-            mint_a,
-            SwapType::ExactIn,
-            Some(100),
-            Some(ctx.signer.pubkey()),
-        )
-        .await?;
-        let before_a = stx.get_token_balance(ata_a).await?;
-        let before_b = stx.get_token_balance(ata_b).await?;
-
-        ctx.send_transaction_with_signers(
-            swap_ix.instructions,
-            swap_ix.additional_signers.iter().collect(),
+        let ata_tefee = setup_ata_te(
+            ctx,
+            minted["TEFee"],
+            Some(SetupAtaConfig {
+                amount: Some(token_balance),
+            }),
         )
         .await?;
 
-        let after_a = stx.get_token_balance(ata_a).await?;
-        let after_b = stx.get_token_balance(ata_b).await?;
+        let mut out = HashMap::new();
+        out.insert("A", ata_a);
+        out.insert("B", ata_b);
+        out.insert("TEA", ata_te_a);
+        out.insert("TEB", ata_te_b);
+        out.insert("TEFee", ata_tefee);
+        Ok(out)
+    }
+
+    fn parse_pool_name(pool: &str) -> (&'static str, &'static str) {
+        match pool {
+            "A-B" => ("A", "B"),
+            "A-TEA" => ("A", "TEA"),
+            "TEA-TEB" => ("TEA", "TEB"),
+            "A-TEFee" => ("A", "TEFee"),
+            _ => panic!("Unknown pool combo: {}", pool),
+        }
+    }
+
+    async fn verify_swap(
+        ctx: &RpcContext,
+        swap_ix: &SwapInstructions,
+        user_ata_for_finalA: Pubkey,
+        user_ata_for_finalB: Pubkey,
+        a_to_b: bool,
+    ) -> Result<(), Box<dyn Error>> {
+        let before_a = get_token_balance(&ctx.rpc, user_ata_for_finalA).await?;
+        let before_b = get_token_balance(&ctx.rpc, user_ata_for_finalB).await?;
+
+        // do swap
+        let signers: Vec<&Keypair> = swap_ix.additional_signers.iter().collect();
+        ctx.send_transaction_with_signers(swap_ix.instructions.clone(), signers)
+            .await?;
+
+        let after_a = get_token_balance(&ctx.rpc, user_ata_for_finalA).await?;
+        let after_b = get_token_balance(&ctx.rpc, user_ata_for_finalB).await?;
+
         let used_a = before_a.saturating_sub(after_a);
+        let used_b = before_b.saturating_sub(after_b);
+        let gained_a = after_a.saturating_sub(before_a);
         let gained_b = after_b.saturating_sub(before_b);
 
-        if let SwapQuote::ExactIn(q) = swap_ix.quote {
-            assert_eq!(used_a, q.token_in, "Used A mismatch");
-            assert_eq!(gained_b, q.token_est_out, "Gained B mismatch");
-        } else {
-            panic!("Expected ExactIn quote");
+        match &swap_ix.quote {
+            SwapQuote::ExactIn(q) => {
+                if a_to_b {
+                    assert_eq!(used_a, q.token_in, "Used A mismatch");
+                    assert_eq!(gained_b, q.token_est_out, "Gained B mismatch");
+                } else {
+                    assert_eq!(used_b, q.token_in, "Used B mismatch");
+                    assert_eq!(gained_a, q.token_est_out, "Gained A mismatch");
+                }
+            }
+            SwapQuote::ExactOut(q) => {
+                if a_to_b {
+                    assert_eq!(gained_b, q.token_out, "Gained B mismatch");
+                    assert_eq!(used_a, q.token_est_in, "Used A mismatch");
+                } else {
+                    assert_eq!(gained_a, q.token_out, "Gained A mismatch");
+                    assert_eq!(used_b, q.token_est_in, "Used B mismatch");
+                }
+            }
         }
-
         Ok(())
+    }
+
+    #[rstest]
+    #[rstest]
+    #[case("A-B", true, SwapType::ExactIn, 1000)]
+    #[case("A-B", true, SwapType::ExactOut, 500)]
+    #[case("A-B", false, SwapType::ExactIn, 200)]
+    #[case("A-B", false, SwapType::ExactOut, 100)]
+    #[case("A-TEA", true, SwapType::ExactIn, 1000)]
+    #[case("A-TEA", true, SwapType::ExactOut, 500)]
+    #[case("A-TEA", false, SwapType::ExactIn, 200)]
+    #[case("A-TEA", false, SwapType::ExactOut, 100)]
+    #[case("TEA-TEB", true, SwapType::ExactIn, 1000)]
+    #[case("TEA-TEB", true, SwapType::ExactOut, 500)]
+    #[case("TEA-TEB", false, SwapType::ExactIn, 200)]
+    #[case("TEA-TEB", false, SwapType::ExactOut, 100)]
+    #[case("A-TEFee", true, SwapType::ExactIn, 1000)]
+    #[case("A-TEFee", true, SwapType::ExactOut, 500)]
+    #[case("A-TEFee", false, SwapType::ExactIn, 200)]
+    #[case("A-TEFee", false, SwapType::ExactOut, 100)]
+    #[serial]
+    fn test_swap_scenarios(
+        #[case] pool_name: &str,
+        #[case] a_to_b: bool,
+        #[case] swap_type: SwapType,
+        #[case] amount: u64,
+    ) {
+        let rt = tokio::runtime::Runtime::new().unwrap();
+        rt.block_on(async {
+            let ctx = RpcContext::new().await;
+
+            let minted = setup_all_mints(&ctx).await.unwrap();
+            let user_atas = setup_all_atas(&ctx, &minted).await.unwrap();
+
+            let (mkey_a, mkey_b) = parse_pool_name(pool_name);
+            let pubkey_a = minted[mkey_a];
+            let pubkey_b = minted[mkey_b];
+
+            let tick_spacing = 64;
+            let (final_a, final_b) = if pubkey_a < pubkey_b {
+                (pubkey_a, pubkey_b)
+            } else {
+                (pubkey_b, pubkey_a)
+            };
+
+            let pool_pubkey = setup_whirlpool(&ctx, final_a, final_b, tick_spacing)
+                .await
+                .unwrap();
+
+            let position_mint = setup_position(
+                &ctx,
+                pool_pubkey,
+                Some((-192, 192)), // aligned to spacing=64
+                None,
+            )
+            .await
+            .unwrap();
+
+            let liq_ix = increase_liquidity_instructions(
+                &ctx.rpc,
+                position_mint,
+                IncreaseLiquidityParam::Liquidity(1_000_000),
+                Some(100), // 1% slippage
+                Some(ctx.signer.pubkey()),
+            )
+            .await
+            .unwrap();
+            ctx.send_transaction_with_signers(
+                liq_ix.instructions,
+                liq_ix.additional_signers.iter().collect(),
+            )
+            .await
+            .unwrap();
+
+            let user_ata_for_finalA = if final_a == pubkey_a {
+                user_atas[mkey_a]
+            } else {
+                user_atas[mkey_b]
+            };
+            let user_ata_for_finalB = if final_b == pubkey_b {
+                user_atas[mkey_b]
+            } else {
+                user_atas[mkey_a]
+            };
+
+            let token_for_this_call = match swap_type {
+                SwapType::ExactIn => {
+                    if a_to_b {
+                        final_a
+                    } else {
+                        final_b
+                    }
+                }
+                SwapType::ExactOut => {
+                    if a_to_b {
+                        final_b
+                    } else {
+                        final_a
+                    }
+                }
+            };
+
+            let swap_ix = swap_instructions(
+                &ctx.rpc,
+                pool_pubkey,
+                amount,
+                token_for_this_call,
+                swap_type.clone(),
+                Some(100), // slippage
+                Some(ctx.signer.pubkey()),
+            )
+            .await
+            .unwrap();
+
+            verify_swap(
+                &ctx,
+                &swap_ix,
+                user_ata_for_finalA,
+                user_ata_for_finalB,
+                a_to_b,
+            )
+            .await
+            .unwrap();
+        });
     }
 }

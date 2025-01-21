@@ -5,10 +5,9 @@ use orca_whirlpools_client::{
     get_position_bundle_address, DecodedAccount, Position, PositionBundle, PositionFilter,
 };
 use orca_whirlpools_core::POSITION_BUNDLE_SIZE;
-use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_client::{nonblocking::rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
 use solana_sdk::account::Account;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signer::Signer;
 
 use crate::{get_token_accounts_for_owner, ParsedTokenAccount};
 
@@ -141,9 +140,15 @@ pub async fn fetch_positions_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
 ) -> Result<Vec<PositionOrBundle>, Box<dyn Error>> {
-    let token_accounts = get_token_accounts_for_owner(rpc, owner, spl_token::ID).await?;
-    let token_extension_accounts =
-        get_token_accounts_for_owner(rpc, owner, spl_token_2022::ID).await?;
+    let token_accounts =
+        get_token_accounts_for_owner(rpc, owner, TokenAccountsFilter::ProgramId(spl_token::ID))
+            .await?;
+    let token_extension_accounts = get_token_accounts_for_owner(
+        rpc,
+        owner,
+        TokenAccountsFilter::ProgramId(spl_token_2022::ID),
+    )
+    .await?;
 
     let potiential_tokens: Vec<ParsedTokenAccount> = [token_accounts, token_extension_accounts]
         .into_iter()
@@ -306,6 +311,7 @@ mod tests {
     };
     use serial_test::serial;
     use solana_program_test::tokio;
+    use solana_sdk::signer::Signer;
     use std::error::Error;
 
     const DEFAULT_TICK_RANGE: (i32, i32) = (-100, 100);

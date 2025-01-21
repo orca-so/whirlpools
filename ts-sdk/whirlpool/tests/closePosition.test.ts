@@ -1,8 +1,13 @@
+import {
+  fetchMaybePosition,
+  getPositionAddress,
+} from "@orca-so/whirlpools-client";
 import { fetchToken } from "@solana-program/token";
 import type { Address } from "@solana/web3.js";
+import { address } from "@solana/web3.js";
 import assert from "assert";
 import { beforeAll, describe, it } from "vitest";
-import { harvestPositionInstructions } from "../src/harvest";
+import { closePositionInstructions } from "../src/decreaseLiquidity";
 import { swapInstructions } from "../src/swap";
 import { rpc, sendTransaction } from "./utils/mockRpc";
 import {
@@ -46,7 +51,7 @@ const positionTypes = new Map([
   ["one sided B", { tickLower: 1, tickUpper: 100 }],
 ]);
 
-describe("Harvest", () => {
+describe("Close Position", () => {
   const atas: Map<string, Address> = new Map();
   const initialLiquidity = 100_000n;
   const mints: Map<string, Address> = new Map();
@@ -126,7 +131,7 @@ describe("Harvest", () => {
     }
   });
 
-  const testHarvestPositionInstructions = async (
+  const testClosePositionInstructions = async (
     poolName: string,
     positionName: string,
   ) => {
@@ -135,74 +140,72 @@ describe("Harvest", () => {
     const ataBAddress = atas.get(mintBName)!;
 
     const positionMintAddress = positions.get(positionName)!;
+    const [positionAddress, _] = await getPositionAddress(positionMintAddress);
 
     const tokenABefore = await fetchToken(rpc, ataAAddress);
     const tokenBBefore = await fetchToken(rpc, ataBAddress);
 
-    const { instructions: harvest_instructions, feesQuote } =
-      await harvestPositionInstructions(rpc, positionMintAddress);
-    await sendTransaction(harvest_instructions);
+    const { instructions, quote, feesQuote } = await closePositionInstructions(
+      rpc,
+      positionMintAddress,
+    );
+    await sendTransaction(instructions);
 
+    const positionAfter = await fetchMaybePosition(rpc, positionAddress);
     const tokenAAfter = await fetchToken(rpc, ataAAddress);
     const tokenBAfter = await fetchToken(rpc, ataBAddress);
 
+    assert.strictEqual(positionAfter.exists, false);
+
     assert.strictEqual(
-      feesQuote.feeOwedA,
+      quote.tokenEstA + feesQuote.feeOwedA,
       tokenAAfter.data.amount - tokenABefore.data.amount,
     );
 
     assert.strictEqual(
-      feesQuote.feeOwedB,
+      quote.tokenEstB + feesQuote.feeOwedB,
       tokenBAfter.data.amount - tokenBBefore.data.amount,
     );
   };
 
-  const testHarvestPositionInstructionsWithoutFees = async (
-    _poolName: string,
-    positionName: string,
-  ) => {
-    const positionMintAddress = positions.get(positionName)!;
-
-    const { instructions: harvest_instructions, feesQuote } =
-      await harvestPositionInstructions(rpc, positionMintAddress);
-    await sendTransaction(harvest_instructions);
-
-    assert.strictEqual(feesQuote.feeOwedA, 0n);
-
-    assert.strictEqual(feesQuote.feeOwedB, 0n);
-  };
-
   for (const poolName of poolTypes.keys()) {
     for (const positionTypeName of positionTypes.keys()) {
       const positionName = `${poolName} ${positionTypeName}`;
-      it(`Should harvest a position for ${positionName}`, async () => {
-        await testHarvestPositionInstructions(poolName, positionName);
+      it(`Should close a position for ${positionName}`, async () => {
+        await testClosePositionInstructions(poolName, positionName);
       });
 
       const positionNameTE = `TE ${poolName} ${positionTypeName}`;
-      it(`Should harvest a position for ${positionNameTE}`, async () => {
-        await testHarvestPositionInstructions(poolName, positionNameTE);
+      it(`Should close a position for ${positionNameTE}`, async () => {
+        await testClosePositionInstructions(poolName, positionNameTE);
       });
     }
   }
 
-  for (const poolName of poolTypes.keys()) {
-    for (const positionTypeName of positionTypes.keys()) {
-      const positionName = `${poolName} ${positionTypeName}`;
-      it(`Should harvest a position without fees for ${positionName}`, async () => {
-        await testHarvestPositionInstructionsWithoutFees(
-          poolName,
-          positionName,
-        );
-      });
+  it("Should close a position without liquidity", async () => {
+    const poolName = "A-B";
+    const pool = pools.get(poolName)!;
+    const positionName = "A-B with 0 liquidity";
 
-      const positionNameTE = `TE ${poolName} ${positionTypeName}`;
-      it(`Should harvest a position without fees for ${positionNameTE}`, async () => {
-        await testHarvestPositionInstructionsWithoutFees(
-          poolName,
-          positionNameTE,
-        );
-      });
-    }
-  }
+    positions.set(
+      positionName,
+      await setupPosition(pool, {
+        tickLower: -100,
+        tickUpper: 100,
+        liquidity: 0n,
+      }),
+    );
+
+    await assert.doesNotReject(
+      testClosePositionInstructions(poolName, positionName),
+    );
+  });
+
+  it("Should throw an error if the position mint can not be found", async () => {
+    const positionMintAddress: Address = address(
+      "123456789abcdefghijkmnopqrstuvwxABCDEFGHJKL",
+    );
+
+    await assert.rejects(closePositionInstructions(rpc, positionMintAddress));
+  });
 });

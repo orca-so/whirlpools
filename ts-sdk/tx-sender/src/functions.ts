@@ -140,7 +140,7 @@ export const estimatePriorityFees = async (
   let priorityFeeMicroLamports = 0,
     jitoTipLamports = 0;
 
-  const { priorityFee, jito } = transactionConfig;
+  const { priorityFee, jito, chainId } = transactionConfig;
   if (!computeUnits) throw new Error("Tx simulation failed");
 
   if (priorityFee.type === "exact") {
@@ -152,7 +152,7 @@ export const estimatePriorityFees = async (
       instructions,
       feePayer,
       connection,
-      transactionConfig.chainId === "solana" && isTriton,
+      chainId === "solana" && isTriton,
       lookupTables
     );
 
@@ -171,7 +171,7 @@ export const estimatePriorityFees = async (
 
   if (jito.type === "exact") {
     jitoTipLamports = jito.amountLamports;
-  } else if (jito.type === "dynamic") {
+  } else if (jito.type === "dynamic" && chainId === "solana") {
     jitoTipLamports = await recentJitoTip();
   }
 

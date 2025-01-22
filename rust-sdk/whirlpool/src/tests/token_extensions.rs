@@ -1,8 +1,4 @@
-use solana_sdk::{
-    pubkey::Pubkey,
-    signer::{keypair::Keypair, Signer},
-    system_instruction,
-};
+use solana_sdk::{pubkey::Pubkey, signer::Signer, system_instruction};
 use spl_associated_token_account::{
     get_associated_token_address_with_program_id,
     instruction::create_associated_token_account_idempotent,
@@ -29,7 +25,7 @@ pub async fn setup_mint_te(
     ctx: &RpcContext,
     extensions: &[ExtensionType],
 ) -> Result<Pubkey, Box<dyn Error>> {
-    let mint = Keypair::new();
+    let mint = ctx.get_next_keypair();
     let mut instructions = vec![];
 
     // 1. Create account instruction

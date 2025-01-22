@@ -12,7 +12,6 @@ use orca_whirlpools_core::{
     get_tick_index_in_array, CollectFeesQuote, CollectRewardsQuote, DecreaseLiquidityQuote,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::program_pack::Pack;
 use solana_sdk::{account::Account, instruction::Instruction, pubkey::Pubkey, signature::Keypair};
 use spl_associated_token_account::get_associated_token_address_with_program_id;
 use std::{
@@ -663,7 +662,7 @@ mod tests {
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
         },
-        DecreaseLiquidityParam, IncreaseLiquidityParam, SwapQuote, SwapType,
+        DecreaseLiquidityParam, IncreaseLiquidityParam, SwapType,
     };
     use orca_whirlpools_client::{get_position_address, Position};
 

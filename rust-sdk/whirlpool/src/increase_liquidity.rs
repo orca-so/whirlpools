@@ -883,6 +883,7 @@ mod tests {
     #[case("A-TEFee", "equally centered", -100, 100)]
     #[case("A-TEFee", "one sided A", -100, -1)]
     #[case("A-TEFee", "one sided B", 1, 100)]
+    #[serial]
     fn test_increase_liquidity_cases(
         #[case] pool_name: &str,
         #[case] position_name: &str,

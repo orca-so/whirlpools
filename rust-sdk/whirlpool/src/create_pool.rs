@@ -24,7 +24,9 @@ use spl_token_2022::extension::StateWithExtensions;
 use spl_token_2022::state::Mint;
 
 use crate::token::order_mints;
-use crate::{get_account_data_size, get_rent, FUNDER, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
+use crate::{
+    get_account_data_size, get_rent, FUNDER, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS,
+};
 
 /// Represents the instructions and metadata for creating a pool.
 pub struct CreatePoolInstructions {
@@ -309,7 +311,10 @@ mod tests {
     use super::*;
     use serial_test::serial;
 
-    async fn fetch_pool(rpc: &RpcClient, pool_address: Pubkey) -> Result<Whirlpool, Box<dyn Error>> {
+    async fn fetch_pool(
+        rpc: &RpcClient,
+        pool_address: Pubkey,
+    ) -> Result<Whirlpool, Box<dyn Error>> {
         let account = rpc.get_account(&pool_address).await?;
         Whirlpool::from_bytes(&account.data).map_err(|e| e.into())
     }
@@ -321,16 +326,10 @@ mod tests {
         let mint_a = setup_mint(&ctx).await.unwrap();
         let mint_b = setup_mint(&ctx).await.unwrap();
 
-        let result = create_splash_pool_instructions(
-            &ctx.rpc,
-            mint_a,
-            mint_b,
-            Some(1.0),
-            None,
-        )
-        .await;
+        let result =
+            create_splash_pool_instructions(&ctx.rpc, mint_a, mint_b, Some(1.0), None).await;
 
-        assert_eq!(result.is_err(), true);
+        assert!(result.is_err());
     }
 
     #[tokio::test]
@@ -350,7 +349,7 @@ mod tests {
         )
         .await;
 
-       assert_eq!(result.is_err(), true);
+        assert!(result.is_err());
     }
 
     #[tokio::test]
@@ -369,17 +368,30 @@ mod tests {
             Some(price),
             Some(ctx.signer.pubkey()),
         )
-        .await.unwrap();
+        .await
+        .unwrap();
 
-        let balance_before = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
-        assert_eq!(pool_before.is_err(), true);
+        assert!(pool_before.is_err());
 
         let instructions = result.instructions;
-        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect()).await.unwrap();
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
 
         let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
-        let balance_after = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let balance_change = balance_before - balance_after;
         let tx_fee = 15000; // 3 signing accounts * 5000 lamports
         let min_rent_exempt = balance_change - tx_fee;
@@ -407,17 +419,30 @@ mod tests {
             Some(price),
             Some(ctx.signer.pubkey()),
         )
-        .await.unwrap();
+        .await
+        .unwrap();
 
-        let balance_before = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
-        assert_eq!(pool_before.is_err(), true);
+        assert!(pool_before.is_err());
 
         let instructions = result.instructions;
-        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect()).await.unwrap();
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
 
         let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
-        let balance_after = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let balance_change = balance_before - balance_after;
         let tx_fee = 15000; // 3 signing accounts * 5000 lamports
         let min_rent_exempt = balance_change - tx_fee;
@@ -445,17 +470,30 @@ mod tests {
             Some(price),
             Some(ctx.signer.pubkey()),
         )
-        .await.unwrap();
+        .await
+        .unwrap();
 
-        let balance_before = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
-        assert_eq!(pool_before.is_err(), true);
+        assert!(pool_before.is_err());
 
         let instructions = result.instructions;
-        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect()).await.unwrap();
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
 
         let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
-        let balance_after = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let balance_change = balance_before - balance_after;
         let tx_fee = 15000; // 3 signing accounts * 5000 lamports
         let min_rent_exempt = balance_change - tx_fee;
@@ -483,17 +521,30 @@ mod tests {
             Some(price),
             Some(ctx.signer.pubkey()),
         )
-        .await.unwrap();
+        .await
+        .unwrap();
 
-        let balance_before = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
-        assert_eq!(pool_before.is_err(), true);
+        assert!(pool_before.is_err());
 
         let instructions = result.instructions;
-        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect()).await.unwrap();
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
 
         let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
-        let balance_after = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let balance_change = balance_before - balance_after;
         let tx_fee = 15000; // 3 signing accounts * 5000 lamports
         let min_rent_exempt = balance_change - tx_fee;
@@ -522,17 +573,30 @@ mod tests {
             Some(price),
             Some(ctx.signer.pubkey()),
         )
-        .await.unwrap();
+        .await
+        .unwrap();
 
-        let balance_before = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
-        assert_eq!(pool_before.is_err(), true);
+        assert!(pool_before.is_err());
 
         let instructions = result.instructions;
-        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect()).await.unwrap();
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
 
         let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
-        let balance_after = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let balance_change = balance_before - balance_after;
         let tx_fee = 15000; // 3 signing accounts * 5000 lamports
         let min_rent_exempt = balance_change - tx_fee;
@@ -561,17 +625,30 @@ mod tests {
             Some(price),
             Some(ctx.signer.pubkey()),
         )
-        .await.unwrap();
+        .await
+        .unwrap();
 
-        let balance_before = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
-        assert_eq!(pool_before.is_err(), true);
+        assert!(pool_before.is_err());
 
         let instructions = result.instructions;
-        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect()).await.unwrap();
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
 
         let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
-        let balance_after = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let balance_change = balance_before - balance_after;
         let tx_fee = 15000; // 3 signing accounts * 5000 lamports
         let min_rent_exempt = balance_change - tx_fee;
@@ -600,17 +677,30 @@ mod tests {
             Some(price),
             Some(ctx.signer.pubkey()),
         )
-        .await.unwrap();
+        .await
+        .unwrap();
 
-        let balance_before = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
-        assert_eq!(pool_before.is_err(), true);
+        assert!(pool_before.is_err());
 
         let instructions = result.instructions;
-        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect()).await.unwrap();
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
 
         let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
-        let balance_after = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let balance_change = balance_before - balance_after;
         let tx_fee = 15000; // 3 signing accounts * 5000 lamports
         let min_rent_exempt = balance_change - tx_fee;
@@ -639,17 +729,30 @@ mod tests {
             Some(price),
             Some(ctx.signer.pubkey()),
         )
-        .await.unwrap();
+        .await
+        .unwrap();
 
-        let balance_before = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
-        assert_eq!(pool_before.is_err(), true);
+        assert!(pool_before.is_err());
 
         let instructions = result.instructions;
-        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect()).await.unwrap();
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
 
         let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
-        let balance_after = ctx.rpc.get_account(&ctx.signer.pubkey()).await.unwrap().lamports;
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
         let balance_change = balance_before - balance_after;
         let tx_fee = 15000; // 3 signing accounts * 5000 lamports
         let min_rent_exempt = balance_change - tx_fee;
@@ -661,4 +764,3 @@ mod tests {
         assert_eq!(64, pool_after.tick_spacing);
     }
 }
-

@@ -337,7 +337,10 @@ pub fn order_mints(mint1: Pubkey, mint2: Pubkey) -> [Pubkey; 2] {
 /// # Returns
 ///
 /// The size of the account data for a token account
-pub fn get_account_data_size(token_program_id: Pubkey, mint_info: &SolanaAccount) -> Result<usize, Box<dyn Error>> {
+pub fn get_account_data_size(
+    token_program_id: Pubkey,
+    mint_info: &SolanaAccount,
+) -> Result<usize, Box<dyn Error>> {
     let mint = StateWithExtensions::<Mint>::unpack(&mint_info.data)?;
     let mint_extensions = mint.get_extension_types()?;
     let account_extensions = ExtensionType::get_required_init_account_extensions(&mint_extensions);

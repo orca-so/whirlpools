@@ -482,7 +482,6 @@ mod tests {
     }
 
     #[rstest]
-    #[rstest]
     #[case("A-B", true, SwapType::ExactIn, 1000)]
     #[case("A-B", true, SwapType::ExactOut, 500)]
     #[case("A-B", false, SwapType::ExactIn, 200)]

@@ -29,7 +29,7 @@ pub async fn setup_mint_te(
     ctx: &RpcContext,
     extensions: &[ExtensionType],
 ) -> Result<Pubkey, Box<dyn Error>> {
-    let mint = Keypair::new();
+    let mint = ctx.get_next_keypair();
     let mut instructions = vec![];
 
     // 1. Create account instruction

@@ -14,7 +14,7 @@ use spl_token::instruction::{close_account, initialize_account3, sync_native};
 use spl_token::solana_program::program_pack::Pack;
 use spl_token::{native_mint, ID as TOKEN_PROGRAM_ID};
 use spl_token_2022::extension::transfer_fee::TransferFeeConfig;
-use spl_token_2022::extension::{BaseStateWithExtensions, StateWithExtensions};
+use spl_token_2022::extension::{BaseStateWithExtensions, ExtensionType, StateWithExtensions};
 use spl_token_2022::state::{Account, Mint};
 use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
@@ -322,6 +322,27 @@ pub fn order_mints(mint1: Pubkey, mint2: Pubkey) -> [Pubkey; 2] {
     } else {
         [mint2, mint1]
     }
+}
+
+/// Get the size of the account data for a token account
+///
+/// This function returns the size of the account data for a token account
+/// given the token program id and the mint info.
+///
+/// # Arguments
+///
+/// * `token_program_id` - The token program id
+/// * `mint_info` - The mint info
+///
+/// # Returns
+///
+/// The size of the account data for a token account
+pub fn get_account_data_size(token_program_id: Pubkey, mint_info: &SolanaAccount) -> Result<usize, Box<dyn Error>> {
+    let mint = StateWithExtensions::<Mint>::unpack(&mint_info.data)?;
+    let mint_extensions = mint.get_extension_types()?;
+    let account_extensions = ExtensionType::get_required_init_account_extensions(&mint_extensions);
+    let account_len = ExtensionType::try_calculate_account_len::<Account>(&account_extensions)?;
+    Ok(account_len)
 }
 
 #[cfg(test)]

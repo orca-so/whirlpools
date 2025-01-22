@@ -1,10 +1,20 @@
-type NoPriority = {
-  mode: "none";
+type FeeSetting =
+  | {
+      type: "dynamic";
+      maxCapLamports?: number;
+    }
+  | {
+      type: "exact";
+      amountLamports: number;
+    }
+  | {
+      type: "none";
+    };
+
+export type TransactionConfig = {
+  jito: FeeSetting;
+  priorityFee: FeeSetting;
+  chainId: ChainId;
 };
 
-type ManualPriorityConfig = {
-  mode: "jitoOnly" | "priorityFeeOnly" | "both";
-  fee: { lamports: number; isExact: boolean };
-};
-
-export type PrioritizationConfig = ManualPriorityConfig | NoPriority;
+type ChainId = "solana" | "eclipse";

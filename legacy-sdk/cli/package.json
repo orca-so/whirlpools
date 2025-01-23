@@ -1,7 +1,6 @@
 {
   "name": "@orca-so/whirlpools-sdk-cli",
-  "private": true,
-  "version": "1.0.0",
+  "version": "1.0.2",
   "type": "module",
   "scripts": {
     "build": "tsc --noEmit",
@@ -9,8 +8,8 @@
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.29.0",
-    "@orca-so/common-sdk": "0.6.4",
-    "@orca-so/whirlpools-sdk": "0.13.12",
+    "@orca-so/common-sdk": "*",
+    "@orca-so/whirlpools-sdk": "*",
     "@solana/spl-token": "0.4.1",
     "@solana/web3.js": "^1.90.0",
     "@types/bn.js": "^5.1.0",

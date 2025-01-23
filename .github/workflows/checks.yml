@@ -47,3 +47,11 @@ jobs:
       run: yarn install
     - name: Run Lint
       run: yarn lint --output-style static
+
+  changeset:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Check changeset
+      run: npx changeset status --since=main

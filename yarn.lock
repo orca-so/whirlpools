@@ -1497,7 +1497,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/nodes-from-anchor@npm:1.1.1":
+"@codama/nodes-from-anchor@npm:1.1.1, @codama/nodes-from-anchor@npm:^1.1.1":
   version: 1.1.1
   resolution: "@codama/nodes-from-anchor@npm:1.1.1"
   dependencies:
@@ -1507,18 +1507,6 @@ __metadata:
     "@noble/hashes": "npm:^1.7.1"
     "@solana/codecs": "npm:2.0.0"
   checksum: 10c0/3ade1b636e0c1edb9f8f1e54d6eafd51e36648aeca79e0eeae9a59e46c9b181f38fb241b3a599d1acf24d7a1dc718f43df99ffb096853ac3d2c0e57c2ece99c5
-  languageName: node
-  linkType: hard
-
-"@codama/nodes-from-anchor@npm:^1.1.0":
-  version: 1.1.0
-  resolution: "@codama/nodes-from-anchor@npm:1.1.0"
-  dependencies:
-    "@codama/errors": "npm:1.2.0"
-    "@codama/nodes": "npm:1.2.0"
-    "@codama/visitors": "npm:1.2.0"
-    "@noble/hashes": "npm:^1.6.1"
-  checksum: 10c0/30fe89715822edec431516e1031e6c560e1a150d3c04eb1b712444a970516caf58a11d740b5606102de610dcf509ff6492d9a80baa513395e3874632c0f43a1b
   languageName: node
   linkType: hard
 
@@ -3910,7 +3898,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@noble/hashes@npm:^1.3.1, @noble/hashes@npm:^1.4.0, @noble/hashes@npm:^1.6.1":
+"@noble/hashes@npm:^1.3.1, @noble/hashes@npm:^1.4.0":
   version: 1.6.1
   resolution: "@noble/hashes@npm:1.6.1"
   checksum: 10c0/27643cd8b551bc933b57cc29aa8c8763d586552fc4c3e06ecf7897f55be3463c0c9dff7f6ebacd88e5ce6d0cdb5415ca4874d0cf4359b5ea4a85be21ada03aab
@@ -4076,7 +4064,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-client@workspace:ts-sdk/client"
   dependencies:
-    "@codama/nodes-from-anchor": "npm:^1.1.0"
+    "@codama/nodes-from-anchor": "npm:^1.1.1"
     "@codama/renderers-js": "npm:^1.1.2"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/web3.js": "npm:^2.0.0"
@@ -4227,7 +4215,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
-    "@codama/nodes-from-anchor": "npm:^1.1.0"
+    "@codama/nodes-from-anchor": "npm:^1.1.1"
     "@codama/renderers-rust": "npm:^1.0.6"
     "@orca-so/whirlpools-program": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"

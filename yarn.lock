@@ -1594,14 +1594,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/validators@npm:1.2.0":
-  version: 1.2.0
-  resolution: "@codama/validators@npm:1.2.0"
+"@codama/validators@npm:1.2.1":
+  version: 1.2.1
+  resolution: "@codama/validators@npm:1.2.1"
   dependencies:
-    "@codama/errors": "npm:1.2.0"
-    "@codama/nodes": "npm:1.2.0"
-    "@codama/visitors-core": "npm:1.2.0"
-  checksum: 10c0/380d4bac3bfe791163ccc2687b707f19a6235abac8b1cb51a4ee9da4079d0d23e53f3b2f3842c0a97cd36b1ddd99eb92552438a95f82cfc883aaeb50d019207c
+    "@codama/errors": "npm:1.2.1"
+    "@codama/nodes": "npm:1.2.1"
+    "@codama/visitors-core": "npm:1.2.1"
+  checksum: 10c0/3fbb71db39f486516a9673a930c1839b8b4b72c354fba6a393245af1be0a18ffc0cd59299614f2482b5b84369d6b6beee52a674dfc471ef998a457b32bffc776
   languageName: node
   linkType: hard
 
@@ -4080,7 +4080,7 @@ __metadata:
     "@codama/renderers-js": "npm:^1.1.2"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/web3.js": "npm:^2.0.0"
-    codama: "npm:^1.2.0"
+    codama: "npm:^1.2.1"
     typescript: "npm:^5.7.3"
   peerDependencies:
     "@solana/web3.js": ^2.0.0
@@ -4231,7 +4231,7 @@ __metadata:
     "@codama/renderers-rust": "npm:^1.0.6"
     "@orca-so/whirlpools-program": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
-    codama: "npm:^1.2.0"
+    codama: "npm:^1.2.1"
   languageName: unknown
   linkType: soft
 
@@ -7850,15 +7850,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"codama@npm:^1.2.0":
-  version: 1.2.0
-  resolution: "codama@npm:1.2.0"
+"codama@npm:^1.2.1":
+  version: 1.2.1
+  resolution: "codama@npm:1.2.1"
   dependencies:
-    "@codama/errors": "npm:1.2.0"
-    "@codama/nodes": "npm:1.2.0"
-    "@codama/validators": "npm:1.2.0"
-    "@codama/visitors": "npm:1.2.0"
-  checksum: 10c0/ad3d6ce1daf20c68ded9b60f78b0c38613d50747b17acdca54e781712dfe54c326f596ac971a0acf3fac44dcf073f8e2ff07777e90b835fde49870fbec6d14c2
+    "@codama/errors": "npm:1.2.1"
+    "@codama/nodes": "npm:1.2.1"
+    "@codama/validators": "npm:1.2.1"
+    "@codama/visitors": "npm:1.2.1"
+  checksum: 10c0/482c0b0dc43326ffcee7af2128c199523f4fa5f16168b5d3a9a25de1de3b0a8dc09c6e2e035d290c6c561037722646fcd4472827e25546618c22bffce6109ac4
   languageName: node
   linkType: hard
 

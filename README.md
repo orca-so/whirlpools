@@ -34,7 +34,6 @@ This monorepo contains all the code needed to build, deploy and interact with th
 
 ### Requirements
 
-- Rust 1.78.0
 - Anchor v0.29.0
 - Solana v1.17.22
 

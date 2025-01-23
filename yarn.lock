@@ -1615,17 +1615,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/visitors@npm:1.2.0":
-  version: 1.2.0
-  resolution: "@codama/visitors@npm:1.2.0"
-  dependencies:
-    "@codama/errors": "npm:1.2.0"
-    "@codama/nodes": "npm:1.2.0"
-    "@codama/visitors-core": "npm:1.2.0"
-  checksum: 10c0/bab7f95995d7d215e3e81ae648bbf0d2d5084a85ca44e28afc7d5ffad9a4bdc78b089a6ef84ae8545cbd9c101343fba58a02932ab433a1e089e6984dcdf0f75c
-  languageName: node
-  linkType: hard
-
 "@codama/visitors@npm:1.2.1":
   version: 1.2.1
   resolution: "@codama/visitors@npm:1.2.1"

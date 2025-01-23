@@ -53,5 +53,7 @@ jobs:
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
+    - name: Install dependencies
+      run: yarn install
     - name: Check changeset
-      run: npx changeset status --since=main
+      run: yarn changeset status

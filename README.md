@@ -88,6 +88,18 @@ If you look closely, the commands just call individual commands specified in the
 
 If you want to stream the logs of a specific command you can add the `--output-style stream` flag to the command. This allows you to view the logs of the command as they are being produced which can be useful for longer running tasks like integration tests.
 
+### Contributing
+
+When contributing to this repository, please follow these steps:
+1. Fork the repository.
+2. Make your changes in your fork.
+3. Run `yarn changeset` to create a changeset file.
+4. Push your changes and create a pull request.
+
+### Publishing
+
+When changes are detected in main, `changesets` will automatically create a pull request to update the version of the packages. Once the pull request is merged, the packages will be published to the npm and cargo automatically.
+
 # Support
 
 ### Questions

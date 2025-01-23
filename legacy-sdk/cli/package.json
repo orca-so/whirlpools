@@ -1,7 +1,8 @@
 {
   "name": "@orca-so/whirlpools-sdk-cli",
-  "version": "1.0.2",
+  "version": "0.1.0",
   "type": "module",
+  "private": true,
   "scripts": {
     "build": "tsc --noEmit",
     "start": "tsx src/index.ts"

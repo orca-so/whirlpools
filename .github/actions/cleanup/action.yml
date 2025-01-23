@@ -1,5 +1,5 @@
-name: 'Setup Version in monorepo'
-description: 'Set version of all packages in monorepo.'
+name: 'Cleanup'
+description: 'Remove unnecessary files from the build environment.'
 
 branding:
   icon: trash-2

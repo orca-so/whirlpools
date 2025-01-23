@@ -28,8 +28,8 @@
   },
   "scripts": {
     "build": "mkdir -p ./src/artifacts && cp -f ../../target/idl/whirlpool.json ./src/artifacts/whirlpool.json && cp -f ../../target/types/whirlpool.ts ./src/artifacts/whirlpool.ts && tsc",
-    "clean": "rimraf dist",
-    "prepublishOnly": "cd ../.. && yarn build legacy-sdk/whirlpool"
+    "publish": "sh ../../scripts/publish-npm",
+    "clean": "rimraf dist"
   },
   "files": [
     "dist",

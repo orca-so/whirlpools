@@ -23,8 +23,8 @@
   },
   "scripts": {
     "build": "tsc",
-    "clean": "rimraf dist",
-    "prepublishOnly": "cd ../.. && yarn build legacy-sdk/common"
+    "publish": "sh ../../scripts/publish-npm",
+    "clean": "rimraf dist"
   },
   "files": [
     "/dist",

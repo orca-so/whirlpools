@@ -1,0 +1,9 @@
+[package]
+name = "orca_whirlpools_client_integration_serde"
+edition = "2021"
+
+[lib]
+path = "../../lib.rs"
+
+[dependencies]
+orca_whirlpools_client = { path = "../../../client", features = ["serde"] }

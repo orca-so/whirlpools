@@ -1615,17 +1615,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/visitors@npm:1.2.0":
-  version: 1.2.0
-  resolution: "@codama/visitors@npm:1.2.0"
-  dependencies:
-    "@codama/errors": "npm:1.2.0"
-    "@codama/nodes": "npm:1.2.0"
-    "@codama/visitors-core": "npm:1.2.0"
-  checksum: 10c0/bab7f95995d7d215e3e81ae648bbf0d2d5084a85ca44e28afc7d5ffad9a4bdc78b089a6ef84ae8545cbd9c101343fba58a02932ab433a1e089e6984dcdf0f75c
-  languageName: node
-  linkType: hard
-
 "@codama/visitors@npm:1.2.1":
   version: 1.2.1
   resolution: "@codama/visitors@npm:1.2.1"
@@ -4037,13 +4026,13 @@ __metadata:
   dependencies:
     "@solana/spl-token": "npm:^0.4.1"
     "@solana/web3.js": "npm:^1.90.0"
-    decimal.js: "npm:^10.4.3"
+    decimal.js: "npm:^10.5.0"
     tiny-invariant: "npm:^1.3.1"
     typescript: "npm:^5.7.3"
   peerDependencies:
     "@solana/spl-token": ^0.4.1
     "@solana/web3.js": ^1.90.0
-    decimal.js: ^10.4.3
+    decimal.js: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -4269,7 +4258,7 @@ __metadata:
     "@types/bn.js": "npm:^5.1.0"
     "@types/prompts": "npm:^2.4.9"
     bs58: "npm:^6.0.0"
-    decimal.js: "npm:^10.4.3"
+    decimal.js: "npm:^10.5.0"
     js-convert-case: "npm:^4.2.0"
     prompts: "npm:^2.4.2"
     tsx: "npm:^4.19.0"
@@ -4297,7 +4286,7 @@ __metadata:
     "@solana/web3.js": "npm:^1.90.0"
     "@types/bn.js": "npm:~5.1.6"
     "@types/jest": "npm:^29.5.14"
-    decimal.js: "npm:^10.4.3"
+    decimal.js: "npm:^10.5.0"
     tiny-invariant: "npm:^1.3.1"
     typescript: "npm:^5.7.3"
   peerDependencies:
@@ -4305,7 +4294,7 @@ __metadata:
     "@orca-so/common-sdk": 0.6.4
     "@solana/spl-token": ^0.4.8
     "@solana/web3.js": ^1.90.0
-    decimal.js: ^10.4.3
+    decimal.js: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -8526,10 +8515,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"decimal.js@npm:^10.4.3":
-  version: 10.4.3
-  resolution: "decimal.js@npm:10.4.3"
-  checksum: 10c0/6d60206689ff0911f0ce968d40f163304a6c1bc739927758e6efc7921cfa630130388966f16bf6ef6b838cb33679fbe8e7a78a2f3c478afce841fd55ac8fb8ee
+"decimal.js@npm:^10.5.0":
+  version: 10.5.0
+  resolution: "decimal.js@npm:10.5.0"
+  checksum: 10c0/785c35279df32762143914668df35948920b6c1c259b933e0519a69b7003fc0a5ed2a766b1e1dda02574450c566b21738a45f15e274b47c2ac02072c0d1f3ac3
   languageName: node
   linkType: hard
 

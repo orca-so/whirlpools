@@ -15,4 +15,4 @@ fi
 
 # Upload artifact
 echo "Publishing version $local_version to gh"
-gh-pages -d dist -b docs > /dev/null
+gh-pages -f -d dist -b docs > /dev/null

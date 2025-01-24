@@ -38,4 +38,5 @@ if [ -n "$local_deps" ]; then
 fi
 
 # Publish to cargo
-# cargo publish --allow-dirty
+echo "Publishing version $local_version to cargo"
+cargo publish --allow-dirty

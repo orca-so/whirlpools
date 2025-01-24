@@ -1615,17 +1615,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/visitors@npm:1.2.0":
-  version: 1.2.0
-  resolution: "@codama/visitors@npm:1.2.0"
-  dependencies:
-    "@codama/errors": "npm:1.2.0"
-    "@codama/nodes": "npm:1.2.0"
-    "@codama/visitors-core": "npm:1.2.0"
-  checksum: 10c0/bab7f95995d7d215e3e81ae648bbf0d2d5084a85ca44e28afc7d5ffad9a4bdc78b089a6ef84ae8545cbd9c101343fba58a02932ab433a1e089e6984dcdf0f75c
-  languageName: node
-  linkType: hard
-
 "@codama/visitors@npm:1.2.1":
   version: 1.2.1
   resolution: "@codama/visitors@npm:1.2.1"
@@ -4161,7 +4150,7 @@ __metadata:
     "@next/bundle-analyzer": "npm:^15.1.6"
     "@orca-so/whirlpools": "npm:*"
     "@solana/web3.js": "npm:^2.0.0"
-    "@types/node": "npm:^22.10.9"
+    "@types/node": "npm:^22.10.10"
     "@types/react": "npm:^18.3.13"
     copy-webpack-plugin: "npm:^12.0.2"
     next: "npm:^15.1.6"
@@ -4197,7 +4186,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-monorepo@workspace:."
   dependencies:
-    "@types/node": "npm:^22.10.9"
+    "@types/node": "npm:^22.10.10"
     nx: "npm:^20.3.2"
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.3.5"
@@ -6032,12 +6021,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.10.9":
-  version: 22.10.9
-  resolution: "@types/node@npm:22.10.9"
+"@types/node@npm:^22.10.10":
+  version: 22.10.10
+  resolution: "@types/node@npm:22.10.10"
   dependencies:
     undici-types: "npm:~6.20.0"
-  checksum: 10c0/ed2d7b2cf20ce520e04711eab48e9cd7d6a835d2859fbdc5d9a8c5e00a97c1f872a409f789783c473062b29beaf1cddf4b1c7ad03ae3fe433b072b7cf9fff741
+  checksum: 10c0/3425772d4513cd5dbdd87c00acda088113c03a97445f84f6a89744c60a66990b56c9d3a7213d09d57b6b944ae8ff45f985565e0c1846726112588e33a22dd12b
   languageName: node
   linkType: hard
 

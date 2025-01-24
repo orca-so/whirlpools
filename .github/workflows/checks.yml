@@ -58,4 +58,5 @@ jobs:
     - name: Install dependencies
       run: yarn install
     - name: Check changesets
+      if: ${{ github.actor != 'dependabot[bot]' }}
       run: yarn changeset status --since origin/main

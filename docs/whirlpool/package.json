@@ -5,6 +5,7 @@
   "scripts": {
     "build": "docusaurus build --out-dir dist",
     "start": "docusaurus start",
+    "publish": "sh ../../scripts/publish-docs",
     "clean": "rimraf dist .docusaurus"
   },
   "dependencies": {
@@ -27,7 +28,8 @@
     "@orca-so/whirlpools-docs-legacy": "*",
     "@orca-so/whirlpools-docs-rust": "*",
     "@orca-so/whirlpools-docs-ts": "*",
-    "@types/react": "^18.3.13"
+    "@types/react": "^18.3.13",
+    "gh-pages": "^6.3.0"
   },
   "browserslist": {
     "production": [

@@ -6,7 +6,7 @@ package_name=$(jq -r ".name" package.json)
 local_version=$(jq -r ".version" package.json)
 
 # Get the published version from npm
-published_version=$(npm view $package_name version 2>/dev/null || echo "0.0.0")
+published_version=$(npm view $package_name version 2>/dev/null || true)
 
 # Compare versions
 if [ "$local_version" = "$published_version" ]; then

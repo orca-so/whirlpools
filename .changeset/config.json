@@ -5,7 +5,9 @@
     { "repo": "orca-so/whirlpools" }
   ],
   "commit": false,
-  "fixed": [],
+  "fixed": [
+    ["@orca-so/whirlpools-docs*"]
+  ],
   "linked": [],
   "access": "public",
   "baseBranch": "main",

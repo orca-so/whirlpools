@@ -50,6 +50,7 @@ jobs:
 
   changeset:
     runs-on: ubuntu-latest
+    if: ${{ github.actor != 'dependabot[bot]' && github.actor != 'github-actions[bot]' }}
     steps:
     - name: Checkout repository
       uses: actions/checkout@v4
@@ -58,5 +59,4 @@ jobs:
     - name: Install dependencies
       run: yarn install
     - name: Check changesets
-      if: ${{ github.actor != 'dependabot[bot]' }}
       run: yarn changeset status --since origin/main

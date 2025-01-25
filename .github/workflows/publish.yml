@@ -1,4 +1,4 @@
-name: Changeset
+name: Publish
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-  changeset:
+  publish:
     runs-on: ubuntu-latest
     permissions:
       contents: write

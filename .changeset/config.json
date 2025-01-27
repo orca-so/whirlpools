@@ -1,0 +1,14 @@
+{
+  "$schema": "https://unpkg.com/@changesets/config@3.0.5/schema.json",
+  "changelog": [
+    "@changesets/changelog-github",
+    { "repo": "orca-so/whirlpools" }
+  ],
+  "commit": false,
+  "fixed": [["@orca-so/whirlpools-docs*"]],
+  "linked": [],
+  "access": "public",
+  "baseBranch": "main",
+  "updateInternalDependencies": "patch",
+  "ignore": []
+}

@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-docs-legacy",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "private": true,
   "scripts": {
     "build": "typedoc",
@@ -8,6 +8,7 @@
     "clean": "rimraf dist"
   },
   "devDependencies": {
+    "@orca-so/common-sdk": "*",
     "@orca-so/whirlpools-sdk": "*",
     "typedoc": "^0.27.6",
     "typescript": "^5.7.3"

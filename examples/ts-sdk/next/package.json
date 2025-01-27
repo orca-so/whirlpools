@@ -2,6 +2,7 @@
   "name": "@orca-so/whirlpools-example-ts-next",
   "version": "0.1.0",
   "type": "module",
+  "private": true,
   "scripts": {
     "start": "next dev",
     "build": "next build",

@@ -53,6 +53,7 @@ runs:
       with:
         node-version: ${{ inputs.node-version }}
         cache: 'yarn'
+        registry-url: 'https://registry.npmjs.org'
     - name: Install Solana CLI
       run: |
         wget -qO- "https://release.anza.xyz/${{ inputs.solana-version }}/solana-release-x86_64-unknown-linux-gnu.tar.bz2" | tar -xvj

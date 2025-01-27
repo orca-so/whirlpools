@@ -1,7 +1,8 @@
 {
   "name": "@orca-so/whirlpools-rust-integration",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "type": "module",
+  "private": true,
   "scripts": {
     "build": "tsc --noEmit",
     "test": "vitest run index.test.ts --test-timeout 60000",

@@ -87,6 +87,12 @@ If you look closely, the commands just call individual commands specified in the
 
 If you want to stream the logs of a specific command you can add the `--output-style stream` flag to the command. This allows you to view the logs of the command as they are being produced which can be useful for longer running tasks like integration tests.
 
+### Changesets
+
+When contributing to this repository, please include a changeset with your changes. You can create a changeset by running `yarn changeset`. If your changes are not related to any of the packages, you can create an empty changeset by running `yarn changeset --empty`. In your pull request, you do not have to manually update the version numbers.
+
+When changes are detected in main, `changesets` will automatically create a pull request to update the version of the packages. Once that pull request is merged, the packages will be published to the npm and cargo automatically.
+
 # Support
 
 ### Questions

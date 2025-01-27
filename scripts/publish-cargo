@@ -1,0 +1,42 @@
+#! /bin/bash
+set -eo pipefail
+
+# Get the local version from Cargo.toml
+package_name=$(awk '
+  /^\[package\]/ { in_package=1 }
+  /^\[/ && !/^\[package\]/ { in_package=0 }
+  in_package && /^name = / { gsub(/"/, "", $3); print $3 }
+' Cargo.toml)
+local_version=$(awk '
+  /^\[package\]/ { in_package=1 }
+  /^\[/ && !/^\[package\]/ { in_package=0 }
+  in_package && /^version = / { gsub(/"/, "", $3); print $3 }
+' Cargo.toml)
+
+# Get the published version from cargo
+published_version=$(cargo search $package_name | awk 'NR==1 { gsub(/"/, "", $3); print $3 }')
+
+# Compare versions
+if [ "$local_version" = "$published_version" ]; then
+  echo "Version $local_version is already published to cargo"
+  exit 0
+fi
+
+# Patch version numbers for local dependencies
+local_deps=$(awk '
+  /^\[dependencies\]/ { in_dependencies=1 }
+  /^\[/ && !/^\[dependencies\]/ { in_dependencies=0 }
+  in_dependencies && /path = "[^"]*"/ { print $1 }
+' Cargo.toml)
+if [ -n "$local_deps" ]; then
+  for dep in $local_deps; do
+    latest_version=$(cargo search $dep | awk 'NR==1 { gsub(/"/, "", $3); print $3 }')
+    awk -v dep="$dep" -v version="$latest_version" '
+      $1 == dep { sub(/path = "[^"]*"/, "version = \"" version "\"") } { print }
+    ' Cargo.toml > tmp.toml && mv tmp.toml Cargo.toml
+  done
+fi
+
+# Publish to cargo
+echo "Publishing version $local_version to cargo"
+cargo publish --allow-dirty

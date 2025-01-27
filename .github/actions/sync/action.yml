@@ -24,11 +24,3 @@ runs:
           done
         ' _ {} +
       shell: bash
-    - name: Push Changes
-      run: |
-        if [[ $(git status --porcelain) ]]; then
-          git add **/Cargo.toml
-          git commit -m "Sync cargo versions"
-          git push
-        fi
-      shell: bash

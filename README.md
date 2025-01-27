@@ -92,11 +92,9 @@ If you want to stream the logs of a specific command you can add the `--output-s
 
 When contributing to this repository, please include a changeset with your changes. You can create a changeset by running `yarn changeset`. If your changes are not related to any of the packages, you can create an empty changeset by running `yarn changeset --empty`. In your pull request, you do not have to manually update the version numbers.
 
-When changes are detected in main, `changesets` will automatically create a pull request to update the version of the packages. Once that pull request is merged, the packages will be published to the npm and cargo automatically.
+To publish packages to npm and cargo, you can run run the `publish` gh action. This will update the versions of the packages and publish them to npm and cargo.
 
 # Support
-
-### Questions
 
 Have problems integrating with the SDK? Pop by over to the Orca [Discord](https://discord.gg/nSwGWn5KSG) #dev-questions channel and chat with one of our engineers.
 

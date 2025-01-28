@@ -1807,9 +1807,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/renderers-js@npm:^1.1.2":
-  version: 1.1.2
-  resolution: "@codama/renderers-js@npm:1.1.2"
+"@codama/renderers-js@npm:^1.2.0":
+  version: 1.2.0
+  resolution: "@codama/renderers-js@npm:1.2.0"
   dependencies:
     "@codama/errors": "npm:1.2.1"
     "@codama/nodes": "npm:1.2.1"
@@ -1819,7 +1819,7 @@ __metadata:
     "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
     prettier: "npm:^3.4.2"
-  checksum: 10c0/ccdab66937cd395271d5a2687d8876df58a4a99f819de585fd686a0edf172b8799bf2f1a891a4be4021f127cdd8b0dddb6ddb09ab6a9b7c9134f667fb2fb0309
+  checksum: 10c0/f9bebd3bbdeb0f7b5e3c84011b14807f2779c7e6964478c871e9cf96c450139acf031f89054c13f7b3834aea22ec5ab6b64e6bfa186a2415f4eef91f6ff0ab26
   languageName: node
   linkType: hard
 
@@ -4322,7 +4322,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-client@workspace:ts-sdk/client"
   dependencies:
     "@codama/nodes-from-anchor": "npm:^1.1.1"
-    "@codama/renderers-js": "npm:^1.1.2"
+    "@codama/renderers-js": "npm:^1.2.0"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/web3.js": "npm:^2.0.0"
     codama: "npm:^1.2.1"

@@ -1,6 +1,6 @@
 [package]
 name = "orca_whirlpools"
-version = "0.1.0"
+version = "1.0.2"
 description = "Orca's high-level rust sdk to interact with Orca's on-chain Whirlpool program."
 include = ["src/*"]
 documentation = "https://orca-so.github.io/whirlpools/"
@@ -36,5 +36,6 @@ solana-version = { version = "^1.18" }
 async-trait = { version = "^0.1" }
 base64 = { version = "^0.20" }
 toml = { version = "^0.7" }
-tokio = { version = "1.0", features = ["sync"] }
-spl-pod = "0.1.0"
+tokio = { version = "^1.0", features = ["sync"] }
+spl-pod = { version = "^0.1" }
+rstest = "0.18.2"

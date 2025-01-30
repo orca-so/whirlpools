@@ -1,15 +1,16 @@
 {
   "name": "@orca-so/whirlpools-lint",
   "private": true,
+  "version": "0.1.0",
   "type": "module",
   "scripts": {
     "format": "cd ../.. && prettier './**/*.{js,jsx,ts,tsx,json}' --write && eslint -c ts-sdk/lint/eslint.config.js --fix",
     "lint": "cd ../.. && prettier --check './**/*.{js,jsx,ts,tsx,json}' && eslint -c ts-sdk/lint/eslint.config.js"
   },
   "devDependencies": {
-    "eslint": "^9.16.0",
+    "eslint": "^9.19.0",
     "prettier": "^3.4.2",
-    "typescript": "^5.7.2",
-    "typescript-eslint": "^8.17.0"
+    "typescript": "^5.7.3",
+    "typescript-eslint": "^8.22.0"
   }
 }

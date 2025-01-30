@@ -20,11 +20,13 @@ use solana_program::sysvar::SysvarId;
 use solana_program::{instruction::Instruction, pubkey::Pubkey};
 use solana_sdk::signature::Keypair;
 use solana_sdk::signer::Signer;
-use spl_token::solana_program::program_pack::Pack;
-use spl_token_2022::state::{Account, Mint};
+use spl_token_2022::extension::StateWithExtensions;
+use spl_token_2022::state::Mint;
 
 use crate::token::order_mints;
-use crate::{get_rent, FUNDER, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
+use crate::{
+    get_account_data_size, get_rent, FUNDER, SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS,
+};
 
 /// Represents the instructions and metadata for creating a pool.
 pub struct CreatePoolInstructions {
@@ -207,14 +209,14 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     let mint_a_info = account_infos[0]
         .as_ref()
         .ok_or(format!("Mint {} not found", token_a))?;
-    let mint_a = Mint::unpack(&mint_a_info.data)?;
-    let decimals_a = mint_a.decimals;
+    let mint_a = StateWithExtensions::<Mint>::unpack(&mint_a_info.data)?;
+    let decimals_a = mint_a.base.decimals;
     let token_program_a = mint_a_info.owner;
     let mint_b_info = account_infos[1]
         .as_ref()
         .ok_or(format!("Mint {} not found", token_b))?;
-    let mint_b = Mint::unpack(&mint_b_info.data)?;
-    let decimals_b = mint_b.decimals;
+    let mint_b = StateWithExtensions::<Mint>::unpack(&mint_b_info.data)?;
+    let decimals_b = mint_b.base.decimals;
     let token_program_b = mint_b_info.owner;
 
     let initial_sqrt_price: u128 = price_to_sqrt_price(initial_price, decimals_a, decimals_b);
@@ -265,8 +267,10 @@ pub async fn create_concentrated_liquidity_pool_instructions(
     );
 
     initialization_cost += rent.minimum_balance(Whirlpool::LEN);
-    initialization_cost += rent.minimum_balance(Account::LEN); // TODO: token 22 size
-    initialization_cost += rent.minimum_balance(Account::LEN); // TODO: token 22 size
+    let token_a_space = get_account_data_size(token_program_a, mint_a_info)?;
+    initialization_cost += rent.minimum_balance(token_a_space);
+    let token_b_space = get_account_data_size(token_program_b, mint_b_info)?;
+    initialization_cost += rent.minimum_balance(token_b_space);
 
     let full_range = get_full_range_tick_indexes(tick_spacing);
     let lower_tick_index =
@@ -298,4 +302,465 @@ pub async fn create_concentrated_liquidity_pool_instructions(
         pool_address,
         additional_signers: vec![token_vault_a, token_vault_b],
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::tests::{setup_mint, setup_mint_te, setup_mint_te_fee, RpcContext};
+
+    use super::*;
+    use serial_test::serial;
+
+    async fn fetch_pool(
+        rpc: &RpcClient,
+        pool_address: Pubkey,
+    ) -> Result<Whirlpool, Box<dyn Error>> {
+        let account = rpc.get_account(&pool_address).await?;
+        Whirlpool::from_bytes(&account.data).map_err(|e| e.into())
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_error_if_no_funder() {
+        let ctx = RpcContext::new().await;
+        let mint_a = setup_mint(&ctx).await.unwrap();
+        let mint_b = setup_mint(&ctx).await.unwrap();
+
+        let result =
+            create_splash_pool_instructions(&ctx.rpc, mint_a, mint_b, Some(1.0), None).await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_error_if_tokens_not_ordered() {
+        let ctx = RpcContext::new().await;
+        let mint_a = setup_mint(&ctx).await.unwrap();
+        let mint_b = setup_mint(&ctx).await.unwrap();
+
+        let result = create_concentrated_liquidity_pool_instructions(
+            &ctx.rpc,
+            mint_b,
+            mint_a,
+            64,
+            Some(1.0),
+            Some(ctx.signer.pubkey()),
+        )
+        .await;
+
+        assert!(result.is_err());
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_create_splash_pool() {
+        let ctx = RpcContext::new().await;
+        let mint_a = setup_mint(&ctx).await.unwrap();
+        let mint_b = setup_mint(&ctx).await.unwrap();
+        let price = 10.0;
+        let sqrt_price = price_to_sqrt_price(price, 9, 9);
+
+        let result = create_splash_pool_instructions(
+            &ctx.rpc,
+            mint_a,
+            mint_b,
+            Some(price),
+            Some(ctx.signer.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
+        assert!(pool_before.is_err());
+
+        let instructions = result.instructions;
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
+
+        let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let balance_change = balance_before - balance_after;
+        let tx_fee = 15000; // 3 signing accounts * 5000 lamports
+        let min_rent_exempt = balance_change - tx_fee;
+
+        assert_eq!(result.initialization_cost, min_rent_exempt);
+        assert_eq!(sqrt_price, pool_after.sqrt_price);
+        assert_eq!(mint_a, pool_after.token_mint_a);
+        assert_eq!(mint_b, pool_after.token_mint_b);
+        assert_eq!(SPLASH_POOL_TICK_SPACING, pool_after.tick_spacing);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_create_splash_pool_with_one_te_token() {
+        let ctx = RpcContext::new().await;
+        let mint = setup_mint(&ctx).await.unwrap();
+        let mint_te = setup_mint_te(&ctx, &[]).await.unwrap();
+        let price = 10.0;
+        let sqrt_price = price_to_sqrt_price(price, 9, 6);
+
+        let result = create_splash_pool_instructions(
+            &ctx.rpc,
+            mint,
+            mint_te,
+            Some(price),
+            Some(ctx.signer.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
+        assert!(pool_before.is_err());
+
+        let instructions = result.instructions;
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
+
+        let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let balance_change = balance_before - balance_after;
+        let tx_fee = 15000; // 3 signing accounts * 5000 lamports
+        let min_rent_exempt = balance_change - tx_fee;
+
+        assert_eq!(result.initialization_cost, min_rent_exempt);
+        assert_eq!(sqrt_price, pool_after.sqrt_price);
+        assert_eq!(mint, pool_after.token_mint_a);
+        assert_eq!(mint_te, pool_after.token_mint_b);
+        assert_eq!(SPLASH_POOL_TICK_SPACING, pool_after.tick_spacing);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_create_splash_pool_with_two_te_tokens() {
+        let ctx = RpcContext::new().await;
+        let mint_te_a = setup_mint_te(&ctx, &[]).await.unwrap();
+        let mint_te_b = setup_mint_te(&ctx, &[]).await.unwrap();
+        let price = 10.0;
+        let sqrt_price = price_to_sqrt_price(price, 6, 6);
+
+        let result = create_splash_pool_instructions(
+            &ctx.rpc,
+            mint_te_a,
+            mint_te_b,
+            Some(price),
+            Some(ctx.signer.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
+        assert!(pool_before.is_err());
+
+        let instructions = result.instructions;
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
+
+        let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let balance_change = balance_before - balance_after;
+        let tx_fee = 15000; // 3 signing accounts * 5000 lamports
+        let min_rent_exempt = balance_change - tx_fee;
+
+        assert_eq!(result.initialization_cost, min_rent_exempt);
+        assert_eq!(sqrt_price, pool_after.sqrt_price);
+        assert_eq!(mint_te_a, pool_after.token_mint_a);
+        assert_eq!(mint_te_b, pool_after.token_mint_b);
+        assert_eq!(SPLASH_POOL_TICK_SPACING, pool_after.tick_spacing);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_create_splash_pool_with_transfer_fee() {
+        let ctx = RpcContext::new().await;
+        let mint = setup_mint(&ctx).await.unwrap();
+        let mint_te_fee = setup_mint_te_fee(&ctx).await.unwrap();
+        let price = 10.0;
+        let sqrt_price = price_to_sqrt_price(price, 9, 6);
+
+        let result = create_splash_pool_instructions(
+            &ctx.rpc,
+            mint,
+            mint_te_fee,
+            Some(price),
+            Some(ctx.signer.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
+        assert!(pool_before.is_err());
+
+        let instructions = result.instructions;
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
+
+        let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let balance_change = balance_before - balance_after;
+        let tx_fee = 15000; // 3 signing accounts * 5000 lamports
+        let min_rent_exempt = balance_change - tx_fee;
+
+        assert_eq!(result.initialization_cost, min_rent_exempt);
+        assert_eq!(sqrt_price, pool_after.sqrt_price);
+        assert_eq!(mint, pool_after.token_mint_a);
+        assert_eq!(mint_te_fee, pool_after.token_mint_b);
+        assert_eq!(SPLASH_POOL_TICK_SPACING, pool_after.tick_spacing);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_create_concentrated_liquidity_pool() {
+        let ctx = RpcContext::new().await;
+        let mint_a = setup_mint(&ctx).await.unwrap();
+        let mint_b = setup_mint(&ctx).await.unwrap();
+        let price = 10.0;
+        let sqrt_price = price_to_sqrt_price(price, 9, 9);
+
+        let result = create_concentrated_liquidity_pool_instructions(
+            &ctx.rpc,
+            mint_a,
+            mint_b,
+            64,
+            Some(price),
+            Some(ctx.signer.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
+        assert!(pool_before.is_err());
+
+        let instructions = result.instructions;
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
+
+        let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let balance_change = balance_before - balance_after;
+        let tx_fee = 15000; // 3 signing accounts * 5000 lamports
+        let min_rent_exempt = balance_change - tx_fee;
+
+        assert_eq!(result.initialization_cost, min_rent_exempt);
+        assert_eq!(sqrt_price, pool_after.sqrt_price);
+        assert_eq!(mint_a, pool_after.token_mint_a);
+        assert_eq!(mint_b, pool_after.token_mint_b);
+        assert_eq!(64, pool_after.tick_spacing);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_create_concentrated_liquidity_pool_with_one_te_token() {
+        let ctx = RpcContext::new().await;
+        let mint = setup_mint(&ctx).await.unwrap();
+        let mint_te = setup_mint_te(&ctx, &[]).await.unwrap();
+        let price = 10.0;
+        let sqrt_price = price_to_sqrt_price(price, 9, 6);
+
+        let result = create_concentrated_liquidity_pool_instructions(
+            &ctx.rpc,
+            mint,
+            mint_te,
+            64,
+            Some(price),
+            Some(ctx.signer.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
+        assert!(pool_before.is_err());
+
+        let instructions = result.instructions;
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
+
+        let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let balance_change = balance_before - balance_after;
+        let tx_fee = 15000; // 3 signing accounts * 5000 lamports
+        let min_rent_exempt = balance_change - tx_fee;
+
+        assert_eq!(result.initialization_cost, min_rent_exempt);
+        assert_eq!(sqrt_price, pool_after.sqrt_price);
+        assert_eq!(mint, pool_after.token_mint_a);
+        assert_eq!(mint_te, pool_after.token_mint_b);
+        assert_eq!(64, pool_after.tick_spacing);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_create_concentrated_liquidity_pool_with_two_te_tokens() {
+        let ctx = RpcContext::new().await;
+        let mint_te_a = setup_mint_te(&ctx, &[]).await.unwrap();
+        let mint_te_b = setup_mint_te(&ctx, &[]).await.unwrap();
+        let price = 10.0;
+        let sqrt_price = price_to_sqrt_price(price, 6, 6);
+
+        let result = create_concentrated_liquidity_pool_instructions(
+            &ctx.rpc,
+            mint_te_a,
+            mint_te_b,
+            64,
+            Some(price),
+            Some(ctx.signer.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
+        assert!(pool_before.is_err());
+
+        let instructions = result.instructions;
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
+
+        let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let balance_change = balance_before - balance_after;
+        let tx_fee = 15000; // 3 signing accounts * 5000 lamports
+        let min_rent_exempt = balance_change - tx_fee;
+
+        assert_eq!(result.initialization_cost, min_rent_exempt);
+        assert_eq!(sqrt_price, pool_after.sqrt_price);
+        assert_eq!(mint_te_a, pool_after.token_mint_a);
+        assert_eq!(mint_te_b, pool_after.token_mint_b);
+        assert_eq!(64, pool_after.tick_spacing);
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_create_concentrated_liquidity_pool_with_transfer_fee() {
+        let ctx = RpcContext::new().await;
+        let mint = setup_mint(&ctx).await.unwrap();
+        let mint_te_fee = setup_mint_te_fee(&ctx).await.unwrap();
+        let price = 10.0;
+        let sqrt_price = price_to_sqrt_price(price, 9, 6);
+
+        let result = create_concentrated_liquidity_pool_instructions(
+            &ctx.rpc,
+            mint,
+            mint_te_fee,
+            64,
+            Some(price),
+            Some(ctx.signer.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        let balance_before = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let pool_before = fetch_pool(&ctx.rpc, result.pool_address).await;
+        assert!(pool_before.is_err());
+
+        let instructions = result.instructions;
+        ctx.send_transaction_with_signers(instructions, result.additional_signers.iter().collect())
+            .await
+            .unwrap();
+
+        let pool_after = fetch_pool(&ctx.rpc, result.pool_address).await.unwrap();
+        let balance_after = ctx
+            .rpc
+            .get_account(&ctx.signer.pubkey())
+            .await
+            .unwrap()
+            .lamports;
+        let balance_change = balance_before - balance_after;
+        let tx_fee = 15000; // 3 signing accounts * 5000 lamports
+        let min_rent_exempt = balance_change - tx_fee;
+
+        assert_eq!(result.initialization_cost, min_rent_exempt);
+        assert_eq!(sqrt_price, pool_after.sqrt_price);
+        assert_eq!(mint, pool_after.token_mint_a);
+        assert_eq!(mint_te_fee, pool_after.token_mint_b);
+        assert_eq!(64, pool_after.tick_spacing);
+    }
 }

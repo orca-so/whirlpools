@@ -1,28 +1,27 @@
 {
   "name": "@orca-so/whirlpools-sdk-cli",
-  "private": true,
-  "version": "1.0.0",
+  "version": "0.1.0",
   "type": "module",
+  "private": true,
   "scripts": {
     "build": "tsc --noEmit",
     "start": "tsx src/index.ts"
   },
   "dependencies": {
     "@coral-xyz/anchor": "0.29.0",
-    "@orca-so/common-sdk": "0.6.4",
-    "@orca-so/orca-sdk": "0.2.0",
+    "@orca-so/common-sdk": "*",
     "@orca-so/whirlpools-sdk": "*",
-    "@solana/spl-token": "0.4.1",
+    "@solana/spl-token": "0.4.11",
     "@solana/web3.js": "^1.90.0",
     "@types/bn.js": "^5.1.0",
     "bs58": "^6.0.0",
-    "decimal.js": "^10.4.3",
+    "decimal.js": "^10.5.0",
     "js-convert-case": "^4.2.0",
     "prompts": "^2.4.2"
   },
   "devDependencies": {
     "@types/prompts": "^2.4.9",
     "tsx": "^4.19.0",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.3"
   }
 }

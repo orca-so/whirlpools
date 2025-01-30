@@ -9,9 +9,9 @@ import {
   resolveOrCreateATAs,
 } from "@orca-so/common-sdk";
 import {
-  getAssociatedTokenAddressSync,
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
+  getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import type { PublicKey } from "@solana/web3.js";
 import { Keypair } from "@solana/web3.js";
@@ -48,7 +48,7 @@ import type {
   WhirlpoolRewardInfo,
 } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
-import { PDAUtil, TickArrayUtil, TickUtil } from "../utils/public";
+import { PDAUtil, PoolUtil, TickArrayUtil, TickUtil } from "../utils/public";
 import { TokenExtensionUtil } from "../utils/public/token-extension-util";
 import {
   MultipleTransactionBuilderFactoryWithAccountResolver,
@@ -599,14 +599,18 @@ export class WhirlpoolImpl implements Whirlpool {
     const shouldDecreaseLiquidity = positionData.liquidity.gtn(0);
 
     const rewardsToCollect = this.data.rewardInfos
-      .filter((_, i) => {
+      .map((info, index) => ({ info, index }))
+      .filter(({ info, index }) => {
+        if (!PoolUtil.isRewardInitialized(info)) {
+          return false;
+        }
         return (
-          (rewardsQuote.rewardOwed[i] ?? ZERO).gtn(0) ||
-          // we need to collect reward even if all reward will be deducted as transfer fee
-          (rewardsQuote.transferFee.deductedFromRewardOwed[i] ?? ZERO).gtn(0)
+          (rewardsQuote.rewardOwed[index] ?? ZERO).gtn(0) ||
+          (rewardsQuote.transferFee.deductedFromRewardOwed[index] ?? ZERO).gtn(
+            0,
+          )
         );
-      })
-      .map((info) => info.mint);
+      });
 
     const shouldCollectRewards = rewardsToCollect.length > 0;
 
@@ -757,15 +761,9 @@ export class WhirlpoolImpl implements Whirlpool {
     }
 
     if (shouldCollectRewards) {
-      for (
-        let rewardIndex = 0;
-        rewardIndex < rewardsToCollect.length;
-        rewardIndex++
-      ) {
+      for (const { info, index: rewardIndex } of rewardsToCollect) {
         await builder.addInstructions(async (resolveTokenAccount) => {
-          const rewardOwnerAccount = resolveTokenAccount(
-            rewardsToCollect[rewardIndex].toBase58(),
-          );
+          const rewardOwnerAccount = resolveTokenAccount(info.mint.toBase58());
 
           const collectRewardBaseParams = {
             whirlpool: positionData.whirlpool,
@@ -774,7 +772,7 @@ export class WhirlpoolImpl implements Whirlpool {
             positionTokenAccount,
             rewardIndex,
             rewardOwnerAccount,
-            rewardVault: whirlpool.rewardInfos[rewardIndex].vault,
+            rewardVault: info.vault,
           };
 
           const ix = !TokenExtensionUtil.isV2IxRequiredReward(

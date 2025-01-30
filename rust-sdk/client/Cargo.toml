@@ -1,6 +1,6 @@
 [package]
 name = "orca_whirlpools_client"
-version = "0.1.0"
+version = "1.0.2"
 description = "Rust client to interact with Orca's on-chain Whirlpool program."
 include = ["src/*"]
 documentation = "https://orca-so.github.io/whirlpools/"
@@ -20,15 +20,15 @@ serde = ["dep:serde", "dep:serde_with"]
 fetch = ["dep:solana-client", "dep:solana-sdk", "dep:solana-account-decoder"]
 
 [dependencies]
-anchor-lang = { version = "^0.29", optional = true }
+anchor-lang = { version = ">=0.28, <0.31", optional = true }
 borsh = { version = "^0.10" }
 num-derive = { version = "^0.4" }
 num-traits = { version = "^0.2" }
 orca_whirlpools_core = { path = "../core", optional = true }
 serde = { version = "^1.0", features = ["derive"], optional = true }
 serde_with = { version = "^3.10", optional = true }
-solana-program = { version = "^1.17" }
-solana-sdk = { version = "^1.17", optional = true }
-solana-client = { version = "^1.17", optional = true }
-solana-account-decoder = { version = "^1.17", optional = true }
+solana-program = { version = "^1.16" }
+solana-sdk = { version = "^1.16", optional = true }
+solana-client = { version = "^1.16", optional = true }
+solana-account-decoder = { version = "^1.16", optional = true }
 thiserror = { version = "^2.0" }

@@ -1,0 +1,18 @@
+#! /usr/bin/env bash
+set -eo pipefail
+
+# Get the local version from package.json
+local_version=$(jq -r ".version" package.json)
+
+# Get the published version from github
+published_version=$(curl -s https://orca-so.github.io/whirlpools/ | grep -o '<meta itemprop="version" content="[^"]*"' | cut -d'"' -f4)
+
+# Compare versions
+if [ "$local_version" = "$published_version" ]; then
+  echo "Version $local_version is already published"
+  exit 0
+fi
+
+# Upload artifact
+echo "Publishing version $local_version to gh"
+gh-pages -f -d dist -b docs > /dev/null

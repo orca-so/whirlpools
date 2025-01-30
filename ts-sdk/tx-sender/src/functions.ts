@@ -7,6 +7,7 @@ import {
   sendTransactionWithoutConfirmingFactory,
   assertTransactionIsFullySigned,
   signTransaction,
+  CompilableTransactionMessage,
 } from "@solana/web3.js";
 
 import {
@@ -60,7 +61,7 @@ export const buildTransaction = async (
   signer: TransactionSigner,
   transactionConfig: TransactionConfig,
   connectionContext: ConnectionContext
-) => {
+): Promise<CompilableTransactionMessage> => {
   const { rpcUrl, isTriton } = connectionContext;
   const rpc = connection(rpcUrl);
   const { value: recentBlockhash } = await rpc

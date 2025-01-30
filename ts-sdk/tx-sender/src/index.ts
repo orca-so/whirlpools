@@ -6,11 +6,17 @@ import {
   setGlobalConfig,
 } from "./config";
 import {
+  addSignersToTransactionMessage,
+  assertIsTransactionMessageWithBlockhashLifetime,
+  assertTransactionIsFullySigned,
   IInstruction,
   KeyPairSigner,
+  partiallySignTransactionMessageWithSigners,
+  sendAndConfirmTransactionFactory,
   TransactionMessage,
   TransactionSigner,
 } from "@solana/web3.js";
+import { connection, socket } from "./utils";
 
 export const init = (config: {
   rpcUrl: string;
@@ -51,6 +57,15 @@ export const buildAndSendTransaction = async (
     transactionSettings,
     connectionCtx
   );
-  // todo figure out the signing flow
-  console.log(tx);
+  assertIsTransactionMessageWithBlockhashLifetime(tx);
+  const withSigners = addSignersToTransactionMessage([signer], tx);
+  const signed = await partiallySignTransactionMessageWithSigners(withSigners);
+  const rpc = connection(connectionCtx.rpcUrl);
+  assertTransactionIsFullySigned(signed);
+  const rpcSubscriptions = socket();
+  const send = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions });
+  await send(signed, {
+    commitment: "confirmed",
+    maxRetries: BigInt(5),
+  });
 };

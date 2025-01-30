@@ -5,14 +5,20 @@ import {
   appendTransactionMessageInstructions,
   Blockhash,
   createDefaultRpcTransport,
+  createRpcSubscriptionsTransportFromChannelCreator,
+  createSolanaRpcSubscriptionsApi,
+  createSubscriptionRpc,
   createTransactionMessage,
   getComputeUnitEstimateForTransactionMessageFactory,
   isWritableRole,
   pipe,
   Rpc,
+  RpcSubscriptions,
+  RpcSubscriptionsChannelCreatorMainnet,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   SolanaRpcApi,
+  SolanaRpcSubscriptionsApi,
   TransactionSigner,
 } from "@solana/web3.js";
 import { fromLegacyPublicKey } from "@solana/compat";
@@ -47,6 +53,18 @@ export const connection = (url: string): Rpc<SolanaRpcApi> => {
   });
   const transport = createDefaultRpcTransport({ url });
   const rpc = createRpc({ api, transport });
+  return rpc;
+};
+
+export const socket = (): RpcSubscriptions<SolanaRpcSubscriptionsApi> => {
+  const api = createSolanaRpcSubscriptionsApi({
+    defaultCommitment: "confirmed",
+  });
+  // TODO lookup channel creators and how its done
+  const transport = createRpcSubscriptionsTransportFromChannelCreator(
+    null as unknown as RpcSubscriptionsChannelCreatorMainnet<unknown, unknown>
+  );
+  const rpc = createSubscriptionRpc({ api, transport });
   return rpc;
 };
 

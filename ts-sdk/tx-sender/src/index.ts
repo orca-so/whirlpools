@@ -9,14 +9,14 @@ import {
   addSignersToTransactionMessage,
   assertIsTransactionMessageWithBlockhashLifetime,
   assertTransactionIsFullySigned,
+  getBase64EncodedWireTransaction,
   IInstruction,
   KeyPairSigner,
-  partiallySignTransactionMessageWithSigners,
-  sendAndConfirmTransactionFactory,
+  signTransactionMessageWithSigners,
   TransactionMessage,
   TransactionSigner,
 } from "@solana/web3.js";
-import { connection, socket } from "./utils";
+import { connection } from "./utils";
 
 export const init = (config: {
   rpcUrl: string;
@@ -59,13 +59,12 @@ export const buildAndSendTransaction = async (
   );
   assertIsTransactionMessageWithBlockhashLifetime(tx);
   const withSigners = addSignersToTransactionMessage([signer], tx);
-  const signed = await partiallySignTransactionMessageWithSigners(withSigners);
+  const signed = await signTransactionMessageWithSigners(withSigners);
   const rpc = connection(connectionCtx.rpcUrl);
   assertTransactionIsFullySigned(signed);
-  const rpcSubscriptions = socket();
-  const send = sendAndConfirmTransactionFactory({ rpc, rpcSubscriptions });
-  await send(signed, {
-    commitment: "confirmed",
-    maxRetries: BigInt(5),
-  });
+  const encodedTransaction = getBase64EncodedWireTransaction(signed);
+  const transactionSignature = await rpc
+    .sendTransaction(encodedTransaction)
+    .send();
+  return transactionSignature;
 };

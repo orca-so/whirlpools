@@ -56,18 +56,6 @@ export const connection = (url: string): Rpc<SolanaRpcApi> => {
   return rpc;
 };
 
-export const socket = (): RpcSubscriptions<SolanaRpcSubscriptionsApi> => {
-  const api = createSolanaRpcSubscriptionsApi({
-    defaultCommitment: "confirmed",
-  });
-  // TODO lookup channel creators and how its done
-  const transport = createRpcSubscriptionsTransportFromChannelCreator(
-    null as unknown as RpcSubscriptionsChannelCreatorMainnet<unknown, unknown>
-  );
-  const rpc = createSubscriptionRpc({ api, transport });
-  return rpc;
-};
-
 export const getComputeUnitsForInstructions = async (
   rpc: Rpc<SolanaRpcApi>,
   instructions: IInstruction[],

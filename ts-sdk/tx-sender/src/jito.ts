@@ -1,6 +1,5 @@
-import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
-
-let cachedJitoTip: number | null = null;
+import { Address, address, lamports } from "@solana/web3.js";
+let cachedJitoTip: bigint | null = null;
 let lastFetchTime = 0;
 const CACHE_TTL = 60 * 1000; // 1 minute
 
@@ -19,7 +18,7 @@ export const recentJitoTip = async () => {
     throw new Error("Failed to fetch recent Jito tips");
   }
   const data = await response.json().then((res) => res[0]);
-  cachedJitoTip = data.landed_tips_50th_percentile * LAMPORTS_PER_SOL;
+  cachedJitoTip = lamports(data.landed_tips_50th_percentile).valueOf();
   lastFetchTime = now;
   return cachedJitoTip;
 };
@@ -39,10 +38,10 @@ const jitoTipAddresses = [
   "3AVi9Tg9Uo68tJfuvoKvqKNWKkC5wPdSSdeBnizKZ6jT",
 ];
 
-export function getJitoTipAddress(): PublicKey {
+export function getJitoTipAddress(): Address {
   // just pick a random one from the list. There are multiple addresses so that no single one
   // can cause local congestion.
-  return new PublicKey(
+  return address(
     jitoTipAddresses[Math.floor(Math.random() * jitoTipAddresses.length)]
   );
 }

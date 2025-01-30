@@ -1,27 +1,26 @@
-import { Connection } from "@solana/web3.js";
 import { DEFAULT_PRIORITIZATION } from "./functions";
-import { TransactionConfig } from "./types";
+import { TransactionConfig, ConnectionContext } from "./types";
 
 let globalConfig: {
-  connection?: Connection;
+  rpcUrl?: string;
   isTriton?: boolean;
   transactionConfig?: TransactionConfig;
 } = {};
 
-export const getConnection = (
-  connectionOrRpcUrl?: Connection | string,
+export const getConnectionContext = (
+  rpcUrl?: string,
   isTriton?: boolean
-): { connection: Connection; isTriton: boolean } => {
-  if (connectionOrRpcUrl) {
-    return { connection: connection(connectionOrRpcUrl), isTriton: !!isTriton };
+): ConnectionContext => {
+  if (rpcUrl) {
+    return { rpcUrl, isTriton: !!isTriton };
   }
-  if (!globalConfig.connection) {
+  if (!globalConfig.rpcUrl) {
     throw new Error(
       "Connection not initialized. Call init() first or provide connection parameter"
     );
   }
   return {
-    connection: globalConfig.connection,
+    rpcUrl: globalConfig.rpcUrl,
     isTriton: !!globalConfig.isTriton,
   };
 };
@@ -39,19 +38,13 @@ export const getPriorityConfig = (
 };
 
 export const setGlobalConfig = (config: {
-  connection: Connection;
+  rpcUrl: string;
   transactionConfig?: TransactionConfig;
   isTriton?: boolean;
 }) => {
   globalConfig = {
-    connection: config.connection,
+    rpcUrl: config.rpcUrl,
     isTriton: !!config.isTriton,
     transactionConfig: config.transactionConfig || DEFAULT_PRIORITIZATION,
   };
-};
-
-const connection = (connectionOrRpcUrl: Connection | string) => {
-  return connectionOrRpcUrl instanceof Connection
-    ? connectionOrRpcUrl
-    : new Connection(connectionOrRpcUrl);
 };

@@ -1,22 +1,19 @@
-import {
-  AddressLookupTableAccount,
-  Connection,
-  Keypair,
-  PublicKey,
-  TransactionInstruction,
-  VersionedTransaction,
-} from "@solana/web3.js";
-import { BaseSignerWalletAdapter } from "@solana/wallet-adapter-base";
 import { TransactionConfig } from "./types";
+import { buildTransaction, DEFAULT_PRIORITIZATION } from "./functions";
 import {
-  buildTransaction,
-  DEFAULT_PRIORITIZATION,
-  signAndSendTransaction,
-} from "./functions";
-import { getConnection, getPriorityConfig, setGlobalConfig } from "./config";
+  getConnectionContext,
+  getPriorityConfig,
+  setGlobalConfig,
+} from "./config";
+import {
+  IInstruction,
+  KeyPairSigner,
+  TransactionMessage,
+  TransactionSigner,
+} from "@solana/web3.js";
 
 export const init = (config: {
-  connection: Connection;
+  rpcUrl: string;
   transactionConfig?: TransactionConfig;
   isTriton?: boolean;
 }) => {
@@ -24,43 +21,36 @@ export const init = (config: {
 };
 
 export const buildTx = async (
-  instructions: TransactionInstruction[],
-  feePayer: PublicKey,
-  signatures?: Array<Uint8Array>,
-  lookupTables?: AddressLookupTableAccount[],
-  connectionOrRpcUrl?: Connection | string,
-  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
-): Promise<VersionedTransaction> => {
-  const connection = getConnection(connectionOrRpcUrl);
+  instructions: IInstruction[],
+  signer: TransactionSigner,
+  rpcUrl?: string,
+  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION,
+  isTriton?: boolean
+): Promise<TransactionMessage> => {
+  const connectionCtx = getConnectionContext(rpcUrl, isTriton);
   const transactionSettings = getPriorityConfig(transactionConfig);
   return buildTransaction(
     instructions,
-    feePayer,
-    connection,
+    signer,
     transactionSettings,
-    lookupTables,
-    signatures
+    connectionCtx
   );
 };
 
 export const buildAndSendTransaction = async (
-  instructions: TransactionInstruction[],
-  feePayer: PublicKey,
-  wallet: Keypair | BaseSignerWalletAdapter,
-  lookupTables?: AddressLookupTableAccount[],
-  signatures?: Array<Uint8Array>,
-  connectionOrRpcUrl?: Connection | string,
+  instructions: IInstruction[],
+  signer: KeyPairSigner,
+  rpcUrl?: string,
   transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
-): Promise<string> => {
-  const { connection, isTriton } = getConnection(connectionOrRpcUrl);
+) => {
+  const connectionCtx = getConnectionContext(rpcUrl);
   const transactionSettings = getPriorityConfig(transactionConfig);
   const tx = await buildTransaction(
     instructions,
-    feePayer,
-    { connection, isTriton },
+    signer,
     transactionSettings,
-    lookupTables,
-    signatures
+    connectionCtx
   );
-  return signAndSendTransaction(tx, wallet, connection);
+  // todo figure out the signing flow
+  console.log(tx);
 };

@@ -6,7 +6,9 @@
   },
   "dependencies": {
     "@solana-program/compute-budget": "^0.6.1",
-    "@solana/wallet-adapter-base": "^0.9.23",
-    "@solana/web3.js": "^1.98.0"
+    "@solana-program/system": "^0.6.2",
+    "@solana/compat": "^2.0.0",
+    "@solana/react": "^2.0.0",
+    "@solana/web3.js": "^2"
   }
 }

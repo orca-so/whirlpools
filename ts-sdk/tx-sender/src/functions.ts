@@ -1,171 +1,167 @@
 import {
-  AddressLookupTableAccount,
-  Connection,
-  PublicKey,
-  TransactionInstruction,
-  VersionedTransaction,
-  ComputeBudgetProgram,
-  TransactionMessage,
+  IInstruction,
+  TransactionSigner,
   Transaction,
-  Keypair,
-  SystemProgram,
+  KeyPairSigner,
+  prependTransactionMessageInstruction,
+  sendTransactionWithoutConfirmingFactory,
+  assertTransactionIsFullySigned,
+  signTransaction,
 } from "@solana/web3.js";
+
 import {
-  calculateDynamicPriorityFees,
+  connection,
+  generateTransactionMessage,
   getComputeUnitsForInstructions,
 } from "./utils";
-import { TransactionConfig } from "./types";
-import { BaseSignerWalletAdapter } from "@solana/wallet-adapter-base";
+import { ConnectionContext, TransactionConfig } from "./types";
+// TODO create flow for ui signing
+// import {
+//   useWalletAccountMessageSigner,
+//   useSignAndSendTransaction,
+// } from "@solana/react";
+
 import { getJitoTipAddress, recentJitoTip } from "./jito";
+import { calculateDynamicPriorityFees } from "./priority";
+import { getConnectionContext } from "./config";
+import { getTransferSolInstruction } from "@solana-program/system";
+import {
+  getSetComputeUnitLimitInstruction,
+  getSetComputeUnitPriceInstruction,
+} from "@solana-program/compute-budget";
 
 export const DEFAULT_PRIORITIZATION: TransactionConfig = {
   priorityFee: {
     type: "dynamic",
-    maxCapLamports: 4_000_000, // 0.004 SOL
+    maxCapLamports: BigInt(4_000_000), // 0.004 SOL
   },
   jito: {
     type: "dynamic",
-    maxCapLamports: 4_000_000, // 0.004 SOL
+    maxCapLamports: BigInt(4_000_000), // 0.004 SOL
   },
   chainId: "solana",
 };
 
 export const signAndSendTransaction = async (
-  transaction: VersionedTransaction | Transaction,
-  wallet: Keypair | BaseSignerWalletAdapter,
-  connection: Connection
-): Promise<string> => {
-  const signed =
-    wallet instanceof BaseSignerWalletAdapter
-      ? await wallet.signTransaction(transaction)
-      : (() => {
-          if (transaction instanceof VersionedTransaction) {
-            transaction.sign([wallet]);
-          } else {
-            transaction.sign(wallet);
-          }
-          return transaction;
-        })();
-  // TODO retry logic with backoff
-  // TODO blockhash expiration handling
-  return connection.sendRawTransaction(signed.serialize());
+  transaction: Transaction,
+  signer: KeyPairSigner,
+  rpcUrl: string = getConnectionContext().rpcUrl
+) => {
+  const signed = await signTransaction([signer.keyPair], transaction);
+  const rpc = connection(rpcUrl);
+  const sendTransaction = sendTransactionWithoutConfirmingFactory({ rpc });
+  assertTransactionIsFullySigned(signed);
+  await sendTransaction(signed, { commitment: "confirmed" });
+  // todo confirming factory
 };
 
 export const buildTransaction = async (
-  instructions: TransactionInstruction[],
-  payerKey: PublicKey,
-  connectionContext: {
-    connection: Connection;
-    isTriton: boolean;
-  },
+  instructions: IInstruction[],
+  signer: TransactionSigner,
   transactionConfig: TransactionConfig,
-  lookupTables?: AddressLookupTableAccount[],
-  signatures?: Array<Uint8Array>
+  connectionContext: ConnectionContext
 ) => {
-  const { connection, isTriton } = connectionContext;
-  const { blockhash: recentBlockhash } = await connection.getLatestBlockhash({
-    commitment: "confirmed",
-  });
+  const { rpcUrl, isTriton } = connectionContext;
+  const rpc = connection(rpcUrl);
+  const { value: recentBlockhash } = await rpc
+    .getLatestBlockhash({
+      commitment: "confirmed",
+    })
+    .send();
+
   const estimatedComputeUnits = await getComputeUnitsForInstructions(
-    connection,
+    rpc,
     instructions,
-    payerKey,
-    lookupTables
+    signer
   );
-  const ixs = [] as TransactionInstruction[];
-  ixs.push(...instructions);
+
+  let message = await generateTransactionMessage(
+    instructions,
+    recentBlockhash,
+    signer
+  );
 
   const { priorityFeeMicroLamports, jitoTipLamports } =
     await estimatePriorityFees(
       instructions,
-      connection,
+      rpcUrl,
       isTriton,
-      payerKey,
-      transactionConfig,
-      lookupTables
+      signer,
+      transactionConfig
     );
 
   if (priorityFeeMicroLamports > 0) {
-    const setComputeUnitPriceIx = ComputeBudgetProgram.setComputeUnitPrice({
-      microLamports: priorityFeeMicroLamports,
-    });
-    const setComputeUnitLimitIx = ComputeBudgetProgram.setComputeUnitLimit({
-      units: estimatedComputeUnits, // todo add margin ?
-    });
-    instructions.unshift(setComputeUnitPriceIx, setComputeUnitLimitIx);
+    message = prependTransactionMessageInstruction(
+      getSetComputeUnitPriceInstruction({
+        microLamports: priorityFeeMicroLamports,
+      }),
+      message
+    );
+    message = prependTransactionMessageInstruction(
+      getSetComputeUnitLimitInstruction({ units: estimatedComputeUnits }),
+      message
+    );
   }
 
   if (jitoTipLamports > 0) {
-    instructions.unshift(
-      SystemProgram.transfer({
-        fromPubkey: payerKey,
-        toPubkey: getJitoTipAddress(),
-        lamports: jitoTipLamports,
-      })
+    message = prependTransactionMessageInstruction(
+      getTransferSolInstruction({
+        source: signer,
+        destination: getJitoTipAddress(),
+        amount: jitoTipLamports,
+      }),
+      message
     );
   }
 
-  const messageV0 = new TransactionMessage({
-    payerKey,
-    recentBlockhash,
-    instructions: ixs,
-  }).compileToV0Message(lookupTables);
-
-  const tx = new VersionedTransaction(messageV0, signatures);
-  if (signatures) {
-    signatures.forEach((signature, index) => {
-      tx.addSignature(messageV0.staticAccountKeys[index], signature);
-    });
-  }
-  return tx;
+  return message;
 };
 
 export const estimatePriorityFees = async (
-  instructions: TransactionInstruction[],
-  connection: Connection,
+  instructions: IInstruction[],
+  rpcUrl: string,
   isTriton: boolean,
-  feePayer: PublicKey,
-  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION,
-  lookupTables?: AddressLookupTableAccount[]
+  feePayer: TransactionSigner,
+  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
 ): Promise<{
-  priorityFeeMicroLamports: number;
-  jitoTipLamports: number;
+  priorityFeeMicroLamports: bigint;
+  jitoTipLamports: bigint;
 }> => {
+  const rpc = connection(rpcUrl);
   const computeUnits = await getComputeUnitsForInstructions(
-    connection,
+    rpc,
     instructions,
-    feePayer,
-    lookupTables
+    feePayer
   );
-  let priorityFeeMicroLamports = 0,
-    jitoTipLamports = 0;
+
+  if (!computeUnits) throw new Error("Transaction simulation failed");
+
+  let priorityFeeMicroLamports = BigInt(0);
+  let jitoTipLamports = BigInt(0);
 
   const { priorityFee, jito, chainId } = transactionConfig;
-  if (!computeUnits) throw new Error("Tx simulation failed");
 
   if (priorityFee.type === "exact") {
-    priorityFeeMicroLamports = Math.floor(
-      (priorityFee.amountLamports * 1_000_000) / computeUnits
-    );
+    priorityFeeMicroLamports =
+      (priorityFee.amountLamports * BigInt(1_000_000)) / BigInt(computeUnits);
   } else if (priorityFee.type === "dynamic") {
     const estimatedPriorityFee = await calculateDynamicPriorityFees(
       instructions,
-      feePayer,
-      connection,
-      chainId === "solana" && isTriton,
-      lookupTables
+      rpcUrl,
+      chainId === "solana" && isTriton
+      // lookupTables todo
     );
 
     if (!priorityFee.maxCapLamports) {
       priorityFeeMicroLamports = estimatedPriorityFee;
     } else {
-      const maxCapMicroLamports = Math.floor(
-        (priorityFee.maxCapLamports * 1_000_000) / computeUnits
-      );
-      priorityFeeMicroLamports = Math.min(
-        maxCapMicroLamports,
-        estimatedPriorityFee
-      );
+      const maxCapMicroLamports =
+        (priorityFee.maxCapLamports * BigInt(1_000_000)) / BigInt(computeUnits);
+
+      priorityFeeMicroLamports =
+        maxCapMicroLamports > estimatedPriorityFee
+          ? estimatedPriorityFee
+          : maxCapMicroLamports;
     }
   }
 

@@ -85,6 +85,12 @@ export default {
           target: "_blank",
         },
         {
+          href: "https://api.orca.so/docs",
+          label: "API Reference",
+          position: "left",
+          target: "_blank",
+        },
+        {
           href: "https://github.com/orca-so/whirlpools",
           label: "GitHub",
           position: "right",

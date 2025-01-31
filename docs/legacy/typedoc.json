@@ -1,8 +1,5 @@
 {
-  "entryPoints": [
-    "../../legacy-sdk/common",
-    "../../legacy-sdk/whirlpool"
-  ],
+  "entryPoints": ["../../legacy-sdk/common", "../../legacy-sdk/whirlpool"],
   "entryPointStrategy": "packages",
   "githubPages": false,
   "skipErrorChecking": true,

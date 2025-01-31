@@ -86,7 +86,7 @@ export default {
         },
         {
           href: "https://api.orca.so/docs",
-          label: "API",
+          label: "API Reference",
           position: "left",
           target: "_blank",
         },

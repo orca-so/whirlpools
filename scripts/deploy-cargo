@@ -16,8 +16,10 @@ local_version=$(awk '
 # Get the published version from cargo
 published_version=$(cargo search $package_name | awk 'NR==1 { gsub(/"/, "", $3); print $3 }')
 
+function semver { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
+
 # Compare versions
-if [ "$local_version" = "$published_version" ]; then
+if [ "$(semver $local_version)" -le "$(semver $published_version)" ]; then
   echo "Version $local_version is already published to cargo"
   exit 0
 fi

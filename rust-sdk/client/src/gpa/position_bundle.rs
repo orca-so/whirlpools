@@ -5,8 +5,9 @@ use solana_client::rpc_filter::Memcmp;
 use solana_client::rpc_filter::RpcFilterType;
 use solana_program::pubkey::Pubkey;
 
-use super::utils::{fetch_decoded_program_accounts, DecodedAccount};
-use crate::PositionBundle;
+use crate::{generated::shared::DecodedAccount, PositionBundle};
+
+use super::fetch_decoded_program_accounts;
 
 pub const POSITION_BUNDLE_DISCRIMINATOR: &[u8] = &[129, 169, 175, 65, 185, 95, 32, 100];
 

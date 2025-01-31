@@ -6,9 +6,9 @@ use solana_client::{
 };
 use solana_sdk::pubkey::Pubkey;
 
-use crate::Position;
+use crate::{generated::shared::DecodedAccount, Position};
 
-use super::utils::{fetch_decoded_program_accounts, DecodedAccount};
+use super::fetch_decoded_program_accounts;
 
 pub const POSITION_DISCRIMINATOR: &[u8] = &[170, 188, 143, 228, 122, 64, 247, 208];
 

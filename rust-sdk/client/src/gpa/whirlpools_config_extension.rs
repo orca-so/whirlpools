@@ -6,8 +6,8 @@ use solana_client::{
 };
 use solana_sdk::pubkey::Pubkey;
 
-use crate::{generated::shared::DecodedAccount, WhirlpoolsConfigExtension};
 use super::fetch_decoded_program_accounts;
+use crate::{generated::shared::DecodedAccount, WhirlpoolsConfigExtension};
 
 pub const WHIRLPOOLS_CONFIG_EXTENSION_DISCRIMINATOR: &[u8] = &[2, 99, 215, 163, 240, 26, 153, 58];
 

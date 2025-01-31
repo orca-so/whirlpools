@@ -17,7 +17,10 @@ jobs:
         with:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
       - name: Configure Git
-        run: git remote set-url origin ssh://git@github.com/${{ github.repository }}
+        run: |
+          git remote set-url origin ssh://git@github.com/${{ github.repository }}
+          git clone --depth 1 ssh://git@github.com/${{ github.repository }} abc
+          git clone --depth 1 git@github.com/${{ github.repository }} xyz
       - name: Setup Anchor
         uses: ./.github/actions/anchor
       - name: Install dependencies

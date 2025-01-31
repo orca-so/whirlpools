@@ -24,7 +24,7 @@
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
     "test": "vitest run tests",
-    "publish": "sh ../../scripts/publish-npm",
+    "deploy": "sh ../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },
   "dependencies": {

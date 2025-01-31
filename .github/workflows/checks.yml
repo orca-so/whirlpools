@@ -61,19 +61,4 @@ jobs:
     - name: Check changesets
       run: yarn changeset status --since origin/main
 
-  try:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
-          persist-credentials: true
-      - name: Test
-        run: ssh -T git@github.com
-        env:
-          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
-      - name: XYZ
-        run: /usr/bin/git clone --depth 1 git@github.com/${{ github.repository }} xyz
-
 

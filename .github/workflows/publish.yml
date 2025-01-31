@@ -36,6 +36,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       - name: Tag Release
         run: yarn changeset tag
       - name: Push Changes

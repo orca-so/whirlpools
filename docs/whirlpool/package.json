@@ -5,7 +5,7 @@
   "scripts": {
     "build": "docusaurus build --out-dir dist",
     "start": "docusaurus start",
-    "deploy": "sh ../../scripts/deploy-docs",
+    "deploy": "../../scripts/deploy-docs",
     "clean": "rimraf dist .docusaurus"
   },
   "dependencies": {

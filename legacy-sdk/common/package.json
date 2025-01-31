@@ -23,7 +23,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "deploy": "sh ../../scripts/deploy-npm",
+    "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },
   "files": [

@@ -16,11 +16,11 @@ jobs:
         uses: actions/checkout@v4
         with:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
-      - name: Configure Git
-        run: |
-          git remote set-url origin ssh://git@github.com/${{ github.repository }}
-          git clone --depth 1 ssh://git@github.com/${{ github.repository }} abc
-          git clone --depth 1 git@github.com/${{ github.repository }} xyz
+          persist-credentials: false
+      - name: Setup SSH
+        uses: ./.github/actions/ssh
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
       - name: Setup Anchor
         uses: ./.github/actions/anchor
       - name: Install dependencies
@@ -36,6 +36,7 @@ jobs:
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       - name: Tag Release
         run: yarn changeset tag
       - name: Push Changes

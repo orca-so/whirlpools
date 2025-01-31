@@ -40,7 +40,7 @@ pub struct Swap<'info> {
     /// CHECK: checked in the handler
     pub tick_array_2: UncheckedAccount<'info>,
 
-    #[account(seeds = [b"oracle", whirlpool.key().as_ref()],bump)]
+    #[account(mut, seeds = [b"oracle", whirlpool.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle: UncheckedAccount<'info>,
 }

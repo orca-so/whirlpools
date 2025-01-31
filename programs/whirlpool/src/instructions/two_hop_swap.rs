@@ -65,11 +65,11 @@ pub struct TwoHopSwap<'info> {
     /// CHECK: checked in the handler
     pub tick_array_two_2: UncheckedAccount<'info>,
 
-    #[account(seeds = [b"oracle", whirlpool_one.key().as_ref()],bump)]
+    #[account(mut, seeds = [b"oracle", whirlpool_one.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_one: UncheckedAccount<'info>,
 
-    #[account(seeds = [b"oracle", whirlpool_two.key().as_ref()],bump)]
+    #[account(mut, seeds = [b"oracle", whirlpool_two.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_two: UncheckedAccount<'info>,
 }

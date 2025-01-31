@@ -603,6 +603,13 @@ export class WhirlpoolIx {
     return ix.closePositionWithTokenExtensionsIx(program, params);
   }
 
+  public static initializeOracleIx(
+    program: Program<Whirlpool>,
+    params: ix.InitializeOracleParams,
+  ) {
+    return ix.initializeOracleIx(program, params);
+  }
+
   // V2 instructions
   // TODO: comments
   public static collectFeesV2Ix(

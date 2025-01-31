@@ -624,6 +624,13 @@ pub mod whirlpool {
         instructions::close_position_with_token_extensions::handler(ctx)
     }
 
+    // TODO: update params if needed
+    pub fn initialize_oracle(
+        ctx: Context<InitializeOracle>,
+    ) -> Result<()> {
+        instructions::initialize_oracle::handler(ctx)
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     // V2 instructions (TokenExtensions)
     ////////////////////////////////////////////////////////////////////////////////

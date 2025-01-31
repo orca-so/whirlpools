@@ -2,11 +2,15 @@ use anchor_lang::prelude::*;
 
 use crate::math::tick_index_from_sqrt_price;
 
+use super::Whirlpool;
+
 pub const VOLATILITY_ACCUMULATOR_SCALE_FACTOR: u16 = 10_000;
 pub const MAX_REDUCTION_FACTOR: u16 = 10_000;
 
-#[account]
-#[derive(Default)]
+pub const VA_FEE_CONTROL_FACTOR_DENOM: u32 = 100_000;
+
+#[account(zero_copy(unsafe))]
+#[repr(C, packed)]
 pub struct Oracle {
     pub whirlpool: Pubkey,
     // DELEGATE ?
@@ -15,9 +19,9 @@ pub struct Oracle {
     // RESERVE to implement oracle (observation) in the future
 }
 
-// #[zero_copy]
-
-#[derive(Copy, Clone, AnchorSerialize, AnchorDeserialize, Default)]
+#[zero_copy(unsafe)]
+#[repr(C, packed)]
+#[derive(Default, Debug)]
 pub struct VolatilityAdjustedFeeConstants {
     /// Period determine high frequency trading time window.
     pub filter_period: u16,
@@ -42,7 +46,9 @@ impl VolatilityAdjustedFeeConstants {
 
 // #[zero_copy]
 
-#[derive(Copy, Clone, AnchorSerialize, AnchorDeserialize, Default)]
+#[zero_copy(unsafe)]
+#[repr(C, packed)]
+#[derive(Default, Debug)]
 pub struct VolatilityAdjustedFeeVariables {
     /// Last timestamp the variables was updated
     pub last_update_timestamp: i64,
@@ -157,7 +163,7 @@ impl Oracle {
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
-        whirlpool: Pubkey,
+        whirlpool: &Account<Whirlpool>,
         filter_period: u16,
         decay_period: u16,
         reduction_factor: u16,
@@ -165,7 +171,7 @@ impl Oracle {
         max_volatility_accumulator: u32,
         tick_group_size: u16,
     ) -> Result<()> {
-        self.whirlpool = whirlpool;
+        self.whirlpool = whirlpool.key();
 
         // TODO: check values (e.g. MAX_REDUCTION_FACTOR)
 

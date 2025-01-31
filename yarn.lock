@@ -4305,13 +4305,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/common-sdk@workspace:legacy-sdk/common"
   dependencies:
-    "@solana/spl-token": "npm:^0.4.11"
+    "@solana/spl-token": "npm:^0.4.12"
     "@solana/web3.js": "npm:^1.90.0"
     decimal.js: "npm:^10.5.0"
     tiny-invariant: "npm:^1.3.1"
     typescript: "npm:^5.7.3"
   peerDependencies:
-    "@solana/spl-token": ^0.4.11
+    "@solana/spl-token": ^0.4.12
     "@solana/web3.js": ^1.90.0
     decimal.js: ^10.5.0
   languageName: unknown
@@ -4525,7 +4525,7 @@ __metadata:
     "@coral-xyz/anchor": "npm:0.29.0"
     "@orca-so/common-sdk": "npm:*"
     "@orca-so/whirlpools-sdk": "npm:*"
-    "@solana/spl-token": "npm:0.4.11"
+    "@solana/spl-token": "npm:0.4.12"
     "@solana/web3.js": "npm:^1.90.0"
     "@types/bn.js": "npm:^5.1.0"
     "@types/prompts": "npm:^2.4.9"
@@ -4554,7 +4554,7 @@ __metadata:
     "@coral-xyz/anchor": "npm:~0.29.0"
     "@orca-so/common-sdk": "npm:*"
     "@orca-so/whirlpools-program": "npm:*"
-    "@solana/spl-token": "npm:^0.4.11"
+    "@solana/spl-token": "npm:^0.4.12"
     "@solana/web3.js": "npm:^1.90.0"
     "@types/bn.js": "npm:~5.1.6"
     "@types/jest": "npm:^29.5.14"
@@ -4564,7 +4564,7 @@ __metadata:
   peerDependencies:
     "@coral-xyz/anchor": ~0.29.0
     "@orca-so/common-sdk": ^0.6.4
-    "@solana/spl-token": ^0.4.11
+    "@solana/spl-token": ^0.4.12
     "@solana/web3.js": ^1.90.0
     decimal.js: ^10.5.0
   languageName: unknown
@@ -5604,19 +5604,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/spl-token@npm:0.4.11, @solana/spl-token@npm:^0.4.11":
-  version: 0.4.11
-  resolution: "@solana/spl-token@npm:0.4.11"
+"@solana/spl-token@npm:0.4.12, @solana/spl-token@npm:^0.4.12":
+  version: 0.4.12
+  resolution: "@solana/spl-token@npm:0.4.12"
   dependencies:
     "@solana/buffer-layout": "npm:^4.0.0"
     "@solana/buffer-layout-utils": "npm:^0.2.0"
     "@solana/spl-token-group": "npm:^0.0.7"
     "@solana/spl-token-metadata": "npm:^0.1.6"
-    "@solana/zk-sdk": "npm:0.1.0"
     buffer: "npm:^6.0.3"
   peerDependencies:
     "@solana/web3.js": ^1.95.5
-  checksum: 10c0/0609ea6e14769ce649e5398ff296d53675ee36f1eeda9adf4462942728e5160093e86b74c6061c95776255159770dfc9c36b34e0210359003d5918d149828a8a
+  checksum: 10c0/262d5b6c60db0f0a4c983b0c29fd38a2f0a2a5a947c3bc3c4951843b212663c502f5cc71f9303178933f6e36ae24303081475c93a789dd33ec9c1c1b1123f841
   languageName: node
   linkType: hard
 
@@ -5752,13 +5751,6 @@ __metadata:
   peerDependencies:
     typescript: ">=5"
   checksum: 10c0/50f955225bc1ec75e39930eba80dcdfec2aaefaadd6e82344cd3a0e73d1eda15888c097f39635982835d37771db84fd16a341ecdd3e78d9b6c682ee44859f6e5
-  languageName: node
-  linkType: hard
-
-"@solana/zk-sdk@npm:0.1.0":
-  version: 0.1.0
-  resolution: "@solana/zk-sdk@npm:0.1.0"
-  checksum: 10c0/5728c05e7d6f43f0e3ad47076b87c26af5aea64f494c0fdf6c56858b611f145fa2dc2f6812e5d2cee8ba6ba469034be5254fcccbcd28fcc591c3df028ee067ae
   languageName: node
   linkType: hard
 

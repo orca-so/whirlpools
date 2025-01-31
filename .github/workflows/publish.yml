@@ -11,6 +11,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Main Only
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: exit 1
       - name: Checkout repository
         uses: actions/checkout@v4
         with:

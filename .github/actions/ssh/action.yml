@@ -1,0 +1,26 @@
+name: 'SSH'
+description: 'Setup ssh key.'
+
+branding:
+  icon: key
+  color: green
+
+inputs:
+  ssh-key:
+    description: 'SSH key'
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - name: Add SSH key
+      env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      run: |
+          mkdir -p /home/runner/.ssh
+          ssh-keyscan github.com >> /home/runner/.ssh/known_hosts
+          echo "${{ inputs.ssh-key }}" > /home/runner/.ssh/github_actions
+          chmod 600 /home/runner/.ssh/github_actions
+          ssh-agent -a $SSH_AUTH_SOCK > /dev/null
+          ssh-add /home/runner/.ssh/github_actions
+      shell: bash

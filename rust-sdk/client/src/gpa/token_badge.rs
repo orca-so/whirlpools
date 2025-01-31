@@ -4,8 +4,8 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_filter::{Memcmp, RpcFilterType};
 use solana_program::pubkey::Pubkey;
 
-use super::utils::{fetch_decoded_program_accounts, DecodedAccount};
-use crate::TokenBadge;
+use crate::{generated::shared::DecodedAccount, TokenBadge};
+use super::fetch_decoded_program_accounts;
 
 pub const TOKEN_BADGE_DISCRIMINATOR: &[u8] = &[116, 219, 204, 229, 249, 116, 255, 150];
 

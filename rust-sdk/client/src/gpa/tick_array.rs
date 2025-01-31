@@ -4,8 +4,8 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_filter::{Memcmp, RpcFilterType};
 use solana_program::pubkey::Pubkey;
 
-use super::utils::{fetch_decoded_program_accounts, DecodedAccount};
-use crate::TickArray;
+use crate::{generated::shared::DecodedAccount, TickArray};
+use super::fetch_decoded_program_accounts;
 
 pub const TICK_ARRAY_DISCRIMINATOR: &[u8] = &[69, 97, 189, 190, 110, 7, 66, 187];
 

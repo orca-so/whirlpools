@@ -27,7 +27,10 @@
 
 img {
   display: block;
-  width: 100%;
   margin-left: auto;
   margin-right: auto;
+}
+
+.navbar__link .iconExternalLink_awgD {
+  display: none !important;
 }

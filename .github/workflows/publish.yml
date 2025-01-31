@@ -16,7 +16,8 @@ jobs:
         uses: actions/checkout@v4
         with:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
-          github-server-url: 'ssh://git@github.com'
+      - name: Configure Git
+        run: git remote set-url origin ssh://git@github.com/${{ github.repository }}
       - name: Setup Anchor
         uses: ./.github/actions/anchor
       - name: Install dependencies

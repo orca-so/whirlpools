@@ -8,8 +8,6 @@ concurrency: ${{ github.workflow }}-${{ github.ref }}
 jobs:
   publish:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - name: Main Only
         if: ${{ github.ref != 'refs/heads/main' }}
@@ -24,6 +22,8 @@ jobs:
         run: yarn install
       - name: Determine New Versions
         run: yarn changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update Cargo Version Numbers
         uses: ./.github/actions/sync
       - name: Publish Packages

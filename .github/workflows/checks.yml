@@ -60,3 +60,16 @@ jobs:
       run: yarn install
     - name: Check changesets
       run: yarn changeset status --since origin/main
+
+  try:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+      - name: Configure Git
+        run: |
+          git remote set-url origin ssh://git@github.com/${{ github.repository }}
+          /usr/bin/git clone --depth 1 ssh://git@github.com/${{ github.repository }} abc
+          /usr/bin/git clone --depth 1 git@github.com/${{ github.repository }} xyz

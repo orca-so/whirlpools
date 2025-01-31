@@ -68,8 +68,9 @@ jobs:
         uses: actions/checkout@v4
         with:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
-      - name: Configure Git
-        run: |
-          git remote set-url origin ssh://git@github.com/${{ github.repository }}
-          /usr/bin/git clone --depth 1 ssh://git@github.com/${{ github.repository }} abc
-          /usr/bin/git clone --depth 1 git@github.com/${{ github.repository }} xyz
+      - name: ABC
+        run: /usr/bin/git clone --depth 1 ssh://git@github.com/${{ github.repository }} abc
+      - name: XYZ
+        run: /usr/bin/git clone --depth 1 git@github.com/${{ github.repository }} xyz
+
+

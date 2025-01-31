@@ -72,8 +72,6 @@ jobs:
           ssh-strict: false
       - name: Test
         run: ssh -T git@github.com
-      - name: ABC
-        run: /usr/bin/git clone --depth 1 ssh://git@github.com/${{ github.repository }} abc
       - name: XYZ
         run: /usr/bin/git clone --depth 1 git@github.com/${{ github.repository }} xyz
 

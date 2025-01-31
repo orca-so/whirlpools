@@ -13,7 +13,7 @@
       "dependsOn": ["build"]
     },
     "publish": {
-      "dependsOn": ["build"]
+      "dependsOn": ["build", "^publish"]
     },
     "lint": {
       "dependsOn": ["build"]

@@ -75,6 +75,8 @@ jobs:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
       - name: Test
         run: ssh -T git@github.com
+        env:
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       - name: XYZ
         run: /usr/bin/git clone --depth 1 git@github.com/${{ github.repository }} xyz
 

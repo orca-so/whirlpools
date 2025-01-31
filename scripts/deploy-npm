@@ -1,5 +1,5 @@
-#! /bin/bash
-set -e
+#!/usr/bin/env bash
+set -eo pipefail
 
 # Get the local version from package.json
 package_name=$(jq -r ".name" package.json)

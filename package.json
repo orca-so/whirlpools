@@ -7,7 +7,7 @@
     "build": "nx run-many --target build --projects",
     "start": "nx run-many --target start --projects",
     "test": "nx run-many --target test --projects",
-    "publish": "nx run-many --target publish --projects && changeset tag",
+    "publish": "nx run-many --target publish --projects",
     "format": "nx run-many --target format --projects",
     "lint": "nx run-many --target lint --projects",
     "clean": "nx reset && nx run-many --target clean --projects"

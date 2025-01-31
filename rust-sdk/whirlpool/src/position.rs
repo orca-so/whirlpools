@@ -126,10 +126,10 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
-///     let whirlpool_address =
-///         Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
+///     let owner =
+///         Pubkey::from_str("FTEV6CnregJCqU8s8hGR3VAYCrPKHfekXLsJaKHbPBxp").unwrap();
 ///
-///     let positions = fetch_positions_for_owner(&rpc, whirlpool_address)
+///     let positions = fetch_positions_for_owner(&rpc, owner)
 ///         .await
 ///         .unwrap();
 ///

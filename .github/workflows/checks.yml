@@ -69,6 +69,7 @@ jobs:
         with:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
           persist-credentials: true
+          ssh-strict: false
       - name: ABC
         run: /usr/bin/git clone --depth 1 ssh://git@github.com/${{ github.repository }} abc
       - name: XYZ

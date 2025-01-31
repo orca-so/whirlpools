@@ -24,7 +24,7 @@
   "scripts": {
     "build": "node ./codama.js && tsup src/index.ts --format cjs,esm --dts --sourcemap",
     "test": "vitest run tests",
-    "deploy": "sh ../../scripts/deploy-npm",
+    "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist src/generated"
   },
   "peerDependencies": {

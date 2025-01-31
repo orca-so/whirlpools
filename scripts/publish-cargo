@@ -1,5 +1,5 @@
 #! /bin/bash
-set -eo pipefail
+set -e
 
 # Get the local version from Cargo.toml
 package_name=$(awk '

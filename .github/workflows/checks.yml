@@ -68,11 +68,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
-          persist-credentials: false
-      - name: Setup SSH
-        uses: ./.github/actions/ssh
-        with:
-          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          persist-credentials: true
       - name: Test
         run: ssh -T git@github.com
         env:

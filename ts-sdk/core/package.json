@@ -18,7 +18,7 @@
     "build": "wasm-pack build --release --out-dir ./dist/nodejs --target nodejs && wasm-pack build --release --out-dir ./dist/browser --target browser",
     "test": "tsc --noEmit && vitest run tests",
     "prepublishOnly": "rimraf dist/nodejs/.gitignore dist/browser/.gitignore",
-    "publish": "sh ../../scripts/publish-npm",
+    "deploy": "sh ../../scripts/deploy-npm",
     "clean": "cargo clean && rimraf dist"
   },
   "devDependencies": {

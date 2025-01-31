@@ -4,7 +4,7 @@
   "scripts": {
     "build": "cargo build",
     "test": "cargo test --lib",
-    "publish": "sh ../../scripts/publish-cargo",
+    "deploy": "sh ../../scripts/deploy-cargo",
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
     "lint": "cargo clippy && cargo fmt --check",
     "clean": "cargo clean"

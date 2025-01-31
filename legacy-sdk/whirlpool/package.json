@@ -28,7 +28,7 @@
   },
   "scripts": {
     "build": "mkdir -p ./src/artifacts && cp -f ../../target/idl/whirlpool.json ./src/artifacts/whirlpool.json && cp -f ../../target/types/whirlpool.ts ./src/artifacts/whirlpool.ts && tsc",
-    "publish": "sh ../../scripts/publish-npm",
+    "deploy": "sh ../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },
   "files": [

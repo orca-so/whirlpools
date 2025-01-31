@@ -27,7 +27,7 @@ jobs:
       - name: Update Cargo Version Numbers
         uses: ./.github/actions/sync
       - name: Publish Packages
-        run: yarn publish
+        run: yarn deploy
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}

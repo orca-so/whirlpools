@@ -1,7 +1,7 @@
 {
   "name": "@orca-so/whirlpools-lint",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.1.1",
   "type": "module",
   "scripts": {
     "format": "cd ../.. && prettier './**/*.{js,jsx,ts,tsx,json}' --write && eslint -c ts-sdk/lint/eslint.config.js --fix",

@@ -1,7 +1,7 @@
 {
   "name": "@orca-so/whirlpools-core",
   "description": "Orca's core typescript package.",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "main": "./dist/nodejs/orca_whirlpools_core_js_bindings.js",
   "types": "./dist/nodejs/orca_whirlpools_core_js_bindings.d.ts",
   "browser": "./dist/browser/orca_whirlpools_core_js_bindings.js",

@@ -1,5 +1,5 @@
-name: 'SSH'
-description: 'Setup ssh key.'
+name: 'Git SSH'
+description: 'Setup ssh key for github.'
 
 branding:
   icon: key
@@ -9,6 +9,10 @@ inputs:
   ssh-key:
     description: 'SSH key'
     required: true
+  user:
+    description: 'Git user name'
+    required: false
+    default: 'github-actions[bot]'
 
 runs:
   using: "composite"
@@ -23,4 +27,9 @@ runs:
           chmod 600 /home/runner/.ssh/github_actions
           ssh-agent -a $SSH_AUTH_SOCK > /dev/null
           ssh-add /home/runner/.ssh/github_actions
+      shell: bash
+    - name: Setup Git User
+      run: |
+        git config --global user.name "${{ inputs.user }}"
+        git config --global user.email "${{ inputs.user }}@users.noreply.github.com"
       shell: bash

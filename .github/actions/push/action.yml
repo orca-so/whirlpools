@@ -29,16 +29,12 @@ runs:
       run: |
         git config --global user.name "${{ inputs.user }}"
         git config --global user.email "${{ inputs.user }}@users.noreply.github.com"
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       shell: bash
     - name: Git Commit
       if: ${{ inputs.message != '' }}
       run: |
         git add .
         git commit -m "${{ inputs.message }}"
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       shell: bash
     - name: Push Changes
       run: |
@@ -46,6 +42,4 @@ runs:
         if [ ${{ inputs.tags }} = 'true' ]; then
           git push --tags
         fi
-      env:
-        SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       shell: bash

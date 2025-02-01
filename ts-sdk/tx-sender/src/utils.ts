@@ -1,28 +1,28 @@
 import { IInstruction } from "@solana/instructions";
 import { createSolanaRpcApi, createRpc } from "@solana/rpc";
 import {
+  AccountRole,
   Address,
   appendTransactionMessageInstructions,
   Blockhash,
+  CompilableTransactionMessage,
   createDefaultRpcTransport,
-  createRpcSubscriptionsTransportFromChannelCreator,
-  createSolanaRpcSubscriptionsApi,
-  createSubscriptionRpc,
   createTransactionMessage,
   getComputeUnitEstimateForTransactionMessageFactory,
   isWritableRole,
   pipe,
   Rpc,
-  RpcSubscriptions,
-  RpcSubscriptionsChannelCreatorMainnet,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
+  SignatureDictionary,
   SolanaRpcApi,
-  SolanaRpcSubscriptionsApi,
+  Transaction,
+  TransactionPartialSignerConfig,
   TransactionSigner,
 } from "@solana/web3.js";
 import { fromLegacyPublicKey } from "@solana/compat";
 import { PublicKey } from "./types";
+import { TransactionInstruction } from "@solana/web3.js/src/transaction";
 
 export const forceAddress = (address: Address | PublicKey) => {
   if (address instanceof PublicKey) {
@@ -56,21 +56,18 @@ export const connection = (url: string): Rpc<SolanaRpcApi> => {
   return rpc;
 };
 
-export const getComputeUnitsForInstructions = async (
+export const getComputeUnitsForTxMessage = async (
   rpc: Rpc<SolanaRpcApi>,
-  instructions: IInstruction[],
-  signer: TransactionSigner
+  txMessage: CompilableTransactionMessage
 ): Promise<number> => {
-  const { value: blockhash } = await rpc.getLatestBlockhash().send();
-  const message = generateTransactionMessage(instructions, blockhash, signer);
   const estimator = getComputeUnitEstimateForTransactionMessageFactory({
     rpc,
   });
-  const estimate = await estimator(message);
+  const estimate = await estimator(txMessage);
   return estimate;
 };
 
-export const getWritableAccounts = (ixs: IInstruction[]) => {
+export const getWritableAccounts = (ixs: readonly IInstruction[]) => {
   const writable = new Set<Address>();
   ixs.forEach((ix) => {
     if (ix.accounts) {
@@ -80,4 +77,72 @@ export const getWritableAccounts = (ixs: IInstruction[]) => {
     }
   });
   return Array.from(writable);
+};
+
+export const fromLegacyTransactionInstruction = (
+  legacyInstruction: TransactionInstruction
+): IInstruction => {
+  const data =
+    legacyInstruction.data?.byteLength > 0
+      ? Uint8Array.from(legacyInstruction.data)
+      : undefined;
+  const accounts = legacyInstruction.keys.map((accountMeta) =>
+    Object.freeze({
+      address: fromLegacyPublicKey(accountMeta.pubkey),
+      role: determineRole(accountMeta.isSigner, accountMeta.isWritable),
+    })
+  );
+  const programAddress = fromLegacyPublicKey(legacyInstruction.programId);
+  return Object.freeze({
+    ...(accounts.length ? { accounts: Object.freeze(accounts) } : null),
+    ...(data ? { data } : null),
+    programAddress,
+  });
+};
+
+const determineRole = (isSigner: boolean, isWritable: boolean): AccountRole => {
+  if (isSigner && isWritable) return AccountRole.WRITABLE_SIGNER;
+  if (isSigner) return AccountRole.READONLY_SIGNER;
+  if (isWritable) return AccountRole.WRITABLE;
+  return AccountRole.READONLY;
+};
+
+// To build transaction we need a Signer object but we dont actually need to sign anything
+export const createFeePayerSigner = (
+  feePayer: PublicKey | Address
+): {
+  address: Address;
+  signTransactions(
+    transactions: readonly Transaction[],
+    config?: TransactionPartialSignerConfig
+  ): Promise<readonly SignatureDictionary[]>;
+} => {
+  const address =
+    feePayer instanceof PublicKey ? fromLegacyPublicKey(feePayer) : feePayer;
+  return {
+    address,
+    signTransactions: async () => {
+      return Promise.all([]);
+    },
+  };
+};
+
+export const normalizeInstructions = (
+  instructions?: (IInstruction | TransactionInstruction)[]
+) => {
+  return (
+    instructions?.map((i) =>
+      i instanceof TransactionInstruction
+        ? fromLegacyTransactionInstruction(i)
+        : i
+    ) ?? []
+  );
+};
+
+export const normalizeAddresses = (addresses?: (PublicKey | Address)[]) => {
+  return (
+    addresses?.map((addr) =>
+      addr instanceof PublicKey ? fromLegacyPublicKey(addr) : addr
+    ) ?? []
+  );
 };

@@ -3,10 +3,9 @@ import { connection, getWritableAccounts } from "./utils";
 import { RecentPrioritizationFee } from "./types";
 
 export const calculateDynamicPriorityFees = async (
-  instructions: IInstruction[],
+  instructions: readonly IInstruction[],
   rpcUrl: string,
   supportsPercentile: boolean
-  // lookupTables?: AddressLookupTableAccount[] TODO add support
 ) => {
   const writableAccounts = getWritableAccounts(instructions);
   if (supportsPercentile) {

@@ -1,4 +1,3 @@
-import { DEFAULT_PRIORITIZATION } from "./functions";
 import { TransactionConfig, ConnectionContext } from "./types";
 
 let globalConfig: {
@@ -6,6 +5,18 @@ let globalConfig: {
   isTriton?: boolean;
   transactionConfig?: TransactionConfig;
 } = {};
+
+export const DEFAULT_PRIORITIZATION: TransactionConfig = {
+  priorityFee: {
+    type: "dynamic",
+    maxCapLamports: BigInt(4_000_000), // 0.004 SOL
+  },
+  jito: {
+    type: "dynamic",
+    maxCapLamports: BigInt(4_000_000), // 0.004 SOL
+  },
+  chainId: "solana",
+};
 
 export const getConnectionContext = (
   rpcUrl?: string,

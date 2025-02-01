@@ -8,14 +8,18 @@ import {
   assertTransactionIsFullySigned,
   signTransaction,
   CompilableTransactionMessage,
+  Address,
+  compressTransactionMessageUsingAddressLookupTables,
+  assertAccountDecoded,
+  assertAccountExists,
+  fetchJsonParsedAccounts,
 } from "@solana/web3.js";
-
 import {
   connection,
   generateTransactionMessage,
-  getComputeUnitsForInstructions,
+  getComputeUnitsForTxMessage,
 } from "./utils";
-import { ConnectionContext, TransactionConfig } from "./types";
+import { ConnectionContext, LookupTableData, TransactionConfig } from "./types";
 // TODO create flow for ui signing
 // import {
 //   useWalletAccountMessageSigner,
@@ -24,24 +28,12 @@ import { ConnectionContext, TransactionConfig } from "./types";
 
 import { getJitoTipAddress, recentJitoTip } from "./jito";
 import { calculateDynamicPriorityFees } from "./priority";
-import { getConnectionContext } from "./config";
+import { DEFAULT_PRIORITIZATION, getConnectionContext } from "./config";
 import { getTransferSolInstruction } from "@solana-program/system";
 import {
   getSetComputeUnitLimitInstruction,
   getSetComputeUnitPriceInstruction,
 } from "@solana-program/compute-budget";
-
-export const DEFAULT_PRIORITIZATION: TransactionConfig = {
-  priorityFee: {
-    type: "dynamic",
-    maxCapLamports: BigInt(4_000_000), // 0.004 SOL
-  },
-  jito: {
-    type: "dynamic",
-    maxCapLamports: BigInt(4_000_000), // 0.004 SOL
-  },
-  chainId: "solana",
-};
 
 export const signAndSendTransaction = async (
   transaction: Transaction,
@@ -60,7 +52,8 @@ export const buildTransaction = async (
   instructions: IInstruction[],
   signer: TransactionSigner,
   transactionConfig: TransactionConfig,
-  connectionContext: ConnectionContext
+  connectionContext: ConnectionContext,
+  lookupTableAddresses?: Address[]
 ): Promise<CompilableTransactionMessage> => {
   const { rpcUrl, isTriton } = connectionContext;
   const rpc = connection(rpcUrl);
@@ -70,26 +63,33 @@ export const buildTransaction = async (
     })
     .send();
 
-  const estimatedComputeUnits = await getComputeUnitsForInstructions(
-    rpc,
-    instructions,
-    signer
-  );
-
   let message = await generateTransactionMessage(
     instructions,
     recentBlockhash,
     signer
   );
 
-  const { priorityFeeMicroLamports, jitoTipLamports } =
-    await estimatePriorityFees(
-      instructions,
-      rpcUrl,
-      isTriton,
-      signer,
-      transactionConfig
+  if (lookupTableAddresses) {
+    const lookupTableAccounts = await fetchJsonParsedAccounts<
+      LookupTableData[]
+    >(rpc, lookupTableAddresses);
+    const tables = lookupTableAccounts.reduce(
+      (prev, account) => {
+        assertAccountDecoded(account);
+        assertAccountExists(account);
+        prev[account.address] = account.data.addresses;
+        return prev;
+      },
+      {} as { [address: Address]: Address[] }
     );
+    message = compressTransactionMessageUsingAddressLookupTables(
+      message,
+      tables
+    );
+  }
+
+  const { priorityFeeMicroLamports, jitoTipLamports, computeUnits } =
+    await estimatePriorityFees(message, rpcUrl, isTriton, transactionConfig);
 
   if (priorityFeeMicroLamports > 0) {
     message = prependTransactionMessageInstruction(
@@ -99,7 +99,7 @@ export const buildTransaction = async (
       message
     );
     message = prependTransactionMessageInstruction(
-      getSetComputeUnitLimitInstruction({ units: estimatedComputeUnits }),
+      getSetComputeUnitLimitInstruction({ units: computeUnits }),
       message
     );
   }
@@ -119,21 +119,17 @@ export const buildTransaction = async (
 };
 
 export const estimatePriorityFees = async (
-  instructions: IInstruction[],
+  txMessage: CompilableTransactionMessage,
   rpcUrl: string,
   isTriton: boolean,
-  feePayer: TransactionSigner,
   transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
 ): Promise<{
   priorityFeeMicroLamports: bigint;
   jitoTipLamports: bigint;
+  computeUnits: number;
 }> => {
   const rpc = connection(rpcUrl);
-  const computeUnits = await getComputeUnitsForInstructions(
-    rpc,
-    instructions,
-    feePayer
-  );
+  const computeUnits = await getComputeUnitsForTxMessage(rpc, txMessage);
 
   if (!computeUnits) throw new Error("Transaction simulation failed");
 
@@ -147,10 +143,9 @@ export const estimatePriorityFees = async (
       (priorityFee.amountLamports * BigInt(1_000_000)) / BigInt(computeUnits);
   } else if (priorityFee.type === "dynamic") {
     const estimatedPriorityFee = await calculateDynamicPriorityFees(
-      instructions,
+      txMessage.instructions,
       rpcUrl,
       chainId === "solana" && isTriton
-      // lookupTables todo
     );
 
     if (!priorityFee.maxCapLamports) {
@@ -175,5 +170,6 @@ export const estimatePriorityFees = async (
   return {
     jitoTipLamports,
     priorityFeeMicroLamports,
+    computeUnits,
   };
 };

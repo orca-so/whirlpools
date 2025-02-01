@@ -1,4 +1,4 @@
-import { MicroLamports, Slot } from "@solana/web3.js";
+import { Address, MicroLamports, Slot } from "@solana/web3.js";
 export { PublicKey } from "@solana/web3.js/src/publickey";
 
 type FeeSetting =
@@ -33,4 +33,8 @@ export type RecentPrioritizationFee = {
   prioritizationFee: MicroLamports;
   /** Slot in which the fee was observed */
   slot: Slot;
+};
+
+export type LookupTableData = {
+  addresses: Address[];
 };

@@ -1,11 +1,13 @@
-import { TransactionConfig } from "./types";
-import { buildTransaction, DEFAULT_PRIORITIZATION } from "./functions";
+import { PublicKey, TransactionConfig } from "./types";
+import { buildTransaction } from "./functions";
 import {
+  DEFAULT_PRIORITIZATION,
   getConnectionContext,
   getPriorityConfig,
   setGlobalConfig,
 } from "./config";
 import {
+  Address,
   addSignersToTransactionMessage,
   assertIsTransactionMessageWithBlockhashLifetime,
   assertTransactionIsFullySigned,
@@ -14,9 +16,14 @@ import {
   KeyPairSigner,
   signTransactionMessageWithSigners,
   TransactionMessage,
-  TransactionSigner,
 } from "@solana/web3.js";
-import { connection } from "./utils";
+import {
+  connection,
+  createFeePayerSigner,
+  normalizeAddresses,
+  normalizeInstructions,
+} from "./utils";
+import { TransactionInstruction } from "@solana/web3.js/src/transaction/legacy";
 
 export const init = (config: {
   rpcUrl: string;
@@ -27,44 +34,49 @@ export const init = (config: {
 };
 
 export const buildTx = async (
-  instructions: IInstruction[],
-  signer: TransactionSigner,
+  instructions: (IInstruction | TransactionInstruction)[],
+  feePayer: Address | PublicKey,
+  lookupTableAddresses?: (Address | PublicKey)[],
   rpcUrl?: string,
-  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION,
-  isTriton?: boolean
+  isTriton?: boolean,
+  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
 ): Promise<TransactionMessage> => {
-  const connectionCtx = getConnectionContext(rpcUrl, isTriton);
-  const transactionSettings = getPriorityConfig(transactionConfig);
   return buildTransaction(
-    instructions,
-    signer,
-    transactionSettings,
-    connectionCtx
+    normalizeInstructions(instructions),
+    createFeePayerSigner(feePayer),
+    getPriorityConfig(transactionConfig),
+    getConnectionContext(rpcUrl, isTriton),
+    normalizeAddresses(lookupTableAddresses)
   );
 };
 
 export const buildAndSendTransaction = async (
-  instructions: IInstruction[],
+  instructions: (IInstruction | TransactionInstruction)[],
   signer: KeyPairSigner,
+  lookupTableAddresses?: (Address | PublicKey)[],
   rpcUrl?: string,
   transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
 ) => {
   const connectionCtx = getConnectionContext(rpcUrl);
   const transactionSettings = getPriorityConfig(transactionConfig);
+
   const tx = await buildTransaction(
-    instructions,
+    normalizeInstructions(instructions),
     signer,
     transactionSettings,
-    connectionCtx
+    connectionCtx,
+    normalizeAddresses(lookupTableAddresses)
   );
+
   assertIsTransactionMessageWithBlockhashLifetime(tx);
+
   const withSigners = addSignersToTransactionMessage([signer], tx);
   const signed = await signTransactionMessageWithSigners(withSigners);
-  const rpc = connection(connectionCtx.rpcUrl);
+
   assertTransactionIsFullySigned(signed);
+
+  const rpc = connection(connectionCtx.rpcUrl);
   const encodedTransaction = getBase64EncodedWireTransaction(signed);
-  const transactionSignature = await rpc
-    .sendTransaction(encodedTransaction)
-    .send();
-  return transactionSignature;
+
+  return rpc.sendTransaction(encodedTransaction).send();
 };

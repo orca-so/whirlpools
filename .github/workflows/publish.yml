@@ -44,3 +44,4 @@ jobs:
           branch: main
           message: Publish Packages
           user: changests[bot]
+          tags: true

@@ -15,6 +15,6 @@
     "@codama/renderers-rust": "^1.0.10",
     "@orca-so/whirlpools-program": "*",
     "@orca-so/whirlpools-rust-core": "*",
-    "codama": "^1.2.1"
+    "codama": "^1.2.2"
   }
 }

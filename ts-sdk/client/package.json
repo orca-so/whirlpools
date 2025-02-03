@@ -35,7 +35,7 @@
     "@codama/renderers-js": "^1.2.0",
     "@orca-so/whirlpools-program": "*",
     "@solana/web3.js": "^2.0.0",
-    "codama": "^1.2.1",
+    "codama": "^1.2.2",
     "typescript": "^5.7.3"
   },
   "repository": {

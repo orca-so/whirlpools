@@ -4,7 +4,7 @@ let lastFetchTime = 0;
 const CACHE_TTL = 60 * 1000; // 1 minute
 
 // returns recent jito tip in lamports
-export const recentJitoTip = async () => {
+async function recentJitoTip() {
   const now = Date.now();
   if (cachedJitoTip && now - lastFetchTime < CACHE_TTL) {
     return cachedJitoTip;
@@ -21,7 +21,7 @@ export const recentJitoTip = async () => {
   cachedJitoTip = lamports(data.landed_tips_50th_percentile).valueOf();
   lastFetchTime = now;
   return cachedJitoTip;
-};
+}
 
 // should we add an argument that dictates if we should use cached value in case fetch fails ?
 
@@ -38,10 +38,12 @@ const jitoTipAddresses = [
   "3AVi9Tg9Uo68tJfuvoKvqKNWKkC5wPdSSdeBnizKZ6jT",
 ];
 
-export function getJitoTipAddress(): Address {
+function getJitoTipAddress(): Address {
   // just pick a random one from the list. There are multiple addresses so that no single one
   // can cause local congestion.
   return address(
     jitoTipAddresses[Math.floor(Math.random() * jitoTipAddresses.length)]
   );
 }
+
+export { recentJitoTip, getJitoTipAddress };

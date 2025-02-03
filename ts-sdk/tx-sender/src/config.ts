@@ -1,12 +1,18 @@
-import { TransactionConfig, ConnectionContext } from "./types";
-
 let globalConfig: {
   rpcUrl?: string;
   isTriton?: boolean;
   transactionConfig?: TransactionConfig;
 } = {};
 
-export const DEFAULT_PRIORITIZATION: TransactionConfig = {
+const init = (config: {
+  rpcUrl: string;
+  transactionConfig?: TransactionConfig;
+  isTriton?: boolean;
+}) => {
+  setGlobalConfig(config);
+};
+
+const DEFAULT_PRIORITIZATION: TransactionConfig = {
   priorityFee: {
     type: "dynamic",
     maxCapLamports: BigInt(4_000_000), // 0.004 SOL
@@ -18,7 +24,7 @@ export const DEFAULT_PRIORITIZATION: TransactionConfig = {
   chainId: "solana",
 };
 
-export const getConnectionContext = (
+const getConnectionContext = (
   rpcUrl?: string,
   isTriton?: boolean
 ): ConnectionContext => {
@@ -36,7 +42,7 @@ export const getConnectionContext = (
   };
 };
 
-export const getPriorityConfig = (
+const getPriorityConfig = (
   transactionConfig?: TransactionConfig
 ): TransactionConfig => {
   if (transactionConfig) {
@@ -48,7 +54,7 @@ export const getPriorityConfig = (
   return globalConfig.transactionConfig;
 };
 
-export const setGlobalConfig = (config: {
+const setGlobalConfig = (config: {
   rpcUrl: string;
   transactionConfig?: TransactionConfig;
   isTriton?: boolean;
@@ -58,4 +64,36 @@ export const setGlobalConfig = (config: {
     isTriton: !!config.isTriton,
     transactionConfig: config.transactionConfig || DEFAULT_PRIORITIZATION,
   };
+};
+
+type FeeSetting =
+  | {
+      type: "dynamic";
+      maxCapLamports?: bigint;
+    }
+  | {
+      type: "exact";
+      amountLamports: bigint;
+    }
+  | {
+      type: "none";
+    };
+
+type TransactionConfig = {
+  jito: FeeSetting;
+  priorityFee: FeeSetting;
+  chainId: ChainId;
+};
+
+type ChainId = "solana" | "eclipse";
+
+type ConnectionContext = { rpcUrl: string; isTriton: boolean };
+
+export {
+  init,
+  DEFAULT_PRIORITIZATION,
+  getPriorityConfig,
+  getConnectionContext,
+  type ConnectionContext,
+  type TransactionConfig,
 };

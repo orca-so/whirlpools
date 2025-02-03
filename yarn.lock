@@ -17355,6 +17355,8 @@ __metadata:
     "@solana/react": "npm:^2.0.0"
     "@solana/web3.js": "npm:^2"
     typescript: "npm:^5.7.3"
+  peerDependencies:
+    "@solana/web3.js": ^2
   languageName: unknown
   linkType: soft
 

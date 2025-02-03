@@ -1,14 +1,17 @@
 {
   "name": "tx-sender",
   "packageManager": "yarn@4.6.0",
-  "devDependencies": {
-    "typescript": "^5.7.3"
-  },
   "dependencies": {
     "@solana-program/compute-budget": "^0.6.1",
     "@solana-program/system": "^0.6.2",
     "@solana/compat": "^2.0.0",
-    "@solana/react": "^2.0.0",
+    "@solana/react": "^2.0.0"
+  },
+  "peerDependencies": {
     "@solana/web3.js": "^2"
+  },
+  "devDependencies": {
+    "@solana/web3.js": "^2",
+    "typescript": "^5.7.3"
   }
 }

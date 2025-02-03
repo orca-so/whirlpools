@@ -163,8 +163,59 @@ describe("volatility adjusted fee tests", () => {
     });
 
     console.log(tx?.meta?.logMessages);
-    console.log("swapQuote est out", swapQuote.estimatedAmountOut.toString());
-    console.log("swapQuote est tick index", swapQuote.estimatedEndTickIndex);
+    //console.log("swapQuote est out", swapQuote.estimatedAmountOut.toString());
+    //console.log("swapQuote est tick index", swapQuote.estimatedEndTickIndex);
+
+    await pool.refreshData();
+
+    const oppositeAToB = !swapQuote.aToB;
+    const oppositeSwapQuote = swapQuoteWithParams(
+      {
+        amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+        aToB: oppositeAToB,
+        otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+          tradeAmountSpecifiedIsInput,
+        ),
+        sqrtPriceLimit: oppositeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+        tickArrays: await SwapUtils.getTickArrays(
+          pool.getData().tickCurrentIndex,
+          pool.getData().tickSpacing,
+          oppositeAToB,
+          testCtx.whirlpoolCtx.program.programId,
+          pool.getAddress(),
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        ),
+        tokenAmount: swapQuote.estimatedAmountOut,
+        whirlpoolData: pool.getData(),
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+      },
+      Percentage.fromFraction(0, 100),
+    );
+
+    const oppositeSignature = await toTx(
+      testCtx.whirlpoolCtx,
+      WhirlpoolIx.swapIx(
+        testCtx.whirlpoolCtx.program,
+        SwapUtils.getSwapParamsFromQuote(
+          {
+            ...oppositeSwapQuote,
+            otherAmountThreshold: ZERO, // JUST FOR TESTING (This quote didn't consider va fee)
+          },
+          testCtx.whirlpoolCtx,
+          pool,
+          oppositeSwapQuote.aToB ? tokenAccountA : tokenAccountB,
+          oppositeSwapQuote.aToB ? tokenAccountB : tokenAccountA,
+          testCtx.provider.wallet.publicKey,
+        ),
+      ),
+    ).buildAndExecute();
+
+    const oppositeTx = await testCtx.provider.connection.getTransaction(oppositeSignature, { 
+      maxSupportedTransactionVersion: 0,
+    });
+
+    console.log(oppositeTx?.meta?.logMessages);
   });
 
 });

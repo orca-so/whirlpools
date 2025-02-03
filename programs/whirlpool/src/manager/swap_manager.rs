@@ -22,6 +22,7 @@ pub struct PostSwapUpdate {
     pub next_fee_growth_global: u128,
     pub next_reward_infos: [WhirlpoolRewardInfo; NUM_REWARDS],
     pub next_protocol_fee: u64,
+    pub next_va_fee_info: Option<VolatilityAdjustedFeeInfo>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -77,7 +78,7 @@ pub fn swap(
         whirlpool.fee_growth_global_b
     };
 
-    let mut curr_va_fee_info = va_fee_info.unwrap_or_default();
+    let mut curr_va_fee_info = va_fee_info.clone().unwrap_or_default();
     let mut curr_tick_group = TickGroup::new(
         curr_va_fee_info.constants.tick_group_size,
         a_to_b,
@@ -285,6 +286,7 @@ pub fn swap(
         next_fee_growth_global: curr_fee_growth_global_input,
         next_reward_infos,
         next_protocol_fee: curr_protocol_fee,
+        next_va_fee_info: va_fee_info.map(|_| curr_va_fee_info),
     })
 }
 

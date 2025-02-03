@@ -5,7 +5,7 @@ use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
     state::Whirlpool,
-    util::{load_va_fee_info, to_timestamp_u64, update_and_swap_whirlpool, SparseSwapTickSequenceBuilder},
+    util::{load_va_fee_info, to_timestamp_u64, update_and_swap_whirlpool, update_va_fee_info, SparseSwapTickSequenceBuilder},
 };
 
 #[derive(Accounts)]
@@ -87,6 +87,13 @@ pub fn handler(
         timestamp,
         va_fee_info,
     )?;
+
+    if let Some(va_fee_info) = &swap_update.next_va_fee_info {
+        update_va_fee_info(&ctx.accounts.oracle, va_fee_info)?;
+        msg!("Next VA fee info: {:?}", va_fee_info);
+    } else {
+        msg!("No next VA fee info");
+    }
 
     if amount_specified_is_input {
         if (a_to_b && other_amount_threshold > swap_update.amount_b)

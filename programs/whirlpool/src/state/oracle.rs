@@ -73,18 +73,17 @@ impl VolatilityAdjustedFeeVariables {
 
     pub fn update_volatility_accumulator(
         &mut self,
-        a_to_b: bool,
-        current_sqrt_price: u128,
-        target_sqrt_price: u128,
+        tick_group_index: i32,
         va_fee_constants: &VolatilityAdjustedFeeConstants,
     ) -> Result<()> {
+      /* 
         let tick_group_index = tick_group_index_from_sqrt_price(
             a_to_b,
             current_sqrt_price,
             target_sqrt_price,
             va_fee_constants.tick_group_size,
         );
-
+*/
         let index_delta = (self.tick_group_index_reference - tick_group_index).unsigned_abs();
         let volatility_accumulator = u64::from(self.volatility_reference)
             + u64::from(index_delta) * u64::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR);
@@ -99,19 +98,24 @@ impl VolatilityAdjustedFeeVariables {
 
     pub fn update_reference(
         &mut self,
-        a_to_b: bool,
-        current_sqrt_price: u128,
-        target_sqrt_price: u128,
+        tick_group_index: i32,
+        // a_to_b: bool,
+        // current_sqrt_price: u128,
+        // target_sqrt_price: u128,
         current_timestamp: i64,
         va_fee_constants: &VolatilityAdjustedFeeConstants,
     ) -> Result<()> {
+      /* 
         let tick_group_index = tick_group_index_from_sqrt_price(
-            a_to_b,
+            // TODO: reconsider edge case: price on the tick (exact)
+            true, // a_to_b,
             current_sqrt_price,
-            target_sqrt_price,
+            // TODO: reconsider edge case: price on the tick (exact)
+            current_sqrt_price,
+            // target_sqrt_price,
             va_fee_constants.tick_group_size,
         );
-
+*/
         // TODO: remove unwrap
         let elapsed = current_timestamp
             .checked_sub(self.last_update_timestamp)

@@ -5,7 +5,7 @@ use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
     state::Whirlpool,
-    util::{to_timestamp_u64, update_and_swap_whirlpool, SparseSwapTickSequenceBuilder},
+    util::{load_va_fee_info, to_timestamp_u64, update_and_swap_whirlpool, SparseSwapTickSequenceBuilder},
 };
 
 #[derive(Accounts)]
@@ -70,6 +70,13 @@ pub fn handler(
     )?;
     let mut swap_tick_sequence = builder.build()?;
 
+    let va_fee_info = load_va_fee_info(&ctx.accounts.oracle)?;
+    if let Some(va_fee_info) = &va_fee_info {
+        msg!("VA fee info found: {:?}", va_fee_info);
+    } else {
+        msg!("VA fee info not found");
+    }
+
     let swap_update = swap(
         whirlpool,
         &mut swap_tick_sequence,
@@ -78,6 +85,7 @@ pub fn handler(
         amount_specified_is_input,
         a_to_b,
         timestamp,
+        va_fee_info,
     )?;
 
     if amount_specified_is_input {

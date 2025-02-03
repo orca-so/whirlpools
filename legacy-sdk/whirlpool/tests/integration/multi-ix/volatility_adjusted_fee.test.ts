@@ -1,5 +1,5 @@
 import * as anchor from "@coral-xyz/anchor";
-import { DecimalUtil, Percentage, U64_MAX } from "@orca-so/common-sdk";
+import { DecimalUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
@@ -61,7 +61,7 @@ describe("volatility adjusted fee tests", () => {
     
     const poolTickSpacing = 64;
     const poolInitialTickIndex = 0;
-    const poolLiquidity = powBN(2, 33);
+    const poolLiquidity = powBN(2, 20);
     const tradeTokenAmount = new BN(20000);
 
     const tradeAmountSpecifiedIsInput = true;
@@ -145,7 +145,10 @@ describe("volatility adjusted fee tests", () => {
       WhirlpoolIx.swapIx(
         testCtx.whirlpoolCtx.program,
         SwapUtils.getSwapParamsFromQuote(
-          swapQuote,
+          {
+            ...swapQuote,
+            otherAmountThreshold: ZERO, // JUST FOR TESTING (This quote didn't consider va fee)
+          },
           testCtx.whirlpoolCtx,
           pool,
           swapQuote.aToB ? tokenAccountA : tokenAccountB,
@@ -160,6 +163,8 @@ describe("volatility adjusted fee tests", () => {
     });
 
     console.log(tx?.meta?.logMessages);
+    console.log("swapQuote est out", swapQuote.estimatedAmountOut.toString());
+    console.log("swapQuote est tick index", swapQuote.estimatedEndTickIndex);
   });
 
 });

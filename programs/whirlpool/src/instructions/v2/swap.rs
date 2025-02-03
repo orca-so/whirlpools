@@ -198,6 +198,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
             amount_specified_is_input,
             a_to_b,
             timestamp,
+            None, // TODO: implement
         )?;
 
         let (swap_update_amount_input, swap_update_amount_output) = if a_to_b {
@@ -254,6 +255,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
         amount_specified_is_input,
         a_to_b,
         timestamp,
+        None, // TODO: implement
     )?;
 
     let (swap_update_amount_input, swap_update_amount_output) = if a_to_b {

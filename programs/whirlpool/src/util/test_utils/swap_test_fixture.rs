@@ -212,6 +212,7 @@ impl SwapTestFixture {
             self.amount_specified_is_input,
             self.a_to_b,
             next_timestamp,
+            None,
         )
         .unwrap()
     }
@@ -229,6 +230,7 @@ impl SwapTestFixture {
             self.amount_specified_is_input,
             self.a_to_b,
             next_timestamp,
+            None,
         )
     }
 }

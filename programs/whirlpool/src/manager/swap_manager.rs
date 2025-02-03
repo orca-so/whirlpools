@@ -7,7 +7,7 @@ use crate::{
     },
     math::*,
     state::*,
-    util::SwapTickSequence,
+    util::{compute_total_fee_rate, SwapTickSequence, TickGroup, VolatilityAdjustedFeeInfo},
 };
 use anchor_lang::prelude::*;
 use std::convert::TryInto;
@@ -24,6 +24,7 @@ pub struct PostSwapUpdate {
     pub next_protocol_fee: u64,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn swap(
     whirlpool: &Whirlpool,
     swap_tick_sequence: &mut SwapTickSequence,
@@ -32,6 +33,7 @@ pub fn swap(
     amount_specified_is_input: bool,
     a_to_b: bool,
     timestamp: u64,
+    va_fee_info: Option<VolatilityAdjustedFeeInfo>,
 ) -> Result<PostSwapUpdate> {
     let adjusted_sqrt_price_limit = if sqrt_price_limit == NO_EXPLICIT_SQRT_PRICE_LIMIT {
         if a_to_b {
@@ -75,7 +77,24 @@ pub fn swap(
         whirlpool.fee_growth_global_b
     };
 
+    let mut curr_va_fee_info = va_fee_info.unwrap_or_default();
+    let mut curr_tick_group = TickGroup::new(
+        curr_va_fee_info.constants.tick_group_size,
+        a_to_b,
+        whirlpool.tick_current_index, // note:  -1 shift is acceptable
+    );
+    msg!("curr_tick_group: {:?}", curr_tick_group.tick_group_index());
+    curr_va_fee_info.variables.update_reference(
+        curr_tick_group.tick_group_index(),
+        timestamp as i64,
+        &curr_va_fee_info.constants,
+    )?;
+
+    let mut outer_iteration = 0;
+
     while amount_remaining > 0 && adjusted_sqrt_price_limit != curr_sqrt_price {
+        outer_iteration += 1;
+
         let (next_array_index, next_tick_index) = swap_tick_sequence
             .get_next_initialized_tick_index(
                 curr_tick_index,
@@ -87,109 +106,151 @@ pub fn swap(
         let (next_tick_sqrt_price, sqrt_price_target) =
             get_next_sqrt_prices(next_tick_index, adjusted_sqrt_price_limit, a_to_b);
 
-        let swap_computation = compute_swap(
-            amount_remaining,
-            fee_rate,
-            curr_liquidity,
-            curr_sqrt_price,
-            sqrt_price_target,
-            amount_specified_is_input,
-            a_to_b,
-        )?;
+        let mut inner_iteration = 0;
+        while amount_remaining > 0 {
+            //anchor_lang::solana_program::log::sol_log_compute_units();
 
-        if amount_specified_is_input {
-            amount_remaining = amount_remaining
-                .checked_sub(swap_computation.amount_in)
-                .ok_or(ErrorCode::AmountRemainingOverflow)?;
-            amount_remaining = amount_remaining
-                .checked_sub(swap_computation.fee_amount)
-                .ok_or(ErrorCode::AmountRemainingOverflow)?;
+            inner_iteration += 1;
+            //msg!("inner iteration({}/{}): remaining: {}, tick_current_index: {}", outer_iteration, inner_iteration, amount_remaining, curr_tick_index);
 
-            amount_calculated = amount_calculated
-                .checked_add(swap_computation.amount_out)
-                .ok_or(ErrorCode::AmountCalcOverflow)?;
-        } else {
-            amount_remaining = amount_remaining
-                .checked_sub(swap_computation.amount_out)
-                .ok_or(ErrorCode::AmountRemainingOverflow)?;
+            let tick_group_boundary_tick_index = curr_tick_group.tick_group_next_boundary_tick_index();
+            let (next_boundary_tick_sqrt_price, inner_sqrt_price_target) =
+                get_next_sqrt_prices(tick_group_boundary_tick_index, sqrt_price_target, a_to_b);
+            //msg!("  tick: current: {}, next: {}, boundary: {}", curr_tick_index, next_tick_index, tick_group_boundary_tick_index);
+            //msg!("  sqrt price: current: {}, next: {}, boundary: {}", curr_sqrt_price, next_tick_sqrt_price, next_boundary_tick_sqrt_price);
 
-            amount_calculated = amount_calculated
-                .checked_add(swap_computation.amount_in)
-                .ok_or(ErrorCode::AmountCalcOverflow)?;
-            amount_calculated = amount_calculated
-                .checked_add(swap_computation.fee_amount)
-                .ok_or(ErrorCode::AmountCalcOverflow)?;
-        }
+            curr_va_fee_info.variables.update_volatility_accumulator(
+                curr_tick_group.tick_group_index(),
+                &curr_va_fee_info.constants,
+            )?;
 
-        let (next_protocol_fee, next_fee_growth_global_input) = calculate_fees(
-            swap_computation.fee_amount,
-            protocol_fee_rate,
-            curr_liquidity,
-            curr_protocol_fee,
-            curr_fee_growth_global_input,
-        );
-        curr_protocol_fee = next_protocol_fee;
-        curr_fee_growth_global_input = next_fee_growth_global_input;
+            let total_fee_rate = compute_total_fee_rate(
+                fee_rate,
+                &curr_va_fee_info.constants,
+                &curr_va_fee_info.variables,
+            );
+            //msg!("  fee rate: static: {}, total: {}", fee_rate, total_fee_rate);
+            msg!("  tick: current: {}, next: {}, boundary: {}, fee rate (static): {}, fee rate (total): {}", curr_tick_index, next_tick_index, tick_group_boundary_tick_index, fee_rate, total_fee_rate);
 
-        if swap_computation.next_price == next_tick_sqrt_price {
-            let (next_tick, next_tick_initialized) = swap_tick_sequence
-                .get_tick(next_array_index, next_tick_index, tick_spacing)
-                .map_or_else(|_| (None, false), |tick| (Some(tick), tick.initialized));
+            //anchor_lang::solana_program::log::sol_log_compute_units();
+            let swap_computation = compute_swap(
+                amount_remaining,
+                total_fee_rate.try_into().unwrap(), // TODO: change data type
+                // fee_rate,
+                curr_liquidity,
+                curr_sqrt_price,
+                inner_sqrt_price_target,
+                //sqrt_price_target,
+                amount_specified_is_input,
+                a_to_b,
+            )?;
+            //anchor_lang::solana_program::log::sol_log_compute_units();
 
-            if next_tick_initialized {
-                let (fee_growth_global_a, fee_growth_global_b) = if a_to_b {
-                    (curr_fee_growth_global_input, whirlpool.fee_growth_global_b)
-                } else {
-                    (whirlpool.fee_growth_global_a, curr_fee_growth_global_input)
-                };
+            if amount_specified_is_input {
+                amount_remaining = amount_remaining
+                    .checked_sub(swap_computation.amount_in)
+                    .ok_or(ErrorCode::AmountRemainingOverflow)?;
+                amount_remaining = amount_remaining
+                    .checked_sub(swap_computation.fee_amount)
+                    .ok_or(ErrorCode::AmountRemainingOverflow)?;
 
-                let (update, next_liquidity) = calculate_update(
-                    next_tick.unwrap(),
-                    a_to_b,
-                    curr_liquidity,
-                    fee_growth_global_a,
-                    fee_growth_global_b,
-                    &next_reward_infos,
-                )?;
+                amount_calculated = amount_calculated
+                    .checked_add(swap_computation.amount_out)
+                    .ok_or(ErrorCode::AmountCalcOverflow)?;
+            } else {
+                amount_remaining = amount_remaining
+                    .checked_sub(swap_computation.amount_out)
+                    .ok_or(ErrorCode::AmountRemainingOverflow)?;
 
-                curr_liquidity = next_liquidity;
-                swap_tick_sequence.update_tick(
+                amount_calculated = amount_calculated
+                    .checked_add(swap_computation.amount_in)
+                    .ok_or(ErrorCode::AmountCalcOverflow)?;
+                amount_calculated = amount_calculated
+                    .checked_add(swap_computation.fee_amount)
+                    .ok_or(ErrorCode::AmountCalcOverflow)?;
+            }
+
+            let (next_protocol_fee, next_fee_growth_global_input) = calculate_fees(
+                swap_computation.fee_amount,
+                protocol_fee_rate,
+                curr_liquidity,
+                curr_protocol_fee,
+                curr_fee_growth_global_input,
+            );
+            curr_protocol_fee = next_protocol_fee;
+            curr_fee_growth_global_input = next_fee_growth_global_input;
+
+            if swap_computation.next_price == next_tick_sqrt_price {
+                let (next_tick, next_tick_initialized) = swap_tick_sequence
+                    .get_tick(next_array_index, next_tick_index, tick_spacing)
+                    .map_or_else(|_| (None, false), |tick| (Some(tick), tick.initialized));
+
+                if next_tick_initialized {
+                    let (fee_growth_global_a, fee_growth_global_b) = if a_to_b {
+                        (curr_fee_growth_global_input, whirlpool.fee_growth_global_b)
+                    } else {
+                        (whirlpool.fee_growth_global_a, curr_fee_growth_global_input)
+                    };
+
+                    let (update, next_liquidity) = calculate_update(
+                        next_tick.unwrap(),
+                        a_to_b,
+                        curr_liquidity,
+                        fee_growth_global_a,
+                        fee_growth_global_b,
+                        &next_reward_infos,
+                    )?;
+
+                    curr_liquidity = next_liquidity;
+                    swap_tick_sequence.update_tick(
+                        next_array_index,
+                        next_tick_index,
+                        tick_spacing,
+                        &update,
+                    )?;
+                }
+
+                let tick_offset = swap_tick_sequence.get_tick_offset(
                     next_array_index,
                     next_tick_index,
                     tick_spacing,
-                    &update,
                 )?;
+
+                // Increment to the next tick array if either condition is true:
+                //  - Price is moving left and the current tick is the start of the tick array
+                //  - Price is moving right and the current tick is the end of the tick array
+                curr_array_index = if (a_to_b && tick_offset == 0)
+                    || (!a_to_b && tick_offset == TICK_ARRAY_SIZE as isize - 1)
+                {
+                    next_array_index + 1
+                } else {
+                    next_array_index
+                };
+
+                // The get_init_tick search is inclusive of the current index in an a_to_b trade.
+                // We therefore have to shift the index by 1 to advance to the next init tick to the left.
+                curr_tick_index = if a_to_b {
+                    next_tick_index - 1
+                } else {
+                    next_tick_index
+                };
+            } else if swap_computation.next_price != curr_sqrt_price {
+                curr_tick_index = tick_index_from_sqrt_price(&swap_computation.next_price);
             }
 
-            let tick_offset = swap_tick_sequence.get_tick_offset(
-                next_array_index,
-                next_tick_index,
-                tick_spacing,
-            )?;
-
-            // Increment to the next tick array if either condition is true:
-            //  - Price is moving left and the current tick is the start of the tick array
-            //  - Price is moving right and the current tick is the end of the tick array
-            curr_array_index = if (a_to_b && tick_offset == 0)
-                || (!a_to_b && tick_offset == TICK_ARRAY_SIZE as isize - 1)
-            {
-                next_array_index + 1
-            } else {
-                next_array_index
-            };
-
-            // The get_init_tick search is inclusive of the current index in an a_to_b trade.
-            // We therefore have to shift the index by 1 to advance to the next init tick to the left.
-            curr_tick_index = if a_to_b {
-                next_tick_index - 1
-            } else {
-                next_tick_index
-            };
-        } else if swap_computation.next_price != curr_sqrt_price {
-            curr_tick_index = tick_index_from_sqrt_price(&swap_computation.next_price);
+            curr_sqrt_price = swap_computation.next_price;
+            
+            anchor_lang::solana_program::log::sol_log_compute_units();
+            if curr_sqrt_price == inner_sqrt_price_target {
+                msg!("  advance tick_group");
+                curr_tick_group.next();
+            }
+            if curr_sqrt_price == sqrt_price_target {
+                msg!("  break inner iteration");
+                break;
+            }
+            //anchor_lang::solana_program::log::sol_log_compute_units();
         }
-
-        curr_sqrt_price = swap_computation.next_price;
     }
 
     // Reject partial fills if no explicit sqrt price limit is set and trade is exact out mode

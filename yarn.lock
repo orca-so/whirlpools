@@ -4313,7 +4313,6 @@ __metadata:
   peerDependencies:
     "@solana/spl-token": ^0.4.12
     "@solana/web3.js": ^1.90.0
-    decimal.js: ^10.5.0
   languageName: unknown
   linkType: soft
 
@@ -4563,10 +4562,8 @@ __metadata:
     typescript: "npm:^5.7.3"
   peerDependencies:
     "@coral-xyz/anchor": ~0.29.0
-    "@orca-so/common-sdk": ^0.6.4
     "@solana/spl-token": ^0.4.12
     "@solana/web3.js": ^1.90.0
-    decimal.js: ^10.5.0
   languageName: unknown
   linkType: soft
 

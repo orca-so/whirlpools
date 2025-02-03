@@ -20,6 +20,7 @@ jobs:
         uses: ./.github/actions/ssh
         with:
           ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          user: changests[bot]
       - name: Setup Anchor
         uses: ./.github/actions/anchor
       - name: Install dependencies
@@ -30,6 +31,8 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Update Cargo Version Numbers
         uses: ./.github/actions/sync
+      - name: Git Commit
+        run: git add . && git commit -m "Publish Packages"
       - name: Publish Packages
         run: yarn deploy
         env:
@@ -38,9 +41,5 @@ jobs:
           SSH_AUTH_SOCK: /tmp/ssh_agent.sock
       - name: Tag Release
         run: yarn changeset tag
-      - name: Push Changes
-        uses: ./.github/actions/push
-        with:
-          branch: main
-          message: Publish Packages
-          user: changests[bot]
+      - name: Git Push
+        run: git push origin main && git push --tags

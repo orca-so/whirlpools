@@ -157,17 +157,6 @@ pub fn update_va_fee_info<'info>(
     Ok(())
 }
 
-
-pub trait VolatilityAdjustedFeeManagerType {
-  fn update_volatility_accumulator(&mut self) -> Result<()>;
-  fn get_total_fee_rate(&self) -> u32;
-  fn get_sqrt_price_boundary(&self, sqrt_price: u128) -> u128;
-  fn advance_tick_group(&mut self);
-  fn get_next_va_fee_info(&self) -> Option<VolatilityAdjustedFeeInfo>;
-}
-
-
-
 pub enum FeeRateManager {
   VolatilityAdjusted {
     a_to_b: bool,
@@ -234,6 +223,23 @@ impl FeeRateManager {
     }
   }
 
+  pub fn advance_tick_group(&mut self) {
+    match self {
+      Self::Static {
+        ..
+      } => {
+        // do nothing
+      }
+      Self::VolatilityAdjusted {
+        a_to_b,
+        tick_group_index,
+        ..
+      } => {
+        *tick_group_index += if *a_to_b { -1 } else { 1 };
+      },
+    }
+  }
+
   pub fn get_total_fee_rate(&self) -> u32 {
     match self {
       Self::Static {
@@ -284,23 +290,6 @@ impl FeeRateManager {
         } else {
           sqrt_price.min(boundary_sqrt_price)
         }
-      },
-    }
-  }
-
-  pub fn advance_tick_group(&mut self) {
-    match self {
-      Self::Static {
-        ..
-      } => {
-        // do nothing
-      }
-      Self::VolatilityAdjusted {
-        a_to_b,
-        tick_group_index,
-        ..
-      } => {
-        *tick_group_index += if *a_to_b { -1 } else { 1 };
       },
     }
   }

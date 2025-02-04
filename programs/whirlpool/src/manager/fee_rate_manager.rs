@@ -155,7 +155,7 @@ impl FeeRateManager {
     }
   }
 
-  pub fn get_next_va_fee_info(&self) -> Option<AdaptiveFeeInfo> {
+  pub fn get_next_adaptive_fee_info(&self) -> Option<AdaptiveFeeInfo> {
     match self {
       Self::Static {
         ..

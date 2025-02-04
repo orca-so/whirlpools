@@ -70,11 +70,11 @@ pub fn handler(
     )?;
     let mut swap_tick_sequence = builder.build()?;
 
-    let va_fee_info = load_adaptive_fee_info(&ctx.accounts.oracle)?;
-    if let Some(va_fee_info) = &va_fee_info {
-        msg!("VA fee info found: {:?}", va_fee_info);
+    let adaptive_fee_info = load_adaptive_fee_info(&ctx.accounts.oracle)?;
+    if let Some(adaptive_fee_info) = &adaptive_fee_info {
+        msg!("Adaptive fee info found: {:?}", adaptive_fee_info);
     } else {
-        msg!("VA fee info not found");
+        msg!("Adaptive fee info not found");
     }
 
     let swap_update = swap(
@@ -85,14 +85,14 @@ pub fn handler(
         amount_specified_is_input,
         a_to_b,
         timestamp,
-        va_fee_info,
+        adaptive_fee_info,
     )?;
 
-    if let Some(va_fee_info) = &swap_update.next_va_fee_info {
-        update_adaptive_fee_info(&ctx.accounts.oracle, va_fee_info)?;
-        msg!("Next VA fee info: {:?}", va_fee_info);
+    if let Some(adaptive_fee_info) = &swap_update.next_adaptive_fee_info {
+        update_adaptive_fee_info(&ctx.accounts.oracle, adaptive_fee_info)?;
+        msg!("Next Adaptive fee info: {:?}", adaptive_fee_info);
     } else {
-        msg!("No next VA fee info");
+        msg!("No next Adaptive fee info");
     }
 
     if amount_specified_is_input {

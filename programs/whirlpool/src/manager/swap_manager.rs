@@ -23,7 +23,7 @@ pub struct PostSwapUpdate {
     pub next_fee_growth_global: u128,
     pub next_reward_infos: [WhirlpoolRewardInfo; NUM_REWARDS],
     pub next_protocol_fee: u64,
-    pub next_va_fee_info: Option<AdaptiveFeeInfo>,
+    pub next_adaptive_fee_info: Option<AdaptiveFeeInfo>,
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -258,7 +258,7 @@ pub fn swap(
         next_fee_growth_global: curr_fee_growth_global_input,
         next_reward_infos,
         next_protocol_fee: curr_protocol_fee,
-        next_va_fee_info: fee_rate_manager.get_next_va_fee_info(),
+        next_adaptive_fee_info: fee_rate_manager.get_next_adaptive_fee_info(),
     })
 }
 

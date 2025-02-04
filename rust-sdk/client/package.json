@@ -11,7 +11,7 @@
     "clean": "cargo clean"
   },
   "devDependencies": {
-    "@codama/nodes-from-anchor": "^1.1.2",
+    "@codama/nodes-from-anchor": "^1.1.4",
     "@codama/renderers-rust": "^1.0.12",
     "@orca-so/whirlpools-program": "*",
     "@orca-so/whirlpools-rust-core": "*",

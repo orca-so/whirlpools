@@ -103,41 +103,34 @@ pub fn swap(
         while amount_remaining > 0 {
             //anchor_lang::solana_program::log::sol_log_compute_units();
 
-            //msg!("inner iteration({}/{}): remaining: {}, tick_current_index: {}", outer_iteration, inner_iteration, amount_remaining, curr_tick_index);
-
             let (inner_sqrt_price_target, total_fee_rate) =
             if let Some(curr_tick_group) = &mut curr_tick_group {
                 curr_tick_group.update_volatility_accumulator()?;
 
-                let tick_group_boundary_tick_index = curr_tick_group.tick_group_next_boundary_tick_index();
-                let (_, bounded_sqrt_price_target) =
-                    get_next_sqrt_prices(tick_group_boundary_tick_index, sqrt_price_target, a_to_b);
-
                 let total_fee_rate = curr_tick_group.compute_total_fee_rate();
+
+                let (_, bounded_sqrt_price_target) =
+                    get_next_sqrt_prices(
+                        curr_tick_group.tick_group_next_boundary_tick_index(),
+                        sqrt_price_target, a_to_b
+                    );
 
                 (bounded_sqrt_price_target, total_fee_rate)
             } else {
                 (sqrt_price_target, fee_rate as u32)
             };
-            //msg!("  tick: current: {}, next: {}, boundary: {}", curr_tick_index, next_tick_index, tick_group_boundary_tick_index);
-            //msg!("  sqrt price: current: {}, next: {}, boundary: {}", curr_sqrt_price, next_tick_sqrt_price, next_boundary_tick_sqrt_price);
 
-            //msg!("  fee rate: static: {}, total: {}", fee_rate, total_fee_rate);
             msg!("  tick: current: {}, next: {}, fee rate (static): {}, fee rate (total): {}", curr_tick_index, next_tick_index, fee_rate, total_fee_rate);
 
-            //anchor_lang::solana_program::log::sol_log_compute_units();
             let swap_computation = compute_swap(
                 amount_remaining,
                 total_fee_rate.try_into().unwrap(), // TODO: change data type
-                // fee_rate,
                 curr_liquidity,
                 curr_sqrt_price,
                 inner_sqrt_price_target,
-                //sqrt_price_target,
                 amount_specified_is_input,
                 a_to_b,
             )?;
-            //anchor_lang::solana_program::log::sol_log_compute_units();
 
             if amount_specified_is_input {
                 amount_remaining = amount_remaining

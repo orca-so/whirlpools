@@ -188,10 +188,6 @@ impl TickGroup {
     }
   }
 
-  pub fn tick_group_index(&self) -> i32 {
-    self.tick_group_index
-  }
-
   pub fn tick_group_next_boundary_tick_index(&self) -> i32 {
     if self.a_to_b {
       self.tick_group_index * self.va_fee_constants.tick_group_size as i32
@@ -202,7 +198,7 @@ impl TickGroup {
 
   pub fn update_volatility_accumulator(&mut self) -> Result<()> {
     self.va_fee_variables.update_volatility_accumulator(
-      self.tick_group_index(),
+      self.tick_group_index,
       &self.va_fee_constants,
     )
   }

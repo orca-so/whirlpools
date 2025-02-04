@@ -29,7 +29,7 @@ pub fn handler(ctx: Context<InitializeOracle>) -> Result<()> {
     let filter_period = 30;
     let decay_period = 600;
     let reduction_factor = 500;
-    let va_fee_control_factor = 4_000;
+    let adaptive_fee_control_factor = 4_000;
     let max_volatility_accumulator = 350_000;
 
     // TODO: splash pool should use more granular group size
@@ -40,7 +40,7 @@ pub fn handler(ctx: Context<InitializeOracle>) -> Result<()> {
       filter_period,
       decay_period,
       reduction_factor,
-      va_fee_control_factor,
+      adaptive_fee_control_factor,
       max_volatility_accumulator,
       tick_group_size,
     )

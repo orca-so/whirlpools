@@ -7,31 +7,31 @@ use super::Whirlpool;
 pub const VOLATILITY_ACCUMULATOR_SCALE_FACTOR: u16 = 10_000;
 pub const MAX_REDUCTION_FACTOR: u16 = 10_000;
 
-pub const VA_FEE_CONTROL_FACTOR_DENOM: u32 = 100_000;
+pub const ADAPTIVE_FEE_CONTROL_FACTOR_DENOM: u32 = 100_000;
 
 #[account(zero_copy(unsafe))]
 #[repr(C, packed)]
 pub struct Oracle {
     pub whirlpool: Pubkey,
     // DELEGATE ?
-    pub va_fee_constants: VolatilityAdjustedFeeConstants,
-    pub va_fee_variables: VolatilityAdjustedFeeVariables,
+    pub adaptive_fee_constants: AdaptiveFeeConstants,
+    pub adaptive_fee_variables: AdaptiveFeeVariables,
     // RESERVE to implement oracle (observation) in the future
 }
 
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
 #[derive(Default, Debug)]
-pub struct VolatilityAdjustedFeeConstants {
+pub struct AdaptiveFeeConstants {
     /// Period determine high frequency trading time window.
     pub filter_period: u16,
     /// Period determine when the volatile fee start decrease.
     pub decay_period: u16,
-    /// Volatility adjusted fee rate decrement rate.
+    /// Adaptive fee rate decrement rate.
     pub reduction_factor: u16,
-    /// Used to scale the volatility adjusted fee component.
-    pub va_fee_control_factor: u32,
-    /// Maximum number of ticks crossed can be accumulated. Used to cap volatility adjusted fee rate.
+    /// Used to scale the adaptive fee component.
+    pub adaptive_fee_control_factor: u32,
+    /// Maximum number of ticks crossed can be accumulated. Used to cap adaptive fee rate.
     pub max_volatility_accumulator: u32,
 
     /// tick_group = floor(tick_index / tick_group_size)
@@ -40,7 +40,7 @@ pub struct VolatilityAdjustedFeeConstants {
     // Padding for bytemuck safe alignment
 }
 
-impl VolatilityAdjustedFeeConstants {
+impl AdaptiveFeeConstants {
     pub const LEN: usize = 2 + 2 + 2 + 4 + 4 + 2;
 }
 
@@ -49,7 +49,7 @@ impl VolatilityAdjustedFeeConstants {
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
 #[derive(Default, Debug)]
-pub struct VolatilityAdjustedFeeVariables {
+pub struct AdaptiveFeeVariables {
     /// Last timestamp the variables was updated
     pub last_update_timestamp: i64,
 
@@ -68,29 +68,21 @@ pub struct VolatilityAdjustedFeeVariables {
     // Padding for bytemuck safe alignment
 }
 
-impl VolatilityAdjustedFeeVariables {
+impl AdaptiveFeeVariables {
     pub const LEN: usize = 4 + 4 + 4 + 8;
 
     pub fn update_volatility_accumulator(
         &mut self,
         tick_group_index: i32,
-        va_fee_constants: &VolatilityAdjustedFeeConstants,
+        adaptive_fee_constants: &AdaptiveFeeConstants,
     ) -> Result<()> {
-      /* 
-        let tick_group_index = tick_group_index_from_sqrt_price(
-            a_to_b,
-            current_sqrt_price,
-            target_sqrt_price,
-            va_fee_constants.tick_group_size,
-        );
-*/
         let index_delta = (self.tick_group_index_reference - tick_group_index).unsigned_abs();
         let volatility_accumulator = u64::from(self.volatility_reference)
             + u64::from(index_delta) * u64::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR);
 
         self.volatility_accumulator = std::cmp::min(
             volatility_accumulator,
-            u64::from(va_fee_constants.max_volatility_accumulator),
+            u64::from(adaptive_fee_constants.max_volatility_accumulator),
         ) as u32;
 
         Ok(())
@@ -99,36 +91,22 @@ impl VolatilityAdjustedFeeVariables {
     pub fn update_reference(
         &mut self,
         tick_group_index: i32,
-        // a_to_b: bool,
-        // current_sqrt_price: u128,
-        // target_sqrt_price: u128,
         current_timestamp: i64,
-        va_fee_constants: &VolatilityAdjustedFeeConstants,
+        adaptive_fee_constants: &AdaptiveFeeConstants,
     ) {
-      /* 
-        let tick_group_index = tick_group_index_from_sqrt_price(
-            // TODO: reconsider edge case: price on the tick (exact)
-            true, // a_to_b,
-            current_sqrt_price,
-            // TODO: reconsider edge case: price on the tick (exact)
-            current_sqrt_price,
-            // target_sqrt_price,
-            va_fee_constants.tick_group_size,
-        );
-*/
         // TODO: remove unwrap
         let elapsed = current_timestamp
             .checked_sub(self.last_update_timestamp)
             .unwrap();
 
-        if elapsed < va_fee_constants.filter_period as i64 {
+        if elapsed < adaptive_fee_constants.filter_period as i64 {
             // high frequency trade
             // no change
-        } else if elapsed < va_fee_constants.decay_period as i64 {
+        } else if elapsed < adaptive_fee_constants.decay_period as i64 {
             // NOT high frequency trade
             self.tick_group_index_reference = tick_group_index;
             self.volatility_reference = (u64::from(self.volatility_accumulator)
-                * u64::from(va_fee_constants.reduction_factor)
+                * u64::from(adaptive_fee_constants.reduction_factor)
                 / u64::from(MAX_REDUCTION_FACTOR)) as u32;
         } else {
             // Out of decay time window
@@ -140,26 +118,10 @@ impl VolatilityAdjustedFeeVariables {
     }
 }
 
-fn tick_group_index_from_sqrt_price(
-    a_to_b: bool,
-    current_sqrt_price: u128,
-    target_sqrt_price: u128,
-    tick_group_size: u16,
-) -> i32 {
-    let tick_index = tick_index_from_sqrt_price(if a_to_b {
-        &target_sqrt_price
-    } else {
-        &current_sqrt_price
-    });
-
-    // TODO: remove float operation
-    (tick_index as f64 / tick_group_size as f64).floor() as i32
-}
-
 impl Oracle {
     // TODO: add reserve for observations
     pub const LEN: usize =
-        8 + 32 + VolatilityAdjustedFeeConstants::LEN + VolatilityAdjustedFeeVariables::LEN;
+        8 + 32 + AdaptiveFeeConstants::LEN + AdaptiveFeeVariables::LEN;
 
     // TODO: simplify initialization, and use set_va_fee_constants instead
     #[allow(clippy::too_many_arguments)]
@@ -169,7 +131,7 @@ impl Oracle {
         filter_period: u16,
         decay_period: u16,
         reduction_factor: u16,
-        va_fee_control_factor: u32,
+        adaptive_fee_control_factor: u32,
         max_volatility_accumulator: u32,
         tick_group_size: u16,
     ) -> Result<()> {
@@ -177,15 +139,15 @@ impl Oracle {
 
         // TODO: check values (e.g. MAX_REDUCTION_FACTOR)
 
-        self.va_fee_constants = VolatilityAdjustedFeeConstants {
+        self.adaptive_fee_constants = AdaptiveFeeConstants {
             filter_period,
             decay_period,
             reduction_factor,
-            va_fee_control_factor,
+            adaptive_fee_control_factor,
             max_volatility_accumulator,
             tick_group_size,
         };
-        self.va_fee_variables = VolatilityAdjustedFeeVariables {
+        self.adaptive_fee_variables = AdaptiveFeeVariables {
             ..Default::default()
         };
         Ok(())

@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::state::{Oracle, VolatilityAdjustedFeeConstants, VolatilityAdjustedFeeVariables, Whirlpool, VA_FEE_CONTROL_FACTOR_DENOM, VOLATILITY_ACCUMULATOR_SCALE_FACTOR};
+use crate::{math::sqrt_price_from_tick_index, state::{Oracle, VolatilityAdjustedFeeConstants, VolatilityAdjustedFeeVariables, Whirlpool, MAX_TICK_INDEX, MIN_TICK_INDEX, VA_FEE_CONTROL_FACTOR_DENOM, VOLATILITY_ACCUMULATOR_SCALE_FACTOR}};
 use std::{
   cell::{Ref, RefMut},
 };
@@ -157,68 +157,171 @@ pub fn update_va_fee_info<'info>(
     Ok(())
 }
 
-pub struct TickGroup {
-  a_to_b: bool,
-  tick_group_index: i32,
-  static_fee_rate: u16,
-  va_fee_constants: VolatilityAdjustedFeeConstants,
-  va_fee_variables: VolatilityAdjustedFeeVariables,
+
+pub trait VolatilityAdjustedFeeManagerType {
+  fn update_volatility_accumulator(&mut self) -> Result<()>;
+  fn get_total_fee_rate(&self) -> u32;
+  fn get_sqrt_price_boundary(&self, sqrt_price: u128) -> u128;
+  fn advance_tick_group(&mut self);
+  fn get_next_va_fee_info(&self) -> Option<VolatilityAdjustedFeeInfo>;
 }
 
-impl TickGroup {
+
+
+pub enum FeeRateManager {
+  VolatilityAdjusted {
+    a_to_b: bool,
+    tick_group_index: i32,
+    static_fee_rate: u16,
+    va_fee_constants: VolatilityAdjustedFeeConstants,
+    va_fee_variables: VolatilityAdjustedFeeVariables,  
+  },
+  Static {
+    static_fee_rate: u16,
+  },
+}
+
+impl FeeRateManager {
   pub fn new(
     a_to_b: bool,
     current_tick_index: i32,
     timestamp: i64,
     static_fee_rate: u16,
-    va_fee_info: VolatilityAdjustedFeeInfo,
+    va_fee_info: Option<VolatilityAdjustedFeeInfo>,
   ) -> Self {
-    let tick_group_index = div_floor(current_tick_index, va_fee_info.constants.tick_group_size as i32);
-    let va_fee_constants = va_fee_info.constants;
-    let mut va_fee_variables = va_fee_info.variables;
-
-    va_fee_variables.update_reference(tick_group_index, timestamp, &va_fee_constants);
-
-    Self {
-      a_to_b,
-      tick_group_index,
-      static_fee_rate,
-      va_fee_constants,
-      va_fee_variables,
-    }
-  }
-
-  pub fn tick_group_next_boundary_tick_index(&self) -> i32 {
-    if self.a_to_b {
-      self.tick_group_index * self.va_fee_constants.tick_group_size as i32
-    } else {
-      self.tick_group_index * self.va_fee_constants.tick_group_size as i32 + self.va_fee_constants.tick_group_size as i32
+    match va_fee_info {
+      None => {
+        Self::Static {
+          static_fee_rate,
+        }
+      }
+      Some(va_fee_info) => {
+        let tick_group_index = div_floor(current_tick_index, va_fee_info.constants.tick_group_size as i32);
+        let va_fee_constants = va_fee_info.constants;
+        let mut va_fee_variables = va_fee_info.variables;
+    
+        va_fee_variables.update_reference(tick_group_index, timestamp, &va_fee_constants);
+    
+        Self::VolatilityAdjusted {
+          a_to_b,
+          tick_group_index,
+          static_fee_rate,
+          va_fee_constants,
+          va_fee_variables,
+        }
+      }
     }
   }
 
   pub fn update_volatility_accumulator(&mut self) -> Result<()> {
-    self.va_fee_variables.update_volatility_accumulator(
-      self.tick_group_index,
-      &self.va_fee_constants,
-    )
+    match self {
+      Self::Static {
+        ..
+      } => {
+        Ok(())
+      }
+      Self::VolatilityAdjusted {
+        tick_group_index,
+        va_fee_constants,
+        va_fee_variables,
+        ..
+      } => {
+        va_fee_variables.update_volatility_accumulator(
+          *tick_group_index,
+          va_fee_constants,
+        )
+      },
+    }
   }
 
-  pub fn compute_total_fee_rate(&self) -> u32 {
-    compute_total_fee_rate(
-      self.static_fee_rate,
-      &self.va_fee_constants,
-      &self.va_fee_variables,
-    )
+  pub fn get_total_fee_rate(&self) -> u32 {
+    match self {
+      Self::Static {
+        static_fee_rate,
+      } => {
+        *static_fee_rate as u32
+      }
+      Self::VolatilityAdjusted {
+        static_fee_rate,
+        va_fee_constants,
+        va_fee_variables,
+        ..
+      } => {
+        compute_total_fee_rate(
+          *static_fee_rate,
+          va_fee_constants,
+          va_fee_variables,
+        )
+      },
+    }
   }
 
-  pub fn next(&mut self) {
-    self.tick_group_index += if self.a_to_b { -1 } else { 1 };
+  pub fn get_bounded_sqrt_price_target(&self, sqrt_price: u128) -> u128 {
+    match self {
+      Self::Static {
+        ..
+      } => {
+        sqrt_price
+      }
+      Self::VolatilityAdjusted {
+        a_to_b,
+        tick_group_index,
+        va_fee_constants,
+        ..
+      } => {
+        let boundary_tick_index = if *a_to_b {
+          *tick_group_index * va_fee_constants.tick_group_size as i32
+        } else {
+          *tick_group_index * va_fee_constants.tick_group_size as i32 + va_fee_constants.tick_group_size as i32
+        };
+
+        let boundary_sqrt_price = sqrt_price_from_tick_index(
+          boundary_tick_index.clamp(MIN_TICK_INDEX, MAX_TICK_INDEX)
+        );
+
+        if *a_to_b {
+          sqrt_price.max(boundary_sqrt_price)
+        } else {
+          sqrt_price.min(boundary_sqrt_price)
+        }
+      },
+    }
   }
 
-  pub fn next_va_fee_info(&self) -> VolatilityAdjustedFeeInfo {
-    VolatilityAdjustedFeeInfo {
-      constants: self.va_fee_constants,
-      variables: self.va_fee_variables,
+  pub fn advance_tick_group(&mut self) {
+    match self {
+      Self::Static {
+        ..
+      } => {
+        // do nothing
+      }
+      Self::VolatilityAdjusted {
+        a_to_b,
+        tick_group_index,
+        ..
+      } => {
+        *tick_group_index += if *a_to_b { -1 } else { 1 };
+      },
+    }
+  }
+
+  pub fn get_next_va_fee_info(&self) -> Option<VolatilityAdjustedFeeInfo> {
+    match self {
+      Self::Static {
+        ..
+      } => {
+        None
+      }
+      Self::VolatilityAdjusted {
+        va_fee_constants,
+        va_fee_variables,
+        ..
+      } => {
+        Some(VolatilityAdjustedFeeInfo {
+          constants: *va_fee_constants,
+          variables: *va_fee_variables,
+        })
+      },
     }
   }
 }

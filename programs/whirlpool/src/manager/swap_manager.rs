@@ -7,7 +7,7 @@ use crate::{
     },
     math::*,
     state::*,
-    util::{compute_total_fee_rate, SwapTickSequence, TickGroup, VolatilityAdjustedFeeInfo},
+    util::{compute_total_fee_rate, SwapTickSequence, FeeRateManager, VolatilityAdjustedFeeInfo},
 };
 use anchor_lang::prelude::*;
 use std::convert::TryInto;
@@ -78,15 +78,13 @@ pub fn swap(
         whirlpool.fee_growth_global_b
     };
 
-    let mut curr_tick_group = va_fee_info.map(|va_fee_info| {
-        TickGroup::new(
-            a_to_b,
-            whirlpool.tick_current_index, // note:  -1 shift is acceptable
-            timestamp as i64,
-            fee_rate,
-            va_fee_info
-        )
-    });
+    let mut fee_rate_manager = FeeRateManager::new(
+        a_to_b,
+        whirlpool.tick_current_index, // note:  -1 shift is acceptable
+        timestamp as i64,
+        fee_rate,
+        va_fee_info
+    );
 
     while amount_remaining > 0 && adjusted_sqrt_price_limit != curr_sqrt_price {
         let (next_array_index, next_tick_index) = swap_tick_sequence
@@ -103,31 +101,20 @@ pub fn swap(
         while amount_remaining > 0 {
             //anchor_lang::solana_program::log::sol_log_compute_units();
 
-            let (inner_sqrt_price_target, total_fee_rate) =
-            if let Some(curr_tick_group) = &mut curr_tick_group {
-                curr_tick_group.update_volatility_accumulator()?;
+            fee_rate_manager.update_volatility_accumulator()?;
 
-                let total_fee_rate = curr_tick_group.compute_total_fee_rate();
-
-                let (_, bounded_sqrt_price_target) =
-                    get_next_sqrt_prices(
-                        curr_tick_group.tick_group_next_boundary_tick_index(),
-                        sqrt_price_target, a_to_b
-                    );
-
-                (bounded_sqrt_price_target, total_fee_rate)
-            } else {
-                (sqrt_price_target, fee_rate as u32)
-            };
+            let total_fee_rate = fee_rate_manager.get_total_fee_rate();
+            let bounded_sqrt_price_target = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price_target);
 
             msg!("  tick: current: {}, next: {}, fee rate (static): {}, fee rate (total): {}", curr_tick_index, next_tick_index, fee_rate, total_fee_rate);
+            msg!("  sqrt price: current: {}, bounded target: {}, target: {}", curr_sqrt_price, bounded_sqrt_price_target, sqrt_price_target);
 
             let swap_computation = compute_swap(
                 amount_remaining,
                 total_fee_rate.try_into().unwrap(), // TODO: change data type
                 curr_liquidity,
                 curr_sqrt_price,
-                inner_sqrt_price_target,
+                bounded_sqrt_price_target,
                 amount_specified_is_input,
                 a_to_b,
             )?;
@@ -227,11 +214,9 @@ pub fn swap(
             curr_sqrt_price = swap_computation.next_price;
             
             anchor_lang::solana_program::log::sol_log_compute_units();
-            if curr_sqrt_price == inner_sqrt_price_target {
-                if let Some(curr_tick_group) = &mut curr_tick_group {
-                    msg!("  advance tick_group");
-                    curr_tick_group.next();
-                }                
+            if curr_sqrt_price == bounded_sqrt_price_target {
+                msg!("  advance tick_group (if va fee is activated)");
+                fee_rate_manager.advance_tick_group();
             }
             if curr_sqrt_price == sqrt_price_target {
                 msg!("  break inner iteration");
@@ -273,7 +258,7 @@ pub fn swap(
         next_fee_growth_global: curr_fee_growth_global_input,
         next_reward_infos,
         next_protocol_fee: curr_protocol_fee,
-        next_va_fee_info: curr_tick_group.map(|tick_group| tick_group.next_va_fee_info()),
+        next_va_fee_info: fee_rate_manager.get_next_va_fee_info(),
     })
 }
 

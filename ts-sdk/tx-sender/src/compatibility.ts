@@ -12,6 +12,7 @@ import {
 } from "@solana/web3.js";
 import { fromLegacyPublicKey } from "@solana/compat";
 import { PublicKey } from "@solana/web3.js/src/publickey";
+import { Keypair } from "@solana/web3.js/src/keypair";
 import { TransactionInstruction } from "@solana/web3.js/src/transaction";
 
 function rpcFromUrl(url: string): Rpc<SolanaRpcApi> {
@@ -93,8 +94,10 @@ function createFeePayerSigner(feePayer: PublicKey | Address): {
 export {
   TransactionInstruction,
   PublicKey,
+  Keypair,
   createFeePayerSigner,
   normalizeInstructions,
   normalizeAddresses,
   rpcFromUrl,
+  forceAddress,
 };

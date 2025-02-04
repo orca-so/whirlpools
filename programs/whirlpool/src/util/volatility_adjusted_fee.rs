@@ -158,18 +158,33 @@ pub fn update_va_fee_info<'info>(
 }
 
 pub struct TickGroup {
-  tick_group_size: u16,
   a_to_b: bool,
   tick_group_index: i32,
+  static_fee_rate: u16,
+  va_fee_constants: VolatilityAdjustedFeeConstants,
+  va_fee_variables: VolatilityAdjustedFeeVariables,
 }
 
 impl TickGroup {
-  pub fn new(tick_group_size: u16, a_to_b: bool, current_tick_index: i32) -> Self {
-    let tick_group_index = div_floor(current_tick_index, tick_group_size as i32);
+  pub fn new(
+    a_to_b: bool,
+    current_tick_index: i32,
+    timestamp: i64,
+    static_fee_rate: u16,
+    va_fee_info: VolatilityAdjustedFeeInfo,
+  ) -> Self {
+    let tick_group_index = div_floor(current_tick_index, va_fee_info.constants.tick_group_size as i32);
+    let va_fee_constants = va_fee_info.constants;
+    let mut va_fee_variables = va_fee_info.variables;
+
+    va_fee_variables.update_reference(tick_group_index, timestamp, &va_fee_constants);
+
     Self {
-      tick_group_size,
       a_to_b,
       tick_group_index,
+      static_fee_rate,
+      va_fee_constants,
+      va_fee_variables,
     }
   }
 
@@ -179,14 +194,36 @@ impl TickGroup {
 
   pub fn tick_group_next_boundary_tick_index(&self) -> i32 {
     if self.a_to_b {
-      self.tick_group_index * self.tick_group_size as i32
+      self.tick_group_index * self.va_fee_constants.tick_group_size as i32
     } else {
-      self.tick_group_index * self.tick_group_size as i32 + self.tick_group_size as i32
+      self.tick_group_index * self.va_fee_constants.tick_group_size as i32 + self.va_fee_constants.tick_group_size as i32
     }
+  }
+
+  pub fn update_volatility_accumulator(&mut self) -> Result<()> {
+    self.va_fee_variables.update_volatility_accumulator(
+      self.tick_group_index(),
+      &self.va_fee_constants,
+    )
+  }
+
+  pub fn compute_total_fee_rate(&self) -> u32 {
+    compute_total_fee_rate(
+      self.static_fee_rate,
+      &self.va_fee_constants,
+      &self.va_fee_variables,
+    )
   }
 
   pub fn next(&mut self) {
     self.tick_group_index += if self.a_to_b { -1 } else { 1 };
+  }
+
+  pub fn next_va_fee_info(&self) -> VolatilityAdjustedFeeInfo {
+    VolatilityAdjustedFeeInfo {
+      constants: self.va_fee_constants,
+      variables: self.va_fee_variables,
+    }
   }
 }
 

@@ -78,24 +78,17 @@ pub fn swap(
         whirlpool.fee_growth_global_b
     };
 
-    let mut curr_va_fee_info = va_fee_info.clone().unwrap_or_default();
-    let mut curr_tick_group = TickGroup::new(
-        curr_va_fee_info.constants.tick_group_size,
-        a_to_b,
-        whirlpool.tick_current_index, // note:  -1 shift is acceptable
-    );
-    msg!("curr_tick_group: {:?}", curr_tick_group.tick_group_index());
-    curr_va_fee_info.variables.update_reference(
-        curr_tick_group.tick_group_index(),
-        timestamp as i64,
-        &curr_va_fee_info.constants,
-    )?;
-
-    let mut outer_iteration = 0;
+    let mut curr_tick_group = va_fee_info.map(|va_fee_info| {
+        TickGroup::new(
+            a_to_b,
+            whirlpool.tick_current_index, // note:  -1 shift is acceptable
+            timestamp as i64,
+            fee_rate,
+            va_fee_info
+        )
+    });
 
     while amount_remaining > 0 && adjusted_sqrt_price_limit != curr_sqrt_price {
-        outer_iteration += 1;
-
         let (next_array_index, next_tick_index) = swap_tick_sequence
             .get_next_initialized_tick_index(
                 curr_tick_index,
@@ -107,31 +100,30 @@ pub fn swap(
         let (next_tick_sqrt_price, sqrt_price_target) =
             get_next_sqrt_prices(next_tick_index, adjusted_sqrt_price_limit, a_to_b);
 
-        let mut inner_iteration = 0;
         while amount_remaining > 0 {
             //anchor_lang::solana_program::log::sol_log_compute_units();
 
-            inner_iteration += 1;
             //msg!("inner iteration({}/{}): remaining: {}, tick_current_index: {}", outer_iteration, inner_iteration, amount_remaining, curr_tick_index);
 
-            let tick_group_boundary_tick_index = curr_tick_group.tick_group_next_boundary_tick_index();
-            let (next_boundary_tick_sqrt_price, inner_sqrt_price_target) =
-                get_next_sqrt_prices(tick_group_boundary_tick_index, sqrt_price_target, a_to_b);
+            let (inner_sqrt_price_target, total_fee_rate) =
+            if let Some(curr_tick_group) = &mut curr_tick_group {
+                curr_tick_group.update_volatility_accumulator()?;
+
+                let tick_group_boundary_tick_index = curr_tick_group.tick_group_next_boundary_tick_index();
+                let (_, bounded_sqrt_price_target) =
+                    get_next_sqrt_prices(tick_group_boundary_tick_index, sqrt_price_target, a_to_b);
+
+                let total_fee_rate = curr_tick_group.compute_total_fee_rate();
+
+                (bounded_sqrt_price_target, total_fee_rate)
+            } else {
+                (sqrt_price_target, fee_rate as u32)
+            };
             //msg!("  tick: current: {}, next: {}, boundary: {}", curr_tick_index, next_tick_index, tick_group_boundary_tick_index);
             //msg!("  sqrt price: current: {}, next: {}, boundary: {}", curr_sqrt_price, next_tick_sqrt_price, next_boundary_tick_sqrt_price);
 
-            curr_va_fee_info.variables.update_volatility_accumulator(
-                curr_tick_group.tick_group_index(),
-                &curr_va_fee_info.constants,
-            )?;
-
-            let total_fee_rate = compute_total_fee_rate(
-                fee_rate,
-                &curr_va_fee_info.constants,
-                &curr_va_fee_info.variables,
-            );
             //msg!("  fee rate: static: {}, total: {}", fee_rate, total_fee_rate);
-            msg!("  tick: current: {}, next: {}, boundary: {}, fee rate (static): {}, fee rate (total): {}", curr_tick_index, next_tick_index, tick_group_boundary_tick_index, fee_rate, total_fee_rate);
+            msg!("  tick: current: {}, next: {}, fee rate (static): {}, fee rate (total): {}", curr_tick_index, next_tick_index, fee_rate, total_fee_rate);
 
             //anchor_lang::solana_program::log::sol_log_compute_units();
             let swap_computation = compute_swap(
@@ -243,8 +235,10 @@ pub fn swap(
             
             anchor_lang::solana_program::log::sol_log_compute_units();
             if curr_sqrt_price == inner_sqrt_price_target {
-                msg!("  advance tick_group");
-                curr_tick_group.next();
+                if let Some(curr_tick_group) = &mut curr_tick_group {
+                    msg!("  advance tick_group");
+                    curr_tick_group.next();
+                }                
             }
             if curr_sqrt_price == sqrt_price_target {
                 msg!("  break inner iteration");
@@ -286,7 +280,7 @@ pub fn swap(
         next_fee_growth_global: curr_fee_growth_global_input,
         next_reward_infos,
         next_protocol_fee: curr_protocol_fee,
-        next_va_fee_info: va_fee_info.map(|_| curr_va_fee_info),
+        next_va_fee_info: curr_tick_group.map(|tick_group| tick_group.next_va_fee_info()),
     })
 }
 

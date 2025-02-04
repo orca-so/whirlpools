@@ -104,7 +104,7 @@ impl VolatilityAdjustedFeeVariables {
         // target_sqrt_price: u128,
         current_timestamp: i64,
         va_fee_constants: &VolatilityAdjustedFeeConstants,
-    ) -> Result<()> {
+    ) {
       /* 
         let tick_group_index = tick_group_index_from_sqrt_price(
             // TODO: reconsider edge case: price on the tick (exact)
@@ -137,8 +137,6 @@ impl VolatilityAdjustedFeeVariables {
         }
 
         self.last_update_timestamp = current_timestamp;
-
-        Ok(())
     }
 }
 

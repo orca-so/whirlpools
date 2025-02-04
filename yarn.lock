@@ -1817,17 +1817,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/renderers-core@npm:1.0.4":
-  version: 1.0.4
-  resolution: "@codama/renderers-core@npm:1.0.4"
-  dependencies:
-    "@codama/errors": "npm:1.2.2"
-    "@codama/nodes": "npm:1.2.2"
-    "@codama/visitors-core": "npm:1.2.2"
-  checksum: 10c0/2baeacd4521ba724a2f89d04a590e4361a86ea5395629bbac86796be468bd31049405fe6bdaa46783ac71134a46dcb39e6fef40ae3300126357fd58eb48f0ad5
-  languageName: node
-  linkType: hard
-
 "@codama/renderers-core@npm:1.0.6":
   version: 1.0.6
   resolution: "@codama/renderers-core@npm:1.0.6"
@@ -1871,7 +1860,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/renderers-rust@npm:1.0.12":
+"@codama/renderers-rust@npm:1.0.12, @codama/renderers-rust@npm:^1.0.12":
   version: 1.0.12
   resolution: "@codama/renderers-rust@npm:1.0.12"
   dependencies:
@@ -1882,20 +1871,6 @@ __metadata:
     "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
   checksum: 10c0/fd2cbcf8c1f4057a09ab29bd55f29d897e9c2d4824cc116235966ca5dcdc770a5f48dbb7fbd9f26beeb72553d150413b77e32b756d75c90ab6bc1d9747e6fc2a
-  languageName: node
-  linkType: hard
-
-"@codama/renderers-rust@npm:^1.0.10":
-  version: 1.0.10
-  resolution: "@codama/renderers-rust@npm:1.0.10"
-  dependencies:
-    "@codama/errors": "npm:1.2.2"
-    "@codama/nodes": "npm:1.2.2"
-    "@codama/renderers-core": "npm:1.0.4"
-    "@codama/visitors-core": "npm:1.2.2"
-    "@solana/codecs-strings": "npm:rc"
-    nunjucks: "npm:^3.2.4"
-  checksum: 10c0/2d03dee577995db41fccf4a95d51e5f8a3a8c912ef55902dab2e8d65c6675f35e3b9b4daee37c4e88804a3700a53a82ac072c754815bf8654ce3e7fdf819b4de
   languageName: node
   linkType: hard
 
@@ -4560,7 +4535,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
     "@codama/nodes-from-anchor": "npm:^1.1.2"
-    "@codama/renderers-rust": "npm:^1.0.10"
+    "@codama/renderers-rust": "npm:^1.0.12"
     "@orca-so/whirlpools-program": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
     codama: "npm:^1.2.4"

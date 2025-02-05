@@ -1,13 +1,8 @@
 use anchor_lang::prelude::*;
 
-use crate::math::tick_index_from_sqrt_price;
+use crate::manager::fee_rate_manager::{MAX_REDUCTION_FACTOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR};
 
 use super::Whirlpool;
-
-pub const VOLATILITY_ACCUMULATOR_SCALE_FACTOR: u16 = 10_000;
-pub const MAX_REDUCTION_FACTOR: u16 = 10_000;
-
-pub const ADAPTIVE_FEE_CONTROL_FACTOR_DENOM: u32 = 100_000;
 
 #[account(zero_copy(unsafe))]
 #[repr(C, packed)]
@@ -151,5 +146,13 @@ impl Oracle {
             ..Default::default()
         };
         Ok(())
+    }
+
+    pub fn update_adaptive_fee_constants(&mut self, constants: AdaptiveFeeConstants) {
+        self.adaptive_fee_constants = constants;
+    }
+
+    pub fn update_adaptive_fee_variables(&mut self, variables: AdaptiveFeeVariables) {
+        self.adaptive_fee_variables = variables;
     }
 }

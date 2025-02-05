@@ -2,12 +2,12 @@ use solana_program::msg;
 
 use crate::{
     errors::ErrorCode,
+    manager::fee_rate_manager::FeeRateManager,
     manager::{
         tick_manager::next_tick_cross_update, whirlpool_manager::next_whirlpool_reward_infos,
     },
     math::*,
     state::*,
-    manager::fee_rate_manager::FeeRateManager,
     util::SwapTickSequence,
 };
 use anchor_lang::prelude::*;
@@ -84,7 +84,7 @@ pub fn swap(
         whirlpool.tick_current_index, // note:  -1 shift is acceptable
         timestamp as i64,
         fee_rate,
-        adaptive_fee_info
+        adaptive_fee_info,
     );
 
     while amount_remaining > 0 && adjusted_sqrt_price_limit != curr_sqrt_price {
@@ -103,10 +103,24 @@ pub fn swap(
             fee_rate_manager.update_volatility_accumulator()?;
 
             let total_fee_rate = fee_rate_manager.get_total_fee_rate();
-            let bounded_sqrt_price_target = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price_target);
+            let bounded_sqrt_price_target =
+                fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price_target);
 
-            msg!("tick: current: {}, next: {}, fee rate (static): {}, fee rate (total): {}", curr_tick_index, next_tick_index, fee_rate, total_fee_rate);
-            msg!("sqrt price: current: {}, bounded target: {}, target: {}", curr_sqrt_price, bounded_sqrt_price_target, sqrt_price_target);
+            // TODO: remove
+            msg!(
+                "tick: current: {}, next: {}, fee rate (static): {}, fee rate (total): {}",
+                curr_tick_index,
+                next_tick_index,
+                fee_rate,
+                total_fee_rate
+            );
+            // TODO: remove
+            msg!(
+                "sqrt price: current: {}, bounded target: {}, target: {}",
+                curr_sqrt_price,
+                bounded_sqrt_price_target,
+                sqrt_price_target
+            );
 
             let swap_computation = compute_swap(
                 amount_remaining,
@@ -211,7 +225,7 @@ pub fn swap(
             }
 
             curr_sqrt_price = swap_computation.next_price;
-            
+
             if curr_sqrt_price == bounded_sqrt_price_target {
                 fee_rate_manager.advance_tick_group();
             }

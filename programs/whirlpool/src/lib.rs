@@ -625,9 +625,7 @@ pub mod whirlpool {
     }
 
     // TODO: update params if needed
-    pub fn initialize_oracle(
-        ctx: Context<InitializeOracle>,
-    ) -> Result<()> {
+    pub fn initialize_oracle(ctx: Context<InitializeOracle>) -> Result<()> {
         instructions::initialize_oracle::handler(ctx)
     }
 

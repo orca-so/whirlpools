@@ -18,7 +18,6 @@ pub struct InitializeOracle<'info> {
     pub oracle: AccountLoader<'info, Oracle>,
 
     // TODO: use VolatilityAdjustedFeeTier ?
-
     pub system_program: Program<'info, System>,
 }
 
@@ -36,12 +35,12 @@ pub fn handler(ctx: Context<InitializeOracle>) -> Result<()> {
     let tick_group_size = ctx.accounts.whirlpool.tick_spacing;
 
     oracle.initialize(
-      &ctx.accounts.whirlpool,
-      filter_period,
-      decay_period,
-      reduction_factor,
-      adaptive_fee_control_factor,
-      max_volatility_accumulator,
-      tick_group_size,
+        &ctx.accounts.whirlpool,
+        filter_period,
+        decay_period,
+        reduction_factor,
+        adaptive_fee_control_factor,
+        max_volatility_accumulator,
+        tick_group_size,
     )
 }

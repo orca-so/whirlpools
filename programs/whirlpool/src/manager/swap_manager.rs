@@ -7,7 +7,7 @@ use crate::{
     },
     math::*,
     state::*,
-    manager::fee_rate_manager::{FeeRateManager, AdaptiveFeeInfo},
+    manager::fee_rate_manager::FeeRateManager,
     util::SwapTickSequence,
 };
 use anchor_lang::prelude::*;

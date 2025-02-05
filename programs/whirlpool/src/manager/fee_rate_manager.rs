@@ -1,5 +1,5 @@
 use anchor_lang::prelude::*;
-use crate::{math::sqrt_price_from_tick_index, state::{AdaptiveFeeConstants, AdaptiveFeeVariables, MAX_TICK_INDEX, MIN_TICK_INDEX}};
+use crate::{math::sqrt_price_from_tick_index, state::{AdaptiveFeeConstants, AdaptiveFeeInfo, AdaptiveFeeVariables, MAX_TICK_INDEX, MIN_TICK_INDEX}};
 
 pub const VOLATILITY_ACCUMULATOR_SCALE_FACTOR: u16 = 10_000;
 pub const MAX_REDUCTION_FACTOR: u16 = 10_000;
@@ -8,14 +8,6 @@ pub const ADAPTIVE_FEE_CONTROL_FACTOR_DENOM: u32 = 100_000;
 
 // max fee rate should be controlled by max_volatility_accumulator, so this is a hard limit for safety
 pub const TOTAL_FEE_RATE_HARD_LIMIT: u32 = 100_000; // 10%
-
-
-// TODO: refacotor (may be moved to oracle.rs and Oracle account uses this ?)
-#[derive(Debug, Default, Clone)]
-pub struct AdaptiveFeeInfo {
-  pub constants: AdaptiveFeeConstants,
-  pub variables: AdaptiveFeeVariables,
-}
 
 pub enum FeeRateManager {
   Adaptive {

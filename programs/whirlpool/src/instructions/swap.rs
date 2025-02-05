@@ -4,8 +4,8 @@ use anchor_spl::token::{self, Token, TokenAccount};
 use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
-    state::Whirlpool,
-    util::{load_adaptive_fee_info, to_timestamp_u64, update_and_swap_whirlpool, update_adaptive_fee_info, SparseSwapTickSequenceBuilder},
+    state::{OracleAccessor, Whirlpool},
+    util::{to_timestamp_u64, update_and_swap_whirlpool, SparseSwapTickSequenceBuilder},
 };
 
 #[derive(Accounts)]
@@ -70,7 +70,8 @@ pub fn handler(
     )?;
     let mut swap_tick_sequence = builder.build()?;
 
-    let adaptive_fee_info = load_adaptive_fee_info(&ctx.accounts.oracle)?;
+    let oracle_accessor = OracleAccessor::new(ctx.accounts.oracle.to_account_info());
+    let adaptive_fee_info = oracle_accessor.get_adaptive_fee_info()?;
     if let Some(adaptive_fee_info) = &adaptive_fee_info {
         msg!("Adaptive fee info found: {:?}", adaptive_fee_info);
     } else {
@@ -88,13 +89,6 @@ pub fn handler(
         adaptive_fee_info,
     )?;
 
-    if let Some(adaptive_fee_info) = &swap_update.next_adaptive_fee_info {
-        update_adaptive_fee_info(&ctx.accounts.oracle, adaptive_fee_info)?;
-        msg!("Next Adaptive fee info: {:?}", adaptive_fee_info);
-    } else {
-        msg!("No next Adaptive fee info");
-    }
-
     if amount_specified_is_input {
         if (a_to_b && other_amount_threshold > swap_update.amount_b)
             || (!a_to_b && other_amount_threshold > swap_update.amount_a)
@@ -106,6 +100,13 @@ pub fn handler(
     {
         return Err(ErrorCode::AmountInAboveMaximum.into());
     }
+
+    if let Some(adaptive_fee_info) = &swap_update.next_adaptive_fee_info {
+        msg!("Next Adaptive fee info: {:?}", adaptive_fee_info);
+    } else {
+        msg!("No next Adaptive fee info");
+    }
+    oracle_accessor.update_adaptive_fee_variables(&swap_update.next_adaptive_fee_info)?;
 
     update_and_swap_whirlpool(
         whirlpool,

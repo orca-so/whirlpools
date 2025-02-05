@@ -1,24 +1,16 @@
+use std::cell::RefMut;
+
 use anchor_lang::prelude::*;
 
 use crate::manager::fee_rate_manager::{MAX_REDUCTION_FACTOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR};
 
 use super::Whirlpool;
 
-#[account(zero_copy(unsafe))]
-#[repr(C, packed)]
-pub struct Oracle {
-    pub whirlpool: Pubkey,
-    // DELEGATE ?
-    pub adaptive_fee_constants: AdaptiveFeeConstants,
-    pub adaptive_fee_variables: AdaptiveFeeVariables,
-    // RESERVE to implement oracle (observation) in the future
-}
-
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
 #[derive(Default, Debug)]
 pub struct AdaptiveFeeConstants {
-    /// Period determine high frequency trading time window.
+  /// Period determine high frequency trading time window.
     pub filter_period: u16,
     /// Period determine when the volatile fee start decrease.
     pub decay_period: u16,
@@ -113,6 +105,22 @@ impl AdaptiveFeeVariables {
     }
 }
 
+#[derive(Debug, Default, Clone)]
+pub struct AdaptiveFeeInfo {
+  pub constants: AdaptiveFeeConstants,
+  pub variables: AdaptiveFeeVariables,
+}
+
+#[account(zero_copy(unsafe))]
+#[repr(C, packed)]
+pub struct Oracle {
+    pub whirlpool: Pubkey,
+    // DELEGATE ?
+    pub adaptive_fee_constants: AdaptiveFeeConstants,
+    pub adaptive_fee_variables: AdaptiveFeeVariables,
+    // RESERVE to implement oracle (observation) in the future
+}
+
 impl Oracle {
     // TODO: add reserve for observations
     pub const LEN: usize =
@@ -155,4 +163,81 @@ impl Oracle {
     pub fn update_adaptive_fee_variables(&mut self, variables: AdaptiveFeeVariables) {
         self.adaptive_fee_variables = variables;
     }
+}
+
+pub struct OracleAccessor<'info> {
+  oracle_account_info: AccountInfo<'info>,
+}
+
+impl<'info> OracleAccessor<'info> {
+  pub fn new(oracle_account_info: AccountInfo<'info>) -> Self {
+      Self { oracle_account_info }
+  }
+
+  pub fn get_adaptive_fee_info(&self) -> Result<Option<AdaptiveFeeInfo>> {
+      let oracle = self.load_mut()?;
+      match oracle {
+          Some(oracle) => Ok(Some(AdaptiveFeeInfo {
+              constants: oracle.adaptive_fee_constants,
+              variables: oracle.adaptive_fee_variables,
+          })),
+          None => Ok(None),
+      }
+  }
+
+  pub fn update_adaptive_fee_variables(&self, adaptive_fee_info: &Option<AdaptiveFeeInfo>) -> Result<()> {
+      let oracle = self.load_mut()?;
+      match (oracle, adaptive_fee_info) {
+          (Some(mut oracle), Some(adaptive_fee_info)) => {
+              oracle.adaptive_fee_variables = adaptive_fee_info.variables;
+              Ok(())
+          },
+          (None, None) => Ok(()),
+          _ => unreachable!(), // TODO: detail
+      }
+  }
+
+  fn load_mut(&self) -> Result<Option<RefMut<'_, Oracle>>> {
+    use anchor_lang::Discriminator;
+    use std::ops::DerefMut;
+
+    // following process is ported from anchor-lang's AccountLoader::try_from and AccountLoader::load_mut
+    // AccountLoader can handle initialized account and partially initialized (owner program changed) account only.
+    // So we need to handle uninitialized account manually.
+
+    // account must be writable
+    if !self.oracle_account_info.is_writable {
+        return Err(anchor_lang::error::ErrorCode::AccountNotMutable.into());
+    }
+
+    // uninitialized writable account (owned by system program and its data size is zero)
+    if self.oracle_account_info.owner == &System::id() && self.oracle_account_info.data_is_empty() {
+      // oracle is not initialized
+        return Ok(None);
+    }
+
+    // owner program check
+    if self.oracle_account_info.owner != &Oracle::owner() {
+        return Err(
+            Error::from(anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram)
+                .with_pubkeys((*self.oracle_account_info.owner, Oracle::owner())),
+        );
+    }
+
+    let data = self.oracle_account_info.try_borrow_mut_data()?;
+    if data.len() < Oracle::discriminator().len() {
+        return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorNotFound.into());
+    }
+
+    let disc_bytes = arrayref::array_ref![data, 0, 8];
+    if disc_bytes != &Oracle::discriminator() {
+        return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
+    }
+
+    let oracle_refmut: RefMut<Oracle> = RefMut::map(data, |data| {
+        bytemuck::from_bytes_mut(&mut data.deref_mut()[8..std::mem::size_of::<Oracle>() + 8])
+    });
+
+    Ok(Some(oracle_refmut))  
+  }
 }

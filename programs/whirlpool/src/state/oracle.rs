@@ -231,3 +231,102 @@ impl<'info> OracleAccessor<'info> {
         Ok(Some(oracle_refmut))
     }
 }
+
+#[cfg(test)]
+mod data_layout_tests {
+    use super::*;
+
+    #[test]
+    fn test_oracle_data_layout() {
+        let oracle_whirlpool = Pubkey::new_unique();
+
+        let af_const_filter_period = 0x1122u16;
+        let af_const_decay_period = 0x3344u16;
+        let af_const_reduction_factor = 0x5566u16;
+        let af_const_adaptive_fee_control_factor = 0x778899aau32;
+        let af_const_max_volatility_accumulator = 0xaabbccddu32;
+        let af_const_tick_group_size = 0xeeffu16;
+
+        let af_var_last_update_timestamp = 0x1122334455667788i64;
+        let af_var_volatility_reference = 0x99aabbccu32;
+        let af_var_tick_group_index_reference = 0x00ddeeffi32;
+        let af_var_volatility_accumulator = 0x11223344u32;
+
+        // manually build the expected AdaptiveFeeConstants data layout
+        let mut af_const_data = [0u8; AdaptiveFeeConstants::LEN];
+        let mut offset = 0;
+        af_const_data[offset..offset + 2].copy_from_slice(&af_const_filter_period.to_le_bytes());
+        offset += 2;
+        af_const_data[offset..offset + 2].copy_from_slice(&af_const_decay_period.to_le_bytes());
+        offset += 2;
+        af_const_data[offset..offset + 2].copy_from_slice(&af_const_reduction_factor.to_le_bytes());
+        offset += 2;
+        af_const_data[offset..offset + 4]
+            .copy_from_slice(&af_const_adaptive_fee_control_factor.to_le_bytes());
+        offset += 4;
+        af_const_data[offset..offset + 4]
+            .copy_from_slice(&af_const_max_volatility_accumulator.to_le_bytes());
+        offset += 4;
+        af_const_data[offset..offset + 2].copy_from_slice(&af_const_tick_group_size.to_le_bytes());
+        offset += 2;
+
+        assert_eq!(offset, af_const_data.len());
+
+        // manually build the expected AdaptiveFeeVariables data layout
+        let mut af_var_data = [0u8; AdaptiveFeeVariables::LEN];
+        let mut offset = 0;
+        af_var_data[offset..offset + 8].copy_from_slice(&af_var_last_update_timestamp.to_le_bytes());
+        offset += 8;
+        af_var_data[offset..offset + 4].copy_from_slice(&af_var_volatility_reference.to_le_bytes());
+        offset += 4;
+        af_var_data[offset..offset + 4]
+            .copy_from_slice(&af_var_tick_group_index_reference.to_le_bytes());
+        offset += 4;
+        af_var_data[offset..offset + 4].copy_from_slice(&af_var_volatility_accumulator.to_le_bytes());
+        offset += 4;
+
+        assert_eq!(offset, af_var_data.len());
+
+        // manually build the expected Oracle data layout
+        // note: no discriminator
+        let mut oracle_data = [0u8; Oracle::LEN - 8];
+        let mut offset = 0;
+        oracle_data[offset..offset + 32].copy_from_slice(oracle_whirlpool.as_ref());
+        offset += 32;
+        oracle_data[offset..offset + AdaptiveFeeConstants::LEN].copy_from_slice(&af_const_data);
+        offset += AdaptiveFeeConstants::LEN;
+        oracle_data[offset..offset + AdaptiveFeeVariables::LEN].copy_from_slice(&af_var_data);
+        offset += AdaptiveFeeVariables::LEN;
+        
+        assert_eq!(offset, oracle_data.len());
+        assert_eq!(oracle_data.len(), core::mem::size_of::<Oracle>());
+
+        // cast from bytes to Oracle (re-interpret)
+        let oracle: &Oracle = bytemuck::from_bytes(&oracle_data);
+
+        // check that the data layout matches the expected layout
+        assert_eq!(oracle.whirlpool, oracle_whirlpool);
+
+        let read_af_const_filter_period = oracle.adaptive_fee_constants.filter_period;
+        assert_eq!(read_af_const_filter_period, af_const_filter_period);
+        let read_af_const_decay_period = oracle.adaptive_fee_constants.decay_period;
+        assert_eq!(read_af_const_decay_period, af_const_decay_period);
+        let read_af_const_reduction_factor = oracle.adaptive_fee_constants.reduction_factor;
+        assert_eq!(read_af_const_reduction_factor, af_const_reduction_factor);
+        let read_af_const_adaptive_fee_control_factor = oracle.adaptive_fee_constants.adaptive_fee_control_factor;
+        assert_eq!(read_af_const_adaptive_fee_control_factor, af_const_adaptive_fee_control_factor);
+        let read_af_const_max_volatility_accumulator = oracle.adaptive_fee_constants.max_volatility_accumulator;
+        assert_eq!(read_af_const_max_volatility_accumulator, af_const_max_volatility_accumulator);
+        let read_af_const_tick_group_size = oracle.adaptive_fee_constants.tick_group_size;
+        assert_eq!(read_af_const_tick_group_size, af_const_tick_group_size);
+
+        let read_af_var_last_update_timestamp = oracle.adaptive_fee_variables.last_update_timestamp;
+        assert_eq!(read_af_var_last_update_timestamp, af_var_last_update_timestamp);
+        let read_af_var_volatility_reference = oracle.adaptive_fee_variables.volatility_reference;
+        assert_eq!(read_af_var_volatility_reference, af_var_volatility_reference);
+        let read_af_var_tick_group_index_reference = oracle.adaptive_fee_variables.tick_group_index_reference;
+        assert_eq!(read_af_var_tick_group_index_reference, af_var_tick_group_index_reference);
+        let read_af_var_volatility_accumulator = oracle.adaptive_fee_variables.volatility_accumulator;
+        assert_eq!(read_af_var_volatility_accumulator, af_var_volatility_accumulator);
+    }
+}

@@ -11,9 +11,7 @@ import {
   TransactionPartialSignerConfig,
 } from "@solana/web3.js";
 import { fromLegacyPublicKey } from "@solana/compat";
-import { PublicKey } from "@solana/web3.js/src/publickey";
-import { Keypair } from "@solana/web3.js/src/keypair";
-import { TransactionInstruction } from "@solana/web3.js/src/transaction";
+import { TransactionInstruction, Keypair, PublicKey } from "./legacy";
 
 function rpcFromUrl(url: string): Rpc<SolanaRpcApi> {
   const api = createSolanaRpcApi({

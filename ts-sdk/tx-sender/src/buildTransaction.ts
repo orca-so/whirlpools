@@ -36,7 +36,7 @@ import {
   ConnectionContext,
   TransactionConfig,
 } from "./config";
-import { TransactionInstruction } from "@solana/web3.js/src/transaction/legacy";
+import { TransactionInstruction } from "./legacy";
 
 async function buildTransaction(
   instructions: (IInstruction | TransactionInstruction)[],

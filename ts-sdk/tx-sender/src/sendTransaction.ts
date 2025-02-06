@@ -14,8 +14,6 @@ import {
   KeyPairSigner,
   signTransactionMessageWithSigners,
   Transaction,
-  sendTransactionWithoutConfirmingFactory,
-  signTransaction,
   CompilableTransactionMessage,
   TransactionModifyingSigner,
   TransactionPartialSigner,
@@ -107,17 +105,14 @@ async function buildAndSendTransaction(
   return rpc.sendTransaction(encodedTransaction, {}).send();
 }
 
-async function signAndSendTransaction(
-  transaction: Transaction,
-  signer: KeyPairSigner,
+async function sendSignedTransactionMessage(
+  transaction: CompilableTransactionMessage,
   rpcUrl: string = getConnectionContext().rpcUrl
 ) {
-  const signed = await signTransaction([signer.keyPair], transaction);
   const rpc = rpcFromUrl(rpcUrl);
-  const sendTransaction = sendTransactionWithoutConfirmingFactory({ rpc });
-  assertTransactionIsFullySigned(signed);
-  await sendTransaction(signed, { commitment: "confirmed" });
-  // todo confirming factory
+  const compiled = compileTransaction(transaction);
+  const encodedTransaction = getBase64EncodedWireTransaction(compiled);
+  return rpc.sendTransaction(encodedTransaction, {}).send();
 }
 
 async function signTransactionMessage(
@@ -220,7 +215,7 @@ function identifyTransactionModifyingSigners(
 }
 
 export {
-  signAndSendTransaction,
   buildAndSendTransaction,
   signTransactionMessage,
+  sendSignedTransactionMessage,
 };

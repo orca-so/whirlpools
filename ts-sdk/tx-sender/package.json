@@ -2,16 +2,20 @@
   "name": "tx-sender",
   "packageManager": "yarn@4.6.0",
   "dependencies": {
+    "@noble/curves": "^1.8.1",
+    "@noble/hashes": "^1.7.1",
     "@solana-program/compute-budget": "^0.6.1",
     "@solana-program/system": "^0.6.2",
     "@solana/compat": "^2.0.0",
-    "@solana/react": "^2.0.0"
+    "@solana/react": "^2.0.0",
+    "@solana/web3.js": "^2.0.0",
+    "borsh": "0.7.0",
+    "bs58": "^6.0.0"
   },
   "peerDependencies": {
-    "@solana/web3.js": "^2"
+    "@solana/web3.js": "^2.0.0"
   },
   "devDependencies": {
-    "@solana/web3.js": "^2",
-    "typescript": "^5.7.3"
+    "@solana/web3.js": "^2.0.0"
   }
 }

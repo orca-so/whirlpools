@@ -95,6 +95,7 @@ pub struct AdaptiveFeeInfo {
 
 #[account(zero_copy(unsafe))]
 #[repr(C, packed)]
+#[derive(Default, Debug)]
 pub struct Oracle {
     pub whirlpool: Pubkey,
     pub adaptive_fee_constants: AdaptiveFeeConstants,
@@ -176,7 +177,7 @@ impl<'info> OracleAccessor<'info> {
         match (oracle, adaptive_fee_info) {
             // Oracle account has been initialized and adaptive fee info is provided
             (Some(mut oracle), Some(adaptive_fee_info)) => {
-                oracle.adaptive_fee_variables = adaptive_fee_info.variables;
+                oracle.update_adaptive_fee_variables(adaptive_fee_info.variables);
                 Ok(())
             }
             // Oracle account has not been initialized and adaptive fee info is not provided
@@ -330,3 +331,477 @@ mod data_layout_tests {
         assert_eq!(read_af_var_volatility_accumulator, af_var_volatility_accumulator);
     }
 }
+
+#[cfg(test)]
+mod oracle_tests {
+    use super::*;
+
+    #[test]
+    fn test_update_adaptive_fee_constants() {
+      let mut oracle = Oracle::default();
+
+      let filter_period = 0x1122u16;
+      let decay_period = 0x3344u16;
+      let reduction_factor = 0x5566u16;
+      let adaptive_fee_control_factor = 0x778899aau32;
+      let max_volatility_accumulator = 0xaabbccddu32;
+      let tick_group_size = 0xeeffu16;
+
+      let constants = AdaptiveFeeConstants {
+          filter_period,
+          decay_period,
+          reduction_factor,
+          adaptive_fee_control_factor,
+          max_volatility_accumulator,
+          tick_group_size,
+      };
+
+      oracle.update_adaptive_fee_constants(constants);
+
+      let read_af_const_filter_period = oracle.adaptive_fee_constants.filter_period;
+      assert_eq!(read_af_const_filter_period, filter_period);
+      let read_af_const_decay_period = oracle.adaptive_fee_constants.decay_period;
+      assert_eq!(read_af_const_decay_period, decay_period);
+      let read_af_const_reduction_factor = oracle.adaptive_fee_constants.reduction_factor;
+      assert_eq!(read_af_const_reduction_factor, reduction_factor);
+      let read_af_const_adaptive_fee_control_factor = oracle.adaptive_fee_constants.adaptive_fee_control_factor;
+      assert_eq!(read_af_const_adaptive_fee_control_factor, adaptive_fee_control_factor);
+      let read_af_const_max_volatility_accumulator = oracle.adaptive_fee_constants.max_volatility_accumulator;
+      assert_eq!(read_af_const_max_volatility_accumulator, max_volatility_accumulator);
+      let read_af_const_tick_group_size = oracle.adaptive_fee_constants.tick_group_size;
+      assert_eq!(read_af_const_tick_group_size, tick_group_size);
+    }
+
+    #[test]
+    fn test_update_adaptive_fee_variables() {
+      let mut oracle = Oracle::default();
+
+      let last_update_timestamp = 0x1122334455667788i64;
+      let volatility_reference = 0x99aabbccu32;
+      let tick_group_index_reference = 0x00ddeeffi32;
+      let volatility_accumulator = 0x11223344u32;
+
+      let variables = AdaptiveFeeVariables {
+          last_update_timestamp,
+          volatility_reference,
+          tick_group_index_reference,
+          volatility_accumulator,
+      };
+
+      oracle.update_adaptive_fee_variables(variables);
+
+      let read_af_var_last_update_timestamp = oracle.adaptive_fee_variables.last_update_timestamp;
+      assert_eq!(read_af_var_last_update_timestamp, last_update_timestamp);
+      let read_af_var_volatility_reference = oracle.adaptive_fee_variables.volatility_reference;
+      assert_eq!(read_af_var_volatility_reference, volatility_reference);
+      let read_af_var_tick_group_index_reference = oracle.adaptive_fee_variables.tick_group_index_reference;
+      assert_eq!(read_af_var_tick_group_index_reference, tick_group_index_reference);
+      let read_af_var_volatility_accumulator = oracle.adaptive_fee_variables.volatility_accumulator;
+      assert_eq!(read_af_var_volatility_accumulator, volatility_accumulator);
+    }
+}
+
+#[cfg(test)]
+mod adaptive_fee_variables_tests {
+    use super::*;
+
+/*
+
+    pub fn update_reference(
+        &mut self,
+        tick_group_index: i32,
+        current_timestamp: i64,
+        adaptive_fee_constants: &AdaptiveFeeConstants,
+    ) {
+        let elapsed = current_timestamp - self.last_update_timestamp;
+
+        if elapsed < adaptive_fee_constants.filter_period as i64 {
+            // high frequency trade
+            // no change
+        } else if elapsed < adaptive_fee_constants.decay_period as i64 {
+            // NOT high frequency trade
+            self.tick_group_index_reference = tick_group_index;
+            self.volatility_reference = (u64::from(self.volatility_accumulator)
+                * u64::from(adaptive_fee_constants.reduction_factor)
+                / u64::from(MAX_REDUCTION_FACTOR)) as u32;
+        } else {
+            // Out of decay time window
+            self.tick_group_index_reference = tick_group_index;
+            self.volatility_reference = 0;
+        }
+
+        self.last_update_timestamp = current_timestamp;
+    }
+*/
+    mod update_reference {
+      use super::*;
+
+      fn check_variables(
+        variables: &AdaptiveFeeVariables,
+        last_update_timestamp: i64,
+        tick_group_index_reference: i32,
+        volatility_reference: u32,
+        volatility_accumulator: u32,
+      ) {
+        let read_last_update_timestamp = variables.last_update_timestamp;
+        assert_eq!(read_last_update_timestamp, last_update_timestamp);
+        let read_tick_group_index_reference = variables.tick_group_index_reference;
+        assert_eq!(read_tick_group_index_reference, tick_group_index_reference);
+        let read_volatility_reference = variables.volatility_reference;
+        assert_eq!(read_volatility_reference, volatility_reference);
+        let read_volatility_accumulator = variables.volatility_accumulator;
+        assert_eq!(read_volatility_accumulator, volatility_accumulator);
+      }
+
+      fn constants_for_test() -> AdaptiveFeeConstants {
+        AdaptiveFeeConstants {
+          filter_period: 30,
+          decay_period: 600,
+          reduction_factor: 3000, // 3000 / 10000 = 30%
+          adaptive_fee_control_factor: 4_000,
+          max_volatility_accumulator: 350_000,
+          tick_group_size: 64,
+        }
+      }
+
+      #[test]
+      fn test_right_after_initialization() {
+        let constants = constants_for_test();
+        let mut variables = AdaptiveFeeVariables::default();
+
+        let tick_group_index = 5;
+        let current_timestamp = 1738824616;
+
+        variables.update_reference(tick_group_index, current_timestamp, &constants);
+        check_variables(
+          &variables,
+          current_timestamp, // should be updated
+          // should be updated (elapsed time is greater than decay_period)
+          tick_group_index,
+          // should be reset
+          0,
+          0,
+        );
+      }
+  
+      #[test]
+      fn test_consecutive_updates() {
+        let constants = constants_for_test();
+        let mut variables = AdaptiveFeeVariables::default();
+
+        let tick_group_index = 5;
+        let current_timestamp = 1738824616;
+
+        // should be updated
+        variables.update_reference(tick_group_index, current_timestamp, &constants);
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          0,
+        );
+
+        let updated_tick_group_index = 6;
+
+        // should be ignored (elapsed time is less than filter_period)
+        variables.update_reference(updated_tick_group_index, current_timestamp, &constants);
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          0,
+        );
+      }
+
+      #[test]
+      fn test_lt_filter_period() {
+        let constants = constants_for_test();
+        let mut variables = AdaptiveFeeVariables::default();
+
+        let tick_group_index = 5;
+        let current_timestamp = 1738824616;
+
+        // should be updated
+        variables.update_reference(tick_group_index, current_timestamp, &constants);
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          0,
+        );
+
+        variables.update_volatility_accumulator(tick_group_index + 1, &constants).unwrap();
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          10_000, // +1
+        );
+
+        let updated_tick_group_index = 10;
+        let updated_current_timestamp = current_timestamp + constants.filter_period as i64 - 1;
+
+        // only last_update_timestamp should be updated
+        variables.update_reference(updated_tick_group_index, updated_current_timestamp, &constants);
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          tick_group_index,
+          0,
+          10_000,
+        );
+      }
+
+      #[test]
+      fn test_eq_filter_period() {
+        let constants = constants_for_test();
+        let mut variables = AdaptiveFeeVariables::default();
+
+        let tick_group_index = 5;
+        let current_timestamp = 1738824616;
+
+        // should be updated
+        variables.update_reference(tick_group_index, current_timestamp, &constants);
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          0,
+        );
+
+        variables.update_volatility_accumulator(tick_group_index + 1, &constants).unwrap();
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          10_000, // +1
+        );
+
+        let updated_tick_group_index = 10;
+        let updated_current_timestamp = current_timestamp + constants.filter_period as i64;
+
+        // should be updated
+        variables.update_reference(updated_tick_group_index, updated_current_timestamp, &constants);
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          3_000, // 10_000 * 30% (reduction_factor) = 3_000,
+          10_000,
+        );
+      }
+
+      #[test]
+      fn test_gt_filter_period_lt_decay_period() {
+        let constants = constants_for_test();
+        let mut variables = AdaptiveFeeVariables::default();
+
+        let tick_group_index = 5;
+        let current_timestamp = 1738824616;
+
+        // should be updated
+        variables.update_reference(tick_group_index, current_timestamp, &constants);
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          0,
+        );
+
+        variables.update_volatility_accumulator(tick_group_index + 1, &constants).unwrap();
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          10_000, // +1
+        );
+
+        let updated_tick_group_index = 10;
+        let updated_current_timestamp = current_timestamp + constants.filter_period as i64 + 1;
+
+        // should be updated
+        variables.update_reference(updated_tick_group_index, updated_current_timestamp, &constants);
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          3_000, // 10_000 * 30% (reduction_factor) = 3_000,
+          10_000,
+        );
+
+        variables.update_volatility_accumulator(updated_tick_group_index + 1, &constants).unwrap();
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          3_000,
+          13_000, // +1
+        );
+
+        let updated_tick_group_index = 20;
+        let updated_current_timestamp = updated_current_timestamp + constants.decay_period as i64 - 1;
+
+        // should be updated
+        variables.update_reference(updated_tick_group_index, updated_current_timestamp, &constants);
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          3_900, // 13_000 * 30% (reduction_factor) = 3_900,
+          13_000,
+        );
+      }
+
+      #[test]
+      fn test_eq_decay_period() {
+        let constants = constants_for_test();
+        let mut variables = AdaptiveFeeVariables::default();
+
+        let tick_group_index = 5;
+        let current_timestamp = 1738824616;
+
+        // should be updated
+        variables.update_reference(tick_group_index, current_timestamp, &constants);
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          0,
+        );
+
+        variables.update_volatility_accumulator(tick_group_index + 1, &constants).unwrap();
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          10_000, // +1
+        );
+
+        let updated_tick_group_index = 10;
+        let updated_current_timestamp = current_timestamp + constants.filter_period as i64 + 1;
+
+        // should be updated
+        variables.update_reference(updated_tick_group_index, updated_current_timestamp, &constants);
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          3_000, // 10_000 * 30% (reduction_factor) = 3_000,
+          10_000,
+        );
+
+        variables.update_volatility_accumulator(updated_tick_group_index + 1, &constants).unwrap();
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          3_000,
+          13_000, // +1
+        );
+
+        let updated_tick_group_index = 20;
+        let updated_current_timestamp = updated_current_timestamp + constants.decay_period as i64;
+
+        // should be updated
+        variables.update_reference(updated_tick_group_index, updated_current_timestamp, &constants);
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          0, // reset
+          13_000,
+        );
+
+        variables.update_volatility_accumulator(updated_tick_group_index, &constants).unwrap();
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          0,
+          0, // reference(0) + delta(0)
+        );
+      }
+
+      #[test]
+      fn test_gt_decay_period() {
+        let constants = constants_for_test();
+        let mut variables = AdaptiveFeeVariables::default();
+
+        let tick_group_index = 5;
+        let current_timestamp = 1738824616;
+
+        // should be updated
+        variables.update_reference(tick_group_index, current_timestamp, &constants);
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          0,
+        );
+
+        variables.update_volatility_accumulator(tick_group_index + 1, &constants).unwrap();
+        check_variables(
+          &variables,
+          current_timestamp,
+          tick_group_index,
+          0,
+          10_000, // +1
+        );
+
+        let updated_tick_group_index = 10;
+        let updated_current_timestamp = current_timestamp + constants.filter_period as i64 + 1;
+
+        // should be updated
+        variables.update_reference(updated_tick_group_index, updated_current_timestamp, &constants);
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          3_000, // 10_000 * 30% (reduction_factor) = 3_000,
+          10_000,
+        );
+
+        variables.update_volatility_accumulator(updated_tick_group_index + 1, &constants).unwrap();
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          3_000,
+          13_000, // +1
+        );
+
+        let updated_tick_group_index = 20;
+        let updated_current_timestamp = updated_current_timestamp + constants.decay_period as i64 + 1;
+
+        // should be updated
+        variables.update_reference(updated_tick_group_index, updated_current_timestamp, &constants);
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          0, // reset
+          13_000,
+        );
+
+        variables.update_volatility_accumulator(updated_tick_group_index, &constants).unwrap();
+        check_variables(
+          &variables,
+          updated_current_timestamp,
+          updated_tick_group_index,
+          0,
+          0, // reference(0) + delta(0)
+        );
+      }
+    }
+  }

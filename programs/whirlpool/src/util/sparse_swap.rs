@@ -6,6 +6,7 @@ use std::{
 
 use crate::{
     errors::ErrorCode,
+    math::floor_division,
     state::{
         Tick, TickArray, TickArrayType, TickUpdate, Whirlpool, ZeroedTickArray, TICK_ARRAY_SIZE,
     },
@@ -346,15 +347,6 @@ fn get_start_tick_indexes(whirlpool: &Account<Whirlpool>, a_to_b: bool) -> Vec<i
     start_tick_indexes
 }
 
-fn floor_division(dividend: i32, divisor: i32) -> i32 {
-    assert!(divisor != 0, "Divisor cannot be zero.");
-    if dividend % divisor == 0 || dividend.signum() == divisor.signum() {
-        dividend / divisor
-    } else {
-        dividend / divisor - 1
-    }
-}
-
 fn derive_tick_array_pda(whirlpool: &Account<Whirlpool>, start_tick_index: i32) -> Pubkey {
     Pubkey::find_program_address(
         &[
@@ -479,25 +471,6 @@ mod sparse_swap_tick_sequence_tests {
             ta_start_11264,
             pubkey!("2ezvsnoXdukw5dAAZ4EkW67bmUo8PHRPX8ZDqf76BKtV")
         );
-    }
-
-    #[test]
-    fn test_floor_division() {
-        assert_eq!(floor_division(0, 64), 0);
-        assert_eq!(floor_division(1, 64), 0);
-        assert_eq!(floor_division(63, 64), 0);
-        assert_eq!(floor_division(64, 64), 1);
-        assert_eq!(floor_division(65, 64), 1);
-        assert_eq!(floor_division(127, 64), 1);
-        assert_eq!(floor_division(128, 64), 2);
-        assert_eq!(floor_division(129, 64), 2);
-        assert_eq!(floor_division(-1, 64), -1);
-        assert_eq!(floor_division(-63, 64), -1);
-        assert_eq!(floor_division(-64, 64), -1);
-        assert_eq!(floor_division(-65, 64), -2);
-        assert_eq!(floor_division(-127, 64), -2);
-        assert_eq!(floor_division(-128, 64), -2);
-        assert_eq!(floor_division(-129, 64), -3);
     }
 
     mod test_get_start_tick_indexes {

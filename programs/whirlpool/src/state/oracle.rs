@@ -124,6 +124,8 @@ impl Oracle {
 
         // TODO: check values (e.g. MAX_REDUCTION_FACTOR)
 
+        // TODO: check max_volatility_accumulator * tick_group_size <= u32::MAX
+
         self.adaptive_fee_constants = AdaptiveFeeConstants {
             filter_period,
             decay_period,
@@ -843,7 +845,7 @@ mod adaptive_fee_variables_tests {
 
             // no change on volatility_accumulator
             variables
-                .update_volatility_accumulator(tick_group_index + 0, &constants)
+                .update_volatility_accumulator(tick_group_index, &constants)
                 .unwrap();
             check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
         }

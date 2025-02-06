@@ -1,5 +1,5 @@
 use crate::{
-    math::sqrt_price_from_tick_index,
+    math::{ceil_division, floor_division, sqrt_price_from_tick_index},
     state::{
         AdaptiveFeeConstants, AdaptiveFeeInfo, AdaptiveFeeVariables, MAX_TICK_INDEX, MIN_TICK_INDEX,
     },
@@ -8,11 +8,10 @@ use anchor_lang::prelude::*;
 
 pub const VOLATILITY_ACCUMULATOR_SCALE_FACTOR: u16 = 10_000;
 pub const MAX_REDUCTION_FACTOR: u16 = 10_000;
-
 pub const ADAPTIVE_FEE_CONTROL_FACTOR_DENOM: u32 = 100_000;
 
 // max fee rate should be controlled by max_volatility_accumulator, so this is a hard limit for safety
-pub const TOTAL_FEE_RATE_HARD_LIMIT: u32 = 100_000; // 10%
+pub const FEE_RATE_HARD_LIMIT: u32 = 100_000; // 10%
 
 pub enum FeeRateManager {
     Adaptive {
@@ -38,13 +37,14 @@ impl FeeRateManager {
         match adaptive_fee_info {
             None => Self::Static { static_fee_rate },
             Some(adaptive_fee_info) => {
-                let tick_group_index = div_floor(
+                let tick_group_index = floor_division(
                     current_tick_index,
                     adaptive_fee_info.constants.tick_group_size as i32,
                 );
                 let adaptive_fee_constants = adaptive_fee_info.constants;
                 let mut adaptive_fee_variables = adaptive_fee_info.variables;
 
+                // update reference at the initialization of the fee rate manager
                 adaptive_fee_variables.update_reference(
                     tick_group_index,
                     timestamp,
@@ -103,8 +103,8 @@ impl FeeRateManager {
                     Self::compute_adaptive_fee_rate(adaptive_fee_constants, adaptive_fee_variables);
                 let total_fee_rate = *static_fee_rate as u32 + adaptive_fee_rate;
 
-                if total_fee_rate > TOTAL_FEE_RATE_HARD_LIMIT {
-                    TOTAL_FEE_RATE_HARD_LIMIT
+                if total_fee_rate > FEE_RATE_HARD_LIMIT {
+                    FEE_RATE_HARD_LIMIT
                 } else {
                     total_fee_rate
                 }
@@ -159,32 +159,22 @@ impl FeeRateManager {
         adaptive_fee_constants: &AdaptiveFeeConstants,
         adaptive_fee_variables: &AdaptiveFeeVariables,
     ) -> u32 {
-        // TODO: remove unwrap
-        let crossed = adaptive_fee_variables
-            .volatility_accumulator
-            .checked_mul(adaptive_fee_constants.tick_group_size as u32)
-            .unwrap();
-        let sqrd = u64::from(crossed) * u64::from(crossed);
-        // TODO: use tight data type (u128 is required ?)
-        div_ceil(
-            u128::from(adaptive_fee_constants.adaptive_fee_control_factor) * u128::from(sqrd),
+        let crossed = adaptive_fee_variables.volatility_accumulator
+            * adaptive_fee_constants.tick_group_size as u32;
+
+        let squared = u64::from(crossed) * u64::from(crossed);
+
+        let fee_rate = ceil_division(
+            u128::from(adaptive_fee_constants.adaptive_fee_control_factor) * u128::from(squared),
             u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOM)
                 * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR)
                 * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR),
-        )
-    }
-}
+        );
 
-fn div_ceil(a: u128, b: u128) -> u32 {
-    let q = (a + b - 1) / b;
-    // TODO: remove unwrap
-    q.try_into().unwrap()
-}
-
-fn div_floor(a: i32, b: i32) -> i32 {
-    if a >= 0 {
-        a / b
-    } else {
-        (a - b + 1) / b
+        if fee_rate > FEE_RATE_HARD_LIMIT as u128 {
+            FEE_RATE_HARD_LIMIT
+        } else {
+            fee_rate as u32
+        }
     }
 }

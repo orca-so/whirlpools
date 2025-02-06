@@ -13,6 +13,37 @@ import { DEFAULT_PRIORITIZATION, TransactionConfig } from "./config";
 import { rpcFromUrl } from "./compatibility";
 import { recentJitoTip } from "./jito";
 
+/**
+ * Estimates priority fees and compute units for a transaction message.
+ *
+ * @param {CompilableTransactionMessage} txMessage - The transaction message to estimate fees for
+ * @param {string} rpcUrl - The RPC URL for the Solana network
+ * @param {boolean} isTriton - Flag indicating if using Triton infrastructure
+ * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Optional transaction configuration for priority fees
+ *
+ * @returns {Promise<{
+ *   priorityFeeMicroLamports: bigint;
+ *   jitoTipLamports: bigint;
+ *   computeUnits: number;
+ * }>} A promise that resolves to an object containing:
+ *   - priorityFeeMicroLamports: The estimated priority fee in micro-lamports
+ *   - jitoTipLamports: The Jito tip amount in lamports
+ *   - computeUnits: The estimated compute units for the transaction
+ *
+ * @throws {Error} If transaction simulation fails
+ *
+ * @example
+ * const fees = await estimatePriorityFees(
+ *   txMessage,
+ *   "https://api.mainnet-beta.solana.com",
+ *   false,
+ *   {
+ *     priorityFee: { type: "dynamic", maxCapLamports: 5_000_000 },
+ *     jito: { type: "dynamic" },
+ *     chainId: "solana"
+ *   }
+ * );
+ */
 async function estimatePriorityFees(
   txMessage: CompilableTransactionMessage,
   rpcUrl: string,

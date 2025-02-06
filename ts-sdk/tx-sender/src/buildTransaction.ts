@@ -6,24 +6,22 @@ import {
   Address,
   compressTransactionMessageUsingAddressLookupTables,
   assertAccountDecoded,
-  assertAccountExists,
-  fetchJsonParsedAccounts,
   appendTransactionMessageInstructions,
   Blockhash,
   createTransactionMessage,
   pipe,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
+  assertAccountExists,
 } from "@solana/web3.js";
 import {
   createFeePayerSigner,
   normalizeAddresses,
-  normalizeInstructions,
-  PublicKey,
   rpcFromUrl,
 } from "./compatibility";
 import { getJitoTipAddress } from "./jito";
 import { getTransferSolInstruction } from "@solana-program/system";
+import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
 import {
   getSetComputeUnitLimitInstruction,
   getSetComputeUnitPriceInstruction,
@@ -36,18 +34,51 @@ import {
   ConnectionContext,
   TransactionConfig,
 } from "./config";
-import { TransactionInstruction } from "./legacy";
 
+/**
+ * Builds a compilable transaction message from the given instructions and configuration.
+ *
+ * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
+ * @param {Address | string} feePayer - The address of the account that will pay for the transaction
+ * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses
+ * @param {string} [rpcUrl] - Optional RPC URL for the Solana network
+ * @param {boolean} [isTriton] - Optional flag to indicate if using Triton infrastructure
+ * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Optional transaction configuration for priority fees
+ *
+ * @returns {Promise<CompilableTransactionMessage>} A promise that resolves to a compilable transaction message
+ *
+ * @example
+ * const instructions = [createATAix, createTransferSolInstruction];
+ * const feePayer = wallet.publicKey;
+ * const message = await buildTransaction(
+ *   instructions,
+ *   feePayer,
+ *   undefined,
+ *   "https://api.mainnet-beta.solana.com",
+ *   false,
+ *   {
+ *     jito: {
+ *       type: "dynamic",
+ *       maxCapLamports: 5_000_000,
+ *     },
+ *     priorityFee: {
+ *       type: "exact",
+ *       amountLamports: 1_000_000,
+ *     },
+ *     chainId: "solana",
+ *   }
+ * );
+ */
 async function buildTransaction(
-  instructions: (IInstruction | TransactionInstruction)[],
-  feePayer: Address | PublicKey,
-  lookupTableAddresses?: (Address | PublicKey)[],
+  instructions: IInstruction[],
+  feePayer: Address | string,
+  lookupTableAddresses?: (Address | string)[],
   rpcUrl?: string,
   isTriton?: boolean,
   transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
 ): Promise<CompilableTransactionMessage> {
   return buildTransactionMessage(
-    normalizeInstructions(instructions),
+    instructions,
     createFeePayerSigner(feePayer),
     getPriorityConfig(transactionConfig),
     getConnectionContext(rpcUrl, isTriton),
@@ -77,13 +108,14 @@ async function buildTransactionMessage(
   );
 
   if (lookupTableAddresses) {
-    const lookupTableAccounts = await fetchJsonParsedAccounts<
-      LookupTableData[]
-    >(rpc, lookupTableAddresses);
+    const lookupTableAccounts = await fetchAllMaybeAddressLookupTable(
+      rpc,
+      lookupTableAddresses
+    );
     const tables = lookupTableAccounts.reduce(
       (prev, account) => {
-        assertAccountDecoded(account);
         assertAccountExists(account);
+        assertAccountDecoded(account);
         prev[account.address] = account.data.addresses;
         return prev;
       },
@@ -140,9 +172,5 @@ function generateTransactionMessage(
     (tx) => appendTransactionMessageInstructions(instructions, tx)
   );
 }
-
-type LookupTableData = {
-  addresses: Address[];
-};
 
 export { buildTransaction };

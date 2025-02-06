@@ -23,29 +23,54 @@ import {
   TransactionWithLifetime,
   assertIsTransactionModifyingSigner,
   TransactionSigner,
-  createKeyPairSignerFromPrivateKeyBytes,
   assertIsKeyPairSigner,
   assertIsTransactionSigner,
+  address,
 } from "@solana/web3.js";
-import {
-  rpcFromUrl,
-  PublicKey,
-  TransactionInstruction,
-  forceAddress,
-  Keypair,
-} from "./compatibility";
+import { rpcFromUrl } from "./compatibility";
 import { buildTransaction } from "./buildTransaction";
 
+/**
+ * Builds and sends a transaction with the given instructions and signers.
+ *
+ * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
+ * @param {KeyPairSigner | {address: Address | string, signTransaction: (tx: Transaction) => Promise<Transaction>}} payer - The fee payer for the transaction
+ * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to use
+ * @param {KeyPairSigner[]} [signers] - Optional additional signers for the transaction
+ * @param {string} [rpcUrlString] - Optional RPC URL. If not provided, uses URL from global config
+ * @param {boolean} [isTritonRpc] - Optional flag indicating if using Triton infrastructure
+ * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Optional transaction configuration for priority fees
+ *
+ * @returns {Promise<void>} A promise that resolves when the transaction is confirmed
+ *
+ * @throws {Error} If transaction building or sending fails
+ *
+ * @example
+ * await buildAndSendTransaction(
+ *   instructions,
+ *   wallet,
+ *   lookupTables,
+ *   [signer1, signer2],
+ *   "https://api.mainnet-beta.solana.com",
+ *   false,
+ *   {
+ *     priorityFee: { type: "dynamic", maxCapLamports: 5_000_000 },
+ *     jito: { type: "dynamic" },
+ *     chainId: "solana"
+ *   }
+ * );
+ */
+
 async function buildAndSendTransaction(
-  instructions: (IInstruction | TransactionInstruction)[],
+  instructions: IInstruction[],
   payer:
     | KeyPairSigner
     | {
-        address: PublicKey;
+        address: Address | string;
         signTransaction: (tx: Transaction) => Promise<Transaction>;
       },
-  lookupTableAddresses?: (Address | PublicKey)[],
-  signers?: Keypair[] | KeyPairSigner[],
+  lookupTableAddresses?: (Address | string)[],
+  signers?: KeyPairSigner[],
   rpcUrlString?: string,
   isTritonRpc?: boolean,
   transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
@@ -65,10 +90,7 @@ async function buildAndSendTransaction(
 
   const additionalSigners = await Promise.all(
     signers?.map(async (kp) => {
-      const signer =
-        kp instanceof Keypair
-          ? await createKeyPairSignerFromPrivateKeyBytes(kp.secretKey)
-          : kp;
+      const signer = kp;
       assertIsKeyPairSigner(signer);
       return signer;
     }) ?? []
@@ -85,7 +107,7 @@ async function buildAndSendTransaction(
               })
             );
           },
-          address: forceAddress(payer.address),
+          address: address(payer.address),
         } as TransactionSigner)
       : payer;
 
@@ -105,6 +127,19 @@ async function buildAndSendTransaction(
   return rpc.sendTransaction(encodedTransaction, {}).send();
 }
 
+/**
+ * Sends a signed transaction message to the Solana network.
+ *
+ * @param {CompilableTransactionMessage} transaction - The compiled transaction message to send
+ * @param {string} [rpcUrl=getConnectionContext().rpcUrl] - Optional RPC URL. If not provided, uses URL from global config
+ *
+ * @returns {Promise<void>} A promise that resolves when the transaction is confirmed
+ *
+ * @throws {Error} If transaction sending fails
+ *
+ * @example
+ * await sendSignedTransactionMessage(compiledTransaction, "https://api.mainnet-beta.solana.com");
+ */
 async function sendSignedTransactionMessage(
   transaction: CompilableTransactionMessage,
   rpcUrl: string = getConnectionContext().rpcUrl
@@ -118,9 +153,8 @@ async function sendSignedTransactionMessage(
 async function signTransactionMessage(
   message: CompilableTransactionMessage,
   signTransaction: (tx: Transaction) => Promise<Transaction>,
-  walletAddress: Address | PublicKey
+  walletAddress: Address | string
 ) {
-  const address = forceAddress(walletAddress);
   const signer = {
     modifyAndSignTransactions: (transactions: Transaction[]) => {
       return Promise.all(
@@ -130,7 +164,7 @@ async function signTransactionMessage(
         })
       );
     },
-    address,
+    address: address(walletAddress),
   } as TransactionSigner;
   assertIsTransactionModifyingSigner(signer);
   const signed = await signTransactionMessageNew(message, [signer]);

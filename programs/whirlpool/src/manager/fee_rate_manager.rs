@@ -563,7 +563,7 @@ mod adaptive_fee_rate_manager_tests {
             for (delta, pre_calculated_fee_rate) in pre_calculated_fee_rates.iter().enumerate() {
                 let tick_group_index = base_tick_group_index + delta as i32;
 
-                variables.update_volatility_accumulator(tick_group_index, &constants);
+                variables.update_volatility_accumulator(tick_group_index, &constants).unwrap();
 
                 let fee_rate = FeeRateManager::compute_adaptive_fee_rate(&constants, &variables);
 

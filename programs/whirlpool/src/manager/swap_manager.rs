@@ -124,7 +124,7 @@ pub fn swap(
 
             let swap_computation = compute_swap(
                 amount_remaining,
-                total_fee_rate.try_into().unwrap(), // TODO: change data type
+                total_fee_rate,
                 curr_liquidity,
                 curr_sqrt_price,
                 bounded_sqrt_price_target,
@@ -2872,5 +2872,237 @@ mod swap_error_tests {
             Some(swap_test_info.tick_arrays[2].borrow_mut()),
         );
         swap_test_info.run(&mut tick_sequence, 100);
+    }
+}
+
+#[cfg(test)]
+mod adaptive_fee_tests {
+    use std::collections::HashMap;
+
+    use super::*;
+    use crate::{
+        manager::fee_rate_manager::{
+            ADAPTIVE_FEE_CONTROL_FACTOR_DENOM, FEE_RATE_HARD_LIMIT,
+            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+        },
+        util::test_utils::swap_test_fixture::*,
+    };
+
+    const B_TO_A: bool = false;
+
+    // another implementation of swap loop to generate expected result
+    fn get_expected_result(
+        a_to_b: bool,
+        start_sqrt_price: u128,
+        start_liquidity: u128,
+        initialized_liquidity_net_map: HashMap<i32, i128>,
+        first_boundary_tick_index: i32,
+        tick_group_size: u16,
+        trade_amount: u64,
+        static_fee_rate: u16,
+        protocol_fee_rate: u16,
+        adaptive_fee_control_factor: u32,
+        max_volatility_cumulator: u32,
+    ) -> (u64, u64, u64, u128) {
+        let mut remaining_input_amount = trade_amount;
+
+        let mut curr_liquidity = start_liquidity;
+
+        let mut curr_sqrt_price = start_sqrt_price;
+        let mut next_tick_index = first_boundary_tick_index;
+
+        let mut tick_group_index_delta = 0;
+
+        let mut fee_amount = 0u64;
+        let mut protocol_fee = 0u64;
+        let mut output_amount = 0u64;
+
+        while remaining_input_amount > 0 && tick_group_index_delta < 100 {
+            // determine fee rate
+            let accumulator = u64::min(
+                tick_group_index_delta as u64 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u64,
+                max_volatility_cumulator as u64,
+            );
+            let crossed = accumulator * tick_group_size as u64;
+            let squared = crossed * crossed;
+            let adaptive_fee_rate = ceil_division(
+                u128::from(adaptive_fee_control_factor) * u128::from(squared),
+                u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOM)
+                    * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR)
+                    * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR),
+            );
+            let capped_adaptive_fee_rate =
+                u128::min(adaptive_fee_rate, u128::from(FEE_RATE_HARD_LIMIT));
+
+            // total fee rate (static + adaptive)
+            let fee_rate = u32::min(
+                static_fee_rate as u32 + capped_adaptive_fee_rate as u32,
+                FEE_RATE_HARD_LIMIT,
+            );
+
+            // swap step
+            let next_sqrt_price = sqrt_price_from_tick_index(next_tick_index);
+            let step_result = compute_swap(
+                remaining_input_amount,
+                fee_rate,
+                curr_liquidity,
+                curr_sqrt_price,
+                next_sqrt_price,
+                true,
+                a_to_b,
+            )
+            .unwrap();
+
+            // update amounts
+            remaining_input_amount = remaining_input_amount
+                .checked_sub(step_result.amount_in + step_result.fee_amount)
+                .unwrap();
+            output_amount += step_result.amount_out;
+            fee_amount += step_result.fee_amount;
+            protocol_fee = calculate_fees(
+                step_result.fee_amount,
+                protocol_fee_rate,
+                curr_liquidity,
+                protocol_fee,
+                0,
+            )
+            .0;
+
+            // update liquidity
+            if let Some(liquidity_net) = initialized_liquidity_net_map.get(&next_tick_index) {
+                if *liquidity_net < 0 {
+                    curr_liquidity -= liquidity_net.unsigned_abs();
+                } else {
+                    curr_liquidity += *liquidity_net as u128;
+                }
+            }
+
+            // update loop vars
+            curr_sqrt_price = step_result.next_price;
+            next_tick_index += if a_to_b {
+                -(tick_group_size as i32)
+            } else {
+                tick_group_size as i32
+            };
+            tick_group_index_delta += 1;
+        }
+
+        (output_amount, fee_amount, protocol_fee, curr_sqrt_price)
+    }
+
+    mod ts_64 {
+        use super::*;
+
+        const TS: u16 = 64;
+
+        fn adaptive_fee_info() -> Option<AdaptiveFeeInfo> {
+            Some(AdaptiveFeeInfo {
+                constants: AdaptiveFeeConstants {
+                    filter_period: 30,
+                    decay_period: 600,
+                    adaptive_fee_control_factor: 5_000,
+                    reduction_factor: 500,
+                    max_volatility_accumulator: 350_000,
+                    tick_group_size: TS,
+                },
+                variables: AdaptiveFeeVariables::default(),
+            })
+        }
+
+        #[test]
+        /// -5632                0                   5632                 11264
+        ///                      p2---p2：500_000
+        ///          p1---------------------p1: 1_000_000
+        /// |--------------------|--------------------|--------------------|--------------------|
+        ///                      c1----->c2
+        fn tick_index_0_b_to_a() {
+            let adaptive_fee_info = adaptive_fee_info();
+            let static_fee_rate = 1000; // 0.1%
+            let protocol_fee_rate = 100; // 1%
+
+            let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                tick_spacing: TS,
+                liquidity: 1_000_000 + 500_000,
+                curr_tick_index: 0,
+                start_tick_index: -5632,
+                trade_amount: 150_000,
+                sqrt_price_limit: 0,
+                amount_specified_is_input: true,
+                a_to_b: B_TO_A,
+                array_1_ticks: &vec![TestTickInfo {
+                    // p1
+                    index: -2816,
+                    liquidity_net: 1_000_000,
+                    ..Default::default()
+                }],
+                array_2_ticks: Some(&vec![
+                    TestTickInfo {
+                        // p2
+                        index: 0,
+                        liquidity_net: 500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p2
+                        index: 1408,
+                        liquidity_net: -500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p1
+                        index: 2816,
+                        liquidity_net: -1_000_000,
+                        ..Default::default()
+                    },
+                ]),
+                adaptive_fee_info: adaptive_fee_info.clone(),
+                fee_rate: static_fee_rate,
+                protocol_fee_rate,
+                ..Default::default()
+            });
+
+            let af_constants = adaptive_fee_info.as_ref().unwrap().constants;
+            let (expected_output, expected_fee, expected_protocol_fee, expected_end_sqrt_price) =
+                get_expected_result(
+                    swap_test_info.a_to_b,
+                    swap_test_info.whirlpool.sqrt_price,
+                    swap_test_info.whirlpool.liquidity,
+                    [(1408, -500_000), (2816, -1_000_000)].into_iter().collect(),
+                    64,
+                    af_constants.tick_group_size,
+                    swap_test_info.trade_amount,
+                    static_fee_rate,
+                    protocol_fee_rate,
+                    af_constants.adaptive_fee_control_factor,
+                    af_constants.max_volatility_accumulator,
+                );
+
+            let mut tick_sequence = SwapTickSequence::new(
+                swap_test_info.tick_arrays[1].borrow_mut(),
+                Some(swap_test_info.tick_arrays[2].borrow_mut()),
+                None,
+            );
+            let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+
+            assert_swap(
+                &post_swap,
+                &SwapTestExpectation {
+                    traded_amount_a: expected_output,
+                    traded_amount_b: swap_test_info.trade_amount,
+                    end_tick_index: tick_index_from_sqrt_price(&expected_end_sqrt_price),
+                    end_liquidity: 1_000_000,
+                    end_reward_growths: [0, 0, 0],
+                },
+            );
+            assert_eq!(post_swap.next_protocol_fee, expected_protocol_fee);
+        }
+    }
+
+    mod ts_1 {
+        use super::*;
+    }
+
+    mod ts_32896 {
+        use super::*;
     }
 }

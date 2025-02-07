@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust
 
+## 1.0.4
+
+### Patch Changes
+
+- [#729](https://github.com/orca-so/whirlpools/pull/729) [`3c185c7`](https://github.com/orca-so/whirlpools/commit/3c185c75cc8f1860befed2472c5ae99909683861) Thanks [@pplanel](https://github.com/pplanel)! - Fix a bug parsing rpc-response in get_token_accounts_for_owner
+
 ## 1.0.3
 
 ### Patch Changes

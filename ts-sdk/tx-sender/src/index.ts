@@ -6,9 +6,11 @@ import {
 } from "./sendTransaction";
 import { estimatePriorityFees } from "./priorityFees";
 import { init } from "./config";
+import { rpcFromUrl } from "./compatibility";
 
 export {
   init,
+  rpcFromUrl,
   estimatePriorityFees,
   buildTransaction,
   signTransactionMessage,

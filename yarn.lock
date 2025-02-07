@@ -17227,7 +17227,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsup@npm:^8.3.5":
+"tsup@npm:^8.3.5, tsup@npm:^8.3.6":
   version: 8.3.6
   resolution: "tsup@npm:8.3.6"
   dependencies:
@@ -17292,6 +17292,7 @@ __metadata:
     "@solana-program/compute-budget": "npm:^0.6.1"
     "@solana-program/system": "npm:^0.6.2"
     "@solana/web3.js": "npm:^2.0.0"
+    tsup: "npm:^8.3.6"
   peerDependencies:
     "@solana/web3.js": ^2.0.0
   languageName: unknown

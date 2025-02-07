@@ -1,108 +1,45 @@
 name: Publish
 
 on:
-  push:
-    tags:
-      - 'v[0-9]+.[0-9]+.[0-9]+'
+  workflow_dispatch:
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
 
 jobs:
-
-  npm:
-    strategy:
-      matrix:
-        package: [core, client, whirlpool]
-      max-parallel: 1
-      fail-fast: true
+  publish:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Setup Anchor
-      uses: ./.github/actions/anchor
-    - name: Set Version
-      uses: ./.github/actions/version
-      with:
-        version: ${{ github.ref }}
-        manifest-file: ts-sdk/${{ matrix.package }}/package.json
-    - name: Setup npm
-      run: npm config set //registry.npmjs.org/:_authToken ${{ secrets.NPM_TOKEN }}
-    - name: Setup yarn
-      run: yarn config set enableImmutableInstalls false
-    - name: Install dependencies
-      run: yarn install
-    - name: Build package
-      run: yarn build ts-sdk/${{ matrix.package }} --output-style static
-    - name: Publish package
-      working-directory: ts-sdk/${{ matrix.package }}
-      run: npm publish --access public
-
-  cargo:
-    strategy:
-      matrix:
-        package: [macros, core, client, whirlpool]
-      max-parallel: 1
-      fail-fast: true
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Setup Anchor
-      uses: ./.github/actions/anchor
-    - name: Set Version
-      uses: ./.github/actions/version
-      with:
-        version: ${{ github.ref }}
-        manifest-file: rust-sdk/${{ matrix.package }}/Cargo.toml
-    - name: Install dependencies
-      run: yarn install
-    - name: Build package
-      run: yarn build rust-sdk/${{ matrix.package }} --output-style static
-    - name: Publish package
-      working-directory: rust-sdk/${{ matrix.package }}
-      run: cargo publish --allow-dirty
-      env:
-        CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
-
-  idl:
-    runs-on: ubuntu-latest
-    steps:
-    - name: Checkout Repository
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0
-    - name: Setup Anchor
-      uses: ./.github/actions/anchor
-    - name: Build idl
-      run: anchor build
-    - name: Upload artifacts
-      uses: actions/upload-artifact@v4
-      with:
-        name: idl
-        path: target/idl/*.json
-        if-no-files-found: error
-
-  release:
-    needs: [npm, cargo, idl]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-    - name: Download artifacts
-      uses: actions/download-artifact@v4
-      id: idl
-      with:
-        name: idl
-    - name: Create Release Name
-      id: name
-      run: echo "NAME=SDK - $(basename ${{ github.ref_name }})" >> $GITHUB_OUTPUT
-    - name: Create Release
-      uses: ncipollo/release-action@v1
-      with:
-        name: ${{ steps.name.outputs.NAME }}
-        generateReleaseNotes: true
-        allowUpdates: true
-        artifacts: ${{ steps.idl.outputs.download-path }}/idl.zip
+      - name: Main Only
+        if: ${{ github.ref != 'refs/heads/main' }}
+        run: exit 1
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+      - name: Setup SSH
+        uses: ./.github/actions/ssh
+        with:
+          ssh-key: ${{ secrets.GH_DEPLOY_KEY }}
+          user: changests[bot]
+      - name: Setup Anchor
+        uses: ./.github/actions/anchor
+      - name: Install dependencies
+        run: yarn install
+      - name: Determine New Versions
+        run: yarn changeset version
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Update Cargo Version Numbers
+        uses: ./.github/actions/sync
+      - name: Git Commit
+        run: git add . && git commit -m "Publish Packages"
+      - name: Publish Packages
+        run: yarn deploy
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CRATES_TOKEN }}
+          SSH_AUTH_SOCK: /tmp/ssh_agent.sock
+      - name: Tag Release
+        run: yarn changeset tag
+      - name: Git Push
+        run: git push origin main && git push --tags

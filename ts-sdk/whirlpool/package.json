@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools",
-  "version": "0.0.1",
+  "version": "1.0.3",
   "description": "Orca's high-level typescript sdk to interact with Orca's on-chain Whirlpool program.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -24,6 +24,7 @@
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
     "test": "vitest run tests",
+    "deploy": "../../scripts/deploy-npm",
     "clean": "rimraf dist"
   },
   "dependencies": {

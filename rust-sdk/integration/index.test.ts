@@ -41,20 +41,14 @@ function check(path: string) {
 
 describe("Integration", () => {
   clientConfigs.forEach((config) => {
-    it.concurrent(`Build client using ${config}`, () =>
-      check(`./client/${config}`),
-    );
+    it(`Build client using ${config}`, () => check(`./client/${config}`));
   });
 
   coreConfigs.forEach((config) => {
-    it.concurrent(`Build core using ${config}`, () =>
-      check(`./core/${config}`),
-    );
+    it(`Build core using ${config}`, () => check(`./core/${config}`));
   });
 
   whirlpoolConfigs.forEach((config) => {
-    it.concurrent(`Build whirlpool using ${config}`, () =>
-      check(`./whirlpool/${config}`),
-    );
+    it(`Build whirlpool using ${config}`, () => check(`./whirlpool/${config}`));
   });
 });

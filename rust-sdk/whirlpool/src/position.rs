@@ -5,10 +5,9 @@ use orca_whirlpools_client::{
     get_position_bundle_address, DecodedAccount, Position, PositionBundle, PositionFilter,
 };
 use orca_whirlpools_core::POSITION_BUNDLE_SIZE;
-use solana_client::nonblocking::rpc_client::RpcClient;
+use solana_client::{nonblocking::rpc_client::RpcClient, rpc_request::TokenAccountsFilter};
 use solana_sdk::account::Account;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signer::Signer;
 
 use crate::{get_token_accounts_for_owner, ParsedTokenAccount};
 
@@ -127,10 +126,10 @@ fn get_position_in_bundle_addresses(position_bundle: &PositionBundle) -> Vec<Pub
 /// async fn main() {
 ///     set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
 ///     let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
-///     let whirlpool_address =
-///         Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
+///     let owner =
+///         Pubkey::from_str("FTEV6CnregJCqU8s8hGR3VAYCrPKHfekXLsJaKHbPBxp").unwrap();
 ///
-///     let positions = fetch_positions_for_owner(&rpc, whirlpool_address)
+///     let positions = fetch_positions_for_owner(&rpc, owner)
 ///         .await
 ///         .unwrap();
 ///
@@ -141,9 +140,15 @@ pub async fn fetch_positions_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
 ) -> Result<Vec<PositionOrBundle>, Box<dyn Error>> {
-    let token_accounts = get_token_accounts_for_owner(rpc, owner, spl_token::ID).await?;
-    let token_extension_accounts =
-        get_token_accounts_for_owner(rpc, owner, spl_token_2022::ID).await?;
+    let token_accounts =
+        get_token_accounts_for_owner(rpc, owner, TokenAccountsFilter::ProgramId(spl_token::ID))
+            .await?;
+    let token_extension_accounts = get_token_accounts_for_owner(
+        rpc,
+        owner,
+        TokenAccountsFilter::ProgramId(spl_token_2022::ID),
+    )
+    .await?;
 
     let potiential_tokens: Vec<ParsedTokenAccount> = [token_accounts, token_extension_accounts]
         .into_iter()
@@ -306,6 +311,7 @@ mod tests {
     };
     use serial_test::serial;
     use solana_program_test::tokio;
+    use solana_sdk::signer::Signer;
     use std::error::Error;
 
     const DEFAULT_TICK_RANGE: (i32, i32) = (-100, 100);

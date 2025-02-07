@@ -7,16 +7,19 @@
     "build": "nx run-many --target build --projects",
     "start": "nx run-many --target start --projects",
     "test": "nx run-many --target test --projects",
+    "deploy": "nx run-many --target deploy --projects",
     "format": "nx run-many --target format --projects",
     "lint": "nx run-many --target lint --projects",
     "clean": "nx reset && nx run-many --target clean --projects"
   },
   "devDependencies": {
-    "@types/node": "^22.10.7",
-    "nx": "^20.2.2",
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.27.12",
+    "@types/node": "^22.13.1",
+    "nx": "^20.3.3",
     "rimraf": "^6.0.1",
-    "tsup": "^8.3.5",
-    "vitest": "^2.1.8"
+    "tsup": "^8.3.6",
+    "vitest": "^3.0.5"
   },
   "workspaces": [
     "programs/*",

@@ -1,6 +1,6 @@
 [package]
 name = "orca_whirlpools_core_js_bindings"
-version = "0.1.0"
+version = "1.0.3"
 publish = false
 edition = "2021"
 

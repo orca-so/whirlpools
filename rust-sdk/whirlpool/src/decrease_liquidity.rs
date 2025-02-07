@@ -12,7 +12,6 @@ use orca_whirlpools_core::{
     get_tick_index_in_array, CollectFeesQuote, CollectRewardsQuote, DecreaseLiquidityQuote,
 };
 use solana_client::nonblocking::rpc_client::RpcClient;
-use solana_sdk::program_pack::Pack;
 use solana_sdk::{account::Account, instruction::Instruction, pubkey::Pubkey, signature::Keypair};
 use spl_associated_token_account::get_associated_token_address_with_program_id;
 use std::{
@@ -657,12 +656,13 @@ mod tests {
     };
 
     use crate::{
-        decrease_liquidity_instructions, increase_liquidity_instructions,
+        close_position_instructions, decrease_liquidity_instructions,
+        increase_liquidity_instructions, swap_instructions,
         tests::{
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
             setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
         },
-        DecreaseLiquidityParam, IncreaseLiquidityParam,
+        DecreaseLiquidityParam, IncreaseLiquidityParam, SwapType,
     };
     use orca_whirlpools_client::{get_position_address, Position};
 
@@ -674,6 +674,19 @@ mod tests {
         } else {
             let parsed = TokenAccount::unpack(&account_data.data)?;
             Ok(parsed.amount)
+        }
+    }
+
+    async fn maybe_fetch_position(
+        rpc: &RpcClient,
+        position_pubkey: Pubkey,
+    ) -> Result<Option<Position>, Box<dyn Error>> {
+        match rpc.get_account(&position_pubkey).await {
+            Ok(acc) => {
+                let p = Position::from_bytes(&acc.data)?;
+                Ok(Some(p))
+            }
+            Err(_) => Ok(None),
         }
     }
 
@@ -896,11 +909,165 @@ mod tests {
             )
             .await
             .unwrap();
-
-            println!(
-                "[combo={}, range=({},{}), pos={}] => Decrease 50k => OK",
-                pool_name, lower_tick, upper_tick, position_mint
-            );
         });
+    }
+
+    #[rstest]
+    #[case("A-B",    "equally centered", -100, 100)]
+    #[case("A-B",    "one sided A",      -100, -1)]
+    #[case("A-TEA",  "equally centered", -100, 100)]
+    #[case("A-TEA",  "one sided A",      -100, -1)]
+    #[case("TEA-TEB","equally centered", -100, 100)]
+    #[case("TEA-TEB","one sided A",      -100, -1)]
+    #[case("A-TEFee","equally centered", -100, 100)]
+    #[case("A-TEFee","one sided A",      -100, -1)]
+    #[tokio::test]
+    #[serial]
+    async fn test_close_position_cases(
+        #[case] pool_name: &str,
+        #[case] range_name: &str,
+        #[case] lower_tick: i32,
+        #[case] upper_tick: i32,
+    ) -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+        let minted = setup_all_mints(&ctx).await?;
+        let user_atas = setup_all_atas(&ctx, &minted).await?;
+
+        let (mkey_a, mkey_b) = parse_pool_name(pool_name);
+        let pubkey_a = minted[mkey_a];
+        let pubkey_b = minted[mkey_b];
+        let swapped = pubkey_a > pubkey_b;
+        let (final_a, final_b) = if pubkey_a < pubkey_b {
+            (pubkey_a, pubkey_b)
+        } else {
+            (pubkey_b, pubkey_a)
+        };
+
+        let tick_spacing = 64;
+        let pool_pubkey = setup_whirlpool(&ctx, final_a, final_b, tick_spacing).await?;
+        let position_mint =
+            setup_position(&ctx, pool_pubkey, Some((lower_tick, upper_tick)), None).await?;
+
+        let inc_ix = increase_liquidity_instructions(
+            &ctx.rpc,
+            position_mint,
+            IncreaseLiquidityParam::Liquidity(100_000),
+            Some(100),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+        ctx.send_transaction_with_signers(inc_ix.instructions, vec![])
+            .await?;
+
+        let swap_ix = swap_instructions(
+            &ctx.rpc,
+            pool_pubkey,
+            100,
+            final_a,
+            SwapType::ExactIn,
+            Some(100),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+        ctx.send_transaction_with_signers(
+            swap_ix.instructions,
+            swap_ix.additional_signers.iter().collect(),
+        )
+        .await?;
+
+        let before_a = get_token_balance(
+            &ctx.rpc,
+            if swapped {
+                user_atas[mkey_b]
+            } else {
+                user_atas[mkey_a]
+            },
+        )
+        .await?;
+        let before_b = get_token_balance(
+            &ctx.rpc,
+            if swapped {
+                user_atas[mkey_a]
+            } else {
+                user_atas[mkey_b]
+            },
+        )
+        .await?;
+
+        let close_ix = close_position_instructions(
+            &ctx.rpc,
+            position_mint,
+            Some(100),
+            Some(ctx.signer.pubkey()),
+        )
+        .await?;
+        let signers: Vec<&Keypair> = close_ix.additional_signers.iter().collect();
+        ctx.send_transaction_with_signers(close_ix.instructions.clone(), signers)
+            .await?;
+
+        let position_address = get_position_address(&position_mint)?.0;
+        let position_after = maybe_fetch_position(&ctx.rpc, position_address).await?;
+        assert!(
+            position_after.is_none(),
+            "[{} {}] position={} was not closed!",
+            pool_name,
+            range_name,
+            position_mint
+        );
+
+        let after_a = get_token_balance(
+            &ctx.rpc,
+            if swapped {
+                user_atas[mkey_b]
+            } else {
+                user_atas[mkey_a]
+            },
+        )
+        .await?;
+        let after_b = get_token_balance(
+            &ctx.rpc,
+            if swapped {
+                user_atas[mkey_a]
+            } else {
+                user_atas[mkey_b]
+            },
+        )
+        .await?;
+        let gained_a = after_a.saturating_sub(before_a);
+        let gained_b = after_b.saturating_sub(before_b);
+
+        let total_expected_a = close_ix.quote.token_est_a + close_ix.fees_quote.fee_owed_a;
+        let total_expected_b = close_ix.quote.token_est_b + close_ix.fees_quote.fee_owed_b;
+
+        assert_eq!(
+            gained_a, total_expected_a,
+            "[{} {}] position={} token A mismatch: gained={}, expected={}",
+            pool_name, range_name, position_mint, gained_a, total_expected_a
+        );
+        assert_eq!(
+            gained_b, total_expected_b,
+            "[{} {}] position={} token B mismatch: gained={}, expected={}",
+            pool_name, range_name, position_mint, gained_b, total_expected_b
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    #[serial]
+    async fn test_close_position_fails_if_missing_mint() -> Result<(), Box<dyn Error>> {
+        let ctx = RpcContext::new().await;
+
+        let bogus_mint = Pubkey::new_unique();
+
+        let res =
+            close_position_instructions(&ctx.rpc, bogus_mint, Some(100), Some(ctx.signer.pubkey()))
+                .await;
+
+        assert!(
+            res.is_err(),
+            "Expected error when position mint doesn't exist"
+        );
+
+        Ok(())
     }
 }

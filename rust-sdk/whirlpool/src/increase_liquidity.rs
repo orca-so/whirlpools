@@ -700,7 +700,6 @@ pub async fn open_position_instructions(
 mod tests {
     use std::collections::HashMap;
     use std::error::Error;
-    use std::time::Duration;
 
     use orca_whirlpools_client::{get_position_address, Position};
     use rstest::rstest;
@@ -713,8 +712,7 @@ mod tests {
     };
     use spl_token::state::Account as TokenAccount;
     use spl_token_2022::{
-        extension::{ExtensionType, StateWithExtensionsOwned},
-        state::Account as TokenAccount2022,
+        extension::StateWithExtensionsOwned, state::Account as TokenAccount2022,
         ID as TOKEN_2022_PROGRAM_ID,
     };
 
@@ -722,8 +720,7 @@ mod tests {
         increase_liquidity_instructions,
         tests::{
             setup_ata_te, setup_ata_with_amount, setup_mint_te, setup_mint_te_fee,
-            setup_mint_with_decimals, setup_position, setup_te_position, setup_whirlpool,
-            RpcContext, SetupAtaConfig,
+            setup_mint_with_decimals, setup_position, setup_whirlpool, RpcContext, SetupAtaConfig,
         },
         IncreaseLiquidityParam,
     };
@@ -883,6 +880,7 @@ mod tests {
     #[case("A-TEFee", "equally centered", -100, 100)]
     #[case("A-TEFee", "one sided A", -100, -1)]
     #[case("A-TEFee", "one sided B", 1, 100)]
+    #[serial]
     fn test_increase_liquidity_cases(
         #[case] pool_name: &str,
         #[case] position_name: &str,
@@ -951,11 +949,6 @@ mod tests {
             )
             .await
             .unwrap();
-
-            println!(
-                "[combo={}, pos_range={}] => position={} => success!",
-                pool_name, position_name, position_mint
-            );
         });
     }
 

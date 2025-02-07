@@ -1,19 +1,20 @@
 {
   "name": "@orca-so/whirlpools-rust-client",
-  "version": "0.0.1",
+  "version": "1.0.3",
   "type": "module",
   "scripts": {
     "build": "node ./codama.js && cargo build",
     "test": "cargo test --lib",
+    "deploy": "../../scripts/deploy-cargo",
     "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
     "lint": "cargo clippy && cargo fmt --check",
     "clean": "cargo clean"
   },
   "devDependencies": {
-    "@codama/nodes-from-anchor": "^1.1.0",
-    "@codama/renderers-rust": "^1.0.6",
+    "@codama/nodes-from-anchor": "^1.1.4",
+    "@codama/renderers-rust": "^1.0.12",
     "@orca-so/whirlpools-program": "*",
     "@orca-so/whirlpools-rust-core": "*",
-    "codama": "^1.2.0"
+    "codama": "^1.2.4"
   }
 }

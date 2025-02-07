@@ -1,11 +1,12 @@
 {
   "name": "@orca-so/whirlpools-rust-integration",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "type": "module",
+  "private": true,
   "scripts": {
     "build": "tsc --noEmit",
-    "test": "vitest run index.test.ts",
-    "clean": "rimraf --glob ./**/Cargo.lock ./**/target"
+    "test": "vitest run index.test.ts --test-timeout 60000",
+    "clean": "rimraf --glob ./**/Cargo.lock ./**/target || true"
   },
   "devDependencies": {
     "@orca-so/whirlpools-rust": "*",

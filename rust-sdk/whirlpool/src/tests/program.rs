@@ -11,28 +11,18 @@ use orca_whirlpools_core::{
     get_initializable_tick_index, get_tick_array_start_tick_index, tick_index_to_sqrt_price,
     TICK_ARRAY_SIZE,
 };
-use solana_program::program_pack::Pack;
 use solana_program::sysvar::rent::ID as RENT_PROGRAM_ID;
-use solana_sdk::{
-    pubkey::Pubkey,
-    signer::{keypair::Keypair, Signer},
-    system_instruction, system_program,
-};
+use solana_sdk::{pubkey::Pubkey, signer::Signer, system_program};
 use spl_associated_token_account::{
     get_associated_token_address, get_associated_token_address_with_program_id,
-    instruction::create_associated_token_account,
 };
-use spl_token::instruction::initialize_mint2;
 use spl_token::ID as TOKEN_PROGRAM_ID;
-use spl_token_2022::{state::Mint as Token2022Mint, ID as TOKEN_2022_PROGRAM_ID};
+use spl_token_2022::ID as TOKEN_2022_PROGRAM_ID;
 use std::error::Error;
 
-use crate::tests::token::{setup_ata, setup_mint_with_decimals};
 use crate::WHIRLPOOLS_CONFIG_ADDRESS;
 
 use super::rpc::RpcContext;
-
-use crate::tests::token_extensions::setup_mint_te;
 
 pub async fn init_tick_arrays_for_range(
     ctx: &RpcContext,

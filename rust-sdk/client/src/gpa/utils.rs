@@ -7,17 +7,8 @@ use solana_client::{
     rpc_config::{RpcAccountInfoConfig, RpcProgramAccountsConfig},
     rpc_filter::RpcFilterType,
 };
-use solana_program::pubkey::Pubkey;
-use solana_sdk::account::Account;
 
-use crate::WHIRLPOOL_ID;
-
-#[derive(Debug, Clone)]
-pub struct DecodedAccount<T> {
-    pub address: Pubkey,
-    pub account: Account,
-    pub data: T,
-}
+use crate::{generated::shared::DecodedAccount, WHIRLPOOL_ID};
 
 pub(crate) async fn fetch_decoded_program_accounts<T: BorshDeserialize>(
     rpc: &RpcClient,

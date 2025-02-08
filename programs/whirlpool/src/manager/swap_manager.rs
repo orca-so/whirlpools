@@ -3006,6 +3006,12 @@ mod adaptive_fee_tests {
         (output_amount, curr_fee, curr_protocol_fee, curr_sqrt_price)
     }
 
+    fn get_mid_sqrt_price(left_tick_index: i32, right_tick_index: i32) -> u128 {
+        let left_sqrt_price = sqrt_price_from_tick_index(left_tick_index);
+        let right_sqrt_price = sqrt_price_from_tick_index(right_tick_index);
+        (left_sqrt_price + right_sqrt_price) / 2
+    }
+
     mod ts_64 {
         use super::*;
 
@@ -3208,7 +3214,6 @@ mod adaptive_fee_tests {
             assert_eq!(post_swap.next_protocol_fee, expected_protocol_fee);
         }
 
-
         #[test]
         /// a to b, sqrt price is on an initializable tick(0) (SHIFTED)
         /// notes:
@@ -3369,6 +3374,757 @@ mod adaptive_fee_tests {
                     swap_test_info.whirlpool.liquidity,
                     [(0, 500_000), (1408, -500_000), (2816, -1_000_000)].into_iter().collect(),
                     0,
+                    af_constants.tick_group_size,
+                    swap_test_info.trade_amount,
+                    static_fee_rate,
+                    protocol_fee_rate,
+                    af_constants.adaptive_fee_control_factor,
+                    af_constants.max_volatility_accumulator,
+                );
+
+            let mut tick_sequence = SwapTickSequence::new(
+                swap_test_info.tick_arrays[1].borrow_mut(),
+                Some(swap_test_info.tick_arrays[2].borrow_mut()),
+                None,
+            );
+            let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+
+            assert_swap(
+                &post_swap,
+                &SwapTestExpectation {
+                    traded_amount_a: expected_output,
+                    traded_amount_b: swap_test_info.trade_amount,
+                    end_tick_index: tick_index_from_sqrt_price(&expected_end_sqrt_price),
+                    end_liquidity: 1_000_000,
+                    end_reward_growths: [0, 0, 0],
+                },
+            );
+            assert_eq!(post_swap.next_protocol_fee, expected_protocol_fee);
+        }
+
+        #[test]
+        /// a to b, sqrt price is NOT on an initializable tick (between tick index 0 ~ 1)
+        /// notes:
+        /// - first tick group index should be 0
+        /// - the delta of tick group index for [0, 64] range is 0.
+        /// - the delta of tick group index for [-64, 0] range is 1.
+        ///
+        /// -11264               -5632                0                   5632
+        ///                                           p2---p2：500_000
+        ///                                p1---------------------p1: 1_000_000
+        /// |--------------------|--------------------|--------------------|
+        ///                                    c2<-----c1
+        fn tick_index_mid_0_and_1_a_to_b() {
+            let adaptive_fee_info = adaptive_fee_info();
+            let static_fee_rate = 1000; // 0.1%
+            let protocol_fee_rate = 100; // 1%
+
+            let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                tick_spacing: TS,
+                liquidity: 1_000_000 + 500_000,
+                curr_tick_index: 0,
+                curr_sqrt_price_override: Some(get_mid_sqrt_price(0, 1)),
+                start_tick_index: 0,
+                trade_amount: 150_000,
+                sqrt_price_limit: 0,
+                amount_specified_is_input: true,
+                a_to_b: A_TO_B,
+                array_1_ticks: &vec![
+                    TestTickInfo {
+                        // p2
+                        index: 0,
+                        liquidity_net: 500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p2
+                        index: 1408,
+                        liquidity_net: -500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p1
+                        index: 2816,
+                        liquidity_net: -1_000_000,
+                        ..Default::default()
+                    },
+                ],
+                array_2_ticks: Some(&vec![TestTickInfo {
+                    // p1
+                    index: -2816,
+                    liquidity_net: 1_000_000,
+                    ..Default::default()
+                }]),
+                adaptive_fee_info: adaptive_fee_info.clone(),
+                fee_rate: static_fee_rate,
+                protocol_fee_rate,
+                ..Default::default()
+            });
+
+            let af_constants = adaptive_fee_info.as_ref().unwrap().constants;
+            let (expected_output, _, expected_protocol_fee, expected_end_sqrt_price) =
+                get_expected_result(
+                    swap_test_info.a_to_b,
+                    swap_test_info.whirlpool.sqrt_price,
+                    swap_test_info.whirlpool.liquidity,
+                    [(0, 500_000), (-2816, 1_000_000)].into_iter().collect(),
+                    0,
+                    af_constants.tick_group_size,
+                    swap_test_info.trade_amount,
+                    static_fee_rate,
+                    protocol_fee_rate,
+                    af_constants.adaptive_fee_control_factor,
+                    af_constants.max_volatility_accumulator,
+                );
+
+            let mut tick_sequence = SwapTickSequence::new(
+                swap_test_info.tick_arrays[0].borrow_mut(),
+                Some(swap_test_info.tick_arrays[1].borrow_mut()),
+                None,
+            );
+            let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+
+            assert_swap(
+                &post_swap,
+                &SwapTestExpectation {
+                    traded_amount_a: swap_test_info.trade_amount,
+                    traded_amount_b: expected_output,
+                    end_tick_index: tick_index_from_sqrt_price(&expected_end_sqrt_price),
+                    end_liquidity: 1_000_000,
+                    end_reward_growths: [0, 0, 0],
+                },
+            );
+            assert_eq!(post_swap.next_protocol_fee, expected_protocol_fee);
+        }
+
+        #[test]
+        /// b to a, sqrt price is NOT on an initializable tick (between tick index 0 ~ 1)
+        /// notes:
+        /// - first tick group index should be 0
+        /// - the delta of tick group index for [0, 64] range is 0.
+        ///
+        /// -5632                0                   5632                 11264
+        ///                      p2---p2：500_000
+        ///          p1---------------------p1: 1_000_000
+        /// |--------------------|--------------------|--------------------|--------------------|
+        ///                       c1----->c2
+        fn tick_index_mid_0_and_1_b_to_a() {
+            let adaptive_fee_info = adaptive_fee_info();
+            let static_fee_rate = 1000; // 0.1%
+            let protocol_fee_rate = 100; // 1%
+
+            let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                tick_spacing: TS,
+                liquidity: 1_000_000 + 500_000,
+                curr_tick_index: 0,
+                curr_sqrt_price_override: Some(get_mid_sqrt_price(0, 1)),
+                start_tick_index: -5632,
+                trade_amount: 150_000,
+                sqrt_price_limit: 0,
+                amount_specified_is_input: true,
+                a_to_b: B_TO_A,
+                array_1_ticks: &vec![TestTickInfo {
+                    // p1
+                    index: -2816,
+                    liquidity_net: 1_000_000,
+                    ..Default::default()
+                }],
+                array_2_ticks: Some(&vec![
+                    TestTickInfo {
+                        // p2
+                        index: 0,
+                        liquidity_net: 500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p2
+                        index: 1408,
+                        liquidity_net: -500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p1
+                        index: 2816,
+                        liquidity_net: -1_000_000,
+                        ..Default::default()
+                    },
+                ]),
+                adaptive_fee_info: adaptive_fee_info.clone(),
+                fee_rate: static_fee_rate,
+                protocol_fee_rate,
+                ..Default::default()
+            });
+
+            let af_constants = adaptive_fee_info.as_ref().unwrap().constants;
+            let (expected_output, _, expected_protocol_fee, expected_end_sqrt_price) =
+                get_expected_result(
+                    swap_test_info.a_to_b,
+                    swap_test_info.whirlpool.sqrt_price,
+                    swap_test_info.whirlpool.liquidity,
+                    [(1408, -500_000), (2816, -1_000_000)].into_iter().collect(),
+                    64,
+                    af_constants.tick_group_size,
+                    swap_test_info.trade_amount,
+                    static_fee_rate,
+                    protocol_fee_rate,
+                    af_constants.adaptive_fee_control_factor,
+                    af_constants.max_volatility_accumulator,
+                );
+
+            let mut tick_sequence = SwapTickSequence::new(
+                swap_test_info.tick_arrays[1].borrow_mut(),
+                Some(swap_test_info.tick_arrays[2].borrow_mut()),
+                None,
+            );
+            let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+
+            assert_swap(
+                &post_swap,
+                &SwapTestExpectation {
+                    traded_amount_a: expected_output,
+                    traded_amount_b: swap_test_info.trade_amount,
+                    end_tick_index: tick_index_from_sqrt_price(&expected_end_sqrt_price),
+                    end_liquidity: 1_000_000,
+                    end_reward_growths: [0, 0, 0],
+                },
+            );
+            assert_eq!(post_swap.next_protocol_fee, expected_protocol_fee);
+        }
+
+        #[test]
+        /// a to b, sqrt price is NOT on an initializable tick (32)
+        /// notes:
+        /// - first tick group index should be 0
+        /// - the delta of tick group index for [0, 64] range is 0.
+        /// - the delta of tick group index for [-64, 0] range is 1.
+        ///
+        /// -11264               -5632                0                   5632
+        ///                                           p2---p2：500_000
+        ///                                p1---------------------p1: 1_000_000
+        /// |--------------------|--------------------|--------------------|
+        ///                                     c2<-----c1
+        fn tick_index_32_a_to_b() {
+            let adaptive_fee_info = adaptive_fee_info();
+            let static_fee_rate = 1000; // 0.1%
+            let protocol_fee_rate = 100; // 1%
+
+            let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                tick_spacing: TS,
+                liquidity: 1_000_000 + 500_000,
+                curr_tick_index: 32,
+                start_tick_index: 0,
+                trade_amount: 150_000,
+                sqrt_price_limit: 0,
+                amount_specified_is_input: true,
+                a_to_b: A_TO_B,
+                array_1_ticks: &vec![
+                    TestTickInfo {
+                        // p2
+                        index: 0,
+                        liquidity_net: 500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p2
+                        index: 1408,
+                        liquidity_net: -500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p1
+                        index: 2816,
+                        liquidity_net: -1_000_000,
+                        ..Default::default()
+                    },
+                ],
+                array_2_ticks: Some(&vec![TestTickInfo {
+                    // p1
+                    index: -2816,
+                    liquidity_net: 1_000_000,
+                    ..Default::default()
+                }]),
+                adaptive_fee_info: adaptive_fee_info.clone(),
+                fee_rate: static_fee_rate,
+                protocol_fee_rate,
+                ..Default::default()
+            });
+
+            let af_constants = adaptive_fee_info.as_ref().unwrap().constants;
+            let (expected_output, _, expected_protocol_fee, expected_end_sqrt_price) =
+                get_expected_result(
+                    swap_test_info.a_to_b,
+                    swap_test_info.whirlpool.sqrt_price,
+                    swap_test_info.whirlpool.liquidity,
+                    [(0, 500_000), (-2816, 1_000_000)].into_iter().collect(),
+                    0,
+                    af_constants.tick_group_size,
+                    swap_test_info.trade_amount,
+                    static_fee_rate,
+                    protocol_fee_rate,
+                    af_constants.adaptive_fee_control_factor,
+                    af_constants.max_volatility_accumulator,
+                );
+
+            let mut tick_sequence = SwapTickSequence::new(
+                swap_test_info.tick_arrays[0].borrow_mut(),
+                Some(swap_test_info.tick_arrays[1].borrow_mut()),
+                None,
+            );
+            let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+
+            assert_swap(
+                &post_swap,
+                &SwapTestExpectation {
+                    traded_amount_a: swap_test_info.trade_amount,
+                    traded_amount_b: expected_output,
+                    end_tick_index: tick_index_from_sqrt_price(&expected_end_sqrt_price),
+                    end_liquidity: 1_000_000,
+                    end_reward_growths: [0, 0, 0],
+                },
+            );
+            assert_eq!(post_swap.next_protocol_fee, expected_protocol_fee);
+        }
+
+        #[test]
+        /// b to a, sqrt price is NOT on an initializable tick (32)
+        /// notes:
+        /// - first tick group index should be 0
+        /// - the delta of tick group index for [0, 64] range is 0.
+        ///
+        /// -5632                0                   5632                 11264
+        ///                      p2---p2：500_000
+        ///          p1---------------------p1: 1_000_000
+        /// |--------------------|--------------------|--------------------|--------------------|
+        ///                        c1----->c2
+        fn tick_index_32_b_to_a() {
+            let adaptive_fee_info = adaptive_fee_info();
+            let static_fee_rate = 1000; // 0.1%
+            let protocol_fee_rate = 100; // 1%
+
+            let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                tick_spacing: TS,
+                liquidity: 1_000_000 + 500_000,
+                curr_tick_index: 32,
+                start_tick_index: -5632,
+                trade_amount: 150_000,
+                sqrt_price_limit: 0,
+                amount_specified_is_input: true,
+                a_to_b: B_TO_A,
+                array_1_ticks: &vec![TestTickInfo {
+                    // p1
+                    index: -2816,
+                    liquidity_net: 1_000_000,
+                    ..Default::default()
+                }],
+                array_2_ticks: Some(&vec![
+                    TestTickInfo {
+                        // p2
+                        index: 0,
+                        liquidity_net: 500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p2
+                        index: 1408,
+                        liquidity_net: -500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p1
+                        index: 2816,
+                        liquidity_net: -1_000_000,
+                        ..Default::default()
+                    },
+                ]),
+                adaptive_fee_info: adaptive_fee_info.clone(),
+                fee_rate: static_fee_rate,
+                protocol_fee_rate,
+                ..Default::default()
+            });
+
+            let af_constants = adaptive_fee_info.as_ref().unwrap().constants;
+            let (expected_output, _, expected_protocol_fee, expected_end_sqrt_price) =
+                get_expected_result(
+                    swap_test_info.a_to_b,
+                    swap_test_info.whirlpool.sqrt_price,
+                    swap_test_info.whirlpool.liquidity,
+                    [(1408, -500_000), (2816, -1_000_000)].into_iter().collect(),
+                    64,
+                    af_constants.tick_group_size,
+                    swap_test_info.trade_amount,
+                    static_fee_rate,
+                    protocol_fee_rate,
+                    af_constants.adaptive_fee_control_factor,
+                    af_constants.max_volatility_accumulator,
+                );
+
+            let mut tick_sequence = SwapTickSequence::new(
+                swap_test_info.tick_arrays[1].borrow_mut(),
+                Some(swap_test_info.tick_arrays[2].borrow_mut()),
+                None,
+            );
+            let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+
+            assert_swap(
+                &post_swap,
+                &SwapTestExpectation {
+                    traded_amount_a: expected_output,
+                    traded_amount_b: swap_test_info.trade_amount,
+                    end_tick_index: tick_index_from_sqrt_price(&expected_end_sqrt_price),
+                    end_liquidity: 1_000_000,
+                    end_reward_growths: [0, 0, 0],
+                },
+            );
+            assert_eq!(post_swap.next_protocol_fee, expected_protocol_fee);
+        }
+
+        #[test]
+        /// a to b, sqrt price is on an initializable tick (64, but not initialized)
+        /// notes:
+        /// - first tick group index should be 1
+        /// - the delta of tick group index for [64, 128] range is 0.
+        /// - the delta of tick group index for [0, 64] range is 1.
+        ///
+        /// -11264               -5632                0                   5632
+        ///                                           p2---p2：500_000
+        ///                                p1---------------------p1: 1_000_000
+        /// |--------------------|--------------------|--------------------|
+        ///                                      c2<-----c1
+        fn tick_index_64_a_to_b() {
+            let adaptive_fee_info = adaptive_fee_info();
+            let static_fee_rate = 1000; // 0.1%
+            let protocol_fee_rate = 100; // 1%
+
+            let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                tick_spacing: TS,
+                liquidity: 1_000_000 + 500_000,
+                curr_tick_index: 64,
+                start_tick_index: 0,
+                trade_amount: 150_000,
+                sqrt_price_limit: 0,
+                amount_specified_is_input: true,
+                a_to_b: A_TO_B,
+                array_1_ticks: &vec![
+                    TestTickInfo {
+                        // p2
+                        index: 0,
+                        liquidity_net: 500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p2
+                        index: 1408,
+                        liquidity_net: -500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p1
+                        index: 2816,
+                        liquidity_net: -1_000_000,
+                        ..Default::default()
+                    },
+                ],
+                array_2_ticks: Some(&vec![TestTickInfo {
+                    // p1
+                    index: -2816,
+                    liquidity_net: 1_000_000,
+                    ..Default::default()
+                }]),
+                adaptive_fee_info: adaptive_fee_info.clone(),
+                fee_rate: static_fee_rate,
+                protocol_fee_rate,
+                ..Default::default()
+            });
+
+            let af_constants = adaptive_fee_info.as_ref().unwrap().constants;
+            let (expected_output, _, expected_protocol_fee, expected_end_sqrt_price) =
+                get_expected_result(
+                    swap_test_info.a_to_b,
+                    swap_test_info.whirlpool.sqrt_price,
+                    swap_test_info.whirlpool.liquidity,
+                    [(0, 500_000), (-2816, 1_000_000)].into_iter().collect(),
+                    64,
+                    af_constants.tick_group_size,
+                    swap_test_info.trade_amount,
+                    static_fee_rate,
+                    protocol_fee_rate,
+                    af_constants.adaptive_fee_control_factor,
+                    af_constants.max_volatility_accumulator,
+                );
+
+            let mut tick_sequence = SwapTickSequence::new(
+                swap_test_info.tick_arrays[0].borrow_mut(),
+                Some(swap_test_info.tick_arrays[1].borrow_mut()),
+                None,
+            );
+            let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+
+            assert_swap(
+                &post_swap,
+                &SwapTestExpectation {
+                    traded_amount_a: swap_test_info.trade_amount,
+                    traded_amount_b: expected_output,
+                    end_tick_index: tick_index_from_sqrt_price(&expected_end_sqrt_price),
+                    end_liquidity: 1_000_000,
+                    end_reward_growths: [0, 0, 0],
+                },
+            );
+            assert_eq!(post_swap.next_protocol_fee, expected_protocol_fee);
+        }
+
+        #[test]
+        /// b to a, sqrt price is on an initializable tick (64, but not initialized)
+        /// notes:
+        /// - first tick group index should be 1
+        /// - the delta of tick group index for [64, 128] range is 0.
+        ///
+        /// -5632                0                   5632                 11264
+        ///                      p2---p2：500_000
+        ///          p1---------------------p1: 1_000_000
+        /// |--------------------|--------------------|--------------------|--------------------|
+        ///                         c1----->c2
+        fn tick_index_64_b_to_a() {
+            let adaptive_fee_info = adaptive_fee_info();
+            let static_fee_rate = 1000; // 0.1%
+            let protocol_fee_rate = 100; // 1%
+
+            let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                tick_spacing: TS,
+                liquidity: 1_000_000 + 500_000,
+                curr_tick_index: 64,
+                start_tick_index: -5632,
+                trade_amount: 150_000,
+                sqrt_price_limit: 0,
+                amount_specified_is_input: true,
+                a_to_b: B_TO_A,
+                array_1_ticks: &vec![TestTickInfo {
+                    // p1
+                    index: -2816,
+                    liquidity_net: 1_000_000,
+                    ..Default::default()
+                }],
+                array_2_ticks: Some(&vec![
+                    TestTickInfo {
+                        // p2
+                        index: 0,
+                        liquidity_net: 500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p2
+                        index: 1408,
+                        liquidity_net: -500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p1
+                        index: 2816,
+                        liquidity_net: -1_000_000,
+                        ..Default::default()
+                    },
+                ]),
+                adaptive_fee_info: adaptive_fee_info.clone(),
+                fee_rate: static_fee_rate,
+                protocol_fee_rate,
+                ..Default::default()
+            });
+
+            let af_constants = adaptive_fee_info.as_ref().unwrap().constants;
+            let (expected_output, _, expected_protocol_fee, expected_end_sqrt_price) =
+                get_expected_result(
+                    swap_test_info.a_to_b,
+                    swap_test_info.whirlpool.sqrt_price,
+                    swap_test_info.whirlpool.liquidity,
+                    [(1408, -500_000), (2816, -1_000_000)].into_iter().collect(),
+                    128,
+                    af_constants.tick_group_size,
+                    swap_test_info.trade_amount,
+                    static_fee_rate,
+                    protocol_fee_rate,
+                    af_constants.adaptive_fee_control_factor,
+                    af_constants.max_volatility_accumulator,
+                );
+
+            let mut tick_sequence = SwapTickSequence::new(
+                swap_test_info.tick_arrays[1].borrow_mut(),
+                Some(swap_test_info.tick_arrays[2].borrow_mut()),
+                None,
+            );
+            let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+
+            assert_swap(
+                &post_swap,
+                &SwapTestExpectation {
+                    traded_amount_a: expected_output,
+                    traded_amount_b: swap_test_info.trade_amount,
+                    end_tick_index: tick_index_from_sqrt_price(&expected_end_sqrt_price),
+                    end_liquidity: 1_000_000,
+                    end_reward_growths: [0, 0, 0],
+                },
+            );
+            assert_eq!(post_swap.next_protocol_fee, expected_protocol_fee);
+        }
+
+        #[test]
+        /// a to b, sqrt price is on an initializable tick (64, but not initialized, SHIFTED)
+        /// notes:
+        /// - first tick group index should be 0
+        /// - the delta of tick group index for [0, 64] range is 0.
+        ///
+        /// -11264               -5632                0                   5632
+        ///                                           p2---p2：500_000
+        ///                                p1---------------------p1: 1_000_000
+        /// |--------------------|--------------------|--------------------|
+        ///                                      c2<-----c1
+        fn tick_index_64_shifted_a_to_b() {
+            let adaptive_fee_info = adaptive_fee_info();
+            let static_fee_rate = 1000; // 0.1%
+            let protocol_fee_rate = 100; // 1%
+
+            let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                tick_spacing: TS,
+                liquidity: 1_000_000 + 500_000,
+                curr_tick_index: 64 - 1, // shifted
+                curr_sqrt_price_override: Some(sqrt_price_from_tick_index(64)),
+                start_tick_index: 0,
+                trade_amount: 150_000,
+                sqrt_price_limit: 0,
+                amount_specified_is_input: true,
+                a_to_b: A_TO_B,
+                array_1_ticks: &vec![
+                    TestTickInfo {
+                        // p2
+                        index: 0,
+                        liquidity_net: 500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p2
+                        index: 1408,
+                        liquidity_net: -500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p1
+                        index: 2816,
+                        liquidity_net: -1_000_000,
+                        ..Default::default()
+                    },
+                ],
+                array_2_ticks: Some(&vec![TestTickInfo {
+                    // p1
+                    index: -2816,
+                    liquidity_net: 1_000_000,
+                    ..Default::default()
+                }]),
+                adaptive_fee_info: adaptive_fee_info.clone(),
+                fee_rate: static_fee_rate,
+                protocol_fee_rate,
+                ..Default::default()
+            });
+
+            let af_constants = adaptive_fee_info.as_ref().unwrap().constants;
+            let (expected_output, _, expected_protocol_fee, expected_end_sqrt_price) =
+                get_expected_result(
+                    swap_test_info.a_to_b,
+                    swap_test_info.whirlpool.sqrt_price,
+                    swap_test_info.whirlpool.liquidity,
+                    [(0, 500_000), (-2816, 1_000_000)].into_iter().collect(),
+                    0,
+                    af_constants.tick_group_size,
+                    swap_test_info.trade_amount,
+                    static_fee_rate,
+                    protocol_fee_rate,
+                    af_constants.adaptive_fee_control_factor,
+                    af_constants.max_volatility_accumulator,
+                );
+
+            let mut tick_sequence = SwapTickSequence::new(
+                swap_test_info.tick_arrays[0].borrow_mut(),
+                Some(swap_test_info.tick_arrays[1].borrow_mut()),
+                None,
+            );
+            let post_swap = swap_test_info.run(&mut tick_sequence, 100);
+
+            assert_swap(
+                &post_swap,
+                &SwapTestExpectation {
+                    traded_amount_a: swap_test_info.trade_amount,
+                    traded_amount_b: expected_output,
+                    end_tick_index: tick_index_from_sqrt_price(&expected_end_sqrt_price),
+                    end_liquidity: 1_000_000,
+                    end_reward_growths: [0, 0, 0],
+                },
+            );
+            assert_eq!(post_swap.next_protocol_fee, expected_protocol_fee);
+        }
+
+        #[test]
+        /// b to a, sqrt price is on an initializable tick (64, but not initialized, SHIFTED)
+        /// notes:
+        /// - first tick group index should be 0
+        /// - the delta of tick group index for [64, 128] range is 1.
+        ///
+        /// -5632                0                   5632                 11264
+        ///                      p2---p2：500_000
+        ///          p1---------------------p1: 1_000_000
+        /// |--------------------|--------------------|--------------------|--------------------|
+        ///                         c1----->c2
+        fn tick_index_64_shifted_b_to_a() {
+            let adaptive_fee_info = adaptive_fee_info();
+            let static_fee_rate = 1000; // 0.1%
+            let protocol_fee_rate = 100; // 1%
+
+            let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                tick_spacing: TS,
+                liquidity: 1_000_000 + 500_000,
+                curr_tick_index: 64 - 1, // shifted
+                curr_sqrt_price_override: Some(sqrt_price_from_tick_index(64)),
+                start_tick_index: -5632,
+                trade_amount: 150_000,
+                sqrt_price_limit: 0,
+                amount_specified_is_input: true,
+                a_to_b: B_TO_A,
+                array_1_ticks: &vec![TestTickInfo {
+                    // p1
+                    index: -2816,
+                    liquidity_net: 1_000_000,
+                    ..Default::default()
+                }],
+                array_2_ticks: Some(&vec![
+                    TestTickInfo {
+                        // p2
+                        index: 0,
+                        liquidity_net: 500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p2
+                        index: 1408,
+                        liquidity_net: -500_000,
+                        ..Default::default()
+                    },
+                    TestTickInfo {
+                        // p1
+                        index: 2816,
+                        liquidity_net: -1_000_000,
+                        ..Default::default()
+                    },
+                ]),
+                adaptive_fee_info: adaptive_fee_info.clone(),
+                fee_rate: static_fee_rate,
+                protocol_fee_rate,
+                ..Default::default()
+            });
+
+            let af_constants = adaptive_fee_info.as_ref().unwrap().constants;
+            let (expected_output, _, expected_protocol_fee, expected_end_sqrt_price) =
+                get_expected_result(
+                    swap_test_info.a_to_b,
+                    swap_test_info.whirlpool.sqrt_price,
+                    swap_test_info.whirlpool.liquidity,
+                    [(1408, -500_000), (2816, -1_000_000)].into_iter().collect(),
+                    64,
                     af_constants.tick_group_size,
                     swap_test_info.trade_amount,
                     static_fee_rate,

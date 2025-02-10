@@ -5,6 +5,7 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_client::rpc_config::RpcSendTransactionConfig;
 use solana_sdk::commitment_config::CommitmentLevel;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
+use solana_sdk::native_token::lamports_to_sol;
 use solana_sdk::{
     message::Message, program_pack::Pack, pubkey::Pubkey, signature::Signature, signer::Signer,
     transaction::Transaction,
@@ -15,6 +16,8 @@ use std::error::Error;
 use tokio::time::{sleep, Duration, Instant};
 use tokio_retry::strategy::ExponentialBackoff;
 use tokio_retry::Retry;
+
+const NATIVE_MINT_ADDRESS: &str = "So11111111111111111111111111111111111111112";
 
 pub async fn display_position_balances(
     rpc: &RpcClient,
@@ -75,6 +78,11 @@ pub async fn fetch_token_balance(
     wallet_address: &Pubkey,
     token_mint_address: &Pubkey,
 ) -> Result<String, Box<dyn Error>> {
+    if token_mint_address.to_string() == NATIVE_MINT_ADDRESS {
+        let balance = rpc.get_balance(wallet_address).await?;
+        return Ok(lamports_to_sol(balance).to_string());
+    }
+
     let mint_account = rpc.get_account(token_mint_address).await?;
     let token_program_id = mint_account.owner;
     let token_address = get_associated_token_address_with_program_id(

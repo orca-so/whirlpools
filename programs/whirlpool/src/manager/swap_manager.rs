@@ -2888,7 +2888,7 @@ mod adaptive_fee_tests {
     use super::*;
     use crate::{
         manager::fee_rate_manager::{
-            ADAPTIVE_FEE_CONTROL_FACTOR_DENOM, FEE_RATE_HARD_LIMIT,
+            ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, FEE_RATE_HARD_LIMIT,
             VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         },
         util::test_utils::swap_test_fixture::*,
@@ -2952,7 +2952,7 @@ mod adaptive_fee_tests {
             let squared = crossed * crossed;
             let adaptive_fee_rate = ceil_division(
                 u128::from(adaptive_fee_control_factor) * u128::from(squared),
-                u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOM)
+                u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR)
                     * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR)
                     * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR),
             );

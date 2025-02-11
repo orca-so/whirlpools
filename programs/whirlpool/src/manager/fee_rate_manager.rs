@@ -8,7 +8,7 @@ use anchor_lang::prelude::*;
 
 pub const VOLATILITY_ACCUMULATOR_SCALE_FACTOR: u16 = 10_000;
 pub const MAX_REDUCTION_FACTOR: u16 = 10_000;
-pub const ADAPTIVE_FEE_CONTROL_FACTOR_DENOM: u32 = 100_000;
+pub const ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR: u32 = 100_000;
 
 // max fee rate should be controlled by max_volatility_accumulator, so this is a hard limit for safety
 pub const FEE_RATE_HARD_LIMIT: u32 = 100_000; // 10%
@@ -166,7 +166,7 @@ impl FeeRateManager {
 
         let fee_rate = ceil_division(
             u128::from(adaptive_fee_constants.adaptive_fee_control_factor) * u128::from(squared),
-            u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOM)
+            u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR)
                 * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR)
                 * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR),
         );
@@ -582,7 +582,7 @@ mod adaptive_fee_rate_manager_tests {
                 let expected_fee_rate = ceil_division(
                     u128::from(constants.adaptive_fee_control_factor)
                         * u128::from(squared_crossed_tick_indexes),
-                    u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOM)
+                    u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR)
                         * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR)
                         * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR),
                 ) as u32;

@@ -1,23 +1,21 @@
 import { describe, it } from "vitest";
 import { buildTransaction } from "../src/buildTransaction";
 import { vi } from "vitest";
-import * as priorityFees from "../src/priorityFees";
 import * as compatibility from "../src/compatibility";
 import {
+  createKeyPairSignerFromPrivateKeyBytes,
   generateKeyPairSigner,
+  getBase64EncodedWireTransaction,
   IInstruction,
   ITransactionMessageWithFeePayerSigner,
   Rpc,
 } from "@solana/web3.js";
 import { getTransferSolInstruction } from "@solana-program/system";
-import {
-  address,
-  createKeyPairSignerFromPrivateKeyBytes,
-} from "@solana/web3.js";
+import { address } from "@solana/web3.js";
 
 import assert from "assert";
 import { init } from "../src/config";
-import { encodeTransaction } from "./utils";
+import { decodeTransaction, encodeTransaction } from "./utils";
 
 const rpcUrl = "https://api.mainnet-beta.solana.com";
 
@@ -60,6 +58,9 @@ vi.mock("@solana/web3.js", async () => {
         }
       ) => encodeTransaction(message.instructions, message.feePayer)
     ),
+    getComputeUnitEstimateForTransactionMessageFactory: vi
+      .fn()
+      .mockReturnValue(vi.fn().mockResolvedValue(50_000)),
   };
 });
 
@@ -67,15 +68,17 @@ const mockRpc = {
   getLatestBlockhash: vi.fn().mockReturnValue({
     send: vi.fn().mockResolvedValue(getLatestBlockhashMockRpcResponse),
   }),
+  getRecentPrioritizationFees: vi.fn().mockReturnValue({
+    send: vi.fn().mockResolvedValue([
+      {
+        prioritizationFee: BigInt(1000),
+        slot: 123456789n,
+      },
+    ]),
+  }),
 } as unknown as Rpc<any>;
 
 vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(mockRpc);
-
-vi.spyOn(priorityFees, "estimatePriorityFees").mockResolvedValue({
-  priorityFeeMicroLamports: 1000n,
-  jitoTipLamports: 10_000n,
-  computeUnits: 200000,
-});
 
 describe("Build Transaction", async () => {
   const signer = await generateKeyPairSigner();
@@ -97,16 +100,17 @@ describe("Build Transaction", async () => {
     });
 
     assert(message);
+    console.log({ message });
 
-    // mock encoder [encodeTransaction] returns 59 message bytes but supposed to be 64
-    // so decoder fails
+    const decodedIxs = await decodeTransaction(
+      getBase64EncodedWireTransaction(message)
+    );
 
-    // const txProgeramIds = await decodeTransaction(message.messageBytes);
-    // const computeUnitProgramId = "ComputeBudget111111111111111111111111111111";
-    // const hasComputeUnitInstruction = txProgeramIds.some(
-    //   (programId) => programId === computeUnitProgramId
-    // );
-    // assert.strictEqual(hasComputeUnitInstruction, false);
+    const computeUnitProgramId = "ComputeBudget111111111111111111111111111111";
+    const hasComputeUnitInstruction = decodedIxs.some(
+      (ix) => ix.programAddress === computeUnitProgramId
+    );
+    assert.strictEqual(hasComputeUnitInstruction, false);
   });
 
   it("Should build transaction with exact priority fee", async () => {

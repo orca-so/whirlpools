@@ -2,7 +2,6 @@ import {
   getTransactionDecoder,
   getCompiledTransactionMessageDecoder,
   decompileTransactionMessageFetchingLookupTables,
-  ReadonlyUint8Array,
   FullySignedTransaction,
   TransactionWithBlockhashLifetime,
   TransactionSigner,
@@ -10,13 +9,18 @@ import {
   IInstruction,
   compileTransactionMessage,
   TransactionMessageBytes,
+  getBase64Encoder,
+  SignatureBytes,
 } from "@solana/web3.js";
 import { rpcFromUrl } from "../src/compatibility";
 import { generateTransactionMessage } from "../src/buildTransaction";
 
-export async function decodeTransaction(transactionBytes: ReadonlyUint8Array) {
+export async function decodeTransaction(base64EncodedTransaction: string) {
+  const base64Encoder = getBase64Encoder();
+  const transactionBytes = base64Encoder.encode(base64EncodedTransaction);
   const transactionDecoder = getTransactionDecoder();
   const decodedTransaction = transactionDecoder.decode(transactionBytes);
+  console.log({ decodedTransaction, transactionBytes });
 
   const compiledMessageDecoder = getCompiledTransactionMessageDecoder();
   const compiledMessage = compiledMessageDecoder.decode(
@@ -27,11 +31,13 @@ export async function decodeTransaction(transactionBytes: ReadonlyUint8Array) {
   const decompiledMessage =
     await decompileTransactionMessageFetchingLookupTables(compiledMessage, rpc);
 
-  const instructionsProgramIds = decompiledMessage.instructions.map(
-    (instruction) => instruction.programAddress
-  );
+  const instructions = decompiledMessage.instructions.map((instruction) => ({
+    programAddress: instruction.programAddress,
+    data: instruction.data,
+    accounts: instruction.accounts,
+  }));
 
-  return instructionsProgramIds;
+  return instructions;
 }
 
 export async function encodeTransaction(
@@ -50,7 +56,7 @@ export async function encodeTransaction(
   // @ts-ignore
   return {
     messageBytes,
-    signatures: {},
+    signatures: { [feePayer.address]: new Uint8Array() as SignatureBytes },
     lifetimeConstraint: message.lifetimeConstraint,
   };
 }

@@ -37,11 +37,11 @@ import {
  *
  * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
  * @param {KeyPairSigner} payer - The fee payer for the transaction
+ * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Optional transaction configuration for priority fees
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to use
  * @param {KeyPairSigner[]} [signers] - Optional additional signers for the transaction
  * @param {{rpcUrlString?: string, isTritonRpc?: boolean, wsUrlString?: string}} [connectionConfig]
  * - Optional connection configuration (required if init hasn't been called)
- * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Optional transaction configuration for priority fees
  *
  * @returns {Promise<string>} A promise that resolves to the transaction signature
  *
@@ -51,16 +51,16 @@ import {
  * await buildAndSendTransaction(
  *   instructions,
  *   wallet,
+ *   {
+ *     priorityFee: { type: "dynamic", maxCapLamports: 5_000_000 },
+ *     jito: { type: "dynamic" },
+ *     chainId: "solana"
+ *   },
  *   lookupTables,
  *   [additionalSigner1, additionalSigner2],
  *   {
  *     rpcUrl: "https://api.mainnet-beta.solana.com",
  *     isTriton: false
- *   },
- *   {
- *     priorityFee: { type: "dynamic", maxCapLamports: 5_000_000 },
- *     jito: { type: "dynamic" },
- *     chainId: "solana"
  *   }
  * );
  */
@@ -68,10 +68,10 @@ import {
 async function buildAndSendTransaction(
   instructions: IInstruction[],
   payer: KeyPairSigner,
+  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION,
   lookupTableAddresses?: (Address | string)[],
   signers?: KeyPairSigner[],
-  connectionConfig?: ConnectionContext,
-  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
+  connectionConfig?: ConnectionContext
 ) {
   const { rpcUrl, isTriton, wsUrl } = getConnectionContext(
     connectionConfig?.rpcUrl,

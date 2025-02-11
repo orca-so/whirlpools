@@ -20,7 +20,6 @@ export async function decodeTransaction(base64EncodedTransaction: string) {
   const transactionBytes = base64Encoder.encode(base64EncodedTransaction);
   const transactionDecoder = getTransactionDecoder();
   const decodedTransaction = transactionDecoder.decode(transactionBytes);
-  console.log({ decodedTransaction, transactionBytes });
 
   const compiledMessageDecoder = getCompiledTransactionMessageDecoder();
   const compiledMessage = compiledMessageDecoder.decode(

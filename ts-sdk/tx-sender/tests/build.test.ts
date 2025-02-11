@@ -1,7 +1,8 @@
-import { describe, it } from "vitest";
+import { describe, expect, it } from "vitest";
 import { buildTransaction } from "../src/buildTransaction";
 import { vi } from "vitest";
 import * as compatibility from "../src/compatibility";
+import * as jito from "../src/jito";
 import {
   createKeyPairSignerFromPrivateKeyBytes,
   generateKeyPairSigner,
@@ -9,15 +10,18 @@ import {
   IInstruction,
   ITransactionMessageWithFeePayerSigner,
   Rpc,
+  SolanaRpcApi,
 } from "@solana/web3.js";
 import { getTransferSolInstruction } from "@solana-program/system";
 import { address } from "@solana/web3.js";
-
 import assert from "assert";
 import { init } from "../src/config";
 import { decodeTransaction, encodeTransaction } from "./utils";
+import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
 
 const rpcUrl = "https://api.mainnet-beta.solana.com";
+const computeUnitProgramId = "ComputeBudget111111111111111111111111111111";
+const systemProgramId = "11111111111111111111111111111111";
 
 const getLatestBlockhashMockRpcResponse = {
   value: {
@@ -76,9 +80,13 @@ const mockRpc = {
       },
     ]),
   }),
-} as unknown as Rpc<any>;
+} as const satisfies Partial<Rpc<SolanaRpcApi>>;
 
-vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(mockRpc);
+vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
+  mockRpc as unknown as Rpc<SolanaRpcApi>
+);
+
+vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
 
 describe("Build Transaction", async () => {
   const signer = await generateKeyPairSigner();
@@ -99,17 +107,18 @@ describe("Build Transaction", async () => {
       chainId: "solana",
     });
 
-    assert(message);
-    console.log({ message });
-
     const decodedIxs = await decodeTransaction(
       getBase64EncodedWireTransaction(message)
     );
 
-    const computeUnitProgramId = "ComputeBudget111111111111111111111111111111";
     const hasComputeUnitInstruction = decodedIxs.some(
       (ix) => ix.programAddress === computeUnitProgramId
     );
+    const systemProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === systemProgramId
+    ).length;
+
+    assert.strictEqual(systemProgramixCount, 1);
     assert.strictEqual(hasComputeUnitInstruction, false);
   });
 
@@ -123,7 +132,19 @@ describe("Build Transaction", async () => {
       chainId: "solana",
     });
 
-    assert(message);
+    const decodedIxs = await decodeTransaction(
+      getBase64EncodedWireTransaction(message)
+    );
+
+    const computeUnitProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === computeUnitProgramId
+    ).length;
+    const systemProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === systemProgramId
+    ).length;
+
+    assert.strictEqual(systemProgramixCount, 1);
+    assert.strictEqual(computeUnitProgramixCount, 2);
   });
 
   it("Should build transaction with dynamic priority fee", async () => {
@@ -136,7 +157,23 @@ describe("Build Transaction", async () => {
       chainId: "solana",
     });
 
-    assert(message);
+    assert.strictEqual(
+      mockRpc.getRecentPrioritizationFees().send.mock.calls.length,
+      1
+    );
+    const decodedIxs = await decodeTransaction(
+      getBase64EncodedWireTransaction(message)
+    );
+
+    const computeUnitProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === computeUnitProgramId
+    ).length;
+    const systemProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === systemProgramId
+    ).length;
+
+    assert.strictEqual(systemProgramixCount, 1);
+    assert.strictEqual(computeUnitProgramixCount, 2);
   });
 
   it("Should build transaction with exact Jito tip", async () => {
@@ -149,7 +186,21 @@ describe("Build Transaction", async () => {
       chainId: "solana",
     });
 
-    assert(message);
+    const decodedIxs = await decodeTransaction(
+      getBase64EncodedWireTransaction(message)
+    );
+
+    const computeUnitProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === computeUnitProgramId
+    ).length;
+    const systemProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === systemProgramId
+    ).length;
+
+    assert.strictEqual(computeUnitProgramixCount, 0);
+    assert.strictEqual(systemProgramixCount, 2);
+
+    expect(jito.recentJitoTip).not.toHaveBeenCalled();
   });
 
   it("Should build transaction with dynamic Jito tip", async () => {
@@ -158,8 +209,21 @@ describe("Build Transaction", async () => {
       jito: { type: "dynamic" },
       chainId: "solana",
     });
+    const decodedIxs = await decodeTransaction(
+      getBase64EncodedWireTransaction(message)
+    );
 
-    assert(message);
+    const computeUnitProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === computeUnitProgramId
+    ).length;
+    const systemProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === systemProgramId
+    ).length;
+
+    assert.strictEqual(computeUnitProgramixCount, 0);
+    assert.strictEqual(systemProgramixCount, 2);
+
+    expect(jito.recentJitoTip).toHaveBeenCalled();
   });
 
   it("Should build transaction with lookup tables", async () => {
@@ -178,8 +242,24 @@ describe("Build Transaction", async () => {
       },
       lookupTables
     );
+    const decodedIxs = await decodeTransaction(
+      getBase64EncodedWireTransaction(message)
+    );
 
-    assert(message);
+    const computeUnitProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === computeUnitProgramId
+    ).length;
+    const systemProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === systemProgramId
+    ).length;
+
+    assert.strictEqual(computeUnitProgramixCount, 0);
+    assert.strictEqual(systemProgramixCount, 1);
+
+    expect(vi.mocked(fetchAllMaybeAddressLookupTable)).toHaveBeenCalledWith(
+      mockRpc,
+      lookupTables
+    );
   });
 
   it("Should build transaction with additional signers", async () => {
@@ -198,7 +278,19 @@ describe("Build Transaction", async () => {
       [],
       [additionalSigner]
     );
+    assert(message.signatures[signer.address]);
+    const decodedIxs = await decodeTransaction(
+      getBase64EncodedWireTransaction(message)
+    );
 
-    assert(message);
+    const computeUnitProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === computeUnitProgramId
+    ).length;
+    const systemProgramixCount = decodedIxs.filter(
+      (ix) => ix.programAddress === systemProgramId
+    ).length;
+
+    assert.strictEqual(computeUnitProgramixCount, 0);
+    assert.strictEqual(systemProgramixCount, 1);
   });
 });

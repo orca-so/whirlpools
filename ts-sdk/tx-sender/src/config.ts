@@ -1,6 +1,5 @@
 let globalConfig: {
-  rpcUrl?: string;
-  isTriton?: boolean;
+  connectionContext?: ConnectionContext;
   transactionConfig?: TransactionConfig;
 } = {};
 
@@ -9,27 +8,31 @@ let globalConfig: {
  * Calling this allows you to avoid passing the same parameters to every function.
  *
  * @param {Object} config - The configuration object
- * @param {string} config.rpcUrl - The RPC endpoint URL to use for Solana network connections
+ * @param {ConnectionContext} [config.connectionContext] - Connection configuration
+ * @param {string} config.connectionContext.rpcUrl - The RPC endpoint URL to use for Solana network connections
+ * @param {boolean} [config.connectionContext.isTriton] - Optional flag indicating if using Triton infrastructure
+ * @param {string} [config.connectionContext.wsUrl] - Optional WebSocket URL for transaction confirmation
  * @param {TransactionConfig} [config.transactionConfig] - Optional configuration for transaction priority fees and Jito tips
- * @param {boolean} [config.isTriton] - Optional flag indicating if using Triton infrastructure
  *
  * The TransactionConfig object has the following properties:
- * @param {Object} transactionConfig.priorityFee - Configuration for priority fees
- * @param {"exact" | "dynamic"} transactionConfig.priorityFee.type - Type of priority fee:
+ * @param {FeeSetting} transactionConfig.priorityFee - Configuration for priority fees
+ * @param {"exact" | "dynamic" | "none"} transactionConfig.priorityFee.type - Type of priority fee:
  *   - "exact": Use a fixed amount specified by amountLamports
  *   - "dynamic": Calculate fee based on recent fees, optionally capped by maxCapLamports
+ *   - "none": No priority fee
  * @param {bigint} [transactionConfig.priorityFee.amountLamports] - Fixed amount in lamports for "exact" type
  * @param {bigint} [transactionConfig.priorityFee.maxCapLamports] - Maximum fee cap in lamports for "dynamic" type
  *
- * @param {Object} transactionConfig.jito - Configuration for Jito MEV tips
- * @param {"exact" | "dynamic"} transactionConfig.jito.type - Type of Jito tip:
+ * @param {FeeSetting} transactionConfig.jito - Configuration for Jito MEV tips
+ * @param {"exact" | "dynamic" | "none"} transactionConfig.jito.type - Type of Jito tip:
  *   - "exact": Use a fixed amount specified by amountLamports
  *   - "dynamic": Calculate tip based on recent tips
+ *   - "none": No Jito tip
  * @param {bigint} [transactionConfig.jito.amountLamports] - Fixed amount in lamports for "exact" type
  * @param {bigint} [transactionConfig.jito.maxCapLamports] - Maximum tip cap in lamports for "dynamic" type
  *
- * @param {"solana"} transactionConfig.chainId - Chain identifier, currently only "solana" supported
- *
+ * @param {ChainId} transactionConfig.chainId - Chain identifier ("solana" or "eclipse")
+ * @param {number} [transactionConfig.computeUnitMarginMultiplier] - Optional multiplier for compute unit margin
  * @example
  * init({
  *   rpcUrl: "https://api.mainnet-beta.solana.com",
@@ -42,19 +45,20 @@ let globalConfig: {
  *       type: "exact",
  *       amountLamports: 1_000_000 // Fixed 0.001 SOL tip
  *     },
- *     chainId: "solana"
+ *     chainId: "solana",
+ *     computeUnitMarginMultiplier: 1.04, // 4% margin for compute units
  *   },
  *   isTriton: false
  * });
  */
 const init = (config: {
-  rpcUrl: string;
   transactionConfig?: TransactionConfig;
-  isTriton?: boolean;
+  connectionContext?: ConnectionContext;
 }) => {
   setGlobalConfig(config);
 };
 
+const DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER = 1.1;
 const DEFAULT_PRIORITIZATION: TransactionConfig = {
   priorityFee: {
     type: "dynamic",
@@ -65,23 +69,33 @@ const DEFAULT_PRIORITIZATION: TransactionConfig = {
     maxCapLamports: BigInt(4_000_000), // 0.004 SOL
   },
   chainId: "solana",
+  computeUnitMarginMultiplier: DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
 };
-
 const getConnectionContext = (
   rpcUrl?: string,
-  isTriton?: boolean
+  isTriton?: boolean,
+  wsUrl?: string
 ): ConnectionContext => {
   if (rpcUrl) {
-    return { rpcUrl, isTriton: !!isTriton };
+    return {
+      rpcUrl,
+      isTriton: !!isTriton,
+      wsUrl:
+        wsUrl !== undefined ? wsUrl : globalConfig.connectionContext?.wsUrl,
+    };
   }
-  if (!globalConfig.rpcUrl) {
+
+  const connectionContext = globalConfig.connectionContext;
+  if (!connectionContext?.rpcUrl) {
     throw new Error(
       "Connection not initialized. Call init() first or provide connection parameter"
     );
   }
+
   return {
-    rpcUrl: globalConfig.rpcUrl,
-    isTriton: !!globalConfig.isTriton,
+    rpcUrl: connectionContext.rpcUrl,
+    isTriton: !!connectionContext.isTriton,
+    wsUrl: connectionContext.wsUrl,
   };
 };
 
@@ -98,14 +112,12 @@ const getPriorityConfig = (
 };
 
 const setGlobalConfig = (config: {
-  rpcUrl: string;
   transactionConfig?: TransactionConfig;
-  isTriton?: boolean;
+  connectionContext?: ConnectionContext;
 }) => {
   globalConfig = {
-    rpcUrl: config.rpcUrl,
-    isTriton: !!config.isTriton,
     transactionConfig: config.transactionConfig || DEFAULT_PRIORITIZATION,
+    connectionContext: config.connectionContext,
   };
 };
 
@@ -126,15 +138,17 @@ type TransactionConfig = {
   jito: FeeSetting;
   priorityFee: FeeSetting;
   chainId: ChainId;
+  computeUnitMarginMultiplier?: number;
 };
 
 type ChainId = "solana" | "eclipse";
 
-type ConnectionContext = { rpcUrl: string; isTriton: boolean };
+type ConnectionContext = { rpcUrl: string; isTriton?: boolean; wsUrl?: string };
 
 export {
   init,
   DEFAULT_PRIORITIZATION,
+  DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
   getPriorityConfig,
   getConnectionContext,
   type ConnectionContext,

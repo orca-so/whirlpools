@@ -8,15 +8,23 @@ import {
   Rpc,
   Slot,
   SolanaRpcApi,
+  TransactionSigner,
 } from "@solana/web3.js";
-import { DEFAULT_PRIORITIZATION, TransactionConfig } from "./config";
+import {
+  DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
+  DEFAULT_PRIORITIZATION,
+  TransactionConfig,
+} from "./config";
 import { rpcFromUrl } from "./compatibility";
-import { recentJitoTip } from "./jito";
+import { getJitoTipAddress, recentJitoTip } from "./jito";
+import { getTransferSolInstruction } from "@solana-program/system";
+import { generateTransactionMessage } from "./buildTransaction";
 
 /**
- * Estimates priority fees and compute units for a transaction message.
+ * Estimates priority fees, compute units, and Jito tips for a set of instructions.
  *
- * @param {CompilableTransactionMessage} txMessage - The transaction message to estimate fees for
+ * @param {IInstruction[]} instructions - The instructions to estimate fees for
+ * @param {TransactionSigner} signer - The transaction signer/fee payer
  * @param {string} rpcUrl - The RPC URL for the Solana network
  * @param {boolean} isTriton - Flag indicating if using Triton infrastructure
  * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Optional transaction configuration for priority fees
@@ -34,18 +42,20 @@ import { recentJitoTip } from "./jito";
  *
  * @example
  * const fees = await estimatePriorityFees(
- *   txMessage,
+ *   instructions,
+ *   signer,
  *   "https://api.mainnet-beta.solana.com",
  *   false,
  *   {
  *     priorityFee: { type: "dynamic", maxCapLamports: 5_000_000 },
  *     jito: { type: "dynamic" },
- *     chainId: "solana"
+ *     chainId: "solana",
  *   }
  * );
  */
 async function estimatePriorityFees(
-  txMessage: CompilableTransactionMessage,
+  instructions: IInstruction[],
+  signer: TransactionSigner,
   rpcUrl: string,
   isTriton: boolean,
   transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
@@ -55,9 +65,28 @@ async function estimatePriorityFees(
   computeUnits: number;
 }> {
   const rpc = rpcFromUrl(rpcUrl);
-  const computeUnits = await getComputeUnitsForTxMessage(rpc, txMessage);
+
+  const ixs = instructions;
+  // mock for more accurate compute unit estimation since sending jito tip consumes CU
+  if (transactionConfig.jito.type !== "none") {
+    ixs.push(
+      getTransferSolInstruction({
+        source: signer,
+        destination: getJitoTipAddress(),
+        amount: 100,
+      })
+    );
+  }
+  const mockMessage = await generateTransactionMessage(ixs, rpc, signer);
+  let computeUnits = await getComputeUnitsForTxMessage(rpc, mockMessage);
 
   if (!computeUnits) throw new Error("Transaction simulation failed");
+  // add margin to compute units
+  computeUnits = Math.ceil(
+    computeUnits *
+      (transactionConfig.computeUnitMarginMultiplier ??
+        DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER)
+  );
 
   let priorityFeeMicroLamports = BigInt(0);
   let jitoTipLamports = BigInt(0);
@@ -69,7 +98,7 @@ async function estimatePriorityFees(
       (priorityFee.amountLamports * BigInt(1_000_000)) / BigInt(computeUnits);
   } else if (priorityFee.type === "dynamic") {
     const estimatedPriorityFee = await calculateDynamicPriorityFees(
-      txMessage.instructions,
+      instructions,
       rpcUrl,
       chainId === "solana" && isTriton
     );

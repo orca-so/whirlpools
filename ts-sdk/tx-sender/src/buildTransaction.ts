@@ -2,23 +2,21 @@ import {
   IInstruction,
   TransactionSigner,
   prependTransactionMessageInstruction,
-  CompilableTransactionMessage,
   Address,
   compressTransactionMessageUsingAddressLookupTables,
   assertAccountDecoded,
   appendTransactionMessageInstructions,
-  Blockhash,
   createTransactionMessage,
   pipe,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   assertAccountExists,
+  signTransactionMessageWithSigners,
+  addSignersToTransactionMessage,
+  Rpc,
+  SolanaRpcApi,
 } from "@solana/web3.js";
-import {
-  createFeePayerSigner,
-  normalizeAddresses,
-  rpcFromUrl,
-} from "./compatibility";
+import { normalizeAddresses, rpcFromUrl } from "./compatibility";
 import { getJitoTipAddress } from "./jito";
 import { getTransferSolInstruction } from "@solana-program/system";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
@@ -71,18 +69,20 @@ import {
  */
 async function buildTransaction(
   instructions: IInstruction[],
-  feePayer: Address | string,
+  feePayer: TransactionSigner,
   lookupTableAddresses?: (Address | string)[],
   rpcUrl?: string,
   isTriton?: boolean,
-  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
-): Promise<CompilableTransactionMessage> {
+  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION,
+  additionalSigners?: TransactionSigner[]
+) {
   return buildTransactionMessage(
     instructions,
-    createFeePayerSigner(feePayer),
+    feePayer,
     getPriorityConfig(transactionConfig),
     getConnectionContext(rpcUrl, isTriton),
-    normalizeAddresses(lookupTableAddresses)
+    normalizeAddresses(lookupTableAddresses),
+    additionalSigners
   );
 }
 
@@ -91,21 +91,13 @@ async function buildTransactionMessage(
   signer: TransactionSigner,
   transactionConfig: TransactionConfig,
   connectionContext: ConnectionContext,
-  lookupTableAddresses?: Address[]
-): Promise<CompilableTransactionMessage> {
+  lookupTableAddresses?: Address[],
+  additionalSigners?: TransactionSigner[]
+) {
   const { rpcUrl, isTriton } = connectionContext;
   const rpc = rpcFromUrl(rpcUrl);
-  const { value: recentBlockhash } = await rpc
-    .getLatestBlockhash({
-      commitment: "confirmed",
-    })
-    .send();
 
-  let message = await generateTransactionMessage(
-    instructions,
-    recentBlockhash,
-    signer
-  );
+  let message = await generateTransactionMessage(instructions, rpc, signer);
 
   if (lookupTableAddresses) {
     const lookupTableAccounts = await fetchAllMaybeAddressLookupTable(
@@ -128,7 +120,24 @@ async function buildTransactionMessage(
   }
 
   const { priorityFeeMicroLamports, jitoTipLamports, computeUnits } =
-    await estimatePriorityFees(message, rpcUrl, isTriton, transactionConfig);
+    await estimatePriorityFees(
+      instructions,
+      signer,
+      rpcUrl,
+      !!isTriton,
+      transactionConfig
+    );
+
+  if (jitoTipLamports > 0) {
+    message = prependTransactionMessageInstruction(
+      getTransferSolInstruction({
+        source: signer,
+        destination: getJitoTipAddress(),
+        amount: jitoTipLamports,
+      }),
+      message
+    );
+  }
 
   if (priorityFeeMicroLamports > 0) {
     message = prependTransactionMessageInstruction(
@@ -143,28 +152,22 @@ async function buildTransactionMessage(
     );
   }
 
-  if (jitoTipLamports > 0) {
-    message = prependTransactionMessageInstruction(
-      getTransferSolInstruction({
-        source: signer,
-        destination: getJitoTipAddress(),
-        amount: jitoTipLamports,
-      }),
-      message
-    );
+  if (additionalSigners) {
+    message = addSignersToTransactionMessage(additionalSigners, message);
   }
-
-  return message;
+  return signTransactionMessageWithSigners(message);
 }
 
-function generateTransactionMessage(
+async function generateTransactionMessage(
   instructions: IInstruction[],
-  blockhash: {
-    blockhash: Blockhash;
-    lastValidBlockHeight: bigint;
-  },
+  rpc: Rpc<SolanaRpcApi>,
   signer: TransactionSigner
 ) {
+  const { value: blockhash } = await rpc
+    .getLatestBlockhash({
+      commitment: "confirmed",
+    })
+    .send();
   return pipe(
     createTransactionMessage({ version: 0 }),
     (tx) => setTransactionMessageLifetimeUsingBlockhash(blockhash, tx),
@@ -173,4 +176,4 @@ function generateTransactionMessage(
   );
 }
 
-export { buildTransaction };
+export { buildTransaction, generateTransactionMessage };

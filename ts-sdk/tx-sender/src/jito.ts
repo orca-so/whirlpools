@@ -18,7 +18,9 @@ async function recentJitoTip() {
     throw new Error("Failed to fetch recent Jito tips");
   }
   const data = await response.json().then((res) => res[0]);
-  cachedJitoTip = lamports(data.landed_tips_50th_percentile).valueOf();
+  cachedJitoTip = lamports(
+    BigInt(Math.floor(Number(data.landed_tips_50th_percentile) * 10 ** 9))
+  ).valueOf();
   lastFetchTime = now;
   return cachedJitoTip;
 }

@@ -4,10 +4,8 @@ import {
   createDefaultRpcTransport,
   Rpc,
   SolanaRpcApi,
-  SignatureDictionary,
-  Transaction,
-  TransactionPartialSignerConfig,
   address,
+  createSolanaRpcSubscriptions,
 } from "@solana/web3.js";
 
 function rpcFromUrl(url: string): Rpc<SolanaRpcApi> {
@@ -19,24 +17,13 @@ function rpcFromUrl(url: string): Rpc<SolanaRpcApi> {
   return rpc;
 }
 
+function subscriptionsFromWsUrl(wsUrl: string) {
+  const rpcSubscriptions = createSolanaRpcSubscriptions(wsUrl);
+  return rpcSubscriptions;
+}
+
 function normalizeAddresses(addresses?: (string | Address)[]): Address[] {
   return addresses?.map((addr) => address(addr)) ?? [];
 }
 
-// To build transaction we need a Signer object but we dont actually need to sign anything
-function createFeePayerSigner(feePayer: string | Address): {
-  address: Address;
-  signTransactions(
-    transactions: readonly Transaction[],
-    config?: TransactionPartialSignerConfig
-  ): Promise<readonly SignatureDictionary[]>;
-} {
-  return {
-    address: address(feePayer),
-    signTransactions: async () => {
-      return Promise.all([]);
-    },
-  };
-}
-
-export { createFeePayerSigner, normalizeAddresses, rpcFromUrl };
+export { normalizeAddresses, rpcFromUrl, subscriptionsFromWsUrl };

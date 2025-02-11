@@ -29,12 +29,13 @@
     "@solana-program/address-lookup-table": "^0.6.1",
     "@solana-program/compute-budget": "^0.6.1",
     "@solana-program/system": "^0.6.2",
-    "tsup": "^8.3.6"
+    "@solana/transaction-confirmation": "^2.0.0"
   },
   "peerDependencies": {
     "@solana/web3.js": "^2.0.0"
   },
   "devDependencies": {
-    "@solana/web3.js": "^2.0.0"
+    "@solana/web3.js": "^2.0.0",
+    "tsup": "^8.3.6"
   }
 }

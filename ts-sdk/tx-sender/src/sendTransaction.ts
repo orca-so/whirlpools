@@ -1,4 +1,5 @@
 import {
+  ConnectionContext,
   DEFAULT_PRIORITIZATION,
   getConnectionContext,
   getPriorityConfig,
@@ -6,13 +7,10 @@ import {
 } from "./config";
 import {
   Address,
-  addSignersToTransactionMessage,
-  assertIsTransactionMessageWithBlockhashLifetime,
   assertTransactionIsFullySigned,
   getBase64EncodedWireTransaction,
   IInstruction,
   KeyPairSigner,
-  signTransactionMessageWithSigners,
   Transaction,
   CompilableTransactionMessage,
   TransactionModifyingSigner,
@@ -21,27 +19,31 @@ import {
   isTransactionModifyingSigner,
   isTransactionPartialSigner,
   TransactionWithLifetime,
-  assertIsTransactionModifyingSigner,
+  FullySignedTransaction,
+  Signature,
+  getBase58Decoder,
   TransactionSigner,
-  assertIsKeyPairSigner,
-  assertIsTransactionSigner,
-  address,
 } from "@solana/web3.js";
-import { rpcFromUrl } from "./compatibility";
+import { rpcFromUrl, subscriptionsFromWsUrl } from "./compatibility";
 import { buildTransaction } from "./buildTransaction";
+import {
+  createRecentSignatureConfirmationPromiseFactory,
+  getTimeoutPromise,
+  waitForRecentTransactionConfirmationUntilTimeout,
+} from "@solana/transaction-confirmation";
 
 /**
  * Builds and sends a transaction with the given instructions and signers.
  *
  * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
- * @param {KeyPairSigner | {address: Address | string, signTransaction: (tx: Transaction) => Promise<Transaction>}} payer - The fee payer for the transaction
+ * @param {KeyPairSigner} payer - The fee payer for the transaction
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to use
  * @param {KeyPairSigner[]} [signers] - Optional additional signers for the transaction
- * @param {string} [rpcUrlString] - Optional RPC URL. If not provided, uses URL from global config
- * @param {boolean} [isTritonRpc] - Optional flag indicating if using Triton infrastructure
+ * @param {{rpcUrlString?: string, isTritonRpc?: boolean, wsUrlString?: string}} [connectionConfig]
+ * - Optional connection configuration (required if init hasn't been called)
  * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Optional transaction configuration for priority fees
  *
- * @returns {Promise<void>} A promise that resolves when the transaction is confirmed
+ * @returns {Promise<string>} A promise that resolves to the transaction signature
  *
  * @throws {Error} If transaction building or sending fails
  *
@@ -50,9 +52,11 @@ import { buildTransaction } from "./buildTransaction";
  *   instructions,
  *   wallet,
  *   lookupTables,
- *   [signer1, signer2],
- *   "https://api.mainnet-beta.solana.com",
- *   false,
+ *   [additionalSigner1, additionalSigner2],
+ *   {
+ *     rpcUrl: "https://api.mainnet-beta.solana.com",
+ *     isTriton: false
+ *   },
  *   {
  *     priorityFee: { type: "dynamic", maxCapLamports: 5_000_000 },
  *     jito: { type: "dynamic" },
@@ -63,117 +67,116 @@ import { buildTransaction } from "./buildTransaction";
 
 async function buildAndSendTransaction(
   instructions: IInstruction[],
-  payer:
-    | KeyPairSigner
-    | {
-        address: Address | string;
-        signTransaction: (tx: Transaction) => Promise<Transaction>;
-      },
+  payer: KeyPairSigner,
   lookupTableAddresses?: (Address | string)[],
   signers?: KeyPairSigner[],
-  rpcUrlString?: string,
-  isTritonRpc?: boolean,
+  connectionConfig?: ConnectionContext,
   transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
 ) {
-  const { rpcUrl, isTriton } = getConnectionContext(rpcUrlString, isTritonRpc);
+  const { rpcUrl, isTriton, wsUrl } = getConnectionContext(
+    connectionConfig?.rpcUrl,
+    connectionConfig?.isTriton,
+    connectionConfig?.wsUrl
+  );
+
   const transactionSettings = getPriorityConfig(transactionConfig);
 
   const tx = await buildTransaction(
     instructions,
-    payer.address,
+    payer,
     lookupTableAddresses,
     rpcUrl,
     isTriton,
-    transactionSettings
+    transactionSettings,
+    signers
   );
-  assertIsTransactionMessageWithBlockhashLifetime(tx);
+  assertTransactionIsFullySigned(tx);
 
-  const additionalSigners = await Promise.all(
-    signers?.map(async (kp) => {
-      const signer = kp;
-      assertIsKeyPairSigner(signer);
-      return signer;
-    }) ?? []
-  );
-
-  const feePayer =
-    "signTransaction" in payer
-      ? ({
-          modifyAndSignTransactions: (transactions: Transaction[]) => {
-            return Promise.all(
-              transactions.map(async (tx) => {
-                const signedTx = await payer.signTransaction(tx);
-                return signedTx;
-              })
-            );
-          },
-          address: address(payer.address),
-        } as TransactionSigner)
-      : payer;
-
-  assertIsTransactionSigner(feePayer);
-
-  const withSigners = addSignersToTransactionMessage(
-    [...additionalSigners, feePayer],
-    tx
-  );
-  const signed = await signTransactionMessageWithSigners(withSigners);
-
-  assertTransactionIsFullySigned(signed);
-
-  const rpc = rpcFromUrl(rpcUrl);
-  const encodedTransaction = getBase64EncodedWireTransaction(signed);
-
-  return rpc.sendTransaction(encodedTransaction, {}).send();
+  return sendSignedTransaction(tx, rpcUrl, wsUrl);
 }
 
 /**
  * Sends a signed transaction message to the Solana network.
+ * If wsUrl is provided, it will use an RPC subscription to wait for confirmation
  *
- * @param {CompilableTransactionMessage} transaction - The compiled transaction message to send
- * @param {string} [rpcUrl=getConnectionContext().rpcUrl] - Optional RPC URL. If not provided, uses URL from global config
+ * @param {FullySignedTransaction} transaction - The fully signed transaction to send
+ * @param {string} [rpcUrl] - Optional RPC URL. If not provided, it must have been passed in a call to {@link init}
+ * @param {string} [wsUrl] - Optional WebSocket URL for transaction confirmation. If provided, will use RPC subscription to wait for confirmation
+ *  (will also use RPC subscription if init has been called with wsUrl previously)
  *
- * @returns {Promise<void>} A promise that resolves when the transaction is confirmed
+ * @returns {Promise<string>} A promise that resolves to the transaction signature
  *
- * @throws {Error} If transaction sending fails
+ * @throws {Error} If transaction sending fails or RPC connection fails
  *
  * @example
- * await sendSignedTransactionMessage(compiledTransaction, "https://api.mainnet-beta.solana.com");
+ * assertTransactionIsFullySigned(signedTransaction);
+ *
+ * const signature = await sendSignedTransaction(
+ *   signedTransaction,
+ *   "https://api.mainnet-beta.solana.com",
+ *   "wss://api.mainnet-beta.solana.com"
+ * );
  */
-async function sendSignedTransactionMessage(
-  transaction: CompilableTransactionMessage,
-  rpcUrl: string = getConnectionContext().rpcUrl
+async function sendSignedTransaction(
+  transaction: FullySignedTransaction,
+  rpcUrlString?: string,
+  wsUrlString?: string
 ) {
+  const { rpcUrl, wsUrl } = getConnectionContext(
+    rpcUrlString,
+    undefined,
+    wsUrlString
+  );
   const rpc = rpcFromUrl(rpcUrl);
-  const compiled = compileTransaction(transaction);
-  const encodedTransaction = getBase64EncodedWireTransaction(compiled);
-  return rpc.sendTransaction(encodedTransaction, {}).send();
+  const txHash = getTxHash(transaction);
+  const encodedTransaction = getBase64EncodedWireTransaction(transaction);
+
+  if (wsUrl) {
+    const rpcSubscriptions = subscriptionsFromWsUrl(wsUrl);
+    const getRecentSignatureConfirmationPromise =
+      createRecentSignatureConfirmationPromiseFactory({
+        rpc,
+        rpcSubscriptions,
+      });
+
+    rpc.sendTransaction(encodedTransaction, { encoding: "base64" }).send();
+    await waitForRecentTransactionConfirmationUntilTimeout({
+      commitment: "confirmed",
+      getRecentSignatureConfirmationPromise,
+      signature: txHash,
+      getTimeoutPromise,
+    });
+    return txHash;
+  }
+
+  await rpc
+    .sendTransaction(encodedTransaction, {
+      encoding: "base64",
+    })
+    .send();
+  return txHash;
 }
+
+/**
+ * Signs a compilable transaction message with the provided signers.
+ *
+ * @param {CompilableTransactionMessage} message - The transaction message to sign
+ * @param {readonly TransactionSigner[]} signers - Array of signers to sign the transaction with
+ *
+ * @returns {Promise<Readonly<Transaction & TransactionWithLifetime>>} A promise that resolves to the signed transaction
+ *
+ * @throws {Error} If signing fails
+ *
+ * @example
+ * const signedTx = await signTransactionMessage(
+ *   transactionMessage,
+ *   [signer1, signer2]
+ * );
+ */
 
 async function signTransactionMessage(
   message: CompilableTransactionMessage,
-  signTransaction: (tx: Transaction) => Promise<Transaction>,
-  walletAddress: Address | string
-) {
-  const signer = {
-    modifyAndSignTransactions: (transactions: Transaction[]) => {
-      return Promise.all(
-        transactions.map(async (tx) => {
-          const signedTx = await signTransaction(tx);
-          return signedTx;
-        })
-      );
-    },
-    address: address(walletAddress),
-  } as TransactionSigner;
-  assertIsTransactionModifyingSigner(signer);
-  const signed = await signTransactionMessageNew(message, [signer]);
-  return signed;
-}
-
-async function signTransactionMessageNew(
-  message: CompilableTransactionMessage,
-  signers: readonly (TransactionModifyingSigner | TransactionPartialSigner)[]
+  signers: readonly TransactionSigner[]
 ) {
   const transaction = compileTransaction(message);
   const { partialSigners, modifyingSigners } = categorizeSigners(signers);
@@ -208,9 +211,7 @@ async function signTransactionMessageNew(
   return Object.freeze(signedTransaction);
 }
 
-function categorizeSigners(
-  signers: readonly (TransactionModifyingSigner | TransactionPartialSigner)[]
-) {
+function categorizeSigners(signers: readonly TransactionSigner[]) {
   const otherSigners = signers.filter(
     (signer): signer is TransactionModifyingSigner | TransactionPartialSigner =>
       signer !== null &&
@@ -248,8 +249,14 @@ function identifyTransactionModifyingSigners(
   return [modifyingSigners[0]];
 }
 
+function getTxHash(transaction: FullySignedTransaction) {
+  const [signature] = Object.values(transaction.signatures);
+  const txHash = getBase58Decoder().decode(signature!) as Signature;
+  return txHash;
+}
+
 export {
   buildAndSendTransaction,
   signTransactionMessage,
-  sendSignedTransactionMessage,
+  sendSignedTransaction,
 };

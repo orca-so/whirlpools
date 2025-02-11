@@ -84,12 +84,13 @@ async function buildAndSendTransaction(
   const tx = await buildTransaction(
     instructions,
     payer,
-    lookupTableAddresses,
-    rpcUrl,
-    isTriton,
     transactionSettings,
-    signers
+    lookupTableAddresses,
+    signers,
+    rpcUrl,
+    isTriton
   );
+
   assertTransactionIsFullySigned(tx);
 
   return sendSignedTransaction(tx, rpcUrl, wsUrl);

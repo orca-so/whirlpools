@@ -15,6 +15,8 @@ import {
   addSignersToTransactionMessage,
   Rpc,
   SolanaRpcApi,
+  FullySignedTransaction,
+  TransactionWithLifetime,
 } from "@solana/web3.js";
 import { normalizeAddresses, rpcFromUrl } from "./compatibility";
 import { getJitoTipAddress } from "./jito";
@@ -34,16 +36,17 @@ import {
 } from "./config";
 
 /**
- * Builds a compilable transaction message from the given instructions and configuration.
+ * Builds and signs a transaction from the given instructions and configuration.
  *
  * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
- * @param {Address | string} feePayer - The address of the account that will pay for the transaction
- * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses
- * @param {string} [rpcUrl] - Optional RPC URL for the Solana network
- * @param {boolean} [isTriton] - Optional flag to indicate if using Triton infrastructure
- * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Optional transaction configuration for priority fees
+ * @param {TransactionSigner} feePayer - The signer that will pay for the transaction
+ * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Configuration for priority fees and Jito tips
+ * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to compress the transaction
+ * @param {TransactionSigner[]} [additionalSigners] - Optional array of additional transaction signers
+ * @param {string} [rpcUrl] - Optional RPC URL to use for the transaction
+ * @param {boolean} [isTriton] - Optional flag to indicate if using Triton RPC
  *
- * @returns {Promise<CompilableTransactionMessage>} A promise that resolves to a compilable transaction message
+ * @returns {Promise<Readonly<FullySignedTransaction & TransactionWithLifetime>>} A signed and encoded transaction
  *
  * @example
  * const instructions = [createATAix, createTransferSolInstruction];
@@ -51,14 +54,13 @@ import {
  * const message = await buildTransaction(
  *   instructions,
  *   feePayer,
- *   undefined,
- *   "https://api.mainnet-beta.solana.com",
- *   false,
  *   {
+ *     // Add Jito tip for MEV extraction
  *     jito: {
  *       type: "dynamic",
  *       maxCapLamports: 5_000_000,
  *     },
+ *     // Add priority fee for faster inclusion
  *     priorityFee: {
  *       type: "exact",
  *       amountLamports: 1_000_000,
@@ -70,12 +72,12 @@ import {
 async function buildTransaction(
   instructions: IInstruction[],
   feePayer: TransactionSigner,
-  lookupTableAddresses?: (Address | string)[],
-  rpcUrl?: string,
-  isTriton?: boolean,
   transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION,
-  additionalSigners?: TransactionSigner[]
-) {
+  lookupTableAddresses?: (Address | string)[],
+  additionalSigners?: TransactionSigner[],
+  rpcUrl?: string,
+  isTriton?: boolean
+): Promise<Readonly<FullySignedTransaction & TransactionWithLifetime>> {
   return buildTransactionMessage(
     instructions,
     feePayer,
@@ -99,7 +101,7 @@ async function buildTransactionMessage(
 
   let message = await generateTransactionMessage(instructions, rpc, signer);
 
-  if (lookupTableAddresses) {
+  if (lookupTableAddresses?.length) {
     const lookupTableAccounts = await fetchAllMaybeAddressLookupTable(
       rpc,
       lookupTableAddresses

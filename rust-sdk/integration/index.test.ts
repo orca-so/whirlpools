@@ -1,38 +1,79 @@
 import assert from "assert";
 import { execSync } from "child_process";
-import { readdirSync } from "fs";
+import { existsSync, readdirSync, readFileSync, rmSync } from "fs";
 import { describe, it } from "vitest";
+import { parse } from "smol-toml";
+import { coerce } from "semver";
 
-const clientConfigs = readdirSync("./client");
-const coreConfigs = readdirSync("./core");
-const whirlpoolConfigs = readdirSync("./whirlpool");
+type Cargofile = {
+  dependencies: Record<string, string | { version?: string }>;
+};
+
+type Lockfile = {
+  package: {
+    name: string;
+    version: string;
+  }[];
+};
+
+function configs(path: string) {
+  return readdirSync(path).filter((folder) =>
+    existsSync(`${path}/${folder}/Cargo.toml`),
+  );
+}
+
+const clientConfigs = configs("./client");
+const coreConfigs = configs("./core");
+const whirlpoolConfigs = configs("./whirlpool");
 
 function exec(...command: string[]) {
   try {
-    return execSync(command.join(" && ")).toString();
+    return execSync(command.join(" ")).toString();
   } catch (error) {
     assert.fail(`${error}`);
   }
 }
 
+function normalizeVersion(version: string) {
+  return coerce(version)?.version ?? version;
+}
+
+function getOverwrites(path: string): Map<string, string> {
+  const toml = parse(readFileSync(`${path}/Cargo.toml`, "utf-8")) as Cargofile;
+  const overwrites: Map<string, string> = new Map();
+  for (const [name, spec] of Object.entries(toml.dependencies)) {
+    if (typeof spec === "string") {
+      overwrites.set(name, normalizeVersion(spec));
+    }
+    if (typeof spec === "object" && spec.version) {
+      overwrites.set(name, normalizeVersion(spec.version));
+    }
+  }
+  return overwrites;
+}
+
+function findExistingVersions(path: string, name: string): Set<string> {
+  const toml = parse(readFileSync(`${path}/Cargo.lock`, "utf-8")) as Lockfile;
+  const existingVersions: Set<string> = new Set();
+  for (const dep of toml.package) {
+    if (dep.name !== name) continue;
+    existingVersions.add(normalizeVersion(dep.version));
+  }
+  return existingVersions;
+}
+
 function check(path: string) {
-  const versions = exec(`awk '/version = "[^"]*"/' '${path}/Cargo.toml'`);
+  const overwrites = getOverwrites(path);
+  if (existsSync(`${path}/Cargo.lock`)) {
+    rmSync(`${path}/Cargo.lock`);
+  }
   exec(`cargo generate-lockfile --manifest-path '${path}/Cargo.toml'`);
-  for (const version of versions.split("\n")) {
-    const match = version.match(
-      /([a-zA-Z0-9-_]+)\s*=\s*{\s*version\s*=\s*"~([^"]+)"/,
-    );
-    if (!match) continue;
-    const rawExistingVersions = exec(
-      `awk '/"${match[1]} [0-9]+.[0-9]+.[0-9]+"/' '${path}/Cargo.lock'`,
-    );
-    const existingVersions = new Set(
-      rawExistingVersions.split("\n").filter((x) => x),
-    );
+  for (const [name, version] of overwrites) {
+    const existingVersions = findExistingVersions(path, name);
+    existingVersions.delete(version);
     for (const existingVersion of existingVersions) {
-      const specifier = existingVersion.slice(2, -2).replaceAll(" ", ":");
       exec(
-        `cargo update ${specifier} --precise ${match[2]} --manifest-path '${path}/Cargo.toml'`,
+        `cargo update ${name}:${existingVersion} --precise ${version} --manifest-path '${path}/Cargo.toml'`,
       );
     }
   }

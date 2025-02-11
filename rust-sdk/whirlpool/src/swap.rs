@@ -438,20 +438,20 @@ mod tests {
     async fn verify_swap(
         ctx: &RpcContext,
         swap_ix: &SwapInstructions,
-        user_ata_for_finalA: Pubkey,
-        user_ata_for_finalB: Pubkey,
+        user_ata_for_final_a: Pubkey,
+        user_ata_for_final_b: Pubkey,
         a_to_b: bool,
     ) -> Result<(), Box<dyn Error>> {
-        let before_a = get_token_balance(&ctx.rpc, user_ata_for_finalA).await?;
-        let before_b = get_token_balance(&ctx.rpc, user_ata_for_finalB).await?;
+        let before_a = get_token_balance(&ctx.rpc, user_ata_for_final_a).await?;
+        let before_b = get_token_balance(&ctx.rpc, user_ata_for_final_b).await?;
 
         // do swap
         let signers: Vec<&Keypair> = swap_ix.additional_signers.iter().collect();
         ctx.send_transaction_with_signers(swap_ix.instructions.clone(), signers)
             .await?;
 
-        let after_a = get_token_balance(&ctx.rpc, user_ata_for_finalA).await?;
-        let after_b = get_token_balance(&ctx.rpc, user_ata_for_finalB).await?;
+        let after_a = get_token_balance(&ctx.rpc, user_ata_for_final_a).await?;
+        let after_b = get_token_balance(&ctx.rpc, user_ata_for_final_b).await?;
 
         let used_a = before_a.saturating_sub(after_a);
         let used_b = before_b.saturating_sub(after_b);
@@ -552,12 +552,12 @@ mod tests {
             .await
             .unwrap();
 
-            let user_ata_for_finalA = if final_a == pubkey_a {
+            let user_ata_for_final_a = if final_a == pubkey_a {
                 user_atas[mkey_a]
             } else {
                 user_atas[mkey_b]
             };
-            let user_ata_for_finalB = if final_b == pubkey_b {
+            let user_ata_for_final_b = if final_b == pubkey_b {
                 user_atas[mkey_b]
             } else {
                 user_atas[mkey_a]
@@ -595,8 +595,8 @@ mod tests {
             verify_swap(
                 &ctx,
                 &swap_ix,
-                user_ata_for_finalA,
-                user_ata_for_finalB,
+                user_ata_for_final_a,
+                user_ata_for_final_b,
                 a_to_b,
             )
             .await

@@ -314,8 +314,6 @@ mod tests {
     use solana_sdk::signer::Signer;
     use std::error::Error;
 
-    const DEFAULT_TICK_RANGE: (i32, i32) = (-100, 100);
-
     #[tokio::test]
     #[serial]
     #[ignore = "Skipped until solana-bankrun supports gpa"]

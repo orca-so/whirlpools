@@ -17,30 +17,24 @@ pub struct InitializeOracle<'info> {
       space = Oracle::LEN)]
     pub oracle: AccountLoader<'info, Oracle>,
 
-    // TODO: use VolatilityAdjustedFeeTier ?
+    #[account(
+      constraint = adaptive_fee_config.whirlpools_config == whirlpool.whirlpools_config,
+      constraint = adaptive_fee_config.tick_spacing == whirlpool.tick_spacing,
+    )]
+    pub adaptive_fee_config: Account<'info, AdaptiveFeeConfig>,
+
     pub system_program: Program<'info, System>,
 }
 
 pub fn handler(ctx: Context<InitializeOracle>) -> Result<()> {
     let mut oracle = ctx.accounts.oracle.load_init()?;
-
-    // TODO: determine how to initialize params (arg, via VA_FEE_TIER or Default, etc)
-    let filter_period = 30;
-    let decay_period = 600;
-    let reduction_factor = 500;
-    let adaptive_fee_control_factor = 4_000;
-    let max_volatility_accumulator = 350_000;
-
-    // TODO: splash pool should use more granular group size
-    let tick_group_size = ctx.accounts.whirlpool.tick_spacing;
-
     oracle.initialize(
         &ctx.accounts.whirlpool,
-        filter_period,
-        decay_period,
-        reduction_factor,
-        adaptive_fee_control_factor,
-        max_volatility_accumulator,
-        tick_group_size,
+        ctx.accounts.adaptive_fee_config.default_filter_period,
+        ctx.accounts.adaptive_fee_config.default_decay_period,
+        ctx.accounts.adaptive_fee_config.default_reduction_factor,
+        ctx.accounts.adaptive_fee_config.default_adaptive_fee_control_factor,
+        ctx.accounts.adaptive_fee_config.default_max_volatility_accumulator,
+        ctx.accounts.adaptive_fee_config.default_tick_group_size,
     )
 }

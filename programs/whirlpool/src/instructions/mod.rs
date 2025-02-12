@@ -9,6 +9,7 @@ pub mod collect_reward;
 pub mod decrease_liquidity;
 pub mod delete_position_bundle;
 pub mod increase_liquidity;
+pub mod initialize_adaptive_fee_config;
 pub mod initialize_config;
 pub mod initialize_fee_tier;
 pub mod initialize_oracle;
@@ -44,6 +45,7 @@ pub use collect_reward::*;
 
 pub use delete_position_bundle::*;
 pub use increase_liquidity::*;
+pub use initialize_adaptive_fee_config::*;
 pub use initialize_config::*;
 pub use initialize_fee_tier::*;
 pub use initialize_oracle::*;

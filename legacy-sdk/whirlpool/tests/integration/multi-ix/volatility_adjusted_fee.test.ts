@@ -67,7 +67,7 @@ describe("volatility adjusted fee tests", () => {
     const tradeAmountSpecifiedIsInput = true;
     const tradeAToB = true;
 
-    const { whirlpoolPda, tokenAccountA, tokenAccountB } =
+    const { whirlpoolPda, tokenAccountA, tokenAccountB, configInitInfo, feeTierParams, configKeypairs } =
       await initTestPoolWithTokens(
         testCtx.whirlpoolCtx,
         poolTickSpacing,
@@ -107,13 +107,40 @@ describe("volatility adjusted fee tests", () => {
       `pool state: tick = ${pool.getData().tickCurrentIndex}, liquidity = ${depositQuote.liquidityAmount.toString()}, tokenA = ${depositQuote.tokenEstA.toString()}, tokenB = ${depositQuote.tokenEstB.toString()}`,
     );
 
+    const whirlpoolsConfig = configInitInfo.whirlpoolsConfigKeypair.publicKey;
+    const feeTier = PDAUtil.getFeeTier(testCtx.whirlpoolCtx.program.programId, whirlpoolsConfig, poolTickSpacing).publicKey;
+    const feeAuthority = configKeypairs.feeAuthorityKeypair.publicKey;
+    const adaptiveFeeConfigPda = PDAUtil.getAdaptiveFeeConfig(
+      testCtx.whirlpoolCtx.program.programId,
+      whirlpoolsConfig,
+      poolTickSpacing,
+    );
+    await toTx(testCtx.whirlpoolCtx, WhirlpoolIx.initializeAdaptiveFeeConfigIx(testCtx.whirlpoolCtx.program, {
+      whirlpoolsConfig,
+      feeTier,
+      adaptiveFeeConfigPda,
+      feeAuthority,
+      funder: testCtx.whirlpoolCtx.provider.wallet.publicKey,
+      // default AdaptiveFeeConstants
+      defaultFilterPeriod: 30,
+      defaultDecayPeriod: 600,
+      defaultReductionFactor: 500,
+      defaultAdaptiveFeeControlFactor: 4_000,
+      defaultMaxVolatilityAccumulator: 350_000,
+      defaultTickGroupSize: poolTickSpacing,
+    }))
+    .addSigner(configKeypairs.feeAuthorityKeypair)
+    .buildAndExecute();
+
+    const oraclePda = PDAUtil.getOracle(
+      testCtx.whirlpoolCtx.program.programId,
+      whirlpoolPda.publicKey,
+    );
     await toTx(testCtx.whirlpoolCtx, WhirlpoolIx.initializeOracleIx(testCtx.whirlpoolCtx.program, {
       funder: testCtx.whirlpoolCtx.provider.wallet.publicKey,
       whirlpool: whirlpoolPda.publicKey,
-      oraclePda: PDAUtil.getOracle(
-        testCtx.whirlpoolCtx.program.programId,
-        whirlpoolPda.publicKey,
-      ),
+      oraclePda,
+      adaptiveFeeConfigPda,
     })).buildAndExecute();
 
     const swapQuote = swapQuoteWithParams(

@@ -8,6 +8,7 @@ export * from "./composites";
 export * from "./decrease-liquidity-ix";
 export * from "./delete-position-bundle-ix";
 export * from "./increase-liquidity-ix";
+export * from "./initialize-adaptive-fee-tier-ix";
 export * from "./initialize-config-ix";
 export * from "./initialize-fee-tier-ix";
 export * from "./initialize-pool-ix";

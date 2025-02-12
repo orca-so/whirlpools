@@ -1,5 +1,5 @@
 use crate::state::WhirlpoolsConfig;
-use crate::{errors::ErrorCode, math::MAX_FEE_RATE};
+use crate::errors::ErrorCode;
 use anchor_lang::prelude::*;
 
 use super::{AdaptiveFeeConstants, FeeTier};

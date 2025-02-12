@@ -629,6 +629,27 @@ pub mod whirlpool {
         instructions::initialize_oracle::handler(ctx)
     }
 
+    // TODO: comment
+    pub fn initialize_adaptive_fee_config(
+        ctx: Context<InitializeAdaptiveFeeConfig>,
+        default_filter_period: u16,
+        default_decay_period: u16,
+        default_reduction_factor: u16,
+        default_adaptive_fee_control_factor: u32,
+        default_max_volatility_accumulator: u32,
+        default_tick_group_size: u16,    
+    ) -> Result<()> {
+        instructions::initialize_adaptive_fee_config::handler(
+            ctx,
+            default_filter_period,
+            default_decay_period,
+            default_reduction_factor,
+            default_adaptive_fee_control_factor,
+            default_max_volatility_accumulator,
+            default_tick_group_size,        
+        )
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     // V2 instructions (TokenExtensions)
     ////////////////////////////////////////////////////////////////////////////////

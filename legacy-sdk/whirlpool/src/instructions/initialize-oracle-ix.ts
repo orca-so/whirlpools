@@ -8,6 +8,7 @@ import type { Whirlpool } from "../artifacts/whirlpool";
 export type InitializeOracleParams = {
   whirlpool: PublicKey;
   oraclePda: PDA;
+  adaptiveFeeConfigPda: PDA;
   funder: PublicKey;
 };
 
@@ -16,13 +17,14 @@ export function initializeOracleIx(
   program: Program<Whirlpool>,
   params: InitializeOracleParams,
 ): Instruction {
-  const { whirlpool, funder, oraclePda } = params;
+  const { whirlpool, funder, oraclePda, adaptiveFeeConfigPda } = params;
 
   const ix = program.instruction.initializeOracle({
     accounts: {
       whirlpool,
       funder,
       oracle: oraclePda.publicKey,
+      adaptiveFeeConfig: adaptiveFeeConfigPda.publicKey,
       systemProgram: anchor.web3.SystemProgram.programId,
     },
   });

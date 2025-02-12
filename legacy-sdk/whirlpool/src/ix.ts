@@ -610,6 +610,13 @@ export class WhirlpoolIx {
     return ix.initializeOracleIx(program, params);
   }
 
+  public static initializeAdaptiveFeeConfigIx(
+    program: Program<Whirlpool>,
+    params: ix.InitializeAdaptiveFeeConfigParams,
+  ) {
+    return ix.initializeAdaptiveFeeConfigIx(program, params);
+  }
+
   // V2 instructions
   // TODO: comments
   public static collectFeesV2Ix(

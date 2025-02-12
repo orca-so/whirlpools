@@ -17,8 +17,6 @@ use tokio::time::{sleep, Duration, Instant};
 use tokio_retry::strategy::ExponentialBackoff;
 use tokio_retry::Retry;
 
-const NATIVE_MINT_ADDRESS: &str = "So11111111111111111111111111111111111111112";
-
 pub async fn display_position_balances(
     rpc: &RpcClient,
     position: &Position,
@@ -78,11 +76,6 @@ pub async fn fetch_token_balance(
     wallet_address: &Pubkey,
     token_mint_address: &Pubkey,
 ) -> Result<String, Box<dyn Error>> {
-    if token_mint_address.to_string() == NATIVE_MINT_ADDRESS {
-        let balance = rpc.get_balance(wallet_address).await?;
-        return Ok(lamports_to_sol(balance).to_string());
-    }
-
     let mint_account = rpc.get_account(token_mint_address).await?;
     let token_program_id = mint_account.owner;
     let token_address = get_associated_token_address_with_program_id(
@@ -90,8 +83,18 @@ pub async fn fetch_token_balance(
         token_mint_address,
         &token_program_id,
     );
-    let balance = rpc.get_token_account_balance(&token_address).await?;
-    Ok(balance.ui_amount_string)
+    match rpc.get_token_account_balance(&token_address).await {
+        Ok(balance) => Ok(balance.ui_amount_string),
+        Err(_) if token_program_id == spl_token::id() => {
+            // If this pool is SOL/??? then we are checking for WSOL in the user's wallet
+            // We failed to find WSOL ATA for this address
+            // We can now check for SOL in user's wallet since we must check if the bot can
+            // rebalance the position
+            let wallet_lampors = rpc.get_balance(wallet_address).await?;
+            Ok(lamports_to_sol(wallet_lampors).to_string())
+        }
+        Err(e) => Err(e.into()),
+    }
 }
 
 pub async fn fetch_position(

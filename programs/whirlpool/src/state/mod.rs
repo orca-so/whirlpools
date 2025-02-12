@@ -1,3 +1,4 @@
+pub mod adaptive_fee_config;
 pub mod config;
 pub mod config_extension;
 pub mod fee_tier;
@@ -9,6 +10,7 @@ pub mod token_badge;
 pub mod whirlpool;
 
 pub use self::whirlpool::*;
+pub use adaptive_fee_config::*;
 pub use config::*;
 pub use config_extension::*;
 pub use fee_tier::*;

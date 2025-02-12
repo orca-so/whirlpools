@@ -50,7 +50,7 @@ import {
  * @example
  * await buildAndSendTransaction(
  *   instructions,
- *   wallet,
+ *   keypairSigner,
  *   {
  *     priorityFee: { type: "dynamic", maxCapLamports: 5_000_000 },
  *     jito: { type: "dynamic" },

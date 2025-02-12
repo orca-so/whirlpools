@@ -1,5 +1,9 @@
 use super::Whirlpool;
-use crate::manager::fee_rate_manager::{ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, MAX_REDUCTION_FACTOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR};
+use crate::errors::ErrorCode;
+use crate::manager::fee_rate_manager::{
+    ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, MAX_REDUCTION_FACTOR,
+    VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+};
 use anchor_lang::prelude::*;
 use std::cell::RefMut;
 
@@ -26,54 +30,52 @@ impl AdaptiveFeeConstants {
     pub const LEN: usize = 2 + 2 + 2 + 4 + 4 + 2;
 
     pub fn validate_constants(
-      tick_spacing: u16,
-      filter_period: u16,
-      decay_period: u16,
-      reduction_factor: u16,
-      adaptive_fee_control_factor: u32,
-      max_volatility_accumulator: u32,
-      tick_group_size: u16,
+        tick_spacing: u16,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        adaptive_fee_control_factor: u32,
+        max_volatility_accumulator: u32,
+        tick_group_size: u16,
     ) -> bool {
+        // filter_period validation
+        // must be >= 1
+        if filter_period == 0 {
+            return false;
+        }
 
-      // filter_period validation
-      // must be >= 1
-      if filter_period == 0 {
-          return false;
-      }
+        // decay_period validation
+        // must be >= 1 and > filter_period
+        if decay_period == 0 || decay_period <= filter_period {
+            return false;
+        }
 
-      // decay_period validation
-      // must be >= 1 and > filter_period
-      if decay_period == 0 || decay_period <= filter_period {
-          return false;
-      }
+        // adaptive_fee_control_factor validation
+        // must be less than ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR
+        if adaptive_fee_control_factor >= ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR {
+            return false;
+        }
 
-      // adaptive_fee_control_factor validation
-      // must be less than ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR
-      if adaptive_fee_control_factor >= ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR {
-          return false;
-      }
+        // max_volatility_accumulator validation
+        // this constraint is to prevent overflow at FeeRateManager::compute_adaptive_fee_rate
+        if u64::from(max_volatility_accumulator) * u64::from(tick_group_size) > u32::MAX as u64 {
+            return false;
+        }
 
-      // max_volatility_accumulator validation
-      // this constraint is to prevent overflow at FeeRateManager::compute_adaptive_fee_rate
-      if u64::from(max_volatility_accumulator) * u64::from(tick_group_size) > u32::MAX as u64 {
-          return false;
-      }
+        // reduction_factor validation
+        if reduction_factor >= MAX_REDUCTION_FACTOR {
+            return false;
+        }
 
-      // reduction_factor validation
-      if reduction_factor >= MAX_REDUCTION_FACTOR {
-          return false;
-      }
+        // tick_group_size validation
+        if tick_group_size == 0
+            || tick_group_size > tick_spacing
+            || tick_spacing % tick_group_size != 0
+        {
+            return false;
+        }
 
-      // tick_group_size validation
-      if
-        tick_group_size == 0 ||
-        tick_group_size > tick_spacing ||
-        tick_spacing % tick_group_size != 0
-      {
-          return false;
-      }
-
-      true
+        true
     }
 }
 
@@ -159,7 +161,6 @@ impl Oracle {
     // TODO: add reserve for observations
     pub const LEN: usize = 8 + 32 + AdaptiveFeeConstants::LEN + AdaptiveFeeVariables::LEN;
 
-    // TODO: simplify initialization, and use set_va_fee_constants instead
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
@@ -173,11 +174,7 @@ impl Oracle {
     ) -> Result<()> {
         self.whirlpool = whirlpool.key();
 
-        // TODO: check values (e.g. MAX_REDUCTION_FACTOR)
-
-        // TODO: check max_volatility_accumulator * tick_group_size <= u32::MAX
-
-        self.adaptive_fee_constants = AdaptiveFeeConstants {
+        let constants = AdaptiveFeeConstants {
             filter_period,
             decay_period,
             reduction_factor,
@@ -185,18 +182,42 @@ impl Oracle {
             max_volatility_accumulator,
             tick_group_size,
         };
-        self.adaptive_fee_variables = AdaptiveFeeVariables {
-            ..Default::default()
-        };
+
+        self.update_adaptive_fee_constants(constants, whirlpool.tick_spacing)?;
+        self.reset_adaptive_fee_variables();
+
         Ok(())
     }
 
-    pub fn update_adaptive_fee_constants(&mut self, constants: AdaptiveFeeConstants) {
+    pub fn update_adaptive_fee_constants(
+        &mut self,
+        constants: AdaptiveFeeConstants,
+        tick_spacing: u16,
+    ) -> Result<()> {
+        if !AdaptiveFeeConstants::validate_constants(
+            tick_spacing,
+            constants.filter_period,
+            constants.decay_period,
+            constants.reduction_factor,
+            constants.adaptive_fee_control_factor,
+            constants.max_volatility_accumulator,
+            constants.tick_group_size,
+        ) {
+            return Err(ErrorCode::InvalidAdaptiveFeeConstants.into());
+        }
+
         self.adaptive_fee_constants = constants;
+        self.reset_adaptive_fee_variables();
+
+        Ok(())
     }
 
     pub fn update_adaptive_fee_variables(&mut self, variables: AdaptiveFeeVariables) {
         self.adaptive_fee_variables = variables;
+    }
+
+    fn reset_adaptive_fee_variables(&mut self) {
+        self.adaptive_fee_variables = AdaptiveFeeVariables::default();
     }
 }
 
@@ -433,7 +454,7 @@ mod oracle_tests {
             tick_group_size,
         };
 
-        oracle.update_adaptive_fee_constants(constants);
+        oracle.update_adaptive_fee_constants(constants, tick_group_size);
 
         let read_af_const_filter_period = oracle.adaptive_fee_constants.filter_period;
         assert_eq!(read_af_const_filter_period, filter_period);

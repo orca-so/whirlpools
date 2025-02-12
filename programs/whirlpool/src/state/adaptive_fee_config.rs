@@ -1,5 +1,5 @@
-use crate::state::WhirlpoolsConfig;
 use crate::errors::ErrorCode;
+use crate::state::WhirlpoolsConfig;
 use anchor_lang::prelude::*;
 
 use super::{AdaptiveFeeConstants, FeeTier};
@@ -15,7 +15,6 @@ pub struct AdaptiveFeeConfig {
     pub default_adaptive_fee_control_factor: u32,
     pub default_max_volatility_accumulator: u32,
     pub default_tick_group_size: u16,
-
     // TODO: DELEGATE
     // TODO: RESERVE
 }
@@ -44,7 +43,7 @@ impl AdaptiveFeeConfig {
             default_reduction_factor,
             default_adaptive_fee_control_factor,
             default_max_volatility_accumulator,
-            default_tick_group_size
+            default_tick_group_size,
         )?;
 
         Ok(())
@@ -102,37 +101,58 @@ mod data_layout_tests {
 
         let mut adaptive_fee_config_data = [0u8; AdaptiveFeeConfig::LEN];
         let mut offset = 0;
-        adaptive_fee_config_data[offset..offset + 8].copy_from_slice(&AdaptiveFeeConfig::discriminator());
+        adaptive_fee_config_data[offset..offset + 8]
+            .copy_from_slice(&AdaptiveFeeConfig::discriminator());
         offset += 8;
-        adaptive_fee_config_data[offset..offset + 32].copy_from_slice(&whirlpools_config.to_bytes());
+        adaptive_fee_config_data[offset..offset + 32]
+            .copy_from_slice(&whirlpools_config.to_bytes());
         offset += 32;
         adaptive_fee_config_data[offset..offset + 2].copy_from_slice(&tick_spacing.to_le_bytes());
         offset += 2;
-        adaptive_fee_config_data[offset..offset + 2].copy_from_slice(&default_filter_period.to_le_bytes());
+        adaptive_fee_config_data[offset..offset + 2]
+            .copy_from_slice(&default_filter_period.to_le_bytes());
         offset += 2;
-        adaptive_fee_config_data[offset..offset + 2].copy_from_slice(&default_decay_period.to_le_bytes());
+        adaptive_fee_config_data[offset..offset + 2]
+            .copy_from_slice(&default_decay_period.to_le_bytes());
         offset += 2;
-        adaptive_fee_config_data[offset..offset + 2].copy_from_slice(&default_reduction_factor.to_le_bytes());
+        adaptive_fee_config_data[offset..offset + 2]
+            .copy_from_slice(&default_reduction_factor.to_le_bytes());
         offset += 2;
-        adaptive_fee_config_data[offset..offset + 4].copy_from_slice(&default_adaptive_fee_control_factor.to_le_bytes());
+        adaptive_fee_config_data[offset..offset + 4]
+            .copy_from_slice(&default_adaptive_fee_control_factor.to_le_bytes());
         offset += 4;
-        adaptive_fee_config_data[offset..offset + 4].copy_from_slice(&default_max_volatility_accumulator.to_le_bytes());
+        adaptive_fee_config_data[offset..offset + 4]
+            .copy_from_slice(&default_max_volatility_accumulator.to_le_bytes());
         offset += 4;
-        adaptive_fee_config_data[offset..offset + 2].copy_from_slice(&default_tick_group_size.to_le_bytes());
+        adaptive_fee_config_data[offset..offset + 2]
+            .copy_from_slice(&default_tick_group_size.to_le_bytes());
         offset += 2;
         assert_eq!(offset, AdaptiveFeeConfig::LEN);
 
         // deserialize
-        let deserialized = AdaptiveFeeConfig::try_deserialize(&mut adaptive_fee_config_data.as_ref()).unwrap();
+        let deserialized =
+            AdaptiveFeeConfig::try_deserialize(&mut adaptive_fee_config_data.as_ref()).unwrap();
 
         assert_eq!(whirlpools_config, deserialized.whirlpools_config);
         assert_eq!(tick_spacing, deserialized.tick_spacing);
         assert_eq!(default_filter_period, deserialized.default_filter_period);
         assert_eq!(default_decay_period, deserialized.default_decay_period);
-        assert_eq!(default_reduction_factor, deserialized.default_reduction_factor);
-        assert_eq!(default_adaptive_fee_control_factor, deserialized.default_adaptive_fee_control_factor);
-        assert_eq!(default_max_volatility_accumulator, deserialized.default_max_volatility_accumulator);
-        assert_eq!(default_tick_group_size, deserialized.default_tick_group_size);
+        assert_eq!(
+            default_reduction_factor,
+            deserialized.default_reduction_factor
+        );
+        assert_eq!(
+            default_adaptive_fee_control_factor,
+            deserialized.default_adaptive_fee_control_factor
+        );
+        assert_eq!(
+            default_max_volatility_accumulator,
+            deserialized.default_max_volatility_accumulator
+        );
+        assert_eq!(
+            default_tick_group_size,
+            deserialized.default_tick_group_size
+        );
 
         // serialize
         let mut serialized = Vec::new();

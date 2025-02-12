@@ -637,7 +637,7 @@ pub mod whirlpool {
         default_reduction_factor: u16,
         default_adaptive_fee_control_factor: u32,
         default_max_volatility_accumulator: u32,
-        default_tick_group_size: u16,    
+        default_tick_group_size: u16,
     ) -> Result<()> {
         instructions::initialize_adaptive_fee_config::handler(
             ctx,
@@ -646,7 +646,49 @@ pub mod whirlpool {
             default_reduction_factor,
             default_adaptive_fee_control_factor,
             default_max_volatility_accumulator,
-            default_tick_group_size,        
+            default_tick_group_size,
+        )
+    }
+
+    // TODO: comment
+    pub fn set_default_adaptive_fee_constants(
+        ctx: Context<SetDefaultAdaptiveFeeConstants>,
+        default_filter_period: u16,
+        default_decay_period: u16,
+        default_reduction_factor: u16,
+        default_adaptive_fee_control_factor: u32,
+        default_max_volatility_accumulator: u32,
+        default_tick_group_size: u16,
+    ) -> Result<()> {
+        instructions::set_default_adaptive_fee_constants::handler(
+            ctx,
+            default_filter_period,
+            default_decay_period,
+            default_reduction_factor,
+            default_adaptive_fee_control_factor,
+            default_max_volatility_accumulator,
+            default_tick_group_size,
+        )
+    }
+
+    // TODO: comment
+    pub fn set_adaptive_fee_constants(
+        ctx: Context<SetAdaptiveFeeConstants>,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        adaptive_fee_control_factor: u32,
+        max_volatility_accumulator: u32,
+        tick_group_size: u16,
+    ) -> Result<()> {
+        instructions::set_adaptive_fee_constants::handler(
+            ctx,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
         )
     }
 

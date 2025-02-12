@@ -33,8 +33,12 @@ pub fn handler(ctx: Context<InitializeOracle>) -> Result<()> {
         ctx.accounts.adaptive_fee_config.default_filter_period,
         ctx.accounts.adaptive_fee_config.default_decay_period,
         ctx.accounts.adaptive_fee_config.default_reduction_factor,
-        ctx.accounts.adaptive_fee_config.default_adaptive_fee_control_factor,
-        ctx.accounts.adaptive_fee_config.default_max_volatility_accumulator,
+        ctx.accounts
+            .adaptive_fee_config
+            .default_adaptive_fee_control_factor,
+        ctx.accounts
+            .adaptive_fee_config
+            .default_max_volatility_accumulator,
         ctx.accounts.adaptive_fee_config.default_tick_group_size,
     )
 }

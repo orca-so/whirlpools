@@ -8,8 +8,8 @@ use super::{
 
 // Fee rate is represented as hundredths of a basis point.
 // Fee amount = total_amount * fee_rate / 1_000_000.
-// Max fee rate supported is 3%.
-pub const MAX_FEE_RATE: u16 = 30_000;
+// Max fee rate supported is 6%.
+pub const MAX_FEE_RATE: u16 = 60_000;
 
 // Assuming that FEE_RATE is represented as hundredths of a basis point
 // We want FEE_RATE_MUL_VALUE = 1/FEE_RATE_UNIT, so 1e6

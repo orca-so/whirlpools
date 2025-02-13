@@ -454,7 +454,9 @@ mod oracle_tests {
             tick_group_size,
         };
 
-        oracle.update_adaptive_fee_constants(constants, tick_group_size);
+        oracle
+            .update_adaptive_fee_constants(constants, tick_group_size)
+            .unwrap();
 
         let read_af_const_filter_period = oracle.adaptive_fee_constants.filter_period;
         assert_eq!(read_af_const_filter_period, filter_period);

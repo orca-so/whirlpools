@@ -177,21 +177,9 @@ pub fn handler<'info>(
 
     let oracle_accessor_one = OracleAccessor::new(ctx.accounts.oracle_one.to_account_info());
     let adaptive_fee_info_one = oracle_accessor_one.get_adaptive_fee_info()?;
-    // TODO: remove
-    if let Some(adaptive_fee_info) = &adaptive_fee_info_one {
-        msg!("Adaptive fee info (one) found: {:?}", adaptive_fee_info);
-    } else {
-        msg!("Adaptive fee info (one) not found");
-    }
 
     let oracle_accessor_two = OracleAccessor::new(ctx.accounts.oracle_two.to_account_info());
     let adaptive_fee_info_two = oracle_accessor_two.get_adaptive_fee_info()?;
-    // TODO: remove
-    if let Some(adaptive_fee_info) = &adaptive_fee_info_two {
-        msg!("Adaptive fee info (two) found: {:?}", adaptive_fee_info);
-    } else {
-        msg!("Adaptive fee info (two) not found");
-    }
 
     // TODO: WLOG, we could extend this to N-swaps, but the account inputs to the instruction would
     // need to be jankier and we may need to programatically map/verify rather than using anchor constraints
@@ -360,21 +348,9 @@ pub fn handler<'info>(
             return Err(ErrorCode::AmountInAboveMaximum.into());
         }
     }
-    
-    // TODO: remove
-    if let Some(adaptive_fee_info) = &swap_update_one.next_adaptive_fee_info {
-        msg!("Next Adaptive fee info(one): {:?}", adaptive_fee_info);
-    } else {
-        msg!("No next Adaptive fee info(one)");
-    }
+
     oracle_accessor_one.update_adaptive_fee_variables(&swap_update_one.next_adaptive_fee_info)?;
 
-    // TODO: remove
-    if let Some(adaptive_fee_info) = &swap_update_two.next_adaptive_fee_info {
-        msg!("Next Adaptive fee info(two): {:?}", adaptive_fee_info);
-    } else {
-        msg!("No next Adaptive fee info(two)");
-    }
     oracle_accessor_two.update_adaptive_fee_variables(&swap_update_two.next_adaptive_fee_info)?;
 
     update_and_two_hop_swap_whirlpool_v2(

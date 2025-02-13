@@ -106,12 +106,6 @@ pub fn handler<'info>(
 
     let oracle_accessor = OracleAccessor::new(ctx.accounts.oracle.to_account_info());
     let adaptive_fee_info = oracle_accessor.get_adaptive_fee_info()?;
-    // TODO: remove
-    if let Some(adaptive_fee_info) = &adaptive_fee_info {
-        msg!("Adaptive fee info found: {:?}", adaptive_fee_info);
-    } else {
-        msg!("Adaptive fee info not found");
-    }
 
     let swap_update = swap_with_transfer_fee_extension(
         whirlpool,
@@ -154,12 +148,6 @@ pub fn handler<'info>(
         }
     }
 
-    // TODO: remove
-    if let Some(adaptive_fee_info) = &swap_update.next_adaptive_fee_info {
-        msg!("Next Adaptive fee info: {:?}", adaptive_fee_info);
-    } else {
-        msg!("No next Adaptive fee info");
-    }
     oracle_accessor.update_adaptive_fee_variables(&swap_update.next_adaptive_fee_info)?;
 
     update_and_swap_whirlpool_v2(

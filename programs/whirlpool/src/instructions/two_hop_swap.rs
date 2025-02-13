@@ -4,7 +4,7 @@ use anchor_spl::token::{self, Token, TokenAccount};
 use crate::{
     errors::ErrorCode,
     manager::swap_manager::*,
-    state::Whirlpool,
+    state::{OracleAccessor, Whirlpool},
     util::{to_timestamp_u64, update_and_swap_whirlpool, SparseSwapTickSequenceBuilder},
 };
 
@@ -136,6 +136,24 @@ pub fn handler(
     )?;
     let mut swap_tick_sequence_two = builder_two.build()?;
 
+    let oracle_accessor_one = OracleAccessor::new(ctx.accounts.oracle_one.to_account_info());
+    let adaptive_fee_info_one = oracle_accessor_one.get_adaptive_fee_info()?;
+    // TODO: remove
+    if let Some(adaptive_fee_info) = &adaptive_fee_info_one {
+        msg!("Adaptive fee info (one) found: {:?}", adaptive_fee_info);
+    } else {
+        msg!("Adaptive fee info (one) not found");
+    }
+
+    let oracle_accessor_two = OracleAccessor::new(ctx.accounts.oracle_two.to_account_info());
+    let adaptive_fee_info_two = oracle_accessor_two.get_adaptive_fee_info()?;
+    // TODO: remove
+    if let Some(adaptive_fee_info) = &adaptive_fee_info_two {
+        msg!("Adaptive fee info (two) found: {:?}", adaptive_fee_info);
+    } else {
+        msg!("Adaptive fee info (two) not found");
+    }
+
     // TODO: WLOG, we could extend this to N-swaps, but the account inputs to the instruction would
     // need to be jankier and we may need to programatically map/verify rather than using anchor constraints
     let (swap_update_one, swap_update_two) = if amount_specified_is_input {
@@ -150,7 +168,7 @@ pub fn handler(
             amount_specified_is_input, // true
             a_to_b_one,
             timestamp,
-            None, // TODO: implement
+            adaptive_fee_info_one,
         )?;
 
         // Swap two input is the output of swap one
@@ -168,7 +186,7 @@ pub fn handler(
             amount_specified_is_input, // true
             a_to_b_two,
             timestamp,
-            None, // TODO: implement
+            adaptive_fee_info_two,
         )?;
         (swap_calc_one, swap_calc_two)
     } else {
@@ -183,7 +201,7 @@ pub fn handler(
             amount_specified_is_input, // false
             a_to_b_two,
             timestamp,
-            None, // TODO: implement
+            adaptive_fee_info_two,
         )?;
 
         // The output of swap 1 is input of swap_calc_two
@@ -201,7 +219,7 @@ pub fn handler(
             amount_specified_is_input, // false
             a_to_b_one,
             timestamp,
-            None, // TODO: implement
+            adaptive_fee_info_one,
         )?;
         (swap_calc_one, swap_calc_two)
     };
@@ -246,6 +264,22 @@ pub fn handler(
             return Err(ErrorCode::AmountInAboveMaximum.into());
         }
     }
+
+    // TODO: remove
+    if let Some(adaptive_fee_info) = &swap_update_one.next_adaptive_fee_info {
+        msg!("Next Adaptive fee info(one): {:?}", adaptive_fee_info);
+    } else {
+        msg!("No next Adaptive fee info(one)");
+    }
+    oracle_accessor_one.update_adaptive_fee_variables(&swap_update_one.next_adaptive_fee_info)?;
+
+    // TODO: remove
+    if let Some(adaptive_fee_info) = &swap_update_two.next_adaptive_fee_info {
+        msg!("Next Adaptive fee info(two): {:?}", adaptive_fee_info);
+    } else {
+        msg!("No next Adaptive fee info(two)");
+    }
+    oracle_accessor_two.update_adaptive_fee_variables(&swap_update_two.next_adaptive_fee_info)?;
 
     update_and_swap_whirlpool(
         whirlpool_one,

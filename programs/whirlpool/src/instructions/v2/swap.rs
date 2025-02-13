@@ -10,7 +10,7 @@ use crate::{
     constants::transfer_memo,
     errors::ErrorCode,
     manager::swap_manager::*,
-    state::Whirlpool,
+    state::*,
     util::{
         to_timestamp_u64, v2::update_and_swap_whirlpool_v2, SparseSwapTickSequenceBuilder,
         SwapTickSequence,
@@ -104,6 +104,15 @@ pub fn handler<'info>(
     )?;
     let mut swap_tick_sequence = builder.build()?;
 
+    let oracle_accessor = OracleAccessor::new(ctx.accounts.oracle.to_account_info());
+    let adaptive_fee_info = oracle_accessor.get_adaptive_fee_info()?;
+    // TODO: remove
+    if let Some(adaptive_fee_info) = &adaptive_fee_info {
+        msg!("Adaptive fee info found: {:?}", adaptive_fee_info);
+    } else {
+        msg!("Adaptive fee info not found");
+    }
+
     let swap_update = swap_with_transfer_fee_extension(
         whirlpool,
         &ctx.accounts.token_mint_a,
@@ -114,6 +123,7 @@ pub fn handler<'info>(
         amount_specified_is_input,
         a_to_b,
         timestamp,
+        adaptive_fee_info,
     )?;
 
     if amount_specified_is_input {
@@ -143,6 +153,14 @@ pub fn handler<'info>(
             return Err(ErrorCode::AmountInAboveMaximum.into());
         }
     }
+
+    // TODO: remove
+    if let Some(adaptive_fee_info) = &swap_update.next_adaptive_fee_info {
+        msg!("Next Adaptive fee info: {:?}", adaptive_fee_info);
+    } else {
+        msg!("No next Adaptive fee info");
+    }
+    oracle_accessor.update_adaptive_fee_variables(&swap_update.next_adaptive_fee_info)?;
 
     update_and_swap_whirlpool_v2(
         whirlpool,
@@ -176,6 +194,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
     amount_specified_is_input: bool,
     a_to_b: bool,
     timestamp: u64,
+    adaptive_fee_info: Option<AdaptiveFeeInfo>,
 ) -> Result<PostSwapUpdate> {
     let (input_token_mint, output_token_mint) = if a_to_b {
         (token_mint_a, token_mint_b)
@@ -198,7 +217,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
             amount_specified_is_input,
             a_to_b,
             timestamp,
-            None, // TODO: implement
+            adaptive_fee_info,
         )?;
 
         let (swap_update_amount_input, swap_update_amount_output) = if a_to_b {
@@ -256,7 +275,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
         amount_specified_is_input,
         a_to_b,
         timestamp,
-        None, // TODO: implement
+        adaptive_fee_info,
     )?;
 
     let (swap_update_amount_input, swap_update_amount_output) = if a_to_b {

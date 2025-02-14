@@ -9,8 +9,8 @@ path = "../../lib.rs"
 solana-account-decoder = { version = "~2.1.13" }
 solana-sdk = { version = "~2.1.13" }
 spl-associated-token-account = { version = "~5.0.1" }
-spl-token = { version = "~6.0.0" }
-spl-memo = { version = "~6.0.0" }
+spl-token = { version = "~6.0.0", features = ["no-entrypoint"] }
+spl-memo = { version = "~6.0.0", features = ["no-entrypoint"] }
 spl-token-2022 = { version = "~6.0.0" }
 solana-program = { version = "~2.1.13" }
 orca_whirlpools = { path = "../../../whirlpool" }

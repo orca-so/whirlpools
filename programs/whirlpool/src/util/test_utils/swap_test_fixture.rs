@@ -52,7 +52,7 @@ pub struct SwapTestFixtureInfo<'info> {
     pub protocol_fee_rate: u16,
 }
 
-impl<'info> Default for SwapTestFixtureInfo<'info> {
+impl Default for SwapTestFixtureInfo<'_> {
     fn default() -> Self {
         SwapTestFixtureInfo {
             tick_spacing: TS_128,

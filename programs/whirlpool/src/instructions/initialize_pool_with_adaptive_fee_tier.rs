@@ -8,8 +8,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-#[instruction(tick_spacing: u16)]
-pub struct InitializePoolV2<'info> {
+pub struct InitializePoolWithAdaptiveFeeTier<'info> {
     pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
 
     pub token_mint_a: InterfaceAccount<'info, Mint>,
@@ -31,13 +30,21 @@ pub struct InitializePoolV2<'info> {
         whirlpools_config.key().as_ref(),
         token_mint_a.key().as_ref(),
         token_mint_b.key().as_ref(),
-        tick_spacing.to_le_bytes().as_ref()
+        adaptive_fee_tier.fee_tier_index.to_le_bytes().as_ref()
       ],
       bump,
       payer = funder,
       space = Whirlpool::LEN)]
     pub whirlpool: Box<Account<'info, Whirlpool>>,
 
+    #[account(
+        init,
+        payer = funder,
+        seeds = [b"oracle", whirlpool.key().as_ref()],
+        bump,
+        space = Oracle::LEN)]
+    pub oracle: AccountLoader<'info, Oracle>,
+  
     #[account(init,
       payer = funder,
       token::token_program = token_program_a,
@@ -52,8 +59,8 @@ pub struct InitializePoolV2<'info> {
       token::authority = whirlpool)]
     pub token_vault_b: Box<InterfaceAccount<'info, TokenAccount>>,
 
-    #[account(has_one = whirlpools_config, constraint = fee_tier.tick_spacing == tick_spacing)]
-    pub fee_tier: Account<'info, FeeTier>,
+    #[account(has_one = whirlpools_config)]
+    pub adaptive_fee_tier: Account<'info, AdaptiveFeeTier>,
 
     #[account(address = *token_mint_a.to_account_info().owner)]
     pub token_program_a: Interface<'info, TokenInterface>,
@@ -64,8 +71,7 @@ pub struct InitializePoolV2<'info> {
 }
 
 pub fn handler(
-    ctx: Context<InitializePoolV2>,
-    tick_spacing: u16,
+    ctx: Context<InitializePoolWithAdaptiveFeeTier>,
     initial_sqrt_price: u128,
 ) -> Result<()> {
     let token_mint_a = ctx.accounts.token_mint_a.key();
@@ -74,9 +80,11 @@ pub fn handler(
     let whirlpool = &mut ctx.accounts.whirlpool;
     let whirlpools_config = &ctx.accounts.whirlpools_config;
 
-    let fee_tier_index = tick_spacing;
+    let fee_tier_index = ctx.accounts.adaptive_fee_tier.fee_tier_index;
 
-    let default_fee_rate = ctx.accounts.fee_tier.default_fee_rate;
+    let tick_spacing = ctx.accounts.adaptive_fee_tier.tick_spacing;
+
+    let default_fee_rate = ctx.accounts.adaptive_fee_tier.default_base_fee_rate;
 
     // ignore the bump passed and use one Anchor derived
     let bump = ctx.bumps.whirlpool;
@@ -113,5 +121,21 @@ pub fn handler(
         ctx.accounts.token_vault_a.key(),
         token_mint_b,
         ctx.accounts.token_vault_b.key(),
+    )?;
+
+    let mut oracle = ctx.accounts.oracle.load_init()?;
+    oracle.initialize(
+        ctx.accounts.whirlpool.key(),
+        tick_spacing,
+        ctx.accounts.adaptive_fee_tier.filter_period,
+        ctx.accounts.adaptive_fee_tier.decay_period,
+        ctx.accounts.adaptive_fee_tier.reduction_factor,
+        ctx.accounts
+            .adaptive_fee_tier
+            .adaptive_fee_control_factor,
+        ctx.accounts
+            .adaptive_fee_tier
+            .max_volatility_accumulator,
+        ctx.accounts.adaptive_fee_tier.tick_group_size,
     )
 }

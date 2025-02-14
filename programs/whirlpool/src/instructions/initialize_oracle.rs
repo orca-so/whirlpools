@@ -1,3 +1,4 @@
+/* 
 use anchor_lang::prelude::*;
 
 use crate::state::*;
@@ -21,7 +22,7 @@ pub struct InitializeOracle<'info> {
       constraint = adaptive_fee_config.whirlpools_config == whirlpool.whirlpools_config,
       constraint = adaptive_fee_config.tick_spacing == whirlpool.tick_spacing,
     )]
-    pub adaptive_fee_config: Account<'info, AdaptiveFeeConfig>,
+    pub adaptive_fee_config: Account<'info, AdaptiveFeeTier>,
 
     pub system_program: Program<'info, System>,
 }
@@ -42,3 +43,4 @@ pub fn handler(ctx: Context<InitializeOracle>) -> Result<()> {
         ctx.accounts.adaptive_fee_config.default_tick_group_size,
     )
 }
+*/

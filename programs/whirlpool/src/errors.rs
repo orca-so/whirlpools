@@ -149,6 +149,9 @@ pub enum ErrorCode {
 
     #[msg("Invalid adaptive fee constants")]
     InvalidAdaptiveFeeConstants, // 0x17aa (6058)
+
+    #[msg("Invalid fee tier index")]
+    InvalidFeeTierIndex, // 0x17ab (6059)
 }
 
 impl From<TryFromIntError> for ErrorCode {

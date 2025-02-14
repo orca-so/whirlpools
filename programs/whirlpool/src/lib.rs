@@ -624,56 +624,15 @@ pub mod whirlpool {
         instructions::close_position_with_token_extensions::handler(ctx)
     }
 
-    // TODO: update params if needed
-    pub fn initialize_oracle(ctx: Context<InitializeOracle>) -> Result<()> {
-        instructions::initialize_oracle::handler(ctx)
-    }
-
     // TODO: comment
+    #[allow(clippy::too_many_arguments)]
     pub fn initialize_adaptive_fee_config(
-        ctx: Context<InitializeAdaptiveFeeConfig>,
-        default_filter_period: u16,
-        default_decay_period: u16,
-        default_reduction_factor: u16,
-        default_adaptive_fee_control_factor: u32,
-        default_max_volatility_accumulator: u32,
-        default_tick_group_size: u16,
-    ) -> Result<()> {
-        instructions::initialize_adaptive_fee_config::handler(
-            ctx,
-            default_filter_period,
-            default_decay_period,
-            default_reduction_factor,
-            default_adaptive_fee_control_factor,
-            default_max_volatility_accumulator,
-            default_tick_group_size,
-        )
-    }
-
-    // TODO: comment
-    pub fn set_default_adaptive_fee_constants(
-        ctx: Context<SetDefaultAdaptiveFeeConstants>,
-        default_filter_period: u16,
-        default_decay_period: u16,
-        default_reduction_factor: u16,
-        default_adaptive_fee_control_factor: u32,
-        default_max_volatility_accumulator: u32,
-        default_tick_group_size: u16,
-    ) -> Result<()> {
-        instructions::set_default_adaptive_fee_constants::handler(
-            ctx,
-            default_filter_period,
-            default_decay_period,
-            default_reduction_factor,
-            default_adaptive_fee_control_factor,
-            default_max_volatility_accumulator,
-            default_tick_group_size,
-        )
-    }
-
-    // TODO: comment
-    pub fn set_adaptive_fee_constants(
-        ctx: Context<SetAdaptiveFeeConstants>,
+        ctx: Context<InitializeAdaptiveFeeTier>,
+        fee_tier_index: u16,
+        tick_spacing: u16,
+        initialize_pool_authority: Pubkey,
+        delegated_fee_authority: Pubkey,
+        default_base_fee_rate: u16,
         filter_period: u16,
         decay_period: u16,
         reduction_factor: u16,
@@ -681,8 +640,13 @@ pub mod whirlpool {
         max_volatility_accumulator: u32,
         tick_group_size: u16,
     ) -> Result<()> {
-        instructions::set_adaptive_fee_constants::handler(
+        instructions::initialize_adaptive_fee_tier::handler(
             ctx,
+            fee_tier_index,
+            tick_spacing,
+            initialize_pool_authority,
+            delegated_fee_authority,
+            default_base_fee_rate,
             filter_period,
             decay_period,
             reduction_factor,
@@ -690,6 +654,14 @@ pub mod whirlpool {
             max_volatility_accumulator,
             tick_group_size,
         )
+    }
+
+    // TODO: comment
+    pub fn initialize_pool_with_adaptive_fee_tier(
+        ctx: Context<InitializePoolWithAdaptiveFeeTier>,
+        initial_sqrt_price: u128,
+    ) -> Result<()> {
+        instructions::initialize_pool_with_adaptive_fee_tier::handler(ctx, initial_sqrt_price)
     }
 
     ////////////////////////////////////////////////////////////////////////////////

@@ -153,7 +153,6 @@ pub struct Oracle {
     pub whirlpool: Pubkey,
     pub adaptive_fee_constants: AdaptiveFeeConstants,
     pub adaptive_fee_variables: AdaptiveFeeVariables,
-    // TODO: DELEGATE (adaptive_fee_authority_delegation) ?
     // TODO: RESERVE to implement oracle (observation) in the future
 }
 
@@ -164,7 +163,8 @@ impl Oracle {
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
-        whirlpool: &Account<Whirlpool>,
+        whirlpool: Pubkey,
+        tick_spacing: u16,
         filter_period: u16,
         decay_period: u16,
         reduction_factor: u16,
@@ -172,7 +172,7 @@ impl Oracle {
         max_volatility_accumulator: u32,
         tick_group_size: u16,
     ) -> Result<()> {
-        self.whirlpool = whirlpool.key();
+        self.whirlpool = whirlpool;
 
         let constants = AdaptiveFeeConstants {
             filter_period,
@@ -183,13 +183,13 @@ impl Oracle {
             tick_group_size,
         };
 
-        self.update_adaptive_fee_constants(constants, whirlpool.tick_spacing)?;
+        self.initialize_adaptive_fee_constants(constants, tick_spacing)?;
         self.reset_adaptive_fee_variables();
 
         Ok(())
     }
 
-    pub fn update_adaptive_fee_constants(
+    pub fn initialize_adaptive_fee_constants(
         &mut self,
         constants: AdaptiveFeeConstants,
         tick_spacing: u16,
@@ -207,7 +207,6 @@ impl Oracle {
         }
 
         self.adaptive_fee_constants = constants;
-        self.reset_adaptive_fee_variables();
 
         Ok(())
     }
@@ -455,7 +454,7 @@ mod oracle_tests {
         };
 
         oracle
-            .update_adaptive_fee_constants(constants, tick_group_size)
+            .initialize_adaptive_fee_constants(constants, tick_group_size)
             .unwrap();
 
         let read_af_const_filter_period = oracle.adaptive_fee_constants.filter_period;

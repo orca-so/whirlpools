@@ -16,7 +16,7 @@ pub struct Whirlpool {
     pub whirlpool_bump: [u8; 1],   // 1
 
     pub tick_spacing: u16,          // 2
-    pub tick_spacing_seed: [u8; 2], // 2
+    pub fee_tier_index_seed: [u8; 2], // 2
 
     // Stored as hundredths of a basis point
     // u16::MAX corresponds to ~6.5%
@@ -64,7 +64,7 @@ impl Whirlpool {
             self.whirlpools_config.as_ref(),
             self.token_mint_a.as_ref(),
             self.token_mint_b.as_ref(),
-            self.tick_spacing_seed.as_ref(),
+            self.fee_tier_index_seed.as_ref(),
             self.whirlpool_bump.as_ref(),
         ]
     }
@@ -105,6 +105,7 @@ impl Whirlpool {
     pub fn initialize(
         &mut self,
         whirlpools_config: &Account<WhirlpoolsConfig>,
+        fee_tier_index: u16,
         bump: u8,
         tick_spacing: u16,
         sqrt_price: u128,
@@ -123,10 +124,10 @@ impl Whirlpool {
         }
 
         self.whirlpools_config = whirlpools_config.key();
+        self.fee_tier_index_seed = fee_tier_index.to_le_bytes();
         self.whirlpool_bump = [bump];
 
         self.tick_spacing = tick_spacing;
-        self.tick_spacing_seed = self.tick_spacing.to_le_bytes();
 
         self.update_fee_rate(default_fee_rate)?;
         self.update_protocol_fee_rate(whirlpools_config.default_protocol_fee_rate)?;
@@ -549,7 +550,7 @@ mod data_layout_tests {
         assert_eq!(deserialized.whirlpools_config, whirlpool_whirlpools_config);
         assert_eq!(deserialized.whirlpool_bump, [whirlpool_bump]);
         assert_eq!(deserialized.tick_spacing, whirlpool_tick_spacing);
-        assert_eq!(deserialized.tick_spacing_seed, whirlpool_tick_spacing_seed);
+        assert_eq!(deserialized.fee_tier_index_seed, whirlpool_tick_spacing_seed);
         assert_eq!(deserialized.fee_rate, whirlpool_fee_rate);
         assert_eq!(deserialized.protocol_fee_rate, whirlpool_protocol_fee_rate);
         assert_eq!(deserialized.liquidity, whirlpool_liquidity);

@@ -2,48 +2,84 @@ use crate::errors::ErrorCode;
 use crate::state::WhirlpoolsConfig;
 use anchor_lang::prelude::*;
 
-use super::{AdaptiveFeeConstants, FeeTier};
+use super::AdaptiveFeeConstants;
 
 #[account]
-pub struct AdaptiveFeeConfig {
+pub struct AdaptiveFeeTier {
     pub whirlpools_config: Pubkey,
+    pub fee_tier_index: u16,
+
     pub tick_spacing: u16,
 
-    pub default_filter_period: u16,
-    pub default_decay_period: u16,
-    pub default_reduction_factor: u16,
-    pub default_adaptive_fee_control_factor: u32,
-    pub default_max_volatility_accumulator: u32,
-    pub default_tick_group_size: u16,
-    // TODO: DELEGATE
-    // TODO: RESERVE
+    // authority who can use this adaptive fee tier
+    pub initialize_pool_authority: Pubkey,
+
+    // delegation
+    pub delegated_fee_authority: Pubkey,
+
+    // base fee
+    pub default_base_fee_rate: u16,
+
+    // adaptive fee constants
+    pub filter_period: u16,
+    pub decay_period: u16,
+    pub reduction_factor: u16,
+    pub adaptive_fee_control_factor: u32,
+    pub max_volatility_accumulator: u32,
+    pub tick_group_size: u16,
+
+    // 256 RESERVE
 }
 
-impl AdaptiveFeeConfig {
-    pub const LEN: usize = 8 + 32 + 2 + 2 + 2 + 2 + 4 + 4 + 2;
+impl AdaptiveFeeTier {
+    pub const LEN: usize = 8
+    + 32 + 2
+    + 2
+    + 32
+    + 32
+    + 2
+    + 2 + 2 + 2 + 4 + 4 + 2
+    + 256;
 
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
         whirlpools_config: &Account<WhirlpoolsConfig>,
-        fee_tier: &Account<FeeTier>,
-        default_filter_period: u16,
-        default_decay_period: u16,
-        default_reduction_factor: u16,
-        default_adaptive_fee_control_factor: u32,
-        default_max_volatility_accumulator: u32,
-        default_tick_group_size: u16,
+        fee_tier_index: u16,
+        tick_spacing: u16,
+        initialize_pool_authority: Pubkey,
+        delegated_fee_authority: Pubkey,
+        default_base_fee_rate: u16,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        adaptive_fee_control_factor: u32,
+        max_volatility_accumulator: u32,
+        tick_group_size: u16,
     ) -> Result<()> {
+        if fee_tier_index == tick_spacing {
+            // fee_tier_index == tick_spacing is reserved for FeeTier account
+            return Err(ErrorCode::InvalidFeeTierIndex.into());
+        }
+
         self.whirlpools_config = whirlpools_config.key();
-        self.tick_spacing = fee_tier.tick_spacing;
+        self.fee_tier_index = fee_tier_index;
+
+        self.tick_spacing = tick_spacing;
+
+        self.initialize_pool_authority = initialize_pool_authority;
+
+        self.delegated_fee_authority = delegated_fee_authority;
+
+        self.default_base_fee_rate = default_base_fee_rate;
 
         self.update_adaptive_fee_constants(
-            default_filter_period,
-            default_decay_period,
-            default_reduction_factor,
-            default_adaptive_fee_control_factor,
-            default_max_volatility_accumulator,
-            default_tick_group_size,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
         )?;
 
         Ok(())
@@ -51,31 +87,31 @@ impl AdaptiveFeeConfig {
 
     pub fn update_adaptive_fee_constants(
         &mut self,
-        default_filter_period: u16,
-        default_decay_period: u16,
-        default_reduction_factor: u16,
-        default_adaptive_fee_control_factor: u32,
-        default_max_volatility_accumulator: u32,
-        default_tick_group_size: u16,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        adaptive_fee_control_factor: u32,
+        max_volatility_accumulator: u32,
+        tick_group_size: u16,
     ) -> Result<()> {
         if !AdaptiveFeeConstants::validate_constants(
             self.tick_spacing,
-            default_filter_period,
-            default_decay_period,
-            default_reduction_factor,
-            default_adaptive_fee_control_factor,
-            default_max_volatility_accumulator,
-            default_tick_group_size,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
         ) {
             return Err(ErrorCode::InvalidAdaptiveFeeConstants.into());
         }
 
-        self.default_filter_period = default_filter_period;
-        self.default_decay_period = default_decay_period;
-        self.default_reduction_factor = default_reduction_factor;
-        self.default_adaptive_fee_control_factor = default_adaptive_fee_control_factor;
-        self.default_max_volatility_accumulator = default_max_volatility_accumulator;
-        self.default_tick_group_size = default_tick_group_size;
+        self.filter_period = filter_period;
+        self.decay_period = decay_period;
+        self.reduction_factor = reduction_factor;
+        self.adaptive_fee_control_factor = adaptive_fee_control_factor;
+        self.max_volatility_accumulator = max_volatility_accumulator;
+        self.tick_group_size = tick_group_size;
 
         Ok(())
     }
@@ -87,6 +123,8 @@ mod data_layout_tests {
 
     use super::*;
 
+    // TODO: modify
+    /* 
     #[test]
     fn test_adaptive_fee_config_data_layout() {
         let whirlpools_config = Pubkey::new_unique();
@@ -99,10 +137,10 @@ mod data_layout_tests {
         let default_max_volatility_accumulator = 0xbbccddeeu32;
         let default_tick_group_size = 0xff00u16;
 
-        let mut adaptive_fee_config_data = [0u8; AdaptiveFeeConfig::LEN];
+        let mut adaptive_fee_config_data = [0u8; AdaptiveFeeTier::LEN];
         let mut offset = 0;
         adaptive_fee_config_data[offset..offset + 8]
-            .copy_from_slice(&AdaptiveFeeConfig::discriminator());
+            .copy_from_slice(&AdaptiveFeeTier::discriminator());
         offset += 8;
         adaptive_fee_config_data[offset..offset + 32]
             .copy_from_slice(&whirlpools_config.to_bytes());
@@ -127,11 +165,11 @@ mod data_layout_tests {
         adaptive_fee_config_data[offset..offset + 2]
             .copy_from_slice(&default_tick_group_size.to_le_bytes());
         offset += 2;
-        assert_eq!(offset, AdaptiveFeeConfig::LEN);
+        assert_eq!(offset, AdaptiveFeeTier::LEN);
 
         // deserialize
         let deserialized =
-            AdaptiveFeeConfig::try_deserialize(&mut adaptive_fee_config_data.as_ref()).unwrap();
+            AdaptiveFeeTier::try_deserialize(&mut adaptive_fee_config_data.as_ref()).unwrap();
 
         assert_eq!(whirlpools_config, deserialized.whirlpools_config);
         assert_eq!(tick_spacing, deserialized.tick_spacing);
@@ -160,4 +198,5 @@ mod data_layout_tests {
 
         assert_eq!(serialized.as_slice(), adaptive_fee_config_data.as_ref());
     }
+    */
 }

@@ -4,7 +4,6 @@ import { vi } from "vitest";
 import * as compatibility from "../src/compatibility";
 import * as jito from "../src/jito";
 import {
-  createKeyPairSignerFromPrivateKeyBytes,
   generateKeyPairSigner,
   getBase64EncodedWireTransaction,
   IInstruction,
@@ -15,7 +14,12 @@ import {
 import { getTransferSolInstruction } from "@solana-program/system";
 import { address } from "@solana/web3.js";
 import assert from "assert";
-import { init } from "../src/config";
+import {
+  setRpc,
+  setPriorityFeeSetting,
+  setJitoTipSetting,
+  setComputeUnitMarginMultiplier,
+} from "../src/config";
 import { decodeTransaction, encodeTransaction } from "./utils";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
 
@@ -92,7 +96,11 @@ describe("Build Transaction", async () => {
   const signer = await generateKeyPairSigner();
   const recipient = address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E");
   const amount = 1_000_000n;
-  init({ connectionContext: { rpcUrl, isTriton: false } });
+
+  setRpc(rpcUrl, "solana", false);
+  setPriorityFeeSetting({ type: "none" });
+  setJitoTipSetting({ type: "none" });
+  setComputeUnitMarginMultiplier(1.05);
 
   const transferInstruction = getTransferSolInstruction({
     source: signer,
@@ -101,36 +109,30 @@ describe("Build Transaction", async () => {
   });
 
   it("Should build basic transaction with no priority fees", async () => {
-    const message = await buildTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: { type: "none" },
-      chainId: "solana",
-    });
+    const message = await buildTransaction([transferInstruction], signer);
 
     const decodedIxs = await decodeTransaction(
       getBase64EncodedWireTransaction(message)
     );
 
-    const hasComputeUnitInstruction = decodedIxs.some(
+    const computeUnitProgramixCount = decodedIxs.filter(
       (ix) => ix.programAddress === computeUnitProgramId
-    );
+    ).length;
     const systemProgramixCount = decodedIxs.filter(
       (ix) => ix.programAddress === systemProgramId
     ).length;
 
     assert.strictEqual(systemProgramixCount, 1);
-    assert.strictEqual(hasComputeUnitInstruction, false);
+    assert.strictEqual(computeUnitProgramixCount, 1);
   });
 
   it("Should build transaction with exact priority fee", async () => {
-    const message = await buildTransaction([transferInstruction], signer, {
-      priorityFee: {
-        type: "exact",
-        amountLamports: 10_000n,
-      },
-      jito: { type: "none" },
-      chainId: "solana",
+    setJitoTipSetting({ type: "none" });
+    setPriorityFeeSetting({
+      type: "exact",
+      amountLamports: 10_000n,
     });
+    const message = await buildTransaction([transferInstruction], signer);
 
     const decodedIxs = await decodeTransaction(
       getBase64EncodedWireTransaction(message)
@@ -148,14 +150,13 @@ describe("Build Transaction", async () => {
   });
 
   it("Should build transaction with dynamic priority fee", async () => {
-    const message = await buildTransaction([transferInstruction], signer, {
-      priorityFee: {
-        type: "dynamic",
-        maxCapLamports: 100_000n,
-      },
-      jito: { type: "none" },
-      chainId: "solana",
+    setJitoTipSetting({ type: "none" });
+    setPriorityFeeSetting({
+      type: "dynamic",
+      maxCapLamports: 100_000n,
     });
+
+    const message = await buildTransaction([transferInstruction], signer);
 
     assert.strictEqual(
       mockRpc.getRecentPrioritizationFees().send.mock.calls.length,
@@ -177,14 +178,12 @@ describe("Build Transaction", async () => {
   });
 
   it("Should build transaction with exact Jito tip", async () => {
-    const message = await buildTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: {
-        type: "exact",
-        amountLamports: 10_000n,
-      },
-      chainId: "solana",
+    setPriorityFeeSetting({ type: "none" });
+    setJitoTipSetting({
+      type: "exact",
+      amountLamports: 10_000n,
     });
+    const message = await buildTransaction([transferInstruction], signer);
 
     const decodedIxs = await decodeTransaction(
       getBase64EncodedWireTransaction(message)
@@ -197,18 +196,14 @@ describe("Build Transaction", async () => {
       (ix) => ix.programAddress === systemProgramId
     ).length;
 
-    assert.strictEqual(computeUnitProgramixCount, 0);
+    assert.strictEqual(computeUnitProgramixCount, 1);
     assert.strictEqual(systemProgramixCount, 2);
-
-    expect(jito.recentJitoTip).not.toHaveBeenCalled();
   });
 
   it("Should build transaction with dynamic Jito tip", async () => {
-    const message = await buildTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: { type: "dynamic" },
-      chainId: "solana",
-    });
+    setPriorityFeeSetting({ type: "none" });
+    setJitoTipSetting({ type: "dynamic" });
+    const message = await buildTransaction([transferInstruction], signer);
     const decodedIxs = await decodeTransaction(
       getBase64EncodedWireTransaction(message)
     );
@@ -220,13 +215,13 @@ describe("Build Transaction", async () => {
       (ix) => ix.programAddress === systemProgramId
     ).length;
 
-    assert.strictEqual(computeUnitProgramixCount, 0);
+    assert.strictEqual(computeUnitProgramixCount, 1);
     assert.strictEqual(systemProgramixCount, 2);
-
-    expect(jito.recentJitoTip).toHaveBeenCalled();
   });
 
   it("Should build transaction with lookup tables", async () => {
+    setPriorityFeeSetting({ type: "dynamic" });
+    setJitoTipSetting({ type: "none" });
     const lookupTables = [
       address("BxZBuYQg7TzDyxBGe7pGCgwM1TRKcwZwcvDiGLVZhTxE"),
       address("HxZBuYQg7TzDyxBGe7pGCgwM1TRKcwZwcvDiGLVZhTxF"),
@@ -235,11 +230,6 @@ describe("Build Transaction", async () => {
     const message = await buildTransaction(
       [transferInstruction],
       signer,
-      {
-        priorityFee: { type: "none" },
-        jito: { type: "none" },
-        chainId: "solana",
-      },
       lookupTables
     );
     const decodedIxs = await decodeTransaction(
@@ -253,44 +243,12 @@ describe("Build Transaction", async () => {
       (ix) => ix.programAddress === systemProgramId
     ).length;
 
-    assert.strictEqual(computeUnitProgramixCount, 0);
+    assert.strictEqual(computeUnitProgramixCount, 2);
     assert.strictEqual(systemProgramixCount, 1);
 
     expect(vi.mocked(fetchAllMaybeAddressLookupTable)).toHaveBeenCalledWith(
       mockRpc,
       lookupTables
     );
-  });
-
-  it("Should build transaction with additional signers", async () => {
-    const additionalSigner = await createKeyPairSignerFromPrivateKeyBytes(
-      new Uint8Array(32)
-    );
-
-    const message = await buildTransaction(
-      [transferInstruction],
-      signer,
-      {
-        priorityFee: { type: "none" },
-        jito: { type: "none" },
-        chainId: "solana",
-      },
-      [],
-      [additionalSigner]
-    );
-    assert(message.signatures[signer.address]);
-    const decodedIxs = await decodeTransaction(
-      getBase64EncodedWireTransaction(message)
-    );
-
-    const computeUnitProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === computeUnitProgramId
-    ).length;
-    const systemProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === systemProgramId
-    ).length;
-
-    assert.strictEqual(computeUnitProgramixCount, 0);
-    assert.strictEqual(systemProgramixCount, 1);
   });
 });

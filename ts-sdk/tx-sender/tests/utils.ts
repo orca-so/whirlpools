@@ -11,9 +11,15 @@ import {
   TransactionMessageBytes,
   getBase64Encoder,
   SignatureBytes,
+  appendTransactionMessageInstructions,
+  createTransactionMessage,
+  pipe,
+  Rpc,
+  setTransactionMessageFeePayerSigner,
+  setTransactionMessageLifetimeUsingBlockhash,
+  SolanaRpcApi,
 } from "@solana/web3.js";
 import { rpcFromUrl } from "../src/compatibility";
-import { generateTransactionMessage } from "../src/buildTransaction";
 
 export async function decodeTransaction(base64EncodedTransaction: string) {
   const base64Encoder = getBase64Encoder();
@@ -39,6 +45,25 @@ export async function decodeTransaction(base64EncodedTransaction: string) {
   return instructions;
 }
 
+// this is a copy of the function in buildTransaction.ts (allowing us to avoid exporting it)
+async function prepareTransactionMessage(
+  instructions: IInstruction[],
+  rpc: Rpc<SolanaRpcApi>,
+  signer: TransactionSigner
+) {
+  const { value: blockhash } = await rpc
+    .getLatestBlockhash({
+      commitment: "confirmed",
+    })
+    .send();
+  return pipe(
+    createTransactionMessage({ version: 0 }),
+    (tx) => setTransactionMessageLifetimeUsingBlockhash(blockhash, tx),
+    (tx) => setTransactionMessageFeePayerSigner(signer, tx),
+    (tx) => appendTransactionMessageInstructions(instructions, tx)
+  );
+}
+
 export async function encodeTransaction(
   instructions: IInstruction[],
   feePayer: TransactionSigner
@@ -46,7 +71,7 @@ export async function encodeTransaction(
   Readonly<FullySignedTransaction & TransactionWithBlockhashLifetime>
 > {
   const rpc = rpcFromUrl("https://");
-  const message = await generateTransactionMessage(instructions, rpc, feePayer);
+  const message = await prepareTransactionMessage(instructions, rpc, feePayer);
   const compiledMessage = compileTransactionMessage(message);
   const messageBytes = getCompiledTransactionMessageEncoder().encode(
     compiledMessage

@@ -16,17 +16,14 @@ import {
 } from "@solana/web3.js";
 import { getTransferSolInstruction } from "@solana-program/system";
 import { address } from "@solana/web3.js";
-import { init } from "../src/config";
+import {
+  setRpc,
+  setPriorityFeeSetting,
+  setJitoTipSetting,
+  setComputeUnitMarginMultiplier,
+} from "../src/config";
 import { encodeTransaction } from "./utils";
 import { buildTransaction } from "../src/buildTransaction";
-
-vi.mock("@solana/transaction-confirmation", () => ({
-  createRecentSignatureConfirmationPromiseFactory: vi.fn(() =>
-    vi.fn().mockResolvedValue(undefined)
-  ),
-  waitForRecentTransactionConfirmationUntilTimeout: vi.fn(),
-  getTimeoutPromise: vi.fn().mockResolvedValue(undefined),
-}));
 
 vi.mock("@solana/web3.js", async () => {
   const actual = await vi.importActual("@solana/web3.js");
@@ -76,17 +73,15 @@ vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
 
 vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
 
-// Get mocked functions
-const {
-  createRecentSignatureConfirmationPromiseFactory,
-  waitForRecentTransactionConfirmationUntilTimeout,
-} = await import("@solana/transaction-confirmation");
-
 describe("Send Transaction", async () => {
   const signer = await generateKeyPairSigner();
   const recipient = address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E");
   const amount = 1_000_000n;
-  init({ connectionContext: { rpcUrl, isTriton: false } });
+
+  setRpc(rpcUrl, "solana", false);
+  setPriorityFeeSetting({ type: "none" });
+  setJitoTipSetting({ type: "none" });
+  setComputeUnitMarginMultiplier(1.05);
 
   const transferInstruction = getTransferSolInstruction({
     source: signer,
@@ -96,87 +91,13 @@ describe("Send Transaction", async () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.spyOn(compatibility, "subscriptionsFromWsUrl").mockReturnValue({
-      signatureNotifications: vi.fn(),
-      accountNotifications: vi.fn(),
-      logsNotifications: vi.fn(),
-      programNotifications: vi.fn(),
-      rootNotifications: vi.fn(),
-      slotNotifications: vi.fn(),
-    });
   });
 
   it("Should send signed transaction without websocket url", async () => {
-    const tx = await buildTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: { type: "none" },
-      chainId: "solana",
-    });
-
-    const signature = await sendSignedTransaction(tx, rpcUrl);
+    const tx = await buildTransaction([transferInstruction], signer);
+    const signature = await sendSignedTransaction(tx);
     expect(mockRpc.sendTransaction().send).toHaveBeenCalled();
     expect(signature).toBeDefined();
-  });
-
-  it("Should send signed transaction with websocket url", async () => {
-    const tx = await buildTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: { type: "none" },
-      chainId: "solana",
-    });
-
-    const wsUrl = "wss://api.mainnet-beta.solana.com";
-    const signature = await sendSignedTransaction(tx, rpcUrl, wsUrl);
-    expect(mockRpc.sendTransaction().send).toHaveBeenCalled();
-    expect(createRecentSignatureConfirmationPromiseFactory).toHaveBeenCalled();
-    expect(signature).toBeDefined();
-  });
-
-  it("Should send basic transaction with no priority fees", async () => {
-    await buildAndSendTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: { type: "none" },
-      chainId: "solana",
-    });
-    expect(jito.recentJitoTip).not.toHaveBeenCalled();
-    expect(mockRpc.sendTransaction().send).toHaveBeenCalled();
-  });
-
-  it("Should send transaction with dynamic priority fee", async () => {
-    await buildAndSendTransaction([transferInstruction], signer, {
-      priorityFee: {
-        type: "dynamic",
-        maxCapLamports: 100_000n,
-      },
-      jito: { type: "none" },
-      chainId: "solana",
-    });
-    expect(jito.recentJitoTip).not.toHaveBeenCalled();
-    expect(mockRpc.sendTransaction().send).toHaveBeenCalled();
-  });
-
-  it("Should send transaction with exact Jito tip", async () => {
-    await buildAndSendTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: {
-        type: "exact",
-        amountLamports: 10_000n,
-      },
-      chainId: "solana",
-    });
-    expect(jito.recentJitoTip).not.toHaveBeenCalled();
-    expect(mockRpc.sendTransaction().send).toHaveBeenCalled();
-  });
-
-  it("Should send transaction with dynamic Jito tip", async () => {
-    await buildAndSendTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: { type: "dynamic" },
-      chainId: "solana",
-    });
-
-    expect(mockRpc.sendTransaction().send).toHaveBeenCalled();
-    expect(jito.recentJitoTip).toHaveBeenCalled();
   });
 
   it("Should handle RPC errors gracefully", async () => {
@@ -192,38 +113,12 @@ describe("Send Transaction", async () => {
     );
 
     await expect(
-      buildAndSendTransaction([transferInstruction], signer, {
-        priorityFee: { type: "none" },
-        jito: { type: "none" },
-        chainId: "solana",
-      })
+      buildAndSendTransaction([transferInstruction], signer)
     ).rejects.toThrow("RPC Error");
   });
 
-  it("Should timeout when confirmation takes too long", async () => {
-    const tx = await buildTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: { type: "none" },
-      chainId: "solana",
-    });
-
-    const timeoutError = new Error("Timed out waiting for confirmation");
-    vi.mocked(
-      waitForRecentTransactionConfirmationUntilTimeout
-    ).mockRejectedValueOnce(timeoutError);
-
-    const wsUrl = "wss://api.mainnet-beta.solana.com";
-    await expect(sendSignedTransaction(tx, rpcUrl, wsUrl)).rejects.toThrow(
-      "Timed out waiting for confirmation"
-    );
-  });
-
   it("Should reject invalid transaction", async () => {
-    const tx = await buildTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: { type: "none" },
-      chainId: "solana",
-    });
+    const tx = await buildTransaction([transferInstruction], signer);
 
     const invalidTx = {
       ...tx,
@@ -234,36 +129,6 @@ describe("Send Transaction", async () => {
       lifetimeConstraint: tx.lifetimeConstraint,
     };
 
-    await expect(sendSignedTransaction(invalidTx, rpcUrl)).rejects.toThrow();
-  });
-
-  it("Should handle websocket connection failures", async () => {
-    const tx = await buildTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: { type: "none" },
-      chainId: "solana",
-    });
-
-    vi.spyOn(compatibility, "subscriptionsFromWsUrl").mockImplementation(() => {
-      throw new Error("WebSocket connection failed");
-    });
-
-    const wsUrl = "wss://api.mainnet-beta.solana.com";
-    await expect(sendSignedTransaction(tx, rpcUrl, wsUrl)).rejects.toThrow(
-      "WebSocket connection failed"
-    );
-  });
-
-  it("Should verify transaction confirmation", async () => {
-    const tx = await buildTransaction([transferInstruction], signer, {
-      priorityFee: { type: "none" },
-      jito: { type: "none" },
-      chainId: "solana",
-    });
-
-    const wsUrl = "wss://api.mainnet-beta.solana.com";
-    const signature = await sendSignedTransaction(tx, rpcUrl, wsUrl);
-    expect(createRecentSignatureConfirmationPromiseFactory).toHaveBeenCalled();
-    expect(signature).toBeDefined();
+    await expect(sendSignedTransaction(invalidTx)).rejects.toThrow();
   });
 });

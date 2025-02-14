@@ -28,8 +28,7 @@
   "dependencies": {
     "@solana-program/address-lookup-table": "^0.6.1",
     "@solana-program/compute-budget": "^0.6.1",
-    "@solana-program/system": "^0.6.2",
-    "@solana/transaction-confirmation": "^2.0.0"
+    "@solana-program/system": "^0.6.2"
   },
   "peerDependencies": {
     "@solana/web3.js": "^2.0.0"

@@ -1,28 +1,52 @@
-import { Address, address, lamports } from "@solana/web3.js";
-let cachedJitoTip: bigint | null = null;
-let lastFetchTime = 0;
-const CACHE_TTL = 60 * 1000; // 1 minute
+import {
+  Address,
+  address,
+  lamports,
+  prependTransactionMessageInstruction,
+  TransactionSigner,
+} from "@solana/web3.js";
+import { FeeSetting } from "./config";
+import { getTransferSolInstruction } from "@solana-program/system";
+import { TxMessage } from "./priorityFees";
+
+async function processJitoTipForTxMessage(
+  message: TxMessage,
+  signer: TransactionSigner,
+  jito: FeeSetting
+) {
+  let jitoTipLamports = BigInt(0);
+
+  if (jito.type === "exact") {
+    jitoTipLamports = jito.amountLamports;
+  } else if (jito.type === "dynamic") {
+    jitoTipLamports = await recentJitoTip();
+  }
+  if (jitoTipLamports > 0) {
+    return prependTransactionMessageInstruction(
+      getTransferSolInstruction({
+        source: signer,
+        destination: getJitoTipAddress(),
+        amount: jitoTipLamports,
+      }),
+      message
+    );
+  } else {
+    return message;
+  }
+}
 
 // returns recent jito tip in lamports
 async function recentJitoTip() {
-  const now = Date.now();
-  if (cachedJitoTip && now - lastFetchTime < CACHE_TTL) {
-    return cachedJitoTip;
-  }
-
   const response = await fetch(
     "https://bundles.jito.wtf/api/v1/bundles/tip_floor"
   );
-
   if (!response.ok) {
-    throw new Error("Failed to fetch recent Jito tips");
+    return BigInt(0);
   }
   const data = await response.json().then((res) => res[0]);
-  cachedJitoTip = lamports(
+  return lamports(
     BigInt(Math.floor(Number(data.landed_tips_50th_percentile) * 10 ** 9))
   ).valueOf();
-  lastFetchTime = now;
-  return cachedJitoTip;
 }
 
 // should we add an argument that dictates if we should use cached value in case fetch fails ?
@@ -48,4 +72,4 @@ function getJitoTipAddress(): Address {
   );
 }
 
-export { recentJitoTip, getJitoTipAddress };
+export { recentJitoTip, processJitoTipForTxMessage };

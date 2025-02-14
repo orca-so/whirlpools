@@ -9,76 +9,56 @@ import {
   Slot,
   SolanaRpcApi,
   TransactionSigner,
+  prependTransactionMessageInstruction,
+  IAccountLookupMeta,
+  IAccountMeta,
+  ITransactionMessageWithFeePayerSigner,
+  TransactionMessageWithBlockhashLifetime,
+  TransactionVersion,
 } from "@solana/web3.js";
 import {
+  ConnectionContext,
   DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
-  DEFAULT_PRIORITIZATION,
+  FeeSetting,
   TransactionConfig,
 } from "./config";
 import { rpcFromUrl } from "./compatibility";
-import { getJitoTipAddress, recentJitoTip } from "./jito";
-import { getTransferSolInstruction } from "@solana-program/system";
-import { generateTransactionMessage } from "./buildTransaction";
+import { processJitoTipForTxMessage } from "./jito";
+import {
+  getSetComputeUnitPriceInstruction,
+  getSetComputeUnitLimitInstruction,
+} from "@solana-program/compute-budget";
 
-/**
- * Estimates priority fees, compute units, and Jito tips for a set of instructions.
- *
- * @param {IInstruction[]} instructions - The instructions to estimate fees for
- * @param {TransactionSigner} signer - The transaction signer/fee payer
- * @param {string} rpcUrl - The RPC URL for the Solana network
- * @param {boolean} isTriton - Flag indicating if using Triton infrastructure
- * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Optional transaction configuration for priority fees
- *
- * @returns {Promise<{
- *   priorityFeeMicroLamports: bigint;
- *   jitoTipLamports: bigint;
- *   computeUnits: number;
- * }>} A promise that resolves to an object containing:
- *   - priorityFeeMicroLamports: The estimated priority fee in micro-lamports
- *   - jitoTipLamports: The Jito tip amount in lamports
- *   - computeUnits: The estimated compute units for the transaction
- *
- * @throws {Error} If transaction simulation fails
- *
- * @example
- * const fees = await estimatePriorityFees(
- *   instructions,
- *   signer,
- *   "https://api.mainnet-beta.solana.com",
- *   false,
- *   {
- *     priorityFee: { type: "dynamic", maxCapLamports: 5_000_000 },
- *     jito: { type: "dynamic" },
- *     chainId: "solana",
- *   }
- * );
- */
-async function estimatePriorityFees(
-  instructions: IInstruction[],
-  signer: TransactionSigner,
-  rpcUrl: string,
-  isTriton: boolean,
-  transactionConfig: TransactionConfig = DEFAULT_PRIORITIZATION
-): Promise<{
-  priorityFeeMicroLamports: bigint;
-  jitoTipLamports: bigint;
-  computeUnits: number;
-}> {
+export type TxMessage = ITransactionMessageWithFeePayerSigner<
+  string,
+  TransactionSigner<string>
+> &
+  Omit<
+    TransactionMessageWithBlockhashLifetime &
+      Readonly<{
+        instructions: readonly IInstruction<
+          string,
+          readonly (IAccountLookupMeta<string, string> | IAccountMeta<string>)[]
+        >[];
+        version: TransactionVersion;
+      }>,
+    "feePayer"
+  >;
+
+async function addPriorityInstructions(
+  message: TxMessage,
+  transactionConfig: TransactionConfig,
+  connectionContext: ConnectionContext,
+  signer: TransactionSigner
+) {
+  const { rpcUrl, chainId } = connectionContext;
+  const { jito, priorityFee, priorityFeePercentile } = transactionConfig;
   const rpc = rpcFromUrl(rpcUrl);
 
-  const ixs = instructions;
-  // mock for more accurate compute unit estimation since sending jito tip consumes CU
-  if (transactionConfig.jito.type !== "none") {
-    ixs.push(
-      getTransferSolInstruction({
-        source: signer,
-        destination: getJitoTipAddress(),
-        amount: 100,
-      })
-    );
+  if (jito.type !== "none" && chainId === "solana") {
+    message = await processJitoTipForTxMessage(message, signer, jito);
   }
-  const mockMessage = await generateTransactionMessage(ixs, rpc, signer);
-  let computeUnits = await getComputeUnitsForTxMessage(rpc, mockMessage);
+  let computeUnits = await getComputeUnitsForTxMessage(rpc, message);
 
   if (!computeUnits) throw new Error("Transaction simulation failed");
   // add margin to compute units
@@ -88,19 +68,33 @@ async function estimatePriorityFees(
         DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER)
   );
 
+  return processPriorityFeeForTxMessage(
+    message,
+    computeUnits,
+    priorityFee,
+    priorityFeePercentile,
+    connectionContext
+  );
+}
+
+async function processPriorityFeeForTxMessage(
+  message: TxMessage,
+  computeUnits: number,
+  priorityFee: FeeSetting,
+  priorityFeePercentile: number,
+  connectionContext: ConnectionContext
+) {
+  const { rpcUrl, supportsPriorityFeePercentile } = connectionContext;
   let priorityFeeMicroLamports = BigInt(0);
-  let jitoTipLamports = BigInt(0);
-
-  const { priorityFee, jito, chainId } = transactionConfig;
-
   if (priorityFee.type === "exact") {
     priorityFeeMicroLamports =
       (priorityFee.amountLamports * BigInt(1_000_000)) / BigInt(computeUnits);
   } else if (priorityFee.type === "dynamic") {
     const estimatedPriorityFee = await calculateDynamicPriorityFees(
-      instructions,
+      message.instructions,
       rpcUrl,
-      chainId === "solana" && isTriton
+      supportsPriorityFeePercentile,
+      priorityFeePercentile
     );
 
     if (!priorityFee.maxCapLamports) {
@@ -116,17 +110,20 @@ async function estimatePriorityFees(
     }
   }
 
-  if (jito.type === "exact") {
-    jitoTipLamports = jito.amountLamports;
-  } else if (jito.type === "dynamic" && chainId === "solana") {
-    jitoTipLamports = await recentJitoTip();
+  if (priorityFeeMicroLamports > 0) {
+    message = prependTransactionMessageInstruction(
+      getSetComputeUnitPriceInstruction({
+        microLamports: priorityFeeMicroLamports,
+      }),
+      message
+    );
   }
+  message = prependTransactionMessageInstruction(
+    getSetComputeUnitLimitInstruction({ units: computeUnits }),
+    message
+  );
 
-  return {
-    jitoTipLamports,
-    priorityFeeMicroLamports,
-    computeUnits,
-  };
+  return message;
 }
 
 async function getComputeUnitsForTxMessage(
@@ -155,13 +152,15 @@ function getWritableAccounts(ixs: readonly IInstruction[]) {
 async function calculateDynamicPriorityFees(
   instructions: readonly IInstruction[],
   rpcUrl: string,
-  supportsPercentile: boolean
+  supportsPercentile: boolean,
+  percentile: number
 ) {
   const writableAccounts = getWritableAccounts(instructions);
   if (supportsPercentile) {
     return await getRecentPrioritizationFeesWithPercentile(
       rpcUrl,
-      writableAccounts
+      writableAccounts,
+      percentile
     );
   } else {
     const rpc = rpcFromUrl(rpcUrl);
@@ -180,7 +179,8 @@ async function calculateDynamicPriorityFees(
 
 async function getRecentPrioritizationFeesWithPercentile(
   rpcEndpoint: string,
-  writableAccounts: Address[]
+  writableAccounts: Address[],
+  percentile: number
 ) {
   const response = await fetch(rpcEndpoint, {
     method: "POST",
@@ -194,7 +194,7 @@ async function getRecentPrioritizationFeesWithPercentile(
       params: [
         {
           lockedWritableAccounts: writableAccounts,
-          percentile: 5000,
+          percentile: percentile * 100,
         },
       ],
     }),
@@ -208,12 +208,11 @@ async function getRecentPrioritizationFeesWithPercentile(
   const last50Slots = last150Slots.slice(-50);
   const nonZeroFees = last50Slots.filter((slot) => slot.prioritizationFee > 0);
   if (nonZeroFees.length === 0) return BigInt(0);
-  const sum = nonZeroFees.reduce(
-    (acc, slot) => acc + slot.prioritizationFee,
-    BigInt(0)
-  );
-
-  return sum / BigInt(nonZeroFees.length);
+  const sorted = nonZeroFees
+    .map((slot) => slot.prioritizationFee)
+    .sort((a, b) => Number(a - b));
+  const medianIndex = Math.floor(sorted.length / 2);
+  return sorted[medianIndex];
 }
 
 type RecentPrioritizationFee = {
@@ -227,4 +226,4 @@ type RecentPrioritizationFee = {
   slot: Slot;
 };
 
-export { estimatePriorityFees };
+export { addPriorityInstructions };

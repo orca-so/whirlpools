@@ -1,10 +1,12 @@
+import { rpcFromUrl } from "./compatibility";
+
 let globalConfig: {
   connectionContext?: ConnectionContext;
   transactionConfig?: TransactionConfig;
 } = {};
 
-const DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER = 1.1;
-const DEFAULT_PRIORITIZATION: TransactionConfig = {
+export const DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER = 1.1;
+export const DEFAULT_PRIORITIZATION: TransactionConfig = {
   priorityFee: {
     type: "dynamic",
     maxCapLamports: BigInt(4_000_000), // 0.004 SOL
@@ -14,10 +16,10 @@ const DEFAULT_PRIORITIZATION: TransactionConfig = {
     maxCapLamports: BigInt(4_000_000), // 0.004 SOL
   },
   computeUnitMarginMultiplier: DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
-  priorityFeePercentile: 50,
+  priorityFeePercentile: "50",
 };
 
-const getConnectionContext = (): ConnectionContext => {
+export const getConnectionContext = (): ConnectionContext => {
   const connectionContext = globalConfig.connectionContext;
   if (!connectionContext?.rpcUrl) {
     throw new Error(
@@ -27,7 +29,7 @@ const getConnectionContext = (): ConnectionContext => {
   return connectionContext;
 };
 
-const getPriorityConfig = (): TransactionConfig => {
+export const getPriorityConfig = (): TransactionConfig => {
   if (!globalConfig.transactionConfig) {
     return DEFAULT_PRIORITIZATION;
   }
@@ -44,11 +46,18 @@ const setGlobalConfig = (config: {
   };
 };
 
-const setRpc = (
+export async function setRpc(
   url: string,
-  chainId: ChainId = "solana",
-  supportsPriorityFeePercentile: boolean = false
-) => {
+  supportsPriorityFeePercentile: boolean = false,
+  chain?: ChainId
+) {
+  const rpc = rpcFromUrl(url);
+  let chainId = chain;
+
+  if (!chainId) {
+    chainId = await getChainIdFromGenesisHash(rpc);
+  }
+
   setGlobalConfig({
     ...globalConfig,
     connectionContext: {
@@ -57,9 +66,24 @@ const setRpc = (
       chainId,
     },
   });
-};
+}
 
-const setPriorityFeeSetting = (priorityFee: FeeSetting) => {
+export async function getChainIdFromGenesisHash(rpc: any): Promise<ChainId> {
+  // not all rpc endpoints support getGenesisHash
+  try {
+    const genesisHash = await rpc.getGenesisHash().send();
+    const genesisHashToChainId: Record<string, ChainId> = {
+      "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d": "solana",
+      EAQLJCV2mh23BsK2P9oYpV5CHVLDNHTxYss3URrNmg3s: "eclipse",
+      EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG: "solana-devnet",
+    };
+    return genesisHashToChainId[genesisHash] || "unknown";
+  } catch (error) {
+    return "unknown";
+  }
+}
+
+export function setPriorityFeeSetting(priorityFee: FeeSetting) {
   setGlobalConfig({
     ...globalConfig,
     transactionConfig: {
@@ -67,9 +91,9 @@ const setPriorityFeeSetting = (priorityFee: FeeSetting) => {
       priorityFee,
     },
   });
-};
+}
 
-const setJitoTipSetting = (jito: FeeSetting) => {
+export function setJitoTipSetting(jito: FeeSetting) {
   setGlobalConfig({
     ...globalConfig,
     transactionConfig: {
@@ -77,9 +101,9 @@ const setJitoTipSetting = (jito: FeeSetting) => {
       jito,
     },
   });
-};
+}
 
-const setComputeUnitMarginMultiplier = (multiplier: number) => {
+export function setComputeUnitMarginMultiplier(multiplier: number) {
   setGlobalConfig({
     ...globalConfig,
     transactionConfig: {
@@ -87,12 +111,9 @@ const setComputeUnitMarginMultiplier = (multiplier: number) => {
       computeUnitMarginMultiplier: multiplier,
     },
   });
-};
+}
 
-const setPriorityFeePercentile = (percentile: number) => {
-  if (percentile < 0 || percentile > 100) {
-    throw new Error("Percentile must be between 0 and 100");
-  }
+export function setPriorityFeePercentile(percentile: Percentile) {
   setGlobalConfig({
     ...globalConfig,
     transactionConfig: {
@@ -100,9 +121,9 @@ const setPriorityFeePercentile = (percentile: number) => {
       priorityFeePercentile: percentile,
     },
   });
-};
+}
 
-type FeeSetting =
+export type FeeSetting =
   | {
       type: "dynamic";
       maxCapLamports?: bigint;
@@ -115,32 +136,18 @@ type FeeSetting =
       type: "none";
     };
 
-type TransactionConfig = {
+export type TransactionConfig = {
   jito: FeeSetting;
   priorityFee: FeeSetting;
   computeUnitMarginMultiplier: number;
-  priorityFeePercentile: number;
+  priorityFeePercentile: Percentile;
 };
 
-type ChainId = "solana" | "eclipse";
+export type Percentile = "25" | "50" | "50ema" | "75" | "95" | "99";
+export type ChainId = "solana" | "eclipse" | "solana-devnet" | "unknown";
 
-type ConnectionContext = {
+export type ConnectionContext = {
   rpcUrl: string;
   supportsPriorityFeePercentile: boolean;
   chainId: ChainId;
-};
-
-export {
-  setPriorityFeePercentile,
-  setPriorityFeeSetting,
-  setJitoTipSetting,
-  setComputeUnitMarginMultiplier,
-  setRpc,
-  DEFAULT_PRIORITIZATION,
-  DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
-  getPriorityConfig,
-  getConnectionContext,
-  type ConnectionContext,
-  type TransactionConfig,
-  type FeeSetting,
 };

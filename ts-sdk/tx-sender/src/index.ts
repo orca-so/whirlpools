@@ -1,8 +1,5 @@
 export * from "./config";
-export { buildTransaction } from "./buildTransaction";
-export {
-  buildAndSendTransaction,
-  sendSignedTransaction,
-} from "./sendTransaction";
+export * from "./buildTransaction";
+export * from "./sendTransaction";
 
 export { rpcFromUrl } from "./compatibility";

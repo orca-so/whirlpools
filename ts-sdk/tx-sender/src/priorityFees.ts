@@ -19,7 +19,7 @@ import {
 import {
   ConnectionContext,
   DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
-  FeeSetting,
+  Percentile,
   TransactionConfig,
 } from "./config";
 import { rpcFromUrl } from "./compatibility";
@@ -55,36 +55,43 @@ async function addPriorityInstructions(
   const { jito, priorityFee, priorityFeePercentile } = transactionConfig;
   const rpc = rpcFromUrl(rpcUrl);
 
-  if (jito.type !== "none" && chainId === "solana") {
-    message = await processJitoTipForTxMessage(message, signer, jito);
+  if (jito.type !== "none") {
+    if (chainId === "solana") {
+      message = await processJitoTipForTxMessage(
+        message,
+        signer,
+        jito,
+        priorityFeePercentile
+      );
+    } else {
+      console.warn(
+        "Jito tip is not supported on this chain. Skipping jito tip."
+      );
+    }
   }
   let computeUnits = await getComputeUnitsForTxMessage(rpc, message);
 
   if (!computeUnits) throw new Error("Transaction simulation failed");
   // add margin to compute units
-  computeUnits = Math.ceil(
-    computeUnits *
-      (transactionConfig.computeUnitMarginMultiplier ??
-        DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER)
-  );
 
   return processPriorityFeeForTxMessage(
     message,
     computeUnits,
-    priorityFee,
-    priorityFeePercentile,
-    connectionContext
+    transactionConfig,
+    connectionContext,
+    priorityFeePercentile
   );
 }
 
 async function processPriorityFeeForTxMessage(
   message: TxMessage,
   computeUnits: number,
-  priorityFee: FeeSetting,
-  priorityFeePercentile: number,
-  connectionContext: ConnectionContext
+  transactionConfig: TransactionConfig,
+  connectionContext: ConnectionContext,
+  priorityFeePercentile: Percentile
 ) {
   const { rpcUrl, supportsPriorityFeePercentile } = connectionContext;
+  const { priorityFee } = transactionConfig;
   let priorityFeeMicroLamports = BigInt(0);
   if (priorityFee.type === "exact") {
     priorityFeeMicroLamports =
@@ -119,7 +126,13 @@ async function processPriorityFeeForTxMessage(
     );
   }
   message = prependTransactionMessageInstruction(
-    getSetComputeUnitLimitInstruction({ units: computeUnits }),
+    getSetComputeUnitLimitInstruction({
+      units: Math.ceil(
+        computeUnits *
+          (transactionConfig.computeUnitMarginMultiplier ??
+            DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER)
+      ),
+    }),
     message
   );
 
@@ -153,7 +166,7 @@ async function calculateDynamicPriorityFees(
   instructions: readonly IInstruction[],
   rpcUrl: string,
   supportsPercentile: boolean,
-  percentile: number
+  percentile: Percentile
 ) {
   const writableAccounts = getWritableAccounts(instructions);
   if (supportsPercentile) {
@@ -171,16 +184,30 @@ async function calculateDynamicPriorityFees(
       .filter((pf) => pf.prioritizationFee > 0)
       .map((pf) => pf.prioritizationFee);
     const sorted = nonZero.sort((a, b) => Number((a - b) / BigInt(1_000_000)));
-    const medianIndex = Math.floor(sorted.length / 2);
-    const estimatedPriorityFee = sorted[medianIndex] || BigInt(0);
-    return estimatedPriorityFee;
+
+    if (percentile === "50" || percentile === "50ema") {
+      const mid = sorted.length / 2;
+      if (sorted.length === 0) return BigInt(0);
+      if (sorted.length % 2 === 0) {
+        return (
+          (sorted[Math.floor(mid - 1)] + sorted[Math.floor(mid)]) / BigInt(2)
+        );
+      } else {
+        return sorted[Math.floor(mid)];
+      }
+    }
+    return (
+      sorted[
+        Math.floor(sorted.length * (percentileNumber(percentile) / 100))
+      ] || BigInt(0)
+    );
   }
 }
 
 async function getRecentPrioritizationFeesWithPercentile(
   rpcEndpoint: string,
   writableAccounts: Address[],
-  percentile: number
+  percentile: Percentile
 ) {
   const response = await fetch(rpcEndpoint, {
     method: "POST",
@@ -194,7 +221,7 @@ async function getRecentPrioritizationFeesWithPercentile(
       params: [
         {
           lockedWritableAccounts: writableAccounts,
-          percentile: percentile * 100,
+          percentile: percentileNumber(percentile) * 100,
         },
       ],
     }),
@@ -225,5 +252,21 @@ type RecentPrioritizationFee = {
   /** Slot in which the fee was observed */
   slot: Slot;
 };
+
+function percentileNumber(percentile: Percentile) {
+  switch (percentile) {
+    case "25":
+      return 25;
+    case "50":
+    case "50ema":
+      return 50;
+    case "75":
+      return 75;
+    case "95":
+      return 95;
+    case "99":
+      return 99;
+  }
+}
 
 export { addPriorityInstructions };

@@ -5,21 +5,22 @@ import {
   prependTransactionMessageInstruction,
   TransactionSigner,
 } from "@solana/web3.js";
-import { FeeSetting } from "./config";
+import { FeeSetting, Percentile } from "./config";
 import { getTransferSolInstruction } from "@solana-program/system";
 import { TxMessage } from "./priorityFees";
 
 async function processJitoTipForTxMessage(
   message: TxMessage,
   signer: TransactionSigner,
-  jito: FeeSetting
+  jito: FeeSetting,
+  priorityFeePercentile: Percentile
 ) {
   let jitoTipLamports = BigInt(0);
 
   if (jito.type === "exact") {
     jitoTipLamports = jito.amountLamports;
   } else if (jito.type === "dynamic") {
-    jitoTipLamports = await recentJitoTip();
+    jitoTipLamports = await recentJitoTip(priorityFeePercentile);
   }
   if (jitoTipLamports > 0) {
     return prependTransactionMessageInstruction(
@@ -36,7 +37,7 @@ async function processJitoTipForTxMessage(
 }
 
 // returns recent jito tip in lamports
-async function recentJitoTip() {
+async function recentJitoTip(priorityFeePercentile: Percentile) {
   const response = await fetch(
     "https://bundles.jito.wtf/api/v1/bundles/tip_floor"
   );
@@ -44,9 +45,21 @@ async function recentJitoTip() {
     return BigInt(0);
   }
   const data = await response.json().then((res) => res[0]);
-  return lamports(
-    BigInt(Math.floor(Number(data.landed_tips_50th_percentile) * 10 ** 9))
-  ).valueOf();
+
+  const percentileToKey: Record<Percentile, string> = {
+    "25": "landed_tips_25th_percentile",
+    "50": "landed_tips_50th_percentile",
+    "75": "landed_tips_75th_percentile",
+    "95": "landed_tips_95th_percentile",
+    "99": "landed_tips_99th_percentile",
+    "50ema": "ema_landed_tips_50th_percentile",
+  };
+
+  const key = percentileToKey[priorityFeePercentile];
+  if (!key || !data[key]) {
+    return BigInt(0);
+  }
+  return lamports(BigInt(Math.floor(Number(data[key]) * 10 ** 9))).valueOf();
 }
 
 // should we add an argument that dictates if we should use cached value in case fetch fails ?

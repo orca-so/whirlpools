@@ -78,7 +78,7 @@ describe("Send Transaction", async () => {
   const recipient = address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E");
   const amount = 1_000_000n;
 
-  setRpc(rpcUrl, "solana", false);
+  await setRpc(rpcUrl, false);
   setPriorityFeeSetting({ type: "none" });
   setJitoTipSetting({ type: "none" });
   setComputeUnitMarginMultiplier(1.05);

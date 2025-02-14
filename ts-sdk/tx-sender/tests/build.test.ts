@@ -84,6 +84,11 @@ const mockRpc = {
       },
     ]),
   }),
+  getGenesisHash: vi.fn().mockReturnValue({
+    send: vi
+      .fn()
+      .mockResolvedValue("5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d"),
+  }),
 } as const satisfies Partial<Rpc<SolanaRpcApi>>;
 
 vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
@@ -97,7 +102,6 @@ describe("Build Transaction", async () => {
   const recipient = address("GdDMspJi2oQaKDtABKE24wAQgXhGBoxq8sC21st7GJ3E");
   const amount = 1_000_000n;
 
-  setRpc(rpcUrl, "solana", false);
   setPriorityFeeSetting({ type: "none" });
   setJitoTipSetting({ type: "none" });
   setComputeUnitMarginMultiplier(1.05);
@@ -107,8 +111,20 @@ describe("Build Transaction", async () => {
     destination: recipient,
     amount,
   });
+  it("Should fail when RPC URL is not set", async () => {
+    await assert.rejects(
+      async () => {
+        await buildTransaction([transferInstruction], signer);
+      },
+      {
+        message:
+          "Connection not initialized. Call init() first or provide connection parameter",
+      }
+    );
+  });
 
   it("Should build basic transaction with no priority fees", async () => {
+    await setRpc(rpcUrl, false);
     const message = await buildTransaction([transferInstruction], signer);
 
     const decodedIxs = await decodeTransaction(

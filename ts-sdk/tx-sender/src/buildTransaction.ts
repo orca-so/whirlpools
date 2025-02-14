@@ -39,7 +39,7 @@ import { getPriorityConfig, getConnectionContext } from "./config";
  *   feePayer,
  * );
  */
-async function buildTransaction(
+export async function buildTransaction(
   instructions: IInstruction[],
   feePayer: TransactionSigner | Address,
   lookupTableAddresses?: (Address | string)[]
@@ -69,9 +69,10 @@ async function buildTransactionMessage(
     );
     const tables = lookupTableAccounts.reduce(
       (prev, account) => {
-        assertAccountExists(account);
-        assertAccountDecoded(account);
-        prev[account.address] = account.data.addresses;
+        if (account.exists) {
+          assertAccountDecoded(account);
+          prev[account.address] = account.data.addresses;
+        }
         return prev;
       },
       {} as { [address: Address]: Address[] }
@@ -109,5 +110,3 @@ async function prepareTransactionMessage(
     (tx) => appendTransactionMessageInstructions(instructions, tx)
   );
 }
-
-export { buildTransaction };

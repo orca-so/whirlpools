@@ -17,7 +17,6 @@ import { buildTransaction } from "./buildTransaction";
  *
  * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
  * @param {KeyPairSigner} payer - The fee payer for the transaction
- * @param {TransactionConfig} [transactionConfig=DEFAULT_PRIORITIZATION] - Optional transaction configuration for priority fees
  * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to use
  *
  * @returns {Promise<string>} A promise that resolves to the transaction signature
@@ -28,16 +27,11 @@ import { buildTransaction } from "./buildTransaction";
  * await buildAndSendTransaction(
  *   instructions,
  *   keypairSigner,
- *   {
- *     priorityFee: { type: "dynamic", maxCapLamports: 5_000_000 },
- *     jito: { type: "dynamic" },
- *     chainId: "solana"
- *   },
  *   lookupTables,
  * );
  */
 
-async function buildAndSendTransaction(
+export async function buildAndSendTransaction(
   instructions: IInstruction[],
   payer: KeyPairSigner,
   lookupTableAddresses?: (Address | string)[]
@@ -63,7 +57,9 @@ async function buildAndSendTransaction(
  *   signedTransaction,
  * );
  */
-async function sendSignedTransaction(transaction: FullySignedTransaction) {
+export async function sendSignedTransaction(
+  transaction: FullySignedTransaction
+) {
   const { rpcUrl } = getConnectionContext();
   const rpc = rpcFromUrl(rpcUrl);
   const txHash = getTxHash(transaction);
@@ -84,5 +80,3 @@ function getTxHash(transaction: FullySignedTransaction) {
   const txHash = getBase58Decoder().decode(signature!) as Signature;
   return txHash;
 }
-
-export { buildAndSendTransaction, sendSignedTransaction };

@@ -3,7 +3,16 @@
 ## Overview
 This package provides developers with low-level functionalities for interacting with the Whirlpool Program on Solana. It serves as a foundational tool that allows developers to manage and integrate detailed operations into their Rust projects, particularly those related to Orca's Whirlpool Program. This package offers granular control for advanced use cases.
 
-> NOTE: To ensure compatibility, use version 1.18 of the `solana-sdk` crate, which matches the version used to build the Whirlpool program.
+## Compatibiltiy
+- Compatible with `anchor v0.29.0`. If you enable the `anchor` feature of `orcah_whirlpools_client` in `cargo.toml` while using a different version of anchor in your project, you may need to apply a lockfile patch to resolve dependency conflicts:
+    ```bash
+    cargo update anchor:<current-version> --precise <required-version>
+    ```  
+- Compatible with Solana SDK versions `^1.18.0` but `<3.0.0`. By default, the Rust compiler will install the latest version of Solana SDK `^v2`. This can cause dependcy issues when using older versions. To solve this you can apply a lockfile patch with the following command:
+    ```bash
+    cargo update solana-program:<current-version> --precise <required-version>
+    ```
+- NOTE: if you are dealing with compatibility issues for both `anchor` and `solana-program`, the order of the patches matters. First patch `anchor`, then patch `solana-program`.
 
 ## Key Features
 - **Codama Client**: The package includes a set of generated client code based on the Whirlpool Program IDL. This ensures all the necessary program information is easily accessible in a structured format. It handles all decoding and encoding of instructions and account data, making it much easier to interact with the program.

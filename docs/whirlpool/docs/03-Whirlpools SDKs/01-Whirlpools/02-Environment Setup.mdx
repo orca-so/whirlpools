@@ -52,7 +52,12 @@ This document covers the essential setup required to start building on Orca’s 
     Add the necessary dependencies to your project:
 
     ```bash
-    cargo add orca_whirlpools solana-sdk@1.18 solana-client@1.18 tokio serde_json
+    cargo add orca_whirlpools solana-sdk solana-client tokio serde_json
+    ```
+
+    **Note**: If you're using the Rust SDK in an already existing project which does not use the latest version of Solana SDK, you may need to apply a patchfile lock to prevent dependency conflicts. To do this, run the following command:
+    ```bash
+    cargo update solana-sdk:<current-version> --precise <required-version>
     ```
   </TabItem>
 </Tabs>

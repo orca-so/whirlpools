@@ -24,8 +24,17 @@ This SDK provides developers with low-level functionalities for interacting with
     ```
   </TabItem>
   <TabItem value="rust" label="Rust">
-    **NOTE**: This SDK requires Solana SDK v1. You can use this crate for cross-program-invocation (CPI)
-    but you will have to disable the default features.
+    ### Compatibility
+    - Compatible with `anchor v0.29.0`. If you enable the `anchor` feature of `orcah_whirlpools_client` in `cargo.toml` while using a different version of anchor in your project, you may need to apply a lockfile patch to resolve dependency conflicts:
+      ```bash
+      cargo update anchor:<current-version> --precise <required-version>
+      ```  
+    - Compatible with `solana-program` versions `^1.18.0` but `<3.0.0`. By default, the Rust compiler will install the latest version of Solana SDK `^v2`. This can cause dependcy issues when using older versions. To solve this you can apply a lockfile patch with the following command:
+      ```bash
+      cargo update solana-program:<current-version> --precise <required-version>
+      ```
+    - NOTE: if you are dealing with compatibility issues for both `anchor` and `solana-program`, the order of the patches matters. First patch `anchor`, then patch `solana-program`.
+    ### Installation
     ```bash
     cargo add orca_whirlpools_client
     ```

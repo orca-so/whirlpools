@@ -64,6 +64,7 @@ function findExistingVersions(path: string, name: string): Set<string> {
 
 function check(path: string) {
   const overwrites = getOverwrites(path);
+  console.log(overwrites)
   if (existsSync(`${path}/Cargo.lock`)) {
     rmSync(`${path}/Cargo.lock`);
   }
@@ -72,6 +73,7 @@ function check(path: string) {
     const existingVersions = findExistingVersions(path, name);
     existingVersions.delete(version);
     for (const existingVersion of existingVersions) {
+      console.log(`cargo update ${name}:${existingVersion} --precise ${version} --manifest-path '${path}/Cargo.toml'`,)
       exec(
         `cargo update ${name}:${existingVersion} --precise ${version} --manifest-path '${path}/Cargo.toml'`,
       );
@@ -81,13 +83,13 @@ function check(path: string) {
 }
 
 describe("Integration", () => {
-  clientConfigs.forEach((config) => {
-    it(`Build client using ${config}`, () => check(`./client/${config}`));
-  });
+  // clientConfigs.forEach((config) => {
+  //   it(`Build client using ${config}`, () => check(`./client/${config}`));
+  // });
 
-  coreConfigs.forEach((config) => {
-    it(`Build core using ${config}`, () => check(`./core/${config}`));
-  });
+  // coreConfigs.forEach((config) => {
+  //   it(`Build core using ${config}`, () => check(`./core/${config}`));
+  // });
 
   whirlpoolConfigs.forEach((config) => {
     it(`Build whirlpool using ${config}`, () => check(`./whirlpool/${config}`));

@@ -1887,7 +1887,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/renderers-rust@npm:1.0.13, @codama/renderers-rust@npm:^1.0.13":
+"@codama/renderers-rust@npm:1.0.13":
   version: 1.0.13
   resolution: "@codama/renderers-rust@npm:1.0.13"
   dependencies:
@@ -1898,6 +1898,20 @@ __metadata:
     "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
   checksum: 10c0/5ed4a3e9123913d5b9b1b3a24d008bdee58739a8aa8728d9dffacca8447beafe7f2739eb88fffe1e369169f22feddfeba18a59eb0e26ef8edf2097c06759fbff
+  languageName: node
+  linkType: hard
+
+"@codama/renderers-rust@npm:^1.0.14":
+  version: 1.0.14
+  resolution: "@codama/renderers-rust@npm:1.0.14"
+  dependencies:
+    "@codama/errors": "npm:1.2.6"
+    "@codama/nodes": "npm:1.2.6"
+    "@codama/renderers-core": "npm:1.0.8"
+    "@codama/visitors-core": "npm:1.2.6"
+    "@solana/codecs-strings": "npm:rc"
+    nunjucks: "npm:^3.2.4"
+  checksum: 10c0/968230b060c8f3337c32cddf5f99424ebcbfb6a2b2e49c22066efe06f70f75009d892da9600f08fada30685936de0e6fc8248eacbb4c4401629d8d09e0c187a0
   languageName: node
   linkType: hard
 
@@ -4571,7 +4585,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
     "@codama/nodes-from-anchor": "npm:^1.1.6"
-    "@codama/renderers-rust": "npm:^1.0.13"
+    "@codama/renderers-rust": "npm:^1.0.14"
     "@orca-so/whirlpools-program": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
     codama: "npm:^1.2.5"

@@ -12,7 +12,7 @@
   },
   "devDependencies": {
     "@codama/nodes-from-anchor": "^1.1.6",
-    "@codama/renderers-rust": "^1.0.13",
+    "@codama/renderers-rust": "^1.0.14",
     "@orca-so/whirlpools-program": "*",
     "@orca-so/whirlpools-rust-core": "*",
     "codama": "^1.2.5"

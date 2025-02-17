@@ -55,10 +55,11 @@ This document covers the essential setup required to start building on Orca’s 
     cargo add orca_whirlpools solana-sdk solana-client tokio serde_json
     ```
 
-    **Note**: If you're using the Rust SDK in an already existing project which does not use the latest version of Solana SDK, you may need to apply a patchfile lock to prevent dependency conflicts. To do this, run the following command:
+    **Note**: If you're using the Rust SDK in an already existing project which does not use the latest version of Solana SDK, you may need to apply a patchfile lock with the following command:
     ```bash
     cargo update solana-sdk:<current-version> --precise <required-version>
     ```
+    You might also have to apply lockfile patches for `solana-program`, `solana-client`, `solana-account-decoder`, `spl-token`, `spl-memo`, `spl-token-2022`, `spl-associated-token-account`.
   </TabItem>
 </Tabs>
 

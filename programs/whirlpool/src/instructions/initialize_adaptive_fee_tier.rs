@@ -9,7 +9,7 @@ pub struct InitializeAdaptiveFeeTier<'info> {
     #[account(init,
       payer = funder,
       seeds = [
-        b"adaptive_fee_tier",
+        b"fee_tier", // this is same to FeeTier to block initialization of both FeeTier and AdaptiveFeeTier
         whirlpools_config.key().as_ref(),
         fee_tier_index.to_le_bytes().as_ref()
       ],

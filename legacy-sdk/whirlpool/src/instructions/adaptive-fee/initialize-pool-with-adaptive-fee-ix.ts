@@ -43,7 +43,7 @@ export type InitPoolWithAdaptiveFeeParams = {
 };
 
 /**
- * Initializes a Whirlpool account.
+ * Initializes a Whirlpool account with adaptive fee.
  *
  * Special Errors
  * `InvalidTokenMintOrder` - The order of mints have to be ordered by

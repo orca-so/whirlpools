@@ -17,6 +17,8 @@ pub struct SetInitializePoolAuthority<'info> {
 }
 
 pub fn handler(ctx: Context<SetInitializePoolAuthority>) -> Result<()> {
-    ctx.accounts.adaptive_fee_tier.update_initialize_pool_authority(ctx.accounts.new_initialize_pool_authority.key());
+    ctx.accounts
+        .adaptive_fee_tier
+        .update_initialize_pool_authority(ctx.accounts.new_initialize_pool_authority.key());
     Ok(())
 }

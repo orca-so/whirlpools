@@ -1,5 +1,5 @@
-use anchor_lang::prelude::*;
 use crate::state::*;
+use anchor_lang::prelude::*;
 
 #[derive(Accounts)]
 #[instruction(fee_tier_index: u16)]

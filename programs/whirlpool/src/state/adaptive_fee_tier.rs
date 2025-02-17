@@ -28,19 +28,11 @@ pub struct AdaptiveFeeTier {
     pub adaptive_fee_control_factor: u32,
     pub max_volatility_accumulator: u32,
     pub tick_group_size: u16,
-
     // 256 RESERVE
 }
 
 impl AdaptiveFeeTier {
-    pub const LEN: usize = 8
-    + 32 + 2
-    + 2
-    + 32
-    + 32
-    + 2
-    + 2 + 2 + 2 + 4 + 4 + 2
-    + 256;
+    pub const LEN: usize = 8 + 32 + 2 + 2 + 32 + 32 + 2 + 2 + 2 + 2 + 4 + 4 + 2 + 256;
 
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
@@ -150,7 +142,7 @@ mod data_layout_tests {
     use super::*;
 
     // TODO: modify
-    /* 
+    /*
     #[test]
     fn test_adaptive_fee_config_data_layout() {
         let whirlpools_config = Pubkey::new_unique();

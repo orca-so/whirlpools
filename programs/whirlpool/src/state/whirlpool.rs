@@ -15,7 +15,7 @@ pub struct Whirlpool {
     pub whirlpools_config: Pubkey, // 32
     pub whirlpool_bump: [u8; 1],   // 1
 
-    pub tick_spacing: u16,          // 2
+    pub tick_spacing: u16,            // 2
     pub fee_tier_index_seed: [u8; 2], // 2
 
     // Stored as hundredths of a basis point
@@ -558,7 +558,10 @@ mod data_layout_tests {
         assert_eq!(deserialized.whirlpools_config, whirlpool_whirlpools_config);
         assert_eq!(deserialized.whirlpool_bump, [whirlpool_bump]);
         assert_eq!(deserialized.tick_spacing, whirlpool_tick_spacing);
-        assert_eq!(deserialized.fee_tier_index_seed, whirlpool_tick_spacing_seed);
+        assert_eq!(
+            deserialized.fee_tier_index_seed,
+            whirlpool_tick_spacing_seed
+        );
         assert_eq!(deserialized.fee_rate, whirlpool_fee_rate);
         assert_eq!(deserialized.protocol_fee_rate, whirlpool_protocol_fee_rate);
         assert_eq!(deserialized.liquidity, whirlpool_liquidity);

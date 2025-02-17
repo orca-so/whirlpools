@@ -665,16 +665,12 @@ pub mod whirlpool {
     }
 
     // TODO: comment
-    pub fn set_delegated_fee_authority(
-        ctx: Context<SetDelegatedFeeAuthority>,
-    ) -> Result<()> {
+    pub fn set_delegated_fee_authority(ctx: Context<SetDelegatedFeeAuthority>) -> Result<()> {
         instructions::set_delegated_fee_authority::handler(ctx)
     }
-    
+
     // TODO: comment
-    pub fn set_initialize_pool_authority(
-        ctx: Context<SetInitializePoolAuthority>,
-    ) -> Result<()> {
+    pub fn set_initialize_pool_authority(ctx: Context<SetInitializePoolAuthority>) -> Result<()> {
         instructions::set_initialize_pool_authority::handler(ctx)
     }
 

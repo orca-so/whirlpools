@@ -22,5 +22,14 @@ pub fn handler(
     max_volatility_accumulator: u32,
     tick_group_size: u16,
 ) -> Result<()> {
-    ctx.accounts.adaptive_fee_tier.update_adaptive_fee_constants(filter_period, decay_period, reduction_factor, adaptive_fee_control_factor, max_volatility_accumulator, tick_group_size)
+    ctx.accounts
+        .adaptive_fee_tier
+        .update_adaptive_fee_constants(
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
+        )
 }

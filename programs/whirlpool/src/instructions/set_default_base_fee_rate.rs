@@ -14,5 +14,7 @@ pub struct SetDefaultBaseFeeRate<'info> {
 }
 
 pub fn handler(ctx: Context<SetDefaultBaseFeeRate>, default_base_fee_rate: u16) -> Result<()> {
-    ctx.accounts.adaptive_fee_tier.update_default_base_fee_rate(default_base_fee_rate)
+    ctx.accounts
+        .adaptive_fee_tier
+        .update_default_base_fee_rate(default_base_fee_rate)
 }

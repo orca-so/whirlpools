@@ -17,6 +17,8 @@ pub struct SetDelegatedFeeAuthority<'info> {
 }
 
 pub fn handler(ctx: Context<SetDelegatedFeeAuthority>) -> Result<()> {
-    ctx.accounts.adaptive_fee_tier.update_delegated_fee_authority(ctx.accounts.new_delegated_fee_authority.key());
+    ctx.accounts
+        .adaptive_fee_tier
+        .update_delegated_fee_authority(ctx.accounts.new_delegated_fee_authority.key());
     Ok(())
 }

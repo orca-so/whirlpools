@@ -47,7 +47,7 @@ pub struct InitializePoolWithAdaptiveFeeTier<'info> {
         bump,
         space = Oracle::LEN)]
     pub oracle: AccountLoader<'info, Oracle>,
-  
+
     #[account(init,
       payer = funder,
       token::token_program = token_program_a,
@@ -133,12 +133,8 @@ pub fn handler(
         ctx.accounts.adaptive_fee_tier.filter_period,
         ctx.accounts.adaptive_fee_tier.decay_period,
         ctx.accounts.adaptive_fee_tier.reduction_factor,
-        ctx.accounts
-            .adaptive_fee_tier
-            .adaptive_fee_control_factor,
-        ctx.accounts
-            .adaptive_fee_tier
-            .max_volatility_accumulator,
+        ctx.accounts.adaptive_fee_tier.adaptive_fee_control_factor,
+        ctx.accounts.adaptive_fee_tier.max_volatility_accumulator,
         ctx.accounts.adaptive_fee_tier.tick_group_size,
     )
 }

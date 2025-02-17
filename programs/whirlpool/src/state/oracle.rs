@@ -1,4 +1,4 @@
-use super::Whirlpool;
+use super::{adaptive_fee_tier, Whirlpool};
 use crate::errors::ErrorCode;
 use crate::manager::fee_rate_manager::{
     ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, MAX_REDUCTION_FACTOR,

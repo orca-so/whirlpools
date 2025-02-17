@@ -26,6 +26,7 @@ pub struct InitializeAdaptiveFeeTier<'info> {
     pub system_program: Program<'info, System>,
 }
 
+#[allow(clippy::too_many_arguments)]
 pub fn handler(
     ctx: Context<InitializeAdaptiveFeeTier>,
     fee_tier_index: u16,

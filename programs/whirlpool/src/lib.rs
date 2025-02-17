@@ -657,11 +657,62 @@ pub mod whirlpool {
     }
 
     // TODO: comment
+    pub fn set_default_base_fee_rate(
+        ctx: Context<SetDefaultBaseFeeRate>,
+        default_base_fee_rate: u16,
+    ) -> Result<()> {
+        instructions::set_default_base_fee_rate::handler(ctx, default_base_fee_rate)
+    }
+
+    // TODO: comment
+    pub fn set_delegated_fee_authority(
+        ctx: Context<SetDelegatedFeeAuthority>,
+    ) -> Result<()> {
+        instructions::set_delegated_fee_authority::handler(ctx)
+    }
+    
+    // TODO: comment
+    pub fn set_initialize_pool_authority(
+        ctx: Context<SetInitializePoolAuthority>,
+    ) -> Result<()> {
+        instructions::set_initialize_pool_authority::handler(ctx)
+    }
+
+    // TODO: comment
+    pub fn set_preset_adaptive_fee_constants(
+        ctx: Context<SetPresetAdaptiveFeeConstants>,
+        filter_period: u16,
+        decay_period: u16,
+        reduction_factor: u16,
+        adaptive_fee_control_factor: u32,
+        max_volatility_accumulator: u32,
+        tick_group_size: u16,
+    ) -> Result<()> {
+        instructions::set_preset_adaptive_fee_constants::handler(
+            ctx,
+            filter_period,
+            decay_period,
+            reduction_factor,
+            adaptive_fee_control_factor,
+            max_volatility_accumulator,
+            tick_group_size,
+        )
+    }
+
+    // TODO: comment
     pub fn initialize_pool_with_adaptive_fee_tier(
         ctx: Context<InitializePoolWithAdaptiveFeeTier>,
         initial_sqrt_price: u128,
     ) -> Result<()> {
         instructions::initialize_pool_with_adaptive_fee_tier::handler(ctx, initial_sqrt_price)
+    }
+
+    // TODO: comment
+    pub fn set_fee_rate_by_delegated_fee_authority(
+        ctx: Context<SetFeeRateByDelegatedFeeAuthority>,
+        fee_rate: u16,
+    ) -> Result<()> {
+        instructions::set_fee_rate_by_delegated_fee_authority::handler(ctx, fee_rate)
     }
 
     ////////////////////////////////////////////////////////////////////////////////

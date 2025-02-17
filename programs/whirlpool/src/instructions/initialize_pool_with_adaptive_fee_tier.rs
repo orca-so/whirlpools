@@ -24,6 +24,9 @@ pub struct InitializePoolWithAdaptiveFeeTier<'info> {
     #[account(mut)]
     pub funder: Signer<'info>,
 
+    #[account(constraint = adaptive_fee_tier.is_valid_initialize_pool_authority(initialize_pool_authority.key()))]
+    pub initialize_pool_authority: Signer<'info>,
+
     #[account(init,
       seeds = [
         b"whirlpool".as_ref(),

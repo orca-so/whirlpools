@@ -1,4 +1,5 @@
 use crate::errors::ErrorCode;
+use crate::math::MAX_FEE_RATE;
 use crate::state::WhirlpoolsConfig;
 use anchor_lang::prelude::*;
 
@@ -85,6 +86,23 @@ impl AdaptiveFeeTier {
         Ok(())
     }
 
+    pub fn update_initialize_pool_authority(&mut self, initialize_pool_authority: Pubkey) {
+        self.initialize_pool_authority = initialize_pool_authority;
+    }
+
+    pub fn update_delegated_fee_authority(&mut self, delegated_fee_authority: Pubkey) {
+        self.delegated_fee_authority = delegated_fee_authority;
+    }
+
+    pub fn update_default_base_fee_rate(&mut self, default_base_fee_rate: u16) -> Result<()> {
+        if default_base_fee_rate > MAX_FEE_RATE {
+            return Err(ErrorCode::FeeRateMaxExceeded.into());
+        }
+        self.default_base_fee_rate = default_base_fee_rate;
+
+        Ok(())
+    }
+
     pub fn update_adaptive_fee_constants(
         &mut self,
         filter_period: u16,
@@ -114,6 +132,14 @@ impl AdaptiveFeeTier {
         self.tick_group_size = tick_group_size;
 
         Ok(())
+    }
+
+    pub fn is_valid_initialize_pool_authority(&self, initialize_pool_authority: Pubkey) -> bool {
+        // no authority is set (permissionless)
+        if self.initialize_pool_authority == Pubkey::default() {
+            return true;
+        }
+        self.initialize_pool_authority == initialize_pool_authority
     }
 }
 

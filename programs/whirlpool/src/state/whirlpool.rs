@@ -274,6 +274,14 @@ impl Whirlpool {
         self.protocol_fee_owed_a = 0;
         self.protocol_fee_owed_b = 0;
     }
+
+    pub fn fee_tier_index(&self) -> u16 {
+        u16::from_le_bytes(self.fee_tier_index_seed)
+    }
+
+    pub fn is_initialized_with_adaptive_fee_tier(&self) -> bool {
+        self.fee_tier_index() != self.tick_spacing
+    }
 }
 
 /// Stores the state relevant for tracking liquidity mining rewards at the `Whirlpool` level.

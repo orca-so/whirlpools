@@ -2,7 +2,7 @@ import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import type { Instruction, PDA } from "@orca-so/common-sdk";
 import { PublicKey } from "@solana/web3.js";
-import type { Whirlpool } from "../artifacts/whirlpool";
+import type { Whirlpool } from "../../artifacts/whirlpool";
 
 // TODO: comment
 export type InitializeAdaptiveFeeTierParams = {

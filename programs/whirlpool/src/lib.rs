@@ -696,11 +696,11 @@ pub mod whirlpool {
     }
 
     // TODO: comment
-    pub fn initialize_pool_with_adaptive_fee_tier(
-        ctx: Context<InitializePoolWithAdaptiveFeeTier>,
+    pub fn initialize_pool_with_adaptive_fee(
+        ctx: Context<InitializePoolWithAdaptiveFee>,
         initial_sqrt_price: u128,
     ) -> Result<()> {
-        instructions::initialize_pool_with_adaptive_fee_tier::handler(ctx, initial_sqrt_price)
+        instructions::initialize_pool_with_adaptive_fee::handler(ctx, initial_sqrt_price)
     }
 
     // TODO: comment

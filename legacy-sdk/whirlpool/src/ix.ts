@@ -610,11 +610,11 @@ export class WhirlpoolIx {
     return ix.initializeAdaptiveFeeTierIx(program, params);
   }
 
-  public static initializePoolWithAdaptiveFeeTierIx(
+  public static initializePoolWithAdaptiveFeeIx(
     program: Program<Whirlpool>,
-    params: ix.InitPoolWithAdaptiveFeeTierParams,
+    params: ix.InitPoolWithAdaptiveFeeParams,
   ) {
-    return ix.initializePoolWithAdaptiveFeeTierIx(program, params);
+    return ix.initializePoolWithAdaptiveFeeIx(program, params);
   }
 
   // V2 instructions

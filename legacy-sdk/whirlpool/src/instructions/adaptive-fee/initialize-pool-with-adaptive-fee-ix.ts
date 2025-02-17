@@ -2,10 +2,10 @@ import type { BN, Program } from "@coral-xyz/anchor";
 import type { Instruction, PDA } from "@orca-so/common-sdk";
 import type { Keypair, PublicKey } from "@solana/web3.js";
 import { SystemProgram, SYSVAR_RENT_PUBKEY } from "@solana/web3.js";
-import type { Whirlpool } from "../artifacts/whirlpool";
+import type { Whirlpool } from "../../artifacts/whirlpool";
 
 /**
- * Parameters to initialize a Whirlpool account with AdaptiveFeeTier.
+ * Parameters to initialize a Whirlpool account with AdaptiveFee.
  *
  * @category Instruction Types
  * @param initSqrtPrice - The desired initial sqrt-price for this pool
@@ -24,7 +24,7 @@ import type { Whirlpool } from "../artifacts/whirlpool";
  * @param initializePoolAuthority - The authority that would initialize this pool
  * @param funder - The account that would fund the creation of this account
  */
-export type InitPoolWithAdaptiveFeeTierParams = {
+export type InitPoolWithAdaptiveFeeParams = {
   initSqrtPrice: BN;
   whirlpoolsConfig: PublicKey;
   whirlpoolPda: PDA;
@@ -54,9 +54,9 @@ export type InitPoolWithAdaptiveFeeTierParams = {
  * @param params - InitPoolWithAdaptiveFeeTierParams object
  * @returns - Instruction to perform the action.
  */
-export function initializePoolWithAdaptiveFeeTierIx(
+export function initializePoolWithAdaptiveFeeIx(
   program: Program<Whirlpool>,
-  params: InitPoolWithAdaptiveFeeTierParams,
+  params: InitPoolWithAdaptiveFeeParams,
 ): Instruction {
   const {
     initSqrtPrice,
@@ -76,7 +76,7 @@ export function initializePoolWithAdaptiveFeeTierIx(
     initializePoolAuthority,
   } = params;
 
-  const ix = program.instruction.initializePoolWithAdaptiveFeeTier(initSqrtPrice, {
+  const ix = program.instruction.initializePoolWithAdaptiveFee(initSqrtPrice, {
     accounts: {
       whirlpoolsConfig,
       tokenMintA,

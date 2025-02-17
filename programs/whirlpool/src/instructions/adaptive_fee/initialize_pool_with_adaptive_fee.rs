@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(Accounts)]
-pub struct InitializePoolWithAdaptiveFeeTier<'info> {
+pub struct InitializePoolWithAdaptiveFee<'info> {
     pub whirlpools_config: Box<Account<'info, WhirlpoolsConfig>>,
 
     pub token_mint_a: InterfaceAccount<'info, Mint>,
@@ -74,7 +74,7 @@ pub struct InitializePoolWithAdaptiveFeeTier<'info> {
 }
 
 pub fn handler(
-    ctx: Context<InitializePoolWithAdaptiveFeeTier>,
+    ctx: Context<InitializePoolWithAdaptiveFee>,
     initial_sqrt_price: u128,
 ) -> Result<()> {
     let token_mint_a = ctx.accounts.token_mint_a.key();

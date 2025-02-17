@@ -9,11 +9,9 @@ pub mod collect_reward;
 pub mod decrease_liquidity;
 pub mod delete_position_bundle;
 pub mod increase_liquidity;
-pub mod initialize_adaptive_fee_tier;
 pub mod initialize_config;
 pub mod initialize_fee_tier;
 pub mod initialize_pool;
-pub mod initialize_pool_with_adaptive_fee_tier;
 pub mod initialize_position_bundle;
 pub mod initialize_position_bundle_with_metadata;
 pub mod initialize_reward;
@@ -50,11 +48,9 @@ pub use collect_reward::*;
 
 pub use delete_position_bundle::*;
 pub use increase_liquidity::*;
-pub use initialize_adaptive_fee_tier::*;
 pub use initialize_config::*;
 pub use initialize_fee_tier::*;
 pub use initialize_pool::*;
-pub use initialize_pool_with_adaptive_fee_tier::*;
 pub use initialize_position_bundle::*;
 pub use initialize_position_bundle_with_metadata::*;
 pub use initialize_reward::*;
@@ -84,3 +80,6 @@ pub use update_fees_and_rewards::*;
 
 pub mod v2;
 pub use v2::*;
+
+pub mod adaptive_fee;
+pub use adaptive_fee::*;

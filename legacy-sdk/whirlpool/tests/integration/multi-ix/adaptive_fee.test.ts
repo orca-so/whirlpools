@@ -131,7 +131,7 @@ describe("volatility adjusted fee tests", () => {
 
     const tokenBadgeAPda = PDAUtil.getTokenBadge(testCtx.whirlpoolCtx.program.programId, configKeypair.publicKey, mintA);
     const tokenBadgeBPda = PDAUtil.getTokenBadge(testCtx.whirlpoolCtx.program.programId, configKeypair.publicKey, mintB);
-    await toTx(testCtx.whirlpoolCtx, WhirlpoolIx.initializePoolWithAdaptiveFeeTierIx(testCtx.whirlpoolCtx.program, {
+    await toTx(testCtx.whirlpoolCtx, WhirlpoolIx.initializePoolWithAdaptiveFeeIx(testCtx.whirlpoolCtx.program, {
       whirlpoolsConfig: configKeypair.publicKey,
       adaptiveFeeTierKey: feeTierPda.publicKey,
       whirlpoolPda,

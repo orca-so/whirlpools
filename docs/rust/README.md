@@ -6,10 +6,11 @@ The Whirlpools SDKs are Orca's primary set of SDKs designed to provide enhanced,
 
 ### 1. High-Level SDK
 #### Compatibility
-- Compatible with Solana SDK versions `^1.18.0` but `<3.0.0`. By default, the Rust compiler will install the latest version of Solana SDK `^v2`. This can cause dependcy issues when using older versions. To solve this you can apply a lockfile patch with the following command:
-    ```bash
-    cargo update solana-program:<current-version> --precise <required-version>
-    ```
+Compatible with Solana SDK versions `^1.18.0` but `<3.0.0`. By default, Cargo will install the latest version of Solana SDK `^v2`. This can cause dependcy issues when using older versions. To solve this you can apply a lockfile patch with the following command:
+```bash
+cargo update solana-sdk:<current-version> --precise <required-version>
+```
+You might also have to apply lockfile patches for `solana-program`, `solana-client`, `solana-account-decoder`, `spl-token`, `spl-memo`, `spl-token-2022`, `spl-associated-token-account`.
 
 #### Description
 The High-Level SDK is our top recommendation for anyone who wants to integrate with the Whirlpool Program. It builds upon the Low-Level and Core SDKs to provide an easy-to-use interface for interacting with the Whirlpool Program. This SDK abstracts many of the underlying complexities, such as tick array management, and makes managing pools and positions, and executing swaps much simpler. It is suitable for developers who need efficient, high-level functionalities and want to minimize manual configuration and management.
@@ -19,11 +20,11 @@ The Core SDK provides essential utilities for math operations and quotes, requir
 
 ### 3. Low-Level SDK
 #### Compatibility
-- Compatible with `anchor v0.29.0`. If you enable the `anchor` feature of `orcah_whirlpools_client` in `cargo.toml` while using a different version of anchor in your project, you may need to apply a lockfile patch to resolve dependency conflicts:
+- Compatible with `anchor` versions `^0.26` but `<0.30`. If you enable the `anchor` feature of `orca_whirlpools_client` in `cargo.toml` while using a version of anchor that's `^0.30` in your project, you may need to apply a lockfile patch to switch to a lower version:
     ```bash
-    cargo update anchor:<current-version> --precise <required-version>
+    cargo update anchor:<current-version> --precise 0.29
     ```  
-- Compatible with `solana-program` versions `^1.18.0` but `<3.0.0`. By default, the Rust compiler will install the latest version of Solana SDK `^v2`. This can cause dependcy issues when using older versions. To solve this you can apply a lockfile patch with the following command:
+- Compatible with `solana-program` versions `^1.18.0` but `<3.0.0`. By default, Cargo will install the latest version of Solana SDK `^v2`. This can cause dependcy issues when using older versions. To solve this you can apply a lockfile patch with the following command:
     ```bash
     cargo update solana-program:<current-version> --precise <required-version>
     ```

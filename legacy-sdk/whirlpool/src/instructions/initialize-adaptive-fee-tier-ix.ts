@@ -1,41 +1,49 @@
 import * as anchor from "@coral-xyz/anchor";
 import type { Program } from "@coral-xyz/anchor";
 import type { Instruction, PDA } from "@orca-so/common-sdk";
-import type { PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import type { Whirlpool } from "../artifacts/whirlpool";
 
 // TODO: comment
-export type InitializeAdaptiveFeeConfigParams = {
+export type InitializeAdaptiveFeeTierParams = {
   whirlpoolsConfig: PublicKey;
-  feeTier: PublicKey;
-  adaptiveFeeConfigPda: PDA;
+  feeTierPda: PDA;
   funder: PublicKey;
   feeAuthority: PublicKey;
-  defaultFilterPeriod: number;
-  defaultDecayPeriod: number;
-  defaultReductionFactor: number;
-  defaultAdaptiveFeeControlFactor: number;
-  defaultMaxVolatilityAccumulator: number;
-  defaultTickGroupSize: number;
+  feeTierIndex: number;
+  tickSpacing: number;
+  initializePoolAuthority?: PublicKey;
+  delegatedFeeAuthority?: PublicKey;
+  defaultBaseFeeRate: number;
+  presetFilterPeriod: number;
+  presetDecayPeriod: number;
+  presetReductionFactor: number;
+  presetAdaptiveFeeControlFactor: number;
+  presetMaxVolatilityAccumulator: number;
+  presetTickGroupSize: number;
 };
 
 // TODO: comment
-export function initializeAdaptiveFeeConfigIx(
+export function initializeAdaptiveFeeTierIx(
   program: Program<Whirlpool>,
-  params: InitializeAdaptiveFeeConfigParams,
+  params: InitializeAdaptiveFeeTierParams,
 ): Instruction {
-  const ix = program.instruction.initializeAdaptiveFeeConfig(
-    params.defaultFilterPeriod,
-    params.defaultDecayPeriod,
-    params.defaultReductionFactor,
-    params.defaultAdaptiveFeeControlFactor,
-    params.defaultMaxVolatilityAccumulator,
-    params.defaultTickGroupSize,
+  const ix = program.instruction.initializeAdaptiveFeeTier(
+    params.feeTierIndex,
+    params.tickSpacing,
+    params.initializePoolAuthority ?? PublicKey.default,
+    params.delegatedFeeAuthority ?? PublicKey.default,
+    params.defaultBaseFeeRate,
+    params.presetFilterPeriod,
+    params.presetDecayPeriod,
+    params.presetReductionFactor,
+    params.presetAdaptiveFeeControlFactor,
+    params.presetMaxVolatilityAccumulator,
+    params.presetTickGroupSize,
     {
     accounts: {
       whirlpoolsConfig: params.whirlpoolsConfig,
-      feeTier: params.feeTier,
-      adaptiveFeeConfig: params.adaptiveFeeConfigPda.publicKey,
+      adaptiveFeeTier: params.feeTierPda.publicKey,
       funder: params.funder,
       feeAuthority: params.feeAuthority,
       systemProgram: anchor.web3.SystemProgram.programId,

@@ -603,18 +603,18 @@ export class WhirlpoolIx {
     return ix.closePositionWithTokenExtensionsIx(program, params);
   }
 
-  public static initializeOracleIx(
+  public static initializeAdaptiveFeeTierIx(
     program: Program<Whirlpool>,
-    params: ix.InitializeOracleParams,
+    params: ix.InitializeAdaptiveFeeTierParams,
   ) {
-    return ix.initializeOracleIx(program, params);
+    return ix.initializeAdaptiveFeeTierIx(program, params);
   }
 
-  public static initializeAdaptiveFeeConfigIx(
+  public static initializePoolWithAdaptiveFeeTierIx(
     program: Program<Whirlpool>,
-    params: ix.InitializeAdaptiveFeeConfigParams,
+    params: ix.InitPoolWithAdaptiveFeeTierParams,
   ) {
-    return ix.initializeAdaptiveFeeConfigIx(program, params);
+    return ix.initializePoolWithAdaptiveFeeTierIx(program, params);
   }
 
   // V2 instructions

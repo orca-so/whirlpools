@@ -626,7 +626,7 @@ pub mod whirlpool {
 
     // TODO: comment
     #[allow(clippy::too_many_arguments)]
-    pub fn initialize_adaptive_fee_config(
+    pub fn initialize_adaptive_fee_tier(
         ctx: Context<InitializeAdaptiveFeeTier>,
         fee_tier_index: u16,
         tick_spacing: u16,

@@ -7,7 +7,7 @@ import {
   address,
 } from "@solana/web3.js";
 
-function rpcFromUrl(url: string): Rpc<SolanaRpcApi> {
+export function rpcFromUrl(url: string): Rpc<SolanaRpcApi> {
   const api = createSolanaRpcApi({
     defaultCommitment: "confirmed",
   });
@@ -16,8 +16,8 @@ function rpcFromUrl(url: string): Rpc<SolanaRpcApi> {
   return rpc;
 }
 
-function normalizeAddresses(addresses?: (string | Address)[]): Address[] {
+export function normalizeAddresses(
+  addresses?: (string | Address)[]
+): Address[] {
   return addresses?.map((addr) => address(addr)) ?? [];
 }
-
-export { normalizeAddresses, rpcFromUrl };

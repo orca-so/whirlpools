@@ -10,13 +10,14 @@ export const DEFAULT_PRIORITIZATION: TransactionConfig = {
   priorityFee: {
     type: "dynamic",
     maxCapLamports: BigInt(4_000_000), // 0.004 SOL
+    priorityFeePercentile: "50",
   },
   jito: {
     type: "dynamic",
     maxCapLamports: BigInt(4_000_000), // 0.004 SOL
+    priorityFeePercentile: "50",
   },
   computeUnitMarginMultiplier: DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
-  priorityFeePercentile: "50",
 };
 
 export const getConnectionContext = (): ConnectionContext => {
@@ -48,15 +49,10 @@ const setGlobalConfig = (config: {
 
 export async function setRpc(
   url: string,
-  supportsPriorityFeePercentile: boolean = false,
-  chain?: ChainId
+  supportsPriorityFeePercentile: boolean = false
 ) {
   const rpc = rpcFromUrl(url);
-  let chainId = chain;
-
-  if (!chainId) {
-    chainId = await getChainIdFromGenesisHash(rpc);
-  }
+  const chainId = await getChainIdFromGenesisHash(rpc);
 
   setGlobalConfig({
     ...globalConfig,
@@ -113,17 +109,36 @@ export function setComputeUnitMarginMultiplier(multiplier: number) {
   });
 }
 
-export function setPriorityFeePercentile(percentile: Percentile) {
+export function setJitoFeePercentile(percentile: Percentile | "50ema") {
+  const jito = getPriorityConfig().jito;
   setGlobalConfig({
     ...globalConfig,
     transactionConfig: {
       ...getPriorityConfig(),
-      priorityFeePercentile: percentile,
+      jito: {
+        ...jito,
+        priorityFeePercentile: percentile,
+      },
     },
   });
 }
 
-export type FeeSetting =
+export function setPriorityFeePercentile(percentile: Percentile) {
+  const priorityConfig = getPriorityConfig();
+  const priorityFee = priorityConfig.priorityFee;
+  setGlobalConfig({
+    ...globalConfig,
+    transactionConfig: {
+      ...priorityConfig,
+      priorityFee: {
+        ...priorityFee,
+        priorityFeePercentile: percentile,
+      },
+    },
+  });
+}
+
+type FeeSetting =
   | {
       type: "dynamic";
       maxCapLamports?: bigint;
@@ -136,14 +151,21 @@ export type FeeSetting =
       type: "none";
     };
 
-export type TransactionConfig = {
-  jito: FeeSetting;
-  priorityFee: FeeSetting;
-  computeUnitMarginMultiplier: number;
-  priorityFeePercentile: Percentile;
+export type JitoFeeSetting = FeeSetting & {
+  priorityFeePercentile?: Percentile | "50ema";
 };
 
-export type Percentile = "25" | "50" | "50ema" | "75" | "95" | "99";
+export type PriorityFeeSetting = FeeSetting & {
+  priorityFeePercentile?: Percentile;
+};
+
+export type TransactionConfig = {
+  jito: JitoFeeSetting;
+  priorityFee: PriorityFeeSetting;
+  computeUnitMarginMultiplier: number;
+};
+
+export type Percentile = "25" | "50" | "75" | "95" | "99";
 export type ChainId = "solana" | "eclipse" | "solana-devnet" | "unknown";
 
 export type ConnectionContext = {

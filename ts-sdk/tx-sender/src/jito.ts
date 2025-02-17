@@ -5,22 +5,26 @@ import {
   prependTransactionMessageInstruction,
   TransactionSigner,
 } from "@solana/web3.js";
-import { FeeSetting, Percentile } from "./config";
+import { JitoFeeSetting, Percentile } from "./config";
 import { getTransferSolInstruction } from "@solana-program/system";
 import { TxMessage } from "./priorityFees";
 
-async function processJitoTipForTxMessage(
+export async function processJitoTipForTxMessage(
   message: TxMessage,
   signer: TransactionSigner,
-  jito: FeeSetting,
-  priorityFeePercentile: Percentile
+  jito: JitoFeeSetting,
+  chainId: string
 ) {
+  if (chainId !== "solana") {
+    console.warn("Jito tip is not supported on this chain. Skipping jito tip.");
+    return message;
+  }
   let jitoTipLamports = BigInt(0);
 
   if (jito.type === "exact") {
     jitoTipLamports = jito.amountLamports;
   } else if (jito.type === "dynamic") {
-    jitoTipLamports = await recentJitoTip(priorityFeePercentile);
+    jitoTipLamports = await recentJitoTip(jito.priorityFeePercentile);
   }
   if (jitoTipLamports > 0) {
     return prependTransactionMessageInstruction(
@@ -37,7 +41,9 @@ async function processJitoTipForTxMessage(
 }
 
 // returns recent jito tip in lamports
-async function recentJitoTip(priorityFeePercentile: Percentile) {
+export async function recentJitoTip(
+  priorityFeePercentile?: Percentile | "50ema"
+) {
   const response = await fetch(
     "https://bundles.jito.wtf/api/v1/bundles/tip_floor"
   );
@@ -46,7 +52,7 @@ async function recentJitoTip(priorityFeePercentile: Percentile) {
   }
   const data = await response.json().then((res) => res[0]);
 
-  const percentileToKey: Record<Percentile, string> = {
+  const percentileToKey: Record<Percentile | "50ema", string> = {
     "25": "landed_tips_25th_percentile",
     "50": "landed_tips_50th_percentile",
     "75": "landed_tips_75th_percentile",
@@ -55,7 +61,7 @@ async function recentJitoTip(priorityFeePercentile: Percentile) {
     "50ema": "ema_landed_tips_50th_percentile",
   };
 
-  const key = percentileToKey[priorityFeePercentile];
+  const key = percentileToKey[priorityFeePercentile ?? "50"];
   if (!key || !data[key]) {
     return BigInt(0);
   }
@@ -84,5 +90,3 @@ function getJitoTipAddress(): Address {
     jitoTipAddresses[Math.floor(Math.random() * jitoTipAddresses.length)]
   );
 }
-
-export { recentJitoTip, processJitoTipForTxMessage };

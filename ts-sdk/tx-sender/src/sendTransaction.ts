@@ -1,4 +1,4 @@
-import { getConnectionContext, TransactionConfig } from "./config";
+import { getRpcConfig } from "./config";
 import {
   Address,
   assertTransactionIsFullySigned,
@@ -60,7 +60,7 @@ export async function buildAndSendTransaction(
 export async function sendSignedTransaction(
   transaction: FullySignedTransaction
 ) {
-  const { rpcUrl } = getConnectionContext();
+  const { rpcUrl } = getRpcConfig();
   const rpc = rpcFromUrl(rpcUrl);
   const txHash = getTxHash(transaction);
   const encodedTransaction = getBase64EncodedWireTransaction(transaction);

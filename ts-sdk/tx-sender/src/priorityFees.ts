@@ -11,7 +11,7 @@ import {
   TransactionMessageWithBlockhashLifetime,
   TransactionVersion,
 } from "@solana/web3.js";
-import { ConnectionContext, TransactionConfig } from "./config";
+import { getJitoConfig, getRpcConfig } from "./config";
 import { rpcFromUrl } from "./compatibility";
 import { processJitoTipForTxMessage } from "./jito";
 import { processComputeBudgetForTxMessage } from "./computeBudget";
@@ -34,12 +34,11 @@ export type TxMessage = ITransactionMessageWithFeePayerSigner<
 
 export async function addPriorityInstructions(
   message: TxMessage,
-  transactionConfig: TransactionConfig,
-  connectionContext: ConnectionContext,
+
   signer: TransactionSigner
 ) {
-  const { rpcUrl, chainId } = connectionContext;
-  const { jito } = transactionConfig;
+  const { rpcUrl, chainId } = getRpcConfig();
+  const jito = getJitoConfig();
   const rpc = rpcFromUrl(rpcUrl);
 
   if (jito.type !== "none") {
@@ -54,12 +53,7 @@ export async function addPriorityInstructions(
     computeUnits = 1_400_000;
   }
 
-  return processComputeBudgetForTxMessage(
-    message,
-    computeUnits,
-    transactionConfig,
-    connectionContext
-  );
+  return processComputeBudgetForTxMessage(message, computeUnits);
 }
 
 async function getComputeUnitsForTxMessage(

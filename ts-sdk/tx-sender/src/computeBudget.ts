@@ -12,21 +12,21 @@ import {
 } from "@solana/web3.js";
 import { rpcFromUrl } from "./compatibility";
 import {
-  TransactionConfig,
-  ConnectionContext,
   DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
   Percentile,
+  getPriorityFeeConfig,
+  getComputeUnitMarginMultiplier,
+  getRpcConfig,
 } from "./config";
 import { TxMessage } from "./priorityFees";
 
 export async function processComputeBudgetForTxMessage(
   message: TxMessage,
-  computeUnits: number,
-  transactionConfig: TransactionConfig,
-  connectionContext: ConnectionContext
+  computeUnits: number
 ) {
-  const { rpcUrl, supportsPriorityFeePercentile } = connectionContext;
-  const { priorityFee } = transactionConfig;
+  const { rpcUrl, supportsPriorityFeePercentile } = getRpcConfig();
+  const priorityFee = getPriorityFeeConfig();
+  const computeUnitMarginMultiplier = getComputeUnitMarginMultiplier();
   let priorityFeeMicroLamports = BigInt(0);
   if (priorityFee.type === "exact") {
     priorityFeeMicroLamports =
@@ -64,7 +64,7 @@ export async function processComputeBudgetForTxMessage(
     getSetComputeUnitLimitInstruction({
       units: Math.ceil(
         computeUnits *
-          (transactionConfig.computeUnitMarginMultiplier ??
+          (computeUnitMarginMultiplier ??
             DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER)
       ),
     }),

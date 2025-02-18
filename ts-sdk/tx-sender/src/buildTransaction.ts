@@ -9,7 +9,6 @@ import {
   pipe,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
-  assertAccountExists,
   signTransactionMessageWithSigners,
   Rpc,
   SolanaRpcApi,
@@ -20,7 +19,7 @@ import {
 import { normalizeAddresses, rpcFromUrl } from "./compatibility";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
 import { addPriorityInstructions } from "./priorityFees";
-import { getPriorityConfig, getConnectionContext } from "./config";
+import { getRpcConfig } from "./config";
 
 /**
  * Builds and signs a transaction from the given instructions and configuration.
@@ -56,9 +55,8 @@ async function buildTransactionMessage(
   signer: TransactionSigner,
   lookupTableAddresses?: Address[]
 ) {
-  const connectionContext = getConnectionContext();
-  const transactionConfig = getPriorityConfig();
-  const rpc = rpcFromUrl(connectionContext.rpcUrl);
+  const { rpcUrl } = getRpcConfig();
+  const rpc = rpcFromUrl(rpcUrl);
 
   let message = await prepareTransactionMessage(instructions, rpc, signer);
 
@@ -84,12 +82,7 @@ async function buildTransactionMessage(
   }
 
   return signTransactionMessageWithSigners(
-    await addPriorityInstructions(
-      message,
-      transactionConfig,
-      connectionContext,
-      signer
-    )
+    await addPriorityInstructions(message, signer)
   );
 }
 

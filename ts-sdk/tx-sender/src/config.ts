@@ -1,7 +1,7 @@
 import { rpcFromUrl } from "./compatibility";
 
 let globalConfig: {
-  connectionContext?: ConnectionContext;
+  rpcConfig?: RpcConfig;
   transactionConfig?: TransactionConfig;
 } = {};
 
@@ -20,30 +20,42 @@ export const DEFAULT_PRIORITIZATION: TransactionConfig = {
   computeUnitMarginMultiplier: DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
 };
 
-export const getConnectionContext = (): ConnectionContext => {
-  const connectionContext = globalConfig.connectionContext;
-  if (!connectionContext?.rpcUrl) {
+export const getRpcConfig = (): RpcConfig => {
+  const rpcConfig = globalConfig.rpcConfig;
+  if (!rpcConfig?.rpcUrl) {
     throw new Error(
       "Connection not initialized. Call init() first or provide connection parameter"
     );
   }
-  return connectionContext;
+  return rpcConfig;
 };
 
-export const getPriorityConfig = (): TransactionConfig => {
+const getPriorityConfig = (): TransactionConfig => {
   if (!globalConfig.transactionConfig) {
     return DEFAULT_PRIORITIZATION;
   }
   return globalConfig.transactionConfig;
 };
 
+export const getJitoConfig = (): JitoFeeSetting => {
+  return getPriorityConfig().jito;
+};
+
+export const getPriorityFeeConfig = (): PriorityFeeSetting => {
+  return getPriorityConfig().priorityFee;
+};
+
+export const getComputeUnitMarginMultiplier = (): number => {
+  return getPriorityConfig().computeUnitMarginMultiplier;
+};
+
 const setGlobalConfig = (config: {
   transactionConfig?: TransactionConfig;
-  connectionContext?: ConnectionContext;
+  rpcConfig?: RpcConfig;
 }) => {
   globalConfig = {
     transactionConfig: config.transactionConfig || DEFAULT_PRIORITIZATION,
-    connectionContext: config.connectionContext,
+    rpcConfig: config.rpcConfig,
   };
 };
 
@@ -56,7 +68,7 @@ export async function setRpc(
 
   setGlobalConfig({
     ...globalConfig,
-    connectionContext: {
+    rpcConfig: {
       rpcUrl: url,
       supportsPriorityFeePercentile,
       chainId,
@@ -168,7 +180,7 @@ export type TransactionConfig = {
 export type Percentile = "25" | "50" | "75" | "95" | "99";
 export type ChainId = "solana" | "eclipse" | "solana-devnet" | "unknown";
 
-export type ConnectionContext = {
+export type RpcConfig = {
   rpcUrl: string;
   supportsPriorityFeePercentile: boolean;
   chainId: ChainId;

@@ -1,5 +1,6 @@
 import React, { useState } from "react";
 import Script from "next/script";
+import packageJson from "../../package.json";
 
 export default function Root({ children }) {
   const [isHovered, setIsHovered] = useState(false);
@@ -25,6 +26,7 @@ export default function Root({ children }) {
     <>
       {children}
       <Script src="https://tally.so/widgets/embed.js" />
+      <meta itemProp="version" content={packageJson.version} />
       <div
         style={{
           position: "fixed",

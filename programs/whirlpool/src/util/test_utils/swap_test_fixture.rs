@@ -55,7 +55,7 @@ pub struct SwapTestFixtureInfo<'info> {
     pub adaptive_fee_info: Option<AdaptiveFeeInfo>,
 }
 
-impl<'info> Default for SwapTestFixtureInfo<'info> {
+impl Default for SwapTestFixtureInfo<'_> {
     fn default() -> Self {
         SwapTestFixtureInfo {
             tick_spacing: TS_128,

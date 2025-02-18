@@ -1,0 +1,11 @@
+[package]
+name = "orca_whirlpools_client_integration_anchor_v0_29"
+edition = "2021"
+
+[lib]
+path = "../../lib.rs"
+
+[dependencies]
+anchor-lang = { version = "~0.29.0" }
+solana-program = { version = "~1.18.26" }
+orca_whirlpools_client = { path = "../../../client", features = ["anchor"] }

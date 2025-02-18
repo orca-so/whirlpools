@@ -1,0 +1,12 @@
+{
+  "name": "@orca-so/whirlpools-sdk-integration",
+  "version": "0.1.1",
+  "devDependencies": {
+    "@orca-so/common-sdk": "*",
+    "@orca-so/whirlpools-sdk": "*"
+  },
+  "scripts": {
+    "build": "anchor build",
+    "test": "anchor test --skip-build"
+  }
+}

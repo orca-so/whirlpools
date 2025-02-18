@@ -93,7 +93,7 @@ describe("set_default_fee_rate", () => {
       configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
-    const newDefaultFeeRate = 30_000;
+    const newDefaultFeeRate = 60_000;
 
     await toTx(
       ctx,
@@ -148,7 +148,7 @@ describe("set_default_fee_rate", () => {
       configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
-    const newDefaultFeeRate = 30_000 + 1;
+    const newDefaultFeeRate = 60_000 + 1;
     await assert.rejects(
       toTx(
         ctx,

@@ -1,6 +1,6 @@
 {
-  "entryPoints": ["../../legacy-sdk/whirlpool/src/index.ts"],
-  "entryPointStrategy": "resolve",
+  "entryPoints": ["../../legacy-sdk/common", "../../legacy-sdk/whirlpool"],
+  "entryPointStrategy": "packages",
   "githubPages": false,
   "skipErrorChecking": true,
   "out": "dist/legacy"

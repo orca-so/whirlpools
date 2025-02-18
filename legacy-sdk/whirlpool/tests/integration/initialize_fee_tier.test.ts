@@ -87,7 +87,7 @@ describe("initialize_fee_tier", () => {
       configInitInfo,
       configKeypairs.feeAuthorityKeypair,
       testTickSpacing,
-      30_000, // 3 %
+      60_000, // 6 %
     );
 
     const feeTierAccount = (await fetcher.getFeeTier(
@@ -96,7 +96,7 @@ describe("initialize_fee_tier", () => {
 
     assert.ok(feeTierAccount.tickSpacing == params.tickSpacing);
     assert.ok(feeTierAccount.defaultFeeRate == params.defaultFeeRate);
-    assert.ok(params.defaultFeeRate === 30_000);
+    assert.ok(params.defaultFeeRate === 60_000);
   });
 
   it("successfully init a FeeRate with another funder wallet", async () => {
@@ -135,7 +135,7 @@ describe("initialize_fee_tier", () => {
         configInitInfo,
         configKeypairs.feeAuthorityKeypair,
         TickSpacing.Stable,
-        30_000 + 1,
+        60_000 + 1,
       ),
       /0x178c/, // FeeRateMaxExceeded
     );

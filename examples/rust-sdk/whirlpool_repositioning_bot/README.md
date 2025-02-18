@@ -1,4 +1,4 @@
-# LP Bot - position rebalance
+# Whirlpool Repositioning Bot
 A Rust-based CLI bot for interacting with the Orca Whirlpools program on Solana. This bot monitors and rebalances a liquidity position by closing and reopening positions when price deviations exceed a user-defined threshold.
 
 ---
@@ -25,19 +25,22 @@ A Rust-based CLI bot for interacting with the Orca Whirlpools program on Solana.
 1. Clone this repository:
   ```bash
   git clone https://github.com/orca-so/whirlpools.git
-  cd examples/rust-sdk/lp-bot
+  cd examples/rust-sdk/whirlpool_repositioning_bot
   ```
-2. Build the bot:
+2. Update `Cargo.toml`
+This project uses the local version of the dependencies. If you want to move this example project outside of this repo, update the `Cargo.toml`:
+```toml
+# other dependencies
+orca_whirlpools = { version = "^1.0" }
+orca_whirlpools_client = { version = "^1.0" }
+orca_whirlpools_core = { version = "^1.0" }
+# rest of the dependencies
+```
+3. Build the bot:
   ```bash
   cargo build --release
   ```
-3. The executable will be located in target/release/lp-bot
-
-> NOTE: This project uses the local version of the dependency. If you want to move this example project outside of this monorepo, make sure you install the necessary dependecies:
-  ```bash
-  cargo add orca_whirlpools orca_whirlpools_client orca_whirlpools_core
-  ```
-
+4. The executable will be located in target/release/whirlpool_repositioning_bot
 
 ---
 
@@ -55,14 +58,16 @@ Run the bot with the following arguments
 ```bash
 ./target/release/lp-bot \
   --position-mint-address <POSITION_MINT_ADDRESS> \
-  --threshold <THRESHOLD_PERCENTAGE> \
+  --threshold <THRESHOLD_BPS> \
   --interval <INTERVAL_IN_SECONDS> \
-  --priority-fee-tier <PRIORITY_FEE_TIER>
+  --priority-fee-tier <PRIORITY_FEE_TIER> \
+  --max-priority-fee-lamports <MAX_PRIORITY_FEE_LAMPORTS> \
+  --slippage-tolerance-bps <SLIPPAGE_TOLERANCE_BPS>
 ```
 
 ### Arguments
 - `--position-mint-address` (required): The mint address of the position to monitor and rebalance.
-- `--threshold` (optional): The percentage deviation from the center price at which rebalancing is triggered. Default: 1.0.
+- `--threshold` (optional): TThe threshold for triggering rebalancing, defined by how far the position's center deviates from the current price. Default: 100.
 - `--interval` (optional): The time interval (in seconds) between checks. Default: 60.
 - `--priority-fee-tier` (optional): The priority fee tier for transaction processing. Options:
   - `none`: No priority fee.
@@ -84,7 +89,7 @@ Monitor with custom threshold and interval:
 ```bash
 ./target/release/lp-bot \
   --position-mint-address 5m1izNWC3ioBaKm63e3gSNFeZ44o13ncre5QknTXBJUS \
-  --threshold 0.5 \
+  --threshold 50 \
   --interval 30
 ```
 
@@ -102,7 +107,7 @@ Monitor with turbo priority fees:
 ```bash
 examples/
 ├── rust-sdk/
-    └── lp-bot/
+    └── whirlpool_repositioning_bot/
         └── src/
             ├── main.rs                 # Entry point
             ├── cli.rs                  # CLI argument parsing

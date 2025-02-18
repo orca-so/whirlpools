@@ -1,8 +1,4 @@
-use solana_sdk::{
-    pubkey::Pubkey,
-    signer::{keypair::Keypair, Signer},
-    system_instruction,
-};
+use solana_sdk::{pubkey::Pubkey, signer::Signer, system_instruction};
 use spl_associated_token_account::{
     get_associated_token_address_with_program_id,
     instruction::create_associated_token_account_idempotent,
@@ -29,7 +25,7 @@ pub async fn setup_mint_te(
     ctx: &RpcContext,
     extensions: &[ExtensionType],
 ) -> Result<Pubkey, Box<dyn Error>> {
-    let mint = Keypair::new();
+    let mint = ctx.get_next_keypair();
     let mut instructions = vec![];
 
     // 1. Create account instruction
@@ -49,18 +45,15 @@ pub async fn setup_mint_te(
 
     // 2. Initialize extensions first
     for extension in extensions {
-        match extension {
-            ExtensionType::TransferFeeConfig => {
-                instructions.push(initialize_transfer_fee_config(
-                    &TOKEN_2022_PROGRAM_ID,
-                    &mint.pubkey(),
-                    Some(&ctx.signer.pubkey()),
-                    Some(&ctx.signer.pubkey()),
-                    100,           // 1% (matching program)
-                    1_000_000_000, // 1 token (matching program)
-                )?);
-            }
-            _ => {} // Handle other extension types here if needed
+        if extension == &ExtensionType::TransferFeeConfig {
+            instructions.push(initialize_transfer_fee_config(
+                &TOKEN_2022_PROGRAM_ID,
+                &mint.pubkey(),
+                Some(&ctx.signer.pubkey()),
+                Some(&ctx.signer.pubkey()),
+                100,           // 1% (matching program)
+                1_000_000_000, // 1 token (matching program)
+            )?);
         }
     }
 
@@ -75,18 +68,15 @@ pub async fn setup_mint_te(
 
     // 4. Set extension configurations
     for extension in extensions {
-        match extension {
-            ExtensionType::TransferFeeConfig => {
-                instructions.push(set_transfer_fee(
-                    &TOKEN_2022_PROGRAM_ID,
-                    &mint.pubkey(),
-                    &ctx.signer.pubkey(),
-                    &[],
-                    150,           // 1.5% (matching program)
-                    1_000_000_000, // 1 token
-                )?);
-            }
-            _ => {} // Handle other extension types here if needed
+        if extension == &ExtensionType::TransferFeeConfig {
+            instructions.push(set_transfer_fee(
+                &TOKEN_2022_PROGRAM_ID,
+                &mint.pubkey(),
+                &ctx.signer.pubkey(),
+                &[],
+                150,           // 1.5% (matching program)
+                1_000_000_000, // 1 token
+            )?);
         }
     }
 

@@ -34,7 +34,6 @@ This monorepo contains all the code needed to build, deploy and interact with th
 
 ### Requirements
 
-- Rust 1.78.0
 - Anchor v0.29.0
 - Solana v1.17.22
 
@@ -88,9 +87,13 @@ If you look closely, the commands just call individual commands specified in the
 
 If you want to stream the logs of a specific command you can add the `--output-style stream` flag to the command. This allows you to view the logs of the command as they are being produced which can be useful for longer running tasks like integration tests.
 
-# Support
+### Changesets
 
-### Questions
+When contributing to this repository, please include a changeset with your changes. You can create a changeset by running `yarn changeset`. If your changes are not related to any of the packages, you can create an empty changeset by running `yarn changeset --empty`. In your pull request, you do not have to manually update the version numbers.
+
+To publish packages to npm and cargo, you can run run the `publish` gh action. This will update the versions of the packages and publish them to npm and cargo.
+
+# Support
 
 Have problems integrating with the SDK? Pop by over to the Orca [Discord](https://discord.gg/nSwGWn5KSG) #dev-questions channel and chat with one of our engineers.
 

@@ -4,10 +4,10 @@ use solana_client::rpc_filter::RpcFilterType;
 use solana_program::pubkey::Pubkey;
 use std::error::Error;
 
+use crate::generated::shared::DecodedAccount;
 use crate::FeeTier;
 
 use super::utils::fetch_decoded_program_accounts;
-use super::utils::DecodedAccount;
 
 pub const FEE_TIER_DISCRIMINATOR: &[u8] = &[56, 75, 159, 76, 142, 68, 190, 105];
 

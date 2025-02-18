@@ -1,7 +1,7 @@
 {
   "name": "@orca-so/whirlpools-core",
   "description": "Orca's core typescript package.",
-  "version": "0.0.1",
+  "version": "1.0.3",
   "main": "./dist/nodejs/orca_whirlpools_core_js_bindings.js",
   "types": "./dist/nodejs/orca_whirlpools_core_js_bindings.d.ts",
   "browser": "./dist/browser/orca_whirlpools_core_js_bindings.js",
@@ -17,13 +17,14 @@
   "scripts": {
     "build": "wasm-pack build --release --out-dir ./dist/nodejs --target nodejs && wasm-pack build --release --out-dir ./dist/browser --target browser",
     "test": "tsc --noEmit && vitest run tests",
-    "clean": "cargo clean && rimraf dist",
-    "prepublishOnly": "rimraf dist/nodejs/.gitignore dist/browser/.gitignore"
+    "prepublishOnly": "rimraf dist/nodejs/.gitignore dist/browser/.gitignore",
+    "deploy": "../../scripts/deploy-npm",
+    "clean": "cargo clean && rimraf dist"
   },
   "devDependencies": {
     "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-rust-core": "*",
-    "typescript": "^5.7.2",
+    "typescript": "^5.7.3",
     "wasm-pack": "^0.13.1"
   },
   "repository": {

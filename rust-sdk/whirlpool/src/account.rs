@@ -39,19 +39,22 @@ struct Amount {
 pub(crate) async fn get_token_accounts_for_owner(
     rpc: &RpcClient,
     owner: Pubkey,
-    program_id: Pubkey,
+    filter: TokenAccountsFilter,
 ) -> Result<Vec<ParsedTokenAccount>, Box<dyn Error>> {
-    let accounts = rpc
-        .get_token_accounts_by_owner(&owner, TokenAccountsFilter::ProgramId(program_id))
-        .await?;
+    let accounts = rpc.get_token_accounts_by_owner(&owner, filter).await?;
 
     let mut token_accounts: Vec<ParsedTokenAccount> = Vec::new();
     for account in accounts {
         if let UiAccountData::Json(data) = account.account.data {
+            let token_program = match data.program.as_str() {
+                "spl-token" => &spl_token::ID.to_string(),
+                "spl-token-2022" => &spl_token_2022::ID.to_string(),
+                pubkey => pubkey,
+            };
             let token: Parsed = from_value(data.parsed)?;
             token_accounts.push(ParsedTokenAccount {
                 pubkey: Pubkey::from_str(&account.pubkey)?,
-                token_program: program_id,
+                token_program: Pubkey::from_str(token_program)?,
                 mint: Pubkey::from_str(&token.info.mint)?,
                 amount: token.info.token_amount.amount.parse::<u64>()?,
             });

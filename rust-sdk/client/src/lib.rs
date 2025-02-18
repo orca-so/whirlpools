@@ -16,6 +16,12 @@ pub use generated::programs::WHIRLPOOL_ID as ID;
 pub use generated::programs::*;
 pub use generated::types::*;
 
+#[cfg(feature = "fetch")]
+pub use generated::shared::*;
+
+#[cfg(feature = "fetch")]
+pub(crate) use generated::*;
+
 pub use pda::*;
 
 #[cfg(feature = "fetch")]

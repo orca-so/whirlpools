@@ -176,6 +176,31 @@ describe("initialize_adaptive_fee_tier", () => {
     assert.ok(preBalance - postBalance == requiredRent);
   });
 
+  it("successfully init an adaptive fee tier account with maximal adaptive fee constants", async () => {
+    const tickSpacing = 64;
+    const feeTierIndex = 1024 + 64;
+    const defaultBaseFeeRate = 3000;
+    const initializePoolAuthority = PublicKey.default;
+    const delegatedFeeAuthority = PublicKey.default;
+    const presetAdaptiveFeeConstants: AdaptiveFeeConstantsData = {
+      filterPeriod: 2**16 - 2, // must be < decayPeriod
+      decayPeriod: 2**16 - 1, // u16::MAX
+      reductionFactor: 9999,
+      adaptiveFeeControlFactor: 99999,
+      maxVolatilityAccumulator: Math.floor(2**32 / tickSpacing) - 1,
+      tickGroupSize: tickSpacing,
+    };
+
+    await tryInitializeAdaptiveFeeTier(
+      tickSpacing,
+      feeTierIndex,
+      defaultBaseFeeRate,
+      initializePoolAuthority,
+      delegatedFeeAuthority,
+      presetAdaptiveFeeConstants,
+    );
+  });
+
   it("fails when default base fee rate exceeds max", async () => {
     const tickSpacing = 128;
     const feeTierIndex = 1024 + 128;

@@ -26,7 +26,7 @@ export class PDAUtil {
    * @param whirlpoolsConfigKey
    * @param tokenMintAKey
    * @param tokenMintBKey
-   * @param tickSpacing
+   * @param feeTierIndex
    * @returns
    */
   public static getWhirlpool(
@@ -34,7 +34,7 @@ export class PDAUtil {
     whirlpoolsConfigKey: PublicKey,
     tokenMintAKey: PublicKey,
     tokenMintBKey: PublicKey,
-    tickSpacing: number,
+    feeTierIndex: number,
   ) {
     return AddressUtil.findProgramAddress(
       [
@@ -42,7 +42,7 @@ export class PDAUtil {
         whirlpoolsConfigKey.toBuffer(),
         tokenMintAKey.toBuffer(),
         tokenMintBKey.toBuffer(),
-        new BN(tickSpacing).toArrayLike(Buffer, "le", 2),
+        new BN(feeTierIndex).toArrayLike(Buffer, "le", 2),
       ],
       programId,
     );
@@ -150,19 +150,19 @@ export class PDAUtil {
    * @category Program Derived Addresses
    * @param programId
    * @param whirlpoolsConfigAddress
-   * @param tickSpacing
+   * @param feeTierIndex
    * @returns
    */
   public static getFeeTier(
     programId: PublicKey,
     whirlpoolsConfigAddress: PublicKey,
-    tickSpacing: number,
+    feeTierIndex: number,
   ) {
     return AddressUtil.findProgramAddress(
       [
         Buffer.from(PDA_FEE_TIER_SEED),
         whirlpoolsConfigAddress.toBuffer(),
-        new BN(tickSpacing).toArrayLike(Buffer, "le", 2),
+        new BN(feeTierIndex).toArrayLike(Buffer, "le", 2),
       ],
       programId,
     );

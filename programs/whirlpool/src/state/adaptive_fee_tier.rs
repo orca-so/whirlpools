@@ -60,11 +60,10 @@ impl AdaptiveFeeTier {
 
         self.tick_spacing = tick_spacing;
 
-        self.initialize_pool_authority = initialize_pool_authority;
+        self.update_default_base_fee_rate(default_base_fee_rate)?;
 
-        self.delegated_fee_authority = delegated_fee_authority;
-
-        self.default_base_fee_rate = default_base_fee_rate;
+        self.update_initialize_pool_authority(initialize_pool_authority);
+        self.update_delegated_fee_authority(delegated_fee_authority);
 
         self.update_adaptive_fee_constants(
             filter_period,

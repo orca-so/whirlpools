@@ -2,15 +2,17 @@ import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import type { AdaptiveFeeConstantsData, AdaptiveFeeTierData, FeeTierData } from "../../../src";
 import { AccountName, getAccountSize, PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
-import { ONE_SOL, systemTransferTx, TickSpacing } from "../../utils";
+import { dropIsSignerFlag, ONE_SOL, rewritePubkey, systemTransferTx, TickSpacing } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initAdaptiveFeeTier, initFeeTier } from "../../utils/init-utils";
 import {
   generateDefaultConfigParams,
+  generateDefaultInitAdaptiveFeeTierParams,
   generateDefaultInitFeeTierParams,
   getDefaultPresetAdaptiveFeeConstants,
 } from "../../utils/test-builders";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";
+import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
 describe("initialize_adaptive_fee_tier", () => {
   const provider = anchor.AnchorProvider.local(
@@ -195,72 +197,477 @@ describe("initialize_adaptive_fee_tier", () => {
     );
   });
 
-  // failure case
-
-  // whirlpools_config が異なる (PDA不一致)
-  // fee_tier_index が異なる (PDA不一致)
-  // fee_tier_index == tick_spacing
-  // default_base_fee_rate が max を超える
-  // constants が不正
-  // すでに FeeTier が存在する
-  // fee_authority が config にないもの
-  // fee_authority が署名なし
-  // funder が署名なし
-  // system_program 誤り
-
-/*
-
-  it("fails when fee authority is not a signer", async () => {
-    const { configInitInfo } = generateDefaultConfigParams(ctx);
-    await toTx(
-      ctx,
-      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
-    ).buildAndExecute();
+  it("fails when feeTierIndex == tickSpacing", async () => {
+    const tickSpacing = 128;
+    const feeTierIndex = tickSpacing;
+    const defaultBaseFeeRate = 3000;
+    const initializePoolAuthority = PublicKey.default;
+    const delegatedFeeAuthority = PublicKey.default;
+    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     await assert.rejects(
-      toTx(
-        ctx,
-        WhirlpoolIx.initializeFeeTierIx(
-          ctx.program,
-          generateDefaultInitFeeTierParams(
-            ctx,
-            configInitInfo.whirlpoolsConfigKeypair.publicKey,
-            configInitInfo.feeAuthority,
-            TickSpacing.Stable,
-            3000,
-          ),
+      tryInitializeAdaptiveFeeTier(
+        tickSpacing,
+        feeTierIndex,
+        defaultBaseFeeRate,
+        initializePoolAuthority,
+        delegatedFeeAuthority,
+        presetAdaptiveFeeConstants,
         ),
-      ).buildAndExecute(),
-      /signature verification fail/i,
+        /0x17ab/, // InvalidFeeTierIndex
     );
   });
 
-  it("fails when invalid fee authority provided", async () => {
+  it("fails when whirlpools_config is not valid for AdaptiveFeeTier PDA", async () => {
+    const tickSpacing = 64;
+    const feeTierIndex = 1024 + 64;
+    const defaultBaseFeeRate = 3000;
+    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+
     const { configInitInfo } = generateDefaultConfigParams(ctx);
     await toTx(
       ctx,
       WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
     ).buildAndExecute();
-    const fakeFeeAuthorityKeypair = anchor.web3.Keypair.generate();
+
+    const { configInitInfo: anotherConfigInitInfo, configKeypairs: anotherConfigKeypairs } = generateDefaultConfigParams(ctx);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, anotherConfigInitInfo),
+    ).buildAndExecute();
+
+    const feeTierPda = PDAUtil.getFeeTier(
+      ctx.program.programId,
+      configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      feeTierIndex,
+    );
+
+    const feeAuthorityKeypair = anotherConfigKeypairs.feeAuthorityKeypair;
+    const tx = toTx(
+      ctx,
+      WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, {
+        whirlpoolsConfig: anotherConfigInitInfo.whirlpoolsConfigKeypair.publicKey, // invalid
+        feeTierIndex,
+        tickSpacing,
+        feeTierPda,
+        funder: ctx.wallet.publicKey,
+        feeAuthority: feeAuthorityKeypair.publicKey,
+        defaultBaseFeeRate,
+        presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
+        presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
+        presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
+        presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+        presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+        presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+      }),
+    ).addSigner(feeAuthorityKeypair);
 
     await assert.rejects(
-      toTx(
-        ctx,
-        WhirlpoolIx.initializeFeeTierIx(
-          ctx.program,
-          generateDefaultInitFeeTierParams(
-            ctx,
-            configInitInfo.whirlpoolsConfigKeypair.publicKey,
-            fakeFeeAuthorityKeypair.publicKey,
-            TickSpacing.Stable,
-            3000,
-          ),
-        ),
-      )
-        .addSigner(fakeFeeAuthorityKeypair)
-        .buildAndExecute(),
+      tx.buildAndExecute(),
+      /0x7d6/, // ConstraintSeeds (seed constraint was violated)
+    );
+  });
+
+  it("fails when fee_tier_index is not valid for AdaptiveFeeTier PDA", async () => {
+    const tickSpacing = 64;
+    const feeTierIndex = 1024 + 64;
+    const invalidFeeTierIndex = feeTierIndex + 1;
+    const defaultBaseFeeRate = 3000;
+    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+
+    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
+
+    const feeTierPda = PDAUtil.getFeeTier(
+      ctx.program.programId,
+      configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      feeTierIndex,
+    );
+
+    const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
+    const tx = toTx(
+      ctx,
+      WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, {
+        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+        feeTierIndex: invalidFeeTierIndex, // invalid
+        tickSpacing,
+        feeTierPda,
+        funder: ctx.wallet.publicKey,
+        feeAuthority: feeAuthorityKeypair.publicKey,
+        defaultBaseFeeRate,
+        presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
+        presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
+        presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
+        presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+        presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+        presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+      }),
+    ).addSigner(feeAuthorityKeypair);
+
+    await assert.rejects(
+      tx.buildAndExecute(),
+      /0x7d6/, // ConstraintSeeds (seed constraint was violated)
+    );
+  });
+
+  it("fails when fee_authority is invalid", async () => {
+    const tickSpacing = 64;
+    const feeTierIndex = 1024 + 64;
+    const defaultBaseFeeRate = 3000;
+    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+
+    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
+
+    const feeTierPda = PDAUtil.getFeeTier(
+      ctx.program.programId,
+      configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      feeTierIndex,
+    )
+
+    const fakeFeeAuthorityKeypair = Keypair.generate();
+    const tx = toTx(
+      ctx,
+      WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, {
+        whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+        feeTierIndex,
+        tickSpacing,
+        feeTierPda,
+        funder: ctx.wallet.publicKey,
+        feeAuthority: fakeFeeAuthorityKeypair.publicKey, // invalid
+        defaultBaseFeeRate,
+        presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
+        presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
+        presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
+        presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+        presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+        presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+      }),
+    ).addSigner(fakeFeeAuthorityKeypair);
+
+    await assert.rejects(
+      tx.buildAndExecute(),
       /0x7dc/, // ConstraintAddress
     );
   });
-  */
+
+  it("fails when fee_authority is not a signer", async () => {
+    const tickSpacing = 64;
+    const feeTierIndex = 1024 + 64;
+    const defaultBaseFeeRate = 3000;
+    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+
+    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
+
+    const feeTierPda = PDAUtil.getFeeTier(
+      ctx.program.programId,
+      configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      feeTierIndex,
+    )
+
+    const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
+    const ix = WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, {
+      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      feeTierIndex,
+      tickSpacing,
+      feeTierPda,
+      funder: ctx.wallet.publicKey,
+      feeAuthority: feeAuthorityKeypair.publicKey,
+      defaultBaseFeeRate,
+      presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
+      presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
+      presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
+      presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+      presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+      presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+    });
+
+    const ixWithoutSigner = dropIsSignerFlag(
+      ix.instructions[0],
+      feeAuthorityKeypair.publicKey,
+    )
+
+    const tx = toTx(
+      ctx,
+      {
+        instructions: [ixWithoutSigner],
+        cleanupInstructions: [],
+        signers: [],
+      },
+    );
+    // not adding feeAuthorityKeypair as a signer
+
+    await assert.rejects(
+      tx.buildAndExecute(),
+      /0xbc2/, // AccountNotSigner
+    );
+  });
+
+  it("fails when funder is not a signer", async () => {
+    const funderKeypair = anchor.web3.Keypair.generate();
+    await systemTransferTx(
+      provider,
+      funderKeypair.publicKey,
+      ONE_SOL,
+    ).buildAndExecute();
+
+    const tickSpacing = 64;
+    const feeTierIndex = 1024 + 64;
+    const defaultBaseFeeRate = 3000;
+    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+
+    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
+
+    const feeTierPda = PDAUtil.getFeeTier(
+      ctx.program.programId,
+      configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      feeTierIndex,
+    )
+
+    const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
+    const ix = WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, {
+      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      feeTierIndex,
+      tickSpacing,
+      feeTierPda,
+      funder: funderKeypair.publicKey,
+      feeAuthority: feeAuthorityKeypair.publicKey,
+      defaultBaseFeeRate,
+      presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
+      presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
+      presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
+      presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+      presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+      presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+    });
+
+    const ixWithoutSigner = dropIsSignerFlag(
+      ix.instructions[0],
+      funderKeypair.publicKey,
+    )
+
+    const tx = toTx(
+      ctx,
+      {
+        instructions: [ixWithoutSigner],
+        cleanupInstructions: [],
+        signers: [],
+      },
+    ).addSigner(feeAuthorityKeypair);
+    // not adding funderKeypair as a signer
+
+    await assert.rejects(
+      tx.buildAndExecute(),
+      /0xbc2/, // AccountNotSigner
+    );
+  });
+
+  it("fails when FeeTier has been initialized", async () => {
+    const tickSpacing = 64;
+    const feeTierIndex = 1024 + 64;
+    const defaultBaseFeeRate = 3000;
+    const initializePoolAuthority = PublicKey.default;
+    const delegatedFeeAuthority = PublicKey.default;
+    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+
+    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
+
+    const feeTierPda = PDAUtil.getFeeTier(
+      ctx.program.programId,
+      configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      feeTierIndex,
+    )
+
+    await initFeeTier(
+      ctx,
+      configInitInfo,
+      configKeypairs.feeAuthorityKeypair,
+      feeTierIndex,
+      defaultBaseFeeRate,
+    );
+
+    const feeTier = await fetcher.getFeeTier(feeTierPda.publicKey);
+    assert.ok(feeTier);
+
+    await assert.rejects(
+      initAdaptiveFeeTier(
+        ctx,
+        configInitInfo,
+        configKeypairs.feeAuthorityKeypair,
+        feeTierIndex,
+        tickSpacing,
+        defaultBaseFeeRate,
+        presetAdaptiveFeeConstants,
+        initializePoolAuthority,
+        delegatedFeeAuthority,
+      ),
+      (err) => {
+        return JSON.stringify(err).includes("already in use");
+      },
+    );
+  });
+
+  it("fails when system_program is invalid", async () => {
+    const tickSpacing = 64;
+    const feeTierIndex = 1024 + 64;
+    const defaultBaseFeeRate = 3000;
+    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+
+    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+    ).buildAndExecute();
+
+    const feeTierPda = PDAUtil.getFeeTier(
+      ctx.program.programId,
+      configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      feeTierIndex,
+    )
+
+    const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
+    const ix = WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, {
+      whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      feeTierIndex,
+      tickSpacing,
+      feeTierPda,
+      funder: ctx.wallet.publicKey,
+      feeAuthority: feeAuthorityKeypair.publicKey,
+      defaultBaseFeeRate,
+      presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
+      presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
+      presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
+      presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+      presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+      presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+    });
+
+    const ixWithWrongAccount = rewritePubkey(
+      ix.instructions[0],
+      SystemProgram.programId,
+      TOKEN_PROGRAM_ID,
+    )
+
+    const tx = toTx(
+      ctx,
+      {
+        instructions: [ixWithWrongAccount],
+        cleanupInstructions: [],
+        signers: [],
+      },
+    )
+      .addSigner(feeAuthorityKeypair);
+
+    await assert.rejects(
+      tx.buildAndExecute(),
+      /0xbc0/, // InvalidProgramId
+    );
+  });
+
+  describe("fails when adaptive fee constants are invalid", () => {
+    const tickSpacing = 128;
+    const feeTierIndex = 1024 + tickSpacing;
+    const defaultBaseFeeRate = 3000;
+    const initializePoolAuthority = PublicKey.default;
+    const delegatedFeeAuthority = PublicKey.default;
+    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+
+    async function shouldFail(constants: AdaptiveFeeConstantsData) {
+      await assert.rejects(
+        tryInitializeAdaptiveFeeTier(
+          tickSpacing,
+          feeTierIndex,
+          defaultBaseFeeRate,
+          initializePoolAuthority,
+          delegatedFeeAuthority,
+          constants,
+          ),
+          /0x17aa/, // InvalidAdaptiveFeeConstants
+      );
+    }
+
+    it("filter_period == 0", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        filterPeriod: 0,
+      })
+    });
+
+    it("decay_period == 0", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        decayPeriod: 0,
+      })
+    });
+
+    it("decay_period <= filter_period", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        decayPeriod: presetAdaptiveFeeConstants.filterPeriod,
+      })
+    });
+
+    it("reduction_factor >= MAX_REDUCTION_FACTOR", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        reductionFactor: 10_000,
+      })
+    });
+
+    it("adaptive_fee_control_factor >= ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        adaptiveFeeControlFactor: 100_000,
+      })
+    });
+
+    it("tick_group_size == 0", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        tickGroupSize: 0,
+      })
+    });
+
+    it("tick_group_size > tick_spacing", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        tickGroupSize: tickSpacing + 1,
+      })
+    });
+
+    it("tick_group_size is not factor of tick_spacing", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        tickGroupSize: 33,
+      })
+    });
+
+    it("max_volatility_accumulator * tick_group_size > u32::MAX", async () => {
+      const tickGroupSize = presetAdaptiveFeeConstants.tickGroupSize;
+      const maxVolatilityAccumulator = Math.floor(2**32 / tickGroupSize);
+      console.log("maxVolatilityAccumulator", maxVolatilityAccumulator);
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        maxVolatilityAccumulator,
+      })
+    });
+  });
 });

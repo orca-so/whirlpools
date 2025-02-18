@@ -13,6 +13,8 @@ import type {
   WhirlpoolData,
   WhirlpoolsConfigData,
   WhirlpoolsConfigExtensionData,
+  AdaptiveFeeTierData,
+  OracleData,
 } from "../../types/public";
 import { AccountName } from "../../types/public";
 
@@ -190,6 +192,50 @@ export class ParsableTokenBadge {
       return parseAnchorAccount(AccountName.TokenBadge, accountData);
     } catch (e) {
       console.error(`error while parsing TokenBadge: ${e}`);
+      return null;
+    }
+  }
+}
+
+/**
+ * @category Network
+ */
+@staticImplements<ParsableEntity<AdaptiveFeeTierData>>()
+export class ParsableAdaptiveFeeTier {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null,
+  ): AdaptiveFeeTierData | null {
+    if (!accountData?.data) {
+      return null;
+    }
+
+    try {
+      return parseAnchorAccount(AccountName.AdaptiveFeeTier, accountData);
+    } catch (e) {
+      console.error(`error while parsing AdaptiveFeeTier: ${e}`);
+      return null;
+    }
+  }
+}
+
+/**
+ * @category Network
+ */
+@staticImplements<ParsableEntity<OracleData>>()
+export class ParsableOracle {
+  public static parse(
+    address: PublicKey,
+    accountData: AccountInfo<Buffer> | undefined | null,
+  ): OracleData | null {
+    if (!accountData?.data) {
+      return null;
+    }
+
+    try {
+      return parseAnchorAccount(AccountName.Oracle, accountData);
+    } catch (e) {
+      console.error(`error while parsing Oracle: ${e}`);
       return null;
     }
   }

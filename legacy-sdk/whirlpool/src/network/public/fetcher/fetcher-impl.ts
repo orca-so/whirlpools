@@ -27,6 +27,8 @@ import type {
   WhirlpoolData,
   WhirlpoolsConfigData,
   WhirlpoolsConfigExtensionData,
+  AdaptiveFeeTierData,
+  OracleData,
 } from "../../../types/public";
 import {
   ParsableFeeTier,
@@ -37,6 +39,8 @@ import {
   ParsableWhirlpoolsConfig,
   ParsableWhirlpoolsConfigExtension,
   ParsableTokenBadge,
+  ParsableAdaptiveFeeTier,
+  ParsableOracle,
 } from "../parsing";
 
 /**
@@ -235,6 +239,32 @@ export class WhirlpoolAccountFetcher
     opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, TokenBadgeData | null>> {
     return this.fetcher.getAccounts(addresses, ParsableTokenBadge, opts);
+  }
+
+  getAdaptiveFeeTier(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<AdaptiveFeeTierData | null> {
+    return this.fetcher.getAccount(address, ParsableAdaptiveFeeTier, opts);
+  }
+  getAdaptiveFeeTiers(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<ReadonlyMap<string, AdaptiveFeeTierData | null>> {
+    return this.fetcher.getAccounts(addresses, ParsableAdaptiveFeeTier, opts);
+  }
+
+  getOracle(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<OracleData | null> {
+    return this.fetcher.getAccount(address, ParsableOracle, opts);
+  }
+  getOracles(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<ReadonlyMap<string, OracleData | null>> {
+    return this.fetcher.getAccounts(addresses, ParsableOracle, opts);
   }
 
   populateCache<T extends WhirlpoolSupportedTypes>(

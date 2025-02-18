@@ -12,8 +12,8 @@
     "test": {
       "dependsOn": ["build"]
     },
-    "publish": {
-      "dependsOn": ["build"]
+    "deploy": {
+      "dependsOn": ["build", "^deploy"]
     },
     "lint": {
       "dependsOn": ["build"]

@@ -61,7 +61,7 @@ describe("set_fee_rate", () => {
       configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
-    const newFeeRate = 30_000;
+    const newFeeRate = 60_000;
 
     let whirlpool = (await fetcher.getPool(
       whirlpoolKey,
@@ -98,7 +98,7 @@ describe("set_fee_rate", () => {
       configInitInfo.whirlpoolsConfigKeypair.publicKey;
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
 
-    const newFeeRate = 30_000 + 1;
+    const newFeeRate = 60_000 + 1;
     await assert.rejects(
       toTx(
         ctx,

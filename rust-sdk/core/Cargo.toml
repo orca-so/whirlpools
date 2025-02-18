@@ -1,6 +1,6 @@
 [package]
 name = "orca_whirlpools_core"
-version = "1.0.2"
+version = "1.0.3"
 description = "Orca's core rust package."
 include = ["src/*"]
 documentation = "https://orca-so.github.io/whirlpools/"

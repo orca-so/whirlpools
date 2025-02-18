@@ -6,7 +6,7 @@ use orca_whirlpools_client::{
     get_fee_tier_address, FEE_TIER_DISCRIMINATOR, WHIRLPOOLS_CONFIG_DISCRIMINATOR, WHIRLPOOL_ID,
 };
 use serde_json::{from_value, to_value, Value};
-use solana_account_decoder::{UiAccount, UiAccountEncoding};
+use solana_account_decoder::{encode_ui_account, UiAccountEncoding};
 use solana_client::client_error::Result as ClientResult;
 use solana_client::{
     client_error::{ClientError, ClientErrorKind},
@@ -36,6 +36,10 @@ use spl_memo::build_memo;
 
 use crate::tests::anchor_programs;
 use crate::{SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS};
+
+lazy_static::lazy_static! {
+    static ref PROGRAMS: Vec<(String, Pubkey)> = anchor_programs("../..").unwrap();
+}
 
 pub struct RpcContext {
     pub rpc: RpcClient,
@@ -136,9 +140,8 @@ impl RpcContext {
             },
         );
 
-        let programs = anchor_programs("../..".to_string()).unwrap();
-        for (name, pubkey) in programs {
-            test.add_program(&name, pubkey, None);
+        for (name, pubkey) in PROGRAMS.iter() {
+            test.add_program(name, *pubkey, None);
         }
         let context = Mutex::new(test.start_with_context().await);
         let rpc = RpcClient::new_sender(MockRpcSender { context }, RpcClientConfig::default());
@@ -205,7 +208,7 @@ fn to_wire_account(
     encoding: UiAccountEncoding,
 ) -> Result<Value, Box<dyn Error>> {
     if let Some(account) = account {
-        let value = to_value(UiAccount::encode(address, &account, encoding, None, None))?;
+        let value = to_value(encode_ui_account(address, &account, encoding, None, None))?;
         Ok(value)
     } else {
         Ok(Value::Null)

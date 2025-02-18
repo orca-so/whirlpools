@@ -3,7 +3,7 @@ use std::{env::set_var, error::Error, fs::read_to_string, path::PathBuf, str::Fr
 use solana_sdk::pubkey::Pubkey;
 use toml::Table;
 
-pub fn anchor_programs(path: String) -> Result<Vec<(String, Pubkey)>, Box<dyn Error>> {
+pub fn anchor_programs(path: &str) -> Result<Vec<(String, Pubkey)>, Box<dyn Error>> {
     let mut programs: Vec<(String, Pubkey)> = Vec::new();
     let mut sbf_out_dir: PathBuf = path.parse()?;
     let mut anchor_toml_path = sbf_out_dir.clone();

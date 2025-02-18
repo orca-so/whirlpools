@@ -147,12 +147,23 @@ pub struct AdaptiveFeeInfo {
 
 #[account(zero_copy(unsafe))]
 #[repr(C, packed)]
-#[derive(Default, Debug)]
+#[derive(Debug)]
 pub struct Oracle {
     pub whirlpool: Pubkey,
     pub adaptive_fee_constants: AdaptiveFeeConstants,
     pub adaptive_fee_variables: AdaptiveFeeVariables,
-    // 256 RESERVE
+    _reserved: [u8; 256], // for bytemuck mapping
+}
+
+impl Default for Oracle {
+    fn default() -> Self {
+        Self {
+            whirlpool: Pubkey::default(),
+            adaptive_fee_constants: AdaptiveFeeConstants::default(),
+            adaptive_fee_variables: AdaptiveFeeVariables::default(),
+            _reserved: [0u8; 256],
+        }
+    }
 }
 
 impl Oracle {
@@ -310,7 +321,9 @@ mod data_layout_tests {
 
     #[test]
     fn test_oracle_data_layout() {
-        let oracle_whirlpool = Pubkey::new_unique();
+      let oracle_reserved = [0u8; 256];
+
+      let oracle_whirlpool = Pubkey::new_unique();
 
         let af_const_filter_period = 0x1122u16;
         let af_const_decay_period = 0x3344u16;
@@ -371,9 +384,10 @@ mod data_layout_tests {
         offset += AdaptiveFeeConstants::LEN;
         oracle_data[offset..offset + AdaptiveFeeVariables::LEN].copy_from_slice(&af_var_data);
         offset += AdaptiveFeeVariables::LEN;
+        oracle_data[offset..offset + oracle_reserved.len()].copy_from_slice(&oracle_reserved);
+        offset += oracle_reserved.len();
 
-        assert_eq!(offset, oracle_data.len());
-        assert_eq!(oracle_data.len(), core::mem::size_of::<Oracle>());
+        assert_eq!(offset, Oracle::LEN - 8);
 
         // cast from bytes to Oracle (re-interpret)
         let oracle: &Oracle = bytemuck::from_bytes(&oracle_data);
@@ -437,10 +451,10 @@ mod oracle_tests {
 
         let filter_period = 0x1122u16;
         let decay_period = 0x3344u16;
-        let reduction_factor = 0x5566u16;
-        let adaptive_fee_control_factor = 0x778899aau32;
-        let max_volatility_accumulator = 0xaabbccddu32;
-        let tick_group_size = 0xeeffu16;
+        let reduction_factor = 0x2266u16; // must be < MAX_REDUCTION_FACTOR
+        let adaptive_fee_control_factor = 0x000122aau32; // must be < ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR
+        let max_volatility_accumulator = 0x00bbccddu32;
+        let tick_group_size = 0x00ffu16;
 
         let constants = AdaptiveFeeConstants {
             filter_period,

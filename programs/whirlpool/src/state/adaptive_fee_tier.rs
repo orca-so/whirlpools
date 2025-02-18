@@ -141,80 +141,109 @@ mod data_layout_tests {
 
     use super::*;
 
-    // TODO: modify
-    /*
     #[test]
-    fn test_adaptive_fee_config_data_layout() {
+    fn test_adaptive_fee_tier_data_layout() {
+        let adaptive_fee_tier_reserved = [0u8; 256];
+
         let whirlpools_config = Pubkey::new_unique();
+        let fee_tier_index = 0x1122u16;
         let tick_spacing = 0xffu16;
 
-        let default_filter_period = 0x1122u16;
-        let default_decay_period = 0x3344u16;
-        let default_reduction_factor = 0x5566u16;
-        let default_adaptive_fee_control_factor = 0x778899aau32;
-        let default_max_volatility_accumulator = 0xbbccddeeu32;
-        let default_tick_group_size = 0xff00u16;
+        let initialize_pool_authority = Pubkey::new_unique();
+        let delegated_fee_authority = Pubkey::new_unique();
 
-        let mut adaptive_fee_config_data = [0u8; AdaptiveFeeTier::LEN];
+        let default_base_fee_rate = 0x3344u16;
+
+        let filter_period = 0x1122u16;
+        let decay_period = 0x3344u16;
+        let reduction_factor = 0x5566u16;
+        let adaptive_fee_control_factor = 0x778899aau32;
+        let max_volatility_accumulator = 0xbbccddeeu32;
+        let tick_group_size = 0xff00u16;
+
+        let mut adaptive_fee_tier_data = [0u8; AdaptiveFeeTier::LEN];
         let mut offset = 0;
-        adaptive_fee_config_data[offset..offset + 8]
+        adaptive_fee_tier_data[offset..offset + 8]
             .copy_from_slice(&AdaptiveFeeTier::discriminator());
         offset += 8;
-        adaptive_fee_config_data[offset..offset + 32]
+        adaptive_fee_tier_data[offset..offset + 32]
             .copy_from_slice(&whirlpools_config.to_bytes());
         offset += 32;
-        adaptive_fee_config_data[offset..offset + 2].copy_from_slice(&tick_spacing.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 2].copy_from_slice(&fee_tier_index.to_le_bytes());
         offset += 2;
-        adaptive_fee_config_data[offset..offset + 2]
-            .copy_from_slice(&default_filter_period.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 2].copy_from_slice(&tick_spacing.to_le_bytes());
         offset += 2;
-        adaptive_fee_config_data[offset..offset + 2]
-            .copy_from_slice(&default_decay_period.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 32]
+            .copy_from_slice(&initialize_pool_authority.to_bytes());
+        offset += 32;
+        adaptive_fee_tier_data[offset..offset + 32]
+            .copy_from_slice(&delegated_fee_authority.to_bytes());
+        offset += 32;
+        adaptive_fee_tier_data[offset..offset + 2]
+            .copy_from_slice(&default_base_fee_rate.to_le_bytes());
         offset += 2;
-        adaptive_fee_config_data[offset..offset + 2]
-            .copy_from_slice(&default_reduction_factor.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 2]
+            .copy_from_slice(&filter_period.to_le_bytes());
         offset += 2;
-        adaptive_fee_config_data[offset..offset + 4]
-            .copy_from_slice(&default_adaptive_fee_control_factor.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 2]
+            .copy_from_slice(&decay_period.to_le_bytes());
+        offset += 2;
+        adaptive_fee_tier_data[offset..offset + 2]
+            .copy_from_slice(&reduction_factor.to_le_bytes());
+        offset += 2;
+        adaptive_fee_tier_data[offset..offset + 4]
+            .copy_from_slice(&adaptive_fee_control_factor.to_le_bytes());
         offset += 4;
-        adaptive_fee_config_data[offset..offset + 4]
-            .copy_from_slice(&default_max_volatility_accumulator.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 4]
+            .copy_from_slice(&max_volatility_accumulator.to_le_bytes());
         offset += 4;
-        adaptive_fee_config_data[offset..offset + 2]
-            .copy_from_slice(&default_tick_group_size.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 2]
+            .copy_from_slice(&tick_group_size.to_le_bytes());
         offset += 2;
+        adaptive_fee_tier_data[offset..offset + adaptive_fee_tier_reserved.len()].copy_from_slice(&adaptive_fee_tier_reserved);
+        offset += adaptive_fee_tier_reserved.len();
         assert_eq!(offset, AdaptiveFeeTier::LEN);
 
         // deserialize
         let deserialized =
-            AdaptiveFeeTier::try_deserialize(&mut adaptive_fee_config_data.as_ref()).unwrap();
+            AdaptiveFeeTier::try_deserialize(&mut adaptive_fee_tier_data.as_ref()).unwrap();
 
         assert_eq!(whirlpools_config, deserialized.whirlpools_config);
+        assert_eq!(fee_tier_index, deserialized.fee_tier_index);
         assert_eq!(tick_spacing, deserialized.tick_spacing);
-        assert_eq!(default_filter_period, deserialized.default_filter_period);
-        assert_eq!(default_decay_period, deserialized.default_decay_period);
         assert_eq!(
-            default_reduction_factor,
-            deserialized.default_reduction_factor
+            initialize_pool_authority,
+            deserialized.initialize_pool_authority
         );
         assert_eq!(
-            default_adaptive_fee_control_factor,
-            deserialized.default_adaptive_fee_control_factor
+            delegated_fee_authority,
+            deserialized.delegated_fee_authority
+        );
+        assert_eq!(default_base_fee_rate, deserialized.default_base_fee_rate);
+        assert_eq!(filter_period, deserialized.filter_period);
+        assert_eq!(decay_period, deserialized.decay_period);
+        assert_eq!(
+            reduction_factor,
+            deserialized.reduction_factor
         );
         assert_eq!(
-            default_max_volatility_accumulator,
-            deserialized.default_max_volatility_accumulator
+            adaptive_fee_control_factor,
+            deserialized.adaptive_fee_control_factor
         );
         assert_eq!(
-            default_tick_group_size,
-            deserialized.default_tick_group_size
+            max_volatility_accumulator,
+            deserialized.max_volatility_accumulator
+        );
+        assert_eq!(
+            tick_group_size,
+            deserialized.tick_group_size
         );
 
         // serialize
         let mut serialized = Vec::new();
         deserialized.try_serialize(&mut serialized).unwrap();
+        serialized.extend_from_slice(&adaptive_fee_tier_reserved);
 
-        assert_eq!(serialized.as_slice(), adaptive_fee_config_data.as_ref());
+        assert_eq!(serialized.as_slice(), adaptive_fee_tier_data.as_ref());
     }
-    */
 }

@@ -1,4 +1,3 @@
-use super::{adaptive_fee_tier, Whirlpool};
 use crate::errors::ErrorCode;
 use crate::manager::fee_rate_manager::{
     ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, MAX_REDUCTION_FACTOR,
@@ -153,12 +152,11 @@ pub struct Oracle {
     pub whirlpool: Pubkey,
     pub adaptive_fee_constants: AdaptiveFeeConstants,
     pub adaptive_fee_variables: AdaptiveFeeVariables,
-    // TODO: RESERVE to implement oracle (observation) in the future
+    // 256 RESERVE
 }
 
 impl Oracle {
-    // TODO: add reserve for observations
-    pub const LEN: usize = 8 + 32 + AdaptiveFeeConstants::LEN + AdaptiveFeeVariables::LEN;
+    pub const LEN: usize = 8 + 32 + AdaptiveFeeConstants::LEN + AdaptiveFeeVariables::LEN + 256;
 
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(

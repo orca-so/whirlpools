@@ -1,7 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import type { Instruction } from "@orca-so/common-sdk";
 import { MathUtil } from "@orca-so/common-sdk";
-import type { PublicKey } from "@solana/web3.js";
+import { PublicKey } from "@solana/web3.js";
 import { ComputeBudgetProgram, Keypair } from "@solana/web3.js";
 import type BN from "bn.js";
 import Decimal from "decimal.js";
@@ -12,8 +12,11 @@ import {
   ZERO_BN,
 } from "..";
 import type {
+  AdaptiveFeeConstantsData,
   InitConfigParams,
   InitPoolV2Params,
+  InitPoolWithAdaptiveFeeParams,
+  InitializeAdaptiveFeeTierParams,
   InitializeRewardV2Params,
   OpenPositionParams,
   WhirlpoolContext,
@@ -29,7 +32,7 @@ import {
 import { PoolUtil } from "../../../src/utils/public/pool-utils";
 import type { TestWhirlpoolsConfigKeypairs } from "../test-builders";
 import { generateDefaultConfigParams } from "../test-builders";
-import { initFeeTier, openPosition, initTickArrayRange } from "../init-utils";
+import { initFeeTier, openPosition, initTickArrayRange, initAdaptiveFeeTier } from "../init-utils";
 import {
   calculateTransferFeeIncludedAmount,
   createAndMintToAssociatedTokenAccountV2,
@@ -91,6 +94,14 @@ export interface FundedPositionV2Info {
   mintKeypair: Keypair;
   tickArrayLower: PublicKey;
   tickArrayUpper: PublicKey;
+}
+
+interface TestPoolWithAdaptiveFeeParams {
+  configInitInfo: InitConfigParams;
+  configKeypairs: TestWhirlpoolsConfigKeypairs;
+  poolInitInfo: InitPoolWithAdaptiveFeeParams;
+  feeTierParams: InitializeAdaptiveFeeTierParams;
+  configExtension: TestConfigExtensionParams;
 }
 
 const DEFAULT_SQRT_PRICE = MathUtil.toX64(new Decimal(5));
@@ -379,6 +390,166 @@ export async function buildTestPoolV2Params(
   };
 }
 
+export async function initTestPoolWithAdaptiveFee(
+  ctx: WhirlpoolContext,
+  tokenTraitA: TokenTrait,
+  tokenTraitB: TokenTrait,
+  feeTierIndex: number,
+  tickSpacing: number,
+  defaultBaseFeeRate = 3000,
+  presetAdaptiveFeeConstants: AdaptiveFeeConstantsData,
+  initializePoolAuthority: PublicKey = PublicKey.default,
+  delegatedFeeAuthority: PublicKey = PublicKey.default,
+  initSqrtPrice = DEFAULT_SQRT_PRICE,
+  executeInitializePoolAuthority?: Keypair,
+  funder?: Keypair,
+) {
+  const poolParams = await buildTestPoolWithAdaptiveFeeParams(
+    ctx,
+    tokenTraitA,
+    tokenTraitB,
+    feeTierIndex,
+    tickSpacing,
+    defaultBaseFeeRate,
+    initSqrtPrice,
+    presetAdaptiveFeeConstants,
+    initializePoolAuthority,
+    delegatedFeeAuthority,
+    executeInitializePoolAuthority?.publicKey,
+    funder?.publicKey,
+  );
+
+  return initTestPoolWithAdaptiveFeeFromParams(ctx, poolParams, executeInitializePoolAuthority, funder);
+}
+
+export async function buildTestPoolWithAdaptiveFeeParams(
+  ctx: WhirlpoolContext,
+  tokenTraitA: TokenTrait,
+  tokenTraitB: TokenTrait,
+  feeTierIndex: number,
+  tickSpacing: number,
+  defaultBaseFeeRate = 3000,
+  initSqrtPrice = DEFAULT_SQRT_PRICE,
+  presetAdaptiveFeeConstants: AdaptiveFeeConstantsData,
+  initializePoolAuthority: PublicKey,
+  delegatedFeeAuthority: PublicKey,
+  executeInitializePoolAuthority?: PublicKey,
+  funder?: PublicKey,
+  createTokenBadgeIfNeededA: boolean = true,
+  createTokenBadgeIfNeededB: boolean = true,
+): Promise<TestPoolWithAdaptiveFeeParams> {
+  const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+  const {
+    configExtensionInitInfo,
+    configExtensionSetTokenBadgeAuthorityInfo,
+    configExtensionKeypairs,
+  } = generateDefaultConfigExtensionParams(
+    ctx,
+    configInitInfo.whirlpoolsConfigKeypair.publicKey,
+    configKeypairs.feeAuthorityKeypair.publicKey,
+  );
+
+  await toTx(
+    ctx,
+    WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
+  ).buildAndExecute();
+  await toTx(
+    ctx,
+    WhirlpoolIx.initializeConfigExtensionIx(
+      ctx.program,
+      configExtensionInitInfo,
+    ),
+  )
+    .addSigner(configKeypairs.feeAuthorityKeypair)
+    .buildAndExecute();
+  await toTx(
+    ctx,
+    WhirlpoolIx.setTokenBadgeAuthorityIx(
+      ctx.program,
+      configExtensionSetTokenBadgeAuthorityInfo,
+    ),
+  )
+    .addSigner(configKeypairs.feeAuthorityKeypair)
+    .buildAndExecute();
+
+  const { params: feeTierParams } = await initAdaptiveFeeTier(
+    ctx,
+    configInitInfo,
+    configKeypairs.feeAuthorityKeypair,
+    feeTierIndex,
+    tickSpacing,
+    defaultBaseFeeRate,
+    presetAdaptiveFeeConstants,
+    initializePoolAuthority,
+    delegatedFeeAuthority,
+  );
+  const poolInitInfo = await generateDefaultInitPoolWithAdaptiveFeeParams(
+    ctx,
+    configInitInfo.whirlpoolsConfigKeypair.publicKey,
+    feeTierParams.feeTierPda.publicKey,
+    tokenTraitA,
+    tokenTraitB,
+    feeTierIndex,
+    initSqrtPrice,
+    executeInitializePoolAuthority,
+    funder,
+  );
+
+  if (isTokenBadgeRequired(tokenTraitA) && createTokenBadgeIfNeededA) {
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+        tokenMint: poolInitInfo.tokenMintA,
+        tokenBadgeAuthority:
+          configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
+        tokenBadgePda: {
+          publicKey: poolInitInfo.tokenBadgeA,
+          bump: 0 /* dummy */,
+        },
+        whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
+        whirlpoolsConfigExtension:
+          configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
+        funder: funder ?? ctx.wallet.publicKey,
+      }),
+    )
+      .addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair)
+      .buildAndExecute();
+  }
+
+  if (isTokenBadgeRequired(tokenTraitB) && createTokenBadgeIfNeededB) {
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeTokenBadgeIx(ctx.program, {
+        tokenMint: poolInitInfo.tokenMintB,
+        tokenBadgeAuthority:
+          configExtensionKeypairs.tokenBadgeAuthorityKeypair.publicKey,
+        tokenBadgePda: {
+          publicKey: poolInitInfo.tokenBadgeB,
+          bump: 0 /* dummy */,
+        },
+        whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
+        whirlpoolsConfigExtension:
+          configExtensionInitInfo.whirlpoolsConfigExtensionPda.publicKey,
+        funder: funder ?? ctx.wallet.publicKey,
+      }),
+    )
+      .addSigner(configExtensionKeypairs.tokenBadgeAuthorityKeypair)
+      .buildAndExecute();
+  }
+
+  return {
+    configInitInfo,
+    configKeypairs,
+    poolInitInfo,
+    feeTierParams,
+    configExtension: {
+      configExtensionInitInfo,
+      configExtensionSetTokenBadgeAuthorityInfo,
+      configExtensionKeypairs,
+    },
+  };
+}
+
 export async function initializeRewardV2(
   ctx: WhirlpoolContext,
   tokenTrait: TokenTrait,
@@ -585,6 +756,105 @@ async function initTestPoolFromParamsV2(
     configExtension,
   };
 }
+
+async function generateDefaultInitPoolWithAdaptiveFeeParams(
+  context: WhirlpoolContext,
+  configKey: PublicKey,
+  adaptiveFeeTierKey: PublicKey,
+  tokenTraitA: TokenTrait,
+  tokenTraitB: TokenTrait,
+  feeTierIndex: number,
+  initSqrtPrice = MathUtil.toX64(new Decimal(5)),
+  initializePoolAuthority: PublicKey = context.wallet.publicKey,
+  funder?: PublicKey,
+): Promise<InitPoolWithAdaptiveFeeParams> {
+  const [tokenAMintPubKey, tokenBMintPubKey] = await createInOrderMintsV2(
+    context.provider,
+    tokenTraitA,
+    tokenTraitB,
+  );
+
+  const whirlpoolPda = PDAUtil.getWhirlpool(
+    context.program.programId,
+    configKey,
+    tokenAMintPubKey,
+    tokenBMintPubKey,
+    feeTierIndex,
+  );
+
+  const oraclePda = PDAUtil.getOracle(
+    context.program.programId,
+    whirlpoolPda.publicKey
+  );
+
+  const tokenBadgeAPda = PDAUtil.getTokenBadge(
+    context.program.programId,
+    configKey,
+    tokenAMintPubKey,
+  );
+  const tokenBadgeBPda = PDAUtil.getTokenBadge(
+    context.program.programId,
+    configKey,
+    tokenBMintPubKey,
+  );
+
+  return {
+    initSqrtPrice,
+    whirlpoolsConfig: configKey,
+    tokenMintA: tokenAMintPubKey,
+    tokenMintB: tokenBMintPubKey,
+    tokenBadgeA: tokenBadgeAPda.publicKey,
+    tokenBadgeB: tokenBadgeBPda.publicKey,
+    tokenProgramA: tokenTraitA.isToken2022
+      ? TEST_TOKEN_2022_PROGRAM_ID
+      : TEST_TOKEN_PROGRAM_ID,
+    tokenProgramB: tokenTraitB.isToken2022
+      ? TEST_TOKEN_2022_PROGRAM_ID
+      : TEST_TOKEN_PROGRAM_ID,
+    whirlpoolPda,
+    tokenVaultAKeypair: Keypair.generate(),
+    tokenVaultBKeypair: Keypair.generate(),
+    adaptiveFeeTierKey,
+    initializePoolAuthority,
+    oraclePda,
+    funder: funder || context.wallet.publicKey,
+  };
+}
+
+async function initTestPoolWithAdaptiveFeeFromParams(
+  ctx: WhirlpoolContext,
+  poolParams: TestPoolWithAdaptiveFeeParams,
+  executeInitializePoolAuthority?: Keypair,
+  funder?: Keypair,
+) {
+  const {
+    configInitInfo,
+    poolInitInfo,
+    configKeypairs,
+    feeTierParams,
+    configExtension,
+  } = poolParams;
+  const tx = toTx(
+    ctx,
+    WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, poolInitInfo),
+  );
+  if (executeInitializePoolAuthority) {
+    tx.addSigner(executeInitializePoolAuthority);
+  }
+  if (funder) {
+    tx.addSigner(funder);
+  }
+
+  return {
+    txId: await tx.buildAndExecute(),
+    configInitInfo,
+    configKeypairs,
+    poolInitInfo,
+    feeTierParams,
+    configExtension,
+  };
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // position related

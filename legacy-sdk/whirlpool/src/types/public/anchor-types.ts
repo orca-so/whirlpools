@@ -126,6 +126,7 @@ export type WhirlpoolData = {
   rewardLastUpdatedTimestamp: BN;
   rewardInfos: WhirlpoolRewardInfoData[];
   tickSpacing: number;
+  feeTierIndexSeed: number[];
 };
 
 /**

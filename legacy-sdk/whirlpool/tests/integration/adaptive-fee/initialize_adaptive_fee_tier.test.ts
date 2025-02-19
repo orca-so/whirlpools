@@ -1,14 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { AdaptiveFeeConstantsData, AdaptiveFeeTierData, FeeTierData } from "../../../src";
+import type { AdaptiveFeeConstantsData, AdaptiveFeeTierData } from "../../../src";
 import { AccountName, getAccountSize, PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
-import { dropIsSignerFlag, ONE_SOL, rewritePubkey, systemTransferTx, TickSpacing } from "../../utils";
+import { dropIsSignerFlag, ONE_SOL, rewritePubkey, systemTransferTx } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initAdaptiveFeeTier, initFeeTier } from "../../utils/init-utils";
 import {
   generateDefaultConfigParams,
-  generateDefaultInitAdaptiveFeeTierParams,
-  generateDefaultInitFeeTierParams,
   getDefaultPresetAdaptiveFeeConstants,
 } from "../../utils/test-builders";
 import { Keypair, PublicKey, SystemProgram } from "@solana/web3.js";

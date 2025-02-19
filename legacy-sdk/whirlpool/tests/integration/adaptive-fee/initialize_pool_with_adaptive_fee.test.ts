@@ -1,9 +1,8 @@
 import * as anchor from "@coral-xyz/anchor";
-import type { PDA } from "@orca-so/common-sdk";
 import { MathUtil } from "@orca-so/common-sdk";
 import * as assert from "assert";
 import Decimal from "decimal.js";
-import type { InitializeAdaptiveFeeTierParams, InitPoolV2Params, InitPoolWithAdaptiveFeeParams, WhirlpoolData } from "../../../src";
+import type { InitializeAdaptiveFeeTierParams, InitPoolWithAdaptiveFeeParams, WhirlpoolData } from "../../../src";
 import {
   IGNORE_CACHE,
   MAX_SQRT_PRICE,
@@ -22,12 +21,12 @@ import {
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
   ZERO_BN,
+  dropIsSignerFlag,
   systemTransferTx,
 } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import type { TokenTrait } from "../../utils/v2/init-utils-v2";
 import {
-  buildTestPoolV2Params,
   buildTestPoolWithAdaptiveFeeParams,
   initTestPoolV2,
   initTestPoolWithAdaptiveFee,
@@ -1702,6 +1701,319 @@ describe("initialize_pool_with_adaptive_fee", () => {
         await runTest({ supported: false, createTokenBadge: true, tokenTrait });
         await runTest({ supported: false, createTokenBadge: false, tokenTrait });
       });
+    });
+  });
+
+  describe("with_adaptive_fee specific accounts", () => {
+    it("[FAIL] when adaptive_fee_tier belongs to different config", async () => {
+      const tickSpacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickSpacing;
+      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        PublicKey.default,
+        PublicKey.default,
+      );
+
+      const { poolInitInfo: anotherPoolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        PublicKey.default,
+        PublicKey.default,
+      );
+
+      const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
+        ...poolInitInfo,
+        whirlpoolsConfig: anotherPoolInitInfo.whirlpoolsConfig,
+      };
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, modifiedPoolInitInfo),
+        ).buildAndExecute(),
+        /0x7d6/, // ConstraintSeeds
+      );
+    });
+
+    it("[FAIL] when adaptive_fee_tier is FeeTier (not AdaptiveFeeTier)", async () => {
+      const tickSpacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickSpacing;
+      const { poolInitInfo, configInitInfo, configKeypairs } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        PublicKey.default,
+        PublicKey.default,
+      );
+
+      const { params: nonAdaptiveFeeTierParams } = await initFeeTier(ctx, configInitInfo, configKeypairs.feeAuthorityKeypair, tickSpacing, 3000);
+
+      const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
+        ...poolInitInfo,
+        adaptiveFeeTierKey: nonAdaptiveFeeTierParams.feeTierPda.publicKey,
+      };
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, modifiedPoolInitInfo),
+        ).buildAndExecute(),
+        /0xbba/, // AccountDiscriminatorMismatch.
+      );
+    });
+
+    it("[FAIL] when oracle address is invalid", async () => {
+      const tickSpacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickSpacing;
+      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        PublicKey.default,
+        PublicKey.default,
+      );
+
+      const wrongOraclePda = PDAUtil.getOracle(
+        ctx.program.programId,
+        Keypair.generate().publicKey,
+      );
+
+      const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
+        ...poolInitInfo,
+        oraclePda: wrongOraclePda,
+      };
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, modifiedPoolInitInfo),
+        ).buildAndExecute(),
+        /0x7d6/, // ConstraintSeeds
+      );
+    });
+
+    it("when initialize_pool_authority is not set (permission less)", async () => {
+      const initializePoolAuthorityKeypair = anchor.web3.Keypair.generate();
+      await systemTransferTx(
+        provider,
+        initializePoolAuthorityKeypair.publicKey,
+        ONE_SOL,
+      ).buildAndExecute();
+
+      const tickSpacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickSpacing;
+      const initializeFeeAuthorityOnAdaptiveFeeTier = PublicKey.default; // permission-less
+      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        initializeFeeAuthorityOnAdaptiveFeeTier,
+        PublicKey.default,
+      );
+
+      const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
+        ...poolInitInfo,
+        initializePoolAuthority: initializePoolAuthorityKeypair.publicKey,
+      };
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, modifiedPoolInitInfo),
+      )
+      .addSigner(initializePoolAuthorityKeypair)
+      .buildAndExecute();
+
+      const whirlpoolData = await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      assert.ok(whirlpoolData !== null);
+    });
+
+    it("when initialize_pool_authority is set (permissioned)", async () => {
+      const initializePoolAuthorityKeypair = anchor.web3.Keypair.generate();
+      await systemTransferTx(
+        provider,
+        initializePoolAuthorityKeypair.publicKey,
+        ONE_SOL,
+      ).buildAndExecute();
+
+      const fakeAuthorityKeypair = anchor.web3.Keypair.generate();
+      await systemTransferTx(
+        provider,
+        fakeAuthorityKeypair.publicKey,
+        ONE_SOL,
+      ).buildAndExecute();
+
+      const tickSpacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickSpacing;
+      const initializeFeeAuthorityOnAdaptiveFeeTier = initializePoolAuthorityKeypair.publicKey;
+      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        initializeFeeAuthorityOnAdaptiveFeeTier,
+        PublicKey.default,
+      );
+
+      const modifiedPoolInitInfoWithFakeAuthority: InitPoolWithAdaptiveFeeParams = {
+        ...poolInitInfo,
+        initializePoolAuthority: fakeAuthorityKeypair.publicKey,
+      };
+
+      await assert.rejects(
+            toTx(
+        ctx,
+        WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, modifiedPoolInitInfoWithFakeAuthority),
+      )
+      .addSigner(fakeAuthorityKeypair)
+      .buildAndExecute(),
+      /0x7d3/, // ConstraintRaw
+      );
+
+      const emptyWhirlpoolData = await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      assert.ok(emptyWhirlpoolData === null);
+
+      const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
+        ...poolInitInfo,
+        initializePoolAuthority: initializePoolAuthorityKeypair.publicKey,
+      };
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, modifiedPoolInitInfo),
+      )
+      .addSigner(initializePoolAuthorityKeypair)
+      .buildAndExecute();
+
+      const whirlpoolData = await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      assert.ok(whirlpoolData !== null);
+    });
+
+    it("[FAIL] when initialize_pool_authority is set (permissioned) and wrong initialize_pool_authority is used", async () => {
+      const initializePoolAuthorityKeypair = anchor.web3.Keypair.generate();
+      await systemTransferTx(
+        provider,
+        initializePoolAuthorityKeypair.publicKey,
+        ONE_SOL,
+      ).buildAndExecute();
+
+      const fakeAuthorityKeypair = anchor.web3.Keypair.generate();
+      await systemTransferTx(
+        provider,
+        fakeAuthorityKeypair.publicKey,
+        ONE_SOL,
+      ).buildAndExecute();
+
+      const tickSpacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickSpacing;
+      const initializeFeeAuthorityOnAdaptiveFeeTier = initializePoolAuthorityKeypair.publicKey;
+      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        initializeFeeAuthorityOnAdaptiveFeeTier,
+        PublicKey.default,
+      );
+
+      const modifiedPoolInitInfoWithFakeAuthority: InitPoolWithAdaptiveFeeParams = {
+        ...poolInitInfo,
+        initializePoolAuthority: fakeAuthorityKeypair.publicKey,
+      };
+
+      await assert.rejects(
+            toTx(
+        ctx,
+        WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, modifiedPoolInitInfoWithFakeAuthority),
+      )
+      .addSigner(fakeAuthorityKeypair)
+      .buildAndExecute(),
+      /0x7d3/, // ConstraintRaw
+      );
+
+      const emptyWhirlpoolData = await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      assert.ok(emptyWhirlpoolData === null);
+    });
+
+    it("[FAIL] when initialize_pool_authority is set (permissioned) and initialize_pool_authority is not a signer", async () => {
+      const initializePoolAuthorityKeypair = anchor.web3.Keypair.generate();
+      await systemTransferTx(
+        provider,
+        initializePoolAuthorityKeypair.publicKey,
+        ONE_SOL,
+      ).buildAndExecute();
+
+      const tickSpacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickSpacing;
+      const initializeFeeAuthorityOnAdaptiveFeeTier = initializePoolAuthorityKeypair.publicKey;
+      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        initializeFeeAuthorityOnAdaptiveFeeTier,
+        PublicKey.default,
+      );
+
+      const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
+        ...poolInitInfo,
+        initializePoolAuthority: initializePoolAuthorityKeypair.publicKey,
+      };
+
+      const ix = WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, modifiedPoolInitInfo);
+      const ixWithoutSigner = dropIsSignerFlag(ix.instructions[0], initializePoolAuthorityKeypair.publicKey);
+
+      await assert.rejects(
+            toTx(
+        ctx,
+        { instructions: [ixWithoutSigner], cleanupInstructions: [], signers: ix.signers // vault keypairs
+       },
+      )
+      .buildAndExecute(),
+      /0xbc2/, // AccountNotSigner
+      );
+
+      const emptyWhirlpoolData = await fetcher.getPool(poolInitInfo.whirlpoolPda.publicKey, IGNORE_CACHE);
+      assert.ok(emptyWhirlpoolData === null);
     });
   });
 

@@ -23,9 +23,7 @@ export const DEFAULT_PRIORITIZATION: TransactionConfig = {
 export const getRpcConfig = (): RpcConfig => {
   const rpcConfig = globalConfig.rpcConfig;
   if (!rpcConfig?.rpcUrl) {
-    throw new Error(
-      "Connection not initialized. Call init() first or provide connection parameter"
-    );
+    throw new Error("Connection not initialized. Call setRpc() first");
   }
   return rpcConfig;
 };

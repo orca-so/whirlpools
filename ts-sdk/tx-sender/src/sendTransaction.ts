@@ -24,13 +24,12 @@ import { buildTransaction } from "./buildTransaction";
  * @throws {Error} If transaction building or sending fails
  *
  * @example
- * await buildAndSendTransaction(
+ * const signature = await buildAndSendTransaction(
  *   instructions,
  *   keypairSigner,
  *   lookupTables,
  * );
  */
-
 export async function buildAndSendTransaction(
   instructions: IInstruction[],
   payer: KeyPairSigner,

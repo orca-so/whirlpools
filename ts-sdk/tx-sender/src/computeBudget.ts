@@ -64,8 +64,8 @@ export async function processComputeBudgetForTxMessage(
     getSetComputeUnitLimitInstruction({
       units: Math.ceil(
         computeUnits *
-          (computeUnitMarginMultiplier ??
-            DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER)
+        (computeUnitMarginMultiplier ??
+          DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER)
       ),
     }),
     message
@@ -122,7 +122,7 @@ async function calculateDynamicPriorityFees(
     }
     return (
       sorted[
-        Math.floor(sorted.length * (percentileNumber(percentile) / 100))
+      Math.floor(sorted.length * (percentileNumber(percentile) / 100))
       ] || BigInt(0)
     );
   }

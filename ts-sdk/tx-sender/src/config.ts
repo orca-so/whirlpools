@@ -178,7 +178,7 @@ export function setComputeUnitMarginMultiplier(multiplier: number) {
 /**
  * Sets the percentile used for Jito fee calculations.
  *
- * @param {Percentile | "50ema"} percentile - The new percentile setting for Jito fees.
+ * @param {Percentile | "50ema"} percentile - The new percentile setting for Jito fees. "50ema" is the exponential moving average over the last 50 blocks.
  */
 export function setJitoFeePercentile(percentile: Percentile | "50ema") {
   const jito = getPriorityConfig().jito;

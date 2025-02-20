@@ -16,22 +16,26 @@ import { rpcFromUrl } from "./compatibility";
 import { buildTransaction } from "./buildTransaction";
 
 /**
- * Builds and sends a transaction with the given instructions and signers.
+ * Builds and sends a transaction with the given instructions, signers, and commitment level.
  *
- * @param {IInstruction[]} instructions - Array of instructions to include in the transaction
- * @param {KeyPairSigner} payer - The fee payer for the transaction
- * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to use
+ * @param {IInstruction[]} instructions - Array of instructions to include in the transaction.
+ * @param {KeyPairSigner} payer - The fee payer for the transaction.
+ * @param {(Address | string)[]} [lookupTableAddresses] - Optional array of address lookup table addresses to use.
+ * @param {Commitment} [commitment="confirmed"] - The commitment level for transaction confirmation.
  *
- * @returns {Promise<string>} A promise that resolves to the transaction signature
+ * @returns {Promise<Signature>} A promise that resolves to the transaction signature.
  *
- * @throws {Error} If transaction building or sending fails
+ * @throws {Error} If transaction building or sending fails.
  *
  * @example
+ * ```ts
  * const signature = await buildAndSendTransaction(
  *   instructions,
  *   keypairSigner,
  *   lookupTables,
+ *   "finalized"
  * );
+ * ```
  */
 export async function buildAndSendTransaction(
   instructions: IInstruction[],
@@ -45,20 +49,24 @@ export async function buildAndSendTransaction(
 }
 
 /**
- * Sends a signed transaction message to the Solana network.
+ * Sends a signed transaction message to the Solana network with a specified commitment level.
  *
- * @param {FullySignedTransaction} transaction - The fully signed transaction to send
+ * @param {FullySignedTransaction} transaction - The fully signed transaction to send.
+ * @param {Commitment} [commitment="confirmed"] - The commitment level for transaction confirmation.
  *
- * @returns {Promise<string>} A promise that resolves to the transaction signature
+ * @returns {Promise<Signature>} A promise that resolves to the transaction signature.
  *
- * @throws {Error} If transaction sending fails or RPC connection fails
+ * @throws {Error} If transaction sending fails, the RPC connection fails, or the transaction expires.
  *
  * @example
+ * ```ts
  * assertTransactionIsFullySigned(signedTransaction);
  *
- * const signature = await sendSignedTransaction(
+ * const signature = await sendTransaction(
  *   signedTransaction,
+ *   "finalized"
  * );
+ * ```
  */
 export async function sendTransaction(
   transaction: FullySignedTransaction,

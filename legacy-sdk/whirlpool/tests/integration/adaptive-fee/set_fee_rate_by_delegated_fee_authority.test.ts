@@ -6,7 +6,10 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { dropIsSignerFlag, TickSpacing } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPool } from "../../utils/init-utils";
-import { generateDefaultConfigParams, getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
+import {
+  generateDefaultConfigParams,
+  getDefaultPresetAdaptiveFeeConstants,
+} from "../../utils/test-builders";
 import { initTestPoolWithAdaptiveFee } from "../../utils/v2/init-utils-v2";
 import { MathUtil } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";
@@ -33,27 +36,30 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
   it("successfully sets_fee_rate_by_delegated_fee_authority", async () => {
     const newFeeRate = 20_000;
 
-    const { poolInitInfo, feeTierParams } =
-      await initTestPoolWithAdaptiveFee(
-        ctx,
-        { isToken2022: true },
-        { isToken2022: false },
-        feeTierIndex,
-        tickSpacing,
-        defaultBaseFeeRate,
-        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
-        undefined,
-        delegatedFeeAuthorityKeypair.publicKey,
-        price,
-      );
-    
+    const { poolInitInfo, feeTierParams } = await initTestPoolWithAdaptiveFee(
+      ctx,
+      { isToken2022: true },
+      { isToken2022: false },
+      feeTierIndex,
+      tickSpacing,
+      defaultBaseFeeRate,
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      undefined,
+      delegatedFeeAuthorityKeypair.publicKey,
+      price,
+    );
+
     let adaptiveFeeTierData = await fetcher.getAdaptiveFeeTier(
       feeTierParams.feeTierPda.publicKey,
       IGNORE_CACHE,
     );
     assert.ok(adaptiveFeeTierData);
     assert.ok(adaptiveFeeTierData.defaultBaseFeeRate === defaultBaseFeeRate);
-    assert.ok(adaptiveFeeTierData.delegatedFeeAuthority.equals(delegatedFeeAuthorityKeypair.publicKey));
+    assert.ok(
+      adaptiveFeeTierData.delegatedFeeAuthority.equals(
+        delegatedFeeAuthorityKeypair.publicKey,
+      ),
+    );
 
     let preWhirlpoolData = await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
@@ -70,7 +76,9 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
         delegatedFeeAuthority: delegatedFeeAuthorityKeypair.publicKey,
         feeRate: newFeeRate,
       }),
-    ).addSigner(delegatedFeeAuthorityKeypair).buildAndExecute();
+    )
+      .addSigner(delegatedFeeAuthorityKeypair)
+      .buildAndExecute();
 
     let postWhirlpoolData = await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
@@ -83,27 +91,30 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
   it("successfully sets_fee_rate_by_delegated_fee_authority max", async () => {
     const newFeeRate = 60_000;
 
-    const { poolInitInfo, feeTierParams } =
-      await initTestPoolWithAdaptiveFee(
-        ctx,
-        { isToken2022: true },
-        { isToken2022: false },
-        feeTierIndex,
-        tickSpacing,
-        defaultBaseFeeRate,
-        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
-        undefined,
-        delegatedFeeAuthorityKeypair.publicKey,
-        price,
-      );
-    
+    const { poolInitInfo, feeTierParams } = await initTestPoolWithAdaptiveFee(
+      ctx,
+      { isToken2022: true },
+      { isToken2022: false },
+      feeTierIndex,
+      tickSpacing,
+      defaultBaseFeeRate,
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      undefined,
+      delegatedFeeAuthorityKeypair.publicKey,
+      price,
+    );
+
     let adaptiveFeeTierData = await fetcher.getAdaptiveFeeTier(
       feeTierParams.feeTierPda.publicKey,
       IGNORE_CACHE,
     );
     assert.ok(adaptiveFeeTierData);
     assert.ok(adaptiveFeeTierData.defaultBaseFeeRate === defaultBaseFeeRate);
-    assert.ok(adaptiveFeeTierData.delegatedFeeAuthority.equals(delegatedFeeAuthorityKeypair.publicKey));
+    assert.ok(
+      adaptiveFeeTierData.delegatedFeeAuthority.equals(
+        delegatedFeeAuthorityKeypair.publicKey,
+      ),
+    );
 
     let preWhirlpoolData = await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
@@ -120,7 +131,9 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
         delegatedFeeAuthority: delegatedFeeAuthorityKeypair.publicKey,
         feeRate: newFeeRate,
       }),
-    ).addSigner(delegatedFeeAuthorityKeypair).buildAndExecute();
+    )
+      .addSigner(delegatedFeeAuthorityKeypair)
+      .buildAndExecute();
 
     let postWhirlpoolData = await fetcher.getPool(
       poolInitInfo.whirlpoolPda.publicKey,
@@ -133,19 +146,18 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
   it("fails when fee rate exceeds max", async () => {
     const newFeeRate = 60_000 + 1;
 
-    const { poolInitInfo, feeTierParams } =
-      await initTestPoolWithAdaptiveFee(
-        ctx,
-        { isToken2022: true },
-        { isToken2022: false },
-        feeTierIndex,
-        tickSpacing,
-        defaultBaseFeeRate,
-        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
-        undefined,
-        delegatedFeeAuthorityKeypair.publicKey,
-        price,
-      );
+    const { poolInitInfo, feeTierParams } = await initTestPoolWithAdaptiveFee(
+      ctx,
+      { isToken2022: true },
+      { isToken2022: false },
+      feeTierIndex,
+      tickSpacing,
+      defaultBaseFeeRate,
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      undefined,
+      delegatedFeeAuthorityKeypair.publicKey,
+      price,
+    );
 
     await assert.rejects(
       toTx(
@@ -156,7 +168,7 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
           delegatedFeeAuthority: delegatedFeeAuthorityKeypair.publicKey,
           feeRate: newFeeRate,
         }),
-        )
+      )
         .addSigner(delegatedFeeAuthorityKeypair)
         .buildAndExecute(),
       /0x178c/, // FeeRateMaxExceeded
@@ -166,34 +178,36 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
   it("fails when delegated fee authority is not signer", async () => {
     const newFeeRate = 20_000;
 
-    const { poolInitInfo, feeTierParams } =
-      await initTestPoolWithAdaptiveFee(
-        ctx,
-        { isToken2022: true },
-        { isToken2022: false },
-        feeTierIndex,
-        tickSpacing,
-        defaultBaseFeeRate,
-        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
-        undefined,
-        delegatedFeeAuthorityKeypair.publicKey,
-        price,
-      );
+    const { poolInitInfo, feeTierParams } = await initTestPoolWithAdaptiveFee(
+      ctx,
+      { isToken2022: true },
+      { isToken2022: false },
+      feeTierIndex,
+      tickSpacing,
+      defaultBaseFeeRate,
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      undefined,
+      delegatedFeeAuthorityKeypair.publicKey,
+      price,
+    );
 
     const ix = WhirlpoolIx.setFeeRateByDelegatedFeeAuthorityIx(program, {
-        whirlpool: poolInitInfo.whirlpoolPda.publicKey,
-        adaptiveFeeTier: feeTierParams.feeTierPda.publicKey,
-        delegatedFeeAuthority: delegatedFeeAuthorityKeypair.publicKey,
-        feeRate: newFeeRate,
-      });
-    const ixWithoutSigner = dropIsSignerFlag(ix.instructions[0], delegatedFeeAuthorityKeypair.publicKey);
+      whirlpool: poolInitInfo.whirlpoolPda.publicKey,
+      adaptiveFeeTier: feeTierParams.feeTierPda.publicKey,
+      delegatedFeeAuthority: delegatedFeeAuthorityKeypair.publicKey,
+      feeRate: newFeeRate,
+    });
+    const ixWithoutSigner = dropIsSignerFlag(
+      ix.instructions[0],
+      delegatedFeeAuthorityKeypair.publicKey,
+    );
 
     await assert.rejects(
-      toTx(
-        ctx,
-        { instructions: [ixWithoutSigner], cleanupInstructions: [], signers: [] },
-        )
-        .buildAndExecute(),
+      toTx(ctx, {
+        instructions: [ixWithoutSigner],
+        cleanupInstructions: [],
+        signers: [],
+      }).buildAndExecute(),
       /0xbc2/, // AccountNotSigner
     );
   });
@@ -201,21 +215,20 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
   it("fails when delegated fee authority is invalid", async () => {
     const newFeeRate = 20_000;
 
-    const { poolInitInfo, feeTierParams } =
-      await initTestPoolWithAdaptiveFee(
-        ctx,
-        { isToken2022: true },
-        { isToken2022: false },
-        feeTierIndex,
-        tickSpacing,
-        defaultBaseFeeRate,
-        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
-        undefined,
-        delegatedFeeAuthorityKeypair.publicKey,
-        price,
-      );
+    const { poolInitInfo, feeTierParams } = await initTestPoolWithAdaptiveFee(
+      ctx,
+      { isToken2022: true },
+      { isToken2022: false },
+      feeTierIndex,
+      tickSpacing,
+      defaultBaseFeeRate,
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      undefined,
+      delegatedFeeAuthorityKeypair.publicKey,
+      price,
+    );
 
-      const fakeDelegatedFeeAuthorityKeypair = Keypair.generate();
+    const fakeDelegatedFeeAuthorityKeypair = Keypair.generate();
 
     await assert.rejects(
       toTx(
@@ -225,7 +238,8 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
           adaptiveFeeTier: feeTierParams.feeTierPda.publicKey,
           delegatedFeeAuthority: fakeDelegatedFeeAuthorityKeypair.publicKey,
           feeRate: newFeeRate,
-        }))
+        }),
+      )
         .addSigner(fakeDelegatedFeeAuthorityKeypair)
         .buildAndExecute(),
       /0x7dc/, // ConstraintAddress
@@ -237,19 +251,18 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
 
     const notDelegated = PublicKey.default;
 
-    const { poolInitInfo, feeTierParams } =
-      await initTestPoolWithAdaptiveFee(
-        ctx,
-        { isToken2022: true },
-        { isToken2022: false },
-        feeTierIndex,
-        tickSpacing,
-        defaultBaseFeeRate,
-        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
-        undefined,
-        notDelegated,
-        price,
-      );
+    const { poolInitInfo, feeTierParams } = await initTestPoolWithAdaptiveFee(
+      ctx,
+      { isToken2022: true },
+      { isToken2022: false },
+      feeTierIndex,
+      tickSpacing,
+      defaultBaseFeeRate,
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      undefined,
+      notDelegated,
+      price,
+    );
 
     await assert.rejects(
       toTx(
@@ -259,7 +272,8 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
           adaptiveFeeTier: feeTierParams.feeTierPda.publicKey,
           delegatedFeeAuthority: delegatedFeeAuthorityKeypair.publicKey,
           feeRate: newFeeRate,
-        }))
+        }),
+      )
         .addSigner(delegatedFeeAuthorityKeypair)
         .buildAndExecute(),
       /0x7dc/, // ConstraintAddress
@@ -269,19 +283,18 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
   it("fails when AdaptiveFeeTier is invalid (whirlpools config don't match)", async () => {
     const newFeeRate = 20_000;
 
-    const { poolInitInfo } =
-      await initTestPoolWithAdaptiveFee(
-        ctx,
-        { isToken2022: true },
-        { isToken2022: false },
-        feeTierIndex,
-        tickSpacing,
-        defaultBaseFeeRate,
-        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
-        undefined,
-        delegatedFeeAuthorityKeypair.publicKey,
-        price,
-      );
+    const { poolInitInfo } = await initTestPoolWithAdaptiveFee(
+      ctx,
+      { isToken2022: true },
+      { isToken2022: false },
+      feeTierIndex,
+      tickSpacing,
+      defaultBaseFeeRate,
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      undefined,
+      delegatedFeeAuthorityKeypair.publicKey,
+      price,
+    );
 
     const { feeTierParams: anotherFeeTierParams } =
       await initTestPoolWithAdaptiveFee(
@@ -305,7 +318,8 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
           adaptiveFeeTier: anotherFeeTierParams.feeTierPda.publicKey, // unmatch (whirlpool.whirlpools_config != adaptive_fee_tier.whirlpools_config)
           delegatedFeeAuthority: delegatedFeeAuthorityKeypair.publicKey,
           feeRate: newFeeRate,
-        }))
+        }),
+      )
         .addSigner(delegatedFeeAuthorityKeypair)
         .buildAndExecute(),
       /0x7d3/, // ConstraintRaw
@@ -316,19 +330,18 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
     const newFeeRate = 20_000;
 
     const constants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
-    const { poolInitInfo, configKeypairs } =
-      await initTestPoolWithAdaptiveFee(
-        ctx,
-        { isToken2022: true },
-        { isToken2022: false },
-        feeTierIndex,
-        tickSpacing,
-        defaultBaseFeeRate,
-        constants,
-        undefined,
-        delegatedFeeAuthorityKeypair.publicKey,
-        price,
-      );
+    const { poolInitInfo, configKeypairs } = await initTestPoolWithAdaptiveFee(
+      ctx,
+      { isToken2022: true },
+      { isToken2022: false },
+      feeTierIndex,
+      tickSpacing,
+      defaultBaseFeeRate,
+      constants,
+      undefined,
+      delegatedFeeAuthorityKeypair.publicKey,
+      price,
+    );
 
     const anotherFeeTierIndex = feeTierIndex + 1;
     const anotherAdaptiveFeeTierPda = PDAUtil.getFeeTier(
@@ -337,21 +350,26 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
       anotherFeeTierIndex,
     );
 
-    await toTx(ctx, WhirlpoolIx.initializeAdaptiveFeeTierIx(program, {
-      whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
-      feeTierPda: anotherAdaptiveFeeTierPda,
-      funder: ctx.wallet.publicKey,
-      feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
-      feeTierIndex: anotherFeeTierIndex,
-      tickSpacing: tickSpacing,
-      defaultBaseFeeRate: defaultBaseFeeRate,
-      presetFilterPeriod: constants.filterPeriod,
-      presetDecayPeriod: constants.decayPeriod,
-      presetReductionFactor: constants.reductionFactor,
-      presetAdaptiveFeeControlFactor: constants.adaptiveFeeControlFactor,
-      presetMaxVolatilityAccumulator: constants.maxVolatilityAccumulator,
-      presetTickGroupSize: constants.tickGroupSize,
-    })).addSigner(configKeypairs.feeAuthorityKeypair).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeAdaptiveFeeTierIx(program, {
+        whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
+        feeTierPda: anotherAdaptiveFeeTierPda,
+        funder: ctx.wallet.publicKey,
+        feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
+        feeTierIndex: anotherFeeTierIndex,
+        tickSpacing: tickSpacing,
+        defaultBaseFeeRate: defaultBaseFeeRate,
+        presetFilterPeriod: constants.filterPeriod,
+        presetDecayPeriod: constants.decayPeriod,
+        presetReductionFactor: constants.reductionFactor,
+        presetAdaptiveFeeControlFactor: constants.adaptiveFeeControlFactor,
+        presetMaxVolatilityAccumulator: constants.maxVolatilityAccumulator,
+        presetTickGroupSize: constants.tickGroupSize,
+      }),
+    )
+      .addSigner(configKeypairs.feeAuthorityKeypair)
+      .buildAndExecute();
 
     await assert.rejects(
       toTx(
@@ -361,7 +379,8 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
           adaptiveFeeTier: anotherAdaptiveFeeTierPda.publicKey, // unmatch (whirlpool.fee_tier_index() != adaptive_fee_tier.fee_tier_index)
           delegatedFeeAuthority: delegatedFeeAuthorityKeypair.publicKey,
           feeRate: newFeeRate,
-        }))
+        }),
+      )
         .addSigner(delegatedFeeAuthorityKeypair)
         .buildAndExecute(),
       /0x7d3/, // ConstraintRaw
@@ -394,14 +413,19 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
       anotherFeeTierIndex,
     );
 
-    await toTx(ctx, WhirlpoolIx.initializeFeeTierIx(program, {
-      whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
-      feeTierPda: anotherAdaptiveFeeTierPda,
-      funder: ctx.wallet.publicKey,
-      feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
-      tickSpacing: anotherTickSpacing,
-      defaultFeeRate: defaultBaseFeeRate,
-    })).addSigner(configKeypairs.feeAuthorityKeypair).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializeFeeTierIx(program, {
+        whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
+        feeTierPda: anotherAdaptiveFeeTierPda,
+        funder: ctx.wallet.publicKey,
+        feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
+        tickSpacing: anotherTickSpacing,
+        defaultFeeRate: defaultBaseFeeRate,
+      }),
+    )
+      .addSigner(configKeypairs.feeAuthorityKeypair)
+      .buildAndExecute();
 
     const anotherWhirlpoolPda = PDAUtil.getWhirlpool(
       program.programId,
@@ -411,26 +435,37 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
       anotherFeeTierIndex,
     );
 
-    await toTx(ctx, WhirlpoolIx.initializePoolIx(program, {
-      whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
-      feeTierKey: anotherAdaptiveFeeTierPda.publicKey,
-      funder: ctx.wallet.publicKey,
-      initSqrtPrice: price,
-      tickSpacing: anotherTickSpacing,
-      tokenMintA: poolInitInfo.tokenMintA,
-      tokenMintB: poolInitInfo.tokenMintB,
-      tokenVaultAKeypair: Keypair.generate(),
-      tokenVaultBKeypair: Keypair.generate(),
-      whirlpoolPda: anotherWhirlpoolPda,
-    })).buildAndExecute();
+    await toTx(
+      ctx,
+      WhirlpoolIx.initializePoolIx(program, {
+        whirlpoolsConfig: poolInitInfo.whirlpoolsConfig,
+        feeTierKey: anotherAdaptiveFeeTierPda.publicKey,
+        funder: ctx.wallet.publicKey,
+        initSqrtPrice: price,
+        tickSpacing: anotherTickSpacing,
+        tokenMintA: poolInitInfo.tokenMintA,
+        tokenMintB: poolInitInfo.tokenMintB,
+        tokenVaultAKeypair: Keypair.generate(),
+        tokenVaultBKeypair: Keypair.generate(),
+        whirlpoolPda: anotherWhirlpoolPda,
+      }),
+    ).buildAndExecute();
 
     const anotherWhirlpool = await fetcher.getPool(
       anotherWhirlpoolPda.publicKey,
       IGNORE_CACHE,
     );
     assert.ok(anotherWhirlpool);
-    assert.ok(anotherWhirlpool.feeTierIndexSeed[0] + anotherWhirlpool.feeTierIndexSeed[1] * 256 === anotherFeeTierIndex);
-    assert.ok(anotherWhirlpool.feeTierIndexSeed[0] + anotherWhirlpool.feeTierIndexSeed[1] * 256 === anotherTickSpacing);
+    assert.ok(
+      anotherWhirlpool.feeTierIndexSeed[0] +
+        anotherWhirlpool.feeTierIndexSeed[1] * 256 ===
+        anotherFeeTierIndex,
+    );
+    assert.ok(
+      anotherWhirlpool.feeTierIndexSeed[0] +
+        anotherWhirlpool.feeTierIndexSeed[1] * 256 ===
+        anotherTickSpacing,
+    );
 
     await assert.rejects(
       toTx(
@@ -440,7 +475,8 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
           adaptiveFeeTier: feeTierParams.feeTierPda.publicKey,
           delegatedFeeAuthority: delegatedFeeAuthorityKeypair.publicKey,
           feeRate: newFeeRate,
-        }))
+        }),
+      )
         .addSigner(delegatedFeeAuthorityKeypair)
         .buildAndExecute(),
       /0x7d3/, // ConstraintRaw

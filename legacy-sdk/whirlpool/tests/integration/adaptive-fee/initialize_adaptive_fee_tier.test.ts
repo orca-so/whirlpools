@@ -1,8 +1,23 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { AdaptiveFeeConstantsData, AdaptiveFeeTierData } from "../../../src";
-import { AccountName, getAccountSize, PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
-import { dropIsSignerFlag, ONE_SOL, rewritePubkey, systemTransferTx } from "../../utils";
+import type {
+  AdaptiveFeeConstantsData,
+  AdaptiveFeeTierData,
+} from "../../../src";
+import {
+  AccountName,
+  getAccountSize,
+  PDAUtil,
+  toTx,
+  WhirlpoolContext,
+  WhirlpoolIx,
+} from "../../../src";
+import {
+  dropIsSignerFlag,
+  ONE_SOL,
+  rewritePubkey,
+  systemTransferTx,
+} from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initAdaptiveFeeTier, initFeeTier } from "../../utils/init-utils";
 import {
@@ -75,13 +90,30 @@ describe("initialize_adaptive_fee_tier", () => {
     );
 
     assert.ok(adaptiveFeeTierAccount);
-    assert.ok(adaptiveFeeTierAccount.whirlpoolsConfig.equals(configInitInfo.whirlpoolsConfigKeypair.publicKey));
+    assert.ok(
+      adaptiveFeeTierAccount.whirlpoolsConfig.equals(
+        configInitInfo.whirlpoolsConfigKeypair.publicKey,
+      ),
+    );
     assert.ok(adaptiveFeeTierAccount.feeTierIndex == feeTierIndex);
     assert.ok(adaptiveFeeTierAccount.tickSpacing == tickSpacing);
-    assert.ok(adaptiveFeeTierAccount.initializePoolAuthority.equals(initializePoolAuthority));
-    assert.ok(adaptiveFeeTierAccount.delegatedFeeAuthority.equals(delegatedFeeAuthority));
+    assert.ok(
+      adaptiveFeeTierAccount.initializePoolAuthority.equals(
+        initializePoolAuthority,
+      ),
+    );
+    assert.ok(
+      adaptiveFeeTierAccount.delegatedFeeAuthority.equals(
+        delegatedFeeAuthority,
+      ),
+    );
     assert.ok(adaptiveFeeTierAccount.defaultBaseFeeRate == defaultBaseFeeRate);
-    assert.ok(equalsAdaptiveFeeConstants(adaptiveFeeTierAccount, presetAdaptiveFeeConstants));
+    assert.ok(
+      equalsAdaptiveFeeConstants(
+        adaptiveFeeTierAccount,
+        presetAdaptiveFeeConstants,
+      ),
+    );
 
     return result;
   }
@@ -92,7 +124,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const defaultBaseFeeRate = 3000;
     const initializePoolAuthority = PublicKey.default;
     const delegatedFeeAuthority = PublicKey.default;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     await tryInitializeAdaptiveFeeTier(
       tickSpacing,
@@ -110,7 +143,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const defaultBaseFeeRate = 60_000;
     const initializePoolAuthority = PublicKey.default;
     const delegatedFeeAuthority = PublicKey.default;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     await tryInitializeAdaptiveFeeTier(
       tickSpacing,
@@ -128,7 +162,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const defaultBaseFeeRate = 3000;
     const initializePoolAuthority = Keypair.generate().publicKey;
     const delegatedFeeAuthority = Keypair.generate().publicKey;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     await tryInitializeAdaptiveFeeTier(
       tickSpacing,
@@ -153,12 +188,16 @@ describe("initialize_adaptive_fee_tier", () => {
     const defaultBaseFeeRate = 3000;
     const initializePoolAuthority = Keypair.generate().publicKey;
     const delegatedFeeAuthority = Keypair.generate().publicKey;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
-    const preBalance = await provider.connection.getBalance(funderKeypair.publicKey);
-    const requiredRent = await provider.connection.getMinimumBalanceForRentExemption(
-      getAccountSize(AccountName.AdaptiveFeeTier),
+    const preBalance = await provider.connection.getBalance(
+      funderKeypair.publicKey,
     );
+    const requiredRent =
+      await provider.connection.getMinimumBalanceForRentExemption(
+        getAccountSize(AccountName.AdaptiveFeeTier),
+      );
 
     await tryInitializeAdaptiveFeeTier(
       tickSpacing,
@@ -170,7 +209,9 @@ describe("initialize_adaptive_fee_tier", () => {
       funderKeypair,
     );
 
-    const postBalance = await provider.connection.getBalance(funderKeypair.publicKey);
+    const postBalance = await provider.connection.getBalance(
+      funderKeypair.publicKey,
+    );
     assert.ok(preBalance - postBalance == requiredRent);
   });
 
@@ -181,11 +222,11 @@ describe("initialize_adaptive_fee_tier", () => {
     const initializePoolAuthority = PublicKey.default;
     const delegatedFeeAuthority = PublicKey.default;
     const presetAdaptiveFeeConstants: AdaptiveFeeConstantsData = {
-      filterPeriod: 2**16 - 2, // must be < decayPeriod
-      decayPeriod: 2**16 - 1, // u16::MAX
+      filterPeriod: 2 ** 16 - 2, // must be < decayPeriod
+      decayPeriod: 2 ** 16 - 1, // u16::MAX
       reductionFactor: 9999,
       adaptiveFeeControlFactor: 99999,
-      maxVolatilityAccumulator: Math.floor(2**32 / tickSpacing) - 1,
+      maxVolatilityAccumulator: Math.floor(2 ** 32 / tickSpacing) - 1,
       tickGroupSize: tickSpacing,
     };
 
@@ -205,7 +246,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const defaultBaseFeeRate = 60_000 + 1;
     const initializePoolAuthority = PublicKey.default;
     const delegatedFeeAuthority = PublicKey.default;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     await assert.rejects(
       tryInitializeAdaptiveFeeTier(
@@ -215,8 +257,8 @@ describe("initialize_adaptive_fee_tier", () => {
         initializePoolAuthority,
         delegatedFeeAuthority,
         presetAdaptiveFeeConstants,
-        ),
-        /0x178c/, // FeeRateMaxExceeded
+      ),
+      /0x178c/, // FeeRateMaxExceeded
     );
   });
 
@@ -226,7 +268,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const defaultBaseFeeRate = 3000;
     const initializePoolAuthority = PublicKey.default;
     const delegatedFeeAuthority = PublicKey.default;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     await assert.rejects(
       tryInitializeAdaptiveFeeTier(
@@ -236,8 +279,8 @@ describe("initialize_adaptive_fee_tier", () => {
         initializePoolAuthority,
         delegatedFeeAuthority,
         presetAdaptiveFeeConstants,
-        ),
-        /0x17ab/, // InvalidFeeTierIndex
+      ),
+      /0x17ab/, // InvalidFeeTierIndex
     );
   });
 
@@ -250,7 +293,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const initializePoolAuthority = PublicKey.default;
     const delegatedFeeAuthority = PublicKey.default;
     // tick_group_size will be zero, but tick_spacing check is first
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     await assert.rejects(
       tryInitializeAdaptiveFeeTier(
@@ -260,8 +304,8 @@ describe("initialize_adaptive_fee_tier", () => {
         initializePoolAuthority,
         delegatedFeeAuthority,
         presetAdaptiveFeeConstants,
-        ),
-        /0x1774/, // InvalidTickSpacing
+      ),
+      /0x1774/, // InvalidTickSpacing
     );
   });
 
@@ -269,7 +313,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const tickSpacing = 64;
     const feeTierIndex = 1024 + 64;
     const defaultBaseFeeRate = 3000;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     const { configInitInfo } = generateDefaultConfigParams(ctx);
     await toTx(
@@ -277,7 +322,10 @@ describe("initialize_adaptive_fee_tier", () => {
       WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
     ).buildAndExecute();
 
-    const { configInitInfo: anotherConfigInitInfo, configKeypairs: anotherConfigKeypairs } = generateDefaultConfigParams(ctx);
+    const {
+      configInitInfo: anotherConfigInitInfo,
+      configKeypairs: anotherConfigKeypairs,
+    } = generateDefaultConfigParams(ctx);
     await toTx(
       ctx,
       WhirlpoolIx.initializeConfigIx(ctx.program, anotherConfigInitInfo),
@@ -293,7 +341,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const tx = toTx(
       ctx,
       WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, {
-        whirlpoolsConfig: anotherConfigInitInfo.whirlpoolsConfigKeypair.publicKey, // invalid
+        whirlpoolsConfig:
+          anotherConfigInitInfo.whirlpoolsConfigKeypair.publicKey, // invalid
         feeTierIndex,
         tickSpacing,
         feeTierPda,
@@ -303,8 +352,10 @@ describe("initialize_adaptive_fee_tier", () => {
         presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
         presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
         presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
-        presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
-        presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+        presetAdaptiveFeeControlFactor:
+          presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+        presetMaxVolatilityAccumulator:
+          presetAdaptiveFeeConstants.maxVolatilityAccumulator,
         presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
       }),
     ).addSigner(feeAuthorityKeypair);
@@ -320,7 +371,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const feeTierIndex = 1024 + 64;
     const invalidFeeTierIndex = feeTierIndex + 1;
     const defaultBaseFeeRate = 3000;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
     await toTx(
@@ -348,8 +400,10 @@ describe("initialize_adaptive_fee_tier", () => {
         presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
         presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
         presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
-        presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
-        presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+        presetAdaptiveFeeControlFactor:
+          presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+        presetMaxVolatilityAccumulator:
+          presetAdaptiveFeeConstants.maxVolatilityAccumulator,
         presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
       }),
     ).addSigner(feeAuthorityKeypair);
@@ -364,7 +418,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const tickSpacing = 64;
     const feeTierIndex = 1024 + 64;
     const defaultBaseFeeRate = 3000;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
     await toTx(
@@ -376,7 +431,7 @@ describe("initialize_adaptive_fee_tier", () => {
       ctx.program.programId,
       configInitInfo.whirlpoolsConfigKeypair.publicKey,
       feeTierIndex,
-    )
+    );
 
     const fakeFeeAuthorityKeypair = Keypair.generate();
     const tx = toTx(
@@ -392,8 +447,10 @@ describe("initialize_adaptive_fee_tier", () => {
         presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
         presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
         presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
-        presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
-        presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+        presetAdaptiveFeeControlFactor:
+          presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+        presetMaxVolatilityAccumulator:
+          presetAdaptiveFeeConstants.maxVolatilityAccumulator,
         presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
       }),
     ).addSigner(fakeFeeAuthorityKeypair);
@@ -408,7 +465,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const tickSpacing = 64;
     const feeTierIndex = 1024 + 64;
     const defaultBaseFeeRate = 3000;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
     await toTx(
@@ -420,7 +478,7 @@ describe("initialize_adaptive_fee_tier", () => {
       ctx.program.programId,
       configInitInfo.whirlpoolsConfigKeypair.publicKey,
       feeTierIndex,
-    )
+    );
 
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
     const ix = WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, {
@@ -434,24 +492,23 @@ describe("initialize_adaptive_fee_tier", () => {
       presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
       presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
       presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
-      presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
-      presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+      presetAdaptiveFeeControlFactor:
+        presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+      presetMaxVolatilityAccumulator:
+        presetAdaptiveFeeConstants.maxVolatilityAccumulator,
       presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
     });
 
     const ixWithoutSigner = dropIsSignerFlag(
       ix.instructions[0],
       feeAuthorityKeypair.publicKey,
-    )
-
-    const tx = toTx(
-      ctx,
-      {
-        instructions: [ixWithoutSigner],
-        cleanupInstructions: [],
-        signers: [],
-      },
     );
+
+    const tx = toTx(ctx, {
+      instructions: [ixWithoutSigner],
+      cleanupInstructions: [],
+      signers: [],
+    });
     // not adding feeAuthorityKeypair as a signer
 
     await assert.rejects(
@@ -471,7 +528,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const tickSpacing = 64;
     const feeTierIndex = 1024 + 64;
     const defaultBaseFeeRate = 3000;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
     await toTx(
@@ -483,7 +541,7 @@ describe("initialize_adaptive_fee_tier", () => {
       ctx.program.programId,
       configInitInfo.whirlpoolsConfigKeypair.publicKey,
       feeTierIndex,
-    )
+    );
 
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
     const ix = WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, {
@@ -497,24 +555,23 @@ describe("initialize_adaptive_fee_tier", () => {
       presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
       presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
       presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
-      presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
-      presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+      presetAdaptiveFeeControlFactor:
+        presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+      presetMaxVolatilityAccumulator:
+        presetAdaptiveFeeConstants.maxVolatilityAccumulator,
       presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
     });
 
     const ixWithoutSigner = dropIsSignerFlag(
       ix.instructions[0],
       funderKeypair.publicKey,
-    )
+    );
 
-    const tx = toTx(
-      ctx,
-      {
-        instructions: [ixWithoutSigner],
-        cleanupInstructions: [],
-        signers: [],
-      },
-    ).addSigner(feeAuthorityKeypair);
+    const tx = toTx(ctx, {
+      instructions: [ixWithoutSigner],
+      cleanupInstructions: [],
+      signers: [],
+    }).addSigner(feeAuthorityKeypair);
     // not adding funderKeypair as a signer
 
     await assert.rejects(
@@ -529,7 +586,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const defaultBaseFeeRate = 3000;
     const initializePoolAuthority = PublicKey.default;
     const delegatedFeeAuthority = PublicKey.default;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
     await toTx(
@@ -541,7 +599,7 @@ describe("initialize_adaptive_fee_tier", () => {
       ctx.program.programId,
       configInitInfo.whirlpoolsConfigKeypair.publicKey,
       feeTierIndex,
-    )
+    );
 
     await initFeeTier(
       ctx,
@@ -576,7 +634,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const tickSpacing = 64;
     const feeTierIndex = 1024 + 64;
     const defaultBaseFeeRate = 3000;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
     await toTx(
@@ -588,7 +647,7 @@ describe("initialize_adaptive_fee_tier", () => {
       ctx.program.programId,
       configInitInfo.whirlpoolsConfigKeypair.publicKey,
       feeTierIndex,
-    )
+    );
 
     const feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
     const ix = WhirlpoolIx.initializeAdaptiveFeeTierIx(ctx.program, {
@@ -602,8 +661,10 @@ describe("initialize_adaptive_fee_tier", () => {
       presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
       presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
       presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
-      presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
-      presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+      presetAdaptiveFeeControlFactor:
+        presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+      presetMaxVolatilityAccumulator:
+        presetAdaptiveFeeConstants.maxVolatilityAccumulator,
       presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
     });
 
@@ -611,17 +672,13 @@ describe("initialize_adaptive_fee_tier", () => {
       ix.instructions[0],
       SystemProgram.programId,
       TOKEN_PROGRAM_ID,
-    )
+    );
 
-    const tx = toTx(
-      ctx,
-      {
-        instructions: [ixWithWrongAccount],
-        cleanupInstructions: [],
-        signers: [],
-      },
-    )
-      .addSigner(feeAuthorityKeypair);
+    const tx = toTx(ctx, {
+      instructions: [ixWithWrongAccount],
+      cleanupInstructions: [],
+      signers: [],
+    }).addSigner(feeAuthorityKeypair);
 
     await assert.rejects(
       tx.buildAndExecute(),
@@ -635,7 +692,8 @@ describe("initialize_adaptive_fee_tier", () => {
     const defaultBaseFeeRate = 3000;
     const initializePoolAuthority = PublicKey.default;
     const delegatedFeeAuthority = PublicKey.default;
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     async function shouldFail(constants: AdaptiveFeeConstantsData) {
       await assert.rejects(
@@ -646,8 +704,8 @@ describe("initialize_adaptive_fee_tier", () => {
           initializePoolAuthority,
           delegatedFeeAuthority,
           constants,
-          ),
-          /0x17aa/, // InvalidAdaptiveFeeConstants
+        ),
+        /0x17aa/, // InvalidAdaptiveFeeConstants
       );
     }
 
@@ -655,65 +713,65 @@ describe("initialize_adaptive_fee_tier", () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         filterPeriod: 0,
-      })
+      });
     });
 
     it("decay_period == 0", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         decayPeriod: 0,
-      })
+      });
     });
 
     it("decay_period <= filter_period", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         decayPeriod: presetAdaptiveFeeConstants.filterPeriod,
-      })
+      });
     });
 
     it("reduction_factor >= MAX_REDUCTION_FACTOR", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         reductionFactor: 10_000,
-      })
+      });
     });
 
     it("adaptive_fee_control_factor >= ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         adaptiveFeeControlFactor: 100_000,
-      })
+      });
     });
 
     it("tick_group_size == 0", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         tickGroupSize: 0,
-      })
+      });
     });
 
     it("tick_group_size > tick_spacing", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         tickGroupSize: tickSpacing + 1,
-      })
+      });
     });
 
     it("tick_group_size is not factor of tick_spacing", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         tickGroupSize: 33,
-      })
+      });
     });
 
     it("max_volatility_accumulator * tick_group_size > u32::MAX", async () => {
       const tickGroupSize = presetAdaptiveFeeConstants.tickGroupSize;
-      const maxVolatilityAccumulator = Math.floor(2**32 / tickGroupSize);
+      const maxVolatilityAccumulator = Math.floor(2 ** 32 / tickGroupSize);
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         maxVolatilityAccumulator,
-      })
+      });
     });
   });
 });

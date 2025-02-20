@@ -32,7 +32,12 @@ export function setDelegatedFeeAuthorityIx(
   program: Program<Whirlpool>,
   params: SetDelegatedFeeAuthorityParams,
 ): Instruction {
-  const { whirlpoolsConfig, feeAuthority, adaptiveFeeTier, newDelegatedFeeAuthority } = params;
+  const {
+    whirlpoolsConfig,
+    feeAuthority,
+    adaptiveFeeTier,
+    newDelegatedFeeAuthority,
+  } = params;
 
   const ix = program.instruction.setDelegatedFeeAuthority({
     accounts: {

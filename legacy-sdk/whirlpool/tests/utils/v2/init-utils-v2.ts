@@ -32,7 +32,12 @@ import {
 import { PoolUtil } from "../../../src/utils/public/pool-utils";
 import type { TestWhirlpoolsConfigKeypairs } from "../test-builders";
 import { generateDefaultConfigParams } from "../test-builders";
-import { initFeeTier, openPosition, initTickArrayRange, initAdaptiveFeeTier } from "../init-utils";
+import {
+  initFeeTier,
+  openPosition,
+  initTickArrayRange,
+  initAdaptiveFeeTier,
+} from "../init-utils";
 import {
   calculateTransferFeeIncludedAmount,
   createAndMintToAssociatedTokenAccountV2,
@@ -419,7 +424,12 @@ export async function initTestPoolWithAdaptiveFee(
     funder?.publicKey,
   );
 
-  return initTestPoolWithAdaptiveFeeFromParams(ctx, poolParams, executeInitializePoolAuthority, funder);
+  return initTestPoolWithAdaptiveFeeFromParams(
+    ctx,
+    poolParams,
+    executeInitializePoolAuthority,
+    funder,
+  );
 }
 
 export async function buildTestPoolWithAdaptiveFeeParams(
@@ -784,7 +794,7 @@ async function generateDefaultInitPoolWithAdaptiveFeeParams(
 
   const oraclePda = PDAUtil.getOracle(
     context.program.programId,
-    whirlpoolPda.publicKey
+    whirlpoolPda.publicKey,
   );
 
   const tokenBadgeAPda = PDAUtil.getTokenBadge(
@@ -854,7 +864,6 @@ async function initTestPoolWithAdaptiveFeeFromParams(
     configExtension,
   };
 }
-
 
 ////////////////////////////////////////////////////////////////////////////////
 // position related

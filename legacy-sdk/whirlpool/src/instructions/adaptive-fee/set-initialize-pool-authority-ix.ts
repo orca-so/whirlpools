@@ -32,7 +32,12 @@ export function setInitializePoolAuthorityIx(
   program: Program<Whirlpool>,
   params: SetInitializePoolAuthorityParams,
 ): Instruction {
-  const { whirlpoolsConfig, feeAuthority, adaptiveFeeTier, newInitializePoolAuthority } = params;
+  const {
+    whirlpoolsConfig,
+    feeAuthority,
+    adaptiveFeeTier,
+    newInitializePoolAuthority,
+  } = params;
 
   const ix = program.instruction.setInitializePoolAuthority({
     accounts: {

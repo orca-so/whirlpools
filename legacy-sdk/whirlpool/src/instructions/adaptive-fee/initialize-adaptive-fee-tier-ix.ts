@@ -71,14 +71,15 @@ export function initializeAdaptiveFeeTierIx(
     params.presetMaxVolatilityAccumulator,
     params.presetTickGroupSize,
     {
-    accounts: {
-      whirlpoolsConfig: params.whirlpoolsConfig,
-      adaptiveFeeTier: params.feeTierPda.publicKey,
-      funder: params.funder,
-      feeAuthority: params.feeAuthority,
-      systemProgram: anchor.web3.SystemProgram.programId,
+      accounts: {
+        whirlpoolsConfig: params.whirlpoolsConfig,
+        adaptiveFeeTier: params.feeTierPda.publicKey,
+        funder: params.funder,
+        feeAuthority: params.feeAuthority,
+        systemProgram: anchor.web3.SystemProgram.programId,
+      },
     },
-  });
+  );
 
   return {
     instructions: [ix],

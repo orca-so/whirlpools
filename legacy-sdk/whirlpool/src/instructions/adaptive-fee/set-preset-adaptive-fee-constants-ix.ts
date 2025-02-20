@@ -53,12 +53,13 @@ export function setPresetAdaptiveFeeConstantsIx(
     params.presetMaxVolatilityAccumulator,
     params.presetTickGroupSize,
     {
-    accounts: {
-      whirlpoolsConfig: params.whirlpoolsConfig,
-      feeAuthority: params.feeAuthority,
-      adaptiveFeeTier: params.adaptiveFeeTier,
+      accounts: {
+        whirlpoolsConfig: params.whirlpoolsConfig,
+        feeAuthority: params.feeAuthority,
+        adaptiveFeeTier: params.adaptiveFeeTier,
+      },
     },
-  });
+  );
 
   return {
     instructions: [ix],

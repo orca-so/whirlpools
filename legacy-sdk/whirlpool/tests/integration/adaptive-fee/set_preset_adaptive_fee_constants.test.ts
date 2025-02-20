@@ -1,7 +1,17 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { AdaptiveFeeConstantsData, InitPoolWithAdaptiveFeeParams } from "../../../src";
-import { IGNORE_CACHE, PDAUtil, PriceMath, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import type {
+  AdaptiveFeeConstantsData,
+  InitPoolWithAdaptiveFeeParams,
+} from "../../../src";
+import {
+  IGNORE_CACHE,
+  PDAUtil,
+  PriceMath,
+  toTx,
+  WhirlpoolContext,
+  WhirlpoolIx,
+} from "../../../src";
 import { dropIsSignerFlag } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initAdaptiveFeeTier } from "../../utils/init-utils";
@@ -36,11 +46,11 @@ describe("set_preset_adaptive_fee_constants", () => {
       tickGroupSize: 64,
     };
     const newPresetAdaptiveFeeConstants: AdaptiveFeeConstantsData = {
-      filterPeriod: 2**16 - 2, // must be < decayPeriod
-      decayPeriod: 2**16 - 1, // u16::MAX
+      filterPeriod: 2 ** 16 - 2, // must be < decayPeriod
+      decayPeriod: 2 ** 16 - 1, // u16::MAX
       reductionFactor: 9999,
       adaptiveFeeControlFactor: 99999,
-      maxVolatilityAccumulator: Math.floor(2**32 / tickSpacing) - 1,
+      maxVolatilityAccumulator: Math.floor(2 ** 32 / tickSpacing) - 1,
       tickGroupSize: 32,
     };
 
@@ -66,12 +76,30 @@ describe("set_preset_adaptive_fee_constants", () => {
       IGNORE_CACHE,
     );
     assert.ok(preAdaptiveFeeTierAccount);
-    assert.ok(preAdaptiveFeeTierAccount.filterPeriod === initialPresetAdaptiveFeeConstants.filterPeriod);
-    assert.ok(preAdaptiveFeeTierAccount.decayPeriod === initialPresetAdaptiveFeeConstants.decayPeriod);
-    assert.ok(preAdaptiveFeeTierAccount.reductionFactor === initialPresetAdaptiveFeeConstants.reductionFactor);
-    assert.ok(preAdaptiveFeeTierAccount.adaptiveFeeControlFactor === initialPresetAdaptiveFeeConstants.adaptiveFeeControlFactor);
-    assert.ok(preAdaptiveFeeTierAccount.maxVolatilityAccumulator === initialPresetAdaptiveFeeConstants.maxVolatilityAccumulator);
-    assert.ok(preAdaptiveFeeTierAccount.tickGroupSize === initialPresetAdaptiveFeeConstants.tickGroupSize);
+    assert.ok(
+      preAdaptiveFeeTierAccount.filterPeriod ===
+        initialPresetAdaptiveFeeConstants.filterPeriod,
+    );
+    assert.ok(
+      preAdaptiveFeeTierAccount.decayPeriod ===
+        initialPresetAdaptiveFeeConstants.decayPeriod,
+    );
+    assert.ok(
+      preAdaptiveFeeTierAccount.reductionFactor ===
+        initialPresetAdaptiveFeeConstants.reductionFactor,
+    );
+    assert.ok(
+      preAdaptiveFeeTierAccount.adaptiveFeeControlFactor ===
+        initialPresetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+    );
+    assert.ok(
+      preAdaptiveFeeTierAccount.maxVolatilityAccumulator ===
+        initialPresetAdaptiveFeeConstants.maxVolatilityAccumulator,
+    );
+    assert.ok(
+      preAdaptiveFeeTierAccount.tickGroupSize ===
+        initialPresetAdaptiveFeeConstants.tickGroupSize,
+    );
 
     await toTx(
       ctx,
@@ -82,25 +110,45 @@ describe("set_preset_adaptive_fee_constants", () => {
         presetFilterPeriod: newPresetAdaptiveFeeConstants.filterPeriod,
         presetDecayPeriod: newPresetAdaptiveFeeConstants.decayPeriod,
         presetReductionFactor: newPresetAdaptiveFeeConstants.reductionFactor,
-        presetAdaptiveFeeControlFactor: newPresetAdaptiveFeeConstants.adaptiveFeeControlFactor,
-        presetMaxVolatilityAccumulator: newPresetAdaptiveFeeConstants.maxVolatilityAccumulator,
+        presetAdaptiveFeeControlFactor:
+          newPresetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+        presetMaxVolatilityAccumulator:
+          newPresetAdaptiveFeeConstants.maxVolatilityAccumulator,
         presetTickGroupSize: newPresetAdaptiveFeeConstants.tickGroupSize,
       }),
     )
-    .addSigner(configKeypairs.feeAuthorityKeypair)
-    .buildAndExecute();
+      .addSigner(configKeypairs.feeAuthorityKeypair)
+      .buildAndExecute();
 
     const postAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
       adaptiveFeeTierPda.publicKey,
       IGNORE_CACHE,
     );
     assert.ok(postAdaptiveFeeTierAccount);
-    assert.ok(postAdaptiveFeeTierAccount.filterPeriod === newPresetAdaptiveFeeConstants.filterPeriod);
-    assert.ok(postAdaptiveFeeTierAccount.decayPeriod === newPresetAdaptiveFeeConstants.decayPeriod);
-    assert.ok(postAdaptiveFeeTierAccount.reductionFactor === newPresetAdaptiveFeeConstants.reductionFactor);
-    assert.ok(postAdaptiveFeeTierAccount.adaptiveFeeControlFactor === newPresetAdaptiveFeeConstants.adaptiveFeeControlFactor);
-    assert.ok(postAdaptiveFeeTierAccount.maxVolatilityAccumulator === newPresetAdaptiveFeeConstants.maxVolatilityAccumulator);
-    assert.ok(postAdaptiveFeeTierAccount.tickGroupSize === newPresetAdaptiveFeeConstants.tickGroupSize);
+    assert.ok(
+      postAdaptiveFeeTierAccount.filterPeriod ===
+        newPresetAdaptiveFeeConstants.filterPeriod,
+    );
+    assert.ok(
+      postAdaptiveFeeTierAccount.decayPeriod ===
+        newPresetAdaptiveFeeConstants.decayPeriod,
+    );
+    assert.ok(
+      postAdaptiveFeeTierAccount.reductionFactor ===
+        newPresetAdaptiveFeeConstants.reductionFactor,
+    );
+    assert.ok(
+      postAdaptiveFeeTierAccount.adaptiveFeeControlFactor ===
+        newPresetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+    );
+    assert.ok(
+      postAdaptiveFeeTierAccount.maxVolatilityAccumulator ===
+        newPresetAdaptiveFeeConstants.maxVolatilityAccumulator,
+    );
+    assert.ok(
+      postAdaptiveFeeTierAccount.tickGroupSize ===
+        newPresetAdaptiveFeeConstants.tickGroupSize,
+    );
 
     // Newly initialized whirlpools have new adaptive fee constants in its Oracle account
     const [tokenMintA, tokenMintB] = await createInOrderMints(ctx);
@@ -114,7 +162,10 @@ describe("set_preset_adaptive_fee_constants", () => {
     const tokenVaultAKeypair = anchor.web3.Keypair.generate();
     const tokenVaultBKeypair = anchor.web3.Keypair.generate();
 
-    const oraclePda = PDAUtil.getOracle(ctx.program.programId, whirlpoolPda.publicKey);
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
 
     const newPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
       whirlpoolsConfig: configInitInfo.whirlpoolsConfigKeypair.publicKey,
@@ -123,8 +174,16 @@ describe("set_preset_adaptive_fee_constants", () => {
       tokenMintB,
       tokenProgramA: TOKEN_PROGRAM_ID,
       tokenProgramB: TOKEN_PROGRAM_ID,
-      tokenBadgeA: PDAUtil.getTokenBadge(ctx.program.programId, configInitInfo.whirlpoolsConfigKeypair.publicKey, tokenMintA).publicKey,
-      tokenBadgeB: PDAUtil.getTokenBadge(ctx.program.programId, configInitInfo.whirlpoolsConfigKeypair.publicKey, tokenMintB).publicKey,
+      tokenBadgeA: PDAUtil.getTokenBadge(
+        ctx.program.programId,
+        configInitInfo.whirlpoolsConfigKeypair.publicKey,
+        tokenMintA,
+      ).publicKey,
+      tokenBadgeB: PDAUtil.getTokenBadge(
+        ctx.program.programId,
+        configInitInfo.whirlpoolsConfigKeypair.publicKey,
+        tokenMintB,
+      ).publicKey,
       whirlpoolPda,
       oraclePda,
       tokenVaultAKeypair,
@@ -138,16 +197,37 @@ describe("set_preset_adaptive_fee_constants", () => {
       WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, newPoolInitInfo),
     ).buildAndExecute();
 
-    const whirlpool = await fetcher.getPool(whirlpoolPda.publicKey, IGNORE_CACHE);
+    const whirlpool = await fetcher.getPool(
+      whirlpoolPda.publicKey,
+      IGNORE_CACHE,
+    );
     assert.ok(whirlpool);
     const oracle = await fetcher.getOracle(oraclePda.publicKey, IGNORE_CACHE);
     assert.ok(oracle);
-    assert.ok(oracle.adaptiveFeeConstants.filterPeriod === newPresetAdaptiveFeeConstants.filterPeriod);
-    assert.ok(oracle.adaptiveFeeConstants.decayPeriod === newPresetAdaptiveFeeConstants.decayPeriod);
-    assert.ok(oracle.adaptiveFeeConstants.reductionFactor === newPresetAdaptiveFeeConstants.reductionFactor);
-    assert.ok(oracle.adaptiveFeeConstants.adaptiveFeeControlFactor === newPresetAdaptiveFeeConstants.adaptiveFeeControlFactor);
-    assert.ok(oracle.adaptiveFeeConstants.maxVolatilityAccumulator === newPresetAdaptiveFeeConstants.maxVolatilityAccumulator);
-    assert.ok(oracle.adaptiveFeeConstants.tickGroupSize === newPresetAdaptiveFeeConstants.tickGroupSize);
+    assert.ok(
+      oracle.adaptiveFeeConstants.filterPeriod ===
+        newPresetAdaptiveFeeConstants.filterPeriod,
+    );
+    assert.ok(
+      oracle.adaptiveFeeConstants.decayPeriod ===
+        newPresetAdaptiveFeeConstants.decayPeriod,
+    );
+    assert.ok(
+      oracle.adaptiveFeeConstants.reductionFactor ===
+        newPresetAdaptiveFeeConstants.reductionFactor,
+    );
+    assert.ok(
+      oracle.adaptiveFeeConstants.adaptiveFeeControlFactor ===
+        newPresetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+    );
+    assert.ok(
+      oracle.adaptiveFeeConstants.maxVolatilityAccumulator ===
+        newPresetAdaptiveFeeConstants.maxVolatilityAccumulator,
+    );
+    assert.ok(
+      oracle.adaptiveFeeConstants.tickGroupSize ===
+        newPresetAdaptiveFeeConstants.tickGroupSize,
+    );
   });
 
   it("fails when adaptive fee tier account has not been initialized", async () => {
@@ -213,15 +293,19 @@ describe("set_preset_adaptive_fee_constants", () => {
       presetMaxVolatilityAccumulator: 50_000,
       presetTickGroupSize: 16,
     });
-    const ixWithoutSigner = dropIsSignerFlag(ix.instructions[0], configKeypairs.feeAuthorityKeypair.publicKey);
-    
+    const ixWithoutSigner = dropIsSignerFlag(
+      ix.instructions[0],
+      configKeypairs.feeAuthorityKeypair.publicKey,
+    );
+
     await assert.rejects(
-      toTx(
-        ctx,
-        { instructions: [ixWithoutSigner], cleanupInstructions: [], signers: [] },
-      )
-      // no fee authority sign
-      .buildAndExecute(),
+      toTx(ctx, {
+        instructions: [ixWithoutSigner],
+        cleanupInstructions: [],
+        signers: [],
+      })
+        // no fee authority sign
+        .buildAndExecute(),
       /0xbc2/, // AccountNotSigner
     );
   });
@@ -243,7 +327,7 @@ describe("set_preset_adaptive_fee_constants", () => {
       getDefaultPresetAdaptiveFeeConstants(tickSpacing),
     );
     const adaptiveFeeTierPda = params.feeTierPda;
-    
+
     const fakeFeeAuthorityKeypair = Keypair.generate();
     await assert.rejects(
       toTx(
@@ -258,10 +342,10 @@ describe("set_preset_adaptive_fee_constants", () => {
           presetAdaptiveFeeControlFactor: 100,
           presetMaxVolatilityAccumulator: 50_000,
           presetTickGroupSize: 16,
-        })
-            )
-      .addSigner(fakeFeeAuthorityKeypair)
-      .buildAndExecute(),
+        }),
+      )
+        .addSigner(fakeFeeAuthorityKeypair)
+        .buildAndExecute(),
       /0x7dc/, // ConstraintAddress
     );
   });
@@ -274,15 +358,17 @@ describe("set_preset_adaptive_fee_constants", () => {
     let adaptiveFeeTierKey: PublicKey;
     let feeAuthorityKeypair: Keypair;
 
-    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+    const presetAdaptiveFeeConstants =
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
     beforeAll(async () => {
-      const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+      const { configInitInfo, configKeypairs } =
+        generateDefaultConfigParams(ctx);
       await toTx(
         ctx,
         WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),
       ).buildAndExecute();
-  
+
       const { params } = await initAdaptiveFeeTier(
         ctx,
         configInitInfo,
@@ -292,7 +378,7 @@ describe("set_preset_adaptive_fee_constants", () => {
         5_000,
         presetAdaptiveFeeConstants,
       );
-      
+
       whirlpoolsConfigKey = configInitInfo.whirlpoolsConfigKeypair.publicKey;
       adaptiveFeeTierKey = params.feeTierPda.publicKey;
       feeAuthorityKeypair = configKeypairs.feeAuthorityKeypair;
@@ -311,11 +397,11 @@ describe("set_preset_adaptive_fee_constants", () => {
           presetAdaptiveFeeControlFactor: constants.adaptiveFeeControlFactor,
           presetMaxVolatilityAccumulator: constants.maxVolatilityAccumulator,
           presetTickGroupSize: constants.tickGroupSize,
-        })
-            )
-      .addSigner(feeAuthorityKeypair)
-      .buildAndExecute();
-  });
+        }),
+      )
+        .addSigner(feeAuthorityKeypair)
+        .buildAndExecute();
+    });
 
     async function shouldFail(constants: AdaptiveFeeConstantsData) {
       await assert.rejects(
@@ -331,11 +417,11 @@ describe("set_preset_adaptive_fee_constants", () => {
             presetAdaptiveFeeControlFactor: constants.adaptiveFeeControlFactor,
             presetMaxVolatilityAccumulator: constants.maxVolatilityAccumulator,
             presetTickGroupSize: constants.tickGroupSize,
-          })
-              )
-        .addSigner(feeAuthorityKeypair)
-        .buildAndExecute(),
-            /0x17aa/, // InvalidAdaptiveFeeConstants
+          }),
+        )
+          .addSigner(feeAuthorityKeypair)
+          .buildAndExecute(),
+        /0x17aa/, // InvalidAdaptiveFeeConstants
       );
     }
 
@@ -343,65 +429,65 @@ describe("set_preset_adaptive_fee_constants", () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         filterPeriod: 0,
-      })
+      });
     });
 
     it("decay_period == 0", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         decayPeriod: 0,
-      })
+      });
     });
 
     it("decay_period <= filter_period", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         decayPeriod: presetAdaptiveFeeConstants.filterPeriod,
-      })
+      });
     });
 
     it("reduction_factor >= MAX_REDUCTION_FACTOR", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         reductionFactor: 10_000,
-      })
+      });
     });
 
     it("adaptive_fee_control_factor >= ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         adaptiveFeeControlFactor: 100_000,
-      })
+      });
     });
 
     it("tick_group_size == 0", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         tickGroupSize: 0,
-      })
+      });
     });
 
     it("tick_group_size > tick_spacing", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         tickGroupSize: tickSpacing + 1,
-      })
+      });
     });
 
     it("tick_group_size is not factor of tick_spacing", async () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         tickGroupSize: 33,
-      })
+      });
     });
 
     it("max_volatility_accumulator * tick_group_size > u32::MAX", async () => {
       const tickGroupSize = presetAdaptiveFeeConstants.tickGroupSize;
-      const maxVolatilityAccumulator = Math.floor(2**32 / tickGroupSize);
+      const maxVolatilityAccumulator = Math.floor(2 ** 32 / tickGroupSize);
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         maxVolatilityAccumulator,
-      })
+      });
     });
   });
 });

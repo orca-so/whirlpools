@@ -171,8 +171,10 @@ export const generateDefaultInitAdaptiveFeeTierParams = (
     presetFilterPeriod: presetAdaptiveFeeConstants.filterPeriod,
     presetDecayPeriod: presetAdaptiveFeeConstants.decayPeriod,
     presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
-    presetAdaptiveFeeControlFactor: presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
-    presetMaxVolatilityAccumulator: presetAdaptiveFeeConstants.maxVolatilityAccumulator,
+    presetAdaptiveFeeControlFactor:
+      presetAdaptiveFeeConstants.adaptiveFeeControlFactor,
+    presetMaxVolatilityAccumulator:
+      presetAdaptiveFeeConstants.maxVolatilityAccumulator,
     presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
     funder: funder || context.wallet.publicKey,
   };
@@ -190,7 +192,7 @@ export const getDefaultPresetAdaptiveFeeConstants = (
     maxVolatilityAccumulator: 350_000,
     tickGroupSize,
   };
-}
+};
 
 export const generateDefaultInitTickArrayParams = (
   context: WhirlpoolContext,

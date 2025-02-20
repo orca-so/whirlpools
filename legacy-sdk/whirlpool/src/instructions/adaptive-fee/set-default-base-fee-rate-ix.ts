@@ -35,8 +35,12 @@ export function setDefaultBaseFeeRateIx(
   program: Program<Whirlpool>,
   params: SetDefaultBaseFeeRateParams,
 ): Instruction {
-  const { whirlpoolsConfig, feeAuthority, adaptiveFeeTier, defaultBaseFeeRate } =
-    params;
+  const {
+    whirlpoolsConfig,
+    feeAuthority,
+    adaptiveFeeTier,
+    defaultBaseFeeRate,
+  } = params;
 
   const ix = program.instruction.setDefaultBaseFeeRate(defaultBaseFeeRate, {
     accounts: {

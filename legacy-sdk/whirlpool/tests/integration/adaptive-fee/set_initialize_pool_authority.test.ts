@@ -1,6 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import { IGNORE_CACHE, PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import {
+  IGNORE_CACHE,
+  PDAUtil,
+  toTx,
+  WhirlpoolContext,
+  WhirlpoolIx,
+} from "../../../src";
 import { dropIsSignerFlag } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initAdaptiveFeeTier } from "../../utils/init-utils";
@@ -50,7 +56,11 @@ describe("set_initialize_pool_authority", () => {
       IGNORE_CACHE,
     );
     assert.ok(preAdaptiveFeeTierAccount);
-    assert.ok(preAdaptiveFeeTierAccount.initializePoolAuthority.equals(initialInitializePoolAuthority));
+    assert.ok(
+      preAdaptiveFeeTierAccount.initializePoolAuthority.equals(
+        initialInitializePoolAuthority,
+      ),
+    );
 
     await toTx(
       ctx,
@@ -61,15 +71,19 @@ describe("set_initialize_pool_authority", () => {
         newInitializePoolAuthority,
       }),
     )
-    .addSigner(configKeypairs.feeAuthorityKeypair)
-    .buildAndExecute();
+      .addSigner(configKeypairs.feeAuthorityKeypair)
+      .buildAndExecute();
 
     const postAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
       adaptiveFeeTierPda.publicKey,
       IGNORE_CACHE,
     );
     assert.ok(postAdaptiveFeeTierAccount);
-    assert.ok(postAdaptiveFeeTierAccount.initializePoolAuthority.equals(newInitializePoolAuthority));
+    assert.ok(
+      postAdaptiveFeeTierAccount.initializePoolAuthority.equals(
+        newInitializePoolAuthority,
+      ),
+    );
   });
 
   it("successfully set_initialize_pool_authority (permissioned to permission-less)", async () => {
@@ -99,7 +113,11 @@ describe("set_initialize_pool_authority", () => {
       IGNORE_CACHE,
     );
     assert.ok(preAdaptiveFeeTierAccount);
-    assert.ok(preAdaptiveFeeTierAccount.initializePoolAuthority.equals(initialInitializePoolAuthority));
+    assert.ok(
+      preAdaptiveFeeTierAccount.initializePoolAuthority.equals(
+        initialInitializePoolAuthority,
+      ),
+    );
 
     await toTx(
       ctx,
@@ -110,15 +128,19 @@ describe("set_initialize_pool_authority", () => {
         newInitializePoolAuthority,
       }),
     )
-    .addSigner(configKeypairs.feeAuthorityKeypair)
-    .buildAndExecute();
+      .addSigner(configKeypairs.feeAuthorityKeypair)
+      .buildAndExecute();
 
     const postAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
       adaptiveFeeTierPda.publicKey,
       IGNORE_CACHE,
     );
     assert.ok(postAdaptiveFeeTierAccount);
-    assert.ok(postAdaptiveFeeTierAccount.initializePoolAuthority.equals(newInitializePoolAuthority));
+    assert.ok(
+      postAdaptiveFeeTierAccount.initializePoolAuthority.equals(
+        newInitializePoolAuthority,
+      ),
+    );
   });
 
   it("fails when adaptive fee tier account has not been initialized", async () => {
@@ -174,15 +196,19 @@ describe("set_initialize_pool_authority", () => {
       feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
       newInitializePoolAuthority: Keypair.generate().publicKey,
     });
-    const ixWithoutSigner = dropIsSignerFlag(ix.instructions[0], configKeypairs.feeAuthorityKeypair.publicKey);
-    
+    const ixWithoutSigner = dropIsSignerFlag(
+      ix.instructions[0],
+      configKeypairs.feeAuthorityKeypair.publicKey,
+    );
+
     await assert.rejects(
-      toTx(
-        ctx,
-        { instructions: [ixWithoutSigner], cleanupInstructions: [], signers: [] },
-      )
-      // no fee authority sign
-      .buildAndExecute(),
+      toTx(ctx, {
+        instructions: [ixWithoutSigner],
+        cleanupInstructions: [],
+        signers: [],
+      })
+        // no fee authority sign
+        .buildAndExecute(),
       /0xbc2/, // AccountNotSigner
     );
   });
@@ -204,7 +230,7 @@ describe("set_initialize_pool_authority", () => {
       getDefaultPresetAdaptiveFeeConstants(tickSpacing),
     );
     const adaptiveFeeTierPda = params.feeTierPda;
-    
+
     const fakeFeeAuthorityKeypair = Keypair.generate();
     await assert.rejects(
       toTx(
@@ -214,10 +240,10 @@ describe("set_initialize_pool_authority", () => {
           adaptiveFeeTier: adaptiveFeeTierPda.publicKey,
           feeAuthority: fakeFeeAuthorityKeypair.publicKey,
           newInitializePoolAuthority: Keypair.generate().publicKey,
-            })
-            )
-      .addSigner(fakeFeeAuthorityKeypair)
-      .buildAndExecute(),
+        }),
+      )
+        .addSigner(fakeFeeAuthorityKeypair)
+        .buildAndExecute(),
       /0x7dc/, // ConstraintAddress
     );
   });

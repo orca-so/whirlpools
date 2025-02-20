@@ -1,5 +1,11 @@
 import * as anchor from "@coral-xyz/anchor";
-import { AddressUtil, DecimalUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
+import {
+  AddressUtil,
+  DecimalUtil,
+  Percentage,
+  U64_MAX,
+  ZERO,
+} from "@orca-so/common-sdk";
 import { Keypair, type PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import BN from "bn.js";
@@ -26,7 +32,13 @@ import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initTestPoolWithTokens } from "../../utils/init-utils";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
-import { MAX_U64, createAndMintToAssociatedTokenAccount, createAndMintToTokenAccount, createMint, getTokenBalance } from "../../utils";
+import {
+  MAX_U64,
+  createAndMintToAssociatedTokenAccount,
+  createAndMintToTokenAccount,
+  createMint,
+  getTokenBalance,
+} from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
@@ -72,48 +84,67 @@ describe("volatility adjusted fee tests", () => {
     await toTx(
       testCtx.whirlpoolCtx,
       WhirlpoolIx.initializeConfigIx(testCtx.whirlpoolCtx.program, {
-        collectProtocolFeesAuthority: authorityWhirlpoolsConfigKeypair.publicKey,
+        collectProtocolFeesAuthority:
+          authorityWhirlpoolsConfigKeypair.publicKey,
         feeAuthority: authorityWhirlpoolsConfigKeypair.publicKey,
-        rewardEmissionsSuperAuthority: authorityWhirlpoolsConfigKeypair.publicKey,
+        rewardEmissionsSuperAuthority:
+          authorityWhirlpoolsConfigKeypair.publicKey,
         defaultProtocolFeeRate: 300,
         funder: provider.wallet.publicKey,
         whirlpoolsConfigKeypair: configKeypair,
       }),
     )
-    .addSigner(configKeypair)
-    .buildAndExecute();
+      .addSigner(configKeypair)
+      .buildAndExecute();
 
     // init mints
     const mintX = await createMint(testCtx.provider);
     const mintY = await createMint(testCtx.provider);
-    const [mintA, mintB] = AddressUtil.toPubKeys(PoolUtil.orderMints(mintX, mintY));
-    const tokenAccountA = await createAndMintToAssociatedTokenAccount(testCtx.provider, mintA, U64_MAX);
-    const tokenAccountB = await createAndMintToAssociatedTokenAccount(testCtx.provider, mintB, U64_MAX);
+    const [mintA, mintB] = AddressUtil.toPubKeys(
+      PoolUtil.orderMints(mintX, mintY),
+    );
+    const tokenAccountA = await createAndMintToAssociatedTokenAccount(
+      testCtx.provider,
+      mintA,
+      U64_MAX,
+    );
+    const tokenAccountB = await createAndMintToAssociatedTokenAccount(
+      testCtx.provider,
+      mintB,
+      U64_MAX,
+    );
 
     // init AdaptiveFeeTier
     const feeTierIndex = 1024 + 64;
     const tickSpacing = 64;
-    const feeTierPda = PDAUtil.getFeeTier(testCtx.whirlpoolCtx.program.programId, configKeypair.publicKey, feeTierIndex);
-    await toTx(testCtx.whirlpoolCtx, WhirlpoolIx.initializeAdaptiveFeeTierIx(testCtx.whirlpoolCtx.program, {
-      whirlpoolsConfig: configKeypair.publicKey,
-      defaultBaseFeeRate: 3000,
+    const feeTierPda = PDAUtil.getFeeTier(
+      testCtx.whirlpoolCtx.program.programId,
+      configKeypair.publicKey,
       feeTierIndex,
-      tickSpacing,
-      feeTierPda,
-      funder: provider.wallet.publicKey,
-      feeAuthority: authorityWhirlpoolsConfigKeypair.publicKey,
-      initializePoolAuthority: undefined,
-      delegatedFeeAuthority: undefined,
-      // AdaptiveFeeConstants
-      presetFilterPeriod: 30,
-      presetDecayPeriod: 600,
-      presetReductionFactor: 500,
-      presetAdaptiveFeeControlFactor: 4_000,
-      presetMaxVolatilityAccumulator: 350_000,
-      presetTickGroupSize: tickSpacing,
-    }))
-    .addSigner(authorityWhirlpoolsConfigKeypair)
-    .buildAndExecute();
+    );
+    await toTx(
+      testCtx.whirlpoolCtx,
+      WhirlpoolIx.initializeAdaptiveFeeTierIx(testCtx.whirlpoolCtx.program, {
+        whirlpoolsConfig: configKeypair.publicKey,
+        defaultBaseFeeRate: 3000,
+        feeTierIndex,
+        tickSpacing,
+        feeTierPda,
+        funder: provider.wallet.publicKey,
+        feeAuthority: authorityWhirlpoolsConfigKeypair.publicKey,
+        initializePoolAuthority: undefined,
+        delegatedFeeAuthority: undefined,
+        // AdaptiveFeeConstants
+        presetFilterPeriod: 30,
+        presetDecayPeriod: 600,
+        presetReductionFactor: 500,
+        presetAdaptiveFeeControlFactor: 4_000,
+        presetMaxVolatilityAccumulator: 350_000,
+        presetTickGroupSize: tickSpacing,
+      }),
+    )
+      .addSigner(authorityWhirlpoolsConfigKeypair)
+      .buildAndExecute();
 
     // init whirlpool with AdaptiveFeeTier
     const whirlpoolPda = PDAUtil.getWhirlpool(
@@ -129,31 +160,46 @@ describe("volatility adjusted fee tests", () => {
       whirlpoolPda.publicKey,
     );
 
-    const tokenBadgeAPda = PDAUtil.getTokenBadge(testCtx.whirlpoolCtx.program.programId, configKeypair.publicKey, mintA);
-    const tokenBadgeBPda = PDAUtil.getTokenBadge(testCtx.whirlpoolCtx.program.programId, configKeypair.publicKey, mintB);
-    await toTx(testCtx.whirlpoolCtx, WhirlpoolIx.initializePoolWithAdaptiveFeeIx(testCtx.whirlpoolCtx.program, {
-      whirlpoolsConfig: configKeypair.publicKey,
-      adaptiveFeeTierKey: feeTierPda.publicKey,
-      whirlpoolPda,
-      oraclePda,
-      funder: provider.wallet.publicKey,
-      initializePoolAuthority: provider.wallet.publicKey,
-      initSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex),
-      tokenMintA: mintA,
-      tokenMintB: mintB,
-      tokenBadgeA: tokenBadgeAPda.publicKey,
-      tokenBadgeB: tokenBadgeBPda.publicKey,
-      tokenProgramA: TOKEN_PROGRAM_ID,
-      tokenProgramB: TOKEN_PROGRAM_ID,
-      tokenVaultAKeypair: Keypair.generate(),
-      tokenVaultBKeypair: Keypair.generate(),
-    })).buildAndExecute();
+    const tokenBadgeAPda = PDAUtil.getTokenBadge(
+      testCtx.whirlpoolCtx.program.programId,
+      configKeypair.publicKey,
+      mintA,
+    );
+    const tokenBadgeBPda = PDAUtil.getTokenBadge(
+      testCtx.whirlpoolCtx.program.programId,
+      configKeypair.publicKey,
+      mintB,
+    );
+    await toTx(
+      testCtx.whirlpoolCtx,
+      WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
+        testCtx.whirlpoolCtx.program,
+        {
+          whirlpoolsConfig: configKeypair.publicKey,
+          adaptiveFeeTierKey: feeTierPda.publicKey,
+          whirlpoolPda,
+          oraclePda,
+          funder: provider.wallet.publicKey,
+          initializePoolAuthority: provider.wallet.publicKey,
+          initSqrtPrice:
+            PriceMath.tickIndexToSqrtPriceX64(poolInitialTickIndex),
+          tokenMintA: mintA,
+          tokenMintB: mintB,
+          tokenBadgeA: tokenBadgeAPda.publicKey,
+          tokenBadgeB: tokenBadgeBPda.publicKey,
+          tokenProgramA: TOKEN_PROGRAM_ID,
+          tokenProgramB: TOKEN_PROGRAM_ID,
+          tokenVaultAKeypair: Keypair.generate(),
+          tokenVaultBKeypair: Keypair.generate(),
+        },
+      ),
+    ).buildAndExecute();
 
     // init TickArrays
-    const pool = await testCtx.whirlpoolClient.getPool(
-      whirlpoolPda.publicKey,
-    );
-    await (await pool.initTickArrayForTicks(TickUtil.getFullRangeTickIndex(tickSpacing)))!.buildAndExecute();
+    const pool = await testCtx.whirlpoolClient.getPool(whirlpoolPda.publicKey);
+    await (await pool.initTickArrayForTicks(
+      TickUtil.getFullRangeTickIndex(tickSpacing),
+    ))!.buildAndExecute();
     const fullRange = TickUtil.getFullRangeTickIndex(
       pool.getData().tickSpacing,
     );
@@ -222,7 +268,7 @@ describe("volatility adjusted fee tests", () => {
       ),
     ).buildAndExecute();
 
-    const tx = await testCtx.provider.connection.getTransaction(signature, { 
+    const tx = await testCtx.provider.connection.getTransaction(signature, {
       maxSupportedTransactionVersion: 0,
     });
 
@@ -275,13 +321,15 @@ describe("volatility adjusted fee tests", () => {
       ),
     ).buildAndExecute();
 
-    const oppositeTx = await testCtx.provider.connection.getTransaction(oppositeSignature, { 
-      maxSupportedTransactionVersion: 0,
-    });
+    const oppositeTx = await testCtx.provider.connection.getTransaction(
+      oppositeSignature,
+      {
+        maxSupportedTransactionVersion: 0,
+      },
+    );
 
     console.log(oppositeTx?.meta?.logMessages);
   });
-
 });
 
 function powBN(base: number, exp: number): BN {

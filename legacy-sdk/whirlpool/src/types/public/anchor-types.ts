@@ -270,4 +270,4 @@ export type AdaptiveFeeVariablesData = {
   volatilityReference: number;
   tickGroupIndexReference: number;
   volatilityAccumulator: number;
-}
+};

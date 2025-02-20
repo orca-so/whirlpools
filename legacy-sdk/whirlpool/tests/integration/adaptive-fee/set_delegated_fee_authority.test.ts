@@ -1,6 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import { IGNORE_CACHE, PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
+import {
+  IGNORE_CACHE,
+  PDAUtil,
+  toTx,
+  WhirlpoolContext,
+  WhirlpoolIx,
+} from "../../../src";
 import { dropIsSignerFlag } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
 import { initAdaptiveFeeTier } from "../../utils/init-utils";
@@ -51,7 +57,11 @@ describe("set_delegated_fee_authority", () => {
       IGNORE_CACHE,
     );
     assert.ok(preAdaptiveFeeTierAccount);
-    assert.ok(preAdaptiveFeeTierAccount.delegatedFeeAuthority.equals(initialDelegatedFeeAuthority));
+    assert.ok(
+      preAdaptiveFeeTierAccount.delegatedFeeAuthority.equals(
+        initialDelegatedFeeAuthority,
+      ),
+    );
 
     await toTx(
       ctx,
@@ -62,15 +72,19 @@ describe("set_delegated_fee_authority", () => {
         newDelegatedFeeAuthority: newDelegatedFeeAuthority,
       }),
     )
-    .addSigner(configKeypairs.feeAuthorityKeypair)
-    .buildAndExecute();
+      .addSigner(configKeypairs.feeAuthorityKeypair)
+      .buildAndExecute();
 
     const postAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
       adaptiveFeeTierPda.publicKey,
       IGNORE_CACHE,
     );
     assert.ok(postAdaptiveFeeTierAccount);
-    assert.ok(postAdaptiveFeeTierAccount.delegatedFeeAuthority.equals(newDelegatedFeeAuthority));
+    assert.ok(
+      postAdaptiveFeeTierAccount.delegatedFeeAuthority.equals(
+        newDelegatedFeeAuthority,
+      ),
+    );
   });
 
   it("successfully set_delegated_fee_authority (delegated to not delegated)", async () => {
@@ -101,7 +115,11 @@ describe("set_delegated_fee_authority", () => {
       IGNORE_CACHE,
     );
     assert.ok(preAdaptiveFeeTierAccount);
-    assert.ok(preAdaptiveFeeTierAccount.delegatedFeeAuthority.equals(initialDelegatedFeeAuthority));
+    assert.ok(
+      preAdaptiveFeeTierAccount.delegatedFeeAuthority.equals(
+        initialDelegatedFeeAuthority,
+      ),
+    );
 
     await toTx(
       ctx,
@@ -112,15 +130,19 @@ describe("set_delegated_fee_authority", () => {
         newDelegatedFeeAuthority: newDelegatedFeeAuthority,
       }),
     )
-    .addSigner(configKeypairs.feeAuthorityKeypair)
-    .buildAndExecute();
+      .addSigner(configKeypairs.feeAuthorityKeypair)
+      .buildAndExecute();
 
     const postAdaptiveFeeTierAccount = await fetcher.getAdaptiveFeeTier(
       adaptiveFeeTierPda.publicKey,
       IGNORE_CACHE,
     );
     assert.ok(postAdaptiveFeeTierAccount);
-    assert.ok(postAdaptiveFeeTierAccount.delegatedFeeAuthority.equals(newDelegatedFeeAuthority));
+    assert.ok(
+      postAdaptiveFeeTierAccount.delegatedFeeAuthority.equals(
+        newDelegatedFeeAuthority,
+      ),
+    );
   });
 
   it("fails when adaptive fee tier account has not been initialized", async () => {
@@ -176,15 +198,19 @@ describe("set_delegated_fee_authority", () => {
       feeAuthority: configKeypairs.feeAuthorityKeypair.publicKey,
       newDelegatedFeeAuthority: Keypair.generate().publicKey,
     });
-    const ixWithoutSigner = dropIsSignerFlag(ix.instructions[0], configKeypairs.feeAuthorityKeypair.publicKey);
-    
+    const ixWithoutSigner = dropIsSignerFlag(
+      ix.instructions[0],
+      configKeypairs.feeAuthorityKeypair.publicKey,
+    );
+
     await assert.rejects(
-      toTx(
-        ctx,
-        { instructions: [ixWithoutSigner], cleanupInstructions: [], signers: [] },
-      )
-      // no fee authority sign
-      .buildAndExecute(),
+      toTx(ctx, {
+        instructions: [ixWithoutSigner],
+        cleanupInstructions: [],
+        signers: [],
+      })
+        // no fee authority sign
+        .buildAndExecute(),
       /0xbc2/, // AccountNotSigner
     );
   });
@@ -206,7 +232,7 @@ describe("set_delegated_fee_authority", () => {
       getDefaultPresetAdaptiveFeeConstants(tickSpacing),
     );
     const adaptiveFeeTierPda = params.feeTierPda;
-    
+
     const fakeFeeAuthorityKeypair = Keypair.generate();
     await assert.rejects(
       toTx(
@@ -216,10 +242,10 @@ describe("set_delegated_fee_authority", () => {
           adaptiveFeeTier: adaptiveFeeTierPda.publicKey,
           feeAuthority: fakeFeeAuthorityKeypair.publicKey,
           newDelegatedFeeAuthority: Keypair.generate().publicKey,
-            })
-            )
-      .addSigner(fakeFeeAuthorityKeypair)
-      .buildAndExecute(),
+        }),
+      )
+        .addSigner(fakeFeeAuthorityKeypair)
+        .buildAndExecute(),
       /0x7dc/, // ConstraintAddress
     );
   });

@@ -108,18 +108,6 @@ async function calculateDynamicPriorityFees(
       .filter((pf) => pf.prioritizationFee > 0)
       .map((pf) => pf.prioritizationFee);
     const sorted = nonZero.sort((a, b) => Number(a - b));
-
-    if (percentile === "50") {
-      const mid = sorted.length / 2;
-      if (sorted.length === 0) return BigInt(0);
-      if (sorted.length % 2 === 0) {
-        return (
-          (sorted[Math.floor(mid - 1)] + sorted[Math.floor(mid)]) / BigInt(2)
-        );
-      } else {
-        return sorted[Math.floor(mid)];
-      }
-    }
     return (
       sorted[
         Math.floor(sorted.length * (percentileNumber(percentile) / 100))

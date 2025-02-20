@@ -904,7 +904,7 @@ export async function fundPositionsWithClient(
       );
 
       const tokenProgramId =
-        param.isTokenExtensionsBasedPosition ?? false
+        (param.isTokenExtensionsBasedPosition ?? false)
           ? TOKEN_2022_PROGRAM_ID
           : TOKEN_PROGRAM_ID;
 

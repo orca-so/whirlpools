@@ -1,15 +1,10 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import type { WhirlpoolData } from "../../../src";
 import { PDAUtil, toTx, WhirlpoolContext, WhirlpoolIx } from "../../../src";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { dropIsSignerFlag, TickSpacing } from "../../utils";
 import { defaultConfirmOptions } from "../../utils/const";
-import { initTestPool } from "../../utils/init-utils";
-import {
-  generateDefaultConfigParams,
-  getDefaultPresetAdaptiveFeeConstants,
-} from "../../utils/test-builders";
+import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 import { initTestPoolWithAdaptiveFee } from "../../utils/v2/init-utils-v2";
 import { MathUtil } from "@orca-so/common-sdk";
 import Decimal from "decimal.js";

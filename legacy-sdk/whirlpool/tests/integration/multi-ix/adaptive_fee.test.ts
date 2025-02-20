@@ -1,44 +1,26 @@
 import * as anchor from "@coral-xyz/anchor";
-import {
-  AddressUtil,
-  DecimalUtil,
-  Percentage,
-  U64_MAX,
-  ZERO,
-} from "@orca-so/common-sdk";
-import { Keypair, type PublicKey } from "@solana/web3.js";
-import * as assert from "assert";
+import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
+import { Keypair } from "@solana/web3.js";
 import BN from "bn.js";
 import type { WhirlpoolClient } from "../../../src";
 import {
   MAX_SQRT_PRICE_BN,
-  MAX_TICK_INDEX,
   MIN_SQRT_PRICE_BN,
-  MIN_TICK_INDEX,
   PDAUtil,
   PriceMath,
   SwapUtils,
   TickUtil,
   WhirlpoolIx,
   buildWhirlpoolClient,
-  increaseLiquidityQuoteByInputToken,
   increaseLiquidityQuoteByLiquidityWithParams,
-  swapQuoteByOutputToken,
   swapQuoteWithParams,
   toTx,
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import { defaultConfirmOptions } from "../../utils/const";
-import { initTestPoolWithTokens } from "../../utils/init-utils";
 import { NO_TOKEN_EXTENSION_CONTEXT } from "../../../src/utils/public/token-extension-util";
-import {
-  MAX_U64,
-  createAndMintToAssociatedTokenAccount,
-  createAndMintToTokenAccount,
-  createMint,
-  getTokenBalance,
-} from "../../utils";
+import { createAndMintToAssociatedTokenAccount, createMint } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 
@@ -272,7 +254,7 @@ describe("volatility adjusted fee tests", () => {
       maxSupportedTransactionVersion: 0,
     });
 
-    console.log(tx?.meta?.logMessages);
+    console.info(tx?.meta?.logMessages);
     //console.log("swapQuote est out", swapQuote.estimatedAmountOut.toString());
     //console.log("swapQuote est tick index", swapQuote.estimatedEndTickIndex);
 
@@ -328,7 +310,7 @@ describe("volatility adjusted fee tests", () => {
       },
     );
 
-    console.log(oppositeTx?.meta?.logMessages);
+    console.info(oppositeTx?.meta?.logMessages);
   });
 });
 

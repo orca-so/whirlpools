@@ -21,7 +21,8 @@ import {
   getDefaultPresetAdaptiveFeeConstants,
 } from "../../utils/test-builders";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
+import { Keypair } from "@solana/web3.js";
 
 describe("set_preset_adaptive_fee_constants", () => {
   const provider = anchor.AnchorProvider.local(

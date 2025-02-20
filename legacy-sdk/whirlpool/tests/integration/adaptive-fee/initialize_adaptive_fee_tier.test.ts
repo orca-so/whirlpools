@@ -421,7 +421,7 @@ describe("initialize_adaptive_fee_tier", () => {
     const presetAdaptiveFeeConstants =
       getDefaultPresetAdaptiveFeeConstants(tickSpacing);
 
-    const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
+    const { configInitInfo } = generateDefaultConfigParams(ctx);
     await toTx(
       ctx,
       WhirlpoolIx.initializeConfigIx(ctx.program, configInitInfo),

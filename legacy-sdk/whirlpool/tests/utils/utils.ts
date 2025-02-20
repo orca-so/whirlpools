@@ -1,7 +1,7 @@
 import type { AnchorProvider } from "@coral-xyz/anchor";
 import { web3 } from "@coral-xyz/anchor";
 import { TransactionBuilder } from "@orca-so/common-sdk";
-import { PublicKey, TransactionInstruction } from "@solana/web3.js";
+import type { PublicKey, TransactionInstruction } from "@solana/web3.js";
 
 export function systemTransferTx(
   provider: AnchorProvider,

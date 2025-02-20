@@ -398,7 +398,6 @@ describe("set_preset_adaptive_fee_constants", () => {
     it("max_volatility_accumulator * tick_group_size > u32::MAX", async () => {
       const tickGroupSize = presetAdaptiveFeeConstants.tickGroupSize;
       const maxVolatilityAccumulator = Math.floor(2**32 / tickGroupSize);
-      console.log("maxVolatilityAccumulator", maxVolatilityAccumulator);
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         maxVolatilityAccumulator,

@@ -852,10 +852,6 @@ mod tests {
         Ok(out)
     }
 
-    fn is_te_scenario(pool_name: &str, position_name: &str) -> bool {
-        pool_name.contains("TE") || position_name.contains("TE")
-    }
-
     pub fn parse_pool_name(pool_name: &str) -> (&'static str, &'static str) {
         match pool_name {
             "A-B" => ("A", "B"),

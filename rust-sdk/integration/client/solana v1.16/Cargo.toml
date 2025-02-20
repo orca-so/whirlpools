@@ -7,7 +7,4 @@ path = "../../lib.rs"
 
 [dependencies]
 solana-program = { version = "~1.16.27" }
-solana-sdk = { version = "~1.16.27" }
-solana-client = { version = "~1.16.27" }
-solana-account-decoder = { version = "~1.16.27" }
-orca_whirlpools_client = { path = "../../../client" }
+orca_whirlpools_client = { path = "../../../client", features = ["solana-v1"] }

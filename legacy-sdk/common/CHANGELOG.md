@@ -1,5 +1,11 @@
 # @orca-so/common-sdk
 
+## 0.6.10
+
+### Patch Changes
+
+- [#713](https://github.com/orca-so/whirlpools/pull/713) [`4f626d7`](https://github.com/orca-so/whirlpools/commit/4f626d7cd08df85e8e7d93e7d0155ac6efb4e1d5) Thanks [@wjthieme](https://github.com/wjthieme)! - Changed some peerDependencies to normal dependencies
+
 ## 0.6.9
 
 ### Patch Changes

@@ -23,10 +23,36 @@ Once a tick-array account is set up, it cannot be closed and will never need to 
 Users of these instructions must provide the tick-arrays that contain the specified tick indexes. For each instruction, two tick-arrays need to be passed in—these may be the same array if the range is small. The instruction requires access to these accounts to read the appropriate Tick objects effectively.
 
 ### Swap
-Swap users will have to provide the series of tick-arrays that the swap will traverse across.
+Swap users must specify a series of tick arrays across which the swap will traverse.
 
-The first tick-array in the sequence typically houses the Whirlpool's current tick index, though this is not always required. 
+The first tick array in the sequence typically contains the Whirlpool’s current tick index, though this is not strictly required. Before processing the swap, the Whirlpool program will order the tick arrays automatically.
 
-The second and third tick arrays are the next tick-arrays in the swap direction. If the user knows the swap will not traverse to the next tick-array, or it's simply not possible at both ends of the price range, they can just put in any tick-array public key.
+The second and third tick arrays are those immediately following in the swap direction. If the user knows the swap will not move into the next tick array, or if it's not possible at either end of the price range, they can provide any tick array public key instead.
 
-In some cases, such as with the new swap instruction, users can pass in up to six tick-arrays, with only three arrays being crossed during a swap. For example, the Whirlpools SDK preemptively provides the tick-array containing the current price, along with two arrays below and two above it, ensuring adequate coverage for different price ranges.
+#### Supply additional tick arrays with `swapV2`
+With the new `swapV2` instruction, users can include an additional three tick arrays in the `remaining_accounts` field of the instruction data. This allows up to six tick arrays to be submitted in total for `swapV2`.
+
+This feature is particularly useful if the current tick is near the edge of the tick array during quote generation but then moves outside of it by the time the transaction executes (see the diagram below). To avoid errors in such scenarios, users can pass the tick array account with a start index of -88 in the `remaining_accounts` field.
+ 
+If you're using the Typescript Whirlpools SDK [`@orca-so/whirlpools`](https://www.npmjs.com/package/@orca-so/whirlpools) or the Rust Whirlpools SDK [`orca_whirlpools`](https://crates.io/crates/orca_whirlpools) to generate the swap instructions, this is automatically handled.
+
+> NOTE: even though you can submit up to 6 tick arrays to the swap instruction, the program will consider only up to three tick arrays for the swap. If the price moves beyond the third tick array, the program will throw an error and the swap will not go through.
+
+![Sparse Swap Overview 1](../../static/img/02-Architecture%20Overview/sparseswap-1.png)
+
+#### SparseSwap: crossing unitialized tick arrays during swap
+For both the `swap` and `swapV2` instructions, it is not necessary for all tick array accounts to be initialized. As long as there is sufficient active liquidity at the current tick (a property defined in the Whirlpool state), the Whirlpool program can execute a swap. The diagram below illustrates this.
+
+![Sparse Swap Overview 2](../../static/img/02-Architecture%20Overview/sparseswap-2.png)
+
+#### SparseSwap: generating quotes
+Our SDKs account for the possibility of uninitialized tick arrays and can reliably generate valid swap quotes. We highly encourage you to use one of our official SDKs:
+- TS Whirlpools SDK
+- Rust Whirlpools SDK
+- TS Legacy SDK (version > 0.13.4)
+
+If you are building custom integrations, be aware of this feature. To generate a quote, you must fetch the tick array accounts and parse the ticks to identify any liquidity changes that may occur during the swap. If you encounter an uninitialized tick array, you might incorrectly assume there is no remaining liquidity and erroneously inform users that swapping is not possible. To avoid this, review our SDK internals on quote generation, particularly these functions:
+- [`fetch_tick_arrays_or_default`](https://github.com/orca-so/whirlpools/blob/4c75c2f0bbc9fa8ad850a49ddf2ed37e527901f8/rust-sdk/whirlpool/src/swap.rs#L70-L112)
+- [`swap_quote_by_input_token` and `swap_quote_by_output_token`](https://github.com/orca-so/whirlpools/blob/4c75c2f0bbc9fa8ad850a49ddf2ed37e527901f8/rust-sdk/core/src/quote/swap.rs#L29-L149)
+- [`compute_swap`](https://github.com/orca-so/whirlpools/blob/4c75c2f0bbc9fa8ad850a49ddf2ed37e527901f8/rust-sdk/core/src/quote/swap.rs#L178-L295)
+- [`compute_swap_step`](https://github.com/orca-so/whirlpools/blob/4c75c2f0bbc9fa8ad850a49ddf2ed37e527901f8/rust-sdk/core/src/quote/swap.rs#L326-L412)

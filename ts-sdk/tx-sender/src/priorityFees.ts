@@ -1,6 +1,5 @@
-import {
+import type {
   CompilableTransactionMessage,
-  getComputeUnitEstimateForTransactionMessageFactory,
   IInstruction,
   Rpc,
   SolanaRpcApi,
@@ -11,6 +10,7 @@ import {
   TransactionMessageWithBlockhashLifetime,
   TransactionVersion,
 } from "@solana/web3.js";
+import { getComputeUnitEstimateForTransactionMessageFactory } from "@solana/web3.js";
 import { getJitoConfig, getRpcConfig } from "./config";
 import { rpcFromUrl } from "./compatibility";
 import { processJitoTipForTxMessage } from "./jito";
@@ -35,7 +35,7 @@ export type TxMessage = ITransactionMessageWithFeePayerSigner<
 export async function addPriorityInstructions(
   message: TxMessage,
 
-  signer: TransactionSigner
+  signer: TransactionSigner,
 ) {
   const { rpcUrl, chainId } = getRpcConfig();
   const jito = getJitoConfig();
@@ -48,7 +48,7 @@ export async function addPriorityInstructions(
 
   if (!computeUnits) {
     console.warn(
-      "Transaction simulation failed, using 1,400,000 compute units"
+      "Transaction simulation failed, using 1,400,000 compute units",
     );
     computeUnits = 1_400_000;
   }
@@ -58,7 +58,7 @@ export async function addPriorityInstructions(
 
 async function getComputeUnitsForTxMessage(
   rpc: Rpc<SolanaRpcApi>,
-  txMessage: CompilableTransactionMessage
+  txMessage: CompilableTransactionMessage,
 ) {
   const estimator = getComputeUnitEstimateForTransactionMessageFactory({
     rpc,

@@ -1,19 +1,19 @@
 import { describe, expect, it, beforeEach } from "vitest";
 import {
   buildAndSendTransaction,
-  sendSignedTransaction,
+  sendTransaction,
 } from "../src/sendTransaction";
 import { vi } from "vitest";
 import * as compatibility from "../src/compatibility";
 import * as jito from "../src/jito";
-import {
-  generateKeyPairSigner,
+import type {
   IInstruction,
   ITransactionMessageWithFeePayerSigner,
   Rpc,
   SolanaRpcApi,
   TransactionMessageBytes,
 } from "@solana/web3.js";
+import { generateKeyPairSigner } from "@solana/web3.js";
 import { getTransferSolInstruction } from "@solana-program/system";
 import { address } from "@solana/web3.js";
 import {
@@ -34,8 +34,8 @@ vi.mock("@solana/web3.js", async () => {
         message: ITransactionMessageWithFeePayerSigner & {
           instructions: IInstruction[];
           version: 0;
-        }
-      ) => encodeTransaction(message.instructions, message.feePayer)
+        },
+      ) => encodeTransaction(message.instructions, message.feePayer),
     ),
     getComputeUnitEstimateForTransactionMessageFactory: vi
       .fn()
@@ -55,7 +55,11 @@ const mockRpc = {
     }),
   }),
   sendTransaction: vi.fn().mockReturnValue({
-    send: vi.fn().mockResolvedValue(""),
+    send: vi.fn().mockResolvedValue({
+      value: {
+        signature: "mock_transaction_signature",
+      },
+    }),
   }),
   getRecentPrioritizationFees: vi.fn().mockReturnValue({
     send: vi.fn().mockResolvedValue([
@@ -65,10 +69,29 @@ const mockRpc = {
       },
     ]),
   }),
+  simulateTransaction: vi.fn().mockReturnValue({
+    send: vi.fn().mockResolvedValue({
+      value: {
+        err: null,
+      },
+    }),
+  }),
+  getSignatureStatuses: vi.fn().mockReturnValue({
+    send: vi.fn().mockResolvedValue({
+      value: [
+        {
+          slot: 123456789n,
+          confirmations: 1,
+          err: null,
+          confirmationStatus: "confirmed",
+        },
+      ],
+    }),
+  }),
 } as const satisfies Partial<Rpc<SolanaRpcApi>>;
 
 vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
-  mockRpc as unknown as Rpc<SolanaRpcApi>
+  mockRpc as unknown as Rpc<SolanaRpcApi>,
 );
 
 vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
@@ -95,7 +118,7 @@ describe("Send Transaction", async () => {
 
   it("Should send signed transaction without websocket url", async () => {
     const tx = await buildTransaction([transferInstruction], signer);
-    const signature = await sendSignedTransaction(tx);
+    const signature = await sendTransaction(tx);
     expect(mockRpc.sendTransaction().send).toHaveBeenCalled();
     expect(signature).toBeDefined();
   });
@@ -103,18 +126,28 @@ describe("Send Transaction", async () => {
   it("Should handle RPC errors gracefully", async () => {
     const errorMockRpc = {
       ...mockRpc,
+      simulateTransaction: vi.fn().mockReturnValue({
+        send: vi.fn().mockResolvedValue({
+          value: {
+            err: "Simulation failed",
+          },
+        }),
+      }),
       sendTransaction: vi.fn().mockReturnValue({
         send: vi.fn().mockRejectedValue(new Error("RPC Error")),
       }),
+      getSignatureStatuses: vi.fn().mockReturnValue({
+        send: vi.fn().mockResolvedValue({
+          value: [null],
+        }),
+      }),
     };
-
     vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
-      errorMockRpc as unknown as Rpc<SolanaRpcApi>
+      errorMockRpc as unknown as Rpc<SolanaRpcApi>,
     );
-
     await expect(
-      buildAndSendTransaction([transferInstruction], signer)
-    ).rejects.toThrow("RPC Error");
+      buildAndSendTransaction([transferInstruction], signer),
+    ).rejects.toThrow("Transaction simulation failed: Simulation failed");
   });
 
   it("Should reject invalid transaction", async () => {
@@ -123,12 +156,12 @@ describe("Send Transaction", async () => {
     const invalidTx = {
       ...tx,
       messageBytes: Object.create(
-        new Uint8Array([1, 2, 3])
+        new Uint8Array([1, 2, 3]),
       ) as TransactionMessageBytes,
       signatures: {},
       lifetimeConstraint: tx.lifetimeConstraint,
     };
 
-    await expect(sendSignedTransaction(invalidTx)).rejects.toThrow();
+    await expect(sendTransaction(invalidTx)).rejects.toThrow();
   });
 });

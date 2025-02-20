@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-docs
 
+## 0.1.2
+
+### Patch Changes
+
+- [#751](https://github.com/orca-so/whirlpools/pull/751) [`6119f80`](https://github.com/orca-so/whirlpools/commit/6119f8006e10d49f0dffa7d0dd7d8d8b2cc079cf) Thanks [@calintje](https://github.com/calintje)! - Update documentation for Rust SDK compatibility with Solana SDK v2
+
 ## 0.1.1
 
 ### Patch Changes

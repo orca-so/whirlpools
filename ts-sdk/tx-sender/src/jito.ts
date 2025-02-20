@@ -1,19 +1,18 @@
+import type { Address, TransactionSigner } from "@solana/web3.js";
 import {
-  Address,
   address,
   lamports,
   prependTransactionMessageInstruction,
-  TransactionSigner,
 } from "@solana/web3.js";
-import { JitoFeeSetting, Percentile } from "./config";
+import type { JitoFeeSetting, Percentile } from "./config";
 import { getTransferSolInstruction } from "@solana-program/system";
-import { TxMessage } from "./priorityFees";
+import type { TxMessage } from "./priorityFees";
 
 export async function processJitoTipForTxMessage(
   message: TxMessage,
   signer: TransactionSigner,
   jito: JitoFeeSetting,
-  chainId: string
+  chainId: string,
 ) {
   if (chainId !== "solana") {
     console.warn("Jito tip is not supported on this chain. Skipping jito tip.");
@@ -33,7 +32,7 @@ export async function processJitoTipForTxMessage(
         destination: getJitoTipAddress(),
         amount: jitoTipLamports,
       }),
-      message
+      message,
     );
   } else {
     return message;
@@ -42,10 +41,10 @@ export async function processJitoTipForTxMessage(
 
 // returns recent jito tip in lamports
 export async function recentJitoTip(
-  priorityFeePercentile?: Percentile | "50ema"
+  priorityFeePercentile?: Percentile | "50ema",
 ) {
   const response = await fetch(
-    "https://bundles.jito.wtf/api/v1/bundles/tip_floor"
+    "https://bundles.jito.wtf/api/v1/bundles/tip_floor",
   );
   if (!response.ok) {
     return BigInt(0);
@@ -87,6 +86,6 @@ function getJitoTipAddress(): Address {
   // just pick a random one from the list. There are multiple addresses so that no single one
   // can cause local congestion.
   return address(
-    jitoTipAddresses[Math.floor(Math.random() * jitoTipAddresses.length)]
+    jitoTipAddresses[Math.floor(Math.random() * jitoTipAddresses.length)],
   );
 }

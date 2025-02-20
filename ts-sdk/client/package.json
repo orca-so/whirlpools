@@ -31,11 +31,11 @@
     "@solana/web3.js": "^2.0.0"
   },
   "devDependencies": {
-    "@codama/nodes-from-anchor": "^1.1.4",
-    "@codama/renderers-js": "^1.2.3",
+    "@codama/nodes-from-anchor": "^1.1.6",
+    "@codama/renderers-js": "^1.2.5",
     "@orca-so/whirlpools-program": "*",
     "@solana/web3.js": "^2.0.0",
-    "codama": "^1.2.4",
+    "codama": "^1.2.6",
     "typescript": "^5.7.3"
   },
   "repository": {

@@ -1,11 +1,6 @@
 import { createSolanaRpcApi, createRpc } from "@solana/rpc";
-import {
-  Address,
-  createDefaultRpcTransport,
-  Rpc,
-  SolanaRpcApi,
-  address,
-} from "@solana/web3.js";
+import type { Address, Rpc, SolanaRpcApi } from "@solana/web3.js";
+import { createDefaultRpcTransport, address } from "@solana/web3.js";
 
 /**
  * Creates an RPC client instance for interacting with the SVM blockchains using the provided RPC URL.
@@ -30,7 +25,7 @@ export function rpcFromUrl(url: string): Rpc<SolanaRpcApi> {
 }
 
 export function normalizeAddresses(
-  addresses?: (string | Address)[]
+  addresses?: (string | Address)[],
 ): Address[] {
   return addresses?.map((addr) => address(addr)) ?? [];
 }

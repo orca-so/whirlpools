@@ -321,9 +321,9 @@ mod data_layout_tests {
 
     #[test]
     fn test_oracle_data_layout() {
-      let oracle_reserved = [0u8; 256];
+        let oracle_reserved = [0u8; 256];
 
-      let oracle_whirlpool = Pubkey::new_unique();
+        let oracle_whirlpool = Pubkey::new_unique();
 
         let af_const_filter_period = 0x1122u16;
         let af_const_decay_period = 0x3344u16;

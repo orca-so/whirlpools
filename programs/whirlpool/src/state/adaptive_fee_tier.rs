@@ -169,8 +169,7 @@ mod data_layout_tests {
         adaptive_fee_tier_data[offset..offset + 8]
             .copy_from_slice(&AdaptiveFeeTier::discriminator());
         offset += 8;
-        adaptive_fee_tier_data[offset..offset + 32]
-            .copy_from_slice(&whirlpools_config.to_bytes());
+        adaptive_fee_tier_data[offset..offset + 32].copy_from_slice(&whirlpools_config.to_bytes());
         offset += 32;
         adaptive_fee_tier_data[offset..offset + 2].copy_from_slice(&fee_tier_index.to_le_bytes());
         offset += 2;
@@ -185,14 +184,11 @@ mod data_layout_tests {
         adaptive_fee_tier_data[offset..offset + 2]
             .copy_from_slice(&default_base_fee_rate.to_le_bytes());
         offset += 2;
-        adaptive_fee_tier_data[offset..offset + 2]
-            .copy_from_slice(&filter_period.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 2].copy_from_slice(&filter_period.to_le_bytes());
         offset += 2;
-        adaptive_fee_tier_data[offset..offset + 2]
-            .copy_from_slice(&decay_period.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 2].copy_from_slice(&decay_period.to_le_bytes());
         offset += 2;
-        adaptive_fee_tier_data[offset..offset + 2]
-            .copy_from_slice(&reduction_factor.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 2].copy_from_slice(&reduction_factor.to_le_bytes());
         offset += 2;
         adaptive_fee_tier_data[offset..offset + 4]
             .copy_from_slice(&adaptive_fee_control_factor.to_le_bytes());
@@ -200,10 +196,10 @@ mod data_layout_tests {
         adaptive_fee_tier_data[offset..offset + 4]
             .copy_from_slice(&max_volatility_accumulator.to_le_bytes());
         offset += 4;
-        adaptive_fee_tier_data[offset..offset + 2]
-            .copy_from_slice(&tick_group_size.to_le_bytes());
+        adaptive_fee_tier_data[offset..offset + 2].copy_from_slice(&tick_group_size.to_le_bytes());
         offset += 2;
-        adaptive_fee_tier_data[offset..offset + adaptive_fee_tier_reserved.len()].copy_from_slice(&adaptive_fee_tier_reserved);
+        adaptive_fee_tier_data[offset..offset + adaptive_fee_tier_reserved.len()]
+            .copy_from_slice(&adaptive_fee_tier_reserved);
         offset += adaptive_fee_tier_reserved.len();
         assert_eq!(offset, AdaptiveFeeTier::LEN);
 
@@ -225,10 +221,7 @@ mod data_layout_tests {
         assert_eq!(default_base_fee_rate, deserialized.default_base_fee_rate);
         assert_eq!(filter_period, deserialized.filter_period);
         assert_eq!(decay_period, deserialized.decay_period);
-        assert_eq!(
-            reduction_factor,
-            deserialized.reduction_factor
-        );
+        assert_eq!(reduction_factor, deserialized.reduction_factor);
         assert_eq!(
             adaptive_fee_control_factor,
             deserialized.adaptive_fee_control_factor
@@ -237,10 +230,7 @@ mod data_layout_tests {
             max_volatility_accumulator,
             deserialized.max_volatility_accumulator
         );
-        assert_eq!(
-            tick_group_size,
-            deserialized.tick_group_size
-        );
+        assert_eq!(tick_group_size, deserialized.tick_group_size);
 
         // serialize
         let mut serialized = Vec::new();

@@ -55,6 +55,10 @@ impl AdaptiveFeeTier {
             return Err(ErrorCode::InvalidFeeTierIndex.into());
         }
 
+        if tick_spacing == 0 {
+            return Err(ErrorCode::InvalidTickSpacing.into());
+        }
+
         self.whirlpools_config = whirlpools_config.key();
         self.fee_tier_index = fee_tier_index;
 

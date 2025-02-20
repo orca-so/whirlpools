@@ -123,6 +123,11 @@ impl Whirlpool {
             return Err(ErrorCode::SqrtPriceOutOfBounds.into());
         }
 
+        if tick_spacing == 0 {
+            // FeeTier and AdaptiveFeeTier enforce tick_spacing > 0
+            unreachable!("tick_spacing must be greater than 0");
+        }
+
         self.whirlpools_config = whirlpools_config.key();
         self.fee_tier_index_seed = fee_tier_index.to_le_bytes();
         self.whirlpool_bump = [bump];

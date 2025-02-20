@@ -241,6 +241,30 @@ describe("initialize_adaptive_fee_tier", () => {
     );
   });
 
+  it("fails when tick_spacing is zero", async () => {
+    // invalid
+    const tickSpacing = 0;
+
+    const feeTierIndex = 1024 + 128;
+    const defaultBaseFeeRate = 60_000 + 1;
+    const initializePoolAuthority = PublicKey.default;
+    const delegatedFeeAuthority = PublicKey.default;
+    // tick_group_size will be zero, but tick_spacing check is first
+    const presetAdaptiveFeeConstants = getDefaultPresetAdaptiveFeeConstants(tickSpacing);
+
+    await assert.rejects(
+      tryInitializeAdaptiveFeeTier(
+        tickSpacing,
+        feeTierIndex,
+        defaultBaseFeeRate,
+        initializePoolAuthority,
+        delegatedFeeAuthority,
+        presetAdaptiveFeeConstants,
+        ),
+        /0x1774/, // InvalidTickSpacing
+    );
+  });
+
   it("fails when whirlpools_config is not valid for AdaptiveFeeTier PDA", async () => {
     const tickSpacing = 64;
     const feeTierIndex = 1024 + 64;

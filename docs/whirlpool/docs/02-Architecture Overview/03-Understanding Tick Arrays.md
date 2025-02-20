@@ -49,7 +49,7 @@ For both the `swap` and `swapV2` instructions, it is not necessary for all tick 
 Our SDKs account for the possibility of uninitialized tick arrays and can reliably generate valid swap quotes. We highly encourage you to use one of our official SDKs:
 - TS Whirlpools SDK
 - Rust Whirlpools SDK
-- TS Legacy SDK (version > 0.13.14)
+- TS Legacy SDK (version > 0.13.4)
 
 If you are building custom integrations, be aware of this feature. To generate a quote, you must fetch the tick array accounts and parse the ticks to identify any liquidity changes that may occur during the swap. If you encounter an uninitialized tick array, you might incorrectly assume there is no remaining liquidity and erroneously inform users that swapping is not possible. To avoid this, review our SDK internals on quote generation, particularly these functions:
 - [`fetch_tick_arrays_or_default`](https://github.com/orca-so/whirlpools/blob/4c75c2f0bbc9fa8ad850a49ddf2ed37e527901f8/rust-sdk/whirlpool/src/swap.rs#L70-L112)

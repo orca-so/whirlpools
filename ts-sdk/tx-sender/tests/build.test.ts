@@ -117,8 +117,7 @@ describe("Build Transaction", async () => {
         await buildTransaction([transferInstruction], signer);
       },
       {
-        message:
-          "Connection not initialized. Call init() first or provide connection parameter",
+        message: "Connection not initialized. Call setRpc() first",
       }
     );
   });

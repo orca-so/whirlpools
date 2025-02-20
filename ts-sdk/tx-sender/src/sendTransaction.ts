@@ -8,6 +8,7 @@ import {
   FullySignedTransaction,
   Signature,
   getBase58Decoder,
+  Commitment,
 } from "@solana/web3.js";
 import { rpcFromUrl } from "./compatibility";
 import { buildTransaction } from "./buildTransaction";
@@ -34,11 +35,12 @@ import { buildTransaction } from "./buildTransaction";
 export async function buildAndSendTransaction(
   instructions: IInstruction[],
   payer: KeyPairSigner,
-  lookupTableAddresses?: (Address | string)[]
+  lookupTableAddresses?: (Address | string)[],
+  commitment: Commitment = "confirmed"
 ) {
   const tx = await buildTransaction(instructions, payer, lookupTableAddresses);
   assertTransactionIsFullySigned(tx);
-  return sendSignedTransaction(tx);
+  return sendTransaction(tx, commitment);
 }
 
 /**
@@ -57,22 +59,49 @@ export async function buildAndSendTransaction(
  *   signedTransaction,
  * );
  */
-export async function sendSignedTransaction(
-  transaction: FullySignedTransaction
-) {
+export async function sendTransaction(
+  transaction: FullySignedTransaction,
+  commitment: Commitment = "confirmed"
+): Promise<Signature> {
   const { rpcUrl } = getRpcConfig();
   const rpc = rpcFromUrl(rpcUrl);
   const txHash = getTxHash(transaction);
   const encodedTransaction = getBase64EncodedWireTransaction(transaction);
 
-  await rpc
-    .sendTransaction(encodedTransaction, {
-      maxRetries: BigInt(0),
-      skipPreflight: true,
+  // Simulate transaction first
+  const simResult = await rpc
+    .simulateTransaction(encodedTransaction, {
       encoding: "base64",
     })
     .send();
-  return txHash;
+
+  if (simResult.value.err) {
+    throw new Error(`Transaction simulation failed: ${simResult.value.err}`);
+  }
+
+  const expiryTime = Date.now() + 90_000;
+
+  while (Date.now() < expiryTime) {
+    try {
+      await rpc
+        .sendTransaction(encodedTransaction, {
+          maxRetries: BigInt(0),
+          skipPreflight: true,
+          encoding: "base64",
+        })
+        .send();
+
+      const { value } = await rpc.getSignatureStatuses([txHash]).send();
+
+      if (value[0]?.confirmationStatus === commitment) {
+        return txHash;
+      }
+    } catch {
+      continue;
+    }
+  }
+
+  throw new Error("Transaction expired");
 }
 
 function getTxHash(transaction: FullySignedTransaction) {

@@ -1,14 +1,16 @@
 import { getRpcConfig } from "./config";
-import {
+import type {
   Address,
-  assertTransactionIsFullySigned,
-  getBase64EncodedWireTransaction,
   IInstruction,
   KeyPairSigner,
   FullySignedTransaction,
   Signature,
-  getBase58Decoder,
   Commitment,
+} from "@solana/web3.js";
+import {
+  assertTransactionIsFullySigned,
+  getBase64EncodedWireTransaction,
+  getBase58Decoder,
 } from "@solana/web3.js";
 import { rpcFromUrl } from "./compatibility";
 import { buildTransaction } from "./buildTransaction";
@@ -36,7 +38,7 @@ export async function buildAndSendTransaction(
   instructions: IInstruction[],
   payer: KeyPairSigner,
   lookupTableAddresses?: (Address | string)[],
-  commitment: Commitment = "confirmed"
+  commitment: Commitment = "confirmed",
 ) {
   const tx = await buildTransaction(instructions, payer, lookupTableAddresses);
   assertTransactionIsFullySigned(tx);
@@ -61,7 +63,7 @@ export async function buildAndSendTransaction(
  */
 export async function sendTransaction(
   transaction: FullySignedTransaction,
-  commitment: Commitment = "confirmed"
+  commitment: Commitment = "confirmed",
 ): Promise<Signature> {
   const { rpcUrl } = getRpcConfig();
   const rpc = rpcFromUrl(rpcUrl);

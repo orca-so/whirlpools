@@ -1,7 +1,13 @@
-import {
+import type {
   IInstruction,
   TransactionSigner,
   Address,
+  Rpc,
+  SolanaRpcApi,
+  FullySignedTransaction,
+  TransactionWithLifetime,
+} from "@solana/web3.js";
+import {
   compressTransactionMessageUsingAddressLookupTables,
   assertAccountDecoded,
   appendTransactionMessageInstructions,
@@ -10,10 +16,6 @@ import {
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   signTransactionMessageWithSigners,
-  Rpc,
-  SolanaRpcApi,
-  FullySignedTransaction,
-  TransactionWithLifetime,
   createNoopSigner,
 } from "@solana/web3.js";
 import { normalizeAddresses, rpcFromUrl } from "./compatibility";
@@ -41,19 +43,19 @@ import { getRpcConfig } from "./config";
 export async function buildTransaction(
   instructions: IInstruction[],
   feePayer: TransactionSigner | Address,
-  lookupTableAddresses?: (Address | string)[]
+  lookupTableAddresses?: (Address | string)[],
 ): Promise<Readonly<FullySignedTransaction & TransactionWithLifetime>> {
   return buildTransactionMessage(
     instructions,
     !("address" in feePayer) ? createNoopSigner(feePayer) : feePayer,
-    normalizeAddresses(lookupTableAddresses)
+    normalizeAddresses(lookupTableAddresses),
   );
 }
 
 async function buildTransactionMessage(
   instructions: IInstruction[],
   signer: TransactionSigner,
-  lookupTableAddresses?: Address[]
+  lookupTableAddresses?: Address[],
 ) {
   const { rpcUrl } = getRpcConfig();
   const rpc = rpcFromUrl(rpcUrl);
@@ -63,7 +65,7 @@ async function buildTransactionMessage(
   if (lookupTableAddresses?.length) {
     const lookupTableAccounts = await fetchAllMaybeAddressLookupTable(
       rpc,
-      lookupTableAddresses
+      lookupTableAddresses,
     );
     const tables = lookupTableAccounts.reduce(
       (prev, account) => {
@@ -73,23 +75,23 @@ async function buildTransactionMessage(
         }
         return prev;
       },
-      {} as { [address: Address]: Address[] }
+      {} as { [address: Address]: Address[] },
     );
     message = compressTransactionMessageUsingAddressLookupTables(
       message,
-      tables
+      tables,
     );
   }
 
   return signTransactionMessageWithSigners(
-    await addPriorityInstructions(message, signer)
+    await addPriorityInstructions(message, signer),
   );
 }
 
 async function prepareTransactionMessage(
   instructions: IInstruction[],
   rpc: Rpc<SolanaRpcApi>,
-  signer: TransactionSigner
+  signer: TransactionSigner,
 ) {
   const { value: blockhash } = await rpc
     .getLatestBlockhash({
@@ -100,6 +102,6 @@ async function prepareTransactionMessage(
     createTransactionMessage({ version: 0 }),
     (tx) => setTransactionMessageLifetimeUsingBlockhash(blockhash, tx),
     (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-    (tx) => appendTransactionMessageInstructions(instructions, tx)
+    (tx) => appendTransactionMessageInstructions(instructions, tx),
   );
 }

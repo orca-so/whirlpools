@@ -1,23 +1,25 @@
+import type {
+  FullySignedTransaction,
+  TransactionWithBlockhashLifetime,
+  TransactionSigner,
+  IInstruction,
+  TransactionMessageBytes,
+  SignatureBytes,
+  Rpc,
+  SolanaRpcApi,
+} from "@solana/web3.js";
 import {
   getTransactionDecoder,
   getCompiledTransactionMessageDecoder,
   decompileTransactionMessageFetchingLookupTables,
-  FullySignedTransaction,
-  TransactionWithBlockhashLifetime,
-  TransactionSigner,
   getCompiledTransactionMessageEncoder,
-  IInstruction,
   compileTransactionMessage,
-  TransactionMessageBytes,
   getBase64Encoder,
-  SignatureBytes,
   appendTransactionMessageInstructions,
   createTransactionMessage,
   pipe,
-  Rpc,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
-  SolanaRpcApi,
 } from "@solana/web3.js";
 import { rpcFromUrl } from "../src/compatibility";
 
@@ -29,7 +31,7 @@ export async function decodeTransaction(base64EncodedTransaction: string) {
 
   const compiledMessageDecoder = getCompiledTransactionMessageDecoder();
   const compiledMessage = compiledMessageDecoder.decode(
-    decodedTransaction.messageBytes
+    decodedTransaction.messageBytes,
   );
 
   const rpc = rpcFromUrl("https://api.mainnet-beta.solana.com");
@@ -49,7 +51,7 @@ export async function decodeTransaction(base64EncodedTransaction: string) {
 async function prepareTransactionMessage(
   instructions: IInstruction[],
   rpc: Rpc<SolanaRpcApi>,
-  signer: TransactionSigner
+  signer: TransactionSigner,
 ) {
   const { value: blockhash } = await rpc
     .getLatestBlockhash({
@@ -60,13 +62,13 @@ async function prepareTransactionMessage(
     createTransactionMessage({ version: 0 }),
     (tx) => setTransactionMessageLifetimeUsingBlockhash(blockhash, tx),
     (tx) => setTransactionMessageFeePayerSigner(signer, tx),
-    (tx) => appendTransactionMessageInstructions(instructions, tx)
+    (tx) => appendTransactionMessageInstructions(instructions, tx),
   );
 }
 
 export async function encodeTransaction(
   instructions: IInstruction[],
-  feePayer: TransactionSigner
+  feePayer: TransactionSigner,
 ): Promise<
   Readonly<FullySignedTransaction & TransactionWithBlockhashLifetime>
 > {
@@ -74,7 +76,7 @@ export async function encodeTransaction(
   const message = await prepareTransactionMessage(instructions, rpc, feePayer);
   const compiledMessage = compileTransactionMessage(message);
   const messageBytes = getCompiledTransactionMessageEncoder().encode(
-    compiledMessage
+    compiledMessage,
   ) as TransactionMessageBytes;
 
   // @ts-ignore

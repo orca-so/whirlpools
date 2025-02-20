@@ -3,13 +3,16 @@ import { buildTransaction } from "../src/buildTransaction";
 import { vi } from "vitest";
 import * as compatibility from "../src/compatibility";
 import * as jito from "../src/jito";
-import {
-  generateKeyPairSigner,
-  getBase64EncodedWireTransaction,
+import type {
   IInstruction,
   ITransactionMessageWithFeePayerSigner,
   Rpc,
   SolanaRpcApi,
+  Address,
+} from "@solana/web3.js";
+import {
+  generateKeyPairSigner,
+  getBase64EncodedWireTransaction,
 } from "@solana/web3.js";
 import { getTransferSolInstruction } from "@solana-program/system";
 import { address } from "@solana/web3.js";
@@ -42,14 +45,14 @@ vi.mock("@solana-program/address-lookup-table", async () => {
       .fn()
       .mockImplementation((rpc, addresses) =>
         Promise.resolve(
-          addresses.map((addr) => ({
+          addresses.map((addr: Address) => ({
             address: addr,
             exists: true,
             data: {
               addresses: ["addr1234567890abcdef", "addr2345678901bcdef0"],
             },
-          }))
-        )
+          })),
+        ),
       ),
   };
 });
@@ -63,8 +66,8 @@ vi.mock("@solana/web3.js", async () => {
         message: ITransactionMessageWithFeePayerSigner & {
           instructions: IInstruction[];
           version: 0;
-        }
-      ) => encodeTransaction(message.instructions, message.feePayer)
+        },
+      ) => encodeTransaction(message.instructions, message.feePayer),
     ),
     getComputeUnitEstimateForTransactionMessageFactory: vi
       .fn()
@@ -92,7 +95,7 @@ const mockRpc = {
 } as const satisfies Partial<Rpc<SolanaRpcApi>>;
 
 vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
-  mockRpc as unknown as Rpc<SolanaRpcApi>
+  mockRpc as unknown as Rpc<SolanaRpcApi>,
 );
 
 vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
@@ -118,7 +121,7 @@ describe("Build Transaction", async () => {
       },
       {
         message: "Connection not initialized. Call setRpc() first",
-      }
+      },
     );
   });
 
@@ -127,14 +130,14 @@ describe("Build Transaction", async () => {
     const message = await buildTransaction([transferInstruction], signer);
 
     const decodedIxs = await decodeTransaction(
-      getBase64EncodedWireTransaction(message)
+      getBase64EncodedWireTransaction(message),
     );
 
     const computeUnitProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === computeUnitProgramId
+      (ix) => ix.programAddress === computeUnitProgramId,
     ).length;
     const systemProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === systemProgramId
+      (ix) => ix.programAddress === systemProgramId,
     ).length;
 
     assert.strictEqual(systemProgramixCount, 1);
@@ -150,14 +153,14 @@ describe("Build Transaction", async () => {
     const message = await buildTransaction([transferInstruction], signer);
 
     const decodedIxs = await decodeTransaction(
-      getBase64EncodedWireTransaction(message)
+      getBase64EncodedWireTransaction(message),
     );
 
     const computeUnitProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === computeUnitProgramId
+      (ix) => ix.programAddress === computeUnitProgramId,
     ).length;
     const systemProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === systemProgramId
+      (ix) => ix.programAddress === systemProgramId,
     ).length;
 
     assert.strictEqual(systemProgramixCount, 1);
@@ -175,17 +178,17 @@ describe("Build Transaction", async () => {
 
     assert.strictEqual(
       mockRpc.getRecentPrioritizationFees().send.mock.calls.length,
-      1
+      1,
     );
     const decodedIxs = await decodeTransaction(
-      getBase64EncodedWireTransaction(message)
+      getBase64EncodedWireTransaction(message),
     );
 
     const computeUnitProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === computeUnitProgramId
+      (ix) => ix.programAddress === computeUnitProgramId,
     ).length;
     const systemProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === systemProgramId
+      (ix) => ix.programAddress === systemProgramId,
     ).length;
 
     assert.strictEqual(systemProgramixCount, 1);
@@ -201,14 +204,14 @@ describe("Build Transaction", async () => {
     const message = await buildTransaction([transferInstruction], signer);
 
     const decodedIxs = await decodeTransaction(
-      getBase64EncodedWireTransaction(message)
+      getBase64EncodedWireTransaction(message),
     );
 
     const computeUnitProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === computeUnitProgramId
+      (ix) => ix.programAddress === computeUnitProgramId,
     ).length;
     const systemProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === systemProgramId
+      (ix) => ix.programAddress === systemProgramId,
     ).length;
 
     assert.strictEqual(computeUnitProgramixCount, 1);
@@ -220,14 +223,14 @@ describe("Build Transaction", async () => {
     setJitoTipSetting({ type: "dynamic" });
     const message = await buildTransaction([transferInstruction], signer);
     const decodedIxs = await decodeTransaction(
-      getBase64EncodedWireTransaction(message)
+      getBase64EncodedWireTransaction(message),
     );
 
     const computeUnitProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === computeUnitProgramId
+      (ix) => ix.programAddress === computeUnitProgramId,
     ).length;
     const systemProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === systemProgramId
+      (ix) => ix.programAddress === systemProgramId,
     ).length;
 
     assert.strictEqual(computeUnitProgramixCount, 1);
@@ -245,17 +248,17 @@ describe("Build Transaction", async () => {
     const message = await buildTransaction(
       [transferInstruction],
       signer,
-      lookupTables
+      lookupTables,
     );
     const decodedIxs = await decodeTransaction(
-      getBase64EncodedWireTransaction(message)
+      getBase64EncodedWireTransaction(message),
     );
 
     const computeUnitProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === computeUnitProgramId
+      (ix) => ix.programAddress === computeUnitProgramId,
     ).length;
     const systemProgramixCount = decodedIxs.filter(
-      (ix) => ix.programAddress === systemProgramId
+      (ix) => ix.programAddress === systemProgramId,
     ).length;
 
     assert.strictEqual(computeUnitProgramixCount, 2);
@@ -263,7 +266,7 @@ describe("Build Transaction", async () => {
 
     expect(vi.mocked(fetchAllMaybeAddressLookupTable)).toHaveBeenCalledWith(
       mockRpc,
-      lookupTables
+      lookupTables,
     );
   });
 });

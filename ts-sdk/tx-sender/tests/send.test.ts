@@ -6,14 +6,14 @@ import {
 import { vi } from "vitest";
 import * as compatibility from "../src/compatibility";
 import * as jito from "../src/jito";
-import {
-  generateKeyPairSigner,
+import type {
   IInstruction,
   ITransactionMessageWithFeePayerSigner,
   Rpc,
   SolanaRpcApi,
   TransactionMessageBytes,
 } from "@solana/web3.js";
+import { generateKeyPairSigner } from "@solana/web3.js";
 import { getTransferSolInstruction } from "@solana-program/system";
 import { address } from "@solana/web3.js";
 import {
@@ -34,8 +34,8 @@ vi.mock("@solana/web3.js", async () => {
         message: ITransactionMessageWithFeePayerSigner & {
           instructions: IInstruction[];
           version: 0;
-        }
-      ) => encodeTransaction(message.instructions, message.feePayer)
+        },
+      ) => encodeTransaction(message.instructions, message.feePayer),
     ),
     getComputeUnitEstimateForTransactionMessageFactory: vi
       .fn()
@@ -91,7 +91,7 @@ const mockRpc = {
 } as const satisfies Partial<Rpc<SolanaRpcApi>>;
 
 vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
-  mockRpc as unknown as Rpc<SolanaRpcApi>
+  mockRpc as unknown as Rpc<SolanaRpcApi>,
 );
 
 vi.spyOn(jito, "recentJitoTip").mockResolvedValue(BigInt(1000));
@@ -143,10 +143,10 @@ describe("Send Transaction", async () => {
       }),
     };
     vi.spyOn(compatibility, "rpcFromUrl").mockReturnValue(
-      errorMockRpc as unknown as Rpc<SolanaRpcApi>
+      errorMockRpc as unknown as Rpc<SolanaRpcApi>,
     );
     await expect(
-      buildAndSendTransaction([transferInstruction], signer)
+      buildAndSendTransaction([transferInstruction], signer),
     ).rejects.toThrow("Transaction simulation failed: Simulation failed");
   });
 
@@ -156,7 +156,7 @@ describe("Send Transaction", async () => {
     const invalidTx = {
       ...tx,
       messageBytes: Object.create(
-        new Uint8Array([1, 2, 3])
+        new Uint8Array([1, 2, 3]),
       ) as TransactionMessageBytes,
       signatures: {},
       lifetimeConstraint: tx.lifetimeConstraint,

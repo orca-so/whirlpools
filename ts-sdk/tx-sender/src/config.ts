@@ -59,7 +59,7 @@ const setGlobalConfig = (config: {
 
 export async function setRpc(
   url: string,
-  supportsPriorityFeePercentile: boolean = false
+  supportsPriorityFeePercentile: boolean = false,
 ) {
   const rpc = rpcFromUrl(url);
   const chainId = await getChainIdFromGenesisHash(rpc);

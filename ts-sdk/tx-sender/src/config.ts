@@ -89,7 +89,7 @@ const setGlobalConfig = (config: {
  * Initializes the global RPC configuration.
  *
  * @param {string} url - The Solana RPC endpoint URL.
- * @param {boolean} [supportsPriorityFeePercentile=false] - Whether the RPC supports percentile-based priority fees. Set this to true if the RPC provider is Titan.
+ * @param {boolean} [supportsPriorityFeePercentile=false] - Whether the RPC supports percentile-based priority fees. Set this to true if the RPC provider is Triton.
  * @returns {Promise<void>} Resolves once the configuration has been set.
  *
  * @example

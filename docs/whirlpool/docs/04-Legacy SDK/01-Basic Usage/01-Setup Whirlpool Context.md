@@ -1,6 +1,6 @@
 # Setup Whirlpool Context
 
-The [WhirlpoolContext](https://orca-so.github.io/whirlpools/legacy/classes/WhirlpoolContext.html) object provides the necessary env information to build and send transactions and is core to running many functions in the SDK. (ex. Connection, Wallet, WhirlpoolProgramId etc).
+The [WhirlpoolContext](https://dev.orca.so/legacy/classes/WhirlpoolContext.html) object provides the necessary env information to build and send transactions and is core to running many functions in the SDK. (ex. Connection, Wallet, WhirlpoolProgramId etc).
 
 ## Setup your context object with one of the following methods:
 

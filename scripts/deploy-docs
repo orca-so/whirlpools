@@ -5,7 +5,7 @@ set -eo pipefail
 local_version=$(jq -r ".version" package.json)
 
 # Get the published version from github
-published_version=$(curl -s https://orca-so.github.io/whirlpools/ | grep -o '<meta itemprop="version" content="[^"]*"' | cut -d'"' -f4)
+published_version=$(curl -s https://dev.orca.so/ | grep -o '<meta itemprop="version" content="[^"]*"' | cut -d'"' -f4)
 
 function semver { echo "$@" | awk -F. '{ printf("%d%03d%03d%03d\n", $1,$2,$3,$4); }'; }
 

@@ -1,10 +1,10 @@
 # Closing a Position
-To close a position, you must first withdraw all liquidity and collect all fees and rewards from the position. You can then call the [`closePosition`](https://orca-so.github.io/whirlpools/legacy/interfaces/Whirlpool.html#closePosition) instruction to close and burn the position NFT. 
+To close a position, you must first withdraw all liquidity and collect all fees and rewards from the position. You can then call the [`closePosition`](https://dev.orca.so/legacy/interfaces/Whirlpool.html#closePosition) instruction to close and burn the position NFT.
 
 The parameters of `closePosition` are identical to the ones in `openPosition`.
 
 ## Whirlpool Client - Sample Code
-The [`WhirlpoolClient`](https://orca-so.github.io/whirlpools/legacy/interfaces/WhirlpoolClient.html) version of [`closePosition`](https://orca-so.github.io/whirlpools/legacy/interfaces/Whirlpool.html#closePosition) will automatically call `decrease_liquidity` and `close_position` for you. Note that you still have to manually call `collect_fees` and `collect_reward` to make sure the position is empty.
+The [`WhirlpoolClient`](https://dev.orca.so/legacy/interfaces/WhirlpoolClient.html) version of [`closePosition`](https://dev.orca.so/legacy/interfaces/Whirlpool.html#closePosition) will automatically call `decrease_liquidity` and `close_position` for you. Note that you still have to manually call `collect_fees` and `collect_reward` to make sure the position is empty.
 
 ```tsx
 const client = new WhirlpoolClient(context, fetcher);

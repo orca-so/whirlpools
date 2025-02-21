@@ -1,0 +1,1 @@
+"use strict";(self.webpackChunk_orca_so_whirlpools_docs=self.webpackChunk_orca_so_whirlpools_docs||[]).push([[9647],{3689:(s,e,r)=>{r.r(e),r.d(e,{default:()=>d});r(4041);var o=r(4357),c=r(9712),a=r(5055),l=r(8150),u=r(8101),_=r(1085);function d(s){return(0,_.jsx)(c.e3,{className:(0,o.A)(a.G.wrapper.docsPages),children:(0,_.jsx)(u.A,{children:(0,l.v)(s.route.routes)})})}}}]);

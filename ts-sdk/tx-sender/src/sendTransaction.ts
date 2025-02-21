@@ -101,8 +101,11 @@ export async function sendTransaction(
         .send();
 
       const { value } = await rpc.getSignatureStatuses([txHash]).send();
-
-      if (value[0]?.confirmationStatus === commitment) {
+      const status = value[0];
+      if (status?.confirmationStatus === commitment) {
+        if (status.err) {
+          throw new Error(`Transaction failed: ${status.err}`);
+        }
         return txHash;
       }
     } catch {

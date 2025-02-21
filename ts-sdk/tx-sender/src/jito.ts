@@ -4,7 +4,11 @@ import {
   lamports,
   prependTransactionMessageInstruction,
 } from "@solana/web3.js";
-import type { JitoFeeSetting, Percentile } from "./config";
+import {
+  getJitoBlockEngineUrl,
+  type JitoFeeSetting,
+  type Percentile,
+} from "./config";
 import { getTransferSolInstruction } from "@solana-program/system";
 import type { TxMessage } from "./priorityFees";
 
@@ -43,9 +47,8 @@ export async function processJitoTipForTxMessage(
 export async function recentJitoTip(
   priorityFeePercentile?: Percentile | "50ema",
 ) {
-  const response = await fetch(
-    "https://bundles.jito.wtf/api/v1/bundles/tip_floor",
-  );
+  const blockEngineUrl = getJitoBlockEngineUrl();
+  const response = await fetch(`${blockEngineUrl}/api/v1/bundles/tip_floor`);
   if (!response.ok) {
     return BigInt(0);
   }

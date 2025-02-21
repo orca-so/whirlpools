@@ -25,6 +25,7 @@ export const DEFAULT_PRIORITIZATION: TransactionConfig = {
     priorityFeePercentile: "50",
   },
   computeUnitMarginMultiplier: DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER,
+  jitoBlockEngineUrl: "https://bundles.jito.wtf",
 };
 
 /**
@@ -75,6 +76,15 @@ export const getComputeUnitMarginMultiplier = (): number => {
   return getPriorityConfig().computeUnitMarginMultiplier;
 };
 
+/**
+ * Retrieves the current Jito block engine URL.
+ *
+ * @returns {string} The Jito block engine URL.
+ */
+export const getJitoBlockEngineUrl = (): string => {
+  return getPriorityConfig().jitoBlockEngineUrl;
+};
+
 const setGlobalConfig = (config: {
   transactionConfig?: TransactionConfig;
   rpcConfig?: RpcConfig;
@@ -120,14 +130,29 @@ async function getChainIdFromGenesisHash(rpc: any): Promise<ChainId> {
     const genesisHash = await rpc.getGenesisHash().send();
     const genesisHashToChainId: Record<string, ChainId> = {
       "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d": "solana",
-      "EAQLJCV2mh23BsK2P9oYpV5CHVLDNHTxYss3URrNmg3s": "eclipse",
-      "EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG": "solana-devnet",
-      "CX4huckiV9QNAkKNVKi5Tj8nxzBive5kQimd94viMKsU": "eclipse-testnet",
+      EAQLJCV2mh23BsK2P9oYpV5CHVLDNHTxYss3URrNmg3s: "eclipse",
+      EtWTRABZaYq6iMfeYKouRu166VU2xqa1wcaWoxPkrZBG: "solana-devnet",
+      CX4huckiV9QNAkKNVKi5Tj8nxzBive5kQimd94viMKsU: "eclipse-testnet",
     };
     return genesisHashToChainId[genesisHash] || "unknown";
   } catch (error) {
     return "unknown";
   }
+}
+
+/**
+ * Sets the Jito block engine URL.
+ *
+ * @param {string} url - The Jito block engine URL.
+ */
+export async function setJitoBlockEngineUrl(url: string) {
+  setGlobalConfig({
+    ...globalConfig,
+    transactionConfig: {
+      ...getPriorityConfig(),
+      jitoBlockEngineUrl: url,
+    },
+  });
 }
 
 /**
@@ -216,16 +241,16 @@ export function setPriorityFeePercentile(percentile: Percentile) {
 
 type FeeSetting =
   | {
-    type: "dynamic";
-    maxCapLamports?: bigint;
-  }
+      type: "dynamic";
+      maxCapLamports?: bigint;
+    }
   | {
-    type: "exact";
-    amountLamports: bigint;
-  }
+      type: "exact";
+      amountLamports: bigint;
+    }
   | {
-    type: "none";
-  };
+      type: "none";
+    };
 
 /**
  * Configuration for transaction fees, including Jito and priority fee settings.
@@ -242,6 +267,7 @@ export type TransactionConfig = {
   jito: JitoFeeSetting;
   priorityFee: PriorityFeeSetting;
   computeUnitMarginMultiplier: number;
+  jitoBlockEngineUrl: string;
 };
 
 /**
@@ -252,7 +278,12 @@ export type Percentile = "25" | "50" | "75" | "95" | "99";
 /**
  * Represents a supported blockchain network chain ID.
  */
-export type ChainId = "solana" | "eclipse" | "solana-devnet" | "eclipse-testnet" | "unknown";
+export type ChainId =
+  | "solana"
+  | "eclipse"
+  | "solana-devnet"
+  | "eclipse-testnet"
+  | "unknown";
 
 /**
  * Configuration for RPC settings.

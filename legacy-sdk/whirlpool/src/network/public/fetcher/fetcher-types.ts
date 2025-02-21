@@ -8,6 +8,7 @@ import type {
 } from "@orca-so/common-sdk";
 import type {
   FeeTierData,
+  LockConfigData,
   PositionBundleData,
   PositionData,
   TickArrayData,
@@ -30,6 +31,7 @@ export type WhirlpoolSupportedTypes =
   | PositionBundleData
   | WhirlpoolsConfigExtensionData
   | TokenBadgeData
+  | LockConfigData
   | BasicSupportedTypes;
 
 /**
@@ -277,6 +279,26 @@ export interface WhirlpoolAccountFetcherInterface {
     addresses: Address[],
     opts?: WhirlpoolAccountFetchOptions,
   ): Promise<ReadonlyMap<string, TokenBadgeData | null>>;
+
+  /**
+   * Fetch and cache the account for a given LockConfig address
+   * @param address The address of the LockConfig account
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getLockConfig(
+    address: Address,
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<LockConfigData | null>;
+
+  /**
+   * Fetch and cache the accounts for a given array of LockConfig addresses
+   * @param addresses The array of LockConfig account addresses
+   * @param opts {@link WhirlpoolAccountFetchOptions} instance to dictate fetch behavior
+   */
+  getLockConfigs(
+    addresses: Address[],
+    opts?: WhirlpoolAccountFetchOptions,
+  ): Promise<ReadonlyMap<string, LockConfigData | null>>;
 
   /**
    * Populate the fetcher's cache with the given {@link WhirlpoolsData} accounts

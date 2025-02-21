@@ -576,7 +576,7 @@ export class WhirlpoolIx {
    * #### Special Errors
    * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
    *
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - OpenPositionWithTokenExtensionsParams object and a derived PDA that hosts the position's metadata.
    * @returns - Instruction to perform the action.
    */
@@ -592,7 +592,7 @@ export class WhirlpoolIx {
    * Mint and TokenAccount are based on Token-2022. And Mint accout will be also closed.
    *
    * @category Instructions
-   * @param context - Context object containing services required to generate the instruction
+   * @param program - program object containing services required to generate the instruction
    * @param params - ClosePositionWithTokenExtensionsParams object
    * @returns - Instruction to perform the action.
    */
@@ -601,6 +601,25 @@ export class WhirlpoolIx {
     params: ix.ClosePositionWithTokenExtensionsParams,
   ) {
     return ix.closePositionWithTokenExtensionsIx(program, params);
+  }
+
+  /**
+   * Lock the position to prevent any liquidity changes.
+   *
+   * #### Special Errors
+   * `PositionAlreadyLocked` - The provided position is already locked.
+   * `PositionNotLockable` - The provided position is not lockable (e.g. An empty position).
+   *
+   * @category Instructions
+   * @param program - program object containing services required to generate the instruction
+   * @param params - LockPositionParams object.
+   * @returns - Instruction to perform the action.
+   */
+  public static lockPositionIx(
+    program: Program<Whirlpool>,
+    params: ix.LockPositionParams,
+  ) {
+    return ix.lockPositionIx(program, params);
   }
 
   // V2 instructions

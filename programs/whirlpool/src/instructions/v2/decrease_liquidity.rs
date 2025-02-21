@@ -7,8 +7,8 @@ use crate::manager::liquidity_manager::{
 };
 use crate::math::convert_to_liquidity_delta;
 use crate::util::{
-    calculate_transfer_fee_excluded_amount, parse_remaining_accounts, AccountsType,
-    RemainingAccountsInfo,
+    calculate_transfer_fee_excluded_amount, is_locked_position, parse_remaining_accounts,
+    AccountsType, RemainingAccountsInfo,
 };
 use crate::util::{
     to_timestamp_u64, v2::transfer_from_vault_to_owner_v2, verify_position_authority_interface,
@@ -30,6 +30,10 @@ pub fn handler<'info>(
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;
+
+    if is_locked_position(&ctx.accounts.position_token_account) {
+        return Err(ErrorCode::OperationNotAllowedOnLockedPosition.into());
+    }
 
     let clock = Clock::get()?;
 

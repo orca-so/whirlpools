@@ -4,7 +4,10 @@ use anchor_spl::token_interface::{Mint, TokenAccount};
 
 use crate::errors::ErrorCode;
 use crate::state::*;
-use crate::util::{burn_and_close_user_position_token_2022, verify_position_authority_interface};
+use crate::util::{
+    burn_and_close_user_position_token_2022, is_locked_position,
+    verify_position_authority_interface,
+};
 
 #[derive(Accounts)]
 pub struct ClosePositionWithTokenExtensions<'info> {
@@ -39,6 +42,10 @@ pub fn handler(ctx: Context<ClosePositionWithTokenExtensions>) -> Result<()> {
         &ctx.accounts.position_token_account,
         &ctx.accounts.position_authority,
     )?;
+
+    if is_locked_position(&ctx.accounts.position_token_account) {
+        return Err(ErrorCode::OperationNotAllowedOnLockedPosition.into());
+    }
 
     if !Position::is_position_empty(&ctx.accounts.position) {
         return Err(ErrorCode::ClosePositionNotEmpty.into());

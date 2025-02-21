@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-docs
 
+## 0.1.3
+
+### Patch Changes
+
+- [#759](https://github.com/orca-so/whirlpools/pull/759) [`dfebc3a`](https://github.com/orca-so/whirlpools/commit/dfebc3ad707b6a70430e518930573a307ec6d7b2) Thanks [@calintje](https://github.com/calintje)! - Augment 'Understanding Tick Arrays' doc with SparseSwap information
+
 ## 0.1.2
 
 ### Patch Changes

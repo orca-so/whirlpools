@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-sdk
 
+## 0.13.16
+
+### Patch Changes
+
+- [#767](https://github.com/orca-so/whirlpools/pull/767) [`16e070e`](https://github.com/orca-so/whirlpools/commit/16e070e3f7099fcc653c791940d6f40b8472c9b2) Thanks [@wjthieme](https://github.com/wjthieme)! - Update the docs url to dev.orca.so
+
 ## 0.13.15
 
 ### Patch Changes

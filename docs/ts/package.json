@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-docs-ts",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "private": true,
   "scripts": {
     "build": "typedoc",

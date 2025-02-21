@@ -2,11 +2,11 @@
 
 Whirlpools provide two instructions - [`increase_liquidity`](https://github.com/orca-so/whirlpools/blob/a988854b3c63499835b4be3bda552182842a8aa1/programs/whirlpool/src/lib.rs#L211) and [`decrease_liquidity`](https://github.com/orca-so/whirlpools/blob/a988854b3c63499835b4be3bda552182842a8aa1/programs/whirlpool/src/lib.rs#L234) to allow users to modify their position's liquidity.
 
-The SDK also provides quote functions (ex. [`increaseLiquidityQuoteByInputToken`](https://orca-so.github.io/whirlpools/legacy/functions/increaseLiquidityQuoteByInputToken.html), [`decreaseLiquidityQuoteByLiquidity`](https://orca-so.github.io/whirlpools/legacy/functions/decreaseLiquidityQuoteByLiquidity.html)) to help estimate the tokenIn/Out from the liquidity operation.
+The SDK also provides quote functions (ex. [`increaseLiquidityQuoteByInputToken`](https://dev.orca.so/legacy/functions/increaseLiquidityQuoteByInputToken.html), [`decreaseLiquidityQuoteByLiquidity`](https://dev.orca.so/legacy/functions/decreaseLiquidityQuoteByLiquidity.html)) to help estimate the tokenIn/Out from the liquidity operation.
 
 ## Using Whirlpool Client
 
-Use the [`Position`](https://orca-so.github.io/whirlpools/legacy/interfaces/Position.html) class from the [`WhirlpoolClient`](https://orca-so.github.io/whirlpools/legacy/interfaces/WhirlpoolClient.html) to fetch and manage your liquidity. Read below for more on the relationship between quote and the transaction.
+Use the [`Position`](https://dev.orca.so/legacy/interfaces/Position.html) class from the [`WhirlpoolClient`](https://dev.orca.so/legacy/interfaces/WhirlpoolClient.html) to fetch and manage your liquidity. Read below for more on the relationship between quote and the transaction.
 
 ```tsx
 const position = await client.getPosition(positionAddress);
@@ -35,7 +35,7 @@ For each instruction, calculate the following values:
 The Typescript SDK provides several quote functions to help generate an estimate based on common user input values.
 
 ### Increase liquidity quote by input token amount
-Given a desired amount of input token (A or B), you can use the quote utility function [`increaseLiquidityQuoteByInputTokenWithParams`](https://orca-so.github.io/whirlpools/legacy/functions/increaseLiquidityQuoteByInputTokenWithParams.html) to calculate the liquidityAmount and other tokenMax value required to deposit the desired amount of token into the position.
+Given a desired amount of input token (A or B), you can use the quote utility function [`increaseLiquidityQuoteByInputTokenWithParams`](https://dev.orca.so/legacy/functions/increaseLiquidityQuoteByInputTokenWithParams.html) to calculate the liquidityAmount and other tokenMax value required to deposit the desired amount of token into the position.
 
 The quote amount will differ based on the current price (tick) and the desired tick boundaries for the position. The price environment may change from the time of quote to the actual processing of the [`increase_liquidity`](https://github.com/orca-so/whirlpools/blob/a988854b3c63499835b4be3bda552182842a8aa1/programs/whirlpool/src/lib.rs#L211) ix. Use the slippage tolerance to adjust the quote values to balance your risk of ix failure and total tokens to deposit.
 
@@ -59,7 +59,7 @@ const quote = await increaseLiquidityQuoteByInputTokenWithParams({
 ```
 
 ### Decrease liquidity quote by input token amount
-Given the liquidity amount, use the [`decreaseLiquidityQuoteByLiquidityWithParams`](https://orca-so.github.io/whirlpools/legacy/functions/decreaseLiquidityQuoteByLiquidityWithParams.html) util function to get an estimate on what's the minimum token A & B you can expect from the [`decrease_liquidity`](https://github.com/orca-so/whirlpools/blob/a988854b3c63499835b4be3bda552182842a8aa1/programs/whirlpool/src/lib.rs#L234) instruction call.
+Given the liquidity amount, use the [`decreaseLiquidityQuoteByLiquidityWithParams`](https://dev.orca.so/legacy/functions/decreaseLiquidityQuoteByLiquidityWithParams.html) util function to get an estimate on what's the minimum token A & B you can expect from the [`decrease_liquidity`](https://github.com/orca-so/whirlpools/blob/a988854b3c63499835b4be3bda552182842a8aa1/programs/whirlpool/src/lib.rs#L234) instruction call.
 
 Like [`increase_liquidity`](https://github.com/orca-so/whirlpools/blob/a988854b3c63499835b4be3bda552182842a8aa1/programs/whirlpool/src/lib.rs#L211), use the slippage tolerance to adjust the quote values to balance your risk of ix failure and total tokens to deposit.
 
@@ -85,7 +85,7 @@ const depositQuote = decreaseLiquidityQuoteByLiquidityWithParams({
 - **position** - PublicKey of the position address. Derivable from PDAUtil.getPosition.
 - **positionTokenAccount** - Associated token address of the position token on the user's wallet.
 - **tokenOwnerAccount A, B** - Associated token address of the tokenA,B on the user's wallet.
-- **tokenVaults A, B** - PublicKey of the token vaults for this 
+- **tokenVaults A, B** - PublicKey of the token vaults for this
 - **tickArrayLower, Upper** - Lower & upper tick-array accounts that contains the tick indices for the lower, upper bound of the position
 - **positionAuthority** - The address that hosts the position token. This authority must sign the transaction.
 

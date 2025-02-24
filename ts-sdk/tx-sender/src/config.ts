@@ -1,3 +1,4 @@
+import type { Rpc, SolanaRpcApi } from "@solana/web3.js";
 import { rpcFromUrl } from "./compatibility";
 
 let globalConfig: {
@@ -124,7 +125,9 @@ export async function setRpc(
   });
 }
 
-async function getChainIdFromGenesisHash(rpc: any): Promise<ChainId> {
+async function getChainIdFromGenesisHash(
+  rpc: Rpc<SolanaRpcApi>,
+): Promise<ChainId> {
   // not all rpc endpoints support getGenesisHash
   try {
     const genesisHash = await rpc.getGenesisHash().send();
@@ -136,6 +139,7 @@ async function getChainIdFromGenesisHash(rpc: any): Promise<ChainId> {
     };
     return genesisHashToChainId[genesisHash] || "unknown";
   } catch (error) {
+    console.warn("Error getting chain ID from genesis hash", error);
     return "unknown";
   }
 }

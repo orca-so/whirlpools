@@ -24,7 +24,7 @@ import type { TxMessage } from "./priorityFees";
 
 export async function processComputeBudgetForTxMessage(
   message: TxMessage,
-  computeUnits: number
+  computeUnits: number,
 ) {
   const { rpcUrl, supportsPriorityFeePercentile } = getRpcConfig();
   const priorityFee = getPriorityFeeConfig();
@@ -38,7 +38,7 @@ export async function processComputeBudgetForTxMessage(
       message.instructions,
       rpcUrl,
       supportsPriorityFeePercentile,
-      priorityFee.priorityFeePercentile ?? "50"
+      priorityFee.priorityFeePercentile ?? "50",
     );
 
     if (!priorityFee.maxCapLamports) {
@@ -59,7 +59,7 @@ export async function processComputeBudgetForTxMessage(
       getSetComputeUnitPriceInstruction({
         microLamports: priorityFeeMicroLamports,
       }),
-      message
+      message,
     );
   }
   message = prependTransactionMessageInstruction(
@@ -67,10 +67,10 @@ export async function processComputeBudgetForTxMessage(
       units: Math.ceil(
         computeUnits *
           (computeUnitMarginMultiplier ??
-            DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER)
+            DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER),
       ),
     }),
-    message
+    message,
   );
 
   return message;
@@ -92,14 +92,14 @@ async function calculateDynamicPriorityFees(
   instructions: readonly IInstruction[],
   rpcUrl: string,
   supportsPercentile: boolean,
-  percentile: Percentile
+  percentile: Percentile,
 ) {
   const writableAccounts = getWritableAccounts(instructions);
   if (supportsPercentile) {
     return await getRecentPrioritizationFeesWithPercentile(
       rpcUrl,
       writableAccounts,
-      percentile
+      percentile,
     );
   } else {
     const rpc = rpcFromUrl(rpcUrl);
@@ -120,7 +120,7 @@ async function calculateDynamicPriorityFees(
 async function getRecentPrioritizationFeesWithPercentile(
   rpcEndpoint: string,
   writableAccounts: Address[],
-  percentile: Percentile
+  percentile: Percentile,
 ) {
   const response = await fetch(rpcEndpoint, {
     method: "POST",

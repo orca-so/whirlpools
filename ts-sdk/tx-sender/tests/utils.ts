@@ -79,10 +79,13 @@ export async function encodeTransaction(
     compiledMessage,
   ) as TransactionMessageBytes;
 
-  // @ts-ignore
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const __brand = "" as any;
+
   return {
     messageBytes,
     signatures: { [feePayer.address]: new Uint8Array() as SignatureBytes },
     lifetimeConstraint: message.lifetimeConstraint,
+    __brand,
   };
 }

@@ -227,7 +227,13 @@ mod fuzz_tests {
             let fee_amount = swap_computation.fee_amount;
 
             // Amount_in can not exceed maximum amount
-            assert!(amount_in <= u64::MAX - fee_amount);
+            if amount_specified_is_input {
+                assert!(amount_in <= u64::MAX - fee_amount);
+            } else {
+                // in ExactOut mode, input + fee may exceeds u64::MAX
+                // higher fee rate reveals this issue
+                // note: swap_manager will detect this case with checked_add
+            }
 
             // Amounts calculated are less than amount specified
             let amount_used = if amount_specified_is_input {
@@ -277,12 +283,16 @@ mod fuzz_tests {
             let fee_amount = swap_computation.fee_amount;
 
             let inverted_amount = if amount_specified_is_input {
-                amount_out
+                Some(amount_out)
             } else {
-                amount_in + fee_amount
+                // in ExactOut mode, input + fee may exceeds u64::MAX
+                // higher fee rate reveals this issue
+                // note: swap_manager will detect this case with checked_add
+                amount_in.checked_add(fee_amount)
             };
 
-            if inverted_amount != 0 {
+            if let Some(inverted_amount) = inverted_amount {
+                if inverted_amount != 0 {
                 let inverted = compute_swap(
                     inverted_amount,
                     fee_rate,
@@ -381,6 +391,7 @@ mod fuzz_tests {
                     // }
                 }
             }
+        }
         }
     }
 }

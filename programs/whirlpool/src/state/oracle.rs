@@ -83,7 +83,7 @@ impl AdaptiveFeeConstants {
 #[derive(Default, Debug)]
 pub struct AdaptiveFeeVariables {
     // Last timestamp the variables was updated
-    pub last_update_timestamp: i64,
+    pub last_update_timestamp: u64,
     // Volatility reference is decayed volatility accumulator
     pub volatility_reference: u32,
     // Active tick group index of last swap
@@ -115,20 +115,25 @@ impl AdaptiveFeeVariables {
     pub fn update_reference(
         &mut self,
         tick_group_index: i32,
-        current_timestamp: i64,
+        current_timestamp: u64,
         adaptive_fee_constants: &AdaptiveFeeConstants,
-    ) {
+    ) -> Result<()> {
+        if current_timestamp < self.last_update_timestamp {
+            return Err(ErrorCode::InvalidTimestamp.into());
+        }
+
         let elapsed = current_timestamp - self.last_update_timestamp;
 
-        if elapsed < adaptive_fee_constants.filter_period as i64 {
+        if elapsed < adaptive_fee_constants.filter_period as u64 {
             // high frequency trade
             // no change
-        } else if elapsed < adaptive_fee_constants.decay_period as i64 {
+        } else if elapsed < adaptive_fee_constants.decay_period as u64 {
             // NOT high frequency trade
             self.tick_group_index_reference = tick_group_index;
             self.volatility_reference = (u64::from(self.volatility_accumulator)
                 * u64::from(adaptive_fee_constants.reduction_factor)
-                / u64::from(REDUCTION_FACTOR_DENOMINATOR)) as u32;
+                / u64::from(REDUCTION_FACTOR_DENOMINATOR))
+                as u32;
         } else {
             // Out of decay time window
             self.tick_group_index_reference = tick_group_index;
@@ -136,6 +141,8 @@ impl AdaptiveFeeVariables {
         }
 
         self.last_update_timestamp = current_timestamp;
+
+        Ok(())
     }
 }
 
@@ -332,7 +339,7 @@ mod data_layout_tests {
         let af_const_max_volatility_accumulator = 0xaabbccddu32;
         let af_const_tick_group_size = 0xeeffu16;
 
-        let af_var_last_update_timestamp = 0x1122334455667788i64;
+        let af_var_last_update_timestamp = 0x1122334455667788u64;
         let af_var_volatility_reference = 0x99aabbccu32;
         let af_var_tick_group_index_reference = 0x00ddeeffi32;
         let af_var_volatility_accumulator = 0x11223344u32;
@@ -495,7 +502,7 @@ mod oracle_tests {
     fn test_update_adaptive_fee_variables() {
         let mut oracle = Oracle::default();
 
-        let last_update_timestamp = 0x1122334455667788i64;
+        let last_update_timestamp = 0x1122334455667788u64;
         let volatility_reference = 0x99aabbccu32;
         let tick_group_index_reference = 0x00ddeeffi32;
         let volatility_accumulator = 0x11223344u32;
@@ -542,7 +549,7 @@ mod adaptive_fee_variables_tests {
 
     fn check_variables(
         variables: &AdaptiveFeeVariables,
-        last_update_timestamp: i64,
+        last_update_timestamp: u64,
         tick_group_index_reference: i32,
         volatility_reference: u32,
         volatility_accumulator: u32,
@@ -568,7 +575,9 @@ mod adaptive_fee_variables_tests {
             let tick_group_index = 5;
             let current_timestamp = 1738824616;
 
-            variables.update_reference(tick_group_index, current_timestamp, &constants);
+            variables
+                .update_reference(tick_group_index, current_timestamp, &constants)
+                .unwrap();
             check_variables(
                 &variables,
                 current_timestamp, // should be updated
@@ -589,13 +598,17 @@ mod adaptive_fee_variables_tests {
             let current_timestamp = 1738824616;
 
             // should be updated
-            variables.update_reference(tick_group_index, current_timestamp, &constants);
+            variables
+                .update_reference(tick_group_index, current_timestamp, &constants)
+                .unwrap();
             check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
 
             let updated_tick_group_index = 6;
 
             // should be ignored (elapsed time is less than filter_period)
-            variables.update_reference(updated_tick_group_index, current_timestamp, &constants);
+            variables
+                .update_reference(updated_tick_group_index, current_timestamp, &constants)
+                .unwrap();
             check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
         }
 
@@ -608,7 +621,9 @@ mod adaptive_fee_variables_tests {
             let current_timestamp = 1738824616;
 
             // should be updated
-            variables.update_reference(tick_group_index, current_timestamp, &constants);
+            variables
+                .update_reference(tick_group_index, current_timestamp, &constants)
+                .unwrap();
             check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
 
             variables
@@ -623,14 +638,16 @@ mod adaptive_fee_variables_tests {
             );
 
             let updated_tick_group_index = 10;
-            let updated_current_timestamp = current_timestamp + constants.filter_period as i64 - 1;
+            let updated_current_timestamp = current_timestamp + constants.filter_period as u64 - 1;
 
             // only last_update_timestamp should be updated
-            variables.update_reference(
-                updated_tick_group_index,
-                updated_current_timestamp,
-                &constants,
-            );
+            variables
+                .update_reference(
+                    updated_tick_group_index,
+                    updated_current_timestamp,
+                    &constants,
+                )
+                .unwrap();
             check_variables(
                 &variables,
                 updated_current_timestamp,
@@ -649,7 +666,9 @@ mod adaptive_fee_variables_tests {
             let current_timestamp = 1738824616;
 
             // should be updated
-            variables.update_reference(tick_group_index, current_timestamp, &constants);
+            variables
+                .update_reference(tick_group_index, current_timestamp, &constants)
+                .unwrap();
             check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
 
             variables
@@ -664,14 +683,16 @@ mod adaptive_fee_variables_tests {
             );
 
             let updated_tick_group_index = 10;
-            let updated_current_timestamp = current_timestamp + constants.filter_period as i64;
+            let updated_current_timestamp = current_timestamp + constants.filter_period as u64;
 
             // should be updated
-            variables.update_reference(
-                updated_tick_group_index,
-                updated_current_timestamp,
-                &constants,
-            );
+            variables
+                .update_reference(
+                    updated_tick_group_index,
+                    updated_current_timestamp,
+                    &constants,
+                )
+                .unwrap();
             check_variables(
                 &variables,
                 updated_current_timestamp,
@@ -690,7 +711,9 @@ mod adaptive_fee_variables_tests {
             let current_timestamp = 1738824616;
 
             // should be updated
-            variables.update_reference(tick_group_index, current_timestamp, &constants);
+            variables
+                .update_reference(tick_group_index, current_timestamp, &constants)
+                .unwrap();
             check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
 
             variables
@@ -705,14 +728,16 @@ mod adaptive_fee_variables_tests {
             );
 
             let updated_tick_group_index = 10;
-            let updated_current_timestamp = current_timestamp + constants.filter_period as i64 + 1;
+            let updated_current_timestamp = current_timestamp + constants.filter_period as u64 + 1;
 
             // should be updated
-            variables.update_reference(
-                updated_tick_group_index,
-                updated_current_timestamp,
-                &constants,
-            );
+            variables
+                .update_reference(
+                    updated_tick_group_index,
+                    updated_current_timestamp,
+                    &constants,
+                )
+                .unwrap();
             check_variables(
                 &variables,
                 updated_current_timestamp,
@@ -734,14 +759,16 @@ mod adaptive_fee_variables_tests {
 
             let updated_tick_group_index = 20;
             let updated_current_timestamp =
-                updated_current_timestamp + constants.decay_period as i64 - 1;
+                updated_current_timestamp + constants.decay_period as u64 - 1;
 
             // should be updated
-            variables.update_reference(
-                updated_tick_group_index,
-                updated_current_timestamp,
-                &constants,
-            );
+            variables
+                .update_reference(
+                    updated_tick_group_index,
+                    updated_current_timestamp,
+                    &constants,
+                )
+                .unwrap();
             check_variables(
                 &variables,
                 updated_current_timestamp,
@@ -760,7 +787,9 @@ mod adaptive_fee_variables_tests {
             let current_timestamp = 1738824616;
 
             // should be updated
-            variables.update_reference(tick_group_index, current_timestamp, &constants);
+            variables
+                .update_reference(tick_group_index, current_timestamp, &constants)
+                .unwrap();
             check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
 
             variables
@@ -775,14 +804,16 @@ mod adaptive_fee_variables_tests {
             );
 
             let updated_tick_group_index = 10;
-            let updated_current_timestamp = current_timestamp + constants.filter_period as i64 + 1;
+            let updated_current_timestamp = current_timestamp + constants.filter_period as u64 + 1;
 
             // should be updated
-            variables.update_reference(
-                updated_tick_group_index,
-                updated_current_timestamp,
-                &constants,
-            );
+            variables
+                .update_reference(
+                    updated_tick_group_index,
+                    updated_current_timestamp,
+                    &constants,
+                )
+                .unwrap();
             check_variables(
                 &variables,
                 updated_current_timestamp,
@@ -804,14 +835,16 @@ mod adaptive_fee_variables_tests {
 
             let updated_tick_group_index = 20;
             let updated_current_timestamp =
-                updated_current_timestamp + constants.decay_period as i64;
+                updated_current_timestamp + constants.decay_period as u64;
 
             // should be updated
-            variables.update_reference(
-                updated_tick_group_index,
-                updated_current_timestamp,
-                &constants,
-            );
+            variables
+                .update_reference(
+                    updated_tick_group_index,
+                    updated_current_timestamp,
+                    &constants,
+                )
+                .unwrap();
             check_variables(
                 &variables,
                 updated_current_timestamp,
@@ -841,7 +874,9 @@ mod adaptive_fee_variables_tests {
             let current_timestamp = 1738824616;
 
             // should be updated
-            variables.update_reference(tick_group_index, current_timestamp, &constants);
+            variables
+                .update_reference(tick_group_index, current_timestamp, &constants)
+                .unwrap();
             check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
 
             variables
@@ -856,14 +891,16 @@ mod adaptive_fee_variables_tests {
             );
 
             let updated_tick_group_index = 10;
-            let updated_current_timestamp = current_timestamp + constants.filter_period as i64 + 1;
+            let updated_current_timestamp = current_timestamp + constants.filter_period as u64 + 1;
 
             // should be updated
-            variables.update_reference(
-                updated_tick_group_index,
-                updated_current_timestamp,
-                &constants,
-            );
+            variables
+                .update_reference(
+                    updated_tick_group_index,
+                    updated_current_timestamp,
+                    &constants,
+                )
+                .unwrap();
             check_variables(
                 &variables,
                 updated_current_timestamp,
@@ -885,14 +922,16 @@ mod adaptive_fee_variables_tests {
 
             let updated_tick_group_index = 20;
             let updated_current_timestamp =
-                updated_current_timestamp + constants.decay_period as i64 + 1;
+                updated_current_timestamp + constants.decay_period as u64 + 1;
 
             // should be updated
-            variables.update_reference(
-                updated_tick_group_index,
-                updated_current_timestamp,
-                &constants,
-            );
+            variables
+                .update_reference(
+                    updated_tick_group_index,
+                    updated_current_timestamp,
+                    &constants,
+                )
+                .unwrap();
             check_variables(
                 &variables,
                 updated_current_timestamp,
@@ -925,7 +964,9 @@ mod adaptive_fee_variables_tests {
             let tick_group_index = 5;
             let current_timestamp = 1738824616;
 
-            variables.update_reference(tick_group_index, current_timestamp, &constants);
+            variables
+                .update_reference(tick_group_index, current_timestamp, &constants)
+                .unwrap();
             check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
 
             // no change on volatility_accumulator
@@ -944,7 +985,9 @@ mod adaptive_fee_variables_tests {
                 let tick_group_index = 5;
                 let current_timestamp = 1738824616;
 
-                variables.update_reference(tick_group_index, current_timestamp, &constants);
+                variables
+                    .update_reference(tick_group_index, current_timestamp, &constants)
+                    .unwrap();
                 check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
 
                 variables
@@ -972,7 +1015,9 @@ mod adaptive_fee_variables_tests {
                 let tick_group_index = 5;
                 let current_timestamp = 1738824616;
 
-                variables.update_reference(tick_group_index, current_timestamp, &constants);
+                variables
+                    .update_reference(tick_group_index, current_timestamp, &constants)
+                    .unwrap();
                 check_variables(&variables, current_timestamp, tick_group_index, 0, 0);
 
                 variables
@@ -1003,7 +1048,9 @@ mod adaptive_fee_variables_tests {
                     .max_volatility_accumulator
                     .min(nth as u32 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32);
 
-                variables.update_reference(tick_group_index, current_timestamp, &constants);
+                variables
+                    .update_reference(tick_group_index, current_timestamp, &constants)
+                    .unwrap();
                 variables
                     .update_volatility_accumulator(tick_group_index, &constants)
                     .unwrap();

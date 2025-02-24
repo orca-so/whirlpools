@@ -42,12 +42,12 @@ impl FeeRateManager {
     pub fn new(
         a_to_b: bool,
         current_tick_index: i32,
-        timestamp: i64,
+        timestamp: u64,
         static_fee_rate: u16,
         adaptive_fee_info: Option<AdaptiveFeeInfo>,
-    ) -> Self {
+    ) -> Result<Self> {
         match adaptive_fee_info {
-            None => Self::Static { static_fee_rate },
+            None => Ok(Self::Static { static_fee_rate }),
             Some(adaptive_fee_info) => {
                 let tick_group_index = floor_division(
                     current_tick_index,
@@ -61,15 +61,15 @@ impl FeeRateManager {
                     tick_group_index,
                     timestamp,
                     &adaptive_fee_constants,
-                );
+                )?;
 
-                Self::Adaptive {
+                Ok(Self::Adaptive {
                     a_to_b,
                     tick_group_index,
                     static_fee_rate,
                     adaptive_fee_constants,
                     adaptive_fee_variables,
-                }
+                })
             }
         }
     }
@@ -198,7 +198,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_new() {
         let static_fee_rate = 3000;
-        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None);
+        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
 
         match fee_rate_manager {
             FeeRateManager::Static {
@@ -213,7 +213,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_update_volatility_accumulator() {
         let static_fee_rate = 3000;
-        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None);
+        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
 
         let result = fee_rate_manager.update_volatility_accumulator();
         assert_eq!(result, Ok(()));
@@ -232,7 +232,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_advance_tick_group() {
         let static_fee_rate = 3000;
-        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None);
+        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
 
         fee_rate_manager.advance_tick_group();
 
@@ -250,7 +250,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_get_total_fee_rate() {
         let static_fee_rate = 3000;
-        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None);
+        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
 
         // total fee = static fee (no adaptive fee)
         let total_fee_rate = fee_rate_manager.get_total_fee_rate();
@@ -260,7 +260,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_get_bounded_sqrt_price_target() {
         let static_fee_rate = 3000;
-        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None);
+        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
 
         fn check_not_bounded(fee_rate_manager: &FeeRateManager, sqrt_price: u128) {
             let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
@@ -289,7 +289,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_get_next_adaptive_fee_info() {
         let static_fee_rate = 3000;
-        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None);
+        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
 
         let next_adaptive_fee_info = fee_rate_manager.get_next_adaptive_fee_info();
         assert!(next_adaptive_fee_info.is_none());
@@ -342,7 +342,7 @@ mod adaptive_fee_rate_manager_tests {
 
     fn check_variables(
         adaptive_fee_variables: &AdaptiveFeeVariables,
-        last_update_timestamp: i64,
+        last_update_timestamp: u64,
         tick_group_index_reference: i32,
         volatility_reference: u32,
         volatility_accumulator: u32,
@@ -356,7 +356,7 @@ mod adaptive_fee_rate_manager_tests {
     fn check_tick_group_index_and_variables(
         fee_rate_manager: &FeeRateManager,
         tick_group_index: i32,
-        last_update_timestamp: i64,
+        last_update_timestamp: u64,
         tick_group_index_reference: i32,
         volatility_reference: u32,
         volatility_accumulator: u32,
@@ -393,7 +393,8 @@ mod adaptive_fee_rate_manager_tests {
             timestamp,
             static_fee_rate,
             Some(adaptive_fee_info.clone()),
-        );
+        )
+        .unwrap();
         match fee_rate_manager {
             FeeRateManager::Adaptive {
                 a_to_b,
@@ -429,14 +430,15 @@ mod adaptive_fee_rate_manager_tests {
 
         let current_tick_index = 1024;
         let timestamp = adaptive_fee_info.variables.last_update_timestamp
-            + adaptive_fee_info.constants.decay_period as i64;
+            + adaptive_fee_info.constants.decay_period as u64;
         let fee_rate_manager = FeeRateManager::new(
             false,
             current_tick_index,
             timestamp,
             static_fee_rate,
             Some(adaptive_fee_info.clone()),
-        );
+        )
+        .unwrap();
         match fee_rate_manager {
             FeeRateManager::Adaptive {
                 a_to_b,
@@ -479,14 +481,15 @@ mod adaptive_fee_rate_manager_tests {
         let current_tick_index = 1024;
         // reset references
         let timestamp = adaptive_fee_info.variables.last_update_timestamp
-            + adaptive_fee_info.constants.decay_period as i64;
+            + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             false,
             current_tick_index,
             timestamp,
             static_fee_rate,
             Some(adaptive_fee_info.clone()),
-        );
+        )
+        .unwrap();
 
         // delta = 0
         fee_rate_manager.update_volatility_accumulator().unwrap();
@@ -525,14 +528,15 @@ mod adaptive_fee_rate_manager_tests {
         let current_tick_index = 64;
         // reset references
         let timestamp = adaptive_fee_info.variables.last_update_timestamp
-            + adaptive_fee_info.constants.decay_period as i64;
+            + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             true,
             current_tick_index,
             timestamp,
             static_fee_rate,
             Some(adaptive_fee_info.clone()),
-        );
+        )
+        .unwrap();
 
         // delta = 0
         fee_rate_manager.update_volatility_accumulator().unwrap();
@@ -571,7 +575,9 @@ mod adaptive_fee_rate_manager_tests {
             let timestamp = 1738863309;
             let base_tick_group_index = 16;
 
-            variables.update_reference(base_tick_group_index, timestamp, &constants);
+            variables
+                .update_reference(base_tick_group_index, timestamp, &constants)
+                .unwrap();
             for (delta, pre_calculated_fee_rate) in pre_calculated_fee_rates.iter().enumerate() {
                 let tick_group_index = base_tick_group_index + delta as i32;
 
@@ -759,7 +765,7 @@ mod adaptive_fee_rate_manager_tests {
         let static_fee_rate = 10_000; // 1%
 
         let mut fee_rate_manager =
-            FeeRateManager::new(true, 1024, timestamp, static_fee_rate, adaptive_fee_info);
+            FeeRateManager::new(true, 1024, timestamp, static_fee_rate, adaptive_fee_info).unwrap();
 
         /*
          # Google Colaboratory
@@ -814,14 +820,15 @@ mod adaptive_fee_rate_manager_tests {
         let current_tick_index = 1024 + 32;
         // reset references
         let timestamp = adaptive_fee_info.variables.last_update_timestamp
-            + adaptive_fee_info.constants.decay_period as i64;
+            + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             true,
             current_tick_index,
             timestamp,
             static_fee_rate,
             Some(adaptive_fee_info.clone()),
-        );
+        )
+        .unwrap();
 
         // a to b = right(positive) to left(negative)
 
@@ -860,14 +867,15 @@ mod adaptive_fee_rate_manager_tests {
         let current_tick_index = 1024 + 32;
         // reset references
         let timestamp = adaptive_fee_info.variables.last_update_timestamp
-            + adaptive_fee_info.constants.decay_period as i64;
+            + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             false,
             current_tick_index,
             timestamp,
             static_fee_rate,
             Some(adaptive_fee_info.clone()),
-        );
+        )
+        .unwrap();
 
         // b to a = left(negative) to right(positive)
 
@@ -909,14 +917,15 @@ mod adaptive_fee_rate_manager_tests {
         let current_tick_index = 64;
         // reset references
         let timestamp = adaptive_fee_info.variables.last_update_timestamp
-            + adaptive_fee_info.constants.decay_period as i64;
+            + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             true,
             current_tick_index,
             timestamp,
             static_fee_rate,
             Some(adaptive_fee_info.clone()),
-        );
+        )
+        .unwrap();
 
         fee_rate_manager.update_volatility_accumulator().unwrap();
         fee_rate_manager.advance_tick_group();

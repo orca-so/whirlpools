@@ -82,10 +82,10 @@ pub fn swap(
     let mut fee_rate_manager = FeeRateManager::new(
         a_to_b,
         whirlpool.tick_current_index, // note:  -1 shift is acceptable
-        timestamp as i64,
+        timestamp,
         fee_rate,
         adaptive_fee_info,
-    );
+    )?;
 
     while amount_remaining > 0 && adjusted_sqrt_price_limit != curr_sqrt_price {
         let (next_array_index, next_tick_index) = swap_tick_sequence

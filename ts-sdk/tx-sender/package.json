@@ -1,0 +1,40 @@
+{
+  "name": "@orca-so/tx-sender",
+  "version": "0.1.0",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    "import": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    },
+    "require": {
+      "types": "./dist/index.d.cts",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
+    "test": "vitest run tests",
+    "clean": "rimraf dist"
+  },
+  "dependencies": {
+    "@solana-program/address-lookup-table": "^0.6.1",
+    "@solana-program/compute-budget": "^0.6.1",
+    "@solana-program/system": "^0.6.2"
+  },
+  "peerDependencies": {
+    "@solana/web3.js": "^2.0.0"
+  },
+  "devDependencies": {
+    "@solana/web3.js": "^2.0.0",
+    "tsup": "^8.3.6"
+  }
+}

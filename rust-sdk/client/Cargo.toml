@@ -1,9 +1,9 @@
 [package]
 name = "orca_whirlpools_client"
-version = "2.0.1"
+version = "2.0.2"
 description = "Rust client to interact with Orca's on-chain Whirlpool program."
 include = ["src/*"]
-documentation = "https://orca-so.github.io/whirlpools/"
+documentation = "https://dev.orca.so/"
 homepage = "https://orca.so"
 repository = "https://github.com/orca-so/whirlpools"
 license = "Apache-2.0"

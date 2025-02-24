@@ -26,7 +26,7 @@ For specific use-cases you can opt for integrating with lower level packages suc
 
 The legacy Typescript SDK (`@orca-so/whirlpools-sdk`) remains a solid choice, and it’s currently the only option if your project uses Solana Web3.js versions below v2.
 
-For a more detailed overview of our SDK suite and usage examples, visit our [developer documentation](https://orca-so.github.io/whirlpools/) site.
+For a more detailed overview of our SDK suite and usage examples, visit our [developer documentation](https://dev.orca.so/) site.
 
 ## Local Development
 

@@ -11,8 +11,10 @@ use std::cell::RefMut;
 #[derive(Default, Debug)]
 pub struct AdaptiveFeeConstants {
     // Period determine high frequency trading time window
+    // The unit of time is "seconds" and is applied to the chain's block time
     pub filter_period: u16,
     // Period determine when the adaptive fee start decrease
+    // The unit of time is "seconds" and is applied to the chain's block time
     pub decay_period: u16,
     // Adaptive fee rate decrement rate
     pub reduction_factor: u16,
@@ -82,7 +84,7 @@ impl AdaptiveFeeConstants {
 #[repr(C, packed)]
 #[derive(Default, Debug)]
 pub struct AdaptiveFeeVariables {
-    // Last timestamp the variables was updated
+    // Last timestamp (block time) the variables was updated
     pub last_update_timestamp: u64,
     // Volatility reference is decayed volatility accumulator
     pub volatility_reference: u32,

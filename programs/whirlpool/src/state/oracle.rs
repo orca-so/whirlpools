@@ -1,6 +1,6 @@
 use crate::errors::ErrorCode;
 use crate::manager::fee_rate_manager::{
-    ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, MAX_REDUCTION_FACTOR,
+    ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, REDUCTION_FACTOR_DENOMINATOR,
     VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
 };
 use anchor_lang::prelude::*;
@@ -62,7 +62,7 @@ impl AdaptiveFeeConstants {
         }
 
         // reduction_factor validation
-        if reduction_factor >= MAX_REDUCTION_FACTOR {
+        if reduction_factor >= REDUCTION_FACTOR_DENOMINATOR {
             return false;
         }
 
@@ -128,7 +128,7 @@ impl AdaptiveFeeVariables {
             self.tick_group_index_reference = tick_group_index;
             self.volatility_reference = (u64::from(self.volatility_accumulator)
                 * u64::from(adaptive_fee_constants.reduction_factor)
-                / u64::from(MAX_REDUCTION_FACTOR)) as u32;
+                / u64::from(REDUCTION_FACTOR_DENOMINATOR)) as u32;
         } else {
             // Out of decay time window
             self.tick_group_index_reference = tick_group_index;

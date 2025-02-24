@@ -6,11 +6,23 @@ use crate::{
 };
 use anchor_lang::prelude::*;
 
+// This constant is used to scale the value of the volatility accumulator.
+// The value of the volatility accumulator is decayed by the reduction factor and used as a new reference.
+// However, if the volatility accumulator is simply the difference in tick_group_index, a value of 1 would quickly decay to 0.
+// By scaling 1 to 10,000, for example, if the reduction factor is 0.5, the resulting value would be 5,000.
 pub const VOLATILITY_ACCUMULATOR_SCALE_FACTOR: u16 = 10_000;
-pub const MAX_REDUCTION_FACTOR: u16 = 10_000;
+
+// The denominator of the reduction factor.
+// When the reduction_factor is 5_000, the reduction factor functions as 0.5.
+pub const REDUCTION_FACTOR_DENOMINATOR: u16 = 10_000;
+
+// adaptive_fee_control_factor is used to map the square of the volatility accumulator to the fee rate.
+// A larger value increases the fee rate quickly even for small volatility, while a smaller value increases the fee rate more gradually even for high volatility.
+// When the adaptive_fee_control_factor is 1_000, the adaptive fee control factor functions as 0.01.
 pub const ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR: u32 = 100_000;
 
-// max fee rate should be controlled by max_volatility_accumulator, so this is a hard limit for safety
+// max fee rate should be controlled by max_volatility_accumulator, so this is a hard limit for safety.
+// Fee rate is represented as hundredths of a basis point.
 pub const FEE_RATE_HARD_LIMIT: u32 = 100_000; // 10%
 
 pub enum FeeRateManager {

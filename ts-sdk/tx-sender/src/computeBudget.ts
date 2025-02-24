@@ -24,7 +24,7 @@ import type { TxMessage } from "./priorityFees";
 
 export async function processComputeBudgetForTxMessage(
   message: TxMessage,
-  computeUnits: number,
+  computeUnits: number
 ) {
   const { rpcUrl, supportsPriorityFeePercentile } = getRpcConfig();
   const priorityFee = getPriorityFeeConfig();
@@ -38,7 +38,7 @@ export async function processComputeBudgetForTxMessage(
       message.instructions,
       rpcUrl,
       supportsPriorityFeePercentile,
-      priorityFee.priorityFeePercentile ?? "50",
+      priorityFee.priorityFeePercentile ?? "50"
     );
 
     if (!priorityFee.maxCapLamports) {
@@ -59,7 +59,7 @@ export async function processComputeBudgetForTxMessage(
       getSetComputeUnitPriceInstruction({
         microLamports: priorityFeeMicroLamports,
       }),
-      message,
+      message
     );
   }
   message = prependTransactionMessageInstruction(
@@ -67,10 +67,10 @@ export async function processComputeBudgetForTxMessage(
       units: Math.ceil(
         computeUnits *
           (computeUnitMarginMultiplier ??
-            DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER),
+            DEFAULT_COMPUTE_UNIT_MARGIN_MULTIPLIER)
       ),
     }),
-    message,
+    message
   );
 
   return message;
@@ -92,14 +92,14 @@ async function calculateDynamicPriorityFees(
   instructions: readonly IInstruction[],
   rpcUrl: string,
   supportsPercentile: boolean,
-  percentile: Percentile,
+  percentile: Percentile
 ) {
   const writableAccounts = getWritableAccounts(instructions);
   if (supportsPercentile) {
     return await getRecentPrioritizationFeesWithPercentile(
       rpcUrl,
       writableAccounts,
-      percentile,
+      percentile
     );
   } else {
     const rpc = rpcFromUrl(rpcUrl);
@@ -111,9 +111,8 @@ async function calculateDynamicPriorityFees(
       .map((pf) => pf.prioritizationFee);
     const sorted = nonZero.sort((a, b) => Number(a - b));
     return (
-      sorted[
-        Math.floor(sorted.length * (percentileNumber(percentile) / 100))
-      ] || BigInt(0)
+      sorted[Math.floor(sorted.length * (parseInt(percentile) / 100))] ||
+      BigInt(0)
     );
   }
 }
@@ -121,7 +120,7 @@ async function calculateDynamicPriorityFees(
 async function getRecentPrioritizationFeesWithPercentile(
   rpcEndpoint: string,
   writableAccounts: Address[],
-  percentile: Percentile,
+  percentile: Percentile
 ) {
   const response = await fetch(rpcEndpoint, {
     method: "POST",
@@ -135,7 +134,7 @@ async function getRecentPrioritizationFeesWithPercentile(
       params: [
         {
           lockedWritableAccounts: writableAccounts,
-          percentile: percentileNumber(percentile) * 100,
+          percentile: parseInt(percentile) * 100,
         },
       ],
     }),
@@ -166,18 +165,3 @@ type RecentPrioritizationFee = {
   /** Slot in which the fee was observed */
   slot: Slot;
 };
-
-function percentileNumber(percentile: Percentile) {
-  switch (percentile) {
-    case "25":
-      return 25;
-    case "50":
-      return 50;
-    case "75":
-      return 75;
-    case "95":
-      return 95;
-    case "99":
-      return 99;
-  }
-}

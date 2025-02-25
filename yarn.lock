@@ -4181,7 +4181,7 @@ __metadata:
   dependencies:
     "@orca-so/common-sdk": "npm:*"
     "@orca-so/whirlpools-sdk": "npm:*"
-    typedoc: "npm:^0.27.8"
+    typedoc: "npm:^0.27.9"
     typescript: "npm:^5.7.3"
   languageName: unknown
   linkType: soft
@@ -4203,7 +4203,7 @@ __metadata:
     "@orca-so/whirlpools": "npm:*"
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"
-    typedoc: "npm:^0.27.8"
+    typedoc: "npm:^0.27.9"
     typedoc-plugin-merge-modules: "npm:^6.1.0"
     typescript: "npm:^5.7.3"
   languageName: unknown
@@ -17809,9 +17809,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typedoc@npm:^0.27.8":
-  version: 0.27.8
-  resolution: "typedoc@npm:0.27.8"
+"typedoc@npm:^0.27.9":
+  version: 0.27.9
+  resolution: "typedoc@npm:0.27.9"
   dependencies:
     "@gerrit0/mini-shiki": "npm:^1.24.0"
     lunr: "npm:^2.3.9"
@@ -17819,10 +17819,10 @@ __metadata:
     minimatch: "npm:^9.0.5"
     yaml: "npm:^2.6.1"
   peerDependencies:
-    typescript: 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x || 5.7.x
+    typescript: 5.0.x || 5.1.x || 5.2.x || 5.3.x || 5.4.x || 5.5.x || 5.6.x || 5.7.x || 5.8.x
   bin:
     typedoc: bin/typedoc
-  checksum: 10c0/640921f9b514b92ba94151a9c784e8071b0a229fd6749107fc1985d14d896a7d0f8538c15c2d73b3dffa4589c7c53d85da6003c0d5d921f21d1812768b3dece9
+  checksum: 10c0/999668d9d23e1824b762e2c411e2c0860d0ce4a2e61f23a2c31d36a1d6337a763553bc75205aee25ce34659e9315315c720694e9eccd7e7e4755873fdfec1192
   languageName: node
   linkType: hard
 

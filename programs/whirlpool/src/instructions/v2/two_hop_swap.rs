@@ -383,74 +383,36 @@ pub fn handler<'info>(
     */
 
     let pre_sqrt_price_one = whirlpool_one.sqrt_price;
-    let (input_amount_one, input_transfer_fee_one, output_amount_one, output_transfer_fee_one) =
-        if a_to_b_one {
-            (
-                swap_update_one.amount_a,
-                calculate_transfer_fee_excluded_amount(
-                    &ctx.accounts.token_mint_input,
-                    swap_update_one.amount_a,
-                )?
-                .transfer_fee,
-                swap_update_one.amount_b,
-                calculate_transfer_fee_excluded_amount(
-                    &ctx.accounts.token_mint_intermediate,
-                    swap_update_one.amount_b,
-                )?
-                .transfer_fee,
-            )
-        } else {
-            (
-                swap_update_one.amount_b,
-                calculate_transfer_fee_excluded_amount(
-                    &ctx.accounts.token_mint_input,
-                    swap_update_one.amount_b,
-                )?
-                .transfer_fee,
-                swap_update_one.amount_a,
-                calculate_transfer_fee_excluded_amount(
-                    &ctx.accounts.token_mint_intermediate,
-                    swap_update_one.amount_a,
-                )?
-                .transfer_fee,
-            )
-        };
+    let (input_amount_one, output_amount_one) = if a_to_b_one {
+        (swap_update_one.amount_a, swap_update_one.amount_b)
+    } else {
+        (swap_update_one.amount_b, swap_update_one.amount_a)
+    };
+    let input_transfer_fee_one =
+        calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_input, input_amount_one)?
+            .transfer_fee;
+    let output_transfer_fee_one = calculate_transfer_fee_excluded_amount(
+        &ctx.accounts.token_mint_intermediate,
+        output_amount_one,
+    )?
+    .transfer_fee;
     let (lp_fee_one, protocol_fee_one) =
         (swap_update_one.lp_fee, swap_update_one.next_protocol_fee);
 
     let pre_sqrt_price_two = whirlpool_two.sqrt_price;
-    let (input_amount_two, input_transfer_fee_two, output_amount_two, output_transfer_fee_two) =
-        if a_to_b_two {
-            (
-                swap_update_two.amount_a,
-                calculate_transfer_fee_excluded_amount(
-                    &ctx.accounts.token_mint_intermediate,
-                    swap_update_two.amount_a,
-                )?
-                .transfer_fee,
-                swap_update_two.amount_b,
-                calculate_transfer_fee_excluded_amount(
-                    &ctx.accounts.token_mint_output,
-                    swap_update_two.amount_b,
-                )?
-                .transfer_fee,
-            )
-        } else {
-            (
-                swap_update_two.amount_b,
-                calculate_transfer_fee_excluded_amount(
-                    &ctx.accounts.token_mint_intermediate,
-                    swap_update_two.amount_b,
-                )?
-                .transfer_fee,
-                swap_update_two.amount_a,
-                calculate_transfer_fee_excluded_amount(
-                    &ctx.accounts.token_mint_output,
-                    swap_update_two.amount_a,
-                )?
-                .transfer_fee,
-            )
-        };
+    let (input_amount_two, output_amount_two) = if a_to_b_two {
+        (swap_update_two.amount_a, swap_update_two.amount_b)
+    } else {
+        (swap_update_two.amount_b, swap_update_two.amount_a)
+    };
+    let input_transfer_fee_two = calculate_transfer_fee_excluded_amount(
+        &ctx.accounts.token_mint_intermediate,
+        input_amount_two,
+    )?
+    .transfer_fee;
+    let output_transfer_fee_two =
+        calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_output, output_amount_two)?
+            .transfer_fee;
     let (lp_fee_two, protocol_fee_two) =
         (swap_update_two.lp_fee, swap_update_two.next_protocol_fee);
 

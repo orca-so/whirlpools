@@ -146,37 +146,17 @@ pub fn handler<'info>(
     }
 
     let pre_sqrt_price = whirlpool.sqrt_price;
-    let (input_amount, input_transfer_fee, output_amount, output_transfer_fee) = if a_to_b {
-        (
-            swap_update.amount_a,
-            calculate_transfer_fee_excluded_amount(
-                &ctx.accounts.token_mint_a,
-                swap_update.amount_a,
-            )?
-            .transfer_fee,
-            swap_update.amount_b,
-            calculate_transfer_fee_excluded_amount(
-                &ctx.accounts.token_mint_b,
-                swap_update.amount_b,
-            )?
-            .transfer_fee,
-        )
+    let (input_amount, output_amount) = if a_to_b {
+        (swap_update.amount_a, swap_update.amount_b)
     } else {
-        (
-            swap_update.amount_b,
-            calculate_transfer_fee_excluded_amount(
-                &ctx.accounts.token_mint_b,
-                swap_update.amount_b,
-            )?
-            .transfer_fee,
-            swap_update.amount_a,
-            calculate_transfer_fee_excluded_amount(
-                &ctx.accounts.token_mint_a,
-                swap_update.amount_a,
-            )?
-            .transfer_fee,
-        )
+        (swap_update.amount_b, swap_update.amount_a)
     };
+    let input_transfer_fee =
+        calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_a, input_amount)?
+            .transfer_fee;
+    let output_transfer_fee =
+        calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_b, output_amount)?
+            .transfer_fee;
     let (lp_fee, protocol_fee) = (swap_update.lp_fee, swap_update.next_protocol_fee);
 
     update_and_swap_whirlpool_v2(

@@ -4,7 +4,7 @@
   "description": "Common Typescript components across Orca",
   "repository": "https://github.com/orca-so/orca-sdks",
   "author": "Orca Foundation",
-  "license": "MIT",
+  "license": "SEE LICENSE IN LICENSE",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "peerDependencies": {
@@ -27,6 +27,7 @@
   },
   "files": [
     "/dist",
-    "README.md"
+    "README.md",
+    "../../LICENSE"
   ]
 }

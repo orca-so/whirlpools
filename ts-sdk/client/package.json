@@ -19,7 +19,8 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "../../LICENSE"
   ],
   "scripts": {
     "build": "node ./codama.js && tsup src/index.ts --format cjs,esm --dts --sourcemap",
@@ -42,7 +43,7 @@
     "type": "git",
     "url": "git+https://github.com/orca-so/whirlpools.git"
   },
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "keywords": [
     "solana",
     "crypto",

@@ -1,4 +1,4 @@
-# tx-sender
+# @orca-so/tx-sender
 
 A lightweight TypeScript package for building and sending Solana transactions with support for priority fees and Jito tips. (based on @solana/web3.js 2.0)
 
@@ -45,3 +45,14 @@ const txHash = await buildAndSendTransaction(
   keypairSigner
 );
 ```
+
+## Default Fee Settings
+
+By default, tx-sender uses the following configuration:
+
+- Priority Fees: Dynamic pricing with a max cap of 0.004 SOL (4,000,000 lamports), using the 50th percentile fee
+- Jito Tips: Dynamic pricing with a max cap of 0.004 SOL (4,000,000 lamports), using the 50th percentile fee
+- Compute Unit Margin: 1.1x multiplier for compute unit calculation (10% margin)
+- Jito Block Engine URL: https://bundles.jito.wtf
+
+These defaults can be overridden using the configuration functions shown in the example above.

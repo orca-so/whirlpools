@@ -7,6 +7,8 @@ pub mod constants;
 #[doc(hidden)]
 pub mod errors;
 #[doc(hidden)]
+pub mod events;
+#[doc(hidden)]
 pub mod instructions;
 #[doc(hidden)]
 pub mod manager;

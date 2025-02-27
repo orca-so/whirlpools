@@ -2,6 +2,7 @@ use anchor_lang::prelude::*;
 
 use crate::constants::transfer_memo;
 use crate::errors::ErrorCode;
+use crate::events::*;
 use crate::manager::liquidity_manager::{
     calculate_liquidity_token_deltas, calculate_modify_liquidity, sync_modify_liquidity_values,
 };
@@ -112,6 +113,18 @@ pub fn handler<'info>(
         delta_b,
         transfer_memo::TRANSFER_MEMO_DECREASE_LIQUIDITY.as_bytes(),
     )?;
+
+    emit!(LiquidityDecreased {
+        whirlpool: ctx.accounts.whirlpool.key(),
+        position: ctx.accounts.position.key(),
+        tick_lower_index: ctx.accounts.position.tick_lower_index,
+        tick_upper_index: ctx.accounts.position.tick_upper_index,
+        liquidity: liquidity_amount,
+        token_a_amount: delta_a,
+        token_b_amount: delta_b,
+        token_a_transfer_fee: transfer_fee_excluded_delta_a.transfer_fee,
+        token_b_transfer_fee: transfer_fee_excluded_delta_b.transfer_fee,
+    });
 
     Ok(())
 }

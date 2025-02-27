@@ -69,3 +69,9 @@ fn validate_owner(expected_owner: &Pubkey, owner_account_info: &AccountInfo) -> 
 pub fn to_timestamp_u64(t: i64) -> Result<u64> {
     u64::try_from(t).or(Err(ErrorCode::InvalidTimestampConversion.into()))
 }
+
+pub fn is_locked_position(
+    position_token_account: &InterfaceAccount<'_, TokenAccountInterface>,
+) -> bool {
+    position_token_account.is_frozen()
+}

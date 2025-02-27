@@ -26,6 +26,7 @@ import type {
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
 import {
   getTokenBalance,
+  sleep,
   TEST_TOKEN_2022_PROGRAM_ID,
   TEST_TOKEN_PROGRAM_ID,
   TickSpacing,
@@ -49,6 +50,7 @@ import {
   NO_TOKEN_EXTENSION_CONTEXT,
   TokenExtensionUtil,
 } from "../../../src/utils/public/token-extension-util";
+import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../../dist/types/public/constants";
 
 describe("two_hop_swap_v2", () => {
   const provider = anchor.AnchorProvider.local(
@@ -1844,6 +1846,159 @@ describe("two_hop_swap_v2", () => {
               }),
             ).buildAndExecute(),
           );
+        });
+
+        it("emit Traded event", async () => {
+          const aquarium = (await buildTestAquariumsV2(ctx, [aqConfig]))[0];
+          const { tokenAccounts, mintKeys, pools } = aquarium;
+
+          const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+          const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+          const whirlpoolDataOne = (await fetcher.getPool(
+            whirlpoolOneKey,
+            IGNORE_CACHE,
+          )) as WhirlpoolData;
+          const whirlpoolDataTwo = (await fetcher.getPool(
+            whirlpoolTwoKey,
+            IGNORE_CACHE,
+          )) as WhirlpoolData;
+
+          const [inputToken, intermediaryToken, _outputToken] = mintKeys;
+
+          const aToBOne = whirlpoolDataOne.tokenMintA.equals(inputToken);
+          const quote = swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: true,
+              aToB: aToBOne,
+              tokenAmount: new BN(1000),
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBOne),
+              whirlpoolData: whirlpoolDataOne,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolDataOne.tickCurrentIndex,
+                whirlpoolDataOne.tickSpacing,
+                aToBOne,
+                ctx.program.programId,
+                whirlpoolOneKey,
+                fetcher,
+                IGNORE_CACHE,
+              ),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataOne,
+                  IGNORE_CACHE,
+                ),
+            },
+            Percentage.fromFraction(1, 100),
+          );
+
+          const aToBTwo = whirlpoolDataTwo.tokenMintA.equals(intermediaryToken);
+          const quote2 = swapQuoteWithParams(
+            {
+              amountSpecifiedIsInput: true,
+              aToB: aToBTwo,
+              tokenAmount: quote.estimatedAmountOut,
+              otherAmountThreshold:
+                SwapUtils.getDefaultOtherAmountThreshold(true),
+              sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToBTwo),
+              whirlpoolData: whirlpoolDataTwo,
+              tickArrays: await SwapUtils.getTickArrays(
+                whirlpoolDataTwo.tickCurrentIndex,
+                whirlpoolDataTwo.tickSpacing,
+                aToBTwo,
+                ctx.program.programId,
+                whirlpoolTwoKey,
+                fetcher,
+                IGNORE_CACHE,
+              ),
+              tokenExtensionCtx:
+                await TokenExtensionUtil.buildTokenExtensionContext(
+                  fetcher,
+                  whirlpoolDataTwo,
+                  IGNORE_CACHE,
+                ),
+            },
+            Percentage.fromFraction(1, 100),
+          );
+
+          const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
+
+          const whirlpoolOnePre = whirlpoolDataOne;
+          const whirlpoolTwoPre = whirlpoolDataTwo;
+
+          // event verification
+          let eventVerifiedOne = false;
+          let eventVerifiedTwo = false;
+          let detectedSignatureOne = null;
+          let detectedSignatureTwo = null;
+          const listener = ctx.program.addEventListener(
+            "Traded",
+            (event, _slot, signature) => {
+              // verify
+              if (event.whirlpool.equals(whirlpoolOneKey)) {
+                detectedSignatureOne = signature;
+                assert.ok(event.whirlpool.equals(whirlpoolOneKey));
+                assert.ok(event.aToB === quote.aToB);
+                assert.ok(event.preSqrtPrice.eq(whirlpoolOnePre.sqrtPrice));
+                assert.ok(event.postSqrtPrice.eq(quote.estimatedEndSqrtPrice));
+                assert.ok(event.inputAmount.eq(quote.estimatedAmountIn));
+                assert.ok(event.outputAmount.eq(quote.estimatedAmountOut));
+                assert.ok(event.inputTransferFee.isZero());
+                assert.ok(event.outputTransferFee.isZero());
+
+                const protocolFee = quote.estimatedFeeAmount
+                  .muln(whirlpoolOnePre.protocolFeeRate)
+                  .div(PROTOCOL_FEE_RATE_MUL_VALUE);
+                const lpFee = quote.estimatedFeeAmount.sub(protocolFee);
+                assert.ok(event.lpFee.eq(lpFee));
+                assert.ok(event.protocolFee.eq(protocolFee));
+
+                eventVerifiedOne = true;
+              } else if (event.whirlpool.equals(whirlpoolTwoKey)) {
+                detectedSignatureTwo = signature;
+                assert.ok(event.whirlpool.equals(whirlpoolTwoKey));
+                assert.ok(event.aToB === quote2.aToB);
+                assert.ok(event.preSqrtPrice.eq(whirlpoolTwoPre.sqrtPrice));
+                assert.ok(event.postSqrtPrice.eq(quote2.estimatedEndSqrtPrice));
+                assert.ok(event.inputAmount.eq(quote2.estimatedAmountIn));
+                assert.ok(event.outputAmount.eq(quote2.estimatedAmountOut));
+                assert.ok(event.inputTransferFee.isZero());
+                assert.ok(event.outputTransferFee.isZero());
+
+                const protocolFee = quote2.estimatedFeeAmount
+                  .muln(whirlpoolTwoPre.protocolFeeRate)
+                  .div(PROTOCOL_FEE_RATE_MUL_VALUE);
+                const lpFee = quote2.estimatedFeeAmount.sub(protocolFee);
+                assert.ok(event.lpFee.eq(lpFee));
+                assert.ok(event.protocolFee.eq(protocolFee));
+
+                eventVerifiedTwo = true;
+              }
+            },
+          );
+
+          const signature = await toTx(
+            ctx,
+            WhirlpoolIx.twoHopSwapV2Ix(ctx.program, {
+              ...twoHopQuote,
+              ...getParamsFromPools(
+                [pools[0], pools[1]],
+                [twoHopQuote.aToBOne, twoHopQuote.aToBTwo],
+                tokenAccounts,
+              ),
+              tokenAuthority: ctx.wallet.publicKey,
+            }),
+          ).buildAndExecute();
+
+          await sleep(2000);
+          assert.equal(signature, detectedSignatureOne);
+          assert.equal(signature, detectedSignatureTwo);
+          assert.ok(eventVerifiedOne);
+          assert.ok(eventVerifiedTwo);
+
+          ctx.program.removeEventListener(listener);
         });
       });
     });

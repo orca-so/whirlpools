@@ -9,6 +9,7 @@ use crate::util::{
 use crate::{
     constants::transfer_memo,
     errors::ErrorCode,
+    events::*,
     manager::swap_manager::*,
     state::Whirlpool,
     util::{
@@ -144,6 +145,40 @@ pub fn handler<'info>(
         }
     }
 
+    let pre_sqrt_price = whirlpool.sqrt_price;
+    let (input_amount, input_transfer_fee, output_amount, output_transfer_fee) = if a_to_b {
+        (
+            swap_update.amount_a,
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_a,
+                swap_update.amount_a,
+            )?
+            .transfer_fee,
+            swap_update.amount_b,
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_b,
+                swap_update.amount_b,
+            )?
+            .transfer_fee,
+        )
+    } else {
+        (
+            swap_update.amount_b,
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_b,
+                swap_update.amount_b,
+            )?
+            .transfer_fee,
+            swap_update.amount_a,
+            calculate_transfer_fee_excluded_amount(
+                &ctx.accounts.token_mint_a,
+                swap_update.amount_a,
+            )?
+            .transfer_fee,
+        )
+    };
+    let (lp_fee, protocol_fee) = (swap_update.lp_fee, swap_update.next_protocol_fee);
+
     update_and_swap_whirlpool_v2(
         whirlpool,
         &ctx.accounts.token_authority,
@@ -162,7 +197,22 @@ pub fn handler<'info>(
         a_to_b,
         timestamp,
         transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
-    )
+    )?;
+
+    emit!(Traded {
+        whirlpool: whirlpool.key(),
+        a_to_b,
+        pre_sqrt_price,
+        post_sqrt_price: whirlpool.sqrt_price,
+        input_amount,
+        output_amount,
+        input_transfer_fee,
+        output_transfer_fee,
+        lp_fee,
+        protocol_fee,
+    });
+
+    Ok(())
 }
 
 #[allow(clippy::too_many_arguments)]
@@ -231,6 +281,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
         return Ok(PostSwapUpdate {
             amount_a, // updated (transfer fee included)
             amount_b, // updated (transfer fee included)
+            lp_fee: swap_update.lp_fee,
             next_liquidity: swap_update.next_liquidity,
             next_tick_index: swap_update.next_tick_index,
             next_sqrt_price: swap_update.next_sqrt_price,
@@ -281,6 +332,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
     Ok(PostSwapUpdate {
         amount_a, // updated (transfer fee included)
         amount_b, // updated (transfer fee included)
+        lp_fee: swap_update.lp_fee,
         next_liquidity: swap_update.next_liquidity,
         next_tick_index: swap_update.next_tick_index,
         next_sqrt_price: swap_update.next_sqrt_price,

@@ -3,6 +3,7 @@ use anchor_spl::token::{self, Token, TokenAccount};
 
 use crate::{
     errors::ErrorCode,
+    events::*,
     manager::swap_manager::*,
     state::Whirlpool,
     util::{to_timestamp_u64, update_and_swap_whirlpool, SparseSwapTickSequenceBuilder},
@@ -243,6 +244,15 @@ pub fn handler(
         }
     }
 
+    let pre_sqrt_price_one = whirlpool_one.sqrt_price;
+    let (input_amount_one, output_amount_one) = if a_to_b_one {
+        (swap_update_one.amount_a, swap_update_one.amount_b)
+    } else {
+        (swap_update_one.amount_b, swap_update_one.amount_a)
+    };
+    let (lp_fee_one, protocol_fee_one) =
+        (swap_update_one.lp_fee, swap_update_one.next_protocol_fee);
+
     update_and_swap_whirlpool(
         whirlpool_one,
         &ctx.accounts.token_authority,
@@ -256,6 +266,15 @@ pub fn handler(
         timestamp,
     )?;
 
+    let pre_sqrt_price_two = whirlpool_two.sqrt_price;
+    let (input_amount_two, output_amount_two) = if a_to_b_two {
+        (swap_update_two.amount_a, swap_update_two.amount_b)
+    } else {
+        (swap_update_two.amount_b, swap_update_two.amount_a)
+    };
+    let (lp_fee_two, protocol_fee_two) =
+        (swap_update_two.lp_fee, swap_update_two.next_protocol_fee);
+
     update_and_swap_whirlpool(
         whirlpool_two,
         &ctx.accounts.token_authority,
@@ -267,5 +286,33 @@ pub fn handler(
         swap_update_two,
         a_to_b_two,
         timestamp,
-    )
+    )?;
+
+    emit!(Traded {
+        whirlpool: whirlpool_one.key(),
+        a_to_b: a_to_b_one,
+        pre_sqrt_price: pre_sqrt_price_one,
+        post_sqrt_price: whirlpool_one.sqrt_price,
+        input_amount: input_amount_one,
+        output_amount: output_amount_one,
+        input_transfer_fee: 0,
+        output_transfer_fee: 0,
+        lp_fee: lp_fee_one,
+        protocol_fee: protocol_fee_one,
+    });
+
+    emit!(Traded {
+        whirlpool: whirlpool_two.key(),
+        a_to_b: a_to_b_two,
+        pre_sqrt_price: pre_sqrt_price_two,
+        post_sqrt_price: whirlpool_two.sqrt_price,
+        input_amount: input_amount_two,
+        output_amount: output_amount_two,
+        input_transfer_fee: 0,
+        output_transfer_fee: 0,
+        lp_fee: lp_fee_two,
+        protocol_fee: protocol_fee_two,
+    });
+
+    Ok(())
 }

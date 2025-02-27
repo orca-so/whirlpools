@@ -20,6 +20,7 @@ import {
   ZERO_BN,
   asyncAssertTokenVault,
   createMint,
+  sleep,
   systemTransferTx,
 } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
@@ -28,6 +29,12 @@ import {
   initFeeTier,
   initTestPool,
 } from "../utils/init-utils";
+import {
+  createInitializeMintInstruction,
+  TOKEN_PROGRAM_ID,
+} from "@solana/spl-token";
+import { Keypair, SystemProgram } from "@solana/web3.js";
+import { PoolUtil } from "../../dist/utils/public/pool-utils";
 
 describe("initialize_pool", () => {
   const provider = anchor.AnchorProvider.local(
@@ -484,5 +491,120 @@ describe("initialize_pool", () => {
     )) as WhirlpoolData;
     assert.equal(whirlpool.whirlpoolBump, validBump);
     assert.notEqual(whirlpool.whirlpoolBump, invalidBump);
+  });
+
+  it("emit PoolInitialized event", async () => {
+    const { poolInitInfo } = await buildTestPoolParams(
+      ctx,
+      TickSpacing.Standard,
+    );
+
+    const whirlpoolsConfig = poolInitInfo.whirlpoolsConfig;
+    const tickSpacing = poolInitInfo.tickSpacing;
+
+    // initialize mint with various decimals
+    const tokenXKeypair = Keypair.generate();
+    const tokenYKeypair = Keypair.generate();
+    const [tokenAKeypair, tokenBKeypair] =
+      PoolUtil.compareMints(tokenXKeypair.publicKey, tokenYKeypair.publicKey) <
+      0
+        ? [tokenXKeypair, tokenYKeypair]
+        : [tokenYKeypair, tokenXKeypair];
+    const decimalsA = 7;
+    const decimalsB = 11;
+    await toTx(ctx, {
+      instructions: [
+        SystemProgram.createAccount({
+          fromPubkey: ctx.wallet.publicKey,
+          newAccountPubkey: tokenAKeypair.publicKey,
+          space: 82,
+          lamports:
+            await ctx.provider.connection.getMinimumBalanceForRentExemption(82),
+          programId: TOKEN_PROGRAM_ID,
+        }),
+        createInitializeMintInstruction(
+          tokenAKeypair.publicKey,
+          decimalsA,
+          ctx.wallet.publicKey,
+          null,
+          TOKEN_PROGRAM_ID,
+        ),
+        SystemProgram.createAccount({
+          fromPubkey: ctx.wallet.publicKey,
+          newAccountPubkey: tokenBKeypair.publicKey,
+          space: 82,
+          lamports:
+            await ctx.provider.connection.getMinimumBalanceForRentExemption(82),
+          programId: TOKEN_PROGRAM_ID,
+        }),
+        createInitializeMintInstruction(
+          tokenBKeypair.publicKey,
+          decimalsB,
+          ctx.wallet.publicKey,
+          null,
+          TOKEN_PROGRAM_ID,
+        ),
+      ],
+      cleanupInstructions: [],
+      signers: [tokenAKeypair, tokenBKeypair],
+    }).buildAndExecute();
+
+    const initSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(123456);
+    const tokenVaultAKeypair = Keypair.generate();
+    const tokenVaultBKeypair = Keypair.generate();
+    const whirlpoolPda = PDAUtil.getWhirlpool(
+      ctx.program.programId,
+      whirlpoolsConfig,
+      tokenAKeypair.publicKey,
+      tokenBKeypair.publicKey,
+      tickSpacing,
+    );
+
+    // event verification
+    let eventVerified = false;
+    let detectedSignature = null;
+    const listener = ctx.program.addEventListener(
+      "PoolInitialized",
+      (event, _slot, signature) => {
+        detectedSignature = signature;
+        // verify
+        assert.equal(event.decimalsA, decimalsA);
+        assert.equal(event.decimalsB, decimalsB);
+        assert.equal(event.tickSpacing, tickSpacing);
+        assert.ok(event.initialSqrtPrice.eq(initSqrtPrice));
+        assert.ok(event.tokenMintA.equals(tokenAKeypair.publicKey));
+        assert.ok(event.tokenMintB.equals(tokenBKeypair.publicKey));
+        assert.ok(event.tokenProgramA.equals(TOKEN_PROGRAM_ID));
+        assert.ok(event.tokenProgramB.equals(TOKEN_PROGRAM_ID));
+        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+        assert.ok(event.whirlpoolsConfig.equals(whirlpoolsConfig));
+        eventVerified = true;
+      },
+    );
+
+    const signature = await toTx(
+      ctx,
+      WhirlpoolIx.initializePoolIx(ctx.program, {
+        feeTierKey: poolInitInfo.feeTierKey,
+        funder: ctx.wallet.publicKey,
+        initSqrtPrice,
+        tickSpacing,
+        whirlpoolsConfig,
+        tokenMintA: tokenAKeypair.publicKey,
+        tokenMintB: tokenBKeypair.publicKey,
+        tokenVaultAKeypair,
+        tokenVaultBKeypair,
+        whirlpoolPda,
+      }),
+    )
+      .addSigner(tokenVaultAKeypair)
+      .addSigner(tokenVaultBKeypair)
+      .buildAndExecute();
+
+    await sleep(2000);
+    assert.equal(signature, detectedSignature);
+    assert.ok(eventVerified);
+
+    ctx.program.removeEventListener(listener);
   });
 });

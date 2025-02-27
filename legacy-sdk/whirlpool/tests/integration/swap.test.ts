@@ -23,7 +23,13 @@ import {
   toTx,
 } from "../../src";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
-import { MAX_U64, TickSpacing, ZERO_BN, getTokenBalance } from "../utils";
+import {
+  MAX_U64,
+  TickSpacing,
+  ZERO_BN,
+  getTokenBalance,
+  sleep,
+} from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import type { FundedPositionParams } from "../utils/init-utils";
 import {
@@ -35,6 +41,7 @@ import {
   withdrawPositions,
 } from "../utils/init-utils";
 import type { PublicKey } from "@solana/web3.js";
+import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../dist/types/public/constants";
 
 describe("swap", () => {
   const provider = anchor.AnchorProvider.local(
@@ -1164,6 +1171,103 @@ describe("swap", () => {
     );
 
     // TODO: Verify fees and other whirlpool params
+  });
+
+  it("emit Traded event", async () => {
+    const { poolInitInfo, whirlpoolPda, tokenAccountA, tokenAccountB } =
+      await initTestPoolWithTokens(ctx, TickSpacing.Standard);
+    const aToB = false;
+    await initTickArrayRange(
+      ctx,
+      whirlpoolPda.publicKey,
+      22528, // to 33792
+      3,
+      TickSpacing.Standard,
+      aToB,
+    );
+
+    const fundParams: FundedPositionParams[] = [
+      {
+        liquidityAmount: new anchor.BN(10_000_000),
+        tickLowerIndex: 29440,
+        tickUpperIndex: 33536,
+      },
+    ];
+
+    await fundPositions(
+      ctx,
+      poolInitInfo,
+      tokenAccountA,
+      tokenAccountB,
+      fundParams,
+    );
+
+    const oraclePda = PDAUtil.getOracle(
+      ctx.program.programId,
+      whirlpoolPda.publicKey,
+    );
+
+    const whirlpoolKey = poolInitInfo.whirlpoolPda.publicKey;
+    const whirlpool = await client.getPool(whirlpoolKey, IGNORE_CACHE);
+    const whirlpoolDataPre = whirlpool.getData();
+    const quote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolDataPre.tokenMintB,
+      new BN(100000),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    const preSqrtPrice = whirlpoolDataPre.sqrtPrice;
+    // event verification
+    let eventVerified = false;
+    let detectedSignature = null;
+    const listener = ctx.program.addEventListener(
+      "Traded",
+      (event, _slot, signature) => {
+        detectedSignature = signature;
+        // verify
+        assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+        assert.ok(event.aToB === aToB);
+        assert.ok(event.preSqrtPrice.eq(preSqrtPrice));
+        assert.ok(event.postSqrtPrice.eq(quote.estimatedEndSqrtPrice));
+        assert.ok(event.inputAmount.eq(quote.estimatedAmountIn));
+        assert.ok(event.outputAmount.eq(quote.estimatedAmountOut));
+        assert.ok(event.inputTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+        assert.ok(event.outputTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+
+        const protocolFee = quote.estimatedFeeAmount
+          .muln(whirlpool.getData().protocolFeeRate)
+          .div(PROTOCOL_FEE_RATE_MUL_VALUE);
+        const lpFee = quote.estimatedFeeAmount.sub(protocolFee);
+        assert.ok(event.lpFee.eq(lpFee));
+        assert.ok(event.protocolFee.eq(protocolFee));
+
+        eventVerified = true;
+      },
+    );
+
+    const signature = await toTx(
+      ctx,
+      WhirlpoolIx.swapIx(ctx.program, {
+        ...quote,
+        whirlpool: whirlpoolPda.publicKey,
+        tokenAuthority: ctx.wallet.publicKey,
+        tokenOwnerAccountA: tokenAccountA,
+        tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+        tokenOwnerAccountB: tokenAccountB,
+        tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+        oracle: oraclePda.publicKey,
+      }),
+    ).buildAndExecute();
+
+    await sleep(2000);
+    assert.equal(signature, detectedSignature);
+    assert.ok(eventVerified);
+
+    ctx.program.removeEventListener(listener);
   });
 
   /* using sparse-swap, we can handle uninitialized tick-array. so this test is no longer needed.

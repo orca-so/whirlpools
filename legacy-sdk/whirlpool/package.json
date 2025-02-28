@@ -2,7 +2,7 @@
   "name": "@orca-so/whirlpools-sdk",
   "version": "0.13.16",
   "description": "Typescript SDK to interact with Orca's Whirlpool program.",
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "peerDependencies": {
@@ -31,7 +31,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "../../LICENSE"
   ],
   "repository": {
     "type": "git",

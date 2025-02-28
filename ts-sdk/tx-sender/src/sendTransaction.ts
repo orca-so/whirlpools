@@ -6,12 +6,12 @@ import type {
   FullySignedTransaction,
   Signature,
   Commitment,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   assertTransactionIsFullySigned,
   getBase64EncodedWireTransaction,
   getBase58Decoder,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import { rpcFromUrl } from "./compatibility";
 import { buildTransaction } from "./buildTransaction";
 

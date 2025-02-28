@@ -33,7 +33,7 @@ Adjusting liquidity in an existing position can be done as follows:
         <TabItem value="ts" label="Typescript" default>
             ```tsx
             import { decreaseLiquidityInstructions, increaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-            import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+            import { createSolanaRpc, devnet, address } from '@solana/kit';
             import { loadWallet } from './utils';
 
             await setWhirlpoolsConfig('solanaDevnet');
@@ -105,7 +105,7 @@ Adjusting liquidity in an existing position can be done as follows:
             ```
         </TabItem>
     </Tabs>
-    
+
 7. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK.
 
 ## 3. Usage example

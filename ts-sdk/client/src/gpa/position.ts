@@ -4,12 +4,12 @@ import type {
   GetProgramAccountsApi,
   Rpc,
   Address,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   getBase58Decoder,
   getAddressEncoder,
   getI32Encoder,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import type { Position } from "../generated/accounts/position";
 import {
   POSITION_DISCRIMINATOR,

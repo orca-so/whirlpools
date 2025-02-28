@@ -4,12 +4,12 @@ import type {
   GetProgramAccountsApi,
   GetProgramAccountsMemcmpFilter,
   Rpc,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   getAddressEncoder,
   getBase58Decoder,
   getI32Encoder,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import type { TickArray } from "../generated/accounts/tickArray";
 import {
   TICK_ARRAY_DISCRIMINATOR,

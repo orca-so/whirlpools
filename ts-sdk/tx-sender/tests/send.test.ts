@@ -12,10 +12,10 @@ import type {
   Rpc,
   SolanaRpcApi,
   TransactionMessageBytes,
-} from "@solana/web3.js";
-import { generateKeyPairSigner } from "@solana/web3.js";
+} from "@solana/kit";
+import { generateKeyPairSigner } from "@solana/kit";
 import { getTransferSolInstruction } from "@solana-program/system";
-import { address } from "@solana/web3.js";
+import { address } from "@solana/kit";
 import {
   setRpc,
   setPriorityFeeSetting,
@@ -25,8 +25,8 @@ import {
 import { encodeTransaction } from "./utils";
 import { buildTransaction } from "../src/buildTransaction";
 
-vi.mock("@solana/web3.js", async () => {
-  const actual = await vi.importActual("@solana/web3.js");
+vi.mock("@solana/kit", async () => {
+  const actual = await vi.importActual("@solana/kit");
   return {
     ...actual,
     signTransactionMessageWithSigners: vi.fn().mockImplementation(

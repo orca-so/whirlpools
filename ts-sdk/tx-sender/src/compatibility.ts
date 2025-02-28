@@ -1,6 +1,6 @@
 import { createSolanaRpcApi, createRpc } from "@solana/rpc";
-import type { Address, Rpc, SolanaRpcApi } from "@solana/web3.js";
-import { createDefaultRpcTransport, address } from "@solana/web3.js";
+import type { Address, Rpc, SolanaRpcApi } from "@solana/kit";
+import { createDefaultRpcTransport, address } from "@solana/kit";
 
 /**
  * Creates an RPC client instance for interacting with the SVM blockchains using the provided RPC URL.

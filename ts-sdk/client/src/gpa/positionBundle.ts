@@ -4,8 +4,8 @@ import type {
   GetProgramAccountsApi,
   GetProgramAccountsMemcmpFilter,
   Rpc,
-} from "@solana/web3.js";
-import { getAddressEncoder, getBase58Decoder } from "@solana/web3.js";
+} from "@solana/kit";
+import { getAddressEncoder, getBase58Decoder } from "@solana/kit";
 import type { PositionBundle } from "../generated/accounts/positionBundle";
 import {
   POSITION_BUNDLE_DISCRIMINATOR,

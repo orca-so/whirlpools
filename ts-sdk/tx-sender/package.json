@@ -33,11 +33,12 @@
     "@solana-program/system": "^0.6.2"
   },
   "peerDependencies": {
-    "@solana/web3.js": "^2.0.0"
+    "@solana/kit": "^2.1.0"
   },
   "devDependencies": {
-    "@solana/web3.js": "^2.0.0",
-    "tsup": "^8.4.0"
+    "@solana/kit": "^2.1.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.3"
   },
   "repository": {
     "type": "git",

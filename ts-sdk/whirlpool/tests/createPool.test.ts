@@ -13,8 +13,8 @@ import { setupMintTE, setupMintTEFee } from "./utils/tokenExtensions";
 import { rpc, sendTransaction, signer } from "./utils/mockRpc";
 import { fetchMaybeWhirlpool } from "@orca-so/whirlpools-client";
 import assert from "assert";
-import type { Address } from "@solana/web3.js";
-import { assertAccountExists } from "@solana/web3.js";
+import type { Address } from "@solana/kit";
+import { assertAccountExists } from "@solana/kit";
 import { _TICK_ARRAY_SIZE, priceToSqrtPrice } from "@orca-so/whirlpools-core";
 
 describe("Create Pool", () => {

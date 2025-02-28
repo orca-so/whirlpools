@@ -38,7 +38,7 @@ import type {
   IInstruction,
   Rpc,
   TransactionSigner,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import { DEFAULT_ADDRESS, FUNDER, SLIPPAGE_TOLERANCE_BPS } from "./config";
 import {
   findAssociatedTokenPda,
@@ -143,7 +143,7 @@ function getDecreaseLiquidityQuote(
  *
  * @example
  * import { decreaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  * import { loadWallet } from './utils';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
@@ -287,7 +287,7 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  *
  * @example
  * import { closePositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  * import { loadWallet } from './utils';
  *
  * await setWhirlpoolsConfig('solanaDevnet');

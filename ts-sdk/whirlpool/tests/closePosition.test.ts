@@ -3,8 +3,8 @@ import {
   getPositionAddress,
 } from "@orca-so/whirlpools-client";
 import { fetchToken } from "@solana-program/token";
-import type { Address } from "@solana/web3.js";
-import { address } from "@solana/web3.js";
+import type { Address } from "@solana/kit";
+import { address } from "@solana/kit";
 import assert from "assert";
 import { beforeAll, describe, it } from "vitest";
 import { closePositionInstructions } from "../src/decreaseLiquidity";

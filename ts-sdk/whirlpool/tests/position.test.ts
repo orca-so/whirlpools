@@ -1,5 +1,5 @@
-import type { Address } from "@solana/web3.js";
-import { generateKeyPairSigner } from "@solana/web3.js";
+import type { Address } from "@solana/kit";
+import { generateKeyPairSigner } from "@solana/kit";
 import { assert, beforeAll, describe, it } from "vitest";
 import { setupAta, setupMint } from "./utils/token";
 import {

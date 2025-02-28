@@ -2,16 +2,11 @@ import {
   getSetComputeUnitPriceInstruction,
   getSetComputeUnitLimitInstruction,
 } from "@solana-program/compute-budget";
-import type {
-  IInstruction,
-  MicroLamports,
-  Address,
-  Slot,
-} from "@solana/web3.js";
+import type { IInstruction, MicroLamports, Address, Slot } from "@solana/kit";
 import {
   prependTransactionMessageInstruction,
   isWritableRole,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import { rpcFromUrl } from "./compatibility";
 import type { Percentile } from "./config";
 import {

@@ -1,5 +1,5 @@
-import type { Address, ProgramDerivedAddress } from "@solana/web3.js";
-import { getAddressEncoder, getProgramDerivedAddress } from "@solana/web3.js";
+import type { Address, ProgramDerivedAddress } from "@solana/kit";
+import { getAddressEncoder, getProgramDerivedAddress } from "@solana/kit";
 import { WHIRLPOOL_PROGRAM_ADDRESS } from "../generated/programs/whirlpool";
 
 export async function getTokenBadgeAddress(

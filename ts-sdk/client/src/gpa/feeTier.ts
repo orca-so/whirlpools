@@ -4,12 +4,12 @@ import type {
   GetProgramAccountsApi,
   GetProgramAccountsMemcmpFilter,
   Rpc,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   getAddressEncoder,
   getBase58Decoder,
   getU16Encoder,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import type { FeeTier } from "../generated/accounts/feeTier";
 import {
   FEE_TIER_DISCRIMINATOR,

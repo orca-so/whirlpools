@@ -33,7 +33,7 @@ This document covers the essential setup required to start building on Orca’s 
     Install the necessary packages:
 
     ```bash
-    npm install typescript @orca-so/whirlpools @solana/web3.js@2
+    npm install typescript @orca-so/whirlpools @solana/kit
     ```
 
     Initialize the project as a TypeScript project:
@@ -69,7 +69,7 @@ You can [generate a file system wallet using the Solana CLI](https://docs.solana
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
     ```tsx
-    import { createKeyPairSignerFromBytes } from '@solana/web3.js';
+    import { createKeyPairSignerFromBytes } from '@solana/kit';
     import fs from 'fs';
 
     const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
@@ -132,7 +132,7 @@ Once your wallet is created, you will need some SOL to pay for transactions. You
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
     ```tsx
-    import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/web3.js';
+    import { generateKeyPair, createSolanaRpc, devnet, getAddressFromPublicKey } from '@solana/kit';
 
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
     const wallet = await generateKeyPairSigner();

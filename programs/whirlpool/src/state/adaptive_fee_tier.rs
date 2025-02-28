@@ -130,11 +130,15 @@ impl AdaptiveFeeTier {
     }
 
     pub fn is_valid_initialize_pool_authority(&self, initialize_pool_authority: Pubkey) -> bool {
-        // no authority is set (permissionless)
+        // no authority is set (permission-less)
         if self.initialize_pool_authority == Pubkey::default() {
             return true;
         }
         self.initialize_pool_authority == initialize_pool_authority
+    }
+
+    pub fn is_permissioned(&self) -> bool {
+        self.initialize_pool_authority != Pubkey::default()
     }
 }
 

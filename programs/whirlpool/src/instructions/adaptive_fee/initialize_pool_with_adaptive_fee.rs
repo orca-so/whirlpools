@@ -4,7 +4,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use crate::{
     errors::ErrorCode,
     state::*,
-    util::{is_token_badge_initialized, v2::is_supported_token_mint},
+    util::{is_token_badge_initialized, to_timestamp_u64, v2::is_supported_token_mint},
 };
 
 #[derive(Accounts)]
@@ -76,6 +76,7 @@ pub struct InitializePoolWithAdaptiveFee<'info> {
 pub fn handler(
     ctx: Context<InitializePoolWithAdaptiveFee>,
     initial_sqrt_price: u128,
+    trade_enable_timestamp: Option<u64>,
 ) -> Result<()> {
     let token_mint_a = ctx.accounts.token_mint_a.key();
     let token_mint_b = ctx.accounts.token_mint_b.key();
@@ -113,6 +114,13 @@ pub fn handler(
         return Err(ErrorCode::UnsupportedTokenMint.into());
     }
 
+    // Don't allow setting trade_enable_timestamp for permission-less adaptive fee tier
+    let clock = Clock::get()?;
+    let timestamp = to_timestamp_u64(clock.unix_timestamp)?;
+    if !is_valid_trade_enable_timestamp(trade_enable_timestamp, timestamp, ctx.accounts.adaptive_fee_tier.is_permissioned()) {
+        return Err(ErrorCode::InvalidTradeEnableTimestamp.into());
+    }
+
     whirlpool.initialize(
         whirlpools_config,
         fee_tier_index,
@@ -129,6 +137,7 @@ pub fn handler(
     let mut oracle = ctx.accounts.oracle.load_init()?;
     oracle.initialize(
         ctx.accounts.whirlpool.key(),
+        trade_enable_timestamp,
         tick_spacing,
         ctx.accounts.adaptive_fee_tier.filter_period,
         ctx.accounts.adaptive_fee_tier.decay_period,
@@ -137,4 +146,93 @@ pub fn handler(
         ctx.accounts.adaptive_fee_tier.max_volatility_accumulator,
         ctx.accounts.adaptive_fee_tier.tick_group_size,
     )
+}
+
+fn is_valid_trade_enable_timestamp(
+    trade_enable_timestamp: Option<u64>,
+    current_timestamp: u64,
+    is_permissioned_adaptive_fee_tier: bool,
+) -> bool {
+    match trade_enable_timestamp {
+        None => true,
+        Some(trade_enable_timestamp) => {
+            if !is_permissioned_adaptive_fee_tier {
+                // If the adaptive fee tier is permission-less, trade_enable_timestamp is not allowed
+                false
+            } else if trade_enable_timestamp > current_timestamp {
+                // reject far future timestamp
+                trade_enable_timestamp - current_timestamp <= MAX_TRADE_ENABLE_TIMESTAMP_DELTA
+            } else {
+                // reject too old timestamp (> 30 seconds)
+                // if pool initialize authority want to enable trading immediately, trade_enable_timestamp should be set to None
+                current_timestamp - trade_enable_timestamp <= 30
+            }            
+        }
+    }
+}
+
+#[cfg(test)]
+mod is_valid_trade_enable_timestamp_unit_tests {
+    use super::*;
+
+    #[test]
+    fn trade_enable_timestamp_is_none() {
+        // should always return true
+
+        assert!(is_valid_trade_enable_timestamp(None, 0, true));
+        assert!(is_valid_trade_enable_timestamp(None, 0, false));
+        assert!(is_valid_trade_enable_timestamp(None, u16::MAX as u64, true));
+        assert!(is_valid_trade_enable_timestamp(None, u16::MAX as u64, false));
+        assert!(is_valid_trade_enable_timestamp(None, u32::MAX as u64, true));
+        assert!(is_valid_trade_enable_timestamp(None, u32::MAX as u64, false));
+        assert!(is_valid_trade_enable_timestamp(None, u64::MAX, true));
+        assert!(is_valid_trade_enable_timestamp(None, u64::MAX, false));
+    }
+
+    #[test]
+    fn trade_enable_timestamp_is_some_but_permission_less() {
+        let current_timestamp = u32::MAX as u64;
+
+        assert!(!is_valid_trade_enable_timestamp(Some(0), current_timestamp, false));
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp - 60), current_timestamp, false));
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp - 31), current_timestamp, false));
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp - 30), current_timestamp, false));
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp), current_timestamp, false));
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp + 60), current_timestamp, false));
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp + MAX_TRADE_ENABLE_TIMESTAMP_DELTA), current_timestamp, false));
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp + MAX_TRADE_ENABLE_TIMESTAMP_DELTA + 1), current_timestamp, false));
+        assert!(!is_valid_trade_enable_timestamp(Some(u64::MAX), current_timestamp, false));
+    }
+
+    #[test]
+    fn trade_enable_timestamp_is_some_but_too_far_future() {
+        let current_timestamp = u32::MAX as u64;
+
+        // should be valid
+        assert!(is_valid_trade_enable_timestamp(Some(current_timestamp), current_timestamp, true));
+        assert!(is_valid_trade_enable_timestamp(Some(current_timestamp + 1), current_timestamp, true));
+        assert!(is_valid_trade_enable_timestamp(Some(current_timestamp + MAX_TRADE_ENABLE_TIMESTAMP_DELTA - 1), current_timestamp, true));
+        assert!(is_valid_trade_enable_timestamp(Some(current_timestamp + MAX_TRADE_ENABLE_TIMESTAMP_DELTA), current_timestamp, true));
+
+        // should be invalid
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp + MAX_TRADE_ENABLE_TIMESTAMP_DELTA + 1), current_timestamp, true));
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp + MAX_TRADE_ENABLE_TIMESTAMP_DELTA + 2), current_timestamp, true));
+        assert!(!is_valid_trade_enable_timestamp(Some(u64::MAX), current_timestamp, true));
+    }
+
+    #[test]
+    fn trade_enable_timestamp_is_some_but_too_old() {
+        let current_timestamp = u32::MAX as u64;
+
+        // should be valid
+        assert!(is_valid_trade_enable_timestamp(Some(current_timestamp), current_timestamp, true));
+        assert!(is_valid_trade_enable_timestamp(Some(current_timestamp - 1), current_timestamp, true));
+        assert!(is_valid_trade_enable_timestamp(Some(current_timestamp - 29), current_timestamp, true));
+        assert!(is_valid_trade_enable_timestamp(Some(current_timestamp - 30), current_timestamp, true));
+        
+        // should be invalid
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp - 30 - 1), current_timestamp, true));
+        assert!(!is_valid_trade_enable_timestamp(Some(current_timestamp - 30 - 2), current_timestamp, true));
+        assert!(!is_valid_trade_enable_timestamp(Some(0), current_timestamp, true));
+    }
 }

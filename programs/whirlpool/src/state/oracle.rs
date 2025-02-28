@@ -6,6 +6,8 @@ use crate::manager::fee_rate_manager::{
 use anchor_lang::prelude::*;
 use std::cell::RefMut;
 
+pub const MAX_TRADE_ENABLE_TIMESTAMP_DELTA: u64 = 60 * 60 * 72; // 72 hours
+
 #[zero_copy(unsafe)]
 #[repr(C, packed)]
 #[derive(Default, Debug)]
@@ -159,6 +161,7 @@ pub struct AdaptiveFeeInfo {
 #[derive(Debug)]
 pub struct Oracle {
     pub whirlpool: Pubkey,
+    pub trade_enable_timestamp: u64,
     pub adaptive_fee_constants: AdaptiveFeeConstants,
     pub adaptive_fee_variables: AdaptiveFeeVariables,
     _reserved: [u8; 256], // for bytemuck mapping
@@ -168,6 +171,7 @@ impl Default for Oracle {
     fn default() -> Self {
         Self {
             whirlpool: Pubkey::default(),
+            trade_enable_timestamp: 0,
             adaptive_fee_constants: AdaptiveFeeConstants::default(),
             adaptive_fee_variables: AdaptiveFeeVariables::default(),
             _reserved: [0u8; 256],
@@ -176,12 +180,13 @@ impl Default for Oracle {
 }
 
 impl Oracle {
-    pub const LEN: usize = 8 + 32 + AdaptiveFeeConstants::LEN + AdaptiveFeeVariables::LEN + 256;
+    pub const LEN: usize = 8 + 32 + 8 + AdaptiveFeeConstants::LEN + AdaptiveFeeVariables::LEN + 256;
 
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
         &mut self,
         whirlpool: Pubkey,
+        trade_enable_timestamp: Option<u64>,
         tick_spacing: u16,
         filter_period: u16,
         decay_period: u16,
@@ -191,6 +196,7 @@ impl Oracle {
         tick_group_size: u16,
     ) -> Result<()> {
         self.whirlpool = whirlpool;
+        self.trade_enable_timestamp = trade_enable_timestamp.unwrap_or(0);
 
         let constants = AdaptiveFeeConstants {
             filter_period,
@@ -246,6 +252,14 @@ impl<'info> OracleAccessor<'info> {
     pub fn new(oracle_account_info: AccountInfo<'info>) -> Self {
         Self {
             oracle_account_info,
+        }
+    }
+
+    pub fn is_trade_enabled(&self, current_timestamp: u64) -> Result<bool> {
+        let oracle = self.load_mut()?;
+        match oracle {
+            Some(oracle) => Ok(oracle.trade_enable_timestamp <= current_timestamp),
+            None => Ok(true),
         }
     }
 
@@ -333,6 +347,7 @@ mod data_layout_tests {
         let oracle_reserved = [0u8; 256];
 
         let oracle_whirlpool = Pubkey::new_unique();
+        let oracle_trade_enable_timestamp = 0x1122334455667788u64;
 
         let af_const_filter_period = 0x1122u16;
         let af_const_decay_period = 0x3344u16;
@@ -389,6 +404,8 @@ mod data_layout_tests {
         let mut offset = 0;
         oracle_data[offset..offset + 32].copy_from_slice(oracle_whirlpool.as_ref());
         offset += 32;
+        oracle_data[offset..offset + 8].copy_from_slice(&oracle_trade_enable_timestamp.to_le_bytes());
+        offset += 8;
         oracle_data[offset..offset + AdaptiveFeeConstants::LEN].copy_from_slice(&af_const_data);
         offset += AdaptiveFeeConstants::LEN;
         oracle_data[offset..offset + AdaptiveFeeVariables::LEN].copy_from_slice(&af_var_data);
@@ -403,6 +420,8 @@ mod data_layout_tests {
 
         // check that the data layout matches the expected layout
         assert_eq!(oracle.whirlpool, oracle_whirlpool);
+        let read_trade_enable_timestamp = oracle.trade_enable_timestamp;
+        assert_eq!(read_trade_enable_timestamp, oracle_trade_enable_timestamp);
 
         let read_af_const_filter_period = oracle.adaptive_fee_constants.filter_period;
         assert_eq!(read_af_const_filter_period, af_const_filter_period);

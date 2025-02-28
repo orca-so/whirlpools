@@ -149,9 +149,12 @@ pub enum ErrorCode {
 
     #[msg("Invalid adaptive fee constants")]
     InvalidAdaptiveFeeConstants, // 0x17aa (6058)
-
     #[msg("Invalid fee tier index")]
     InvalidFeeTierIndex, // 0x17ab (6059)
+    #[msg("Invalid trade enable timestamp")]
+    InvalidTradeEnableTimestamp, // 0x17ac (6060)
+    #[msg("Trade is not enabled yet")]
+    TradeIsNotEnabled, // 0x17ad (6061)
 }
 
 impl From<TryFromIntError> for ErrorCode {

@@ -107,6 +107,7 @@ pub fn swap(
                 fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price_target);
 
             // TODO: remove
+            /*
             msg!(
                 "tick: current: {}, next: {}, fee rate (static): {}, fee rate (total): {}",
                 curr_tick_index,
@@ -127,6 +128,7 @@ pub fn swap(
                 amount_remaining,
                 curr_liquidity
             );
+            */
 
             let swap_computation = compute_swap(
                 amount_remaining,
@@ -237,7 +239,9 @@ pub fn swap(
             }
 
             // TODO: remove
+            /*
             anchor_lang::solana_program::log::sol_log_compute_units();
+            */
 
             // do while loop
             if amount_remaining == 0 || curr_sqrt_price == sqrt_price_target {

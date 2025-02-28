@@ -26,6 +26,7 @@ import type { Whirlpool } from "../../artifacts/whirlpool";
  */
 export type InitPoolWithAdaptiveFeeParams = {
   initSqrtPrice: BN;
+  tradeEnableTimestamp?: BN;
   whirlpoolsConfig: PublicKey;
   whirlpoolPda: PDA;
   oraclePda: PDA;
@@ -48,6 +49,7 @@ export type InitPoolWithAdaptiveFeeParams = {
  * Special Errors
  * `InvalidTokenMintOrder` - The order of mints have to be ordered by
  * `SqrtPriceOutOfBounds` - provided initial_sqrt_price is not between 2^-64 to 2^64
+ * `InvalidTradeEnableTimestamp` - provided trade_enable_timestamp is not in the valid range
  *
  * @category Instructions
  * @param context - Context object containing services required to generate the instruction
@@ -60,6 +62,7 @@ export function initializePoolWithAdaptiveFeeIx(
 ): Instruction {
   const {
     initSqrtPrice,
+    tradeEnableTimestamp,
     tokenMintA,
     tokenMintB,
     tokenBadgeA,
@@ -76,7 +79,9 @@ export function initializePoolWithAdaptiveFeeIx(
     initializePoolAuthority,
   } = params;
 
-  const ix = program.instruction.initializePoolWithAdaptiveFee(initSqrtPrice, {
+  const optionTradeEnableTimestamp = tradeEnableTimestamp ?? null; // null = None (undefined is not allowed)
+
+  const ix = program.instruction.initializePoolWithAdaptiveFee(initSqrtPrice, optionTradeEnableTimestamp, {
     accounts: {
       whirlpoolsConfig,
       tokenMintA,

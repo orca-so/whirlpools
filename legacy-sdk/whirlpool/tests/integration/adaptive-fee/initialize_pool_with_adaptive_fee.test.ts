@@ -2145,15 +2145,164 @@ describe("initialize_pool_with_adaptive_fee", () => {
     });
   });
 
+  describe("with_adaptive_fee specific parameter", () => {
+    it("[FAIL] when trade_enable_timestamp is set with permission less Adaptive Fee tier", async () => {
+      const tickSpacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickSpacing;
+      const initializeFeeAuthorityOnAdaptiveFeeTier = PublicKey.default; // permission-less
+      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        initializeFeeAuthorityOnAdaptiveFeeTier,
+        PublicKey.default,
+      );
+
+      const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
+      const tradeEnableTimestamp = currentTimeInSec.addn(60);
+      const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
+        ...poolInitInfo,
+        tradeEnableTimestamp,
+      };
+
+      await assert.rejects(
+        toTx(
+          ctx,
+          WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
+            ctx.program,
+            modifiedPoolInitInfo,
+          ),
+        ).buildAndExecute(),
+        /0x17ac/, // InvalidTradeEnableTimestamp
+      );
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, poolInitInfo),
+      ).buildAndExecute();
+
+      const whirlpoolData = await fetcher.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      assert.ok(whirlpoolData !== null);
+
+      const oracleData = await fetcher.getOracle(
+        poolInitInfo.oraclePda.publicKey,
+        IGNORE_CACHE,
+      );
+      assert.ok(oracleData !== null);
+      assert.ok(oracleData!.tradeEnableTimestamp.isZero());
+    });
+
+    it("when trade_enable_timestamp is set with permissioned Adaptive Fee tier", async () => {
+      const tickSpacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickSpacing;
+      const initializeFeeAuthorityOnAdaptiveFeeTier = ctx.wallet.publicKey; // permissioned
+      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        initializeFeeAuthorityOnAdaptiveFeeTier,
+        PublicKey.default,
+      );
+
+      const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
+      const tradeEnableTimestamp = currentTimeInSec.addn(60 * 60 * 24 * 1); // 1 day later
+      const modifiedPoolInitInfo: InitPoolWithAdaptiveFeeParams = {
+        ...poolInitInfo,
+        tradeEnableTimestamp,
+      };
+
+      await toTx(
+        ctx,
+        WhirlpoolIx.initializePoolWithAdaptiveFeeIx(
+          ctx.program,
+          modifiedPoolInitInfo,
+        ),
+      ).buildAndExecute();
+
+      const whirlpoolData = await fetcher.getPool(
+        poolInitInfo.whirlpoolPda.publicKey,
+        IGNORE_CACHE,
+      );
+      assert.ok(whirlpoolData !== null);
+
+      const oracleData = await fetcher.getOracle(
+        poolInitInfo.oraclePda.publicKey,
+        IGNORE_CACHE,
+      );
+      assert.ok(oracleData !== null);
+      assert.ok(oracleData!.tradeEnableTimestamp.eq(tradeEnableTimestamp));
+    });
+
+    it("[FAIL] when invalid trade_enable_timestamp is set with permissioned Adaptive Fee tier", async () => {
+      const tickSpacing = TickSpacing.Standard;
+      const feeTierIndex = 1024 + tickSpacing;
+      const initializeFeeAuthorityOnAdaptiveFeeTier = ctx.wallet.publicKey; // permissioned
+      const { poolInitInfo } = await buildTestPoolWithAdaptiveFeeParams(
+        ctx,
+        { isToken2022: true },
+        { isToken2022: true },
+        feeTierIndex,
+        tickSpacing,
+        undefined,
+        undefined,
+        getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+        initializeFeeAuthorityOnAdaptiveFeeTier,
+        PublicKey.default,
+      );
+
+      const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
+      const tradeEnableTimestamps = [
+        // too old
+        new anchor.BN(0),
+        currentTimeInSec.subn(60),
+        // far future
+        currentTimeInSec.addn(60 * 60 * 24 * 3 + 100),
+        currentTimeInSec.addn(60 * 60 * 24 * 365),
+      ];
+
+      for (const tradeEnableTimestamp of tradeEnableTimestamps) {
+        await assert.rejects(
+          toTx(
+            ctx,
+            WhirlpoolIx.initializePoolWithAdaptiveFeeIx(ctx.program, {
+              ...poolInitInfo,
+              tradeEnableTimestamp,
+            }),
+          ).buildAndExecute(),
+          /0x17ac/, // InvalidTradeEnableTimestamp
+        );
+      }
+    });
+  });
+
   async function asyncAssertOracle(
     oracle: PublicKey,
     whirlpool: PublicKey,
     feeTierParams: InitializeAdaptiveFeeTierParams,
+    tradeEnableTimestamp?: anchor.BN,
   ) {
     const oracleData = await fetcher.getOracle(oracle, IGNORE_CACHE);
     assert.ok(oracleData);
 
     assert.ok(oracleData.whirlpool.equals(whirlpool));
+    assert.ok(
+      oracleData.tradeEnableTimestamp.eq(
+        tradeEnableTimestamp ?? new anchor.BN(0),
+      ),
+    );
 
     const consts = oracleData.adaptiveFeeConstants;
     assert.ok(consts.filterPeriod === feeTierParams.presetFilterPeriod);

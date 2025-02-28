@@ -246,6 +246,7 @@ export type AdaptiveFeeTierData = {
  */
 export type OracleData = {
   whirlpool: PublicKey;
+  tradeEnableTimestamp: BN;
   adaptiveFeeConstants: AdaptiveFeeConstantsData;
   adaptiveFeeVariables: AdaptiveFeeVariablesData;
 };

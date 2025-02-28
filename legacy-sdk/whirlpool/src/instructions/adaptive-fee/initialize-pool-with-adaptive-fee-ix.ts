@@ -81,26 +81,30 @@ export function initializePoolWithAdaptiveFeeIx(
 
   const optionTradeEnableTimestamp = tradeEnableTimestamp ?? null; // null = None (undefined is not allowed)
 
-  const ix = program.instruction.initializePoolWithAdaptiveFee(initSqrtPrice, optionTradeEnableTimestamp, {
-    accounts: {
-      whirlpoolsConfig,
-      tokenMintA,
-      tokenMintB,
-      tokenBadgeA,
-      tokenBadgeB,
-      funder,
-      initializePoolAuthority,
-      whirlpool: whirlpoolPda.publicKey,
-      oracle: oraclePda.publicKey,
-      tokenVaultA: tokenVaultAKeypair.publicKey,
-      tokenVaultB: tokenVaultBKeypair.publicKey,
-      adaptiveFeeTier: adaptiveFeeTierKey,
-      systemProgram: SystemProgram.programId,
-      tokenProgramA,
-      tokenProgramB,
-      rent: SYSVAR_RENT_PUBKEY,
+  const ix = program.instruction.initializePoolWithAdaptiveFee(
+    initSqrtPrice,
+    optionTradeEnableTimestamp,
+    {
+      accounts: {
+        whirlpoolsConfig,
+        tokenMintA,
+        tokenMintB,
+        tokenBadgeA,
+        tokenBadgeB,
+        funder,
+        initializePoolAuthority,
+        whirlpool: whirlpoolPda.publicKey,
+        oracle: oraclePda.publicKey,
+        tokenVaultA: tokenVaultAKeypair.publicKey,
+        tokenVaultB: tokenVaultBKeypair.publicKey,
+        adaptiveFeeTier: adaptiveFeeTierKey,
+        systemProgram: SystemProgram.programId,
+        tokenProgramA,
+        tokenProgramB,
+        rent: SYSVAR_RENT_PUBKEY,
+      },
     },
-  });
+  );
 
   return {
     instructions: [ix],

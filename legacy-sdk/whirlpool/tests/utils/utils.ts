@@ -50,6 +50,28 @@ export function dropIsSignerFlag(
   };
 }
 
+export function dropIsWritableFlag(
+  ix: TransactionInstruction,
+  writableAccount: PublicKey,
+): TransactionInstruction {
+  // drop isSigner flag
+  const keysWithoutWritable = ix.keys.map((key) => {
+    if (key.pubkey.equals(writableAccount)) {
+      return {
+        pubkey: key.pubkey,
+        isSigner: key.isSigner,
+        isWritable: false,
+      };
+    }
+    return key;
+  });
+
+  return {
+    ...ix,
+    keys: keysWithoutWritable,
+  };
+}
+
 export function rewritePubkey(
   ix: TransactionInstruction,
   oldPubkey: PublicKey,

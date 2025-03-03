@@ -8,8 +8,8 @@ import type {
   IInstruction,
   Rpc,
   TransactionSigner,
-} from "@solana/web3.js";
-import { AccountRole, lamports } from "@solana/web3.js";
+} from "@solana/kit";
+import { AccountRole, lamports } from "@solana/kit";
 import { FUNDER, SLIPPAGE_TOLERANCE_BPS } from "./config";
 import type {
   ExactInSwapQuote,
@@ -106,6 +106,7 @@ function createUninitializedTickArray(
         rewardGrowthsOutside: [0n, 0n, 0n],
       }),
     },
+    space: 0n,
     executable: false,
     lamports: lamports(0n),
     programAddress,
@@ -204,7 +205,7 @@ function getSwapQuote<T extends SwapParams>(
  *
  * @example
  * import { setWhirlpoolsConfig, swapInstructions } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  * import { loadWallet } from './utils';
  *
  * await setWhirlpoolsConfig('solanaDevnet');

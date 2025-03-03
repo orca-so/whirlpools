@@ -1,6 +1,6 @@
 import { getWhirlpoolsConfigExtensionAddress } from "@orca-so/whirlpools-client";
-import type { Address, TransactionSigner } from "@solana/web3.js";
-import { address, createNoopSigner, isAddress } from "@solana/web3.js";
+import type { Address, TransactionSigner } from "@solana/kit";
+import { address, createNoopSigner, isAddress } from "@solana/kit";
 
 /**
  * The default (null) address.

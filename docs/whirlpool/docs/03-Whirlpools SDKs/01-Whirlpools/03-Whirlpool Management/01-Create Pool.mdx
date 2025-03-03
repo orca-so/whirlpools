@@ -18,7 +18,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
 
 - **Splash Pools**: Splash Pools are the simplest type of liquidity pool. They are ideal for those looking to launch a new token with minimal parameters. You only need to provide the mint addresses of the two tokens and set the initial price. Splash Pools offer an easy entry point into liquidity provision, making them especially appealing for community-driven projects like memecoins. These projects often prioritize community engagement over technical complexity, and Splash Pools provide a straightforward way to get started.
 
-- **Concentrated Liquidity Pools:** Concentrated Liquidity Pools are more advanced and allow liquidity providers to concentrate their liquidity within specific price ranges. This results in higher capital efficiency but requires a deeper understanding of how to manage liquidity. Concentrated Liquidity Pools are better suited for experienced users who want greater control over their liquidity. 
+- **Concentrated Liquidity Pools:** Concentrated Liquidity Pools are more advanced and allow liquidity providers to concentrate their liquidity within specific price ranges. This results in higher capital efficiency but requires a deeper understanding of how to manage liquidity. Concentrated Liquidity Pools are better suited for experienced users who want greater control over their liquidity.
 
 ## 2. Getting Started Guide
 
@@ -41,7 +41,7 @@ Splash Pools are the easiest way to get started:
         <TabItem value="ts" label="Typescript" default>
             ```tsx
             import { createSplashPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-            import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
+            import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
 
             await setWhirlpoolsConfig('solanaDevnet');
             const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -93,7 +93,7 @@ Splash Pools are the easiest way to get started:
                     "Initialization Cost: {} lamports",
                     result.initialization_cost
                 );
-            } 
+            }
             ```
         </TabItem>
     </Tabs>
@@ -112,7 +112,7 @@ Concentrated Liquidity Pools offer more flexibility:
         <TabItem value="ts" label="Typescript" default>
             ```tsx
             import { createConcentratedLiquidityPoolInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-            import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
+            import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
 
             await setWhirlpoolsConfig('solanaDevnet');
             const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));

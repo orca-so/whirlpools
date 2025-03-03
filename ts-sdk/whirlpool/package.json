@@ -31,16 +31,17 @@
   "dependencies": {
     "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-core": "*",
-    "@solana-program/memo": "^0.6.1",
-    "@solana-program/system": "^0.6.2",
-    "@solana-program/token": "^0.4.1",
-    "@solana-program/token-2022": "^0.3.4"
+    "@solana-program/memo": "^0.7.0",
+    "@solana-program/system": "^0.7.0",
+    "@solana-program/token": "^0.5.1",
+    "@solana-program/token-2022": "^0.4.0",
+    "@solana/sysvars": "^2.1.0"
   },
   "peerDependencies": {
-    "@solana/web3.js": "^2.0.0"
+    "@solana/kit": "^2.1.0"
   },
   "devDependencies": {
-    "@solana/web3.js": "^2.0.0",
+    "@solana/kit": "^2.1.0",
     "solana-bankrun": "^0.4.0",
     "typescript": "^5.8.2"
   },

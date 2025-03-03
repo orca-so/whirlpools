@@ -18,14 +18,14 @@ import type {
   MaybeAccount,
   Rpc,
   TransactionSigner,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   address,
   generateKeyPairSigner,
   getAddressDecoder,
   getAddressEncoder,
   lamports,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import { NATIVE_MINT_WRAPPING_STRATEGY } from "./config";
 import {
   getCreateAccountInstruction,

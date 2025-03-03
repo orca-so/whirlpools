@@ -9,8 +9,8 @@ import type {
   ITransactionMessageWithFeePayerSigner,
   TransactionMessageWithBlockhashLifetime,
   TransactionVersion,
-} from "@solana/web3.js";
-import { getComputeUnitEstimateForTransactionMessageFactory } from "@solana/web3.js";
+} from "@solana/kit";
+import { getComputeUnitEstimateForTransactionMessageFactory } from "@solana/kit";
 import { getJitoConfig, getRpcConfig } from "./config";
 import { rpcFromUrl } from "./compatibility";
 import { processJitoTipForTxMessage } from "./jito";

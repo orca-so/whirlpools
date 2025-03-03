@@ -30,7 +30,7 @@ Similarly, when using Fetch Pools, which iterates through all possible tick spac
   <TabItem value="ts" label="Typescript" default>
     ```tsx
     import { fetchSplashPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+    import { createSolanaRpc, devnet, address } from '@solana/kit';
 
     await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -85,7 +85,7 @@ Similarly, when using Fetch Pools, which iterates through all possible tick spac
   <TabItem value="ts" label="Typescript" default>
    ```tsx
     import { fetchConcentratedLiquidityPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+    import { createSolanaRpc, devnet, address } from '@solana/kit';
 
     await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -145,7 +145,7 @@ Similarly, when using Fetch Pools, which iterates through all possible tick spac
   <TabItem value="ts" label="Typescript" default>
     ```tsx
     import { fetchWhirlpoolsByTokenPair, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+    import { createSolanaRpc, devnet, address } from '@solana/kit';
 
     await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));

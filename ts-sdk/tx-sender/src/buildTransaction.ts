@@ -6,7 +6,7 @@ import type {
   SolanaRpcApi,
   FullySignedTransaction,
   TransactionWithLifetime,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   compressTransactionMessageUsingAddressLookupTables,
   assertAccountDecoded,
@@ -17,7 +17,7 @@ import {
   setTransactionMessageLifetimeUsingBlockhash,
   signTransactionMessageWithSigners,
   createNoopSigner,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import { normalizeAddresses, rpcFromUrl } from "./compatibility";
 import { fetchAllMaybeAddressLookupTable } from "@solana-program/address-lookup-table";
 import { addPriorityInstructions } from "./priorityFees";

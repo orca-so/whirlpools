@@ -29,16 +29,17 @@
     "clean": "rimraf dist"
   },
   "dependencies": {
-    "@solana-program/address-lookup-table": "^0.6.1",
-    "@solana-program/compute-budget": "^0.6.1",
-    "@solana-program/system": "^0.6.2"
+    "@solana-program/address-lookup-table": "^0.7.0",
+    "@solana-program/compute-budget": "^0.7.0",
+    "@solana-program/system": "^0.7.0"
   },
   "peerDependencies": {
-    "@solana/web3.js": "^2.0.0"
+    "@solana/kit": "^2.1.0"
   },
   "devDependencies": {
-    "@solana/web3.js": "^2.0.0",
-    "tsup": "^8.4.0"
+    "@solana/kit": "^2.1.0",
+    "tsup": "^8.4.0",
+    "typescript": "^5.7.3"
   },
   "repository": {
     "type": "git",

@@ -1,6 +1,6 @@
 import { describe, it } from "vitest";
 import type { SysvarRent } from "@solana/sysvars";
-import { lamports } from "@solana/web3.js";
+import { lamports } from "@solana/kit";
 import { calculateMinimumBalanceForRentExemption } from "../src/sysvar";
 import assert from "assert";
 

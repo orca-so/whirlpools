@@ -1,5 +1,5 @@
 import { fetchToken } from "@solana-program/token-2022";
-import type { Address } from "@solana/web3.js";
+import type { Address } from "@solana/kit";
 import assert from "assert";
 import { beforeAll, describe, it } from "vitest";
 import { swapInstructions } from "../src/swap";

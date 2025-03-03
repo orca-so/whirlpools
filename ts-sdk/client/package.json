@@ -29,13 +29,13 @@
     "clean": "rimraf dist src/generated"
   },
   "peerDependencies": {
-    "@solana/web3.js": "^2.0.0"
+    "@solana/kit": "^2.1.0"
   },
   "devDependencies": {
     "@codama/nodes-from-anchor": "^1.1.8",
-    "@codama/renderers-js": "^1.2.5",
+    "@codama/renderers-js": "^1.2.7",
     "@orca-so/whirlpools-program": "*",
-    "@solana/web3.js": "^2.0.0",
+    "@solana/kit": "^2.1.0",
     "codama": "^1.2.7",
     "typescript": "^5.8.2"
   },

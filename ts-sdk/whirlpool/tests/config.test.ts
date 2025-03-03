@@ -17,10 +17,7 @@ import {
   DEFAULT_WHIRLPOOLS_CONFIG_ADDRESSES,
 } from "../src/config";
 import assert from "assert";
-import {
-  address,
-  createKeyPairSignerFromPrivateKeyBytes,
-} from "@solana/web3.js";
+import { address, createKeyPairSignerFromPrivateKeyBytes } from "@solana/kit";
 
 // Tests in order, which is important here
 

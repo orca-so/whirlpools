@@ -7,7 +7,7 @@ import type {
   SignatureBytes,
   Rpc,
   SolanaRpcApi,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   getTransactionDecoder,
   getCompiledTransactionMessageDecoder,
@@ -20,7 +20,7 @@ import {
   pipe,
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import { rpcFromUrl } from "../src/compatibility";
 
 export async function decodeTransaction(base64EncodedTransaction: string) {

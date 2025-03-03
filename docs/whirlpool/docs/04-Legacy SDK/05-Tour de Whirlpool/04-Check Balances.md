@@ -31,7 +31,7 @@ async function main() {
   // Display the RPC and the wallet's public key
   // When displaying the public key, use base58 encoding
   console.log("endpoint:", connection.rpcEndpoint);
-  console.log("wallet pubkey:", keypair.publicKey.toBase58());  
+  console.log("wallet pubkey:", keypair.publicKey.toBase58());
 
   // Obtain the SOL balance
   // Use the getBalance method from the Connection class
@@ -52,10 +52,10 @@ main();
 Run the code, and then verify that the public key and SOL balance match the Phantom UI.
 
 ```bash
-$ ts-node src/011_get_sol_balance.ts 
-endpoint: https://api.devnet.solana.com 
-wallet pubkey: FptVFacYhPrwScJayvKXvwjGeZRbefnnEcgmSQkoRAXB 
-lamports: 2191782899 
+$ ts-node src/011_get_sol_balance.ts
+endpoint: https://api.devnet.solana.com
+wallet pubkey: FptVFacYhPrwScJayvKXvwjGeZRbefnnEcgmSQkoRAXB
+lamports: 2191782899
 SOL: 2.191782899
 ```
 
@@ -70,7 +70,7 @@ SOL: 2.191782899
 - 1 SOL = 1,000,000,000 lamports
 
 ### API Used
-- https://solana-labs.github.io/solana-web3.js/v1.x/classes/Connection.html#getBalance
+- https://solana-labs.github.io/solana-web3.js/classes/Connection.html#getBalance
 
 ## Checking Token Balances
 Next, let's check token balances from a program.
@@ -158,34 +158,34 @@ Run the code, and then verify that the Phantom UI displays the same token balanc
 The address displayed after "TokenAccount" will differ for different wallet addresses.
 
 ```bash
-$ ts-node src/012_get_token_balance.ts 
-endpoint: https://api.devnet.solana.com 
-wallet pubkey: FptVFacYhPrwScJayvKXvwjGeZRbefnnEcgmSQkoRAXB getTokenAccountsByOwner: { 
-    context: { apiVersion: '1.10.29', slot: 151582140 }, 
-    value: [ { account: [Object], pubkey: [PublicKey] }, 
-        { account: [Object], pubkey: [PublicKey] }, 
-        { account: [Object], pubkey: [PublicKey] }, 
-        { account: [Object], pubkey: [PublicKey] } 
-    ] } 
-TokenAccount: B3PXuJ7FyXJ9wu97WZ2b3vt1tHoPQayaQbrTpPKRjUky 
-    mint: Afn8YB1p4NsoZeS5XJBZ18LTfEy5NFPwN46wapZcBQr6 
-    name: devTMAC 
-    amount: 151240169 
-    ui_amount: 151.240169 
-TokenAccount: FzAVSbhRDnncdqWLUzsxXpRM6wmB1h2Jb6obJZuRgpiw 
-    mint: BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k 
-    name: devUSDC 
-    amount: 15099547 
-    ui_amount: 15.099547 
-TokenAccount: 2uDMLemoyarwUCrnzzhJ4y5YFfeLpUYusgdDAZ4tv78w 
-    mint: H8UekPGwePSmQ3ttuYGPU1szyFfjZR4N53rymSFwpLPm 
-    name: devUSDT 
-    amount: 17102615 
-    ui_amount: 17.102615 
-TokenAccount: H5vU48wbEWtxsdqYZtcYLcAaEZ57jjcokoJKMct2LCAE 
-    mint: Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa 
-    name: devSAMO 
-    amount: 1322051824431 
+$ ts-node src/012_get_token_balance.ts
+endpoint: https://api.devnet.solana.com
+wallet pubkey: FptVFacYhPrwScJayvKXvwjGeZRbefnnEcgmSQkoRAXB getTokenAccountsByOwner: {
+    context: { apiVersion: '1.10.29', slot: 151582140 },
+    value: [ { account: [Object], pubkey: [PublicKey] },
+        { account: [Object], pubkey: [PublicKey] },
+        { account: [Object], pubkey: [PublicKey] },
+        { account: [Object], pubkey: [PublicKey] }
+    ] }
+TokenAccount: B3PXuJ7FyXJ9wu97WZ2b3vt1tHoPQayaQbrTpPKRjUky
+    mint: Afn8YB1p4NsoZeS5XJBZ18LTfEy5NFPwN46wapZcBQr6
+    name: devTMAC
+    amount: 151240169
+    ui_amount: 151.240169
+TokenAccount: FzAVSbhRDnncdqWLUzsxXpRM6wmB1h2Jb6obJZuRgpiw
+    mint: BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k
+    name: devUSDC
+    amount: 15099547
+    ui_amount: 15.099547
+TokenAccount: 2uDMLemoyarwUCrnzzhJ4y5YFfeLpUYusgdDAZ4tv78w
+    mint: H8UekPGwePSmQ3ttuYGPU1szyFfjZR4N53rymSFwpLPm
+    name: devUSDT
+    amount: 17102615
+    ui_amount: 17.102615
+TokenAccount: H5vU48wbEWtxsdqYZtcYLcAaEZ57jjcokoJKMct2LCAE
+    mint: Jd4M8bfJG3sAkd82RsGWyEXoaBXQP7njFzBwEaCTuDa
+    name: devSAMO
+    amount: 1322051824431
     ui_amount: 1322.051824431
 ```
 
@@ -213,7 +213,7 @@ Since one TokenAccount can only store one token balance, the account structure l
 ![token-account-structure](../../../static/img/04-Legacy%20SDK/05-Tour%20de%20Whirlpool/token-account-structure.png)
 
 ### APIs Used
-- https://solana-labs.github.io/solana-web3.js/v1.x/classes/Connection.html#getTokenAccountsByOwner
+- https://solana-labs.github.io/solana-web3.js/classes/Connection.html#getTokenAccountsByOwner
 - TokenUtil.deserializeTokenAccount
 - DecimalUtil.fromU64
 

@@ -11,7 +11,7 @@ import {
   getMintToInstruction,
   getSyncNativeInstruction,
 } from "@solana-program/token";
-import type { Address, IInstruction } from "@solana/web3.js";
+import type { Address, IInstruction } from "@solana/kit";
 import { signer, sendTransaction } from "./mockRpc";
 import { NATIVE_MINT } from "../../src/token";
 import { getNextKeypair } from "./keypair";

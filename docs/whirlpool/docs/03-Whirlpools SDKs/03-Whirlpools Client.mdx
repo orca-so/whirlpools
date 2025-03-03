@@ -18,7 +18,7 @@ This SDK provides developers with low-level functionalities for interacting with
 
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
-    **NOTE**: This SDK requires Solana Web3.js SDK v2. It is not compatible with the widely used v1.x.x version.
+    **NOTE**: This SDK requires Solana Kit. It is not compatible with Solana Web3.js.
     ```bash
     npm install @orca-so/whirlpools-client
     ```
@@ -50,7 +50,7 @@ The following example demonstrates how to fetch Whirlpools accounts based on spe
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
     ```tsx
-    import { createSolanaRpc, address, devnet } from '@solana/web3.js';
+    import { createSolanaRpc, address, devnet } from '@solana/kit';
     import { fetchAllWhirlpoolWithFilter, whirlpoolTokenMintAFilter } from "@orca-so/whirlpools-client";
 
     const rpc = createSolanaRpc(devnet("https://api.devnet.solana.com"));
@@ -76,7 +76,7 @@ To derive a PDA for a Whirlpool account, you can use the `getWhirlpoolAddress` P
   <TabItem value="ts" label="Typescript" default>
     ```tsx
     import { getWhirlpoolAddress } from "@orca-so/whirlpools-client";
-    import { address } from '@solana/web3.js';
+    import { address } from '@solana/kit';
 
     const whirlpoolConfigAddress = address("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR");
     const tokenMintA = address("So11111111111111111111111111111111111111112"); //wSOL
@@ -118,7 +118,7 @@ The following example demonstrates how to create an InitializePool instruction u
   <TabItem value="ts" label="Typescript" default>
     ```tsx
     import { getInitializePoolV2Instruction, getTokenBadgeAddress, getWhirlpoolAddress, getFeeTierAddress } from "@orca-so/whirlpools-client";
-    import { address, generateKeyPairSigner } from '@solana/web3.js';
+    import { address, generateKeyPairSigner } from '@solana/kit';
 
     const whirlpoolConfigAddress = address("FcrweFY1G9HJAHG5inkGB6pKg1HZ6x9UC2WioAfWrGkR");
     const tokenMintA = address("So11111111111111111111111111111111111111112"); // wSOL

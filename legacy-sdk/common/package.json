@@ -18,7 +18,7 @@
   "devDependencies": {
     "@solana/spl-token": "^0.4.12",
     "@solana/web3.js": "^1.90.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.2"
   },
   "scripts": {
     "build": "tsc",

@@ -15,7 +15,7 @@ Refer to the [this page](https://solana.com/docs/intro/installation) to install 
 After installing the tools, verify the Solana CLI version on the command line. There should be no problem with version 1.10.8 or later.
 
 ```bash
-$ solana --version 
+$ solana --version
 solana-cli 1.10.8 (src:623ac656; feat;1122441720)
 ```
 
@@ -68,9 +68,9 @@ Move to a directory where you can freely create new directories. Then, create a 
 Run the following commands in the terminal or command prompt.
 
 ```bash
-cd somewhere 
-mkdir tour_de_whirlpool 
-cd tour_de_whirlpool 
+cd somewhere
+mkdir tour_de_whirlpool
+cd tour_de_whirlpool
 mkdir src
 ```
 
@@ -80,8 +80,8 @@ To interact with Whirlpools we will install the Whirlpools-SDK and its dependenc
 Run the following commands in the terminal or command prompt from the `tour_de_whirlpool` directory.
 
 ```bash
-npm init -y 
-npm install @orca-so/whirlpools-sdk 
+npm init -y
+npm install @orca-so/whirlpools-sdk
 npm ls
 ```
 
@@ -95,14 +95,10 @@ Wrote to /tour_de_whirlpool/package.json:
 {
   "name": "tour_de_whirlpool",
   "version": "1.0.0",
-  "description": "",
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC"
 }
 
 $ npm install @orca-so/whirlpools-sdk
@@ -221,7 +217,7 @@ const readline = require('readline').createInterface({
     input: process.stdin,
     output: process.stdout
 });
-  
+
 readline.question('secretKey(base58):', (secret_base58) => {
     readline.close();
     const secret_bytes = Uint8Array.from(bs58.decode(secret_base58.trim()));
@@ -252,7 +248,7 @@ When the program displays "secretKey(base58):", paste the private key you copied
 Verify that the output says "wallet.json created successfully!"
 
 ```bash
-$ cd tour_de_whirlpool 
+$ cd tour_de_whirlpool
 $ ts-node create_wallet_json.ts secretKey(base58):xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx wallet.json created successfully!
 ```
 
@@ -260,7 +256,7 @@ Use the Solana CLI to display the public key, using the file you just created as
 Verify that it matches the public key displayed in Phantom.
 
 ```bash
-$ solana address -k wallet.json 
+$ solana address -k wallet.json
 FptVxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxRAXB
 ```
 

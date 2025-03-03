@@ -8,7 +8,7 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "0.29.0",
+    "@coral-xyz/anchor": "0.30.1",
     "@orca-so/common-sdk": "*",
     "@orca-so/whirlpools-sdk": "*",
     "@solana/spl-token": "0.4.12",
@@ -22,6 +22,6 @@
   "devDependencies": {
     "@types/prompts": "^2.4.9",
     "tsx": "^4.19.3",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.2"
   }
 }

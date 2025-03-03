@@ -3,6 +3,7 @@ name = "whirlpool"
 version = "0.3.4"
 publish = false
 edition = "2021"
+license-file = "../../LICENSE"
 
 [lib]
 crate-type = ["cdylib", "lib"]

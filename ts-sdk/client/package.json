@@ -19,7 +19,8 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "../../LICENSE"
   ],
   "scripts": {
     "build": "node ./codama.js && tsup src/index.ts --format cjs,esm --dts --sourcemap",
@@ -36,13 +37,13 @@
     "@orca-so/whirlpools-program": "*",
     "@solana/kit": "^2.1.0",
     "codama": "^1.2.7",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.2"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/orca-so/whirlpools.git"
   },
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "keywords": [
     "solana",
     "crypto",

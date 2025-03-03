@@ -1744,10 +1744,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@codama/errors@npm:1.2.8":
+  version: 1.2.8
+  resolution: "@codama/errors@npm:1.2.8"
+  dependencies:
+    "@codama/node-types": "npm:1.2.8"
+    chalk: "npm:^5.4.1"
+    commander: "npm:^13.1.0"
+  bin:
+    errors: bin/cli.cjs
+  checksum: 10c0/e70baafca6dbadc1fe3c725dc27c908419381796f4f92634df424d1c2f3c5a83b453297595c01584462016b1aa556277782ac5b76d08f961969f95e0c2908db3
+  languageName: node
+  linkType: hard
+
 "@codama/node-types@npm:1.2.7":
   version: 1.2.7
   resolution: "@codama/node-types@npm:1.2.7"
   checksum: 10c0/75f839f8472a38c7eeae79dc89157c9c23f66b8a930ebb59ecb201b163c1f50ca1fa802bc935e83218cc6b2fb9f93fa555d302674a4b33166be199ac2889321b
+  languageName: node
+  linkType: hard
+
+"@codama/node-types@npm:1.2.8":
+  version: 1.2.8
+  resolution: "@codama/node-types@npm:1.2.8"
+  checksum: 10c0/6b15d9b0c34ca078e2f3d9fe16e5fb6d332afc3fcbe2e15eb7eddbbef1b538e938e054559d726078b55e5b2dc9147b2890816b17d17c69afbf615d9f9696c880
   languageName: node
   linkType: hard
 
@@ -1771,6 +1791,27 @@ __metadata:
     "@codama/errors": "npm:1.2.7"
     "@codama/node-types": "npm:1.2.7"
   checksum: 10c0/ccd0330acbe57f29e09ba3ec82871e28dbb4e5a4f335aa519fa31de12e9f0fff4c237f7f92cb0e9aefd9ae625b8039e811ea9b7ae50e69e449f13198ccce483a
+  languageName: node
+  linkType: hard
+
+"@codama/nodes@npm:1.2.8":
+  version: 1.2.8
+  resolution: "@codama/nodes@npm:1.2.8"
+  dependencies:
+    "@codama/errors": "npm:1.2.8"
+    "@codama/node-types": "npm:1.2.8"
+  checksum: 10c0/6b718e2e83019ade5491e0f64ffd02b8555a1b9ee56c0bf0e8a9f350d83bf204ae754adeffa9375c8abbf10102678d8a27227978c9065ce0f1d0ac4acf75236d
+  languageName: node
+  linkType: hard
+
+"@codama/renderers-core@npm:1.0.10":
+  version: 1.0.10
+  resolution: "@codama/renderers-core@npm:1.0.10"
+  dependencies:
+    "@codama/errors": "npm:1.2.8"
+    "@codama/nodes": "npm:1.2.8"
+    "@codama/visitors-core": "npm:1.2.8"
+  checksum: 10c0/4bc33894f08ad86f724f82a2c4272fd1e0563e3a33d9170e5027fc449c02d6dda17b1a8338ff5c7899fafb667b1690aeca3941d446c2c5103da80a7aa2f738de
   languageName: node
   linkType: hard
 
@@ -1817,7 +1858,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/renderers-rust@npm:1.0.15, @codama/renderers-rust@npm:^1.0.15":
+"@codama/renderers-rust@npm:1.0.15":
   version: 1.0.15
   resolution: "@codama/renderers-rust@npm:1.0.15"
   dependencies:
@@ -1828,6 +1869,20 @@ __metadata:
     "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
   checksum: 10c0/e64d656c6eedc1c48f17f238e201cc4ea9483a2d81436a1f24c296acbdbe05f4b64b8dee7e4daa92e76c341b33f04e581b48e91a17e99929aa046bc0a69db770
+  languageName: node
+  linkType: hard
+
+"@codama/renderers-rust@npm:^1.0.16":
+  version: 1.0.16
+  resolution: "@codama/renderers-rust@npm:1.0.16"
+  dependencies:
+    "@codama/errors": "npm:1.2.8"
+    "@codama/nodes": "npm:1.2.8"
+    "@codama/renderers-core": "npm:1.0.10"
+    "@codama/visitors-core": "npm:1.2.8"
+    "@solana/codecs-strings": "npm:rc"
+    nunjucks: "npm:^3.2.4"
+  checksum: 10c0/18781fd8e89fcea799ebc49e01ae935ec04ca483daf89e4d00cecdd1cda1ebd4d66731edad33de2ab5e58cab4eabfb2ea191ca0938f56b661cdf43c6d803b7ce
   languageName: node
   linkType: hard
 
@@ -1861,6 +1916,17 @@ __metadata:
     "@codama/nodes": "npm:1.2.7"
     json-stable-stringify: "npm:^1.2.1"
   checksum: 10c0/279cd449b70444e9daae11214c66046b49b64de02c87c3ee120cdd75df0c344fe4dea92994df8044745ebf414b6a2f380c7daecc6869a4c12e33f47b237da725
+  languageName: node
+  linkType: hard
+
+"@codama/visitors-core@npm:1.2.8":
+  version: 1.2.8
+  resolution: "@codama/visitors-core@npm:1.2.8"
+  dependencies:
+    "@codama/errors": "npm:1.2.8"
+    "@codama/nodes": "npm:1.2.8"
+    json-stable-stringify: "npm:^1.2.1"
+  checksum: 10c0/c8da7557393d5ee1ba6f32247a8d1a5b866538256606854f4e30bde9678d359bf8c29cd9f9c6ff8021ad2653e62082c023d007bf668dc197f743e0fffc0f8463
   languageName: node
   linkType: hard
 
@@ -4128,7 +4194,7 @@ __metadata:
     "@solana/web3.js": "npm:^1.90.0"
     decimal.js: "npm:^10.5.0"
     tiny-invariant: "npm:^1.3.1"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
   peerDependencies:
     "@solana/spl-token": ^0.4.12
     "@solana/web3.js": ^1.90.0
@@ -4139,9 +4205,9 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/tx-sender@workspace:ts-sdk/tx-sender"
   dependencies:
-    "@solana-program/address-lookup-table": "npm:^0.6.1"
-    "@solana-program/compute-budget": "npm:^0.6.1"
-    "@solana-program/system": "npm:^0.6.2"
+    "@solana-program/address-lookup-table": "npm:^0.7.0"
+    "@solana-program/compute-budget": "npm:^0.7.0"
+    "@solana-program/system": "npm:^0.7.0"
     "@solana/kit": "npm:^2.1.0"
     tsup: "npm:^8.4.0"
     typescript: "npm:^5.7.3"
@@ -4159,7 +4225,7 @@ __metadata:
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/kit": "npm:^2.1.0"
     codama: "npm:^1.2.7"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
   peerDependencies:
     "@solana/kit": ^2.1.0
   languageName: unknown
@@ -4171,7 +4237,7 @@ __metadata:
   dependencies:
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
     wasm-pack: "npm:^0.13.1"
   languageName: unknown
   linkType: soft
@@ -4183,7 +4249,7 @@ __metadata:
     "@orca-so/common-sdk": "npm:*"
     "@orca-so/whirlpools-sdk": "npm:*"
     typedoc: "npm:^0.27.9"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -4206,7 +4272,7 @@ __metadata:
     "@orca-so/whirlpools-core": "npm:*"
     typedoc: "npm:^0.27.9"
     typedoc-plugin-merge-modules: "npm:^6.1.0"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -4253,13 +4319,13 @@ __metadata:
     "@next/bundle-analyzer": "npm:^15.2.0"
     "@orca-so/whirlpools": "npm:*"
     "@solana/kit": "npm:^2.1.0"
-    "@types/node": "npm:^22.13.5"
+    "@types/node": "npm:^22.13.8"
     "@types/react": "npm:^18.3.13"
     copy-webpack-plugin: "npm:^13.0.0"
     next: "npm:^15.2.0"
     react: "npm:^18.3.1"
     react-dom: "npm:^18.3.1"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
     webpack: "npm:^5.98.0"
   languageName: unknown
   linkType: soft
@@ -4270,7 +4336,7 @@ __metadata:
   dependencies:
     "@orca-so/whirlpools": "npm:*"
     tsx: "npm:^4.19.3"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -4280,7 +4346,7 @@ __metadata:
   dependencies:
     eslint: "npm:^9.21.0"
     prettier: "npm:^3.5.2"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
     typescript-eslint: "npm:^8.25.0"
   languageName: unknown
   linkType: soft
@@ -4291,7 +4357,7 @@ __metadata:
   dependencies:
     "@changesets/changelog-github": "npm:^0.5.1"
     "@changesets/cli": "npm:^2.28.1"
-    "@types/node": "npm:^22.13.5"
+    "@types/node": "npm:^22.13.8"
     nx: "npm:^20.4.6"
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.4.0"
@@ -4310,7 +4376,7 @@ __metadata:
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
     "@codama/nodes-from-anchor": "npm:^1.1.7"
-    "@codama/renderers-rust": "npm:^1.0.15"
+    "@codama/renderers-rust": "npm:^1.0.16"
     "@orca-so/whirlpools-program": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
     codama: "npm:^1.2.7"
@@ -4335,7 +4401,7 @@ __metadata:
     "@types/semver": "npm:^7.5.8"
     semver: "npm:^7.7.1"
     smol-toml: "npm:^1.3.1"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -4370,7 +4436,7 @@ __metadata:
     js-convert-case: "npm:^4.2.0"
     prompts: "npm:^2.4.2"
     tsx: "npm:^4.19.3"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
 
@@ -4396,7 +4462,7 @@ __metadata:
     "@types/jest": "npm:^29.5.14"
     decimal.js: "npm:^10.5.0"
     tiny-invariant: "npm:^1.3.1"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
   peerDependencies:
     "@coral-xyz/anchor": ~0.29.0
     "@solana/spl-token": ^0.4.12
@@ -4410,13 +4476,13 @@ __metadata:
   dependencies:
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"
-    "@solana-program/memo": "npm:^0.6.1"
-    "@solana-program/system": "npm:^0.6.2"
-    "@solana-program/token": "npm:^0.4.1"
+    "@solana-program/memo": "npm:^0.7.0"
+    "@solana-program/system": "npm:^0.7.0"
+    "@solana-program/token": "npm:^0.5.1"
     "@solana-program/token-2022": "npm:^0.3.4"
     "@solana/kit": "npm:^2.1.0"
     solana-bankrun: "npm:^0.4.0"
-    typescript: "npm:^5.7.3"
+    typescript: "npm:^5.8.2"
   peerDependencies:
     "@solana/kit": ^2.1.0
   languageName: unknown
@@ -4678,39 +4744,39 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/address-lookup-table@npm:^0.6.1":
-  version: 0.6.1
-  resolution: "@solana-program/address-lookup-table@npm:0.6.1"
+"@solana-program/address-lookup-table@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "@solana-program/address-lookup-table@npm:0.7.0"
   peerDependencies:
-    "@solana/web3.js": ^2.0.0
-  checksum: 10c0/ec749290e7bf08836a7163996684e8cb13cf8f408a17ebff78956d7d24606d967c12083b85bb9c4a44fa5a25ff8901df81c2a8d5bbb7b4f5e2e1601617c4bab5
+    "@solana/kit": ^2.1.0
+  checksum: 10c0/5832582b3768dfae5770176fb9ce3ec0dacc76f754664c757c565a7d7c5f10cbd5eaa2a1d2d8dbe058309e66618bb0e9fda078cbef8816ecd18020c195b67166
   languageName: node
   linkType: hard
 
-"@solana-program/compute-budget@npm:^0.6.1":
-  version: 0.6.1
-  resolution: "@solana-program/compute-budget@npm:0.6.1"
+"@solana-program/compute-budget@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "@solana-program/compute-budget@npm:0.7.0"
   peerDependencies:
-    "@solana/web3.js": ^2.0.0
-  checksum: 10c0/0f3d77b7edc4339e5b278400217ef7985c66fb08cb4cb706f218c8ec75a097cbdc11236ff1d8f874306e1a08b6deb2e68710eb1494d796cb327d146b93f912b3
+    "@solana/kit": ^2.1.0
+  checksum: 10c0/134545e66f267602e575ff2fa7b57eaf590397bd62f17c73edfe1e8e915c5533df1d64368b3cbf1f63a7dc97f829278a43fc38c463437f142ebad00e6e0b7c73
   languageName: node
   linkType: hard
 
-"@solana-program/memo@npm:^0.6.1":
-  version: 0.6.1
-  resolution: "@solana-program/memo@npm:0.6.1"
+"@solana-program/memo@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "@solana-program/memo@npm:0.7.0"
   peerDependencies:
-    "@solana/web3.js": ^2.0.0
-  checksum: 10c0/b047d742c4320eeabe38ff32643f6c57a24c1582b1b7168525af457e4c94d15223c7ff4b13af081b63e02120530faa2cec4f2054577810996d866f327c7c8051
+    "@solana/kit": ^2.1.0
+  checksum: 10c0/b299a352e6bf4fcf8db9b144a7a6407dcf0791815b3cf471ca5d590a9a679cf86ba4e7c56ea1d43ca9157f3eb862d5a6ef40b3b5535339eb1a05fbf2a17d103d
   languageName: node
   linkType: hard
 
-"@solana-program/system@npm:^0.6.2":
-  version: 0.6.2
-  resolution: "@solana-program/system@npm:0.6.2"
+"@solana-program/system@npm:^0.7.0":
+  version: 0.7.0
+  resolution: "@solana-program/system@npm:0.7.0"
   peerDependencies:
-    "@solana/web3.js": ^2.0.0
-  checksum: 10c0/ccdbb5464132aba7634f298d90dd8189f557fc5bb3e0f51c7f43323d87da9b50ccde1885ad2dbfe11094acf15bf767620310bc23b1dd9b7c91592b437dbae113
+    "@solana/kit": ^2.1.0
+  checksum: 10c0/0316a6f5359a79b7d070358bf5b7443ff99419f2b7120f78fe625861925b227c7129fa9c2d88c53a8731630032777491e25e8cf6c0711f92fe956d90d40b5662
   languageName: node
   linkType: hard
 
@@ -4723,12 +4789,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana-program/token@npm:^0.4.1":
-  version: 0.4.1
-  resolution: "@solana-program/token@npm:0.4.1"
+"@solana-program/token@npm:^0.5.1":
+  version: 0.5.1
+  resolution: "@solana-program/token@npm:0.5.1"
   peerDependencies:
-    "@solana/web3.js": ^2.0.0
-  checksum: 10c0/d7b8d64d67f50c2cfab71b55d77e0979725ecac44a8a0be73ebce2a5901ee0775f337c4564ce436ada138fac3decb121b848118849f6203323c2717b7ffb47bc
+    "@solana/kit": ^2.1.0
+  checksum: 10c0/cbcf0487defbc73938b060ea377d1eb0a8aa47b6aaa55d9e16a2917c6a4ff1167501d67b3b46b408b787d426333c5468798df438d60e992f0756f23b54d91e7a
   languageName: node
   linkType: hard
 
@@ -6071,12 +6137,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:^22.13.5":
-  version: 22.13.5
-  resolution: "@types/node@npm:22.13.5"
+"@types/node@npm:^22.13.8":
+  version: 22.13.8
+  resolution: "@types/node@npm:22.13.8"
   dependencies:
     undici-types: "npm:~6.20.0"
-  checksum: 10c0/a2e7ed7bb0690e439004779baedeb05159c5cc41ef6d81c7a6ebea5303fde4033669e1c0e41ff7453b45fd2fea8dbd55fddfcd052950c7fcae3167c970bca725
+  checksum: 10c0/bfc92b734a9dce6ac5daee0a52feccdf5dcb3804d895e4bc5384e2f4644612b8801725cd03c8c3c0888fb5eeb16b875877ac44b77641e0196dc1a837b1c2a366
   languageName: node
   linkType: hard
 
@@ -17894,6 +17960,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"typescript@npm:^5.8.2":
+  version: 5.8.2
+  resolution: "typescript@npm:5.8.2"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/5c4f6fbf1c6389b6928fe7b8fcd5dc73bb2d58cd4e3883f1d774ed5bd83b151cbac6b7ecf11723de56d4676daeba8713894b1e9af56174f2f9780ae7848ec3c6
+  languageName: node
+  linkType: hard
+
 "typescript@patch:typescript@npm%3A^5.7.3#optional!builtin<compat/typescript>":
   version: 5.7.3
   resolution: "typescript@patch:typescript@npm%3A5.7.3#optional!builtin<compat/typescript>::version=5.7.3&hash=5786d5"
@@ -17901,6 +17977,16 @@ __metadata:
     tsc: bin/tsc
     tsserver: bin/tsserver
   checksum: 10c0/6fd7e0ed3bf23a81246878c613423730c40e8bdbfec4c6e4d7bf1b847cbb39076e56ad5f50aa9d7ebd89877999abaee216002d3f2818885e41c907caaa192cc4
+  languageName: node
+  linkType: hard
+
+"typescript@patch:typescript@npm%3A^5.8.2#optional!builtin<compat/typescript>":
+  version: 5.8.2
+  resolution: "typescript@patch:typescript@npm%3A5.8.2#optional!builtin<compat/typescript>::version=5.8.2&hash=5786d5"
+  bin:
+    tsc: bin/tsc
+    tsserver: bin/tsserver
+  checksum: 10c0/5448a08e595cc558ab321e49d4cac64fb43d1fa106584f6ff9a8d8e592111b373a995a1d5c7f3046211c8a37201eb6d0f1566f15cdb7a62a5e3be01d087848e2
   languageName: node
   linkType: hard
 

@@ -8,7 +8,7 @@
     "start": "tsx src/index.ts"
   },
   "dependencies": {
-    "@coral-xyz/anchor": "0.30.1",
+    "@coral-xyz/anchor": "0.29.0",
     "@orca-so/common-sdk": "*",
     "@orca-so/whirlpools-sdk": "*",
     "@solana/spl-token": "0.4.12",

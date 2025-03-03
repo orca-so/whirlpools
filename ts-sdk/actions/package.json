@@ -22,7 +22,6 @@
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
-    "test": "vitest run tests",
     "clean": "rimraf dist"
   },
   "dependencies": {
@@ -34,7 +33,6 @@
     "@solana/web3.js": "^2.0.0"
   },
   "devDependencies": {
-    "@solana/web3.js": "^2.0.0",
     "tsup": "^8.3.6"
   }
 }

@@ -3,6 +3,7 @@ use anchor_spl::memo::Memo;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::errors::ErrorCode;
+use crate::events::*;
 use crate::manager::liquidity_manager::{
     calculate_liquidity_token_deltas, calculate_modify_liquidity, sync_modify_liquidity_values,
 };
@@ -149,6 +150,18 @@ pub fn handler<'info>(
         &remaining_accounts.transfer_hook_b,
         transfer_fee_included_delta_b.amount,
     )?;
+
+    emit!(LiquidityIncreased {
+        whirlpool: ctx.accounts.whirlpool.key(),
+        position: ctx.accounts.position.key(),
+        tick_lower_index: ctx.accounts.position.tick_lower_index,
+        tick_upper_index: ctx.accounts.position.tick_upper_index,
+        liquidity: liquidity_amount,
+        token_a_amount: transfer_fee_included_delta_a.amount,
+        token_b_amount: transfer_fee_included_delta_b.amount,
+        token_a_transfer_fee: transfer_fee_included_delta_a.transfer_fee,
+        token_b_transfer_fee: transfer_fee_included_delta_b.transfer_fee,
+    });
 
     Ok(())
 }

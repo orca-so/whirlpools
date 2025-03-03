@@ -11,8 +11,8 @@
     "@orca-so/whirlpools": "*",
     "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-core": "*",
-    "typedoc": "^0.27.8",
+    "typedoc": "^0.27.9",
     "typedoc-plugin-merge-modules": "^6.1.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.2"
   }
 }

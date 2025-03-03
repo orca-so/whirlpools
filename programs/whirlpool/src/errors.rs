@@ -146,6 +146,11 @@ pub enum ErrorCode {
 
     #[msg("Trade resulted in partial fill")]
     PartialFillError, // 0x17a9 (6057)
+
+    #[msg("Position is not lockable")]
+    PositionNotLockable, // 0x17aa (6058)
+    #[msg("Operation not allowed on locked position")]
+    OperationNotAllowedOnLockedPosition, // 0x17ab (6059)
 }
 
 impl From<TryFromIntError> for ErrorCode {

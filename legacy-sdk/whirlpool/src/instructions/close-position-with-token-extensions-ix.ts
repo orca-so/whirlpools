@@ -27,7 +27,7 @@ export type ClosePositionWithTokenExtensionsParams = {
  * Mint and TokenAccount are based on Token-2022. And Mint accout will be also closed.
  *
  * @category Instructions
- * @param context - Context object containing services required to generate the instruction
+ * @param program - program object containing services required to generate the instruction
  * @param params - ClosePositionWithTokenExtensionsParams object
  * @returns - Instruction to perform the action.
  */

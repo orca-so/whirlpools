@@ -19,7 +19,8 @@
   "sideEffects": false,
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "../../LICENSE"
   ],
   "scripts": {
     "build": "tsup src/index.ts --format cjs,esm --dts --sourcemap",
@@ -41,13 +42,13 @@
   "devDependencies": {
     "@solana/web3.js": "^2.0.0",
     "solana-bankrun": "^0.4.0",
-    "typescript": "^5.7.3"
+    "typescript": "^5.8.2"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/orca-so/whirlpools.git"
   },
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "keywords": [
     "solana",
     "crypto",

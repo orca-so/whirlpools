@@ -106,6 +106,7 @@ function createUninitializedTickArray(
         rewardGrowthsOutside: [0n, 0n, 0n],
       }),
     },
+    space: 0n,
     executable: false,
     lamports: lamports(0n),
     programAddress,

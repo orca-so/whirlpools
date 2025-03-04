@@ -7,9 +7,12 @@ import {
   fetchPositionsForOwner,
   harvestPositionInstructions,
 } from "@orca-so/whirlpools";
-import { IInstruction } from "@solana/web3.js";
+import { Address, IInstruction } from "@solana/web3.js";
 import { getPayer } from "./config";
-import { wouldExceedTransactionSize } from "./helpers";
+import {
+  executeWhirlpoolInstruction,
+  wouldExceedTransactionSize,
+} from "./helpers";
 
 // Harvest fees from all positions owned by an address
 export async function harvestAllPositionFees(): Promise<string[]> {
@@ -41,4 +44,12 @@ export async function harvestAllPositionFees(): Promise<string[]> {
       return String(txHash);
     })
   );
+}
+
+export async function harvestPositionFees(
+  positionMint: Address
+): Promise<string> {
+  return (
+    await executeWhirlpoolInstruction(harvestPositionInstructions, positionMint)
+  ).callback();
 }

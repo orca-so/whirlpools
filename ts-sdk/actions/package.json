@@ -1,5 +1,5 @@
 {
-  "name": "@orca-so/actions",
+  "name": "@orca-so/whirlpools-actions",
   "version": "0.0.2",
   "type": "module",
   "main": "./dist/index.cjs",

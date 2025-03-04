@@ -2,7 +2,7 @@ import {
   createKeyPairFromBytes,
   createSignerFromKeyPair,
   KeyPairSigner,
-} from "@solana/web3.js";
+} from "@solana/kit";
 export {
   setComputeUnitMarginMultiplier,
   setJitoBlockEngineUrl,

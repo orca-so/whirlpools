@@ -7,7 +7,7 @@ import {
   fetchPositionsForOwner,
   harvestPositionInstructions,
 } from "@orca-so/whirlpools";
-import { Address, IInstruction } from "@solana/web3.js";
+import { Address, IInstruction } from "@solana/kit";
 import { getPayer } from "./config";
 import {
   executeWhirlpoolInstruction,

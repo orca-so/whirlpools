@@ -26,13 +26,13 @@
   },
   "dependencies": {
     "@orca-so/tx-sender": "*",
-    "@orca-so/whirlpools": "*",
-    "@solana/web3.js": "^2.0.0"
+    "@orca-so/whirlpools": "*"
   },
   "peerDependencies": {
-    "@solana/web3.js": "^2.0.0"
+    "@solana/kit": "^2.1.0"
   },
   "devDependencies": {
+    "@solana/kit": "^2.1.0",
     "tsup": "^8.3.6"
   }
 }

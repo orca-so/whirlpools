@@ -1,6 +1,6 @@
 import { swapInstructions, SwapParams } from "@orca-so/whirlpools";
 import { ExactInSwapQuote, ExactOutSwapQuote } from "@orca-so/whirlpools-core";
-import { Address } from "@solana/web3.js";
+import { Address } from "@solana/kit";
 import { executeWhirlpoolInstruction } from "./helpers";
 
 // Swap tokens with optional slippage

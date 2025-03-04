@@ -1,4 +1,4 @@
-import { Address, Lamports } from "@solana/web3.js";
+import { Address, Lamports } from "@solana/kit";
 import {
   IncreaseLiquidityQuoteParam,
   openPositionInstructions,

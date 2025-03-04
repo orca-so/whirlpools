@@ -1,4 +1,4 @@
-import { IInstruction, TransactionSigner } from "@solana/web3.js";
+import type { IInstruction, TransactionSigner } from "@solana/kit";
 import { getPayer, getRpcConfig } from "./config";
 import { rpcFromUrl, buildAndSendTransaction } from "@orca-so/tx-sender";
 
@@ -35,7 +35,7 @@ export async function executeWhirlpoolInstruction<T extends any[], R>(
  */
 export function wouldExceedTransactionSize(
   currentInstructions: IInstruction[],
-  instructionsToAdd: IInstruction[]
+  instructionsToAdd: IInstruction[],
 ): boolean {
   // Current Solana transaction size limit is 1232 bytes
   const MAX_TRANSACTION_SIZE = 1232;
@@ -53,7 +53,7 @@ export function wouldExceedTransactionSize(
 
       return sum + ixSize;
     },
-    0
+    0,
   );
 
   return totalSize > MAX_TRANSACTION_SIZE;

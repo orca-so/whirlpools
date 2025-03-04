@@ -1,4 +1,4 @@
-import { Address } from "@solana/kit";
+import type { Address } from "@solana/kit";
 import {
   createSplashPoolInstructions,
   createConcentratedLiquidityPoolInstructions,
@@ -9,13 +9,13 @@ import { executeWhirlpoolInstruction } from "./helpers";
 export async function createSplashPool(
   tokenMintA: Address,
   tokenMintB: Address,
-  initialPrice: number
+  initialPrice: number,
 ) {
   return executeWhirlpoolInstruction(
     createSplashPoolInstructions,
     tokenMintA,
     tokenMintB,
-    initialPrice
+    initialPrice,
   );
 }
 
@@ -24,13 +24,13 @@ export async function createConcentratedLiquidityPool(
   tokenMintA: Address,
   tokenMintB: Address,
   tickSpacing: number,
-  initialPrice: number
+  initialPrice: number,
 ) {
   return executeWhirlpoolInstruction(
     createConcentratedLiquidityPoolInstructions,
     tokenMintA,
     tokenMintB,
     tickSpacing,
-    initialPrice
+    initialPrice,
   );
 }

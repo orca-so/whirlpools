@@ -7,7 +7,7 @@ import {
   fetchPositionsForOwner,
   harvestPositionInstructions,
 } from "@orca-so/whirlpools";
-import { Address, IInstruction } from "@solana/kit";
+import type { Address, IInstruction } from "@solana/kit";
 import { getPayer } from "./config";
 import {
   executeWhirlpoolInstruction,
@@ -28,7 +28,7 @@ export async function harvestAllPositionFees(): Promise<string[]> {
       const { instructions } = await harvestPositionInstructions(
         rpc,
         position.data.positionMint,
-        owner
+        owner,
       );
       if (wouldExceedTransactionSize(currentInstructions, instructions)) {
         instructionSets.push(currentInstructions);
@@ -42,12 +42,12 @@ export async function harvestAllPositionFees(): Promise<string[]> {
     instructionSets.map(async (instructions) => {
       let txHash = await buildAndSendTransaction(instructions, owner);
       return String(txHash);
-    })
+    }),
   );
 }
 
 export async function harvestPositionFees(
-  positionMint: Address
+  positionMint: Address,
 ): Promise<string> {
   return (
     await executeWhirlpoolInstruction(harvestPositionInstructions, positionMint)

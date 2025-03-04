@@ -1,7 +1,8 @@
+import type {
+  KeyPairSigner} from "@solana/kit";
 import {
   createKeyPairFromBytes,
-  createSignerFromKeyPair,
-  KeyPairSigner,
+  createSignerFromKeyPair
 } from "@solana/kit";
 export {
   setComputeUnitMarginMultiplier,

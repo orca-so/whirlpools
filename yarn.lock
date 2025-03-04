@@ -3945,19 +3945,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@orca-so/actions@workspace:ts-sdk/actions":
-  version: 0.0.0-use.local
-  resolution: "@orca-so/actions@workspace:ts-sdk/actions"
-  dependencies:
-    "@orca-so/tx-sender": "npm:*"
-    "@orca-so/whirlpools": "npm:*"
-    "@solana/web3.js": "npm:^2.0.0"
-    tsup: "npm:^8.3.6"
-  peerDependencies:
-    "@solana/web3.js": ^2.0.0
-  languageName: unknown
-  linkType: soft
-
 "@orca-so/common-sdk@npm:*, @orca-so/common-sdk@workspace:legacy-sdk/common":
   version: 0.0.0-use.local
   resolution: "@orca-so/common-sdk@workspace:legacy-sdk/common"
@@ -3982,6 +3969,19 @@ __metadata:
     "@solana-program/system": "npm:^0.6.2"
     "@solana/web3.js": "npm:^2.0.0"
     tsup: "npm:^8.4.0"
+  peerDependencies:
+    "@solana/web3.js": ^2.0.0
+  languageName: unknown
+  linkType: soft
+
+"@orca-so/whirlpools-actions@workspace:ts-sdk/actions":
+  version: 0.0.0-use.local
+  resolution: "@orca-so/whirlpools-actions@workspace:ts-sdk/actions"
+  dependencies:
+    "@orca-so/tx-sender": "npm:*"
+    "@orca-so/whirlpools": "npm:*"
+    "@solana/web3.js": "npm:^2.0.0"
+    tsup: "npm:^8.3.6"
   peerDependencies:
     "@solana/web3.js": ^2.0.0
   languageName: unknown

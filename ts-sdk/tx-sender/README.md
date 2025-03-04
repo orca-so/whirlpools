@@ -1,6 +1,6 @@
 # @orca-so/tx-sender
 
-A lightweight TypeScript package for building and sending Solana transactions with support for priority fees and Jito tips. (based on @solana/web3.js 2.0)
+A lightweight TypeScript package for building and sending Solana transactions with support for priority fees and Jito tips. (based on @solana/kit 2.0)
 
 ## Key Features
 

@@ -1,9 +1,9 @@
-import type { Address, TransactionSigner } from "@solana/web3.js";
+import type { Address, TransactionSigner } from "@solana/kit";
 import {
   address,
   lamports,
   prependTransactionMessageInstruction,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   getJitoBlockEngineUrl,
   type JitoFeeSetting,

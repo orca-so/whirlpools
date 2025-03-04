@@ -17,7 +17,7 @@ import type {
   GetMultipleAccountsApi,
   GetMinimumBalanceForRentExemptionApi,
   GetEpochInfoApi,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import { DEFAULT_ADDRESS, FUNDER } from "./config";
 import {
   fetchAllTickArray,
@@ -69,7 +69,7 @@ export type HarvestPositionInstructions = {
  *    A promise that resolves to an object containing the instructions, fees, and rewards quotes.
  * @example
  * import { harvestPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  * import { loadWallet } from './utils';
  *
  * await setWhirlpoolsConfig('solanaDevnet');

@@ -13,7 +13,7 @@ The Orca Whirlpools SDK provides a comprehensive set of tools to interact with t
 To install the SDK, use the following command:
 
 ```sh
-npm install @orca-so/whirlpools @solana/web3.js@2
+npm install @orca-so/whirlpools @solana/kit@2
 ```
 
 ## Basic Usage
@@ -22,7 +22,7 @@ npm install @orca-so/whirlpools @solana/web3.js@2
 You can [generate a file system wallet using the Solana CLI](https://docs.solanalabs.com/cli/wallets/file-system) and load it in your program.
 
 ```tsx
-import { createKeyPairSignerFromBytes } from '@solana/web3.js';
+import { createKeyPairSignerFromBytes } from '@solana/kit';
 import fs from 'fs';
 
 const keyPairBytes = new Uint8Array(JSON.parse(fs.readFileSync('path/to/solana-keypair.json', 'utf8')));
@@ -72,7 +72,7 @@ const { instructions, quote } = await swapInstructions(
 ### 4. Putting it all together
 ```tsx
 import { swapInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/kit';
 
 const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
 await setWhirlpoolsConfig('solanaDevnet');

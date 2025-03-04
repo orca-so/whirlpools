@@ -4,12 +4,12 @@ import type {
   Account,
   GetProgramAccountsApi,
   Rpc,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   getBase58Decoder,
   getAddressEncoder,
   getU16Encoder,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import type { WhirlpoolsConfig } from "../generated/accounts/whirlpoolsConfig";
 import {
   WHIRLPOOLS_CONFIG_DISCRIMINATOR,

@@ -24,7 +24,7 @@ For specific use-cases you can opt for integrating with lower level packages suc
 * `@orca-so/whirlpools-client` & `orca_whirlpools_client` - auto-generated client for the Whirlpools program that contains account, instruction and error parsing.
 * `@orca-so/whirlpools-core` & `orca_whirlpools_core` - utility, math and quoting functions used by other packages.
 
-The legacy Typescript SDK (`@orca-so/whirlpools-sdk`) remains a solid choice, and it’s currently the only option if your project uses Solana Web3.js versions below v2.
+The legacy Typescript SDK (`@orca-so/whirlpools-sdk`) remains a solid choice, and it’s currently the only option if your project uses Solana Web3.js.
 
 For a more detailed overview of our SDK suite and usage examples, visit our [developer documentation](https://dev.orca.so/) site.
 

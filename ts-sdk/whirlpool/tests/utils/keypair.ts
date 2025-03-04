@@ -1,5 +1,5 @@
-import type { KeyPairSigner } from "@solana/web3.js";
-import { generateKeyPairSigner } from "@solana/web3.js";
+import type { KeyPairSigner } from "@solana/kit";
+import { generateKeyPairSigner } from "@solana/kit";
 import { orderMints } from "../../src/token";
 
 const keypairs = await Promise.all(

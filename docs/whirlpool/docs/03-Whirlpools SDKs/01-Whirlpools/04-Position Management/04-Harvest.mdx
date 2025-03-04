@@ -25,7 +25,7 @@ To harvest fees and rewards from a position, follow these steps:
   <TabItem value="ts" label="Typescript" default>
     ```tsx
     import { harvestPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+    import { createSolanaRpc, devnet, address } from '@solana/kit';
     import { loadWallet } from './utils';
 
     await setWhirlpoolsConfig('solanaDevnet');

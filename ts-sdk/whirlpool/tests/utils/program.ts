@@ -28,7 +28,7 @@ import {
   findAssociatedTokenPda,
   TOKEN_2022_PROGRAM_ADDRESS,
 } from "@solana-program/token-2022";
-import { address, type Address, type IInstruction } from "@solana/web3.js";
+import { address, type Address, type IInstruction } from "@solana/kit";
 import {
   SPLASH_POOL_TICK_SPACING,
   WHIRLPOOLS_CONFIG_ADDRESS,

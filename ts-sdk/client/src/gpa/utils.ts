@@ -5,8 +5,8 @@ import type {
   GetProgramAccountsMemcmpFilter,
   Rpc,
   VariableSizeDecoder,
-} from "@solana/web3.js";
-import { getBase64Encoder } from "@solana/web3.js";
+} from "@solana/kit";
+import { getBase64Encoder } from "@solana/kit";
 
 export async function fetchDecodedProgramAccounts<T extends object>(
   rpc: Rpc<GetProgramAccountsApi>,

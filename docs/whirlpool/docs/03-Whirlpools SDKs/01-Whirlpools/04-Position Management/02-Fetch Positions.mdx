@@ -27,7 +27,7 @@ Fetching positions is a straightforward process:
   <TabItem value="ts" label="Typescript" default>
     ```tsx
     import { fetchPositionsForOwner, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+    import { createSolanaRpc, devnet, address } from '@solana/kit';
 
     await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -75,7 +75,7 @@ Fetching all positions in a Whirlpool is a straightforward process:
   <TabItem value="ts" label="Typescript" default>
     ```tsx
     import { fetchPositionsInWhirlpool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
-    import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+    import { createSolanaRpc, devnet, address } from '@solana/kit';
 
     await setWhirlpoolsConfig('solanaDevnet');
     const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));

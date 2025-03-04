@@ -19,8 +19,8 @@ import type {
   GetProgramAccountsApi,
   GetTokenAccountsByOwnerApi,
   Rpc,
-} from "@solana/web3.js";
-import { getBase64Encoder } from "@solana/web3.js";
+} from "@solana/kit";
+import { getBase64Encoder } from "@solana/kit";
 
 /**
  * Represents a Position account.
@@ -82,7 +82,7 @@ function getPositionInBundleAddresses(
  *
  * @example
  * import { fetchPositionsForOwner } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet } from '@solana/kit';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  * const wallet = address("INSERT_WALLET_ADDRESS");
@@ -190,7 +190,7 @@ export async function fetchPositionsForOwner(
  *
  * @example
  * import { fetchPositionsInWhirlpool } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  *
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
  *

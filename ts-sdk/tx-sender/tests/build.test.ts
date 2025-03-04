@@ -9,13 +9,13 @@ import type {
   Rpc,
   SolanaRpcApi,
   Address,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   generateKeyPairSigner,
   getBase64EncodedWireTransaction,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import { getTransferSolInstruction } from "@solana-program/system";
-import { address } from "@solana/web3.js";
+import { address } from "@solana/kit";
 import assert from "assert";
 import {
   setRpc,
@@ -57,8 +57,8 @@ vi.mock("@solana-program/address-lookup-table", async () => {
   };
 });
 
-vi.mock("@solana/web3.js", async () => {
-  const actual = await vi.importActual("@solana/web3.js");
+vi.mock("@solana/kit", async () => {
+  const actual = await vi.importActual("@solana/kit");
   return {
     ...actual,
     signTransactionMessageWithSigners: vi.fn().mockImplementation(

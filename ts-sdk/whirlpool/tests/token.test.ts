@@ -22,8 +22,8 @@ import {
   prepareTokenAccountsInstructions,
 } from "../src/token";
 import assert from "assert";
-import type { Address } from "@solana/web3.js";
-import { address } from "@solana/web3.js";
+import type { Address } from "@solana/kit";
+import { address } from "@solana/kit";
 import { setupAta, setupMint } from "./utils/token";
 import { setupMintTE, setupMintTEFee } from "./utils/tokenExtensions";
 

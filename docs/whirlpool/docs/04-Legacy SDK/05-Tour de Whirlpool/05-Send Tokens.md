@@ -65,9 +65,9 @@ main();
 Execute the script and verify that the transaction was successful.
 
 ```bash
-$ ts-node ./src/013_transfer_sol.ts 
-endpoint: https://api.devnet.solana.com 
-wallet pubkey: FptVFacYhPrwScJayvKXvwjGeZRbefnnEcgmSQkoRAXB 
+$ ts-node ./src/013_transfer_sol.ts
+endpoint: https://api.devnet.solana.com
+wallet pubkey: FptVFacYhPrwScJayvKXvwjGeZRbefnnEcgmSQkoRAXB
 signature: 2EiiHe5JqpbJTUChaeZwUiAEtRtvD9BwWHqX5pKaHhMA5hPEyCuQwEDLjtjHZY6QnHybLdfTS9Rv6k75tLisnf8N
 ```
 
@@ -86,7 +86,7 @@ If you are unable to find the transaction, make sure that you have the network d
 - You can also verify transaction transactions executed on Devnet using SolScan.
 
 ### APIs Used
-https://solana-labs.github.io/solana-web3.js/v1.x/classes/SystemProgram.html#transfer
+https://solana-labs.github.io/solana-web3.js/classes/SystemProgram.html#transfer
 
 ## Sending Tokens
 Next, let's try sending Tokens from a program.
@@ -172,7 +172,7 @@ Run the code, and then verify that the devSAMO token has been sent.
 ```bash
 $ ts-node ./src/014_transfer_token.ts
 endpoint: https://api.devnet.solana.com
-wallet pubkey: FptVFacYhPrwScJayvKXvwjGeZRbefnnEcgmSQkoRAXB 
+wallet pubkey: FptVFacYhPrwScJayvKXvwjGeZRbefnnEcgmSQkoRAXB
 signature: 4NXrCbHJHBqgV4oDnWHCPFe7emiVf9SmRjqGxEgKFRAu2Wc8LrmWScygUfdfzZjCifjj4xsmnVke9EVxixceCXjk
 ```
 

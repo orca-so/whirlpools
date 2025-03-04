@@ -15,7 +15,7 @@ import type {
   GetMultipleAccountsApi,
   Address,
   GetProgramAccountsApi,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import { SPLASH_POOL_TICK_SPACING, WHIRLPOOLS_CONFIG_ADDRESS } from "./config";
 import { orderMints } from "./token";
 import { sqrtPriceToPrice } from "@orca-so/whirlpools-core";
@@ -65,7 +65,7 @@ export type PoolInfo = (InitializablePool | InitializedPool) & {
  *
  * @example
  * import { fetchSplashPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -108,7 +108,7 @@ export async function fetchSplashPool(
  *
  * @example
  * import { fetchConcentratedLiquidityPool, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -194,7 +194,7 @@ export async function fetchConcentratedLiquidityPool(
  *
  * @example
  * import { fetchWhirlpoolsByTokenPair, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));

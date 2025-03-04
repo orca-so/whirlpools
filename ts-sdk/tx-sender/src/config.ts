@@ -1,4 +1,4 @@
-import type { Rpc, SolanaRpcApi } from "@solana/web3.js";
+import type { Rpc, SolanaRpcApi } from "@solana/kit";
 import { rpcFromUrl } from "./compatibility";
 
 let globalConfig: {

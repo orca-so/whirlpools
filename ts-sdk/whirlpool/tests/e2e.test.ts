@@ -10,7 +10,7 @@ import {
 import { sendTransaction, rpc } from "./utils/mockRpc";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
 import { swapInstructions } from "../src/swap";
-import type { Address } from "@solana/web3.js";
+import type { Address } from "@solana/kit";
 import { harvestPositionInstructions } from "../src/harvest";
 import {
   decreaseLiquidityInstructions,

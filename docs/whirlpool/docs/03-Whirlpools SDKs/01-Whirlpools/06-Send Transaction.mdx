@@ -24,27 +24,27 @@ Let's start by importing the necessary dependencies from Solana's SDKs.
     ```json title="package.json"
     "dependencies": {
       "@solana-program/compute-budget": "^0.6.1",
-      "@solana/web3.js": "^2.0.0",
+      "@solana/kit": "^2.1.0",
     },
     ```
     ```tsx title="sendTransaction.ts"
-    import { 
-      createSolanaRpc, 
-      address, 
-      pipe, 
-      createTransactionMessage, 
-      setTransactionMessageFeePayer, 
-      setTransactionMessageLifetimeUsingBlockhash, 
-      appendTransactionMessageInstructions, 
-      prependTransactionMessageInstructions, 
-      signTransactionMessageWithSigners, 
-      getComputeUnitEstimateForTransactionMessageFactory, 
-      getBase64EncodedWireTransaction, 
-      setTransactionMessageFeePayerSigner 
-    } from '@solana/web3.js';
-    import { 
-      getSetComputeUnitLimitInstruction, 
-      getSetComputeUnitPriceInstruction 
+    import {
+      createSolanaRpc,
+      address,
+      pipe,
+      createTransactionMessage,
+      setTransactionMessageFeePayer,
+      setTransactionMessageLifetimeUsingBlockhash,
+      appendTransactionMessageInstructions,
+      prependTransactionMessageInstructions,
+      signTransactionMessageWithSigners,
+      getComputeUnitEstimateForTransactionMessageFactory,
+      getBase64EncodedWireTransaction,
+      setTransactionMessageFeePayerSigner
+    } from '@solana/kit';
+    import {
+      getSetComputeUnitLimitInstruction,
+      getSetComputeUnitPriceInstruction
     } from '@solana-program/compute-budget';
     ```
   </TabItem>
@@ -77,7 +77,7 @@ To send a transaction on Solana, you need to include a blockhash to the transact
 
 > **Durable Nonces**: In some cases, you might need a transaction to remain valid for longer than the typical blockhash lifespan, such as when scheduling future payments or collecting multi-signature approvals over time. In that case, you can use [durable nonces](https://solana.com/developers/courses/offline-transactions/durable-nonces) to sign the transaction, which includes a nonce in place of a recent blockhash.
 
-You also need to add the signers to the transactions. With Solana web3.js v2, you can create instructions and add additional signers as `TransactionSigner` to the instructions. The Typescript Whirlpools SDK leverages this functioanlity and appends all additional signers to the instructions for you. In Rust, this feautures is not available. Therefore, the Rust Whirlpools SDK may return `instruction_result.additional_signers` if there are any, and you need to manually append them to the transaction.
+You also need to add the signers to the transactions. With Solana Kit, you can create instructions and add additional signers as `TransactionSigner` to the instructions. The Typescript Whirlpools SDK leverages this functioanlity and appends all additional signers to the instructions for you. In Rust, this feautures is not available. Therefore, the Rust Whirlpools SDK may return `instruction_result.additional_signers` if there are any, and you need to manually append them to the transaction.
 
 Here's how the transaction message is created:
 
@@ -132,7 +132,7 @@ The prioritization fee per compute unit also incentivizes validators to prioriti
 <Tabs groupId="programming-languages">
   <TabItem value="ts" label="Typescript" default>
     ```tsx title="sendTransaction.ts"
-    const getComputeUnitEstimateForTransactionMessage = 
+    const getComputeUnitEstimateForTransactionMessage =
       getComputeUnitEstimateForTransactionMessageFactory({
         rpc
       });
@@ -255,7 +255,7 @@ You're probably wondering why we don't just use the widely used `sendAndConfirm`
           break Err(Box::<dyn std::error::Error>::from("Transaction timed out"));
         }
         let transaction_start_time = Instant::now();
-        
+
         let signature: Signature = rpc
           .send_transaction_with_config(&transaction, transaction_config)
           .await
@@ -265,7 +265,7 @@ You're probably wondering why we don't just use the widely used `sendAndConfirm`
           .await
           .unwrap()
           .value;
-        
+
         if let Some(status) = statuses[0].clone() {
           break Ok((status, signature));
         }

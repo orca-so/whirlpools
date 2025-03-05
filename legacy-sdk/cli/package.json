@@ -11,7 +11,7 @@
     "@coral-xyz/anchor": "0.29.0",
     "@orca-so/common-sdk": "*",
     "@orca-so/whirlpools-sdk": "*",
-    "@solana/spl-token": "0.4.12",
+    "@solana/spl-token": "0.4.13",
     "@solana/web3.js": "^1.90.0",
     "@types/bn.js": "^5.1.0",
     "bs58": "^6.0.0",

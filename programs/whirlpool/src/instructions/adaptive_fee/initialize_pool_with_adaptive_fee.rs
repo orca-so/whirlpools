@@ -4,7 +4,7 @@ use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use crate::{
     errors::ErrorCode,
     state::*,
-    util::{is_token_badge_initialized, to_timestamp_u64, v2::is_supported_token_mint},
+    util::{verify_supported_token_mint, to_timestamp_u64},
 };
 
 #[derive(Accounts)]
@@ -94,25 +94,16 @@ pub fn handler(
     let bump = ctx.bumps.whirlpool;
 
     // Don't allow creating a pool with unsupported token mints
-    let is_token_badge_initialized_a = is_token_badge_initialized(
+    verify_supported_token_mint(
+        &ctx.accounts.token_mint_a,
         whirlpools_config.key(),
-        token_mint_a,
         &ctx.accounts.token_badge_a,
     )?;
-
-    if !is_supported_token_mint(&ctx.accounts.token_mint_a, is_token_badge_initialized_a).unwrap() {
-        return Err(ErrorCode::UnsupportedTokenMint.into());
-    }
-
-    let is_token_badge_initialized_b = is_token_badge_initialized(
+    verify_supported_token_mint(
+        &ctx.accounts.token_mint_b,
         whirlpools_config.key(),
-        token_mint_b,
         &ctx.accounts.token_badge_b,
     )?;
-
-    if !is_supported_token_mint(&ctx.accounts.token_mint_b, is_token_badge_initialized_b).unwrap() {
-        return Err(ErrorCode::UnsupportedTokenMint.into());
-    }
 
     // Don't allow setting trade_enable_timestamp for permission-less adaptive fee tier
     let clock = Clock::get()?;

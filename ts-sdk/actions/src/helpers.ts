@@ -1,4 +1,9 @@
-import type { IInstruction, TransactionSigner } from "@solana/kit";
+import type {
+  IInstruction,
+  Rpc,
+  SolanaRpcApi,
+  TransactionSigner,
+} from "@solana/kit";
 import { getPayer, getRpcConfig } from "./config";
 import { rpcFromUrl, buildAndSendTransaction } from "@orca-so/tx-sender";
 
@@ -8,9 +13,9 @@ import { rpcFromUrl, buildAndSendTransaction } from "@orca-so/tx-sender";
  * @param params Parameters for the instruction function (excluding rpc and owner)
  * @returns An object with callback and other relevant data
  */
-export async function executeWhirlpoolInstruction<T extends any[], R>(
+export async function executeWhirlpoolInstruction<T extends unknown[], R>(
   instructionFn: (
-    rpc: any,
+    rpc: Rpc<SolanaRpcApi>,
     ...params: [...T, TransactionSigner]
   ) => Promise<R & { instructions: IInstruction[] }>,
   ...params: T

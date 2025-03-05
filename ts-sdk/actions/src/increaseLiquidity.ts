@@ -14,7 +14,7 @@ export async function openConcentratedPosition(
   tokenAmount: IncreaseLiquidityQuoteParam,
   lowerPrice: number,
   upperPrice: number,
-  slippageToleranceBps?: number
+  slippageToleranceBps?: number,
 ): Promise<{
   callback: () => Promise<string>;
   quote: IncreaseLiquidityQuote;
@@ -27,7 +27,7 @@ export async function openConcentratedPosition(
     tokenAmount,
     lowerPrice,
     upperPrice,
-    slippageToleranceBps
+    slippageToleranceBps,
   );
 }
 
@@ -35,7 +35,7 @@ export async function openConcentratedPosition(
 export async function openFullRangePosition(
   poolAddress: Address,
   tokenAmount: IncreaseLiquidityQuoteParam,
-  slippageToleranceBps?: number
+  slippageToleranceBps?: number,
 ): Promise<{
   callback: () => Promise<string>;
   quote: IncreaseLiquidityQuote;
@@ -45,7 +45,7 @@ export async function openFullRangePosition(
     openFullRangePositionInstructions,
     poolAddress,
     tokenAmount,
-    slippageToleranceBps
+    slippageToleranceBps,
   );
 }
 
@@ -53,7 +53,7 @@ export async function openFullRangePosition(
 export async function increasePosLiquidity(
   positionMintAddress: Address,
   tokenAmount: IncreaseLiquidityQuoteParam,
-  slippageToleranceBps?: number
+  slippageToleranceBps?: number,
 ): Promise<{
   callback: () => Promise<string>;
   quote: IncreaseLiquidityQuote;
@@ -62,6 +62,6 @@ export async function increasePosLiquidity(
     increaseLiquidityInstructions,
     positionMintAddress,
     tokenAmount,
-    slippageToleranceBps
+    slippageToleranceBps,
   );
 }

@@ -14,7 +14,7 @@ import { executeWhirlpoolInstruction } from "./helpers";
 // Close a position and collect all fees and rewards
 export async function closePosition(
   positionMintAddress: Address,
-  slippageToleranceBps?: number
+  slippageToleranceBps?: number,
 ): Promise<{
   callback: () => Promise<string>;
   quote: DecreaseLiquidityQuote;
@@ -24,7 +24,7 @@ export async function closePosition(
   return executeWhirlpoolInstruction(
     closePositionInstructions,
     positionMintAddress,
-    slippageToleranceBps
+    slippageToleranceBps,
   );
 }
 
@@ -32,7 +32,7 @@ export async function closePosition(
 export async function decreasePosLiquidity(
   positionMintAddress: Address,
   tokenAmount: DecreaseLiquidityQuoteParam,
-  slippageToleranceBps?: number
+  slippageToleranceBps?: number,
 ): Promise<{
   callback: () => Promise<string>;
   quote: DecreaseLiquidityQuote;
@@ -41,6 +41,6 @@ export async function decreasePosLiquidity(
     decreaseLiquidityInstructions,
     positionMintAddress,
     tokenAmount,
-    slippageToleranceBps
+    slippageToleranceBps,
   );
 }

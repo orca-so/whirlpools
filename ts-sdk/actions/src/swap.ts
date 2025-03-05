@@ -11,7 +11,7 @@ import { executeWhirlpoolInstruction } from "./helpers";
 export async function swapTokens(
   poolAddress: Address,
   swapParams: SwapParams,
-  slippageToleranceBps?: number
+  slippageToleranceBps?: number,
 ): Promise<{
   quote: ExactInSwapQuote | ExactOutSwapQuote;
   callback: () => Promise<string>;
@@ -20,6 +20,6 @@ export async function swapTokens(
     swapInstructions,
     swapParams,
     poolAddress,
-    slippageToleranceBps
+    slippageToleranceBps,
   );
 }

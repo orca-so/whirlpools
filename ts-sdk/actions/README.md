@@ -147,7 +147,7 @@ import { swap } from "@orca-so/actions";
 
 const { callback, quote } = await swap(
   poolAddress,
-  tokenAmount,
+  swapParams,
   slippageToleranceBps // optional
 );
 

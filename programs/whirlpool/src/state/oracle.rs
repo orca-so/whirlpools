@@ -4,7 +4,7 @@ use crate::manager::fee_rate_manager::{
     VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
 };
 use anchor_lang::prelude::*;
-use std::cell::RefMut;
+use std::cell::{Ref, RefMut};
 
 pub const MAX_TRADE_ENABLE_TIMESTAMP_DELTA: u64 = 60 * 60 * 72; // 72 hours
 
@@ -246,81 +246,85 @@ impl Oracle {
 
 pub struct OracleAccessor<'info> {
     oracle_account_info: AccountInfo<'info>,
+    oracle_account_initialized: bool,
 }
 
 impl<'info> OracleAccessor<'info> {
-    pub fn new(oracle_account_info: AccountInfo<'info>) -> Self {
-        Self {
+    pub fn new(oracle_account_info: AccountInfo<'info>) -> Result<Self> {
+        let oracle_account_initialized = Self::is_oracle_account_initialized(&oracle_account_info)?;
+        Ok(Self {
             oracle_account_info,
-        }
+            oracle_account_initialized,
+        })
     }
 
     pub fn is_trade_enabled(&self, current_timestamp: u64) -> Result<bool> {
-        let oracle = self.load_mut()?;
-        match oracle {
-            Some(oracle) => Ok(oracle.trade_enable_timestamp <= current_timestamp),
-            None => Ok(true),
+        if !self.oracle_account_initialized {
+            return Ok(true);
         }
+
+        let oracle = self.load()?;
+        Ok(oracle.trade_enable_timestamp <= current_timestamp)
     }
 
     pub fn get_adaptive_fee_info(&self) -> Result<Option<AdaptiveFeeInfo>> {
-        let oracle = self.load_mut()?;
-        match oracle {
-            Some(oracle) => Ok(Some(AdaptiveFeeInfo {
-                constants: oracle.adaptive_fee_constants,
-                variables: oracle.adaptive_fee_variables,
-            })),
-            None => Ok(None),
+        if !self.oracle_account_initialized {
+            return Ok(None);
         }
+
+        let oracle = self.load()?;
+        Ok(Some(AdaptiveFeeInfo {
+            constants: oracle.adaptive_fee_constants,
+            variables: oracle.adaptive_fee_variables,
+        }))
     }
 
     pub fn update_adaptive_fee_variables(
         &self,
         adaptive_fee_info: &Option<AdaptiveFeeInfo>,
     ) -> Result<()> {
-        let oracle = self.load_mut()?;
-        match (oracle, adaptive_fee_info) {
+        // If the Oracle account is not initialized, load_mut access will be skipped.
+        // In other words, no need for writable flag on the Oracle account if it is not initialized.
+
+        match (self.oracle_account_initialized, adaptive_fee_info) {
             // Oracle account has been initialized and adaptive fee info is provided
-            (Some(mut oracle), Some(adaptive_fee_info)) => {
+            (true, Some(adaptive_fee_info)) => {
+                let mut oracle = self.load_mut()?;
                 oracle.update_adaptive_fee_variables(adaptive_fee_info.variables);
                 Ok(())
             }
             // Oracle account has not been initialized and adaptive fee info is not provided
-            (None, None) => Ok(()),
+            (false, None) => Ok(()),
             _ => unreachable!(),
         }
     }
 
-    fn load_mut(&self) -> Result<Option<RefMut<'_, Oracle>>> {
+    fn is_oracle_account_initialized(oracle_account_info: &AccountInfo<'info>) -> Result<bool> {
         use anchor_lang::Discriminator;
-        use std::ops::DerefMut;
 
         // following process is ported from anchor-lang's AccountLoader::try_from and AccountLoader::load_mut
         // AccountLoader can handle initialized account and partially initialized (owner program changed) account only.
         // So we need to handle uninitialized account manually.
 
-        // account must be writable
-        if !self.oracle_account_info.is_writable {
-            return Err(anchor_lang::error::ErrorCode::AccountNotMutable.into());
-        }
+        // Note: intentionally do not check if the account is writable here, defer the evaluation until load_mut is called
 
-        // uninitialized writable account (owned by system program and its data size is zero)
-        if self.oracle_account_info.owner == &System::id()
-            && self.oracle_account_info.data_is_empty()
+        // uninitialized account (owned by system program and its data size is zero)
+        if oracle_account_info.owner == &System::id()
+            && oracle_account_info.data_is_empty()
         {
             // oracle is not initialized
-            return Ok(None);
+            return Ok(false);
         }
 
         // owner program check
-        if self.oracle_account_info.owner != &Oracle::owner() {
+        if oracle_account_info.owner != &Oracle::owner() {
             return Err(
                 Error::from(anchor_lang::error::ErrorCode::AccountOwnedByWrongProgram)
-                    .with_pubkeys((*self.oracle_account_info.owner, Oracle::owner())),
+                    .with_pubkeys((*oracle_account_info.owner, Oracle::owner())),
             );
         }
 
-        let data = self.oracle_account_info.try_borrow_mut_data()?;
+        let data = oracle_account_info.try_borrow_data()?;
         if data.len() < Oracle::discriminator().len() {
             return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorNotFound.into());
         }
@@ -330,11 +334,36 @@ impl<'info> OracleAccessor<'info> {
             return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
         }
 
+        Ok(true)
+    }
+
+    fn load(&self) -> Result<Ref<'_, Oracle>> {
+        // is_oracle_account_initialized already checked if the account is initialized
+
+        let data = self.oracle_account_info.try_borrow_data()?;
+        let oracle_refmut: Ref<Oracle> = Ref::map(data, |data| {
+            bytemuck::from_bytes(&data[8..std::mem::size_of::<Oracle>() + 8])
+        });
+
+        Ok(oracle_refmut)
+    }
+
+    fn load_mut(&self) -> Result<RefMut<'_, Oracle>> {
+        // is_oracle_account_initialized already checked if the account is initialized
+
+        use std::ops::DerefMut;
+
+        // account must be writable
+        if !self.oracle_account_info.is_writable {
+            return Err(anchor_lang::error::ErrorCode::AccountNotMutable.into());
+        }
+
+        let data = self.oracle_account_info.try_borrow_mut_data()?;
         let oracle_refmut: RefMut<Oracle> = RefMut::map(data, |data| {
             bytemuck::from_bytes_mut(&mut data.deref_mut()[8..std::mem::size_of::<Oracle>() + 8])
         });
 
-        Ok(Some(oracle_refmut))
+        Ok(oracle_refmut)
     }
 }
 

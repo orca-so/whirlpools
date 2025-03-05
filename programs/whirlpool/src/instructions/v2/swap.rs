@@ -104,7 +104,7 @@ pub fn handler<'info>(
     )?;
     let mut swap_tick_sequence = builder.build()?;
 
-    let oracle_accessor = OracleAccessor::new(ctx.accounts.oracle.to_account_info());
+    let oracle_accessor = OracleAccessor::new(ctx.accounts.oracle.to_account_info())?;
     if !oracle_accessor.is_trade_enabled(timestamp)? {
         return Err(ErrorCode::TradeIsNotEnabled.into());
     }

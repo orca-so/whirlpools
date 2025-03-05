@@ -40,7 +40,7 @@ pub struct Swap<'info> {
     /// CHECK: checked in the handler
     pub tick_array_2: UncheckedAccount<'info>,
 
-    #[account(mut, seeds = [b"oracle", whirlpool.key().as_ref()], bump)]
+    #[account(seeds = [b"oracle", whirlpool.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle: UncheckedAccount<'info>,
 }
@@ -70,7 +70,7 @@ pub fn handler(
     )?;
     let mut swap_tick_sequence = builder.build()?;
 
-    let oracle_accessor = OracleAccessor::new(ctx.accounts.oracle.to_account_info());
+    let oracle_accessor = OracleAccessor::new(ctx.accounts.oracle.to_account_info())?;
     if !oracle_accessor.is_trade_enabled(timestamp)? {
         return Err(ErrorCode::TradeIsNotEnabled.into());
     }

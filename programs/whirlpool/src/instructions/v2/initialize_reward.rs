@@ -2,7 +2,6 @@ use anchor_lang::prelude::*;
 use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::{
-    errors::ErrorCode,
     state::Whirlpool,
     util::verify_supported_token_mint,
 };

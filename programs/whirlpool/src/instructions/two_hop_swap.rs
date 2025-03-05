@@ -65,11 +65,11 @@ pub struct TwoHopSwap<'info> {
     /// CHECK: checked in the handler
     pub tick_array_two_2: UncheckedAccount<'info>,
 
-    #[account(mut, seeds = [b"oracle", whirlpool_one.key().as_ref()], bump)]
+    #[account(seeds = [b"oracle", whirlpool_one.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_one: UncheckedAccount<'info>,
 
-    #[account(mut, seeds = [b"oracle", whirlpool_two.key().as_ref()], bump)]
+    #[account(seeds = [b"oracle", whirlpool_two.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_two: UncheckedAccount<'info>,
 }
@@ -136,13 +136,13 @@ pub fn handler(
     )?;
     let mut swap_tick_sequence_two = builder_two.build()?;
 
-    let oracle_accessor_one = OracleAccessor::new(ctx.accounts.oracle_one.to_account_info());
+    let oracle_accessor_one = OracleAccessor::new(ctx.accounts.oracle_one.to_account_info())?;
     if !oracle_accessor_one.is_trade_enabled(timestamp)? {
         return Err(ErrorCode::TradeIsNotEnabled.into());
     }
     let adaptive_fee_info_one = oracle_accessor_one.get_adaptive_fee_info()?;
 
-    let oracle_accessor_two = OracleAccessor::new(ctx.accounts.oracle_two.to_account_info());
+    let oracle_accessor_two = OracleAccessor::new(ctx.accounts.oracle_two.to_account_info())?;
     if !oracle_accessor_two.is_trade_enabled(timestamp)? {
         return Err(ErrorCode::TradeIsNotEnabled.into());
     }

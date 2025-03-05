@@ -1,7 +1,7 @@
 import type { Program } from "@coral-xyz/anchor";
 import type { Instruction } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import type { PublicKey } from "@solana/web3.js";
+import type { AccountMeta, PublicKey } from "@solana/web3.js";
 import type BN from "bn.js";
 import type { Whirlpool } from "../artifacts/whirlpool";
 
@@ -111,6 +111,11 @@ export function swapIx(
     oracle,
   } = params;
 
+  // HACK: to make Oracle account mutable without breaking change
+  const remainingAccounts: AccountMeta[] = [
+    { pubkey: oracle, isWritable: true, isSigner: false }
+  ];
+
   const ix = program.instruction.swap(
     amount,
     otherAmountThreshold,
@@ -131,6 +136,7 @@ export function swapIx(
         tickArray2,
         oracle,
       },
+      remainingAccounts,
     },
   );
 

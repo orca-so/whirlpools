@@ -7853,7 +7853,7 @@ mod adaptive_fee_tests {
             use super::*;
 
             #[test]
-            /// a to b -> no wait (same timestamp) -> b to a
+            /// a to b -> wait (less than filter_period) -> b to a
             ///
             /// -11264               -5632                0                   5632
             ///                          p1------------------------------p1: 1_500_000
@@ -8015,7 +8015,7 @@ mod adaptive_fee_tests {
             }
 
             #[test]
-            /// b to a -> no wait (same timestamp) -> b to a
+            /// b to a -> wait (less than filter_period) -> b to a
             ///
             /// -11264               -5632                0                   5632
             ///                          p1------------------------------p1: 1_500_000
@@ -8181,7 +8181,7 @@ mod adaptive_fee_tests {
             use super::*;
 
             #[test]
-            /// a to b -> no wait (same timestamp) -> b to a
+            /// a to b -> wait (less than decay_period) -> b to a
             ///
             /// -11264               -5632                0                   5632
             ///                          p1------------------------------p1: 1_500_000
@@ -8346,7 +8346,7 @@ mod adaptive_fee_tests {
             }
 
             #[test]
-            /// b to a -> no wait (same timestamp) -> b to a
+            /// b to a -> wait (less than decay_period) -> b to a
             ///
             /// -11264               -5632                0                   5632
             ///                          p1------------------------------p1: 1_500_000
@@ -8515,7 +8515,7 @@ mod adaptive_fee_tests {
             use super::*;
 
             #[test]
-            /// a to b -> no wait (same timestamp) -> b to a
+            /// a to b -> wait (greater than or equal to decay_period) -> b to a
             ///
             /// -11264               -5632                0                   5632
             ///                          p1------------------------------p1: 1_500_000
@@ -8676,7 +8676,7 @@ mod adaptive_fee_tests {
             }
 
             #[test]
-            /// b to a -> no wait (same timestamp) -> b to a
+            /// b to a -> wait (greater than or equal to decay_period) -> b to a
             ///
             /// -11264               -5632                0                   5632
             ///                          p1------------------------------p1: 1_500_000

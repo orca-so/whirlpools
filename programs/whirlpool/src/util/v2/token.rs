@@ -319,13 +319,10 @@ pub fn is_token_badge_initialized(
 pub fn verify_supported_token_mint(
     token_mint: &InterfaceAccount<'_, Mint>,
     whirlpools_config_key: Pubkey,
-    token_badge: &UncheckedAccount<'_>,    
+    token_badge: &UncheckedAccount<'_>,
 ) -> Result<()> {
-    let token_badge_initialized = is_token_badge_initialized(
-        whirlpools_config_key,
-        token_mint.key(),
-        token_badge,
-    )?;
+    let token_badge_initialized =
+        is_token_badge_initialized(whirlpools_config_key, token_mint.key(), token_badge)?;
 
     if !is_supported_token_mint(token_mint, token_badge_initialized)? {
         return Err(ErrorCode::UnsupportedTokenMint.into());

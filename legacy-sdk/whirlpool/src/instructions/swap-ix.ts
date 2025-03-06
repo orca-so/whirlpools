@@ -113,7 +113,7 @@ export function swapIx(
 
   // HACK: to make Oracle account mutable without breaking change
   const remainingAccounts: AccountMeta[] = [
-    { pubkey: oracle, isWritable: true, isSigner: false }
+    { pubkey: oracle, isWritable: true, isSigner: false },
   ];
 
   const ix = program.instruction.swap(

@@ -362,8 +362,8 @@ fn derive_tick_array_pda(whirlpool: &Account<Whirlpool>, start_tick_index: i32) 
 #[cfg(test)]
 mod sparse_swap_tick_sequence_tests {
     use super::*;
-    use anchor_lang::solana_program::pubkey;
     use crate::util::test_utils::account_info_mock::AccountInfoMock;
+    use anchor_lang::solana_program::pubkey;
 
     #[test]
     fn test_derive_tick_array_pda() {

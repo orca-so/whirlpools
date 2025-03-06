@@ -2892,7 +2892,8 @@ mod adaptive_fee_tests {
     use super::*;
     use crate::{
         manager::fee_rate_manager::{
-            ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, FEE_RATE_HARD_LIMIT, REDUCTION_FACTOR_DENOMINATOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR
+            ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, FEE_RATE_HARD_LIMIT,
+            REDUCTION_FACTOR_DENOMINATOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         },
         util::test_utils::swap_test_fixture::*,
     };
@@ -2950,21 +2951,25 @@ mod adaptive_fee_tests {
         // update reference
         let elapsed = current_timestamp - adaptive_fee_info.variables.last_update_timestamp;
         let (tick_group_index_reference, volatility_reference) =
-        if elapsed < adaptive_fee_info.constants.filter_period as u64 {
-            // high frequency trade
-            // no change
-            (adaptive_fee_info.variables.tick_group_index_reference, adaptive_fee_info.variables.volatility_reference)
-        } else if elapsed < adaptive_fee_info.constants.decay_period as u64 {
-            // NOT high frequency trade
-            (first_tick_group_index,
-            (u64::from(adaptive_fee_info.variables.volatility_accumulator)
-                * u64::from(adaptive_fee_info.constants.reduction_factor)
-                / u64::from(REDUCTION_FACTOR_DENOMINATOR))
-                as u32)
-        } else {
-            // Out of decay time window
-            (first_tick_group_index, 0)
-        };
+            if elapsed < adaptive_fee_info.constants.filter_period as u64 {
+                // high frequency trade
+                // no change
+                (
+                    adaptive_fee_info.variables.tick_group_index_reference,
+                    adaptive_fee_info.variables.volatility_reference,
+                )
+            } else if elapsed < adaptive_fee_info.constants.decay_period as u64 {
+                // NOT high frequency trade
+                (
+                    first_tick_group_index,
+                    (u64::from(adaptive_fee_info.variables.volatility_accumulator)
+                        * u64::from(adaptive_fee_info.constants.reduction_factor)
+                        / u64::from(REDUCTION_FACTOR_DENOMINATOR)) as u32,
+                )
+            } else {
+                // Out of decay time window
+                (first_tick_group_index, 0)
+            };
         let mut accumulator = adaptive_fee_info.variables.volatility_accumulator;
 
         let mut tick_group_index = first_tick_group_index;
@@ -2978,9 +2983,12 @@ mod adaptive_fee_tests {
 
             // determine fee rate
             accumulator = u64::min(
-                volatility_reference as u64 + tick_group_index_delta as u64 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u64,
+                volatility_reference as u64
+                    + tick_group_index_delta as u64 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u64,
                 max_volatility_acumulator as u64,
-            ).try_into().unwrap();
+            )
+            .try_into()
+            .unwrap();
             let crossed = accumulator as u64 * tick_group_size as u64;
             let squared = crossed * crossed;
             let adaptive_fee_rate = ceil_division(
@@ -3057,11 +3065,7 @@ mod adaptive_fee_tests {
             } else {
                 tick_group_size as i32
             };
-            tick_group_index += if a_to_b {
-                -1
-            } else {
-                1
-            };
+            tick_group_index += if a_to_b { -1 } else { 1 };
 
             iteration += 1;
             if iteration > TICK_ARRAY_SIZE * 3 {
@@ -3099,16 +3103,22 @@ mod adaptive_fee_tests {
         assert_eq!(result_last_update_timestamp, expected_last_update_timestamp);
         let result_tick_group_index_reference = result.tick_group_index_reference;
         let expected_tick_group_index_reference = expected.tick_group_index_reference;
-        assert_eq!(result_tick_group_index_reference, expected_tick_group_index_reference);
+        assert_eq!(
+            result_tick_group_index_reference,
+            expected_tick_group_index_reference
+        );
         let result_volatility_reference = result.volatility_reference;
         let expected_volatility_reference = expected.volatility_reference;
         assert_eq!(result_volatility_reference, expected_volatility_reference);
         let result_volatility_accumulator = result.volatility_accumulator;
         let expected_volatility_accumulator = expected.volatility_accumulator;
-        assert_eq!(result_volatility_accumulator, expected_volatility_accumulator);
+        assert_eq!(
+            result_volatility_accumulator,
+            expected_volatility_accumulator
+        );
     }
 
-    mod single_swap{
+    mod single_swap {
         use super::*;
 
         mod ts_64 {
@@ -3221,7 +3231,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -3310,7 +3323,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -3400,7 +3416,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -3495,7 +3514,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -3589,7 +3611,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -3682,7 +3707,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -3775,7 +3803,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -3867,7 +3898,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -3960,7 +3994,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -4052,7 +4089,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -4145,7 +4185,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -4238,7 +4281,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -4318,7 +4364,10 @@ mod adaptive_fee_tests {
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
                 assert_eq!(expected.end_sqrt_price, MAX_SQRT_PRICE_X64);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -4397,7 +4446,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -4477,7 +4529,10 @@ mod adaptive_fee_tests {
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
                 assert_eq!(expected.end_sqrt_price, MIN_SQRT_PRICE_X64);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -4557,7 +4612,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
         }
 
@@ -4670,7 +4728,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -4759,7 +4820,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -4864,7 +4928,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -4959,7 +5026,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5053,7 +5123,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5146,7 +5219,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5226,7 +5302,10 @@ mod adaptive_fee_tests {
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
                 assert_eq!(expected.end_sqrt_price, MAX_SQRT_PRICE_X64);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5305,7 +5384,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5385,7 +5467,10 @@ mod adaptive_fee_tests {
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
                 assert_eq!(expected.end_sqrt_price, MIN_SQRT_PRICE_X64);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5465,7 +5550,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
         }
 
@@ -5564,7 +5652,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5636,7 +5727,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5714,7 +5808,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5786,7 +5883,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5861,7 +5961,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -5935,7 +6038,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -6011,7 +6117,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -6086,7 +6195,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -6160,7 +6272,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -6232,7 +6347,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -6307,7 +6425,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -6382,7 +6503,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -6458,7 +6582,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -6533,7 +6660,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -6609,7 +6739,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
 
             #[test]
@@ -6682,7 +6815,10 @@ mod adaptive_fee_tests {
                     },
                 );
                 assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap.next_adaptive_fee_info.unwrap().variables, &expected.next_adaptive_fee_variables);
+                check_next_adaptive_fee_variables(
+                    &post_swap.next_adaptive_fee_info.unwrap().variables,
+                    &expected.next_adaptive_fee_variables,
+                );
             }
         }
     }
@@ -6711,14 +6847,12 @@ mod adaptive_fee_tests {
         }
 
         fn tick_arrays() -> (Vec<TestTickInfo>, Vec<TestTickInfo>) {
-            let tick_array_0 = vec![
-                TestTickInfo {
-                    // p1
-                    index: 4224,
-                    liquidity_net: -1_500_000,
-                    ..Default::default()
-                },
-            ];
+            let tick_array_0 = vec![TestTickInfo {
+                // p1
+                index: 4224,
+                liquidity_net: -1_500_000,
+                ..Default::default()
+            }];
             let tick_array_neg_5632 = vec![TestTickInfo {
                 // p1
                 index: -4224,
@@ -6747,7 +6881,10 @@ mod adaptive_fee_tests {
 
         // another implementation of reduction
         fn reduction(volatility_accumulator: u32, reduction_factor: u16) -> u32 {
-            (u64::from(volatility_accumulator) * u64::from(reduction_factor) / REDUCTION_FACTOR_DENOMINATOR as u64).try_into().unwrap()
+            (u64::from(volatility_accumulator) * u64::from(reduction_factor)
+                / REDUCTION_FACTOR_DENOMINATOR as u64)
+                .try_into()
+                .unwrap()
         }
 
         mod no_wait {
@@ -6802,7 +6939,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -6814,8 +6952,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -6838,7 +6986,8 @@ mod adaptive_fee_tests {
                 });
                 let timestamp_second = timestamp_first;
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -6858,7 +7007,8 @@ mod adaptive_fee_tests {
                     None,
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -6870,14 +7020,33 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
-                assert_eq!(last_update_timestamp(&variables_first), last_update_timestamp(&variables_second));
-                assert_eq!(tick_group_index_reference(&variables_first), tick_group_index_reference(&variables_second));
-                assert_eq!(volatility_reference(&variables_first), volatility_reference(&variables_second));
+                assert_eq!(
+                    last_update_timestamp(&variables_first),
+                    last_update_timestamp(&variables_second)
+                );
+                assert_eq!(
+                    tick_group_index_reference(&variables_first),
+                    tick_group_index_reference(&variables_second)
+                );
+                assert_eq!(
+                    volatility_reference(&variables_first),
+                    volatility_reference(&variables_second)
+                );
             }
 
             #[test]
@@ -6930,7 +7099,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -6942,8 +7112,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -6966,7 +7146,8 @@ mod adaptive_fee_tests {
                 });
                 let timestamp_second = timestamp_first;
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -6986,7 +7167,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -6998,14 +7180,33 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
-                assert_eq!(last_update_timestamp(&variables_first), last_update_timestamp(&variables_second));
-                assert_eq!(tick_group_index_reference(&variables_first), tick_group_index_reference(&variables_second));
-                assert_eq!(volatility_reference(&variables_first), volatility_reference(&variables_second));
+                assert_eq!(
+                    last_update_timestamp(&variables_first),
+                    last_update_timestamp(&variables_second)
+                );
+                assert_eq!(
+                    tick_group_index_reference(&variables_first),
+                    tick_group_index_reference(&variables_second)
+                );
+                assert_eq!(
+                    volatility_reference(&variables_first),
+                    volatility_reference(&variables_second)
+                );
             }
 
             #[test]
@@ -7058,7 +7259,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -7070,8 +7272,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -7094,7 +7306,8 @@ mod adaptive_fee_tests {
                 });
                 let timestamp_second = timestamp_first;
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -7114,7 +7327,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -7126,14 +7340,33 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
-                assert_eq!(last_update_timestamp(&variables_first), last_update_timestamp(&variables_second));
-                assert_eq!(tick_group_index_reference(&variables_first), tick_group_index_reference(&variables_second));
-                assert_eq!(volatility_reference(&variables_first), volatility_reference(&variables_second));
+                assert_eq!(
+                    last_update_timestamp(&variables_first),
+                    last_update_timestamp(&variables_second)
+                );
+                assert_eq!(
+                    tick_group_index_reference(&variables_first),
+                    tick_group_index_reference(&variables_second)
+                );
+                assert_eq!(
+                    volatility_reference(&variables_first),
+                    volatility_reference(&variables_second)
+                );
             }
 
             #[test]
@@ -7185,7 +7418,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -7197,8 +7431,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -7221,7 +7465,8 @@ mod adaptive_fee_tests {
                 });
                 let timestamp_second = timestamp_first;
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -7241,7 +7486,8 @@ mod adaptive_fee_tests {
                     None,
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -7253,14 +7499,33 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
-                assert_eq!(last_update_timestamp(&variables_first), last_update_timestamp(&variables_second));
-                assert_eq!(tick_group_index_reference(&variables_first), tick_group_index_reference(&variables_second));
-                assert_eq!(volatility_reference(&variables_first), volatility_reference(&variables_second));
+                assert_eq!(
+                    last_update_timestamp(&variables_first),
+                    last_update_timestamp(&variables_second)
+                );
+                assert_eq!(
+                    tick_group_index_reference(&variables_first),
+                    tick_group_index_reference(&variables_second)
+                );
+                assert_eq!(
+                    volatility_reference(&variables_first),
+                    volatility_reference(&variables_second)
+                );
             }
 
             #[test]
@@ -7313,7 +7578,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -7325,8 +7591,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -7349,7 +7625,8 @@ mod adaptive_fee_tests {
                 });
                 let timestamp_second = timestamp_first;
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -7369,7 +7646,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -7381,14 +7659,33 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
-                assert_eq!(last_update_timestamp(&variables_first), last_update_timestamp(&variables_second));
-                assert_eq!(tick_group_index_reference(&variables_first), tick_group_index_reference(&variables_second));
-                assert_eq!(volatility_reference(&variables_first), volatility_reference(&variables_second));
+                assert_eq!(
+                    last_update_timestamp(&variables_first),
+                    last_update_timestamp(&variables_second)
+                );
+                assert_eq!(
+                    tick_group_index_reference(&variables_first),
+                    tick_group_index_reference(&variables_second)
+                );
+                assert_eq!(
+                    volatility_reference(&variables_first),
+                    volatility_reference(&variables_second)
+                );
             }
 
             #[test]
@@ -7441,7 +7738,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -7453,8 +7751,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -7477,7 +7785,8 @@ mod adaptive_fee_tests {
                 });
                 let timestamp_second = timestamp_first;
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -7497,7 +7806,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -7509,20 +7819,39 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
-                assert_eq!(last_update_timestamp(&variables_first), last_update_timestamp(&variables_second));
-                assert_eq!(tick_group_index_reference(&variables_first), tick_group_index_reference(&variables_second));
-                assert_eq!(volatility_reference(&variables_first), volatility_reference(&variables_second));
+                assert_eq!(
+                    last_update_timestamp(&variables_first),
+                    last_update_timestamp(&variables_second)
+                );
+                assert_eq!(
+                    tick_group_index_reference(&variables_first),
+                    tick_group_index_reference(&variables_second)
+                );
+                assert_eq!(
+                    volatility_reference(&variables_first),
+                    volatility_reference(&variables_second)
+                );
             }
         }
 
         mod wait_lt_filter_period {
             use super::*;
- 
+
             #[test]
             /// a to b -> no wait (same timestamp) -> b to a
             ///
@@ -7535,7 +7864,8 @@ mod adaptive_fee_tests {
                 let (tick_array_0, tick_array_neg_5632) = tick_arrays();
                 let adaptive_fee_info = adaptive_fee_info();
 
-                let timestamp_delta = adaptive_fee_info.clone().unwrap().constants.filter_period as u64 - 1;
+                let timestamp_delta =
+                    adaptive_fee_info.clone().unwrap().constants.filter_period as u64 - 1;
                 let timestamp_first = 1_000_000;
                 let timestamp_second = timestamp_first + timestamp_delta;
 
@@ -7576,7 +7906,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -7588,8 +7919,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -7611,7 +7952,8 @@ mod adaptive_fee_tests {
                     ..Default::default()
                 });
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -7631,7 +7973,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -7643,17 +7986,32 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
-
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, but reference should not be updated at the second swap
                 assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
                 assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
-                assert_eq!(tick_group_index_reference(&variables_first), tick_group_index_reference(&variables_second));
-                assert_eq!(volatility_reference(&variables_first), volatility_reference(&variables_second));
+                assert_eq!(
+                    tick_group_index_reference(&variables_first),
+                    tick_group_index_reference(&variables_second)
+                );
+                assert_eq!(
+                    volatility_reference(&variables_first),
+                    volatility_reference(&variables_second)
+                );
             }
 
             #[test]
@@ -7668,7 +8026,8 @@ mod adaptive_fee_tests {
                 let (tick_array_0, tick_array_neg_5632) = tick_arrays();
                 let adaptive_fee_info = adaptive_fee_info();
 
-                let timestamp_delta = adaptive_fee_info.clone().unwrap().constants.filter_period as u64 - 1;
+                let timestamp_delta =
+                    adaptive_fee_info.clone().unwrap().constants.filter_period as u64 - 1;
                 let timestamp_first = 1_000_000;
                 let timestamp_second = timestamp_first + timestamp_delta;
 
@@ -7709,7 +8068,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -7721,8 +8081,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -7744,7 +8114,8 @@ mod adaptive_fee_tests {
                     ..Default::default()
                 });
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -7764,7 +8135,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -7776,22 +8148,38 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, but reference should not be updated at the second swap
                 assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
                 assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
-                assert_eq!(tick_group_index_reference(&variables_first), tick_group_index_reference(&variables_second));
-                assert_eq!(volatility_reference(&variables_first), volatility_reference(&variables_second));
-            }           
+                assert_eq!(
+                    tick_group_index_reference(&variables_first),
+                    tick_group_index_reference(&variables_second)
+                );
+                assert_eq!(
+                    volatility_reference(&variables_first),
+                    volatility_reference(&variables_second)
+                );
+            }
         }
 
         mod wait_gte_filter_period_lt_decay_period {
             use super::*;
- 
+
             #[test]
             /// a to b -> no wait (same timestamp) -> b to a
             ///
@@ -7804,7 +8192,8 @@ mod adaptive_fee_tests {
                 let (tick_array_0, tick_array_neg_5632) = tick_arrays();
                 let adaptive_fee_info = adaptive_fee_info();
 
-                let timestamp_delta = adaptive_fee_info.clone().unwrap().constants.decay_period as u64 - 1;
+                let timestamp_delta =
+                    adaptive_fee_info.clone().unwrap().constants.decay_period as u64 - 1;
                 let timestamp_first = 1_000_000;
                 let timestamp_second = timestamp_first + timestamp_delta;
 
@@ -7845,7 +8234,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -7857,8 +8247,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -7880,7 +8280,8 @@ mod adaptive_fee_tests {
                     ..Default::default()
                 });
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -7900,7 +8301,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -7912,8 +8314,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let reduction_factor = adaptive_fee_info.unwrap().constants.reduction_factor;
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
@@ -7922,9 +8334,15 @@ mod adaptive_fee_tests {
                 assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
                 assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(tick_group_index_reference(&variables_first), 0);
-                assert_eq!(tick_group_index_reference(&variables_second), first_tick_group_index);
+                assert_eq!(
+                    tick_group_index_reference(&variables_second),
+                    first_tick_group_index
+                );
                 assert_eq!(volatility_reference(&variables_first), 0);
-                assert_eq!(volatility_reference(&variables_second), reduction(volatility_accumulator(&variables_first), reduction_factor));
+                assert_eq!(
+                    volatility_reference(&variables_second),
+                    reduction(volatility_accumulator(&variables_first), reduction_factor)
+                );
             }
 
             #[test]
@@ -7939,7 +8357,8 @@ mod adaptive_fee_tests {
                 let (tick_array_0, tick_array_neg_5632) = tick_arrays();
                 let adaptive_fee_info = adaptive_fee_info();
 
-                let timestamp_delta = adaptive_fee_info.clone().unwrap().constants.decay_period as u64 - 1;
+                let timestamp_delta =
+                    adaptive_fee_info.clone().unwrap().constants.decay_period as u64 - 1;
                 let timestamp_first = 1_000_000;
                 let timestamp_second = timestamp_first + timestamp_delta;
 
@@ -7980,7 +8399,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -7992,8 +8412,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -8015,7 +8445,8 @@ mod adaptive_fee_tests {
                     ..Default::default()
                 });
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -8035,7 +8466,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -8047,8 +8479,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let reduction_factor = adaptive_fee_info.unwrap().constants.reduction_factor;
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
@@ -8057,15 +8499,21 @@ mod adaptive_fee_tests {
                 assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
                 assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(tick_group_index_reference(&variables_first), -2);
-                assert_eq!(tick_group_index_reference(&variables_second), first_tick_group_index);
+                assert_eq!(
+                    tick_group_index_reference(&variables_second),
+                    first_tick_group_index
+                );
                 assert_eq!(volatility_reference(&variables_first), 0);
-                assert_eq!(volatility_reference(&variables_second), reduction(volatility_accumulator(&variables_first), reduction_factor));
-            }           
+                assert_eq!(
+                    volatility_reference(&variables_second),
+                    reduction(volatility_accumulator(&variables_first), reduction_factor)
+                );
+            }
         }
 
         mod wait_gte_decay_period {
             use super::*;
- 
+
             #[test]
             /// a to b -> no wait (same timestamp) -> b to a
             ///
@@ -8078,7 +8526,8 @@ mod adaptive_fee_tests {
                 let (tick_array_0, tick_array_neg_5632) = tick_arrays();
                 let adaptive_fee_info = adaptive_fee_info();
 
-                let timestamp_delta = adaptive_fee_info.clone().unwrap().constants.decay_period as u64;
+                let timestamp_delta =
+                    adaptive_fee_info.clone().unwrap().constants.decay_period as u64;
                 let timestamp_first = 1_000_000;
                 let timestamp_second = timestamp_first + timestamp_delta;
 
@@ -8119,7 +8568,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -8131,8 +8581,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -8154,7 +8614,8 @@ mod adaptive_fee_tests {
                     ..Default::default()
                 });
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -8174,7 +8635,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -8186,8 +8648,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
@@ -8195,7 +8667,10 @@ mod adaptive_fee_tests {
                 assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
                 assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(tick_group_index_reference(&variables_first), 0);
-                assert_eq!(tick_group_index_reference(&variables_second), first_tick_group_index);
+                assert_eq!(
+                    tick_group_index_reference(&variables_second),
+                    first_tick_group_index
+                );
                 assert_eq!(volatility_reference(&variables_first), 0);
                 assert_eq!(volatility_reference(&variables_second), 0); // reset
             }
@@ -8212,7 +8687,8 @@ mod adaptive_fee_tests {
                 let (tick_array_0, tick_array_neg_5632) = tick_arrays();
                 let adaptive_fee_info = adaptive_fee_info();
 
-                let timestamp_delta = adaptive_fee_info.clone().unwrap().constants.decay_period as u64;
+                let timestamp_delta =
+                    adaptive_fee_info.clone().unwrap().constants.decay_period as u64;
                 let timestamp_first = 1_000_000;
                 let timestamp_second = timestamp_first + timestamp_delta;
 
@@ -8253,7 +8729,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_first.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_first = swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
+                let post_swap_first =
+                    swap_test_info_first.run(&mut tick_sequence_first, timestamp_first);
 
                 assert_swap(
                     &post_swap_first,
@@ -8265,8 +8742,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_first.next_protocol_fee, expected_first.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_first.next_adaptive_fee_info.clone().unwrap().variables, &expected_first.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_first.next_protocol_fee,
+                    expected_first.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_first
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_first.next_adaptive_fee_variables,
+                );
 
                 // second swap
 
@@ -8288,7 +8775,8 @@ mod adaptive_fee_tests {
                     ..Default::default()
                 });
 
-                let first_tick_group_index = floor_division(post_swap_first.next_tick_index, TS as i32);
+                let first_tick_group_index =
+                    floor_division(post_swap_first.next_tick_index, TS as i32);
                 let expected_second = get_expected_result(
                     swap_test_info_second.a_to_b,
                     swap_test_info_second.whirlpool.sqrt_price,
@@ -8308,7 +8796,8 @@ mod adaptive_fee_tests {
                     Some(swap_test_info_second.tick_arrays[1].borrow_mut()),
                     None,
                 );
-                let post_swap_second = swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
+                let post_swap_second =
+                    swap_test_info_second.run(&mut tick_sequence_second, timestamp_second);
 
                 assert_swap(
                     &post_swap_second,
@@ -8320,8 +8809,18 @@ mod adaptive_fee_tests {
                         end_reward_growths: [0, 0, 0],
                     },
                 );
-                assert_eq!(post_swap_second.next_protocol_fee, expected_second.protocol_fee);
-                check_next_adaptive_fee_variables(&post_swap_second.next_adaptive_fee_info.clone().unwrap().variables, &expected_second.next_adaptive_fee_variables);
+                assert_eq!(
+                    post_swap_second.next_protocol_fee,
+                    expected_second.protocol_fee
+                );
+                check_next_adaptive_fee_variables(
+                    &post_swap_second
+                        .next_adaptive_fee_info
+                        .clone()
+                        .unwrap()
+                        .variables,
+                    &expected_second.next_adaptive_fee_variables,
+                );
 
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
@@ -8329,11 +8828,13 @@ mod adaptive_fee_tests {
                 assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
                 assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(tick_group_index_reference(&variables_first), -2);
-                assert_eq!(tick_group_index_reference(&variables_second), first_tick_group_index);
+                assert_eq!(
+                    tick_group_index_reference(&variables_second),
+                    first_tick_group_index
+                );
                 assert_eq!(volatility_reference(&variables_first), 0);
                 assert_eq!(volatility_reference(&variables_second), 0); // reset
-            }           
+            }
         }
     }
-
 }

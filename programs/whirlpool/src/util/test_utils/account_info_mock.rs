@@ -1,7 +1,7 @@
+use crate::state::{AdaptiveFeeConstants, Oracle, TickArray, Whirlpool};
 use anchor_lang::prelude::*;
 use anchor_lang::Discriminator;
 use std::cell::RefCell;
-use crate::state::{Whirlpool, TickArray, Oracle, AdaptiveFeeConstants};
 
 pub struct AccountInfoMock {
     pub key: Pubkey,
@@ -55,35 +55,45 @@ impl AccountInfoMock {
     }
 
     pub fn new_oracle(
-      key: Pubkey,
-      whirlpool: Pubkey,
-      trade_enable_timestamp: u64,
-      adaptive_fee_constants: AdaptiveFeeConstants,
-      owner: Option<Pubkey>,
+        key: Pubkey,
+        whirlpool: Pubkey,
+        trade_enable_timestamp: u64,
+        adaptive_fee_constants: AdaptiveFeeConstants,
+        owner: Option<Pubkey>,
     ) -> Self {
-      let mut af_const_data = [0u8; AdaptiveFeeConstants::LEN];
-      let mut offset = 0;
-      af_const_data[offset..offset + 2].copy_from_slice(&adaptive_fee_constants.filter_period.to_le_bytes());
-      offset += 2;
-      af_const_data[offset..offset + 2].copy_from_slice(&adaptive_fee_constants.decay_period.to_le_bytes());
-      offset += 2;
-      af_const_data[offset..offset + 2].copy_from_slice(&adaptive_fee_constants.reduction_factor.to_le_bytes());
-      offset += 2;
-      af_const_data[offset..offset + 4]
-          .copy_from_slice(&adaptive_fee_constants.adaptive_fee_control_factor.to_le_bytes());
-      offset += 4;
-      af_const_data[offset..offset + 4]
-          .copy_from_slice(&adaptive_fee_constants.max_volatility_accumulator.to_le_bytes());
-      offset += 4;
-      af_const_data[offset..offset + 2].copy_from_slice(&adaptive_fee_constants.tick_group_size.to_le_bytes());
+        let mut af_const_data = [0u8; AdaptiveFeeConstants::LEN];
+        let mut offset = 0;
+        af_const_data[offset..offset + 2]
+            .copy_from_slice(&adaptive_fee_constants.filter_period.to_le_bytes());
+        offset += 2;
+        af_const_data[offset..offset + 2]
+            .copy_from_slice(&adaptive_fee_constants.decay_period.to_le_bytes());
+        offset += 2;
+        af_const_data[offset..offset + 2]
+            .copy_from_slice(&adaptive_fee_constants.reduction_factor.to_le_bytes());
+        offset += 2;
+        af_const_data[offset..offset + 4].copy_from_slice(
+            &adaptive_fee_constants
+                .adaptive_fee_control_factor
+                .to_le_bytes(),
+        );
+        offset += 4;
+        af_const_data[offset..offset + 4].copy_from_slice(
+            &adaptive_fee_constants
+                .max_volatility_accumulator
+                .to_le_bytes(),
+        );
+        offset += 4;
+        af_const_data[offset..offset + 2]
+            .copy_from_slice(&adaptive_fee_constants.tick_group_size.to_le_bytes());
 
-      let mut data = vec![0u8; Oracle::LEN];
-      data[0..8].copy_from_slice(&Oracle::discriminator());
-      data[8..40].copy_from_slice(&whirlpool.to_bytes());
-      data[40..48].copy_from_slice(&trade_enable_timestamp.to_le_bytes());
-      data[48..48 + af_const_data.len()].copy_from_slice(&af_const_data);
-      
-      Self::new(key, data, owner.unwrap_or(Oracle::owner()))
+        let mut data = vec![0u8; Oracle::LEN];
+        data[0..8].copy_from_slice(&Oracle::discriminator());
+        data[8..40].copy_from_slice(&whirlpool.to_bytes());
+        data[40..48].copy_from_slice(&trade_enable_timestamp.to_le_bytes());
+        data[48..48 + af_const_data.len()].copy_from_slice(&af_const_data);
+
+        Self::new(key, data, owner.unwrap_or(Oracle::owner()))
     }
 
     pub fn to_account_info(&mut self, is_writable: bool) -> AccountInfo<'_> {

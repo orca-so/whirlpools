@@ -1,9 +1,9 @@
 use crate::errors::ErrorCode;
-use crate::state::Whirlpool;
 use crate::manager::fee_rate_manager::{
     ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, REDUCTION_FACTOR_DENOMINATOR,
     VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
 };
+use crate::state::Whirlpool;
 use anchor_lang::prelude::*;
 use std::cell::{Ref, RefMut};
 
@@ -253,9 +253,10 @@ pub struct OracleAccessor<'info> {
 impl<'info> OracleAccessor<'info> {
     pub fn new(
         whirlpool: &Account<'info, Whirlpool>,
-        oracle_account_info: AccountInfo<'info>
+        oracle_account_info: AccountInfo<'info>,
     ) -> Result<Self> {
-        let oracle_account_initialized = Self::is_oracle_account_initialized(&oracle_account_info, whirlpool.key())?;
+        let oracle_account_initialized =
+            Self::is_oracle_account_initialized(&oracle_account_info, whirlpool.key())?;
         Ok(Self {
             oracle_account_info,
             oracle_account_initialized,
@@ -303,7 +304,10 @@ impl<'info> OracleAccessor<'info> {
         }
     }
 
-    fn is_oracle_account_initialized(oracle_account_info: &AccountInfo<'info>, whirlpool: Pubkey) -> Result<bool> {
+    fn is_oracle_account_initialized(
+        oracle_account_info: &AccountInfo<'info>,
+        whirlpool: Pubkey,
+    ) -> Result<bool> {
         use anchor_lang::Discriminator;
 
         // following process is ported from anchor-lang's AccountLoader::try_from and AccountLoader::load_mut
@@ -313,9 +317,7 @@ impl<'info> OracleAccessor<'info> {
         // Note: intentionally do not check if the account is writable here, defer the evaluation until load_mut is called
 
         // uninitialized account (owned by system program and its data size is zero)
-        if oracle_account_info.owner == &System::id()
-            && oracle_account_info.data_is_empty()
-        {
+        if oracle_account_info.owner == &System::id() && oracle_account_info.data_is_empty() {
             // oracle is not initialized
             return Ok(false);
         }
@@ -446,7 +448,8 @@ mod data_layout_tests {
         let mut offset = 0;
         oracle_data[offset..offset + 32].copy_from_slice(oracle_whirlpool.as_ref());
         offset += 32;
-        oracle_data[offset..offset + 8].copy_from_slice(&oracle_trade_enable_timestamp.to_le_bytes());
+        oracle_data[offset..offset + 8]
+            .copy_from_slice(&oracle_trade_enable_timestamp.to_le_bytes());
         offset += 8;
         oracle_data[offset..offset + AdaptiveFeeConstants::LEN].copy_from_slice(&af_const_data);
         offset += AdaptiveFeeConstants::LEN;
@@ -567,7 +570,13 @@ mod oracle_accessor_test {
         let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
         let account_address = Pubkey::new_unique();
-        let mut account_info_mock = AccountInfoMock::new_oracle(account_address, whirlpool_address, 100, AdaptiveFeeConstants::default(), None);
+        let mut account_info_mock = AccountInfoMock::new_oracle(
+            account_address,
+            whirlpool_address,
+            100,
+            AdaptiveFeeConstants::default(),
+            None,
+        );
         let account_info = account_info_mock.to_account_info(is_writable);
 
         let result = OracleAccessor::new(&whirlpool, account_info);
@@ -586,7 +595,13 @@ mod oracle_accessor_test {
         let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
         let account_address = Pubkey::new_unique();
-        let mut account_info_mock = AccountInfoMock::new_oracle(account_address, whirlpool_address, 100, AdaptiveFeeConstants::default(), None);
+        let mut account_info_mock = AccountInfoMock::new_oracle(
+            account_address,
+            whirlpool_address,
+            100,
+            AdaptiveFeeConstants::default(),
+            None,
+        );
         let account_info = account_info_mock.to_account_info(is_writable);
 
         let result = OracleAccessor::new(&whirlpool, account_info);
@@ -605,7 +620,13 @@ mod oracle_accessor_test {
         let wrong_owner_program = Some(Pubkey::new_unique());
 
         let account_address = Pubkey::new_unique();
-        let mut account_info_mock = AccountInfoMock::new_oracle(account_address, whirlpool_address, 100, AdaptiveFeeConstants::default(), wrong_owner_program);
+        let mut account_info_mock = AccountInfoMock::new_oracle(
+            account_address,
+            whirlpool_address,
+            100,
+            AdaptiveFeeConstants::default(),
+            wrong_owner_program,
+        );
         let account_info = account_info_mock.to_account_info(true);
 
         let result = OracleAccessor::new(&whirlpool, account_info);
@@ -627,7 +648,8 @@ mod oracle_accessor_test {
 
         let account_address = Pubkey::new_unique();
         // 7 bytes is too short to contain the discriminator
-        let mut account_info_mock = AccountInfoMock::new(account_address, vec![0u8; 7], Oracle::owner());
+        let mut account_info_mock =
+            AccountInfoMock::new(account_address, vec![0u8; 7], Oracle::owner());
         let account_info = account_info_mock.to_account_info(true);
 
         let result = OracleAccessor::new(&whirlpool, account_info);
@@ -650,7 +672,8 @@ mod oracle_accessor_test {
         let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
         let account_address = Pubkey::new_unique();
-        let mut account_info_mock = AccountInfoMock::new(account_address, vec![0u8; Oracle::LEN], Oracle::owner());
+        let mut account_info_mock =
+            AccountInfoMock::new(account_address, vec![0u8; Oracle::LEN], Oracle::owner());
         let account_info = account_info_mock.to_account_info(is_writable);
 
         let result = OracleAccessor::new(&whirlpool, account_info);
@@ -674,7 +697,13 @@ mod oracle_accessor_test {
         let fake_whirlpool_address = Pubkey::new_unique();
 
         let account_address = Pubkey::new_unique();
-        let mut account_info_mock = AccountInfoMock::new_oracle(account_address, fake_whirlpool_address, 100, AdaptiveFeeConstants::default(), None);
+        let mut account_info_mock = AccountInfoMock::new_oracle(
+            account_address,
+            fake_whirlpool_address,
+            100,
+            AdaptiveFeeConstants::default(),
+            None,
+        );
         let account_info = account_info_mock.to_account_info(true);
 
         let _result = OracleAccessor::new(&whirlpool, account_info);
@@ -691,7 +720,13 @@ mod oracle_accessor_test {
         let trade_enable_timestamp = 1741238139u64;
 
         let account_address = Pubkey::new_unique();
-        let mut account_info_mock = AccountInfoMock::new_oracle(account_address, whirlpool_address, trade_enable_timestamp, AdaptiveFeeConstants::default(), None);
+        let mut account_info_mock = AccountInfoMock::new_oracle(
+            account_address,
+            whirlpool_address,
+            trade_enable_timestamp,
+            AdaptiveFeeConstants::default(),
+            None,
+        );
         let account_info = account_info_mock.to_account_info(true);
         let result = OracleAccessor::new(&whirlpool, account_info);
         let accessor = result.unwrap();
@@ -700,16 +735,32 @@ mod oracle_accessor_test {
 
         // not tradable
         assert!(!accessor.is_trade_enabled(0).unwrap());
-        assert!(!accessor.is_trade_enabled(trade_enable_timestamp / 2).unwrap());
-        assert!(!accessor.is_trade_enabled(trade_enable_timestamp - 10).unwrap());
-        assert!(!accessor.is_trade_enabled(trade_enable_timestamp - 2).unwrap());
-        assert!(!accessor.is_trade_enabled(trade_enable_timestamp - 1).unwrap());
+        assert!(!accessor
+            .is_trade_enabled(trade_enable_timestamp / 2)
+            .unwrap());
+        assert!(!accessor
+            .is_trade_enabled(trade_enable_timestamp - 10)
+            .unwrap());
+        assert!(!accessor
+            .is_trade_enabled(trade_enable_timestamp - 2)
+            .unwrap());
+        assert!(!accessor
+            .is_trade_enabled(trade_enable_timestamp - 1)
+            .unwrap());
         // tradable
         assert!(accessor.is_trade_enabled(trade_enable_timestamp).unwrap());
-        assert!(accessor.is_trade_enabled(trade_enable_timestamp + 1).unwrap());
-        assert!(accessor.is_trade_enabled(trade_enable_timestamp + 2).unwrap());
-        assert!(accessor.is_trade_enabled(trade_enable_timestamp + 10).unwrap());
-        assert!(accessor.is_trade_enabled(trade_enable_timestamp * 2).unwrap());
+        assert!(accessor
+            .is_trade_enabled(trade_enable_timestamp + 1)
+            .unwrap());
+        assert!(accessor
+            .is_trade_enabled(trade_enable_timestamp + 2)
+            .unwrap());
+        assert!(accessor
+            .is_trade_enabled(trade_enable_timestamp + 10)
+            .unwrap());
+        assert!(accessor
+            .is_trade_enabled(trade_enable_timestamp * 2)
+            .unwrap());
         assert!(accessor.is_trade_enabled(u64::MAX).unwrap());
     }
 
@@ -770,7 +821,8 @@ mod oracle_accessor_test {
         };
 
         let account_address = Pubkey::new_unique();
-        let mut account_info_mock = AccountInfoMock::new_oracle(account_address, whirlpool_address, 100, af_consts, None);
+        let mut account_info_mock =
+            AccountInfoMock::new_oracle(account_address, whirlpool_address, 100, af_consts, None);
         let account_info = account_info_mock.to_account_info(true);
         let result = OracleAccessor::new(&whirlpool, account_info);
         let accessor = result.unwrap();
@@ -782,21 +834,23 @@ mod oracle_accessor_test {
         let adaptive_fee_info = adaptive_fee_info.unwrap();
         assert!(adaptive_fee_info.is_some());
         let adaptive_fee_info = adaptive_fee_info.unwrap();
-        
+
         assert_eq!(adaptive_fee_info.constants, af_consts);
         assert_eq!(adaptive_fee_info.variables, AdaptiveFeeVariables::default());
 
-        accessor.update_adaptive_fee_variables(&Some(AdaptiveFeeInfo {
-            constants: af_consts,
-            variables: af_vars,
-        })).unwrap();
+        accessor
+            .update_adaptive_fee_variables(&Some(AdaptiveFeeInfo {
+                constants: af_consts,
+                variables: af_vars,
+            }))
+            .unwrap();
 
         let adaptive_fee_info = accessor.get_adaptive_fee_info();
         assert!(adaptive_fee_info.is_ok());
         let adaptive_fee_info = adaptive_fee_info.unwrap();
         assert!(adaptive_fee_info.is_some());
         let adaptive_fee_info = adaptive_fee_info.unwrap();
-        
+
         assert_eq!(adaptive_fee_info.constants, af_consts);
         assert_eq!(adaptive_fee_info.variables, af_vars);
     }
@@ -832,7 +886,13 @@ mod oracle_accessor_test {
         let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
         let account_address = Pubkey::new_unique();
-        let mut account_info_mock = AccountInfoMock::new_oracle(account_address, whirlpool_address, 100, AdaptiveFeeConstants::default(), None);
+        let mut account_info_mock = AccountInfoMock::new_oracle(
+            account_address,
+            whirlpool_address,
+            100,
+            AdaptiveFeeConstants::default(),
+            None,
+        );
         let account_info = account_info_mock.to_account_info(true);
         let result = OracleAccessor::new(&whirlpool, account_info);
         let accessor = result.unwrap();
@@ -858,7 +918,9 @@ mod oracle_accessor_test {
             variables: af_vars,
         };
 
-        accessor.update_adaptive_fee_variables(&Some(adaptive_fee_info)).unwrap();
+        accessor
+            .update_adaptive_fee_variables(&Some(adaptive_fee_info))
+            .unwrap();
 
         let adaptive_fee_info = accessor.get_adaptive_fee_info().unwrap().unwrap();
         // constants should not be updated
@@ -877,7 +939,13 @@ mod oracle_accessor_test {
         let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
         let account_address = Pubkey::new_unique();
-        let mut account_info_mock = AccountInfoMock::new_oracle(account_address, whirlpool_address, 100, AdaptiveFeeConstants::default(), None);
+        let mut account_info_mock = AccountInfoMock::new_oracle(
+            account_address,
+            whirlpool_address,
+            100,
+            AdaptiveFeeConstants::default(),
+            None,
+        );
         let account_info = account_info_mock.to_account_info(true);
         let result = OracleAccessor::new(&whirlpool, account_info);
         let accessor = result.unwrap();
@@ -936,7 +1004,13 @@ mod oracle_accessor_test {
         let whirlpool = Account::<Whirlpool>::try_from(&account_info).unwrap();
 
         let account_address = Pubkey::new_unique();
-        let mut account_info_mock = AccountInfoMock::new_oracle(account_address, whirlpool_address, 100, AdaptiveFeeConstants::default(), None);
+        let mut account_info_mock = AccountInfoMock::new_oracle(
+            account_address,
+            whirlpool_address,
+            100,
+            AdaptiveFeeConstants::default(),
+            None,
+        );
         let account_info = account_info_mock.to_account_info(is_writable);
         let result = OracleAccessor::new(&whirlpool, account_info);
         let accessor = result.unwrap();

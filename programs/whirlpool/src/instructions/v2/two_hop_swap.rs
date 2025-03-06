@@ -175,13 +175,15 @@ pub fn handler<'info>(
     )?;
     let mut swap_tick_sequence_two = builder_two.build()?;
 
-    let oracle_accessor_one = OracleAccessor::new(whirlpool_one, ctx.accounts.oracle_one.to_account_info())?;
+    let oracle_accessor_one =
+        OracleAccessor::new(whirlpool_one, ctx.accounts.oracle_one.to_account_info())?;
     if !oracle_accessor_one.is_trade_enabled(timestamp)? {
         return Err(ErrorCode::TradeIsNotEnabled.into());
     }
     let adaptive_fee_info_one = oracle_accessor_one.get_adaptive_fee_info()?;
 
-    let oracle_accessor_two = OracleAccessor::new(whirlpool_two, ctx.accounts.oracle_two.to_account_info())?;
+    let oracle_accessor_two =
+        OracleAccessor::new(whirlpool_two, ctx.accounts.oracle_two.to_account_info())?;
     if !oracle_accessor_two.is_trade_enabled(timestamp)? {
         return Err(ErrorCode::TradeIsNotEnabled.into());
     }

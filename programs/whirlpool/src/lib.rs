@@ -701,7 +701,11 @@ pub mod whirlpool {
         initial_sqrt_price: u128,
         trade_enable_timestamp: Option<u64>,
     ) -> Result<()> {
-        instructions::initialize_pool_with_adaptive_fee::handler(ctx, initial_sqrt_price, trade_enable_timestamp)
+        instructions::initialize_pool_with_adaptive_fee::handler(
+            ctx,
+            initial_sqrt_price,
+            trade_enable_timestamp,
+        )
     }
 
     // TODO: comment

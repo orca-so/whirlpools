@@ -1,4 +1,5 @@
 use crate::errors::ErrorCode;
+use crate::state::Whirlpool;
 use crate::manager::fee_rate_manager::{
     ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, REDUCTION_FACTOR_DENOMINATOR,
     VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
@@ -250,8 +251,11 @@ pub struct OracleAccessor<'info> {
 }
 
 impl<'info> OracleAccessor<'info> {
-    pub fn new(oracle_account_info: AccountInfo<'info>) -> Result<Self> {
-        let oracle_account_initialized = Self::is_oracle_account_initialized(&oracle_account_info)?;
+    pub fn new(
+        whirlpool: &Account<'info, Whirlpool>,
+        oracle_account_info: AccountInfo<'info>
+    ) -> Result<Self> {
+        let oracle_account_initialized = Self::is_oracle_account_initialized(&oracle_account_info, whirlpool.key())?;
         Ok(Self {
             oracle_account_info,
             oracle_account_initialized,
@@ -299,7 +303,7 @@ impl<'info> OracleAccessor<'info> {
         }
     }
 
-    fn is_oracle_account_initialized(oracle_account_info: &AccountInfo<'info>) -> Result<bool> {
+    fn is_oracle_account_initialized(oracle_account_info: &AccountInfo<'info>, whirlpool: Pubkey) -> Result<bool> {
         use anchor_lang::Discriminator;
 
         // following process is ported from anchor-lang's AccountLoader::try_from and AccountLoader::load_mut
@@ -334,6 +338,15 @@ impl<'info> OracleAccessor<'info> {
             return Err(anchor_lang::error::ErrorCode::AccountDiscriminatorMismatch.into());
         }
 
+        // whirlpool check
+        let oracle_ref: Ref<Oracle> = Ref::map(data, |data| {
+            bytemuck::from_bytes(&data[8..std::mem::size_of::<Oracle>() + 8])
+        });
+        if oracle_ref.whirlpool != whirlpool {
+            // Just for safety: Oracle address is derived from Whirlpool address, so this should not happen.
+            unreachable!();
+        }
+
         Ok(true)
     }
 
@@ -341,11 +354,11 @@ impl<'info> OracleAccessor<'info> {
         // is_oracle_account_initialized already checked if the account is initialized
 
         let data = self.oracle_account_info.try_borrow_data()?;
-        let oracle_refmut: Ref<Oracle> = Ref::map(data, |data| {
+        let oracle_ref: Ref<Oracle> = Ref::map(data, |data| {
             bytemuck::from_bytes(&data[8..std::mem::size_of::<Oracle>() + 8])
         });
 
-        Ok(oracle_refmut)
+        Ok(oracle_ref)
     }
 
     fn load_mut(&self) -> Result<RefMut<'_, Oracle>> {

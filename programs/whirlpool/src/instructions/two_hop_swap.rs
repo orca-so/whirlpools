@@ -72,6 +72,14 @@ pub struct TwoHopSwap<'info> {
     #[account(seeds = [b"oracle", whirlpool_two.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle_two: UncheckedAccount<'info>,
+
+    // Special notes to support pools with AdaptiveFee:
+    // - For trades on pools using AdaptiveFee, pass oracle_one and oracle_two as writable accounts in the remaining accounts.
+    // - If you want to avoid using the remaining accounts, you can pass oracle_one and oracle_two as writable accounts directly.
+
+    // remaining accounts
+    // - [mut] oracle_one
+    // - [mut] oracle_two
 }
 
 #[allow(clippy::too_many_arguments)]

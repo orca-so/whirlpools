@@ -4,6 +4,7 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import type { AccountMeta, PublicKey } from "@solana/web3.js";
 import type BN from "bn.js";
 import type { Whirlpool } from "../artifacts/whirlpool";
+import invariant from "tiny-invariant";
 
 /**
  * Parameters to execute a two-hop swap on a Whirlpool.
@@ -138,12 +139,6 @@ export function twoHopSwapIx(
     oracleTwo,
   } = params;
 
-  // HACK: to make Oracle account mutable without breaking change
-  const remainingAccounts: AccountMeta[] = [
-    { pubkey: oracleOne, isWritable: true, isSigner: false },
-    { pubkey: oracleTwo, isWritable: true, isSigner: false },
-  ];
-
   const ix = program.instruction.twoHopSwap(
     amount,
     otherAmountThreshold,
@@ -175,9 +170,14 @@ export function twoHopSwapIx(
         oracleOne,
         oracleTwo,
       },
-      remainingAccounts,
     },
   );
+
+  // HACK: to make Oracle account mutable without breaking change
+  invariant(ix.keys[18].pubkey.equals(oracleOne));
+  ix.keys[18].isWritable = true;
+  invariant(ix.keys[19].pubkey.equals(oracleTwo));
+  ix.keys[19].isWritable = true;
 
   return {
     instructions: [ix],

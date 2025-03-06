@@ -363,73 +363,7 @@ fn derive_tick_array_pda(whirlpool: &Account<Whirlpool>, start_tick_index: i32) 
 mod sparse_swap_tick_sequence_tests {
     use super::*;
     use anchor_lang::solana_program::pubkey;
-    use anchor_lang::Discriminator;
-    use std::cell::RefCell;
-
-    struct AccountInfoMock {
-        pub key: Pubkey,
-        pub lamports: u64,
-        pub data: Vec<u8>,
-        pub owner: Pubkey,
-        pub rent_epoch: u64,
-        pub executable: bool,
-    }
-
-    impl AccountInfoMock {
-        pub fn new(key: Pubkey, data: Vec<u8>, owner: Pubkey) -> Self {
-            Self {
-                key,
-                lamports: 0,
-                data,
-                owner,
-                rent_epoch: 0,
-                executable: false,
-            }
-        }
-
-        pub fn new_whirlpool(
-            key: Pubkey,
-            tick_spacing: u16,
-            tick_current_index: i32,
-            owner: Option<Pubkey>,
-        ) -> Self {
-            let whirlpool = Whirlpool {
-                tick_spacing,
-                tick_current_index,
-                ..Whirlpool::default()
-            };
-
-            let mut data = vec![0u8; Whirlpool::LEN];
-            whirlpool.try_serialize(&mut data.as_mut_slice()).unwrap();
-            Self::new(key, data, owner.unwrap_or(Whirlpool::owner()))
-        }
-
-        pub fn new_tick_array(
-            key: Pubkey,
-            whirlpool: Pubkey,
-            start_tick_index: i32,
-            owner: Option<Pubkey>,
-        ) -> Self {
-            let mut data = vec![0u8; TickArray::LEN];
-            data[0..8].copy_from_slice(&TickArray::discriminator());
-            data[8..12].copy_from_slice(&start_tick_index.to_le_bytes());
-            data[9956..9988].copy_from_slice(&whirlpool.to_bytes());
-            Self::new(key, data, owner.unwrap_or(TickArray::owner()))
-        }
-
-        pub fn to_account_info(&mut self, is_writable: bool) -> AccountInfo<'_> {
-            AccountInfo {
-                key: &self.key,
-                is_signer: false,
-                is_writable,
-                lamports: std::rc::Rc::new(RefCell::new(&mut self.lamports)),
-                data: std::rc::Rc::new(RefCell::new(&mut self.data)),
-                owner: &self.owner,
-                rent_epoch: self.rent_epoch,
-                executable: self.executable,
-            }
-        }
-    }
+    use crate::util::test_utils::account_info_mock::AccountInfoMock;
 
     #[test]
     fn test_derive_tick_array_pda() {

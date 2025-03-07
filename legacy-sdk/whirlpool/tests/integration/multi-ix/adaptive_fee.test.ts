@@ -1,7 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
-import { Keypair, PublicKey } from "@solana/web3.js";
+import {
+  AccountMeta,
+  Keypair,
+  PublicKey,
+  TransactionInstruction,
+} from "@solana/web3.js";
 import BN from "bn.js";
 import type {
   InitPoolWithAdaptiveFeeParams,
@@ -17,8 +22,10 @@ import {
   WhirlpoolIx,
   buildWhirlpoolClient,
   increaseLiquidityQuoteByLiquidityWithParams,
+  swapQuoteByInputToken,
   swapQuoteWithParams,
   toTx,
+  twoHopSwapQuoteFromSwapQuotes,
 } from "../../../src";
 import { WhirlpoolContext } from "../../../src/context";
 import { IGNORE_CACHE } from "../../../src/network/public/fetcher";
@@ -34,6 +41,15 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { buildTestPoolWithAdaptiveFeeParams } from "../../utils/v2/init-utils-v2";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 import type { OracleData } from "../../../dist";
+import type {
+  FundedPositionParams} from "../../utils/init-utils";
+import {
+  buildTestAquariums,
+  getDefaultAquarium,
+  getTokenAccsForPools,
+  initTestPoolWithTokens,
+  initTickArrayRange,
+} from "../../utils/init-utils";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -979,6 +995,798 @@ describe("adaptive fee tests", () => {
           await toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).buildAndExecute();
         });
       }
+    });
+  });
+
+  describe("swapV1 / twoHopSwapV1 compatibility", () => {
+    describe("works on a pool with static fee (FeeTier)", () => {
+      const tickSpacing = 128;
+      const aqConfig = getDefaultAquarium();
+      aqConfig.initMintParams.push({});
+      aqConfig.initTokenAccParams.push({ mintIndex: 2 });
+      aqConfig.initPoolParams.push({
+        mintIndices: [1, 2],
+        tickSpacing,
+      });
+      aqConfig.initTickArrayRangeParams.push({
+        poolIndex: 0,
+        startTickIndex: 22528,
+        arrayCount: 3,
+        aToB: false,
+      });
+      aqConfig.initTickArrayRangeParams.push({
+        poolIndex: 1,
+        startTickIndex: 22528,
+        arrayCount: 3,
+        aToB: false,
+      });
+      const fundParams: FundedPositionParams[] = [
+        {
+          liquidityAmount: new anchor.BN(10_000_000),
+          tickLowerIndex: 29440,
+          tickUpperIndex: 33536,
+        },
+      ];
+      aqConfig.initPositionParams.push({ poolIndex: 0, fundParams });
+      aqConfig.initPositionParams.push({ poolIndex: 1, fundParams });
+
+      it("swapV1", async () => {
+        // build pool with FeeTier
+        const aquarium = (
+          await buildTestAquariums(testCtx.whirlpoolCtx, [aqConfig])
+        )[0];
+        const {
+          tokenAccounts: tokenAccountsUnsorted,
+          mintKeys,
+          pools,
+        } = aquarium;
+        const tokenAccounts = getTokenAccsForPools(
+          pools,
+          tokenAccountsUnsorted,
+        );
+        const whirlpoolKey = pools[0].whirlpoolPda.publicKey;
+        const whirlpool = await testCtx.whirlpoolClient.getPool(
+          whirlpoolKey,
+          IGNORE_CACHE,
+        );
+        const [inputToken] = mintKeys;
+
+        const quote = await swapQuoteByInputToken(
+          whirlpool,
+          inputToken,
+          new BN(1000),
+          Percentage.fromFraction(1, 100),
+          testCtx.whirlpoolCtx.program.programId,
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+
+        const oracle = PDAUtil.getOracle(
+          testCtx.whirlpoolCtx.program.programId,
+          whirlpoolKey,
+        ).publicKey;
+
+        const swapIx = WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+          ...quote,
+          whirlpool: whirlpoolKey,
+          oracle,
+          tokenOwnerAccountA: tokenAccounts[0],
+          tokenOwnerAccountB: tokenAccounts[1],
+          tokenVaultA: whirlpool.getData().tokenVaultA,
+          tokenVaultB: whirlpool.getData().tokenVaultB,
+          tokenAuthority: testCtx.provider.wallet.publicKey,
+        }).instructions[0];
+
+        // try to execute swap ix on a pool WITHOUT adaptive fee WITHOUT isWritable flag on oracle account
+
+        // oracle: readonly
+        assert.equal(swapIx.keys[10].pubkey, oracle);
+        swapIx.keys[10] = {
+          pubkey: oracle,
+          isSigner: false,
+          isWritable: false,
+        };
+        // no remaining accounts
+        assert.equal(swapIx.keys.length, 11);
+
+        const preSqrtPrice = (await whirlpool.refreshData()).sqrtPrice;
+        await toTx(testCtx.whirlpoolCtx, {
+          instructions: [swapIx],
+          cleanupInstructions: [],
+          signers: [],
+        }).buildAndExecute();
+        const postSqrtPrice = (await whirlpool.refreshData()).sqrtPrice;
+        assert.ok(!preSqrtPrice.eq(postSqrtPrice));
+      });
+
+      it("twoHopSwapV1", async () => {
+        // build pools with FeeTier
+        const aquarium = (
+          await buildTestAquariums(testCtx.whirlpoolCtx, [aqConfig])
+        )[0];
+        const {
+          tokenAccounts: tokenAccountsUnsorted,
+          mintKeys,
+          pools,
+        } = aquarium;
+        const tokenAccounts = getTokenAccsForPools(
+          pools,
+          tokenAccountsUnsorted,
+        );
+
+        const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+        const whirlpoolOne = await testCtx.whirlpoolClient.getPool(
+          whirlpoolOneKey,
+          IGNORE_CACHE,
+        );
+        const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+        const whirlpoolTwo = await testCtx.whirlpoolClient.getPool(
+          whirlpoolTwoKey,
+          IGNORE_CACHE,
+        );
+        const [inputToken, midToken] = mintKeys;
+
+        const quoteOne = await swapQuoteByInputToken(
+          whirlpoolOne,
+          inputToken,
+          new BN(1000),
+          Percentage.fromFraction(1, 100),
+          testCtx.whirlpoolCtx.program.programId,
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+        const quoteTwo = await swapQuoteByInputToken(
+          whirlpoolTwo,
+          midToken,
+          quoteOne.estimatedAmountOut,
+          Percentage.fromFraction(1, 100),
+          testCtx.whirlpoolCtx.program.programId,
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+        const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quoteOne, quoteTwo);
+
+        const oracleOne = PDAUtil.getOracle(
+          testCtx.whirlpoolCtx.program.programId,
+          whirlpoolOneKey,
+        ).publicKey;
+        const oracleTwo = PDAUtil.getOracle(
+          testCtx.whirlpoolCtx.program.programId,
+          whirlpoolTwoKey,
+        ).publicKey;
+
+        const twoHopSwapIx = WhirlpoolIx.twoHopSwapIx(
+          testCtx.whirlpoolCtx.program,
+          {
+            ...twoHopQuote,
+            whirlpoolOne: whirlpoolOneKey,
+            whirlpoolTwo: whirlpoolTwoKey,
+            oracleOne: oracleOne,
+            oracleTwo: oracleTwo,
+            tokenOwnerAccountOneA: tokenAccounts[0],
+            tokenOwnerAccountOneB: tokenAccounts[1],
+            tokenOwnerAccountTwoA: tokenAccounts[2],
+            tokenOwnerAccountTwoB: tokenAccounts[3],
+            tokenVaultOneA: whirlpoolOne.getData().tokenVaultA,
+            tokenVaultOneB: whirlpoolOne.getData().tokenVaultB,
+            tokenVaultTwoA: whirlpoolTwo.getData().tokenVaultA,
+            tokenVaultTwoB: whirlpoolTwo.getData().tokenVaultB,
+            tokenAuthority: testCtx.provider.wallet.publicKey,
+          },
+        ).instructions[0];
+
+        // try to execute twoHopSwap ix on pools WITHOUT adaptive fee WITHOUT isWritable flags on oracle accounts
+
+        // oracle_one: readonly
+        assert.equal(twoHopSwapIx.keys[18].pubkey, oracleOne);
+        twoHopSwapIx.keys[18] = {
+          pubkey: oracleOne,
+          isSigner: false,
+          isWritable: false,
+        };
+        // oracle_two: readonly
+        assert.equal(twoHopSwapIx.keys[19].pubkey, oracleTwo);
+        twoHopSwapIx.keys[19] = {
+          pubkey: oracleTwo,
+          isSigner: false,
+          isWritable: false,
+        };
+        // no remaining accounts
+        assert.equal(twoHopSwapIx.keys.length, 20);
+
+        const preSqrtPriceOne = (await whirlpoolOne.refreshData()).sqrtPrice;
+        const preSqrtPriceTwo = (await whirlpoolTwo.refreshData()).sqrtPrice;
+        await toTx(testCtx.whirlpoolCtx, {
+          instructions: [twoHopSwapIx],
+          cleanupInstructions: [],
+          signers: [],
+        }).buildAndExecute();
+        const postSqrtPriceOne = (await whirlpoolOne.refreshData()).sqrtPrice;
+        const postSqrtPriceTwo = (await whirlpoolTwo.refreshData()).sqrtPrice;
+        assert.ok(!preSqrtPriceOne.eq(postSqrtPriceOne));
+        assert.ok(!preSqrtPriceTwo.eq(postSqrtPriceTwo));
+      });
+    });
+
+    describe("works on a pool with adaptive fee (AdaptiveFeeTier), modify isWritable hack", () => {
+      it("swapV1", async () => {
+        const poolInfo = await buildSwapTestPool(undefined, undefined);
+        const whirlpool = await testCtx.whirlpoolClient.getPool(
+          poolInfo.whirlpool,
+          IGNORE_CACHE,
+        );
+
+        const tradeTokenAmount = new BN(20000);
+        const quote = await swapQuoteByInputToken(
+          whirlpool,
+          poolInfo.mintA,
+          tradeTokenAmount,
+          Percentage.fromFraction(1, 100),
+          testCtx.whirlpoolCtx.program.programId,
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+
+        const oracle = PDAUtil.getOracle(
+          testCtx.whirlpoolCtx.program.programId,
+          whirlpool.getAddress(),
+        ).publicKey;
+
+        const swapIx = WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+          ...quote,
+          whirlpool: whirlpool.getAddress(),
+          oracle,
+          tokenOwnerAccountA: poolInfo.tokenAccountA,
+          tokenOwnerAccountB: poolInfo.tokenAccountB,
+          tokenVaultA: whirlpool.getData().tokenVaultA,
+          tokenVaultB: whirlpool.getData().tokenVaultB,
+          tokenAuthority: testCtx.provider.wallet.publicKey,
+        }).instructions[0];
+
+        // try to execute swap ix on a pool WITH adaptive fee WITHOUT isWritable flag on oracle account
+
+        // oracle: readonly
+        assert.equal(swapIx.keys[10].pubkey, oracle);
+        swapIx.keys[10] = {
+          pubkey: oracle,
+          isSigner: false,
+          isWritable: false,
+        };
+        // no remaining accounts
+        assert.ok(swapIx.keys.length == 11);
+
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            instructions: [swapIx],
+            cleanupInstructions: [],
+            signers: [],
+          }).buildAndExecute(),
+          /0xbbe/, // AccountNotMutable
+        );
+
+        // now try with isWritable flag on oracle account (this is a hacky way)
+
+        // oracle: readonly
+        assert.equal(swapIx.keys[10].pubkey, oracle);
+        swapIx.keys[10] = { pubkey: oracle, isSigner: false, isWritable: true };
+        // no remaining accounts
+        assert.equal(swapIx.keys.length, 11);
+
+        const preSqrtPrice = (await whirlpool.refreshData()).sqrtPrice;
+        await toTx(testCtx.whirlpoolCtx, {
+          instructions: [swapIx],
+          cleanupInstructions: [],
+          signers: [],
+        }).buildAndExecute();
+        const postSqrtPrice = (await whirlpool.refreshData()).sqrtPrice;
+        assert.ok(!preSqrtPrice.eq(postSqrtPrice));
+      });
+
+      it("twoHopSwapV1", async () => {
+        const {
+          whirlpoolOne,
+          whirlpoolTwo,
+          oracleOne,
+          oracleTwo,
+          tokenAccountIn,
+          tokenAccountMid,
+          tokenAccountOut,
+        } = await buildTwoHopSwapTestPools(
+          undefined,
+          undefined,
+          PriceMath.tickIndexToSqrtPriceX64(0),
+          PriceMath.tickIndexToSqrtPriceX64(0),
+        );
+
+        const poolOne = await testCtx.whirlpoolClient.getPool(
+          whirlpoolOne,
+          IGNORE_CACHE,
+        );
+        const poolTwo = await testCtx.whirlpoolClient.getPool(
+          whirlpoolTwo,
+          IGNORE_CACHE,
+        );
+
+        const tradeTokenAmount = new BN(20000);
+        const tradeAmountSpecifiedIsInput = true;
+        const tradeAToBOne = true;
+        const tradeAToBTwo = true;
+        const swapQuoteOne = swapQuoteWithParams(
+          {
+            amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+            aToB: tradeAToBOne,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+              tradeAmountSpecifiedIsInput,
+            ),
+            sqrtPriceLimit: tradeAToBOne
+              ? MIN_SQRT_PRICE_BN
+              : MAX_SQRT_PRICE_BN,
+            tickArrays: await SwapUtils.getTickArrays(
+              poolOne.getData().tickCurrentIndex,
+              poolOne.getData().tickSpacing,
+              tradeAToBOne,
+              testCtx.whirlpoolCtx.program.programId,
+              poolOne.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
+            tokenAmount: tradeTokenAmount,
+            whirlpoolData: poolOne.getData(),
+            tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+          },
+          Percentage.fromFraction(0, 100),
+        );
+
+        const swapQuoteTwo = swapQuoteWithParams(
+          {
+            amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+            aToB: tradeAToBOne,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+              tradeAmountSpecifiedIsInput,
+            ),
+            sqrtPriceLimit: tradeAToBOne
+              ? MIN_SQRT_PRICE_BN
+              : MAX_SQRT_PRICE_BN,
+            tickArrays: await SwapUtils.getTickArrays(
+              poolTwo.getData().tickCurrentIndex,
+              poolTwo.getData().tickSpacing,
+              tradeAToBTwo,
+              testCtx.whirlpoolCtx.program.programId,
+              poolTwo.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
+            tokenAmount: swapQuoteOne.estimatedAmountOut,
+            whirlpoolData: poolTwo.getData(),
+            tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+          },
+          Percentage.fromFraction(0, 100),
+        );
+
+        const twoHopSwapIx = WhirlpoolIx.twoHopSwapIx(
+          testCtx.whirlpoolCtx.program,
+          {
+            amount: tradeTokenAmount,
+            amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+            aToBOne: tradeAToBOne,
+            aToBTwo: tradeAToBTwo,
+            oracleOne,
+            oracleTwo,
+            otherAmountThreshold: ZERO,
+            sqrtPriceLimitOne: ZERO,
+            sqrtPriceLimitTwo: ZERO,
+            tickArrayOne0: swapQuoteOne.tickArray0,
+            tickArrayOne1: swapQuoteOne.tickArray1,
+            tickArrayOne2: swapQuoteOne.tickArray2,
+            tickArrayTwo0: swapQuoteTwo.tickArray0,
+            tickArrayTwo1: swapQuoteTwo.tickArray1,
+            tickArrayTwo2: swapQuoteTwo.tickArray2,
+            tokenAuthority: testCtx.provider.wallet.publicKey,
+            tokenOwnerAccountOneA: tokenAccountIn,
+            tokenOwnerAccountOneB: tokenAccountMid,
+            tokenOwnerAccountTwoA: tokenAccountMid,
+            tokenOwnerAccountTwoB: tokenAccountOut,
+            tokenVaultOneA: poolOne.getData().tokenVaultA,
+            tokenVaultOneB: poolOne.getData().tokenVaultB,
+            tokenVaultTwoA: poolTwo.getData().tokenVaultA,
+            tokenVaultTwoB: poolTwo.getData().tokenVaultB,
+            whirlpoolOne,
+            whirlpoolTwo,
+          },
+        ).instructions[0];
+
+        // try to execute twoHopSwap ix on pools WITH adaptive fee WITHOUT isWritable flags on oracle accounts
+
+        // oracle_one: readonly
+        assert.equal(twoHopSwapIx.keys[18].pubkey, oracleOne);
+        twoHopSwapIx.keys[18] = {
+          pubkey: oracleOne,
+          isSigner: false,
+          isWritable: false,
+        };
+        // oracle_two: readonly
+        assert.equal(twoHopSwapIx.keys[19].pubkey, oracleTwo);
+        twoHopSwapIx.keys[19] = {
+          pubkey: oracleTwo,
+          isSigner: false,
+          isWritable: false,
+        };
+        // no remaining accounts
+        assert.equal(twoHopSwapIx.keys.length, 20);
+
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            instructions: [twoHopSwapIx],
+            cleanupInstructions: [],
+            signers: [],
+          }).buildAndExecute(),
+          /0xbbe/, // AccountNotMutable
+        );
+
+        // oracle_one: writable
+        assert.equal(twoHopSwapIx.keys[18].pubkey, oracleOne);
+        twoHopSwapIx.keys[18] = {
+          pubkey: oracleOne,
+          isSigner: false,
+          isWritable: true,
+        };
+        // oracle_two: readonly
+        assert.equal(twoHopSwapIx.keys[19].pubkey, oracleTwo);
+        twoHopSwapIx.keys[19] = {
+          pubkey: oracleTwo,
+          isSigner: false,
+          isWritable: false,
+        };
+        // no remaining accounts
+        assert.equal(twoHopSwapIx.keys.length, 20);
+
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            instructions: [twoHopSwapIx],
+            cleanupInstructions: [],
+            signers: [],
+          }).buildAndExecute(),
+          /0xbbe/, // AccountNotMutable
+        );
+
+        // oracle_one: readonly
+        assert.equal(twoHopSwapIx.keys[18].pubkey, oracleOne);
+        twoHopSwapIx.keys[18] = {
+          pubkey: oracleOne,
+          isSigner: false,
+          isWritable: false,
+        };
+        // oracle_two: writable
+        assert.equal(twoHopSwapIx.keys[19].pubkey, oracleTwo);
+        twoHopSwapIx.keys[19] = {
+          pubkey: oracleTwo,
+          isSigner: false,
+          isWritable: true,
+        };
+        // no remaining accounts
+        assert.equal(twoHopSwapIx.keys.length, 20);
+
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            instructions: [twoHopSwapIx],
+            cleanupInstructions: [],
+            signers: [],
+          }).buildAndExecute(),
+          /0xbbe/, // AccountNotMutable
+        );
+
+        // now try with isWritable flags on oracle accounts (this is a hacky way)
+
+        // oracle_one: writable
+        assert.equal(twoHopSwapIx.keys[18].pubkey, oracleOne);
+        twoHopSwapIx.keys[18] = {
+          pubkey: oracleOne,
+          isSigner: false,
+          isWritable: true,
+        };
+        // oracle_two: writable
+        assert.equal(twoHopSwapIx.keys[19].pubkey, oracleTwo);
+        twoHopSwapIx.keys[19] = {
+          pubkey: oracleTwo,
+          isSigner: false,
+          isWritable: true,
+        };
+        // no remaining accounts
+        assert.equal(twoHopSwapIx.keys.length, 20);
+
+        const preSqrtPriceOne = (await poolOne.refreshData()).sqrtPrice;
+        const preSqrtPriceTwo = (await poolTwo.refreshData()).sqrtPrice;
+        await toTx(testCtx.whirlpoolCtx, {
+          instructions: [twoHopSwapIx],
+          cleanupInstructions: [],
+          signers: [],
+        }).buildAndExecute();
+        const postSqrtPriceOne = (await poolOne.refreshData()).sqrtPrice;
+        const postSqrtPriceTwo = (await poolTwo.refreshData()).sqrtPrice;
+        assert.ok(!preSqrtPriceOne.eq(postSqrtPriceOne));
+        assert.ok(!preSqrtPriceTwo.eq(postSqrtPriceTwo));
+      });
+    });
+
+    describe("works on a pool with adaptive fee (AdaptiveFeeTier), add writable Oracle in remaining accounts (official way)", () => {
+      it("swapV1", async () => {
+        const poolInfo = await buildSwapTestPool(undefined, undefined);
+        const whirlpool = await testCtx.whirlpoolClient.getPool(
+          poolInfo.whirlpool,
+          IGNORE_CACHE,
+        );
+
+        const tradeTokenAmount = new BN(20000);
+        const quote = await swapQuoteByInputToken(
+          whirlpool,
+          poolInfo.mintA,
+          tradeTokenAmount,
+          Percentage.fromFraction(1, 100),
+          testCtx.whirlpoolCtx.program.programId,
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        );
+
+        const oracle = PDAUtil.getOracle(
+          testCtx.whirlpoolCtx.program.programId,
+          whirlpool.getAddress(),
+        ).publicKey;
+
+        const swapIx = WhirlpoolIx.swapIx(testCtx.whirlpoolCtx.program, {
+          ...quote,
+          whirlpool: whirlpool.getAddress(),
+          oracle,
+          tokenOwnerAccountA: poolInfo.tokenAccountA,
+          tokenOwnerAccountB: poolInfo.tokenAccountB,
+          tokenVaultA: whirlpool.getData().tokenVaultA,
+          tokenVaultB: whirlpool.getData().tokenVaultB,
+          tokenAuthority: testCtx.provider.wallet.publicKey,
+        }).instructions[0];
+
+        // try to execute swap ix on a pool WITH adaptive fee WITHOUT isWritable flag on oracle account
+
+        // oracle: readonly
+        assert.equal(swapIx.keys[10].pubkey, oracle);
+        swapIx.keys[10] = {
+          pubkey: oracle,
+          isSigner: false,
+          isWritable: false,
+        };
+        // no remaining accounts
+        assert.equal(swapIx.keys.length, 11);
+
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            instructions: [swapIx],
+            cleanupInstructions: [],
+            signers: [],
+          }).buildAndExecute(),
+          /0xbbe/, // AccountNotMutable
+        );
+
+        // now try with writable account in remaining accounts (this is an official way)
+
+        // oracle: readonly
+        assert.equal(swapIx.keys[10].pubkey, oracle);
+        swapIx.keys[10] = { pubkey: oracle, isSigner: false, isWritable: true };
+        // additional oracle: writable
+        swapIx.keys.push({ pubkey: oracle, isSigner: false, isWritable: true });
+        // 1 remaining accounts
+        assert.equal(swapIx.keys.length, 12);
+
+        const preSqrtPrice = (await whirlpool.refreshData()).sqrtPrice;
+        await toTx(testCtx.whirlpoolCtx, {
+          instructions: [swapIx],
+          cleanupInstructions: [],
+          signers: [],
+        }).buildAndExecute();
+        const postSqrtPrice = (await whirlpool.refreshData()).sqrtPrice;
+        assert.ok(!preSqrtPrice.eq(postSqrtPrice));
+      });
+
+      it("twoHopSwapV1", async () => {
+        const {
+          whirlpoolOne,
+          whirlpoolTwo,
+          oracleOne,
+          oracleTwo,
+          tokenAccountIn,
+          tokenAccountMid,
+          tokenAccountOut,
+        } = await buildTwoHopSwapTestPools(
+          undefined,
+          undefined,
+          PriceMath.tickIndexToSqrtPriceX64(0),
+          PriceMath.tickIndexToSqrtPriceX64(0),
+        );
+
+        const poolOne = await testCtx.whirlpoolClient.getPool(
+          whirlpoolOne,
+          IGNORE_CACHE,
+        );
+        const poolTwo = await testCtx.whirlpoolClient.getPool(
+          whirlpoolTwo,
+          IGNORE_CACHE,
+        );
+
+        const tradeTokenAmount = new BN(20000);
+        const tradeAmountSpecifiedIsInput = true;
+        const tradeAToBOne = true;
+        const tradeAToBTwo = true;
+        const swapQuoteOne = swapQuoteWithParams(
+          {
+            amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+            aToB: tradeAToBOne,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+              tradeAmountSpecifiedIsInput,
+            ),
+            sqrtPriceLimit: tradeAToBOne
+              ? MIN_SQRT_PRICE_BN
+              : MAX_SQRT_PRICE_BN,
+            tickArrays: await SwapUtils.getTickArrays(
+              poolOne.getData().tickCurrentIndex,
+              poolOne.getData().tickSpacing,
+              tradeAToBOne,
+              testCtx.whirlpoolCtx.program.programId,
+              poolOne.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
+            tokenAmount: tradeTokenAmount,
+            whirlpoolData: poolOne.getData(),
+            tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+          },
+          Percentage.fromFraction(0, 100),
+        );
+
+        const swapQuoteTwo = swapQuoteWithParams(
+          {
+            amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+            aToB: tradeAToBOne,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+              tradeAmountSpecifiedIsInput,
+            ),
+            sqrtPriceLimit: tradeAToBOne
+              ? MIN_SQRT_PRICE_BN
+              : MAX_SQRT_PRICE_BN,
+            tickArrays: await SwapUtils.getTickArrays(
+              poolTwo.getData().tickCurrentIndex,
+              poolTwo.getData().tickSpacing,
+              tradeAToBTwo,
+              testCtx.whirlpoolCtx.program.programId,
+              poolTwo.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
+            tokenAmount: swapQuoteOne.estimatedAmountOut,
+            whirlpoolData: poolTwo.getData(),
+            tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+          },
+          Percentage.fromFraction(0, 100),
+        );
+
+        const twoHopSwapIx = WhirlpoolIx.twoHopSwapIx(
+          testCtx.whirlpoolCtx.program,
+          {
+            amount: tradeTokenAmount,
+            amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+            aToBOne: tradeAToBOne,
+            aToBTwo: tradeAToBTwo,
+            oracleOne,
+            oracleTwo,
+            otherAmountThreshold: ZERO,
+            sqrtPriceLimitOne: ZERO,
+            sqrtPriceLimitTwo: ZERO,
+            tickArrayOne0: swapQuoteOne.tickArray0,
+            tickArrayOne1: swapQuoteOne.tickArray1,
+            tickArrayOne2: swapQuoteOne.tickArray2,
+            tickArrayTwo0: swapQuoteTwo.tickArray0,
+            tickArrayTwo1: swapQuoteTwo.tickArray1,
+            tickArrayTwo2: swapQuoteTwo.tickArray2,
+            tokenAuthority: testCtx.provider.wallet.publicKey,
+            tokenOwnerAccountOneA: tokenAccountIn,
+            tokenOwnerAccountOneB: tokenAccountMid,
+            tokenOwnerAccountTwoA: tokenAccountMid,
+            tokenOwnerAccountTwoB: tokenAccountOut,
+            tokenVaultOneA: poolOne.getData().tokenVaultA,
+            tokenVaultOneB: poolOne.getData().tokenVaultB,
+            tokenVaultTwoA: poolTwo.getData().tokenVaultA,
+            tokenVaultTwoB: poolTwo.getData().tokenVaultB,
+            whirlpoolOne,
+            whirlpoolTwo,
+          },
+        ).instructions[0];
+
+        // try to execute twoHopSwap ix on pools WITH adaptive fee WITHOUT isWritable flags on oracle accounts and WITHOUT writable oracle accounts in remaining accounts
+
+        // oracle_one: readonly
+        assert.equal(twoHopSwapIx.keys[18].pubkey, oracleOne);
+        twoHopSwapIx.keys[18] = {
+          pubkey: oracleOne,
+          isSigner: false,
+          isWritable: false,
+        };
+        // oracle_two: readonly
+        assert.equal(twoHopSwapIx.keys[19].pubkey, oracleTwo);
+        twoHopSwapIx.keys[19] = {
+          pubkey: oracleTwo,
+          isSigner: false,
+          isWritable: false,
+        };
+        // no remaining accounts
+        assert.equal(twoHopSwapIx.keys.length, 20);
+
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            instructions: [twoHopSwapIx],
+            cleanupInstructions: [],
+            signers: [],
+          }).buildAndExecute(),
+          /0xbbe/, // AccountNotMutable
+        );
+
+        // add writable oracle_one only
+        const keysWithAdditionalOracleOneOnly = [
+          ...twoHopSwapIx.keys,
+          { pubkey: oracleOne, isSigner: false, isWritable: true },
+        ];
+        assert.equal(keysWithAdditionalOracleOneOnly.length, 20 + 1);
+        const twoHopSwapIxWithAdditionalOracleOneOnly = {
+          ...twoHopSwapIx,
+          keys: keysWithAdditionalOracleOneOnly,
+        };
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            instructions: [twoHopSwapIxWithAdditionalOracleOneOnly],
+            cleanupInstructions: [],
+            signers: [],
+          }).buildAndExecute(),
+          /0xbbe/, // AccountNotMutable
+        );
+
+        // add writable oracle_two only
+        const keysWithAdditionalOracleTwoOnly = [
+          ...twoHopSwapIx.keys,
+          { pubkey: oracleTwo, isSigner: false, isWritable: true },
+        ];
+        assert.equal(keysWithAdditionalOracleTwoOnly.length, 20 + 1);
+        const twoHopSwapIxWithAdditionalOracleTwoOnly = {
+          ...twoHopSwapIx,
+          keys: keysWithAdditionalOracleTwoOnly,
+        };
+        await assert.rejects(
+          toTx(testCtx.whirlpoolCtx, {
+            instructions: [twoHopSwapIxWithAdditionalOracleTwoOnly],
+            cleanupInstructions: [],
+            signers: [],
+          }).buildAndExecute(),
+          /0xbbe/, // AccountNotMutable
+        );
+
+        // add both writable oracle_one and oracle_two
+        const keysWithAdditionalOracleOneAndTwo = [
+          ...twoHopSwapIx.keys,
+          { pubkey: oracleOne, isSigner: false, isWritable: true },
+          { pubkey: oracleTwo, isSigner: false, isWritable: true },
+        ];
+        assert.equal(keysWithAdditionalOracleOneAndTwo.length, 20 + 2);
+        const twoHopSwapIxWithAdditionalOracleOneAndTwo = {
+          ...twoHopSwapIx,
+          keys: keysWithAdditionalOracleOneAndTwo,
+        };
+
+        const preSqrtPriceOne = (await poolOne.refreshData()).sqrtPrice;
+        const preSqrtPriceTwo = (await poolTwo.refreshData()).sqrtPrice;
+        await toTx(testCtx.whirlpoolCtx, {
+          instructions: [twoHopSwapIxWithAdditionalOracleOneAndTwo],
+          cleanupInstructions: [],
+          signers: [],
+        }).buildAndExecute();
+        const postSqrtPriceOne = (await poolOne.refreshData()).sqrtPrice;
+        const postSqrtPriceTwo = (await poolTwo.refreshData()).sqrtPrice;
+        assert.ok(!preSqrtPriceOne.eq(postSqrtPriceOne));
+        assert.ok(!preSqrtPriceTwo.eq(postSqrtPriceTwo));
+      });
     });
   });
 

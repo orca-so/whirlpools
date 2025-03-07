@@ -174,6 +174,8 @@ export function twoHopSwapIx(
   );
 
   // HACK: to make Oracle account mutable without breaking change
+  // The official way to assemble instructions for pools that use AdaptiveFee is to add remaining accounts with isWritable set to true,
+  // but this hack that overrides the IDL requirements works.
   invariant(ix.keys[18].pubkey.equals(oracleOne));
   ix.keys[18].isWritable = true;
   invariant(ix.keys[19].pubkey.equals(oracleTwo));

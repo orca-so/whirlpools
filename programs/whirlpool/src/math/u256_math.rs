@@ -131,8 +131,8 @@ impl U256Muldiv {
         }
 
         for i in 0..NUM_WORDS - 1 {
-            result.items[i] = (result.items[i] >> shift_amount)
-                | (result.items[i + 1] << (U64_RESOLUTION - shift_amount));
+            result.items[i] = result.items[i] >> shift_amount
+                | result.items[i + 1] << (U64_RESOLUTION - shift_amount);
         }
 
         result.items[3] >>= shift_amount;
@@ -204,7 +204,7 @@ impl U256Muldiv {
             return Err(ErrorCode::NumberDownCastError);
         }
 
-        Ok(((self.items[1] as u128) << U64_RESOLUTION) | (self.items[0] as u128))
+        Ok((self.items[1] as u128) << U64_RESOLUTION | (self.items[0] as u128))
     }
 
     pub fn is_zero(self) -> bool {
@@ -446,7 +446,7 @@ impl LoHi for u128 {
 }
 
 pub fn hi_lo(hi: u64, lo: u64) -> u128 {
-    ((hi as u128) << U64_RESOLUTION) | (lo as u128)
+    (hi as u128) << U64_RESOLUTION | (lo as u128)
 }
 
 pub fn mul_u256(v: u128, n: u128) -> U256Muldiv {

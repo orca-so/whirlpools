@@ -92,8 +92,8 @@ impl U256Muldiv {
         }
 
         for i in (1..NUM_WORDS).rev() {
-            result.items[i] = (result.items[i] << shift_amount)
-                | (result.items[i - 1] >> (U64_RESOLUTION - shift_amount));
+            result.items[i] = result.items[i] << shift_amount
+                | result.items[i - 1] >> (U64_RESOLUTION - shift_amount);
         }
 
         result.items[0] <<= shift_amount;

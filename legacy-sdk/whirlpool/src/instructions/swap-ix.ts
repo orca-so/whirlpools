@@ -1,7 +1,7 @@
 import type { Program } from "@coral-xyz/anchor";
 import type { Instruction } from "@orca-so/common-sdk";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import type { AccountMeta, PublicKey } from "@solana/web3.js";
+import type { PublicKey } from "@solana/web3.js";
 import type BN from "bn.js";
 import type { Whirlpool } from "../artifacts/whirlpool";
 import invariant from "tiny-invariant";

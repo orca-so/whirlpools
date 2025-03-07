@@ -1,12 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
 import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
-import {
-  AccountMeta,
-  Keypair,
-  PublicKey,
-  TransactionInstruction,
-} from "@solana/web3.js";
+import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import type {
   InitPoolWithAdaptiveFeeParams,
@@ -41,14 +36,11 @@ import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { buildTestPoolWithAdaptiveFeeParams } from "../../utils/v2/init-utils-v2";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 import type { OracleData } from "../../../dist";
-import type {
-  FundedPositionParams} from "../../utils/init-utils";
+import type { FundedPositionParams } from "../../utils/init-utils";
 import {
   buildTestAquariums,
   getDefaultAquarium,
   getTokenAccsForPools,
-  initTestPoolWithTokens,
-  initTickArrayRange,
 } from "../../utils/init-utils";
 
 interface SharedTestContext {

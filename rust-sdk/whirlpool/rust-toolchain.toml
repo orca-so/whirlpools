@@ -1,0 +1,6 @@
+# Program requires < 1.82 because anchor build doesn not understand
+# lockfile v4 yet. On the other hand this lib requires >= 1.84 because
+# it uses const panic.
+
+[toolchain]
+channel = "1.84.0"

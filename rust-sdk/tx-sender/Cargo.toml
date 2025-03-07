@@ -9,11 +9,11 @@ rust-version = "1.70"
 
 [dependencies]
 # Use consistent versions to avoid conflicts
-solana-client = "=1.17.20"
-solana-sdk = { version = "=1.17.20", features = ["full"] }
-solana-program = "=1.17.20"
-solana-account-decoder = "=1.17.20"
-solana-rpc-client-api = "=1.17.20"
+solana-client = "1.18.0"
+solana-sdk = "1.18.0"
+solana-program = "1.18.0"
+solana-account-decoder = "1.18.0"
+solana-rpc-client-api = "1.18.0"
 reqwest = { version = "0.11.27", features = ["json", "stream"] }
 tokio = { version = "1.37.0", features = ["full"] }
 thiserror = "1.0.58"

@@ -3960,7 +3960,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@orca-so/tx-sender@npm:*, @orca-so/tx-sender@workspace:ts-sdk/tx-sender":
+"@orca-so/tx-sender@workspace:ts-sdk/tx-sender":
   version: 0.0.0-use.local
   resolution: "@orca-so/tx-sender@workspace:ts-sdk/tx-sender"
   dependencies:
@@ -3970,19 +3970,6 @@ __metadata:
     "@solana/kit": "npm:^2.1.0"
     tsup: "npm:^8.4.0"
     typescript: "npm:^5.7.3"
-  peerDependencies:
-    "@solana/kit": ^2.1.0
-  languageName: unknown
-  linkType: soft
-
-"@orca-so/whirlpools-actions@workspace:ts-sdk/actions":
-  version: 0.0.0-use.local
-  resolution: "@orca-so/whirlpools-actions@workspace:ts-sdk/actions"
-  dependencies:
-    "@orca-so/tx-sender": "npm:*"
-    "@orca-so/whirlpools": "npm:*"
-    "@solana/kit": "npm:^2.1.0"
-    tsup: "npm:^8.3.6"
   peerDependencies:
     "@solana/kit": ^2.1.0
   languageName: unknown
@@ -17501,7 +17488,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tsup@npm:^8.3.6, tsup@npm:^8.4.0":
+"tsup@npm:^8.4.0":
   version: 8.4.0
   resolution: "tsup@npm:8.4.0"
   dependencies:

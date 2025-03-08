@@ -17,8 +17,9 @@ import type {
   GetMultipleAccountsApi,
   GetMinimumBalanceForRentExemptionApi,
   GetEpochInfoApi,
+  Signature,
 } from "@solana/kit";
-import { DEFAULT_ADDRESS, FUNDER } from "./config";
+import { DEFAULT_ADDRESS, FUNDER, getPayer, getRpcConfig } from "./config";
 import {
   fetchAllTickArray,
   fetchPosition,
@@ -37,6 +38,12 @@ import {
 import { fetchAllMaybeMint } from "@solana-program/token-2022";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
+import {
+  wouldExceedTransactionSize,
+  wrapFunctionWithExecution,
+} from "./actionHelpers";
+import { rpcFromUrl, buildAndSendTransaction } from "@orca-so/tx-sender";
+import { fetchPositionsForOwner } from "./position";
 
 // TODO: Transfer hook
 
@@ -271,4 +278,41 @@ export async function harvestPositionInstructions(
     rewardsQuote,
     instructions,
   };
+}
+
+// -------- ACTIONS --------
+
+export const harvestPosition = wrapFunctionWithExecution(
+  harvestPositionInstructions,
+);
+
+export async function harvestAllPositionFees(): Promise<Signature[]> {
+  const { rpcUrl } = getRpcConfig();
+  const rpc = rpcFromUrl(rpcUrl);
+  const owner = getPayer();
+
+  const positions = await fetchPositionsForOwner(rpc, owner.address);
+  const instructionSets: IInstruction[][] = [];
+  let currentInstructions: IInstruction[] = [];
+  for (const position of positions) {
+    if ("positionMint" in position.data) {
+      const { instructions } = await harvestPositionInstructions(
+        rpc,
+        position.data.positionMint,
+        owner,
+      );
+      if (await wouldExceedTransactionSize(currentInstructions, instructions)) {
+        instructionSets.push(currentInstructions);
+        currentInstructions = [...instructions];
+      } else {
+        currentInstructions.push(...instructions);
+      }
+    }
+  }
+  return Promise.all(
+    instructionSets.map(async (instructions) => {
+      let txHash = await buildAndSendTransaction(instructions, owner);
+      return txHash;
+    }),
+  );
 }

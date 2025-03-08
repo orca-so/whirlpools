@@ -62,6 +62,7 @@ import {
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
 import { calculateMinimumBalanceForRentExemption } from "./sysvar";
+import { wrapFunctionWithExecution } from "./actionHelpers";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
@@ -606,3 +607,17 @@ export async function openPositionInstructions(
     funder,
   );
 }
+
+// -------- ACTIONS --------
+
+export const increasePosLiquidity = wrapFunctionWithExecution(
+  increaseLiquidityInstructions,
+);
+
+export const openFullRangePosition = wrapFunctionWithExecution(
+  openFullRangePositionInstructions,
+);
+
+export const openConcentratedPosition = wrapFunctionWithExecution(
+  openPositionInstructions,
+);

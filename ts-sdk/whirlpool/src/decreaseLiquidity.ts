@@ -55,7 +55,7 @@ import {
 } from "@solana-program/token-2022";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
-
+import { wrapFunctionWithExecution } from "./actionHelpers";
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
 
@@ -555,3 +555,13 @@ export async function closePositionInstructions(
     rewardsQuote,
   };
 }
+
+// -------- ACTIONS --------
+
+export const closePosition = wrapFunctionWithExecution(
+  closePositionInstructions,
+);
+
+export const decreaseLiquidity = wrapFunctionWithExecution(
+  decreaseLiquidityInstructions,
+);

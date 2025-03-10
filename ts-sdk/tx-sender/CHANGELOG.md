@@ -1,5 +1,11 @@
 # @orca-so/tx-sender
 
+## 1.0.0
+
+### Major Changes
+
+- [#811](https://github.com/orca-so/whirlpools/pull/811) [`7b4bbf9`](https://github.com/orca-so/whirlpools/commit/7b4bbf907ee88b79351938e46b7e5da9cbf21414) Thanks [@wjthieme](https://github.com/wjthieme)! - Initial release
+
 ## 0.2.0
 
 ### Minor Changes

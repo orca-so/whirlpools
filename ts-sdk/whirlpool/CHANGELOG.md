@@ -1,5 +1,11 @@
 # @orca-so/whirlpools
 
+## 1.1.0
+
+### Minor Changes
+
+- [#795](https://github.com/orca-so/whirlpools/pull/795) [`3cf441a`](https://github.com/orca-so/whirlpools/commit/3cf441ae5b7a32dffdef4d28a59baf7de1447917) Thanks [@parhim](https://github.com/parhim)! - Added actions (wrapped with execution logic)
+
 ## 1.0.4
 
 ### Patch Changes

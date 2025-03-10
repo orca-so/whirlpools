@@ -189,6 +189,24 @@ export function resetConfiguration() {
 
 let _payer: KeyPairSigner | undefined;
 
+/**
+ * Sets the payer from a private key byte array.
+ *
+ * @param {Uint8Array<ArrayBuffer>} pkBytes - The private key bytes to create the payer from.
+ * @returns {Promise<KeyPairSigner>} - A promise that resolves to the created signer.
+ *
+ * @example
+ * ```ts
+ * // Set payer from a private key byte array
+ * const privateKeyBytes = new Uint8Array([
+ *   55, 244, 186, 115, 93, 3, 9, 47, 12, 168,
+ *   86, 1, 5, 155, 127, 3, 44, 165, 155, 3,
+ *   112, 1, 3, 99, 3, 211, 3, 77, 153,
+ *   44, 1, 179
+ * ]);
+ * const signer = await setPayerFromBytes(privateKeyBytes);
+ * ```
+ */
 export async function setPayerFromBytes(pkBytes: Uint8Array<ArrayBuffer>) {
   const kp = await createKeyPairFromBytes(pkBytes);
   const signer = await createSignerFromKeyPair(kp);

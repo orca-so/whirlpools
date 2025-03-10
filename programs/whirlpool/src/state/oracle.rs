@@ -98,7 +98,7 @@ pub struct AdaptiveFeeVariables {
 }
 
 impl AdaptiveFeeVariables {
-    pub const LEN: usize = 4 + 4 + 4 + 8;
+    pub const LEN: usize = 8 + 4 + 4 + 4;
 
     pub fn update_volatility_accumulator(
         &mut self,

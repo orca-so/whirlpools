@@ -130,11 +130,27 @@ export async function fetchPositionsForOwner(
     ),
   );
 
-  // FIXME: need to batch if more than 100 position bundles?
-  const [positions, positionBundles] = await Promise.all([
-    fetchAllMaybePosition(rpc, positionAddresses),
-    fetchAllMaybePositionBundle(rpc, positionBundleAddresses),
-  ]);
+  const chunkSize = 100;
+
+  let promises = [];
+  for (let i = 0; i < positionAddresses.length; i += chunkSize) {
+    let chunk = positionAddresses.slice(i, i + chunkSize);
+    promises.push(fetchAllMaybePosition(rpc, chunk));
+  }
+
+  const positions = await Promise.all(promises).then((results) =>
+    results.flat(),
+  );
+
+  promises = [];
+  for (let i = 0; i < positionBundleAddresses.length; i += chunkSize) {
+    let chunk = positionBundleAddresses.slice(i, i + chunkSize);
+    promises.push(fetchAllMaybePositionBundle(rpc, chunk));
+  }
+
+  const positionBundles = await Promise.all(promises).then((results) =>
+    results.flat(),
+  );
 
   const bundledPositionAddresses = await Promise.all(
     positionBundles
@@ -142,10 +158,16 @@ export async function fetchPositionsForOwner(
       .flatMap((x) => getPositionInBundleAddresses(x.data)),
   );
 
-  const bundledPositions = await fetchAllPosition(
-    rpc,
-    bundledPositionAddresses,
+  promises = [];
+  for (let i = 0; i < bundledPositionAddresses.length; i += chunkSize) {
+    let chunk = bundledPositionAddresses.slice(i, i + chunkSize);
+    promises.push(fetchAllPosition(rpc, chunk));
+  }
+
+  const bundledPositions = await Promise.all(promises).then((results) =>
+    results.flat(),
   );
+
   const bundledPositionMap = bundledPositions.reduce((acc, x) => {
     const current = acc.get(x.data.positionMint) ?? [];
     return acc.set(x.data.positionMint, [...current, x]);

@@ -16,7 +16,7 @@
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^15.2.1",
+    "@next/bundle-analyzer": "^15.2.2",
     "@types/node": "^22.13.10",
     "@types/react": "^18.3.13",
     "copy-webpack-plugin": "^13.0.0",

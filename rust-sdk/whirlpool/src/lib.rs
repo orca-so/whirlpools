@@ -8,6 +8,7 @@ mod pool;
 mod position;
 mod swap;
 mod token;
+mod utils;
 
 #[cfg(test)]
 mod e2e;

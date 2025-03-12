@@ -129,6 +129,8 @@ let tx_config = TransactionConfig {
 
 let sender = TransactionSender::new(rpc_config, fee_config)
     .with_tx_config(tx_config);
+
+sender.build_and_send_transaction(instructions, signers).await?;
 ```
 
 ## License

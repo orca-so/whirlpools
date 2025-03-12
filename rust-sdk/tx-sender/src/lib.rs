@@ -96,7 +96,7 @@ impl TransactionSender {
     }
 
     /// Build a transaction with compute budget and priority fees
-    async fn build_transaction(
+    pub async fn build_transaction(
         &self,
         mut instructions: Vec<Instruction>,
         payer: Pubkey,

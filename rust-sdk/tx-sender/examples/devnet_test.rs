@@ -2,19 +2,32 @@ use orca_tx_sender::{
     FeeConfig, JitoFeeStrategy, Percentile, PriorityFeeStrategy, RpcConfig, TransactionSender,
 };
 use solana_program::system_instruction;
-use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::pubkey::Pubkey;
+use solana_sdk::signature::{read_keypair_file, Keypair, Signer};
 use std::error::Error;
+use std::fs::File;
+use std::io::Write;
+use std::path::Path;
+use std::str::FromStr;
 use std::time::Instant;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     println!("Starting Solana Transaction Sender Devnet Test");
 
-    // Create a new keypair for testing
-    let payer = Keypair::new();
-    let recipient = Keypair::new().pubkey();
+    // Try to load keypair from file or create a new one
+    let keypair_path = "devnet-test-keypair.json";
+    let payer = if Path::new(keypair_path).exists() {
+        println!("Loading existing keypair from {}", keypair_path);
+        read_keypair_file(keypair_path).expect("Failed to read keypair file")
+    } else {
+        return Err("Keypair file does not exist".into());
+    };
 
-    println!("Test keypair generated:");
+    // Use a fixed recipient account
+    let recipient = Pubkey::from_str("5DX5Hwnw2xwSTg93TWgUmxcZVkBMxv25URizo83taNGd")?;
+
+    println!("Test keypair:");
     println!("  Payer: {}", payer.pubkey());
     println!("  Recipient: {}", recipient);
 
@@ -42,7 +55,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let fee_config = FeeConfig {
         priority_fee: PriorityFeeStrategy::Dynamic {
             percentile: Percentile::P95,
-            max_lamports: 1_000_000,
+            max_lamports: 10_000,
         },
         jito: JitoFeeStrategy::Disabled,
         compute_unit_margin_multiplier: 1.1,
@@ -51,46 +64,63 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Create sender instance
     let sender = TransactionSender::new(rpc_config, fee_config);
-
-    // Request airdrop for the test keypair
-    println!("Requesting airdrop of 1 SOL for test account...");
     let client = sender.rpc_client();
-    let airdrop_signature = client
-        .request_airdrop(&payer.pubkey(), 1_000_000_000) // 1 SOL
-        .await?;
-
-    println!("Airdrop requested: {}", airdrop_signature);
-    println!("Waiting for airdrop confirmation...");
-
-    // Wait for confirmation
-    let start = Instant::now();
-    let mut confirmed = false;
-    while start.elapsed().as_secs() < 30 && !confirmed {
-        if let Ok(status) = client.get_signature_status(&airdrop_signature).await {
-            if status.is_some() {
-                confirmed = true;
-                println!("Airdrop confirmed in {:?}", start.elapsed());
-                break;
-            }
-        }
-        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-    }
-
-    if !confirmed {
-        println!("Airdrop not confirmed after 30 seconds, but continuing anyway");
-    }
 
     // Check balance
     let balance = client.get_balance(&payer.pubkey()).await?;
     println!("Account balance: {} lamports", balance);
 
+    // Request airdrop if balance is low
+    if balance < 500_000_000 {
+        // 0.5 SOL
+        println!("Balance is low, requesting airdrop of 1 SOL...");
+        match client.request_airdrop(&payer.pubkey(), 1_000_000_000).await {
+            Ok(airdrop_signature) => {
+                println!("Airdrop requested: {}", airdrop_signature);
+                println!("Waiting for airdrop confirmation...");
+
+                // Wait for confirmation
+                let start = Instant::now();
+                let mut confirmed = false;
+                while start.elapsed().as_secs() < 30 && !confirmed {
+                    if let Ok(status) = client.get_signature_status(&airdrop_signature).await {
+                        if status.is_some() {
+                            confirmed = true;
+                            println!("Airdrop confirmed in {:?}", start.elapsed());
+                            break;
+                        }
+                    }
+                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+                }
+
+                if !confirmed {
+                    println!("Airdrop not confirmed after 30 seconds, but continuing anyway");
+                }
+
+                // Check balance again
+                let balance = client.get_balance(&payer.pubkey()).await?;
+                println!("Updated account balance: {} lamports", balance);
+            }
+            Err(e) => {
+                println!("Failed to request airdrop: {}", e);
+                println!("Continuing with existing balance");
+            }
+        }
+    }
+
+    // If balance is still zero, we can't proceed
+    let balance = client.get_balance(&payer.pubkey()).await?;
     if balance == 0 {
-        println!("Error: Account has zero balance. Airdrop may have failed.");
+        println!("Error: Account has zero balance. Cannot proceed with test.");
         return Ok(());
     }
 
-    // Create transfer instruction (send a small amount)
-    let transfer_amount = 100_000; // 0.0001 SOL
+    // Create transfer instruction (send a very small amount)
+    let transfer_amount = 1_000_000; // 0.001 SOL, enough to cover rent exemption
+    println!(
+        "Using transfer amount of {} lamports (0.001 SOL)",
+        transfer_amount
+    );
     let transfer_ix = system_instruction::transfer(&payer.pubkey(), &recipient, transfer_amount);
 
     println!("Sending {} lamports to {}", transfer_amount, recipient);
@@ -108,7 +138,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Wait for confirmation
     let start = Instant::now();
     println!("Waiting for transaction confirmation...");
-    confirmed = false;
+    let mut confirmed = false;
     while start.elapsed().as_secs() < 30 && !confirmed {
         if let Ok(status) = client.get_signature_status(&signature).await {
             if status.is_some() {

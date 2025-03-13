@@ -30,17 +30,6 @@ pub async fn run_position_manager(
         .await
         .map_err(|_| "Failed to fetch Whirlpool data.")?;
 
-    let current_sqrt_price = whirlpool.sqrt_price;
-    let position_lower_sqrt_price = tick_index_to_sqrt_price(position.tick_lower_index);
-    let position_upper_sqrt_price = tick_index_to_sqrt_price(position.tick_upper_index);
-    let position_center_sqrt_price = (position_lower_sqrt_price + position_upper_sqrt_price) / 2;
-    let deviation_amount_sqrt = if current_sqrt_price > position_center_sqrt_price {
-        current_sqrt_price - position_center_sqrt_price
-    } else {
-        position_center_sqrt_price - current_sqrt_price
-    };
-    let deviation_bps = (deviation_amount_sqrt * 10000) / (position_center_sqrt_price);
-
     let current_price = sqrt_price_to_price(
         whirlpool.sqrt_price,
         token_mint_a.decimals,
@@ -57,6 +46,13 @@ pub async fn run_position_manager(
         token_mint_b.decimals,
     );
     let position_center_price = (position_lower_price + position_upper_price) / 2.0;
+
+    let deviation_amount = if current_price > position_center_price {
+        current_price - position_center_price
+    } else {
+        position_center_price - current_price
+    };
+    let deviation_bps = (deviation_amount * 10000.0) / (position_center_price);
 
     println!("Current pool price: {:.6}", current_price);
     println!(

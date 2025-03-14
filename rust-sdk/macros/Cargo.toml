@@ -1,6 +1,6 @@
 [package]
 name = "orca_whirlpools_macros"
-version = "1.0.4"
+version = "1.0.5"
 description = "Orca's rust wasm macros package."
 include = ["src/*"]
 documentation = "https://dev.orca.so/"

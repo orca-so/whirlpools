@@ -13,11 +13,8 @@ A Rust crate for building and sending Solana transactions with priority fees and
 
 ## Version Compatibility
 
-- Solana CLI: 1.17.20
-- Solana SDK: 1.17.20
-- Solana RPC: 2.0.0
-- Rust Edition: 2021
-- Minimum Supported Rust Version: 1.70+
+- Solana CLI: 1.17.22
+- Solana SDK: 1.17.22
 
 ## Installation
 

@@ -53,8 +53,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
             percentile: JitoPercentile::P95,
             max_lamports: 10_000,
         },
-        compute_unit_margin_multiplier: 1.1,
-        jito_block_engine_url: "https://bundles.jito.wtf".to_string(),
+        ..Default::default()
     };
 
     // Create sender instance

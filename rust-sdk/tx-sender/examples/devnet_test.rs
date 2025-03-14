@@ -70,44 +70,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let balance = client.get_balance(&payer.pubkey()).await?;
     println!("Account balance: {} lamports", balance);
 
-    // Request airdrop if balance is low
-    if balance < 500_000_000 {
-        // 0.5 SOL
-        println!("Balance is low, requesting airdrop of 1 SOL...");
-        match client.request_airdrop(&payer.pubkey(), 1_000_000_000).await {
-            Ok(airdrop_signature) => {
-                println!("Airdrop requested: {}", airdrop_signature);
-                println!("Waiting for airdrop confirmation...");
-
-                // Wait for confirmation
-                let start = Instant::now();
-                let mut confirmed = false;
-                while start.elapsed().as_secs() < 30 && !confirmed {
-                    if let Ok(status) = client.get_signature_status(&airdrop_signature).await {
-                        if status.is_some() {
-                            confirmed = true;
-                            println!("Airdrop confirmed in {:?}", start.elapsed());
-                            break;
-                        }
-                    }
-                    tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-                }
-
-                if !confirmed {
-                    println!("Airdrop not confirmed after 30 seconds, but continuing anyway");
-                }
-
-                // Check balance again
-                let balance = client.get_balance(&payer.pubkey()).await?;
-                println!("Updated account balance: {} lamports", balance);
-            }
-            Err(e) => {
-                println!("Failed to request airdrop: {}", e);
-                println!("Continuing with existing balance");
-            }
-        }
-    }
-
     // If balance is still zero, we can't proceed
     let balance = client.get_balance(&payer.pubkey()).await?;
     if balance == 0 {
@@ -148,21 +110,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
             }
         }
         tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
-    }
-
-    if !confirmed {
-        println!("Transaction not confirmed after 30 seconds");
-        return Ok(());
-    }
-
-    // Verify recipient balance
-    let recipient_balance = client.get_balance(&recipient).await?;
-    println!("Recipient balance: {} lamports", recipient_balance);
-
-    if recipient_balance == transfer_amount {
-        println!("✅ Test successful! Transfer verified.");
-    } else {
-        println!("❌ Test failed! Recipient balance doesn't match transfer amount.");
     }
 
     Ok(())

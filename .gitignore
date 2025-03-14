@@ -1,6 +1,7 @@
 .anchor
 .DS_Store
 .vscode/
+.idea/
 target
 **/*.rs.bk
 node_modules

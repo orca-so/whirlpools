@@ -32,6 +32,8 @@ pub enum FeeRateManager {
         static_fee_rate: u16,
         adaptive_fee_constants: AdaptiveFeeConstants,
         adaptive_fee_variables: AdaptiveFeeVariables,
+        core_tick_group_range_lower_bound: Option<(i32, u128)>,
+        core_tick_group_range_upper_bound: Option<(i32, u128)>,
     },
     Static {
         static_fee_rate: u16,
@@ -63,12 +65,60 @@ impl FeeRateManager {
                     &adaptive_fee_constants,
                 )?;
 
+                // max_volatility_accumulator < volatility_reference + tick_group_index_delta * VOLATILITY_ACCUMULATOR_SCALE_FACTOR
+                // -> ceil((max_volatility_accumulator - volatility_reference) / VOLATILITY_ACCUMULATOR_SCALE_FACTOR) < tick_group_index_delta
+                // EN: From the above, if tick_group_index_delta is sufficiently large, volatility_accumulator always sticks to max_volatility_accumulator
+                let max_volatility_accumulator_tick_group_index_delta = ((adaptive_fee_constants
+                    .max_volatility_accumulator
+                    - adaptive_fee_variables.volatility_reference)
+                    + VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32
+                    - 1)
+                    / VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+
+                // we need to calculate the adaptive fee rate for each tick_group_index in the range of core tick group
+                let core_tick_group_range_lower_index = adaptive_fee_variables
+                    .tick_group_index_reference
+                    - max_volatility_accumulator_tick_group_index_delta as i32;
+                let core_tick_group_range_upper_index = adaptive_fee_variables
+                    .tick_group_index_reference
+                    + max_volatility_accumulator_tick_group_index_delta as i32;
+                let core_tick_group_range_lower_bound_tick_index = core_tick_group_range_lower_index
+                    * adaptive_fee_constants.tick_group_size as i32;
+                let core_tick_group_range_upper_bound_tick_index = core_tick_group_range_upper_index
+                    * adaptive_fee_constants.tick_group_size as i32
+                    + adaptive_fee_constants.tick_group_size as i32;
+
+                let core_tick_group_range_lower_bound =
+                    if core_tick_group_range_lower_bound_tick_index > MIN_TICK_INDEX {
+                        Some((
+                            core_tick_group_range_lower_index,
+                            sqrt_price_from_tick_index(
+                                core_tick_group_range_lower_bound_tick_index,
+                            ),
+                        ))
+                    } else {
+                        None
+                    };
+                let core_tick_group_range_upper_bound =
+                    if core_tick_group_range_upper_bound_tick_index < MAX_TICK_INDEX {
+                        Some((
+                            core_tick_group_range_upper_index,
+                            sqrt_price_from_tick_index(
+                                core_tick_group_range_upper_bound_tick_index,
+                            ),
+                        ))
+                    } else {
+                        None
+                    };
+
                 Ok(Self::Adaptive {
                     a_to_b,
                     tick_group_index,
                     static_fee_rate,
                     adaptive_fee_constants,
                     adaptive_fee_variables,
+                    core_tick_group_range_lower_bound,
+                    core_tick_group_range_upper_bound,
                 })
             }
         }
@@ -180,18 +230,52 @@ impl FeeRateManager {
                 a_to_b,
                 tick_group_index,
                 adaptive_fee_constants,
+                core_tick_group_range_lower_bound,
+                core_tick_group_range_upper_bound,
                 ..
             } => {
-                // If the liquidity is 0, obviously no trades occur due to swap steps,
-                // and the calculation of adaptive fee is meaningless.
+                // If the liquidity is 0, obviously no trades occur,
+                // and the step-by-step calculation of adaptive fee is meaningless.
                 if curr_liquidity == 0 {
                     return (sqrt_price, true);
                 }
 
                 // If the adaptive fee control factor is 0, the adaptive fee is not applied,
-                // and the calculation of adaptive fee is meaningless.
+                // and the step-by-step calculation of adaptive fee is meaningless.
                 if adaptive_fee_constants.adaptive_fee_control_factor == 0 {
                     return (sqrt_price, true);
+                }
+
+                // If the tick group index is out of the core tick group range (loweer side),
+                // the range where volatility_accumulator is always max_volatility_accumulator can be skipped.
+                if let Some((lower_tick_group_index, lower_tick_group_bound_sqrt_price)) =
+                    core_tick_group_range_lower_bound
+                {
+                    if *tick_group_index < *lower_tick_group_index {
+                        if *a_to_b {
+                            // <<-- swap direction -- <current tick group index> | core range |
+                            return (sqrt_price, true);
+                        } else {
+                            // <current tick group index> -- swap direction -->> | core range |
+                            return (sqrt_price.min(*lower_tick_group_bound_sqrt_price), true);
+                        }
+                    }
+                }
+
+                // If the tick group index is out of the core tick group range (upper side)
+                // the range where volatility_accumulator is always max_volatility_accumulator can be skipped.
+                if let Some((upper_tick_group_index, upper_tick_group_bound_sqrt_price)) =
+                    core_tick_group_range_upper_bound
+                {
+                    if *tick_group_index > *upper_tick_group_index {
+                        if *a_to_b {
+                            // | core range | <<-- swap direction -- <current tick group index>
+                            return (sqrt_price.max(*upper_tick_group_bound_sqrt_price), true);
+                        } else {
+                            // | core range | <current tick group index> -- swap direction -->>
+                            return (sqrt_price, true);
+                        }
+                    }
                 }
 
                 let boundary_tick_index = if *a_to_b {
@@ -466,6 +550,9 @@ mod adaptive_fee_rate_manager_tests {
                 static_fee_rate: rate,
                 adaptive_fee_constants,
                 adaptive_fee_variables,
+                // TODO: check
+                core_tick_group_range_lower_bound,
+                core_tick_group_range_upper_bound,
             } => {
                 assert!(a_to_b);
                 assert_eq!(tick_group_index, 16);
@@ -510,6 +597,9 @@ mod adaptive_fee_rate_manager_tests {
                 static_fee_rate: rate,
                 adaptive_fee_constants,
                 adaptive_fee_variables,
+                // TODO: check
+                core_tick_group_range_lower_bound,
+                core_tick_group_range_upper_bound,
             } => {
                 assert!(!a_to_b);
                 assert_eq!(tick_group_index, 16);

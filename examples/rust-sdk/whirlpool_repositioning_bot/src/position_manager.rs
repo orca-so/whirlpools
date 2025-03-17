@@ -10,7 +10,7 @@ use orca_whirlpools::{
     close_position_instructions, open_position_instructions, IncreaseLiquidityParam,
 };
 use orca_whirlpools_client::{get_position_address, Position};
-use orca_whirlpools_core::{sqrt_price_to_price, tick_index_to_price, tick_index_to_sqrt_price};
+use orca_whirlpools_core::{sqrt_price_to_price, tick_index_to_price};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::signer::Signer;
 use spl_token_2022::state::Mint;

@@ -1,8 +1,7 @@
 import type { Position, PositionBundle } from "@orca-so/whirlpools-client";
 import {
-  fetchAllMaybePosition,
-  fetchAllMaybePositionBundle,
-  fetchAllPosition,
+  decodePosition,
+  decodePositionBundle,
   fetchAllPositionWithFilter,
   getBundledPositionAddress,
   getPositionAddress,
@@ -20,7 +19,8 @@ import type {
   GetTokenAccountsByOwnerApi,
   Rpc,
 } from "@solana/kit";
-import { getBase64Encoder } from "@solana/kit";
+import { assertAccountExists, getBase64Encoder } from "@solana/kit";
+import { fetchMultipleAccountsBatched } from "./utils";
 
 /**
  * Represents a Position account.
@@ -130,26 +130,16 @@ export async function fetchPositionsForOwner(
     ),
   );
 
-  const chunkSize = 100;
-
-  let promises = [];
-  for (let i = 0; i < positionAddresses.length; i += chunkSize) {
-    let chunk = positionAddresses.slice(i, i + chunkSize);
-    promises.push(fetchAllMaybePosition(rpc, chunk));
-  }
-
-  const positions = await Promise.all(promises).then((results) =>
-    results.flat(),
+  const positions = await fetchMultipleAccountsBatched(
+    rpc,
+    positionAddresses,
+    decodePosition,
   );
 
-  promises = [];
-  for (let i = 0; i < positionBundleAddresses.length; i += chunkSize) {
-    let chunk = positionBundleAddresses.slice(i, i + chunkSize);
-    promises.push(fetchAllMaybePositionBundle(rpc, chunk));
-  }
-
-  const positionBundles = await Promise.all(promises).then((results) =>
-    results.flat(),
+  const positionBundles = await fetchMultipleAccountsBatched(
+    rpc,
+    positionBundleAddresses,
+    decodePositionBundle,
   );
 
   const bundledPositionAddresses = await Promise.all(
@@ -158,15 +148,18 @@ export async function fetchPositionsForOwner(
       .flatMap((x) => getPositionInBundleAddresses(x.data)),
   );
 
-  promises = [];
-  for (let i = 0; i < bundledPositionAddresses.length; i += chunkSize) {
-    let chunk = bundledPositionAddresses.slice(i, i + chunkSize);
-    promises.push(fetchAllPosition(rpc, chunk));
-  }
-
-  const bundledPositions = await Promise.all(promises).then((results) =>
-    results.flat(),
-  );
+  const bundledPositions = (
+    await fetchMultipleAccountsBatched(
+      rpc,
+      bundledPositionAddresses,
+      decodePosition,
+    )
+  )
+    .filter((x) => x.exists)
+    .map((x) => {
+      assertAccountExists(x);
+      return x;
+    });
 
   const bundledPositionMap = bundledPositions.reduce((acc, x) => {
     const current = acc.get(x.data.positionMint) ?? [];

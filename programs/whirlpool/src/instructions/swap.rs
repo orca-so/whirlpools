@@ -43,7 +43,6 @@ pub struct Swap<'info> {
     #[account(seeds = [b"oracle", whirlpool.key().as_ref()], bump)]
     /// CHECK: Oracle is currently unused and will be enabled on subsequent updates
     pub oracle: UncheckedAccount<'info>,
-
     // Special notes to support pools with AdaptiveFee:
     // - For trades on pool using AdaptiveFee, pass oracle as writable accounts in the remaining accounts.
     // - If you want to avoid using the remaining accounts, you can pass oracle as writable accounts directly.

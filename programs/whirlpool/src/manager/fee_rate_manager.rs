@@ -1,5 +1,5 @@
 use crate::{
-    math::{ceil_division, floor_division, sqrt_price_from_tick_index},
+    math::{ceil_division, floor_division, sqrt_price_from_tick_index, tick_index_from_sqrt_price},
     state::{
         AdaptiveFeeConstants, AdaptiveFeeInfo, AdaptiveFeeVariables, MAX_TICK_INDEX, MIN_TICK_INDEX,
     },
@@ -102,6 +102,51 @@ impl FeeRateManager {
         }
     }
 
+    pub fn advance_tick_group_after_skip(
+        &mut self,
+        sqrt_price: u128,
+        next_tick_sqrt_price: u128,
+        next_tick_index: i32,
+    ) -> Result<()> {
+        match self {
+            Self::Static { .. } => {
+                // static fee rate manager doesn't use skip feature
+                unreachable!();
+            }
+            Self::Adaptive {
+                a_to_b,
+                tick_group_index,
+                adaptive_fee_variables,
+                adaptive_fee_constants,
+                ..
+            } => {
+                if sqrt_price == next_tick_sqrt_price {
+                    // next_tick_index = tick_index_from_sqrt_price(&sqrt_price) is true,
+                    // but we use next_tick_index to reduce calculations in the middle of the loop
+                    *tick_group_index = floor_division(
+                        next_tick_index,
+                        adaptive_fee_constants.tick_group_size as i32,
+                    );
+                } else {
+                    // End of the loop
+                    *tick_group_index = floor_division(
+                        tick_index_from_sqrt_price(&sqrt_price),
+                        adaptive_fee_constants.tick_group_size as i32,
+                    );
+                }
+
+                adaptive_fee_variables
+                    .update_volatility_accumulator(*tick_group_index, adaptive_fee_constants)?;
+
+                if *a_to_b {
+                    *tick_group_index -= 1;
+                }
+
+                Ok(())
+            }
+        }
+    }
+
     pub fn get_total_fee_rate(&self) -> u32 {
         match self {
             Self::Static { static_fee_rate } => *static_fee_rate as u32,
@@ -124,15 +169,31 @@ impl FeeRateManager {
         }
     }
 
-    pub fn get_bounded_sqrt_price_target(&self, sqrt_price: u128) -> u128 {
+    pub fn get_bounded_sqrt_price_target(
+        &self,
+        sqrt_price: u128,
+        curr_liquidity: u128,
+    ) -> (u128, bool) {
         match self {
-            Self::Static { .. } => sqrt_price,
+            Self::Static { .. } => (sqrt_price, false),
             Self::Adaptive {
                 a_to_b,
                 tick_group_index,
                 adaptive_fee_constants,
                 ..
             } => {
+                // If the liquidity is 0, obviously no trades occur due to swap steps,
+                // and the calculation of adaptive fee is meaningless.
+                if curr_liquidity == 0 {
+                    return (sqrt_price, true);
+                }
+
+                // If the adaptive fee control factor is 0, the adaptive fee is not applied,
+                // and the calculation of adaptive fee is meaningless.
+                if adaptive_fee_constants.adaptive_fee_control_factor == 0 {
+                    return (sqrt_price, true);
+                }
+
                 let boundary_tick_index = if *a_to_b {
                     *tick_group_index * adaptive_fee_constants.tick_group_size as i32
                 } else {
@@ -145,9 +206,9 @@ impl FeeRateManager {
                 );
 
                 if *a_to_b {
-                    sqrt_price.max(boundary_sqrt_price)
+                    (sqrt_price.max(boundary_sqrt_price), false)
                 } else {
-                    sqrt_price.min(boundary_sqrt_price)
+                    (sqrt_price.min(boundary_sqrt_price), false)
                 }
             }
         }
@@ -263,7 +324,10 @@ mod static_fee_rate_manager_tests {
         let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
 
         fn check_not_bounded(fee_rate_manager: &FeeRateManager, sqrt_price: u128) {
-            let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+            let non_zero_liquidity = 1_000_000_000u128;
+            let bounded_sqrt_price = fee_rate_manager
+                .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+                .0;
             assert_eq!(bounded_sqrt_price, sqrt_price);
         }
 
@@ -816,6 +880,7 @@ mod adaptive_fee_rate_manager_tests {
     fn test_get_bounded_sqrt_price_target_a_to_b() {
         let static_fee_rate = 3000;
         let adaptive_fee_info = adaptive_fee_info();
+        let non_zero_liquidity = 1_000_000_000u128;
 
         let current_tick_index = 1024 + 32;
         // reset references
@@ -834,28 +899,38 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 16);
-        let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+        let bounded_sqrt_price = fee_rate_manager
+            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+            .0;
         assert_eq!(bounded_sqrt_price, sqrt_price);
 
         // sqrt_price is on the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024);
-        let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+        let bounded_sqrt_price = fee_rate_manager
+            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+            .0;
         assert_eq!(bounded_sqrt_price, sqrt_price);
 
         // sqrt_price is far than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 - 16);
-        let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+        let bounded_sqrt_price = fee_rate_manager
+            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+            .0;
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024));
 
         // sqrt_price is very far than the boundary
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+        let bounded_sqrt_price = fee_rate_manager
+            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+            .0;
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024));
 
         fee_rate_manager.advance_tick_group();
 
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+        let bounded_sqrt_price = fee_rate_manager
+            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+            .0;
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024 - 64));
     }
 
@@ -863,6 +938,7 @@ mod adaptive_fee_rate_manager_tests {
     fn test_get_bounded_sqrt_price_target_b_to_a() {
         let static_fee_rate = 3000;
         let adaptive_fee_info = adaptive_fee_info();
+        let non_zero_liquidity = 1_000_000_000u128;
 
         let current_tick_index = 1024 + 32;
         // reset references
@@ -881,28 +957,38 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 32 + 16);
-        let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+        let bounded_sqrt_price = fee_rate_manager
+            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+            .0;
         assert_eq!(bounded_sqrt_price, sqrt_price);
 
         // sqrt_price is on the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 64);
-        let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+        let bounded_sqrt_price = fee_rate_manager
+            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+            .0;
         assert_eq!(bounded_sqrt_price, sqrt_price);
 
         // sqrt_price is far than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 64 + 16);
-        let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+        let bounded_sqrt_price = fee_rate_manager
+            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+            .0;
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024 + 64));
 
         // sqrt_price is very far than the boundary
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+        let bounded_sqrt_price = fee_rate_manager
+            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+            .0;
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024 + 64));
 
         fee_rate_manager.advance_tick_group();
 
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let bounded_sqrt_price = fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price);
+        let bounded_sqrt_price = fee_rate_manager
+            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
+            .0;
         assert_eq!(
             bounded_sqrt_price,
             sqrt_price_from_tick_index(1024 + 64 + 64)

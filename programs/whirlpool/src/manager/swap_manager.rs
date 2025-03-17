@@ -103,8 +103,8 @@ pub fn swap(
             fee_rate_manager.update_volatility_accumulator()?;
 
             let total_fee_rate = fee_rate_manager.get_total_fee_rate();
-            let bounded_sqrt_price_target =
-                fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price_target);
+            let (bounded_sqrt_price_target, adaptive_fee_update_skipped) =
+                fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price_target, curr_liquidity);
 
             let swap_computation = compute_swap(
                 amount_remaining,
@@ -210,8 +210,14 @@ pub fn swap(
 
             curr_sqrt_price = swap_computation.next_price;
 
-            if curr_sqrt_price == bounded_sqrt_price_target {
+            if !adaptive_fee_update_skipped {
                 fee_rate_manager.advance_tick_group();
+            } else {
+                fee_rate_manager.advance_tick_group_after_skip(
+                    curr_sqrt_price,
+                    next_tick_sqrt_price,
+                    next_tick_index,
+                )?;
             }
 
             // do while loop

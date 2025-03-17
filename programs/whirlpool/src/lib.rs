@@ -719,14 +719,12 @@ pub mod whirlpool {
         instructions::set_initialize_pool_authority::handler(ctx)
     }
 
-
-
     /// Sets the adaptive fee constants for a AdaptiveFeeTier.
     /// Only the current fee authority in WhirlpoolsConfig has permission to invoke this instruction.
     ///
     /// ### Authority
     /// - "fee_authority" - Set authority in the WhirlpoolConfig
-    /// 
+    ///
     /// ### Parameters
     /// - `filter_period` - Period determine high frequency trading time window. (seconds)
     /// - `decay_period` - Period determine when the adaptive fee start decrease. (seconds)

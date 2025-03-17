@@ -7,8 +7,8 @@ export default {
   tagline: "Open source concentrated liquidity AMM contract on Solana",
   favicon: "https://orca.so/favicon.ico",
 
-  url: "https://orca-so.github.io/",
-  baseUrl: "/whirlpools",
+  url: "https://dev.orca.so/",
+  baseUrl: "/",
 
   organizationName: "orca-so",
   projectName: "whirlpools",

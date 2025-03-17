@@ -10,6 +10,7 @@ use crate::util::{
 use crate::{
     constants::transfer_memo,
     errors::ErrorCode,
+    events::*,
     state::Whirlpool,
     util::{to_timestamp_u64, SparseSwapTickSequenceBuilder},
 };
@@ -381,6 +382,40 @@ pub fn handler<'info>(
     )
     */
 
+    let pre_sqrt_price_one = whirlpool_one.sqrt_price;
+    let (input_amount_one, output_amount_one) = if a_to_b_one {
+        (swap_update_one.amount_a, swap_update_one.amount_b)
+    } else {
+        (swap_update_one.amount_b, swap_update_one.amount_a)
+    };
+    let input_transfer_fee_one =
+        calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_input, input_amount_one)?
+            .transfer_fee;
+    let output_transfer_fee_one = calculate_transfer_fee_excluded_amount(
+        &ctx.accounts.token_mint_intermediate,
+        output_amount_one,
+    )?
+    .transfer_fee;
+    let (lp_fee_one, protocol_fee_one) =
+        (swap_update_one.lp_fee, swap_update_one.next_protocol_fee);
+
+    let pre_sqrt_price_two = whirlpool_two.sqrt_price;
+    let (input_amount_two, output_amount_two) = if a_to_b_two {
+        (swap_update_two.amount_a, swap_update_two.amount_b)
+    } else {
+        (swap_update_two.amount_b, swap_update_two.amount_a)
+    };
+    let input_transfer_fee_two = calculate_transfer_fee_excluded_amount(
+        &ctx.accounts.token_mint_intermediate,
+        input_amount_two,
+    )?
+    .transfer_fee;
+    let output_transfer_fee_two =
+        calculate_transfer_fee_excluded_amount(&ctx.accounts.token_mint_output, output_amount_two)?
+            .transfer_fee;
+    let (lp_fee_two, protocol_fee_two) =
+        (swap_update_two.lp_fee, swap_update_two.next_protocol_fee);
+
     update_and_two_hop_swap_whirlpool_v2(
         swap_update_one,
         swap_update_two,
@@ -407,5 +442,33 @@ pub fn handler<'info>(
         &ctx.accounts.memo_program,
         timestamp,
         transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
-    )
+    )?;
+
+    emit!(Traded {
+        whirlpool: whirlpool_one.key(),
+        a_to_b: a_to_b_one,
+        pre_sqrt_price: pre_sqrt_price_one,
+        post_sqrt_price: whirlpool_one.sqrt_price,
+        input_amount: input_amount_one,
+        output_amount: output_amount_one,
+        input_transfer_fee: input_transfer_fee_one,
+        output_transfer_fee: output_transfer_fee_one,
+        lp_fee: lp_fee_one,
+        protocol_fee: protocol_fee_one,
+    });
+
+    emit!(Traded {
+        whirlpool: whirlpool_two.key(),
+        a_to_b: a_to_b_two,
+        pre_sqrt_price: pre_sqrt_price_two,
+        post_sqrt_price: whirlpool_two.sqrt_price,
+        input_amount: input_amount_two,
+        output_amount: output_amount_two,
+        input_transfer_fee: input_transfer_fee_two,
+        output_transfer_fee: output_transfer_fee_two,
+        lp_fee: lp_fee_two,
+        protocol_fee: protocol_fee_two,
+    });
+
+    Ok(())
 }

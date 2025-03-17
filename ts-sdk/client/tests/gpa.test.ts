@@ -6,13 +6,13 @@ import type {
   Address,
   GetProgramAccountsMemcmpFilter,
   ReadonlyUint8Array,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   createDefaultRpcTransport,
   createSolanaRpcFromTransport,
   getAddressDecoder,
   getBase58Encoder,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import {
   feeTierFeeRateFilter,
   feeTierTickSpacingFilter,

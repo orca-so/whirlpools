@@ -1,5 +1,21 @@
 # @orca-so/whirlpools-rust-client
 
+## 2.0.3
+
+### Patch Changes
+
+- [#782](https://github.com/orca-so/whirlpools/pull/782) [`ca5f054`](https://github.com/orca-so/whirlpools/commit/ca5f054066d34943eefe72228b442525e849eaeb) Thanks [@wjthieme](https://github.com/wjthieme)! - Update LICENSE file
+
+- [#768](https://github.com/orca-so/whirlpools/pull/768) [`188fad0`](https://github.com/orca-so/whirlpools/commit/188fad03422a55369f1ad50278c59030b786fc72) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Add liquidity locking feature
+
+- [#778](https://github.com/orca-so/whirlpools/pull/778) [`7488726`](https://github.com/orca-so/whirlpools/commit/748872685428e0dd6a12b16091d31f9882f91541) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Add event emission feature
+
+## 2.0.2
+
+### Patch Changes
+
+- [#767](https://github.com/orca-so/whirlpools/pull/767) [`16e070e`](https://github.com/orca-so/whirlpools/commit/16e070e3f7099fcc653c791940d6f40b8472c9b2) Thanks [@wjthieme](https://github.com/wjthieme)! - Update the docs url to dev.orca.so
+
 ## 2.0.1
 
 ### Patch Changes

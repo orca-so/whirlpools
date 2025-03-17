@@ -21,7 +21,7 @@ import {
 } from "../../src";
 import type { TwoHopSwapParams } from "../../src/instructions";
 import { IGNORE_CACHE } from "../../src/network/public/fetcher";
-import { getTokenBalance, TickSpacing } from "../utils";
+import { getTokenBalance, sleep, TickSpacing } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
 import type {
   FundedPositionParams,
@@ -32,6 +32,7 @@ import {
   getDefaultAquarium,
   getTokenAccsForPools,
 } from "../utils/init-utils";
+import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../dist/types/public/constants";
 
 describe("two-hop swap", () => {
   const provider = anchor.AnchorProvider.local(
@@ -1682,6 +1683,111 @@ describe("two-hop swap", () => {
         }),
       ).buildAndExecute();
     });
+  });
+
+  it("emit Traded event", async () => {
+    const aquarium = (await buildTestAquariums(ctx, [aqConfig]))[0];
+    const { tokenAccounts, mintKeys, pools } = aquarium;
+
+    const whirlpoolOneKey = pools[0].whirlpoolPda.publicKey;
+    const whirlpoolTwoKey = pools[1].whirlpoolPda.publicKey;
+    let whirlpoolOne = await client.getPool(whirlpoolOneKey, IGNORE_CACHE);
+    let whirlpoolTwo = await client.getPool(whirlpoolTwoKey, IGNORE_CACHE);
+
+    const [inputToken, intermediaryToken, _outputToken] = mintKeys;
+
+    const quote = await swapQuoteByInputToken(
+      whirlpoolOne,
+      inputToken,
+      new BN(1000),
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    const quote2 = await swapQuoteByInputToken(
+      whirlpoolTwo,
+      intermediaryToken,
+      quote.estimatedAmountOut,
+      Percentage.fromFraction(1, 100),
+      ctx.program.programId,
+      fetcher,
+      IGNORE_CACHE,
+    );
+
+    const twoHopQuote = twoHopSwapQuoteFromSwapQuotes(quote, quote2);
+
+    const whirlpoolOnePre = whirlpoolOne.getData();
+    const whirlpoolTwoPre = whirlpoolTwo.getData();
+
+    // event verification
+    let eventVerifiedOne = false;
+    let eventVerifiedTwo = false;
+    let detectedSignatureOne = null;
+    let detectedSignatureTwo = null;
+    const listener = ctx.program.addEventListener(
+      "Traded",
+      (event, _slot, signature) => {
+        // verify
+        if (event.whirlpool.equals(whirlpoolOneKey)) {
+          detectedSignatureOne = signature;
+          assert.ok(event.whirlpool.equals(whirlpoolOneKey));
+          assert.ok(event.aToB === quote.aToB);
+          assert.ok(event.preSqrtPrice.eq(whirlpoolOnePre.sqrtPrice));
+          assert.ok(event.postSqrtPrice.eq(quote.estimatedEndSqrtPrice));
+          assert.ok(event.inputAmount.eq(quote.estimatedAmountIn));
+          assert.ok(event.outputAmount.eq(quote.estimatedAmountOut));
+          assert.ok(event.inputTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+          assert.ok(event.outputTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+
+          const protocolFee = quote.estimatedFeeAmount
+            .muln(whirlpoolOnePre.protocolFeeRate)
+            .div(PROTOCOL_FEE_RATE_MUL_VALUE);
+          const lpFee = quote.estimatedFeeAmount.sub(protocolFee);
+          assert.ok(event.lpFee.eq(lpFee));
+          assert.ok(event.protocolFee.eq(protocolFee));
+
+          eventVerifiedOne = true;
+        } else if (event.whirlpool.equals(whirlpoolTwoKey)) {
+          detectedSignatureTwo = signature;
+          assert.ok(event.whirlpool.equals(whirlpoolTwoKey));
+          assert.ok(event.aToB === quote2.aToB);
+          assert.ok(event.preSqrtPrice.eq(whirlpoolTwoPre.sqrtPrice));
+          assert.ok(event.postSqrtPrice.eq(quote2.estimatedEndSqrtPrice));
+          assert.ok(event.inputAmount.eq(quote2.estimatedAmountIn));
+          assert.ok(event.outputAmount.eq(quote2.estimatedAmountOut));
+          assert.ok(event.inputTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+          assert.ok(event.outputTransferFee.isZero()); // v1 doesn't handle TransferFee extension
+
+          const protocolFee = quote2.estimatedFeeAmount
+            .muln(whirlpoolTwoPre.protocolFeeRate)
+            .div(PROTOCOL_FEE_RATE_MUL_VALUE);
+          const lpFee = quote2.estimatedFeeAmount.sub(protocolFee);
+          assert.ok(event.lpFee.eq(lpFee));
+          assert.ok(event.protocolFee.eq(protocolFee));
+
+          eventVerifiedTwo = true;
+        }
+      },
+    );
+
+    const signature = await toTx(
+      ctx,
+      WhirlpoolIx.twoHopSwapIx(ctx.program, {
+        ...twoHopQuote,
+        ...getParamsFromPools([pools[0], pools[1]], tokenAccounts),
+        tokenAuthority: ctx.wallet.publicKey,
+      }),
+    ).buildAndExecute();
+
+    await sleep(2000);
+    assert.equal(signature, detectedSignatureOne);
+    assert.equal(signature, detectedSignatureTwo);
+    assert.ok(eventVerifiedOne);
+    assert.ok(eventVerifiedTwo);
+
+    ctx.program.removeEventListener(listener);
   });
 
   function getParamsFromPools(

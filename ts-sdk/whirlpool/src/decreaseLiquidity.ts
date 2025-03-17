@@ -38,7 +38,7 @@ import type {
   IInstruction,
   Rpc,
   TransactionSigner,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import { DEFAULT_ADDRESS, FUNDER, SLIPPAGE_TOLERANCE_BPS } from "./config";
 import {
   findAssociatedTokenPda,
@@ -55,7 +55,7 @@ import {
 } from "@solana-program/token-2022";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
-
+import { wrapFunctionWithExecution } from "./actionHelpers";
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
 
@@ -143,7 +143,7 @@ function getDecreaseLiquidityQuote(
  *
  * @example
  * import { decreaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  * import { loadWallet } from './utils';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
@@ -287,7 +287,7 @@ export type ClosePositionInstructions = DecreaseLiquidityInstructions & {
  *
  * @example
  * import { closePositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  * import { loadWallet } from './utils';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
@@ -555,3 +555,13 @@ export async function closePositionInstructions(
     rewardsQuote,
   };
 }
+
+// -------- ACTIONS --------
+
+export const closePosition = wrapFunctionWithExecution(
+  closePositionInstructions,
+);
+
+export const decreaseLiquidity = wrapFunctionWithExecution(
+  decreaseLiquidityInstructions,
+);

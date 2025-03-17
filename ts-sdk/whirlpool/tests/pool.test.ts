@@ -10,7 +10,7 @@ import {
   SPLASH_POOL_TICK_SPACING,
   WHIRLPOOLS_CONFIG_ADDRESS,
 } from "../src/config";
-import type { Address } from "@solana/web3.js";
+import type { Address } from "@solana/kit";
 import { setupMint } from "./utils/token";
 import { setupWhirlpool } from "./utils/program";
 import { getWhirlpoolAddress } from "@orca-so/whirlpools-client";

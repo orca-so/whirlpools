@@ -37,8 +37,8 @@ import type {
   Lamports,
   Rpc,
   TransactionSigner,
-} from "@solana/web3.js";
-import { address, generateKeyPairSigner, lamports } from "@solana/web3.js";
+} from "@solana/kit";
+import { address, generateKeyPairSigner, lamports } from "@solana/kit";
 import { fetchSysvarRent } from "@solana/sysvars";
 import {
   DEFAULT_ADDRESS,
@@ -62,6 +62,7 @@ import {
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import assert from "assert";
 import { calculateMinimumBalanceForRentExemption } from "./sysvar";
+import { wrapFunctionWithExecution } from "./actionHelpers";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
@@ -150,7 +151,7 @@ function getIncreaseLiquidityQuote(
  *
  * @example
  * import { increaseLiquidityInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { createSolanaRpc, devnet, address } from '@solana/kit';
  * import { loadWallet } from './utils';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
@@ -478,7 +479,7 @@ async function internalOpenPositionInstructions(
  *
  * @example
  * import { openFullRangePositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -545,7 +546,7 @@ export async function openFullRangePositionInstructions(
  *
  * @example
  * import { openPositionInstructions, setWhirlpoolsConfig } from '@orca-so/whirlpools';
- * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/web3.js';
+ * import { generateKeyPairSigner, createSolanaRpc, devnet, address } from '@solana/kit';
  *
  * await setWhirlpoolsConfig('solanaDevnet');
  * const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
@@ -606,3 +607,17 @@ export async function openPositionInstructions(
     funder,
   );
 }
+
+// -------- ACTIONS --------
+
+export const increasePosLiquidity = wrapFunctionWithExecution(
+  increaseLiquidityInstructions,
+);
+
+export const openFullRangePosition = wrapFunctionWithExecution(
+  openFullRangePositionInstructions,
+);
+
+export const openConcentratedPosition = wrapFunctionWithExecution(
+  openPositionInstructions,
+);

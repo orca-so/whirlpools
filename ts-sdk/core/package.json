@@ -1,7 +1,7 @@
 {
   "name": "@orca-so/whirlpools-core",
   "description": "Orca's core typescript package.",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "./dist/nodejs/orca_whirlpools_core_js_bindings.js",
   "types": "./dist/nodejs/orca_whirlpools_core_js_bindings.d.ts",
   "browser": "./dist/browser/orca_whirlpools_core_js_bindings.js",
@@ -12,7 +12,8 @@
   ],
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "../../LICENSE"
   ],
   "scripts": {
     "build": "wasm-pack build --release --out-dir ./dist/nodejs --target nodejs && wasm-pack build --release --out-dir ./dist/browser --target browser",
@@ -24,14 +25,14 @@
   "devDependencies": {
     "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-rust-core": "*",
-    "typescript": "^5.7.3",
+    "typescript": "^5.8.2",
     "wasm-pack": "^0.13.1"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/orca-so/whirlpools.git"
   },
-  "license": "Apache-2.0",
+  "license": "SEE LICENSE IN LICENSE",
   "keywords": [
     "solana",
     "crypto",

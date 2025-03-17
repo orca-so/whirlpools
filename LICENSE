@@ -1,12 +1,44 @@
-Copyright 2022 Orca Foundation
+The code in this repository was available until February 26th, 2025 under the Apache 2.0 license (https://www.apache.org/licenses/LICENSE-2.0).  Beginning on February 27th, 2025, the code in this repository is licensed pursuant to the Orca License set forth herein.
 
-Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except in compliance with the License.
+  Orca License
 
-You may obtain a copy of the License at:
+This Orca License is entered into by and between you and Orca Management Company S.A. (“Licensor”), and relates to accessing, downloading, copying, modifying, reading, viewing, using, or otherwise engaging with (collectively, “Use” or “Using”) the Orca software and smart contracts made available on Licensor’s GitHub repository to which this Agreement is posted (collectively, the “Software”).
 
-    http://www.apache.org/licenses/LICENSE-2.0.
+If the user Uses the Software under authority from a different party or on another party’s behalf, then “you,” as used herein, refers to that person on whose behalf the Software is Used (e.g., an employer, a contractor, or other agent).  If the person Using the Software is an individual, acting in their own individual capacity, then “you” refers to that individual.  If you have anyone Using the Software on your behalf, you agree that you are responsible for the actions and inactions of all such persons, as if they were your own.
 
+Please read this Orca License (the “Agreement”) carefully before you Use the Software in any way. By Using the Software, you accept and agree to be bound and abide by the terms of this Agreement. If you do not want to agree to the terms of this Agreement, you must not Use the Software.
 
-Unless required by applicable law or agreed to in writing, software distributed under the License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+By using the Software, you represent and warrant that you are of legal age and otherwise have all requisite legal authority to form a binding contract with Licensor. If you do not meet all of these requirements, you are not permitted to Use the Software in whole or in part.
 
-See the License for the specific language governing permissions and limitations under the License.
+1. Non-Commercial Use License Grant
+
+  a. Subject to the provisions of section 2(b) below, and the remainder of the provisions of this Agreement, Licensor hereby grants you a limited, non-exclusive, non-sublicensable, non-transferable, revocable license, to Use the Software, solely for Authorized Non-Commercial Uses (as defined below). This license is further subject to the Apache 2.0 open-source license, published by The Apache Software Foundation (the “Apache License”) and the terms of this Agreement.  If there is any conflict between the terms of the Apache License and those set forth in this Agreement, the provisions of this Agreement shall prevail.  The “Authorized Non-Commercial Uses” are the following:
+    i. Educational Purposes: Using the Software in university courses, coding boot camps, or self-learning projects to teach blockchain development, provided such Use does not involve revenue generation or commercial exploitation.
+    ii. Research & Experimentation: Academics and developers Using the Software to test and research new decentralized finance (“DeFi”) models, security vulnerabilities, or governance mechanisms. Any research must clearly disclose its non-commercial nature.
+    iii. Personal Use: Deploying smart contracts for self-custody, portfolio tracking, or experimenting with personal finance automation without monetization, provided such Use does not involve revenue generation or commercial exploitation.
+    iv. Non-Profit Financial Services: Using the Software for decentralized microloans, donations, or mutual aid organizations, where all funds and activities serve a charitable purpose and do not generate any financial compensation for the operator.
+    v. Testing & Simulation: Using the Software to create testnet environments to evaluate new economic models, game theory applications, or tokenomics without real-world financial implications, provided such Use does not result in the eventual deployment in a production environment.
+
+  b. If any Use of the Software does or could benefit, directly or indirectly, a competitor of Licensor, such Use shall not be subject to Section 1(a), but instead, be subject to the provisions of Section 1(c) below.  "Competitor" means any legal person, project, protocol, or platform that directly or indirectly offers, develops, operates, or facilitates services or functionalities similar to those provided by Licensor or its affiliates or other related entities or persons (collectively the “Licensor Parties”), including centralized exchanges, decentralized exchanges (DEXs), automated market makers (AMMs), liquidity protocols, token swap services, DeFi aggregators, bodies engaged in cryptocurrency trading, as well as legal persons, decentralized autonomous organizations or other bodies that develop, promote, or maintain software or protocols that could substitute, replicate, or substantially overlap with Licensor’s or the Licensor Parties’ services or its offered functionalities.
+
+  c. Any Use of the Software outside of the Authorized Non-Commercial Uses requires Licensor’s prior written consent in each instance, such consent to be granted or withheld at Licensor’s sole discretion.  Such Use, if consented to by Licensor, shall be subject to the terms of this Agreement, and to the terms of any additional use grant documentation provided along with Licensor’s approval.
+
+  d. You acknowledge and agree that you are granted no rights to use the Software, except as set forth herein, unless explicitly authorized in writing by Licensor. In order to request such approval, please contact Licensor at IPLicensing@orca.so.
+
+  e. Licensor hereby reserves all rights not specifically granted herein.
+
+2. Miscellaneous
+
+  a. This Agreement does not grant you any rights to use any trademarks, logos or other designations of origin of Licensor or the Licensor Parties.
+
+  b. Licensor reserves the right to modify this Agreement at any time with or without notice.  Each time you Use the Software, you agree to the terms of this Agreement as they exist on the date you Use such Software.
+
+  c. Except as otherwise set forth in this Agreement, (i) no failure to exercise, or delay in exercising, any right, remedy, power, or privilege arising from this Agreement will operate or be construed as a waiver thereof and (ii) no single or partial exercise of any right, remedy, power, or privilege hereunder will preclude any other or further exercise thereof or the exercise of any other right, remedy, power, or privilege.
+
+  d. If you violate the terms of this Agreement, your license to Use the Software shall immediately terminate.
+
+  e. This Agreement shall in all respects be governed by and construed in accordance with the laws of the Cayman Islands, without regard to any conflicts of law doctrines that would result in the application of the laws of another jurisdiction,
+
+  f. THE SOFTWARE IS PROVIDED “AS IS” AND LICENSOR HEREBY DISCLAIMS ALL WARRANTIES, WHETHER EXPRESS, IMPLIED, STATUTORY, OR OTHERWISE INCLUDING THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE, TITLE, AND NON-INFRINGEMENT, AND ALL WARRANTIES ARISING FROM COURSE OF DEALING, USAGE, OR TRADE PRACTICE. LICENSOR MAKES NO WARRANTY OF ANY KIND THAT THE SOFTWARE, OR ANY PRODUCTS OR RESULTS OF THE USE THEREOF, WILL MEET YOUR OR ANY OTHER PERSON’S REQUIREMENTS, OPERATE WITHOUT INTERRUPTION, ACHIEVE ANY INTENDED RESULT, BE COMPATIBLE OR WORK WITH ANY SOFTWARE, SYSTEM OR OTHER SERVICES, OR BE SECURE, ACCURATE, COMPLETE, FREE OF HARMFUL CODE, OR ERROR FREE.
+
+  g. IN NO EVENT WILL LICENSOR, THE LICENSOR PARTIES, OR ANY OF THEIR RESPECTIVE LICENSORS, SERVICE PROVIDERS, OFFICERS, DIRECTORS, EMPLOYEES, CONTRACTORS, AGENTS, SUPPLIERS, SUCCESSORS, AND ASSIGNS BE LIABLE TO YOU OR ANY THIRD PARTY UNDER ANY THEORY, INCLUDING BREACH OF CONTRACT, TORT (INCLUDING NEGLIGENCE), STRICT LIABILITY, OR OTHERWISE, FOR ANY: (i) CONSEQUENTIAL, INCIDENTAL, INDIRECT, EXEMPLARY, SPECIAL, ENHANCED, OR PUNITIVE DAMAGES; (ii) INCREASED COSTS, DIMINUTION IN VALUE OR LOST BUSINESS, PRODUCTION, REVENUES, OR PROFITS; (iii) LOSS OF GOODWILL OR REPUTATION; (iv) USE, INABILITY TO USE, LOSS, INTERRUPTION, DELAY OR RECOVERY OF ANY DATA, OR BREACH OF DATA OR SYSTEM SECURITY; OR (v) COST OF REPLACEMENT GOODS OR SERVICES, OR ANY OTHER DAMAGES, IN EACH CASE REGARDLESS OF WHETHER LICENSOR WAS ADVISED OF THE POSSIBILITY OF SUCH LOSSES OR DAMAGES OR SUCH LOSSES OR DAMAGES WERE OTHERWISE FORESEEABLE.

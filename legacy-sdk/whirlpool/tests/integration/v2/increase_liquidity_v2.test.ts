@@ -1605,6 +1605,88 @@ describe("increase_liquidity_v2", () => {
             /0x7d1/, // A has one constraint was violated
           );
         });
+
+        it("emit LiquidityIncreased event", async () => {
+          const currTick = 0;
+          const tickLowerIndex = -1280,
+            tickUpperIndex = 1280;
+
+          const fixture = await new WhirlpoolTestFixtureV2(ctx).init({
+            ...tokenTraits,
+            tickSpacing: TickSpacing.Standard,
+            positions: [
+              {
+                tickLowerIndex: -1280,
+                tickUpperIndex: 1280,
+                liquidityAmount: ZERO_BN,
+              },
+            ],
+            initialSqrtPrice: PriceMath.tickIndexToSqrtPriceX64(currTick),
+          });
+
+          const { poolInitInfo, positions, tokenAccountA, tokenAccountB } =
+            fixture.getInfos();
+          const { whirlpoolPda } = poolInitInfo;
+          const positionInitInfo = positions[0];
+
+          const tokenAmount = toTokenAmount(167_000, 167_000);
+          const liquidityAmount = PoolUtil.estimateLiquidityFromTokenAmounts(
+            currTick,
+            tickLowerIndex,
+            tickUpperIndex,
+            tokenAmount,
+          );
+
+          // event verification
+          let eventVerified = false;
+          let detectedSignature = null;
+          const listener = ctx.program.addEventListener(
+            "LiquidityIncreased",
+            (event, _slot, signature) => {
+              detectedSignature = signature;
+              // verify
+              assert.ok(event.whirlpool.equals(whirlpoolPda.publicKey));
+              assert.ok(event.position.equals(positionInitInfo.publicKey));
+              assert.ok(event.liquidity.eq(liquidityAmount));
+              assert.ok(event.tickLowerIndex === tickLowerIndex);
+              assert.ok(event.tickUpperIndex === tickUpperIndex);
+              assert.ok(event.tokenAAmount.eq(tokenAmount.tokenA));
+              assert.ok(event.tokenBAmount.eq(tokenAmount.tokenB));
+              assert.ok(event.tokenATransferFee.isZero());
+              assert.ok(event.tokenBTransferFee.isZero());
+              eventVerified = true;
+            },
+          );
+
+          const signature = await toTx(
+            ctx,
+            WhirlpoolIx.increaseLiquidityV2Ix(ctx.program, {
+              liquidityAmount,
+              tokenMaxA: tokenAmount.tokenA,
+              tokenMaxB: tokenAmount.tokenB,
+              whirlpool: whirlpoolPda.publicKey,
+              positionAuthority: provider.wallet.publicKey,
+              position: positionInitInfo.publicKey,
+              positionTokenAccount: positionInitInfo.tokenAccount,
+              tokenOwnerAccountA: tokenAccountA,
+              tokenOwnerAccountB: tokenAccountB,
+              tokenVaultA: poolInitInfo.tokenVaultAKeypair.publicKey,
+              tokenVaultB: poolInitInfo.tokenVaultBKeypair.publicKey,
+              tickArrayLower: positionInitInfo.tickArrayLower,
+              tickArrayUpper: positionInitInfo.tickArrayUpper,
+              tokenMintA: poolInitInfo.tokenMintA,
+              tokenMintB: poolInitInfo.tokenMintB,
+              tokenProgramA: poolInitInfo.tokenProgramA,
+              tokenProgramB: poolInitInfo.tokenProgramB,
+            }),
+          ).buildAndExecute();
+
+          await sleep(2000);
+          assert.equal(signature, detectedSignature);
+          assert.ok(eventVerified);
+
+          ctx.program.removeEventListener(listener);
+        });
       });
     });
   });

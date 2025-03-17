@@ -1,6 +1,6 @@
 import { describe, it, beforeAll } from "vitest";
-import type { Address } from "@solana/web3.js";
-import { assertAccountExists } from "@solana/web3.js";
+import type { Address } from "@solana/kit";
+import { assertAccountExists } from "@solana/kit";
 import { setupAta, setupMint } from "./utils/token";
 import {
   setupAtaTE,

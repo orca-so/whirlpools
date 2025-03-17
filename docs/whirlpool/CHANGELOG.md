@@ -1,5 +1,23 @@
 # @orca-so/whirlpools-docs
 
+## 0.1.5
+
+### Patch Changes
+
+- [#788](https://github.com/orca-so/whirlpools/pull/788) [`7d2f507`](https://github.com/orca-so/whirlpools/commit/7d2f507081398973e712390281df535b3fc8988c) Thanks [@wjthieme](https://github.com/wjthieme)! - Switch from @solana/web3.js v2 to @solana/kit
+
+## 0.1.4
+
+### Patch Changes
+
+- [#767](https://github.com/orca-so/whirlpools/pull/767) [`16e070e`](https://github.com/orca-so/whirlpools/commit/16e070e3f7099fcc653c791940d6f40b8472c9b2) Thanks [@wjthieme](https://github.com/wjthieme)! - Update the docs url to dev.orca.so
+
+## 0.1.3
+
+### Patch Changes
+
+- [#759](https://github.com/orca-so/whirlpools/pull/759) [`dfebc3a`](https://github.com/orca-so/whirlpools/commit/dfebc3ad707b6a70430e518930573a307ec6d7b2) Thanks [@calintje](https://github.com/calintje)! - Augment 'Understanding Tick Arrays' doc with SparseSwap information
+
 ## 0.1.2
 
 ### Patch Changes

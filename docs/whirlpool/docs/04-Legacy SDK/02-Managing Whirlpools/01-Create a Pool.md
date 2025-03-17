@@ -1,11 +1,11 @@
 # Creating a Pool
 
-Whirlpools is set up such that anyone is able to set up a liquidity pool within a WhirlpoolsConfig space. Follow these steps to initialize a Whirlpool using the `initialize_pool` instruction. 
+Whirlpools is set up such that anyone is able to set up a liquidity pool within a WhirlpoolsConfig space. Follow these steps to initialize a Whirlpool using the `initialize_pool` instruction.
 
 ## Determine Whirlpool Parameters
-**Whirlpool Pda** - The derived address of the Whirlpool account that will be initialized. Can be derived with [`PDAUtil.getWhirlpool()`](https://orca-so.github.io/whirlpools/legacy/classes/PDAUtil.html#getWhirlpool)
+**Whirlpool Pda** - The derived address of the Whirlpool account that will be initialized. Can be derived with [`PDAUtil.getWhirlpool()`](https://dev.orca.so/legacy/classes/PDAUtil.html#getWhirlpool)
 
-**Token Mints** - The mints of the tokens for this trading pair. Token A and Token B Mint has to be cardinally ordered. Use the [`orderMints`](https://orca-so.github.io/whirlpools/legacy/classes/PoolUtil.html#orderMints
+**Token Mints** - The mints of the tokens for this trading pair. Token A and Token B Mint has to be cardinally ordered. Use the [`orderMints`](https://dev.orca.so/legacy/classes/PoolUtil.html#orderMints
 ) function to help you order them.
 
 **Tick Spacing** - Consider the effects of fees and tick-spacing when determining your tick spacing value. Note that for optimal compute-budget performance, tick-spacing should be a power of 2.
@@ -23,7 +23,7 @@ const desiredMarketPrice = new Decimal(98);
 // Invert due to token mint ordering
 const actualPrice = new Decimal(1).div(desiredMarketPrice);
 // Shift by 64 bits
-const initSqrtPrice = MathUtil.toX64(actualPrice); 
+const initSqrtPrice = MathUtil.toX64(actualPrice);
 ```
 > ℹ️ Reminder to take into account the ordering of the token A / B when determining the price. You may have to invert the value if your traded token is older than base token.
 

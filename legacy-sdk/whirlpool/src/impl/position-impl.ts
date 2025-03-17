@@ -27,11 +27,14 @@ import {
   decreaseLiquidityV2Ix,
   increaseLiquidityIx,
   increaseLiquidityV2Ix,
+  lockPositionIx,
   updateFeesAndRewardsIx,
 } from "../instructions";
 import type { WhirlpoolAccountFetchOptions } from "../network/public/fetcher";
 import { IGNORE_CACHE, PREFER_CACHE } from "../network/public/fetcher";
 import type {
+  LockConfigData,
+  LockTypeData,
   PositionData,
   TickArrayData,
   TickData,
@@ -650,6 +653,56 @@ export class PositionImpl implements Position {
     }
 
     return builder.build();
+  }
+
+  async lock(
+    lockType: LockTypeData,
+    positionWallet?: Address,
+    funder?: Address,
+  ): Promise<TransactionBuilder> {
+    const [positionWalletKey, funderKey] = AddressUtil.toPubKeys([
+      positionWallet ?? this.ctx.wallet.publicKey,
+      funder ?? this.ctx.wallet.publicKey,
+    ]);
+
+    let txBuilder = new TransactionBuilder(
+      this.ctx.provider.connection,
+      this.ctx.provider.wallet,
+      this.ctx.txBuilderOpts,
+    );
+
+    const positionTokenAccount = getAssociatedTokenAddressSync(
+      this.data.positionMint,
+      positionWalletKey,
+      this.ctx.accountResolverOpts.allowPDAOwnerAddress,
+      this.positionMintTokenProgramId,
+    );
+
+    const ix = lockPositionIx(this.ctx.program, {
+      funder: funderKey,
+      positionAuthority: positionWalletKey,
+      position: this.address,
+      positionMint: this.data.positionMint,
+      positionTokenAccount,
+      whirlpool: this.data.whirlpool,
+      lockConfigPda: PDAUtil.getLockConfig(
+        this.ctx.program.programId,
+        this.address,
+      ),
+      lockType,
+    });
+
+    txBuilder.addInstruction(ix);
+
+    return txBuilder;
+  }
+
+  async getLockConfigData(): Promise<LockConfigData | null> {
+    const lockConfig = await this.ctx.fetcher.getLockConfig(
+      PDAUtil.getLockConfig(this.ctx.program.programId, this.address).publicKey,
+      IGNORE_CACHE,
+    );
+    return lockConfig;
   }
 
   private async refresh() {

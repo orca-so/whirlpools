@@ -1,8 +1,4 @@
-import type {
-  Address,
-  IInstruction,
-  VariableSizeDecoder,
-} from "@solana/web3.js";
+import type { Address, IInstruction, VariableSizeDecoder } from "@solana/kit";
 import {
   appendTransactionMessageInstructions,
   assertIsAddress,
@@ -20,7 +16,7 @@ import {
   setTransactionMessageFeePayerSigner,
   setTransactionMessageLifetimeUsingBlockhash,
   signTransactionMessageWithSigners,
-} from "@solana/web3.js";
+} from "@solana/kit";
 import assert from "assert";
 import type { ProgramTestContext } from "solana-bankrun/dist/internal";
 import { Account, startAnchor } from "solana-bankrun/dist/internal";

@@ -1,4 +1,4 @@
-import { address } from "@solana/web3.js";
+import { address } from "@solana/kit";
 import assert from "assert";
 import { getFeeTierAddress } from "../src/pda/feeTier";
 import { getOracleAddress } from "../src/pda/oracle";

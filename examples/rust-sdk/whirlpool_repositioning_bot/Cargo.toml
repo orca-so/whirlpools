@@ -6,9 +6,20 @@ edition = "2021"
 [dependencies]
 clap = { version = "^4.5.21", features = ["derive"] }
 colored = { version = "^2.0" }
+
+# We are using the local versions of the Whirlpools SDKs. However, when you move
+# this example to a new repository, you can use the latest versions of the SDKs by 
+# uncommenting the following lines:
+# 
+# orca_whirlpools = { version = "^2.0" }
+# orca_whirlpools_client = { version = "^2.0" }
+# orca_whirlpools_core = { version = "^2.0" }
+#
+# And removing the following lines:
 orca_whirlpools = { path = '../../../rust-sdk/whirlpool' }
 orca_whirlpools_client = { path = '../../../rust-sdk/client' }
 orca_whirlpools_core = { path = '../../../rust-sdk/core' }
+
 serde_json = { version = "^1.0" }
 solana-client = { version = "^2.1" }
 solana-sdk = { version = "^2.1" }
@@ -16,4 +27,4 @@ spl-token-2022 = { version = "^7.0", features = ["no-entrypoint"] }
 spl-associated-token-account = { version = "^6.0" }
 tokio = { version = "^1.41.1" }
 tokio-retry = { version = "^0.3.0" }
-dotenv = { version = "^0.15.0"}
+dotenv = { version = "^0.15.0" }

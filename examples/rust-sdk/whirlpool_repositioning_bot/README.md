@@ -33,15 +33,34 @@ A Rust-based CLI bot for interacting with the Orca Whirlpools program on Solana.
 
 ## Installation
 
-1. Clone this repository:
+There are two ways of building and using this example.
+
+### 1. Build Whirlpools repo
+
+First, clone the repository:
+
+```bash
+git clone https://github.com/orca-so/whirlpools.git
+```
+
+Then, build the repository from the root of the repository:
+
+```bash
+yarn build
+```
+
+> Note: if you experience any issues during the build process, consult the [README](../../../README.md) at the root of the repository.
+
+### 2. Build the example project only:
+
+First, clone the repo and `cd` into the directory of this project.
 
 ```bash
 git clone https://github.com/orca-so/whirlpools.git
 cd examples/rust-sdk/whirlpool_repositioning_bot
 ```
 
-2. Update `Cargo.toml`
-   This project uses the local version of the dependencies. If you want to move this example project outside of this repo, update the `Cargo.toml`:
+Then, update `Cargo.toml`. This project uses the local version of the dependencies. If you want to move this example project outside of this repo, update the `Cargo.toml` as follows:
 
 ```toml
 # other dependencies
@@ -51,13 +70,13 @@ orca_whirlpools_core = { version = "^2.0" }
 # rest of the dependencies
 ```
 
-3. Build the bot:
+Build the bot:
 
 ```bash
 cargo build --release
 ```
 
-4. The executable will be located in target/release/whirlpool_repositioning_bot
+The executable will be located in target/release/whirlpool_repositioning_bot
 
 ---
 

@@ -11,7 +11,7 @@ pub(crate) async fn batch_get_multiple_accounts(
 ) -> Result<Vec<Option<Account>>, Box<dyn std::error::Error>> {
     let mut results = vec![];
 
-    for chunk in pubkeys.chunks(chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE)) {
+    for chunk in pubkeys.chunks(chunk_size.unwrap_or(DEFAULT_CHUNK_SIZE).clamp(1, DEFAULT_CHUNK_SIZE)) {
         let accounts = rpc_client.get_multiple_accounts(chunk).await?;
         results.extend(accounts);
     }

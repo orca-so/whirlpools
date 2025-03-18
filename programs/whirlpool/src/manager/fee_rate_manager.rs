@@ -25,6 +25,7 @@ pub const ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR: u32 = 100_000;
 // Fee rate is represented as hundredths of a basis point.
 pub const FEE_RATE_HARD_LIMIT: u32 = 100_000; // 10%
 
+#[derive(Debug)]
 pub enum FeeRateManager {
     Adaptive {
         a_to_b: bool,

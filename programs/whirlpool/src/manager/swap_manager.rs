@@ -87,6 +87,9 @@ pub fn swap(
         adaptive_fee_info,
     )?;
 
+    // TODO: remove
+    println!("frm: {:?}", fee_rate_manager);
+
     while amount_remaining > 0 && adjusted_sqrt_price_limit != curr_sqrt_price {
         let (next_array_index, next_tick_index) = swap_tick_sequence
             .get_next_initialized_tick_index(
@@ -105,6 +108,12 @@ pub fn swap(
             let total_fee_rate = fee_rate_manager.get_total_fee_rate();
             let (bounded_sqrt_price_target, adaptive_fee_update_skipped) =
                 fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price_target, curr_liquidity);
+
+            // TODO: remove
+            println!(
+                "curr_tick_index: {}, total_fee_rate: {}, skipped: {}, remaining: {}",
+                curr_tick_index, total_fee_rate, adaptive_fee_update_skipped, amount_remaining
+            );
 
             let swap_computation = compute_swap(
                 amount_remaining,
@@ -2923,7 +2932,7 @@ mod adaptive_fee_tests {
 
         let tick_group_size = adaptive_fee_info.constants.tick_group_size;
         let adaptive_fee_control_factor = adaptive_fee_info.constants.adaptive_fee_control_factor;
-        let max_volatility_acumulator = adaptive_fee_info.constants.max_volatility_accumulator;
+        let max_volatility_accumulator = adaptive_fee_info.constants.max_volatility_accumulator;
 
         // update reference
         let elapsed = current_timestamp - adaptive_fee_info.variables.last_update_timestamp;
@@ -2962,7 +2971,7 @@ mod adaptive_fee_tests {
             accumulator = u64::min(
                 volatility_reference as u64
                     + tick_group_index_delta as u64 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u64,
-                max_volatility_acumulator as u64,
+                max_volatility_accumulator as u64,
             )
             .try_into()
             .unwrap();
@@ -3111,7 +3120,8 @@ mod adaptive_fee_tests {
                         decay_period: 600,
                         adaptive_fee_control_factor: 5_000,
                         reduction_factor: 500,
-                        max_volatility_accumulator: 350_000,
+                        // block skip based on max_volatility_accumulator
+                        max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
@@ -4609,7 +4619,8 @@ mod adaptive_fee_tests {
                         decay_period: 600,
                         adaptive_fee_control_factor: 50_000,
                         reduction_factor: 500,
-                        max_volatility_accumulator: 350_000,
+                        // block skip based on max_volatility_accumulator
+                        max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
@@ -5547,7 +5558,8 @@ mod adaptive_fee_tests {
                         decay_period: 600,
                         adaptive_fee_control_factor: 5_000,
                         reduction_factor: 500,
-                        max_volatility_accumulator: 350_000,
+                        // block skip based on max_volatility_accumulator
+                        max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
@@ -6816,7 +6828,8 @@ mod adaptive_fee_tests {
                     decay_period: 600,
                     adaptive_fee_control_factor: 5_000,
                     reduction_factor: 500,
-                    max_volatility_accumulator: 350_000,
+                    // block skip based on max_volatility_accumulator
+                    max_volatility_accumulator: 88 * 3 * 10_000,
                     tick_group_size: TICK_GROUP_SIZE,
                 },
                 variables: AdaptiveFeeVariables::default(),

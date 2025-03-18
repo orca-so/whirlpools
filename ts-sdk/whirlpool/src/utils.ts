@@ -22,7 +22,7 @@ export async function fetchMultipleAccountsBatched<T extends object>(
   const results: MaybeAccount<T>[] = [];
   for (const chunk of chunks) {
     const chunkResult = await fetchEncodedAccounts(rpc, chunk);
-    chunkResult.forEach((account, i) => {
+    chunkResult.forEach((account, _) => {
       const data = decoder(account);
       results.push(data);
     });

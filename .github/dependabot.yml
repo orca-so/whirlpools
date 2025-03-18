@@ -28,7 +28,7 @@ updates:
       program-dependencies:
         applies-to: version-updates
         dependency-type: production
-    versioning-strategy: widen
+    versioning-strategy: lockfile-only
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

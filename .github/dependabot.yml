@@ -4,7 +4,7 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    labels: [ ]
+    labels: []
     groups:
       docusaurus:
         applies-to: version-updates
@@ -14,13 +14,24 @@ updates:
     directory: "/"
     schedule:
       interval: "daily"
-    labels: [ ]
+    labels: []
     groups:
       program-dependencies:
         applies-to: version-updates
         dependency-type: production
+  - package-ecosystem: "cargo"
+    directory: "/**/*"
+    schedule:
+      interval: "daily"
+    labels: []
+    groups:
+      program-dependencies:
+        applies-to: version-updates
+        dependency-type: production
+    allow:
+      - dependency-type: "indirect"
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "daily"
-    labels: [ ]
+    labels: []

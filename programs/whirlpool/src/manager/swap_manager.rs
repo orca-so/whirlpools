@@ -111,8 +111,8 @@ pub fn swap(
 
             // TODO: remove
             println!(
-                "curr_tick_index: {}, total_fee_rate: {}, skipped: {}, remaining: {}",
-                curr_tick_index, total_fee_rate, adaptive_fee_update_skipped, amount_remaining
+                "curr_tick_index: {}, total_fee_rate: {}, liquidity: {}, skipped: {}, remaining: {}",
+                curr_tick_index, total_fee_rate, curr_liquidity, adaptive_fee_update_skipped, amount_remaining
             );
 
             let swap_computation = compute_swap(

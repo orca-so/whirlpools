@@ -20,7 +20,7 @@ updates:
         applies-to: version-updates
         dependency-type: production
   - package-ecosystem: "cargo"
-    directories: ["/examples/*, /rust-sdk/*, /ts-sdk/*"]
+    directories: ["/examples/*", "/rust-sdk/*", "/ts-sdk/*"]
     schedule:
       interval: "daily"
     labels: []
@@ -28,8 +28,7 @@ updates:
       program-dependencies:
         applies-to: version-updates
         dependency-type: production
-    allow:
-      - dependency-type: "indirect"
+    versioning-strategy: widen
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:

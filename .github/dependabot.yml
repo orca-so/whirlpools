@@ -20,7 +20,7 @@ updates:
         applies-to: version-updates
         dependency-type: production
   - package-ecosystem: "cargo"
-    directories: ["/**/*"]
+    directories: ["/examples/*, /rust-sdk/*, /ts-sdk/*"]
     schedule:
       interval: "daily"
     labels: []

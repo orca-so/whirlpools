@@ -25,7 +25,6 @@ generated
 .docusaurus
 .cache-loader
 .devcontainer
-**/Cargo.lock
 .next
 .env
 wallet.json

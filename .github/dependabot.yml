@@ -20,7 +20,7 @@ updates:
         applies-to: version-updates
         dependency-type: production
   - package-ecosystem: "cargo"
-    directories: "/**/*"
+    directories: ["/**/*"]
     schedule:
       interval: "daily"
     labels: []

@@ -179,7 +179,7 @@ impl FeeRateManager {
                         adaptive_fee_constants.tick_group_size as i32,
                     );
                 } else {
-                    // End of the loop
+                    // End of the swap loop
                     *tick_group_index = floor_division(
                         tick_index_from_sqrt_price(&sqrt_price),
                         adaptive_fee_constants.tick_group_size as i32,
@@ -235,15 +235,15 @@ impl FeeRateManager {
                 core_tick_group_range_upper_bound,
                 ..
             } => {
-                // If the liquidity is 0, obviously no trades occur,
-                // and the step-by-step calculation of adaptive fee is meaningless.
-                if curr_liquidity == 0 {
-                    return (sqrt_price, true);
-                }
-
                 // If the adaptive fee control factor is 0, the adaptive fee is not applied,
                 // and the step-by-step calculation of adaptive fee is meaningless.
                 if adaptive_fee_constants.adaptive_fee_control_factor == 0 {
+                    return (sqrt_price, true);
+                }
+
+                // If the liquidity is 0, obviously no trades occur,
+                // and the step-by-step calculation of adaptive fee is meaningless.
+                if curr_liquidity == 0 {
                     return (sqrt_price, true);
                 }
 

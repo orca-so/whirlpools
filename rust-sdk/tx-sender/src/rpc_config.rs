@@ -1,4 +1,3 @@
-use serde::{Deserialize, Serialize};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::hash::Hash;
 use std::str::FromStr;
@@ -64,22 +63,18 @@ impl ChainId {
 }
 
 /// RPC configuration for connecting to Solana nodes
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct RpcConfig {
     /// Full HTTP/HTTPS URL for Solana RPC endpoint
     pub url: String,
     
     /// Whether RPC supports getRecentPrioritizationFees endpoint
-    /// Default: false
-    #[serde(default)]
     pub supports_priority_fee_percentile: bool,
     
     /// Auto-detected chain ID from genesis hash
-    #[serde(skip)]
     pub chain_id: Option<ChainId>,
     
     /// Transaction timeout in milliseconds
-    #[serde(default = "default_timeout")]
     pub timeout: u64, // Store timeout as milliseconds
 }
 
@@ -122,8 +117,4 @@ impl RpcConfig {
             None => "unknown",
         }
     }
-} 
-
-fn default_timeout() -> u64 {
-    30_000
 }

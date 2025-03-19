@@ -3,7 +3,7 @@ use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
 use solana_program::system_instruction;
 use std::str::FromStr;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 
 // Jito tip receiver addresses
 const JITO_TIP_ADDRESSES: [&str; 8] = [
@@ -18,7 +18,7 @@ const JITO_TIP_ADDRESSES: [&str; 8] = [
 ];
 
 /// Represents a single entry in the Jito tip data response
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Deserialize)]
 pub struct JitoTipData {
     /// Timestamp of the tip data
     pub time: String,

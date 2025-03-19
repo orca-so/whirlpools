@@ -1,5 +1,4 @@
 mod compute_budget;
-mod error;
 mod fee_config;
 mod jito;
 mod rpc_config;
@@ -9,7 +8,6 @@ mod tx_config;
 
 // Re-export public types
 pub use compute_budget::get_writable_accounts;
-pub use error::{Result, TransactionError};
 pub use fee_config::{FeeConfig, JitoFeeStrategy, JitoPercentile, Percentile, PriorityFeeStrategy};
 pub use rpc_config::RpcConfig;
 pub use tx_config::TransactionConfig;
@@ -76,17 +74,18 @@ impl TransactionSender {
         &self,
         instructions: Vec<Instruction>,
         signers: &[&dyn Signer],
-    ) -> Result<Signature> {
+    ) -> Result<Signature, String> {
         // Get the payer (first signer)
         let payer = signers.first().ok_or_else(|| {
-            TransactionError::ConfigError("At least one signer is required".to_string())
+            "At least one signer is required".to_string()
         })?;
 
         // Build transaction with compute budget and priority fees
         let mut tx = self.build_transaction(instructions, payer.pubkey()).await?;
 
         // Get recent blockhash
-        let recent_blockhash = self.rpc_client.get_latest_blockhash().await?;
+        let recent_blockhash = self.rpc_client.get_latest_blockhash().await
+            .map_err(|e| format!("RPC Error: {}", e))?;
 
         // Sign the transaction
         tx.sign(signers, recent_blockhash);
@@ -100,7 +99,7 @@ impl TransactionSender {
         &self,
         mut instructions: Vec<Instruction>,
         payer: Pubkey,
-    ) -> Result<Transaction> {
+    ) -> Result<Transaction, String> {
         // Get writable accounts for priority fee calculation
         let writable_accounts = get_writable_accounts(&instructions);
 
@@ -128,15 +127,15 @@ impl TransactionSender {
     }
 
     /// Send a transaction with retry logic
-    async fn send_with_retry(&self, transaction: Transaction) -> Result<Signature> {
+    async fn send_with_retry(&self, transaction: Transaction) -> Result<Signature, String> {
         let start_time = Instant::now();
         let config = self.tx_config.to_rpc_config();
         let mut retries = 0;
 
         loop {
             // Check timeout
-            if start_time.elapsed() > self.tx_config.timeout {
-                return Err(TransactionError::Timeout(self.tx_config.timeout));
+            if start_time.elapsed() > self.tx_config.timeout() {
+                return Err(format!("Transaction timeout ({:?})", self.tx_config.timeout()));
             }
 
             // Send transaction
@@ -149,7 +148,7 @@ impl TransactionSender {
                 Err(err) => {
                     // Check if we should retry
                     if retries >= self.tx_config.max_retries {
-                        return Err(TransactionError::RpcError(err));
+                        return Err(format!("RPC Error: {}", err));
                     }
 
                     // Exponential backoff

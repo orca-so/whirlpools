@@ -1,4 +1,3 @@
-use crate::error::{Result, TransactionError};
 use serde::{Deserialize, Serialize};
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::hash::Hash;
@@ -47,7 +46,7 @@ impl ChainId {
         let eclipse_testnet_hash = Hash::from_str("CX4huckiV9QNAkKNVKi5Tj8nxzBive5kQimd94viMKsU").unwrap_or_default();
         self.0 == eclipse_testnet_hash
     }
-    
+
     /// Get the chain name as a string
     pub fn name(&self) -> &'static str {
         if self.is_mainnet() {
@@ -79,13 +78,9 @@ pub struct RpcConfig {
     #[serde(skip)]
     pub chain_id: Option<ChainId>,
     
-    /// Timeout for RPC requests (default: 30s)
-    #[serde(with = "humantime_serde", default = "default_timeout")]
-    pub timeout: Duration,
-}
-
-fn default_timeout() -> Duration {
-    Duration::from_secs(30)
+    /// Transaction timeout in milliseconds
+    #[serde(default = "default_timeout")]
+    pub timeout: u64, // Store timeout as milliseconds
 }
 
 impl RpcConfig {
@@ -95,29 +90,29 @@ impl RpcConfig {
             url: url.into(),
             supports_priority_fee_percentile: false,
             chain_id: None,
-            timeout: default_timeout(),
+            timeout: 30_000,
         }
     }
 
     /// Async constructor with chain ID detection
-    pub async fn with_chain_detection(url: impl Into<String>) -> Result<Self> {
+    pub async fn with_chain_detection(url: impl Into<String>) -> Result<Self, String> {
         let url = url.into();
         let client = RpcClient::new(url.clone());
         let genesis_hash = client.get_genesis_hash().await.map_err(|e| {
-            TransactionError::ChainDetectionError(format!("Failed to get genesis hash: {e}"))
+            format!("Chain Detection Error: Failed to get genesis hash: {e}")
         })?;
         
         Ok(Self {
             url,
             supports_priority_fee_percentile: false,
             chain_id: Some(ChainId::from_genesis_hash(genesis_hash)),
-            timeout: default_timeout(),
+            timeout: 30_000,
         })
     }
 
     /// Get the RPC client for this configuration
     pub fn client(&self) -> RpcClient {
-        RpcClient::new_with_timeout(self.url.clone(), self.timeout)
+        RpcClient::new_with_timeout(self.url.clone(), Duration::from_millis(self.timeout))
     }
     
     /// Get the chain name if available
@@ -128,3 +123,7 @@ impl RpcConfig {
         }
     }
 } 
+
+fn default_timeout() -> u64 {
+    30_000
+}

@@ -18,9 +18,9 @@ pub struct TransactionConfig {
     #[serde(default = "default_max_retries")]
     pub max_retries: usize,
 
-    /// Transaction timeout
-    #[serde(with = "humantime_serde", default = "default_timeout")]
-    pub timeout: Duration,
+    /// Transaction timeout in milliseconds
+    #[serde(default = "default_timeout")]
+    pub timeout_ms: u64, // Store timeout as milliseconds
 }
 
 impl Default for TransactionConfig {
@@ -29,7 +29,7 @@ impl Default for TransactionConfig {
             skip_preflight: false,
             preflight_commitment: None,
             max_retries: default_max_retries(),
-            timeout: default_timeout(),
+            timeout_ms: 30_000,
         }
     }
 }
@@ -45,12 +45,17 @@ impl TransactionConfig {
             min_context_slot: None,
         }
     }
+
+    /// Get the timeout as a `Duration`
+    pub fn timeout(&self) -> Duration {
+        Duration::from_millis(self.timeout_ms)
+    }
 }
 
 fn default_max_retries() -> usize {
     3
 }
 
-fn default_timeout() -> Duration {
-    Duration::from_secs(30)
+fn default_timeout() -> u64 {
+    30_000
 }

@@ -1,8 +1,7 @@
 [workspace]
 resolver = "2"
 members = [
-    "programs/*",
-    "rust-sdk/tx-sender",
+    "programs/*"
 ]
 exclude = [
     "rust-sdk",

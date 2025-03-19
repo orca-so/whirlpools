@@ -1,11 +1,9 @@
-use crate::error::{Result, TransactionError};
 use crate::fee_config::{FeeConfig, JitoFeeStrategy, JitoPercentile};
 use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
 use solana_program::system_instruction;
 use std::str::FromStr;
 use serde_json::Value;
-use rand::seq::SliceRandom;
 
 // Jito tip receiver addresses
 const JITO_TIP_ADDRESSES: [&str; 8] = [
@@ -21,14 +19,10 @@ const JITO_TIP_ADDRESSES: [&str; 8] = [
 
 /// Create a Jito tip instruction
 pub fn create_tip_instruction(lamports: u64, payer: &Pubkey) -> Instruction {
-    // Pick a random Jito tip address from the list
-    let jito_address_str = JITO_TIP_ADDRESSES
-        .choose(&mut rand::thread_rng())
-        .expect("Failed to choose a random Jito tip address");
-    
-    let jito_pubkey = Pubkey::from_str(jito_address_str)
-        .expect("Failed to parse Jito tip account address");
-    
+    // Pick a random Jito tip address from the list using the native random function
+    let random_index = Pubkey::new_unique().to_bytes()[0] as usize % JITO_TIP_ADDRESSES.len();
+    let jito_address_str = JITO_TIP_ADDRESSES[random_index];
+    let jito_pubkey = Pubkey::from_str(jito_address_str).expect("Invalid pubkey string");
     system_instruction::transfer(payer, &jito_pubkey, lamports)
 }
 
@@ -37,7 +31,7 @@ pub async fn add_jito_tip_instruction(
     instructions: &mut Vec<Instruction>,
     fee_config: &FeeConfig,
     payer: &Pubkey,
-) -> Result<()> {
+) -> Result<(), String> {
     match &fee_config.jito {
         JitoFeeStrategy::Dynamic { percentile, max_lamports } => {
             let tip = calculate_dynamic_jito_tip(fee_config, *percentile).await?;
@@ -64,7 +58,7 @@ pub async fn add_jito_tip_instruction(
 async fn calculate_dynamic_jito_tip(
     fee_config: &FeeConfig,
     percentile: JitoPercentile,
-) -> Result<u64> {
+) -> Result<u64, String> {
     // Make a request to the Jito block engine API to get recent tips
     let client = reqwest::Client::new();
     let url = format!("{}/api/v1/bundles/tip_floor", fee_config.jito_block_engine_url);
@@ -72,19 +66,19 @@ async fn calculate_dynamic_jito_tip(
     let response = client.get(&url)
         .send()
         .await
-        .map_err(|e| TransactionError::JitoError(e))?;
+        .map_err(|e| format!("Jito Error: {}", e))?;
     
     if !response.status().is_success() {
-        return Err(TransactionError::FeeError(format!(
-            "Failed to get Jito tips: HTTP {}", 
+        return Err(format!(
+            "Fee Calculation Failed: Failed to get Jito tips: HTTP {}", 
             response.status()
-        )));
+        ));
     }
     
     // Parse the response as JSON
     let json_data: Value = response.json()
         .await
-        .map_err(|e| TransactionError::JitoError(e))?;
+        .map_err(|e| format!("Jito Error: {}", e))?;
     
     // Map percentile to the corresponding key in the response
     let percentile_key = match percentile {

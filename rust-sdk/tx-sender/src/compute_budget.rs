@@ -1,4 +1,3 @@
-use crate::error::{Result, TransactionError};
 use crate::fee_config::{FeeConfig, Percentile, PriorityFeeStrategy};
 use crate::rpc_config::RpcConfig;
 use solana_client::nonblocking::rpc_client::RpcClient;
@@ -13,7 +12,7 @@ pub async fn add_compute_budget_instructions(
     rpc_config: &RpcConfig,
     fee_config: &FeeConfig,
     writable_accounts: &[Pubkey],
-) -> Result<()> {
+) -> Result<(), String> {
     // Add compute unit limit instruction with margin
     let compute_units_with_margin =
         (compute_units as f64 * fee_config.compute_unit_margin_multiplier) as u32;
@@ -64,7 +63,7 @@ async fn calculate_dynamic_priority_fee(
     writable_accounts: &[Pubkey],
     percentile: Percentile,
     _compute_units: u32, // Not used but kept for future enhancements
-) -> Result<u64> {
+) -> Result<u64, String> {
     let client = RpcClient::new_with_commitment(
         rpc_config.url.clone(),
         rpc_config
@@ -86,7 +85,7 @@ async fn get_priority_fee_with_percentile(
     client: &RpcClient,
     writable_accounts: &[Pubkey],
     percentile: Percentile,
-) -> Result<u64> {
+) -> Result<u64, String> {
     // This is a direct RPC call using reqwest since the Solana client doesn't support
     // the percentile parameter yet
     let rpc_url = client.url();
@@ -103,12 +102,12 @@ async fn get_priority_fee_with_percentile(
         }))
         .send()
         .await
-        .map_err(TransactionError::JitoError)?;
+        .map_err(|e| format!("Jito Error: {}", e))?;
 
-    let data: serde_json::Value = response.json().await.map_err(TransactionError::JitoError)?;
+    let data: serde_json::Value = response.json().await.map_err(|e| format!("Jito Error: {}", e))?;
 
     if let Some(error) = data.get("error") {
-        return Err(TransactionError::FeeError(format!("RPC error: {}", error)));
+        return Err(format!("Fee Calculation Failed: RPC error: {}", error));
     }
 
     // Parse the result
@@ -127,11 +126,11 @@ async fn get_priority_fee_legacy(
     client: &RpcClient,
     writable_accounts: &[Pubkey],
     percentile: Percentile,
-) -> Result<u64> {
+) -> Result<u64, String> {
     let recent_fees = client
         .get_recent_prioritization_fees(writable_accounts)
         .await
-        .map_err(TransactionError::RpcError)?;
+        .map_err(|e| format!("RPC Error: {}", e))?;
 
     // Filter out zero fees and sort
     let mut non_zero_fees: Vec<u64> = recent_fees

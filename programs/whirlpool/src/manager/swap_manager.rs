@@ -2941,7 +2941,8 @@ mod adaptive_fee_tests {
         adaptive_fee_info: AdaptiveFeeInfo,
         first_tick_group_index: i32,
         current_timestamp: u64,
-        expected_max_volatility_skip_range: HashMap<i32, (i32, u128)>,
+        // (skip from tick group index, next tick index)
+        expected_max_volatility_skip_range: HashMap<i32, i32>,
     ) -> ExpectedSwapResult {
         _get_expected_result(
             a_to_b,
@@ -2973,7 +2974,8 @@ mod adaptive_fee_tests {
         adaptive_fee_info: AdaptiveFeeInfo,
         first_tick_group_index: i32,
         current_timestamp: u64,
-        expected_max_volatility_skip_range: HashMap<i32, (i32, u128)>,
+        // (skip from tick group index, next tick index)
+        expected_max_volatility_skip_range: HashMap<i32, i32>,
     ) -> ExpectedSwapResult {
         let mut remaining_input_amount = trade_amount;
 
@@ -3054,19 +3056,20 @@ mod adaptive_fee_tests {
                 FEE_RATE_HARD_LIMIT,
             );
 
-            println!(
-                "remaining: {}, liq: {}, next_tick_index: {}, total fee rate: {}",
-                remaining_input_amount, curr_liquidity, next_tick_index, fee_rate
-            );
-
             let expected_skip = expected_max_volatility_skip_range.get(&tick_group_index);
 
             // swap step
-            let next_sqrt_price = if let Some(expected_skip) = expected_skip {
-                expected_skip.1
-            } else {
-                sqrt_price_from_tick_index(next_tick_index.clamp(MIN_TICK_INDEX, MAX_TICK_INDEX))
-            };
+            if let Some(skip_next_tick_index) = expected_skip {
+                next_tick_index = *skip_next_tick_index;
+            }
+            let next_sqrt_price = sqrt_price_from_tick_index(next_tick_index.clamp(MIN_TICK_INDEX, MAX_TICK_INDEX));
+
+            println!(
+                "remaining: {}, group_index:  {}, liq: {}, current_tick_index -> next_tick_index: {} -> {}, total fee rate: {}",
+                remaining_input_amount, tick_group_index, curr_liquidity,
+                tick_index_from_sqrt_price(&curr_sqrt_price),
+                next_tick_index, fee_rate
+            );
             let step_result = compute_swap(
                 remaining_input_amount,
                 fee_rate,
@@ -3113,8 +3116,13 @@ mod adaptive_fee_tests {
 
             // update loop vars
             curr_sqrt_price = step_result.next_price;
-            if let Some(expected_skip) = expected_skip {
-                tick_group_index = expected_skip.0;
+            if let Some(skip_next_tick_index) = expected_skip {
+                tick_group_index =  if a_to_b {
+                    floor_division(*skip_next_tick_index, tick_group_size as i32) - 1
+                } else {
+                    floor_division(*skip_next_tick_index, tick_group_size as i32)
+                };
+                
                 next_tick_index = if a_to_b {
                     tick_group_index * tick_group_size as i32
                 } else {
@@ -8460,6 +8468,534 @@ mod adaptive_fee_tests {
                             .max_volatility_accumulator,
                     },
                 );
+            }
+        }
+
+
+        mod ts_64_with_max_volatility_skip {
+            use super::*;
+
+            const TS: u16 = 64;
+            const TICK_GROUP_SIZE: u16 = TS;
+
+            fn adaptive_fee_info_with_max_volatility_skip(max_volatility_accumulator: u32) -> Option<AdaptiveFeeInfo> {
+                Some(AdaptiveFeeInfo {
+                    constants: AdaptiveFeeConstants {
+                        filter_period: 30,
+                        decay_period: 600,
+                        adaptive_fee_control_factor: 5_000,
+                        reduction_factor: 500,
+                        max_volatility_accumulator,
+                        tick_group_size: TICK_GROUP_SIZE,
+                    },
+                    variables: AdaptiveFeeVariables::default(),
+                })
+            }
+
+            mod ref_zero {
+                use super::*;
+                #[test]
+                /// a to b, core range to skip range, step by step + skip
+                ///
+                /// -11264               -5632                0                   5632
+                ///                                        p3---p3: 200_000
+                ///                                  p2---------------p2：500_000
+                ///                         p1---------------------------------p1: 1_000_000
+                /// |--------------------|--------------------|--------------------|
+                ///                            c2<********----c1 (*: skip enabled)
+                fn a_to_b_core_range_to_skip_range() {
+                    // reach max by 8 delta tick_group_index
+                    let max_volatility_accumulator = 8 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+                    let adaptive_fee_info = adaptive_fee_info_with_max_volatility_skip(max_volatility_accumulator);
+
+                    let static_fee_rate = 1000; // 0.1%
+                    let protocol_fee_rate = 100; // 1%
+
+                    let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                        tick_spacing: TS,
+                        liquidity: 1_000_000 + 500_000 + 200_000,
+                        curr_tick_index: 0,
+                        start_tick_index: 0,
+                        trade_amount: 300_000,
+                        sqrt_price_limit: 0,
+                        amount_specified_is_input: true,
+                        a_to_b: A_TO_B,
+                        array_1_ticks: &vec![
+                            TestTickInfo {
+                                // p3
+                                index: 256,
+                                liquidity_net: -200_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p2
+                                index: 2816,
+                                liquidity_net: -500_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p1
+                                index: 4224,
+                                liquidity_net: -1_000_000,
+                                ..Default::default()
+                            },
+                        ],
+                        array_2_ticks: Some(&vec![
+                            TestTickInfo {
+                            // p3
+                            index: -256,
+                            liquidity_net: 200_000,
+                            ..Default::default()
+                        },
+                        TestTickInfo {
+                            // p2
+                            index: -2816,
+                            liquidity_net: 500_000,
+                            ..Default::default()
+                        },
+                        TestTickInfo {
+                            // p1
+                            index: -4224,
+                            liquidity_net: 1_000_000,
+                            ..Default::default()
+                        },                    
+                        ]),
+                        adaptive_fee_info: adaptive_fee_info.clone(),
+                        fee_rate: static_fee_rate,
+                        protocol_fee_rate,
+                        ..Default::default()
+                    });
+
+                    //let af_constants = adaptive_fee_info.as_ref().unwrap().constants;
+                    let expected = get_expected_result_with_max_volatility_skip(
+                        swap_test_info.a_to_b,
+                        swap_test_info.whirlpool.sqrt_price,
+                        swap_test_info.whirlpool.liquidity,
+                        [(-256, 200_000), (-2816, 500_000), (-4224, 1_000_000)].into_iter().collect(),
+                        0,
+                        swap_test_info.trade_amount,
+                        static_fee_rate,
+                        protocol_fee_rate,
+                        adaptive_fee_info.clone().unwrap(),
+                        0,
+                        1_000_000,
+                        [
+                            // core tick group range: [-8, +8]
+                            // skip to p2 end
+                            (-8 - 1, -2816),
+                            // skip to p1 end
+                            (-2816/TICK_GROUP_SIZE as i32 - 1, -4224),
+                        ].into_iter().collect(),
+                    );
+
+                    let mut tick_sequence = SwapTickSequence::new(
+                        swap_test_info.tick_arrays[0].borrow_mut(),
+                        Some(swap_test_info.tick_arrays[1].borrow_mut()),
+                        None,
+                    );
+                    let post_swap = swap_test_info.run(&mut tick_sequence, 1_000_000);
+
+                    assert_swap(
+                        &post_swap,
+                        &SwapTestExpectation {
+                            traded_amount_a: swap_test_info.trade_amount,
+                            traded_amount_b: expected.output_amount,
+                            end_tick_index: tick_index_from_sqrt_price(&expected.end_sqrt_price),
+                            end_liquidity: 1_000_000,
+                            end_reward_growths: [0, 0, 0],
+                        },
+                    );
+                    assert_eq!(post_swap.next_sqrt_price, expected.end_sqrt_price);
+                    assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
+                    check_next_adaptive_fee_variables(
+                        &post_swap.next_adaptive_fee_info.unwrap().variables,
+                        &expected.next_adaptive_fee_variables,
+                    );
+                }
+
+                #[test]
+                /// b to a, core range to skip range, step by step + skip
+                ///
+                /// -5632                0                   5632                 11264
+                ///                   p3---p3: 200_000
+                ///            p2---------------p2：500_000
+                ///    p1---------------------------------p1: 1_000_000
+                /// |--------------------|--------------------|--------------------|--------------------|
+                ///                      c1--*********>c2 (*: skip enabled)
+                fn b_to_a_core_range_to_skip_range() {
+                    // reach max by 8 delta tick_group_index
+                    let max_volatility_accumulator = 8 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+                    let adaptive_fee_info = adaptive_fee_info_with_max_volatility_skip(max_volatility_accumulator);
+
+                    let static_fee_rate = 1000; // 0.1%
+                    let protocol_fee_rate = 100; // 1%
+
+                    let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                        tick_spacing: TS,
+                        liquidity: 1_000_000 + 500_000 + 200_000,
+                        curr_tick_index: 0,
+                        start_tick_index: -5632,
+                        trade_amount: 300_000,
+                        sqrt_price_limit: 0,
+                        amount_specified_is_input: true,
+                        a_to_b: B_TO_A,
+                        array_1_ticks: &vec![
+                            TestTickInfo {
+                                // p3
+                                index: -256,
+                                liquidity_net: 200_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p2
+                                index: -2816,
+                                liquidity_net: 500_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p1
+                                index: -4224,
+                                liquidity_net: 1_000_000,
+                                ..Default::default()
+                            },                    
+                    ],
+                        array_2_ticks: Some(&vec![
+                            TestTickInfo {
+                                // p3
+                                index: 256,
+                                liquidity_net: -200_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p2
+                                index: 2816,
+                                liquidity_net: -500_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p1
+                                index: 4224,
+                                liquidity_net: -1_000_000,
+                                ..Default::default()
+                            },
+                        ]),
+                        adaptive_fee_info: adaptive_fee_info.clone(),
+                        fee_rate: static_fee_rate,
+                        protocol_fee_rate,
+                        ..Default::default()
+                    });
+
+                    let expected = get_expected_result_with_max_volatility_skip(
+                        swap_test_info.a_to_b,
+                        swap_test_info.whirlpool.sqrt_price,
+                        swap_test_info.whirlpool.liquidity,
+                        [(256, -200_000), (2816, -500_000), (4224, -1_000_000)].into_iter().collect(),
+                        64,
+                        swap_test_info.trade_amount,
+                        static_fee_rate,
+                        protocol_fee_rate,
+                        adaptive_fee_info.clone().unwrap(),
+                        0,
+                        1_000_000,
+                        [
+                            // core tick group range: [-8, +8]
+                            // skip to p2 end
+                            (8 + 1, 2816),
+                            // skip to p1 end
+                            (2816/TICK_GROUP_SIZE as i32, 4224),
+                        ].into_iter().collect(),
+                    );
+
+                    let mut tick_sequence = SwapTickSequence::new(
+                        swap_test_info.tick_arrays[1].borrow_mut(),
+                        Some(swap_test_info.tick_arrays[2].borrow_mut()),
+                        None,
+                    );
+                    let post_swap = swap_test_info.run(&mut tick_sequence, 1_000_000);
+
+                    assert_swap(
+                        &post_swap,
+                        &SwapTestExpectation {
+                            traded_amount_a: expected.output_amount,
+                            traded_amount_b: swap_test_info.trade_amount,
+                            end_tick_index: tick_index_from_sqrt_price(&expected.end_sqrt_price),
+                            end_liquidity: 1_000_000,
+                            end_reward_growths: [0, 0, 0],
+                        },
+                    );
+                    assert_eq!(post_swap.next_sqrt_price, expected.end_sqrt_price);
+                    assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
+                    check_next_adaptive_fee_variables(
+                        &post_swap.next_adaptive_fee_info.unwrap().variables,
+                        &expected.next_adaptive_fee_variables,
+                    );
+                }
+
+                #[test]
+                /// a to b, skip range only
+                ///
+                /// -11264               -5632                0                   5632
+                ///                                        p3---p3: 200_000
+                ///                                  p2---------------p2：500_000
+                ///                         p1---------------------------------p1: 1_000_000
+                /// |--------------------|--------------------|--------------------|
+                ///                            c2<******c1 (*: skip enabled)
+                fn a_to_b_skip_range_only() {
+                    // reach max by 8 delta tick_group_index
+                    let max_volatility_accumulator = 8 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+                    let mut adaptive_fee_info = adaptive_fee_info_with_max_volatility_skip(max_volatility_accumulator).unwrap();
+
+                    // set 0 as reference tick group index
+                    // test will start with max volatility accumulator
+                    adaptive_fee_info.variables.update_reference(0, 1_000_000, &adaptive_fee_info.constants).unwrap();
+                    adaptive_fee_info.variables.update_volatility_accumulator(-10, &adaptive_fee_info.constants).unwrap();
+                    check_next_adaptive_fee_variables(&adaptive_fee_info.variables, &AdaptiveFeeVariables {
+                        last_update_timestamp: 1_000_000,
+                        tick_group_index_reference: 0,
+                        volatility_reference: 0,
+                        volatility_accumulator: adaptive_fee_info.constants.max_volatility_accumulator,
+                    });
+                    let adaptive_fee_info = Some(AdaptiveFeeInfo {
+                        constants: adaptive_fee_info.constants,
+                        variables: adaptive_fee_info.variables,
+                    });
+
+                    let static_fee_rate = 1000; // 0.1%
+                    let protocol_fee_rate = 100; // 1%
+
+                    let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                        tick_spacing: TS,
+                        liquidity: 1_000_000 + 500_000,
+                        curr_tick_index: -640,
+                        start_tick_index: 0,
+                        trade_amount: 200_000,
+                        sqrt_price_limit: 0,
+                        amount_specified_is_input: true,
+                        a_to_b: A_TO_B,
+                        array_1_ticks: &vec![
+                            TestTickInfo {
+                                // p3
+                                index: 256,
+                                liquidity_net: -200_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p2
+                                index: 2816,
+                                liquidity_net: -500_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p1
+                                index: 4224,
+                                liquidity_net: -1_000_000,
+                                ..Default::default()
+                            },
+                        ],
+                        array_2_ticks: Some(&vec![
+                            TestTickInfo {
+                            // p3
+                            index: -256,
+                            liquidity_net: 200_000,
+                            ..Default::default()
+                        },
+                        TestTickInfo {
+                            // p2
+                            index: -2816,
+                            liquidity_net: 500_000,
+                            ..Default::default()
+                        },
+                        TestTickInfo {
+                            // p1
+                            index: -4224,
+                            liquidity_net: 1_000_000,
+                            ..Default::default()
+                        },                    
+                        ]),
+                        adaptive_fee_info: adaptive_fee_info.clone(),
+                        fee_rate: static_fee_rate,
+                        protocol_fee_rate,
+                        ..Default::default()
+                    });
+
+                    let expected = get_expected_result_with_max_volatility_skip(
+                        swap_test_info.a_to_b,
+                        swap_test_info.whirlpool.sqrt_price,
+                        swap_test_info.whirlpool.liquidity,
+                        [(-2816, 500_000), (-4224, 1_000_000)].into_iter().collect(),
+                        -640 - 64,
+                        swap_test_info.trade_amount,
+                        static_fee_rate,
+                        protocol_fee_rate,
+                        adaptive_fee_info.clone().unwrap(),
+                        -10,
+                        1_000_000,
+                        [
+                            // core tick group range: [-8, +8]
+                            // skip to p2 end
+                            (-10, -2816),
+                            // skip to p1 end
+                            (-2816/TICK_GROUP_SIZE as i32 - 1, -4224),
+                        ].into_iter().collect(),
+                    );
+
+                    let mut tick_sequence = SwapTickSequence::new(
+                        swap_test_info.tick_arrays[1].borrow_mut(),
+                        None,
+                        None,
+                    );
+                    let post_swap = swap_test_info.run(&mut tick_sequence, 1_000_000);
+
+                    assert_swap(
+                        &post_swap,
+                        &SwapTestExpectation {
+                            traded_amount_a: swap_test_info.trade_amount,
+                            traded_amount_b: expected.output_amount,
+                            end_tick_index: tick_index_from_sqrt_price(&expected.end_sqrt_price),
+                            end_liquidity: 1_000_000,
+                            end_reward_growths: [0, 0, 0],
+                        },
+                    );
+                    assert_eq!(post_swap.next_sqrt_price, expected.end_sqrt_price);
+                    assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
+                    check_next_adaptive_fee_variables(
+                        &post_swap.next_adaptive_fee_info.unwrap().variables,
+                        &expected.next_adaptive_fee_variables,
+                    );
+                }
+
+                #[test]
+                /// b to a, skip range only
+                ///
+                /// -5632                0                   5632                 11264
+                ///                   p3---p3: 200_000
+                ///            p2---------------p2：500_000
+                ///    p1---------------------------------p1: 1_000_000
+                /// |--------------------|--------------------|--------------------|--------------------|
+                ///                         c1********>c2 (*: skip enabled)
+                fn b_to_a_skip_range_only() {
+                    // reach max by 8 delta tick_group_index
+                    let max_volatility_accumulator = 8 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+                    let mut adaptive_fee_info = adaptive_fee_info_with_max_volatility_skip(max_volatility_accumulator).unwrap();
+
+                    // set 0 as reference tick group index
+                    // test will start with max volatility accumulator
+                    adaptive_fee_info.variables.update_reference(0, 1_000_000, &adaptive_fee_info.constants).unwrap();
+                    adaptive_fee_info.variables.update_volatility_accumulator(10, &adaptive_fee_info.constants).unwrap();
+                    check_next_adaptive_fee_variables(&adaptive_fee_info.variables, &AdaptiveFeeVariables {
+                        last_update_timestamp: 1_000_000,
+                        tick_group_index_reference: 0,
+                        volatility_reference: 0,
+                        volatility_accumulator: adaptive_fee_info.constants.max_volatility_accumulator,
+                    });
+                    let adaptive_fee_info = Some(AdaptiveFeeInfo {
+                        constants: adaptive_fee_info.constants,
+                        variables: adaptive_fee_info.variables,
+                    });
+
+                    let static_fee_rate = 1000; // 0.1%
+                    let protocol_fee_rate = 100; // 1%
+
+                    let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
+                        tick_spacing: TS,
+                        liquidity: 1_000_000 + 500_000,
+                        curr_tick_index: 640,
+                        start_tick_index: -5632,
+                        trade_amount: 200_000,
+                        sqrt_price_limit: 0,
+                        amount_specified_is_input: true,
+                        a_to_b: B_TO_A,
+                        array_1_ticks: &vec![
+                            TestTickInfo {
+                                // p3
+                                index: -256,
+                                liquidity_net: 200_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p2
+                                index: -2816,
+                                liquidity_net: 500_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p1
+                                index: -4224,
+                                liquidity_net: 1_000_000,
+                                ..Default::default()
+                            },                    
+                    ],
+                        array_2_ticks: Some(&vec![
+                            TestTickInfo {
+                                // p3
+                                index: 256,
+                                liquidity_net: -200_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p2
+                                index: 2816,
+                                liquidity_net: -500_000,
+                                ..Default::default()
+                            },
+                            TestTickInfo {
+                                // p1
+                                index: 4224,
+                                liquidity_net: -1_000_000,
+                                ..Default::default()
+                            },
+                        ]),
+                        adaptive_fee_info: adaptive_fee_info.clone(),
+                        fee_rate: static_fee_rate,
+                        protocol_fee_rate,
+                        ..Default::default()
+                    });
+
+                    let expected = get_expected_result_with_max_volatility_skip(
+                        swap_test_info.a_to_b,
+                        swap_test_info.whirlpool.sqrt_price,
+                        swap_test_info.whirlpool.liquidity,
+                        [(2816, -500_000), (4224, -1_000_000)].into_iter().collect(),
+                        640 + 64,
+                        swap_test_info.trade_amount,
+                        static_fee_rate,
+                        protocol_fee_rate,
+                        adaptive_fee_info.clone().unwrap(),
+                        10,
+                        1_000_000,
+                        [
+                            // core tick group range: [-8, +8]
+                            // skip to p2 end
+                            (10, 2816),
+                            // skip to p1 end
+                            (2816/TICK_GROUP_SIZE as i32, 4224),
+                        ].into_iter().collect(),
+                    );
+
+                    let mut tick_sequence = SwapTickSequence::new(
+                        swap_test_info.tick_arrays[1].borrow_mut(),
+                        Some(swap_test_info.tick_arrays[2].borrow_mut()),
+                        None,
+                    );
+                    let post_swap = swap_test_info.run(&mut tick_sequence, 1_000_000);
+
+                    assert_swap(
+                        &post_swap,
+                        &SwapTestExpectation {
+                            traded_amount_a: expected.output_amount,
+                            traded_amount_b: swap_test_info.trade_amount,
+                            end_tick_index: tick_index_from_sqrt_price(&expected.end_sqrt_price),
+                            end_liquidity: 1_000_000,
+                            end_reward_growths: [0, 0, 0],
+                        },
+                    );
+                    assert_eq!(post_swap.next_sqrt_price, expected.end_sqrt_price);
+                    assert_eq!(post_swap.next_protocol_fee, expected.protocol_fee);
+                    check_next_adaptive_fee_variables(
+                        &post_swap.next_adaptive_fee_info.unwrap().variables,
+                        &expected.next_adaptive_fee_variables,
+                    );
+                }
             }
         }
     }

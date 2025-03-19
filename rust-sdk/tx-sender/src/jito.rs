@@ -3,7 +3,7 @@ use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
 use solana_program::system_instruction;
 use std::str::FromStr;
-use serde_json::Value;
+use serde::{Deserialize, Serialize};
 
 // Jito tip receiver addresses
 const JITO_TIP_ADDRESSES: [&str; 8] = [
@@ -16,6 +16,25 @@ const JITO_TIP_ADDRESSES: [&str; 8] = [
     "DttWaMuVvTiduZRnguLF7jNxTgiMBZ1hyAumKUiL2KRL",
     "3AVi9Tg9Uo68tJfuvoKvqKNWKkC5wPdSSdeBnizKZ6jT",
 ];
+
+/// Represents a single entry in the Jito tip data response
+#[derive(Debug, Serialize, Deserialize)]
+pub struct JitoTipData {
+    /// Timestamp of the tip data
+    pub time: String,
+    /// 25th percentile of landed tips (in SOL)
+    pub landed_tips_25th_percentile: f64,
+    /// 50th percentile of landed tips (in SOL)
+    pub landed_tips_50th_percentile: f64,
+    /// 75th percentile of landed tips (in SOL)
+    pub landed_tips_75th_percentile: f64,
+    /// 95th percentile of landed tips (in SOL)
+    pub landed_tips_95th_percentile: f64,
+    /// 99th percentile of landed tips (in SOL)
+    pub landed_tips_99th_percentile: f64,
+    /// 50th percentile exponential moving average of landed tips (in SOL)
+    pub ema_landed_tips_50th_percentile: f64,
+}
 
 /// Create a Jito tip instruction
 pub fn create_tip_instruction(lamports: u64, payer: &Pubkey) -> Instruction {
@@ -75,28 +94,26 @@ pub(crate) async fn calculate_dynamic_jito_tip(
         ));
     }
     
-    // Parse the response as JSON
-    let json_data: Value = response.json()
+    // Parse the response as a structured type
+    let tip_data: Vec<JitoTipData> = response.json()
         .await
         .map_err(|e| format!("Jito Error: {}", e))?;
     
-    // Map percentile to the corresponding key in the response
-    let percentile_key = match percentile {
-        JitoPercentile::P25 => "landed_tips_25th_percentile",
-        JitoPercentile::P50 => "landed_tips_50th_percentile",
-        JitoPercentile::P50Ema => "ema_landed_tips_50th_percentile",
-        JitoPercentile::P75 => "landed_tips_75th_percentile",
-        JitoPercentile::P95 => "landed_tips_95th_percentile",
-        JitoPercentile::P99 => "landed_tips_99th_percentile",
-    };
-    
-    // Extract the first item from the array and get the percentile value
-    if let Some(data) = json_data.as_array().and_then(|arr| arr.get(0)) {
-        if let Some(value) = data.get(percentile_key).and_then(|v| v.as_f64()) {
-            // Convert from SOL to lamports (multiply by 10^9)
-            let lamports = (value * 1_000_000_000.0).floor() as u64;
-            return Ok(lamports);
-        }
+    // Get the first entry if available
+    if let Some(data) = tip_data.first() {
+        // Get the appropriate percentile value based on the requested percentile
+        let value = match percentile {
+            JitoPercentile::P25 => data.landed_tips_25th_percentile,
+            JitoPercentile::P50 => data.landed_tips_50th_percentile,
+            JitoPercentile::P50Ema => data.ema_landed_tips_50th_percentile,
+            JitoPercentile::P75 => data.landed_tips_75th_percentile,
+            JitoPercentile::P95 => data.landed_tips_95th_percentile,
+            JitoPercentile::P99 => data.landed_tips_99th_percentile,
+        };
+        
+        // Convert from SOL to lamports (multiply by 10^9)
+        let lamports = (value * 1_000_000_000.0).floor() as u64;
+        return Ok(lamports);
     }
     
     // Default to 0 if we couldn't get a valid tip

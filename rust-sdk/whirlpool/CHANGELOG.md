@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust
 
+## 2.0.2
+
+### Patch Changes
+
+- [#782](https://github.com/orca-so/whirlpools/pull/782) [`ca5f054`](https://github.com/orca-so/whirlpools/commit/ca5f054066d34943eefe72228b442525e849eaeb) Thanks [@wjthieme](https://github.com/wjthieme)! - Update LICENSE file
+
 ## 2.0.1
 
 ### Patch Changes

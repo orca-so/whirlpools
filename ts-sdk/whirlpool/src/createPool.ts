@@ -35,6 +35,7 @@ import { fetchAllMint } from "@solana-program/token-2022";
 import assert from "assert";
 import { getTokenSizeForMint, orderMints } from "./token";
 import { calculateMinimumBalanceForRentExemption } from "./sysvar";
+import { wrapFunctionWithExecution } from "./actionHelpers";
 
 /**
  * Represents the instructions and metadata for creating a pool.
@@ -271,3 +272,12 @@ export async function createConcentratedLiquidityPoolInstructions(
     initializationCost: lamports(nonRefundableRent),
   };
 }
+
+// -------- ACTIONS --------
+
+export const createSplashPool = wrapFunctionWithExecution(
+  createSplashPoolInstructions,
+);
+export const createConcentratedLiquidityPool = wrapFunctionWithExecution(
+  createConcentratedLiquidityPoolInstructions,
+);

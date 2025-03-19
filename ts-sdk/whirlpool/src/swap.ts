@@ -38,6 +38,7 @@ import {
 } from "./token";
 import { MEMO_PROGRAM_ADDRESS } from "@solana-program/memo";
 import { fetchAllMint } from "@solana-program/token-2022";
+import { wrapFunctionWithExecution } from "./actionHelpers";
 
 // TODO: allow specify number as well as bigint
 // TODO: transfer hook
@@ -324,3 +325,7 @@ export async function swapInstructions<T extends SwapParams>(
     instructions,
   };
 }
+
+// -------- ACTIONS --------
+
+export const swap = wrapFunctionWithExecution(swapInstructions);

@@ -8,9 +8,9 @@
     "lint": "cd ../.. && prettier --check './**/*.{js,jsx,ts,tsx,json}' && eslint -c ts-sdk/lint/eslint.config.js"
   },
   "devDependencies": {
-    "eslint": "^9.21.0",
-    "prettier": "^3.5.2",
+    "eslint": "^9.22.0",
+    "prettier": "^3.5.3",
     "typescript": "^5.8.2",
-    "typescript-eslint": "^8.25.0"
+    "typescript-eslint": "^8.26.1"
   }
 }

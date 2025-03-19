@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/common-sdk",
-  "version": "0.6.10",
+  "version": "0.6.11",
   "description": "Common Typescript components across Orca",
   "repository": "https://github.com/orca-so/orca-sdks",
   "author": "Orca Foundation",
@@ -8,7 +8,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "peerDependencies": {
-    "@solana/spl-token": "^0.4.12",
+    "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.90.0"
   },
   "dependencies": {
@@ -16,7 +16,7 @@
     "tiny-invariant": "^1.3.1"
   },
   "devDependencies": {
-    "@solana/spl-token": "^0.4.12",
+    "@solana/spl-token": "^0.4.13",
     "@solana/web3.js": "^1.90.0",
     "typescript": "^5.8.2"
   },

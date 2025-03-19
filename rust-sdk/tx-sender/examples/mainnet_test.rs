@@ -1,5 +1,5 @@
 use orca_tx_sender::{
-    FeeConfig, JitoFeeStrategy, JitoPercentile, Percentile, PriorityFeeStrategy, RpcConfig,
+    FeeConfig, JitoFeeStrategy, JitoPercentile, PriorityFeeStrategy, RpcConfig,
     TransactionSender,
 };
 use solana_program::system_instruction;

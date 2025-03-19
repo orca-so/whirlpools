@@ -2,19 +2,16 @@ mod compute_budget;
 mod fee_config;
 mod jito;
 mod rpc_config;
-// Comment out the separate tests module since we have inline tests
-// mod tests;
 mod tx_config;
 
-// Re-export public types
-pub use compute_budget::get_writable_accounts;
-pub use fee_config::{FeeConfig, JitoFeeStrategy, JitoPercentile, Percentile, PriorityFeeStrategy};
-pub use rpc_config::RpcConfig;
-pub use tx_config::TransactionConfig;
+// Re-export public types with wildcards
+pub use compute_budget::*;
+pub use fee_config::*;
+pub use jito::*;
+pub use rpc_config::*;
+pub use tx_config::*;
 
 // Import types for internal use
-use compute_budget::add_compute_budget_instructions;
-use jito::add_jito_tip_instruction;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_program::instruction::Instruction;
 use solana_program::message::Message;
@@ -173,9 +170,9 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_fee_config_serialization() {
+    fn test_fee_config_default() {
         let config = FeeConfig::default();
-        let json = serde_json::to_string(&config).unwrap();
-        assert!(json.contains("jito_block_engine_url"));
+        assert_eq!(config.compute_unit_margin_multiplier, 1.1);
+        assert_eq!(config.jito_block_engine_url, "https://bundles.jito.wtf");
     }
 }

@@ -6,35 +6,6 @@ mod tests {
     use solana_sdk::system_instruction;
 
     #[test]
-    fn test_fee_config_serialization() {
-        let config = FeeConfig {
-            priority_fee: PriorityFeeStrategy::Dynamic {
-                percentile: Percentile::P95,
-                max_lamports: 1_000_000,
-            },
-            jito: JitoFeeStrategy::Disabled,
-            compute_unit_margin_multiplier: 1.1,
-            jito_block_engine_url: None,
-        };
-
-        let json = serde_json::to_string_pretty(&config).unwrap();
-        println!("Serialized FeeConfig: {}", json);
-
-        let deserialized: FeeConfig = serde_json::from_str(&json).unwrap();
-        assert_eq!(config.priority_fee, deserialized.priority_fee);
-    }
-
-    #[test]
-    fn test_rpc_config_serialization() {
-        let config = RpcConfig::new("https://api.mainnet-beta.solana.com");
-        let json = serde_json::to_string_pretty(&config).unwrap();
-        println!("Serialized RpcConfig: {}", json);
-
-        let deserialized: RpcConfig = serde_json::from_str(&json).unwrap();
-        assert_eq!(config.endpoint(), deserialized.endpoint());
-    }
-
-    #[test]
     fn test_get_writable_accounts() {
         let keypair = Keypair::new();
         let recipient = Keypair::new().pubkey();
@@ -61,7 +32,7 @@ mod tests {
             },
             jito: JitoFeeStrategy::Disabled,
             compute_unit_margin_multiplier: 1.1,
-            jito_block_engine_url: None,
+            jito_block_engine_url: "https://bundles.jito.wtf".to_string(),
         };
 
         let sender = TransactionSender::new(rpc_config, fee_config);

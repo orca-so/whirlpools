@@ -54,7 +54,7 @@ pub async fn add_jito_tip_instruction(
 }
 
 /// Calculate dynamic Jito tip based on recent tips
-async fn calculate_dynamic_jito_tip(
+pub(crate) async fn calculate_dynamic_jito_tip(
     fee_config: &FeeConfig,
     percentile: JitoPercentile,
 ) -> Result<u64, String> {

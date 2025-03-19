@@ -42,7 +42,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         skip_preflight: false,
         preflight_commitment: Some(CommitmentLevel::Confirmed),
         max_retries: 5,
-        timeout: Duration::from_secs(60),
+        timeout_ms: 60_000, // 60 seconds in milliseconds
     };
 
     // Create sender instance with custom transaction config

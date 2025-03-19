@@ -4,6 +4,7 @@ use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
+use solana_rpc_client_api::response::RpcPrioritizationFee;
 
 /// Calculate and return compute budget instructions for a transaction
 pub async fn add_compute_budget_instructions(
@@ -58,7 +59,7 @@ pub async fn add_compute_budget_instructions(
 }
 
 /// Calculate dynamic priority fee based on recent fees
-async fn calculate_dynamic_priority_fee(
+pub(crate) async fn calculate_dynamic_priority_fee(
     client: &RpcClient,
     rpc_config: &RpcConfig,
     writable_accounts: &[Pubkey],
@@ -73,7 +74,7 @@ async fn calculate_dynamic_priority_fee(
 }
 
 /// Get priority fee using the getRecentPrioritizationFees endpoint with percentile parameter
-async fn get_priority_fee_with_percentile(
+pub(crate) async fn get_priority_fee_with_percentile(
     client: &RpcClient,
     writable_accounts: &[Pubkey],
     percentile: Percentile,
@@ -81,6 +82,8 @@ async fn get_priority_fee_with_percentile(
     // This is a direct RPC call using reqwest since the Solana client doesn't support
     // the percentile parameter yet
     let rpc_url = client.url();
+   
+    // Send RPC request with percentile parameter
     let response = reqwest::Client::new()
         .post(rpc_url)
         .json(&serde_json::json!({
@@ -88,37 +91,33 @@ async fn get_priority_fee_with_percentile(
             "id": 1,
             "method": "getRecentPrioritizationFees",
             "params": [{
-                "lockedWritableAccounts": writable_accounts.iter().map(|p| p.to_string()).collect::<Vec<_>>(),
+                "lockedWritableAccounts": writable_accounts.iter().map(|p| p.to_string()).collect::<Vec<String>>(),
                 "percentile": percentile.as_value() * 100
             }]
         }))
         .send()
         .await
-        .map_err(|e| format!("Jito Error: {}", e))?;
+        .map_err(|e| format!("RPC Error: {}", e))?;
 
-    let data: serde_json::Value = response.json().await.map_err(|e| format!("Jito Error: {}", e))?;
-
-    if let Some(error) = data.get("error") {
-        return Err(format!("Fee Calculation Failed: RPC error: {}", error));
+    // Define minimal response structure and directly extract the prioritization fee
+    #[derive(serde::Deserialize)]
+    struct Response {
+        result: RpcPrioritizationFee,
     }
-
-    // Parse the result
-    if let Some(result) = data.get("result") {
-        if let Some(fee) = result.get("prioritizationFee").and_then(|v| v.as_u64()) {
-            return Ok(fee);
-        }
-    }
-
-    // Default to zero if we couldn't parse the result
-    Ok(0)
+    
+    response.json::<Response>()
+        .await
+        .map(|resp| resp.result.prioritization_fee)
+        .map_err(|e| format!("Failed to parse prioritization fee response: {}", e))
 }
 
 /// Get priority fee using the legacy getRecentPrioritizationFees endpoint
-async fn get_priority_fee_legacy(
+pub(crate) async fn get_priority_fee_legacy(
     client: &RpcClient,
     writable_accounts: &[Pubkey],
     percentile: Percentile,
 ) -> Result<u64, String> {
+    // This uses the built-in method that returns Vec<RpcPrioritizationFee>
     let recent_fees = client
         .get_recent_prioritization_fees(writable_accounts)
         .await

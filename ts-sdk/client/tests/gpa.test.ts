@@ -19,7 +19,7 @@ import {
   feeTierWhirlpoolsConfigFilter,
   fetchAllFeeTierWithFilter,
 } from "../src/gpa/feeTier";
-import { LockConfigArgs } from "../src/generated/accounts/lockConfig";
+import type { LockConfigArgs } from "../src/generated/accounts/lockConfig";
 import { getLockConfigEncoder } from "../src/generated/accounts/lockConfig";
 import { LockTypeLabel } from "../src/generated/types/lockTypeLabel";
 import {

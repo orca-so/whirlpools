@@ -104,17 +104,24 @@ impl TransactionSender {
         let writable_accounts = get_writable_accounts(&instructions);
 
         // Add compute budget instructions
-        add_compute_budget_instructions(
-            &mut instructions,
+        let compute_budget_ixs = add_compute_budget_instructions(
+            &self.rpc_client,
             DEFAULT_COMPUTE_UNITS,
             &self.rpc_config,
             &self.fee_config,
             &writable_accounts[..],
         )
         .await?;
+        
+        // Add compute budget instructions to the beginning of the instruction list
+        for (idx, instr) in compute_budget_ixs.into_iter().enumerate() {
+            instructions.insert(idx, instr);
+        }
 
         // Add Jito tip instruction if enabled
-        add_jito_tip_instruction(&mut instructions, &self.fee_config, &payer).await?;
+        if let Some(jito_tip_ix) = add_jito_tip_instruction(&self.fee_config, &payer).await? {
+            instructions.insert(0, jito_tip_ix);
+        }
 
         // Create message with placeholder blockhash
         let message = Message::new_with_blockhash(

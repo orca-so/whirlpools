@@ -5,19 +5,20 @@ use solana_program::instruction::Instruction;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
 
-/// Calculate and add compute budget instructions to a transaction
+/// Calculate and return compute budget instructions for a transaction
 pub async fn add_compute_budget_instructions(
-    instructions: &mut Vec<Instruction>,
+    client: &RpcClient,
     compute_units: u32,
     rpc_config: &RpcConfig,
     fee_config: &FeeConfig,
     writable_accounts: &[Pubkey],
-) -> Result<(), String> {
+) -> Result<Vec<Instruction>, String> {
+    let mut budget_instructions = Vec::new();
+    
     // Add compute unit limit instruction with margin
     let compute_units_with_margin =
         (compute_units as f64 * fee_config.compute_unit_margin_multiplier) as u32;
-    instructions.insert(
-        0,
+    budget_instructions.push(
         ComputeBudgetInstruction::set_compute_unit_limit(compute_units_with_margin),
     );
 
@@ -28,6 +29,7 @@ pub async fn add_compute_budget_instructions(
             max_lamports,
         } => {
             let fee = calculate_dynamic_priority_fee(
+                client,
                 rpc_config,
                 writable_accounts,
                 *percentile,
@@ -37,16 +39,14 @@ pub async fn add_compute_budget_instructions(
             let clamped_fee = std::cmp::min(fee, *max_lamports);
 
             if clamped_fee > 0 {
-                instructions.insert(
-                    1,
+                budget_instructions.push(
                     ComputeBudgetInstruction::set_compute_unit_price(clamped_fee),
                 );
             }
         }
         PriorityFeeStrategy::Exact(lamports) => {
             if *lamports > 0 {
-                instructions.insert(
-                    1,
+                budget_instructions.push(
                     ComputeBudgetInstruction::set_compute_unit_price(*lamports),
                 );
             }
@@ -54,29 +54,21 @@ pub async fn add_compute_budget_instructions(
         PriorityFeeStrategy::Disabled => {}
     }
 
-    Ok(())
+    Ok(budget_instructions)
 }
 
 /// Calculate dynamic priority fee based on recent fees
 async fn calculate_dynamic_priority_fee(
+    client: &RpcClient,
     rpc_config: &RpcConfig,
     writable_accounts: &[Pubkey],
     percentile: Percentile,
     _compute_units: u32, // Not used but kept for future enhancements
 ) -> Result<u64, String> {
-    let client = RpcClient::new_with_commitment(
-        rpc_config.url.clone(),
-        rpc_config
-            .chain_id
-            .as_ref()
-            .map(|_| solana_sdk::commitment_config::CommitmentConfig::confirmed())
-            .unwrap_or_default(),
-    );
-
     if rpc_config.supports_priority_fee_percentile {
-        get_priority_fee_with_percentile(&client, writable_accounts, percentile).await
+        get_priority_fee_with_percentile(client, writable_accounts, percentile).await
     } else {
-        get_priority_fee_legacy(&client, writable_accounts, percentile).await
+        get_priority_fee_legacy(client, writable_accounts, percentile).await
     }
 }
 

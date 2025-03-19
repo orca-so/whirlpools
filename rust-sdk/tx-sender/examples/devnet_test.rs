@@ -34,7 +34,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize configurations with devnet
     let start = Instant::now();
     println!("Connecting to Solana devnet...");
-    let rpc_config = RpcConfig::with_chain_detection("https://api.devnet.solana.com")
+    let rpc_config = RpcConfig::new("https://api.devnet.solana.com")
         .await
         .expect("Failed to detect chain ID");
 

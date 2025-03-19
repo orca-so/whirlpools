@@ -14,7 +14,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let keypair = read_keypair_file("~/.config/solana/id.json")?;
 
     // Initialize configurations
-    let rpc_config = RpcConfig::with_chain_detection("https://api.mainnet-beta.solana.com")
+    let rpc_config = RpcConfig::new("https://api.mainnet-beta.solana.com")
         .await
         .expect("Failed to detect chain ID");
 

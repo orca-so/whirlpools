@@ -36,7 +36,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Initialize configurations with mainnet
     let start = Instant::now();
     println!("Connecting to Solana mainnet...");
-    let rpc_config = RpcConfig::with_chain_detection("https://api.mainnet-beta.solana.com")
+    let rpc_config = RpcConfig::new("https://api.mainnet-beta.solana.com")
         .await
         .expect("Failed to detect chain ID");
 

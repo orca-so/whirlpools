@@ -39,7 +39,7 @@ use std::str::FromStr;
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Initialize configurations
-    let rpc_config = RpcConfig::with_chain_detection("https://api.mainnet-beta.solana.com")
+    let rpc_config = RpcConfig::new("https://api.mainnet-beta.solana.com")
         .await?;
 
     println!("Connected to chain: {}", rpc_config.chain_name());

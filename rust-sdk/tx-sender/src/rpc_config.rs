@@ -79,18 +79,8 @@ pub struct RpcConfig {
 }
 
 impl RpcConfig {
-    /// Create a new RPC configuration with the given URL
-    pub fn new(url: impl Into<String>) -> Self {
-        Self {
-            url: url.into(),
-            supports_priority_fee_percentile: false,
-            chain_id: None,
-            timeout: 30_000,
-        }
-    }
-
     /// Async constructor with chain ID detection
-    pub async fn with_chain_detection(url: impl Into<String>) -> Result<Self, String> {
+    pub async fn new(url: impl Into<String>) -> Result<Self, String> {
         let url = url.into();
         let client = RpcClient::new(url.clone());
         let genesis_hash = client.get_genesis_hash().await.map_err(|e| {

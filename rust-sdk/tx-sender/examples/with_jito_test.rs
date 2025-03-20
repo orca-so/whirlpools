@@ -28,13 +28,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Get RPC URL from command line args or use devnet as default
     let rpc_url = env::args().nth(1).unwrap_or_else(|| "https://api.devnet.solana.com".to_string());
-    let network_name = if rpc_url.contains("devnet") {
-        "devnet"
-    } else if rpc_url.contains("mainnet") {
-        "mainnet-beta"
-    } else {
-        "custom network"
-    };
+   
 
     // Initialize RPC configuration
     let start = Instant::now();
@@ -43,11 +37,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Set the RPC configuration globally
     set_rpc(&rpc_url).await?;
 
-    println!(
-        "Connected to chain: {} in {:?}",
-        network_name,
-        start.elapsed()
-    );
+    println!("Connected to chain");
 
     // Check balance
     let client = get_rpc_client()?;
@@ -78,7 +68,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
     set_jito_block_engine_url(jito_url.clone())?;
 
     // Create a memo instruction
-    let memo_data = format!("Hello from the Orca transaction sender on {}!", network_name);
+    let memo_data = format!("Hello from the Orca transaction sender!");
     let memo_program_id = Pubkey::from_str("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr").unwrap();
     let memo_instruction = util::create_memo_instruction(memo_program_id, &payer.pubkey(), &memo_data);
 

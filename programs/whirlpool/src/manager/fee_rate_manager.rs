@@ -138,6 +138,7 @@ impl FeeRateManager {
         }
     }
 
+    // This function is called when skip is NOT used.
     pub fn advance_tick_group(&mut self) {
         match self {
             Self::Static { .. } => {
@@ -153,6 +154,7 @@ impl FeeRateManager {
         }
     }
 
+    // This function is called when skip is used.
     pub fn advance_tick_group_after_skip(
         &mut self,
         sqrt_price: u128,
@@ -186,9 +188,13 @@ impl FeeRateManager {
                     );
                 }
 
+                // volatility_accumulator is updated with the new tick_group_index based ooon new sqrt_price
                 adaptive_fee_variables
                     .update_volatility_accumulator(*tick_group_index, adaptive_fee_constants)?;
 
+                // If the swap direction is A to B, the tick group index should be decremented to "advance".
+                // If sqrt_price is not on the tick_group_size boundary, tick_group_index will advance by one more.
+                // However, it does not affect subsequent processing because it is the last iteration of the swap loop.
                 if *a_to_b {
                     *tick_group_index -= 1;
                 }
@@ -220,6 +226,10 @@ impl FeeRateManager {
         }
     }
 
+    // returns (bounded_sqrt_price, skip)
+    // skip is true if the step-by-step calculation of adaptive fee is meaningless.
+    //
+    // When skip is true, we need to call advance_tick_group_after_skip() instead of advance_tick_group().
     pub fn get_bounded_sqrt_price_target(
         &self,
         sqrt_price: u128,

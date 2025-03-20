@@ -424,8 +424,8 @@ mod static_fee_rate_manager_tests {
 
         fn check_not_bounded(fee_rate_manager: &FeeRateManager, sqrt_price: u128) {
             let non_zero_liquidity = 1_000_000_000u128;
-            let (bounded_sqrt_price, skip) = fee_rate_manager
-                .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+            let (bounded_sqrt_price, skip) =
+                fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
             assert_eq!(bounded_sqrt_price, sqrt_price);
             assert!(!skip); // skip should be always false for StaticFeeRateManager
         }
@@ -578,8 +578,22 @@ mod adaptive_fee_rate_manager_tests {
                 // = ceil( (350_000 - 500) / 10_000 ) = 35
                 // tick_group_index_reference +/- max_volatility_delta
                 // = 1 +/- 35 = -34, 36
-                assert_eq!(core_tick_group_range_lower_bound, Some((-34, sqrt_price_from_tick_index(-34 * tick_group_size as i32))));
-                assert_eq!(core_tick_group_range_upper_bound, Some((36, sqrt_price_from_tick_index(36 * tick_group_size as i32 + tick_group_size as i32))));
+                assert_eq!(
+                    core_tick_group_range_lower_bound,
+                    Some((
+                        -34,
+                        sqrt_price_from_tick_index(-34 * tick_group_size as i32)
+                    ))
+                );
+                assert_eq!(
+                    core_tick_group_range_upper_bound,
+                    Some((
+                        36,
+                        sqrt_price_from_tick_index(
+                            36 * tick_group_size as i32 + tick_group_size as i32
+                        )
+                    ))
+                );
 
                 check_constants(
                     &adaptive_fee_constants,
@@ -631,8 +645,22 @@ mod adaptive_fee_rate_manager_tests {
                 // tick_group_index_reference should be updated
                 // tick_group_index_reference +/- max_volatility_delta
                 // = 16 +/- 35 = -19, 51
-                assert_eq!(core_tick_group_range_lower_bound, Some((-19, sqrt_price_from_tick_index(-19 * tick_group_size as i32))));
-                assert_eq!(core_tick_group_range_upper_bound, Some((51, sqrt_price_from_tick_index(51 * tick_group_size as i32 + tick_group_size as i32))));
+                assert_eq!(
+                    core_tick_group_range_lower_bound,
+                    Some((
+                        -19,
+                        sqrt_price_from_tick_index(-19 * tick_group_size as i32)
+                    ))
+                );
+                assert_eq!(
+                    core_tick_group_range_upper_bound,
+                    Some((
+                        51,
+                        sqrt_price_from_tick_index(
+                            51 * tick_group_size as i32 + tick_group_size as i32
+                        )
+                    ))
+                );
 
                 check_constants(
                     &adaptive_fee_constants,
@@ -697,18 +725,22 @@ mod adaptive_fee_rate_manager_tests {
             )
             .unwrap();
 
-            let expected_core_tick_group_range_lower_bound = expected_lower_tick_group_index.map(|index| {
-                (
-                    index,
-                    sqrt_price_from_tick_index(index * tick_group_size as i32),
-                )
-            });
-            let expected_core_tick_group_range_upper_bound = expected_upper_tick_group_index.map(|index| {
-                (
-                    index,
-                    sqrt_price_from_tick_index(index * tick_group_size as i32 + tick_group_size as i32),
-                )
-            });
+            let expected_core_tick_group_range_lower_bound =
+                expected_lower_tick_group_index.map(|index| {
+                    (
+                        index,
+                        sqrt_price_from_tick_index(index * tick_group_size as i32),
+                    )
+                });
+            let expected_core_tick_group_range_upper_bound =
+                expected_upper_tick_group_index.map(|index| {
+                    (
+                        index,
+                        sqrt_price_from_tick_index(
+                            index * tick_group_size as i32 + tick_group_size as i32,
+                        ),
+                    )
+                });
 
             match fee_rate_manager {
                 FeeRateManager::Adaptive {
@@ -716,11 +748,17 @@ mod adaptive_fee_rate_manager_tests {
                     core_tick_group_range_upper_bound,
                     ..
                 } => {
-                    assert_eq!(core_tick_group_range_lower_bound, expected_core_tick_group_range_lower_bound);
-                    assert_eq!(core_tick_group_range_upper_bound, expected_core_tick_group_range_upper_bound);
+                    assert_eq!(
+                        core_tick_group_range_lower_bound,
+                        expected_core_tick_group_range_lower_bound
+                    );
+                    assert_eq!(
+                        core_tick_group_range_upper_bound,
+                        expected_core_tick_group_range_upper_bound
+                    );
                 }
                 _ => panic!("Adaptive variant expected."),
-            }    
+            }
         }
 
         // max_volatility_delta = ceil(  (max_volatility_accumulator - volatility_reference) / VOLATILITY_ACCUMULATOR_SCALE_FACTOR )
@@ -784,7 +822,14 @@ mod adaptive_fee_rate_manager_tests {
 
             // None if the left edge of lower bound is out of the tick range
             // note: MIN_TICK_INDEX will not be the left edge of lower bound
-            test(1, -443600, 0, 350_000, Some(-443600 - 35), Some(-443600 + 35));
+            test(
+                1,
+                -443600,
+                0,
+                350_000,
+                Some(-443600 - 35),
+                Some(-443600 + 35),
+            );
             test(1, -443601, 0, 350_000, None, Some(-443601 + 35));
             test(1, -443602, 0, 350_000, None, Some(-443602 + 35));
             test(1, -443635, 0, 350_000, None, Some(-443635 + 35));

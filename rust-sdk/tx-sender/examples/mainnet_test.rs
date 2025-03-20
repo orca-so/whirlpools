@@ -1,16 +1,18 @@
 use orca_tx_sender::{
-    FeeConfig, JitoFeeStrategy, JitoPercentile, PriorityFeeStrategy, RpcConfig,
-    TransactionSender,
+    build_and_send_transaction,
+    JitoFeeStrategy, Percentile,JitoPercentile, PriorityFeeStrategy, SendOptions,
+    set_priority_fee_strategy, set_jito_fee_strategy, set_compute_unit_margin_multiplier, 
+    set_jito_block_engine_url, set_rpc, get_rpc_client
 };
-use solana_program::system_instruction;
+use solana_program::instruction::Instruction;
 use solana_sdk::pubkey::Pubkey;
-use solana_sdk::signature::{read_keypair_file, Keypair, Signer};
+use solana_sdk::signature::{read_keypair_file, Signer};
 use std::error::Error;
-use std::fs::File;
-use std::io::Write;
 use std::path::Path;
 use std::str::FromStr;
 use std::time::Instant;
+use solana_sdk::instruction::AccountMeta;
+use solana_sdk::commitment_config::CommitmentLevel;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
@@ -25,79 +27,101 @@ async fn main() -> Result<(), Box<dyn Error>> {
         return Err("Keypair file does not exist".into());
     };
 
-    // Use a fixed recipient account - IMPORTANT: Replace with your own address for mainnet testing
-    let recipient = Pubkey::from_str("5DX5Hwnw2xwSTg93TWgUmxcZVkBMxv25URizo83taNGd")
-        .expect("Invalid recipient pubkey");
-
     println!("Test keypair:");
     println!("  Payer: {}", payer.pubkey());
-    println!("  Recipient: {}", recipient);
 
-    // Initialize configurations with mainnet
+    // Initialize RPC configuration with mainnet
     let start = Instant::now();
     println!("Connecting to Solana mainnet...");
-    let rpc_config = RpcConfig::new("https://api.mainnet-beta.solana.com")
-        .await
-        .expect("Failed to detect chain ID");
+    
+    // Set the RPC configuration globally
+    set_rpc("https://api.mainnet-beta.solana.com").await?;
 
     println!(
         "Connected to chain: {} in {:?}",
-        rpc_config.chain_name(),
+        "mainnet-beta",
         start.elapsed()
     );
 
-    // Configure fee settings with dynamic Jito fee
-    let fee_config = FeeConfig {
-        priority_fee: PriorityFeeStrategy::Exact((55_000)),
-        jito: JitoFeeStrategy::Dynamic {
-            percentile: JitoPercentile::P95,
-            max_lamports: 10_000,
-        },
-        ..Default::default()
-    };
+    // Check balance
+    let client = get_rpc_client()?;
+    let balance = client.get_balance(&payer.pubkey()).await?;
+    println!("Account balance: {} lamports", balance);
 
-    // Create sender instance
-    let sender = TransactionSender::new(rpc_config, fee_config);
-    let client = sender.rpc_client();
-
-    // Create transfer instruction (send a very small amount)
-    let transfer_amount = 100_000;
-    println!(
-        "Using transfer amount of {} lamports (0.001 SOL)",
-        transfer_amount
-    );
-    let transfer_ix = system_instruction::transfer(&payer.pubkey(), &recipient, transfer_amount);
-
-    println!("Sending {} lamports to {}", transfer_amount, recipient);
-
-    // Build and send transaction
-    let start = Instant::now();
-    println!("Building and sending transaction...");
-    let signature = sender
-        .build_and_send_transaction(vec![transfer_ix], &[&payer])
-        .await?;
-
-    println!("Transaction sent: {}", signature);
-    println!("Transaction sent in {:?}", start.elapsed());
-
-    // Wait for confirmation
-    let start = Instant::now();
-    println!("Waiting for transaction confirmation...");
-    let mut confirmed = false;
-    while start.elapsed().as_secs() < 30 && !confirmed {
-        if let Ok(status) = client.get_signature_status(&signature).await {
-            if status.is_some() {
-                confirmed = true;
-                println!("Transaction confirmed in {:?}", start.elapsed());
-                break;
-            }
-        }
-        tokio::time::sleep(tokio::time::Duration::from_millis(500)).await;
+    // If balance is still zero, we can't proceed
+    if balance == 0 {
+        println!("Error: Account has zero balance. Cannot proceed with test.");
+        return Ok(());
     }
 
-    let recipient_balance = client.get_balance(&recipient).await?;
-    println!("Recipient balance: {} lamports", recipient_balance);
-    println!("✅ Test completed successfully!");
+    // 1. Configure fee settings with dynamic priority fees and Jito fees
+    let compute_multiplier = 1.1;
+    let jito_url = "https://bundles.jito.wtf".to_string();
+    
+    // Set individual configuration options
+    set_priority_fee_strategy(PriorityFeeStrategy::Dynamic {
+        percentile: Percentile::P95,
+        max_lamports: 10_000,
+    })?;
+    
+    set_jito_fee_strategy(JitoFeeStrategy::Dynamic {
+        percentile: JitoPercentile::P95,
+        max_lamports: 10_000,
+    })?;
+    set_compute_unit_margin_multiplier(compute_multiplier)?;
+    set_jito_block_engine_url(jito_url.clone())?;
+
+    // Create a memo instruction
+    let memo_data = "Hello from the Orca transaction sender on mainnet!";
+    let memo_program_id = Pubkey::from_str("MemoSq4gqABAXKb96qnH8TysNcWxMyWCqXgDLGmfcHr").unwrap();
+    let memo_instruction = create_memo_instruction(memo_program_id, &payer.pubkey(), memo_data);
+
+    // Create SendOptions with more retries
+    let options = SendOptions {
+        skip_preflight: true,            // Skip preflight checks
+        commitment: CommitmentLevel::Confirmed,
+        max_retries: 5,                  
+        timeout_ms: 60_000,
+    };
+
+    // Build and send transaction with dynamic priority fees and Jito fees
+    let start = Instant::now();
+    println!("Building and sending transaction with dynamic priority fees and Jito fees...");
+    
+    let signature = build_and_send_transaction(
+        vec![memo_instruction.clone()],
+        &[&payer],
+        Some(options.clone()),
+    ).await?;
+
+    println!("Transaction sent: {}", signature);
+    println!("Transaction with dynamic fees sent in {:?}", start.elapsed());
+
+    // 2. Now update fee config to disable priority fees but keep Jito fees
+    println!("Changing priority fee strategy to Disabled...");
+    set_priority_fee_strategy(PriorityFeeStrategy::Disabled)?;
+
+    // Build and send transaction with no priority fees but with Jito fees
+    let start = Instant::now();
+    println!("Building and sending transaction with no priority fees but with Jito fees...");
+    
+    let signature = build_and_send_transaction(
+        vec![memo_instruction],
+        &[&payer],
+        Some(options),
+    ).await?;
+
+    println!("Transaction sent: {}", signature);
+    println!("Transaction with Jito fees only sent in {:?}", start.elapsed());
 
     Ok(())
+}
+
+// Helper function to create a memo instruction
+fn create_memo_instruction(program_id: Pubkey, signer: &Pubkey, memo: &str) -> Instruction {
+    Instruction {
+        program_id,
+        accounts: vec![AccountMeta::new_readonly(*signer, true)],
+        data: memo.as_bytes().to_vec(),
+    }
 }

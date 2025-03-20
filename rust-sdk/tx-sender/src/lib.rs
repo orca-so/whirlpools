@@ -1,167 +1,201 @@
 mod compute_budget;
+mod config;
 mod fee_config;
 mod jito;
 mod rpc_config;
-mod tx_config;
 
 // Re-export public types with wildcards
 pub use compute_budget::*;
+pub use config::*;
 pub use fee_config::*;
 pub use jito::*;
 pub use rpc_config::*;
-pub use tx_config::*;
 
 // Import types for internal use
-use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_program::instruction::Instruction;
 use solana_program::message::Message;
-use solana_program::pubkey::Pubkey;
-use solana_sdk::hash::Hash;
 use solana_sdk::signature::{Signature, Signer};
 use solana_sdk::transaction::Transaction;
-use std::sync::Arc;
+use solana_sdk::commitment_config::CommitmentConfig;
+use solana_client::rpc_config::RpcSendTransactionConfig;
 use std::time::{Duration, Instant};
 use tokio::time::sleep;
 
-/// Default compute units for transactions
-pub const DEFAULT_COMPUTE_UNITS: u32 = 200_000;
 
-/// Transaction sender for building and sending Solana transactions
-#[derive(Clone)]
-pub struct TransactionSender {
-    /// Immutable RPC configuration
-    rpc_config: Arc<RpcConfig>,
+/// Build and send a transaction using the global configuration
+/// 
+/// This function:
+/// 1. Builds an unsigned transaction with all necessary instructions
+/// 2. Signs the transaction with all provided signers
+/// 3. Sends the transaction and waits for confirmation
+pub async fn build_and_send_transaction(
+    instructions: Vec<Instruction>,
+    signers: &[&dyn Signer],
+    options: Option<SendOptions>,
+) -> Result<Signature, String> {
+    // Get the payer (first signer)
+    let payer = signers.first().ok_or_else(|| {
+        "At least one signer is required".to_string()
+    })?;
 
-    /// Immutable fee configuration
-    fee_config: Arc<FeeConfig>,
+    // Get RPC client
+    let rpc_client = config::get_rpc_client()?;
+      println!("getting blockhash");
+    // Get recent blockhash - needed for building and signing
+    let recent_blockhash = rpc_client.get_latest_blockhash().await
+        .map_err(|e| format!("RPC Error: {}", e))?;
 
-    /// Reusable RPC client with connection pool
-    rpc_client: Arc<RpcClient>,
+    // Log the blockhash for debugging
+    println!("Using blockhash: {}", recent_blockhash);
+    // Build transaction with compute budget and priority fees
+    // Pass recent_blockhash to avoid fetching it twice
+    let mut tx = build_transaction(instructions, *payer, recent_blockhash).await?;
 
-    /// Transaction construction settings
-    tx_config: TransactionConfig,
+    tx.sign(signers, recent_blockhash);
+
+    // Send with retry logic
+    send_transaction(tx, options).await
 }
 
-impl TransactionSender {
-    /// Create a new transaction sender with the given configurations
-    pub fn new(rpc_config: RpcConfig, fee_config: FeeConfig) -> Self {
-        let rpc_client = Arc::new(rpc_config.client());
+/// Build a transaction with compute budget and priority fees
+/// 
+/// This function handles:
+/// 1. Building a transaction message with all instructions
+/// 2. Adding compute budget instructions
+/// 3. Adding any Jito tip instructions
+pub async fn build_transaction(
+    mut instructions: Vec<Instruction>,
+    payer: &dyn Signer,
+    recent_blockhash: impl Into<solana_sdk::hash::Hash>,
+) -> Result<Transaction, String> {
+    // Get the global configuration
+    let config = config::get_global_config().read().map_err(|e| format!("Lock error: {}", e))?;
+    
+    // Get RPC client
+    let rpc_client = config::get_rpc_client()?;
+    
+    // Convert the blockhash parameter
+    let recent_blockhash = recent_blockhash.into();
+    
+    // Estimate compute units by simulating the transaction
+    let estimated_units = compute_budget::estimate_compute_units(&rpc_client, &instructions, &payer.pubkey()).await?;
+    
+    // Get writable accounts for priority fee calculation
+    let writable_accounts = compute_budget::get_writable_accounts(&instructions);
 
-        Self {
-            rpc_config: Arc::new(rpc_config),
-            fee_config: Arc::new(fee_config),
-            rpc_client,
-            tx_config: TransactionConfig::default(),
-        }
+    // Add compute budget instructions (similar to addComputeBudgetAndPriorityFeeInstructions in Kit)
+    let compute_budget_ixs = compute_budget::add_compute_budget_instructions(
+        &rpc_client,
+        estimated_units,
+        config.rpc_config.as_ref().ok_or_else(|| "RPC not configured. Call set_rpc() first.".to_string())?,
+        &config.fee_config,
+        &writable_accounts,
+    ).await?;
+    
+    // Add compute budget instructions to the beginning of the instruction list
+    for (idx, instr) in compute_budget_ixs.into_iter().enumerate() {
+        instructions.insert(idx, instr);
     }
 
-    /// Set transaction configuration
-    pub fn with_tx_config(mut self, tx_config: TransactionConfig) -> Self {
-        self.tx_config = tx_config;
-        self
+    // Add Jito tip instruction if enabled (similar to addJitoTipInstruction in Kit)
+    if let Some(jito_tip_ix) = jito::add_jito_tip_instruction(&config.fee_config, &payer.pubkey()).await? {
+        instructions.insert(0, jito_tip_ix);
     }
 
-    /// Get a reference to the RPC client
-    pub fn rpc_client(&self) -> &RpcClient {
-        &self.rpc_client
+    // Create message with blockhash (similar to TransactionMessage in Kit)
+    let message = Message::new_with_blockhash(
+        &instructions,
+        Some(&payer.pubkey()),
+        &recent_blockhash,
+    );
+    
+    // Return unsigned transaction (signing happens at the higher level)
+    Ok(Transaction::new_unsigned(message))
+}
+
+/// Send a transaction with retry logic using the global configuration
+/// 
+/// This function handles:
+/// 1. Sending the transaction to the network
+/// 2. Implementing retry logic with exponential backoff
+/// 3. Waiting for transaction confirmation
+pub async fn send_transaction(
+    transaction: Transaction,
+    options: Option<SendOptions>,
+) -> Result<Signature, String> {
+    // Get RPC client
+    let rpc_client = config::get_rpc_client()?;
+    
+    // Use provided options or defaults
+    let options = options.unwrap_or_default();
+    
+    // Simulate transaction first (similar to simulateTransaction in Kit)
+    let sim_result = rpc_client.simulate_transaction(&transaction)
+        .await
+        .map_err(|e| format!("Transaction simulation failed: {}", e))?;
+
+    if let Some(err) = sim_result.value.err {
+        return Err(format!("Transaction simulation failed: {}", err));
     }
 
-    /// Build and send a transaction with the given instructions and signers
-    pub async fn build_and_send_transaction(
-        &self,
-        instructions: Vec<Instruction>,
-        signers: &[&dyn Signer],
-    ) -> Result<Signature, String> {
-        // Get the payer (first signer)
-        let payer = signers.first().ok_or_else(|| {
-            "At least one signer is required".to_string()
-        })?;
+    // Implement send with retry logic (similar to sendWithRetry in Kit)
+    let expiry_time = Instant::now() + Duration::from_millis(options.timeout_ms);
+    let mut retries = 0;
 
-        // Build transaction with compute budget and priority fees
-        let mut tx = self.build_transaction(instructions, payer.pubkey()).await?;
+    while Instant::now() < expiry_time && retries <= options.max_retries {
+        let send_config = RpcSendTransactionConfig {
+            skip_preflight: options.skip_preflight,
+            preflight_commitment: Some(options.commitment.clone()),
+            max_retries: Some(0), // We handle retries ourselves
+            ..RpcSendTransactionConfig::default()
+        };
 
-        // Get recent blockhash
-        let recent_blockhash = self.rpc_client.get_latest_blockhash().await
-            .map_err(|e| format!("RPC Error: {}", e))?;
-
-        // Sign the transaction
-        tx.sign(signers, recent_blockhash);
-
-        // Send with retry logic
-        self.send_with_retry(tx).await
-    }
-
-    /// Build a transaction with compute budget and priority fees
-    pub async fn build_transaction(
-        &self,
-        mut instructions: Vec<Instruction>,
-        payer: Pubkey,
-    ) -> Result<Transaction, String> {
-        // Get writable accounts for priority fee calculation
-        let writable_accounts = get_writable_accounts(&instructions);
-
-        // Add compute budget instructions
-        let compute_budget_ixs = add_compute_budget_instructions(
-            &self.rpc_client,
-            DEFAULT_COMPUTE_UNITS,
-            &self.rpc_config,
-            &self.fee_config,
-            &writable_accounts[..],
-        )
-        .await?;
-        
-        // Add compute budget instructions to the beginning of the instruction list
-        for (idx, instr) in compute_budget_ixs.into_iter().enumerate() {
-            instructions.insert(idx, instr);
-        }
-
-        // Add Jito tip instruction if enabled
-        if let Some(jito_tip_ix) = add_jito_tip_instruction(&self.fee_config, &payer).await? {
-            instructions.insert(0, jito_tip_ix);
-        }
-
-        // Create message with placeholder blockhash
-        let message = Message::new_with_blockhash(
-            &instructions,
-            Some(&payer),
-            &Hash::default(), // Placeholder, will be replaced when signing
-        );
-
-        Ok(Transaction::new_unsigned(message))
-    }
-
-    /// Send a transaction with retry logic
-    async fn send_with_retry(&self, transaction: Transaction) -> Result<Signature, String> {
-        let start_time = Instant::now();
-        let config = self.tx_config.to_rpc_config();
-        let mut retries = 0;
-
-        loop {
-            // Check timeout
-            if start_time.elapsed() > self.tx_config.timeout() {
-                return Err(format!("Transaction timeout ({:?})", self.tx_config.timeout()));
-            }
-
-            // Send transaction
-            match self
-                .rpc_client
-                .send_transaction_with_config(&transaction, config.clone())
-                .await
-            {
-                Ok(signature) => return Ok(signature),
-                Err(err) => {
-                    // Check if we should retry
-                    if retries >= self.tx_config.max_retries {
-                        return Err(format!("RPC Error: {}", err));
+        match rpc_client.send_transaction_with_config(&transaction, send_config)
+            .await {
+            Ok(signature) => {
+                // Wait for confirmation (similar to awaitTransactionSignatureConfirmation in Kit)
+                let deadline = Instant::now() + Duration::from_millis(options.timeout_ms);
+                
+                loop {
+                    let status = rpc_client
+                        .get_signature_status_with_commitment(&signature, CommitmentConfig { commitment: options.commitment })
+                        .await
+                        .map_err(|e| format!("Failed to get signature status: {}", e))?;
+                    
+                    match status {
+                        // Transaction is confirmed
+                        Some(Ok(())) => {
+                            return Ok(signature);
+                        }
+                        // Transaction failed
+                        Some(Err(err)) => {
+                            return Err(format!("Transaction failed: {}", err));
+                        }
+                        // Transaction still processing, keep waiting until deadline
+                        None => {
+                            if Instant::now() > deadline {
+                                break;
+                            }
+                            sleep(Duration::from_millis(500)).await;
+                        }
                     }
-
+                }
+            }
+            Err(_) => {
+                retries += 1;
+                if retries <= options.max_retries {
                     // Exponential backoff
                     let backoff = Duration::from_millis(500 * 2u64.pow(retries as u32));
                     sleep(backoff).await;
-                    retries += 1;
                 }
             }
         }
+    }
+
+    if Instant::now() >= expiry_time {
+        Err("Transaction timeout".to_string())
+    } else {
+        Err("Maximum retries exceeded".to_string())
     }
 }
 

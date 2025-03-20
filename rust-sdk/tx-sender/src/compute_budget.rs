@@ -2,9 +2,44 @@ use crate::fee_config::{FeeConfig, Percentile, PriorityFeeStrategy};
 use crate::rpc_config::RpcConfig;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_program::instruction::Instruction;
+use solana_program::message::Message;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
+use solana_sdk::transaction::Transaction;
 use solana_rpc_client_api::response::RpcPrioritizationFee;
+
+/// Estimate compute units by simulating a transaction
+pub async fn estimate_compute_units(
+    rpc_client: &RpcClient,
+    instructions: &[Instruction],
+    payer: &Pubkey,
+) -> Result<u32, String> {
+    let recent_blockhash = rpc_client.get_latest_blockhash().await
+    .map_err(|e| format!("RPC Error: {}", e))?;
+    let message = Message::new_with_blockhash(
+        &instructions,
+        Some(payer),
+        &recent_blockhash,
+    );
+
+    let transaction = Transaction::new_unsigned(message);
+    // Simulate transaction
+    let simulation_result = rpc_client.simulate_transaction(&transaction)
+        .await
+        .map_err(|e| format!("Transaction simulation failed: {}", e))?;
+    
+    // Return error if simulation failed
+    if let Some(err) = simulation_result.value.err {
+        return Err(format!("Transaction simulation failed: {}", err));
+    }
+    
+    // Return error if no units consumed value was returned (should never happen)
+    match simulation_result.value.units_consumed {
+        Some(units) => Ok(units as u32),
+        None => Err("Transaction simulation didn't return consumed units".to_string())
+    }
+}
+
 
 /// Calculate and return compute budget instructions for a transaction
 pub async fn add_compute_budget_instructions(
@@ -17,8 +52,10 @@ pub async fn add_compute_budget_instructions(
     let mut budget_instructions = Vec::new();
     
     // Add compute unit limit instruction with margin
-    let compute_units_with_margin =
-        (compute_units as f64 * fee_config.compute_unit_margin_multiplier) as u32;
+    // Calculate percentage margin from the multiplier
+    let compute_units_with_margin = (compute_units as f64 * (fee_config.compute_unit_margin_multiplier)) as u32;
+
+    
     budget_instructions.push(
         ComputeBudgetInstruction::set_compute_unit_limit(compute_units_with_margin),
     );
@@ -34,7 +71,6 @@ pub async fn add_compute_budget_instructions(
                 rpc_config,
                 writable_accounts,
                 *percentile,
-                compute_units,
             )
             .await?;
             let clamped_fee = std::cmp::min(fee, *max_lamports);
@@ -64,7 +100,6 @@ pub(crate) async fn calculate_dynamic_priority_fee(
     rpc_config: &RpcConfig,
     writable_accounts: &[Pubkey],
     percentile: Percentile,
-    _compute_units: u32, // Not used but kept for future enhancements
 ) -> Result<u64, String> {
     if rpc_config.supports_priority_fee_percentile {
         get_priority_fee_with_percentile(client, writable_accounts, percentile).await

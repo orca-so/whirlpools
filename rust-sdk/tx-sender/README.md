@@ -14,8 +14,8 @@ A Rust crate for building and sending Solana transactions with priority fees and
 
 ## Version Compatibility
 
-- Solana CLI: 1.17.22
-- Solana SDK: 1.17.22
+- Solana CLI: >=1.16, <3.0
+- Solana SDK: >=1.16
 
 ## Installation
 
@@ -223,6 +223,21 @@ let signature = sender
 // Use default options by passing None
 let signature = build_and_send_transaction(instructions, signers, None).await?;
 ```
+
+## Testing
+
+All testing and example code is located in the `examples` directory. You can run the examples directly:
+
+```bash
+# Priority fees only (no Jito fees)
+cargo run --example priority_only_test "https://api.devnet.solana.com"
+
+# With Jito fees
+cargo run --example with_jito_test "https://api.mainnet-beta.solana.com"
+```
+
+You can provide any custom RPC URL as a command-line argument. If no URL is provided,
+the examples will default to using the Solana devnet URL.
 
 ## License
 

@@ -1,4 +1,3 @@
-/// Percentile for priority fee calculation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Percentile {
     P25,
@@ -9,7 +8,6 @@ pub enum Percentile {
 }
 
 impl Percentile {
-    /// Convert to a numeric value (0-100)
     pub fn as_value(&self) -> u8 {
         match self {
             Self::P25 => 25,
@@ -21,7 +19,6 @@ impl Percentile {
     }
 }
 
-/// Percentile for Jito tip calculation
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum JitoPercentile {
     P25,
@@ -32,49 +29,31 @@ pub enum JitoPercentile {
     P99,
 }
 
-/// Priority fee strategy for Solana transactions
 #[derive(Debug, Clone, PartialEq)]
 pub enum PriorityFeeStrategy {
-    /// Dynamically calculate priority fee based on recent fees
     Dynamic {
         percentile: Percentile,
         max_lamports: u64,
     },
-    /// Use a fixed priority fee
     Exact(u64),
-    /// Disable priority fees
     Disabled,
 }
 
-/// Jito tip strategy for Solana transactions
 #[derive(Debug, Clone, PartialEq)]
 pub enum JitoFeeStrategy {
-    /// Dynamically calculate Jito tip based on recent tips
     Dynamic {
         percentile: JitoPercentile,
         max_lamports: u64,
     },
-    /// Use a fixed Jito tip
     Exact(u64),
-    /// Disable Jito tips
     Disabled,
 }
 
-/// Fee configuration for Solana transactions
 #[derive(Debug, Clone, PartialEq)]
 pub struct FeeConfig {
-    /// Priority fee strategy (Solana network)
     pub priority_fee: PriorityFeeStrategy,
-
-    /// Jito tip strategy (requires block engine URL)
     pub jito: JitoFeeStrategy,
-
-    /// Multiplier for compute unit budget estimation
-    /// Default: 1.1
     pub compute_unit_margin_multiplier: f64,
-
-    /// Jito block engine URL
-    /// Default: "https://bundles.jito.wtf"
     pub jito_block_engine_url: String,
 }
 

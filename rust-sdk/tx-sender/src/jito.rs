@@ -20,19 +20,12 @@ const JITO_TIP_ADDRESSES: [&str; 8] = [
 /// Represents a single entry in the Jito tip data response
 #[derive(Debug, Deserialize)]
 pub struct JitoTipData {
-    /// Timestamp of the tip data
     pub time: String,
-    /// 25th percentile of landed tips (in SOL)
     pub landed_tips_25th_percentile: f64,
-    /// 50th percentile of landed tips (in SOL)
     pub landed_tips_50th_percentile: f64,
-    /// 75th percentile of landed tips (in SOL)
     pub landed_tips_75th_percentile: f64,
-    /// 95th percentile of landed tips (in SOL)
     pub landed_tips_95th_percentile: f64,
-    /// 99th percentile of landed tips (in SOL)
     pub landed_tips_99th_percentile: f64,
-    /// 50th percentile exponential moving average of landed tips (in SOL)
     pub ema_landed_tips_50th_percentile: f64,
 }
 

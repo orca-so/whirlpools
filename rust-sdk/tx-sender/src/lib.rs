@@ -11,17 +11,6 @@ pub use fee_config::*;
 pub use jito::*;
 pub use rpc_config::*;
 
-// Import types for internal use
-use solana_program::instruction::Instruction;
-use solana_program::message::Message;
-use solana_sdk::signature::{Signature, Signer};
-use solana_sdk::transaction::Transaction;
-use solana_sdk::commitment_config::CommitmentConfig;
-use solana_client::rpc_config::RpcSendTransactionConfig;
-use std::time::{Duration, Instant};
-use tokio::time::sleep;
-
-
 /// Build and send a transaction using the global configuration
 /// 
 /// This function:
@@ -83,11 +72,14 @@ pub async fn build_transaction(
     // Get writable accounts for priority fee calculation
     let writable_accounts = compute_budget::get_writable_accounts(&instructions);
 
+    let rpc_config = config.rpc_config.as_ref()
+    .ok_or_else(|| "RPC not configured. Call set_rpc() first.".to_string())?;
+
     // Add compute budget instructions (similar to addComputeBudgetAndPriorityFeeInstructions in Kit)
     let compute_budget_ixs = compute_budget::add_compute_budget_instructions(
         &rpc_client,
         estimated_units,
-        config.rpc_config.as_ref().ok_or_else(|| "RPC not configured. Call set_rpc() first.".to_string())?,
+        rpc_config,
         &config.fee_config,
         &writable_accounts,
     ).await?;
@@ -97,9 +89,13 @@ pub async fn build_transaction(
         instructions.insert(idx, instr);
     }
 
-    // Add Jito tip instruction if enabled (similar to addJitoTipInstruction in Kit)
-    if let Some(jito_tip_ix) = jito::add_jito_tip_instruction(&config.fee_config, &payer.pubkey()).await? {
-        instructions.insert(0, jito_tip_ix);
+    // Check if network is mainnet before adding Jito tip
+    if config.fee_config.jito != JitoFeeStrategy::Disabled {
+        if !rpc_config.is_mainnet() {
+            println!("Warning: Jito tips are only supported on mainnet. Skipping Jito tip.");
+        } else if let Some(jito_tip_ix) = jito::add_jito_tip_instruction(&config.fee_config, &payer.pubkey()).await? {
+            instructions.insert(0, jito_tip_ix);
+        }
     }
 
     // Create message with blockhash (similar to TransactionMessage in Kit)
@@ -202,6 +198,26 @@ pub async fn send_transaction(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::compute_budget;
+    use solana_sdk::signature::{Keypair, Signer};
+    use solana_sdk::system_instruction;
+
+    #[test]
+    fn test_get_writable_accounts() {
+        let keypair = Keypair::new();
+        let recipient = Keypair::new().pubkey();
+
+        let instructions = vec![system_instruction::transfer(
+            &keypair.pubkey(),
+            &recipient,
+            1_000_000,
+        )];
+
+        let writable_accounts = compute_budget::get_writable_accounts(&instructions);
+        assert_eq!(writable_accounts.len(), 2);
+        assert!(writable_accounts.contains(&keypair.pubkey()));
+        assert!(writable_accounts.contains(&recipient));
+    }
 
     #[test]
     fn test_fee_config_default() {

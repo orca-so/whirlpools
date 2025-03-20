@@ -11,12 +11,12 @@
   "dependencies": {
     "@orca-so/whirlpools": "*",
     "@solana/kit": "^2.1.0",
-    "next": "^15.2.2",
+    "next": "^15.2.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },
   "devDependencies": {
-    "@next/bundle-analyzer": "^15.2.2",
+    "@next/bundle-analyzer": "^15.2.3",
     "@types/node": "^22.13.10",
     "@types/react": "^18.3.13",
     "copy-webpack-plugin": "^13.0.0",

@@ -1216,37 +1216,37 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(!skip);
 
         // sqrt_price is on the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(!skip);
 
         // sqrt_price is far than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 - 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024));
         assert!(!skip);
 
         // sqrt_price is very far than the boundary
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024));
         assert!(!skip);
 
         fee_rate_manager.advance_tick_group();
 
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024 - 64));
         assert!(!skip);
     }
@@ -1274,37 +1274,37 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(skip); // skip, but 1024 + 16 should be used
 
         // sqrt_price is on the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(skip); // skip, but 1024 should be used
 
         // sqrt_price is far than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 - 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024 - 16));
         assert!(skip);
 
         // sqrt_price is very far than the boundary
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
         assert_eq!(bounded_sqrt_price, MIN_SQRT_PRICE_X64);
         assert!(skip);
 
         fee_rate_manager.advance_tick_group();
 
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
         assert_eq!(bounded_sqrt_price, MIN_SQRT_PRICE_X64);
         assert!(skip);
     }
@@ -1335,37 +1335,37 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(skip); // skip, but 1024 + 16 should be used
 
         // sqrt_price is on the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(skip); // skip, but 1024 should be used
 
         // sqrt_price is far than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 - 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024 - 16));
         assert!(skip);
 
         // sqrt_price is very far than the boundary
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, MIN_SQRT_PRICE_X64);
         assert!(skip);
 
         fee_rate_manager.advance_tick_group();
 
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, MIN_SQRT_PRICE_X64);
         assert!(skip);
     }
@@ -1392,7 +1392,7 @@ mod adaptive_fee_rate_manager_tests {
                 tick_group_index_reference: 0,
                 volatility_accumulator: 0,
                 volatility_reference: 0,
-            }
+            },
         };
 
         // a to b = right(positive) to left(negative)
@@ -1411,15 +1411,15 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary (core range right end)
         let sqrt_price = sqrt_price_from_tick_index(1024);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(skip); // skip, but 1024 should be used
 
         // sqrt_price is far than the boundary
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(8 * 64 + 64)); // core range right end
         assert!(skip);
 
@@ -1436,15 +1436,15 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary
         let sqrt_price = sqrt_price_from_tick_index(64 * 8 + 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(!skip);
 
         // sqrt_price is far than the boundary
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(64 * 8)); // should be bounded
         assert!(!skip);
 
@@ -1461,8 +1461,8 @@ mod adaptive_fee_rate_manager_tests {
 
         // no boundary
         let sqrt_price = MIN_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, MIN_SQRT_PRICE_X64);
         assert!(skip);
     }
@@ -1551,37 +1551,40 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 32 + 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(skip); // skip, but 1024 + 32 + 16 should be used
 
         // sqrt_price is on the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 64);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(skip); // skip, but 1024 + 64 should be used
 
         // sqrt_price is far than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 64 + 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
-        assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024 + 64 + 16));
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
+        assert_eq!(
+            bounded_sqrt_price,
+            sqrt_price_from_tick_index(1024 + 64 + 16)
+        );
         assert!(skip);
 
         // sqrt_price is very far than the boundary
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
         assert_eq!(bounded_sqrt_price, MAX_SQRT_PRICE_X64);
         assert!(skip);
-        
+
         fee_rate_manager.advance_tick_group();
 
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, zero_liquidity);
         assert_eq!(bounded_sqrt_price, MAX_SQRT_PRICE_X64);
         assert!(skip);
     }
@@ -1612,37 +1615,40 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 32 + 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(skip); // skip, but 1024 + 32 + 16 should be used
 
         // sqrt_price is on the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 64);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(skip); // skip, but 1024 + 64 should be used
 
         // sqrt_price is far than the boundary
         let sqrt_price = sqrt_price_from_tick_index(1024 + 64 + 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
-        assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(1024 + 64 + 16));
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        assert_eq!(
+            bounded_sqrt_price,
+            sqrt_price_from_tick_index(1024 + 64 + 16)
+        );
         assert!(skip);
 
         // sqrt_price is very far than the boundary
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, MAX_SQRT_PRICE_X64);
         assert!(skip);
-        
+
         fee_rate_manager.advance_tick_group();
 
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, MAX_SQRT_PRICE_X64);
         assert!(skip);
     }
@@ -1669,7 +1675,7 @@ mod adaptive_fee_rate_manager_tests {
                 tick_group_index_reference: 0,
                 volatility_accumulator: 0,
                 volatility_reference: 0,
-            }
+            },
         };
 
         // b to a = left(negative) to right(positive)
@@ -1688,8 +1694,8 @@ mod adaptive_fee_rate_manager_tests {
 
         // no boundary
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, MAX_SQRT_PRICE_X64);
         assert!(skip);
 
@@ -1706,15 +1712,15 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary
         let sqrt_price = sqrt_price_from_tick_index(64 * -8 + 32 + 16);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(!skip);
 
         // sqrt_price is far than the boundary
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(64 * -8 + 64)); // should be bounded
         assert!(!skip);
 
@@ -1731,17 +1737,558 @@ mod adaptive_fee_rate_manager_tests {
 
         // sqrt_price is near than the boundary (core range left end)
         let sqrt_price = sqrt_price_from_tick_index(-1024);
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price);
         assert!(skip); // skip, but -1024 should be used
 
         // sqrt_price is far than the boundary
         let sqrt_price = MAX_SQRT_PRICE_X64;
-        let (bounded_sqrt_price, skip) = fee_rate_manager
-            .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
+        let (bounded_sqrt_price, skip) =
+            fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
         assert_eq!(bounded_sqrt_price, sqrt_price_from_tick_index(-8 * 64)); // core range left end
         assert!(skip);
+    }
+
+    mod advance_tick_group_after_skip {
+        use super::*;
+
+        fn build_fee_rate_manager(a_to_b: bool, current_tick_index: i32) -> FeeRateManager {
+            let timestamp = 1_000;
+            let static_fee_rate = 3_000;
+
+            let adaptive_fee_info = AdaptiveFeeInfo {
+                constants: AdaptiveFeeConstants {
+                    max_volatility_accumulator: 64
+                        * 88
+                        * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+                    adaptive_fee_control_factor: 5_000,
+                    tick_group_size: 64,
+                    filter_period: 30,
+                    decay_period: 600,
+                    reduction_factor: 5000,
+                },
+                variables: AdaptiveFeeVariables {
+                    last_update_timestamp: timestamp,
+                    tick_group_index_reference: 0,
+                    volatility_accumulator: 0,
+                    volatility_reference: 0,
+                },
+            };
+
+            FeeRateManager::new(
+                a_to_b,
+                current_tick_index,
+                timestamp,
+                static_fee_rate,
+                Some(adaptive_fee_info.clone()),
+            )
+            .unwrap()
+        }
+
+        fn test(
+            a_to_b: bool,
+            current_tick_index: i32,
+            advance_current_sqrt_price: u128,
+            advance_next_tick_sqrt_price: u128,
+            advance_next_tick_index: i32,
+            expected_tick_group_index: i32,
+            expected_volatility_accumulator: u32,
+        ) {
+            let mut fee_rate_manager = build_fee_rate_manager(a_to_b, current_tick_index);
+
+            fee_rate_manager
+                .advance_tick_group_after_skip(
+                    advance_current_sqrt_price,
+                    advance_next_tick_sqrt_price,
+                    advance_next_tick_index,
+                )
+                .unwrap();
+
+            match fee_rate_manager {
+                FeeRateManager::Adaptive {
+                    tick_group_index,
+                    adaptive_fee_variables,
+                    ..
+                } => {
+                    assert_eq!(tick_group_index, expected_tick_group_index);
+                    assert!(
+                        adaptive_fee_variables.volatility_accumulator
+                            == expected_volatility_accumulator
+                    );
+                }
+                _ => panic!("Some and Adaptive variant expected."),
+            }
+        }
+
+        #[test]
+        fn test_b_to_a() {
+            // left to right
+            let a_to_b = false;
+            let tick_group_size = 64;
+            let max_volatility_accumulator = 64 * 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+
+            // hit next tick
+            // -1024 --> tick(-1023)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(-1023),
+                sqrt_price_from_tick_index(-1023),
+                -1023,
+                -16,
+                16 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(-65)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(-65),
+                sqrt_price_from_tick_index(-65),
+                -65,
+                -2,
+                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(-64)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(-64),
+                sqrt_price_from_tick_index(-64),
+                -64,
+                -1,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(-32)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(-32),
+                sqrt_price_from_tick_index(-32),
+                -32,
+                -1,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(0)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(0),
+                sqrt_price_from_tick_index(0),
+                0,
+                0,
+                0,
+            );
+            // -1024 --> tick(32)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(32),
+                sqrt_price_from_tick_index(32),
+                32,
+                0,
+                0,
+            );
+            // -1024 --> tick(64)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(64),
+                sqrt_price_from_tick_index(64),
+                64,
+                1,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(65)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(65),
+                sqrt_price_from_tick_index(65),
+                65,
+                1,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(127)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(127),
+                sqrt_price_from_tick_index(127),
+                127,
+                1,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(128)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(128),
+                sqrt_price_from_tick_index(128),
+                128,
+                2,
+                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> MAX_SQRT_PRICE
+            test(
+                a_to_b,
+                -1024,
+                MAX_SQRT_PRICE_X64,
+                MAX_SQRT_PRICE_X64,
+                MAX_TICK_INDEX,
+                MAX_TICK_INDEX / tick_group_size,
+                max_volatility_accumulator,
+            );
+
+            // NOT hit next tick
+            // -1024 --> tick(-1023)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(-1023) - 1,
+                sqrt_price_from_tick_index(-1023),
+                -1023,
+                -16,
+                16 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(-65)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(-65 - 1),
+                sqrt_price_from_tick_index(-65),
+                -65,
+                -2,
+                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(-64)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(-64 - 1),
+                sqrt_price_from_tick_index(-64),
+                -64,
+                -2,
+                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(-32)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(-32 - 1),
+                sqrt_price_from_tick_index(-32),
+                -32,
+                -1,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(0)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(0 - 1),
+                sqrt_price_from_tick_index(0),
+                0,
+                -1,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(32)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(32 - 1),
+                sqrt_price_from_tick_index(32),
+                32,
+                0,
+                0,
+            );
+            // -1024 --> tick(64)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(64 - 1),
+                sqrt_price_from_tick_index(64),
+                64,
+                0,
+                0,
+            );
+            // -1024 --> tick(65)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(65 - 1),
+                sqrt_price_from_tick_index(65),
+                65,
+                1,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(127)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(127 - 1),
+                sqrt_price_from_tick_index(127),
+                127,
+                1,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> tick(128)
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(128 - 1),
+                sqrt_price_from_tick_index(128),
+                128,
+                1,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -1024 --> MAX_SQRT_PRICE
+            test(
+                a_to_b,
+                -1024,
+                sqrt_price_from_tick_index(64 * 88 * 2),
+                MAX_SQRT_PRICE_X64,
+                MAX_TICK_INDEX,
+                (64 * 88 * 2) / tick_group_size,
+                88 * 2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+        }
+
+        #[test]
+        fn test_a_to_b() {
+            // right to left
+            let a_to_b = true;
+            let tick_group_size = 64;
+            let max_volatility_accumulator = 64 * 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+
+            // When a_to_b = true, calculate tick_index and tick_group_index from sqrt_price after skip, update volatility_accumulator.
+            // Then, shift tick_group_index to the left by 1 for the next loop. If it is not a tick_group_size boundary, shifting will advance too much,
+            // but tick_group_index is not recorded in the chain and the loop ends, so there is no adverse effect on subsequent processing.
+            const LEFT_SHIFT: i32 = 1;
+
+            // hit next tick
+            // tick(1023) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(1023),
+                sqrt_price_from_tick_index(1023),
+                1023,
+                15 - LEFT_SHIFT,
+                15 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(65) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(65),
+                sqrt_price_from_tick_index(65),
+                65,
+                1 - LEFT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(64) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(64),
+                sqrt_price_from_tick_index(64),
+                64,
+                1 - LEFT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(32) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(32),
+                sqrt_price_from_tick_index(32),
+                32,
+                0 - LEFT_SHIFT,
+                0,
+            );
+            // tick(0) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(0),
+                sqrt_price_from_tick_index(0),
+                0,
+                0 - LEFT_SHIFT,
+                0,
+            );
+            // tick(-32) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-32),
+                sqrt_price_from_tick_index(-32),
+                -32,
+                -1 - LEFT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(-64) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-64),
+                sqrt_price_from_tick_index(-64),
+                -64,
+                -1 - LEFT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(-65) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-65),
+                sqrt_price_from_tick_index(-65),
+                -65,
+                -2 - LEFT_SHIFT,
+                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(-127) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-127),
+                sqrt_price_from_tick_index(-127),
+                -127,
+                -2 - LEFT_SHIFT,
+                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(-128) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-128),
+                sqrt_price_from_tick_index(-128),
+                -128,
+                -2 - LEFT_SHIFT,
+                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // MIN_SQRT_PRICE <-- 1024
+            test(
+                a_to_b,
+                1024,
+                MIN_SQRT_PRICE_X64,
+                MIN_SQRT_PRICE_X64,
+                MIN_TICK_INDEX,
+                MIN_TICK_INDEX / tick_group_size - 1 - LEFT_SHIFT,
+                max_volatility_accumulator,
+            );
+
+            // NOT hit next tick
+            // tick(1023) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(1023) + 1,
+                sqrt_price_from_tick_index(1023),
+                1023,
+                15 - LEFT_SHIFT,
+                15 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(65) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(65 + 1),
+                sqrt_price_from_tick_index(65),
+                65,
+                1 - LEFT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(64) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(64 + 1),
+                sqrt_price_from_tick_index(64),
+                64,
+                1 - LEFT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(32) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(32 + 1),
+                sqrt_price_from_tick_index(32),
+                32,
+                0 - LEFT_SHIFT,
+                0,
+            );
+            // tick(0) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(1),
+                sqrt_price_from_tick_index(0),
+                0,
+                0 - LEFT_SHIFT,
+                0,
+            );
+            // tick(-32) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-32 + 1),
+                sqrt_price_from_tick_index(-32),
+                -32,
+                -1 - LEFT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(-64) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-64 + 1),
+                sqrt_price_from_tick_index(-64),
+                -64,
+                -1 - LEFT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(-65) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-65 + 1),
+                sqrt_price_from_tick_index(-65),
+                -65,
+                -1 - LEFT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(-127) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-127 + 1),
+                sqrt_price_from_tick_index(-127),
+                -127,
+                -2 - LEFT_SHIFT,
+                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(-128) <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-128 + 1),
+                sqrt_price_from_tick_index(-128),
+                -128,
+                -2 - LEFT_SHIFT,
+                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // MIN_SQRT_PRICE <-- 1024
+            test(
+                a_to_b,
+                1024,
+                sqrt_price_from_tick_index(-64 * 88 * 2),
+                MIN_SQRT_PRICE_X64,
+                MIN_TICK_INDEX,
+                (-64 * 88 * 2) / tick_group_size - LEFT_SHIFT,
+                88 * 2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+        }
     }
 
     #[test]

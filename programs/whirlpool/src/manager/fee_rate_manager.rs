@@ -68,7 +68,7 @@ impl FeeRateManager {
 
                 // max_volatility_accumulator < volatility_reference + tick_group_index_delta * VOLATILITY_ACCUMULATOR_SCALE_FACTOR
                 // -> ceil((max_volatility_accumulator - volatility_reference) / VOLATILITY_ACCUMULATOR_SCALE_FACTOR) < tick_group_index_delta
-                // EN: From the above, if tick_group_index_delta is sufficiently large, volatility_accumulator always sticks to max_volatility_accumulator
+                // From the above, if tick_group_index_delta is sufficiently large, volatility_accumulator always sticks to max_volatility_accumulator
                 let max_volatility_accumulator_tick_group_index_delta = ((adaptive_fee_constants
                     .max_volatility_accumulator
                     - adaptive_fee_variables.volatility_reference)

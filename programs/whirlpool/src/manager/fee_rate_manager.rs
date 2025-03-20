@@ -394,6 +394,20 @@ mod static_fee_rate_manager_tests {
     }
 
     #[test]
+    #[should_panic]
+    fn test_advance_tick_group_after_skip() {
+        let static_fee_rate = 3000;
+        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
+
+        // panic because static fee rate manager doesn't use skip feature
+        let _ = fee_rate_manager.advance_tick_group_after_skip(
+            sqrt_price_from_tick_index(1),
+            sqrt_price_from_tick_index(64),
+            64,
+        );
+    }
+
+    #[test]
     fn test_get_total_fee_rate() {
         let static_fee_rate = 3000;
         let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
@@ -410,10 +424,10 @@ mod static_fee_rate_manager_tests {
 
         fn check_not_bounded(fee_rate_manager: &FeeRateManager, sqrt_price: u128) {
             let non_zero_liquidity = 1_000_000_000u128;
-            let bounded_sqrt_price = fee_rate_manager
-                .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity)
-                .0;
+            let (bounded_sqrt_price, skip) = fee_rate_manager
+                .get_bounded_sqrt_price_target(sqrt_price, non_zero_liquidity);
             assert_eq!(bounded_sqrt_price, sqrt_price);
+            assert!(!skip); // skip should be always false for StaticFeeRateManager
         }
 
         check_not_bounded(
@@ -534,6 +548,8 @@ mod adaptive_fee_rate_manager_tests {
         let static_fee_rate = 3000;
         let adaptive_fee_info = adaptive_fee_info();
 
+        let tick_group_size = adaptive_fee_info.constants.tick_group_size;
+
         let current_tick_index = 1024;
         let timestamp = adaptive_fee_info.variables.last_update_timestamp + 1;
         let fee_rate_manager = FeeRateManager::new(
@@ -551,13 +567,20 @@ mod adaptive_fee_rate_manager_tests {
                 static_fee_rate: rate,
                 adaptive_fee_constants,
                 adaptive_fee_variables,
-                // TODO: check
                 core_tick_group_range_lower_bound,
                 core_tick_group_range_upper_bound,
             } => {
                 assert!(a_to_b);
                 assert_eq!(tick_group_index, 16);
                 assert_eq!(rate, static_fee_rate);
+
+                // max_volatility_delta = ceil(  (max_volatility_accumulator - volatility_reference) / VOLATILITY_ACCUMULATOR_SCALE_FACTOR )
+                // = ceil( (350_000 - 500) / 10_000 ) = 35
+                // tick_group_index_reference +/- max_volatility_delta
+                // = 1 +/- 35 = -34, 36
+                assert_eq!(core_tick_group_range_lower_bound, Some((-34, sqrt_price_from_tick_index(-34 * tick_group_size as i32))));
+                assert_eq!(core_tick_group_range_upper_bound, Some((36, sqrt_price_from_tick_index(36 * tick_group_size as i32 + tick_group_size as i32))));
+
                 check_constants(
                     &adaptive_fee_constants,
                     adaptive_fee_info.constants.filter_period,
@@ -598,13 +621,19 @@ mod adaptive_fee_rate_manager_tests {
                 static_fee_rate: rate,
                 adaptive_fee_constants,
                 adaptive_fee_variables,
-                // TODO: check
                 core_tick_group_range_lower_bound,
                 core_tick_group_range_upper_bound,
             } => {
                 assert!(!a_to_b);
                 assert_eq!(tick_group_index, 16);
                 assert_eq!(rate, static_fee_rate);
+
+                // tick_group_index_reference should be updated
+                // tick_group_index_reference +/- max_volatility_delta
+                // = 16 +/- 35 = -19, 51
+                assert_eq!(core_tick_group_range_lower_bound, Some((-19, sqrt_price_from_tick_index(-19 * tick_group_size as i32))));
+                assert_eq!(core_tick_group_range_upper_bound, Some((51, sqrt_price_from_tick_index(51 * tick_group_size as i32 + tick_group_size as i32))));
+
                 check_constants(
                     &adaptive_fee_constants,
                     adaptive_fee_info.constants.filter_period,
@@ -625,6 +654,158 @@ mod adaptive_fee_rate_manager_tests {
                 );
             }
             _ => panic!("Adaptive variant expected."),
+        }
+    }
+
+    mod test_new_core_tick_group_range {
+        use super::*;
+
+        fn test(
+            tick_group_size: u16,
+            tick_group_reference: i32,
+            volatility_refereence: u32,
+            max_volatility_accumulator: u32,
+            expected_lower_tick_group_index: Option<i32>,
+            expected_upper_tick_group_index: Option<i32>,
+        ) {
+            let a_to_b = true;
+            let current_tick_index = 0;
+            let timestamp = 1000;
+            let static_fee_rate = 3000;
+
+            let fee_rate_manager = FeeRateManager::new(
+                a_to_b,
+                current_tick_index,
+                timestamp,
+                static_fee_rate,
+                Some(AdaptiveFeeInfo {
+                    constants: AdaptiveFeeConstants {
+                        filter_period: 30,
+                        decay_period: 600,
+                        max_volatility_accumulator,
+                        reduction_factor: 500,
+                        adaptive_fee_control_factor: 100,
+                        tick_group_size,
+                    },
+                    variables: AdaptiveFeeVariables {
+                        last_update_timestamp: timestamp,
+                        tick_group_index_reference: tick_group_reference,
+                        volatility_reference: volatility_refereence,
+                        volatility_accumulator: 0,
+                    },
+                }),
+            )
+            .unwrap();
+
+            let expected_core_tick_group_range_lower_bound = expected_lower_tick_group_index.map(|index| {
+                (
+                    index,
+                    sqrt_price_from_tick_index(index * tick_group_size as i32),
+                )
+            });
+            let expected_core_tick_group_range_upper_bound = expected_upper_tick_group_index.map(|index| {
+                (
+                    index,
+                    sqrt_price_from_tick_index(index * tick_group_size as i32 + tick_group_size as i32),
+                )
+            });
+
+            match fee_rate_manager {
+                FeeRateManager::Adaptive {
+                    core_tick_group_range_lower_bound,
+                    core_tick_group_range_upper_bound,
+                    ..
+                } => {
+                    assert_eq!(core_tick_group_range_lower_bound, expected_core_tick_group_range_lower_bound);
+                    assert_eq!(core_tick_group_range_upper_bound, expected_core_tick_group_range_upper_bound);
+                }
+                _ => panic!("Adaptive variant expected."),
+            }    
+        }
+
+        // max_volatility_delta = ceil(  (max_volatility_accumulator - volatility_reference) / VOLATILITY_ACCUMULATOR_SCALE_FACTOR )
+        // tick_group_index_reference +/- max_volatility_delta
+
+        #[test]
+        fn test_ts_64() {
+            test(64, 0, 0, 350_000, Some(-35), Some(35));
+            test(64, 0, 0, 100_000, Some(-10), Some(10));
+
+            // shift by tick_group_reference
+            test(64, 100, 0, 350_000, Some(65), Some(135));
+
+            // volatility_reference should be used
+            test(64, 100, 100_000, 350_000, Some(75), Some(125));
+
+            // ceil should be used
+            test(64, 100, 100_000, 350_001, Some(74), Some(126));
+            test(64, 100, 100_000, 359_999, Some(74), Some(126));
+            test(64, 100, 100_000, 360_000, Some(74), Some(126));
+            test(64, 100, 100_000, 360_001, Some(73), Some(127));
+
+            test(64, 100, 100_001, 350_000, Some(75), Some(125));
+            test(64, 100, 109_999, 350_000, Some(75), Some(125));
+            test(64, 100, 110_000, 350_000, Some(76), Some(124));
+            test(64, 100, 110_001, 350_000, Some(76), Some(124));
+            test(64, 100, 119_999, 350_000, Some(76), Some(124));
+
+            // None if the left edge of lower bound is out of the tick range
+            test(64, -6896, 0, 350_000, Some(-6896 - 35), Some(-6896 + 35));
+            test(64, -6897, 0, 350_000, None, Some(-6897 + 35));
+            test(64, -6931, 0, 350_000, None, Some(-6931 + 35));
+            test(64, -6932, 0, 350_000, None, Some(-6932 + 35));
+
+            // None if the right edge of upper bound is out of the tick range
+            test(64, 6895, 0, 350_000, Some(6895 - 35), Some(6895 + 35));
+            test(64, 6896, 0, 350_000, Some(6896 - 35), None);
+            test(64, 6930, 0, 350_000, Some(6930 - 35), None);
+            test(64, 6931, 0, 350_000, Some(6931 - 35), None);
+
+            // high volatility reference
+            test(64, 0, 340_000, 350_000, Some(-1), Some(1));
+            test(64, 0, 349_999, 350_000, Some(-1), Some(1));
+
+            // zero max volatility accumulator (edge case: should set adaptive fee factor to 0 if adaptive fee is not used)
+            test(64, 0, 0, 0, Some(0), Some(0));
+            test(64, 100, 0, 0, Some(100), Some(100));
+            test(64, -6931, 0, 0, Some(-6931), Some(-6931));
+            test(64, -6932, 0, 0, None, Some(-6932));
+            test(64, 6930, 0, 0, Some(6930), Some(6930));
+            test(64, 6931, 0, 0, Some(6931), None);
+        }
+
+        #[test]
+        fn test_ts_1() {
+            test(1, 0, 0, 350_000, Some(-35), Some(35));
+            test(1, 0, 0, 100_000, Some(-10), Some(10));
+
+            // shift by tick_group_reference
+            test(1, 100, 0, 350_000, Some(65), Some(135));
+
+            // None if the left edge of lower bound is out of the tick range
+            // note: MIN_TICK_INDEX will not be the left edge of lower bound
+            test(1, -443600, 0, 350_000, Some(-443600 - 35), Some(-443600 + 35));
+            test(1, -443601, 0, 350_000, None, Some(-443601 + 35));
+            test(1, -443602, 0, 350_000, None, Some(-443602 + 35));
+            test(1, -443635, 0, 350_000, None, Some(-443635 + 35));
+            test(1, -443636, 0, 350_000, None, Some(-443636 + 35));
+            test(1, -443637, 0, 350_000, None, Some(-443637 + 35));
+
+            // None if the right edge of upper bound is out of the tick range
+            // note: MAX_TICK_INDEX will not be the right edge of upper bound
+            test(1, 443599, 0, 350_000, Some(443599 - 35), Some(443599 + 35));
+            test(1, 443600, 0, 350_000, Some(443600 - 35), None);
+            test(1, 443601, 0, 350_000, Some(443601 - 35), None);
+            test(1, 443635, 0, 350_000, Some(443635 - 35), None);
+            test(1, 443636, 0, 350_000, Some(443636 - 35), None);
+
+            // zero max volatility accumulator (edge case: should set adaptive fee factor to 0 if adaptive fee is not used)
+            test(1, 0, 0, 0, Some(0), Some(0));
+            test(1, 100, 0, 0, Some(100), Some(100));
+            test(1, -443635, 0, 0, Some(-443635), Some(-443635));
+            test(1, -443636, 0, 0, None, Some(-443636));
+            test(1, 443634, 0, 0, Some(443634), Some(443634));
+            test(1, 443635, 0, 0, Some(443635), None);
         }
     }
 

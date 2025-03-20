@@ -87,9 +87,6 @@ pub fn swap(
         adaptive_fee_info,
     )?;
 
-    // TODO: remove
-    println!("frm: {:?}", fee_rate_manager);
-
     while amount_remaining > 0 && adjusted_sqrt_price_limit != curr_sqrt_price {
         let (next_array_index, next_tick_index) = swap_tick_sequence
             .get_next_initialized_tick_index(
@@ -108,12 +105,6 @@ pub fn swap(
             let total_fee_rate = fee_rate_manager.get_total_fee_rate();
             let (bounded_sqrt_price_target, adaptive_fee_update_skipped) =
                 fee_rate_manager.get_bounded_sqrt_price_target(sqrt_price_target, curr_liquidity);
-
-            // TODO: remove
-            println!(
-                "curr_tick_index: {}, total_fee_rate: {}, liquidity: {}, skipped: {}, remaining: {}",
-                curr_tick_index, total_fee_rate, curr_liquidity, adaptive_fee_update_skipped, amount_remaining
-            );
 
             let swap_computation = compute_swap(
                 amount_remaining,

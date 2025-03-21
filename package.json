@@ -19,7 +19,7 @@
     "nx": "^20.6.2",
     "rimraf": "^6.0.1",
     "tsup": "^8.4.0",
-    "vitest": "^3.0.8"
+    "vitest": "^3.0.9"
   },
   "workspaces": [
     "programs/*",

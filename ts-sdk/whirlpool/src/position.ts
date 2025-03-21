@@ -1,8 +1,7 @@
 import type { Position, PositionBundle } from "@orca-so/whirlpools-client";
 import {
-  fetchAllMaybePosition,
-  fetchAllMaybePositionBundle,
-  fetchAllPosition,
+  decodePosition,
+  decodePositionBundle,
   fetchAllPositionWithFilter,
   getBundledPositionAddress,
   getPositionAddress,
@@ -20,7 +19,8 @@ import type {
   GetTokenAccountsByOwnerApi,
   Rpc,
 } from "@solana/kit";
-import { getBase64Encoder } from "@solana/kit";
+import { assertAccountExists, getBase64Encoder } from "@solana/kit";
+import { fetchMultipleAccountsBatched } from "./utils";
 
 /**
  * Represents a Position account.
@@ -130,11 +130,17 @@ export async function fetchPositionsForOwner(
     ),
   );
 
-  // FIXME: need to batch if more than 100 position bundles?
-  const [positions, positionBundles] = await Promise.all([
-    fetchAllMaybePosition(rpc, positionAddresses),
-    fetchAllMaybePositionBundle(rpc, positionBundleAddresses),
-  ]);
+  const positions = await fetchMultipleAccountsBatched(
+    rpc,
+    positionAddresses,
+    decodePosition,
+  );
+
+  const positionBundles = await fetchMultipleAccountsBatched(
+    rpc,
+    positionBundleAddresses,
+    decodePositionBundle,
+  );
 
   const bundledPositionAddresses = await Promise.all(
     positionBundles
@@ -142,10 +148,19 @@ export async function fetchPositionsForOwner(
       .flatMap((x) => getPositionInBundleAddresses(x.data)),
   );
 
-  const bundledPositions = await fetchAllPosition(
-    rpc,
-    bundledPositionAddresses,
-  );
+  const bundledPositions = (
+    await fetchMultipleAccountsBatched(
+      rpc,
+      bundledPositionAddresses,
+      decodePosition,
+    )
+  )
+    .filter((x) => x.exists)
+    .map((x) => {
+      assertAccountExists(x);
+      return x;
+    });
+
   const bundledPositionMap = bundledPositions.reduce((acc, x) => {
     const current = acc.get(x.data.positionMint) ?? [];
     return acc.set(x.data.positionMint, [...current, x]);

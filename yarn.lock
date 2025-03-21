@@ -4201,7 +4201,7 @@ __metadata:
     "@next/bundle-analyzer": "npm:^15.2.3"
     "@orca-so/whirlpools": "npm:*"
     "@solana/kit": "npm:^2.1.0"
-    "@types/node": "npm:^22.13.10"
+    "@types/node": "npm:^22.13.11"
     "@types/react": "npm:^18.3.13"
     copy-webpack-plugin: "npm:^13.0.0"
     next: "npm:^15.2.3"
@@ -4239,7 +4239,7 @@ __metadata:
   dependencies:
     "@changesets/changelog-github": "npm:^0.5.1"
     "@changesets/cli": "npm:^2.28.1"
-    "@types/node": "npm:^22.13.10"
+    "@types/node": "npm:^22.13.11"
     nx: "npm:^20.6.2"
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.4.0"
@@ -5998,7 +5998,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^22.13.10":
+"@types/node@npm:*":
   version: 22.13.10
   resolution: "@types/node@npm:22.13.10"
   dependencies:
@@ -6018,6 +6018,15 @@ __metadata:
   version: 17.0.45
   resolution: "@types/node@npm:17.0.45"
   checksum: 10c0/0db377133d709b33a47892581a21a41cd7958f22723a3cc6c71d55ac018121382de42fbfc7970d5ae3e7819dbe5f40e1c6a5174aedf7e7964e9cb8fa72b580b0
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^22.13.11":
+  version: 22.13.11
+  resolution: "@types/node@npm:22.13.11"
+  dependencies:
+    undici-types: "npm:~6.20.0"
+  checksum: 10c0/f6ee33d36372242535c38640fe7550a6640d8a775ec19b55bfc11775b521cba072d892ca92a912332ce01b317293d645c1bf767f3f882ec719f2404a3d2a5b96
   languageName: node
   linkType: hard
 

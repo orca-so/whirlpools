@@ -33,7 +33,7 @@
   },
   "devDependencies": {
     "@codama/nodes-from-anchor": "^1.1.11",
-    "@codama/renderers-js": "^1.2.9",
+    "@codama/renderers-js": "^1.2.10",
     "@orca-so/whirlpools-program": "*",
     "@solana/kit": "^2.1.0",
     "codama": "^1.2.11",

@@ -26,7 +26,6 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let rpc_url = env::args().nth(1).unwrap_or_else(|| "https://api.devnet.solana.com".to_string());
 
     // Initialize RPC configuration
-    let start = Instant::now();
     println!("Connecting to Solana at {}...", rpc_url);
     
     // Set the RPC configuration globally
@@ -64,9 +63,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Create SendOptions with more retries
     let options = SendOptions {
-        skip_preflight: true,            // Skip preflight checks
-        commitment: CommitmentLevel::Confirmed,
-        max_retries: 5,                  
+        commitment: CommitmentLevel::Confirmed,               
         timeout_ms: 60_000,
     };
 

@@ -28,135 +28,148 @@ orca_tx_sender = { version = "0.1.0" }
 
 ## Usage Examples
 
-### Global Configuration Approach
+### Basic Example
 
 ```rust
-use solana_program::system_instruction;
+use orca_tx_sender::{
+    build_and_send_transaction,
+    PriorityFeeStrategy, Percentile, SendOptions,
+    set_priority_fee_strategy, set_rpc, get_rpc_client
+};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::system_instruction;
 use solana_sdk::commitment_config::CommitmentLevel;
-use orca_tx_sender::{
-    set_rpc, set_priority_fee_strategy,
-    build_and_send_transaction, SendOptions,
-    PriorityFeeStrategy, Percentile
-};
+use std::error::Error;
 use std::str::FromStr;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Set global RPC configuration (required!)
+async fn main() -> Result<(), Box<dyn Error>> {
+    // Initialize RPC configuration (required!)
     set_rpc("https://api.mainnet-beta.solana.com").await?;
 
-    // Configure priority fees globally
+    // Check connection
+    let client = get_rpc_client()?;
+    println!("Connected to Solana");
+
+    // Configure priority fees
     set_priority_fee_strategy(PriorityFeeStrategy::Dynamic {
         percentile: Percentile::P95,
-        max_lamports: 1_000_000, // 1 SOL
+        max_lamports: 10_000,
     })?;
 
     // Create a keypair for signing
-    let keypair = Keypair::new();
+    let payer = Keypair::new();
+    println!("Using keypair: {}", payer.pubkey());
+
+    // Check balance
+    let balance = client.get_balance(&payer.pubkey()).await?;
+    println!("Account balance: {} lamports", balance);
 
     // Jupiter Program address as an example recipient
     let recipient = Pubkey::from_str("JUP2jxvXaqu7NQY1GmNF4m1vodw12LVXYxbFL2uJvfo").unwrap();
 
     // Create transfer instruction
     let transfer_ix = system_instruction::transfer(
-        &keypair.pubkey(),
+        &payer.pubkey(),
         &recipient,
         1_000_000, // 0.001 SOL
     );
 
-    // Custom send options (optional)
+    // Custom send options
     let options = SendOptions {
-        skip_preflight: false,
         commitment: CommitmentLevel::Confirmed,
-        max_retries: 5,
         timeout_ms: 60_000, // 60 seconds
     };
 
-    // Build and send transaction using global configuration with custom options
+    // Build and send transaction
+    println!("Sending transaction...");
     let signature = build_and_send_transaction(
         vec![transfer_ix],
-        &[&keypair],
-        Some(options)
+        &[&payer],
+        Some(options),
     ).await?;
 
-    // Or use default options
-    // let signature = build_and_send_transaction(
-    //     vec![transfer_ix],
-    //     &[&keypair],
-    //     None
-    // ).await?;
-
-    println!("Transaction confirmed: {}", signature);
+    println!("Transaction sent: {}", signature);
     Ok(())
 }
 ```
 
-### Direct Instance Approach
+### Example With Jito Fees
 
 ```rust
-use solana_program::system_instruction;
+use orca_tx_sender::{
+    build_and_send_transaction,
+    JitoFeeStrategy, Percentile, JitoPercentile, PriorityFeeStrategy, SendOptions,
+    set_priority_fee_strategy, set_jito_fee_strategy, set_compute_unit_margin_multiplier,
+    set_jito_block_engine_url, set_rpc, get_rpc_client
+};
 use solana_sdk::pubkey::Pubkey;
 use solana_sdk::signature::{Keypair, Signer};
+use solana_sdk::system_instruction;
 use solana_sdk::commitment_config::CommitmentLevel;
-use orca_tx_sender::{
-    FeeConfig, PriorityFeeStrategy, Percentile, RpcConfig,
-    TransactionSender, SendOptions,
-};
+use std::error::Error;
 use std::str::FromStr;
 
 #[tokio::main]
-async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Initialize configurations
-    let rpc_config = RpcConfig::new("https://api.mainnet-beta.solana.com")
-        .await?;
+async fn main() -> Result<(), Box<dyn Error>> {
+    // Initialize RPC configuration (required!)
+    set_rpc("https://api.mainnet-beta.solana.com").await?;
 
-    println!("Connected to chain: {}", rpc_config.chain_name());
+    // Check connection
+    let client = get_rpc_client()?;
+    println!("Connected to Solana");
 
-    let fee_config = FeeConfig {
-        priority_fee: PriorityFeeStrategy::Dynamic {
-            percentile: Percentile::P95,
-            max_lamports: 1_000_000, // 1 SOL
-        },
-        ..Default::default()
-    };
+    // Configure fee settings with dynamic priority fees and Jito fees
+    let compute_multiplier = 1.1;
+    let jito_url = "https://bundles.jito.wtf".to_string();
 
-    // Create sender instance
-    let sender = TransactionSender::new(rpc_config, fee_config);
+    // Set individual configuration options
+    set_priority_fee_strategy(PriorityFeeStrategy::Dynamic {
+        percentile: Percentile::P95,
+        max_lamports: 10_000,
+    })?;
+
+    set_jito_fee_strategy(JitoFeeStrategy::Dynamic {
+        percentile: JitoPercentile::P95,
+        max_lamports: 10_000,
+    })?;
+    set_compute_unit_margin_multiplier(compute_multiplier)?;
+    set_jito_block_engine_url(jito_url.clone())?;
 
     // Create a keypair for signing
-    let keypair = Keypair::new();
+    let payer = Keypair::new();
+    println!("Using keypair: {}", payer.pubkey());
+
+    // Check balance
+    let balance = client.get_balance(&payer.pubkey()).await?;
+    println!("Account balance: {} lamports", balance);
 
     // Jupiter Program address as an example recipient
     let recipient = Pubkey::from_str("JUP2jxvXaqu7NQY1GmNF4m1vodw12LVXYxbFL2uJvfo").unwrap();
 
     // Create transfer instruction
     let transfer_ix = system_instruction::transfer(
-        &keypair.pubkey(),
+        &payer.pubkey(),
         &recipient,
         1_000_000, // 0.001 SOL
     );
 
-    // Custom send options (optional)
+    // Custom send options
     let options = SendOptions {
-        skip_preflight: false,
         commitment: CommitmentLevel::Confirmed,
-        max_retries: 5,
         timeout_ms: 60_000, // 60 seconds
     };
 
-    // Build and send transaction with custom options
-    let signature = sender
-        .build_and_send_transaction(vec![transfer_ix], &[&keypair], Some(options))
-        .await?;
+    // Build and send transaction
+    println!("Sending transaction with priority fees and Jito fees...");
+    let signature = build_and_send_transaction(
+        vec![transfer_ix],
+        &[&payer],
+        Some(options),
+    ).await?;
 
-    // Or use default options
-    // let signature = sender
-    //     .build_and_send_transaction(vec![transfer_ix], &[&keypair], None)
-    //     .await?;
-
-    println!("Transaction confirmed: {}", signature);
+    println!("Transaction sent: {}", signature);
     Ok(())
 }
 ```
@@ -202,9 +215,7 @@ Transaction options can be provided directly when sending:
 ```rust
 // Create custom send options
 let options = SendOptions {
-    skip_preflight: false,
     commitment: CommitmentLevel::Confirmed,
-    max_retries: 5,
     timeout_ms: 60_000, // 60 seconds
 };
 

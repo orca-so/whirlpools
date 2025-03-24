@@ -2,11 +2,10 @@ use crate::fee_config::{FeeConfig, Percentile, PriorityFeeStrategy};
 use crate::rpc_config::RpcConfig;
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_program::instruction::Instruction;
-use solana_program::message::Message;
 use solana_program::pubkey::Pubkey;
 use solana_sdk::compute_budget::ComputeBudgetInstruction;
-use solana_sdk::transaction::Transaction;
 use solana_rpc_client_api::response::RpcPrioritizationFee;
+use solana_client::rpc_config::RpcSimulateTransactionConfig;
 
 /// Estimate compute units by simulating a transaction
 pub async fn estimate_compute_units(
@@ -15,25 +14,41 @@ pub async fn estimate_compute_units(
     payer: &Pubkey,
 ) -> Result<u32, String> {
     let recent_blockhash = rpc_client.get_latest_blockhash().await
-    .map_err(|e| format!("RPC Error: {}", e))?;
-    let message = Message::new_with_blockhash(
-        &instructions,
-        Some(payer),
-        &recent_blockhash,
+        .map_err(|e| format!("RPC Error: {}", e))?;
+    
+    let message = solana_sdk::message::Message::new_with_blockhash(
+        instructions, 
+        Some(payer), 
+        &recent_blockhash
     );
-
-    let transaction = Transaction::new_unsigned(message);
-    // Simulate transaction
-    let simulation_result = rpc_client.simulate_transaction(&transaction)
-        .await
-        .map_err(|e| format!("Transaction simulation failed: {}", e))?;
+    
+    let legacy_transaction = solana_sdk::transaction::Transaction::new_unsigned(message.clone());
+    
+    // Configure simulation options
+    let config = RpcSimulateTransactionConfig {
+        sig_verify: false,                 // Skip signature verification
+        replace_recent_blockhash: true,    // Use a recent blockhash from the server
+        commitment: None,                  // Use default commitment
+        encoding: None,                    // Use default encoding
+        accounts: None,                    // No additional account configs
+        min_context_slot: None,            // No minimum slot
+        inner_instructions: false,         // Don't include inner instructions
+    };
+    
+    // Simulate transaction with config
+    let simulation_result = rpc_client.simulate_transaction_with_config(
+        &legacy_transaction,
+        config,
+    )
+    .await
+    .map_err(|e| format!("Transaction simulation failed: {}", e))?;
     
     // Return error if simulation failed
     if let Some(err) = simulation_result.value.err {
         return Err(format!("Transaction simulation failed: {}", err));
     }
     
-    // Return error if no units consumed value was returned (should never happen)
+    // Return error if no units consumed value was returned
     match simulation_result.value.units_consumed {
         Some(units) => Ok(units as u32),
         None => Err("Transaction simulation didn't return consumed units".to_string())
@@ -42,7 +57,7 @@ pub async fn estimate_compute_units(
 
 
 /// Calculate and return compute budget instructions for a transaction
-pub async fn add_compute_budget_instructions(
+pub async fn get_compute_budget_instruction(
     client: &RpcClient,
     compute_units: u32,
     rpc_config: &RpcConfig,

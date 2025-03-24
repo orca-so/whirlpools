@@ -108,18 +108,14 @@ pub fn get_rpc_client() -> Result<Arc<RpcClient>, String> {
 
 #[derive(Debug, Clone)]
 pub struct SendOptions {
-    pub skip_preflight: bool,
     pub commitment: CommitmentLevel,
-    pub max_retries: usize,
     pub timeout_ms: u64,
 }
 
 impl Default for SendOptions {
     fn default() -> Self {
         Self {
-            skip_preflight: false,
             commitment: CommitmentLevel::Finalized,
-            max_retries: DEFAULT_RETRIES,
             timeout_ms: DEFAULT_TRANSACTION_TIMEOUT_MS,
         }
     }
@@ -146,9 +142,7 @@ mod tests {
     fn test_send_options_default() {
         let options = SendOptions::default();
         
-        assert_eq!(options.skip_preflight, false);
         assert_eq!(options.commitment, CommitmentLevel::Finalized);
-        assert_eq!(options.max_retries, DEFAULT_RETRIES);
         assert_eq!(options.timeout_ms, DEFAULT_TRANSACTION_TIMEOUT_MS);
     }
 } 

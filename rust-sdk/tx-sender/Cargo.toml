@@ -12,7 +12,6 @@ authors = ["team@orca.so"]
 edition = "2021"
 
 [dependencies]
-# Use consistent versions to avoid conflicts
 solana-program = { version = ">=1.16, <3.0" }
 solana-sdk = { version = ">=1.16, <3.0"}
 solana-client = { version = ">=1.16, <3.0"}
@@ -21,7 +20,7 @@ solana-rpc-client-api = { version = ">=1.16, <3.0"}
 reqwest = { version = "0.11.27", features = ["json", "stream"] }
 tokio = { version = "1.37.0", features = ["full"] }
 serde = { version = "1.0.202", features = ["derive"] }
-serde_json = "1.0.108"
+serde_json = { version = "^1.0" }
 
 [dev-dependencies]
 solana-cli-config = { version = ">=1.16, <3.0"}

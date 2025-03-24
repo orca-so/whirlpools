@@ -76,7 +76,7 @@ pub async fn build_transaction(
     .ok_or_else(|| "RPC not configured. Call set_rpc() first.".to_string())?;
 
     // Add compute budget instructions (similar to addComputeBudgetAndPriorityFeeInstructions in Kit)
-    let compute_budget_ixs = compute_budget::add_compute_budget_instructions(
+    let compute_budget_ixs = compute_budget::get_compute_budget_instruction(
         &rpc_client,
         estimated_units,
         rpc_config,
@@ -121,11 +121,8 @@ pub async fn send_transaction(
 ) -> Result<Signature, String> {
     // Get RPC client
     let rpc_client = config::get_rpc_client()?;
-    
-    // Use provided options or defaults
     let options = options.unwrap_or_default();
     
-    // Simulate transaction first (similar to simulateTransaction in Kit)
     let sim_result = rpc_client.simulate_transaction(&transaction)
         .await
         .map_err(|e| format!("Transaction simulation failed: {}", e))?;
@@ -134,65 +131,62 @@ pub async fn send_transaction(
         return Err(format!("Transaction simulation failed: {}", err));
     }
 
-    // Implement send with retry logic (similar to sendWithRetry in Kit)
     let expiry_time = Instant::now() + Duration::from_millis(options.timeout_ms);
     let mut retries = 0;
+    let mut last_signature = None;
 
-    while Instant::now() < expiry_time && retries <= options.max_retries {
+    while Instant::now() < expiry_time {
+        if let Some(signature) = last_signature {
+            let status = rpc_client
+                .get_signature_status_with_commitment(&signature, CommitmentConfig { commitment: options.commitment })
+                .await
+                .map_err(|e| format!("Failed to get signature status: {}", e))?;
+            
+            match status {
+                // Transaction confirmed
+                Some(Ok(())) => {
+                    return Ok(signature);
+                }
+                // Transaction failed
+                Some(Err(err)) => {
+                    return Err(format!("Transaction failed: {}", err));
+                }
+                // Transaction still processing
+                None => {
+                    sleep(Duration::from_secs(1)).await;
+                    continue;
+                }
+            }
+        }
+
         let send_config = RpcSendTransactionConfig {
-            skip_preflight: options.skip_preflight,
+            skip_preflight: true,
             preflight_commitment: Some(options.commitment.clone()),
             max_retries: Some(0), // We handle retries ourselves
             ..RpcSendTransactionConfig::default()
         };
 
-        match rpc_client.send_transaction_with_config(&transaction, send_config)
-            .await {
+        match rpc_client.send_transaction_with_config(&transaction, send_config).await {
             Ok(signature) => {
-                // Wait for confirmation (similar to awaitTransactionSignatureConfirmation in Kit)
-                let deadline = Instant::now() + Duration::from_millis(options.timeout_ms);
-                
-                loop {
-                    let status = rpc_client
-                        .get_signature_status_with_commitment(&signature, CommitmentConfig { commitment: options.commitment })
-                        .await
-                        .map_err(|e| format!("Failed to get signature status: {}", e))?;
-                    
-                    match status {
-                        // Transaction is confirmed
-                        Some(Ok(())) => {
-                            return Ok(signature);
-                        }
-                        // Transaction failed
-                        Some(Err(err)) => {
-                            return Err(format!("Transaction failed: {}", err));
-                        }
-                        // Transaction still processing, keep waiting until deadline
-                        None => {
-                            if Instant::now() > deadline {
-                                break;
-                            }
-                            sleep(Duration::from_millis(500)).await;
-                        }
-                    }
-                }
+                // Store the signature for checking confirmation status
+                last_signature = Some(signature);
+                retries = 0;
             }
-            Err(_) => {
+            Err(err) => {
                 retries += 1;
-                if retries <= options.max_retries {
-                    // Exponential backoff
-                    let backoff = Duration::from_millis(500 * 2u64.pow(retries as u32));
-                    sleep(backoff).await;
-                }
+                println!("Transaction send failed (attempt {}): {}", retries, err);
+                // Wait briefly before retrying
+                sleep(Duration::from_millis(500)).await;
             }
         }
     }
-
-    if Instant::now() >= expiry_time {
-        Err("Transaction timeout".to_string())
-    } else {
-        Err("Maximum retries exceeded".to_string())
+    
+    if let Some(signature) = last_signature {
+        println!("Transaction send timeout but might still confirm with signature: {}", signature);
+        return Ok(signature);
     }
+    
+    Err("Transaction timeout".to_string())
 }
 
 #[cfg(test)]

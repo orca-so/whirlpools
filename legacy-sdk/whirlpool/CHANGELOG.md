@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-sdk
 
+## 0.13.18
+
+### Patch Changes
+
+- [#805](https://github.com/orca-so/whirlpools/pull/805) [`1e939cb`](https://github.com/orca-so/whirlpools/commit/1e939cb50a41f24240d46edf8a5601502c425f6f) Thanks [@pauldragonfly](https://github.com/pauldragonfly)! - Fix fetch_positions_for_owner() to perform batch calls
+
 ## 0.13.17
 
 ### Patch Changes

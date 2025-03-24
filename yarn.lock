@@ -1754,6 +1754,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@codama/errors@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/errors@npm:1.2.11"
+  dependencies:
+    "@codama/node-types": "npm:1.2.11"
+    chalk: "npm:^5.4.1"
+    commander: "npm:^13.1.0"
+  bin:
+    errors: bin/cli.cjs
+  checksum: 10c0/2e62416506358b1958f0624a8383b6cd71f6a2e70adc4fba22c9067a5daf2fbf550146735be3c7d4b42af07c7fc0fdc989951caa51eee9e9380ddd526da6dcda
+  languageName: node
+  linkType: hard
+
 "@codama/node-types@npm:1.2.10":
   version: 1.2.10
   resolution: "@codama/node-types@npm:1.2.10"
@@ -1761,7 +1774,14 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/nodes-from-anchor@npm:1.1.10, @codama/nodes-from-anchor@npm:^1.1.10":
+"@codama/node-types@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/node-types@npm:1.2.11"
+  checksum: 10c0/5db33eddc12ceba1295416ed2c34d693217981be101a63f4560d8ca10e306338220b484a67b971a768030e707727b03ee5b37a04488a7d70199f3bc218f2de9c
+  languageName: node
+  linkType: hard
+
+"@codama/nodes-from-anchor@npm:1.1.10":
   version: 1.1.10
   resolution: "@codama/nodes-from-anchor@npm:1.1.10"
   dependencies:
@@ -1774,6 +1794,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@codama/nodes-from-anchor@npm:^1.1.11":
+  version: 1.1.11
+  resolution: "@codama/nodes-from-anchor@npm:1.1.11"
+  dependencies:
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/visitors": "npm:1.2.11"
+    "@noble/hashes": "npm:^1.7.1"
+    "@solana/codecs": "npm:2.1.0"
+  checksum: 10c0/2687e147cf01764a6e7ef8a8aab3e32d675f6af696d441cae0669dd853b6fba398be71b31ab3a93fd0cd3a692382504c72918ffce0a90b3c2b33d00f79ff33c9
+  languageName: node
+  linkType: hard
+
 "@codama/nodes@npm:1.2.10":
   version: 1.2.10
   resolution: "@codama/nodes@npm:1.2.10"
@@ -1781,6 +1814,16 @@ __metadata:
     "@codama/errors": "npm:1.2.10"
     "@codama/node-types": "npm:1.2.10"
   checksum: 10c0/6204172c7fc0c6388930abb68ac73fa23b0ddd337d520dfc97d5981e3d454540fce50adedc1fd16a325828c4eb6a4826d8f28391c75f50a85b8c243a986500fe
+  languageName: node
+  linkType: hard
+
+"@codama/nodes@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/nodes@npm:1.2.11"
+  dependencies:
+    "@codama/errors": "npm:1.2.11"
+    "@codama/node-types": "npm:1.2.11"
+  checksum: 10c0/3cd5c264ef1547bee445f4e8fc7b2b848dafc17a26f4fd108d88ed367a38b43781dc71b6cfdeba51e0a4ebd90005b1bccf9dd7549c2742ca8ddf0c47b50316f5
   languageName: node
   linkType: hard
 
@@ -1874,6 +1917,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@codama/visitors-core@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/visitors-core@npm:1.2.11"
+  dependencies:
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    json-stable-stringify: "npm:^1.2.1"
+  checksum: 10c0/2234a46002239ed7b14ee3016086ca238ba56d3140beb0cbf19c8ee21ddebc927542ad4022c9c902879042898ed3dcb369ec70c636854b728a209bd806332a96
+  languageName: node
+  linkType: hard
+
 "@codama/visitors@npm:1.2.10":
   version: 1.2.10
   resolution: "@codama/visitors@npm:1.2.10"
@@ -1882,6 +1936,17 @@ __metadata:
     "@codama/nodes": "npm:1.2.10"
     "@codama/visitors-core": "npm:1.2.10"
   checksum: 10c0/ccea9a5478240c3d1de0d342ef513125b2a1dbaa42ef0a6dcc9b9368b0b8ae18cc2fc56f0070e100f34d23af2f4aa36cc81a5f758a43427ae913d8eb374942df
+  languageName: node
+  linkType: hard
+
+"@codama/visitors@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/visitors@npm:1.2.11"
+  dependencies:
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/visitors-core": "npm:1.2.11"
+  checksum: 10c0/ca0bd321b8a341f69eb6c947e5e55237ccb65ddb4de75c83818d96ac95bed52b1a32b21d05735c8ffea6115f5add850a5456d445c65667300b791d013ef00745
   languageName: node
   linkType: hard
 
@@ -3996,7 +4061,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-client@workspace:ts-sdk/client"
   dependencies:
-    "@codama/nodes-from-anchor": "npm:^1.1.10"
+    "@codama/nodes-from-anchor": "npm:^1.1.11"
     "@codama/renderers-js": "npm:^1.2.9"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/kit": "npm:^2.1.0"
@@ -4151,7 +4216,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
-    "@codama/nodes-from-anchor": "npm:^1.1.10"
+    "@codama/nodes-from-anchor": "npm:^1.1.11"
     "@codama/renderers-rust": "npm:^1.0.18"
     "@orca-so/whirlpools-program": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"

@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-example-rust-repositioning-bot
 
+## 0.2.1
+
+### Patch Changes
+
+- [#821](https://github.com/orca-so/whirlpools/pull/821) [`c72652d`](https://github.com/orca-so/whirlpools/commit/c72652dbb21a57d2b715415e14f3fcd65f4b0728) Thanks [@calintje](https://github.com/calintje)! - Fix calculation of position deviation
+
 ## 0.2.0
 
 ### Minor Changes

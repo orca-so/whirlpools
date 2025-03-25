@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-client",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Typescript client to interact with Orca's on-chain Whirlpool program.",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -32,11 +32,11 @@
     "@solana/kit": "^2.1.0"
   },
   "devDependencies": {
-    "@codama/nodes-from-anchor": "^1.1.10",
-    "@codama/renderers-js": "^1.2.9",
+    "@codama/nodes-from-anchor": "^1.1.11",
+    "@codama/renderers-js": "^1.2.10",
     "@orca-so/whirlpools-program": "*",
     "@solana/kit": "^2.1.0",
-    "codama": "^1.2.8",
+    "codama": "^1.2.11",
     "typescript": "^5.8.2"
   },
   "repository": {

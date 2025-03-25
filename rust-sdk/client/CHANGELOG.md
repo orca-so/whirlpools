@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust-client
 
+## 2.0.4
+
+### Patch Changes
+
+- [#837](https://github.com/orca-so/whirlpools/pull/837) [`72f0e7c`](https://github.com/orca-so/whirlpools/commit/72f0e7c7effcbafefec2df67b0422111acfc3259) Thanks [@pauldragonfly](https://github.com/pauldragonfly)! - LockConfig gpa and pda functions in ts-sdk and rust-sdk
+
 ## 2.0.3
 
 ### Patch Changes

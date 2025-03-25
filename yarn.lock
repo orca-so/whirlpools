@@ -1722,272 +1722,166 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@codama/cli@npm:1.0.7":
-  version: 1.0.7
-  resolution: "@codama/cli@npm:1.0.7"
+"@codama/cli@npm:1.0.10":
+  version: 1.0.10
+  resolution: "@codama/cli@npm:1.0.10"
   dependencies:
-    "@codama/nodes": "npm:1.2.8"
-    "@codama/nodes-from-anchor": "npm:1.1.8"
-    "@codama/renderers": "npm:1.0.16"
-    "@codama/renderers-js": "npm:1.2.7"
-    "@codama/renderers-js-umi": "npm:1.1.9"
-    "@codama/renderers-rust": "npm:1.0.16"
-    "@codama/visitors": "npm:1.2.8"
-    "@codama/visitors-core": "npm:1.2.8"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/nodes-from-anchor": "npm:1.1.11"
+    "@codama/renderers": "npm:1.0.19"
+    "@codama/renderers-js": "npm:1.2.10"
+    "@codama/renderers-js-umi": "npm:1.1.12"
+    "@codama/renderers-rust": "npm:1.0.19"
+    "@codama/visitors": "npm:1.2.11"
+    "@codama/visitors-core": "npm:1.2.11"
     commander: "npm:^13.1.0"
     picocolors: "npm:^1.1.1"
     prompts: "npm:^2.4.2"
-  checksum: 10c0/dac7353e2c500ed5dbd41de7a9d7e13db50cfb8f6e66c15658ce248c9fa3b7f88dd0a693f2660d18b832231447454f771f27608be4c57c8cae6f871571ab31c4
+  checksum: 10c0/19151dafa1e35591c6f0a00e6e77d213f232ab1792f26f35768b6cfa48c18251d09857cbf88a91a015270af55dae30809895e52d56fdb39ac34d12ac76e2e940
   languageName: node
   linkType: hard
 
-"@codama/errors@npm:1.2.10":
-  version: 1.2.10
-  resolution: "@codama/errors@npm:1.2.10"
+"@codama/errors@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/errors@npm:1.2.11"
   dependencies:
-    "@codama/node-types": "npm:1.2.10"
+    "@codama/node-types": "npm:1.2.11"
     chalk: "npm:^5.4.1"
     commander: "npm:^13.1.0"
   bin:
     errors: bin/cli.cjs
-  checksum: 10c0/6ed6b8c75780eb8282a730b345ff9f17be88f02c7f8a66cd7d979bef528fc6151b8d07ab80fae2e1862859357db1b1f403df74d0be469311957d00952bea741c
+  checksum: 10c0/2e62416506358b1958f0624a8383b6cd71f6a2e70adc4fba22c9067a5daf2fbf550146735be3c7d4b42af07c7fc0fdc989951caa51eee9e9380ddd526da6dcda
   languageName: node
   linkType: hard
 
-"@codama/errors@npm:1.2.8":
-  version: 1.2.8
-  resolution: "@codama/errors@npm:1.2.8"
+"@codama/node-types@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/node-types@npm:1.2.11"
+  checksum: 10c0/5db33eddc12ceba1295416ed2c34d693217981be101a63f4560d8ca10e306338220b484a67b971a768030e707727b03ee5b37a04488a7d70199f3bc218f2de9c
+  languageName: node
+  linkType: hard
+
+"@codama/nodes-from-anchor@npm:1.1.11, @codama/nodes-from-anchor@npm:^1.1.11":
+  version: 1.1.11
+  resolution: "@codama/nodes-from-anchor@npm:1.1.11"
   dependencies:
-    "@codama/node-types": "npm:1.2.8"
-    chalk: "npm:^5.4.1"
-    commander: "npm:^13.1.0"
-  bin:
-    errors: bin/cli.cjs
-  checksum: 10c0/e70baafca6dbadc1fe3c725dc27c908419381796f4f92634df424d1c2f3c5a83b453297595c01584462016b1aa556277782ac5b76d08f961969f95e0c2908db3
-  languageName: node
-  linkType: hard
-
-"@codama/node-types@npm:1.2.10":
-  version: 1.2.10
-  resolution: "@codama/node-types@npm:1.2.10"
-  checksum: 10c0/828fdf5db9aa676873b72d4bdf7884bd6dcdeaa2bde51a617dbeddfec92b3b3b1d6c9d1cfbdc7a4e475ab033392dac047bbb0247188c4e315c570924522d297a
-  languageName: node
-  linkType: hard
-
-"@codama/node-types@npm:1.2.8":
-  version: 1.2.8
-  resolution: "@codama/node-types@npm:1.2.8"
-  checksum: 10c0/6b15d9b0c34ca078e2f3d9fe16e5fb6d332afc3fcbe2e15eb7eddbbef1b538e938e054559d726078b55e5b2dc9147b2890816b17d17c69afbf615d9f9696c880
-  languageName: node
-  linkType: hard
-
-"@codama/nodes-from-anchor@npm:1.1.10, @codama/nodes-from-anchor@npm:^1.1.10":
-  version: 1.1.10
-  resolution: "@codama/nodes-from-anchor@npm:1.1.10"
-  dependencies:
-    "@codama/errors": "npm:1.2.10"
-    "@codama/nodes": "npm:1.2.10"
-    "@codama/visitors": "npm:1.2.10"
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/visitors": "npm:1.2.11"
     "@noble/hashes": "npm:^1.7.1"
     "@solana/codecs": "npm:2.1.0"
-  checksum: 10c0/f6e2386222bcb7e71e6b46bbe2832a243bce31e39f8329d7685da7a738dfc367409f1abc3e3777d8fc116d3db75a78ea76b30edd0ce3470c4cb95ff50bd75994
+  checksum: 10c0/2687e147cf01764a6e7ef8a8aab3e32d675f6af696d441cae0669dd853b6fba398be71b31ab3a93fd0cd3a692382504c72918ffce0a90b3c2b33d00f79ff33c9
   languageName: node
   linkType: hard
 
-"@codama/nodes-from-anchor@npm:1.1.8":
-  version: 1.1.8
-  resolution: "@codama/nodes-from-anchor@npm:1.1.8"
+"@codama/nodes@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/nodes@npm:1.2.11"
   dependencies:
-    "@codama/errors": "npm:1.2.8"
-    "@codama/nodes": "npm:1.2.8"
-    "@codama/visitors": "npm:1.2.8"
-    "@noble/hashes": "npm:^1.7.1"
-    "@solana/codecs": "npm:2.0.0"
-  checksum: 10c0/0774430da81e67566beee5ae13bc5072b89ff4b8296697e00393ef663e5a0debbe5e1f5eb77447d971ca26496ff200c2365b23ca04176a14aa8e7525f3a23bf3
+    "@codama/errors": "npm:1.2.11"
+    "@codama/node-types": "npm:1.2.11"
+  checksum: 10c0/3cd5c264ef1547bee445f4e8fc7b2b848dafc17a26f4fd108d88ed367a38b43781dc71b6cfdeba51e0a4ebd90005b1bccf9dd7549c2742ca8ddf0c47b50316f5
   languageName: node
   linkType: hard
 
-"@codama/nodes@npm:1.2.10":
-  version: 1.2.10
-  resolution: "@codama/nodes@npm:1.2.10"
+"@codama/renderers-core@npm:1.0.13":
+  version: 1.0.13
+  resolution: "@codama/renderers-core@npm:1.0.13"
   dependencies:
-    "@codama/errors": "npm:1.2.10"
-    "@codama/node-types": "npm:1.2.10"
-  checksum: 10c0/6204172c7fc0c6388930abb68ac73fa23b0ddd337d520dfc97d5981e3d454540fce50adedc1fd16a325828c4eb6a4826d8f28391c75f50a85b8c243a986500fe
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/visitors-core": "npm:1.2.11"
+  checksum: 10c0/50f746318abfba93f821cfa34244ccda01df4caf6d749550b3fef86b8b13e39592665ccc20ead1077de2225716fc593525dc633570b1593e1b377f64545dc5c4
   languageName: node
   linkType: hard
 
-"@codama/nodes@npm:1.2.8":
-  version: 1.2.8
-  resolution: "@codama/nodes@npm:1.2.8"
+"@codama/renderers-js-umi@npm:1.1.12":
+  version: 1.1.12
+  resolution: "@codama/renderers-js-umi@npm:1.1.12"
   dependencies:
-    "@codama/errors": "npm:1.2.8"
-    "@codama/node-types": "npm:1.2.8"
-  checksum: 10c0/6b718e2e83019ade5491e0f64ffd02b8555a1b9ee56c0bf0e8a9f350d83bf204ae754adeffa9375c8abbf10102678d8a27227978c9065ce0f1d0ac4acf75236d
-  languageName: node
-  linkType: hard
-
-"@codama/renderers-core@npm:1.0.10":
-  version: 1.0.10
-  resolution: "@codama/renderers-core@npm:1.0.10"
-  dependencies:
-    "@codama/errors": "npm:1.2.8"
-    "@codama/nodes": "npm:1.2.8"
-    "@codama/visitors-core": "npm:1.2.8"
-  checksum: 10c0/4bc33894f08ad86f724f82a2c4272fd1e0563e3a33d9170e5027fc449c02d6dda17b1a8338ff5c7899fafb667b1690aeca3941d446c2c5103da80a7aa2f738de
-  languageName: node
-  linkType: hard
-
-"@codama/renderers-core@npm:1.0.12":
-  version: 1.0.12
-  resolution: "@codama/renderers-core@npm:1.0.12"
-  dependencies:
-    "@codama/errors": "npm:1.2.10"
-    "@codama/nodes": "npm:1.2.10"
-    "@codama/visitors-core": "npm:1.2.10"
-  checksum: 10c0/fe35a9286b184f787ef0dc4c77feb11e180d56ead812db2c8428998bcb1ab389a244052883e86fc7153c457b9dcb6ead30cd2d2ef5a847ffcf1da21d128549c1
-  languageName: node
-  linkType: hard
-
-"@codama/renderers-js-umi@npm:1.1.9":
-  version: 1.1.9
-  resolution: "@codama/renderers-js-umi@npm:1.1.9"
-  dependencies:
-    "@codama/errors": "npm:1.2.8"
-    "@codama/nodes": "npm:1.2.8"
-    "@codama/renderers-core": "npm:1.0.10"
-    "@codama/validators": "npm:1.2.8"
-    "@codama/visitors-core": "npm:1.2.8"
-    "@solana/codecs-strings": "npm:rc"
-    nunjucks: "npm:^3.2.4"
-    prettier: "npm:^3.5.2"
-  checksum: 10c0/6ad57324acae993ff29e5d3e07227183d4b23e834fe89e063d9448480abb020a908a8fde1e6ff6f8ab2c37952cb0a6d71e112206fec2b73120c16f4c260738ae
-  languageName: node
-  linkType: hard
-
-"@codama/renderers-js@npm:1.2.7":
-  version: 1.2.7
-  resolution: "@codama/renderers-js@npm:1.2.7"
-  dependencies:
-    "@codama/errors": "npm:1.2.8"
-    "@codama/nodes": "npm:1.2.8"
-    "@codama/nodes-from-anchor": "npm:1.1.8"
-    "@codama/renderers-core": "npm:1.0.10"
-    "@codama/visitors-core": "npm:1.2.8"
-    "@solana/codecs-strings": "npm:rc"
-    nunjucks: "npm:^3.2.4"
-    prettier: "npm:^3.5.2"
-  checksum: 10c0/a0c1aac93efe7d8cd03fbea1c861bd237989060f8fe30579e0f9041fdd064dafe57fb0d7cd55044f1f1e43d4ad629914bf2943dd1435cef348a3f66a653f1d2e
-  languageName: node
-  linkType: hard
-
-"@codama/renderers-js@npm:^1.2.9":
-  version: 1.2.9
-  resolution: "@codama/renderers-js@npm:1.2.9"
-  dependencies:
-    "@codama/errors": "npm:1.2.10"
-    "@codama/nodes": "npm:1.2.10"
-    "@codama/nodes-from-anchor": "npm:1.1.10"
-    "@codama/renderers-core": "npm:1.0.12"
-    "@codama/visitors-core": "npm:1.2.10"
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/renderers-core": "npm:1.0.13"
+    "@codama/validators": "npm:1.2.11"
+    "@codama/visitors-core": "npm:1.2.11"
     "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
     prettier: "npm:^3.5.3"
-  checksum: 10c0/09edd96763006ed417db4aea1370708a105be4f764024ad46f2d8d54b7c7da71e8ba0e36b1ea2b8cb3a1a4b031e2d1a96c17c1d0b48569799ea57ab36433052d
+  checksum: 10c0/df5ec935026063fa8beadbf629450cb08dff23c6f15c2ef778752769bae1c90922350ea39d9c4ad389d1e3fb513c9ed27aca31421b4039c911c5e7a1ecee2919
   languageName: node
   linkType: hard
 
-"@codama/renderers-rust@npm:1.0.16":
-  version: 1.0.16
-  resolution: "@codama/renderers-rust@npm:1.0.16"
+"@codama/renderers-js@npm:1.2.10, @codama/renderers-js@npm:^1.2.10":
+  version: 1.2.10
+  resolution: "@codama/renderers-js@npm:1.2.10"
   dependencies:
-    "@codama/errors": "npm:1.2.8"
-    "@codama/nodes": "npm:1.2.8"
-    "@codama/renderers-core": "npm:1.0.10"
-    "@codama/visitors-core": "npm:1.2.8"
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/nodes-from-anchor": "npm:1.1.11"
+    "@codama/renderers-core": "npm:1.0.13"
+    "@codama/visitors-core": "npm:1.2.11"
     "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
-  checksum: 10c0/18781fd8e89fcea799ebc49e01ae935ec04ca483daf89e4d00cecdd1cda1ebd4d66731edad33de2ab5e58cab4eabfb2ea191ca0938f56b661cdf43c6d803b7ce
+    prettier: "npm:^3.5.3"
+  checksum: 10c0/d1c9f3264569db93591de754e287a7a67df55872ae2a0e5bbb32ad871e842b116dd8af3569789c01df756a40e3dc52cd1a3761f4b2c848cabb6845488f3f8a1e
   languageName: node
   linkType: hard
 
-"@codama/renderers-rust@npm:^1.0.18":
-  version: 1.0.18
-  resolution: "@codama/renderers-rust@npm:1.0.18"
+"@codama/renderers-rust@npm:1.0.19, @codama/renderers-rust@npm:^1.0.19":
+  version: 1.0.19
+  resolution: "@codama/renderers-rust@npm:1.0.19"
   dependencies:
-    "@codama/errors": "npm:1.2.10"
-    "@codama/nodes": "npm:1.2.10"
-    "@codama/renderers-core": "npm:1.0.12"
-    "@codama/visitors-core": "npm:1.2.10"
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/renderers-core": "npm:1.0.13"
+    "@codama/visitors-core": "npm:1.2.11"
     "@solana/codecs-strings": "npm:rc"
     nunjucks: "npm:^3.2.4"
-  checksum: 10c0/9a493999a7ab137570b23a2572e089e7d8b5f5146849abc39021b41c16249467bde3f11ce8b8ae8ab8ad678528f4b0d453a3717c19909e5aa4266f8f49fc6471
+  checksum: 10c0/e6689547acea650a3a85ee0be90278f29e782462bd9d70de619d3a0a43fb79a8260f0842427078f607c00b2065858dba4b877aa632ad7c31b47697bce896223b
   languageName: node
   linkType: hard
 
-"@codama/renderers@npm:1.0.16":
-  version: 1.0.16
-  resolution: "@codama/renderers@npm:1.0.16"
+"@codama/renderers@npm:1.0.19":
+  version: 1.0.19
+  resolution: "@codama/renderers@npm:1.0.19"
   dependencies:
-    "@codama/renderers-js": "npm:1.2.7"
-    "@codama/renderers-js-umi": "npm:1.1.9"
-    "@codama/renderers-rust": "npm:1.0.16"
-  checksum: 10c0/3c28899b6143a0c7f48744f6077a6be154bb1b66696c4022a008db009b9124d7e026ce177b905316a2c905a8d756ce9bc6c9802d345636de9ce02c15a181ae26
+    "@codama/renderers-js": "npm:1.2.10"
+    "@codama/renderers-js-umi": "npm:1.1.12"
+    "@codama/renderers-rust": "npm:1.0.19"
+  checksum: 10c0/06e5cb69b8f6d6a6a55643aeafcec087d85c09ef89df7ec61fd8d3b5e4125af22c2e48fd32c082cdfd40603c5512b51d50326eb5508b1a7da1c8292bc08730b7
   languageName: node
   linkType: hard
 
-"@codama/validators@npm:1.2.8":
-  version: 1.2.8
-  resolution: "@codama/validators@npm:1.2.8"
+"@codama/validators@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/validators@npm:1.2.11"
   dependencies:
-    "@codama/errors": "npm:1.2.8"
-    "@codama/nodes": "npm:1.2.8"
-    "@codama/visitors-core": "npm:1.2.8"
-  checksum: 10c0/99ba5e74268da7228c51b9367985e838aa5054e906e43a015bde931757ecdc778f6b63086ebf361fddb9a694644d09376ad40b624a0daeb6e5bfc0a39d8248b8
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/visitors-core": "npm:1.2.11"
+  checksum: 10c0/b86109c8adb73f6611a4687e9de6133058aa7573f780681a7f8cb9d809aa244e453a02a30d30448c782258974a2bab6aa477ee7a6431f0c8c1d95762fb41a1e6
   languageName: node
   linkType: hard
 
-"@codama/visitors-core@npm:1.2.10":
-  version: 1.2.10
-  resolution: "@codama/visitors-core@npm:1.2.10"
+"@codama/visitors-core@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/visitors-core@npm:1.2.11"
   dependencies:
-    "@codama/errors": "npm:1.2.10"
-    "@codama/nodes": "npm:1.2.10"
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
     json-stable-stringify: "npm:^1.2.1"
-  checksum: 10c0/9596a83c9863eccc1a36c9029abed3f74af6aaf5fee83f897be31534a7daf3610cbfbb78720a74d0bb5bd64a61dde7919f4225a7ff8efd929f7830114dfd5617
+  checksum: 10c0/2234a46002239ed7b14ee3016086ca238ba56d3140beb0cbf19c8ee21ddebc927542ad4022c9c902879042898ed3dcb369ec70c636854b728a209bd806332a96
   languageName: node
   linkType: hard
 
-"@codama/visitors-core@npm:1.2.8":
-  version: 1.2.8
-  resolution: "@codama/visitors-core@npm:1.2.8"
+"@codama/visitors@npm:1.2.11":
+  version: 1.2.11
+  resolution: "@codama/visitors@npm:1.2.11"
   dependencies:
-    "@codama/errors": "npm:1.2.8"
-    "@codama/nodes": "npm:1.2.8"
-    json-stable-stringify: "npm:^1.2.1"
-  checksum: 10c0/c8da7557393d5ee1ba6f32247a8d1a5b866538256606854f4e30bde9678d359bf8c29cd9f9c6ff8021ad2653e62082c023d007bf668dc197f743e0fffc0f8463
-  languageName: node
-  linkType: hard
-
-"@codama/visitors@npm:1.2.10":
-  version: 1.2.10
-  resolution: "@codama/visitors@npm:1.2.10"
-  dependencies:
-    "@codama/errors": "npm:1.2.10"
-    "@codama/nodes": "npm:1.2.10"
-    "@codama/visitors-core": "npm:1.2.10"
-  checksum: 10c0/ccea9a5478240c3d1de0d342ef513125b2a1dbaa42ef0a6dcc9b9368b0b8ae18cc2fc56f0070e100f34d23af2f4aa36cc81a5f758a43427ae913d8eb374942df
-  languageName: node
-  linkType: hard
-
-"@codama/visitors@npm:1.2.8":
-  version: 1.2.8
-  resolution: "@codama/visitors@npm:1.2.8"
-  dependencies:
-    "@codama/errors": "npm:1.2.8"
-    "@codama/nodes": "npm:1.2.8"
-    "@codama/visitors-core": "npm:1.2.8"
-  checksum: 10c0/6127bf3bfa62781c2e20e24aa4cb2436eab9b0716e791886be7ee24469d955d6b3cd0e409458adbcc1dfddba8f9d6228c1e2f11d7625ec16f4ea83d99e01e3ae
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/visitors-core": "npm:1.2.11"
+  checksum: 10c0/ca0bd321b8a341f69eb6c947e5e55237ccb65ddb4de75c83818d96ac95bed52b1a32b21d05735c8ffea6115f5add850a5456d445c65667300b791d013ef00745
   languageName: node
   linkType: hard
 
@@ -3369,10 +3263,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eslint/config-helpers@npm:^0.1.0":
-  version: 0.1.0
-  resolution: "@eslint/config-helpers@npm:0.1.0"
-  checksum: 10c0/3562b5325f42740fc83b0b92b7d13a61b383f8db064915143eec36184f09a09fad73eca6c2955ab6c248b0d04fa03c140f9af2f2c4c06770781a6b79f300a01e
+"@eslint/config-helpers@npm:^0.2.0":
+  version: 0.2.0
+  resolution: "@eslint/config-helpers@npm:0.2.0"
+  checksum: 10c0/743a64653e13177029108f57ab47460ded08e3412c86216a14b7e8ab2dc79c2b64be45bf55c5ef29f83692a707dc34cf1e9217e4b8b4b272a0d9b691fdaf6a2a
   languageName: node
   linkType: hard
 
@@ -3385,9 +3279,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@eslint/eslintrc@npm:^3.3.0":
-  version: 3.3.0
-  resolution: "@eslint/eslintrc@npm:3.3.0"
+"@eslint/eslintrc@npm:^3.3.1":
+  version: 3.3.1
+  resolution: "@eslint/eslintrc@npm:3.3.1"
   dependencies:
     ajv: "npm:^6.12.4"
     debug: "npm:^4.3.2"
@@ -3398,14 +3292,14 @@ __metadata:
     js-yaml: "npm:^4.1.0"
     minimatch: "npm:^3.1.2"
     strip-json-comments: "npm:^3.1.1"
-  checksum: 10c0/215de990231b31e2fe6458f225d8cea0f5c781d3ecb0b7920703501f8cd21b3101fc5ef2f0d4f9a38865d36647b983e0e8ce8bf12fd2bcdd227fc48a5b1a43be
+  checksum: 10c0/b0e63f3bc5cce4555f791a4e487bf999173fcf27c65e1ab6e7d63634d8a43b33c3693e79f192cbff486d7df1be8ebb2bd2edc6e70ddd486cbfa84a359a3e3b41
   languageName: node
   linkType: hard
 
-"@eslint/js@npm:9.22.0":
-  version: 9.22.0
-  resolution: "@eslint/js@npm:9.22.0"
-  checksum: 10c0/5bcd009bb579dc6c6ed760703bdd741e08a48cd9decd677aa2cf67fe66236658cb09a00185a0369f3904e5cffba9e6e0f2ff4d9ba4fdf598fcd81d34c49213a5
+"@eslint/js@npm:9.23.0":
+  version: 9.23.0
+  resolution: "@eslint/js@npm:9.23.0"
+  checksum: 10c0/4e70869372b6325389e0ab51cac6d3062689807d1cef2c3434857571422ce11dde3c62777af85c382b9f94d937127598d605d2086787f08611351bf99faded81
   languageName: node
   linkType: hard
 
@@ -4102,11 +3996,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-client@workspace:ts-sdk/client"
   dependencies:
-    "@codama/nodes-from-anchor": "npm:^1.1.10"
-    "@codama/renderers-js": "npm:^1.2.9"
+    "@codama/nodes-from-anchor": "npm:^1.1.11"
+    "@codama/renderers-js": "npm:^1.2.10"
     "@orca-so/whirlpools-program": "npm:*"
     "@solana/kit": "npm:^2.1.0"
-    codama: "npm:^1.2.8"
+    codama: "npm:^1.2.11"
     typescript: "npm:^5.8.2"
   peerDependencies:
     "@solana/kit": ^2.1.0
@@ -4201,7 +4095,7 @@ __metadata:
     "@next/bundle-analyzer": "npm:^15.2.3"
     "@orca-so/whirlpools": "npm:*"
     "@solana/kit": "npm:^2.1.0"
-    "@types/node": "npm:^22.13.10"
+    "@types/node": "npm:^22.13.11"
     "@types/react": "npm:^18.3.13"
     copy-webpack-plugin: "npm:^13.0.0"
     next: "npm:^15.2.3"
@@ -4226,7 +4120,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-lint@workspace:ts-sdk/lint"
   dependencies:
-    eslint: "npm:^9.22.0"
+    eslint: "npm:^9.23.0"
     prettier: "npm:^3.5.3"
     typescript: "npm:^5.8.2"
     typescript-eslint: "npm:^8.27.0"
@@ -4239,11 +4133,11 @@ __metadata:
   dependencies:
     "@changesets/changelog-github": "npm:^0.5.1"
     "@changesets/cli": "npm:^2.28.1"
-    "@types/node": "npm:^22.13.10"
+    "@types/node": "npm:^22.13.11"
     nx: "npm:^20.6.2"
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.4.0"
-    vitest: "npm:^3.0.8"
+    vitest: "npm:^3.0.9"
   languageName: unknown
   linkType: soft
 
@@ -4257,11 +4151,11 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@orca-so/whirlpools-rust-client@workspace:rust-sdk/client"
   dependencies:
-    "@codama/nodes-from-anchor": "npm:^1.1.10"
-    "@codama/renderers-rust": "npm:^1.0.18"
+    "@codama/nodes-from-anchor": "npm:^1.1.11"
+    "@codama/renderers-rust": "npm:^1.0.19"
     "@orca-so/whirlpools-program": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
-    codama: "npm:^1.2.8"
+    codama: "npm:^1.2.11"
   languageName: unknown
   linkType: soft
 
@@ -4744,17 +4638,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/codecs-core@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@solana/codecs-core@npm:2.0.0"
-  dependencies:
-    "@solana/errors": "npm:2.0.0"
-  peerDependencies:
-    typescript: ">=5"
-  checksum: 10c0/31d20a17dc5388671fb7bd2ba924fae3a60d45e88571443d888210c28a05b913e884f49a425ac4e07a0c5c53352ff748cd882b8146ed46d2701f6fac926d9764
-  languageName: node
-  linkType: hard
-
 "@solana/codecs-core@npm:2.0.0-rc.1":
   version: 2.0.0-rc.1
   resolution: "@solana/codecs-core@npm:2.0.0-rc.1"
@@ -4788,19 +4671,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/codecs-data-structures@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@solana/codecs-data-structures@npm:2.0.0"
-  dependencies:
-    "@solana/codecs-core": "npm:2.0.0"
-    "@solana/codecs-numbers": "npm:2.0.0"
-    "@solana/errors": "npm:2.0.0"
-  peerDependencies:
-    typescript: ">=5"
-  checksum: 10c0/ac415b979c0ec77f8106855cab6b1b1f1cf9e38614e588acc74dea74b6a84a5119c616a66c1963dc2b51700b039a4236e7cc88ff2c2aea97cca9bdc63866d3eb
-  languageName: node
-  linkType: hard
-
 "@solana/codecs-data-structures@npm:2.0.0-rc.1":
   version: 2.0.0-rc.1
   resolution: "@solana/codecs-data-structures@npm:2.0.0-rc.1"
@@ -4824,18 +4694,6 @@ __metadata:
   peerDependencies:
     typescript: ">=5"
   checksum: 10c0/2520f4d4648bbe97383d8df42423ceee14473ae4e608f68fa372b8121b764559fd14fb34c65dfce6e98d3c79b142890a628239003365a70cab993fe7073046ee
-  languageName: node
-  linkType: hard
-
-"@solana/codecs-numbers@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@solana/codecs-numbers@npm:2.0.0"
-  dependencies:
-    "@solana/codecs-core": "npm:2.0.0"
-    "@solana/errors": "npm:2.0.0"
-  peerDependencies:
-    typescript: ">=5"
-  checksum: 10c0/b424c5495dc34af03529c01ae90c8d4cc855986c47f05a2a3728a29ff14455dc10e082040d717dbba67e9ae84afb6718ffd89086fb1d58763fe4fe8d80810faa
   languageName: node
   linkType: hard
 
@@ -4872,20 +4730,6 @@ __metadata:
   peerDependencies:
     typescript: ">=5"
   checksum: 10c0/ae5c256e4d49f7d2eb37ad5aa52e038eb3f13d611cd5799f3d7e549b6b983571511a0d924fb287f49b687a101bb849114de4e7b29eb103a2369126e4fd3dbebb
-  languageName: node
-  linkType: hard
-
-"@solana/codecs-strings@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@solana/codecs-strings@npm:2.0.0"
-  dependencies:
-    "@solana/codecs-core": "npm:2.0.0"
-    "@solana/codecs-numbers": "npm:2.0.0"
-    "@solana/errors": "npm:2.0.0"
-  peerDependencies:
-    fastestsmallesttextencoderdecoder: ^1.0.22
-    typescript: ">=5"
-  checksum: 10c0/330577f6b898d7f721f6326e41a27882740e4531e8f4717d3b8d521afcc9648c874f63d86bdf34d0a08bbd4bed0996a93a7cf131df452ab3221a5e7a621f292d
   languageName: node
   linkType: hard
 
@@ -4931,21 +4775,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@solana/codecs@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@solana/codecs@npm:2.0.0"
-  dependencies:
-    "@solana/codecs-core": "npm:2.0.0"
-    "@solana/codecs-data-structures": "npm:2.0.0"
-    "@solana/codecs-numbers": "npm:2.0.0"
-    "@solana/codecs-strings": "npm:2.0.0"
-    "@solana/options": "npm:2.0.0"
-  peerDependencies:
-    typescript: ">=5"
-  checksum: 10c0/922d4a1800e6d363ae687d9053c5653768f59a7c6a203d277d17eac0d5aafcbedbf206ae9dff063a95b7989a8b336fa085cb5d8063953d4efda7c0f1b86c084c
-  languageName: node
-  linkType: hard
-
 "@solana/codecs@npm:2.0.0-rc.1":
   version: 2.0.0-rc.1
   resolution: "@solana/codecs@npm:2.0.0-rc.1"
@@ -4973,20 +4802,6 @@ __metadata:
   peerDependencies:
     typescript: ">=5"
   checksum: 10c0/5395221a6fffe3c4cfd9c7e2e41067226c4e34a10bcebb7490ef8313d7ccceefa1f81c1aa762197ed49f69266a5efd8d8f86ccf40ff123bbd16bd74850d17b6c
-  languageName: node
-  linkType: hard
-
-"@solana/errors@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@solana/errors@npm:2.0.0"
-  dependencies:
-    chalk: "npm:^5.3.0"
-    commander: "npm:^12.1.0"
-  peerDependencies:
-    typescript: ">=5"
-  bin:
-    errors: bin/cli.mjs
-  checksum: 10c0/f56fdc5263d99cfa65a7ee6213e5156383c58f1f3d86c540a05fddb5021d4a824e84f9ae545914acea534e9ee264cfc3001790ae4f90270d2bb3fb288e9fa49b
   languageName: node
   linkType: hard
 
@@ -5101,21 +4916,6 @@ __metadata:
   peerDependencies:
     typescript: ">=5"
   checksum: 10c0/9c377875ad054df0e5e0912db78893c9608a38a39fab49e6b73ceb14f7298efc28298ac11a684dd6dcee7627ef8a7a33663ddc48db441563543f8479e6551eaf
-  languageName: node
-  linkType: hard
-
-"@solana/options@npm:2.0.0":
-  version: 2.0.0
-  resolution: "@solana/options@npm:2.0.0"
-  dependencies:
-    "@solana/codecs-core": "npm:2.0.0"
-    "@solana/codecs-data-structures": "npm:2.0.0"
-    "@solana/codecs-numbers": "npm:2.0.0"
-    "@solana/codecs-strings": "npm:2.0.0"
-    "@solana/errors": "npm:2.0.0"
-  peerDependencies:
-    typescript: ">=5"
-  checksum: 10c0/dceed0e97be11b2251db33bf43db37678255d35bf4d2b9cb07114c4d71467614e7a10c7fa86b7736bf5a067bd82e8eeac0cb1a4713a486b2f313c2bdfaf77b88
   languageName: node
   linkType: hard
 
@@ -5998,7 +5798,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:^22.13.10":
+"@types/node@npm:*":
   version: 22.13.10
   resolution: "@types/node@npm:22.13.10"
   dependencies:
@@ -6018,6 +5818,15 @@ __metadata:
   version: 17.0.45
   resolution: "@types/node@npm:17.0.45"
   checksum: 10c0/0db377133d709b33a47892581a21a41cd7958f22723a3cc6c71d55ac018121382de42fbfc7970d5ae3e7819dbe5f40e1c6a5174aedf7e7964e9cb8fa72b580b0
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^22.13.11":
+  version: 22.13.11
+  resolution: "@types/node@npm:22.13.11"
+  dependencies:
+    undici-types: "npm:~6.20.0"
+  checksum: 10c0/f6ee33d36372242535c38640fe7550a6640d8a775ec19b55bfc11775b521cba072d892ca92a912332ce01b317293d645c1bf767f3f882ec719f2404a3d2a5b96
   languageName: node
   linkType: hard
 
@@ -6360,23 +6169,23 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@vitest/expect@npm:3.0.8":
-  version: 3.0.8
-  resolution: "@vitest/expect@npm:3.0.8"
+"@vitest/expect@npm:3.0.9":
+  version: 3.0.9
+  resolution: "@vitest/expect@npm:3.0.9"
   dependencies:
-    "@vitest/spy": "npm:3.0.8"
-    "@vitest/utils": "npm:3.0.8"
+    "@vitest/spy": "npm:3.0.9"
+    "@vitest/utils": "npm:3.0.9"
     chai: "npm:^5.2.0"
     tinyrainbow: "npm:^2.0.0"
-  checksum: 10c0/48aebec816f5a1b1f64f82b474ccfba537801a654f9547c581ed1c2d30b5de72207b643d3db2ac2869809a63a585425df30f65481f86d2bbbf979d8f235661bd
+  checksum: 10c0/4e5eef8fbc9c3e47f3fb69dbbd5b51aabdf1b6de2f781556d37d79731678fc83cf4a01d146226b12a27df051a4110153a6172506c9c74ae08e5b924a9c947f08
   languageName: node
   linkType: hard
 
-"@vitest/mocker@npm:3.0.8":
-  version: 3.0.8
-  resolution: "@vitest/mocker@npm:3.0.8"
+"@vitest/mocker@npm:3.0.9":
+  version: 3.0.9
+  resolution: "@vitest/mocker@npm:3.0.9"
   dependencies:
-    "@vitest/spy": "npm:3.0.8"
+    "@vitest/spy": "npm:3.0.9"
     estree-walker: "npm:^3.0.3"
     magic-string: "npm:^0.30.17"
   peerDependencies:
@@ -6387,57 +6196,57 @@ __metadata:
       optional: true
     vite:
       optional: true
-  checksum: 10c0/bc89a31a5ebba900bb965b05d1fab581ae2872b6ddc17734f2a8433b9a3c7ae1fa0efd5f13bf03cf8075864b47954e8fcf609cf3a8258f0451375d68b81f135b
+  checksum: 10c0/9083a83902ca550cf004413b9fc87c8367a789e18a3c5a61e63c72810f9153e7d1c100c66f0b0656ea1035a700a373d5b78b49de0963ab62333c720aeec9f1b3
   languageName: node
   linkType: hard
 
-"@vitest/pretty-format@npm:3.0.8, @vitest/pretty-format@npm:^3.0.8":
-  version: 3.0.8
-  resolution: "@vitest/pretty-format@npm:3.0.8"
+"@vitest/pretty-format@npm:3.0.9, @vitest/pretty-format@npm:^3.0.9":
+  version: 3.0.9
+  resolution: "@vitest/pretty-format@npm:3.0.9"
   dependencies:
     tinyrainbow: "npm:^2.0.0"
-  checksum: 10c0/9133052605f16966db91d5e495afb5e32c3eb9215602248710bc3fd9034b1b511d1a7f1093571afee8664beb2a83303d42f1d5896fdba2a39adbb5ca9af788f7
+  checksum: 10c0/56ae7b1f14df2905b3205d4e121727631c4938ec44f76c1e9fa49923919010378f0dad70b1d277672f3ef45ddf6372140c8d1da95e45df8282f70b74328fce47
   languageName: node
   linkType: hard
 
-"@vitest/runner@npm:3.0.8":
-  version: 3.0.8
-  resolution: "@vitest/runner@npm:3.0.8"
+"@vitest/runner@npm:3.0.9":
+  version: 3.0.9
+  resolution: "@vitest/runner@npm:3.0.9"
   dependencies:
-    "@vitest/utils": "npm:3.0.8"
+    "@vitest/utils": "npm:3.0.9"
     pathe: "npm:^2.0.3"
-  checksum: 10c0/9a9d48dc82ca7101209b21309e18a4720e77d6015bf00a60ace6130e362320158d110f48cf9aa221e5e744729fe8a198811dd69e598688ffbb78c2fce2a842a1
+  checksum: 10c0/b276f238a16a6d02bb244f655d9cd8db8cce4708a6267cc48476a785ca8887741c440ae27b379a5bbbb6fe4f9f12675f13da0270253043195defd7a36bf15114
   languageName: node
   linkType: hard
 
-"@vitest/snapshot@npm:3.0.8":
-  version: 3.0.8
-  resolution: "@vitest/snapshot@npm:3.0.8"
+"@vitest/snapshot@npm:3.0.9":
+  version: 3.0.9
+  resolution: "@vitest/snapshot@npm:3.0.9"
   dependencies:
-    "@vitest/pretty-format": "npm:3.0.8"
+    "@vitest/pretty-format": "npm:3.0.9"
     magic-string: "npm:^0.30.17"
     pathe: "npm:^2.0.3"
-  checksum: 10c0/40564f60f7d166d10a03e9d1f8780daef164c76b2d85c1c8f5800168f907929c815395ac5c1f5c824da5ff29286f874e22dd8874b52044a53e0d858be67ceeb7
+  checksum: 10c0/8298caa334d357cb22b1946cbebedb22f04d38fe080d6da7445873221fe6f89c2b82fe4f368d9eb8a62a77bd76d1b4234595bb085279d48130f09ba6b2e18637
   languageName: node
   linkType: hard
 
-"@vitest/spy@npm:3.0.8":
-  version: 3.0.8
-  resolution: "@vitest/spy@npm:3.0.8"
+"@vitest/spy@npm:3.0.9":
+  version: 3.0.9
+  resolution: "@vitest/spy@npm:3.0.9"
   dependencies:
     tinyspy: "npm:^3.0.2"
-  checksum: 10c0/7a940e6fbf5e6903758dfd904dedc9223df72ffa2a3d8c988706c2626c0fd3f9b129452bcd7af40bda014831f15ddb23ad7c1a7e42900acf4f3432b0c2bc8fb5
+  checksum: 10c0/993085dbaf9e651ca9516f88e440424d29279def998186628a1ebcab5558a3045fee8562630608f58303507135f6f3bf9970f65639f3b9baa8bf86cab3eb4742
   languageName: node
   linkType: hard
 
-"@vitest/utils@npm:3.0.8":
-  version: 3.0.8
-  resolution: "@vitest/utils@npm:3.0.8"
+"@vitest/utils@npm:3.0.9":
+  version: 3.0.9
+  resolution: "@vitest/utils@npm:3.0.9"
   dependencies:
-    "@vitest/pretty-format": "npm:3.0.8"
+    "@vitest/pretty-format": "npm:3.0.9"
     loupe: "npm:^3.1.3"
     tinyrainbow: "npm:^2.0.0"
-  checksum: 10c0/929e71582d27f5ec2fe422d72112471b36517620beb2c4398c116598ca55b36340b0fa97958d8584bc05153d92dbd60324664d5b623ec6eed8c72e50e226633c
+  checksum: 10c0/b966dfb3b926ee9bea59c1fb297abc67adaa23a8a582453ee81167b238446394693617a5e0523eb2791d6983173ef1c07bf28a76bd5a63b49a100610ed6b6a6c
   languageName: node
   linkType: hard
 
@@ -7841,18 +7650,18 @@ __metadata:
   languageName: node
   linkType: hard
 
-"codama@npm:^1.2.8":
-  version: 1.2.8
-  resolution: "codama@npm:1.2.8"
+"codama@npm:^1.2.11":
+  version: 1.2.11
+  resolution: "codama@npm:1.2.11"
   dependencies:
-    "@codama/cli": "npm:1.0.7"
-    "@codama/errors": "npm:1.2.8"
-    "@codama/nodes": "npm:1.2.8"
-    "@codama/validators": "npm:1.2.8"
-    "@codama/visitors": "npm:1.2.8"
+    "@codama/cli": "npm:1.0.10"
+    "@codama/errors": "npm:1.2.11"
+    "@codama/nodes": "npm:1.2.11"
+    "@codama/validators": "npm:1.2.11"
+    "@codama/visitors": "npm:1.2.11"
   bin:
     codama: bin/cli.cjs
-  checksum: 10c0/cc0884b8d3453ba66a5ca8763b24a4eb01da03072e3fcf0a4c6c33a09d2845adeae61722cf55d6ec01b3dc56e5947aa64238c6439d9d042a665336511eb317e6
+  checksum: 10c0/ff50bd540e52c00468245f260f1f7707f65caa81b0c26efb4d3222220c2b291db94a7c8254635ced4a47057f0a49adbd50029093e57e40e85ffb61670bfd1cd9
   languageName: node
   linkType: hard
 
@@ -9341,17 +9150,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint@npm:^9.22.0":
-  version: 9.22.0
-  resolution: "eslint@npm:9.22.0"
+"eslint@npm:^9.23.0":
+  version: 9.23.0
+  resolution: "eslint@npm:9.23.0"
   dependencies:
     "@eslint-community/eslint-utils": "npm:^4.2.0"
     "@eslint-community/regexpp": "npm:^4.12.1"
     "@eslint/config-array": "npm:^0.19.2"
-    "@eslint/config-helpers": "npm:^0.1.0"
+    "@eslint/config-helpers": "npm:^0.2.0"
     "@eslint/core": "npm:^0.12.0"
-    "@eslint/eslintrc": "npm:^3.3.0"
-    "@eslint/js": "npm:9.22.0"
+    "@eslint/eslintrc": "npm:^3.3.1"
+    "@eslint/js": "npm:9.23.0"
     "@eslint/plugin-kit": "npm:^0.2.7"
     "@humanfs/node": "npm:^0.16.6"
     "@humanwhocodes/module-importer": "npm:^1.0.1"
@@ -9387,7 +9196,7 @@ __metadata:
       optional: true
   bin:
     eslint: bin/eslint.js
-  checksum: 10c0/7b5ab6f2365971c16efe97349565f75d8343347562fb23f12734c6ab2cd5e35301373a0d51e194789ddcfdfca21db7b62ff481b03d524b8169896c305b65ff48
+  checksum: 10c0/9616c308dfa8d09db8ae51019c87d5d05933742214531b077bd6ab618baab3bec7938256c14dcad4dc47f5ba93feb0bc5e089f68799f076374ddea21b6a9be45
   languageName: node
   linkType: hard
 
@@ -15161,7 +14970,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:^3.5.2, prettier@npm:^3.5.3":
+"prettier@npm:^3.5.3":
   version: 3.5.3
   resolution: "prettier@npm:3.5.3"
   bin:
@@ -18130,9 +17939,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vite-node@npm:3.0.8":
-  version: 3.0.8
-  resolution: "vite-node@npm:3.0.8"
+"vite-node@npm:3.0.9":
+  version: 3.0.9
+  resolution: "vite-node@npm:3.0.9"
   dependencies:
     cac: "npm:^6.7.14"
     debug: "npm:^4.4.0"
@@ -18141,7 +17950,7 @@ __metadata:
     vite: "npm:^5.0.0 || ^6.0.0"
   bin:
     vite-node: vite-node.mjs
-  checksum: 10c0/1e7243ad04edc71ccff67b1a686cc85b59ad803645b83c524eab6cde92d6c8f06d595cc99cd3236b4017de27d6760808c419711cd728471eb36ec9a6734ef651
+  checksum: 10c0/97768a64182832c1ae1797667920fec002d283506b628b684df707fc453c6bf58719029c52c7a4cdf98f5a5a44769036126efdb8192d4040ba3d39f271aa338b
   languageName: node
   linkType: hard
 
@@ -18197,17 +18006,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"vitest@npm:^3.0.8":
-  version: 3.0.8
-  resolution: "vitest@npm:3.0.8"
+"vitest@npm:^3.0.9":
+  version: 3.0.9
+  resolution: "vitest@npm:3.0.9"
   dependencies:
-    "@vitest/expect": "npm:3.0.8"
-    "@vitest/mocker": "npm:3.0.8"
-    "@vitest/pretty-format": "npm:^3.0.8"
-    "@vitest/runner": "npm:3.0.8"
-    "@vitest/snapshot": "npm:3.0.8"
-    "@vitest/spy": "npm:3.0.8"
-    "@vitest/utils": "npm:3.0.8"
+    "@vitest/expect": "npm:3.0.9"
+    "@vitest/mocker": "npm:3.0.9"
+    "@vitest/pretty-format": "npm:^3.0.9"
+    "@vitest/runner": "npm:3.0.9"
+    "@vitest/snapshot": "npm:3.0.9"
+    "@vitest/spy": "npm:3.0.9"
+    "@vitest/utils": "npm:3.0.9"
     chai: "npm:^5.2.0"
     debug: "npm:^4.4.0"
     expect-type: "npm:^1.1.0"
@@ -18219,14 +18028,14 @@ __metadata:
     tinypool: "npm:^1.0.2"
     tinyrainbow: "npm:^2.0.0"
     vite: "npm:^5.0.0 || ^6.0.0"
-    vite-node: "npm:3.0.8"
+    vite-node: "npm:3.0.9"
     why-is-node-running: "npm:^2.3.0"
   peerDependencies:
     "@edge-runtime/vm": "*"
     "@types/debug": ^4.1.12
     "@types/node": ^18.0.0 || ^20.0.0 || >=22.0.0
-    "@vitest/browser": 3.0.8
-    "@vitest/ui": 3.0.8
+    "@vitest/browser": 3.0.9
+    "@vitest/ui": 3.0.9
     happy-dom: "*"
     jsdom: "*"
   peerDependenciesMeta:
@@ -18246,7 +18055,7 @@ __metadata:
       optional: true
   bin:
     vitest: vitest.mjs
-  checksum: 10c0/007a951c4e10ceda1eecad38e5bcc7aa25ed90269614e1394eb2c5fa5f51bbe05d915bcec27fc2e18da8bdea27cea80d428095ef818b97857c51422fddda34ff
+  checksum: 10c0/5bcd25cab1681f3a968a6483cd5fe115791bc02769bd73bc680bf40153474391a03a6329781b0fb0b8c2f95c82eb342a972bd5132d9bd0d4be92977af19574d0
   languageName: node
   linkType: hard
 

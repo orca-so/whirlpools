@@ -188,7 +188,7 @@ impl FeeRateManager {
                     );
                 }
 
-                // volatility_accumulator is updated with the new tick_group_index based ooon new sqrt_price
+                // volatility_accumulator is updated with the new tick_group_index based on new sqrt_price
                 adaptive_fee_variables
                     .update_volatility_accumulator(*tick_group_index, adaptive_fee_constants)?;
 
@@ -257,7 +257,7 @@ impl FeeRateManager {
                     return (sqrt_price, true);
                 }
 
-                // If the tick group index is out of the core tick group range (loweer side),
+                // If the tick group index is out of the core tick group range (lower side),
                 // the range where volatility_accumulator is always max_volatility_accumulator can be skipped.
                 if let Some((lower_tick_group_index, lower_tick_group_bound_sqrt_price)) =
                     core_tick_group_range_lower_bound

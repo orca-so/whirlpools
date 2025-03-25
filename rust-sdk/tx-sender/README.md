@@ -88,6 +88,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         vec![transfer_ix],
         &[&payer],
         Some(options),
+        None, // No address lookup tables
     ).await?;
 
     println!("Transaction sent: {}", signature);
@@ -167,6 +168,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         vec![transfer_ix],
         &[&payer],
         Some(options),
+        None, // No address lookup tables
     ).await?;
 
     println!("Transaction sent: {}", signature);
@@ -223,16 +225,25 @@ let options = SendOptions {
 let signature = build_and_send_transaction(
     instructions,
     signers,
-    Some(options)
+    Some(options),
+    None, // No address lookup tables
 ).await?;
 
-// Or with a TransactionSender instance
-let signature = sender
-    .build_and_send_transaction(instructions, signers, Some(options))
-    .await?;
+// With address lookup tables for account compression
+let signature = build_and_send_transaction(
+    instructions,
+    signers,
+    Some(options),
+    Some(address_lookup_tables), // With ALTs
+).await?;
 
 // Use default options by passing None
-let signature = build_and_send_transaction(instructions, signers, None).await?;
+let signature = build_and_send_transaction(
+    instructions,
+    signers,
+    None,
+    None,
+).await?;
 ```
 
 ## Testing
@@ -245,6 +256,9 @@ cargo run --example priority_only_test "https://api.devnet.solana.com"
 
 # With Jito fees
 cargo run --example with_jito_test "https://api.mainnet-beta.solana.com"
+
+# With address lookup tables
+cargo run --example with_lookup_tables "https://api.mainnet-beta.solana.com"
 ```
 
 You can provide any custom RPC URL as a command-line argument. If no URL is provided,

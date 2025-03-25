@@ -1,6 +1,5 @@
 use solana_client::nonblocking::rpc_client::RpcClient;
 use solana_sdk::hash::Hash;
-use std::str::FromStr;
 use std::time::Duration;
 
 const MAINNET_HASH: &str = "5eykt4UsFv8P8NJdTREpY1vzqKqZKvdpKuc147dw2N9d";
@@ -18,53 +17,23 @@ pub enum ChainId {
 }
 
 impl ChainId {
-    /// Get the underlying hash
-    pub fn hash(&self) -> Hash {
-        match self {
-            Self::Mainnet => Hash::from_str(MAINNET_HASH).unwrap_or_default(),
-            Self::Devnet => Hash::from_str(DEVNET_HASH).unwrap_or_default(),
-            Self::Eclipse => Hash::from_str(ECLIPSE_HASH).unwrap_or_default(),
-            Self::EclipseTestnet => Hash::from_str(ECLIPSE_TESTNET_HASH).unwrap_or_default(),
-            Self::Unknown(hash) => *hash,
-        }
-    }
     pub fn is_mainnet(&self) -> bool {
         matches!(self, Self::Mainnet)
-    }
-    pub fn is_devnet(&self) -> bool {
-        matches!(self, Self::Devnet)
-    }
-    pub fn is_eclipse(&self) -> bool {
-        matches!(self, Self::Eclipse)
-    }
-    pub fn is_eclipse_testnet(&self) -> bool {
-        matches!(self, Self::EclipseTestnet)
-    }
-    pub fn name(&self) -> &'static str {
-        match self {
-            Self::Mainnet => "solana",
-            Self::Devnet => "solana-devnet",
-            Self::Eclipse => "eclipse",
-            Self::EclipseTestnet => "eclipse-testnet",
-            Self::Unknown(_) => "unknown",
-        }
     }
 }
 
 impl From<Hash> for ChainId {
     fn from(hash: Hash) -> Self {
-        // Mainnet genesis hash
-        let mainnet_hash = Hash::from_str(MAINNET_HASH).unwrap_or_default();
-        let devnet_hash = Hash::from_str(DEVNET_HASH).unwrap_or_default();
-        let eclipse_hash = Hash::from_str(ECLIPSE_HASH).unwrap_or_default();
-        let eclipse_testnet_hash = Hash::from_str(ECLIPSE_TESTNET_HASH).unwrap_or_default();
-        if hash == mainnet_hash {
+        // Convert hash to string once for comparison
+        let hash_str = hash.to_string();
+        // Compare with string constants directly
+        if hash_str == MAINNET_HASH {
             return Self::Mainnet;
-        } else if hash == devnet_hash {
+        } else if hash_str == DEVNET_HASH {
             return Self::Devnet;
-        } else if hash == eclipse_hash {
+        } else if hash_str == ECLIPSE_HASH {
             return Self::Eclipse;
-        } else if hash == eclipse_testnet_hash {
+        } else if hash_str == ECLIPSE_TESTNET_HASH {
             return Self::EclipseTestnet;
         }
         Self::Unknown(hash)
@@ -98,13 +67,6 @@ impl RpcConfig {
 
     pub fn client(&self) -> RpcClient {
         RpcClient::new_with_timeout(self.url.clone(), Duration::from_millis(self.timeout))
-    }
-    
-    pub fn chain_name(&self) -> &'static str {
-        match &self.chain_id {
-            Some(chain_id) => chain_id.name(),
-            None => "unknown",
-        }
     }
 
     /// Check if the RPC is connected to Solana mainnet

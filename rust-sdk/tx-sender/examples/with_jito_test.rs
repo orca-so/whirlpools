@@ -85,6 +85,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         vec![memo_instruction.clone()],
         &[&payer],
         Some(options.clone()),
+        None,
     ).await?;
 
     println!("Transaction sent: {}", signature);
@@ -102,6 +103,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         vec![memo_instruction],
         &[&payer],
         Some(options),
+        None,
     ).await?;
 
     println!("Transaction sent: {}", signature);

@@ -1,10 +1,14 @@
 // Solana program imports
 pub use solana_program::instruction::Instruction;
-pub use solana_program::message::Message;
-// Solana SDK imports
+// Use Message and versioned transaction types from solana_sdk
+pub use solana_sdk::message::{Message as LegacyMessage, v0::Message, VersionedMessage};
+pub use solana_sdk::transaction::{Transaction, VersionedTransaction};
 pub use solana_sdk::commitment_config::CommitmentConfig;
 pub use solana_sdk::signature::{Signature, Signer};
-pub use solana_sdk::transaction::Transaction;
+pub use solana_sdk::address_lookup_table::AddressLookupTableAccount;
+pub use solana_sdk::compute_budget::ComputeBudgetInstruction;
+pub use solana_sdk::hash::Hash;
+pub use solana_sdk::pubkey::Pubkey;
 // Solana client imports
 pub use solana_client::rpc_config::RpcSendTransactionConfig;
 // Standard library imports

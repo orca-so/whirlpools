@@ -17,31 +17,25 @@ pub use rpc_config::*;
 /// 1. Builds an unsigned transaction with all necessary instructions
 /// 2. Signs the transaction with all provided signers
 /// 3. Sends the transaction and waits for confirmation
+/// 4. Optionally uses address lookup tables for account compression
 pub async fn build_and_send_transaction(
     instructions: Vec<Instruction>,
     signers: &[&dyn Signer],
     options: Option<SendOptions>,
+    address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
 ) -> Result<Signature, String> {
     // Get the payer (first signer)
     let payer = signers.first().ok_or_else(|| {
         "At least one signer is required".to_string()
     })?;
-
-    // Get RPC client
-    let rpc_client = config::get_rpc_client()?;
-      println!("getting blockhash");
-    // Get recent blockhash - needed for building and signing
-    let recent_blockhash = rpc_client.get_latest_blockhash().await
-        .map_err(|e| format!("RPC Error: {}", e))?;
-
-    // Log the blockhash for debugging
-    println!("Using blockhash: {}", recent_blockhash);
     // Build transaction with compute budget and priority fees
-    // Pass recent_blockhash to avoid fetching it twice
-    let mut tx = build_transaction(instructions, *payer, recent_blockhash).await?;
-
-    tx.sign(signers, recent_blockhash);
-
+    let mut tx = build_transaction(instructions, *payer, address_lookup_tables).await?;
+    // Serialize the message once instead of for each signer
+    let serialized_message = tx.message.serialize();
+    tx.signatures = signers
+        .iter()
+        .map(|signer| signer.sign_message(&serialized_message))
+        .collect();
     // Send with retry logic
     send_transaction(tx, options).await
 }
@@ -52,43 +46,46 @@ pub async fn build_and_send_transaction(
 /// 1. Building a transaction message with all instructions
 /// 2. Adding compute budget instructions
 /// 3. Adding any Jito tip instructions
+/// 4. Supporting address lookup tables for account compression
 pub async fn build_transaction(
     mut instructions: Vec<Instruction>,
     payer: &dyn Signer,
-    recent_blockhash: impl Into<solana_sdk::hash::Hash>,
-) -> Result<Transaction, String> {
+    address_lookup_tables: Option<Vec<AddressLookupTableAccount>>,
+) -> Result<VersionedTransaction, String> {
     // Get the global configuration
     let config = config::get_global_config().read().map_err(|e| format!("Lock error: {}", e))?;
     
     // Get RPC client
     let rpc_client = config::get_rpc_client()?;
     
-    // Convert the blockhash parameter
-    let recent_blockhash = recent_blockhash.into();
+    let recent_blockhash = rpc_client.get_latest_blockhash().await
+        .map_err(|e| format!("RPC Error: {}", e))?;
     
-    // Estimate compute units by simulating the transaction
-    let estimated_units = compute_budget::estimate_compute_units(&rpc_client, &instructions, &payer.pubkey()).await?;
-    
-    // Get writable accounts for priority fee calculation
+    let rpc_config = config.rpc_config.as_ref().unwrap();
+
     let writable_accounts = compute_budget::get_writable_accounts(&instructions);
+    
+    let address_lookup_tables_clone = address_lookup_tables.clone();
 
-    let rpc_config = config.rpc_config.as_ref()
-    .ok_or_else(|| "RPC not configured. Call set_rpc() first.".to_string())?;
 
-    // Add compute budget instructions (similar to addComputeBudgetAndPriorityFeeInstructions in Kit)
-    let compute_budget_ixs = compute_budget::get_compute_budget_instruction(
+    let compute_units = compute_budget::estimate_compute_units(
+        &rpc_client, 
+        instructions.clone(), 
+        &payer.pubkey(), 
+        address_lookup_tables_clone
+    ).await?;
+    let budget_instructions = compute_budget::get_compute_budget_instruction(
         &rpc_client,
-        estimated_units,
+        compute_units,
+        &payer.pubkey(),
         rpc_config,
         &config.fee_config,
         &writable_accounts,
     ).await?;
-    
-    // Add compute budget instructions to the beginning of the instruction list
-    for (idx, instr) in compute_budget_ixs.into_iter().enumerate() {
-        instructions.insert(idx, instr);
+    // Insert compute budget instructions at the beginning
+    for (i, budget_ix) in budget_instructions.into_iter().enumerate() {
+        instructions.insert(i, budget_ix);
     }
-
     // Check if network is mainnet before adding Jito tip
     if config.fee_config.jito != JitoFeeStrategy::Disabled {
         if !rpc_config.is_mainnet() {
@@ -97,16 +94,28 @@ pub async fn build_transaction(
             instructions.insert(0, jito_tip_ix);
         }
     }
-
-    // Create message with blockhash (similar to TransactionMessage in Kit)
-    let message = Message::new_with_blockhash(
-        &instructions,
-        Some(&payer.pubkey()),
-        &recent_blockhash,
-    );
+    // Create versioned transaction message based on whether ALTs are provided
+    let message = if let Some(address_lookup_tables_clone) = address_lookup_tables {
+        Message::try_compile(
+            &payer.pubkey(),
+            &instructions,
+            &address_lookup_tables_clone,
+            recent_blockhash,
+        ).map_err(|e| format!("Failed to compile message with ALTs: {}", e))?
+    } else {
+        Message::try_compile(
+            &payer.pubkey(),
+            &instructions,
+            &[], 
+            recent_blockhash,
+        ).map_err(|e| format!("Failed to compile message: {}", e))?
+    };
     
     // Return unsigned transaction (signing happens at the higher level)
-    Ok(Transaction::new_unsigned(message))
+    Ok(VersionedTransaction {
+        signatures: vec![],
+        message: VersionedMessage::V0(message),
+    })
 }
 
 /// Send a transaction with retry logic using the global configuration
@@ -116,7 +125,7 @@ pub async fn build_transaction(
 /// 2. Implementing retry logic with exponential backoff
 /// 3. Waiting for transaction confirmation
 pub async fn send_transaction(
-    transaction: Transaction,
+    transaction: VersionedTransaction,
     options: Option<SendOptions>,
 ) -> Result<Signature, String> {
     // Get RPC client

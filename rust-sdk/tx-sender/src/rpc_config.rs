@@ -46,31 +46,32 @@ pub struct RpcConfig {
     pub url: String,
     pub supports_priority_fee_percentile: bool,
     pub chain_id: Option<ChainId>,
-    pub timeout: u64, 
 }
 
 impl RpcConfig {
     pub async fn new(url: impl Into<String>) -> Result<Self, String> {
         let url = url.into();
         let client = RpcClient::new(url.clone());
-        let genesis_hash = client.get_genesis_hash().await.map_err(|e| {
-            format!("Chain Detection Error: Failed to get genesis hash: {e}")
-        })?;
-        
+        let genesis_hash = client
+            .get_genesis_hash()
+            .await
+            .map_err(|e| format!("Chain Detection Error: Failed to get genesis hash: {e}"))?;
+
         Ok(Self {
             url,
             supports_priority_fee_percentile: false,
             chain_id: Some(ChainId::from(genesis_hash)),
-            timeout: 30_000,
         })
     }
 
     pub fn client(&self) -> RpcClient {
-        RpcClient::new_with_timeout(self.url.clone(), Duration::from_millis(self.timeout))
+        RpcClient::new_with_timeout(self.url.clone(), Duration::from_millis(90_000))
     }
 
     /// Check if the RPC is connected to Solana mainnet
     pub fn is_mainnet(&self) -> bool {
-        self.chain_id.as_ref().map_or(false, |chain_id| chain_id.is_mainnet())
+        self.chain_id
+            .as_ref()
+            .map_or(false, |chain_id| chain_id.is_mainnet())
     }
 }

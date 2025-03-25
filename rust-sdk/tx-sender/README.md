@@ -33,7 +33,7 @@ orca_tx_sender = { version = "0.1.0" }
 ```rust
 use orca_tx_sender::{
     build_and_send_transaction,
-    PriorityFeeStrategy, Percentile, SendOptions,
+    PriorityFeeStrategy, Percentile,
     set_priority_fee_strategy, set_rpc, get_rpc_client
 };
 use solana_sdk::pubkey::Pubkey;
@@ -76,18 +76,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         1_000_000, // 0.001 SOL
     );
 
-    // Custom send options
-    let options = SendOptions {
-        commitment: CommitmentLevel::Confirmed,
-        timeout_ms: 60_000, // 60 seconds
-    };
-
     // Build and send transaction
     println!("Sending transaction...");
     let signature = build_and_send_transaction(
         vec![transfer_ix],
         &[&payer],
-        Some(options),
+        Some(CommitmentLevel::Confirmed),
         None, // No address lookup tables
     ).await?;
 
@@ -156,18 +150,12 @@ async fn main() -> Result<(), Box<dyn Error>> {
         1_000_000, // 0.001 SOL
     );
 
-    // Custom send options
-    let options = SendOptions {
-        commitment: CommitmentLevel::Confirmed,
-        timeout_ms: 60_000, // 60 seconds
-    };
-
     // Build and send transaction
     println!("Sending transaction with priority fees and Jito fees...");
     let signature = build_and_send_transaction(
         vec![transfer_ix],
         &[&payer],
-        Some(options),
+        Some(CommitmentLevel::Confirmed),
         None, // No address lookup tables
     ).await?;
 
@@ -215,17 +203,12 @@ set_compute_unit_margin_multiplier(1.2)?;
 Transaction options can be provided directly when sending:
 
 ```rust
-// Create custom send options
-let options = SendOptions {
-    commitment: CommitmentLevel::Confirmed,
-    timeout_ms: 60_000, // 60 seconds
-};
 
 // Use with global configuration
 let signature = build_and_send_transaction(
     instructions,
     signers,
-    Some(options),
+    Some(CommitmentLevel::Confirmed),
     None, // No address lookup tables
 ).await?;
 
@@ -233,11 +216,11 @@ let signature = build_and_send_transaction(
 let signature = build_and_send_transaction(
     instructions,
     signers,
-    Some(options),
+    Some(CommitmentLevel::Processed),
     Some(address_lookup_tables), // With ALTs
 ).await?;
 
-// Use default options by passing None
+// Use default commitment level by passing None
 let signature = build_and_send_transaction(
     instructions,
     signers,

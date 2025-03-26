@@ -638,6 +638,26 @@ pub mod whirlpool {
         instructions::lock_position::handler(ctx, lock_type)
     }
 
+    /// Reset the position range to a new range.
+    ///
+    /// ### Authority
+    /// - `position_authority` - The authority that owns the position token.
+    ///
+    /// ### Parameters
+    /// - `new_tick_lower_index` - The new tick specifying the lower end of the position range.
+    /// - `new_tick_upper_index` - The new tick specifying the upper end of the position range.
+    ///
+    /// #### Special Errors
+    /// - `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of
+    ///                        the tick-spacing in this pool.
+    pub fn reset_position_range(
+        ctx: Context<ResetPositionRange>,
+        new_tick_lower_index: i32,
+        new_tick_upper_index: i32,
+    ) -> Result<()> {
+        instructions::reset_position_range::handler(ctx, new_tick_lower_index, new_tick_upper_index)
+    }
+
     ////////////////////////////////////////////////////////////////////////////////
     // V2 instructions (TokenExtensions)
     ////////////////////////////////////////////////////////////////////////////////

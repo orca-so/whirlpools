@@ -62,24 +62,7 @@ impl Position {
         tick_lower_index: i32,
         tick_upper_index: i32,
     ) -> Result<()> {
-        if !Tick::check_is_usable_tick(tick_lower_index, whirlpool.tick_spacing)
-            || !Tick::check_is_usable_tick(tick_upper_index, whirlpool.tick_spacing)
-            || tick_lower_index >= tick_upper_index
-        {
-            return Err(ErrorCode::InvalidTickIndex.into());
-        }
-
-        // On tick spacing >= 2^15, should only be able to open full range positions
-        if whirlpool.tick_spacing >= FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD {
-            let (full_range_lower_index, full_range_upper_index) =
-                Tick::full_range_indexes(whirlpool.tick_spacing);
-            if tick_lower_index != full_range_lower_index
-                || tick_upper_index != full_range_upper_index
-            {
-                return Err(ErrorCode::FullRangeOnlyPool.into());
-            }
-        }
-
+        validate_tick_range_for_whirlpool(whirlpool, tick_lower_index, tick_upper_index)?;
         self.whirlpool = whirlpool.key();
         self.position_mint = position_mint;
 
@@ -96,6 +79,65 @@ impl Position {
     pub fn update_reward_owed(&mut self, index: usize, amount_owed: u64) {
         self.reward_infos[index].amount_owed = amount_owed;
     }
+
+    pub fn reset_position_range(
+        &mut self,
+        whirlpool: &Account<Whirlpool>,
+        new_tick_lower_index: i32,
+        new_tick_upper_index: i32,
+    ) -> Result<()> {
+        // Because locked liquidity rejects positions with 0 liquidity, this check will also reject locked positions
+        if !Position::is_position_empty(self) {
+            return Err(ErrorCode::ClosePositionNotEmpty.into());
+        }
+
+        // Do we care whether the tick range is the same as before?
+        validate_tick_range_for_whirlpool(whirlpool, new_tick_lower_index, new_tick_upper_index)?;
+
+        // Wihle we could theoretically update the whirlpool here
+        // For Token Extensions positions, the NFT metadata contains the whirlpool address
+        // so it could introduce some inconsistency
+
+        // Set new tick ranges
+        self.tick_lower_index = new_tick_lower_index;
+        self.tick_upper_index = new_tick_upper_index;
+
+        // Reset the growth checkpoints
+        self.fee_growth_checkpoint_a = 0;
+        self.fee_growth_checkpoint_b = 0;
+
+        // fee_owed and rewards.amount_owed should be zero due to the check above
+        for i in 0..NUM_REWARDS {
+            self.reward_infos[i].growth_inside_checkpoint = 0;
+        }
+
+        Ok(())
+    }
+}
+
+fn validate_tick_range_for_whirlpool(
+    whirlpool: &Account<Whirlpool>,
+    tick_lower_index: i32,
+    tick_upper_index: i32,
+) -> Result<()> {
+    if !Tick::check_is_usable_tick(tick_lower_index, whirlpool.tick_spacing)
+        || !Tick::check_is_usable_tick(tick_upper_index, whirlpool.tick_spacing)
+        || tick_lower_index >= tick_upper_index
+    {
+        return Err(ErrorCode::InvalidTickIndex.into());
+    }
+
+    // On tick spacing >= 2^15, should only be able to open full range positions
+    if whirlpool.tick_spacing >= FULL_RANGE_ONLY_TICK_SPACING_THRESHOLD {
+        let (full_range_lower_index, full_range_upper_index) =
+            Tick::full_range_indexes(whirlpool.tick_spacing);
+        if tick_lower_index != full_range_lower_index || tick_upper_index != full_range_upper_index
+        {
+            return Err(ErrorCode::FullRangeOnlyPool.into());
+        }
+    }
+
+    Ok(())
 }
 
 #[derive(Copy, Clone, AnchorSerialize, AnchorDeserialize, Default, Debug, PartialEq)]

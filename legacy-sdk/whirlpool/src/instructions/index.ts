@@ -18,6 +18,7 @@ export * from "./lock-position";
 export * from "./open-bundled-position-ix";
 export * from "./open-position-ix";
 export * from "./open-position-with-token-extensions-ix";
+export * from "./reset-position-range-ix";
 export * from "./set-collect-protocol-fees-authority-ix";
 export * from "./set-default-fee-rate-ix";
 export * from "./set-default-protocol-fee-rate-ix";

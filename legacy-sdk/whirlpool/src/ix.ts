@@ -604,6 +604,23 @@ export class WhirlpoolIx {
   }
 
   /**
+   * Reset a position's range. Requires liquidity to be zero.
+   *
+   * #### Special Errors
+   * `InvalidTickIndex` - If a provided tick is out of bounds, out of order or not a multiple of the tick-spacing in this pool.
+   *
+   * @param program - program object containing services required to generate the instruction
+   * @param params - ResetPositionRangeParams object
+   * @returns - Instruction to perform the action.
+   */
+  public static resetPositionRangeIx(
+    program: Program<Whirlpool>,
+    params: ix.ResetPositionRangeParams,
+  ) {
+    return ix.resetPositionRangeIx(program, params);
+  }
+
+  /**
    * Lock the position to prevent any liquidity changes.
    *
    * #### Special Errors

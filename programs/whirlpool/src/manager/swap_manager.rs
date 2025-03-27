@@ -211,6 +211,9 @@ pub fn swap(
             curr_sqrt_price = swap_computation.next_price;
 
             if !adaptive_fee_update_skipped {
+                // Note: curr_sqrt_price != bounded_sqrt_price_target implies the end of the loop.
+                //       tick_group_index counter exists only in the memory of the FeeRateManager,
+                //       so even if it is incremented one extra time at the end of the loop, there is no real harm.
                 fee_rate_manager.advance_tick_group();
             } else {
                 fee_rate_manager.advance_tick_group_after_skip(

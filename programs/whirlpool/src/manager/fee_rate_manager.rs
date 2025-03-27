@@ -181,7 +181,10 @@ impl FeeRateManager {
                         adaptive_fee_constants.tick_group_size as i32,
                     );
                 } else {
-                    // End of the swap loop
+                    // End of the swap loop or the boundary of core tick group range.
+
+                    // Note: It was pointed out during the review that using curr_tick_index may suppress tick_index_from_sqrt_price.
+                    //       However, since curr_tick_index may also be shifted by -1, we decided to prioritize safety by recalculating it here.
                     *tick_group_index = floor_division(
                         tick_index_from_sqrt_price(&sqrt_price),
                         adaptive_fee_constants.tick_group_size as i32,

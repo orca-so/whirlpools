@@ -63,15 +63,6 @@ pub fn handler(ctx: Context<LockPosition>, lock_type: LockType) -> Result<()> {
         return Err(ErrorCode::PositionNotLockable.into());
     }
 
-    // only full range positions can be locked at initial implementation (no technical reason)
-    let (full_range_lower_index, full_range_upper_index) =
-        Tick::full_range_indexes(ctx.accounts.whirlpool.tick_spacing);
-    if ctx.accounts.position.tick_lower_index != full_range_lower_index
-        || ctx.accounts.position.tick_upper_index != full_range_upper_index
-    {
-        return Err(ErrorCode::PositionNotLockable.into());
-    }
-
     freeze_user_position_token_2022(
         &ctx.accounts.position_mint,
         &ctx.accounts.position_token_account,

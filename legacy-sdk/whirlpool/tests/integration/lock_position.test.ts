@@ -51,6 +51,7 @@ import type {
 import { useMaxCU } from "../utils/v2/init-utils-v2";
 import { WhirlpoolTestFixtureV2 } from "../utils/v2/fixture-v2";
 import { approveTokenV2, createTokenAccountV2 } from "../utils/v2/token-2022";
+import { PositionData } from "@orca-so/whirlpools";
 
 describe("lock_position", () => {
   const provider = anchor.AnchorProvider.local(
@@ -348,6 +349,17 @@ describe("lock_position", () => {
     );
   }
 
+  async function isFullRangePosition(positionAddress: PublicKey): Promise<boolean> {
+    const position = await fetcher.getPosition(
+      positionAddress,
+      IGNORE_CACHE,
+    ) as PositionData;
+
+    const pool = await fetcher.getPool(position.whirlpool, IGNORE_CACHE) as WhirlpoolData;
+
+    return TickUtil.isFullRange(pool.tickSpacing, position.tickLowerIndex, position.tickUpperIndex);    
+  }
+
   it("successfully locks a position in SplashPool and verify token account and LockConfig state", async () => {
     const positionParams = await openTokenExtensionsBasedPositionWithLiquidity(
       splashPoolFixture,
@@ -363,6 +375,9 @@ describe("lock_position", () => {
       positionParams.owner,
       NOT_FROZEN,
     );
+
+    // confirm that position is a FullRange position
+    assert.ok(await isFullRangePosition(positionParams.positionPda.publicKey));
 
     const lockParams: LockPositionParams = {
       funder: ctx.wallet.publicKey,
@@ -409,6 +424,58 @@ describe("lock_position", () => {
       positionParams.owner,
       NOT_FROZEN,
     );
+
+    // confirm that position is a FullRange position
+    assert.ok(await isFullRangePosition(positionParams.positionPda.publicKey));
+
+    const lockParams: LockPositionParams = {
+      funder: ctx.wallet.publicKey,
+      position: positionParams.positionPda.publicKey,
+      positionMint: positionParams.positionMint,
+      positionTokenAccount: positionParams.positionTokenAccount,
+      whirlpool: positionParams.whirlpool,
+      positionAuthority: ctx.wallet.publicKey,
+      lockType: LockConfigUtil.getPermanentLockType(),
+      lockConfigPda: PDAUtil.getLockConfig(
+        ctx.program.programId,
+        positionParams.positionPda.publicKey,
+      ),
+    };
+    await toTx(
+      ctx,
+      WhirlpoolIx.lockPositionIx(ctx.program, lockParams),
+    ).buildAndExecute();
+
+    // check TokenAccount state again
+    await checkTokenAccountState(
+      positionParams.positionTokenAccount,
+      positionParams.positionMint,
+      positionParams.owner,
+      FROZEN,
+    );
+
+    // check LockConfig state
+    await checkLockConfigState(lockParams, positionParams.owner);
+  });
+
+  it("successfully locks a Concentrated position (not FullRange position) in ConcentratedPool and verify token account and LockConfig state", async () => {
+    const positionParams = await openTokenExtensionsBasedPositionWithLiquidity(
+      concentratedPoolFixture,
+      concentratedPoolFullRange[0],
+      concentratedPoolFullRange[0] + concentratedPoolTickSpacing,
+      new BN(1_000_000),
+    );
+
+    // check TokenAccount state
+    await checkTokenAccountState(
+      positionParams.positionTokenAccount,
+      positionParams.positionMint,
+      positionParams.owner,
+      NOT_FROZEN,
+    );
+
+    // confirm that position is NOT a FullRange position
+    assert.ok(!(await isFullRangePosition(positionParams.positionPda.publicKey)));
 
     const lockParams: LockPositionParams = {
       funder: ctx.wallet.publicKey,
@@ -1146,26 +1213,6 @@ describe("lock_position", () => {
     await assert.rejects(
       lockPosition(positionParams),
       /already in use/, // cannot initialize LockConfig account
-    );
-  });
-
-  it("should be failed: try to lock a concentrated position (not FullRange position)", async () => {
-    const positionParams = await openTokenExtensionsBasedPositionWithLiquidity(
-      concentratedPoolFixture,
-      concentratedPoolFullRange[0],
-      concentratedPoolFullRange[0] + concentratedPoolTickSpacing,
-      new BN(1_000_000),
-    );
-
-    // position has liquidity
-    const position = await fetcher.getPosition(
-      positionParams.positionPda.publicKey,
-    );
-    assert.ok(position?.liquidity.eq(new BN(1_000_000)));
-
-    await assert.rejects(
-      lockPosition(positionParams),
-      /0x17aa/, // PositionNotLockable
     );
   });
 

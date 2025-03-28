@@ -1,0 +1,12 @@
+{
+  "name": "@orca-so/rust-tx-sender",
+  "version": "0.1.0",
+  "scripts": {
+    "build": "cargo build",
+    "test": "cargo test --lib",
+    "deploy": "../../scripts/deploy-cargo",
+    "format": "cargo clippy --fix --allow-dirty --allow-staged && cargo fmt",
+    "lint": "cargo clippy && cargo fmt --check",
+    "clean": "cargo clean"
+  }
+}

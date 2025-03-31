@@ -11,7 +11,7 @@ import {
   createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
-import { Keypair } from "@solana/web3.js";
+import type { Keypair } from "@solana/web3.js";
 import type { PublicKey } from "@solana/web3.js";
 import * as assert from "assert";
 import type { InitPoolParams, WhirlpoolData } from "../../src";

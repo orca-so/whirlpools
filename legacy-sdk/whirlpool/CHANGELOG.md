@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-sdk
 
+## 0.13.19
+
+### Patch Changes
+
+- [#866](https://github.com/orca-so/whirlpools/pull/866) [`7db9161`](https://github.com/orca-so/whirlpools/commit/7db9161cd1a7d722d3341160be56410239ae86c9) Thanks [@yugure-orca](https://github.com/yugure-orca)! - Fix: Remove isTickInitializable check on createPool function
+
 ## 0.13.18
 
 ### Patch Changes

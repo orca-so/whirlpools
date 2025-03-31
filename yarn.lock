@@ -4047,7 +4047,7 @@ __metadata:
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"
     typedoc: "npm:^0.28.1"
-    typedoc-plugin-merge-modules: "npm:^6.1.0"
+    typedoc-plugin-merge-modules: "npm:^7.0.0"
     typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
@@ -17527,12 +17527,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typedoc-plugin-merge-modules@npm:^6.1.0":
-  version: 6.1.0
-  resolution: "typedoc-plugin-merge-modules@npm:6.1.0"
+"typedoc-plugin-merge-modules@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "typedoc-plugin-merge-modules@npm:7.0.0"
   peerDependencies:
-    typedoc: 0.26.x || ^0.27.1
-  checksum: 10c0/32a89f8411cef9fcf57711225f492ffaaefd8933cc36bd9980da30066f90a45b43a0fe8cde4dd155c095e5b4683b2295c8e784ed70835e838c5c8406dbc8102d
+    typedoc: 0.28.x
+  checksum: 10c0/00029b39fc4f6c1a56e6b4ed716b647b57dec59543f8783419593a724999ff26f11581b22cc9a763ae43f437be43045bd9f80609deb1ee750858e9bb2ae0f592
   languageName: node
   linkType: hard
 

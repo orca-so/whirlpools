@@ -1,6 +1,6 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_2022::{self, Token2022};
-use anchor_spl::token_interface::{Mint, TokenAccount};
+use anchor_spl::token_2022::{self};
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 
 use crate::errors::ErrorCode;
 use crate::state::*;
@@ -43,7 +43,7 @@ pub struct LockPosition<'info> {
     pub whirlpool: Account<'info, Whirlpool>,
 
     #[account(address = token_2022::ID)]
-    pub token_2022_program: Program<'info, Token2022>,
+    pub token_2022_program: Interface<'info, TokenInterface>,
     pub system_program: Program<'info, System>,
 }
 

@@ -7,7 +7,7 @@ use anchor_spl::token_2022::spl_token_2022::{
     self, extension::ExtensionType, instruction::AuthorityType,
 };
 use anchor_spl::token_2022::Token2022;
-use anchor_spl::token_interface::{Mint, TokenAccount};
+use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
 use solana_program::program::{invoke, invoke_signed};
 use solana_program::system_instruction::{create_account, transfer};
 
@@ -346,21 +346,21 @@ pub fn build_position_token_metadata<'info>(
 pub fn freeze_user_position_token_2022<'info>(
     position_mint: &InterfaceAccount<'info, Mint>,
     position_token_account: &InterfaceAccount<'info, TokenAccount>,
-    token_2022_program: &Program<'info, Token2022>,
+    token_program: &Interface<'info, TokenInterface>,
     position: &Account<'info, Position>,
     position_seeds: &[&[u8]],
 ) -> Result<()> {
     // Note: Token-2022 program rejects the freeze instruction if the account is already frozen.
     invoke_signed(
         &spl_token_2022::instruction::freeze_account(
-            token_2022_program.key,
+            token_program.key,
             position_token_account.to_account_info().key,
             position_mint.to_account_info().key,
             &position.key(),
             &[],
         )?,
         &[
-            token_2022_program.to_account_info(),
+            token_program.to_account_info(),
             position_token_account.to_account_info(),
             position_mint.to_account_info(),
             position.to_account_info(),
@@ -368,5 +368,62 @@ pub fn freeze_user_position_token_2022<'info>(
         &[position_seeds],
     )?;
 
+    Ok(())
+}
+
+pub fn unfreeze_user_position_token_2022<'info>(
+    position_mint: &InterfaceAccount<'info, Mint>,
+    position_token_account: &InterfaceAccount<'info, TokenAccount>,
+    token_program: &Interface<'info, TokenInterface>,
+    position: &Account<'info, Position>,
+    position_seeds: &[&[u8]],
+) -> Result<()> {
+    // Note: Token-2022 program rejects the unfreeze instruction if the account is not frozen.
+    invoke_signed(
+        &spl_token_2022::instruction::thaw_account(
+            token_program.key,
+            position_token_account.to_account_info().key,
+            position_mint.to_account_info().key,
+            &position.key(),
+            &[],
+        )?,
+        &[
+            token_program.to_account_info(),
+            position_token_account.to_account_info(),
+            position_mint.to_account_info(),
+            position.to_account_info(),
+        ],
+        &[position_seeds],
+    )?;
+
+    Ok(())
+}
+
+pub fn transfer_user_position_token_2022<'info>(
+    authority: &Signer<'info>,
+    position_mint: &InterfaceAccount<'info, Mint>,
+    position_token_account: &InterfaceAccount<'info, TokenAccount>,
+    destination_token_account: &InterfaceAccount<'info, TokenAccount>,
+    token_program: &Interface<'info, TokenInterface>,
+) -> Result<()> {
+    invoke(
+        &spl_token_2022::instruction::transfer_checked(
+            token_program.key,
+            position_token_account.to_account_info().key,
+            position_mint.to_account_info().key,
+            destination_token_account.to_account_info().key,
+            authority.key,
+            &[],
+            1,
+            position_mint.decimals,
+        )?,
+        &[
+            token_program.to_account_info(),
+            position_token_account.to_account_info(),
+            position_mint.to_account_info(),
+            destination_token_account.to_account_info(),
+            authority.to_account_info(),
+        ],
+    )?;
     Ok(())
 }

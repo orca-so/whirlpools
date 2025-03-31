@@ -3977,6 +3977,12 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@orca-so/rust-tx-sender@workspace:rust-sdk/tx-sender":
+  version: 0.0.0-use.local
+  resolution: "@orca-so/rust-tx-sender@workspace:rust-sdk/tx-sender"
+  languageName: unknown
+  linkType: soft
+
 "@orca-so/tx-sender@workspace:ts-sdk/tx-sender":
   version: 0.0.0-use.local
   resolution: "@orca-so/tx-sender@workspace:ts-sdk/tx-sender"

@@ -1,11 +1,12 @@
 import * as anchor from "@coral-xyz/anchor";
 import { BN } from "@coral-xyz/anchor";
-import type { PDA} from "@orca-so/common-sdk";
+import type { PDA } from "@orca-so/common-sdk";
 import { Percentage } from "@orca-so/common-sdk";
 import {
   TOKEN_2022_PROGRAM_ID,
   TOKEN_PROGRAM_ID,
   createApproveCheckedInstruction,
+  createAssociatedTokenAccountIdempotentInstruction,
   createAssociatedTokenAccountInstruction,
   createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
@@ -37,6 +38,7 @@ import type {
 } from "../../src/instructions";
 import { useMaxCU } from "../utils/v2/init-utils-v2";
 import { WhirlpoolTestFixtureV2 } from "../utils/v2/fixture-v2";
+import { IGNORE_CACHE } from "../../dist/network/public/fetcher/fetcher-types";
 
 describe("transfer_position", () => {
   const provider = anchor.AnchorProvider.local(
@@ -157,7 +159,7 @@ describe("transfer_position", () => {
         withTokenMetadataExtension,
         tickLowerIndex,
         tickUpperIndex,
-        provider.wallet.publicKey,
+        ctx.wallet.publicKey,
       );
     await toTx(
       ctx,
@@ -185,44 +187,9 @@ describe("transfer_position", () => {
     return positionParams;
   }
 
-  async function openLegacyPositionWithLiquidity(
-    poolFixture: WhirlpoolTestFixtureV2,
-    tickLowerIndex: number,
-    tickUpperIndex: number,
-    liquidity: BN,
-  ) {
-    const poolInitInfo = poolFixture.getInfos().poolInitInfo;
-
-    const { params: positionParams, mint } =
-      await generateDefaultOpenPositionParams(
-        ctx,
-        poolInitInfo.whirlpoolPda.publicKey,
-        tickLowerIndex,
-        tickUpperIndex,
-        provider.wallet.publicKey,
-      );
-    await toTx(ctx, WhirlpoolIx.openPositionIx(ctx.program, positionParams))
-      .addSigner(mint)
-      .prependInstruction(useMaxCU())
-      .buildAndExecute();
-
-    // deposit (empty position is not lockable)
-    await increaseLiquidity(
-      poolInitInfo,
-      positionParams.positionPda.publicKey,
-      positionParams.positionTokenAccount,
-      tickLowerIndex,
-      tickUpperIndex,
-      liquidity,
-      poolFixture.getInfos().tokenAccountA,
-      poolFixture.getInfos().tokenAccountB,
-    );
-
-    return positionParams;
-  }
-
   async function lockPosition(
     positionParams: OpenPositionWithTokenExtensionsParams,
+    positionAuthority?: Keypair,
   ) {
     const lockParams: LockPositionParams = {
       funder: ctx.wallet.publicKey,
@@ -230,7 +197,7 @@ describe("transfer_position", () => {
       positionMint: positionParams.positionMint,
       positionTokenAccount: positionParams.positionTokenAccount,
       whirlpool: positionParams.whirlpool,
-      positionAuthority: ctx.wallet.publicKey,
+      positionAuthority: positionAuthority?.publicKey ?? ctx.wallet.publicKey,
       lockType: LockConfigUtil.getPermanentLockType(),
       lockConfigPda: PDAUtil.getLockConfig(
         ctx.program.programId,
@@ -238,34 +205,40 @@ describe("transfer_position", () => {
       ),
     };
 
-    await toTx(
-      ctx,
-      WhirlpoolIx.lockPositionIx(ctx.program, lockParams),
-    ).buildAndExecute();
+    const tx = toTx(ctx, WhirlpoolIx.lockPositionIx(ctx.program, lockParams));
+
+    if (positionAuthority) {
+      tx.addSigner(positionAuthority);
+    }
+
+    await tx.buildAndExecute();
   }
 
   async function transferPosition(
     positionPda: PDA,
     positionMint: PublicKey,
     positionTokenAccount: PublicKey,
-    positionTokenProgram: PublicKey,
+    destinationWallet: PublicKey,
     authority?: Keypair,
   ) {
-    const destinationWallet = Keypair.generate();
     const destinationTokenAccount = getAssociatedTokenAddressSync(
       positionMint,
-      destinationWallet.publicKey,
+      destinationWallet,
       false,
-      positionTokenProgram,
+      TOKEN_2022_PROGRAM_ID,
     );
+
+    const walletTokenAccountDataBefore =
+      await ctx.fetcher.getTokenInfo(positionTokenAccount);
+
     await toTx(ctx, {
       instructions: [
-        createAssociatedTokenAccountInstruction(
+        createAssociatedTokenAccountIdempotentInstruction(
           ctx.wallet.publicKey,
           destinationTokenAccount,
-          destinationWallet.publicKey,
+          destinationWallet,
           positionMint,
-          positionTokenProgram,
+          TOKEN_2022_PROGRAM_ID,
         ),
       ],
       cleanupInstructions: [],
@@ -274,13 +247,16 @@ describe("transfer_position", () => {
 
     const tx = toTx(
       ctx,
-      WhirlpoolIx.transferPositionIx(ctx.program, {
+      WhirlpoolIx.transferLockedPositionIx(ctx.program, {
         positionPda,
         positionMint,
         positionTokenAccount,
-        positionTokenProgram,
         destinationTokenAccount,
         authority: authority?.publicKey ?? ctx.wallet.publicKey,
+        lockConfigPda: PDAUtil.getLockConfig(
+          ctx.program.programId,
+          positionPda.publicKey,
+        ),
       }),
     );
 
@@ -290,66 +266,29 @@ describe("transfer_position", () => {
 
     await tx.buildAndExecute();
 
-    const walletTokenAccountData =
-      await ctx.fetcher.getTokenInfo(positionTokenAccount);
+    const walletTokenAccountData = await ctx.fetcher.getTokenInfo(
+      positionTokenAccount,
+      IGNORE_CACHE,
+    );
 
-    assert.strictEqual(walletTokenAccountData?.amount, 0n);
+    assert.ok(walletTokenAccountData == null);
 
     const destinationTokenAccountData = await ctx.fetcher.getTokenInfo(
       destinationTokenAccount,
     );
 
     assert.strictEqual(destinationTokenAccountData?.amount, 1n);
-  }
 
-  async function transferTokenToFunder(
-    positionMint: PublicKey,
-    positionTokenAccount: PublicKey,
-    positionTokenProgram: PublicKey,
-  ) {
-    const destinationTokenAccount = getAssociatedTokenAddressSync(
-      positionMint,
-      funderKeypair.publicKey,
-      false,
-      positionTokenProgram,
+    // If the position was frozen, it needs to be frozen again in the new token account
+    assert.strictEqual(
+      destinationTokenAccountData?.isFrozen,
+      walletTokenAccountDataBefore?.isFrozen,
     );
-
-    await toTx(ctx, {
-      instructions: [
-        createAssociatedTokenAccountInstruction(
-          ctx.wallet.publicKey,
-          destinationTokenAccount,
-          funderKeypair.publicKey,
-          positionMint,
-          positionTokenProgram,
-        ),
-      ],
-      cleanupInstructions: [],
-      signers: [],
-    }).buildAndExecute();
-
-    await toTx(ctx, {
-      instructions: [
-        createTransferCheckedInstruction(
-          positionTokenAccount,
-          positionMint,
-          destinationTokenAccount,
-          ctx.wallet.publicKey,
-          1n,
-          0,
-          [],
-          positionTokenProgram,
-        ),
-      ],
-      cleanupInstructions: [],
-      signers: [],
-    }).buildAndExecute();
   }
 
   async function approveDelegate(
     positionMint: PublicKey,
     positionTokenAccount: PublicKey,
-    positionTokenProgram: PublicKey,
   ) {
     await toTx(ctx, {
       instructions: [
@@ -361,29 +300,13 @@ describe("transfer_position", () => {
           1n,
           0,
           [],
-          positionTokenProgram,
+          TOKEN_2022_PROGRAM_ID,
         ),
       ],
       cleanupInstructions: [],
       signers: [],
     }).buildAndExecute();
   }
-
-  it("Should transfer the position token", async () => {
-    const positionParams = await openTokenExtensionsBasedPositionWithLiquidity(
-      splashPoolFixture,
-      splashPoolFullRange[0],
-      splashPoolFullRange[1],
-      new BN(1_000_000),
-    );
-
-    await transferPosition(
-      positionParams.positionPda,
-      positionParams.positionMint,
-      positionParams.positionTokenAccount,
-      TOKEN_2022_PROGRAM_ID,
-    );
-  });
 
   it("Should transfer a locked position token", async () => {
     const positionParams = await openTokenExtensionsBasedPositionWithLiquidity(
@@ -398,23 +321,30 @@ describe("transfer_position", () => {
       positionParams.positionPda,
       positionParams.positionMint,
       positionParams.positionTokenAccount,
-      TOKEN_2022_PROGRAM_ID,
+      funderKeypair.publicKey,
     );
   });
 
-  it("Should transfer a legacy token position", async () => {
-    const positionParams = await openLegacyPositionWithLiquidity(
+  it("Should not be able to transfer an unlocked position token", async () => {
+    const positionParams = await openTokenExtensionsBasedPositionWithLiquidity(
       splashPoolFixture,
       splashPoolFullRange[0],
       splashPoolFullRange[1],
       new BN(1_000_000),
     );
 
-    await transferPosition(
-      positionParams.positionPda,
-      positionParams.positionMintAddress,
-      positionParams.positionTokenAccount,
-      TOKEN_PROGRAM_ID,
+    assert.rejects(
+      transferPosition(
+        positionParams.positionPda,
+        positionParams.positionMint,
+        positionParams.positionTokenAccount,
+        funderKeypair.publicKey,
+      ),
+      /0xbc4/, // AccountNotInitialized.
+      // TODO: there is currently no way to initialize a lock_config without the token account being
+      // frozen. Because lock_config does not exist, the program throws `AccountNotInitialized` instead
+      // of `OperationNotAllowedOnUnlockedPosition`.
+      // /0x17ac/, // OperationNotAllowedOnUnlockedPosition
     );
   });
 
@@ -425,42 +355,33 @@ describe("transfer_position", () => {
       splashPoolFullRange[1],
       new BN(1_000_000),
     );
-    await transferTokenToFunder(
-      positionParams.positionMint,
-      positionParams.positionTokenAccount,
-      TOKEN_2022_PROGRAM_ID,
-    );
+    await lockPosition(positionParams);
     await assert.rejects(
       transferPosition(
         positionParams.positionPda,
         positionParams.positionMint,
         positionParams.positionTokenAccount,
-        TOKEN_2022_PROGRAM_ID,
+        funderKeypair.publicKey,
+        funderKeypair,
       ),
-      /0x7d3/, // ConstraintRaw
+      /0x1783/, // MissingOrInvalidDelegate
     );
   });
 
-  it("Should not be able to transfer a legacy token position not owned by the signer", async () => {
-    const positionParams = await openLegacyPositionWithLiquidity(
+  it("Should fail if trying to send to the same address", async () => {
+    const positionParams = await openTokenExtensionsBasedPositionWithLiquidity(
       splashPoolFixture,
       splashPoolFullRange[0],
       splashPoolFullRange[1],
       new BN(1_000_000),
     );
-
-    await transferTokenToFunder(
-      positionParams.positionMintAddress,
-      positionParams.positionTokenAccount,
-      TOKEN_PROGRAM_ID,
-    );
-
+    await lockPosition(positionParams);
     await assert.rejects(
       transferPosition(
         positionParams.positionPda,
-        positionParams.positionMintAddress,
+        positionParams.positionMint,
         positionParams.positionTokenAccount,
-        TOKEN_PROGRAM_ID,
+        ctx.wallet.publicKey,
       ),
       /0x7d3/, // ConstraintRaw
     );
@@ -476,35 +397,15 @@ describe("transfer_position", () => {
     await approveDelegate(
       positionParams.positionMint,
       positionParams.positionTokenAccount,
-      TOKEN_2022_PROGRAM_ID,
     );
+
+    await lockPosition(positionParams, delegatedAuthority);
 
     await transferPosition(
       positionParams.positionPda,
       positionParams.positionMint,
       positionParams.positionTokenAccount,
-      TOKEN_2022_PROGRAM_ID,
-    );
-  });
-
-  it("Should be able to transfer a delegated position legacy token", async () => {
-    const positionParams = await openLegacyPositionWithLiquidity(
-      splashPoolFixture,
-      splashPoolFullRange[0],
-      splashPoolFullRange[1],
-      new BN(1_000_000),
-    );
-    await approveDelegate(
-      positionParams.positionMintAddress,
-      positionParams.positionTokenAccount,
-      TOKEN_PROGRAM_ID,
-    );
-
-    await transferPosition(
-      positionParams.positionPda,
-      positionParams.positionMintAddress,
-      positionParams.positionTokenAccount,
-      TOKEN_PROGRAM_ID,
+      delegatedAuthority.publicKey,
     );
   });
 });

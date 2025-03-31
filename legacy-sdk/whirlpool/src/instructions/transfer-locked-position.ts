@@ -2,6 +2,7 @@ import type { Program } from "@coral-xyz/anchor";
 import type { Instruction, PDA } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import type { Whirlpool } from "../artifacts/whirlpool";
+import { TOKEN_2022_PROGRAM_ID } from "@solana/spl-token";
 
 /**
  * Parameters to transfer a position.
@@ -14,13 +15,13 @@ import type { Whirlpool } from "../artifacts/whirlpool";
  * @param destinationTokenAccount - The associated token address for the position token in the destination wallet.
  * @param positionTokenProgram - The program id for the position token program.
  */
-export type TransferPositionParams = {
+export type TransferLockedPositionParams = {
   positionPda: PDA;
   positionMint: PublicKey;
   positionTokenAccount: PublicKey;
   destinationTokenAccount: PublicKey;
   authority: PublicKey;
-  positionTokenProgram: PublicKey;
+  lockConfigPda: PDA;
 };
 
 /**
@@ -31,18 +32,19 @@ export type TransferPositionParams = {
  * @param params - LockPositionParams object.
  * @returns - Instruction to perform the action.
  */
-export function transferPositionIx(
+export function transferLockedPositionIx(
   program: Program<Whirlpool>,
-  params: TransferPositionParams,
+  params: TransferLockedPositionParams,
 ): Instruction {
-  const ix = program.instruction.transferPosition({
+  const ix = program.instruction.transferLockedPosition({
     accounts: {
       positionAuthority: params.authority,
       position: params.positionPda.publicKey,
       positionMint: params.positionMint,
       positionTokenAccount: params.positionTokenAccount,
       destinationTokenAccount: params.destinationTokenAccount,
-      tokenProgram: params.positionTokenProgram,
+      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      lockConfig: params.lockConfigPda.publicKey,
     },
   });
 

@@ -427,3 +427,29 @@ pub fn transfer_user_position_token_2022<'info>(
     )?;
     Ok(())
 }
+
+pub fn close_empty_token_account_2022<'info>(
+    token_authority: &Signer<'info>,
+    token_account: &InterfaceAccount<'info, TokenAccount>,
+    token_program: &Interface<'info, TokenInterface>,
+    receiver: &AccountInfo<'info>,
+) -> Result<()> {
+    invoke_signed(
+        &spl_token_2022::instruction::close_account(
+            token_program.key,
+            token_account.to_account_info().key,
+            receiver.key,
+            token_authority.key,
+            &[],
+        )?,
+        &[
+            token_program.to_account_info(),
+            token_account.to_account_info(),
+            receiver.to_account_info(),
+            token_authority.to_account_info(),
+        ],
+        &[],
+    )?;
+
+    Ok(())
+}

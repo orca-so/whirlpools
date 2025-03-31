@@ -648,11 +648,11 @@ export class WhirlpoolIx {
    * @param params - TransferPositionParams object
    * @returns - Instruction to perform the action.
    */
-  public static transferPositionIx(
+  public static transferLockedPositionIx(
     program: Program<Whirlpool>,
-    params: ix.TransferPositionParams,
+    params: ix.TransferLockedPositionParams,
   ) {
-    return ix.transferPositionIx(program, params);
+    return ix.transferLockedPositionIx(program, params);
   }
 
   // V2 instructions

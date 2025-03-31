@@ -661,16 +661,15 @@ pub mod whirlpool {
 
     }
 
-    /// Transfer the position to to a different token account. This instruction also works for locked positions.
+    /// Transfer a locked position to to a different token account.
     ///
     /// ### Authority
     /// - `position_authority` - The authority that owns the position token.
     ///
     /// #### Special Errors
-    /// - `PositionAlreadyLocked` - The provided position is already locked.
-    /// - `PositionNotLockable` - The provided position is not lockable (e.g. An empty position).
-    pub fn transfer_position(ctx: Context<TransferPosition>) -> Result<()> {
-        instructions::transfer_position::handler(ctx)
+    /// - `OperationNotAllowedOnUnlockedPosition` - The provided position is not locked.
+    pub fn transfer_locked_position(ctx: Context<TransferLockedPosition>) -> Result<()> {
+        instructions::transfer_locked_position::handler(ctx)
     }
 
     ////////////////////////////////////////////////////////////////////////////////

@@ -154,9 +154,6 @@ pub enum ErrorCode {
 
     #[msg("Cannot reset position range with same tick range")]
     SameTickRangeNotAllowed, // 0x17ac (6060)
-
-    #[msg("Operation not allowed on unlocked position")]
-    OperationNotAllowedOnUnlockedPosition, // 0x17ad (6061)
 }
 
 impl From<TryFromIntError> for ErrorCode {

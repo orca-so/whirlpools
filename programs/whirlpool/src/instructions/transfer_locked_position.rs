@@ -1,16 +1,16 @@
 use anchor_lang::prelude::*;
-use anchor_spl::token_interface::{Mint, TokenAccount, TokenInterface};
+use anchor_spl::{
+    token_2022::{self, Token2022},
+    token_interface::{Mint, TokenAccount},
+};
 
 use crate::{
     state::*,
     util::{
         close_empty_token_account_2022, freeze_user_position_token_2022, is_locked_position,
-        transfer_user_position_token_2022, unfreeze_user_position_token_2022,
-        verify_position_authority_interface,
+        transfer_user_position_token_2022, unfreeze_user_position_token_2022, validate_owner,
     },
 };
-
-use crate::errors::ErrorCode;
 
 #[derive(Accounts)]
 pub struct TransferLockedPosition<'info> {
@@ -22,7 +22,7 @@ pub struct TransferLockedPosition<'info> {
     )]
     pub position: Account<'info, Position>,
 
-    #[account(address = position.position_mint, owner = token_program.key())]
+    #[account(address = position.position_mint)]
     pub position_mint: InterfaceAccount<'info, Mint>,
 
     #[account(mut,
@@ -39,28 +39,31 @@ pub struct TransferLockedPosition<'info> {
 
     #[account(
       mut,
-      seeds = [b"lock_config".as_ref(), position.key().as_ref()],
-      bump,
+      has_one = position
     )]
     pub lock_config: Box<Account<'info, LockConfig>>,
 
-    pub token_program: Interface<'info, TokenInterface>,
+    #[account(address = token_2022::ID)]
+    pub token_2022_program: Program<'info, Token2022>,
 }
 
 pub fn handler(ctx: Context<TransferLockedPosition>) -> Result<()> {
-    verify_position_authority_interface(
-        &ctx.accounts.position_token_account,
-        &ctx.accounts.position_authority,
+    // Only allow the owner of the position to transfer this and not the delegate.
+    // * Once a position is locked the delegate cannot be changed
+    // * The delegate gets removed once it transfers the position, meaning the freeze ix fails here
+    validate_owner(
+        &ctx.accounts.position_token_account.owner,
+        &ctx.accounts.position_authority.to_account_info(),
     )?;
 
     if !is_locked_position(&ctx.accounts.position_token_account) {
-        return Err(ErrorCode::OperationNotAllowedOnUnlockedPosition.into());
+        unreachable!("Position has to be locked for this instruction");
     }
 
     unfreeze_user_position_token_2022(
         &ctx.accounts.position_mint,
         &ctx.accounts.position_token_account,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_2022_program,
         &ctx.accounts.position,
         &[
             b"position".as_ref(),
@@ -74,13 +77,13 @@ pub fn handler(ctx: Context<TransferLockedPosition>) -> Result<()> {
         &ctx.accounts.position_mint,
         &ctx.accounts.position_token_account,
         &ctx.accounts.destination_token_account,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_2022_program,
     )?;
 
     freeze_user_position_token_2022(
         &ctx.accounts.position_mint,
         &ctx.accounts.destination_token_account,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_2022_program,
         &ctx.accounts.position,
         &[
             b"position".as_ref(),
@@ -92,11 +95,13 @@ pub fn handler(ctx: Context<TransferLockedPosition>) -> Result<()> {
     close_empty_token_account_2022(
         &ctx.accounts.position_authority,
         &ctx.accounts.position_token_account,
-        &ctx.accounts.token_program,
+        &ctx.accounts.token_2022_program,
         &ctx.accounts.position_authority,
     )?;
 
-    ctx.accounts.lock_config.position_owner = ctx.accounts.destination_token_account.owner;
+    ctx.accounts
+        .lock_config
+        .update_position_owner(ctx.accounts.destination_token_account.owner);
 
     Ok(())
 }

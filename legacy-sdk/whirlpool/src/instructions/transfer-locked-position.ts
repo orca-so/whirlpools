@@ -43,7 +43,7 @@ export function transferLockedPositionIx(
       positionMint: params.positionMint,
       positionTokenAccount: params.positionTokenAccount,
       destinationTokenAccount: params.destinationTokenAccount,
-      tokenProgram: TOKEN_2022_PROGRAM_ID,
+      token2022Program: TOKEN_2022_PROGRAM_ID,
       lockConfig: params.lockConfigPda.publicKey,
     },
   });

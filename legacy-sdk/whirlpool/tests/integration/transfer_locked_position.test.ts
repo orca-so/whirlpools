@@ -4,11 +4,8 @@ import type { PDA } from "@orca-so/common-sdk";
 import { Percentage } from "@orca-so/common-sdk";
 import {
   TOKEN_2022_PROGRAM_ID,
-  TOKEN_PROGRAM_ID,
   createApproveCheckedInstruction,
   createAssociatedTokenAccountIdempotentInstruction,
-  createAssociatedTokenAccountInstruction,
-  createTransferCheckedInstruction,
   getAssociatedTokenAddressSync,
 } from "@solana/spl-token";
 import type { Keypair } from "@solana/web3.js";
@@ -28,10 +25,7 @@ import {
 } from "../../src";
 import { ONE_SOL, systemTransferTx } from "../utils";
 import { defaultConfirmOptions } from "../utils/const";
-import {
-  generateDefaultOpenPositionParams,
-  generateDefaultOpenPositionWithTokenExtensionsParams,
-} from "../utils/test-builders";
+import { generateDefaultOpenPositionWithTokenExtensionsParams } from "../utils/test-builders";
 import type {
   LockPositionParams,
   OpenPositionWithTokenExtensionsParams,
@@ -54,7 +48,6 @@ describe("transfer_position", () => {
 
   const splashPoolTickSpacing = SPLASH_POOL_TICK_SPACING;
   let splashPoolFixture: WhirlpoolTestFixtureV2;
-  let splashPoolInitInfo: InitPoolParams;
   let splashPoolFullRange: [number, number];
 
   beforeAll(async () => {
@@ -75,8 +68,6 @@ describe("transfer_position", () => {
       ],
       rewards: [],
     });
-
-    splashPoolInitInfo = splashPoolFixture.getInfos().poolInitInfo;
 
     // setup other wallets
     await systemTransferTx(
@@ -228,9 +219,6 @@ describe("transfer_position", () => {
       TOKEN_2022_PROGRAM_ID,
     );
 
-    const walletTokenAccountDataBefore =
-      await ctx.fetcher.getTokenInfo(positionTokenAccount);
-
     await toTx(ctx, {
       instructions: [
         createAssociatedTokenAccountIdempotentInstruction(
@@ -278,12 +266,7 @@ describe("transfer_position", () => {
     );
 
     assert.strictEqual(destinationTokenAccountData?.amount, 1n);
-
-    // If the position was frozen, it needs to be frozen again in the new token account
-    assert.strictEqual(
-      destinationTokenAccountData?.isFrozen,
-      walletTokenAccountDataBefore?.isFrozen,
-    );
+    assert.strictEqual(destinationTokenAccountData?.isFrozen, true);
   }
 
   async function approveDelegate(
@@ -341,10 +324,6 @@ describe("transfer_position", () => {
         funderKeypair.publicKey,
       ),
       /0xbc4/, // AccountNotInitialized.
-      // TODO: there is currently no way to initialize a lock_config without the token account being
-      // frozen. Because lock_config does not exist, the program throws `AccountNotInitialized` instead
-      // of `OperationNotAllowedOnUnlockedPosition`.
-      // /0x17ac/, // OperationNotAllowedOnUnlockedPosition
     );
   });
 
@@ -387,7 +366,7 @@ describe("transfer_position", () => {
     );
   });
 
-  it("Should be able to transfer a delegated position token", async () => {
+  it("Should not be able to transfer a delegated position token", async () => {
     const positionParams = await openTokenExtensionsBasedPositionWithLiquidity(
       splashPoolFixture,
       splashPoolFullRange[0],
@@ -401,11 +380,15 @@ describe("transfer_position", () => {
 
     await lockPosition(positionParams, delegatedAuthority);
 
-    await transferPosition(
-      positionParams.positionPda,
-      positionParams.positionMint,
-      positionParams.positionTokenAccount,
-      delegatedAuthority.publicKey,
+    await assert.rejects(
+      transferPosition(
+        positionParams.positionPda,
+        positionParams.positionMint,
+        positionParams.positionTokenAccount,
+        delegatedAuthority.publicKey,
+        delegatedAuthority,
+      ),
+      /0x1783/, // MissingOrInvalidDelegate
     );
   });
 });

@@ -140,6 +140,7 @@ pub fn handler(
         ctx.accounts.adaptive_fee_tier.adaptive_fee_control_factor,
         ctx.accounts.adaptive_fee_tier.max_volatility_accumulator,
         ctx.accounts.adaptive_fee_tier.tick_group_size,
+        ctx.accounts.adaptive_fee_tier.major_swap_threshold_ticks,
     )
 }
 

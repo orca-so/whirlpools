@@ -38,6 +38,7 @@ pub struct AdaptiveFeeConstants {
 impl AdaptiveFeeConstants {
     pub const LEN: usize = 2 + 2 + 2 + 4 + 4 + 2 + 2;
 
+    #[allow(clippy::too_many_arguments)]
     pub fn validate_constants(
         tick_spacing: u16,
         filter_period: u16,

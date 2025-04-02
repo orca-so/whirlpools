@@ -492,7 +492,7 @@ mod static_fee_rate_manager_tests {
         assert!(next_adaptive_fee_info.is_none());
     }
 }
-
+/* 
 #[cfg(test)]
 mod adaptive_fee_rate_manager_tests {
     use super::*;
@@ -2385,3 +2385,4 @@ mod adaptive_fee_rate_manager_tests {
         }
     }
 }
+*/

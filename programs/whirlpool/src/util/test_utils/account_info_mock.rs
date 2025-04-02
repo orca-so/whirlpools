@@ -86,6 +86,12 @@ impl AccountInfoMock {
         offset += 4;
         af_const_data[offset..offset + 2]
             .copy_from_slice(&adaptive_fee_constants.tick_group_size.to_le_bytes());
+        offset += 2;
+        af_const_data[offset..offset + 2]
+            .copy_from_slice(&adaptive_fee_constants.major_swap_threshold_ticks.to_le_bytes());
+        offset += 2;
+
+        assert_eq!(offset, AdaptiveFeeConstants::LEN);
 
         let mut data = vec![0u8; Oracle::LEN];
         data[0..8].copy_from_slice(&Oracle::discriminator());

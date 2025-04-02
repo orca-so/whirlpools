@@ -173,6 +173,7 @@ mod data_layout_tests {
         let adaptive_fee_control_factor = 0x778899aau32;
         let max_volatility_accumulator = 0xbbccddeeu32;
         let tick_group_size = 0xff00u16;
+        let major_swap_threshold_ticks = 0x1122u16;
 
         let mut adaptive_fee_tier_data = [0u8; AdaptiveFeeTier::LEN];
         let mut offset = 0;
@@ -207,6 +208,9 @@ mod data_layout_tests {
             .copy_from_slice(&max_volatility_accumulator.to_le_bytes());
         offset += 4;
         adaptive_fee_tier_data[offset..offset + 2].copy_from_slice(&tick_group_size.to_le_bytes());
+        offset += 2;
+        adaptive_fee_tier_data[offset..offset + 2]
+            .copy_from_slice(&major_swap_threshold_ticks.to_le_bytes());
         offset += 2;
         adaptive_fee_tier_data[offset..offset + adaptive_fee_tier_reserved.len()]
             .copy_from_slice(&adaptive_fee_tier_reserved);

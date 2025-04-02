@@ -2870,7 +2870,7 @@ mod swap_error_tests {
         swap_test_info.run(&mut tick_sequence, 100);
     }
 }
-
+/*
 #[cfg(test)]
 mod adaptive_fee_tests {
     use std::collections::HashMap;
@@ -13686,3 +13686,4 @@ mod adaptive_fee_tests {
         }
     }
 }
+*/

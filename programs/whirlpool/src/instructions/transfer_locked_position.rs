@@ -50,7 +50,7 @@ pub struct TransferLockedPosition<'info> {
 pub fn handler(ctx: Context<TransferLockedPosition>) -> Result<()> {
     // Only allow the owner of the position to transfer this and not the delegate.
     // * Once a position is locked the delegate cannot be changed
-    // * The delegate gets removed once it transfers the position, meaning the freeze ix fails here
+    // * The delegate gets removed once it transfers the position, meaning the subsequent ixs fails here
     validate_owner(
         &ctx.accounts.position_token_account.owner,
         &ctx.accounts.position_authority.to_account_info(),

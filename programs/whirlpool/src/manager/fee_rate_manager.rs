@@ -496,7 +496,7 @@ mod static_fee_rate_manager_tests {
         assert!(next_adaptive_fee_info.is_none());
     }
 }
-/*
+
 #[cfg(test)]
 mod adaptive_fee_rate_manager_tests {
     use super::*;
@@ -514,9 +514,11 @@ mod adaptive_fee_rate_manager_tests {
                 reduction_factor: 500,
                 adaptive_fee_control_factor: 100,
                 tick_group_size: 64,
+                major_swap_threshold_ticks: 64,
             },
             variables: AdaptiveFeeVariables {
-                last_update_timestamp: 1738863309,
+                last_reference_update_timestamp: 1738863309,
+                last_major_swap_timestamp: 1738863309,
                 tick_group_index_reference: 1,
                 volatility_reference: 500,
                 volatility_accumulator: 10000,
@@ -524,6 +526,7 @@ mod adaptive_fee_rate_manager_tests {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
     fn check_constants(
         adaptive_fee_constants: &AdaptiveFeeConstants,
         filter_period: u16,
@@ -532,6 +535,7 @@ mod adaptive_fee_rate_manager_tests {
         reduction_factor: u16,
         adaptive_fee_control_factor: u32,
         tick_group_size: u16,
+        major_swap_threshold_ticks: u16,
     ) {
         assert!(adaptive_fee_constants.filter_period == filter_period);
         assert!(adaptive_fee_constants.decay_period == decay_period);
@@ -539,16 +543,22 @@ mod adaptive_fee_rate_manager_tests {
         assert!(adaptive_fee_constants.reduction_factor == reduction_factor);
         assert!(adaptive_fee_constants.adaptive_fee_control_factor == adaptive_fee_control_factor);
         assert!(adaptive_fee_constants.tick_group_size == tick_group_size);
+        assert!(adaptive_fee_constants.major_swap_threshold_ticks == major_swap_threshold_ticks);
     }
 
     fn check_variables(
         adaptive_fee_variables: &AdaptiveFeeVariables,
-        last_update_timestamp: u64,
+        last_reference_update_timestamp: u64,
+        last_major_swap_timestamp: u64,
         tick_group_index_reference: i32,
         volatility_reference: u32,
         volatility_accumulator: u32,
     ) {
-        assert!(adaptive_fee_variables.last_update_timestamp == last_update_timestamp);
+        assert!(
+            adaptive_fee_variables.last_reference_update_timestamp
+                == last_reference_update_timestamp
+        );
+        assert!(adaptive_fee_variables.last_major_swap_timestamp == last_major_swap_timestamp);
         assert!(adaptive_fee_variables.tick_group_index_reference == tick_group_index_reference);
         assert!(adaptive_fee_variables.volatility_reference == volatility_reference);
         assert!(adaptive_fee_variables.volatility_accumulator == volatility_accumulator);
@@ -557,7 +567,8 @@ mod adaptive_fee_rate_manager_tests {
     fn check_tick_group_index_and_variables(
         fee_rate_manager: &FeeRateManager,
         tick_group_index: i32,
-        last_update_timestamp: u64,
+        last_reference_update_timestamp: u64,
+        last_major_swap_timestamp: u64,
         tick_group_index_reference: i32,
         volatility_reference: u32,
         volatility_accumulator: u32,
@@ -571,7 +582,8 @@ mod adaptive_fee_rate_manager_tests {
                 assert_eq!(*tgi, tick_group_index);
                 check_variables(
                     adaptive_fee_variables,
-                    last_update_timestamp,
+                    last_reference_update_timestamp,
+                    last_major_swap_timestamp,
                     tick_group_index_reference,
                     volatility_reference,
                     volatility_accumulator,
@@ -589,7 +601,7 @@ mod adaptive_fee_rate_manager_tests {
         let tick_group_size = adaptive_fee_info.constants.tick_group_size;
 
         let current_tick_index = 1024;
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp + 1;
+        let timestamp = adaptive_fee_info.variables.last_reference_update_timestamp + 1;
         let fee_rate_manager = FeeRateManager::new(
             true,
             current_tick_index,
@@ -641,12 +653,15 @@ mod adaptive_fee_rate_manager_tests {
                     adaptive_fee_info.constants.reduction_factor,
                     adaptive_fee_info.constants.adaptive_fee_control_factor,
                     adaptive_fee_info.constants.tick_group_size,
+                    adaptive_fee_info.constants.major_swap_threshold_ticks,
                 );
                 // update_reference should be called
                 check_variables(
                     &adaptive_fee_variables,
-                    timestamp, // timestamp should be updated
+                    // timestamp should be updated
                     // both reference should not be updated (< filter_period)
+                    adaptive_fee_info.variables.last_reference_update_timestamp,
+                    adaptive_fee_info.variables.last_major_swap_timestamp,
                     adaptive_fee_info.variables.tick_group_index_reference,
                     adaptive_fee_info.variables.volatility_reference,
                     adaptive_fee_info.variables.volatility_accumulator,
@@ -656,7 +671,10 @@ mod adaptive_fee_rate_manager_tests {
         }
 
         let current_tick_index = 1024;
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
             + adaptive_fee_info.constants.decay_period as u64;
         let fee_rate_manager = FeeRateManager::new(
             false,
@@ -708,11 +726,13 @@ mod adaptive_fee_rate_manager_tests {
                     adaptive_fee_info.constants.reduction_factor,
                     adaptive_fee_info.constants.adaptive_fee_control_factor,
                     adaptive_fee_info.constants.tick_group_size,
+                    adaptive_fee_info.constants.major_swap_threshold_ticks,
                 );
                 // update_reference should be called
                 check_variables(
                     &adaptive_fee_variables,
-                    timestamp, // timestamp should be updated
+                    timestamp, // should be updated
+                    adaptive_fee_info.variables.last_major_swap_timestamp,
                     // both reference should be updated (>= decay_period)
                     16,
                     0,
@@ -752,9 +772,11 @@ mod adaptive_fee_rate_manager_tests {
                         reduction_factor: 500,
                         adaptive_fee_control_factor: 100,
                         tick_group_size,
+                        major_swap_threshold_ticks: tick_group_size,
                     },
                     variables: AdaptiveFeeVariables {
-                        last_update_timestamp: timestamp,
+                        last_reference_update_timestamp: timestamp,
+                        last_major_swap_timestamp: timestamp,
                         tick_group_index_reference: tick_group_reference,
                         volatility_reference: volatility_refereence,
                         volatility_accumulator: 0,
@@ -899,7 +921,10 @@ mod adaptive_fee_rate_manager_tests {
 
         let current_tick_index = 1024;
         // reset references
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
             + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             false,
@@ -912,7 +937,15 @@ mod adaptive_fee_rate_manager_tests {
 
         // delta = 0
         fee_rate_manager.update_volatility_accumulator().unwrap();
-        check_tick_group_index_and_variables(&fee_rate_manager, 16, timestamp, 16, 0, 0);
+        check_tick_group_index_and_variables(
+            &fee_rate_manager,
+            16,
+            timestamp,
+            adaptive_fee_info.variables.last_major_swap_timestamp,
+            16,
+            0,
+            0,
+        );
 
         // delta = 1
         fee_rate_manager.advance_tick_group(); // 16 to 17 (b to a)
@@ -921,6 +954,7 @@ mod adaptive_fee_rate_manager_tests {
             &fee_rate_manager,
             17,
             timestamp,
+            adaptive_fee_info.variables.last_major_swap_timestamp,
             16,
             0,
             VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
@@ -933,6 +967,7 @@ mod adaptive_fee_rate_manager_tests {
             &fee_rate_manager,
             18,
             timestamp,
+            adaptive_fee_info.variables.last_major_swap_timestamp,
             16,
             0,
             2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
@@ -946,7 +981,10 @@ mod adaptive_fee_rate_manager_tests {
 
         let current_tick_index = 64;
         // reset references
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
             + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             true,
@@ -959,7 +997,15 @@ mod adaptive_fee_rate_manager_tests {
 
         // delta = 0
         fee_rate_manager.update_volatility_accumulator().unwrap();
-        check_tick_group_index_and_variables(&fee_rate_manager, 1, timestamp, 1, 0, 0);
+        check_tick_group_index_and_variables(
+            &fee_rate_manager,
+            1,
+            timestamp,
+            adaptive_fee_info.variables.last_major_swap_timestamp,
+            1,
+            0,
+            0,
+        );
 
         // delta = 1
         fee_rate_manager.advance_tick_group(); // 1 to 0 (a to b)
@@ -968,6 +1014,7 @@ mod adaptive_fee_rate_manager_tests {
             &fee_rate_manager,
             0,
             timestamp,
+            adaptive_fee_info.variables.last_major_swap_timestamp,
             1,
             0,
             VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
@@ -980,6 +1027,7 @@ mod adaptive_fee_rate_manager_tests {
             &fee_rate_manager,
             -1,
             timestamp,
+            adaptive_fee_info.variables.last_major_swap_timestamp,
             1,
             0,
             2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
@@ -1037,6 +1085,7 @@ mod adaptive_fee_rate_manager_tests {
                     max_volatility_accumulator: 350_000,
                     adaptive_fee_control_factor: 1500,
                     tick_group_size: 64,
+                    major_swap_threshold_ticks: 64,
                     filter_period: 30,
                     decay_period: 600,
                     reduction_factor: 5000,
@@ -1082,6 +1131,7 @@ mod adaptive_fee_rate_manager_tests {
                     max_volatility_accumulator: 450_000,
                     adaptive_fee_control_factor: 1500,
                     tick_group_size: 64,
+                    major_swap_threshold_ticks: 64,
                     filter_period: 30,
                     decay_period: 600,
                     reduction_factor: 5000,
@@ -1127,6 +1177,7 @@ mod adaptive_fee_rate_manager_tests {
                     max_volatility_accumulator: 500_000,
                     adaptive_fee_control_factor: 1000,
                     tick_group_size: 64,
+                    major_swap_threshold_ticks: 64,
                     filter_period: 30,
                     decay_period: 600,
                     reduction_factor: 5000,
@@ -1173,6 +1224,7 @@ mod adaptive_fee_rate_manager_tests {
                 max_volatility_accumulator: 450_000,
                 adaptive_fee_control_factor: 1500,
                 tick_group_size: 64,
+                major_swap_threshold_ticks: 64,
                 filter_period: 30,
                 decay_period: 600,
                 reduction_factor: 5000,
@@ -1239,7 +1291,10 @@ mod adaptive_fee_rate_manager_tests {
 
         let current_tick_index = 1024 + 32;
         // reset references
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
             + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             true,
@@ -1297,7 +1352,10 @@ mod adaptive_fee_rate_manager_tests {
 
         let current_tick_index = 1024 + 32;
         // reset references
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
             + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             true,
@@ -1358,7 +1416,10 @@ mod adaptive_fee_rate_manager_tests {
 
         let current_tick_index = 1024 + 32;
         // reset references
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
             + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             true,
@@ -1421,12 +1482,14 @@ mod adaptive_fee_rate_manager_tests {
                 max_volatility_accumulator: 80_000,
                 adaptive_fee_control_factor: 1500,
                 tick_group_size: 64,
+                major_swap_threshold_ticks: 64,
                 filter_period: 30,
                 decay_period: 600,
                 reduction_factor: 5000,
             },
             variables: AdaptiveFeeVariables {
-                last_update_timestamp: timestamp,
+                last_reference_update_timestamp: timestamp,
+                last_major_swap_timestamp: timestamp,
                 tick_group_index_reference: 0,
                 volatility_accumulator: 0,
                 volatility_reference: 0,
@@ -1513,7 +1576,10 @@ mod adaptive_fee_rate_manager_tests {
 
         let current_tick_index = 1024 + 32;
         // reset references
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
             + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             false,
@@ -1574,7 +1640,10 @@ mod adaptive_fee_rate_manager_tests {
 
         let current_tick_index = 1024 + 32;
         // reset references
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
             + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             false,
@@ -1638,7 +1707,10 @@ mod adaptive_fee_rate_manager_tests {
 
         let current_tick_index = 1024 + 32;
         // reset references
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
             + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             false,
@@ -1704,12 +1776,14 @@ mod adaptive_fee_rate_manager_tests {
                 max_volatility_accumulator: 80_000,
                 adaptive_fee_control_factor: 1500,
                 tick_group_size: 64,
+                major_swap_threshold_ticks: 64,
                 filter_period: 30,
                 decay_period: 600,
                 reduction_factor: 5000,
             },
             variables: AdaptiveFeeVariables {
-                last_update_timestamp: timestamp,
+                last_reference_update_timestamp: timestamp,
+                last_major_swap_timestamp: timestamp,
                 tick_group_index_reference: 0,
                 volatility_accumulator: 0,
                 volatility_reference: 0,
@@ -1802,12 +1876,14 @@ mod adaptive_fee_rate_manager_tests {
                         * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
                     adaptive_fee_control_factor: 5_000,
                     tick_group_size: 64,
+                    major_swap_threshold_ticks: 64,
                     filter_period: 30,
                     decay_period: 600,
                     reduction_factor: 5000,
                 },
                 variables: AdaptiveFeeVariables {
-                    last_update_timestamp: timestamp,
+                    last_reference_update_timestamp: timestamp,
+                    last_major_swap_timestamp: timestamp,
                     tick_group_index_reference: 0,
                     volatility_accumulator: 0,
                     volatility_reference: 0,
@@ -2336,7 +2412,10 @@ mod adaptive_fee_rate_manager_tests {
 
         let current_tick_index = 64;
         // reset references
-        let timestamp = adaptive_fee_info.variables.last_update_timestamp
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
             + adaptive_fee_info.constants.decay_period as u64;
         let mut fee_rate_manager = FeeRateManager::new(
             true,
@@ -2357,6 +2436,7 @@ mod adaptive_fee_rate_manager_tests {
             &fee_rate_manager,
             -1,
             timestamp,
+            adaptive_fee_info.variables.last_major_swap_timestamp,
             1,
             0,
             2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
@@ -2376,10 +2456,12 @@ mod adaptive_fee_rate_manager_tests {
                     adaptive_fee_info.constants.reduction_factor,
                     adaptive_fee_info.constants.adaptive_fee_control_factor,
                     adaptive_fee_info.constants.tick_group_size,
+                    adaptive_fee_info.constants.major_swap_threshold_ticks,
                 );
                 check_variables(
                     &variables,
                     timestamp,
+                    adaptive_fee_info.variables.last_major_swap_timestamp,
                     1,
                     0,
                     2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
@@ -2389,4 +2471,3 @@ mod adaptive_fee_rate_manager_tests {
         }
     }
 }
-*/

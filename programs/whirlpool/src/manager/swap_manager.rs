@@ -2870,7 +2870,7 @@ mod swap_error_tests {
         swap_test_info.run(&mut tick_sequence, 100);
     }
 }
-/*
+
 #[cfg(test)]
 mod adaptive_fee_tests {
     use std::collections::HashMap;
@@ -2999,18 +2999,20 @@ mod adaptive_fee_tests {
         let max_volatility_accumulator = adaptive_fee_info.constants.max_volatility_accumulator;
 
         // update reference
-        let elapsed = current_timestamp - adaptive_fee_info.variables.last_update_timestamp;
-        let (tick_group_index_reference, volatility_reference) =
+        let elapsed = current_timestamp - adaptive_fee_info.variables.last_reference_update_timestamp.max(adaptive_fee_info.variables.last_major_swap_timestamp);
+        let (next_last_reference_update_timestamp, tick_group_index_reference, volatility_reference) =
             if elapsed < adaptive_fee_info.constants.filter_period as u64 {
                 // high frequency trade
                 // no change
                 (
+                    adaptive_fee_info.variables.last_reference_update_timestamp,
                     adaptive_fee_info.variables.tick_group_index_reference,
                     adaptive_fee_info.variables.volatility_reference,
                 )
             } else if elapsed < adaptive_fee_info.constants.decay_period as u64 {
                 // NOT high frequency trade
                 (
+                    current_timestamp,
                     first_tick_group_index,
                     (u64::from(adaptive_fee_info.variables.volatility_accumulator)
                         * u64::from(adaptive_fee_info.constants.reduction_factor)
@@ -3018,7 +3020,7 @@ mod adaptive_fee_tests {
                 )
             } else {
                 // Out of decay time window
-                (first_tick_group_index, 0)
+                (current_timestamp, first_tick_group_index, 0)
             };
         let mut accumulator = adaptive_fee_info.variables.volatility_accumulator;
 
@@ -3151,7 +3153,9 @@ mod adaptive_fee_tests {
             protocol_fee: curr_protocol_fee,
             end_sqrt_price: curr_sqrt_price,
             next_adaptive_fee_variables: AdaptiveFeeVariables {
-                last_update_timestamp: current_timestamp,
+                last_reference_update_timestamp: next_last_reference_update_timestamp,
+                // TODO: update
+                last_major_swap_timestamp: adaptive_fee_info.variables.last_major_swap_timestamp,
                 tick_group_index_reference,
                 volatility_reference,
                 volatility_accumulator: accumulator,
@@ -3169,9 +3173,13 @@ mod adaptive_fee_tests {
         result: &AdaptiveFeeVariables,
         expected: &AdaptiveFeeVariables,
     ) {
-        let result_last_update_timestamp = result.last_update_timestamp;
-        let expected_last_update_timestamp = expected.last_update_timestamp;
-        assert_eq!(result_last_update_timestamp, expected_last_update_timestamp);
+        let result_last_reference_update_timestamp = result.last_reference_update_timestamp;
+        let expected_last_reference_update_timestamp = expected.last_reference_update_timestamp;
+        assert_eq!(result_last_reference_update_timestamp, expected_last_reference_update_timestamp);
+        let result_last_major_swap_timestamp = result.last_major_swap_timestamp;
+        let expected_last_major_swap_timestamp = expected.last_major_swap_timestamp;
+        assert_eq!(result_last_major_swap_timestamp, expected_last_major_swap_timestamp);
+
         let result_tick_group_index_reference = result.tick_group_index_reference;
         let expected_tick_group_index_reference = expected.tick_group_index_reference;
         assert_eq!(
@@ -3208,6 +3216,7 @@ mod adaptive_fee_tests {
                         // block skip based on max_volatility_accumulator
                         max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -4707,6 +4716,7 @@ mod adaptive_fee_tests {
                         // block skip based on max_volatility_accumulator
                         max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -5646,6 +5656,7 @@ mod adaptive_fee_tests {
                         // block skip based on max_volatility_accumulator
                         max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -7065,6 +7076,7 @@ mod adaptive_fee_tests {
                         // block skip based on max_volatility_accumulator
                         max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -7503,6 +7515,7 @@ mod adaptive_fee_tests {
                         // block skip based on max_volatility_accumulator
                         max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -7562,7 +7575,8 @@ mod adaptive_fee_tests {
                 check_next_adaptive_fee_variables(
                     &post_swap.next_adaptive_fee_info.unwrap().variables,
                     &AdaptiveFeeVariables {
-                        last_update_timestamp: 1_000_000,
+                        last_reference_update_timestamp: 1_000_000,
+                        last_major_swap_timestamp: 0,
                         volatility_reference: 0,
                         tick_group_index_reference: 3465, // tick_group_index for 443636
                         // pool price moved MAX_TICK_INDEX to MIN_TICK_INDEX, max volatility is expected
@@ -7627,7 +7641,8 @@ mod adaptive_fee_tests {
                 check_next_adaptive_fee_variables(
                     &post_swap.next_adaptive_fee_info.unwrap().variables,
                     &AdaptiveFeeVariables {
-                        last_update_timestamp: 1_000_000,
+                        last_reference_update_timestamp: 1_000_000,
+                        last_major_swap_timestamp: 0,
                         volatility_reference: 0,
                         tick_group_index_reference: -3466, // tick_group_index for -443636
                         // pool price moved MIN_TICK_INDEX to MAX_TICK_INDEX, max volatility is expected
@@ -7656,6 +7671,7 @@ mod adaptive_fee_tests {
                         reduction_factor: 0,
                         max_volatility_accumulator: 350_000,
                         tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -7790,7 +7806,8 @@ mod adaptive_fee_tests {
                 check_next_adaptive_fee_variables(
                     &post_swap.next_adaptive_fee_info.unwrap().variables,
                     &AdaptiveFeeVariables {
-                        last_update_timestamp: 1_000_000,
+                        last_reference_update_timestamp: 1_000_000,
+                        last_major_swap_timestamp: 0,
                         volatility_reference: 0,
                         tick_group_index_reference: 0, // tick_group_index for 0
                         // volatility accumulator should be updated correctly even if adaptive fee control factor is zero
@@ -7931,7 +7948,8 @@ mod adaptive_fee_tests {
                 check_next_adaptive_fee_variables(
                     &post_swap.next_adaptive_fee_info.unwrap().variables,
                     &AdaptiveFeeVariables {
-                        last_update_timestamp: 1_000_000,
+                        last_reference_update_timestamp: 1_000_000,
+                        last_major_swap_timestamp: 0,
                         volatility_reference: 0,
                         tick_group_index_reference: 0, // tick_group_index for 0
                         // volatility accumulator should be updated correctly even if adaptive fee control factor is zero
@@ -8071,7 +8089,8 @@ mod adaptive_fee_tests {
                 check_next_adaptive_fee_variables(
                     &post_swap.next_adaptive_fee_info.unwrap().variables,
                     &AdaptiveFeeVariables {
-                        last_update_timestamp: 1_000_000,
+                        last_reference_update_timestamp: 1_000_000,
+                        last_major_swap_timestamp: 0,
                         volatility_reference: 0,
                         tick_group_index_reference: -1, // tick_group_index for -1 (shifted)
                         // volatility accumulator should be updated correctly even if adaptive fee control factor is zero
@@ -8214,7 +8233,8 @@ mod adaptive_fee_tests {
                 check_next_adaptive_fee_variables(
                     &post_swap.next_adaptive_fee_info.unwrap().variables,
                     &AdaptiveFeeVariables {
-                        last_update_timestamp: 1_000_000,
+                        last_reference_update_timestamp: 1_000_000,
+                        last_major_swap_timestamp: 0,
                         volatility_reference: 0,
                         tick_group_index_reference: -1, // tick_group_index for -1 (shifted)
                         // volatility accumulator should be updated correctly even if adaptive fee control factor is zero
@@ -8240,6 +8260,7 @@ mod adaptive_fee_tests {
                         reduction_factor: 0,
                         max_volatility_accumulator: 350_000,
                         tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -8346,7 +8367,8 @@ mod adaptive_fee_tests {
                 check_next_adaptive_fee_variables(
                     &post_swap.next_adaptive_fee_info.unwrap().variables,
                     &AdaptiveFeeVariables {
-                        last_update_timestamp: 1_000_000,
+                        last_reference_update_timestamp: 1_000_000,
+                        last_major_swap_timestamp: 0,
                         volatility_reference: 0,
                         tick_group_index_reference: 1, // tick_group_index for 128
                         // volatility accumulator should be updated correctly even if adaptive fee control factor is zero
@@ -8459,7 +8481,8 @@ mod adaptive_fee_tests {
                 check_next_adaptive_fee_variables(
                     &post_swap.next_adaptive_fee_info.unwrap().variables,
                     &AdaptiveFeeVariables {
-                        last_update_timestamp: 1_000_000,
+                        last_reference_update_timestamp: 1_000_000,
+                        last_major_swap_timestamp: 0,
                         volatility_reference: 0,
                         tick_group_index_reference: -1, // tick_group_index for -128
                         // volatility accumulator should be updated correctly even if adaptive fee control factor is zero
@@ -8489,6 +8512,7 @@ mod adaptive_fee_tests {
                         reduction_factor: 500,
                         max_volatility_accumulator,
                         tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -8772,7 +8796,8 @@ mod adaptive_fee_tests {
                     check_next_adaptive_fee_variables(
                         &adaptive_fee_info.variables,
                         &AdaptiveFeeVariables {
-                            last_update_timestamp: 1_000_000,
+                            last_reference_update_timestamp: 1_000_000,
+                            last_major_swap_timestamp: 0,    
                             tick_group_index_reference: 0,
                             volatility_reference: 0,
                             volatility_accumulator: adaptive_fee_info
@@ -8920,7 +8945,8 @@ mod adaptive_fee_tests {
                     check_next_adaptive_fee_variables(
                         &adaptive_fee_info.variables,
                         &AdaptiveFeeVariables {
-                            last_update_timestamp: 1_000_000,
+                            last_reference_update_timestamp: 1_000_000,
+                            last_major_swap_timestamp: 0,    
                             tick_group_index_reference: 0,
                             volatility_reference: 0,
                             volatility_accumulator: adaptive_fee_info
@@ -9068,7 +9094,8 @@ mod adaptive_fee_tests {
                     check_next_adaptive_fee_variables(
                         &adaptive_fee_info.variables,
                         &AdaptiveFeeVariables {
-                            last_update_timestamp: 1_000_000,
+                            last_reference_update_timestamp: 1_000_000,
+                            last_major_swap_timestamp: 0,    
                             tick_group_index_reference: 0,
                             volatility_reference: 0,
                             volatility_accumulator: adaptive_fee_info
@@ -9236,7 +9263,8 @@ mod adaptive_fee_tests {
                     check_next_adaptive_fee_variables(
                         &adaptive_fee_info.variables,
                         &AdaptiveFeeVariables {
-                            last_update_timestamp: 1_000_000,
+                            last_reference_update_timestamp: 1_000_000,
+                            last_major_swap_timestamp: 0,
                             tick_group_index_reference: 0,
                             volatility_reference: 0,
                             volatility_accumulator: adaptive_fee_info
@@ -9408,7 +9436,8 @@ mod adaptive_fee_tests {
                     check_next_adaptive_fee_variables(
                         &adaptive_fee_info.variables,
                         &AdaptiveFeeVariables {
-                            last_update_timestamp: 1_000_000,
+                            last_reference_update_timestamp: 1_000_000,
+                            last_major_swap_timestamp: 0,
                             tick_group_index_reference: 0,
                             volatility_reference: 0,
                             volatility_accumulator: adaptive_fee_info
@@ -9576,7 +9605,8 @@ mod adaptive_fee_tests {
                     check_next_adaptive_fee_variables(
                         &adaptive_fee_info.variables,
                         &AdaptiveFeeVariables {
-                            last_update_timestamp: 1_000_000,
+                            last_reference_update_timestamp: 1_000_000,
+                            last_major_swap_timestamp: 0,
                             tick_group_index_reference: 0,
                             volatility_reference: 0,
                             volatility_accumulator: adaptive_fee_info
@@ -9748,7 +9778,8 @@ mod adaptive_fee_tests {
                     let adaptive_fee_info = Some(AdaptiveFeeInfo {
                         constants: adaptive_fee_info.constants,
                         variables: AdaptiveFeeVariables {
-                            last_update_timestamp: 1_000_000,
+                            last_reference_update_timestamp: 1_000_000,
+                            last_major_swap_timestamp: 0,
                             tick_group_index_reference: 20,
                             volatility_reference: 15_000,
                             volatility_accumulator: adaptive_fee_info
@@ -9916,7 +9947,8 @@ mod adaptive_fee_tests {
                     let adaptive_fee_info = Some(AdaptiveFeeInfo {
                         constants: adaptive_fee_info.constants,
                         variables: AdaptiveFeeVariables {
-                            last_update_timestamp: 1_000_000,
+                            last_reference_update_timestamp: 1_000_000,
+                            last_major_swap_timestamp: 0,
                             tick_group_index_reference: 20,
                             volatility_reference: 15_000,
                             volatility_accumulator: adaptive_fee_info
@@ -10078,7 +10110,8 @@ mod adaptive_fee_tests {
                     let adaptive_fee_info = Some(AdaptiveFeeInfo {
                         constants: adaptive_fee_info.constants,
                         variables: AdaptiveFeeVariables {
-                            last_update_timestamp: 1_000_000,
+                            last_reference_update_timestamp: 1_000_000,
+                            last_major_swap_timestamp: 0,
                             tick_group_index_reference: -6929,
                             volatility_reference: 0,
                             volatility_accumulator: adaptive_fee_info
@@ -10198,7 +10231,8 @@ mod adaptive_fee_tests {
                     let adaptive_fee_info = Some(AdaptiveFeeInfo {
                         constants: adaptive_fee_info.constants,
                         variables: AdaptiveFeeVariables {
-                            last_update_timestamp: 1_000_000,
+                            last_reference_update_timestamp: 1_000_000,
+                            last_major_swap_timestamp: 0,
                             tick_group_index_reference: 6929,
                             volatility_reference: 0,
                             volatility_accumulator: adaptive_fee_info
@@ -10318,6 +10352,7 @@ mod adaptive_fee_tests {
                         reduction_factor: 500,
                         max_volatility_accumulator,
                         tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -10524,6 +10559,7 @@ mod adaptive_fee_tests {
                         reduction_factor: 500,
                         max_volatility_accumulator,
                         tick_group_size: TICK_GROUP_SIZE,
+                        major_swap_threshold_ticks: TICK_GROUP_SIZE,
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -10547,7 +10583,8 @@ mod adaptive_fee_tests {
                 let adaptive_fee_info = Some(AdaptiveFeeInfo {
                     constants: adaptive_fee_info.constants,
                     variables: AdaptiveFeeVariables {
-                        last_update_timestamp: 1_000_000,
+                        last_reference_update_timestamp: 1_000_000,
+                        last_major_swap_timestamp: 0,
                         tick_group_index_reference: 443630,
                         volatility_reference: 0,
                         volatility_accumulator: adaptive_fee_info
@@ -10654,7 +10691,8 @@ mod adaptive_fee_tests {
                 let adaptive_fee_info = Some(AdaptiveFeeInfo {
                     constants: adaptive_fee_info.constants,
                     variables: AdaptiveFeeVariables {
-                        last_update_timestamp: 1_000_000,
+                        last_reference_update_timestamp: 1_000_000,
+                        last_major_swap_timestamp: 0,
                         tick_group_index_reference: -443630,
                         volatility_reference: 0,
                         volatility_accumulator: adaptive_fee_info
@@ -10765,6 +10803,7 @@ mod adaptive_fee_tests {
                     // block skip based on max_volatility_accumulator
                     max_volatility_accumulator: 88 * 3 * 10_000,
                     tick_group_size: TICK_GROUP_SIZE,
+                    major_swap_threshold_ticks: TICK_GROUP_SIZE,
                 },
                 variables: AdaptiveFeeVariables::default(),
             })
@@ -10781,6 +10820,7 @@ mod adaptive_fee_tests {
                     reduction_factor: 500,
                     max_volatility_accumulator,
                     tick_group_size: TICK_GROUP_SIZE,
+                    major_swap_threshold_ticks: TICK_GROUP_SIZE,
                 },
                 variables: AdaptiveFeeVariables::default(),
             })
@@ -10803,8 +10843,8 @@ mod adaptive_fee_tests {
             (tick_array_0, tick_array_neg_5632)
         }
 
-        fn last_update_timestamp(v: &AdaptiveFeeVariables) -> u64 {
-            v.last_update_timestamp
+        fn last_reference_update_timestamp(v: &AdaptiveFeeVariables) -> u64 {
+            v.last_reference_update_timestamp
         }
 
         fn tick_group_index_reference(v: &AdaptiveFeeVariables) -> i32 {
@@ -10976,8 +11016,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 assert_eq!(
-                    last_update_timestamp(&variables_first),
-                    last_update_timestamp(&variables_second)
+                    last_reference_update_timestamp(&variables_first),
+                    last_reference_update_timestamp(&variables_second)
                 );
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
@@ -11136,8 +11176,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 assert_eq!(
-                    last_update_timestamp(&variables_first),
-                    last_update_timestamp(&variables_second)
+                    last_reference_update_timestamp(&variables_first),
+                    last_reference_update_timestamp(&variables_second)
                 );
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
@@ -11296,8 +11336,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 assert_eq!(
-                    last_update_timestamp(&variables_first),
-                    last_update_timestamp(&variables_second)
+                    last_reference_update_timestamp(&variables_first),
+                    last_reference_update_timestamp(&variables_second)
                 );
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
@@ -11455,8 +11495,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 assert_eq!(
-                    last_update_timestamp(&variables_first),
-                    last_update_timestamp(&variables_second)
+                    last_reference_update_timestamp(&variables_first),
+                    last_reference_update_timestamp(&variables_second)
                 );
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
@@ -11615,8 +11655,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 assert_eq!(
-                    last_update_timestamp(&variables_first),
-                    last_update_timestamp(&variables_second)
+                    last_reference_update_timestamp(&variables_first),
+                    last_reference_update_timestamp(&variables_second)
                 );
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
@@ -11775,8 +11815,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 assert_eq!(
-                    last_update_timestamp(&variables_first),
-                    last_update_timestamp(&variables_second)
+                    last_reference_update_timestamp(&variables_first),
+                    last_reference_update_timestamp(&variables_second)
                 );
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
@@ -11955,8 +11995,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 assert_eq!(
-                    last_update_timestamp(&variables_first),
-                    last_update_timestamp(&variables_second)
+                    last_reference_update_timestamp(&variables_first),
+                    last_reference_update_timestamp(&variables_second)
                 );
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
@@ -12135,8 +12175,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 assert_eq!(
-                    last_update_timestamp(&variables_first),
-                    last_update_timestamp(&variables_second)
+                    last_reference_update_timestamp(&variables_first),
+                    last_reference_update_timestamp(&variables_second)
                 );
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
@@ -12302,8 +12342,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, but reference should not be updated at the second swap
-                assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
-                assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
+                assert_eq!(last_reference_update_timestamp(&variables_first), timestamp_first);
+                assert_eq!(last_reference_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
                     tick_group_index_reference(&variables_second)
@@ -12464,8 +12504,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, but reference should not be updated at the second swap
-                assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
-                assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
+                assert_eq!(last_reference_update_timestamp(&variables_first), timestamp_first);
+                assert_eq!(last_reference_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
                     tick_group_index_reference(&variables_second)
@@ -12646,8 +12686,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, but reference should not be updated at the second swap
-                assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
-                assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
+                assert_eq!(last_reference_update_timestamp(&variables_first), timestamp_first);
+                assert_eq!(last_reference_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(
                     tick_group_index_reference(&variables_first),
                     tick_group_index_reference(&variables_second)
@@ -12813,8 +12853,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, and reference should be updated (volatility_reference should be reduced value)
-                assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
-                assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
+                assert_eq!(last_reference_update_timestamp(&variables_first), timestamp_first);
+                assert_eq!(last_reference_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(tick_group_index_reference(&variables_first), 0);
                 assert_eq!(
                     tick_group_index_reference(&variables_second),
@@ -12978,8 +13018,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, and reference should be updated (volatility_reference should be reduced value)
-                assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
-                assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
+                assert_eq!(last_reference_update_timestamp(&variables_first), timestamp_first);
+                assert_eq!(last_reference_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(tick_group_index_reference(&variables_first), -2);
                 assert_eq!(
                     tick_group_index_reference(&variables_second),
@@ -13163,8 +13203,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, and reference should be updated (volatility_reference should be reduced value)
-                assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
-                assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
+                assert_eq!(last_reference_update_timestamp(&variables_first), timestamp_first);
+                assert_eq!(last_reference_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(tick_group_index_reference(&variables_first), 0);
                 assert_eq!(
                     tick_group_index_reference(&variables_second),
@@ -13331,8 +13371,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, and reference should be updated (volatility_reference should be reset)
-                assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
-                assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
+                assert_eq!(last_reference_update_timestamp(&variables_first), timestamp_first);
+                assert_eq!(last_reference_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(tick_group_index_reference(&variables_first), 0);
                 assert_eq!(
                     tick_group_index_reference(&variables_second),
@@ -13492,8 +13532,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, and reference should be updated (volatility_reference should be reset)
-                assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
-                assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
+                assert_eq!(last_reference_update_timestamp(&variables_first), timestamp_first);
+                assert_eq!(last_reference_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(tick_group_index_reference(&variables_first), -2);
                 assert_eq!(
                     tick_group_index_reference(&variables_second),
@@ -13673,8 +13713,8 @@ mod adaptive_fee_tests {
                 let variables_first = post_swap_first.next_adaptive_fee_info.unwrap().variables;
                 let variables_second = post_swap_second.next_adaptive_fee_info.unwrap().variables;
                 // last_update_timestamp should be updated, and reference should be updated (volatility_reference should be reduced value)
-                assert_eq!(last_update_timestamp(&variables_first), timestamp_first);
-                assert_eq!(last_update_timestamp(&variables_second), timestamp_second);
+                assert_eq!(last_reference_update_timestamp(&variables_first), timestamp_first);
+                assert_eq!(last_reference_update_timestamp(&variables_second), timestamp_second);
                 assert_eq!(tick_group_index_reference(&variables_first), 0);
                 assert_eq!(
                     tick_group_index_reference(&variables_second),
@@ -13686,4 +13726,3 @@ mod adaptive_fee_tests {
         }
     }
 }
-*/

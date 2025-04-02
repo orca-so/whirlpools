@@ -1,8 +1,8 @@
 use crate::errors::ErrorCode;
 use crate::manager::fee_rate_manager::{
-    ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, REDUCTION_FACTOR_DENOMINATOR,
-    VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+    ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, MAX_REFERENCE_AGE, REDUCTION_FACTOR_DENOMINATOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR
 };
+use crate::math::{sqrt_price_from_tick_index, U256Muldiv, Q64_RESOLUTION};
 use crate::state::Whirlpool;
 use anchor_lang::prelude::*;
 use std::cell::{Ref, RefMut};
@@ -28,10 +28,12 @@ pub struct AdaptiveFeeConstants {
     pub max_volatility_accumulator: u32,
     // Tick group index is defined as floor(tick_index / tick_group_size)
     pub tick_group_size: u16,
+    // Major swap threshold in tick
+    pub major_swap_threshold_ticks: u16,
 }
 
 impl AdaptiveFeeConstants {
-    pub const LEN: usize = 2 + 2 + 2 + 4 + 4 + 2;
+    pub const LEN: usize = 2 + 2 + 2 + 4 + 4 + 2 + 2;
 
     pub fn validate_constants(
         tick_spacing: u16,
@@ -87,8 +89,10 @@ impl AdaptiveFeeConstants {
 #[repr(C, packed)]
 #[derive(Default, Debug, PartialEq, Eq)]
 pub struct AdaptiveFeeVariables {
-    // Last timestamp (block time) the variables was updated
-    pub last_update_timestamp: u64,
+    // Last timestamp (block time) when major swap was executed
+    pub last_major_swap_timestamp: u64,
+    // Last timestamp (block time) when volatility_reference and tick_group_index_reference were updated
+    pub last_reference_update_timestamp: u64,
     // Volatility reference is decayed volatility accumulator
     pub volatility_reference: u32,
     // Active tick group index of last swap
@@ -98,7 +102,7 @@ pub struct AdaptiveFeeVariables {
 }
 
 impl AdaptiveFeeVariables {
-    pub const LEN: usize = 8 + 4 + 4 + 4;
+    pub const LEN: usize = 8 + 8 + 4 + 4 + 4;
 
     pub fn update_volatility_accumulator(
         &mut self,
@@ -123,12 +127,21 @@ impl AdaptiveFeeVariables {
         current_timestamp: u64,
         adaptive_fee_constants: &AdaptiveFeeConstants,
     ) -> Result<()> {
-        if current_timestamp < self.last_update_timestamp {
+        let max_timestamp = self.last_reference_update_timestamp.max(self.last_major_swap_timestamp);
+        if current_timestamp < max_timestamp {
             return Err(ErrorCode::InvalidTimestamp.into());
         }
 
-        let elapsed = current_timestamp - self.last_update_timestamp;
-
+        let reference_age = current_timestamp - self.last_reference_update_timestamp;
+        if reference_age > MAX_REFERENCE_AGE {
+            // The references are too old, so reset them
+            self.tick_group_index_reference = tick_group_index;
+            self.volatility_reference = 0;
+            self.last_reference_update_timestamp = current_timestamp;
+            return Ok(());
+        } 
+        
+        let elapsed = current_timestamp - max_timestamp;
         if elapsed < adaptive_fee_constants.filter_period as u64 {
             // high frequency trade
             // no change
@@ -139,15 +152,45 @@ impl AdaptiveFeeVariables {
                 * u64::from(adaptive_fee_constants.reduction_factor)
                 / u64::from(REDUCTION_FACTOR_DENOMINATOR))
                 as u32;
+            self.last_reference_update_timestamp = current_timestamp;
         } else {
             // Out of decay time window
             self.tick_group_index_reference = tick_group_index;
             self.volatility_reference = 0;
+            self.last_reference_update_timestamp = current_timestamp;
         }
 
-        self.last_update_timestamp = current_timestamp;
-
         Ok(())
+    }
+
+    pub fn update_major_swap_timestamp(&mut self, pre_sqrt_price: u128, post_sqrt_price: u128, current_timestamp: u64, adaptive_fee_constants: &AdaptiveFeeConstants) -> Result<()> {
+        if Self::is_major_swap(pre_sqrt_price, post_sqrt_price, adaptive_fee_constants.major_swap_threshold_ticks)? {
+            self.last_major_swap_timestamp = current_timestamp;
+        }
+        Ok(())
+    }
+
+    fn is_major_swap(
+        pre_sqrt_price: u128,
+        post_sqrt_price: u128,
+        major_swap_threshold_ticks: u16,
+    ) -> Result<bool> {
+        let (smaller_sqrt_price, larger_sqrt_price) = if pre_sqrt_price < post_sqrt_price {
+            (pre_sqrt_price, post_sqrt_price)
+        } else {
+            (post_sqrt_price, pre_sqrt_price)
+        };
+
+        // major_swap_sqrt_price_target
+        //   = smaller_sqrt_price * pow(1.0001, major_swap_threshold_ticks)
+        //   = smaller_sqrt_price * sqrt_price_from_tick_index(major_swap_threshold_ticks) >> Q64_RESOLUTION
+        let major_swap_sqrt_price_factor = sqrt_price_from_tick_index(major_swap_threshold_ticks as i32);
+        let major_swap_sqrt_price_target = U256Muldiv::new(0, smaller_sqrt_price)
+            .mul(U256Muldiv::new(0, major_swap_sqrt_price_factor))
+            .shift_right(Q64_RESOLUTION as u32)
+            .try_into_u128()?;
+
+        Ok(larger_sqrt_price >= major_swap_sqrt_price_target)
     }
 }
 

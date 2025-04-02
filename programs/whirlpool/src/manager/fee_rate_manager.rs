@@ -25,6 +25,10 @@ pub const ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR: u32 = 100_000;
 // Fee rate is represented as hundredths of a basis point.
 pub const FEE_RATE_HARD_LIMIT: u32 = 100_000; // 10%
 
+// The time (in seconds) to forcibly reset the reference if it is not updated for a long time.
+// A recovery measure against the act of intentionally repeating major swaps to keep the Adaptive Fee high.
+pub const MAX_REFERENCE_AGE: u64 = 3_600; // 1 hour
+
 #[derive(Debug)]
 pub enum FeeRateManager {
     Adaptive {
@@ -135,6 +139,23 @@ impl FeeRateManager {
                 ..
             } => adaptive_fee_variables
                 .update_volatility_accumulator(*tick_group_index, adaptive_fee_constants),
+        }
+    }
+
+    pub fn update_major_swap_timestamp(&mut self, timestamp: u64, pre_sqrt_price: u128, post_sqrt_price: u128) -> Result<()> {
+        match self {
+            Self::Static { .. } => Ok(()),
+            Self::Adaptive {
+                adaptive_fee_variables,
+                adaptive_fee_constants,
+                ..
+            } => 
+                adaptive_fee_variables.update_major_swap_timestamp(
+                    pre_sqrt_price,
+                    post_sqrt_price,
+                    timestamp,
+                    adaptive_fee_constants,
+                ),            
         }
     }
 

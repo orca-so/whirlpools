@@ -253,6 +253,12 @@ pub fn swap(
     // Log delta in fee growth to track pool usage over time with off-chain analytics
     msg!("fee_growth: {}", fee_growth);
 
+    fee_rate_manager.update_major_swap_timestamp(
+        timestamp,
+        whirlpool.sqrt_price,
+        curr_sqrt_price,
+    )?;
+
     Ok(PostSwapUpdate {
         amount_a,
         amount_b,

@@ -87,8 +87,11 @@ impl AccountInfoMock {
         af_const_data[offset..offset + 2]
             .copy_from_slice(&adaptive_fee_constants.tick_group_size.to_le_bytes());
         offset += 2;
-        af_const_data[offset..offset + 2]
-            .copy_from_slice(&adaptive_fee_constants.major_swap_threshold_ticks.to_le_bytes());
+        af_const_data[offset..offset + 2].copy_from_slice(
+            &adaptive_fee_constants
+                .major_swap_threshold_ticks
+                .to_le_bytes(),
+        );
         offset += 2;
 
         assert_eq!(offset, AdaptiveFeeConstants::LEN);

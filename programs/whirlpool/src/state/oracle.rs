@@ -1,6 +1,7 @@
 use crate::errors::ErrorCode;
 use crate::manager::fee_rate_manager::{
-    ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, MAX_REFERENCE_AGE, REDUCTION_FACTOR_DENOMINATOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR
+    ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, MAX_REFERENCE_AGE, REDUCTION_FACTOR_DENOMINATOR,
+    VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
 };
 use crate::math::{sqrt_price_from_tick_index, U256Muldiv, Q64_RESOLUTION};
 use crate::state::Whirlpool;
@@ -139,7 +140,9 @@ impl AdaptiveFeeVariables {
         current_timestamp: u64,
         adaptive_fee_constants: &AdaptiveFeeConstants,
     ) -> Result<()> {
-        let max_timestamp = self.last_reference_update_timestamp.max(self.last_major_swap_timestamp);
+        let max_timestamp = self
+            .last_reference_update_timestamp
+            .max(self.last_major_swap_timestamp);
         if current_timestamp < max_timestamp {
             return Err(ErrorCode::InvalidTimestamp.into());
         }
@@ -151,8 +154,8 @@ impl AdaptiveFeeVariables {
             self.volatility_reference = 0;
             self.last_reference_update_timestamp = current_timestamp;
             return Ok(());
-        } 
-        
+        }
+
         let elapsed = current_timestamp - max_timestamp;
         if elapsed < adaptive_fee_constants.filter_period as u64 {
             // high frequency trade
@@ -175,8 +178,18 @@ impl AdaptiveFeeVariables {
         Ok(())
     }
 
-    pub fn update_major_swap_timestamp(&mut self, pre_sqrt_price: u128, post_sqrt_price: u128, current_timestamp: u64, adaptive_fee_constants: &AdaptiveFeeConstants) -> Result<()> {
-        if Self::is_major_swap(pre_sqrt_price, post_sqrt_price, adaptive_fee_constants.major_swap_threshold_ticks)? {
+    pub fn update_major_swap_timestamp(
+        &mut self,
+        pre_sqrt_price: u128,
+        post_sqrt_price: u128,
+        current_timestamp: u64,
+        adaptive_fee_constants: &AdaptiveFeeConstants,
+    ) -> Result<()> {
+        if Self::is_major_swap(
+            pre_sqrt_price,
+            post_sqrt_price,
+            adaptive_fee_constants.major_swap_threshold_ticks,
+        )? {
             self.last_major_swap_timestamp = current_timestamp;
         }
         Ok(())
@@ -196,7 +209,8 @@ impl AdaptiveFeeVariables {
         // major_swap_sqrt_price_target
         //   = smaller_sqrt_price * pow(1.0001, major_swap_threshold_ticks)
         //   = smaller_sqrt_price * sqrt_price_from_tick_index(major_swap_threshold_ticks) >> Q64_RESOLUTION
-        let major_swap_sqrt_price_factor = sqrt_price_from_tick_index(major_swap_threshold_ticks as i32);
+        let major_swap_sqrt_price_factor =
+            sqrt_price_from_tick_index(major_swap_threshold_ticks as i32);
         let major_swap_sqrt_price_target = U256Muldiv::new(0, smaller_sqrt_price)
             .mul(U256Muldiv::new(0, major_swap_sqrt_price_factor))
             .shift_right(Q64_RESOLUTION as u32)
@@ -561,8 +575,9 @@ mod data_layout_tests {
             af_const_major_swap_threshold_ticks
         );
 
-        let read_af_var_last_reference_update_timestamp =
-            oracle.adaptive_fee_variables.last_reference_update_timestamp;
+        let read_af_var_last_reference_update_timestamp = oracle
+            .adaptive_fee_variables
+            .last_reference_update_timestamp;
         assert_eq!(
             read_af_var_last_reference_update_timestamp,
             af_var_last_reference_update_timestamp
@@ -1211,10 +1226,19 @@ mod oracle_tests {
 
         oracle.update_adaptive_fee_variables(variables);
 
-        let read_af_var_last_reference_update_timestamp = oracle.adaptive_fee_variables.last_reference_update_timestamp;
-        assert_eq!(read_af_var_last_reference_update_timestamp, last_reference_update_timestamp);
-        let read_af_var_last_major_swap_timestamp = oracle.adaptive_fee_variables.last_major_swap_timestamp;
-        assert_eq!(read_af_var_last_major_swap_timestamp, last_major_swap_timestamp);
+        let read_af_var_last_reference_update_timestamp = oracle
+            .adaptive_fee_variables
+            .last_reference_update_timestamp;
+        assert_eq!(
+            read_af_var_last_reference_update_timestamp,
+            last_reference_update_timestamp
+        );
+        let read_af_var_last_major_swap_timestamp =
+            oracle.adaptive_fee_variables.last_major_swap_timestamp;
+        assert_eq!(
+            read_af_var_last_major_swap_timestamp,
+            last_major_swap_timestamp
+        );
         let read_af_var_volatility_reference = oracle.adaptive_fee_variables.volatility_reference;
         assert_eq!(read_af_var_volatility_reference, volatility_reference);
         let read_af_var_tick_group_index_reference =
@@ -1254,7 +1278,10 @@ mod adaptive_fee_variables_tests {
         volatility_accumulator: u32,
     ) {
         let read_last_reference_update_timestamp = variables.last_reference_update_timestamp;
-        assert_eq!(read_last_reference_update_timestamp, last_reference_update_timestamp);
+        assert_eq!(
+            read_last_reference_update_timestamp,
+            last_reference_update_timestamp
+        );
         let read_last_major_swap_timestamp = variables.last_major_swap_timestamp;
         assert_eq!(read_last_major_swap_timestamp, last_major_swap_timestamp);
         let read_tick_group_index_reference = variables.tick_group_index_reference;
@@ -1282,7 +1309,7 @@ mod adaptive_fee_variables_tests {
             check_variables(
                 &variables,
                 current_timestamp, // should be updated
-                0, // should not be updated
+                0,                 // should not be updated
                 // should be updated (elapsed time is greater than decay_period)
                 tick_group_index,
                 // should be reset
@@ -1780,9 +1807,9 @@ mod adaptive_fee_variables_tests {
                 check_variables(
                     &variables,
                     initial_current_timestamp, // reference should not be updated (< filter_period)
-                    0,                       // reference should not be updated (no major swap)
-                    initial_tick_group_index, // reference should not be updated (< filter_period)
-                    0,                        // reference should not be updated
+                    0,                         // reference should not be updated (no major swap)
+                    initial_tick_group_index,  // reference should not be updated (< filter_period)
+                    0,                         // reference should not be updated
                     expected_volatility_accumulator,
                 );
 

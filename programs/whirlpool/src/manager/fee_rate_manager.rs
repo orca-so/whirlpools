@@ -142,20 +142,24 @@ impl FeeRateManager {
         }
     }
 
-    pub fn update_major_swap_timestamp(&mut self, timestamp: u64, pre_sqrt_price: u128, post_sqrt_price: u128) -> Result<()> {
+    pub fn update_major_swap_timestamp(
+        &mut self,
+        timestamp: u64,
+        pre_sqrt_price: u128,
+        post_sqrt_price: u128,
+    ) -> Result<()> {
         match self {
             Self::Static { .. } => Ok(()),
             Self::Adaptive {
                 adaptive_fee_variables,
                 adaptive_fee_constants,
                 ..
-            } => 
-                adaptive_fee_variables.update_major_swap_timestamp(
-                    pre_sqrt_price,
-                    post_sqrt_price,
-                    timestamp,
-                    adaptive_fee_constants,
-                ),            
+            } => adaptive_fee_variables.update_major_swap_timestamp(
+                pre_sqrt_price,
+                post_sqrt_price,
+                timestamp,
+                adaptive_fee_constants,
+            ),
         }
     }
 
@@ -492,7 +496,7 @@ mod static_fee_rate_manager_tests {
         assert!(next_adaptive_fee_info.is_none());
     }
 }
-/* 
+/*
 #[cfg(test)]
 mod adaptive_fee_rate_manager_tests {
     use super::*;

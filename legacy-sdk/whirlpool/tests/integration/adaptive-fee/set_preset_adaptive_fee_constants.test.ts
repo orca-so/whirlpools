@@ -8,6 +8,7 @@ import {
   IGNORE_CACHE,
   PDAUtil,
   PriceMath,
+  TICK_ARRAY_SIZE,
   toTx,
   WhirlpoolContext,
   WhirlpoolIx,
@@ -45,6 +46,7 @@ describe("set_preset_adaptive_fee_constants", () => {
       adaptiveFeeControlFactor: 4_000,
       maxVolatilityAccumulator: 350_000,
       tickGroupSize: 64,
+      majorSwapThresholdTicks: 32,
     };
     const newPresetAdaptiveFeeConstants: AdaptiveFeeConstantsData = {
       filterPeriod: 2 ** 16 - 2, // must be < decayPeriod
@@ -53,6 +55,7 @@ describe("set_preset_adaptive_fee_constants", () => {
       adaptiveFeeControlFactor: 99999,
       maxVolatilityAccumulator: Math.floor(2 ** 32 / tickSpacing) - 1,
       tickGroupSize: 32,
+      majorSwapThresholdTicks: 16,
     };
 
     const { configInitInfo, configKeypairs } = generateDefaultConfigParams(ctx);
@@ -101,6 +104,10 @@ describe("set_preset_adaptive_fee_constants", () => {
       preAdaptiveFeeTierAccount.tickGroupSize ===
         initialPresetAdaptiveFeeConstants.tickGroupSize,
     );
+    assert.ok(
+      preAdaptiveFeeTierAccount.majorSwapThresholdTicks ===
+        initialPresetAdaptiveFeeConstants.majorSwapThresholdTicks,
+    );
 
     await toTx(
       ctx,
@@ -116,6 +123,8 @@ describe("set_preset_adaptive_fee_constants", () => {
         presetMaxVolatilityAccumulator:
           newPresetAdaptiveFeeConstants.maxVolatilityAccumulator,
         presetTickGroupSize: newPresetAdaptiveFeeConstants.tickGroupSize,
+        presetMajorSwapThresholdTicks:
+          newPresetAdaptiveFeeConstants.majorSwapThresholdTicks,
       }),
     )
       .addSigner(configKeypairs.feeAuthorityKeypair)
@@ -149,6 +158,10 @@ describe("set_preset_adaptive_fee_constants", () => {
     assert.ok(
       postAdaptiveFeeTierAccount.tickGroupSize ===
         newPresetAdaptiveFeeConstants.tickGroupSize,
+    );
+    assert.ok(
+      postAdaptiveFeeTierAccount.majorSwapThresholdTicks ===
+        newPresetAdaptiveFeeConstants.majorSwapThresholdTicks,
     );
 
     // Newly initialized whirlpools have new adaptive fee constants in its Oracle account
@@ -229,6 +242,10 @@ describe("set_preset_adaptive_fee_constants", () => {
       oracle.adaptiveFeeConstants.tickGroupSize ===
         newPresetAdaptiveFeeConstants.tickGroupSize,
     );
+    assert.ok(
+      oracle.adaptiveFeeConstants.majorSwapThresholdTicks ===
+        newPresetAdaptiveFeeConstants.majorSwapThresholdTicks,
+    );
   });
 
   it("fails when adaptive fee tier account has not been initialized", async () => {
@@ -257,6 +274,7 @@ describe("set_preset_adaptive_fee_constants", () => {
           presetAdaptiveFeeControlFactor: 100,
           presetMaxVolatilityAccumulator: 50_000,
           presetTickGroupSize: 16,
+          presetMajorSwapThresholdTicks: 16,
         }),
       )
         .addSigner(configKeypairs.feeAuthorityKeypair)
@@ -293,6 +311,7 @@ describe("set_preset_adaptive_fee_constants", () => {
       presetAdaptiveFeeControlFactor: 100,
       presetMaxVolatilityAccumulator: 50_000,
       presetTickGroupSize: 16,
+      presetMajorSwapThresholdTicks: 16,
     });
     const ixWithoutSigner = dropIsSignerFlag(
       ix.instructions[0],
@@ -343,6 +362,7 @@ describe("set_preset_adaptive_fee_constants", () => {
           presetAdaptiveFeeControlFactor: 100,
           presetMaxVolatilityAccumulator: 50_000,
           presetTickGroupSize: 16,
+          presetMajorSwapThresholdTicks: 16,
         }),
       )
         .addSigner(fakeFeeAuthorityKeypair)
@@ -398,6 +418,7 @@ describe("set_preset_adaptive_fee_constants", () => {
           presetAdaptiveFeeControlFactor: constants.adaptiveFeeControlFactor,
           presetMaxVolatilityAccumulator: constants.maxVolatilityAccumulator,
           presetTickGroupSize: constants.tickGroupSize,
+          presetMajorSwapThresholdTicks: constants.majorSwapThresholdTicks,
         }),
       )
         .addSigner(feeAuthorityKeypair)
@@ -418,6 +439,7 @@ describe("set_preset_adaptive_fee_constants", () => {
             presetAdaptiveFeeControlFactor: constants.adaptiveFeeControlFactor,
             presetMaxVolatilityAccumulator: constants.maxVolatilityAccumulator,
             presetTickGroupSize: constants.tickGroupSize,
+            presetMajorSwapThresholdTicks: constants.majorSwapThresholdTicks,
           }),
         )
           .addSigner(feeAuthorityKeypair)
@@ -490,5 +512,19 @@ describe("set_preset_adaptive_fee_constants", () => {
         maxVolatilityAccumulator,
       });
     });
+
+    it("major_swap_threshold_ticks == 0", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        majorSwapThresholdTicks: 0,
+      });
+    });
+
+    it("major_swap_threshold_ticks > tick_spacing * TICK_ARRAY_SIZE", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        majorSwapThresholdTicks: tickSpacing * TICK_ARRAY_SIZE + 1,
+      });
+    });    
   });
 });

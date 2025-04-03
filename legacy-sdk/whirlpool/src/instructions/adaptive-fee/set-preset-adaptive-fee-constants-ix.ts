@@ -16,6 +16,7 @@ import type { Whirlpool } from "../../artifacts/whirlpool";
  * @param presetAdaptiveFeeControlFactor - The control factor for the adaptive fee
  * @param presetMaxVolatilityAccumulator - The max volatility accumulator for the adaptive fee
  * @param presetTickGroupSize - The tick group size for the adaptive fee
+ * @param presetMajorSwapThresholdTicks - The major swap threshold ticks to define major swap
  */
 export type SetPresetAdaptiveFeeConstantsParams = {
   whirlpoolsConfig: PublicKey;
@@ -27,6 +28,7 @@ export type SetPresetAdaptiveFeeConstantsParams = {
   presetAdaptiveFeeControlFactor: number;
   presetMaxVolatilityAccumulator: number;
   presetTickGroupSize: number;
+  presetMajorSwapThresholdTicks: number;
 };
 
 /**
@@ -51,6 +53,7 @@ export function setPresetAdaptiveFeeConstantsIx(
     params.presetAdaptiveFeeControlFactor,
     params.presetMaxVolatilityAccumulator,
     params.presetTickGroupSize,
+    params.presetMajorSwapThresholdTicks,
     {
       accounts: {
         whirlpoolsConfig: params.whirlpoolsConfig,

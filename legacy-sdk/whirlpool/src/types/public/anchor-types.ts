@@ -239,6 +239,7 @@ export type AdaptiveFeeTierData = {
   adaptiveFeeControlFactor: number;
   maxVolatilityAccumulator: number;
   tickGroupSize: number;
+  majorSwapThresholdTicks: number;
 };
 
 /**
@@ -261,13 +262,15 @@ export type AdaptiveFeeConstantsData = {
   adaptiveFeeControlFactor: number;
   maxVolatilityAccumulator: number;
   tickGroupSize: number;
+  majorSwapThresholdTicks: number;
 };
 
 /**
  * @category Solana Accounts
  */
 export type AdaptiveFeeVariablesData = {
-  lastUpdateTimestamp: BN;
+  lastReferenceUpdateTimestamp: BN;
+  lastMajorSwapTimestamp: BN;
   volatilityReference: number;
   tickGroupIndexReference: number;
   volatilityAccumulator: number;

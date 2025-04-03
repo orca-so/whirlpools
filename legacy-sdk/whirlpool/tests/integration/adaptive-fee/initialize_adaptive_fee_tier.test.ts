@@ -8,6 +8,7 @@ import {
   AccountName,
   getAccountSize,
   PDAUtil,
+  TICK_ARRAY_SIZE,
   toTx,
   WhirlpoolContext,
   WhirlpoolIx,
@@ -47,7 +48,8 @@ describe("initialize_adaptive_fee_tier", () => {
       aft.reductionFactor == constants.reductionFactor &&
       aft.adaptiveFeeControlFactor == constants.adaptiveFeeControlFactor &&
       aft.maxVolatilityAccumulator == constants.maxVolatilityAccumulator &&
-      aft.tickGroupSize == constants.tickGroupSize
+      aft.tickGroupSize == constants.tickGroupSize &&
+      aft.majorSwapThresholdTicks == constants.majorSwapThresholdTicks
     );
   }
 
@@ -228,6 +230,7 @@ describe("initialize_adaptive_fee_tier", () => {
       adaptiveFeeControlFactor: 99999,
       maxVolatilityAccumulator: Math.floor(2 ** 32 / tickSpacing) - 1,
       tickGroupSize: tickSpacing,
+      majorSwapThresholdTicks: tickSpacing,
     };
 
     await tryInitializeAdaptiveFeeTier(
@@ -357,6 +360,8 @@ describe("initialize_adaptive_fee_tier", () => {
         presetMaxVolatilityAccumulator:
           presetAdaptiveFeeConstants.maxVolatilityAccumulator,
         presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+        presetMajorSwapThresholdTicks:
+          presetAdaptiveFeeConstants.majorSwapThresholdTicks,
       }),
     ).addSigner(feeAuthorityKeypair);
 
@@ -405,6 +410,8 @@ describe("initialize_adaptive_fee_tier", () => {
         presetMaxVolatilityAccumulator:
           presetAdaptiveFeeConstants.maxVolatilityAccumulator,
         presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+        presetMajorSwapThresholdTicks:
+          presetAdaptiveFeeConstants.majorSwapThresholdTicks,
       }),
     ).addSigner(feeAuthorityKeypair);
 
@@ -452,6 +459,8 @@ describe("initialize_adaptive_fee_tier", () => {
         presetMaxVolatilityAccumulator:
           presetAdaptiveFeeConstants.maxVolatilityAccumulator,
         presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+        presetMajorSwapThresholdTicks:
+          presetAdaptiveFeeConstants.majorSwapThresholdTicks,
       }),
     ).addSigner(fakeFeeAuthorityKeypair);
 
@@ -497,6 +506,8 @@ describe("initialize_adaptive_fee_tier", () => {
       presetMaxVolatilityAccumulator:
         presetAdaptiveFeeConstants.maxVolatilityAccumulator,
       presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+      presetMajorSwapThresholdTicks:
+        presetAdaptiveFeeConstants.majorSwapThresholdTicks,
     });
 
     const ixWithoutSigner = dropIsSignerFlag(
@@ -560,6 +571,8 @@ describe("initialize_adaptive_fee_tier", () => {
       presetMaxVolatilityAccumulator:
         presetAdaptiveFeeConstants.maxVolatilityAccumulator,
       presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+      presetMajorSwapThresholdTicks:
+        presetAdaptiveFeeConstants.majorSwapThresholdTicks,
     });
 
     const ixWithoutSigner = dropIsSignerFlag(
@@ -666,6 +679,8 @@ describe("initialize_adaptive_fee_tier", () => {
       presetMaxVolatilityAccumulator:
         presetAdaptiveFeeConstants.maxVolatilityAccumulator,
       presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+      presetMajorSwapThresholdTicks:
+        presetAdaptiveFeeConstants.majorSwapThresholdTicks,
     });
 
     const ixWithWrongAccount = rewritePubkey(
@@ -771,6 +786,20 @@ describe("initialize_adaptive_fee_tier", () => {
       await shouldFail({
         ...presetAdaptiveFeeConstants,
         maxVolatilityAccumulator,
+      });
+    });
+
+    it("major_swap_threshold_ticks == 0", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        majorSwapThresholdTicks: 0,
+      });
+    });
+
+    it("major_swap_threshold_ticks > tick_spacing * TICK_ARRAY_SIZE", async () => {
+      await shouldFail({
+        ...presetAdaptiveFeeConstants,
+        majorSwapThresholdTicks: tickSpacing * TICK_ARRAY_SIZE + 1,
       });
     });
   });

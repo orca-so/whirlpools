@@ -5,6 +5,7 @@ import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import type {
   InitPoolWithAdaptiveFeeParams,
+  OracleData,
   WhirlpoolClient,
 } from "../../../src";
 import {
@@ -35,7 +36,6 @@ import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
 import { buildTestPoolWithAdaptiveFeeParams } from "../../utils/v2/init-utils-v2";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
-import type { OracleData } from "../../../dist";
 import type { FundedPositionParams } from "../../utils/init-utils";
 import {
   buildTestAquariums,
@@ -393,7 +393,8 @@ describe("adaptive fee tests", () => {
 
           // initial state
           const preVars = preOracle.adaptiveFeeVariables;
-          assert.ok(preVars.lastUpdateTimestamp.isZero());
+          assert.ok(preVars.lastReferenceUpdateTimestamp.isZero());
+          assert.ok(preVars.lastMajorSwapTimestamp.isZero());
           assert.ok(preVars.tickGroupIndexReference == 0);
           assert.ok(preVars.volatilityReference == 0);
           assert.ok(preVars.volatilityAccumulator == 0);
@@ -424,13 +425,14 @@ describe("adaptive fee tests", () => {
 
           const postVars = postOracle.adaptiveFeeVariables;
           const currentSystemTimestamp = new BN(Math.floor(Date.now() / 1000));
-          assert.ok(postVars.lastUpdateTimestamp.gtn(0));
+          assert.ok(postVars.lastReferenceUpdateTimestamp.gtn(0));
           assert.ok(
-            postVars.lastUpdateTimestamp
+            postVars.lastReferenceUpdateTimestamp
               .sub(currentSystemTimestamp)
               .abs()
               .lten(10),
           ); // margin 10s
+          assert.ok(postVars.lastMajorSwapTimestamp.eq(postVars.lastReferenceUpdateTimestamp));
           assert.ok(
             postVars.tickGroupIndexReference ==
               Math.floor(
@@ -620,12 +622,14 @@ describe("adaptive fee tests", () => {
 
           // initial state
           const preVarsOne = preOracleOne.adaptiveFeeVariables;
-          assert.ok(preVarsOne.lastUpdateTimestamp.isZero());
+          assert.ok(preVarsOne.lastReferenceUpdateTimestamp.isZero());
+          assert.ok(preVarsOne.lastMajorSwapTimestamp.isZero());
           assert.ok(preVarsOne.tickGroupIndexReference == 0);
           assert.ok(preVarsOne.volatilityReference == 0);
           assert.ok(preVarsOne.volatilityAccumulator == 0);
           const preVarsTwo = preOracleTwo.adaptiveFeeVariables;
-          assert.ok(preVarsTwo.lastUpdateTimestamp.isZero());
+          assert.ok(preVarsTwo.lastReferenceUpdateTimestamp.isZero());
+          assert.ok(preVarsTwo.lastMajorSwapTimestamp.isZero());
           assert.ok(preVarsTwo.tickGroupIndexReference == 0);
           assert.ok(preVarsTwo.volatilityReference == 0);
           assert.ok(preVarsTwo.volatilityAccumulator == 0);
@@ -651,13 +655,14 @@ describe("adaptive fee tests", () => {
           const postVarsTwo = postOracleTwo.adaptiveFeeVariables;
           const currentSystemTimestamp = new BN(Math.floor(Date.now() / 1000));
 
-          assert.ok(postVarsOne.lastUpdateTimestamp.gtn(0));
+          assert.ok(postVarsOne.lastReferenceUpdateTimestamp.gtn(0));
           assert.ok(
-            postVarsOne.lastUpdateTimestamp
+            postVarsOne.lastReferenceUpdateTimestamp
               .sub(currentSystemTimestamp)
               .abs()
               .lten(10),
           ); // margin 10s
+          assert.ok(postVarsOne.lastMajorSwapTimestamp.eq(postVarsOne.lastReferenceUpdateTimestamp));
           assert.ok(
             postVarsOne.tickGroupIndexReference ==
               Math.floor(
@@ -679,13 +684,14 @@ describe("adaptive fee tests", () => {
             postVarsOne.volatilityAccumulator == tickGroupIndexDeltaOne * 10000,
           );
 
-          assert.ok(postVarsTwo.lastUpdateTimestamp.gtn(0));
+          assert.ok(postVarsTwo.lastReferenceUpdateTimestamp.gtn(0));
           assert.ok(
-            postVarsTwo.lastUpdateTimestamp
+            postVarsTwo.lastReferenceUpdateTimestamp
               .sub(currentSystemTimestamp)
               .abs()
               .lten(10),
           ); // margin 10s
+          assert.ok(postVarsTwo.lastMajorSwapTimestamp.eq(postVarsTwo.lastReferenceUpdateTimestamp));
           assert.ok(
             postVarsTwo.tickGroupIndexReference ==
               Math.floor(
@@ -1797,7 +1803,7 @@ describe("adaptive fee tests", () => {
       tickSpacing,
       undefined,
       initialSqrtPrice ?? PriceMath.tickIndexToSqrtPriceX64(0),
-      getDefaultPresetAdaptiveFeeConstants(tickSpacing),
+      getDefaultPresetAdaptiveFeeConstants(tickSpacing, tickSpacing, 1),
       provider.wallet.publicKey, // permissioned
       PublicKey.default,
     );
@@ -1947,6 +1953,7 @@ describe("adaptive fee tests", () => {
         presetAdaptiveFeeControlFactor: 4_000,
         presetMaxVolatilityAccumulator: 350_000,
         presetTickGroupSize: tickSpacing,
+        presetMajorSwapThresholdTicks: 1,
       }),
     )
       .addSigner(authorityWhirlpoolsConfigKeypair)

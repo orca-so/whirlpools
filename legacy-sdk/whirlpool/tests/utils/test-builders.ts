@@ -176,6 +176,8 @@ export const generateDefaultInitAdaptiveFeeTierParams = (
     presetMaxVolatilityAccumulator:
       presetAdaptiveFeeConstants.maxVolatilityAccumulator,
     presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+    presetMajorSwapThresholdTicks:
+      presetAdaptiveFeeConstants.majorSwapThresholdTicks,
     funder: funder || context.wallet.publicKey,
   };
 };
@@ -183,6 +185,7 @@ export const generateDefaultInitAdaptiveFeeTierParams = (
 export const getDefaultPresetAdaptiveFeeConstants = (
   tickSpacing: number,
   tickGroupSize: number = tickSpacing,
+  majorSwapThresholdTicks: number = tickSpacing,
 ): AdaptiveFeeConstantsData => {
   return {
     filterPeriod: 30,
@@ -191,6 +194,7 @@ export const getDefaultPresetAdaptiveFeeConstants = (
     adaptiveFeeControlFactor: 4_000,
     maxVolatilityAccumulator: 350_000,
     tickGroupSize,
+    majorSwapThresholdTicks,
   };
 };
 

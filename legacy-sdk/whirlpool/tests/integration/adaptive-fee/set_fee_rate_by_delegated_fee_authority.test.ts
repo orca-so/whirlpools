@@ -361,6 +361,7 @@ describe("set_fee_rate_by_delegated_fee_authority", () => {
         presetAdaptiveFeeControlFactor: constants.adaptiveFeeControlFactor,
         presetMaxVolatilityAccumulator: constants.maxVolatilityAccumulator,
         presetTickGroupSize: constants.tickGroupSize,
+        presetMajorSwapThresholdTicks: constants.majorSwapThresholdTicks,
       }),
     )
       .addSigner(configKeypairs.feeAuthorityKeypair)

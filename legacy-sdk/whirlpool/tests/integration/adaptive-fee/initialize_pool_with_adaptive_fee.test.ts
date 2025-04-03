@@ -909,6 +909,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 presetAdaptiveFeeConstants.maxVolatilityAccumulator,
               presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
               presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+              presetMajorSwapThresholdTicks: presetAdaptiveFeeConstants.majorSwapThresholdTicks,
             }),
           ).buildAndExecute();
 
@@ -1239,6 +1240,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               presetAdaptiveFeeConstants.maxVolatilityAccumulator,
             presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
             presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+            presetMajorSwapThresholdTicks: presetAdaptiveFeeConstants.majorSwapThresholdTicks,
           }),
         ).buildAndExecute();
 
@@ -1381,6 +1383,7 @@ describe("initialize_pool_with_adaptive_fee", () => {
               presetAdaptiveFeeConstants.maxVolatilityAccumulator,
             presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
             presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
+            presetMajorSwapThresholdTicks: presetAdaptiveFeeConstants.majorSwapThresholdTicks,
           }),
         ).buildAndExecute();
 
@@ -2319,7 +2322,8 @@ describe("initialize_pool_with_adaptive_fee", () => {
     assert.ok(consts.tickGroupSize === feeTierParams.presetTickGroupSize);
 
     const vars = oracleData.adaptiveFeeVariables;
-    assert.ok(vars.lastUpdateTimestamp.isZero());
+    assert.ok(vars.lastReferenceUpdateTimestamp.isZero());
+    assert.ok(vars.lastMajorSwapTimestamp.isZero());
     assert.ok(vars.tickGroupIndexReference === 0);
     assert.ok(vars.volatilityReference === 0);
     assert.ok(vars.volatilityAccumulator === 0);

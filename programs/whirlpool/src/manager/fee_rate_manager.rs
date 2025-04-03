@@ -495,6 +495,28 @@ mod static_fee_rate_manager_tests {
         let next_adaptive_fee_info = fee_rate_manager.get_next_adaptive_fee_info();
         assert!(next_adaptive_fee_info.is_none());
     }
+
+    #[test]
+    fn test_update_major_swap_timestamp() {
+        let static_fee_rate = 3000;
+        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
+
+        let pre_sqrt_price = sqrt_price_from_tick_index(0);
+        let post_sqrt_price = sqrt_price_from_tick_index(1024);
+        fee_rate_manager
+            .update_major_swap_timestamp(0, pre_sqrt_price, post_sqrt_price)
+            .unwrap();
+
+        // not changed anything
+        match fee_rate_manager {
+            FeeRateManager::Static {
+                static_fee_rate: rate,
+            } => {
+                assert_eq!(rate, static_fee_rate);
+            }
+            _ => panic!("Static variant expected."),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -2468,6 +2490,194 @@ mod adaptive_fee_rate_manager_tests {
                 );
             }
             _ => panic!("Some and Adaptive variant expected."),
+        }
+    }
+
+    mod test_update_major_swap_timestamp {
+        use super::*;
+
+        #[test]
+        fn test_a_to_b_minor() {
+            let static_fee_rate = 3000;
+            let adaptive_fee_info = adaptive_fee_info();
+
+            let major_swap_threshold_ticks = adaptive_fee_info.constants.major_swap_threshold_ticks;
+            assert!(major_swap_threshold_ticks > 1);
+
+            let current_tick_index = 0;
+
+            // keep reference
+            let timestamp = adaptive_fee_info
+                .variables
+                .last_reference_update_timestamp
+                .max(adaptive_fee_info.variables.last_major_swap_timestamp)
+                + 1;
+            let mut fee_rate_manager = FeeRateManager::new(
+                true,
+                current_tick_index,
+                timestamp,
+                static_fee_rate,
+                Some(adaptive_fee_info.clone()),
+            )
+            .unwrap();
+
+            let pre_sqrt_price = sqrt_price_from_tick_index(current_tick_index);
+            let post_sqrt_price = sqrt_price_from_tick_index(
+                current_tick_index - major_swap_threshold_ticks as i32 + 1,
+            );
+
+            fee_rate_manager
+                .update_major_swap_timestamp(timestamp, pre_sqrt_price, post_sqrt_price)
+                .unwrap();
+            let next_variables = fee_rate_manager
+                .get_next_adaptive_fee_info()
+                .unwrap()
+                .variables;
+
+            // should not be updated
+            assert!(
+                next_variables.last_major_swap_timestamp
+                    == adaptive_fee_info.variables.last_major_swap_timestamp
+            );
+            assert!(next_variables.last_major_swap_timestamp != timestamp);
+        }
+
+        #[test]
+        fn test_a_to_b_major() {
+            let static_fee_rate = 3000;
+            let adaptive_fee_info = adaptive_fee_info();
+
+            let major_swap_threshold_ticks = adaptive_fee_info.constants.major_swap_threshold_ticks;
+            assert!(major_swap_threshold_ticks > 1);
+
+            let current_tick_index = 0;
+
+            // keep reference
+            let timestamp = adaptive_fee_info
+                .variables
+                .last_reference_update_timestamp
+                .max(adaptive_fee_info.variables.last_major_swap_timestamp)
+                + 1;
+            let mut fee_rate_manager = FeeRateManager::new(
+                true,
+                current_tick_index,
+                timestamp,
+                static_fee_rate,
+                Some(adaptive_fee_info.clone()),
+            )
+            .unwrap();
+
+            let pre_sqrt_price = sqrt_price_from_tick_index(current_tick_index);
+            let post_sqrt_price = sqrt_price_from_tick_index(
+                current_tick_index - major_swap_threshold_ticks as i32 - 1,
+            );
+
+            fee_rate_manager
+                .update_major_swap_timestamp(timestamp, pre_sqrt_price, post_sqrt_price)
+                .unwrap();
+            let next_variables = fee_rate_manager
+                .get_next_adaptive_fee_info()
+                .unwrap()
+                .variables;
+
+            // should be updated
+            assert!(
+                next_variables.last_major_swap_timestamp
+                    != adaptive_fee_info.variables.last_major_swap_timestamp
+            );
+            assert!(next_variables.last_major_swap_timestamp == timestamp);
+        }
+
+        #[test]
+        fn test_b_to_a_minor() {
+            let static_fee_rate = 3000;
+            let adaptive_fee_info = adaptive_fee_info();
+
+            let major_swap_threshold_ticks = adaptive_fee_info.constants.major_swap_threshold_ticks;
+            assert!(major_swap_threshold_ticks > 1);
+
+            let current_tick_index = 0;
+
+            // keep reference
+            let timestamp = adaptive_fee_info
+                .variables
+                .last_reference_update_timestamp
+                .max(adaptive_fee_info.variables.last_major_swap_timestamp)
+                + 1;
+            let mut fee_rate_manager = FeeRateManager::new(
+                false,
+                current_tick_index,
+                timestamp,
+                static_fee_rate,
+                Some(adaptive_fee_info.clone()),
+            )
+            .unwrap();
+
+            let pre_sqrt_price = sqrt_price_from_tick_index(current_tick_index);
+            let post_sqrt_price = sqrt_price_from_tick_index(
+                current_tick_index + major_swap_threshold_ticks as i32 - 1,
+            );
+
+            fee_rate_manager
+                .update_major_swap_timestamp(timestamp, pre_sqrt_price, post_sqrt_price)
+                .unwrap();
+            let next_variables = fee_rate_manager
+                .get_next_adaptive_fee_info()
+                .unwrap()
+                .variables;
+
+            // should not be updated
+            assert!(
+                next_variables.last_major_swap_timestamp
+                    == adaptive_fee_info.variables.last_major_swap_timestamp
+            );
+            assert!(next_variables.last_major_swap_timestamp != timestamp);
+        }
+
+        #[test]
+        fn test_b_to_a_major() {
+            let static_fee_rate = 3000;
+            let adaptive_fee_info = adaptive_fee_info();
+
+            let major_swap_threshold_ticks = adaptive_fee_info.constants.major_swap_threshold_ticks;
+            assert!(major_swap_threshold_ticks > 1);
+
+            let current_tick_index = 0;
+
+            // keep reference
+            let timestamp = adaptive_fee_info
+                .variables
+                .last_reference_update_timestamp
+                .max(adaptive_fee_info.variables.last_major_swap_timestamp)
+                + 1;
+            let mut fee_rate_manager = FeeRateManager::new(
+                true,
+                current_tick_index,
+                timestamp,
+                static_fee_rate,
+                Some(adaptive_fee_info.clone()),
+            )
+            .unwrap();
+
+            let pre_sqrt_price = sqrt_price_from_tick_index(current_tick_index);
+            let post_sqrt_price = sqrt_price_from_tick_index(
+                current_tick_index + major_swap_threshold_ticks as i32 + 1,
+            );
+
+            fee_rate_manager
+                .update_major_swap_timestamp(timestamp, pre_sqrt_price, post_sqrt_price)
+                .unwrap();
+            let next_variables = fee_rate_manager
+                .get_next_adaptive_fee_info()
+                .unwrap()
+                .variables;
+
+            // should be updated
+            assert!(
+                next_variables.last_major_swap_timestamp
+                    != adaptive_fee_info.variables.last_major_swap_timestamp
+            );
+            assert!(next_variables.last_major_swap_timestamp == timestamp);
         }
     }
 }

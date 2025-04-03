@@ -26,7 +26,7 @@ pub const ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR: u32 = 100_000;
 pub const FEE_RATE_HARD_LIMIT: u32 = 100_000; // 10%
 
 // The time (in seconds) to forcibly reset the reference if it is not updated for a long time.
-// A recovery measure against the act of intentionally repeating major swaps to keep the Adaptive Fee high.
+// A recovery measure against the act of intentionally repeating major swaps to keep the Adaptive Fee high (DoS).
 pub const MAX_REFERENCE_AGE: u64 = 3_600; // 1 hour
 
 #[derive(Debug)]

@@ -196,6 +196,8 @@ impl AdaptiveFeeVariables {
         Ok(())
     }
 
+    // Determine whether the difference between pre_sqrt_price and post_sqrt_price is equivalent to major_swap_threshold_ticks or more
+    // Note: The error of less than 0.00000003% due to integer arithmetic of sqrt_price is acceptable
     fn is_major_swap(
         pre_sqrt_price: u128,
         post_sqrt_price: u128,
@@ -210,6 +212,11 @@ impl AdaptiveFeeVariables {
         // major_swap_sqrt_price_target
         //   = smaller_sqrt_price * pow(1.0001, major_swap_threshold_ticks)
         //   = smaller_sqrt_price * sqrt_price_from_tick_index(major_swap_threshold_ticks) >> Q64_RESOLUTION
+        //
+        // Note: The following two are theoretically equal, but there is an integer arithmetic error.
+        //       However, the error impact is less than 0.00000003% in sqrt price (x64) and is small enough.
+        //       - sqrt_price_from_tick_index(a) * sqrt_price_from_tick_index(b)   (mathematically, pow(1.0001, a) * pow(1.0001, b) = pow(1.0001, a + b))
+        //       - sqrt_price_from_tick_index(a + b)                               (mathematically, pow(1.0001, a + b))
         let major_swap_sqrt_price_factor =
             sqrt_price_from_tick_index(major_swap_threshold_ticks as i32);
         let major_swap_sqrt_price_target = U256Muldiv::new(0, smaller_sqrt_price)
@@ -1817,6 +1824,143 @@ mod adaptive_fee_variables_tests {
                 tick_group_index += 1;
                 current_timestamp += 1;
             }
+        }
+    }
+
+    mod update_major_swap_timestamp {
+        use super::*;
+        use crate::state::{MAX_TICK_INDEX, MIN_TICK_INDEX};
+
+        fn test(major_swap_threshold_ticks: u16) {
+            let current_timestamp = 1738824616;
+            let constants = AdaptiveFeeConstants {
+                major_swap_threshold_ticks,
+                ..constants_for_test()
+            };
+
+            let step = 256;
+            let min_tick_index = MIN_TICK_INDEX / step * step;
+            let max_tick_index = MAX_TICK_INDEX / step * step;
+
+            for smaller_tick_index in (min_tick_index..=max_tick_index).step_by(step as usize) {
+                let larger_tick_index = smaller_tick_index + major_swap_threshold_ticks as i32;
+                if larger_tick_index > MAX_TICK_INDEX {
+                    break;
+                }
+
+                let smaller_sqrt_price = sqrt_price_from_tick_index(smaller_tick_index);
+                let larger_sqrt_price = sqrt_price_from_tick_index(larger_tick_index);
+
+                // tolerance is 0.00000003% of larger_sqrt_price
+                // ceil(large_sqrt_price * 0.00000003%)
+                let epsilon = (larger_sqrt_price * 3 + (10000000000 - 1)) / 10000000000;
+
+                // is_major_swap test
+
+                let b_to_a_is_major_swap_sub_epsilon = AdaptiveFeeVariables::is_major_swap(
+                    smaller_sqrt_price,
+                    larger_sqrt_price - epsilon,
+                    major_swap_threshold_ticks,
+                )
+                .unwrap();
+                let b_to_a_is_major_swap_add_epsilon = AdaptiveFeeVariables::is_major_swap(
+                    smaller_sqrt_price,
+                    larger_sqrt_price + epsilon,
+                    major_swap_threshold_ticks,
+                )
+                .unwrap();
+                // println!("tick_index: {}/{}, large_sqrt_price: {}, epsilon: {}, -/+: {}/{}", smaller_tick_index, larger_tick_index, larger_sqrt_price, epsilon, b_to_a_is_major_swap_sub_epsilon, b_to_a_is_major_swap_add_epsilon);
+                assert!(!b_to_a_is_major_swap_sub_epsilon);
+                assert!(b_to_a_is_major_swap_add_epsilon);
+
+                let a_to_b_is_major_swap_sub_epsilon = AdaptiveFeeVariables::is_major_swap(
+                    larger_sqrt_price,
+                    smaller_sqrt_price - epsilon,
+                    major_swap_threshold_ticks,
+                )
+                .unwrap();
+                let a_to_b_is_major_swap_add_epsilon = AdaptiveFeeVariables::is_major_swap(
+                    larger_sqrt_price,
+                    smaller_sqrt_price + epsilon,
+                    major_swap_threshold_ticks,
+                )
+                .unwrap();
+                assert!(a_to_b_is_major_swap_sub_epsilon);
+                assert!(!a_to_b_is_major_swap_add_epsilon);
+
+                // update_major_swap_timestamp test
+
+                let mut b_to_a_variables = AdaptiveFeeVariables::default();
+                // should not be updated
+                b_to_a_variables
+                    .update_major_swap_timestamp(
+                        smaller_sqrt_price,
+                        larger_sqrt_price - epsilon,
+                        current_timestamp,
+                        &constants,
+                    )
+                    .unwrap();
+                assert!(b_to_a_variables.last_major_swap_timestamp == 0);
+
+                // should be updated
+                b_to_a_variables
+                    .update_major_swap_timestamp(
+                        smaller_sqrt_price,
+                        larger_sqrt_price + epsilon,
+                        current_timestamp,
+                        &constants,
+                    )
+                    .unwrap();
+                assert!(b_to_a_variables.last_major_swap_timestamp == current_timestamp);
+
+                let mut a_to_b_variables = AdaptiveFeeVariables::default();
+                // should not be updated
+                a_to_b_variables
+                    .update_major_swap_timestamp(
+                        larger_sqrt_price,
+                        smaller_sqrt_price + epsilon,
+                        current_timestamp,
+                        &constants,
+                    )
+                    .unwrap();
+                assert!(a_to_b_variables.last_major_swap_timestamp == 0);
+
+                // should be updated
+                a_to_b_variables
+                    .update_major_swap_timestamp(
+                        larger_sqrt_price,
+                        smaller_sqrt_price - epsilon,
+                        current_timestamp,
+                        &constants,
+                    )
+                    .unwrap();
+                assert!(a_to_b_variables.last_major_swap_timestamp == current_timestamp);
+            }
+        }
+
+        #[test]
+        fn test_major_swap_threshold_ticks_1() {
+            test(1);
+        }
+
+        #[test]
+        fn test_major_swap_threshold_ticks_8() {
+            test(8);
+        }
+
+        #[test]
+        fn test_major_swap_threshold_ticks_64() {
+            test(64);
+        }
+
+        #[test]
+        fn test_major_swap_threshold_ticks_128() {
+            test(128);
+        }
+
+        #[test]
+        fn test_major_swap_threshold_ticks_512() {
+            test(512);
         }
     }
 }

@@ -17,7 +17,7 @@
   },
   "devDependencies": {
     "@next/bundle-analyzer": "^15.2.4",
-    "@types/node": "^22.13.13",
+    "@types/node": "^22.14.0",
     "@types/react": "^18.3.13",
     "copy-webpack-plugin": "^13.0.0",
     "typescript": "^5.8.2",

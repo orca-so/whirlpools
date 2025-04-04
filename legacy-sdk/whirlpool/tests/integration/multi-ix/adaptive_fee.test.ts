@@ -432,7 +432,11 @@ describe("adaptive fee tests", () => {
               .abs()
               .lten(10),
           ); // margin 10s
-          assert.ok(postVars.lastMajorSwapTimestamp.eq(postVars.lastReferenceUpdateTimestamp));
+          assert.ok(
+            postVars.lastMajorSwapTimestamp.eq(
+              postVars.lastReferenceUpdateTimestamp,
+            ),
+          );
           assert.ok(
             postVars.tickGroupIndexReference ==
               Math.floor(
@@ -662,7 +666,11 @@ describe("adaptive fee tests", () => {
               .abs()
               .lten(10),
           ); // margin 10s
-          assert.ok(postVarsOne.lastMajorSwapTimestamp.eq(postVarsOne.lastReferenceUpdateTimestamp));
+          assert.ok(
+            postVarsOne.lastMajorSwapTimestamp.eq(
+              postVarsOne.lastReferenceUpdateTimestamp,
+            ),
+          );
           assert.ok(
             postVarsOne.tickGroupIndexReference ==
               Math.floor(
@@ -691,7 +699,11 @@ describe("adaptive fee tests", () => {
               .abs()
               .lten(10),
           ); // margin 10s
-          assert.ok(postVarsTwo.lastMajorSwapTimestamp.eq(postVarsTwo.lastReferenceUpdateTimestamp));
+          assert.ok(
+            postVarsTwo.lastMajorSwapTimestamp.eq(
+              postVarsTwo.lastReferenceUpdateTimestamp,
+            ),
+          );
           assert.ok(
             postVarsTwo.tickGroupIndexReference ==
               Math.floor(
@@ -789,8 +801,8 @@ describe("adaptive fee tests", () => {
         /0x17ad/, // TradeIsNotEnabled.
       );
 
-      // wait until trade enable timestamp
-      await sleep((20 + 2) * 1000);
+      // wait until trade enable timestamp (margin: 5s)
+      await sleep((20 + 5) * 1000);
 
       // now it should be successful
       await toTx(testCtx.whirlpoolCtx, swapIx).buildAndExecute();
@@ -985,8 +997,8 @@ describe("adaptive fee tests", () => {
             /0x17ad/, // TradeIsNotEnabled.
           );
 
-          // wait until trade enable timestamp
-          await sleep((20 + 2) * 1000);
+          // wait until trade enable timestamp (margin: 5s)
+          await sleep((20 + 5) * 1000);
 
           // now it should be successful
           await toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute();

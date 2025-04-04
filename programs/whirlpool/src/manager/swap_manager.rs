@@ -13969,7 +13969,7 @@ mod adaptive_fee_tests {
 
     mod sqrt_price_limit_edge_case {
         use super::*;
-    
+
         #[test]
         fn test_sqrt_price_limit_ne_whirlpool_sqrt_price() {
             let max_volatility_accumulator = 350_000;
@@ -14043,10 +14043,11 @@ mod adaptive_fee_tests {
                 let num_reduction = timestamp / timestamp_delta;
                 if num_reduction > 0 {
                     // reduction: 50%
-                    let expected_volatility_reference = (initial_variables.volatility_accumulator as u64 >> num_reduction) as u32;
+                    let expected_volatility_reference =
+                        (initial_variables.volatility_accumulator as u64 >> num_reduction) as u32;
                     assert!(next_variables.volatility_reference == expected_volatility_reference);
                 }
-                    
+
                 variables = next_variables;
                 timestamp += timestamp_delta;
                 a_to_b = !a_to_b;
@@ -14128,10 +14129,11 @@ mod adaptive_fee_tests {
                 let num_reduction = timestamp / timestamp_delta;
                 if num_reduction > 0 {
                     // reduction: 50%
-                    let expected_volatility_reference = (initial_variables.volatility_accumulator as u64 >> num_reduction) as u32;
+                    let expected_volatility_reference =
+                        (initial_variables.volatility_accumulator as u64 >> num_reduction) as u32;
                     assert!(next_variables.volatility_reference == expected_volatility_reference);
                 }
-                    
+
                 variables = next_variables;
                 timestamp += timestamp_delta;
                 a_to_b = !a_to_b;

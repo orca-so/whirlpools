@@ -909,7 +909,8 @@ describe("initialize_pool_with_adaptive_fee", () => {
                 presetAdaptiveFeeConstants.maxVolatilityAccumulator,
               presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
               presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
-              presetMajorSwapThresholdTicks: presetAdaptiveFeeConstants.majorSwapThresholdTicks,
+              presetMajorSwapThresholdTicks:
+                presetAdaptiveFeeConstants.majorSwapThresholdTicks,
             }),
           ).buildAndExecute();
 
@@ -1240,7 +1241,8 @@ describe("initialize_pool_with_adaptive_fee", () => {
               presetAdaptiveFeeConstants.maxVolatilityAccumulator,
             presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
             presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
-            presetMajorSwapThresholdTicks: presetAdaptiveFeeConstants.majorSwapThresholdTicks,
+            presetMajorSwapThresholdTicks:
+              presetAdaptiveFeeConstants.majorSwapThresholdTicks,
           }),
         ).buildAndExecute();
 
@@ -1383,7 +1385,8 @@ describe("initialize_pool_with_adaptive_fee", () => {
               presetAdaptiveFeeConstants.maxVolatilityAccumulator,
             presetReductionFactor: presetAdaptiveFeeConstants.reductionFactor,
             presetTickGroupSize: presetAdaptiveFeeConstants.tickGroupSize,
-            presetMajorSwapThresholdTicks: presetAdaptiveFeeConstants.majorSwapThresholdTicks,
+            presetMajorSwapThresholdTicks:
+              presetAdaptiveFeeConstants.majorSwapThresholdTicks,
           }),
         ).buildAndExecute();
 

@@ -525,6 +525,6 @@ describe("set_preset_adaptive_fee_constants", () => {
         ...presetAdaptiveFeeConstants,
         majorSwapThresholdTicks: tickSpacing * TICK_ARRAY_SIZE + 1,
       });
-    });    
+    });
   });
 });

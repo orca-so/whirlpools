@@ -116,6 +116,13 @@ impl FeeRateManager {
                         None
                     };
 
+                // update volatility_accumulator at the initialization of the fee rate manager
+                // Note: reduction uses the value of volatility_accumulator, but update_reference does not update it
+                //       update_volatility_accumulator is always called if the swap loop is executed at least once,
+                //       but it is executed as a precaution against the case where the swap loop does not run at all (sqrt_price_limit = whirlpool.sqrt_price)
+                adaptive_fee_variables
+                    .update_volatility_accumulator(tick_group_index, &adaptive_fee_constants)?;
+
                 Ok(Self::Adaptive {
                     a_to_b,
                     tick_group_index,
@@ -622,8 +629,14 @@ mod adaptive_fee_rate_manager_tests {
 
         let tick_group_size = adaptive_fee_info.constants.tick_group_size;
 
+        // < filter_period
+
         let current_tick_index = 1024;
-        let timestamp = adaptive_fee_info.variables.last_reference_update_timestamp + 1;
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
+            + 1;
         let fee_rate_manager = FeeRateManager::new(
             true,
             current_tick_index,
@@ -677,20 +690,111 @@ mod adaptive_fee_rate_manager_tests {
                     adaptive_fee_info.constants.tick_group_size,
                     adaptive_fee_info.constants.major_swap_threshold_ticks,
                 );
-                // update_reference should be called
+                // update_reference and update_volatility_accumulator should be called
+                let expected_volatility_accumulator = (adaptive_fee_info
+                    .variables
+                    .volatility_reference
+                    + ((floor_division(current_tick_index, tick_group_size as i32)
+                        - adaptive_fee_info.variables.tick_group_index_reference)
+                        .abs()
+                        * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as i32) as u32)
+                    .min(adaptive_fee_info.constants.max_volatility_accumulator);
                 check_variables(
                     &adaptive_fee_variables,
-                    // timestamp should be updated
-                    // both reference should not be updated (< filter_period)
+                    // both reference and timestamp should not be updated (< filter_period)
                     adaptive_fee_info.variables.last_reference_update_timestamp,
                     adaptive_fee_info.variables.last_major_swap_timestamp,
                     adaptive_fee_info.variables.tick_group_index_reference,
                     adaptive_fee_info.variables.volatility_reference,
-                    adaptive_fee_info.variables.volatility_accumulator,
+                    // volatility_accumulator should be updated
+                    expected_volatility_accumulator,
                 );
             }
             _ => panic!("Adaptive variant expected."),
         }
+
+        // >= filter_period, < decay_period
+
+        let current_tick_index = 1024;
+        let timestamp = adaptive_fee_info
+            .variables
+            .last_reference_update_timestamp
+            .max(adaptive_fee_info.variables.last_major_swap_timestamp)
+            + adaptive_fee_info.constants.filter_period as u64;
+        let fee_rate_manager = FeeRateManager::new(
+            false,
+            current_tick_index,
+            timestamp,
+            static_fee_rate,
+            Some(adaptive_fee_info.clone()),
+        )
+        .unwrap();
+        match fee_rate_manager {
+            FeeRateManager::Adaptive {
+                a_to_b,
+                tick_group_index,
+                static_fee_rate: rate,
+                adaptive_fee_constants,
+                adaptive_fee_variables,
+                core_tick_group_range_lower_bound,
+                core_tick_group_range_upper_bound,
+            } => {
+                assert!(!a_to_b);
+                assert_eq!(tick_group_index, 16);
+                assert_eq!(rate, static_fee_rate);
+
+                // tick_group_index_reference should be updated
+                // tick_group_index_reference +/- max_volatility_delta
+                // = 16 +/- 35 = -19, 51
+                assert_eq!(
+                    core_tick_group_range_lower_bound,
+                    Some((
+                        -19,
+                        sqrt_price_from_tick_index(-19 * tick_group_size as i32)
+                    ))
+                );
+                assert_eq!(
+                    core_tick_group_range_upper_bound,
+                    Some((
+                        51,
+                        sqrt_price_from_tick_index(
+                            51 * tick_group_size as i32 + tick_group_size as i32
+                        )
+                    ))
+                );
+
+                check_constants(
+                    &adaptive_fee_constants,
+                    adaptive_fee_info.constants.filter_period,
+                    adaptive_fee_info.constants.decay_period,
+                    adaptive_fee_info.constants.max_volatility_accumulator,
+                    adaptive_fee_info.constants.reduction_factor,
+                    adaptive_fee_info.constants.adaptive_fee_control_factor,
+                    adaptive_fee_info.constants.tick_group_size,
+                    adaptive_fee_info.constants.major_swap_threshold_ticks,
+                );
+                // update_reference and update_volatility_accumulator should be called
+                let expected_tick_group_index_reference = 16;
+                let expected_volatility_reference =
+                    adaptive_fee_info.variables.volatility_accumulator
+                        * adaptive_fee_info.constants.reduction_factor as u32
+                        / REDUCTION_FACTOR_DENOMINATOR as u32;
+                let expected_volatility_accumulator = expected_volatility_reference; // delta = 0
+                check_variables(
+                    &adaptive_fee_variables,
+                    timestamp, // should be updated
+                    adaptive_fee_info.variables.last_major_swap_timestamp,
+                    // both reference should be updated (>= filter_period, < decay_period)
+                    expected_tick_group_index_reference,
+                    expected_volatility_reference,
+                    // volatility_accumulator should be updated
+                    expected_volatility_accumulator,
+                );
+            }
+            _ => panic!("Adaptive variant expected."),
+        }
+
+        // >= decay_period
 
         let current_tick_index = 1024;
         let timestamp = adaptive_fee_info
@@ -750,15 +854,19 @@ mod adaptive_fee_rate_manager_tests {
                     adaptive_fee_info.constants.tick_group_size,
                     adaptive_fee_info.constants.major_swap_threshold_ticks,
                 );
-                // update_reference should be called
+                // update_reference and update_volatility_accumulator should be called
+                let expected_tick_group_index_reference = 16;
+                let expected_volatility_reference = 0;
+                let expected_volatility_accumulator = 0;
                 check_variables(
                     &adaptive_fee_variables,
                     timestamp, // should be updated
                     adaptive_fee_info.variables.last_major_swap_timestamp,
                     // both reference should be updated (>= decay_period)
-                    16,
-                    0,
-                    adaptive_fee_info.variables.volatility_accumulator,
+                    expected_tick_group_index_reference,
+                    expected_volatility_reference,
+                    // volatility_reference should be updated
+                    expected_volatility_accumulator,
                 );
             }
             _ => panic!("Adaptive variant expected."),

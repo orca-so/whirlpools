@@ -34,7 +34,7 @@ import {
 } from "../../utils";
 import { PoolUtil } from "../../../dist/utils/public/pool-utils";
 import { TOKEN_PROGRAM_ID } from "@solana/spl-token";
-import { buildTestPoolWithAdaptiveFeeParams, useMaxCU } from "../../utils/v2/init-utils-v2";
+import { buildTestPoolWithAdaptiveFeeParams } from "../../utils/v2/init-utils-v2";
 import { getDefaultPresetAdaptiveFeeConstants } from "../../utils/test-builders";
 import type { FundedPositionParams } from "../../utils/init-utils";
 import {
@@ -639,9 +639,9 @@ describe("adaptive fee tests", () => {
           assert.ok(preVarsTwo.volatilityAccumulator == 0);
 
           if (version == 1) {
-            await toTx(testCtx.whirlpoolCtx, twoHopSwapIx).prependInstruction(useMaxCU()).buildAndExecute();
+            await toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute();
           } else {
-            await toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).prependInstruction(useMaxCU()).buildAndExecute();
+            await toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).buildAndExecute();
           }
 
           const postWhirlpoolOne = await poolOne.refreshData();
@@ -1001,8 +1001,8 @@ describe("adaptive fee tests", () => {
           await sleep((20 + 5) * 1000);
 
           // now it should be successful
-          await toTx(testCtx.whirlpoolCtx, twoHopSwapIx).prependInstruction(useMaxCU()).buildAndExecute();
-          await toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).prependInstruction(useMaxCU()).buildAndExecute();
+          await toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute();
+          await toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).buildAndExecute();
         });
       }
     });

@@ -13862,4 +13862,282 @@ mod adaptive_fee_tests {
             }
         }
     }
+
+    mod max_reference_age_reset {
+        use super::*;
+        use crate::manager::fee_rate_manager::MAX_REFERENCE_AGE;
+
+        // Even if major swaps are continuous for a long time, references are reset when their age exceed MAX_REFERENCE_AGE
+        // This is an autonomous means of recovering from DoS that keeps the fee rate high and makes the pool unusable
+        #[test]
+        fn test_max_reference_age_reset() {
+            let max_volatility_accumulator = 350_000;
+            let high_volatility = max_volatility_accumulator - 20000;
+
+            let constants = AdaptiveFeeConstants {
+                filter_period: 30,
+                decay_period: 600,
+                reduction_factor: 3000,
+                adaptive_fee_control_factor: 4_000,
+                max_volatility_accumulator,
+                tick_group_size: 64,
+                major_swap_threshold_ticks: 64,
+            };
+            let initial_variables = AdaptiveFeeVariables {
+                last_reference_update_timestamp: 0,
+                last_major_swap_timestamp: 0,
+                tick_group_index_reference: 1,
+                volatility_accumulator: high_volatility,
+                volatility_reference: high_volatility,
+            };
+
+            let timestamp_delta = constants.filter_period as u64 - 1;
+            let max_timestamp = MAX_REFERENCE_AGE + 5 * timestamp_delta;
+
+            let mut timestamp = 0;
+            let mut variables = initial_variables;
+            let mut a_to_b = true;
+            while timestamp <= max_timestamp {
+                // 0                    64                  128
+                // |--------------------|--------------------|
+                //      16 <--------------------------- 112 : a to b
+                //      16 ---------------------------> 112 : b to a
+                let (start_tick, end_tick) = if a_to_b { (112, 16) } else { (16, 112) };
+
+                // swap simulation
+                let next_variables = {
+                    let mut fee_rate_manager = FeeRateManager::new(
+                        a_to_b,
+                        start_tick,
+                        timestamp,
+                        3000,
+                        Some(AdaptiveFeeInfo {
+                            constants,
+                            variables,
+                        }),
+                    )
+                    .unwrap();
+
+                    // 1st iteration
+                    // 112 -> 64 (a to b)
+                    // 16 -> 64 (b to a)
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    fee_rate_manager.advance_tick_group();
+                    // 2nd iteration
+                    // 64 -> 16 (a to b)
+                    // 64 -> 112 (b to a)
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    fee_rate_manager.advance_tick_group();
+
+                    // update major swap timestamp
+                    fee_rate_manager
+                        .update_major_swap_timestamp(
+                            timestamp,
+                            sqrt_price_from_tick_index(start_tick),
+                            sqrt_price_from_tick_index(end_tick),
+                        )
+                        .unwrap();
+
+                    fee_rate_manager
+                        .get_next_adaptive_fee_info()
+                        .unwrap()
+                        .variables
+                };
+
+                println!("timestamp: {}, variables: {:?}", timestamp, next_variables);
+
+                if timestamp <= MAX_REFERENCE_AGE {
+                    // no change because major swaps happened
+                    assert!(next_variables.volatility_reference == high_volatility);
+                    assert!(next_variables.last_reference_update_timestamp == 0);
+                    assert!(next_variables.last_major_swap_timestamp == timestamp);
+                } else {
+                    // should be reset
+                    assert!(next_variables.volatility_reference == 0);
+                    assert!(next_variables.last_reference_update_timestamp > 0);
+                    assert!(next_variables.last_major_swap_timestamp == timestamp);
+                }
+
+                variables = next_variables;
+                timestamp += timestamp_delta;
+                a_to_b = !a_to_b;
+            }
+
+            assert!(variables.volatility_reference == 0);
+        }
+    }
+
+    mod sqrt_price_limit_edge_case {
+        use super::*;
+    
+        #[test]
+        fn test_sqrt_price_limit_ne_whirlpool_sqrt_price() {
+            let max_volatility_accumulator = 350_000;
+            let high_volatility = max_volatility_accumulator - 20000;
+
+            let constants = AdaptiveFeeConstants {
+                filter_period: 30,
+                decay_period: 600,
+                reduction_factor: 5000, // 50%
+                adaptive_fee_control_factor: 4_000,
+                max_volatility_accumulator,
+                tick_group_size: 64,
+                major_swap_threshold_ticks: 64,
+            };
+            let initial_variables = AdaptiveFeeVariables {
+                last_reference_update_timestamp: 0,
+                last_major_swap_timestamp: 0,
+                tick_group_index_reference: 1,
+                volatility_accumulator: high_volatility,
+                volatility_reference: high_volatility,
+            };
+
+            let timestamp_delta = constants.filter_period as u64 + 1;
+
+            let mut timestamp = 0;
+            let mut variables = initial_variables;
+            let mut a_to_b = true;
+            // loop 33 times (u32::MAX >> 32 should be 0)
+            for _ in 0..=32 {
+                // 0                    64                  128
+                // |--------------------|--------------------|
+                //                               111 <- 112 : a to b
+                //                               111 -> 112 : b to a
+                let (start_tick, end_tick) = if a_to_b { (112, 111) } else { (111, 112) };
+
+                // swap simulation
+                let next_variables = {
+                    let mut fee_rate_manager = FeeRateManager::new(
+                        a_to_b,
+                        start_tick,
+                        timestamp,
+                        3000,
+                        Some(AdaptiveFeeInfo {
+                            constants,
+                            variables,
+                        }),
+                    )
+                    .unwrap();
+
+                    // 1st iteration
+                    fee_rate_manager.update_volatility_accumulator().unwrap();
+                    fee_rate_manager.advance_tick_group();
+
+                    // update major swap timestamp
+                    fee_rate_manager
+                        .update_major_swap_timestamp(
+                            timestamp,
+                            sqrt_price_from_tick_index(start_tick),
+                            sqrt_price_from_tick_index(end_tick),
+                        )
+                        .unwrap();
+
+                    fee_rate_manager
+                        .get_next_adaptive_fee_info()
+                        .unwrap()
+                        .variables
+                };
+
+                println!("timestamp: {}, variables: {:?}", timestamp, next_variables);
+
+                let num_reduction = timestamp / timestamp_delta;
+                if num_reduction > 0 {
+                    // reduction: 50%
+                    let expected_volatility_reference = (initial_variables.volatility_accumulator as u64 >> num_reduction) as u32;
+                    assert!(next_variables.volatility_reference == expected_volatility_reference);
+                }
+                    
+                variables = next_variables;
+                timestamp += timestamp_delta;
+                a_to_b = !a_to_b;
+            }
+
+            assert!(variables.volatility_reference == 0);
+        }
+
+        // sqrt_price_limit that matches the pool's sqrt_price does not error
+        // reduction should work even if the swap loop does not run at all
+        #[test]
+        fn test_sqrt_price_limit_eq_whirlpool_sqrt_price() {
+            let max_volatility_accumulator = 350_000;
+            let high_volatility = max_volatility_accumulator - 20000;
+
+            let constants = AdaptiveFeeConstants {
+                filter_period: 30,
+                decay_period: 600,
+                reduction_factor: 5000, // 50%
+                adaptive_fee_control_factor: 4_000,
+                max_volatility_accumulator,
+                tick_group_size: 64,
+                major_swap_threshold_ticks: 64,
+            };
+            let initial_variables = AdaptiveFeeVariables {
+                last_reference_update_timestamp: 0,
+                last_major_swap_timestamp: 0,
+                tick_group_index_reference: 1,
+                volatility_accumulator: high_volatility,
+                volatility_reference: high_volatility,
+            };
+
+            let timestamp_delta = constants.filter_period as u64 + 1;
+
+            let mut timestamp = 0;
+            let mut variables = initial_variables;
+            let mut a_to_b = true;
+            // loop 33 times (u32::MAX >> 32 should be 0)
+            for _ in 0..=32 {
+                // 0                    64                  128
+                // |--------------------|--------------------|
+                //                                     112 (no move) : a to b
+                //                                     112 (no move) : b to a
+                let (start_tick, end_tick) = if a_to_b { (112, 112) } else { (112, 112) };
+
+                // swap simulation
+                let next_variables = {
+                    let mut fee_rate_manager = FeeRateManager::new(
+                        a_to_b,
+                        start_tick,
+                        timestamp,
+                        3000,
+                        Some(AdaptiveFeeInfo {
+                            constants,
+                            variables,
+                        }),
+                    )
+                    .unwrap();
+
+                    // NO iteration
+
+                    // update major swap timestamp
+                    fee_rate_manager
+                        .update_major_swap_timestamp(
+                            timestamp,
+                            sqrt_price_from_tick_index(start_tick),
+                            sqrt_price_from_tick_index(end_tick),
+                        )
+                        .unwrap();
+
+                    fee_rate_manager
+                        .get_next_adaptive_fee_info()
+                        .unwrap()
+                        .variables
+                };
+
+                println!("timestamp: {}, variables: {:?}", timestamp, next_variables);
+
+                let num_reduction = timestamp / timestamp_delta;
+                if num_reduction > 0 {
+                    // reduction: 50%
+                    let expected_volatility_reference = (initial_variables.volatility_accumulator as u64 >> num_reduction) as u32;
+                    assert!(next_variables.volatility_reference == expected_volatility_reference);
+                }
+                    
+                variables = next_variables;
+                timestamp += timestamp_delta;
+                a_to_b = !a_to_b;
+            }
+
+            assert!(variables.volatility_reference == 0);
+        }
+    }
 }

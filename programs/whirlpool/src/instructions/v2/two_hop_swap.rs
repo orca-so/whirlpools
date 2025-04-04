@@ -213,7 +213,7 @@ pub fn handler<'info>(
             amount_specified_is_input, // true
             a_to_b_one,
             timestamp,
-            adaptive_fee_info_one,
+            &adaptive_fee_info_one,
         )?;
 
         // Swap two input is the output of swap one
@@ -242,7 +242,7 @@ pub fn handler<'info>(
             amount_specified_is_input, // true
             a_to_b_two,
             timestamp,
-            adaptive_fee_info_two,
+            &adaptive_fee_info_two,
         )?;
         (swap_calc_one, swap_calc_two)
     } else {
@@ -267,7 +267,7 @@ pub fn handler<'info>(
             amount_specified_is_input, // false
             a_to_b_two,
             timestamp,
-            adaptive_fee_info_two,
+            &adaptive_fee_info_two,
         )?;
 
         // The output of swap 1 is input of swap_calc_two
@@ -303,7 +303,7 @@ pub fn handler<'info>(
             amount_specified_is_input, // false
             a_to_b_one,
             timestamp,
-            adaptive_fee_info_one,
+            &adaptive_fee_info_one,
         )?;
         (swap_calc_one, swap_calc_two)
     };
@@ -362,8 +362,8 @@ pub fn handler<'info>(
     oracle_accessor_two.update_adaptive_fee_variables(&swap_update_two.next_adaptive_fee_info)?;
 
     update_and_two_hop_swap_whirlpool_v2(
-        swap_update_one,
-        swap_update_two,
+        &swap_update_one,
+        &swap_update_two,
         whirlpool_one,
         whirlpool_two,
         a_to_b_one,

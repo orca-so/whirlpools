@@ -171,7 +171,7 @@ pub fn handler(
             amount_specified_is_input, // true
             a_to_b_one,
             timestamp,
-            adaptive_fee_info_one,
+            &adaptive_fee_info_one,
         )?;
 
         // Swap two input is the output of swap one
@@ -189,7 +189,7 @@ pub fn handler(
             amount_specified_is_input, // true
             a_to_b_two,
             timestamp,
-            adaptive_fee_info_two,
+            &adaptive_fee_info_two,
         )?;
         (swap_calc_one, swap_calc_two)
     } else {
@@ -204,7 +204,7 @@ pub fn handler(
             amount_specified_is_input, // false
             a_to_b_two,
             timestamp,
-            adaptive_fee_info_two,
+            &adaptive_fee_info_two,
         )?;
 
         // The output of swap 1 is input of swap_calc_two
@@ -222,7 +222,7 @@ pub fn handler(
             amount_specified_is_input, // false
             a_to_b_one,
             timestamp,
-            adaptive_fee_info_one,
+            &adaptive_fee_info_one,
         )?;
         (swap_calc_one, swap_calc_two)
     };
@@ -280,7 +280,7 @@ pub fn handler(
         &ctx.accounts.token_vault_one_a,
         &ctx.accounts.token_vault_one_b,
         &ctx.accounts.token_program,
-        swap_update_one,
+        &swap_update_one,
         a_to_b_one,
         timestamp,
     )?;
@@ -293,7 +293,7 @@ pub fn handler(
         &ctx.accounts.token_vault_two_a,
         &ctx.accounts.token_vault_two_b,
         &ctx.accounts.token_program,
-        swap_update_two,
+        &swap_update_two,
         a_to_b_two,
         timestamp,
     )

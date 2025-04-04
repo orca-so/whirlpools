@@ -90,7 +90,7 @@ pub fn handler(
         amount_specified_is_input,
         a_to_b,
         timestamp,
-        adaptive_fee_info,
+        &adaptive_fee_info,
     )?;
 
     if amount_specified_is_input {
@@ -115,7 +115,7 @@ pub fn handler(
         &ctx.accounts.token_vault_a,
         &ctx.accounts.token_vault_b,
         &ctx.accounts.token_program,
-        swap_update,
+        &swap_update,
         a_to_b,
         timestamp,
     )

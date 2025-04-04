@@ -51,7 +51,7 @@ impl FeeRateManager {
         current_tick_index: i32,
         timestamp: u64,
         static_fee_rate: u16,
-        adaptive_fee_info: Option<AdaptiveFeeInfo>,
+        adaptive_fee_info: &Option<AdaptiveFeeInfo>,
     ) -> Result<Self> {
         match adaptive_fee_info {
             None => Ok(Self::Static { static_fee_rate }),
@@ -390,7 +390,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_new() {
         let static_fee_rate = 3000;
-        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
+        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         match fee_rate_manager {
             FeeRateManager::Static {
@@ -405,7 +405,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_update_volatility_accumulator() {
         let static_fee_rate = 3000;
-        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
+        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         let result = fee_rate_manager.update_volatility_accumulator();
         assert_eq!(result, Ok(()));
@@ -424,7 +424,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_advance_tick_group() {
         let static_fee_rate = 3000;
-        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
+        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         fee_rate_manager.advance_tick_group();
 
@@ -443,7 +443,7 @@ mod static_fee_rate_manager_tests {
     #[should_panic]
     fn test_advance_tick_group_after_skip() {
         let static_fee_rate = 3000;
-        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
+        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         // panic because static fee rate manager doesn't use skip feature
         let _ = fee_rate_manager.advance_tick_group_after_skip(
@@ -456,7 +456,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_get_total_fee_rate() {
         let static_fee_rate = 3000;
-        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
+        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         // total fee = static fee (no adaptive fee)
         let total_fee_rate = fee_rate_manager.get_total_fee_rate();
@@ -466,7 +466,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_get_bounded_sqrt_price_target() {
         let static_fee_rate = 3000;
-        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
+        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         fn check_not_bounded(fee_rate_manager: &FeeRateManager, sqrt_price: u128) {
             let non_zero_liquidity = 1_000_000_000u128;
@@ -498,7 +498,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_get_next_adaptive_fee_info() {
         let static_fee_rate = 3000;
-        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
+        let fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         let next_adaptive_fee_info = fee_rate_manager.get_next_adaptive_fee_info();
         assert!(next_adaptive_fee_info.is_none());
@@ -507,7 +507,7 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_update_major_swap_timestamp() {
         let static_fee_rate = 3000;
-        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, None).unwrap();
+        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         let pre_sqrt_price = sqrt_price_from_tick_index(0);
         let post_sqrt_price = sqrt_price_from_tick_index(1024);
@@ -645,7 +645,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
         match fee_rate_manager {
@@ -729,7 +729,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
         match fee_rate_manager {
@@ -810,7 +810,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
         match fee_rate_manager {
@@ -897,7 +897,7 @@ mod adaptive_fee_rate_manager_tests {
                 current_tick_index,
                 timestamp,
                 static_fee_rate,
-                Some(AdaptiveFeeInfo {
+                &Some(AdaptiveFeeInfo {
                     constants: AdaptiveFeeConstants {
                         filter_period: 30,
                         decay_period: 600,
@@ -1066,7 +1066,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1126,7 +1126,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1375,7 +1375,7 @@ mod adaptive_fee_rate_manager_tests {
         let static_fee_rate = 10_000; // 1%
 
         let mut fee_rate_manager =
-            FeeRateManager::new(true, 1024, timestamp, static_fee_rate, adaptive_fee_info).unwrap();
+            FeeRateManager::new(true, 1024, timestamp, static_fee_rate, &adaptive_fee_info).unwrap();
 
         /*
          # Google Colaboratory
@@ -1440,7 +1440,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1501,7 +1501,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1565,7 +1565,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1647,7 +1647,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1672,7 +1672,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1697,7 +1697,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1727,7 +1727,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1791,7 +1791,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1858,7 +1858,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1943,7 +1943,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1961,7 +1961,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -1986,7 +1986,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -2040,7 +2040,7 @@ mod adaptive_fee_rate_manager_tests {
                 current_tick_index,
                 timestamp,
                 static_fee_rate,
-                Some(adaptive_fee_info.clone()),
+                &Some(adaptive_fee_info.clone()),
             )
             .unwrap()
         }
@@ -2567,7 +2567,7 @@ mod adaptive_fee_rate_manager_tests {
             current_tick_index,
             timestamp,
             static_fee_rate,
-            Some(adaptive_fee_info.clone()),
+            &Some(adaptive_fee_info.clone()),
         )
         .unwrap();
 
@@ -2640,7 +2640,7 @@ mod adaptive_fee_rate_manager_tests {
                 current_tick_index,
                 timestamp,
                 static_fee_rate,
-                Some(adaptive_fee_info.clone()),
+                &Some(adaptive_fee_info.clone()),
             )
             .unwrap();
 
@@ -2686,7 +2686,7 @@ mod adaptive_fee_rate_manager_tests {
                 current_tick_index,
                 timestamp,
                 static_fee_rate,
-                Some(adaptive_fee_info.clone()),
+                &Some(adaptive_fee_info.clone()),
             )
             .unwrap();
 
@@ -2732,7 +2732,7 @@ mod adaptive_fee_rate_manager_tests {
                 current_tick_index,
                 timestamp,
                 static_fee_rate,
-                Some(adaptive_fee_info.clone()),
+                &Some(adaptive_fee_info.clone()),
             )
             .unwrap();
 
@@ -2778,7 +2778,7 @@ mod adaptive_fee_rate_manager_tests {
                 current_tick_index,
                 timestamp,
                 static_fee_rate,
-                Some(adaptive_fee_info.clone()),
+                &Some(adaptive_fee_info.clone()),
             )
             .unwrap();
 

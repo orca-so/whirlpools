@@ -221,7 +221,7 @@ impl SwapTestFixture {
             self.amount_specified_is_input,
             self.a_to_b,
             next_timestamp,
-            self.adaptive_fee_info.clone(),
+            &self.adaptive_fee_info,
         )
         .unwrap()
     }
@@ -239,7 +239,7 @@ impl SwapTestFixture {
             self.amount_specified_is_input,
             self.a_to_b,
             next_timestamp,
-            self.adaptive_fee_info.clone(),
+            &self.adaptive_fee_info,
         )
     }
 }

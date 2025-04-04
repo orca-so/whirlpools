@@ -35,7 +35,7 @@ pub fn swap(
     amount_specified_is_input: bool,
     a_to_b: bool,
     timestamp: u64,
-    adaptive_fee_info: Option<AdaptiveFeeInfo>,
+    adaptive_fee_info: &Option<AdaptiveFeeInfo>,
 ) -> Result<PostSwapUpdate> {
     let adjusted_sqrt_price_limit = if sqrt_price_limit == NO_EXPLICIT_SQRT_PRICE_LIMIT {
         if a_to_b {
@@ -13946,7 +13946,7 @@ mod adaptive_fee_tests {
                         start_tick,
                         timestamp,
                         3000,
-                        Some(AdaptiveFeeInfo {
+                        &Some(AdaptiveFeeInfo {
                             constants,
                             variables,
                         }),
@@ -14049,7 +14049,7 @@ mod adaptive_fee_tests {
                         start_tick,
                         timestamp,
                         3000,
-                        Some(AdaptiveFeeInfo {
+                        &Some(AdaptiveFeeInfo {
                             constants,
                             variables,
                         }),
@@ -14139,7 +14139,7 @@ mod adaptive_fee_tests {
                         start_tick,
                         timestamp,
                         3000,
-                        Some(AdaptiveFeeInfo {
+                        &Some(AdaptiveFeeInfo {
                             constants,
                             variables,
                         }),

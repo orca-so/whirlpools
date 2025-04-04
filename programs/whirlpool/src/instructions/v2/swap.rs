@@ -120,7 +120,7 @@ pub fn handler<'info>(
         amount_specified_is_input,
         a_to_b,
         timestamp,
-        adaptive_fee_info,
+        &adaptive_fee_info,
     )?;
 
     if amount_specified_is_input {
@@ -167,7 +167,7 @@ pub fn handler<'info>(
         &ctx.accounts.token_program_a,
         &ctx.accounts.token_program_b,
         &ctx.accounts.memo_program,
-        swap_update,
+        &swap_update,
         a_to_b,
         timestamp,
         transfer_memo::TRANSFER_MEMO_SWAP.as_bytes(),
@@ -185,7 +185,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
     amount_specified_is_input: bool,
     a_to_b: bool,
     timestamp: u64,
-    adaptive_fee_info: Option<AdaptiveFeeInfo>,
+    adaptive_fee_info: &Option<AdaptiveFeeInfo>,
 ) -> Result<PostSwapUpdate> {
     let (input_token_mint, output_token_mint) = if a_to_b {
         (token_mint_a, token_mint_b)

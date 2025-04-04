@@ -33,10 +33,12 @@ pub struct AdaptiveFeeConstants {
     pub tick_group_size: u16,
     // Major swap threshold in tick
     pub major_swap_threshold_ticks: u16,
+    // Reserved for future use
+    pub reserved: [u8; 16],
 }
 
 impl AdaptiveFeeConstants {
-    pub const LEN: usize = 2 + 2 + 2 + 4 + 4 + 2 + 2;
+    pub const LEN: usize = 2 + 2 + 2 + 4 + 4 + 2 + 2 + 16;
 
     #[allow(clippy::too_many_arguments)]
     pub fn validate_constants(
@@ -113,10 +115,12 @@ pub struct AdaptiveFeeVariables {
     pub tick_group_index_reference: i32,
     // Volatility accumulator measure the number of tick group crossed since reference tick group index (scaled)
     pub volatility_accumulator: u32,
+    // Reserved for future use
+    pub reserved: [u8; 16],
 }
 
 impl AdaptiveFeeVariables {
-    pub const LEN: usize = 8 + 8 + 4 + 4 + 4;
+    pub const LEN: usize = 8 + 8 + 4 + 4 + 4 + 16;
 
     pub fn update_volatility_accumulator(
         &mut self,
@@ -242,7 +246,8 @@ pub struct Oracle {
     pub trade_enable_timestamp: u64,
     pub adaptive_fee_constants: AdaptiveFeeConstants,
     pub adaptive_fee_variables: AdaptiveFeeVariables,
-    _reserved: [u8; 256], // for bytemuck mapping
+    // Reserved for future use
+    pub reserved: [u8; 128],
 }
 
 impl Default for Oracle {
@@ -252,13 +257,13 @@ impl Default for Oracle {
             trade_enable_timestamp: 0,
             adaptive_fee_constants: AdaptiveFeeConstants::default(),
             adaptive_fee_variables: AdaptiveFeeVariables::default(),
-            _reserved: [0u8; 256],
+            reserved: [0u8; 128],
         }
     }
 }
 
 impl Oracle {
-    pub const LEN: usize = 8 + 32 + 8 + AdaptiveFeeConstants::LEN + AdaptiveFeeVariables::LEN + 256;
+    pub const LEN: usize = 8 + 32 + 8 + AdaptiveFeeConstants::LEN + AdaptiveFeeVariables::LEN + 128;
 
     #[allow(clippy::too_many_arguments)]
     pub fn initialize(
@@ -285,6 +290,7 @@ impl Oracle {
             max_volatility_accumulator,
             tick_group_size,
             major_swap_threshold_ticks,
+            reserved: [0u8; 16],
         };
 
         self.initialize_adaptive_fee_constants(constants, tick_spacing)?;
@@ -468,7 +474,7 @@ mod data_layout_tests {
 
     #[test]
     fn test_oracle_data_layout() {
-        let oracle_reserved = [0u8; 256];
+        let oracle_reserved = [0u8; 128];
 
         let oracle_whirlpool = Pubkey::new_unique();
         let oracle_trade_enable_timestamp = 0x1122334455667788u64;
@@ -480,12 +486,14 @@ mod data_layout_tests {
         let af_const_max_volatility_accumulator = 0xaabbccddu32;
         let af_const_tick_group_size = 0xeeffu16;
         let af_const_major_swap_threshold_ticks = 0x1122u16;
+        let af_const_reserved = [0u8; 16];
 
         let af_var_last_reference_update_timestamp = 0x1122334455667788u64;
         let af_var_last_major_swap_timestamp = 0x2233445566778899u64;
         let af_var_volatility_reference = 0x99aabbccu32;
         let af_var_tick_group_index_reference = 0x00ddeeffi32;
         let af_var_volatility_accumulator = 0x11223344u32;
+        let af_var_reserved = [0u8; 16];
 
         // manually build the expected AdaptiveFeeConstants data layout
         let mut af_const_data = [0u8; AdaptiveFeeConstants::LEN];
@@ -507,6 +515,7 @@ mod data_layout_tests {
         af_const_data[offset..offset + 2]
             .copy_from_slice(&af_const_major_swap_threshold_ticks.to_le_bytes());
         offset += 2;
+        offset += af_const_reserved.len();
 
         assert_eq!(offset, af_const_data.len());
 
@@ -527,6 +536,7 @@ mod data_layout_tests {
         af_var_data[offset..offset + 4]
             .copy_from_slice(&af_var_volatility_accumulator.to_le_bytes());
         offset += 4;
+        offset += af_var_reserved.len();
 
         assert_eq!(offset, af_var_data.len());
 
@@ -618,8 +628,6 @@ mod data_layout_tests {
 
 #[cfg(test)]
 mod oracle_accessor_test {
-    use std::u64;
-
     use super::*;
     use crate::util::test_utils::account_info_mock::AccountInfoMock;
 
@@ -914,6 +922,7 @@ mod oracle_accessor_test {
             max_volatility_accumulator: 0x55555555,
             tick_group_size: 256,
             major_swap_threshold_ticks: 128,
+            ..Default::default()
         };
 
         let af_vars = AdaptiveFeeVariables {
@@ -922,6 +931,7 @@ mod oracle_accessor_test {
             volatility_reference: 0x99aabbccu32,
             tick_group_index_reference: 0x00ddeeffi32,
             volatility_accumulator: 0x11223344u32,
+            ..Default::default()
         };
 
         let account_address = Pubkey::new_unique();
@@ -1009,6 +1019,7 @@ mod oracle_accessor_test {
             max_volatility_accumulator: 0x55555555,
             tick_group_size: 256,
             major_swap_threshold_ticks: 128,
+            ..Default::default()
         };
 
         let af_vars = AdaptiveFeeVariables {
@@ -1017,6 +1028,7 @@ mod oracle_accessor_test {
             volatility_reference: 0x99aabbccu32,
             tick_group_index_reference: 0x00ddeeffi32,
             volatility_accumulator: 0x11223344u32,
+            ..Default::default()
         };
 
         let adaptive_fee_info = AdaptiveFeeInfo {
@@ -1180,6 +1192,7 @@ mod oracle_tests {
             max_volatility_accumulator,
             tick_group_size,
             major_swap_threshold_ticks,
+            ..Default::default()
         };
 
         oracle
@@ -1230,6 +1243,7 @@ mod oracle_tests {
             volatility_reference,
             tick_group_index_reference,
             volatility_accumulator,
+            ..Default::default()
         };
 
         oracle.update_adaptive_fee_variables(variables);
@@ -1274,6 +1288,7 @@ mod adaptive_fee_variables_tests {
             max_volatility_accumulator: 350_000,
             tick_group_size: 64,
             major_swap_threshold_ticks: 64,
+            ..Default::default()
         }
     }
 
@@ -1344,6 +1359,7 @@ mod adaptive_fee_variables_tests {
                 max_volatility_accumulator: 350_000,
                 tick_group_size: 64,
                 major_swap_threshold_ticks: 64,
+                ..Default::default()
             };
 
             let initial = AdaptiveFeeVariables {
@@ -1353,6 +1369,7 @@ mod adaptive_fee_variables_tests {
                 tick_group_index_reference: 10,
                 volatility_accumulator: 30_000,
                 volatility_reference: 50_000,
+                ..Default::default()
             };
 
             // elapsed = 0
@@ -1408,6 +1425,7 @@ mod adaptive_fee_variables_tests {
                 tick_group_index_reference: 10,
                 volatility_accumulator: 30_000,
                 volatility_reference: 50_000,
+                ..Default::default()
             }
         }
 
@@ -1582,6 +1600,7 @@ mod adaptive_fee_variables_tests {
                 tick_group_index_reference: 10,
                 volatility_accumulator: 30_000,
                 volatility_reference: 50_000,
+                ..Default::default()
             }
         }
 
@@ -1756,6 +1775,7 @@ mod adaptive_fee_variables_tests {
                 tick_group_index_reference: 10,
                 volatility_accumulator: 30_000,
                 volatility_reference: 50_000,
+                ..Default::default()
             }
         }
 
@@ -2064,6 +2084,7 @@ mod adaptive_fee_variables_tests {
 
                 // tolerance is 0.00000003% of larger_sqrt_price
                 // ceil(large_sqrt_price * 0.00000003%)
+                #[allow(clippy::manual_div_ceil)]
                 let epsilon = (larger_sqrt_price * 3 + (10000000000 - 1)) / 10000000000;
 
                 // is_major_swap test

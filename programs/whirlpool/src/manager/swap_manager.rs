@@ -3187,6 +3187,7 @@ mod adaptive_fee_tests {
                 tick_group_index_reference,
                 volatility_reference,
                 volatility_accumulator: accumulator,
+                ..Default::default()
             },
         }
     }
@@ -3251,6 +3252,7 @@ mod adaptive_fee_tests {
                         max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
                         major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -4751,6 +4753,7 @@ mod adaptive_fee_tests {
                         max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
                         major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -5691,6 +5694,7 @@ mod adaptive_fee_tests {
                         max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
                         major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -7111,6 +7115,7 @@ mod adaptive_fee_tests {
                         max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
                         major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -7550,6 +7555,7 @@ mod adaptive_fee_tests {
                         max_volatility_accumulator: 88 * 3 * 10_000,
                         tick_group_size: TICK_GROUP_SIZE,
                         major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -7618,6 +7624,7 @@ mod adaptive_fee_tests {
                             .unwrap()
                             .constants
                             .max_volatility_accumulator,
+                        ..Default::default()
                     },
                 );
             }
@@ -7684,6 +7691,7 @@ mod adaptive_fee_tests {
                             .unwrap()
                             .constants
                             .max_volatility_accumulator,
+                            ..Default::default()
                     },
                 );
             }
@@ -7706,6 +7714,7 @@ mod adaptive_fee_tests {
                         max_volatility_accumulator: 350_000,
                         tick_group_size: TICK_GROUP_SIZE,
                         major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -7849,6 +7858,7 @@ mod adaptive_fee_tests {
                             .unwrap()
                             .constants
                             .max_volatility_accumulator,
+                            ..Default::default()
                     },
                 );
             }
@@ -7988,6 +7998,7 @@ mod adaptive_fee_tests {
                         tick_group_index_reference: 0, // tick_group_index for 0
                         // volatility accumulator should be updated correctly even if adaptive fee control factor is zero
                         volatility_accumulator: 330_000,
+                        ..Default::default()
                     },
                 );
             }
@@ -8132,6 +8143,7 @@ mod adaptive_fee_tests {
                             .unwrap()
                             .constants
                             .max_volatility_accumulator,
+                        ..Default::default()
                     },
                 );
             }
@@ -8273,6 +8285,7 @@ mod adaptive_fee_tests {
                         tick_group_index_reference: -1, // tick_group_index for -1 (shifted)
                         // volatility accumulator should be updated correctly even if adaptive fee control factor is zero
                         volatility_accumulator: 340_000, // -1 -> 33
+                        ..Default::default()
                     },
                 );
             }
@@ -8295,6 +8308,7 @@ mod adaptive_fee_tests {
                         max_volatility_accumulator: 350_000,
                         tick_group_size: TICK_GROUP_SIZE,
                         major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -8410,6 +8424,7 @@ mod adaptive_fee_tests {
                             .unwrap()
                             .constants
                             .max_volatility_accumulator,
+                        ..Default::default()
                     },
                 );
             }
@@ -8524,6 +8539,7 @@ mod adaptive_fee_tests {
                             .unwrap()
                             .constants
                             .max_volatility_accumulator,
+                        ..Default::default()
                     },
                 );
             }
@@ -8547,6 +8563,7 @@ mod adaptive_fee_tests {
                         max_volatility_accumulator,
                         tick_group_size: TICK_GROUP_SIZE,
                         major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -8837,6 +8854,7 @@ mod adaptive_fee_tests {
                             volatility_accumulator: adaptive_fee_info
                                 .constants
                                 .max_volatility_accumulator,
+                            ..Default::default()
                         },
                     );
                     let adaptive_fee_info = Some(AdaptiveFeeInfo {
@@ -8986,6 +9004,7 @@ mod adaptive_fee_tests {
                             volatility_accumulator: adaptive_fee_info
                                 .constants
                                 .max_volatility_accumulator,
+                            ..Default::default()
                         },
                     );
                     let adaptive_fee_info = Some(AdaptiveFeeInfo {
@@ -9135,6 +9154,7 @@ mod adaptive_fee_tests {
                             volatility_accumulator: adaptive_fee_info
                                 .constants
                                 .max_volatility_accumulator,
+                            ..Default::default()
                         },
                     );
                     let adaptive_fee_info = Some(AdaptiveFeeInfo {
@@ -9304,6 +9324,7 @@ mod adaptive_fee_tests {
                             volatility_accumulator: adaptive_fee_info
                                 .constants
                                 .max_volatility_accumulator,
+                            ..Default::default()
                         },
                     );
                     let adaptive_fee_info = Some(AdaptiveFeeInfo {
@@ -9477,6 +9498,7 @@ mod adaptive_fee_tests {
                             volatility_accumulator: adaptive_fee_info
                                 .constants
                                 .max_volatility_accumulator,
+                            ..Default::default()
                         },
                     );
                     let adaptive_fee_info = Some(AdaptiveFeeInfo {
@@ -9646,6 +9668,7 @@ mod adaptive_fee_tests {
                             volatility_accumulator: adaptive_fee_info
                                 .constants
                                 .max_volatility_accumulator,
+                            ..Default::default()
                         },
                     );
                     let adaptive_fee_info = Some(AdaptiveFeeInfo {
@@ -9819,6 +9842,7 @@ mod adaptive_fee_tests {
                             volatility_accumulator: adaptive_fee_info
                                 .constants
                                 .max_volatility_accumulator,
+                            ..Default::default()
                         },
                     });
 
@@ -9988,6 +10012,7 @@ mod adaptive_fee_tests {
                             volatility_accumulator: adaptive_fee_info
                                 .constants
                                 .max_volatility_accumulator,
+                            ..Default::default()
                         },
                     });
 
@@ -10151,6 +10176,7 @@ mod adaptive_fee_tests {
                             volatility_accumulator: adaptive_fee_info
                                 .constants
                                 .max_volatility_accumulator,
+                            ..Default::default()
                         },
                     });
 
@@ -10272,6 +10298,7 @@ mod adaptive_fee_tests {
                             volatility_accumulator: adaptive_fee_info
                                 .constants
                                 .max_volatility_accumulator,
+                            ..Default::default()
                         },
                     });
 
@@ -10387,6 +10414,7 @@ mod adaptive_fee_tests {
                         max_volatility_accumulator,
                         tick_group_size: TICK_GROUP_SIZE,
                         major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -10594,6 +10622,7 @@ mod adaptive_fee_tests {
                         max_volatility_accumulator,
                         tick_group_size: TICK_GROUP_SIZE,
                         major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables::default(),
                 })
@@ -10624,6 +10653,7 @@ mod adaptive_fee_tests {
                         volatility_accumulator: adaptive_fee_info
                             .constants
                             .max_volatility_accumulator,
+                        ..Default::default()
                     },
                 });
 
@@ -10732,6 +10762,7 @@ mod adaptive_fee_tests {
                         volatility_accumulator: adaptive_fee_info
                             .constants
                             .max_volatility_accumulator,
+                        ..Default::default()
                     },
                 });
 
@@ -10838,6 +10869,7 @@ mod adaptive_fee_tests {
                     max_volatility_accumulator: 88 * 3 * 10_000,
                     tick_group_size: TICK_GROUP_SIZE,
                     major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                    ..Default::default()
                 },
                 variables: AdaptiveFeeVariables::default(),
             })
@@ -10855,6 +10887,7 @@ mod adaptive_fee_tests {
                     max_volatility_accumulator,
                     tick_group_size: TICK_GROUP_SIZE,
                     major_swap_threshold_ticks: TICK_GROUP_SIZE,
+                    ..Default::default()
                 },
                 variables: AdaptiveFeeVariables::default(),
             })
@@ -13882,6 +13915,7 @@ mod adaptive_fee_tests {
                 max_volatility_accumulator,
                 tick_group_size: 64,
                 major_swap_threshold_ticks: 64,
+                ..Default::default()
             };
             let initial_variables = AdaptiveFeeVariables {
                 last_reference_update_timestamp: 0,
@@ -13889,6 +13923,7 @@ mod adaptive_fee_tests {
                 tick_group_index_reference: 1,
                 volatility_accumulator: high_volatility,
                 volatility_reference: high_volatility,
+                ..Default::default()
             };
 
             let timestamp_delta = constants.filter_period as u64 - 1;
@@ -13983,6 +14018,7 @@ mod adaptive_fee_tests {
                 max_volatility_accumulator,
                 tick_group_size: 64,
                 major_swap_threshold_ticks: 64,
+                ..Default::default()
             };
             let initial_variables = AdaptiveFeeVariables {
                 last_reference_update_timestamp: 0,
@@ -13990,6 +14026,7 @@ mod adaptive_fee_tests {
                 tick_group_index_reference: 1,
                 volatility_accumulator: high_volatility,
                 volatility_reference: high_volatility,
+                ..Default::default()
             };
 
             let timestamp_delta = constants.filter_period as u64 + 1;
@@ -14071,6 +14108,7 @@ mod adaptive_fee_tests {
                 max_volatility_accumulator,
                 tick_group_size: 64,
                 major_swap_threshold_ticks: 64,
+                ..Default::default()
             };
             let initial_variables = AdaptiveFeeVariables {
                 last_reference_update_timestamp: 0,
@@ -14078,6 +14116,7 @@ mod adaptive_fee_tests {
                 tick_group_index_reference: 1,
                 volatility_accumulator: high_volatility,
                 volatility_reference: high_volatility,
+                ..Default::default()
             };
 
             let timestamp_delta = constants.filter_period as u64 + 1;
@@ -14091,7 +14130,7 @@ mod adaptive_fee_tests {
                 // |--------------------|--------------------|
                 //                                     112 (no move) : a to b
                 //                                     112 (no move) : b to a
-                let (start_tick, end_tick) = if a_to_b { (112, 112) } else { (112, 112) };
+                let (start_tick, end_tick) = (112, 112);
 
                 // swap simulation
                 let next_variables = {

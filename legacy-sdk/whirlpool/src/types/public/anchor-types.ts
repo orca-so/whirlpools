@@ -60,8 +60,8 @@ const RESERVED_BYTES: ReservedBytes = {
   [AccountName.PositionBundle]: 64,
   [AccountName.WhirlpoolsConfigExtension]: 512,
   [AccountName.TokenBadge]: 128,
-  [AccountName.Oracle]: 0, // "_reserved" is reserved
-  [AccountName.AdaptiveFeeTier]: 256,
+  [AccountName.Oracle]: 0, // reserved space is occupied as "reserved" field
+  [AccountName.AdaptiveFeeTier]: 128,
 };
 
 type ReservedBytes = {

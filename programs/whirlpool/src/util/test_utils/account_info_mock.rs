@@ -93,6 +93,8 @@ impl AccountInfoMock {
                 .to_le_bytes(),
         );
         offset += 2;
+        // reserved
+        offset += 16;
 
         assert_eq!(offset, AdaptiveFeeConstants::LEN);
 

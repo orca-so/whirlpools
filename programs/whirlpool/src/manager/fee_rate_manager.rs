@@ -73,6 +73,7 @@ impl FeeRateManager {
                 // max_volatility_accumulator < volatility_reference + tick_group_index_delta * VOLATILITY_ACCUMULATOR_SCALE_FACTOR
                 // -> ceil((max_volatility_accumulator - volatility_reference) / VOLATILITY_ACCUMULATOR_SCALE_FACTOR) < tick_group_index_delta
                 // From the above, if tick_group_index_delta is sufficiently large, volatility_accumulator always sticks to max_volatility_accumulator
+                #[allow(clippy::manual_div_ceil)]
                 let max_volatility_accumulator_tick_group_index_delta = ((adaptive_fee_constants
                     .max_volatility_accumulator
                     - adaptive_fee_variables.volatility_reference)
@@ -544,6 +545,7 @@ mod adaptive_fee_rate_manager_tests {
                 adaptive_fee_control_factor: 100,
                 tick_group_size: 64,
                 major_swap_threshold_ticks: 64,
+                ..Default::default()
             },
             variables: AdaptiveFeeVariables {
                 last_reference_update_timestamp: 1738863309,
@@ -551,6 +553,7 @@ mod adaptive_fee_rate_manager_tests {
                 tick_group_index_reference: 1,
                 volatility_reference: 500,
                 volatility_accumulator: 10000,
+                ..Default::default()
             },
         }
     }
@@ -903,6 +906,7 @@ mod adaptive_fee_rate_manager_tests {
                         adaptive_fee_control_factor: 100,
                         tick_group_size,
                         major_swap_threshold_ticks: tick_group_size,
+                        ..Default::default()
                     },
                     variables: AdaptiveFeeVariables {
                         last_reference_update_timestamp: timestamp,
@@ -910,6 +914,7 @@ mod adaptive_fee_rate_manager_tests {
                         tick_group_index_reference: tick_group_reference,
                         volatility_reference: volatility_refereence,
                         volatility_accumulator: 0,
+                        ..Default::default()
                     },
                 }),
             )
@@ -1219,6 +1224,7 @@ mod adaptive_fee_rate_manager_tests {
                     filter_period: 30,
                     decay_period: 600,
                     reduction_factor: 5000,
+                    ..Default::default()
                 },
                 /*
                   # Google Colaboratory
@@ -1265,6 +1271,7 @@ mod adaptive_fee_rate_manager_tests {
                     filter_period: 30,
                     decay_period: 600,
                     reduction_factor: 5000,
+                    ..Default::default()
                 },
                 /*
                   # Google Colaboratory
@@ -1311,6 +1318,7 @@ mod adaptive_fee_rate_manager_tests {
                     filter_period: 30,
                     decay_period: 600,
                     reduction_factor: 5000,
+                    ..Default::default()
                 },
                 /*
                   # Google Colaboratory
@@ -1358,6 +1366,7 @@ mod adaptive_fee_rate_manager_tests {
                 filter_period: 30,
                 decay_period: 600,
                 reduction_factor: 5000,
+                ..Default::default()
             },
             variables: AdaptiveFeeVariables::default(),
         });
@@ -1616,6 +1625,7 @@ mod adaptive_fee_rate_manager_tests {
                 filter_period: 30,
                 decay_period: 600,
                 reduction_factor: 5000,
+                ..Default::default()
             },
             variables: AdaptiveFeeVariables {
                 last_reference_update_timestamp: timestamp,
@@ -1623,6 +1633,7 @@ mod adaptive_fee_rate_manager_tests {
                 tick_group_index_reference: 0,
                 volatility_accumulator: 0,
                 volatility_reference: 0,
+                ..Default::default()
             },
         };
 
@@ -1910,6 +1921,7 @@ mod adaptive_fee_rate_manager_tests {
                 filter_period: 30,
                 decay_period: 600,
                 reduction_factor: 5000,
+                ..Default::default()
             },
             variables: AdaptiveFeeVariables {
                 last_reference_update_timestamp: timestamp,
@@ -1917,6 +1929,7 @@ mod adaptive_fee_rate_manager_tests {
                 tick_group_index_reference: 0,
                 volatility_accumulator: 0,
                 volatility_reference: 0,
+                ..Default::default()
             },
         };
 
@@ -2010,6 +2023,7 @@ mod adaptive_fee_rate_manager_tests {
                     filter_period: 30,
                     decay_period: 600,
                     reduction_factor: 5000,
+                    ..Default::default()
                 },
                 variables: AdaptiveFeeVariables {
                     last_reference_update_timestamp: timestamp,
@@ -2017,6 +2031,7 @@ mod adaptive_fee_rate_manager_tests {
                     tick_group_index_reference: 0,
                     volatility_accumulator: 0,
                     volatility_reference: 0,
+                    ..Default::default()
                 },
             };
 

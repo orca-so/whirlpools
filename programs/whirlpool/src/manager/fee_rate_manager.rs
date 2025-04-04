@@ -405,7 +405,8 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_update_volatility_accumulator() {
         let static_fee_rate = 3000;
-        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
+        let mut fee_rate_manager =
+            FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         let result = fee_rate_manager.update_volatility_accumulator();
         assert_eq!(result, Ok(()));
@@ -424,7 +425,8 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_advance_tick_group() {
         let static_fee_rate = 3000;
-        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
+        let mut fee_rate_manager =
+            FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         fee_rate_manager.advance_tick_group();
 
@@ -443,7 +445,8 @@ mod static_fee_rate_manager_tests {
     #[should_panic]
     fn test_advance_tick_group_after_skip() {
         let static_fee_rate = 3000;
-        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
+        let mut fee_rate_manager =
+            FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         // panic because static fee rate manager doesn't use skip feature
         let _ = fee_rate_manager.advance_tick_group_after_skip(
@@ -507,7 +510,8 @@ mod static_fee_rate_manager_tests {
     #[test]
     fn test_update_major_swap_timestamp() {
         let static_fee_rate = 3000;
-        let mut fee_rate_manager = FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
+        let mut fee_rate_manager =
+            FeeRateManager::new(false, 0, 0, static_fee_rate, &None).unwrap();
 
         let pre_sqrt_price = sqrt_price_from_tick_index(0);
         let post_sqrt_price = sqrt_price_from_tick_index(1024);
@@ -1375,7 +1379,8 @@ mod adaptive_fee_rate_manager_tests {
         let static_fee_rate = 10_000; // 1%
 
         let mut fee_rate_manager =
-            FeeRateManager::new(true, 1024, timestamp, static_fee_rate, &adaptive_fee_info).unwrap();
+            FeeRateManager::new(true, 1024, timestamp, static_fee_rate, &adaptive_fee_info)
+                .unwrap();
 
         /*
          # Google Colaboratory

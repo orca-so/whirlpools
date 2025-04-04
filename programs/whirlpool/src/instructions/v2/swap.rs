@@ -186,7 +186,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
     a_to_b: bool,
     timestamp: u64,
     adaptive_fee_info: &Option<AdaptiveFeeInfo>,
-) -> Result<PostSwapUpdate> {
+) -> Result<Box<PostSwapUpdate>> {
     let (input_token_mint, output_token_mint) = if a_to_b {
         (token_mint_a, token_mint_b)
     } else {
@@ -239,7 +239,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
                 adjusted_transfer_fee_included_input,
             )
         };
-        return Ok(PostSwapUpdate {
+        return Ok(Box::new(PostSwapUpdate {
             amount_a, // updated (transfer fee included)
             amount_b, // updated (transfer fee included)
             next_liquidity: swap_update.next_liquidity,
@@ -249,7 +249,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
             next_reward_infos: swap_update.next_reward_infos,
             next_protocol_fee: swap_update.next_protocol_fee,
             next_adaptive_fee_info: swap_update.next_adaptive_fee_info,
-        });
+        }));
     }
 
     // ExactOut
@@ -291,7 +291,7 @@ pub fn swap_with_transfer_fee_extension<'info>(
             transfer_fee_included_input,
         )
     };
-    Ok(PostSwapUpdate {
+    Ok(Box::new(PostSwapUpdate {
         amount_a, // updated (transfer fee included)
         amount_b, // updated (transfer fee included)
         next_liquidity: swap_update.next_liquidity,
@@ -301,5 +301,5 @@ pub fn swap_with_transfer_fee_extension<'info>(
         next_reward_infos: swap_update.next_reward_infos,
         next_protocol_fee: swap_update.next_protocol_fee,
         next_adaptive_fee_info: swap_update.next_adaptive_fee_info,
-    })
+    }))
 }

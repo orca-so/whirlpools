@@ -36,7 +36,7 @@ pub fn swap(
     a_to_b: bool,
     timestamp: u64,
     adaptive_fee_info: &Option<AdaptiveFeeInfo>,
-) -> Result<PostSwapUpdate> {
+) -> Result<Box<PostSwapUpdate>> {
     let adjusted_sqrt_price_limit = if sqrt_price_limit == NO_EXPLICIT_SQRT_PRICE_LIMIT {
         if a_to_b {
             MIN_SQRT_PRICE_X64
@@ -259,7 +259,7 @@ pub fn swap(
         curr_sqrt_price,
     )?;
 
-    Ok(PostSwapUpdate {
+    Ok(Box::new(PostSwapUpdate {
         amount_a,
         amount_b,
         next_liquidity: curr_liquidity,
@@ -269,7 +269,7 @@ pub fn swap(
         next_reward_infos,
         next_protocol_fee: curr_protocol_fee,
         next_adaptive_fee_info: fee_rate_manager.get_next_adaptive_fee_info(),
-    })
+    }))
 }
 
 fn calculate_fees(
@@ -7691,7 +7691,7 @@ mod adaptive_fee_tests {
                             .unwrap()
                             .constants
                             .max_volatility_accumulator,
-                            ..Default::default()
+                        ..Default::default()
                     },
                 );
             }
@@ -7858,7 +7858,7 @@ mod adaptive_fee_tests {
                             .unwrap()
                             .constants
                             .max_volatility_accumulator,
-                            ..Default::default()
+                        ..Default::default()
                     },
                 );
             }

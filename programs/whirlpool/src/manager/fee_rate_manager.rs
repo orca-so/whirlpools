@@ -1,5 +1,8 @@
 use crate::{
-    math::{ceil_division, floor_division, sqrt_price_from_tick_index, tick_index_from_sqrt_price},
+    math::{
+        ceil_division_u128, ceil_division_u32, floor_division, sqrt_price_from_tick_index,
+        tick_index_from_sqrt_price,
+    },
     state::{
         AdaptiveFeeConstants, AdaptiveFeeInfo, AdaptiveFeeVariables,
         ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, MAX_TICK_INDEX, MIN_TICK_INDEX,
@@ -56,13 +59,11 @@ impl FeeRateManager {
                 // max_volatility_accumulator < volatility_reference + tick_group_index_delta * VOLATILITY_ACCUMULATOR_SCALE_FACTOR
                 // -> ceil((max_volatility_accumulator - volatility_reference) / VOLATILITY_ACCUMULATOR_SCALE_FACTOR) < tick_group_index_delta
                 // From the above, if tick_group_index_delta is sufficiently large, volatility_accumulator always sticks to max_volatility_accumulator
-                #[allow(clippy::manual_div_ceil)]
-                let max_volatility_accumulator_tick_group_index_delta = ((adaptive_fee_constants
-                    .max_volatility_accumulator
-                    - adaptive_fee_variables.volatility_reference)
-                    + VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32
-                    - 1)
-                    / VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+                let max_volatility_accumulator_tick_group_index_delta = ceil_division_u32(
+                    adaptive_fee_constants.max_volatility_accumulator
+                        - adaptive_fee_variables.volatility_reference,
+                    VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+                );
 
                 // we need to calculate the adaptive fee rate for each tick_group_index in the range of core tick group
                 let core_tick_group_range_lower_index = adaptive_fee_variables
@@ -348,7 +349,7 @@ impl FeeRateManager {
 
         let squared = u64::from(crossed) * u64::from(crossed);
 
-        let fee_rate = ceil_division(
+        let fee_rate = ceil_division_u128(
             u128::from(adaptive_fee_constants.adaptive_fee_control_factor) * u128::from(squared),
             u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR)
                 * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR)
@@ -1175,7 +1176,7 @@ mod adaptive_fee_rate_manager_tests {
                 let squared_crossed_tick_indexes =
                     u64::from(crossed_tick_indexes) * u64::from(crossed_tick_indexes);
 
-                let expected_fee_rate = ceil_division(
+                let expected_fee_rate = ceil_division_u128(
                     u128::from(constants.adaptive_fee_control_factor)
                         * u128::from(squared_crossed_tick_indexes),
                     u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR)

@@ -3055,7 +3055,7 @@ mod adaptive_fee_tests {
             .unwrap();
             let crossed = accumulator as u64 * tick_group_size as u64;
             let squared = crossed * crossed;
-            let adaptive_fee_rate = ceil_division(
+            let adaptive_fee_rate = ceil_division_u128(
                 u128::from(adaptive_fee_control_factor) * u128::from(squared),
                 u128::from(ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR)
                     * u128::from(VOLATILITY_ACCUMULATOR_SCALE_FACTOR)

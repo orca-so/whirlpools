@@ -1,0 +1,304 @@
+---
+sidebar_label: Trade
+hide_table_of_contents: true
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import ReactMarkdown from 'react-markdown';
+
+# Executing a Token Swap
+You can use the SDK to execute a token swap on Orca. Whether you're swapping a specific amount of input tokens or looking to receive a precise amount of output tokens, this function handles the preparation of token accounts, liquidity data, and instruction assembly. It also manages slippage tolerance to ensure that swaps are executed within acceptable price changes.
+
+This guide explains how to use the SDK to perform a token swap in an Orca Whirlpool.
+
+<Tabs groupId="sdk-type">
+  <TabItem value="rust" label="Rust">
+    ## 1. Overview of Executing a Token Swap
+    The SDK allows you to swap tokens between different pools on Orca. It handles the calculation of token amounts, manages slippage, and assembles the necessary instructions for executing the swap.
+
+    With this function, you can:
+    - Swap an exact amount of input tokens for the maximum possible output.
+    - Specify the desired amount of output tokens and determine the necessary input.
+    - Control slippage to manage your risk during volatile market conditions.
+
+    ## 2. Getting Started Guide
+    Before executing a token swap, ensure you have completed the environment setup:
+    - **RPC Setup**: Use a Solana RPC client to communicate with the blockchain.
+    - **Wallet Creation**: Create a wallet to interact with the Solana network.
+    - **Devnet Airdrop**: Fund your wallet with a Solana devnet airdrop to cover transaction fees.
+
+    For more details, refer to our [Environment Setup Guide](02-Environment%20Setup.mdx)
+
+    ### Executing a Token Swap
+    To execute a token swap in an Orca Whirlpool, follow these steps:
+
+    1. **RPC Client**: Use a Solana RPC client to interact with the blockchain.
+    2. **Pool Address**: Provide the address of the Orca Whirlpool pool where the swap will take place.
+    3. **Swap Parameters**: Define the swap parameters. You only need to provide one of these parameters, and the function will compute the others in the returned quote based on the current price of the pool:
+      - `inputAmount`: Specify the amount of tokens to swap (if exact input).
+      - `outputAmount`: Specify the desired amount of tokens to receive (if exact output).
+      - `mint`: Provide the mint address of the token you want to swap out.
+    4. **Slippage tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected amounts of tokens received or sent during the swap and the actual amounts executed. A lower slippage tolerance reduces the risk of receiving fewer tokens than expected, but may lead to failed transactions if the market moves too quickly. For example, if you expect to receive 1,000 units of Token B for 100 units of Token A, with a 1% slippage tolerance, the maximum Token A spent will be 101, and the minimum Token B received will be 990.
+    5. **Signer**: This can be your wallet, which will fund the pool initialization. If a signer is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
+    6. **Create Instructions**: Use the appropriate function to generate the necessary instructions for the swap.
+    
+    ```rust
+    use crate::utils::load_wallet;
+    use orca_whirlpools::{
+        set_whirlpools_config_address, swap_instructions, SwapType, WhirlpoolsConfigInput,
+    };
+    use solana_client::nonblocking::rpc_client::RpcClient;
+    use solana_sdk::pubkey::Pubkey;
+    use std::str::FromStr;
+
+    #[tokio::main]
+    async fn main() {
+        set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
+        let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
+        let wallet = load_wallet();
+        let whirlpool_address =
+            Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
+        let mint_address = Pubkey::from_str("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k").unwrap();
+        let input_amount = 1_000_000;
+
+        let result = swap_instructions(
+            &rpc,
+            whirlpool_address,
+            input_amount,
+            mint_address,
+            SwapType::ExactIn,
+            Some(100),
+            Some(wallet.pubkey()),
+        )
+        .await
+        .unwrap();
+
+        println!("Quote estimated token out: {:?}", result.quote);
+        println!("Number of Instructions: {}", result.instructions.len());
+    }
+    ```
+    
+    7. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK.
+    
+    ## 3. Example Usage
+    Suppose you are developing an arbitrage bot that looks for price discrepancies between different liquidity pools on Orca. By using the SDK, the bot can retrieve the quote object for a potential swap, which includes details about the token amounts and expected output. The bot can quickly compare quotes from multiple pools to identify arbitrage opportunities and execute profitable swaps.
+    
+    ## 4. Next Steps
+    After successfully executing a token swap, you might want to:
+
+    - [Open a Position](04-Position%20Management/01-Open%20Position.mdx): Provide liquidity to the pool and earn fees.
+    - [Monitor Positions](04-Position%20Management/05-Monitor%20Positions.mdx): Track your position's performance over time.
+    - Build more complex trading strategies by combining multiple swaps.
+
+    By effectively using the SDK's swap functionality, you can create powerful trading applications on Orca Whirlpools.
+  </TabItem>
+  
+  <TabItem value="ts" label="TypeScript Kit">
+    ## 1. Overview of Executing a Token Swap
+    The SDK allows you to swap tokens between different pools on Orca. It handles the calculation of token amounts, manages slippage, and assembles the necessary instructions for executing the swap.
+
+    With this function, you can:
+    - Swap an exact amount of input tokens for the maximum possible output.
+    - Specify the desired amount of output tokens and determine the necessary input.
+    - Control slippage to manage your risk during volatile market conditions.
+    
+    ## 2. Getting Started Guide
+    Before executing a token swap, ensure you have completed the environment setup:
+    - **RPC Setup**: Use a Solana RPC client to communicate with the blockchain.
+    - **Wallet Creation**: Create a wallet to interact with the Solana network.
+    - **Devnet Airdrop**: Fund your wallet with a Solana devnet airdrop to cover transaction fees.
+
+    For more details, refer to our [Environment Setup Guide](02-Environment%20Setup.mdx)
+    
+    ### Executing a Token Swap
+    To execute a token swap in an Orca Whirlpool, follow these steps:
+
+    1. **RPC Client**: Use a Solana RPC client to interact with the blockchain.
+    2. **Pool Address**: Provide the address of the Orca Whirlpool pool where the swap will take place.
+    3. **Swap Parameters**: Define the swap parameters. You only need to provide one of these parameters, and the function will compute the others in the returned quote based on the current price of the pool:
+      - `inputAmount`: Specify the amount of tokens to swap (if exact input).
+      - `outputAmount`: Specify the desired amount of tokens to receive (if exact output).
+      - `mint`: Provide the mint address of the token you want to swap out.
+    4. **Slippage tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected amounts of tokens received or sent during the swap and the actual amounts executed. A lower slippage tolerance reduces the risk of receiving fewer tokens than expected, but may lead to failed transactions if the market moves too quickly. For example, if you expect to receive 1,000 units of Token B for 100 units of Token A, with a 1% slippage tolerance, the maximum Token A spent will be 101, and the minimum Token B received will be 990.
+    5. **Signer**: This can be your wallet, which will fund the pool initialization. If a signer is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
+    6. **Create Instructions**: Use the appropriate function to generate the necessary instructions for the swap.
+    
+    ```tsx
+    import { setWhirlpoolsConfig, swapInstructions } from '@orca-so/whirlpools';
+    import { createSolanaRpc, devnet, address } from '@solana/kit';
+    import { loadWallet } from './utils';
+
+    await setWhirlpoolsConfig('solanaDevnet');
+    const devnetRpc = createSolanaRpc(devnet('https://api.devnet.solana.com'));
+    const wallet = await loadWallet();
+    const whirlpoolAddress = address("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt");
+    const mintAddress = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
+    const inputAmount = 1_000_000n;
+
+    const { instructions, quote } = await swapInstructions(
+      devnetRpc,
+      { inputAmount, mint: mintAddress },
+      whirlpoolAddress,
+      100,
+      wallet
+    );
+
+    console.log(`Quote estimated token out: ${quote.tokenEstOut}`);
+    console.log(`Number of instructions:, ${instructions.length}`);
+    ```
+    
+    7. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK.
+    
+    ## 3. Example Usage
+    Suppose you are developing an arbitrage bot that looks for price discrepancies between different liquidity pools on Orca. By using the SDK, the bot can retrieve the quote object for a potential swap, which includes details about the token amounts and expected output. The bot can quickly compare quotes from multiple pools to identify arbitrage opportunities and execute profitable swaps.
+    
+    ## 4. Next Steps
+    After successfully executing a token swap, you might want to:
+
+    - [Open a Position](04-Position%20Management/01-Open%20Position.mdx): Provide liquidity to the pool and earn fees.
+    - [Monitor Positions](04-Position%20Management/05-Monitor%20Positions.mdx): Track your position's performance over time.
+    - Build more complex trading strategies by combining multiple swaps.
+
+    By effectively using the SDK's swap functionality, you can create powerful trading applications on Orca Whirlpools.
+  </TabItem>
+  
+  <TabItem value="ts-legacy" label="TypeScript Legacy">
+    Before we begin, you should have an understanding of what ticks are and how they are stored. If not, you can reference [Price & Ticks](../02-Architecture%20Overview/02-Price%20&%20Ticks.md).
+
+    ## Trade with WhirlpoolClient
+    You can use the swap quote and WhirlpoolClient to easily perform a trade.
+
+    Learn more about `amountSpecifiedIsInput` , `aToB` in the section below.
+
+    ### Generating a swap quote by input or output token
+    Generate quote with one of the quote functions:
+    - [`swapQuoteByInputToken`](https://dev.orca.so/legacy/functions/swapQuoteByInputToken.html) if you want an estimate on the amount of outputToken received on an amount of inputToken.
+    - [`swapQuoteByOutputToken`](https://dev.orca.so/legacy/functions/swapQuoteByInputToken.html) if you want an estimate on the amount of inputToken needed to receive a set amount of outputToken.
+
+    The resulting [`SwapQuote`](https://dev.orca.so/legacy/types/SwapQuote.html) object contains the estimations on the expected amount of tokenIn, tokenOut, fees, projected ending sqrtPrice. When you are ready, plug the quote object directly into the swapIx to perform the trade.
+
+    ```tsx
+    const whirlpoolPda = PDAUtil.getWhirlpool(...);
+    const whirlpoolClient = buildWhirlpoolClient(ctx);
+    const whirlpool = await whirlpoolClient.getPool(whirlpoolPda.publicKey, true);
+    // use getData or refreshData, depending on whether you think your data is stale.
+    const whirlpoolData = await whirlpool.getData();
+
+    const inputTokenQuote = await swapQuoteByInputToken(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new u64(190000000),
+      Percentage.fromFraction(1, 1000), // 0.1%
+      ctx.program.programId,
+      fetcher,
+      true
+    );
+
+    // Send out the transaction
+    const txId = await (await whirlpool.swap(inputTokenQuote)).buildAndExecute();
+    ```
+
+    ### Adding a developer fee to the swap
+    The SDK also provides [`swapQuoteByInputTokenWithDevFees`](https://dev.orca.so/legacy/functions/swapQuoteByInputTokenWithDevFees.html) & [`swapWithDevFees`](https://dev.orca.so/legacy/interfaces/Whirlpool.html#swapWithDevFees) function to let developers take a fee as a percentage of the input asset. This feature is a convenient way to calculate the percentage, build a transfer instruction for the fee, and use the remaining input asset in a swap instruction.
+
+    ```tsx
+    // Wallet used to collect developer fees
+    const DEV_WALLET = new PublicKey(...)
+
+    const whirlpoolPda = PDAUtil.getWhirlpool(...);
+    const whirlpoolClient = buildWhirlpoolClient(ctx);
+    const whirlpool = await whirlpoolClient.getPool(whirlpoolPda.publicKey, true);
+    // use getData or refreshData, depending on whether you think your data is stale.
+    const whirlpoolData = await whirlpool.getData();
+
+    const inputTokenQuote = await swapQuoteByInputTokenWithDevFees(
+      whirlpool,
+      whirlpoolData.tokenMintB,
+      new u64(190000000),
+      Percentage.fromFraction(1, 1000), // 0.1%
+      ctx.program.programId,
+      fetcher,
+      Percentage.fromFraction(2, 1000), // 0.2% of the input asset will be sent to DEV_WALLET
+      true
+    );
+
+    // Send out the transaction
+    const txId = await (await whirlpool.swapWithDevFees(inputTokenQuote, DEV_WALLET)).buildAndExecute();
+    ```
+
+    > ℹ️ The developer fee transfer is performed by the SPL Token program or System program, and not the Whirlpools program.
+
+    Best practice is to [pre-create Associated Token Accounts (ATA)](https://solanacookbook.com/references/token.html#how-to-create-a-token-account) for each token type which will be sent to the developer wallet. Also, if the fee will be payed in SOL, make sure that the developer wallet has at least 0.001 SOL to ensure that the wallet account will meet rent exemption.
+
+    ## The Manual Way
+    Manually constructing your own parameters gives you more flexibility in defining the boundaries of your trade.
+
+    ### Trade Parameters
+    The [`swap`](https://dev.orca.so/legacy/interfaces/Whirlpool.html#swap) instruction requires the following input (and other common accounts) to execute the trade.
+
+    ```tsx
+    export type SwapInput = {
+      amount: u64;
+      otherAmountThreshold: u64;
+      sqrtPriceLimit: BN;
+      amountSpecifiedIsInput: boolean;
+      aToB: boolean;
+      tickArray0: PublicKey;
+      tickArray1: PublicKey;
+      tickArray2: PublicKey;
+    };
+    ```
+
+    - Decide the trade direction with `aToB`
+        - If true, you are trading from token A to B
+        - If false, you are trading from token B to A
+    - Decide the token you would like to cap with `amountSpecifiedIsInput`
+        - If true, `amount` is the value representing the token being traded from. This amount is subject to trade fees before the trade calculation.
+        - If false, `amount` is the value representing the token being traded to. This amount is the required token out amount from a trade after fees.
+    - Decide whether you want to cap the other token of the trade using `otherAmountThreshold`
+        - If `amountSpecifiedIsInput` is true, this amount represents the minimum amount of output token expected from this trade. If you do not want to cap, use 0.
+        - If `amountSpecifiedIsInput` is false, this amount represents the maximum amount of input token that can be used to trade to an expected amount of the output token. If you do not want to cap, use the maximum amount of tokens in your wallet.
+    - Decide the price limit that you would like to cap this trade to with `sqrtPriceLimit`.
+        - If `aToB` is true, the trade will push the price lower. This amount is minimum sqrt-price that the trade will trade to if input token amount is sufficient.
+        - If `aToB` is false, the trade will push the price higher. This amount is the maximum sqrt-price that the trade will trade to if the the input token amount is sufficient.
+        - If you don't have a cap and want to trade as much as you've defined with `amount` and `otherAmountThreshold`, use the minimum price of your tick-array range for `bToA` and maximum price of your tick-range for `aToB`. If you don't mind hitting tick-array errors or you know your swap won't move the price too much, you can use [`MIN_SQRT_PRICE`](https://dev.orca.so/legacy/variables/MIN_SQRT_PRICE.html) or [`MAX_SQRT_PRICE`](https://dev.orca.so/legacy/variables/MAX_SQRT_PRICE.html).
+        - sqrt-price is a x64 number. So your number would need to multiplied by 2^64. Use [`PriceMath`](https://dev.orca.so/legacy/classes/PriceMath.html) utils here to help you do the conversion.
+    - `amount` and `otherAmountThreshold` are u64 numbers. So make sure you shift your expected token numbers by the token's decimal.
+
+    ### Tick Arrays
+    The tick-array parameters are a sequence of tick-arrays that your swap may traverse through. `tickArray0` will always be the PublicKey of the TickArray that houses the current tick-index.
+
+    In almost all cases, you can use the [`SwapUtils.getTickArrays`](https://dev.orca.so/legacy/classes/SwapUtils.html#getTickArrays) to generate the sequence of tick-arrays that you need.
+
+    If you opt for building it yourself and you know that your swap is small enough that it's unlikely to traverse through an array, simply provide the same tickArray0 account for all 3 accounts. Once you have the sequence of tick-array public keys, you can use the AccountFetcher to check that the tick-arrays are initialized.
+
+    To learn more about tick-arrays and how its traversal works, read [Understanding Tick Arrays](../02-Architecture%20Overview/03-Understanding%20Tick%20Arrays.md).
+
+    ### Common Usage Examples
+    Assume all tokens below have a decimal of 6
+    1. Trading 100 token A for some amount of token B.
+        ```tsx
+        aToB = true
+        amount = 100 * Math.pow(10, 6)
+        amountSpecifiedIsInput  = true
+        otherAmountThreshold = 0
+        sqrt_price_limit = MIN_SQRT_PRICE
+        ```
+    2. Trading a max amount of 50 token B for 100 token A
+        ```tsx
+        aToB = false
+        amount = 100 * Math.pow(10, 6)
+        amountSpecifiedIsInput  = false
+        otherAmountThreshold = 50
+        sqrt_price_limit = MAX_SQRT_PRICE
+        ```
+    3. Trade whatever amount needed to move the price from current sqrt-price 50_x64 to sqrt_price 250_x64
+        ```tsx
+        aToB = true
+        amount = maxAmmountWallet
+        amountSpecifiedIsInput  = true
+        otherAmountThreshold = 0
+        sqrt_price_limit = 250_x64
+        ```
+  </TabItem>
+</Tabs> 

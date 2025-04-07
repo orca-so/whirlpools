@@ -2877,9 +2877,10 @@ mod adaptive_fee_tests {
 
     use super::*;
     use crate::{
-        manager::fee_rate_manager::{
-            ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, FEE_RATE_HARD_LIMIT,
-            REDUCTION_FACTOR_DENOMINATOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+        manager::fee_rate_manager::FEE_RATE_HARD_LIMIT,
+        state::{
+            ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, REDUCTION_FACTOR_DENOMINATOR,
+            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         },
         util::test_utils::swap_test_fixture::*,
     };
@@ -13898,7 +13899,7 @@ mod adaptive_fee_tests {
 
     mod max_reference_age_reset {
         use super::*;
-        use crate::manager::fee_rate_manager::MAX_REFERENCE_AGE;
+        use crate::state::MAX_REFERENCE_AGE;
 
         // Even if major swaps are continuous for a long time, references are reset when their age exceed MAX_REFERENCE_AGE
         // This is an autonomous means of recovering from DoS that keeps the fee rate high and makes the pool unusable

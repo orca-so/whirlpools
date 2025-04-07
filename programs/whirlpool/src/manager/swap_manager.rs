@@ -2218,6 +2218,9 @@ mod swap_sqrt_price_tests {
         swap_test_info.run(&mut tick_sequence, 100);
     }
 
+    /*
+    The sqrt_price_limit = whirlpool.sqrt_price will be rejected
+
     #[test]
     /// A leftward swap with the sqrt-price limit at the current tick index.
     /// |__c2____limit,c1_______|
@@ -2289,6 +2292,7 @@ mod swap_sqrt_price_tests {
             },
         )
     }
+    */
 
     #[test]
     #[should_panic(expected = "InvalidSqrtPriceLimitDirection")]
@@ -14096,6 +14100,7 @@ mod adaptive_fee_tests {
 
         // sqrt_price_limit that matches the pool's sqrt_price does not error
         // reduction should work even if the swap loop does not run at all
+        /*
         #[test]
         fn test_sqrt_price_limit_eq_whirlpool_sqrt_price() {
             let max_volatility_accumulator = 350_000;
@@ -14181,5 +14186,6 @@ mod adaptive_fee_tests {
 
             assert!(variables.volatility_reference == 0);
         }
+        */
     }
 }

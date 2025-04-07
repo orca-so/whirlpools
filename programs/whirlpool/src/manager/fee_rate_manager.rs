@@ -680,15 +680,6 @@ mod adaptive_fee_rate_manager_tests {
                     adaptive_fee_info.constants.tick_group_size,
                     adaptive_fee_info.constants.major_swap_threshold_ticks,
                 );
-                // update_reference and update_volatility_accumulator should be called
-                let expected_volatility_accumulator = (adaptive_fee_info
-                    .variables
-                    .volatility_reference
-                    + ((floor_division(current_tick_index, tick_group_size as i32)
-                        - adaptive_fee_info.variables.tick_group_index_reference)
-                        .abs()
-                        * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as i32) as u32)
-                    .min(adaptive_fee_info.constants.max_volatility_accumulator);
                 check_variables(
                     &adaptive_fee_variables,
                     // both reference and timestamp should not be updated (< filter_period)
@@ -696,8 +687,8 @@ mod adaptive_fee_rate_manager_tests {
                     adaptive_fee_info.variables.last_major_swap_timestamp,
                     adaptive_fee_info.variables.tick_group_index_reference,
                     adaptive_fee_info.variables.volatility_reference,
-                    // volatility_accumulator should be updated
-                    expected_volatility_accumulator,
+                    // volatility_accumulator should NOT be updated (it should be updated by update_volatility_accumulator function)
+                    adaptive_fee_info.variables.volatility_accumulator,
                 );
             }
             _ => panic!("Adaptive variant expected."),
@@ -769,7 +760,6 @@ mod adaptive_fee_rate_manager_tests {
                     adaptive_fee_info.variables.volatility_accumulator
                         * adaptive_fee_info.constants.reduction_factor as u32
                         / REDUCTION_FACTOR_DENOMINATOR as u32;
-                let expected_volatility_accumulator = expected_volatility_reference; // delta = 0
                 check_variables(
                     &adaptive_fee_variables,
                     timestamp, // should be updated
@@ -777,8 +767,8 @@ mod adaptive_fee_rate_manager_tests {
                     // both reference should be updated (>= filter_period, < decay_period)
                     expected_tick_group_index_reference,
                     expected_volatility_reference,
-                    // volatility_accumulator should be updated
-                    expected_volatility_accumulator,
+                    // volatility_accumulator should NOT be updated (it should be updated by update_volatility_accumulator function)
+                    adaptive_fee_info.variables.volatility_accumulator,
                 );
             }
             _ => panic!("Adaptive variant expected."),
@@ -847,7 +837,6 @@ mod adaptive_fee_rate_manager_tests {
                 // update_reference and update_volatility_accumulator should be called
                 let expected_tick_group_index_reference = 16;
                 let expected_volatility_reference = 0;
-                let expected_volatility_accumulator = 0;
                 check_variables(
                     &adaptive_fee_variables,
                     timestamp, // should be updated
@@ -855,8 +844,8 @@ mod adaptive_fee_rate_manager_tests {
                     // both reference should be updated (>= decay_period)
                     expected_tick_group_index_reference,
                     expected_volatility_reference,
-                    // volatility_reference should be updated
-                    expected_volatility_accumulator,
+                    // volatility_accumulator should NOT be updated (it should be updated by update_volatility_accumulator function)
+                    adaptive_fee_info.variables.volatility_accumulator,
                 );
             }
             _ => panic!("Adaptive variant expected."),

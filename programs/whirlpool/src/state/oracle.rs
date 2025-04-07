@@ -3,7 +3,7 @@ use crate::manager::fee_rate_manager::{
     ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, MAX_REFERENCE_AGE, REDUCTION_FACTOR_DENOMINATOR,
     VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
 };
-use crate::math::{sqrt_price_from_tick_index, U256Muldiv, Q64_RESOLUTION};
+use crate::math::{increasing_price_order, sqrt_price_from_tick_index, U256Muldiv, Q64_RESOLUTION};
 use crate::state::Whirlpool;
 use anchor_lang::prelude::*;
 use std::cell::{Ref, RefMut};
@@ -207,20 +207,16 @@ impl AdaptiveFeeVariables {
         post_sqrt_price: u128,
         major_swap_threshold_ticks: u16,
     ) -> Result<bool> {
-        let (smaller_sqrt_price, larger_sqrt_price) = if pre_sqrt_price < post_sqrt_price {
-            (pre_sqrt_price, post_sqrt_price)
-        } else {
-            (post_sqrt_price, pre_sqrt_price)
-        };
+        let (smaller_sqrt_price, larger_sqrt_price) = increasing_price_order(pre_sqrt_price, post_sqrt_price);
 
         // major_swap_sqrt_price_target
-        //   = smaller_sqrt_price * pow(1.0001, major_swap_threshold_ticks)
+        //   = smaller_sqrt_price * sqrt(pow(1.0001, major_swap_threshold_ticks))
         //   = smaller_sqrt_price * sqrt_price_from_tick_index(major_swap_threshold_ticks) >> Q64_RESOLUTION
         //
         // Note: The following two are theoretically equal, but there is an integer arithmetic error.
         //       However, the error impact is less than 0.00000003% in sqrt price (x64) and is small enough.
-        //       - sqrt_price_from_tick_index(a) * sqrt_price_from_tick_index(b)   (mathematically, pow(1.0001, a) * pow(1.0001, b) = pow(1.0001, a + b))
-        //       - sqrt_price_from_tick_index(a + b)                               (mathematically, pow(1.0001, a + b))
+        //       - sqrt_price_from_tick_index(a) * sqrt_price_from_tick_index(b) >> Q64_RESOLUTION   (mathematically, sqrt(pow(1.0001, a)) * sqrt(pow(1.0001, b)) = sqrt(pow(1.0001, a + b)))
+        //       - sqrt_price_from_tick_index(a + b)                                                 (mathematically, sqrt(pow(1.0001, a + b)))
         let major_swap_sqrt_price_factor =
             sqrt_price_from_tick_index(major_swap_threshold_ticks as i32);
         let major_swap_sqrt_price_target = U256Muldiv::new(0, smaller_sqrt_price)

@@ -2218,15 +2218,13 @@ mod swap_sqrt_price_tests {
         swap_test_info.run(&mut tick_sequence, 100);
     }
 
-    /*
-    The sqrt_price_limit = whirlpool.sqrt_price will be rejected
-
     #[test]
+    #[should_panic(expected = "InvalidSqrtPriceLimitDirection")]
     /// A leftward swap with the sqrt-price limit at the current tick index.
     /// |__c2____limit,c1_______|
     ///
     /// Expectation:
-    /// Swap will not swap and exit on the price limit since it cannot proceed into the price limit.
+    /// Swap will fail because price limit is in the wrong direction.
     fn sqrt_price_limit_at_current_tick_a_to_b() {
         let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
             tick_spacing: TS_8,
@@ -2258,11 +2256,12 @@ mod swap_sqrt_price_tests {
     }
 
     #[test]
+    #[should_panic(expected = "InvalidSqrtPriceLimitDirection")]
     /// A rightward swap with the sqrt-price limit at the current tick index.
     /// |____c1,limit__c2__|
     ///
     /// Expectation:
-    /// Swap will not swap and exit on the price limit since it cannot proceed into the price limit.
+    /// Swap will fail because price limit is in the wrong direction.
     fn sqrt_price_limit_at_current_tick_b_to_a() {
         let swap_test_info = SwapTestFixture::new(SwapTestFixtureInfo {
             tick_spacing: TS_8,
@@ -2292,7 +2291,6 @@ mod swap_sqrt_price_tests {
             },
         )
     }
-    */
 
     #[test]
     #[should_panic(expected = "InvalidSqrtPriceLimitDirection")]

@@ -100,12 +100,9 @@ impl FeeRateManager {
                         None
                     };
 
-                // update volatility_accumulator at the initialization of the fee rate manager
-                // Note: reduction uses the value of volatility_accumulator, but update_reference does not update it
+                // Note: reduction uses the value of volatility_accumulator, but update_reference does not update it.
                 //       update_volatility_accumulator is always called if the swap loop is executed at least once,
-                //       but it is executed as a precaution against the case where the swap loop does not run at all (sqrt_price_limit = whirlpool.sqrt_price)
-                adaptive_fee_variables
-                    .update_volatility_accumulator(tick_group_index, &adaptive_fee_constants)?;
+                //       amount == 0 and sqrt_price_limit == whirlpool.sqrt_price are rejected, so the loop is guaranteed to run at least once.
 
                 Ok(Self::Adaptive {
                     a_to_b,

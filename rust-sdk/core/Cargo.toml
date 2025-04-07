@@ -20,6 +20,7 @@ floats = ["dep:libm"]
 ethnum = { version = "^1.1" }
 libm = { version = ">=0.1, <0.3", optional = true }
 orca_whirlpools_macros = { path = "../macros" }
+whirlpool = { path = "../../programs/whirlpool", features = ["no-entrypoint"] }
 wasm-bindgen = { version = "^0.2", optional = true }
 serde = { version = "^1.0", features = ["derive"], optional = true }
 serde-big-array = { version = "^0.5", optional = true }

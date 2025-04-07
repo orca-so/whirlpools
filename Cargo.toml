@@ -1,6 +1,7 @@
 [workspace]
 members = [
-    "programs/*"
+    "programs/*",
+    "rust-sdk/core"
 ]
 
 [profile.release]

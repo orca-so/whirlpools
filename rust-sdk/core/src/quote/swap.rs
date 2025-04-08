@@ -736,6 +736,9 @@ mod tests {
             None,
         )
         .unwrap();
+
+        // With the implementation of the current release,
+        // this results `compute_swap` running in an infinite loop.
         let result_4739 = swap_quote_by_input_token(
             4739,
             true,

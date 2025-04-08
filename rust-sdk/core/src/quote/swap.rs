@@ -559,6 +559,17 @@ mod tests {
         .into()
     }
 
+    fn test_tick_arrays_one_initialized_tick() -> TickArrays {
+        [
+            test_tick_array_one_initialized_tick(0),
+            test_tick_array_uninitialized_ticks(176),
+            test_tick_array_uninitialized_ticks(352),
+            test_tick_array_uninitialized_ticks(-176),
+            test_tick_array_uninitialized_ticks(-352),
+        ]
+        .into()
+    }
+
     #[test]
     fn test_exact_in_a_to_b_simple() {
         let result = swap_quote_by_input_token(
@@ -704,36 +715,40 @@ mod tests {
     }
 
     #[test]
-    fn test_swap_iteration_limit() {
-        let tick_spacing = 256;
-        let whirlpool = WhirlpoolFacade {
-            tick_current_index: 0,
-            fee_rate: 3000,
-            liquidity: 1000,
-            sqrt_price: 1 << 64,
-            tick_spacing,
-            ..WhirlpoolFacade::default()
-        };
-        let tick_array_0 = test_tick_array_one_initialized_tick(0);
-        let tick_array_1 = test_tick_array_uninitialized_ticks(22528);
-        let tick_array_2 = test_tick_array_uninitialized_ticks(45056);
-        let tick_array_3 = test_tick_array_uninitialized_ticks(-22528);
-        let tick_array_4 = test_tick_array_uninitialized_ticks(-45056);
-
-        let tick_arrays: [Option<TickArrayFacade>; 6] = [
-            Some(tick_array_0.clone()),
-            Some(tick_array_1.clone()),
-            Some(tick_array_2.clone()),
-            Some(tick_array_3.clone()),
-            Some(tick_array_4.clone()),
+    fn test_swap_only_availalbe_liquidity() {
+        let result_4737 = swap_quote_by_input_token(
+            4737,
+            true,
+            0,
+            test_whirlpool(1 << 64, false),
+            test_tick_arrays_one_initialized_tick(),
             None,
-        ];
-
-        let tick_sequence_result = TickArraySequence::new(tick_arrays, whirlpool.tick_spacing);
-
-        let tick_sequence = tick_sequence_result.unwrap();
-
-        let result = compute_swap(1_000_000, 0, whirlpool, tick_sequence, true, true, 0);
+            None,
+        )
+        .unwrap();
+        let result_4738 = swap_quote_by_input_token(
+            4738,
+            true,
+            0,
+            test_whirlpool(1 << 64, false),
+            test_tick_arrays_one_initialized_tick(),
+            None,
+            None,
+        )
+        .unwrap();
+        let result_4739 = swap_quote_by_input_token(
+            4739,
+            true,
+            0,
+            test_whirlpool(1 << 64, false),
+            test_tick_arrays_one_initialized_tick(),
+            None,
+            None,
+        )
+        .unwrap();
+        assert_eq!(result_4737.token_in, 4737);
+        assert_eq!(result_4738.token_in, 4738);
+        assert_eq!(result_4739.token_in, 4738);
     }
 
     // TODO: add more complex tests that

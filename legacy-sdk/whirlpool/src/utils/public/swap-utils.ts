@@ -4,7 +4,7 @@ import { AddressUtil, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import type { WhirlpoolContext } from "../..";
-import { TickUtil } from "../..";
+import { PriceMath, TICK_ARRAY_SIZE, TickUtil } from "../..";
 import type {
   WhirlpoolAccountFetchOptions,
   WhirlpoolAccountFetcherInterface,
@@ -51,13 +51,27 @@ export class SwapUtils {
     return new BN(aToB ? MIN_SQRT_PRICE : MAX_SQRT_PRICE);
   }
 
+  public static getSqrtPriceLimit(
+    aToB: boolean,
+    tickArrays: TickArray[],
+    tickSpacing: number
+  ) {
+    const startTickIndexes = tickArrays.map((ta) => ta.startTickIndex);
+    const startTickIndex = Math.min(...startTickIndexes);
+    const endTickIndex =
+      Math.max(...startTickIndexes) + TICK_ARRAY_SIZE * tickSpacing;
+    const minSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(startTickIndex);
+    const maxSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(endTickIndex);
+    return new BN(aToB ? minSqrtPrice : maxSqrtPrice);
+  }
+
   /**
    * Get the default values for the otherAmountThreshold parameter in a swap.
    * @param amountSpecifiedIsInput - The direction of a swap
    * @returns The default values for the otherAmountThreshold parameter in a swap.
    */
   public static getDefaultOtherAmountThreshold(
-    amountSpecifiedIsInput: boolean,
+    amountSpecifiedIsInput: boolean
   ) {
     return amountSpecifiedIsInput ? ZERO : U64_MAX;
   }
@@ -72,7 +86,7 @@ export class SwapUtils {
   public static getSwapDirection(
     pool: WhirlpoolData,
     swapTokenMint: PublicKey,
-    swapTokenIsInput: boolean,
+    swapTokenIsInput: boolean
   ): SwapDirection | undefined {
     const tokenType = PoolUtil.getTokenType(pool, swapTokenMint);
     if (!tokenType) {
@@ -101,14 +115,14 @@ export class SwapUtils {
     tickSpacing: number,
     aToB: boolean,
     programId: PublicKey,
-    whirlpoolAddress: PublicKey,
+    whirlpoolAddress: PublicKey
   ): PublicKey[] {
     return getTickArrayPublicKeysWithStartTickIndex(
       tickCurrentIndex,
       tickSpacing,
       aToB,
       programId,
-      whirlpoolAddress,
+      whirlpoolAddress
     ).map((p) => p.pubkey);
   }
 
@@ -128,18 +142,18 @@ export class SwapUtils {
     tickSpacing: number,
     aToB: boolean,
     programId: PublicKey,
-    whirlpoolAddress: PublicKey,
+    whirlpoolAddress: PublicKey
   ): PublicKey | undefined {
     try {
       const fallbackStartTickIndex = TickUtil.getStartTickIndex(
         tickArrays[0].startTickIndex,
         tickSpacing,
-        aToB ? 1 : -1,
+        aToB ? 1 : -1
       );
       const pda = PDAUtil.getTickArray(
         programId,
         whirlpoolAddress,
-        fallbackStartTickIndex,
+        fallbackStartTickIndex
       );
       return pda.publicKey;
     } catch {
@@ -167,13 +181,13 @@ export class SwapUtils {
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
     fetcher: WhirlpoolAccountFetcherInterface,
-    opts?: WhirlpoolAccountFetchOptions,
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<TickArray[]> {
     const data = await this.getBatchTickArrays(
       programId,
       fetcher,
       [{ tickCurrentIndex, tickSpacing, aToB, whirlpoolAddress }],
-      opts,
+      opts
     );
     return data[0];
   }
@@ -190,7 +204,7 @@ export class SwapUtils {
     programId: PublicKey,
     fetcher: WhirlpoolAccountFetcherInterface,
     tickArrayRequests: TickArrayRequest[],
-    opts?: WhirlpoolAccountFetchOptions,
+    opts?: WhirlpoolAccountFetchOptions
   ): Promise<TickArray[][]> {
     let addresses: TickArrayAddress[] = [];
     let requestToIndices = [];
@@ -205,7 +219,7 @@ export class SwapUtils {
         tickSpacing,
         aToB,
         programId,
-        whirlpoolAddress,
+        whirlpoolAddress
       );
       requestToIndices.push([
         addresses.length,
@@ -215,7 +229,7 @@ export class SwapUtils {
     }
     const data = await fetcher.getTickArrays(
       addresses.map((a) => a.pubkey),
-      opts,
+      opts
     );
 
     // Re-map from flattened batch data to TickArray[] for request
@@ -240,7 +254,7 @@ export class SwapUtils {
    */
   public static interpolateUninitializedTickArrays(
     whirlpoolAddress: PublicKey,
-    tickArrays: TickArray[],
+    tickArrays: TickArray[]
   ): TickArray[] {
     return tickArrays.map((tickArray) => ({
       address: tickArray.address,
@@ -266,7 +280,7 @@ export class SwapUtils {
     estAmountIn: BN,
     estAmountOut: BN,
     slippageTolerance: Percentage,
-    amountSpecifiedIsInput: boolean,
+    amountSpecifiedIsInput: boolean
   ): Pick<SwapInput, "amount" | "otherAmountThreshold"> {
     if (amountSpecifiedIsInput) {
       return {
@@ -274,7 +288,7 @@ export class SwapUtils {
         otherAmountThreshold: adjustForSlippage(
           estAmountOut,
           slippageTolerance,
-          false,
+          false
         ),
       };
     } else {
@@ -283,7 +297,7 @@ export class SwapUtils {
         otherAmountThreshold: adjustForSlippage(
           estAmountIn,
           slippageTolerance,
-          true,
+          true
         ),
       };
     }
@@ -307,7 +321,7 @@ export class SwapUtils {
     whirlpool: Whirlpool,
     inputTokenAssociatedAddress: Address,
     outputTokenAssociatedAddress: Address,
-    wallet: PublicKey,
+    wallet: PublicKey
   ) {
     const data = whirlpool.getData();
     return this.getSwapParamsFromQuoteKeys(
@@ -318,7 +332,7 @@ export class SwapUtils {
       data.tokenVaultB,
       inputTokenAssociatedAddress,
       outputTokenAssociatedAddress,
-      wallet,
+      wallet
     );
   }
 
@@ -330,7 +344,7 @@ export class SwapUtils {
     tokenVaultB: PublicKey,
     inputTokenAssociatedAddress: Address,
     outputTokenAssociatedAddress: Address,
-    wallet: PublicKey,
+    wallet: PublicKey
   ) {
     const aToB = quote.aToB;
     const [inputTokenATA, outputTokenATA] = AddressUtil.toPubKeys([

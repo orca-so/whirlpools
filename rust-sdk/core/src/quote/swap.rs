@@ -532,17 +532,6 @@ mod tests {
         .into()
     }
 
-    fn test_tick_arrays_one_initialized_tick() -> TickArrays {
-        [
-            test_tick_array_one_initialized_tick(0),
-            test_tick_array_uninitialized_ticks(176),
-            test_tick_array_uninitialized_ticks(352),
-            test_tick_array_uninitialized_ticks(-176),
-            test_tick_array_uninitialized_ticks(-352),
-        ]
-        .into()
-    }
-
     #[test]
     fn test_exact_in_a_to_b_simple() {
         let result = swap_quote_by_input_token(

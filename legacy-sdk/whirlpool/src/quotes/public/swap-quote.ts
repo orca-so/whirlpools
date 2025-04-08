@@ -115,7 +115,7 @@ export async function swapQuoteByInputToken(
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions,
-  useFallbackTickArray: UseFallbackTickArray = UseFallbackTickArray.Never
+  useFallbackTickArray: UseFallbackTickArray = UseFallbackTickArray.Never,
 ): Promise<SwapQuote> {
   const params = await swapQuoteByToken(
     whirlpool,
@@ -125,7 +125,7 @@ export async function swapQuoteByInputToken(
     useFallbackTickArray,
     programId,
     fetcher,
-    opts
+    opts,
   );
   return swapQuoteWithParams(params, slippageTolerance);
 }
@@ -155,7 +155,7 @@ export async function swapQuoteByOutputToken(
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions,
-  useFallbackTickArray: UseFallbackTickArray = UseFallbackTickArray.Never
+  useFallbackTickArray: UseFallbackTickArray = UseFallbackTickArray.Never,
 ): Promise<SwapQuote> {
   const params = await swapQuoteByToken(
     whirlpool,
@@ -165,7 +165,7 @@ export async function swapQuoteByOutputToken(
     useFallbackTickArray,
     programId,
     fetcher,
-    opts
+    opts,
   );
   return swapQuoteWithParams(params, slippageTolerance);
 }
@@ -180,13 +180,13 @@ export async function swapQuoteByOutputToken(
  */
 export function swapQuoteWithParams(
   params: SwapQuoteParam,
-  slippageTolerance: Percentage
+  slippageTolerance: Percentage,
 ): SwapQuote {
   const quote = simulateSwap({
     ...params,
     tickArrays: SwapUtils.interpolateUninitializedTickArrays(
       PublicKey.default,
-      params.tickArrays
+      params.tickArrays,
     ),
   });
 
@@ -207,7 +207,7 @@ export function swapQuoteWithParams(
       quote.estimatedAmountIn,
       quote.estimatedAmountOut,
       slippageTolerance,
-      quote.amountSpecifiedIsInput
+      quote.amountSpecifiedIsInput,
     ),
   };
 
@@ -222,7 +222,7 @@ async function swapQuoteByToken(
   useFallbackTickArray: UseFallbackTickArray,
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
-  opts?: WhirlpoolAccountFetchOptions
+  opts?: WhirlpoolAccountFetchOptions,
 ): Promise<SwapQuoteParam> {
   // If we use whirlpool.getData() here, quote will not be the latest even if opts is IGNORE_CACHE
   const whirlpoolData = await fetcher.getPool(whirlpool.getAddress(), opts);
@@ -232,14 +232,14 @@ async function swapQuoteByToken(
   const swapTokenType = PoolUtil.getTokenType(whirlpoolData, swapMintKey);
   invariant(
     !!swapTokenType,
-    "swapTokenMint does not match any tokens on this pool"
+    "swapTokenMint does not match any tokens on this pool",
   );
 
   const aToB =
     SwapUtils.getSwapDirection(
       whirlpoolData,
       swapMintKey,
-      amountSpecifiedIsInput
+      amountSpecifiedIsInput,
     ) === SwapDirection.AtoB;
 
   const tickArrays = await SwapUtils.getTickArrays(
@@ -249,7 +249,7 @@ async function swapQuoteByToken(
     AddressUtil.toPubKey(programId),
     whirlpool.getAddress(),
     fetcher,
-    opts
+    opts,
   );
 
   const fallbackTickArray = getFallbackTickArray(
@@ -257,13 +257,13 @@ async function swapQuoteByToken(
     tickArrays,
     aToB,
     whirlpool,
-    programId
+    programId,
   );
 
   const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(
     fetcher,
     whirlpoolData,
-    IGNORE_CACHE
+    IGNORE_CACHE,
   );
 
   return {
@@ -272,13 +272,8 @@ async function swapQuoteByToken(
     aToB,
     amountSpecifiedIsInput,
     sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
-    // sqrtPriceLimit: SwapUtils.getSqrtPriceLimit(
-    //   aToB,
-    //   tickArrays,
-    //   whirlpool.getData().tickSpacing
-    // ),
     otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-      amountSpecifiedIsInput
+      amountSpecifiedIsInput,
     ),
     tickArrays,
     tokenExtensionCtx,
@@ -291,7 +286,7 @@ function getFallbackTickArray(
   tickArrays: TickArray[],
   aToB: boolean,
   whirlpool: Whirlpool,
-  programId: Address
+  programId: Address,
 ): PublicKey | undefined {
   if (useFallbackTickArray === UseFallbackTickArray.Never) {
     return undefined;
@@ -302,7 +297,7 @@ function getFallbackTickArray(
     whirlpool.getData().tickSpacing,
     aToB,
     AddressUtil.toPubKey(programId),
-    whirlpool.getAddress()
+    whirlpool.getAddress(),
   );
 
   if (
@@ -314,7 +309,7 @@ function getFallbackTickArray(
 
   invariant(
     useFallbackTickArray === UseFallbackTickArray.Situational,
-    `Unexpected UseFallbackTickArray value: ${useFallbackTickArray}`
+    `Unexpected UseFallbackTickArray value: ${useFallbackTickArray}`,
   );
 
   const ticksInArray = whirlpool.getData().tickSpacing * TICK_ARRAY_SIZE;

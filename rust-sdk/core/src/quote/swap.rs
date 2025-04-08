@@ -5,8 +5,8 @@ use crate::{
     try_get_next_sqrt_price_from_b, try_reverse_apply_swap_fee, try_reverse_apply_transfer_fee,
     CoreError, ExactInSwapQuote, ExactOutSwapQuote, TickArraySequence, TickArrays, TickFacade,
     TransferFee, WhirlpoolFacade, AMOUNT_EXCEEDS_MAX_U64, ARITHMETIC_OVERFLOW,
-    INVALID_SQRT_PRICE_LIMIT_DIRECTION, MAX_SQRT_PRICE, MIN_SQRT_PRICE,
-    SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT,
+    INVALID_SQRT_PRICE_LIMIT_DIRECTION, INVALID_TICK_ARRAY_SEQUENCE, MAX_SQRT_PRICE,
+    MIN_SQRT_PRICE, SQRT_PRICE_LIMIT_OUT_OF_BOUNDS, ZERO_TRADABLE_AMOUNT,
 };
 
 #[cfg(feature = "wasm")]
@@ -186,12 +186,9 @@ pub fn compute_swap<const SIZE: usize>(
 ) -> Result<SwapResult, CoreError> {
     let sqrt_price_limit = if sqrt_price_limit == 0 {
         if a_to_b {
-            let start_tick_price: u128 =
-                tick_index_to_sqrt_price(tick_sequence.start_index()).into();
-            std::cmp::max(start_tick_price, MIN_SQRT_PRICE)
+            MIN_SQRT_PRICE
         } else {
-            let end_tick_price: u128 = tick_index_to_sqrt_price(tick_sequence.end_index()).into();
-            std::cmp::min(end_tick_price, MAX_SQRT_PRICE)
+            MAX_SQRT_PRICE
         }
     } else {
         sqrt_price_limit
@@ -715,43 +712,28 @@ mod tests {
     }
 
     #[test]
-    fn test_swap_only_availalbe_liquidity() {
-        let result_4737 = swap_quote_by_input_token(
-            4737,
+    fn test_swap_quote_does_not_exceed_tick_array_sequence() {
+        let result_1000_tokens_in = swap_quote_by_input_token(
+            1000,
             true,
             0,
             test_whirlpool(1 << 64, false),
-            test_tick_arrays_one_initialized_tick(),
+            test_tick_arrays(),
             None,
             None,
         )
         .unwrap();
-        let result_4738 = swap_quote_by_input_token(
-            4738,
-            true,
-            0,
-            test_whirlpool(1 << 64, false),
-            test_tick_arrays_one_initialized_tick(),
-            None,
-            None,
-        )
-        .unwrap();
-
-        // With the implementation of the current release,
-        // this results `compute_swap` running in an infinite loop.
         let result_4739 = swap_quote_by_input_token(
-            4739,
+            1001,
             true,
             0,
             test_whirlpool(1 << 64, false),
             test_tick_arrays_one_initialized_tick(),
             None,
             None,
-        )
-        .unwrap();
-        assert_eq!(result_4737.token_in, 4737);
-        assert_eq!(result_4738.token_in, 4738);
-        assert_eq!(result_4739.token_in, 4738);
+        );
+        assert_eq!(result_1000.token_in, 1000);
+        assert!(matches!(result_1001, Err(INVALID_TICK_ARRAY_SEQUENCE)));
     }
 
     // TODO: add more complex tests that

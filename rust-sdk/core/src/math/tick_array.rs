@@ -1,6 +1,7 @@
 use crate::{
-    CoreError, TickArrayFacade, TickFacade, INVALID_TICK_INDEX, MAX_TICK_INDEX, MIN_TICK_INDEX,
-    TICK_ARRAY_NOT_EVENLY_SPACED, TICK_ARRAY_SIZE, TICK_INDEX_OUT_OF_BOUNDS, TICK_SEQUENCE_EMPTY,
+    CoreError, TickArrayFacade, TickFacade, INVALID_TICK_ARRAY_SEQUENCE, INVALID_TICK_INDEX,
+    MAX_TICK_INDEX, MIN_TICK_INDEX, TICK_ARRAY_NOT_EVENLY_SPACED, TICK_ARRAY_SIZE,
+    TICK_INDEX_OUT_OF_BOUNDS, TICK_SEQUENCE_EMPTY,
 };
 
 use super::{
@@ -86,9 +87,8 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
         let mut next_index = tick_index;
         loop {
             next_index = get_next_initializable_tick_index(next_index, self.tick_spacing);
-            // If at the end of the sequence, we don't have tick info but can still return the next tick index
             if next_index > array_end_index {
-                return Ok((None, array_end_index));
+                return Err(INVALID_TICK_ARRAY_SEQUENCE);
             }
             let tick = self.tick(next_index)?;
             if tick.initialized {
@@ -105,9 +105,8 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
         let mut prev_index =
             get_initializable_tick_index(tick_index, self.tick_spacing, Some(false));
         loop {
-            // If at the start of the sequence, we don't have tick info but can still return the previous tick index
             if prev_index < array_start_index {
-                return Ok((None, array_start_index));
+                return Err(INVALID_TICK_ARRAY_SEQUENCE);
             }
             let tick = self.tick(prev_index)?;
             if tick.initialized {
@@ -258,9 +257,8 @@ mod tests {
     #[test]
     fn test_get_next_initializable_tick_out_of_bounds() {
         let sequence = test_sequence(16);
-        let pair = sequence.next_initialized_tick(2817);
-        assert_eq!(pair.map(|x| x.1), Ok(2815));
-        assert_eq!(pair.map(|x| x.0), Ok(None));
+        let result = sequence.next_initialized_tick(2817);
+        assert!(matches!(result, Err(INVALID_TICK_ARRAY_SEQUENCE)));
     }
 
     #[test]
@@ -298,8 +296,7 @@ mod tests {
     #[test]
     fn test_get_prev_initialized_tick_out_of_bounds() {
         let sequence = test_sequence(16);
-        let pair = sequence.prev_initialized_tick(-1409);
-        assert_eq!(pair.map(|x| x.1), Ok(-1408));
-        assert_eq!(pair.map(|x| x.0), Ok(None));
+        let result = sequence.prev_initialized_tick(-1409);
+        assert!(matches!(result, Err(INVALID_TICK_ARRAY_SEQUENCE)));
     }
 }

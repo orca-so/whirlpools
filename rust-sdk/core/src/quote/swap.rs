@@ -186,9 +186,12 @@ pub fn compute_swap<const SIZE: usize>(
 ) -> Result<SwapResult, CoreError> {
     let sqrt_price_limit = if sqrt_price_limit == 0 {
         if a_to_b {
-            MIN_SQRT_PRICE
+            let start_tick_price: u128 =
+                tick_index_to_sqrt_price(tick_sequence.start_index()).into();
+            std::cmp::max(start_tick_price, MIN_SQRT_PRICE)
         } else {
-            MAX_SQRT_PRICE
+            let end_tick_price: u128 = tick_index_to_sqrt_price(tick_sequence.end_index()).into();
+            std::cmp::min(end_tick_price, MAX_SQRT_PRICE)
         }
     } else {
         sqrt_price_limit
@@ -513,11 +516,35 @@ mod tests {
         }
     }
 
+    fn test_tick_uninitialized() -> TickFacade {
+        TickFacade {
+            initialized: false,
+            ..TickFacade::default()
+        }
+    }
+
     fn test_tick_array(start_tick_index: i32) -> TickArrayFacade {
         let positive_liq_net = start_tick_index < 0;
         TickArrayFacade {
             start_tick_index,
             ticks: [test_tick(positive_liq_net); TICK_ARRAY_SIZE],
+        }
+    }
+
+    fn test_tick_array_uninitialized_ticks(start_tick_index: i32) -> TickArrayFacade {
+        TickArrayFacade {
+            start_tick_index,
+            ticks: [test_tick_uninitialized(); TICK_ARRAY_SIZE],
+        }
+    }
+
+    fn test_tick_array_one_initialized_tick(start_tick_index: i32) -> TickArrayFacade {
+        let positive_liq_net = start_tick_index < 0;
+        let mut ticks = [test_tick_uninitialized(); TICK_ARRAY_SIZE];
+        ticks[0] = test_tick(positive_liq_net);
+        TickArrayFacade {
+            start_tick_index,
+            ticks,
         }
     }
 
@@ -674,6 +701,39 @@ mod tests {
         assert_eq!(result.token_est_in, 1088);
         assert_eq!(result.token_max_in, 1197);
         assert_eq!(result.trade_fee, 42);
+    }
+
+    #[test]
+    fn test_swap_iteration_limit() {
+        let tick_spacing = 256;
+        let whirlpool = WhirlpoolFacade {
+            tick_current_index: 0,
+            fee_rate: 3000,
+            liquidity: 1000,
+            sqrt_price: 1 << 64,
+            tick_spacing,
+            ..WhirlpoolFacade::default()
+        };
+        let tick_array_0 = test_tick_array_one_initialized_tick(0);
+        let tick_array_1 = test_tick_array_uninitialized_ticks(22528);
+        let tick_array_2 = test_tick_array_uninitialized_ticks(45056);
+        let tick_array_3 = test_tick_array_uninitialized_ticks(-22528);
+        let tick_array_4 = test_tick_array_uninitialized_ticks(-45056);
+
+        let tick_arrays: [Option<TickArrayFacade>; 6] = [
+            Some(tick_array_0.clone()),
+            Some(tick_array_1.clone()),
+            Some(tick_array_2.clone()),
+            Some(tick_array_3.clone()),
+            Some(tick_array_4.clone()),
+            None,
+        ];
+
+        let tick_sequence_result = TickArraySequence::new(tick_arrays, whirlpool.tick_spacing);
+
+        let tick_sequence = tick_sequence_result.unwrap();
+
+        let result = compute_swap(1_000_000, 0, whirlpool, tick_sequence, true, true, 0);
     }
 
     // TODO: add more complex tests that

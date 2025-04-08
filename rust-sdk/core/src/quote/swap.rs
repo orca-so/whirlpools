@@ -513,35 +513,11 @@ mod tests {
         }
     }
 
-    fn test_tick_uninitialized() -> TickFacade {
-        TickFacade {
-            initialized: false,
-            ..TickFacade::default()
-        }
-    }
-
     fn test_tick_array(start_tick_index: i32) -> TickArrayFacade {
         let positive_liq_net = start_tick_index < 0;
         TickArrayFacade {
             start_tick_index,
             ticks: [test_tick(positive_liq_net); TICK_ARRAY_SIZE],
-        }
-    }
-
-    fn test_tick_array_uninitialized_ticks(start_tick_index: i32) -> TickArrayFacade {
-        TickArrayFacade {
-            start_tick_index,
-            ticks: [test_tick_uninitialized(); TICK_ARRAY_SIZE],
-        }
-    }
-
-    fn test_tick_array_one_initialized_tick(start_tick_index: i32) -> TickArrayFacade {
-        let positive_liq_net = start_tick_index < 0;
-        let mut ticks = [test_tick_uninitialized(); TICK_ARRAY_SIZE];
-        ticks[0] = test_tick(positive_liq_net);
-        TickArrayFacade {
-            start_tick_index,
-            ticks,
         }
     }
 

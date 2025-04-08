@@ -187,34 +187,45 @@ impl FeeRateManager {
                 adaptive_fee_constants,
                 ..
             } => {
-                if sqrt_price == next_tick_sqrt_price {
+                let (tick_index, is_on_tick_group_boundary) = if sqrt_price == next_tick_sqrt_price
+                {
                     // next_tick_index = tick_index_from_sqrt_price(&sqrt_price) is true,
                     // but we use next_tick_index to reduce calculations in the middle of the loop
-                    *tick_group_index = floor_division(
-                        next_tick_index,
-                        adaptive_fee_constants.tick_group_size as i32,
-                    );
+                    let is_on_tick_group_boundary =
+                        next_tick_index % adaptive_fee_constants.tick_group_size as i32 == 0;
+                    (next_tick_index, is_on_tick_group_boundary)
                 } else {
                     // End of the swap loop or the boundary of core tick group range.
 
                     // Note: It was pointed out during the review that using curr_tick_index may suppress tick_index_from_sqrt_price.
                     //       However, since curr_tick_index may also be shifted by -1, we decided to prioritize safety by recalculating it here.
-                    *tick_group_index = floor_division(
-                        tick_index_from_sqrt_price(&sqrt_price),
-                        adaptive_fee_constants.tick_group_size as i32,
-                    );
+                    let tick_index = tick_index_from_sqrt_price(&sqrt_price);
+                    let is_on_tick_group_boundary =
+                        tick_index % adaptive_fee_constants.tick_group_size as i32 == 0
+                            && sqrt_price == sqrt_price_from_tick_index(tick_index);
+                    (tick_index, is_on_tick_group_boundary)
+                };
+
+                let last_traversed_tick_group_index = if is_on_tick_group_boundary && !*a_to_b {
+                    // tick_index is on tick group boundary, so this division is safe
+                    tick_index / adaptive_fee_constants.tick_group_size as i32 - 1
+                } else {
+                    floor_division(tick_index, adaptive_fee_constants.tick_group_size as i32)
+                };
+
+                // In most cases, last_traversed_tick_group_index and tick_group_index are expected to be different because of the skip.
+                // However, if the skip only advances by 1 tick_spacing, they will be the same (update_volatility_accumulator is updated at the beginning of the loop, so no update is needed).
+                // If sqrt_price is on the tick group boundary and has not advanced at all (all amount is collected as fees), we need to prevent backward movement in the b to a direction. This is why we don't use != and use < instead.
+                if (*a_to_b && last_traversed_tick_group_index < *tick_group_index)
+                    || (!*a_to_b && last_traversed_tick_group_index > *tick_group_index)
+                {
+                    *tick_group_index = last_traversed_tick_group_index;
+                    // volatility_accumulator is updated with the new tick_group_index based on new sqrt_price
+                    adaptive_fee_variables
+                        .update_volatility_accumulator(*tick_group_index, adaptive_fee_constants)?;
                 }
 
-                // volatility_accumulator is updated with the new tick_group_index based on new sqrt_price
-                adaptive_fee_variables
-                    .update_volatility_accumulator(*tick_group_index, adaptive_fee_constants)?;
-
-                // If the swap direction is A to B, the tick group index should be decremented to "advance".
-                // If sqrt_price is not on the tick_group_size boundary, tick_group_index will advance by one more.
-                // However, it does not affect subsequent processing because it is the last iteration of the swap loop.
-                if *a_to_b {
-                    *tick_group_index -= 1;
-                }
+                *tick_group_index += if *a_to_b { -1 } else { 1 };
 
                 Ok(())
             }
@@ -1992,9 +2003,7 @@ mod adaptive_fee_rate_manager_tests {
 
             let adaptive_fee_info = AdaptiveFeeInfo {
                 constants: AdaptiveFeeConstants {
-                    max_volatility_accumulator: 64
-                        * 88
-                        * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+                    max_volatility_accumulator: 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
                     adaptive_fee_control_factor: 5_000,
                     tick_group_size: 64,
                     major_swap_threshold_ticks: 64,
@@ -2034,6 +2043,9 @@ mod adaptive_fee_rate_manager_tests {
         ) {
             let mut fee_rate_manager = build_fee_rate_manager(a_to_b, current_tick_index);
 
+            // to simulate swap loop
+            fee_rate_manager.update_volatility_accumulator().unwrap();
+
             fee_rate_manager
                 .advance_tick_group_after_skip(
                     advance_current_sqrt_price,
@@ -2063,7 +2075,12 @@ mod adaptive_fee_rate_manager_tests {
             // left to right
             let a_to_b = false;
             let tick_group_size = 64;
-            let max_volatility_accumulator = 64 * 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+            let max_volatility_accumulator = 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+
+            // In advance_tick_group_after_skip, tick_group_index will be shifted to right by 1 for the next loop.
+            // If it is not a tick_group_size boundary, shifting will advance too much,
+            // but tick_group_index is not recorded in the chain and the loop ends, so there is no adverse effect on subsequent processing.
+            const RIGHT_SHIFT: i32 = 1;
 
             // hit next tick
             // -1024 --> tick(-1023)
@@ -2073,7 +2090,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(-1023),
                 sqrt_price_from_tick_index(-1023),
                 -1023,
-                -16,
+                -16 + RIGHT_SHIFT,
                 16 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(-65)
@@ -2083,7 +2100,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(-65),
                 sqrt_price_from_tick_index(-65),
                 -65,
-                -2,
+                -2 + RIGHT_SHIFT,
                 2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(-64)
@@ -2093,8 +2110,8 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(-64),
                 sqrt_price_from_tick_index(-64),
                 -64,
-                -1,
-                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+                -2 + RIGHT_SHIFT,
+                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(-32)
             test(
@@ -2103,7 +2120,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(-32),
                 sqrt_price_from_tick_index(-32),
                 -32,
-                -1,
+                -1 + RIGHT_SHIFT,
                 VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(0)
@@ -2113,8 +2130,8 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(0),
                 sqrt_price_from_tick_index(0),
                 0,
-                0,
-                0,
+                -1 + RIGHT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(32)
             test(
@@ -2123,7 +2140,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(32),
                 sqrt_price_from_tick_index(32),
                 32,
-                0,
+                0 + RIGHT_SHIFT,
                 0,
             );
             // -1024 --> tick(64)
@@ -2133,8 +2150,8 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(64),
                 sqrt_price_from_tick_index(64),
                 64,
-                1,
-                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+                0 + RIGHT_SHIFT,
+                0,
             );
             // -1024 --> tick(65)
             test(
@@ -2143,7 +2160,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(65),
                 sqrt_price_from_tick_index(65),
                 65,
-                1,
+                1 + RIGHT_SHIFT,
                 VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(127)
@@ -2153,7 +2170,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(127),
                 sqrt_price_from_tick_index(127),
                 127,
-                1,
+                1 + RIGHT_SHIFT,
                 VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(128)
@@ -2163,8 +2180,8 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(128),
                 sqrt_price_from_tick_index(128),
                 128,
-                2,
-                2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+                1 + RIGHT_SHIFT,
+                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> MAX_SQRT_PRICE
             test(
@@ -2173,7 +2190,7 @@ mod adaptive_fee_rate_manager_tests {
                 MAX_SQRT_PRICE_X64,
                 MAX_SQRT_PRICE_X64,
                 MAX_TICK_INDEX,
-                MAX_TICK_INDEX / tick_group_size,
+                MAX_TICK_INDEX / tick_group_size + RIGHT_SHIFT,
                 max_volatility_accumulator,
             );
 
@@ -2185,7 +2202,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(-1023) - 1,
                 sqrt_price_from_tick_index(-1023),
                 -1023,
-                -16,
+                -16 + RIGHT_SHIFT,
                 16 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(-65)
@@ -2195,7 +2212,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(-65 - 1),
                 sqrt_price_from_tick_index(-65),
                 -65,
-                -2,
+                -2 + RIGHT_SHIFT,
                 2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(-64)
@@ -2205,7 +2222,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(-64 - 1),
                 sqrt_price_from_tick_index(-64),
                 -64,
-                -2,
+                -2 + RIGHT_SHIFT,
                 2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(-32)
@@ -2215,7 +2232,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(-32 - 1),
                 sqrt_price_from_tick_index(-32),
                 -32,
-                -1,
+                -1 + RIGHT_SHIFT,
                 VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(0)
@@ -2225,7 +2242,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(0 - 1),
                 sqrt_price_from_tick_index(0),
                 0,
-                -1,
+                -1 + RIGHT_SHIFT,
                 VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(32)
@@ -2235,7 +2252,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(32 - 1),
                 sqrt_price_from_tick_index(32),
                 32,
-                0,
+                0 + RIGHT_SHIFT,
                 0,
             );
             // -1024 --> tick(64)
@@ -2245,7 +2262,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(64 - 1),
                 sqrt_price_from_tick_index(64),
                 64,
-                0,
+                0 + RIGHT_SHIFT,
                 0,
             );
             // -1024 --> tick(65)
@@ -2255,8 +2272,8 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(65 - 1),
                 sqrt_price_from_tick_index(65),
                 65,
-                1,
-                VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+                0 + RIGHT_SHIFT,
+                0,
             );
             // -1024 --> tick(127)
             test(
@@ -2265,7 +2282,7 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(127 - 1),
                 sqrt_price_from_tick_index(127),
                 127,
-                1,
+                1 + RIGHT_SHIFT,
                 VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> tick(128)
@@ -2275,18 +2292,38 @@ mod adaptive_fee_rate_manager_tests {
                 sqrt_price_from_tick_index(128 - 1),
                 sqrt_price_from_tick_index(128),
                 128,
-                1,
+                1 + RIGHT_SHIFT,
                 VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
             );
             // -1024 --> MAX_SQRT_PRICE
             test(
                 a_to_b,
                 -1024,
-                sqrt_price_from_tick_index(64 * 88 * 2),
+                sqrt_price_from_tick_index(64 * 44),
                 MAX_SQRT_PRICE_X64,
                 MAX_TICK_INDEX,
-                (64 * 88 * 2) / tick_group_size,
-                88 * 2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+                (64 * (44 - 1)) / tick_group_size + RIGHT_SHIFT,
+                (44 - 1) * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // -11264 --> tick(-8448) (out of core range)
+            test(
+                a_to_b,
+                -11264,
+                sqrt_price_from_tick_index(-8448),
+                sqrt_price_from_tick_index(-8448),
+                -8448,
+                -133 + RIGHT_SHIFT,
+                max_volatility_accumulator,
+            );
+            // -11264 --> tick(-11264) (out of core range, amount is collected as fee, no price change)
+            test(
+                a_to_b,
+                -11264,
+                sqrt_price_from_tick_index(-11264),
+                sqrt_price_from_tick_index(-8448),
+                -8448,
+                -176 + RIGHT_SHIFT,
+                max_volatility_accumulator,
             );
         }
 
@@ -2295,10 +2332,10 @@ mod adaptive_fee_rate_manager_tests {
             // right to left
             let a_to_b = true;
             let tick_group_size = 64;
-            let max_volatility_accumulator = 64 * 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
+            let max_volatility_accumulator = 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32;
 
-            // When a_to_b = true, calculate tick_index and tick_group_index from sqrt_price after skip, update volatility_accumulator.
-            // Then, shift tick_group_index to the left by 1 for the next loop. If it is not a tick_group_size boundary, shifting will advance too much,
+            // In advance_tick_group_after_skip, tick_group_index will be shifted to left by 1 for the next loop.
+            // If it is not a tick_group_size boundary, shifting will advance too much,
             // but tick_group_index is not recorded in the chain and the loop ends, so there is no adverse effect on subsequent processing.
             const LEFT_SHIFT: i32 = 1;
 
@@ -2519,11 +2556,31 @@ mod adaptive_fee_rate_manager_tests {
             test(
                 a_to_b,
                 1024,
-                sqrt_price_from_tick_index(-64 * 88 * 2),
+                sqrt_price_from_tick_index(-64 * 44),
                 MIN_SQRT_PRICE_X64,
                 MIN_TICK_INDEX,
-                (-64 * 88 * 2) / tick_group_size - LEFT_SHIFT,
-                88 * 2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+                (-64 * 44) / tick_group_size - LEFT_SHIFT,
+                44 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR as u32,
+            );
+            // tick(8448) <-- 11264 (out of core range)
+            test(
+                a_to_b,
+                11264,
+                sqrt_price_from_tick_index(8448),
+                sqrt_price_from_tick_index(8448),
+                8448,
+                132 - LEFT_SHIFT,
+                max_volatility_accumulator,
+            );
+            // tick(11264) <-- 11264 (out of core range, amount is collected as fee, no price change)
+            test(
+                a_to_b,
+                11264,
+                sqrt_price_from_tick_index(11264),
+                sqrt_price_from_tick_index(8448),
+                8448,
+                176 - LEFT_SHIFT,
+                max_volatility_accumulator,
             );
         }
     }

@@ -86,18 +86,18 @@ describe("e2e", () => {
     assert.strictEqual(quote.liquidityDelta, positionAfter.data.liquidity);
     assert.strictEqual(
       tokenAAfter.data.amount - tokenABefore.data.amount,
-      -quote.tokenEstA
+      -quote.tokenEstA,
     );
     assert.strictEqual(
       tokenBAfter.data.amount - tokenBBefore.data.amount,
-      -quote.tokenEstB
+      -quote.tokenEstB,
     );
 
     return positionMint;
   };
 
   const testOpenConcentratedLiquidityPosition = async (
-    poolAddress: Address
+    poolAddress: Address,
   ) => {
     const tokenABefore = await fetchToken(rpc, ataA);
     const tokenBBefore = await fetchToken(rpc, ataB);
@@ -110,7 +110,7 @@ describe("e2e", () => {
           liquidity: 1000000000n,
         },
         0.9,
-        1.1
+        1.1,
       );
     await sendTransaction(instructions);
 
@@ -120,11 +120,11 @@ describe("e2e", () => {
     assert.strictEqual(quote.liquidityDelta, positionAfter.data.liquidity);
     assert.strictEqual(
       tokenAAfter.data.amount - tokenABefore.data.amount,
-      -quote.tokenEstA
+      -quote.tokenEstA,
     );
     assert.strictEqual(
       tokenBAfter.data.amount - tokenBBefore.data.amount,
-      -quote.tokenEstB
+      -quote.tokenEstB,
     );
 
     return positionMint;
@@ -138,7 +138,7 @@ describe("e2e", () => {
     const { instructions, quote } = await increaseLiquidityInstructions(
       rpc,
       positionMint,
-      { liquidity: 10000n }
+      { liquidity: 10000n },
     );
     await sendTransaction(instructions);
 
@@ -147,15 +147,15 @@ describe("e2e", () => {
     const tokenBAfter = await fetchToken(rpc, ataB);
     assert.strictEqual(
       positionAfter.data.liquidity - positionBefore.data.liquidity,
-      quote.liquidityDelta
+      quote.liquidityDelta,
     );
     assert.strictEqual(
       tokenAAfter.data.amount - tokenABefore.data.amount,
-      -quote.tokenEstA
+      -quote.tokenEstA,
     );
     assert.strictEqual(
       tokenBAfter.data.amount - tokenBBefore.data.amount,
-      -quote.tokenEstB
+      -quote.tokenEstB,
     );
   };
 
@@ -167,7 +167,7 @@ describe("e2e", () => {
     const { instructions, quote } = await decreaseLiquidityInstructions(
       rpc,
       positionMint,
-      { liquidity: 10000n }
+      { liquidity: 10000n },
     );
     await sendTransaction(instructions);
 
@@ -176,15 +176,15 @@ describe("e2e", () => {
     const tokenBAfter = await fetchToken(rpc, ataB);
     assert.strictEqual(
       positionAfter.data.liquidity - positionBefore.data.liquidity,
-      -quote.liquidityDelta
+      -quote.liquidityDelta,
     );
     assert.strictEqual(
       tokenAAfter.data.amount - tokenABefore.data.amount,
-      quote.tokenEstA
+      quote.tokenEstA,
     );
     assert.strictEqual(
       tokenBAfter.data.amount - tokenBBefore.data.amount,
-      quote.tokenEstB
+      quote.tokenEstB,
     );
   };
 
@@ -194,7 +194,7 @@ describe("e2e", () => {
 
     const { instructions, feesQuote } = await harvestPositionInstructions(
       rpc,
-      positionMint
+      positionMint,
     );
     await sendTransaction(instructions);
 
@@ -202,11 +202,11 @@ describe("e2e", () => {
     const tokenBAfter = await fetchToken(rpc, ataB);
     assert.strictEqual(
       tokenAAfter.data.amount - tokenABefore.data.amount,
-      feesQuote.feeOwedA
+      feesQuote.feeOwedA,
     );
     assert.strictEqual(
       tokenBAfter.data.amount - tokenBBefore.data.amount,
-      feesQuote.feeOwedB
+      feesQuote.feeOwedB,
     );
   };
 
@@ -216,7 +216,7 @@ describe("e2e", () => {
 
     const { instructions, quote, feesQuote } = await closePositionInstructions(
       rpc,
-      positionMint
+      positionMint,
     );
     await sendTransaction(instructions);
 
@@ -226,11 +226,11 @@ describe("e2e", () => {
     assert.strictEqual(positionAfter.value[0], null);
     assert.strictEqual(
       tokenAAfter.data.amount - tokenABefore.data.amount,
-      quote.tokenEstA + feesQuote.feeOwedA
+      quote.tokenEstA + feesQuote.feeOwedA,
     );
     assert.strictEqual(
       tokenBAfter.data.amount - tokenBBefore.data.amount,
-      quote.tokenEstB + feesQuote.feeOwedB
+      quote.tokenEstB + feesQuote.feeOwedB,
     );
   };
 
@@ -241,7 +241,7 @@ describe("e2e", () => {
     const { instructions, quote } = await swapInstructions(
       rpc,
       { inputAmount: 100000n, mint: mintA },
-      poolAddress
+      poolAddress,
     );
     await sendTransaction(instructions);
 
@@ -250,11 +250,11 @@ describe("e2e", () => {
 
     assert.strictEqual(
       tokenAAfter.data.amount - tokenABefore.data.amount,
-      -quote.tokenIn
+      -quote.tokenIn,
     );
     assert.strictEqual(
       tokenBAfter.data.amount - tokenBBefore.data.amount,
-      quote.tokenEstOut
+      quote.tokenEstOut,
     );
   };
 
@@ -265,7 +265,7 @@ describe("e2e", () => {
     const { instructions, quote } = await swapInstructions(
       rpc,
       { outputAmount: 100000n, mint: mintA },
-      poolAddress
+      poolAddress,
     );
     await sendTransaction(instructions);
 
@@ -274,11 +274,11 @@ describe("e2e", () => {
 
     assert.strictEqual(
       tokenAAfter.data.amount - tokenABefore.data.amount,
-      quote.tokenOut
+      quote.tokenOut,
     );
     assert.strictEqual(
       tokenBAfter.data.amount - tokenBBefore.data.amount,
-      -quote.tokenEstIn
+      -quote.tokenEstIn,
     );
   };
 
@@ -289,7 +289,7 @@ describe("e2e", () => {
     const { instructions, quote } = await swapInstructions(
       rpc,
       { inputAmount: 100n, mint: mintB },
-      poolAddress
+      poolAddress,
     );
     await sendTransaction(instructions);
 
@@ -298,11 +298,11 @@ describe("e2e", () => {
 
     assert.strictEqual(
       tokenAAfter.data.amount - tokenABefore.data.amount,
-      quote.tokenEstOut
+      quote.tokenEstOut,
     );
     assert.strictEqual(
       tokenBAfter.data.amount - tokenBBefore.data.amount,
-      -quote.tokenIn
+      -quote.tokenIn,
     );
   };
 
@@ -313,7 +313,7 @@ describe("e2e", () => {
     const { instructions, quote } = await swapInstructions(
       rpc,
       { outputAmount: 100n, mint: mintB },
-      poolAddress
+      poolAddress,
     );
     await sendTransaction(instructions);
 
@@ -322,11 +322,11 @@ describe("e2e", () => {
 
     assert.strictEqual(
       tokenAAfter.data.amount - tokenABefore.data.amount,
-      -quote.tokenEstIn
+      -quote.tokenEstIn,
     );
     assert.strictEqual(
       tokenBAfter.data.amount - tokenBBefore.data.amount,
-      quote.tokenOut
+      quote.tokenOut,
     );
   };
 

@@ -138,7 +138,10 @@ impl TestContext {
         Ok(position.position_mint)
     }
 
-    pub async fn open_concentrated_liquidity_position(&self, pool: Pubkey) -> Result<Pubkey, Box<dyn Error>> {
+    pub async fn open_concentrated_liquidity_position(
+        &self,
+        pool: Pubkey,
+    ) -> Result<Pubkey, Box<dyn Error>> {
         let infos_before = &self
             .ctx
             .rpc
@@ -592,7 +595,10 @@ async fn test_splash_pool() {
 async fn test_concentrated_liquidity_pool() {
     let ctx = TestContext::new().await.unwrap();
     let pool = ctx.init_concentrated_liquidity_pool().await.unwrap();
-    let position_mint = ctx.open_concentrated_liquidity_position(pool).await.unwrap();
+    let position_mint = ctx
+        .open_concentrated_liquidity_position(pool)
+        .await
+        .unwrap();
     Box::pin(ctx.swap_a_exact_in(pool)).await.unwrap();
     Box::pin(ctx.increase_liquidity(position_mint))
         .await

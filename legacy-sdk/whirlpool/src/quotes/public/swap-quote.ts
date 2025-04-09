@@ -1,7 +1,7 @@
 import type { Address } from "@coral-xyz/anchor";
 import type { Percentage } from "@orca-so/common-sdk";
 import { AddressUtil } from "@orca-so/common-sdk";
-import type BN from "bn.js";
+import { BN } from "@coral-xyz/anchor";
 import invariant from "tiny-invariant";
 import type { SwapInput } from "../../instructions";
 import type {
@@ -9,7 +9,7 @@ import type {
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
 import { IGNORE_CACHE } from "../../network/public/fetcher";
-import type { TickArray, WhirlpoolData } from "../../types/public";
+import type { AdaptiveFeeConstantsData, AdaptiveFeeVariablesData, TickArray, WhirlpoolData } from "../../types/public";
 import { TICK_ARRAY_SIZE } from "../../types/public";
 import { PoolUtil, SwapDirection } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";
@@ -33,6 +33,15 @@ export enum UseFallbackTickArray {
   Situational = "Situational",
 }
 
+/*
+ * Adaptive fee info for a swap quote.
+ * @category Quotes
+ */
+export type AdaptiveFeeInfo = {
+  adaptiveFeeConstants: AdaptiveFeeConstantsData,
+  adaptiveFeeVariables: AdaptiveFeeVariablesData,
+};
+
 /**
  * @category Quotes
  *
@@ -43,6 +52,8 @@ export enum UseFallbackTickArray {
  * @param amountSpecifiedIsInput - Specifies the token the parameter `amount`represents. If true, the amount represents
  *                                 the input token of the swap.
  * @param tickArrays - An sequential array of tick-array objects in the direction of the trade to swap on
+ * @param timestampInSeconds - A parameter to generate this quote to a unix time stamp
+ * @param adaptiveFeeInfo - Adaptive fee info for the whirlpool
  * @param tokenExtensionCtx - TokenExtensions info for the whirlpool
  * @param fallbackTickArray - Optional. A reserve in case prices move in the opposite direction
  */
@@ -54,6 +65,8 @@ export type SwapQuoteParam = {
   aToB: boolean;
   amountSpecifiedIsInput: boolean;
   tickArrays: TickArray[];
+  timestampInSeconds: BN;
+  adaptiveFeeInfo: AdaptiveFeeInfo | null;
   tokenExtensionCtx: TokenExtensionContextForPool;
   fallbackTickArray?: PublicKey;
 };
@@ -105,6 +118,7 @@ export type NormalSwapQuote = SwapInput & SwapEstimates;
  * @param cache - WhirlpoolAccountCacheInterface instance object to fetch solana accounts
  * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
  * @param useFallbackTickArray - An enum to specify when to use fallback tick array in a swap quote.
+ * @param timestampInSeconds - Optional parameter to generate this quote to a unix time stamp.
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByInputToken(
@@ -116,6 +130,7 @@ export async function swapQuoteByInputToken(
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions,
   useFallbackTickArray: UseFallbackTickArray = UseFallbackTickArray.Never,
+  timestampInSeconds?: BN,
 ): Promise<SwapQuote> {
   const params = await swapQuoteByToken(
     whirlpool,
@@ -126,6 +141,7 @@ export async function swapQuoteByInputToken(
     programId,
     fetcher,
     opts,
+    timestampInSeconds,
   );
   return swapQuoteWithParams(params, slippageTolerance);
 }
@@ -145,6 +161,7 @@ export async function swapQuoteByInputToken(
  * @param cache - WhirlpoolAccountCacheInterface instance to fetch solana accounts
  * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
  * @param useFallbackTickArray - An enum to specify when to use fallback tick array in a swap quote.
+ * @param timestampInSeconds - Optional parameter to generate this quote to a unix time stamp.
  * @returns a SwapQuote object with slippage adjusted SwapInput parameters & estimates on token amounts, fee & end whirlpool states.
  */
 export async function swapQuoteByOutputToken(
@@ -156,6 +173,7 @@ export async function swapQuoteByOutputToken(
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions,
   useFallbackTickArray: UseFallbackTickArray = UseFallbackTickArray.Never,
+  timestampInSeconds?: BN,
 ): Promise<SwapQuote> {
   const params = await swapQuoteByToken(
     whirlpool,
@@ -166,6 +184,7 @@ export async function swapQuoteByOutputToken(
     programId,
     fetcher,
     opts,
+    timestampInSeconds,
   );
   return swapQuoteWithParams(params, slippageTolerance);
 }
@@ -223,6 +242,7 @@ async function swapQuoteByToken(
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions,
+  optionTimestampInSeconds?: BN,
 ): Promise<SwapQuoteParam> {
   // If we use whirlpool.getData() here, quote will not be the latest even if opts is IGNORE_CACHE
   const whirlpoolData = await fetcher.getPool(whirlpool.getAddress(), opts);
@@ -242,15 +262,23 @@ async function swapQuoteByToken(
       amountSpecifiedIsInput,
     ) === SwapDirection.AtoB;
 
-  const tickArrays = await SwapUtils.getTickArrays(
-    whirlpoolData.tickCurrentIndex,
-    whirlpoolData.tickSpacing,
-    aToB,
-    AddressUtil.toPubKey(programId),
-    whirlpool.getAddress(),
-    fetcher,
-    opts,
-  );
+  const [tickArrays, tokenExtensionCtx, adaptiveFeeInfo] = await Promise.all([
+    SwapUtils.getTickArrays(
+      whirlpoolData.tickCurrentIndex,
+      whirlpoolData.tickSpacing,
+      aToB,
+      AddressUtil.toPubKey(programId),
+      whirlpool.getAddress(),
+      fetcher,
+      opts,
+    ),
+    TokenExtensionUtil.buildTokenExtensionContext(
+      fetcher,
+      whirlpoolData,
+      IGNORE_CACHE,
+    ),
+    getAdaptiveFeeInfo(whirlpool, programId, fetcher, opts),
+  ]);
 
   const fallbackTickArray = getFallbackTickArray(
     useFallbackTickArray,
@@ -260,11 +288,7 @@ async function swapQuoteByToken(
     programId,
   );
 
-  const tokenExtensionCtx = await TokenExtensionUtil.buildTokenExtensionContext(
-    fetcher,
-    whirlpoolData,
-    IGNORE_CACHE,
-  );
+  const timestampInSeconds = optionTimestampInSeconds ?? new BN(Date.now()).div(new BN(1000));
 
   return {
     whirlpoolData,
@@ -278,7 +302,21 @@ async function swapQuoteByToken(
     tickArrays,
     tokenExtensionCtx,
     fallbackTickArray,
+    timestampInSeconds,
+    adaptiveFeeInfo,
   };
+}
+
+async function getAdaptiveFeeInfo(
+  whirlpool: Whirlpool,
+  programId: Address,
+  fetcher: WhirlpoolAccountFetcherInterface,
+  opts?: WhirlpoolAccountFetchOptions,
+): Promise<AdaptiveFeeInfo | null> {
+  if (!PoolUtil.isInitializedWithAdaptiveFeeTier(whirlpool.getData())) {
+    return null;
+  }
+  return SwapUtils.getAdaptiveFeeInfo(AddressUtil.toPubKey(programId), whirlpool.getAddress(), fetcher, opts);
 }
 
 function getFallbackTickArray(

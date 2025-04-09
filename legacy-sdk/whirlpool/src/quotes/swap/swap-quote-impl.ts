@@ -27,6 +27,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     sqrtPriceLimit,
     otherAmountThreshold,
     amountSpecifiedIsInput,
+    timestampInSeconds,
+    adaptiveFeeInfo,
     tokenExtensionCtx,
   } = params;
 
@@ -41,8 +43,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
   }
 
   if (
-    (aToB && sqrtPriceLimit.gt(whirlpoolData.sqrtPrice)) ||
-    (!aToB && sqrtPriceLimit.lt(whirlpoolData.sqrtPrice))
+    (aToB && sqrtPriceLimit.gte(whirlpoolData.sqrtPrice)) ||
+    (!aToB && sqrtPriceLimit.lte(whirlpoolData.sqrtPrice))
   ) {
     throw new WhirlpoolsError(
       "Provided SqrtPriceLimit is in the opposite direction of the trade.",
@@ -98,6 +100,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
       sqrtPriceLimit,
       amountSpecifiedIsInput,
       aToB,
+      timestampInSeconds,
+      adaptiveFeeInfo,
     );
 
     // otherAmountThreshold should be applied to transfer fee EXCLUDED output amount.
@@ -179,6 +183,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     sqrtPriceLimit,
     amountSpecifiedIsInput,
     aToB,
+    timestampInSeconds,
+    adaptiveFeeInfo,
   );
 
   // otherAmountThreshold should be applied to transfer fee INCLUDED input amount.

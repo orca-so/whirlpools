@@ -321,6 +321,31 @@ export class PoolUtil {
 
     return true;
   }
+
+  /**
+   * Return the fee tier index for the given whirlpool.
+   *
+   * @param pool The Whirlpool to get the fee tier index
+   * @returns The fee tier index of the whirlpool.
+   */
+  public static getFeeTierIndex(
+    pool: WhirlpoolData,
+  ): number {
+    invariant(pool.feeTierIndexSeed.length == 2, "feeTierIndexSeed length is not 2 (u16, little endian)");
+    return new BN(pool.feeTierIndexSeed, "le").toNumber();
+  }
+
+  /*
+   * Check if the pool is initialized with an adaptive fee tier.
+   *
+   * @param pool The Whirlpool to check
+   * @returns True if the pool is initialized with an adaptive fee tier, false otherwise.
+   */
+  public static isInitializedWithAdaptiveFeeTier(
+    pool: WhirlpoolData,
+  ): boolean {
+    return this.getFeeTierIndex(pool) !== pool.tickSpacing;
+  }
 }
 
 /**

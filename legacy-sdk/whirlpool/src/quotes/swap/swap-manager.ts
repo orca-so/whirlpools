@@ -3,9 +3,12 @@ import BN from "bn.js";
 import type { WhirlpoolData } from "../../types/public";
 import { PROTOCOL_FEE_RATE_MUL_VALUE } from "../../types/public";
 import { computeSwapStep } from "../../utils/math/swap-math";
-import { PriceMath } from "../../utils/public";
+import { PoolUtil, PriceMath } from "../../utils/public";
 import type { TickArraySequence } from "./tick-array-sequence";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
+import { AdaptiveFeeInfo } from "../public";
+import invariant from "tiny-invariant";
+import { FeeRateManager } from "./fee-rate-manager";
 
 export type SwapResult = {
   amountA: BN;
@@ -22,6 +25,8 @@ export function computeSwap(
   sqrtPriceLimit: BN,
   amountSpecifiedIsInput: boolean,
   aToB: boolean,
+  timestampInSeconds: BN,
+  adaptiveFeeInfo: AdaptiveFeeInfo | null,
 ): SwapResult {
   let amountRemaining = tokenAmount;
   let amountCalculated = ZERO;
@@ -36,19 +41,36 @@ export function computeSwap(
     ? whirlpoolData.feeGrowthGlobalA
     : whirlpoolData.feeGrowthGlobalB;
 
+  invariant(PoolUtil.isInitializedWithAdaptiveFeeTier(whirlpoolData) === !!adaptiveFeeInfo, "adaptiveFeeInfo should be non-null if and only if the pool is initialized with adaptive fee tier");
+
+  const feeRateManager = FeeRateManager.new(
+    aToB,
+    whirlpoolData.tickCurrentIndex,
+    timestampInSeconds,
+    feeRate,
+    adaptiveFeeInfo,
+  );
+
   while (amountRemaining.gt(ZERO) && !sqrtPriceLimit.eq(currSqrtPrice)) {
     let { nextIndex: nextTickIndex } =
       tickSequence.findNextInitializedTickIndex(currTickIndex);
 
-    let { nextTickPrice, nextSqrtPriceLimit: targetSqrtPrice } =
+    let { nextTickPrice: nextTickSqrtPrice, nextSqrtPriceLimit: sqrtPriceTarget } =
       getNextSqrtPrices(nextTickIndex, sqrtPriceLimit, aToB);
+
+    do {
+    feeRateManager.updateVolatilityAccumulator();
+
+    const totalFeeRate = feeRateManager.getTotalFeeRate();
+    const { boundedSqrtPriceTarget, adaptiveFeeUpdateSkipped } =
+      feeRateManager.getBoundedSqrtPriceTarget(sqrtPriceTarget, currLiquidity);
 
     const swapComputation = computeSwapStep(
       amountRemaining,
-      feeRate,
+      totalFeeRate,
       currLiquidity,
       currSqrtPrice,
-      targetSqrtPrice,
+      boundedSqrtPriceTarget,
       amountSpecifiedIsInput,
       aToB,
     );
@@ -88,7 +110,7 @@ export function computeSwap(
     currProtocolFee = nextProtocolFee;
     currFeeGrowthGlobalInput = nextFeeGrowthGlobalInput;
 
-    if (swapComputation.nextPrice.eq(nextTickPrice)) {
+    if (swapComputation.nextPrice.eq(nextTickSqrtPrice)) {
       const nextTick = tickSequence.getTick(nextTickIndex);
       if (nextTick.initialized) {
         currLiquidity = calculateNextLiquidity(
@@ -105,6 +127,18 @@ export function computeSwap(
     }
 
     currSqrtPrice = swapComputation.nextPrice;
+
+    if (!adaptiveFeeUpdateSkipped) {
+      feeRateManager.advanceTickGroup();
+    } else {
+      feeRateManager.advanceTickGroupAfterSkip(
+        currSqrtPrice,
+        nextTickSqrtPrice,
+        nextTickIndex,
+      );
+    }
+
+    } while (amountRemaining.gt(ZERO) && !currSqrtPrice.eq(sqrtPriceTarget));
   }
 
   let { amountA, amountB } = calculateEstTokens(
@@ -114,6 +148,8 @@ export function computeSwap(
     aToB,
     amountSpecifiedIsInput,
   );
+
+  feeRateManager.updateMajorSwapTimestamp(whirlpoolData.sqrtPrice, currSqrtPrice);
 
   return {
     amountA,

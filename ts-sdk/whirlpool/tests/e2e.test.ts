@@ -6,7 +6,6 @@ import {
 import {
   openFullRangePositionInstructions,
   increaseLiquidityInstructions,
-  openPositionInstructions,
 } from "../src/increaseLiquidity";
 import { sendTransaction, rpc } from "./utils/mockRpc";
 import { SPLASH_POOL_TICK_SPACING } from "../src/config";
@@ -70,7 +69,7 @@ describe("e2e", () => {
     return poolAddress;
   };
 
-  const testOpenFullRangePosition = async (poolAddress: Address) => {
+  const testOpenPosition = async (poolAddress: Address) => {
     const tokenABefore = await fetchToken(rpc, ataA);
     const tokenBBefore = await fetchToken(rpc, ataB);
 
@@ -78,40 +77,6 @@ describe("e2e", () => {
       await openFullRangePositionInstructions(rpc, poolAddress, {
         liquidity: 1000000000n,
       });
-    await sendTransaction(instructions);
-
-    const positionAfter = await fetchPositionByMint(positionMint);
-    const tokenAAfter = await fetchToken(rpc, ataA);
-    const tokenBAfter = await fetchToken(rpc, ataB);
-    assert.strictEqual(quote.liquidityDelta, positionAfter.data.liquidity);
-    assert.strictEqual(
-      tokenAAfter.data.amount - tokenABefore.data.amount,
-      -quote.tokenEstA,
-    );
-    assert.strictEqual(
-      tokenBAfter.data.amount - tokenBBefore.data.amount,
-      -quote.tokenEstB,
-    );
-
-    return positionMint;
-  };
-
-  const testOpenConcentratedLiquidityPosition = async (
-    poolAddress: Address,
-  ) => {
-    const tokenABefore = await fetchToken(rpc, ataA);
-    const tokenBBefore = await fetchToken(rpc, ataB);
-
-    const { instructions, positionMint, quote } =
-      await openPositionInstructions(
-        rpc,
-        poolAddress,
-        {
-          liquidity: 1000000000n,
-        },
-        0.9,
-        1.1,
-      );
     await sendTransaction(instructions);
 
     const positionAfter = await fetchPositionByMint(positionMint);
@@ -332,7 +297,7 @@ describe("e2e", () => {
 
   it("Splash pool", async () => {
     const poolAddress = await testInitSplashPool();
-    const positionMint = await testOpenFullRangePosition(poolAddress);
+    const positionMint = await testOpenPosition(poolAddress);
     await testSwapAExactIn(poolAddress);
     await testIncreaseLiquidity(positionMint);
     await testSwapAExactOut(poolAddress);
@@ -345,8 +310,7 @@ describe("e2e", () => {
 
   it("Concentrated liquidity pool", async () => {
     const poolAddress = await testInitConcentratedLiquidityPool();
-    const positionMint =
-      await testOpenConcentratedLiquidityPosition(poolAddress);
+    const positionMint = await testOpenPosition(poolAddress);
     await testSwapAExactIn(poolAddress);
     await testIncreaseLiquidity(positionMint);
     await testSwapAExactOut(poolAddress);

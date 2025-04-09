@@ -84,11 +84,14 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
         tick_index: i32,
     ) -> Result<(Option<&TickFacade>, i32), CoreError> {
         let array_end_index = self.end_index();
+        if tick_index >= array_end_index {
+            return Err(INVALID_TICK_ARRAY_SEQUENCE);
+        }
         let mut next_index = tick_index;
         loop {
             next_index = get_next_initializable_tick_index(next_index, self.tick_spacing);
             if next_index > array_end_index {
-                return Err(INVALID_TICK_ARRAY_SEQUENCE);
+                return Ok((None, array_end_index));
             }
             let tick = self.tick(next_index)?;
             if tick.initialized {
@@ -102,11 +105,14 @@ impl<const SIZE: usize> TickArraySequence<SIZE> {
         tick_index: i32,
     ) -> Result<(Option<&TickFacade>, i32), CoreError> {
         let array_start_index = self.start_index();
+        if tick_index < array_start_index {
+            return Err(INVALID_TICK_ARRAY_SEQUENCE);
+        }
         let mut prev_index =
             get_initializable_tick_index(tick_index, self.tick_spacing, Some(false));
         loop {
             if prev_index < array_start_index {
-                return Err(INVALID_TICK_ARRAY_SEQUENCE);
+                return Ok((None, array_start_index));
             }
             let tick = self.tick(prev_index)?;
             if tick.initialized {
@@ -257,8 +263,16 @@ mod tests {
     #[test]
     fn test_get_next_initializable_tick_out_of_bounds() {
         let sequence = test_sequence(16);
-        let result = sequence.next_initialized_tick(2817);
-        assert!(matches!(result, Err(INVALID_TICK_ARRAY_SEQUENCE)));
+        let pair_2813 = sequence.next_initialized_tick(2813);
+        let pair_2814 = sequence.next_initialized_tick(2814);
+        let pair_2815 = sequence.next_initialized_tick(2815);
+        let pair_2816 = sequence.next_initialized_tick(2816);
+        let pair_2817 = sequence.next_initialized_tick(2817);
+        assert!(matches!(pair_2813, Ok((None, 2815))));
+        assert!(matches!(pair_2814, Ok((None, 2815))));
+        assert!(matches!(pair_2815, Err(INVALID_TICK_ARRAY_SEQUENCE)));
+        assert!(matches!(pair_2816, Err(INVALID_TICK_ARRAY_SEQUENCE)));
+        assert!(matches!(pair_2817, Err(INVALID_TICK_ARRAY_SEQUENCE)));
     }
 
     #[test]
@@ -296,7 +310,13 @@ mod tests {
     #[test]
     fn test_get_prev_initialized_tick_out_of_bounds() {
         let sequence = test_sequence(16);
-        let result = sequence.prev_initialized_tick(-1409);
-        assert!(matches!(result, Err(INVALID_TICK_ARRAY_SEQUENCE)));
+        let pair_1407 = sequence.prev_initialized_tick(-1407);
+        let pair_1408 = sequence.prev_initialized_tick(-1408);
+        let pair_1409 = sequence.prev_initialized_tick(-1409);
+        let pair_1410 = sequence.prev_initialized_tick(-1410);
+        assert!(matches!(pair_1407, Ok((None, -1408))));
+        assert!(matches!(pair_1408, Ok((None, -1408))));
+        assert!(matches!(pair_1409, Err(INVALID_TICK_ARRAY_SEQUENCE)));
+        assert!(matches!(pair_1410, Err(INVALID_TICK_ARRAY_SEQUENCE)));
     }
 }

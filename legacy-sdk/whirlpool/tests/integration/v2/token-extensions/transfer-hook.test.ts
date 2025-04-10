@@ -2159,7 +2159,7 @@ describe("TokenExtension/TransferHook", () => {
               whirlpoolData,
               IGNORE_CACHE,
             ),
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+          adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         },
         Percentage.fromFraction(100, 100), // 100% slippage
       );
@@ -2487,7 +2487,7 @@ describe("TokenExtension/TransferHook", () => {
               whirlpoolDataOne,
               IGNORE_CACHE,
             ),
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+          adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         },
         Percentage.fromFraction(1, 100),
       );
@@ -2516,7 +2516,7 @@ describe("TokenExtension/TransferHook", () => {
               whirlpoolDataTwo,
               IGNORE_CACHE,
             ),
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+          adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         },
         Percentage.fromFraction(1, 100),
       );
@@ -3002,7 +3002,7 @@ describe("TokenExtension/TransferHook", () => {
                 whirlpoolData,
                 IGNORE_CACHE,
               ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
           },
           Percentage.fromFraction(1, 100),
         );
@@ -3124,7 +3124,7 @@ describe("TokenExtension/TransferHook", () => {
                 whirlpoolData,
                 IGNORE_CACHE,
               ),
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
           },
           Percentage.fromFraction(1, 100),
         );

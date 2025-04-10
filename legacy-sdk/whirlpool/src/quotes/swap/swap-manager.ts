@@ -6,7 +6,7 @@ import { computeSwapStep } from "../../utils/math/swap-math";
 import { PoolUtil, PriceMath } from "../../utils/public";
 import type { TickArraySequence } from "./tick-array-sequence";
 import { SwapErrorCode, WhirlpoolsError } from "../../errors/errors";
-import { AdaptiveFeeInfo } from "../public";
+import type { AdaptiveFeeInfo } from "../public";
 import invariant from "tiny-invariant";
 import { FeeRateManager } from "./fee-rate-manager";
 
@@ -45,7 +45,11 @@ export function computeSwap(
     ? whirlpoolData.feeGrowthGlobalA
     : whirlpoolData.feeGrowthGlobalB;
 
-  invariant(PoolUtil.isInitializedWithAdaptiveFeeTier(whirlpoolData) === !!adaptiveFeeInfo, "adaptiveFeeInfo should be non-null if and only if the pool is initialized with adaptive fee tier");
+  invariant(
+    PoolUtil.isInitializedWithAdaptiveFeeTier(whirlpoolData) ===
+      !!adaptiveFeeInfo,
+    "adaptiveFeeInfo should be non-null if and only if the pool is initialized with adaptive fee tier",
+  );
 
   const feeRateManager = FeeRateManager.new(
     aToB,
@@ -59,92 +63,96 @@ export function computeSwap(
     let { nextIndex: nextTickIndex } =
       tickSequence.findNextInitializedTickIndex(currTickIndex);
 
-    let { nextTickPrice: nextTickSqrtPrice, nextSqrtPriceLimit: sqrtPriceTarget } =
-      getNextSqrtPrices(nextTickIndex, sqrtPriceLimit, aToB);
+    let {
+      nextTickPrice: nextTickSqrtPrice,
+      nextSqrtPriceLimit: sqrtPriceTarget,
+    } = getNextSqrtPrices(nextTickIndex, sqrtPriceLimit, aToB);
 
     do {
-    feeRateManager.updateVolatilityAccumulator();
+      feeRateManager.updateVolatilityAccumulator();
 
-    const totalFeeRate = feeRateManager.getTotalFeeRate();
-    appliedFeeRateMin = Math.min(appliedFeeRateMin, totalFeeRate);
-    appliedFeeRateMax = Math.max(appliedFeeRateMax, totalFeeRate);
+      const totalFeeRate = feeRateManager.getTotalFeeRate();
+      appliedFeeRateMin = Math.min(appliedFeeRateMin, totalFeeRate);
+      appliedFeeRateMax = Math.max(appliedFeeRateMax, totalFeeRate);
 
-    const { boundedSqrtPriceTarget, adaptiveFeeUpdateSkipped } =
-      feeRateManager.getBoundedSqrtPriceTarget(sqrtPriceTarget, currLiquidity);
-
-    const swapComputation = computeSwapStep(
-      amountRemaining,
-      totalFeeRate,
-      currLiquidity,
-      currSqrtPrice,
-      boundedSqrtPriceTarget,
-      amountSpecifiedIsInput,
-      aToB,
-    );
-
-    totalFeeAmount = totalFeeAmount.add(swapComputation.feeAmount);
-
-    if (amountSpecifiedIsInput) {
-      amountRemaining = amountRemaining.sub(swapComputation.amountIn);
-      amountRemaining = amountRemaining.sub(swapComputation.feeAmount);
-      amountCalculated = amountCalculated.add(swapComputation.amountOut);
-    } else {
-      amountRemaining = amountRemaining.sub(swapComputation.amountOut);
-      amountCalculated = amountCalculated.add(swapComputation.amountIn);
-      amountCalculated = amountCalculated.add(swapComputation.feeAmount);
-    }
-
-    if (amountRemaining.isNeg()) {
-      throw new WhirlpoolsError(
-        "Amount remaining is negative.",
-        SwapErrorCode.AmountRemainingOverflow,
-      );
-    }
-    if (amountCalculated.gt(U64_MAX)) {
-      throw new WhirlpoolsError(
-        "Amount calculated is greater than U64_MAX.",
-        SwapErrorCode.AmountCalcOverflow,
-      );
-    }
-
-    let { nextProtocolFee, nextFeeGrowthGlobalInput } = calculateFees(
-      swapComputation.feeAmount,
-      protocolFeeRate,
-      currLiquidity,
-      currProtocolFee,
-      currFeeGrowthGlobalInput,
-    );
-    currProtocolFee = nextProtocolFee;
-    currFeeGrowthGlobalInput = nextFeeGrowthGlobalInput;
-
-    if (swapComputation.nextPrice.eq(nextTickSqrtPrice)) {
-      const nextTick = tickSequence.getTick(nextTickIndex);
-      if (nextTick.initialized) {
-        currLiquidity = calculateNextLiquidity(
-          nextTick.liquidityNet,
+      const { boundedSqrtPriceTarget, adaptiveFeeUpdateSkipped } =
+        feeRateManager.getBoundedSqrtPriceTarget(
+          sqrtPriceTarget,
           currLiquidity,
-          aToB,
+        );
+
+      const swapComputation = computeSwapStep(
+        amountRemaining,
+        totalFeeRate,
+        currLiquidity,
+        currSqrtPrice,
+        boundedSqrtPriceTarget,
+        amountSpecifiedIsInput,
+        aToB,
+      );
+
+      totalFeeAmount = totalFeeAmount.add(swapComputation.feeAmount);
+
+      if (amountSpecifiedIsInput) {
+        amountRemaining = amountRemaining.sub(swapComputation.amountIn);
+        amountRemaining = amountRemaining.sub(swapComputation.feeAmount);
+        amountCalculated = amountCalculated.add(swapComputation.amountOut);
+      } else {
+        amountRemaining = amountRemaining.sub(swapComputation.amountOut);
+        amountCalculated = amountCalculated.add(swapComputation.amountIn);
+        amountCalculated = amountCalculated.add(swapComputation.feeAmount);
+      }
+
+      if (amountRemaining.isNeg()) {
+        throw new WhirlpoolsError(
+          "Amount remaining is negative.",
+          SwapErrorCode.AmountRemainingOverflow,
         );
       }
-      currTickIndex = aToB ? nextTickIndex - 1 : nextTickIndex;
-    } else {
-      currTickIndex = PriceMath.sqrtPriceX64ToTickIndex(
-        swapComputation.nextPrice,
+      if (amountCalculated.gt(U64_MAX)) {
+        throw new WhirlpoolsError(
+          "Amount calculated is greater than U64_MAX.",
+          SwapErrorCode.AmountCalcOverflow,
+        );
+      }
+
+      let { nextProtocolFee, nextFeeGrowthGlobalInput } = calculateFees(
+        swapComputation.feeAmount,
+        protocolFeeRate,
+        currLiquidity,
+        currProtocolFee,
+        currFeeGrowthGlobalInput,
       );
-    }
+      currProtocolFee = nextProtocolFee;
+      currFeeGrowthGlobalInput = nextFeeGrowthGlobalInput;
 
-    currSqrtPrice = swapComputation.nextPrice;
+      if (swapComputation.nextPrice.eq(nextTickSqrtPrice)) {
+        const nextTick = tickSequence.getTick(nextTickIndex);
+        if (nextTick.initialized) {
+          currLiquidity = calculateNextLiquidity(
+            nextTick.liquidityNet,
+            currLiquidity,
+            aToB,
+          );
+        }
+        currTickIndex = aToB ? nextTickIndex - 1 : nextTickIndex;
+      } else {
+        currTickIndex = PriceMath.sqrtPriceX64ToTickIndex(
+          swapComputation.nextPrice,
+        );
+      }
 
-    if (!adaptiveFeeUpdateSkipped) {
-      feeRateManager.advanceTickGroup();
-    } else {
-      feeRateManager.advanceTickGroupAfterSkip(
-        currSqrtPrice,
-        nextTickSqrtPrice,
-        nextTickIndex,
-      );
-    }
+      currSqrtPrice = swapComputation.nextPrice;
 
+      if (!adaptiveFeeUpdateSkipped) {
+        feeRateManager.advanceTickGroup();
+      } else {
+        feeRateManager.advanceTickGroupAfterSkip(
+          currSqrtPrice,
+          nextTickSqrtPrice,
+          nextTickIndex,
+        );
+      }
     } while (amountRemaining.gt(ZERO) && !currSqrtPrice.eq(sqrtPriceTarget));
   }
 
@@ -156,7 +164,10 @@ export function computeSwap(
     amountSpecifiedIsInput,
   );
 
-  feeRateManager.updateMajorSwapTimestamp(whirlpoolData.sqrtPrice, currSqrtPrice);
+  feeRateManager.updateMajorSwapTimestamp(
+    whirlpoolData.sqrtPrice,
+    currSqrtPrice,
+  );
 
   return {
     amountA,

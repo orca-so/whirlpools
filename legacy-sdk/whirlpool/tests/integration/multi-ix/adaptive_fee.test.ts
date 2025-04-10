@@ -1,6 +1,7 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import { AccountWithTokenProgram, AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
+import type { AccountWithTokenProgram } from "@orca-so/common-sdk";
+import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import type {
@@ -11,7 +12,6 @@ import type {
 import {
   MAX_SQRT_PRICE_BN,
   MIN_SQRT_PRICE_BN,
-  NO_ADAPTIVE_FEE_CONTEXT,
   PDAUtil,
   PriceMath,
   SwapUtils,
@@ -43,7 +43,8 @@ import {
   getDefaultAquarium,
   getTokenAccsForPools,
 } from "../../utils/init-utils";
-import { WhirlpoolsError, SwapErrorCode } from "../../../src/errors/errors";
+import type { WhirlpoolsError } from "../../../src/errors/errors";
+import { SwapErrorCode } from "../../../src/errors/errors";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -399,8 +400,16 @@ describe("adaptive fee tests", () => {
             IGNORE_CACHE,
           )) as OracleData;
 
-          const preTokenAccountIn = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB, IGNORE_CACHE) as AccountWithTokenProgram;
-          const preTokenAccountOut = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA, IGNORE_CACHE) as AccountWithTokenProgram;
+          const preTokenAccountIn =
+            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+              swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
+              IGNORE_CACHE,
+            )) as AccountWithTokenProgram;
+          const preTokenAccountOut =
+            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+              swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
+              IGNORE_CACHE,
+            )) as AccountWithTokenProgram;
 
           // initial state
           const preVars = preOracle.adaptiveFeeVariables;
@@ -469,10 +478,26 @@ describe("adaptive fee tests", () => {
             postVars.volatilityAccumulator == tickGroupIndexDelta * 10000,
           );
 
-          const postTokenAccountIn = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB, IGNORE_CACHE) as AccountWithTokenProgram;
-          const postTokenAccountOut = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA, IGNORE_CACHE) as AccountWithTokenProgram;
-          assert.ok(postTokenAccountIn.amount === preTokenAccountIn.amount - BigInt(swapQuote.estimatedAmountIn.toString()));
-          assert.ok(postTokenAccountOut.amount === preTokenAccountOut.amount + BigInt(swapQuote.estimatedAmountOut.toString()));
+          const postTokenAccountIn =
+            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+              swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
+              IGNORE_CACHE,
+            )) as AccountWithTokenProgram;
+          const postTokenAccountOut =
+            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+              swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
+              IGNORE_CACHE,
+            )) as AccountWithTokenProgram;
+          assert.ok(
+            postTokenAccountIn.amount ===
+              preTokenAccountIn.amount -
+                BigInt(swapQuote.estimatedAmountIn.toString()),
+          );
+          assert.ok(
+            postTokenAccountOut.amount ===
+              preTokenAccountOut.amount +
+                BigInt(swapQuote.estimatedAmountOut.toString()),
+          );
         });
       }
     });
@@ -652,8 +677,16 @@ describe("adaptive fee tests", () => {
             IGNORE_CACHE,
           )) as OracleData;
 
-          const preTokenAccountIn = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(tokenAccountIn, IGNORE_CACHE) as AccountWithTokenProgram;
-          const preTokenAccountOut = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(tokenAccountOut, IGNORE_CACHE) as AccountWithTokenProgram;
+          const preTokenAccountIn =
+            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+              tokenAccountIn,
+              IGNORE_CACHE,
+            )) as AccountWithTokenProgram;
+          const preTokenAccountOut =
+            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+              tokenAccountOut,
+              IGNORE_CACHE,
+            )) as AccountWithTokenProgram;
 
           // initial state
           const preVarsOne = preOracleOne.adaptiveFeeVariables;
@@ -756,10 +789,26 @@ describe("adaptive fee tests", () => {
             postVarsTwo.volatilityAccumulator == tickGroupIndexDeltaTwo * 10000,
           );
 
-          const postTokenAccountIn = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(tokenAccountIn, IGNORE_CACHE) as AccountWithTokenProgram;
-          const postTokenAccountOut = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(tokenAccountOut, IGNORE_CACHE) as AccountWithTokenProgram;
-          assert.ok(postTokenAccountIn.amount === preTokenAccountIn.amount - BigInt(swapQuoteOne.estimatedAmountIn.toString()));
-          assert.ok(postTokenAccountOut.amount === preTokenAccountOut.amount + BigInt(swapQuoteTwo.estimatedAmountOut.toString()));
+          const postTokenAccountIn =
+            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+              tokenAccountIn,
+              IGNORE_CACHE,
+            )) as AccountWithTokenProgram;
+          const postTokenAccountOut =
+            (await testCtx.whirlpoolCtx.fetcher.getTokenInfo(
+              tokenAccountOut,
+              IGNORE_CACHE,
+            )) as AccountWithTokenProgram;
+          assert.ok(
+            postTokenAccountIn.amount ===
+              preTokenAccountIn.amount -
+                BigInt(swapQuoteOne.estimatedAmountIn.toString()),
+          );
+          assert.ok(
+            postTokenAccountOut.amount ===
+              preTokenAccountOut.amount +
+                BigInt(swapQuoteTwo.estimatedAmountOut.toString()),
+          );
         });
       }
     });
@@ -771,107 +820,111 @@ describe("adaptive fee tests", () => {
 
       for (const version of versions) {
         it(`swapV${version}`, async () => {
-
           const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
-      const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
+          const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
 
-      const poolInfo = await buildSwapTestPool(tradeEnableTimestamp, undefined);
-      const pool = await testCtx.whirlpoolClient.getPool(
-        poolInfo.whirlpool,
-        IGNORE_CACHE,
-      );
+          const poolInfo = await buildSwapTestPool(
+            tradeEnableTimestamp,
+            undefined,
+          );
+          const pool = await testCtx.whirlpoolClient.getPool(
+            poolInfo.whirlpool,
+            IGNORE_CACHE,
+          );
 
-      const tradeTokenAmount = new BN(20000);
-      const tradeAmountSpecifiedIsInput = true;
-      const tradeAToB = true;
-      const swapQuoteParams = {
-        amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
-        aToB: tradeAToB,
-        otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-          tradeAmountSpecifiedIsInput,
-        ),
-        sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
-        tickArrays: await SwapUtils.getTickArrays(
-          pool.getData().tickCurrentIndex,
-          pool.getData().tickSpacing,
-          tradeAToB,
-          testCtx.whirlpoolCtx.program.programId,
-          pool.getAddress(),
-          testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE,
-        ),
-        tokenAmount: tradeTokenAmount,
-        whirlpoolData: pool.getData(),
-        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-        adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
-          testCtx.whirlpoolCtx.program.programId,
-          pool.getAddress(),
-          testCtx.whirlpoolCtx.fetcher,
-          IGNORE_CACHE,
-        ),
-      };
+          const tradeTokenAmount = new BN(20000);
+          const tradeAmountSpecifiedIsInput = true;
+          const tradeAToB = true;
+          const swapQuoteParams = {
+            amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+            aToB: tradeAToB,
+            otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+              tradeAmountSpecifiedIsInput,
+            ),
+            sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+            tickArrays: await SwapUtils.getTickArrays(
+              pool.getData().tickCurrentIndex,
+              pool.getData().tickSpacing,
+              tradeAToB,
+              testCtx.whirlpoolCtx.program.programId,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
+            tokenAmount: tradeTokenAmount,
+            whirlpoolData: pool.getData(),
+            tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+              testCtx.whirlpoolCtx.program.programId,
+              pool.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
+          };
 
-      assert.throws(
-        () => swapQuoteWithParams(
-        swapQuoteParams,
-        Percentage.fromFraction(0, 100),
-      ), (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.TradeIsNotEnabled);
+          assert.throws(
+            () =>
+              swapQuoteWithParams(
+                swapQuoteParams,
+                Percentage.fromFraction(0, 100),
+              ),
+            (err) =>
+              (err as WhirlpoolsError).errorCode ===
+              SwapErrorCode.TradeIsNotEnabled,
+          );
 
-      const swapQuote = swapQuoteWithParams(
-        { ...swapQuoteParams,
-          timestampInSeconds: tradeEnableTimestamp,
-        },
-        Percentage.fromFraction(0, 100),
-      );
+          const swapQuote = swapQuoteWithParams(
+            { ...swapQuoteParams, timestampInSeconds: tradeEnableTimestamp },
+            Percentage.fromFraction(0, 100),
+          );
 
-      const swapParams = SwapUtils.getSwapParamsFromQuote(
-        swapQuote,
-        testCtx.whirlpoolCtx,
-        pool,
-        swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
-        swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
-        testCtx.provider.wallet.publicKey,
-      );
+          const swapParams = SwapUtils.getSwapParamsFromQuote(
+            swapQuote,
+            testCtx.whirlpoolCtx,
+            pool,
+            swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
+            swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA,
+            testCtx.provider.wallet.publicKey,
+          );
 
-      const swapIx = WhirlpoolIx.swapIx(
-        testCtx.whirlpoolCtx.program,
-        swapParams,
-      );
-      const swapV2Ix = WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
-        ...swapParams,
-        tokenMintA: poolInfo.mintA,
-        tokenMintB: poolInfo.mintB,
-        tokenProgramA: TOKEN_PROGRAM_ID,
-        tokenProgramB: TOKEN_PROGRAM_ID,
-      });
+          const swapIx = WhirlpoolIx.swapIx(
+            testCtx.whirlpoolCtx.program,
+            swapParams,
+          );
+          const swapV2Ix = WhirlpoolIx.swapV2Ix(testCtx.whirlpoolCtx.program, {
+            ...swapParams,
+            tokenMintA: poolInfo.mintA,
+            tokenMintB: poolInfo.mintB,
+            tokenProgramA: TOKEN_PROGRAM_ID,
+            tokenProgramB: TOKEN_PROGRAM_ID,
+          });
 
-      if (version == 1) {
-      await assert.rejects(
-        toTx(testCtx.whirlpoolCtx, swapIx).buildAndExecute(),
-        /0x17b0/, // TradeIsNotEnabled.
-      );
-    } else {
+          if (version == 1) {
+            await assert.rejects(
+              toTx(testCtx.whirlpoolCtx, swapIx).buildAndExecute(),
+              /0x17b0/, // TradeIsNotEnabled.
+            );
+          } else {
+            await assert.rejects(
+              toTx(testCtx.whirlpoolCtx, swapV2Ix).buildAndExecute(),
+              /0x17b0/, // TradeIsNotEnabled.
+            );
+          }
+          // wait until trade enable timestamp (margin: 5s)
+          await sleep((20 + 5) * 1000);
 
-      await assert.rejects(
-        toTx(testCtx.whirlpoolCtx, swapV2Ix).buildAndExecute(),
-        /0x17b0/, // TradeIsNotEnabled.
-      );
-    }
-      // wait until trade enable timestamp (margin: 5s)
-      await sleep((20 + 5) * 1000);
-
-      // now it should be successful
-      if (version == 1) {
-      await toTx(testCtx.whirlpoolCtx, swapIx).buildAndExecute();
-      } else {
-      await toTx(testCtx.whirlpoolCtx, swapV2Ix).buildAndExecute();
+          // now it should be successful
+          if (version == 1) {
+            await toTx(testCtx.whirlpoolCtx, swapIx).buildAndExecute();
+          } else {
+            await toTx(testCtx.whirlpoolCtx, swapV2Ix).buildAndExecute();
+          }
+        });
       }
     });
-    }
-  });
 
-  describe("twoHopSwap/twoHopSwapV2", () => {
-    const variants = [
+    describe("twoHopSwap/twoHopSwapV2", () => {
+      const variants = [
         {
           oneOrTwo: "One",
           useTradeEnableTimestampOne: true,
@@ -899,194 +952,199 @@ describe("adaptive fee tests", () => {
         const versions = [1, 2];
         for (const version of versions) {
           it(`twoHopSwapV${version} should be blocked until trade enable timestamp of whirlpool ${oneOrTwo}`, async () => {
-            const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
-          const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
+            const currentTimeInSec = new anchor.BN(
+              Math.floor(Date.now() / 1000),
+            );
+            const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
 
-          const {
-            whirlpoolOne,
-            whirlpoolTwo,
-            oracleOne,
-            oracleTwo,
-            tokenAccountIn,
-            tokenAccountMid,
-            tokenAccountOut,
-          } = await buildTwoHopSwapTestPools(
-            useTradeEnableTimestampOne ? tradeEnableTimestamp : undefined,
-            useTradeEnableTimestampTwo ? tradeEnableTimestamp : undefined,
-            undefined,
-            undefined,
-          );
-
-          const poolOne = await testCtx.whirlpoolClient.getPool(
-            whirlpoolOne,
-            IGNORE_CACHE,
-          );
-          const poolTwo = await testCtx.whirlpoolClient.getPool(
-            whirlpoolTwo,
-            IGNORE_CACHE,
-          );
-
-          const tradeTokenAmount = new BN(20000);
-          const tradeAmountSpecifiedIsInput = true;
-          const tradeAToBOne = true;
-          const tradeAToBTwo = true;
-          const swapQuoteOne = swapQuoteWithParams(
-            {
-              amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
-              aToB: tradeAToBOne,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-                tradeAmountSpecifiedIsInput,
-              ),
-              sqrtPriceLimit: tradeAToBOne
-                ? MIN_SQRT_PRICE_BN
-                : MAX_SQRT_PRICE_BN,
-              tickArrays: await SwapUtils.getTickArrays(
-                poolOne.getData().tickCurrentIndex,
-                poolOne.getData().tickSpacing,
-                tradeAToBOne,
-                testCtx.whirlpoolCtx.program.programId,
-                poolOne.getAddress(),
-                testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE,
-              ),
-              tokenAmount: tradeTokenAmount,
-              whirlpoolData: poolOne.getData(),
-              tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
-                testCtx.whirlpoolCtx.program.programId,
-                poolOne.getAddress(),
-                testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE,
-              ),
-              timestampInSeconds: tradeEnableTimestamp,
-            },
-            Percentage.fromFraction(0, 100),
-          );
-
-          const swapQuoteTwo = swapQuoteWithParams(
-            {
-              amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
-              aToB: tradeAToBOne,
-              otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-                tradeAmountSpecifiedIsInput,
-              ),
-              sqrtPriceLimit: tradeAToBOne
-                ? MIN_SQRT_PRICE_BN
-                : MAX_SQRT_PRICE_BN,
-              tickArrays: await SwapUtils.getTickArrays(
-                poolTwo.getData().tickCurrentIndex,
-                poolTwo.getData().tickSpacing,
-                tradeAToBTwo,
-                testCtx.whirlpoolCtx.program.programId,
-                poolTwo.getAddress(),
-                testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE,
-              ),
-              tokenAmount: swapQuoteOne.estimatedAmountOut,
-              whirlpoolData: poolTwo.getData(),
-              tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
-                testCtx.whirlpoolCtx.program.programId,
-                poolTwo.getAddress(),
-                testCtx.whirlpoolCtx.fetcher,
-                IGNORE_CACHE,
-              ),
-              timestampInSeconds: tradeEnableTimestamp,
-            },
-            Percentage.fromFraction(0, 100),
-          );
-
-          const twoHopSwapIx = WhirlpoolIx.twoHopSwapIx(
-            testCtx.whirlpoolCtx.program,
-            {
-              amount: tradeTokenAmount,
-              amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
-              aToBOne: tradeAToBOne,
-              aToBTwo: tradeAToBTwo,
-              oracleOne,
-              oracleTwo,
-              otherAmountThreshold: ZERO,
-              sqrtPriceLimitOne: ZERO,
-              sqrtPriceLimitTwo: ZERO,
-              tickArrayOne0: swapQuoteOne.tickArray0,
-              tickArrayOne1: swapQuoteOne.tickArray1,
-              tickArrayOne2: swapQuoteOne.tickArray2,
-              tickArrayTwo0: swapQuoteTwo.tickArray0,
-              tickArrayTwo1: swapQuoteTwo.tickArray1,
-              tickArrayTwo2: swapQuoteTwo.tickArray2,
-              tokenAuthority: testCtx.provider.wallet.publicKey,
-              tokenOwnerAccountOneA: tokenAccountIn,
-              tokenOwnerAccountOneB: tokenAccountMid,
-              tokenOwnerAccountTwoA: tokenAccountMid,
-              tokenOwnerAccountTwoB: tokenAccountOut,
-              tokenVaultOneA: poolOne.getData().tokenVaultA,
-              tokenVaultOneB: poolOne.getData().tokenVaultB,
-              tokenVaultTwoA: poolTwo.getData().tokenVaultA,
-              tokenVaultTwoB: poolTwo.getData().tokenVaultB,
+            const {
               whirlpoolOne,
               whirlpoolTwo,
-            },
-          );
-
-          const twoHopSwapV2Ix = WhirlpoolIx.twoHopSwapV2Ix(
-            testCtx.whirlpoolCtx.program,
-            {
-              amount: tradeTokenAmount,
-              amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
-              aToBOne: tradeAToBOne,
-              aToBTwo: tradeAToBTwo,
               oracleOne,
               oracleTwo,
-              otherAmountThreshold: ZERO,
-              sqrtPriceLimitOne: ZERO,
-              sqrtPriceLimitTwo: ZERO,
-              tickArrayOne0: swapQuoteOne.tickArray0,
-              tickArrayOne1: swapQuoteOne.tickArray1,
-              tickArrayOne2: swapQuoteOne.tickArray2,
-              tickArrayTwo0: swapQuoteTwo.tickArray0,
-              tickArrayTwo1: swapQuoteTwo.tickArray1,
-              tickArrayTwo2: swapQuoteTwo.tickArray2,
-              tokenAuthority: testCtx.provider.wallet.publicKey,
-              tokenMintInput: poolOne.getData().tokenMintA,
-              tokenMintIntermediate: poolOne.getData().tokenMintB,
-              tokenMintOutput: poolTwo.getData().tokenMintB,
-              tokenOwnerAccountInput: tokenAccountIn,
-              tokenOwnerAccountOutput: tokenAccountOut,
-              tokenProgramInput: TOKEN_PROGRAM_ID,
-              tokenProgramIntermediate: TOKEN_PROGRAM_ID,
-              tokenProgramOutput: TOKEN_PROGRAM_ID,
-              tokenVaultOneInput: poolOne.getData().tokenVaultA,
-              tokenVaultOneIntermediate: poolOne.getData().tokenVaultB,
-              tokenVaultTwoIntermediate: poolTwo.getData().tokenVaultA,
-              tokenVaultTwoOutput: poolTwo.getData().tokenVaultB,
+              tokenAccountIn,
+              tokenAccountMid,
+              tokenAccountOut,
+            } = await buildTwoHopSwapTestPools(
+              useTradeEnableTimestampOne ? tradeEnableTimestamp : undefined,
+              useTradeEnableTimestampTwo ? tradeEnableTimestamp : undefined,
+              undefined,
+              undefined,
+            );
+
+            const poolOne = await testCtx.whirlpoolClient.getPool(
               whirlpoolOne,
+              IGNORE_CACHE,
+            );
+            const poolTwo = await testCtx.whirlpoolClient.getPool(
               whirlpoolTwo,
-            },
-          );
+              IGNORE_CACHE,
+            );
 
-          if (version == 1) {
-          await assert.rejects(
-            toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute(),
-            /0x17b0/, // TradeIsNotEnabled.
-          );
-          } else {
-          await assert.rejects(
-            toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).buildAndExecute(),
-            /0x17b0/, // TradeIsNotEnabled.
-          );
-          }
+            const tradeTokenAmount = new BN(20000);
+            const tradeAmountSpecifiedIsInput = true;
+            const tradeAToBOne = true;
+            const tradeAToBTwo = true;
+            const swapQuoteOne = swapQuoteWithParams(
+              {
+                amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+                aToB: tradeAToBOne,
+                otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+                  tradeAmountSpecifiedIsInput,
+                ),
+                sqrtPriceLimit: tradeAToBOne
+                  ? MIN_SQRT_PRICE_BN
+                  : MAX_SQRT_PRICE_BN,
+                tickArrays: await SwapUtils.getTickArrays(
+                  poolOne.getData().tickCurrentIndex,
+                  poolOne.getData().tickSpacing,
+                  tradeAToBOne,
+                  testCtx.whirlpoolCtx.program.programId,
+                  poolOne.getAddress(),
+                  testCtx.whirlpoolCtx.fetcher,
+                  IGNORE_CACHE,
+                ),
+                tokenAmount: tradeTokenAmount,
+                whirlpoolData: poolOne.getData(),
+                tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+                adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+                  testCtx.whirlpoolCtx.program.programId,
+                  poolOne.getAddress(),
+                  testCtx.whirlpoolCtx.fetcher,
+                  IGNORE_CACHE,
+                ),
+                timestampInSeconds: tradeEnableTimestamp,
+              },
+              Percentage.fromFraction(0, 100),
+            );
 
-          // wait until trade enable timestamp (margin: 5s)
-          await sleep((20 + 5) * 1000);
+            const swapQuoteTwo = swapQuoteWithParams(
+              {
+                amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+                aToB: tradeAToBOne,
+                otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+                  tradeAmountSpecifiedIsInput,
+                ),
+                sqrtPriceLimit: tradeAToBOne
+                  ? MIN_SQRT_PRICE_BN
+                  : MAX_SQRT_PRICE_BN,
+                tickArrays: await SwapUtils.getTickArrays(
+                  poolTwo.getData().tickCurrentIndex,
+                  poolTwo.getData().tickSpacing,
+                  tradeAToBTwo,
+                  testCtx.whirlpoolCtx.program.programId,
+                  poolTwo.getAddress(),
+                  testCtx.whirlpoolCtx.fetcher,
+                  IGNORE_CACHE,
+                ),
+                tokenAmount: swapQuoteOne.estimatedAmountOut,
+                whirlpoolData: poolTwo.getData(),
+                tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+                adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+                  testCtx.whirlpoolCtx.program.programId,
+                  poolTwo.getAddress(),
+                  testCtx.whirlpoolCtx.fetcher,
+                  IGNORE_CACHE,
+                ),
+                timestampInSeconds: tradeEnableTimestamp,
+              },
+              Percentage.fromFraction(0, 100),
+            );
 
-          // now it should be successful
-          if (version == 1) { 
-          await toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute();
-          } else {
-          await toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).buildAndExecute();
-          }
-        });
-      }
+            const twoHopSwapIx = WhirlpoolIx.twoHopSwapIx(
+              testCtx.whirlpoolCtx.program,
+              {
+                amount: tradeTokenAmount,
+                amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+                aToBOne: tradeAToBOne,
+                aToBTwo: tradeAToBTwo,
+                oracleOne,
+                oracleTwo,
+                otherAmountThreshold: ZERO,
+                sqrtPriceLimitOne: ZERO,
+                sqrtPriceLimitTwo: ZERO,
+                tickArrayOne0: swapQuoteOne.tickArray0,
+                tickArrayOne1: swapQuoteOne.tickArray1,
+                tickArrayOne2: swapQuoteOne.tickArray2,
+                tickArrayTwo0: swapQuoteTwo.tickArray0,
+                tickArrayTwo1: swapQuoteTwo.tickArray1,
+                tickArrayTwo2: swapQuoteTwo.tickArray2,
+                tokenAuthority: testCtx.provider.wallet.publicKey,
+                tokenOwnerAccountOneA: tokenAccountIn,
+                tokenOwnerAccountOneB: tokenAccountMid,
+                tokenOwnerAccountTwoA: tokenAccountMid,
+                tokenOwnerAccountTwoB: tokenAccountOut,
+                tokenVaultOneA: poolOne.getData().tokenVaultA,
+                tokenVaultOneB: poolOne.getData().tokenVaultB,
+                tokenVaultTwoA: poolTwo.getData().tokenVaultA,
+                tokenVaultTwoB: poolTwo.getData().tokenVaultB,
+                whirlpoolOne,
+                whirlpoolTwo,
+              },
+            );
+
+            const twoHopSwapV2Ix = WhirlpoolIx.twoHopSwapV2Ix(
+              testCtx.whirlpoolCtx.program,
+              {
+                amount: tradeTokenAmount,
+                amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+                aToBOne: tradeAToBOne,
+                aToBTwo: tradeAToBTwo,
+                oracleOne,
+                oracleTwo,
+                otherAmountThreshold: ZERO,
+                sqrtPriceLimitOne: ZERO,
+                sqrtPriceLimitTwo: ZERO,
+                tickArrayOne0: swapQuoteOne.tickArray0,
+                tickArrayOne1: swapQuoteOne.tickArray1,
+                tickArrayOne2: swapQuoteOne.tickArray2,
+                tickArrayTwo0: swapQuoteTwo.tickArray0,
+                tickArrayTwo1: swapQuoteTwo.tickArray1,
+                tickArrayTwo2: swapQuoteTwo.tickArray2,
+                tokenAuthority: testCtx.provider.wallet.publicKey,
+                tokenMintInput: poolOne.getData().tokenMintA,
+                tokenMintIntermediate: poolOne.getData().tokenMintB,
+                tokenMintOutput: poolTwo.getData().tokenMintB,
+                tokenOwnerAccountInput: tokenAccountIn,
+                tokenOwnerAccountOutput: tokenAccountOut,
+                tokenProgramInput: TOKEN_PROGRAM_ID,
+                tokenProgramIntermediate: TOKEN_PROGRAM_ID,
+                tokenProgramOutput: TOKEN_PROGRAM_ID,
+                tokenVaultOneInput: poolOne.getData().tokenVaultA,
+                tokenVaultOneIntermediate: poolOne.getData().tokenVaultB,
+                tokenVaultTwoIntermediate: poolTwo.getData().tokenVaultA,
+                tokenVaultTwoOutput: poolTwo.getData().tokenVaultB,
+                whirlpoolOne,
+                whirlpoolTwo,
+              },
+            );
+
+            if (version == 1) {
+              await assert.rejects(
+                toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute(),
+                /0x17b0/, // TradeIsNotEnabled.
+              );
+            } else {
+              await assert.rejects(
+                toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).buildAndExecute(),
+                /0x17b0/, // TradeIsNotEnabled.
+              );
+            }
+
+            // wait until trade enable timestamp (margin: 5s)
+            await sleep((20 + 5) * 1000);
+
+            // now it should be successful
+            if (version == 1) {
+              await toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute();
+            } else {
+              await toTx(
+                testCtx.whirlpoolCtx,
+                twoHopSwapV2Ix,
+              ).buildAndExecute();
+            }
+          });
+        }
       }
     });
   });

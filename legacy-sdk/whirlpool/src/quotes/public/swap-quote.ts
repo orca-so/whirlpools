@@ -1,7 +1,7 @@
 import type { Address } from "@coral-xyz/anchor";
 import type { Percentage } from "@orca-so/common-sdk";
 import { AddressUtil } from "@orca-so/common-sdk";
-import { BN } from "@coral-xyz/anchor";
+import type { BN } from "@coral-xyz/anchor";
 import invariant from "tiny-invariant";
 import type { SwapInput } from "../../instructions";
 import type {
@@ -9,7 +9,12 @@ import type {
   WhirlpoolAccountFetcherInterface,
 } from "../../network/public/fetcher";
 import { IGNORE_CACHE } from "../../network/public/fetcher";
-import type { AdaptiveFeeConstantsData, AdaptiveFeeVariablesData, TickArray, WhirlpoolData } from "../../types/public";
+import type {
+  AdaptiveFeeConstantsData,
+  AdaptiveFeeVariablesData,
+  TickArray,
+  WhirlpoolData,
+} from "../../types/public";
 import { TICK_ARRAY_SIZE } from "../../types/public";
 import { PoolUtil, SwapDirection } from "../../utils/public";
 import { SwapUtils } from "../../utils/public/swap-utils";
@@ -38,8 +43,8 @@ export enum UseFallbackTickArray {
  * @category Quotes
  */
 export type AdaptiveFeeContext = {
-  tradeEnableTimestamp: BN,
-  adaptiveFeeInfo: AdaptiveFeeInfo,
+  tradeEnableTimestamp: BN;
+  adaptiveFeeInfo: AdaptiveFeeInfo;
 };
 
 /*
@@ -47,8 +52,8 @@ export type AdaptiveFeeContext = {
  * @category Quotes
  */
 export type AdaptiveFeeInfo = {
-  adaptiveFeeConstants: AdaptiveFeeConstantsData,
-  adaptiveFeeVariables: AdaptiveFeeVariablesData,
+  adaptiveFeeConstants: AdaptiveFeeConstantsData;
+  adaptiveFeeVariables: AdaptiveFeeVariablesData;
 };
 
 /**
@@ -105,8 +110,8 @@ export type SwapEstimates = {
   estimatedEndTickIndex: number;
   estimatedEndSqrtPrice: BN;
   estimatedFeeAmount: BN;
-  estimatedFeeRateMin: number,
-  estimatedFeeRateMax: number,
+  estimatedFeeRateMin: number;
+  estimatedFeeRateMax: number;
   transferFee: {
     deductingFromEstimatedAmountIn: BN;
     deductedFromEstimatedAmountOut: BN;
@@ -327,7 +332,12 @@ async function getAdaptiveFeeCtx(
   if (!PoolUtil.isInitializedWithAdaptiveFeeTier(whirlpool.getData())) {
     return null;
   }
-  return SwapUtils.getAdaptiveFeeContext(AddressUtil.toPubKey(programId), whirlpool.getAddress(), fetcher, opts);
+  return SwapUtils.getAdaptiveFeeContext(
+    AddressUtil.toPubKey(programId),
+    whirlpool.getAddress(),
+    fetcher,
+    opts,
+  );
 }
 
 function getFallbackTickArray(

@@ -27,7 +27,7 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     sqrtPriceLimit,
     otherAmountThreshold,
     amountSpecifiedIsInput,
-    timestampInSeconds,
+    timestampInSeconds: optionalTimestampInSeconds,
     adaptiveFeeInfo,
     tokenExtensionCtx,
   } = params;
@@ -72,6 +72,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
       SwapErrorCode.TickArraySequenceInvalid,
     );
   }
+
+  const timestampInSeconds = optionalTimestampInSeconds ?? new BN(Date.now()).div(new BN(1000));
 
   if (amountSpecifiedIsInput) {
     // For ExactIn

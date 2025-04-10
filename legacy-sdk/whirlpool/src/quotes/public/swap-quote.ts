@@ -52,10 +52,10 @@ export type AdaptiveFeeInfo = {
  * @param amountSpecifiedIsInput - Specifies the token the parameter `amount`represents. If true, the amount represents
  *                                 the input token of the swap.
  * @param tickArrays - An sequential array of tick-array objects in the direction of the trade to swap on
- * @param timestampInSeconds - A parameter to generate this quote to a unix time stamp
  * @param adaptiveFeeInfo - Adaptive fee info for the whirlpool
  * @param tokenExtensionCtx - TokenExtensions info for the whirlpool
  * @param fallbackTickArray - Optional. A reserve in case prices move in the opposite direction
+ * @param timestampInSeconds - Optional. A parameter to generate this quote to a unix time stamp
  */
 export type SwapQuoteParam = {
   whirlpoolData: WhirlpoolData;
@@ -65,10 +65,10 @@ export type SwapQuoteParam = {
   aToB: boolean;
   amountSpecifiedIsInput: boolean;
   tickArrays: TickArray[];
-  timestampInSeconds: BN;
   adaptiveFeeInfo: AdaptiveFeeInfo | null;
   tokenExtensionCtx: TokenExtensionContextForPool;
   fallbackTickArray?: PublicKey;
+  timestampInSeconds?: BN;
 };
 
 /**
@@ -242,7 +242,7 @@ async function swapQuoteByToken(
   programId: Address,
   fetcher: WhirlpoolAccountFetcherInterface,
   opts?: WhirlpoolAccountFetchOptions,
-  optionTimestampInSeconds?: BN,
+  timestampInSeconds?: BN,
 ): Promise<SwapQuoteParam> {
   // If we use whirlpool.getData() here, quote will not be the latest even if opts is IGNORE_CACHE
   const whirlpoolData = await fetcher.getPool(whirlpool.getAddress(), opts);
@@ -287,8 +287,6 @@ async function swapQuoteByToken(
     whirlpool,
     programId,
   );
-
-  const timestampInSeconds = optionTimestampInSeconds ?? new BN(Date.now()).div(new BN(1000));
 
   return {
     whirlpoolData,

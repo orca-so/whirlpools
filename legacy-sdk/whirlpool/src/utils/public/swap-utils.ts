@@ -38,6 +38,12 @@ export interface TickArrayRequest {
   tickSpacing: number;
 }
 
+/*
+ * An alias for null indicating that the adaptive fee info does not exist.
+ * @category Whirlpool Utils
+ */
+export const NO_ADAPTIVE_FEE_INFO = null;
+
 /**
  * @category Whirlpool Utils
  */
@@ -198,7 +204,7 @@ export class SwapUtils {
 
     const oracleData = await fetcher.getOracle(oracleAddress, opts);
     if (!oracleData) {
-      return null;
+      return NO_ADAPTIVE_FEE_INFO;
     }
 
     return {

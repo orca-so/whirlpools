@@ -13,6 +13,7 @@ import type {
 } from "../../../src";
 import {
   MEMO_PROGRAM_ADDRESS,
+  NO_ADAPTIVE_FEE_INFO,
   PDAUtil,
   PriceMath,
   SwapUtils,
@@ -1159,6 +1160,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: targetSqrtPrice,
             tickArrays,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1321,6 +1323,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: targetSqrtPrice,
             tickArrays,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1581,6 +1584,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: targetSqrtPrice,
             tickArrays: tickArrays1,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1596,6 +1600,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             tickArrays: tickArrays0,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1916,6 +1921,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: targetSqrtPrice,
             tickArrays: tickArrays0,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1931,6 +1937,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             tickArrays: tickArrays1,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -2575,6 +2582,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: targetSqrtPrice,
             tickArrays: tickArrays1,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -2590,6 +2598,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             tickArrays: tickArrays0,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -2835,6 +2844,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: targetSqrtPrice,
             tickArrays: tickArrays1,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -2850,6 +2860,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             tickArrays: tickArrays0,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -3146,6 +3157,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: targetSqrtPrice,
             tickArrays: tickArrays1,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -3161,6 +3173,7 @@ describe("sparse swap tests", () => {
             sqrtPriceLimit: SwapUtils.getDefaultSqrtPriceLimit(aToB),
             tickArrays: tickArrays0,
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
           },
           Percentage.fromFraction(0, 100),
         );

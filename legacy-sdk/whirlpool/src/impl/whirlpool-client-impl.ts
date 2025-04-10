@@ -14,8 +14,6 @@ import type {
   WhirlpoolAccountFetcherInterface,
 } from "../network/public/fetcher";
 import { IGNORE_CACHE, PREFER_CACHE } from "../network/public/fetcher";
-import type { WhirlpoolRouter } from "../router/public";
-import { WhirlpoolRouterBuilder } from "../router/public";
 import type { WhirlpoolData } from "../types/public";
 import { SPLASH_POOL_TICK_SPACING } from "../types/public";
 import { getTickArrayDataForPosition } from "../utils/builder/position-builder-util";
@@ -44,10 +42,6 @@ export class WhirlpoolClientImpl implements WhirlpoolClient {
 
   public getFetcher(): WhirlpoolAccountFetcherInterface {
     return this.ctx.fetcher;
-  }
-
-  public getRouter(poolAddresses: Address[]): Promise<WhirlpoolRouter> {
-    return WhirlpoolRouterBuilder.buildWithPools(this.ctx, poolAddresses);
   }
 
   public async getPool(

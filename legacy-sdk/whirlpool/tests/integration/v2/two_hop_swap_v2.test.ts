@@ -2570,7 +2570,7 @@ describe("two_hop_swap_v2", () => {
           IGNORE_CACHE,
         ),
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-        adaptiveFeeInfo: NO_ADAPTIVE_FEE_CONTEXT,
+        adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         whirlpoolData: whirlpoolOne.getData(),
         tokenAmount: new BN(1_000_000),
       };
@@ -3135,7 +3135,7 @@ describe("two_hop_swap_v2", () => {
           IGNORE_CACHE,
         ),
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-        adaptiveFeeInfo: NO_ADAPTIVE_FEE_CONTEXT,
+        adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         whirlpoolData: whirlpoolOne.getData(),
         tokenAmount: new BN(1_000_000),
       };

@@ -96,6 +96,8 @@ export type SwapQuote = NormalSwapQuote | DevFeeSwapQuote;
  * @param estimatedEndTickIndex - Approximate tick-index the Whirlpool will land on after this swap
  * @param estimatedEndSqrtPrice - Approximate sqrtPrice the Whirlpool will land on after this swap
  * @param estimatedFeeAmount - Approximate feeAmount (all fees) charged on this swap
+ * @param estimatedFeeRateMin - Approximate minimum fee rate on this swap
+ * @param estimatedFeeRateMax - Approximate maximum fee rate on this swap
  */
 export type SwapEstimates = {
   estimatedAmountIn: BN;
@@ -103,6 +105,8 @@ export type SwapEstimates = {
   estimatedEndTickIndex: number;
   estimatedEndSqrtPrice: BN;
   estimatedFeeAmount: BN;
+  estimatedFeeRateMin: number,
+  estimatedFeeRateMax: number,
   transferFee: {
     deductingFromEstimatedAmountIn: BN;
     deductedFromEstimatedAmountOut: BN;

@@ -159,6 +159,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
       estimatedEndTickIndex: swapResults.nextTickIndex,
       estimatedEndSqrtPrice: swapResults.nextSqrtPrice,
       estimatedFeeAmount: swapResults.totalFeeAmount,
+      estimatedFeeRateMin: swapResults.appliedFeeRateMin,
+      estimatedFeeRateMax: swapResults.appliedFeeRateMax,
       transferFee: {
         deductingFromEstimatedAmountIn: transferFeeIncludedIn.fee,
         deductedFromEstimatedAmountOut: transferFeeExcludedOut.fee,
@@ -238,6 +240,8 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     estimatedEndTickIndex: swapResults.nextTickIndex,
     estimatedEndSqrtPrice: swapResults.nextSqrtPrice,
     estimatedFeeAmount: swapResults.totalFeeAmount,
+    estimatedFeeRateMin: swapResults.appliedFeeRateMin,
+    estimatedFeeRateMax: swapResults.appliedFeeRateMax,
     transferFee: {
       deductingFromEstimatedAmountIn: transferFeeIncludedIn.fee,
       deductedFromEstimatedAmountOut: transferFeeExcludedOut.fee,

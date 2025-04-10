@@ -1,6 +1,6 @@
 import * as anchor from "@coral-xyz/anchor";
 import * as assert from "assert";
-import { AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
+import { AccountWithTokenProgram, AddressUtil, Percentage, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import { Keypair, PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
 import type {
@@ -43,6 +43,7 @@ import {
   getDefaultAquarium,
   getTokenAccsForPools,
 } from "../../utils/init-utils";
+import { WhirlpoolsError, SwapErrorCode } from "../../../src/errors/errors";
 
 interface SharedTestContext {
   provider: anchor.AnchorProvider;
@@ -370,16 +371,21 @@ describe("adaptive fee tests", () => {
               tokenAmount: tradeTokenAmount,
               whirlpoolData: pool.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+                testCtx.whirlpoolCtx.program.programId,
+                pool.getAddress(),
+                testCtx.whirlpoolCtx.fetcher,
+                IGNORE_CACHE,
+              ),
             },
             Percentage.fromFraction(0, 100),
           );
 
+          assert.ok(swapQuote.estimatedFeeRateMin === pool.getData().feeRate);
+          assert.ok(swapQuote.estimatedFeeRateMax > pool.getData().feeRate);
+
           const swapParams = SwapUtils.getSwapParamsFromQuote(
-            {
-              ...swapQuote,
-              otherAmountThreshold: ZERO, // JUST FOR TESTING
-            },
+            swapQuote,
             testCtx.whirlpoolCtx,
             pool,
             swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
@@ -392,6 +398,9 @@ describe("adaptive fee tests", () => {
             poolInfo.oracle,
             IGNORE_CACHE,
           )) as OracleData;
+
+          const preTokenAccountIn = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB, IGNORE_CACHE) as AccountWithTokenProgram;
+          const preTokenAccountOut = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA, IGNORE_CACHE) as AccountWithTokenProgram;
 
           // initial state
           const preVars = preOracle.adaptiveFeeVariables;
@@ -459,6 +468,11 @@ describe("adaptive fee tests", () => {
           assert.ok(
             postVars.volatilityAccumulator == tickGroupIndexDelta * 10000,
           );
+
+          const postTokenAccountIn = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB, IGNORE_CACHE) as AccountWithTokenProgram;
+          const postTokenAccountOut = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(swapQuote.aToB ? poolInfo.tokenAccountB : poolInfo.tokenAccountA, IGNORE_CACHE) as AccountWithTokenProgram;
+          assert.ok(postTokenAccountIn.amount === preTokenAccountIn.amount - BigInt(swapQuote.estimatedAmountIn.toString()));
+          assert.ok(postTokenAccountOut.amount === preTokenAccountOut.amount + BigInt(swapQuote.estimatedAmountOut.toString()));
         });
       }
     });
@@ -517,7 +531,12 @@ describe("adaptive fee tests", () => {
               tokenAmount: tradeTokenAmount,
               whirlpoolData: poolOne.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+                testCtx.whirlpoolCtx.program.programId,
+                poolOne.getAddress(),
+                testCtx.whirlpoolCtx.fetcher,
+                IGNORE_CACHE,
+              ),
             },
             Percentage.fromFraction(0, 100),
           );
@@ -544,7 +563,12 @@ describe("adaptive fee tests", () => {
               tokenAmount: swapQuoteOne.estimatedAmountOut,
               whirlpoolData: poolTwo.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+                testCtx.whirlpoolCtx.program.programId,
+                poolTwo.getAddress(),
+                testCtx.whirlpoolCtx.fetcher,
+                IGNORE_CACHE,
+              ),
             },
             Percentage.fromFraction(0, 100),
           );
@@ -627,6 +651,9 @@ describe("adaptive fee tests", () => {
             oracleTwo,
             IGNORE_CACHE,
           )) as OracleData;
+
+          const preTokenAccountIn = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(tokenAccountIn, IGNORE_CACHE) as AccountWithTokenProgram;
+          const preTokenAccountOut = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(tokenAccountOut, IGNORE_CACHE) as AccountWithTokenProgram;
 
           // initial state
           const preVarsOne = preOracleOne.adaptiveFeeVariables;
@@ -728,14 +755,24 @@ describe("adaptive fee tests", () => {
           assert.ok(
             postVarsTwo.volatilityAccumulator == tickGroupIndexDeltaTwo * 10000,
           );
+
+          const postTokenAccountIn = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(tokenAccountIn, IGNORE_CACHE) as AccountWithTokenProgram;
+          const postTokenAccountOut = await testCtx.whirlpoolCtx.fetcher.getTokenInfo(tokenAccountOut, IGNORE_CACHE) as AccountWithTokenProgram;
+          assert.ok(postTokenAccountIn.amount === preTokenAccountIn.amount - BigInt(swapQuoteOne.estimatedAmountIn.toString()));
+          assert.ok(postTokenAccountOut.amount === preTokenAccountOut.amount + BigInt(swapQuoteTwo.estimatedAmountOut.toString()));
         });
       }
     });
   });
 
   describe("trade enable timestamp", () => {
-    it("swap/swapV2 should be blocked until trade enable timestamp", async () => {
-      const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
+    describe("swap/swapV2 should be blocked until trade enable timestamp", () => {
+      const versions = [1, 2];
+
+      for (const version of versions) {
+        it(`swapV${version}`, async () => {
+
+          const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
       const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
 
       const poolInfo = await buildSwapTestPool(tradeEnableTimestamp, undefined);
@@ -747,36 +784,48 @@ describe("adaptive fee tests", () => {
       const tradeTokenAmount = new BN(20000);
       const tradeAmountSpecifiedIsInput = true;
       const tradeAToB = true;
+      const swapQuoteParams = {
+        amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
+        aToB: tradeAToB,
+        otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
+          tradeAmountSpecifiedIsInput,
+        ),
+        sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
+        tickArrays: await SwapUtils.getTickArrays(
+          pool.getData().tickCurrentIndex,
+          pool.getData().tickSpacing,
+          tradeAToB,
+          testCtx.whirlpoolCtx.program.programId,
+          pool.getAddress(),
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        ),
+        tokenAmount: tradeTokenAmount,
+        whirlpoolData: pool.getData(),
+        tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
+        adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+          testCtx.whirlpoolCtx.program.programId,
+          pool.getAddress(),
+          testCtx.whirlpoolCtx.fetcher,
+          IGNORE_CACHE,
+        ),
+      };
+
+      assert.throws(
+        () => swapQuoteWithParams(
+        swapQuoteParams,
+        Percentage.fromFraction(0, 100),
+      ), (err) => (err as WhirlpoolsError).errorCode === SwapErrorCode.TradeIsNotEnabled);
+
       const swapQuote = swapQuoteWithParams(
-        {
-          amountSpecifiedIsInput: tradeAmountSpecifiedIsInput,
-          aToB: tradeAToB,
-          otherAmountThreshold: SwapUtils.getDefaultOtherAmountThreshold(
-            tradeAmountSpecifiedIsInput,
-          ),
-          sqrtPriceLimit: tradeAToB ? MIN_SQRT_PRICE_BN : MAX_SQRT_PRICE_BN,
-          tickArrays: await SwapUtils.getTickArrays(
-            pool.getData().tickCurrentIndex,
-            pool.getData().tickSpacing,
-            tradeAToB,
-            testCtx.whirlpoolCtx.program.programId,
-            pool.getAddress(),
-            testCtx.whirlpoolCtx.fetcher,
-            IGNORE_CACHE,
-          ),
-          tokenAmount: tradeTokenAmount,
-          whirlpoolData: pool.getData(),
-          tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-          adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+        { ...swapQuoteParams,
+          timestampInSeconds: tradeEnableTimestamp,
         },
         Percentage.fromFraction(0, 100),
       );
 
       const swapParams = SwapUtils.getSwapParamsFromQuote(
-        {
-          ...swapQuote,
-          otherAmountThreshold: ZERO, // JUST FOR TESTING
-        },
+        swapQuote,
         testCtx.whirlpoolCtx,
         pool,
         swapQuote.aToB ? poolInfo.tokenAccountA : poolInfo.tokenAccountB,
@@ -796,26 +845,33 @@ describe("adaptive fee tests", () => {
         tokenProgramB: TOKEN_PROGRAM_ID,
       });
 
+      if (version == 1) {
       await assert.rejects(
         toTx(testCtx.whirlpoolCtx, swapIx).buildAndExecute(),
         /0x17b0/, // TradeIsNotEnabled.
       );
+    } else {
 
       await assert.rejects(
         toTx(testCtx.whirlpoolCtx, swapV2Ix).buildAndExecute(),
         /0x17b0/, // TradeIsNotEnabled.
       );
-
+    }
       // wait until trade enable timestamp (margin: 5s)
       await sleep((20 + 5) * 1000);
 
       // now it should be successful
+      if (version == 1) {
       await toTx(testCtx.whirlpoolCtx, swapIx).buildAndExecute();
+      } else {
       await toTx(testCtx.whirlpoolCtx, swapV2Ix).buildAndExecute();
+      }
     });
+    }
+  });
 
-    describe("twoHopSwap/twoHopSwapV2", () => {
-      const variants = [
+  describe("twoHopSwap/twoHopSwapV2", () => {
+    const variants = [
         {
           oneOrTwo: "One",
           useTradeEnableTimestampOne: true,
@@ -840,8 +896,10 @@ describe("adaptive fee tests", () => {
           useTradeEnableTimestampTwo,
         } = variant;
 
-        it(`twoHopSwap/twoHopSwapV2 should be blocked until trade enable timestamp of whirlpool ${oneOrTwo}`, async () => {
-          const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
+        const versions = [1, 2];
+        for (const version of versions) {
+          it(`twoHopSwapV${version} should be blocked until trade enable timestamp of whirlpool ${oneOrTwo}`, async () => {
+            const currentTimeInSec = new anchor.BN(Math.floor(Date.now() / 1000));
           const tradeEnableTimestamp = currentTimeInSec.addn(20); // 20 seconds from now
 
           const {
@@ -894,7 +952,13 @@ describe("adaptive fee tests", () => {
               tokenAmount: tradeTokenAmount,
               whirlpoolData: poolOne.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+                testCtx.whirlpoolCtx.program.programId,
+                poolOne.getAddress(),
+                testCtx.whirlpoolCtx.fetcher,
+                IGNORE_CACHE,
+              ),
+              timestampInSeconds: tradeEnableTimestamp,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -921,7 +985,13 @@ describe("adaptive fee tests", () => {
               tokenAmount: swapQuoteOne.estimatedAmountOut,
               whirlpoolData: poolTwo.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+              adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+                testCtx.whirlpoolCtx.program.programId,
+                poolTwo.getAddress(),
+                testCtx.whirlpoolCtx.fetcher,
+                IGNORE_CACHE,
+              ),
+              timestampInSeconds: tradeEnableTimestamp,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -994,23 +1064,29 @@ describe("adaptive fee tests", () => {
             },
           );
 
+          if (version == 1) {
           await assert.rejects(
             toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute(),
             /0x17b0/, // TradeIsNotEnabled.
           );
-
+          } else {
           await assert.rejects(
             toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).buildAndExecute(),
             /0x17b0/, // TradeIsNotEnabled.
           );
+          }
 
           // wait until trade enable timestamp (margin: 5s)
           await sleep((20 + 5) * 1000);
 
           // now it should be successful
+          if (version == 1) { 
           await toTx(testCtx.whirlpoolCtx, twoHopSwapIx).buildAndExecute();
+          } else {
           await toTx(testCtx.whirlpoolCtx, twoHopSwapV2Ix).buildAndExecute();
+          }
         });
+      }
       }
     });
   });
@@ -1238,7 +1314,7 @@ describe("adaptive fee tests", () => {
           whirlpool,
           poolInfo.mintA,
           tradeTokenAmount,
-          Percentage.fromFraction(1, 100),
+          Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
           IGNORE_CACHE,
@@ -1350,7 +1426,12 @@ describe("adaptive fee tests", () => {
             tokenAmount: tradeTokenAmount,
             whirlpoolData: poolOne.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+            adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+              testCtx.whirlpoolCtx.program.programId,
+              poolOne.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1377,7 +1458,12 @@ describe("adaptive fee tests", () => {
             tokenAmount: swapQuoteOne.estimatedAmountOut,
             whirlpoolData: poolTwo.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+            adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+              testCtx.whirlpoolCtx.program.programId,
+              poolTwo.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1540,7 +1626,7 @@ describe("adaptive fee tests", () => {
           whirlpool,
           poolInfo.mintA,
           tradeTokenAmount,
-          Percentage.fromFraction(1, 100),
+          Percentage.fromFraction(0, 100),
           testCtx.whirlpoolCtx.program.programId,
           testCtx.whirlpoolCtx.fetcher,
           IGNORE_CACHE,
@@ -1654,7 +1740,12 @@ describe("adaptive fee tests", () => {
             tokenAmount: tradeTokenAmount,
             whirlpoolData: poolOne.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+            adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+              testCtx.whirlpoolCtx.program.programId,
+              poolOne.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1681,7 +1772,12 @@ describe("adaptive fee tests", () => {
             tokenAmount: swapQuoteOne.estimatedAmountOut,
             whirlpoolData: poolTwo.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
+            adaptiveFeeCtx: await SwapUtils.getAdaptiveFeeContext(
+              testCtx.whirlpoolCtx.program.programId,
+              poolTwo.getAddress(),
+              testCtx.whirlpoolCtx.fetcher,
+              IGNORE_CACHE,
+            ),
           },
           Percentage.fromFraction(0, 100),
         );

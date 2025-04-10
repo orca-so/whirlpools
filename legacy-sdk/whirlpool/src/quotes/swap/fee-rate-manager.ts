@@ -1,19 +1,8 @@
 import { BN } from "@coral-xyz/anchor";
-import { AdaptiveFeeInfo } from "../public";
 import invariant from "tiny-invariant";
-import { AdaptiveFeeConstantsData, AdaptiveFeeVariablesData, MAX_TICK_INDEX, MIN_TICK_INDEX } from "../../types/public";
+import { AdaptiveFeeInfo } from "../public";
+import { ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, AdaptiveFeeConstantsData, AdaptiveFeeVariablesData, FEE_RATE_HARD_LIMIT, MAX_REFERENCE_AGE, MAX_TICK_INDEX, MIN_TICK_INDEX, REDUCTION_FACTOR_DENOMINATOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR } from "../../types/public";
 import { PriceMath } from "../../utils/public";
-
-
-// Constants
-const FEE_RATE_HARD_LIMIT = 100_000; // 10%
-
-const ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR = 100_000;
-const VOLATILITY_ACCUMULATOR_SCALE_FACTOR = 10_000;
-const REDUCTION_FACTOR_DENOMINATOR = 10_000;
-
-const MAX_REFERENCE_AGE = 3_600; // 1 hour
-
 
 export abstract class FeeRateManager {
   public static new(
@@ -105,6 +94,7 @@ class AdaptiveFeeRateManager extends FeeRateManager {
     this.tickGroupIndex = Math.floor(this.currentTickIndex / this.adaptiveFeeConstants.tickGroupSize);
 
     this.adaptiveFeeVariables.updateReference(this.tickGroupIndex, this.timestamp, this.adaptiveFeeConstants);
+
     const { coreTickGroupRangeLowerBound, coreTickGroupRangeUpperBound } = this.adaptiveFeeVariables.getCoreTickGroupRange(this.adaptiveFeeConstants);
     this.coreTickGroupRangeLowerBound = coreTickGroupRangeLowerBound;
     this.coreTickGroupRangeUpperBound = coreTickGroupRangeUpperBound;
@@ -193,7 +183,34 @@ class AdaptiveFeeRateManager extends FeeRateManager {
   }
 
   public advanceTickGroupAfterSkip(sqrtPrice: BN, nextTickSqrtPrice: BN, nextTickIndex: number): void {
-    // TODO: implement
+    const [tickIndex, isOnTickGroupBoundary] = (() => {
+      if (sqrtPrice.eq(nextTickSqrtPrice)) {
+        const isOnTickGroupBoundary = nextTickIndex % this.adaptiveFeeConstants.tickGroupSize === 0;
+        return [nextTickIndex, isOnTickGroupBoundary];
+      } else {
+        const tickIndex = PriceMath.sqrtPriceX64ToTickIndex(sqrtPrice);
+        const isOnTickGroupBoundary = tickIndex % this.adaptiveFeeConstants.tickGroupSize === 0 && sqrtPrice.eq(PriceMath.tickIndexToSqrtPriceX64(tickIndex));
+        return [tickIndex, isOnTickGroupBoundary];
+      }
+    })();
+
+    const lastTraversedTickGroupIndex = isOnTickGroupBoundary && !this.aToB
+      ? tickIndex / this.adaptiveFeeConstants.tickGroupSize - 1
+      : Math.floor(tickIndex / this.adaptiveFeeConstants.tickGroupSize);
+
+    if (
+      (this.aToB && lastTraversedTickGroupIndex < this.tickGroupIndex) ||
+      (!this.aToB && lastTraversedTickGroupIndex > this.tickGroupIndex)
+    ) {
+      this.tickGroupIndex = lastTraversedTickGroupIndex;
+      this.adaptiveFeeVariables.updateVolatilityAccumulator(this.tickGroupIndex, this.adaptiveFeeConstants);
+    }
+
+    if (this.aToB) {
+      this.tickGroupIndex--;
+    } else {
+      this.tickGroupIndex++;
+    }
   }
 
   public updateMajorSwapTimestamp(preSqrtPrice: BN, postSqrtPrice: BN): void {

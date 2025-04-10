@@ -78,7 +78,7 @@ class AdaptiveFeeRateManager extends FeeRateManager {
     private currentTickIndex: number,
     private timestamp: BN,
     private staticFeeRate: number,
-    adaptiveFeeInfo: AdaptiveFeeInfo
+    adaptiveFeeInfo: AdaptiveFeeInfo,
   ) {
     super();
 

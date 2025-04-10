@@ -3,7 +3,7 @@ import type { Percentage } from "@orca-so/common-sdk";
 import { AddressUtil, U64_MAX, ZERO } from "@orca-so/common-sdk";
 import type { PublicKey } from "@solana/web3.js";
 import BN from "bn.js";
-import type { AdaptiveFeeInfo, WhirlpoolContext } from "../..";
+import type { AdaptiveFeeContext, WhirlpoolContext } from "../..";
 import { TickUtil } from "../..";
 import type {
   WhirlpoolAccountFetchOptions,
@@ -39,10 +39,10 @@ export interface TickArrayRequest {
 }
 
 /*
- * An alias for null indicating that the adaptive fee info does not exist.
+ * An alias for null indicating that the adaptive fee context does not exist.
  * @category Whirlpool Utils
  */
-export const NO_ADAPTIVE_FEE_INFO = null;
+export const NO_ADAPTIVE_FEE_CONTEXT = null;
 
 /**
  * @category Whirlpool Utils
@@ -192,24 +192,27 @@ export class SwapUtils {
    * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
    * @param fetcher - WhirlpoolAccountCacheInterface object to fetch solana accounts
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
-   * @returns AdaptiveFeeInfo object containing the adaptive fee constants and variables if the oracle is initialized, otherwise null.   
+   * @returns AdaptiveFeeContext object containing the trade enable timestamp and adaptive fee constants and variables if the oracle is initialized, otherwise null.   
    */
-  public static async getAdaptiveFeeInfo(
+  public static async getAdaptiveFeeContext(
     programId: PublicKey,
     whirlpoolAddress: PublicKey,
     fetcher: WhirlpoolAccountFetcherInterface,
     opts?: WhirlpoolAccountFetchOptions,
-  ): Promise<AdaptiveFeeInfo | null> {
+  ): Promise<AdaptiveFeeContext | null> {
     const oracleAddress = PDAUtil.getOracle(programId, whirlpoolAddress).publicKey;
 
     const oracleData = await fetcher.getOracle(oracleAddress, opts);
     if (!oracleData) {
-      return NO_ADAPTIVE_FEE_INFO;
+      return NO_ADAPTIVE_FEE_CONTEXT;
     }
 
     return {
-      adaptiveFeeConstants: oracleData.adaptiveFeeConstants,
-      adaptiveFeeVariables: oracleData.adaptiveFeeVariables,
+      tradeEnableTimestamp: oracleData.tradeEnableTimestamp,
+      adaptiveFeeInfo: {
+        adaptiveFeeConstants: oracleData.adaptiveFeeConstants,
+        adaptiveFeeVariables: oracleData.adaptiveFeeVariables,
+      },
     };
   }
 

@@ -8,7 +8,7 @@ import {
   MAX_TICK_INDEX,
   MIN_SQRT_PRICE,
   MIN_TICK_INDEX,
-  NO_ADAPTIVE_FEE_INFO,
+  NO_ADAPTIVE_FEE_CONTEXT,
   PriceMath,
   swapQuoteByInputToken,
   swapQuoteByOutputToken,
@@ -1583,7 +1583,7 @@ describe("swap traversal tests", () => {
             otherAmountThreshold:
               SwapUtils.getDefaultOtherAmountThreshold(true),
             tokenExtensionCtx,
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
           },
           slippageTolerance,
         ),
@@ -1650,7 +1650,7 @@ describe("swap traversal tests", () => {
             otherAmountThreshold:
               SwapUtils.getDefaultOtherAmountThreshold(true),
             tokenExtensionCtx,
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
           },
           slippageTolerance,
         ),

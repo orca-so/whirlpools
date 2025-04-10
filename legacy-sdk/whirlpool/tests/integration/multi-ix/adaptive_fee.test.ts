@@ -11,7 +11,7 @@ import type {
 import {
   MAX_SQRT_PRICE_BN,
   MIN_SQRT_PRICE_BN,
-  NO_ADAPTIVE_FEE_INFO,
+  NO_ADAPTIVE_FEE_CONTEXT,
   PDAUtil,
   PriceMath,
   SwapUtils,
@@ -370,7 +370,7 @@ describe("adaptive fee tests", () => {
               tokenAmount: tradeTokenAmount,
               whirlpoolData: pool.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -517,7 +517,7 @@ describe("adaptive fee tests", () => {
               tokenAmount: tradeTokenAmount,
               whirlpoolData: poolOne.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -544,7 +544,7 @@ describe("adaptive fee tests", () => {
               tokenAmount: swapQuoteOne.estimatedAmountOut,
               whirlpoolData: poolTwo.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -767,7 +767,7 @@ describe("adaptive fee tests", () => {
           tokenAmount: tradeTokenAmount,
           whirlpoolData: pool.getData(),
           tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-          adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+          adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         },
         Percentage.fromFraction(0, 100),
       );
@@ -894,7 +894,7 @@ describe("adaptive fee tests", () => {
               tokenAmount: tradeTokenAmount,
               whirlpoolData: poolOne.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -921,7 +921,7 @@ describe("adaptive fee tests", () => {
               tokenAmount: swapQuoteOne.estimatedAmountOut,
               whirlpoolData: poolTwo.getData(),
               tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -1350,7 +1350,7 @@ describe("adaptive fee tests", () => {
             tokenAmount: tradeTokenAmount,
             whirlpoolData: poolOne.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1377,7 +1377,7 @@ describe("adaptive fee tests", () => {
             tokenAmount: swapQuoteOne.estimatedAmountOut,
             whirlpoolData: poolTwo.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1654,7 +1654,7 @@ describe("adaptive fee tests", () => {
             tokenAmount: tradeTokenAmount,
             whirlpoolData: poolOne.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
           },
           Percentage.fromFraction(0, 100),
         );
@@ -1681,7 +1681,7 @@ describe("adaptive fee tests", () => {
             tokenAmount: swapQuoteOne.estimatedAmountOut,
             whirlpoolData: poolTwo.getData(),
             tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
           },
           Percentage.fromFraction(0, 100),
         );

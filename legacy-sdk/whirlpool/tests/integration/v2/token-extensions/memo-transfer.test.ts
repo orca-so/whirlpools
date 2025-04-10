@@ -16,7 +16,7 @@ import {
   buildWhirlpoolClient,
   collectRewardsQuote,
   decreaseLiquidityQuoteByLiquidityWithParams,
-  NO_ADAPTIVE_FEE_INFO,
+  NO_ADAPTIVE_FEE_CONTEXT,
   NUM_REWARDS,
   PDAUtil,
   swapQuoteWithParams,
@@ -1019,7 +1019,7 @@ describe("TokenExtension/MemoTransfer", () => {
               whirlpoolData,
               IGNORE_CACHE,
             ),
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         },
         Percentage.fromFraction(100, 100), // 100% slippage
       );
@@ -1047,7 +1047,7 @@ describe("TokenExtension/MemoTransfer", () => {
               whirlpoolData,
               IGNORE_CACHE,
             ),
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         },
         Percentage.fromFraction(100, 100), // 100% slippage
       );
@@ -1351,7 +1351,7 @@ describe("TokenExtension/MemoTransfer", () => {
               whirlpoolDataOne,
               IGNORE_CACHE,
             ),
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         },
         Percentage.fromFraction(1, 100),
       );
@@ -1380,7 +1380,7 @@ describe("TokenExtension/MemoTransfer", () => {
               whirlpoolDataTwo,
               IGNORE_CACHE,
             ),
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         },
         Percentage.fromFraction(1, 100),
       );

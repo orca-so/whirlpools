@@ -16,7 +16,7 @@ import {
   buildWhirlpoolClient,
   collectRewardsQuote,
   MEMO_PROGRAM_ADDRESS,
-  NO_ADAPTIVE_FEE_INFO,
+  NO_ADAPTIVE_FEE_CONTEXT,
   NUM_REWARDS,
   PDAUtil,
   PoolUtil,
@@ -4151,7 +4151,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -4318,7 +4318,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -4485,7 +4485,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -4652,7 +4652,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -5035,7 +5035,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -5250,7 +5250,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -5511,7 +5511,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -5772,7 +5772,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -6451,7 +6451,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -6504,7 +6504,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -6808,7 +6808,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -6861,7 +6861,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -7164,7 +7164,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -7217,7 +7217,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -7524,7 +7524,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -7577,7 +7577,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -8224,7 +8224,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -8276,7 +8276,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -8674,7 +8674,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -8726,7 +8726,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -9125,7 +9125,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -9177,7 +9177,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -9580,7 +9580,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -9632,7 +9632,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100),
           );
@@ -10467,7 +10467,7 @@ describe("TokenExtension/TransferFee", () => {
               IGNORE_CACHE,
             ),
             tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
           },
           Percentage.fromFraction(0, 100), // 0% slippage
         );
@@ -10590,7 +10590,7 @@ describe("TokenExtension/TransferFee", () => {
               IGNORE_CACHE,
             ),
             tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-            adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+            adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
           },
           Percentage.fromFraction(0, 100), // 0% slippage
         );
@@ -10774,7 +10774,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -10909,7 +10909,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -11065,7 +11065,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -11194,7 +11194,7 @@ describe("TokenExtension/TransferFee", () => {
                 IGNORE_CACHE,
               ),
               tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-              adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+              adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(0, 100), // 0% slippage
           );
@@ -11305,7 +11305,7 @@ describe("TokenExtension/TransferFee", () => {
             IGNORE_CACHE,
           ),
           tokenExtensionCtx: withNoExtension, // TransferFee is taken into account later
-          adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+          adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
         },
         Percentage.fromFraction(0, 100), // 0% slippage
       );

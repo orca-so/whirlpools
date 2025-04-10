@@ -7,7 +7,7 @@ import type { InitPoolParams } from "../../src";
 import {
   buildWhirlpoolClient,
   MIN_SQRT_PRICE_BN,
-  NO_ADAPTIVE_FEE_INFO,
+  NO_ADAPTIVE_FEE_CONTEXT,
   NO_TOKEN_EXTENSION_CONTEXT,
   PDAUtil,
   PriceMath,
@@ -921,7 +921,7 @@ describe("two-hop swap", () => {
           IGNORE_CACHE,
         ),
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-        adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+        adaptiveFeeInfo: NO_ADAPTIVE_FEE_CONTEXT,
         whirlpoolData: whirlpoolOne.getData(),
         tokenAmount: new BN(1_000_000),
       };
@@ -1462,7 +1462,7 @@ describe("two-hop swap", () => {
           IGNORE_CACHE,
         ),
         tokenExtensionCtx: NO_TOKEN_EXTENSION_CONTEXT,
-        adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+        adaptiveFeeInfo: NO_ADAPTIVE_FEE_CONTEXT,
         whirlpoolData: whirlpoolOne.getData(),
         tokenAmount: new BN(1_000_000),
       };

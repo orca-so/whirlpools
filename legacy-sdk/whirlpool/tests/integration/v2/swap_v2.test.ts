@@ -17,7 +17,7 @@ import {
   METADATA_PROGRAM_ADDRESS,
   MIN_SQRT_PRICE,
   MIN_SQRT_PRICE_BN,
-  NO_ADAPTIVE_FEE_INFO,
+  NO_ADAPTIVE_FEE_CONTEXT,
   PDAUtil,
   PriceMath,
   SwapUtils,
@@ -822,7 +822,7 @@ describe("swap_v2", () => {
                   whirlpoolData,
                   IGNORE_CACHE,
                 ),
-                adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+                adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -984,7 +984,7 @@ describe("swap_v2", () => {
                   whirlpoolData,
                   IGNORE_CACHE,
                 ),
-                adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+                adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1059,7 +1059,7 @@ describe("swap_v2", () => {
                   whirlpoolData,
                   IGNORE_CACHE,
                 ),
-                adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+                adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1222,7 +1222,7 @@ describe("swap_v2", () => {
                   whirlpoolData,
                   IGNORE_CACHE,
                 ),
-                adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+                adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(1, 100),
           );
@@ -1292,7 +1292,7 @@ describe("swap_v2", () => {
                   whirlpoolData,
                   IGNORE_CACHE,
                 ),
-                adaptiveFeeInfo: NO_ADAPTIVE_FEE_INFO,
+                adaptiveFeeCtx: NO_ADAPTIVE_FEE_CONTEXT,
             },
             Percentage.fromFraction(1, 100),
           );

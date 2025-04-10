@@ -225,6 +225,9 @@ impl FeeRateManager {
                         .update_volatility_accumulator(*tick_group_index, adaptive_fee_constants)?;
                 }
 
+                // tick_group_index will be shifted to left(-1) or right(+1) for the next loop.
+                // If sqrt_price is not on a tick_group_size boundary, shifting will advance too much,
+                // but tick_group_index is not recorded in the chain and the loop ends, so there is no adverse effect on subsequent processing.
                 *tick_group_index += if *a_to_b { -1 } else { 1 };
 
                 Ok(())

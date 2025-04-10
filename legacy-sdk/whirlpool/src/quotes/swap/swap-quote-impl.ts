@@ -73,8 +73,11 @@ export function simulateSwap(params: SwapQuoteParam): SwapQuote {
     );
   }
 
-  const adaptiveFeeInfo = !!adaptiveFeeCtx ? adaptiveFeeCtx.adaptiveFeeInfo : null;
-  const timestampInSeconds = optionalTimestampInSeconds ?? new BN(Date.now()).div(new BN(1000));
+  const adaptiveFeeInfo = !!adaptiveFeeCtx
+    ? adaptiveFeeCtx.adaptiveFeeInfo
+    : null;
+  const timestampInSeconds =
+    optionalTimestampInSeconds ?? new BN(Date.now()).div(new BN(1000));
 
   if (adaptiveFeeCtx?.tradeEnableTimestamp.gt(timestampInSeconds)) {
     throw new WhirlpoolsError(

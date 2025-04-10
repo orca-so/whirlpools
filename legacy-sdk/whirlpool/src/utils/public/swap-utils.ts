@@ -184,7 +184,7 @@ export class SwapUtils {
     return data[0];
   }
 
-    /**
+  /**
    * Fetch the adaptive fee info for a given whirlpool.
    *
    * @category Whirlpool Utils
@@ -192,7 +192,7 @@ export class SwapUtils {
    * @param whirlpoolAddress - PublicKey of the whirlpool to swap on.
    * @param fetcher - WhirlpoolAccountCacheInterface object to fetch solana accounts
    * @param opts an {@link WhirlpoolAccountFetchOptions} object to define fetch and cache options when accessing on-chain accounts
-   * @returns AdaptiveFeeContext object containing the trade enable timestamp and adaptive fee constants and variables if the oracle is initialized, otherwise null.   
+   * @returns AdaptiveFeeContext object containing the trade enable timestamp and adaptive fee constants and variables if the oracle is initialized, otherwise null.
    */
   public static async getAdaptiveFeeContext(
     programId: PublicKey,
@@ -200,7 +200,10 @@ export class SwapUtils {
     fetcher: WhirlpoolAccountFetcherInterface,
     opts?: WhirlpoolAccountFetchOptions,
   ): Promise<AdaptiveFeeContext | null> {
-    const oracleAddress = PDAUtil.getOracle(programId, whirlpoolAddress).publicKey;
+    const oracleAddress = PDAUtil.getOracle(
+      programId,
+      whirlpoolAddress,
+    ).publicKey;
 
     const oracleData = await fetcher.getOracle(oracleAddress, opts);
     if (!oracleData) {

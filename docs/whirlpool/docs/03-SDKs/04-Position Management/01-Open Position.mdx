@@ -100,15 +100,22 @@ After opening a position, you can:
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
     use std::str::FromStr;
+    use solana_sdk::signature::Signer;
+    use orca_tx_sender::{
+        build_and_send_transaction,
+        set_rpc, get_rpc_client
+    };
+    use solana_sdk::commitment_config::CommitmentLevel;
     use crate::utils::load_wallet;
 
     #[tokio::main]
-    async fn main() {
+    async fn main() -> Result<(), Box<dyn std::error::Error>> {
+      set_rpc("https://api.devnet.solana.com").await?;
       set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-      let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
       let wallet = load_wallet();
       let whirlpool_address = Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
       let param = IncreaseLiquidityParam::TokenA(10);
+      let rpc = get_rpc_client()?;
 
       let result = open_full_range_position_instructions(
         &rpc,
@@ -116,11 +123,21 @@ After opening a position, you can:
         param,
         Some(100),
         Some(wallet.pubkey())
-      ).await.unwrap();
+      ).await?;
 
       println!("Quote token mac B: {:?}", result.quote.token_max_b);
       println!("Initialization cost: {:?}", result.initialization_cost);
       println!("Position mint: {:?}", result.position_mint);
+      
+      let signature = build_and_send_transaction(
+          result.instructions,
+          &[&wallet],
+          Some(CommitmentLevel::Confirmed),
+          None, // No address lookup tables
+      ).await?;
+      
+      println!("Transaction sent: {}", signature);
+      Ok(())
     }
     ```
 
@@ -133,15 +150,22 @@ After opening a position, you can:
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
     use std::str::FromStr;
+    use solana_sdk::signature::Signer;
+    use orca_tx_sender::{
+        build_and_send_transaction,
+        set_rpc, get_rpc_client
+    };
+    use solana_sdk::commitment_config::CommitmentLevel;
     use crate::utils::load_wallet;
 
     #[tokio::main]
-    async fn main() {
+    async fn main() -> Result<(), Box<dyn std::error::Error>> {
+      set_rpc("https://api.devnet.solana.com").await?;
       set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-      let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
       let wallet = load_wallet();
       let whirlpool_address = Pubkey::from_str("3KBZiL2g8C7tiJ32hTv5v3KM7aK9htpqTw4cTXz1HvPt").unwrap();
       let param = IncreaseLiquidityParam::TokenA(10);
+      let rpc = get_rpc_client()?;
 
       let result = open_position_instructions(
         &rpc,
@@ -151,11 +175,21 @@ After opening a position, you can:
         param,
         Some(100),
         Some(wallet.pubkey())
-      ).await.unwrap();
+      ).await?;
 
       println!("Quote token max B: {:?}", result.quote.token_est_b);
       println!("Initialization cost: {:?}", result.initialization_cost);
       println!("Position mint: {:?}", result.position_mint);
+      
+      let signature = build_and_send_transaction(
+          result.instructions,
+          &[&wallet],
+          Some(CommitmentLevel::Confirmed),
+          None, // No address lookup tables
+      ).await?;
+      
+      println!("Transaction sent: {}", signature);
+      Ok(())
     }
     ```
 

@@ -63,24 +63,40 @@ By using the SDK, you can maximize the benefits of providing liquidity while kee
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
     use std::str::FromStr;
+    use solana_sdk::signature::Signer;
+    use orca_tx_sender::{
+        build_and_send_transaction,
+        set_rpc, get_rpc_client
+    };
+    use solana_sdk::commitment_config::CommitmentLevel;
     use crate::utils::load_wallet;
 
     #[tokio::main]
-    async fn main() {
+    async fn main() -> Result<(), Box<dyn std::error::Error>> {
+        set_rpc("https://api.devnet.solana.com").await?;
         set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-        let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
         let wallet = load_wallet();
+        let rpc = get_rpc_client()?;
 
         let position_mint_address =
             Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
 
         let result = harvest_position_instructions(&rpc, position_mint_address, Some(wallet.pubkey()))
-            .await
-            .unwrap();
+            .await?;
 
         println!("Fees Quote: {:?}", result.fees_quote);
         println!("Rewards Quote: {:?}", result.rewards_quote);
         println!("Number of Instructions: {}", result.instructions.len());
+        
+        let signature = build_and_send_transaction(
+            result.instructions,
+            &[&wallet],
+            Some(CommitmentLevel::Confirmed),
+            None, // No address lookup tables
+        ).await?;
+        
+        println!("Harvest transaction sent: {}", signature);
+        Ok(())
     }
     ```
 

@@ -71,16 +71,23 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
     use solana_client::nonblocking::rpc_client::RpcClient;
     use solana_sdk::pubkey::Pubkey;
     use std::str::FromStr;
+    use solana_sdk::signature::Signer;
+    use orca_tx_sender::{
+        build_and_send_transaction,
+        set_rpc, get_rpc_client
+    };
+    use solana_sdk::commitment_config::CommitmentLevel;
     use crate::utils::load_wallet;
 
     #[tokio::main]
-    async fn main() {
+    async fn main() -> Result<(), Box<dyn std::error::Error>> {
+        set_rpc("https://api.devnet.solana.com").await?;
         set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
-        let rpc = RpcClient::new("https://api.devnet.solana.com".to_string());
         let wallet = load_wallet();
         let position_mint_address = Pubkey::from_str("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K").unwrap();
         let increase_param = IncreaseLiquidityParam::TokenA(1_000_000);
         let decrease_param = DecreaseLiquidityParam::TokenA(1_000_000);
+        let rpc = get_rpc_client()?;
 
         let increase_result = increase_liquidity_instructions(
             &rpc,
@@ -89,8 +96,20 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
             Some(100),
             Some(wallet.pubkey()),
         )
-        .await.unwrap();
+        .await?;
 
+        println!("Liquidity Increase Quote: {:?}", increase_result.quote);
+        println!("Number of Instructions: {}", increase_result.instructions.len());
+        
+        let increase_signature = build_and_send_transaction(
+            increase_result.instructions,
+            &[&wallet],
+            Some(CommitmentLevel::Confirmed),
+            None, // No address lookup tables
+        ).await?;
+        
+        println!("Increase liquidity transaction sent: {}", increase_signature);
+        
         let decrease_result = decrease_liquidity_instructions(
             &rpc,
             position_mint_address,
@@ -98,11 +117,19 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
             Some(100),
             Some(wallet.pubkey()),
         )
-        .await.unwrap();
+        .await?;
 
-        println!("Liquidity Increase Quote: {:?}", increase_result.quote);
         println!("Liquidity Decrease Quote: {:?}", decrease_result.quote);
-        println!("Number of Instructions: {}", increase_result.instructions.len());
+        
+        let decrease_signature = build_and_send_transaction(
+            decrease_result.instructions,
+            &[&wallet],
+            Some(CommitmentLevel::Confirmed),
+            None, // No address lookup tables
+        ).await?;
+        
+        println!("Decrease liquidity transaction sent: {}", decrease_signature);
+        Ok(())
     }
     ```
     <ReactMarkdown>{usageExampleText}</ReactMarkdown>

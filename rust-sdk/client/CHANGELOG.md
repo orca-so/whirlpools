@@ -1,5 +1,11 @@
 # @orca-so/whirlpools-rust-client
 
+## 2.0.5
+
+### Patch Changes
+
+- [#884](https://github.com/orca-so/whirlpools/pull/884) [`6cd51d6`](https://github.com/orca-so/whirlpools/commit/6cd51d64de8fe0f310c1bf2f3a5e659a68c426d0) Thanks [@calintje](https://github.com/calintje)! - Updated cargo.lock
+
 ## 2.0.4
 
 ### Patch Changes

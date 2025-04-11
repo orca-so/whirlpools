@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-rust-core",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "scripts": {
     "build": "cargo build -p orca_whirlpools_core",
     "test": "cargo test -p orca_whirlpools_core --lib",

@@ -122,10 +122,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
 
     #[tokio::main]
     async fn main() -> Result<(), Box<dyn std::error::Error>> {
-        // Initialize RPC configuration
         set_rpc("https://api.devnet.solana.com").await?;
-        
-        // Set Whirlpools config address for Devnet
         set_whirlpools_config_address(WhirlpoolsConfigInput::SolanaDevnet).unwrap();
         
         let token_a = Pubkey::from_str("So11111111111111111111111111111111111111112").unwrap();
@@ -145,14 +142,12 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
         )
         .await?;
 
-        // Print pool information
         println!("Pool Address: {:?}", result.pool_address);
         println!(
             "Initialization Cost: {} lamports",
             result.initialization_cost
         );
         
-        // Build and send transaction
         let signature = build_and_send_transaction(
             result.instructions,
             &[&wallet],

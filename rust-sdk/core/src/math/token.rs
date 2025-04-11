@@ -318,7 +318,7 @@ pub fn try_get_min_amount_with_slippage_tolerance(
 /// # Returns
 /// - `u64`: The amount after the fee has been applied
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn try_apply_swap_fee(amount: u64, fee_rate: u16) -> Result<u64, CoreError> {
+pub fn try_apply_swap_fee(amount: u64, fee_rate: u32) -> Result<u64, CoreError> {
     let product = <u128>::from(FEE_RATE_DENOMINATOR) - <u128>::from(fee_rate);
     let result = try_mul_div(amount, product, FEE_RATE_DENOMINATOR.into(), false)?;
     Ok(result)
@@ -335,7 +335,7 @@ pub fn try_apply_swap_fee(amount: u64, fee_rate: u16) -> Result<u64, CoreError> 
 /// # Returns
 /// - `u64`: The amount before the fee has been applied
 #[cfg_attr(feature = "wasm", wasm_expose)]
-pub fn try_reverse_apply_swap_fee(amount: u64, fee_rate: u16) -> Result<u64, CoreError> {
+pub fn try_reverse_apply_swap_fee(amount: u64, fee_rate: u32) -> Result<u64, CoreError> {
     let denominator = <u128>::from(FEE_RATE_DENOMINATOR) - <u128>::from(fee_rate);
     let result = try_mul_div(amount, FEE_RATE_DENOMINATOR.into(), denominator, true)?;
     Ok(result)
@@ -377,6 +377,8 @@ fn order_prices(a: u128, b: u128) -> (u128, u128) {
 
 #[cfg(all(test, not(feature = "wasm")))]
 mod tests {
+    use crate::FEE_RATE_HARD_LIMIT;
+
     use super::*;
 
     #[test]
@@ -676,7 +678,8 @@ mod tests {
         assert_eq!(try_apply_swap_fee(10000, 0), Ok(10000));
         assert_eq!(try_apply_swap_fee(10000, 1000), Ok(9990));
         assert_eq!(try_apply_swap_fee(10000, 10000), Ok(9900));
-        assert_eq!(try_apply_swap_fee(10000, u16::MAX), Ok(9344));
+        assert_eq!(try_apply_swap_fee(10000, u16::MAX as u32), Ok(9344));
+        assert_eq!(try_apply_swap_fee(10000, FEE_RATE_HARD_LIMIT), Ok(9000));
         assert_eq!(try_apply_swap_fee(u64::MAX, 1000), Ok(18428297329635842063));
         assert_eq!(
             try_apply_swap_fee(u64::MAX, 10000),
@@ -690,7 +693,8 @@ mod tests {
         assert_eq!(try_reverse_apply_swap_fee(10000, 0), Ok(10000));
         assert_eq!(try_reverse_apply_swap_fee(9990, 1000), Ok(10000));
         assert_eq!(try_reverse_apply_swap_fee(9900, 10000), Ok(10000));
-        assert_eq!(try_reverse_apply_swap_fee(9344, u16::MAX), Ok(10000));
+        assert_eq!(try_reverse_apply_swap_fee(9344, u16::MAX as u32), Ok(10000));
+        assert_eq!(try_reverse_apply_swap_fee(9000, FEE_RATE_HARD_LIMIT), Ok(10000));
         assert_eq!(
             try_reverse_apply_swap_fee(u64::MAX, 1000),
             Err(AMOUNT_EXCEEDS_MAX_U64)

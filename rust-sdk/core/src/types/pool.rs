@@ -8,6 +8,7 @@ use orca_whirlpools_macros::wasm_expose;
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Default)]
 #[cfg_attr(feature = "wasm", wasm_expose)]
 pub struct WhirlpoolFacade {
+    pub fee_tier_index: u16,
     pub tick_spacing: u16,
     pub fee_rate: u16,
     pub protocol_fee_rate: u16,

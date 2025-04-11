@@ -16,6 +16,8 @@ import {
 } from "../../types/public";
 import { PriceMath } from "../../utils/public";
 
+// Note: straight conversion from rust code
+
 export abstract class FeeRateManager {
   public static new(
     aToB: boolean,
@@ -87,7 +89,7 @@ class StaticFeeRateManager extends FeeRateManager {
     _nextTickSqrtPrice: BN,
     _nextTickIndex: number,
   ): void {
-    // do nothing
+    throw new Error("StaticFeeRateManager does not support advanceTickGroupAfterSkip");
   }
 
   public updateMajorSwapTimestamp(_preSqrtPrice: BN, _postSqrtPrice: BN): void {
@@ -310,7 +312,7 @@ class AdaptiveFeeRateManager extends FeeRateManager {
   }
 }
 
-class AdaptiveFeeVariables {
+export class AdaptiveFeeVariables {
   public constructor(
     private lastReferenceUpdateTimestamp: BN,
     private lastMajorSwapTimestamp: BN,

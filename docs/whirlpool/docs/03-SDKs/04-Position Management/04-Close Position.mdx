@@ -34,10 +34,6 @@ To close a position and withdraw all liquidity, follow these steps:
 6. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
 `;
 
-export const submitTransactionText = `
-7. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK.
-`;
-
 export const usageExampleText = `
 ## 3. Usage Example
 Suppose your trading strategy predicts that the current price range will lead to divergence loss, and you need to close the position to avoid further losses. Using the SDK, you can generate the instructions to collect all accumulated fees, rewards, and remove liquidity to prevent further losses.
@@ -97,8 +93,6 @@ After closing a position, you can:
     }
     ```
 
-    <ReactMarkdown>{submitTransactionText}</ReactMarkdown>
-
     <ReactMarkdown>{usageExampleText}</ReactMarkdown>
 
     <ReactMarkdown>{nextStepsText}</ReactMarkdown>
@@ -123,20 +117,22 @@ After closing a position, you can:
     const wallet = await loadWallet();
     const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
 
-    const { instructions, quote, feesQuote, rewardsQuote } = await closePositionInstructions(
+    const { instructions, quote, feesQuote, rewardsQuote, callback: closePosition } = await closePositionInstructions(
       devnetRpc,
       positionMint,
       100,
       wallet
     );
 
+    // Use the callback to submit the transaction 
+    const txId = await closePosition();
+
     console.log(`Quote token max B: ${quote.tokenEstB}`);
     console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
     console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);
     console.log(`Number of instructions:, ${instructions.length}`);
+    console.log(`Transaction ID: ${txId}`);
     ```
-
-    <ReactMarkdown>{submitTransactionText}</ReactMarkdown>
 
     <ReactMarkdown>{usageExampleText}</ReactMarkdown>
 

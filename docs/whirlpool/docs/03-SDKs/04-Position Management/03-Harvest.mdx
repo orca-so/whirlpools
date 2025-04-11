@@ -29,10 +29,6 @@ To harvest fees and rewards from a position, follow these steps:
 4. **Create Instructions**: Use the appropriate function to generate the necessary instructions to harvest fees and rewards.
 `;
 
-export const submitTransactionText = `
-5. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK.
-`;
-
 export const usageExampleText = `
 ## 3. Usage Example
 Suppose you are a developer creating a bot to manage investments for a group of investors. The bot periodically collects accumulated fees and rewards from liquidity positions to distribute profits among investors. By using the SDK, you can generate the instructions to collect earnings from each active position without closing it, allowing the liquidity to continue generating returns and potentially reinvest your earned fees into the position.
@@ -88,8 +84,6 @@ By using the SDK, you can maximize the benefits of providing liquidity while kee
     }
     ```
 
-    <ReactMarkdown>{submitTransactionText}</ReactMarkdown>
-
     <ReactMarkdown>{usageExampleText}</ReactMarkdown>
 
     <ReactMarkdown>{nextStepsText}</ReactMarkdown>
@@ -114,17 +108,19 @@ By using the SDK, you can maximize the benefits of providing liquidity while kee
     const wallet = await loadWallet();
     const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
 
-    const { feesQuote, rewardsQuote, instructions } = await harvestPositionInstructions(
+    const { feesQuote, rewardsQuote, instructions, callback: harvestPosition } = await harvestPositionInstructions(
       devnetRpc,
       positionMint,
       wallet
     );
 
+    // Use the callback to submit the transaction
+    const txId = await harvestPosition();
+
     console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
     console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);
+    console.log(`Transaction ID: ${txId}`);
     ```
-
-    <ReactMarkdown>{submitTransactionText}</ReactMarkdown>
 
     <ReactMarkdown>{usageExampleText}</ReactMarkdown>
 

@@ -47,10 +47,6 @@ export const splashPoolOpeningSteps = `
 5. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
 `;
 
-export const splashPoolSubmitTransaction = `
-6. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK. Ensure that you have enough of both Token A and Token B as calculated in the quote, or the transaction will fail.
-`;
-
 export const concentratedPoolOpeningSteps = `
 ### Opening a Position in Concentrated Liquidity Pools
 1. **Pool Address**: Provide the address of the Concentrated Liquidity Pool where you want to open a position.
@@ -64,9 +60,7 @@ export const concentratedPoolOpeningSteps = `
 5. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
 `;
 
-export const concentratedPoolSubmitTransaction = `
-6. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK. Ensure that you have enough of both Token A and Token B as calculated in the quote, or the transaction will fail.
-
+export const concentratedPoolNote = `
 > ⚠️ You cannot use this function on Splash Pools, as this function is specifically for Concentrated Liquidity Pools.
 `;
 
@@ -132,8 +126,6 @@ After opening a position, you can:
     }
     ```
 
-    <ReactMarkdown>{splashPoolSubmitTransaction}</ReactMarkdown>
-
     <ReactMarkdown>{concentratedPoolOpeningSteps}</ReactMarkdown>
 
     ```rust
@@ -169,7 +161,7 @@ After opening a position, you can:
     }
     ```
 
-    <ReactMarkdown>{concentratedPoolSubmitTransaction}</ReactMarkdown>
+    <ReactMarkdown>{concentratedPoolNote}</ReactMarkdown>
 
     <ReactMarkdown>{usageExamples}</ReactMarkdown>
 
@@ -200,7 +192,7 @@ After opening a position, you can:
 
     const param = { tokenA: 10n };
 
-    const { quote, instructions, initializationCost, positionMint } = await openFullRangePositionInstructions(
+    const { quote, instructions, initializationCost, positionMint, callback: openFullRangePosition } = await openFullRangePositionInstructions(
       devnetRpc,
       whirlpoolAddress,
       param,
@@ -208,12 +200,14 @@ After opening a position, you can:
       wallet
     );
 
+    // Use the callback to submit the transaction
+    const txId = await openFullRangePosition();
+
     console.log(`Quote token max B: ${quote.tokenMaxB}`);
     console.log(`Initialization cost: ${initializationCost}`);
     console.log(`Position mint: ${positionMint}`);
+    console.log(`Transaction ID: ${txId}`);
     ```
-
-    <ReactMarkdown>{splashPoolSubmitTransaction}</ReactMarkdown>
 
     <ReactMarkdown>{concentratedPoolOpeningSteps}</ReactMarkdown>
 
@@ -230,7 +224,7 @@ After opening a position, you can:
 
     const param = { tokenA: 10n };
 
-    const { quote, instructions, initializationCost, positionMint } = await openPositionInstructions(
+    const { quote, instructions, initializationCost, positionMint, callback: openPosition } = await openPositionInstructions(
       devnetRpc,
       whirlpoolAddress,
       param,
@@ -238,14 +232,18 @@ After opening a position, you can:
       100.0,
       100,
       wallet
-    );
+      );
+
+    // Use the callback to submit the transaction
+    const txId = await openPosition();
 
     console.log(`Quote token max B: ${quote.tokenEstB}`);
     console.log(`Initialization cost: ${initializationCost}`);
     console.log(`Position mint: ${positionMint}`);
+    console.log(`Transaction ID: ${txId}`);
     ```
 
-    <ReactMarkdown>{concentratedPoolSubmitTransaction}</ReactMarkdown>
+    <ReactMarkdown>{concentratedPoolNote}</ReactMarkdown>
 
     <ReactMarkdown>{usageExamples}</ReactMarkdown>
 

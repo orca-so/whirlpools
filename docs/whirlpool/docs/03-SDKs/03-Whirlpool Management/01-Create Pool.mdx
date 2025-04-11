@@ -38,10 +38,6 @@ Concentrated Liquidity Pools offer more flexibility:
 5. **Create instructions**: Use the appropriate function to create the pool.
 `;
 
-export const submitTransaction = `
-6. **Submit Transaction**: Include the generated pool creation instructions in a Solana transaction and send it to the network using the Solana SDK.
-`;
-
 export const legacySetupGuide = `
 Before creating a Whirlpool, ensure you have completed the environment setup:
 - **Client Setup**: Create a WhirlpoolClient instance.
@@ -107,8 +103,6 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     }
     ```
 
-    <ReactMarkdown>{submitTransaction}</ReactMarkdown>
-
     <ReactMarkdown>{concentratedLiquiditySteps}</ReactMarkdown>
 
     ```rust
@@ -150,8 +144,6 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
         );
     }
     ```
-
-    <ReactMarkdown>{submitTransaction}</ReactMarkdown>
   </TabItem>
   
   <TabItem value="ts-kit" label="TypeScript Kit">
@@ -171,7 +163,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
     const initialPrice = 0.01;
 
-    const { poolAddress, instructions, initializationCost } = await createSplashPoolInstructions(
+    const { poolAddress, instructions, initializationCost, callback: createSplashPool } = await createSplashPoolInstructions(
         devnetRpc,
         tokenMintOne,
         tokenMintTwo,
@@ -179,11 +171,13 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
         wallet
     );
 
+    // Use the callback to submit the transaction
+    const txId = await createSplashPool();
+
     console.log(`Pool Address: ${poolAddress}`);
     console.log(`Initialization Cost: ${initializationCost} lamports`);
+    console.log(`Transaction ID: ${txId}`);
     ```
-
-    <ReactMarkdown>{submitTransaction}</ReactMarkdown>
 
     <ReactMarkdown>{concentratedLiquiditySteps}</ReactMarkdown>
 
@@ -200,7 +194,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     const tickSpacing = 64;
     const initialPrice = 0.01;
 
-    const { poolAddress, instructions, initializationCost } = await createConcentratedLiquidityPoolInstructions(
+    const { poolAddress, instructions, initializationCost, callback: createConcentratedLiquidityPool } = await createConcentratedLiquidityPoolInstructions(
         devnetRpc,
         tokenMintOne,
         tokenMintTwo,
@@ -209,11 +203,15 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
         wallet
     );
 
+    // Use the callback to submit the transaction
+    const txId = await createConcentratedLiquidityPool();
+
+
     console.log(`Pool Address: ${poolAddress}`);
     console.log(`Initialization Cost: ${initializationCost} lamports`);
+    console.log(`Transaction ID: ${txId}`);
     ```
 
-    <ReactMarkdown>{submitTransaction}</ReactMarkdown>
   </TabItem>
   
   <TabItem value="ts-legacy" label="TypeScript Legacy">

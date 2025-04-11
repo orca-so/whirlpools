@@ -37,10 +37,6 @@ Adjusting liquidity in an existing position can be done as follows:
 6. **Create Instructions**: Use the appropriate function to generate the necessary instructions.
 `;
 
-export const submitTransactionText = `
-7. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK.
-`;
-
 export const usageExampleText = `
 ## 3. Usage example
 You are creating a bot to manage investors' funds and want to optimize returns. Such a bot could rebalance liquidity based on market signals to maintain a specific target price range or to optimize fee collection during periods of high volatility.
@@ -109,9 +105,6 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
         println!("Number of Instructions: {}", increase_result.instructions.len());
     }
     ```
-
-    <ReactMarkdown>{submitTransactionText}</ReactMarkdown>
-
     <ReactMarkdown>{usageExampleText}</ReactMarkdown>
 
     <ReactMarkdown>{nextStepsText}</ReactMarkdown>
@@ -137,7 +130,7 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
     const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
     const param = { tokenA: 10n };
     
-    const { quote: increaseQuote, instructions: increaseInstructions } = await increaseLiquidityInstructions(
+    const { quote: increaseQuote, instructions: increaseInstructions, callback: increaseLiquidity } = await increaseLiquidityInstructions(
         devnetRpc,
         positionMint,
         param,
@@ -145,7 +138,7 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
         wallet
     );
 
-    const { quote: decreaseQuote, instructions: decreaseInstructions } = await decreaseLiquidityInstructions(
+    const { quote: decreaseQuote, instructions: decreaseInstructions, callback: decreaseLiquidity } = await decreaseLiquidityInstructions(
         devnetRpc,
         positionMint,
         param,
@@ -155,9 +148,14 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
 
     console.log(`Increase quote token max B: ${increaseQuote.tokenEstB}`);
     console.log(`Decrease quote token max B: ${decreaseQuote.tokenEstB}`);
-    ```
 
-    <ReactMarkdown>{submitTransactionText}</ReactMarkdown>
+    // Use the callback to submit the transaction
+    const txIdIncrease = await increaseLiquidity();
+    console.log(`Transaction ID: ${txIdIncrease}`);
+
+    const txIdDecrease = await decreaseLiquidity();
+    console.log(`Transaction ID: ${txIdDecrease}`);
+    ```
 
     <ReactMarkdown>{usageExampleText}</ReactMarkdown>
 

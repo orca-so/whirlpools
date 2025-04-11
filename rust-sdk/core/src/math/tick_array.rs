@@ -6,7 +6,7 @@ use crate::{
 
 use super::{
     get_initializable_tick_index, get_next_initializable_tick_index,
-    get_prev_initializable_tick_index, get_tick_array_start_tick_index,
+    get_prev_initializable_tick_index,
 };
 
 #[derive(Clone, Debug, PartialEq, Eq)]

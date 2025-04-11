@@ -2,11 +2,12 @@
 sidebar_label: Trade
 hide_table_of_contents: true
 ---
-import Tabs from '@theme/Tabs';
-import TabItem from '@theme/TabItem';
-import ReactMarkdown from 'react-markdown';
+import Tabs from "@theme/Tabs";
+import TabItem from "@theme/TabItem";
+import ReactMarkdown from "react-markdown";
 
 # Executing a Token Swap
+
 You can use the SDK to execute a token swap on Orca. Whether you're swapping a specific amount of input tokens or looking to receive a precise amount of output tokens, this function handles the preparation of token accounts, liquidity data, and instruction assembly. It also manages slippage tolerance to ensure that swaps are executed within acceptable price changes.
 
 This guide explains how to use the SDK to perform a token swap in an Orca Whirlpool.
@@ -41,7 +42,7 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     4. **Slippage tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected amounts of tokens received or sent during the swap and the actual amounts executed. A lower slippage tolerance reduces the risk of receiving fewer tokens than expected, but may lead to failed transactions if the market moves too quickly. For example, if you expect to receive 1,000 units of Token B for 100 units of Token A, with a 1% slippage tolerance, the maximum Token A spent will be 101, and the minimum Token B received will be 990.
     5. **Signer**: This can be your wallet, which will fund the pool initialization. If a signer is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
     6. **Create Instructions**: Use the appropriate function to generate the necessary instructions for the swap.
-    
+
     ```rust
     use crate::utils::load_wallet;
     use orca_whirlpools::{
@@ -77,12 +78,12 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
         println!("Number of Instructions: {}", result.instructions.len());
     }
     ```
-    
+
     7. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK.
-    
+
     ## 3. Example Usage
     Suppose you are developing an arbitrage bot that looks for price discrepancies between different liquidity pools on Orca. By using the SDK, the bot can retrieve the quote object for a potential swap, which includes details about the token amounts and expected output. The bot can quickly compare quotes from multiple pools to identify arbitrage opportunities and execute profitable swaps.
-    
+
     ## 4. Next Steps
     After successfully executing a token swap, you might want to:
 
@@ -91,6 +92,7 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     - Build more complex trading strategies by combining multiple swaps.
 
     By effectively using the SDK's swap functionality, you can create powerful trading applications on Orca Whirlpools.
+
   </TabItem>
   
   <TabItem value="ts" label="TypeScript Kit">
@@ -101,7 +103,7 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     - Swap an exact amount of input tokens for the maximum possible output.
     - Specify the desired amount of output tokens and determine the necessary input.
     - Control slippage to manage your risk during volatile market conditions.
-    
+
     ## 2. Getting Started Guide
     Before executing a token swap, ensure you have completed the environment setup:
     - **RPC Setup**: Use a Solana RPC client to communicate with the blockchain.
@@ -109,7 +111,7 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     - **Devnet Airdrop**: Fund your wallet with a Solana devnet airdrop to cover transaction fees.
 
     For more details, refer to our [Environment Setup Guide](02-Environment%20Setup.mdx)
-    
+
     ### Executing a Token Swap
     To execute a token swap in an Orca Whirlpool, follow these steps:
 
@@ -122,7 +124,8 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     4. **Slippage tolerance**: Set the maximum slippage tolerance (optional, defaults to 1%). Slippage refers to the difference between the expected amounts of tokens received or sent during the swap and the actual amounts executed. A lower slippage tolerance reduces the risk of receiving fewer tokens than expected, but may lead to failed transactions if the market moves too quickly. For example, if you expect to receive 1,000 units of Token B for 100 units of Token A, with a 1% slippage tolerance, the maximum Token A spent will be 101, and the minimum Token B received will be 990.
     5. **Signer**: This can be your wallet, which will fund the pool initialization. If a signer is not specified, the default wallet will be used. You can configure the default wallet through the SDK.
     6. **Create Instructions**: Use the appropriate function to generate the necessary instructions for the swap.
-    
+    7. **Submit Transaction**: Use the callback to submit the transaction.
+
     ```tsx
     import { setWhirlpoolsConfig, swapInstructions } from '@orca-so/whirlpools';
     import { createSolanaRpc, devnet, address } from '@solana/kit';
@@ -135,7 +138,7 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     const mintAddress = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k");
     const inputAmount = 1_000_000n;
 
-    const { instructions, quote } = await swapInstructions(
+    const { instructions, quote, callback: swap } = await swapInstructions(
       devnetRpc,
       { inputAmount, mint: mintAddress },
       whirlpoolAddress,
@@ -143,15 +146,17 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
       wallet
     );
 
+    // Use the callback to submit the transaction
+    const txId = await swap();
+
     console.log(`Quote estimated token out: ${quote.tokenEstOut}`);
     console.log(`Number of instructions:, ${instructions.length}`);
+    console.log(`Transaction ID: ${txId}`);
     ```
-    
-    7. **Submit Transaction**: Include the generated instructions in a Solana transaction and send it to the network using the Solana SDK.
-    
+
     ## 3. Example Usage
     Suppose you are developing an arbitrage bot that looks for price discrepancies between different liquidity pools on Orca. By using the SDK, the bot can retrieve the quote object for a potential swap, which includes details about the token amounts and expected output. The bot can quickly compare quotes from multiple pools to identify arbitrage opportunities and execute profitable swaps.
-    
+
     ## 4. Next Steps
     After successfully executing a token swap, you might want to:
 
@@ -160,6 +165,7 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
     - Build more complex trading strategies by combining multiple swaps.
 
     By effectively using the SDK's swap functionality, you can create powerful trading applications on Orca Whirlpools.
+
   </TabItem>
   
   <TabItem value="ts-legacy" label="TypeScript Legacy">
@@ -300,5 +306,6 @@ This guide explains how to use the SDK to perform a token swap in an Orca Whirlp
         otherAmountThreshold = 0
         sqrt_price_limit = 250_x64
         ```
+
   </TabItem>
-</Tabs> 
+</Tabs>

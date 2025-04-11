@@ -1,0 +1,207 @@
+---
+sidebar_label: Utilities
+---
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
+import DocCard from '@theme/DocCard';
+
+# Orca Utility Helpers
+The Orca SDKs provide a range of utility functions that you may use when interacting with the Whirlpool protocol. 
+
+<Tabs groupId="sdk-type">
+  <TabItem value="rust-ts-kit" label="Rust & Typescript Kit">
+    ## Orca Whirlpools Core SDK
+    This package provides developers with advanced functionalities for interacting with the Whirlpool Program on Solana. Originally written in Rust, it has been compiled to WebAssembly (Wasm). This compilation makes the SDK accessible in JavaScript/TypeScript environments, offering developers the same core features and calculations for their Typescript projects. The SDK exposes convenient methods for math calculations, quotes, and other utilities, enabling seamless integration within web-based projects.
+
+    ## Key Features
+    - **Math Library**: Contains a variety of functions for math operations related to bundles, positions, prices, ticks, and tokens, including calculations such as determining position status or price conversions.
+    - **Quote Library**: Provides utility functions for generating quotes, such as increasing liquidity, collecting fees or rewards, and swapping, to help developers make informed decisions regarding liquidity management.
+
+    ### Installation:
+    <Tabs groupId="programming-languages">
+      <TabItem value="rust" label="Rust">
+        ```bash
+        cargo add orca_whirlpools_core
+        ```
+      </TabItem>
+      <TabItem value="ts-kit" label="Typescript Kit" default>
+        ```bash
+        npm install @orca-so/whirlpools-core
+        ```
+      </TabItem>
+    </Tabs>
+
+    ### Usage
+    Here are some basic examples of how to use the package:
+
+    #### Math Example
+    The following example demonstrates how to use the `isPositionInRange` function to determine whether a position is currently in range.
+    <Tabs groupId="programming-languages">
+      <TabItem value="rust" label="Rust">
+        ```rust
+        use orca_whirlpools_core::is_position_in_range;
+
+        fn main() {
+            let current_sqrt_price = 7448043534253661173u128;
+            let tick_index_1 = -18304;
+            let tick_index_2 = -17956;
+
+            let in_range = is_position_in_range(current_sqrt_price.into(), tick_index_1, tick_index_2);
+            println!("Position in range? {:?}", in_range);
+        }
+        ```
+
+        Expected output:
+        ```
+        Position in range? true
+        ```
+      </TabItem>
+      <TabItem value="ts-kit" label="Typescript Kit" default>
+        ```tsx
+        import { isPositionInRange } from "@orca-so/whirlpools-core";
+
+        const currentSqrtPrice = 7448043534253661173n;
+        const tickIndex1 = -18304;
+        const tickIndex2 = -17956;
+
+        const inRange = isPositionInRange(currentSqrtPrice, tickIndex1, tickIndex2);
+        console.log("Position in range:", inRange);
+        ```
+
+        Expected output:
+        ```
+        Position in range? true
+        ```
+      </TabItem>
+    </Tabs>
+
+    #### Quote Example
+    The following example demonstrates how to use the `increaseLiquidityQuoteA` function to calculate a quote for increasing liquidity given a token A amount.
+    <Tabs groupId="programming-languages">
+      <TabItem value="rust" label="Rust">
+        ```rust
+        use orca_whirlpools_core::increase_liquidity_quote_a;
+        use orca_whirlpools_core::TransferFee;
+
+        fn main() {
+            let token_amount_a = 1000000000u64;
+            let slippage_tolerance_bps = 100u16;
+            let current_sqrt_price = 7437568627975669726u128;
+            let tick_index_1 = -18568;
+            let tick_index_2 = -17668;
+            let transfer_fee_a = Some(TransferFee::new(200));
+            let transfer_fee_b = None;
+
+            let quote = increase_liquidity_quote_a(
+                token_amount_a,
+                slippage_tolerance_bps,
+                current_sqrt_price.into(),
+                tick_index_1,
+                tick_index_2,
+                transfer_fee_a,
+                transfer_fee_b,
+            ).unwrap();
+            
+            println!("{:?}", quote);
+        }
+        ```
+
+        Expected output:
+        ```
+        IncreaseLiquidityQuote {
+            liquidity_delta: 16011047470,
+            token_est_a: 1000000000,
+            token_est_b: 127889169,
+            token_max_a: 1010000000,
+            token_max_b: 129168061,
+        }
+        ```
+      </TabItem>
+      <TabItem value="ts-kit" label="Typescript Kit" default>
+        ```tsx
+        import { increaseLiquidityQuoteA } from "@orca-so/whirlpools-core";
+
+        const tokenAmountA = 1000000000n;
+        const slippageToleranceBps = 100;
+        const currentSqrtPrice = 7437568627975669726n;
+        const tickIndex1 = -18568;
+        const tickIndex2 = -17668;
+        const transferFeeA = { feeBps: 200, maxFee: 1000000000n };
+
+        const quote = increaseLiquidityQuoteA(
+        tokenAmountA,
+        slippageToleranceBps,
+        currentSqrtPrice,
+        tickIndex1,
+        tickIndex2,
+        transferFeeA,
+        );
+
+        console.log(quote);
+        ```
+
+        Expected output:
+        ```
+        {
+            liquidityDelta: 16011047470n,
+            tokenEstA: 1000000000n,
+            tokenEstB: 127889169n,
+            tokenMaxA: 1010000000n,
+            tokenMaxB: 129168061n
+        }
+        ```
+      </TabItem>
+    </Tabs>
+
+  </TabItem>
+  <TabItem value="ts-legacy" label="Typescript Legacy">
+    ## Important Util helpers
+
+    Reference the following utility types to help you interact with the Whirlpool protocol.
+
+    ### PDAUtil
+    Utility class to help you derive the PDA for Whirlpool accounts
+    <DocCard item={{
+      type: 'link',
+      href: 'https://dev.orca.so/legacy/classes/PDAUtil.html',
+      label: 'PDAUtil | @orca-so/whirlpools',
+      description: 'https://dev.orca.so/legacy/classes/PDAUtil.html'
+    }} />
+
+    ### PriceMath
+    Utility methods to help you convert between sqrt-price, price and tick index.
+    <DocCard item={{
+      type: 'link',
+      href: 'https://dev.orca.so/legacy/classes/PriceMath.html',
+      label: 'PriceMath | @orca-so/whirlpools',
+      description: 'https://dev.orca.so/legacy/classes/PriceMath.html'
+    }} />
+
+    ### TickUtil
+    Utility class hosting Tick utility methods such as finding initializable ticks, deriving tick array start-index etc.
+    <DocCard item={{
+      type: 'link',
+      href: 'https://dev.orca.so/legacy/classes/TickUtil.html',
+      label: 'TickUtil | @orca-so/whirlpools',
+      description: 'https://dev.orca.so/legacy/classes/TickUtil.html'
+    }} />
+
+    ### TickArrayUtil
+    Utility class to help fetch TickArray data.
+    <DocCard item={{
+      type: 'link',
+      href: 'https://dev.orca.so/legacy/classes/TickArrayUtil.html',
+      label: 'TickArrayUtil | @orca-so/whirlpools',
+      description: 'https://dev.orca.so/legacy/classes/TickArrayUtil.html'
+    }} />
+
+    ### PoolUtil
+    A collection of utility methods that you may use when interacting with the Whirlpool account.
+    <DocCard item={{
+      type: 'link',
+      href: 'https://dev.orca.so/legacy/classes/PoolUtil.html',
+      label: 'PoolUtil | @orca-so/whirlpools',
+      description: 'https://dev.orca.so/legacy/classes/PoolUtil.html'
+    }} />
+  </TabItem>
+</Tabs>

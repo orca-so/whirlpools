@@ -3893,72 +3893,72 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-arm64@npm:20.7.1":
-  version: 20.7.1
-  resolution: "@nx/nx-darwin-arm64@npm:20.7.1"
+"@nx/nx-darwin-arm64@npm:20.6.3":
+  version: 20.6.3
+  resolution: "@nx/nx-darwin-arm64@npm:20.6.3"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-darwin-x64@npm:20.7.1":
-  version: 20.7.1
-  resolution: "@nx/nx-darwin-x64@npm:20.7.1"
+"@nx/nx-darwin-x64@npm:20.6.3":
+  version: 20.6.3
+  resolution: "@nx/nx-darwin-x64@npm:20.6.3"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-freebsd-x64@npm:20.7.1":
-  version: 20.7.1
-  resolution: "@nx/nx-freebsd-x64@npm:20.7.1"
+"@nx/nx-freebsd-x64@npm:20.6.3":
+  version: 20.6.3
+  resolution: "@nx/nx-freebsd-x64@npm:20.6.3"
   conditions: os=freebsd & cpu=x64
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm-gnueabihf@npm:20.7.1":
-  version: 20.7.1
-  resolution: "@nx/nx-linux-arm-gnueabihf@npm:20.7.1"
+"@nx/nx-linux-arm-gnueabihf@npm:20.6.3":
+  version: 20.6.3
+  resolution: "@nx/nx-linux-arm-gnueabihf@npm:20.6.3"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-gnu@npm:20.7.1":
-  version: 20.7.1
-  resolution: "@nx/nx-linux-arm64-gnu@npm:20.7.1"
+"@nx/nx-linux-arm64-gnu@npm:20.6.3":
+  version: 20.6.3
+  resolution: "@nx/nx-linux-arm64-gnu@npm:20.6.3"
   conditions: os=linux & cpu=arm64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-arm64-musl@npm:20.7.1":
-  version: 20.7.1
-  resolution: "@nx/nx-linux-arm64-musl@npm:20.7.1"
+"@nx/nx-linux-arm64-musl@npm:20.6.3":
+  version: 20.6.3
+  resolution: "@nx/nx-linux-arm64-musl@npm:20.6.3"
   conditions: os=linux & cpu=arm64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-gnu@npm:20.7.1":
-  version: 20.7.1
-  resolution: "@nx/nx-linux-x64-gnu@npm:20.7.1"
+"@nx/nx-linux-x64-gnu@npm:20.6.3":
+  version: 20.6.3
+  resolution: "@nx/nx-linux-x64-gnu@npm:20.6.3"
   conditions: os=linux & cpu=x64 & libc=glibc
   languageName: node
   linkType: hard
 
-"@nx/nx-linux-x64-musl@npm:20.7.1":
-  version: 20.7.1
-  resolution: "@nx/nx-linux-x64-musl@npm:20.7.1"
+"@nx/nx-linux-x64-musl@npm:20.6.3":
+  version: 20.6.3
+  resolution: "@nx/nx-linux-x64-musl@npm:20.6.3"
   conditions: os=linux & cpu=x64 & libc=musl
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-arm64-msvc@npm:20.7.1":
-  version: 20.7.1
-  resolution: "@nx/nx-win32-arm64-msvc@npm:20.7.1"
+"@nx/nx-win32-arm64-msvc@npm:20.6.3":
+  version: 20.6.3
+  resolution: "@nx/nx-win32-arm64-msvc@npm:20.6.3"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@nx/nx-win32-x64-msvc@npm:20.7.1":
-  version: 20.7.1
-  resolution: "@nx/nx-win32-x64-msvc@npm:20.7.1"
+"@nx/nx-win32-x64-msvc@npm:20.6.3":
+  version: 20.6.3
+  resolution: "@nx/nx-win32-x64-msvc@npm:20.6.3"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
@@ -4048,7 +4048,7 @@ __metadata:
     "@orca-so/whirlpools-client": "npm:*"
     "@orca-so/whirlpools-core": "npm:*"
     typedoc: "npm:^0.28.1"
-    typedoc-plugin-merge-modules: "npm:^6.1.0"
+    typedoc-plugin-merge-modules: "npm:^7.0.0"
     typescript: "npm:^5.8.2"
   languageName: unknown
   linkType: soft
@@ -4097,7 +4097,7 @@ __metadata:
     "@next/bundle-analyzer": "npm:^15.2.4"
     "@orca-so/whirlpools": "npm:*"
     "@solana/kit": "npm:^2.1.0"
-    "@types/node": "npm:^22.13.13"
+    "@types/node": "npm:^22.14.0"
     "@types/react": "npm:^18.3.13"
     copy-webpack-plugin: "npm:^13.0.0"
     next: "npm:^15.2.4"
@@ -4135,8 +4135,8 @@ __metadata:
   dependencies:
     "@changesets/changelog-github": "npm:^0.5.1"
     "@changesets/cli": "npm:^2.28.1"
-    "@types/node": "npm:^22.13.13"
-    nx: "npm:^20.6.3"
+    "@types/node": "npm:^22.14.0"
+    nx: "npm:^20.7.2"
     rimraf: "npm:^6.0.1"
     tsup: "npm:^8.4.0"
     vitest: "npm:^3.0.9"
@@ -4176,7 +4176,7 @@ __metadata:
     "@orca-so/whirlpools-rust": "npm:*"
     "@orca-so/whirlpools-rust-client": "npm:*"
     "@orca-so/whirlpools-rust-core": "npm:*"
-    "@types/semver": "npm:^7.5.8"
+    "@types/semver": "npm:^7.7.0"
     semver: "npm:^7.7.1"
     smol-toml: "npm:^1.3.1"
     typescript: "npm:^5.8.2"
@@ -5838,6 +5838,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/node@npm:^22.13.13":
+  version: 22.13.13
+  resolution: "@types/node@npm:22.13.13"
+  dependencies:
+    undici-types: "npm:~6.20.0"
+  checksum: 10c0/daf792ba5dcff1316abf4b33680f94b792f8d54d6ae495efc8929531e0ba1284a248d29aab117d2259f9280284d986ad5799b193b0516e2b926d713aab835f7d
+  languageName: node
+  linkType: hard
+
 "@types/parse-json@npm:^4.0.0":
   version: 4.0.2
   resolution: "@types/parse-json@npm:4.0.2"
@@ -5951,9 +5960,9 @@ __metadata:
   linkType: hard
 
 "@types/semver@npm:^7.5.8":
-  version: 7.7.0
-  resolution: "@types/semver@npm:7.7.0"
-  checksum: 10c0/6b5f65f647474338abbd6ee91a6bbab434662ddb8fe39464edcbcfc96484d388baad9eb506dff217b6fc1727a88894930eb1f308617161ac0f376fe06be4e1ee
+  version: 7.5.8
+  resolution: "@types/semver@npm:7.5.8"
+  checksum: 10c0/8663ff927234d1c5fcc04b33062cb2b9fcfbe0f5f351ed26c4d1e1581657deebd506b41ff7fdf89e787e3d33ce05854bc01686379b89e9c49b564c4cfa988efa
   languageName: node
   linkType: hard
 
@@ -9299,11 +9308,11 @@ __metadata:
   linkType: hard
 
 "estree-util-value-to-estree@npm:^3.0.1":
-  version: 3.3.2
-  resolution: "estree-util-value-to-estree@npm:3.3.2"
+  version: 3.3.3
+  resolution: "estree-util-value-to-estree@npm:3.3.3"
   dependencies:
     "@types/estree": "npm:^1.0.0"
-  checksum: 10c0/ada14d3b50d51b324a301a53f5e9eb4a413f6e2039d631bf3e8bf1ee298c24e33d0f993d37bb2fe8216bc22782a9be3562cc0d2645a0f14808c73efef90f367f
+  checksum: 10c0/cc90e277bff949f49d08dbca28237821506839ab729cafc93105a5a1b02af1a308c1d1f6221ade840351f60ef03faedd2197be454318a16a9e1a7c5af0480c69
   languageName: node
   linkType: hard
 
@@ -13462,20 +13471,20 @@ __metadata:
   linkType: hard
 
 "nx@npm:^20.6.3":
-  version: 20.7.1
-  resolution: "nx@npm:20.7.1"
+  version: 20.6.3
+  resolution: "nx@npm:20.6.3"
   dependencies:
     "@napi-rs/wasm-runtime": "npm:0.2.4"
-    "@nx/nx-darwin-arm64": "npm:20.7.1"
-    "@nx/nx-darwin-x64": "npm:20.7.1"
-    "@nx/nx-freebsd-x64": "npm:20.7.1"
-    "@nx/nx-linux-arm-gnueabihf": "npm:20.7.1"
-    "@nx/nx-linux-arm64-gnu": "npm:20.7.1"
-    "@nx/nx-linux-arm64-musl": "npm:20.7.1"
-    "@nx/nx-linux-x64-gnu": "npm:20.7.1"
-    "@nx/nx-linux-x64-musl": "npm:20.7.1"
-    "@nx/nx-win32-arm64-msvc": "npm:20.7.1"
-    "@nx/nx-win32-x64-msvc": "npm:20.7.1"
+    "@nx/nx-darwin-arm64": "npm:20.6.3"
+    "@nx/nx-darwin-x64": "npm:20.6.3"
+    "@nx/nx-freebsd-x64": "npm:20.6.3"
+    "@nx/nx-linux-arm-gnueabihf": "npm:20.6.3"
+    "@nx/nx-linux-arm64-gnu": "npm:20.6.3"
+    "@nx/nx-linux-arm64-musl": "npm:20.6.3"
+    "@nx/nx-linux-x64-gnu": "npm:20.6.3"
+    "@nx/nx-linux-x64-musl": "npm:20.6.3"
+    "@nx/nx-win32-arm64-msvc": "npm:20.6.3"
+    "@nx/nx-win32-x64-msvc": "npm:20.6.3"
     "@yarnpkg/lockfile": "npm:^1.1.0"
     "@yarnpkg/parsers": "npm:3.0.2"
     "@zkochan/js-yaml": "npm:0.0.7"
@@ -13541,7 +13550,7 @@ __metadata:
   bin:
     nx: bin/nx.js
     nx-cloud: bin/nx-cloud.js
-  checksum: 10c0/6384170af8059eb90aa98d65ad76f4ed71fc387f78b4fb02d8d39076ca9b0103f241749680ad013419ab78a19eb215da90bfc9abfc48f566f93666d912a87a09
+  checksum: 10c0/9125fe24db02f355605978e7734ebb6a9c7dcd3dc663e43195c7606d21e308b2609ce2699e3c404c376ef2775dee45be0bd58f2929f3ffe30d0ec6d492344fe0
   languageName: node
   linkType: hard
 
@@ -17541,12 +17550,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"typedoc-plugin-merge-modules@npm:^6.1.0":
-  version: 6.1.0
-  resolution: "typedoc-plugin-merge-modules@npm:6.1.0"
+"typedoc-plugin-merge-modules@npm:^7.0.0":
+  version: 7.0.0
+  resolution: "typedoc-plugin-merge-modules@npm:7.0.0"
   peerDependencies:
-    typedoc: 0.26.x || ^0.27.1
-  checksum: 10c0/32a89f8411cef9fcf57711225f492ffaaefd8933cc36bd9980da30066f90a45b43a0fe8cde4dd155c095e5b4683b2295c8e784ed70835e838c5c8406dbc8102d
+    typedoc: 0.28.x
+  checksum: 10c0/00029b39fc4f6c1a56e6b4ed716b647b57dec59543f8783419593a724999ff26f11581b22cc9a763ae43f437be43045bd9f80609deb1ee750858e9bb2ae0f592
   languageName: node
   linkType: hard
 
@@ -17612,6 +17621,13 @@ __metadata:
   version: 7.7.0
   resolution: "undici-types@npm:7.7.0"
   checksum: 10c0/158e4b44edc158fbb0376c39e1df88356f9b96f630321a77e81066512b748ac786be8ff55c2c41234ba4e1e3a3726b98b4ee355501785ab5b037f6bdd85a944e
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~6.21.0":
+  version: 6.21.0
+  resolution: "undici-types@npm:6.21.0"
+  checksum: 10c0/c01ed51829b10aa72fc3ce64b747f8e74ae9b60eafa19a7b46ef624403508a54c526ffab06a14a26b3120d055e1104d7abe7c9017e83ced038ea5cf52f8d5e04
   languageName: node
   linkType: hard
 
@@ -17969,8 +17985,8 @@ __metadata:
   linkType: hard
 
 "vite@npm:^5.0.0 || ^6.0.0":
-  version: 6.2.5
-  resolution: "vite@npm:6.2.5"
+  version: 6.2.1
+  resolution: "vite@npm:6.2.1"
   dependencies:
     esbuild: "npm:^0.25.0"
     fsevents: "npm:~2.3.3"
@@ -18016,7 +18032,7 @@ __metadata:
       optional: true
   bin:
     vite: bin/vite.js
-  checksum: 10c0/226bb3c1875e1982559007007580e8d083b81f5289f18e28841d622ba030599e1bd9926adccc8264879e319e9f9e4f48a38a0dc52a5dfcdf2a9cb7313bfc1816
+  checksum: 10c0/2c024376a840eae2ce9cfba98d62e9f1eae93caa8304875854dbc0740414aedcfbe157c2244567bd456cdb60a300312af02ae9b5c63c147d35cf4da3a0591312
   languageName: node
   linkType: hard
 

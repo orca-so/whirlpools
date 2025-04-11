@@ -1,6 +1,6 @@
 {
   "name": "@orca-so/whirlpools-docs-ts",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "private": true,
   "scripts": {
     "build": "typedoc",
@@ -12,7 +12,7 @@
     "@orca-so/whirlpools-client": "*",
     "@orca-so/whirlpools-core": "*",
     "typedoc": "^0.28.1",
-    "typedoc-plugin-merge-modules": "^6.1.0",
+    "typedoc-plugin-merge-modules": "^7.0.0",
     "typescript": "^5.8.2"
   }
 }

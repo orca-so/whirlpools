@@ -89,7 +89,9 @@ class StaticFeeRateManager extends FeeRateManager {
     _nextTickSqrtPrice: BN,
     _nextTickIndex: number,
   ): void {
-    throw new Error("StaticFeeRateManager does not support advanceTickGroupAfterSkip");
+    throw new Error(
+      "StaticFeeRateManager does not support advanceTickGroupAfterSkip",
+    );
   }
 
   public updateMajorSwapTimestamp(_preSqrtPrice: BN, _postSqrtPrice: BN): void {

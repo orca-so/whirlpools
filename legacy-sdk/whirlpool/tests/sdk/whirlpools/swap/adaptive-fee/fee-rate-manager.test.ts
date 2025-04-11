@@ -1,7 +1,23 @@
 import * as anchor from "@coral-xyz/anchor";
-import { AdaptiveFeeVariables, FeeRateManager } from "../../../../../src/quotes/swap/fee-rate-manager";
+import {
+  AdaptiveFeeVariables,
+  FeeRateManager,
+} from "../../../../../src/quotes/swap/fee-rate-manager";
 import * as assert from "assert";
-import { ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR, AdaptiveFeeConstantsData, AdaptiveFeeInfo, FEE_RATE_HARD_LIMIT, MAX_REFERENCE_AGE, MAX_SQRT_PRICE_BN, MAX_TICK_INDEX, MIN_SQRT_PRICE_BN, MIN_TICK_INDEX, REDUCTION_FACTOR_DENOMINATOR, VOLATILITY_ACCUMULATOR_SCALE_FACTOR } from "../../../../../src";
+import type {
+  AdaptiveFeeConstantsData,
+  AdaptiveFeeInfo} from "../../../../../src";
+import {
+  ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR,
+  FEE_RATE_HARD_LIMIT,
+  MAX_REFERENCE_AGE,
+  MAX_SQRT_PRICE_BN,
+  MAX_TICK_INDEX,
+  MIN_SQRT_PRICE_BN,
+  MIN_TICK_INDEX,
+  REDUCTION_FACTOR_DENOMINATOR,
+  VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+} from "../../../../../src";
 import { PriceMath } from "../../../../../src/utils/public/price-math";
 
 // Note: straight conversion from rust test cases
@@ -14,7 +30,7 @@ describe("fee-rate-manager", () => {
         0,
         new anchor.BN(0),
         feeRate,
-        null
+        null,
       );
     }
 
@@ -48,15 +64,25 @@ describe("fee-rate-manager", () => {
 
       const feeRateManagerAToB = createStaticFeeRateManager(feeRate, true);
 
-      const { boundedSqrtPriceTarget: boundedSqrtPriceTargetAToB, adaptiveFeeUpdateSkipped: adaptiveFeeUpdateSkippedAToB } =
-        feeRateManagerAToB.getBoundedSqrtPriceTarget(MIN_SQRT_PRICE_BN, currLiquidity);
+      const {
+        boundedSqrtPriceTarget: boundedSqrtPriceTargetAToB,
+        adaptiveFeeUpdateSkipped: adaptiveFeeUpdateSkippedAToB,
+      } = feeRateManagerAToB.getBoundedSqrtPriceTarget(
+        MIN_SQRT_PRICE_BN,
+        currLiquidity,
+      );
       assert.ok(boundedSqrtPriceTargetAToB.eq(MIN_SQRT_PRICE_BN));
       assert.equal(adaptiveFeeUpdateSkippedAToB, false);
 
       const feeRateManagerBToA = createStaticFeeRateManager(feeRate, false);
 
-      const { boundedSqrtPriceTarget: boundedSqrtPriceTargetBToA, adaptiveFeeUpdateSkipped: adaptiveFeeUpdateSkippedBToA } =
-        feeRateManagerBToA.getBoundedSqrtPriceTarget(MAX_SQRT_PRICE_BN, currLiquidity);
+      const {
+        boundedSqrtPriceTarget: boundedSqrtPriceTargetBToA,
+        adaptiveFeeUpdateSkipped: adaptiveFeeUpdateSkippedBToA,
+      } = feeRateManagerBToA.getBoundedSqrtPriceTarget(
+        MAX_SQRT_PRICE_BN,
+        currLiquidity,
+      );
       assert.ok(boundedSqrtPriceTargetBToA.eq(MAX_SQRT_PRICE_BN));
       assert.equal(adaptiveFeeUpdateSkippedBToA, false);
     });
@@ -74,7 +100,15 @@ describe("fee-rate-manager", () => {
       const feeRate = 3000;
       const feeRateManager = createStaticFeeRateManager(feeRate);
 
-      assert.throws(() => feeRateManager.advanceTickGroupAfterSkip(new anchor.BN(0), new anchor.BN(0), 0), /StaticFeeRateManager does not support advanceTickGroupAfterSkip/);
+      assert.throws(
+        () =>
+          feeRateManager.advanceTickGroupAfterSkip(
+            new anchor.BN(0),
+            new anchor.BN(0),
+            0,
+          ),
+        /StaticFeeRateManager does not support advanceTickGroupAfterSkip/,
+      );
     });
 
     it("updateMajorSwapTimestamp", async () => {
@@ -82,7 +116,10 @@ describe("fee-rate-manager", () => {
       const feeRateManager = createStaticFeeRateManager(feeRate);
 
       assert.equal(feeRateManager.getTotalFeeRate(), feeRate);
-      feeRateManager.updateMajorSwapTimestamp(new anchor.BN(0), new anchor.BN(0));
+      feeRateManager.updateMajorSwapTimestamp(
+        new anchor.BN(0),
+        new anchor.BN(0),
+      );
       assert.equal(feeRateManager.getTotalFeeRate(), feeRate);
     });
 
@@ -131,12 +168,18 @@ describe("fee-rate-manager", () => {
     ) {
       assert.equal(feeRateManager.constructor.name, "AdaptiveFeeRateManager");
       // HACK: check tickGroupIndex
-      const feeRateManagerTickGroupIndex = (feeRateManager as unknown as { tickGroupIndex: number}).tickGroupIndex;
+      const feeRateManagerTickGroupIndex = (
+        feeRateManager as unknown as { tickGroupIndex: number }
+      ).tickGroupIndex;
       assert.equal(feeRateManagerTickGroupIndex, tickGroupIndex);
 
-      const variables = feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
+      const variables =
+        feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
       assert.ok(variables);
-      assert.equal(variables.lastReferenceUpdateTimestamp, lastReferenceUpdateTimestamp);
+      assert.equal(
+        variables.lastReferenceUpdateTimestamp,
+        lastReferenceUpdateTimestamp,
+      );
       assert.equal(variables.lastMajorSwapTimestamp, lastMajorSwapTimestamp);
       assert.equal(variables.tickGroupIndexReference, tickGroupIndexReference);
       assert.equal(variables.volatilityReference, volatilityReference);
@@ -147,7 +190,9 @@ describe("fee-rate-manager", () => {
       const adaptiveFeeInfo = defaultAdaptiveFeeInfo();
       const timestamp = now();
       const currentTickIndex = 128;
-      const tickGroupIndex = Math.floor(currentTickIndex / adaptiveFeeInfo.adaptiveFeeConstants.tickGroupSize);
+      const tickGroupIndex = Math.floor(
+        currentTickIndex / adaptiveFeeInfo.adaptiveFeeConstants.tickGroupSize,
+      );
       const feeRateManager = FeeRateManager.new(
         true,
         currentTickIndex,
@@ -160,22 +205,41 @@ describe("fee-rate-manager", () => {
       const nextAdaptiveFeeInfo = feeRateManager.getNextAdaptiveFeeInfo();
       assert.ok(nextAdaptiveFeeInfo);
       // constants should be the same
-      assert.deepEqual(nextAdaptiveFeeInfo.adaptiveFeeConstants, adaptiveFeeInfo.adaptiveFeeConstants);
+      assert.deepEqual(
+        nextAdaptiveFeeInfo.adaptiveFeeConstants,
+        adaptiveFeeInfo.adaptiveFeeConstants,
+      );
 
       // these variables should not be updated yet
-      assert.equal(nextAdaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp.toString(), adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp.toString());
-      assert.equal(nextAdaptiveFeeInfo.adaptiveFeeVariables.volatilityAccumulator, adaptiveFeeInfo.adaptiveFeeVariables.volatilityAccumulator);
+      assert.equal(
+        nextAdaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp.toString(),
+        adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp.toString(),
+      );
+      assert.equal(
+        nextAdaptiveFeeInfo.adaptiveFeeVariables.volatilityAccumulator,
+        adaptiveFeeInfo.adaptiveFeeVariables.volatilityAccumulator,
+      );
 
       // references should be updated
-      assert.equal(nextAdaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp.toString(), timestamp.toString());
-      assert.equal(nextAdaptiveFeeInfo.adaptiveFeeVariables.tickGroupIndexReference, tickGroupIndex);
-      assert.equal(nextAdaptiveFeeInfo.adaptiveFeeVariables.volatilityReference, 0);
+      assert.equal(
+        nextAdaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp.toString(),
+        timestamp.toString(),
+      );
+      assert.equal(
+        nextAdaptiveFeeInfo.adaptiveFeeVariables.tickGroupIndexReference,
+        tickGroupIndex,
+      );
+      assert.equal(
+        nextAdaptiveFeeInfo.adaptiveFeeVariables.volatilityReference,
+        0,
+      );
     });
-    
+
     describe("updateReference", () => {
       it("lt filterPeriod", async () => {
         const timestamp = now();
-        const adaptiveFeeConstants = defaultAdaptiveFeeInfo().adaptiveFeeConstants;
+        const adaptiveFeeConstants =
+          defaultAdaptiveFeeInfo().adaptiveFeeConstants;
 
         const adaptiveFeeInfo: AdaptiveFeeInfo = {
           adaptiveFeeConstants,
@@ -196,17 +260,22 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo,
         );
 
-        const variables = feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
+        const variables =
+          feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
         assert.ok(variables);
         // no change
-        assert.equal(variables.lastReferenceUpdateTimestamp.toString(), timestamp.toString());
+        assert.equal(
+          variables.lastReferenceUpdateTimestamp.toString(),
+          timestamp.toString(),
+        );
         assert.equal(variables.tickGroupIndexReference, 1);
         assert.equal(variables.volatilityReference, 500);
       });
 
       it("gte filterPeriod, lt decayPeriod", async () => {
         const timestamp = now();
-        const adaptiveFeeConstants = defaultAdaptiveFeeInfo().adaptiveFeeConstants;
+        const adaptiveFeeConstants =
+          defaultAdaptiveFeeInfo().adaptiveFeeConstants;
 
         const adaptiveFeeInfo: AdaptiveFeeInfo = {
           adaptiveFeeConstants,
@@ -227,17 +296,28 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo,
         );
 
-        const variables = feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
+        const variables =
+          feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
         assert.ok(variables);
         // updated (reduction)
-        assert.equal(variables.lastReferenceUpdateTimestamp.toString(), timestamp.addn(adaptiveFeeConstants.decayPeriod - 1).toString());
+        assert.equal(
+          variables.lastReferenceUpdateTimestamp.toString(),
+          timestamp.addn(adaptiveFeeConstants.decayPeriod - 1).toString(),
+        );
         assert.equal(variables.tickGroupIndexReference, 10);
-        assert.equal(variables.volatilityReference, Math.floor(10000 * adaptiveFeeConstants.reductionFactor / REDUCTION_FACTOR_DENOMINATOR));
+        assert.equal(
+          variables.volatilityReference,
+          Math.floor(
+            (10000 * adaptiveFeeConstants.reductionFactor) /
+              REDUCTION_FACTOR_DENOMINATOR,
+          ),
+        );
       });
 
       it("gte decayPeriod", async () => {
         const timestamp = now();
-        const adaptiveFeeConstants = defaultAdaptiveFeeInfo().adaptiveFeeConstants;
+        const adaptiveFeeConstants =
+          defaultAdaptiveFeeInfo().adaptiveFeeConstants;
 
         const adaptiveFeeInfo: AdaptiveFeeInfo = {
           adaptiveFeeConstants,
@@ -258,17 +338,22 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo,
         );
 
-        const variables = feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
+        const variables =
+          feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
         assert.ok(variables);
         // updated (reset)
-        assert.equal(variables.lastReferenceUpdateTimestamp.toString(), timestamp.addn(adaptiveFeeConstants.decayPeriod).toString());
+        assert.equal(
+          variables.lastReferenceUpdateTimestamp.toString(),
+          timestamp.addn(adaptiveFeeConstants.decayPeriod).toString(),
+        );
         assert.equal(variables.tickGroupIndexReference, 10);
         assert.equal(variables.volatilityReference, 0);
       });
 
       it("eq MAX_REFERENCE_AGE", async () => {
         const timestamp = now();
-        const adaptiveFeeConstants = defaultAdaptiveFeeInfo().adaptiveFeeConstants;
+        const adaptiveFeeConstants =
+          defaultAdaptiveFeeInfo().adaptiveFeeConstants;
 
         const adaptiveFeeInfo: AdaptiveFeeInfo = {
           adaptiveFeeConstants,
@@ -289,17 +374,22 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo,
         );
 
-        const variables = feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
+        const variables =
+          feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
         assert.ok(variables);
         // no change
-        assert.equal(variables.lastReferenceUpdateTimestamp.toString(), timestamp.subn(MAX_REFERENCE_AGE).toString());
+        assert.equal(
+          variables.lastReferenceUpdateTimestamp.toString(),
+          timestamp.subn(MAX_REFERENCE_AGE).toString(),
+        );
         assert.equal(variables.tickGroupIndexReference, 1);
         assert.equal(variables.volatilityReference, 500);
       });
 
       it("gt MAX_REFERENCE_AGE", async () => {
         const timestamp = now();
-        const adaptiveFeeConstants = defaultAdaptiveFeeInfo().adaptiveFeeConstants;
+        const adaptiveFeeConstants =
+          defaultAdaptiveFeeInfo().adaptiveFeeConstants;
 
         const adaptiveFeeInfo: AdaptiveFeeInfo = {
           adaptiveFeeConstants,
@@ -320,10 +410,14 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo,
         );
 
-        const variables = feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
+        const variables =
+          feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables;
         assert.ok(variables);
         // updated (reset)
-        assert.equal(variables.lastReferenceUpdateTimestamp.toString(), timestamp.toString());
+        assert.equal(
+          variables.lastReferenceUpdateTimestamp.toString(),
+          timestamp.toString(),
+        );
         assert.equal(variables.tickGroupIndexReference, 10);
         assert.equal(variables.volatilityReference, 0);
       });
@@ -351,12 +445,19 @@ describe("fee-rate-manager", () => {
           volatilityReference,
           0,
         );
-        
-        const { coreTickGroupRangeLowerBound, coreTickGroupRangeUpperBound } = variables.getCoreTickGroupRange(adaptiveFeeConstants);
-        assert.equal(coreTickGroupRangeLowerBound?.tickGroupIndex, expectedLowerTickGroupIndex ?? undefined);
-        assert.equal(coreTickGroupRangeUpperBound?.tickGroupIndex, expectedUpperTickGroupIndex ?? undefined);
+
+        const { coreTickGroupRangeLowerBound, coreTickGroupRangeUpperBound } =
+          variables.getCoreTickGroupRange(adaptiveFeeConstants);
+        assert.equal(
+          coreTickGroupRangeLowerBound?.tickGroupIndex,
+          expectedLowerTickGroupIndex ?? undefined,
+        );
+        assert.equal(
+          coreTickGroupRangeUpperBound?.tickGroupIndex,
+          expectedUpperTickGroupIndex ?? undefined,
+        );
       }
-      
+
       it("ts64", async () => {
         test(64, 0, 0, 350_000, -35, 35);
         test(64, 0, 0, 100_000, -10, 10);
@@ -413,14 +514,7 @@ describe("fee-rate-manager", () => {
 
         // None if the left edge of lower bound is out of the tick range
         // note: MIN_TICK_INDEX will not be the left edge of lower bound
-        test(
-            1,
-            -443600,
-            0,
-            350_000,
-            -443600 - 35,
-            -443600 + 35,
-        );
+        test(1, -443600, 0, 350_000, -443600 - 35, -443600 + 35);
         test(1, -443601, 0, 350_000, null, -443601 + 35);
         test(1, -443602, 0, 350_000, null, -443602 + 35);
         test(1, -443635, 0, 350_000, null, -443635 + 35);
@@ -454,7 +548,7 @@ describe("fee-rate-manager", () => {
         // reset references
         const timestamp = anchor.BN.max(
           adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp,
-          adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp
+          adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
         ).addn(adaptiveFeeInfo.adaptiveFeeConstants.decayPeriod);
         const feeRateManager = FeeRateManager.new(
           true,
@@ -475,7 +569,7 @@ describe("fee-rate-manager", () => {
           0,
           0,
         );
-        
+
         // delta = 1
         feeRateManager.advanceTickGroup();
         feeRateManager.updateVolatilityAccumulator();
@@ -486,7 +580,7 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
           1,
           0,
-          VOLATILITY_ACCUMULATOR_SCALE_FACTOR
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
 
         // delta = 2
@@ -499,12 +593,14 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
           1,
           0,
-          2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR
+          2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
 
         // reductiiion
         const nextCurrentTickIndex = -32;
-        const nextTimestamp = timestamp.addn(adaptiveFeeInfo.adaptiveFeeConstants.filterPeriod);
+        const nextTimestamp = timestamp.addn(
+          adaptiveFeeInfo.adaptiveFeeConstants.filterPeriod,
+        );
         const nextFeeRateManager = FeeRateManager.new(
           true,
           nextCurrentTickIndex,
@@ -514,7 +610,12 @@ describe("fee-rate-manager", () => {
         );
 
         // delta = 0
-        const nextVolatilityReference = Math.floor(2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR * adaptiveFeeInfo.adaptiveFeeConstants.reductionFactor / REDUCTION_FACTOR_DENOMINATOR);
+        const nextVolatilityReference = Math.floor(
+          (2 *
+            VOLATILITY_ACCUMULATOR_SCALE_FACTOR *
+            adaptiveFeeInfo.adaptiveFeeConstants.reductionFactor) /
+            REDUCTION_FACTOR_DENOMINATOR,
+        );
         assert.ok(nextVolatilityReference > 0);
         nextFeeRateManager.updateVolatilityAccumulator();
         checkTickGroupIndexAndVariables(
@@ -552,7 +653,8 @@ describe("fee-rate-manager", () => {
             -1,
             nextVolatilityReference,
             Math.min(
-              nextVolatilityReference + delta * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+              nextVolatilityReference +
+                delta * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
               adaptiveFeeInfo.adaptiveFeeConstants.maxVolatilityAccumulator,
             ),
           );
@@ -567,7 +669,7 @@ describe("fee-rate-manager", () => {
         // reset references
         const timestamp = anchor.BN.max(
           adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp,
-          adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp
+          adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
         ).addn(adaptiveFeeInfo.adaptiveFeeConstants.decayPeriod);
         const feeRateManager = FeeRateManager.new(
           false,
@@ -588,7 +690,7 @@ describe("fee-rate-manager", () => {
           0,
           0,
         );
-        
+
         // delta = 1
         feeRateManager.advanceTickGroup();
         feeRateManager.updateVolatilityAccumulator();
@@ -599,7 +701,7 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
           16,
           0,
-          VOLATILITY_ACCUMULATOR_SCALE_FACTOR
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
 
         // delta = 2
@@ -612,12 +714,14 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
           16,
           0,
-          2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR
+          2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
 
         // reductiiion
         const nextCurrentTickIndex = 1184;
-        const nextTimestamp = timestamp.addn(adaptiveFeeInfo.adaptiveFeeConstants.filterPeriod);
+        const nextTimestamp = timestamp.addn(
+          adaptiveFeeInfo.adaptiveFeeConstants.filterPeriod,
+        );
         const nextFeeRateManager = FeeRateManager.new(
           false,
           nextCurrentTickIndex,
@@ -627,7 +731,12 @@ describe("fee-rate-manager", () => {
         );
 
         // delta = 0
-        const nextVolatilityReference = Math.floor(2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR * adaptiveFeeInfo.adaptiveFeeConstants.reductionFactor / REDUCTION_FACTOR_DENOMINATOR);
+        const nextVolatilityReference = Math.floor(
+          (2 *
+            VOLATILITY_ACCUMULATOR_SCALE_FACTOR *
+            adaptiveFeeInfo.adaptiveFeeConstants.reductionFactor) /
+            REDUCTION_FACTOR_DENOMINATOR,
+        );
         assert.ok(nextVolatilityReference > 0);
         nextFeeRateManager.updateVolatilityAccumulator();
         checkTickGroupIndexAndVariables(
@@ -665,7 +774,8 @@ describe("fee-rate-manager", () => {
             18,
             nextVolatilityReference,
             Math.min(
-              nextVolatilityReference + delta * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+              nextVolatilityReference +
+                delta * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
               adaptiveFeeInfo.adaptiveFeeConstants.maxVolatilityAccumulator,
             ),
           );
@@ -674,7 +784,10 @@ describe("fee-rate-manager", () => {
     });
 
     describe("computeAdaptiveFee", () => {
-      function test(constants: AdaptiveFeeConstantsData, preCalculatedFeeRates: number[]) {
+      function test(
+        constants: AdaptiveFeeConstantsData,
+        preCalculatedFeeRates: number[],
+      ) {
         const variables = new AdaptiveFeeVariables(
           new anchor.BN(0),
           new anchor.BN(0),
@@ -687,154 +800,187 @@ describe("fee-rate-manager", () => {
         const baseTickGroupIndex = 16;
 
         variables.updateReference(baseTickGroupIndex, timestamp, constants);
-        for (let delta = 0; delta < preCalculatedFeeRates.length; delta++ ) {
-            const tickGroupIndex = baseTickGroupIndex + delta;
+        for (let delta = 0; delta < preCalculatedFeeRates.length; delta++) {
+          const tickGroupIndex = baseTickGroupIndex + delta;
 
-            variables.updateVolatilityAccumulator(tickGroupIndex, constants);
+          variables.updateVolatilityAccumulator(tickGroupIndex, constants);
 
-            const feeRate = variables.computeAdaptiveFeeRate(constants);
+          const feeRate = variables.computeAdaptiveFeeRate(constants);
 
-            const volatilityAccumulator = delta * VOLATILITY_ACCUMULATOR_SCALE_FACTOR;
-            const cappedVolatilityAccumulator = Math.min(volatilityAccumulator, constants.maxVolatilityAccumulator);
+          const volatilityAccumulator =
+            delta * VOLATILITY_ACCUMULATOR_SCALE_FACTOR;
+          const cappedVolatilityAccumulator = Math.min(
+            volatilityAccumulator,
+            constants.maxVolatilityAccumulator,
+          );
 
-            const crossedTickIndexes = cappedVolatilityAccumulator * constants.tickGroupSize;
-            const squaredCrossedTickIndexes = new anchor.BN(crossedTickIndexes).mul(new anchor.BN(crossedTickIndexes));
-            const numerator = new anchor.BN(constants.adaptiveFeeControlFactor).mul(squaredCrossedTickIndexes);
-            const denominator = new anchor.BN(ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR).muln(VOLATILITY_ACCUMULATOR_SCALE_FACTOR).muln(VOLATILITY_ACCUMULATOR_SCALE_FACTOR);
-            const expectedFeeRate = numerator.add(denominator.subn(1)).div(denominator);
+          const crossedTickIndexes =
+            cappedVolatilityAccumulator * constants.tickGroupSize;
+          const squaredCrossedTickIndexes = new anchor.BN(
+            crossedTickIndexes,
+          ).mul(new anchor.BN(crossedTickIndexes));
+          const numerator = new anchor.BN(
+            constants.adaptiveFeeControlFactor,
+          ).mul(squaredCrossedTickIndexes);
+          const denominator = new anchor.BN(
+            ADAPTIVE_FEE_CONTROL_FACTOR_DENOMINATOR,
+          )
+            .muln(VOLATILITY_ACCUMULATOR_SCALE_FACTOR)
+            .muln(VOLATILITY_ACCUMULATOR_SCALE_FACTOR);
+          const expectedFeeRate = numerator
+            .add(denominator.subn(1))
+            .div(denominator);
 
-            const cappedExpectedFeeRate = anchor.BN.min(expectedFeeRate, new anchor.BN(FEE_RATE_HARD_LIMIT)).toNumber();
+          const cappedExpectedFeeRate = anchor.BN.min(
+            expectedFeeRate,
+            new anchor.BN(FEE_RATE_HARD_LIMIT),
+          ).toNumber();
 
-            assert.equal(feeRate, cappedExpectedFeeRate);
-            assert.equal(feeRate, preCalculatedFeeRates[delta]);
+          assert.equal(feeRate, cappedExpectedFeeRate);
+          assert.equal(feeRate, preCalculatedFeeRates[delta]);
         }
       }
 
       it("max volatility accumulator should bound fee rate", async () => {
         test(
-            // copied from the contract test cases
-            {
-
-                maxVolatilityAccumulator: 350_000,
-                adaptiveFeeControlFactor: 1500,
-                tickGroupSize: 64,
-                majorSwapThresholdTicks: 64,
-                filterPeriod: 30,
-                decayPeriod: 600,
-                reductionFactor: 5000,
-            },
-            [
-                0, 62, 246, 553, 984, 1536, 2212, 3011, 3933, 4977, 6144, 7435, 8848, 10384,
-                12043, 13824, 15729, 17757, 19907, 22180, 24576, 27096, 29737, 32502, 35390,
-                38400, 41534, 44790, 48169, 51672, 55296, 59044, 62915, 66909, 71025, 75264,
-                75264, 75264, 75264, 75264, 75264, 75264, 75264, 75264, 75264, 75264, 75264,
-                75264, 75264, 75264,
-            ],
+          // copied from the contract test cases
+          {
+            maxVolatilityAccumulator: 350_000,
+            adaptiveFeeControlFactor: 1500,
+            tickGroupSize: 64,
+            majorSwapThresholdTicks: 64,
+            filterPeriod: 30,
+            decayPeriod: 600,
+            reductionFactor: 5000,
+          },
+          [
+            0, 62, 246, 553, 984, 1536, 2212, 3011, 3933, 4977, 6144, 7435,
+            8848, 10384, 12043, 13824, 15729, 17757, 19907, 22180, 24576, 27096,
+            29737, 32502, 35390, 38400, 41534, 44790, 48169, 51672, 55296,
+            59044, 62915, 66909, 71025, 75264, 75264, 75264, 75264, 75264,
+            75264, 75264, 75264, 75264, 75264, 75264, 75264, 75264, 75264,
+            75264,
+          ],
         );
       });
 
       it("fee rate hard limit should bound fee rate", async () => {
         test(
-            // copied from the contract test cases
-            {
-              maxVolatilityAccumulator: 450_000,
-              adaptiveFeeControlFactor: 1500,
-              tickGroupSize: 64,
-              majorSwapThresholdTicks: 64,
-              filterPeriod: 30,
-              decayPeriod: 600,
-              reductionFactor: 5000,
+          // copied from the contract test cases
+          {
+            maxVolatilityAccumulator: 450_000,
+            adaptiveFeeControlFactor: 1500,
+            tickGroupSize: 64,
+            majorSwapThresholdTicks: 64,
+            filterPeriod: 30,
+            decayPeriod: 600,
+            reductionFactor: 5000,
           },
           [
-              0, 62, 246, 553, 984, 1536, 2212, 3011, 3933, 4977, 6144, 7435, 8848, 10384,
-              12043, 13824, 15729, 17757, 19907, 22180, 24576, 27096, 29737, 32502, 35390,
-              38400, 41534, 44790, 48169, 51672, 55296, 59044, 62915, 66909, 71025, 75264,
-              79627, 84112, 88720, 93451, 98304, 100000, 100000, 100000, 100000, 100000,
-              100000, 100000, 100000, 100000,
+            0, 62, 246, 553, 984, 1536, 2212, 3011, 3933, 4977, 6144, 7435,
+            8848, 10384, 12043, 13824, 15729, 17757, 19907, 22180, 24576, 27096,
+            29737, 32502, 35390, 38400, 41534, 44790, 48169, 51672, 55296,
+            59044, 62915, 66909, 71025, 75264, 79627, 84112, 88720, 93451,
+            98304, 100000, 100000, 100000, 100000, 100000, 100000, 100000,
+            100000, 100000,
           ],
         );
       });
 
       it("fee rate is not bounded in this range", async () => {
         test(
-            // copied from the contract test cases
-            {
-                maxVolatilityAccumulator: 500_000,
-                adaptiveFeeControlFactor: 1000,
-                tickGroupSize: 64,
-                majorSwapThresholdTicks: 64,
-                filterPeriod: 30,
-                decayPeriod: 600,
-                reductionFactor: 5000,
-            },
-            [
-                0, 41, 164, 369, 656, 1024, 1475, 2008, 2622, 3318, 4096, 4957, 5899, 6923,
-                8029, 9216, 10486, 11838, 13272, 14787, 16384, 18064, 19825, 21668, 23593,
-                25600, 27689, 29860, 32113, 34448, 36864, 39363, 41944, 44606, 47350, 50176,
-                53085, 56075, 59147, 62301, 65536, 68854, 72254, 75736, 79299, 82944, 86672,
-                90481, 94372, 98345,
-            ],
+          // copied from the contract test cases
+          {
+            maxVolatilityAccumulator: 500_000,
+            adaptiveFeeControlFactor: 1000,
+            tickGroupSize: 64,
+            majorSwapThresholdTicks: 64,
+            filterPeriod: 30,
+            decayPeriod: 600,
+            reductionFactor: 5000,
+          },
+          [
+            0, 41, 164, 369, 656, 1024, 1475, 2008, 2622, 3318, 4096, 4957,
+            5899, 6923, 8029, 9216, 10486, 11838, 13272, 14787, 16384, 18064,
+            19825, 21668, 23593, 25600, 27689, 29860, 32113, 34448, 36864,
+            39363, 41944, 44606, 47350, 50176, 53085, 56075, 59147, 62301,
+            65536, 68854, 72254, 75736, 79299, 82944, 86672, 90481, 94372,
+            98345,
+          ],
         );
       });
     });
 
     it("getTotalFeeRate", async () => {
-        const adaptiveFeeInfo: AdaptiveFeeInfo = {
-            adaptiveFeeConstants: {
-                maxVolatilityAccumulator: 450_000,
-                adaptiveFeeControlFactor: 1500,
-                tickGroupSize: 64,
-                majorSwapThresholdTicks: 64,
-                filterPeriod: 30,
-                decayPeriod: 600,
-                reductionFactor: 5000,
-            },
-            adaptiveFeeVariables: {
-              lastReferenceUpdateTimestamp: new anchor.BN(0),
-              lastMajorSwapTimestamp: new anchor.BN(0),
-              tickGroupIndexReference: 0,
-              volatilityReference: 0,
-              volatilityAccumulator: 0,
-            },
-        };
+      const adaptiveFeeInfo: AdaptiveFeeInfo = {
+        adaptiveFeeConstants: {
+          maxVolatilityAccumulator: 450_000,
+          adaptiveFeeControlFactor: 1500,
+          tickGroupSize: 64,
+          majorSwapThresholdTicks: 64,
+          filterPeriod: 30,
+          decayPeriod: 600,
+          reductionFactor: 5000,
+        },
+        adaptiveFeeVariables: {
+          lastReferenceUpdateTimestamp: new anchor.BN(0),
+          lastMajorSwapTimestamp: new anchor.BN(0),
+          tickGroupIndexReference: 0,
+          volatilityReference: 0,
+          volatilityAccumulator: 0,
+        },
+      };
 
-        const timestamp = new anchor.BN(1738863309);
-        const staticFeeRate = 10_000; // 1%
+      const timestamp = new anchor.BN(1738863309);
+      const staticFeeRate = 10_000; // 1%
 
-        const feeRateManager = FeeRateManager.new(
-          true,
-          1024,
-          timestamp,
-          staticFeeRate,
-          adaptiveFeeInfo,
-        );
+      const feeRateManager = FeeRateManager.new(
+        true,
+        1024,
+        timestamp,
+        staticFeeRate,
+        adaptiveFeeInfo,
+      );
 
-        // copied from the contract test cases
-        const preCalculatedTotalFeeRates = [
-            10000, 10062, 10246, 10553, 10984, 11536, 12212, 13011, 13933, 14977, 16144, 17435,
-            18848, 20384, 22043, 23824, 25729, 27757, 29907, 32180, 34576, 37096, 39737, 42502,
-            45390, 48400, 51534, 54790, 58169, 61672, 65296, 69044, 72915, 76909, 81025, 85264,
-            89627, 94112, 98720, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000,
-            100000, 100000, 100000,
-        ];
+      // copied from the contract test cases
+      const preCalculatedTotalFeeRates = [
+        10000, 10062, 10246, 10553, 10984, 11536, 12212, 13011, 13933, 14977,
+        16144, 17435, 18848, 20384, 22043, 23824, 25729, 27757, 29907, 32180,
+        34576, 37096, 39737, 42502, 45390, 48400, 51534, 54790, 58169, 61672,
+        65296, 69044, 72915, 76909, 81025, 85264, 89627, 94112, 98720, 100000,
+        100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000, 100000,
+        100000,
+      ];
 
-        for (const preCalculatedTotalFeeRate of preCalculatedTotalFeeRates) {
-            feeRateManager.updateVolatilityAccumulator();
+      for (const preCalculatedTotalFeeRate of preCalculatedTotalFeeRates) {
+        feeRateManager.updateVolatilityAccumulator();
 
-            const totalFeeRate = feeRateManager.getTotalFeeRate();
-            assert.equal(totalFeeRate, preCalculatedTotalFeeRate);
+        const totalFeeRate = feeRateManager.getTotalFeeRate();
+        assert.equal(totalFeeRate, preCalculatedTotalFeeRate);
 
-            feeRateManager.advanceTickGroup();
-        }
+        feeRateManager.advanceTickGroup();
+      }
     });
 
     describe("getBoundedSqrtPriceTarget", () => {
-      function test(feeRateManager: FeeRateManager, sqrtPrice: anchor.BN, liquidity: anchor.BN, expectedBoundedSqrtPrice: anchor.BN, expectedAdaptiveFeeUpdateSkipped: boolean) {
-          const result = feeRateManager.getBoundedSqrtPriceTarget(sqrtPrice, liquidity);
-          assert.ok(result.boundedSqrtPriceTarget.eq(expectedBoundedSqrtPrice));
-          assert.equal(result.adaptiveFeeUpdateSkipped, expectedAdaptiveFeeUpdateSkipped);
+      function test(
+        feeRateManager: FeeRateManager,
+        sqrtPrice: anchor.BN,
+        liquidity: anchor.BN,
+        expectedBoundedSqrtPrice: anchor.BN,
+        expectedAdaptiveFeeUpdateSkipped: boolean,
+      ) {
+        const result = feeRateManager.getBoundedSqrtPriceTarget(
+          sqrtPrice,
+          liquidity,
+        );
+        assert.ok(result.boundedSqrtPriceTarget.eq(expectedBoundedSqrtPrice));
+        assert.equal(
+          result.adaptiveFeeUpdateSkipped,
+          expectedAdaptiveFeeUpdateSkipped,
+        );
       }
-  
+
       it("a to b without skip", async () => {
         const staticFeeRate = 3000;
         const adaptiveFeeInfo = defaultAdaptiveFeeInfo();
@@ -842,14 +988,16 @@ describe("fee-rate-manager", () => {
 
         const currentTickIndex = 1024 + 32;
         // reset references
-        const timestamp = anchor.BN.max(adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp, adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp)
-            .addn(adaptiveFeeInfo.adaptiveFeeConstants.decayPeriod);
+        const timestamp = anchor.BN.max(
+          adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp,
+          adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
+        ).addn(adaptiveFeeInfo.adaptiveFeeConstants.decayPeriod);
         const feeRateManager = FeeRateManager.new(
-            true,
-            currentTickIndex,
-            timestamp,
-            staticFeeRate,
-            adaptiveFeeInfo,
+          true,
+          currentTickIndex,
+          timestamp,
+          staticFeeRate,
+          adaptiveFeeInfo,
         );
 
         // a to b = right(positive) to left(negative)
@@ -900,7 +1048,7 @@ describe("fee-rate-manager", () => {
           false,
         );
       });
-      
+
       it("a to b with zero liquidity skip", async () => {
         const staticFeeRate = 3000;
         const adaptiveFeeInfo = defaultAdaptiveFeeInfo();
@@ -908,14 +1056,16 @@ describe("fee-rate-manager", () => {
 
         const currentTickIndex = 1024 + 32;
         // reset references
-        const timestamp = anchor.BN.max(adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp, adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp)
-            .addn(adaptiveFeeInfo.adaptiveFeeConstants.decayPeriod);
+        const timestamp = anchor.BN.max(
+          adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp,
+          adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
+        ).addn(adaptiveFeeInfo.adaptiveFeeConstants.decayPeriod);
         const feeRateManager = FeeRateManager.new(
-            true,
-            currentTickIndex,
-            timestamp,
-            staticFeeRate,
-            adaptiveFeeInfo,
+          true,
+          currentTickIndex,
+          timestamp,
+          staticFeeRate,
+          adaptiveFeeInfo,
         );
 
         // a to b = right(positive) to left(negative)
@@ -977,7 +1127,10 @@ describe("fee-rate-manager", () => {
 
         const currentTickIndex = 1024 + 32;
         // reset references
-        const timestamp = anchor.BN.max(adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp, adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp);
+        const timestamp = anchor.BN.max(
+          adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp,
+          adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
+        );
         const feeRateManager = FeeRateManager.new(
           true,
           currentTickIndex,
@@ -1043,22 +1196,22 @@ describe("fee-rate-manager", () => {
         const aToB = true;
 
         const adaptiveFeeInfo: AdaptiveFeeInfo = {
-            adaptiveFeeConstants: {
-                maxVolatilityAccumulator: 80_000,
-                adaptiveFeeControlFactor: 1500,
-                tickGroupSize: 64,
-                majorSwapThresholdTicks: 64,
-                filterPeriod: 30,
-                decayPeriod: 600,
-                reductionFactor: 5000,
-            },
-            adaptiveFeeVariables: {
-                lastReferenceUpdateTimestamp: timestamp,
-                lastMajorSwapTimestamp: timestamp,
-                tickGroupIndexReference: 0,
-                volatilityAccumulator: 0,
-                volatilityReference: 0,
-            },
+          adaptiveFeeConstants: {
+            maxVolatilityAccumulator: 80_000,
+            adaptiveFeeControlFactor: 1500,
+            tickGroupSize: 64,
+            majorSwapThresholdTicks: 64,
+            filterPeriod: 30,
+            decayPeriod: 600,
+            reductionFactor: 5000,
+          },
+          adaptiveFeeVariables: {
+            lastReferenceUpdateTimestamp: timestamp,
+            lastMajorSwapTimestamp: timestamp,
+            tickGroupIndexReference: 0,
+            volatilityAccumulator: 0,
+            volatilityReference: 0,
+          },
         };
 
         // a to b = right(positive) to left(negative)
@@ -1066,93 +1219,93 @@ describe("fee-rate-manager", () => {
 
         // right side of core range
         {
-        const currentTickIndex = 2048;
-        const feeRateManager = FeeRateManager.new(
+          const currentTickIndex = 2048;
+          const feeRateManager = FeeRateManager.new(
             aToB,
             currentTickIndex,
             timestamp,
             staticFeeRate,
             adaptiveFeeInfo,
-        );
+          );
 
-        // sqrt_price is near than the boundary (core range right end)
-        test(
-          feeRateManager,
-          PriceMath.tickIndexToSqrtPriceX64(1024),
-          nonZeroLiquidity,
-          PriceMath.tickIndexToSqrtPriceX64(1024),
-          true,
-        );
+          // sqrt_price is near than the boundary (core range right end)
+          test(
+            feeRateManager,
+            PriceMath.tickIndexToSqrtPriceX64(1024),
+            nonZeroLiquidity,
+            PriceMath.tickIndexToSqrtPriceX64(1024),
+            true,
+          );
 
-        // sqrt_price is far than the boundary
-        test(
-          feeRateManager,
-          MIN_SQRT_PRICE_BN,
-          nonZeroLiquidity,
-          PriceMath.tickIndexToSqrtPriceX64(8 * 64 + 64),
-          true,
-        );
-      }
+          // sqrt_price is far than the boundary
+          test(
+            feeRateManager,
+            MIN_SQRT_PRICE_BN,
+            nonZeroLiquidity,
+            PriceMath.tickIndexToSqrtPriceX64(8 * 64 + 64),
+            true,
+          );
+        }
 
         // in core range
         {
-        const currentTickIndex = 64 * 8 + 32;
-        const feeRateManager = FeeRateManager.new(
+          const currentTickIndex = 64 * 8 + 32;
+          const feeRateManager = FeeRateManager.new(
             aToB,
             currentTickIndex,
             timestamp,
             staticFeeRate,
             adaptiveFeeInfo,
-        );
+          );
 
-        // sqrt_price is near than the boundary
-        test(
-          feeRateManager,
-          PriceMath.tickIndexToSqrtPriceX64(64 * 8 + 16),
-          nonZeroLiquidity,
-          PriceMath.tickIndexToSqrtPriceX64(64 * 8 + 16),
-          false,
-        );
+          // sqrt_price is near than the boundary
+          test(
+            feeRateManager,
+            PriceMath.tickIndexToSqrtPriceX64(64 * 8 + 16),
+            nonZeroLiquidity,
+            PriceMath.tickIndexToSqrtPriceX64(64 * 8 + 16),
+            false,
+          );
 
-        // sqrt_price is far than the boundary
-        test(
-          feeRateManager,
-          MIN_SQRT_PRICE_BN,
-          nonZeroLiquidity,
-          PriceMath.tickIndexToSqrtPriceX64(64 * 8),
-          false,
-        );
+          // sqrt_price is far than the boundary
+          test(
+            feeRateManager,
+            MIN_SQRT_PRICE_BN,
+            nonZeroLiquidity,
+            PriceMath.tickIndexToSqrtPriceX64(64 * 8),
+            false,
+          );
 
-        feeRateManager.advanceTickGroup();
+          feeRateManager.advanceTickGroup();
 
-        test(
-          feeRateManager,
-          MIN_SQRT_PRICE_BN,
-          nonZeroLiquidity,
-          PriceMath.tickIndexToSqrtPriceX64(64 * 7),
-          false,
-        );
-      }
+          test(
+            feeRateManager,
+            MIN_SQRT_PRICE_BN,
+            nonZeroLiquidity,
+            PriceMath.tickIndexToSqrtPriceX64(64 * 7),
+            false,
+          );
+        }
 
         // left side of core range
         {
-        const currentTickIndex = -2048;
-        const feeRateManager = FeeRateManager.new(
+          const currentTickIndex = -2048;
+          const feeRateManager = FeeRateManager.new(
             aToB,
             currentTickIndex,
             timestamp,
             staticFeeRate,
             adaptiveFeeInfo,
-        );
+          );
 
-        // no boundary
-        test(
-          feeRateManager,
-          MIN_SQRT_PRICE_BN,
-          nonZeroLiquidity,
-          MIN_SQRT_PRICE_BN,
-          true,
-        );
+          // no boundary
+          test(
+            feeRateManager,
+            MIN_SQRT_PRICE_BN,
+            nonZeroLiquidity,
+            MIN_SQRT_PRICE_BN,
+            true,
+          );
         }
       });
 
@@ -1163,7 +1316,10 @@ describe("fee-rate-manager", () => {
 
         const currentTickIndex = 1024 + 32;
         // reset references
-        const timestamp = anchor.BN.max(adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp, adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp);
+        const timestamp = anchor.BN.max(
+          adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp,
+          adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
+        );
         const feeRateManager = FeeRateManager.new(
           false,
           currentTickIndex,
@@ -1228,7 +1384,10 @@ describe("fee-rate-manager", () => {
 
         const currentTickIndex = 1024 + 32;
         // reset references
-        const timestamp = anchor.BN.max(adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp, adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp);
+        const timestamp = anchor.BN.max(
+          adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp,
+          adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
+        );
         const feeRateManager = FeeRateManager.new(
           false,
           currentTickIndex,
@@ -1296,7 +1455,10 @@ describe("fee-rate-manager", () => {
 
         const currentTickIndex = 1024 + 32;
         // reset references
-        const timestamp = anchor.BN.max(adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp, adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp);
+        const timestamp = anchor.BN.max(
+          adaptiveFeeInfo.adaptiveFeeVariables.lastReferenceUpdateTimestamp,
+          adaptiveFeeInfo.adaptiveFeeVariables.lastMajorSwapTimestamp,
+        );
         const feeRateManager = FeeRateManager.new(
           false,
           currentTickIndex,
@@ -1362,22 +1524,22 @@ describe("fee-rate-manager", () => {
         const aToB = false;
 
         const adaptiveFeeInfo: AdaptiveFeeInfo = {
-            adaptiveFeeConstants: {
-                maxVolatilityAccumulator: 80_000,
-                adaptiveFeeControlFactor: 1500,
-                tickGroupSize: 64,
-                majorSwapThresholdTicks: 64,
-                filterPeriod: 30,
-                decayPeriod: 600,
-                reductionFactor: 5000,
-            },
-            adaptiveFeeVariables: {
-                lastReferenceUpdateTimestamp: timestamp,
-                lastMajorSwapTimestamp: timestamp,
-                tickGroupIndexReference: 0,
-                volatilityAccumulator: 0,
-                volatilityReference: 0,
-            },
+          adaptiveFeeConstants: {
+            maxVolatilityAccumulator: 80_000,
+            adaptiveFeeControlFactor: 1500,
+            tickGroupSize: 64,
+            majorSwapThresholdTicks: 64,
+            filterPeriod: 30,
+            decayPeriod: 600,
+            reductionFactor: 5000,
+          },
+          adaptiveFeeVariables: {
+            lastReferenceUpdateTimestamp: timestamp,
+            lastMajorSwapTimestamp: timestamp,
+            tickGroupIndexReference: 0,
+            volatilityAccumulator: 0,
+            volatilityReference: 0,
+          },
         };
 
         // b to a = left(negative) to right(positive)
@@ -1385,95 +1547,94 @@ describe("fee-rate-manager", () => {
 
         // right side of core range
         {
-        const currentTickIndex = 2048;
-        const feeRateManager = FeeRateManager.new(
+          const currentTickIndex = 2048;
+          const feeRateManager = FeeRateManager.new(
             aToB,
             currentTickIndex,
             timestamp,
             staticFeeRate,
             adaptiveFeeInfo,
-        );
+          );
 
-        // no boundary
-        test(
-          feeRateManager,
-          MAX_SQRT_PRICE_BN,
-          nonZeroLiquidity,
-          MAX_SQRT_PRICE_BN,
-          true,
-        );
+          // no boundary
+          test(
+            feeRateManager,
+            MAX_SQRT_PRICE_BN,
+            nonZeroLiquidity,
+            MAX_SQRT_PRICE_BN,
+            true,
+          );
         }
 
         // in core range
         {
-        const currentTickIndex = 64 * -8 + 32;
-        const feeRateManager = FeeRateManager.new(
+          const currentTickIndex = 64 * -8 + 32;
+          const feeRateManager = FeeRateManager.new(
             aToB,
             currentTickIndex,
             timestamp,
             staticFeeRate,
             adaptiveFeeInfo,
-        );
+          );
 
-        // sqrt_price is near than the boundary
-        test(
-          feeRateManager,
-          PriceMath.tickIndexToSqrtPriceX64(64 * -8 + 32 + 16),
-          nonZeroLiquidity,
-          PriceMath.tickIndexToSqrtPriceX64(64 * -8 + 32 + 16),
-          false,
-        );
+          // sqrt_price is near than the boundary
+          test(
+            feeRateManager,
+            PriceMath.tickIndexToSqrtPriceX64(64 * -8 + 32 + 16),
+            nonZeroLiquidity,
+            PriceMath.tickIndexToSqrtPriceX64(64 * -8 + 32 + 16),
+            false,
+          );
 
-        // sqrt_price is far than the boundary
-        test(
-          feeRateManager,
-          MAX_SQRT_PRICE_BN,
-          nonZeroLiquidity,
-          PriceMath.tickIndexToSqrtPriceX64(64 * -8 + 64),
-          false,
-        );
+          // sqrt_price is far than the boundary
+          test(
+            feeRateManager,
+            MAX_SQRT_PRICE_BN,
+            nonZeroLiquidity,
+            PriceMath.tickIndexToSqrtPriceX64(64 * -8 + 64),
+            false,
+          );
 
-        feeRateManager.advanceTickGroup();
+          feeRateManager.advanceTickGroup();
 
-        test(
-          feeRateManager,
-          MAX_SQRT_PRICE_BN,
-          nonZeroLiquidity,
-          PriceMath.tickIndexToSqrtPriceX64(64 * -8 + 64 + 64),
-          false,
-        );
+          test(
+            feeRateManager,
+            MAX_SQRT_PRICE_BN,
+            nonZeroLiquidity,
+            PriceMath.tickIndexToSqrtPriceX64(64 * -8 + 64 + 64),
+            false,
+          );
         }
 
         // left side of core range
         {
-        const currentTickIndex = -2048;
-        const feeRateManager = FeeRateManager.new(
+          const currentTickIndex = -2048;
+          const feeRateManager = FeeRateManager.new(
             aToB,
             currentTickIndex,
             timestamp,
             staticFeeRate,
             adaptiveFeeInfo,
-        );
+          );
 
-        // sqrt_price is near than the boundary (core range left end)
-        test(
-          feeRateManager,
-          PriceMath.tickIndexToSqrtPriceX64(-1024),
-          nonZeroLiquidity,
-          PriceMath.tickIndexToSqrtPriceX64(-1024),
-          true,
-        );
+          // sqrt_price is near than the boundary (core range left end)
+          test(
+            feeRateManager,
+            PriceMath.tickIndexToSqrtPriceX64(-1024),
+            nonZeroLiquidity,
+            PriceMath.tickIndexToSqrtPriceX64(-1024),
+            true,
+          );
 
-        // sqrt_price is far than the boundary
-        test(
-          feeRateManager,
-          MAX_SQRT_PRICE_BN,
-          nonZeroLiquidity,
-          PriceMath.tickIndexToSqrtPriceX64(-8 * 64),
-          true,
-        );
-      }
-
+          // sqrt_price is far than the boundary
+          test(
+            feeRateManager,
+            MAX_SQRT_PRICE_BN,
+            nonZeroLiquidity,
+            PriceMath.tickIndexToSqrtPriceX64(-8 * 64),
+            true,
+          );
+        }
       });
     });
 
@@ -1483,30 +1644,30 @@ describe("fee-rate-manager", () => {
         const staticFeeRate = 3_000;
 
         const adaptiveFeeInfo: AdaptiveFeeInfo = {
-            adaptiveFeeConstants: {
-                maxVolatilityAccumulator: 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-                adaptiveFeeControlFactor: 5_000,
-                tickGroupSize: 64,
-                majorSwapThresholdTicks: 64,
-                filterPeriod: 30,
-                decayPeriod: 600,
-                reductionFactor: 5000,
-            },
-            adaptiveFeeVariables: {
-                lastReferenceUpdateTimestamp: timestamp,
-                lastMajorSwapTimestamp: timestamp,
-                tickGroupIndexReference: 0,
-                volatilityAccumulator: 0,
-                volatilityReference: 0,
-            },
+          adaptiveFeeConstants: {
+            maxVolatilityAccumulator: 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+            adaptiveFeeControlFactor: 5_000,
+            tickGroupSize: 64,
+            majorSwapThresholdTicks: 64,
+            filterPeriod: 30,
+            decayPeriod: 600,
+            reductionFactor: 5000,
+          },
+          adaptiveFeeVariables: {
+            lastReferenceUpdateTimestamp: timestamp,
+            lastMajorSwapTimestamp: timestamp,
+            tickGroupIndexReference: 0,
+            volatilityAccumulator: 0,
+            volatilityReference: 0,
+          },
         };
 
         return FeeRateManager.new(
-            aToB,
-            currentTickIndex,
-            timestamp,
-            staticFeeRate,
-            adaptiveFeeInfo,
+          aToB,
+          currentTickIndex,
+          timestamp,
+          staticFeeRate,
+          adaptiveFeeInfo,
         );
       }
 
@@ -1524,14 +1685,14 @@ describe("fee-rate-manager", () => {
         // to simulate swap loop
         feeRateManager.updateVolatilityAccumulator();
 
-        feeRateManager
-            .advanceTickGroupAfterSkip(
-                advanceCurrentSqrtPrice,
-                advanceNextTickSqrtPrice,
-                advanceNextTickIndex,
-            );
+        feeRateManager.advanceTickGroupAfterSkip(
+          advanceCurrentSqrtPrice,
+          advanceNextTickSqrtPrice,
+          advanceNextTickIndex,
+        );
 
-        const variables = feeRateManager.getNextAdaptiveFeeInfo()!.adaptiveFeeVariables;
+        const variables =
+          feeRateManager.getNextAdaptiveFeeInfo()!.adaptiveFeeVariables;
         checkTickGroupIndexAndVariables(
           feeRateManager,
           expectedTickGroupIndex, // check
@@ -1541,22 +1702,23 @@ describe("fee-rate-manager", () => {
           variables.volatilityReference,
           expectedVolatilityAccumulator, // check
         );
-    }
+      }
 
-    it("a to b", async () => {
-      // right to left
-      const aToB = true;
-      const tickGroupSize = 64;
-      const maxVolatilityAccumulator = 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR;
+      it("a to b", async () => {
+        // right to left
+        const aToB = true;
+        const tickGroupSize = 64;
+        const maxVolatilityAccumulator =
+          88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR;
 
-      // In advance_tick_group_after_skip, tick_group_index will be shifted to left by 1 for the next loop.
-      // If it is not a tick_group_size boundary, shifting will advance too much,
-      // but tick_group_index is not recorded in the chain and the loop ends, so there is no adverse effect on subsequent processing.
-      const LEFT_SHIFT = 1;
+        // In advance_tick_group_after_skip, tick_group_index will be shifted to left by 1 for the next loop.
+        // If it is not a tick_group_size boundary, shifting will advance too much,
+        // but tick_group_index is not recorded in the chain and the loop ends, so there is no adverse effect on subsequent processing.
+        const LEFT_SHIFT = 1;
 
-      // hit next tick
-      // tick(1023) <-- 1024
-      test(
+        // hit next tick
+        // tick(1023) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(1023),
@@ -1564,9 +1726,9 @@ describe("fee-rate-manager", () => {
           1023,
           15 - LEFT_SHIFT,
           15 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(65) <-- 1024
-      test(
+        );
+        // tick(65) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(65),
@@ -1574,9 +1736,9 @@ describe("fee-rate-manager", () => {
           65,
           1 - LEFT_SHIFT,
           VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(64) <-- 1024
-      test(
+        );
+        // tick(64) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(64),
@@ -1584,9 +1746,9 @@ describe("fee-rate-manager", () => {
           64,
           1 - LEFT_SHIFT,
           VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(32) <-- 1024
-      test(
+        );
+        // tick(32) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(32),
@@ -1594,9 +1756,9 @@ describe("fee-rate-manager", () => {
           32,
           0 - LEFT_SHIFT,
           0,
-      );
-      // tick(0) <-- 1024
-      test(
+        );
+        // tick(0) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(0),
@@ -1604,9 +1766,9 @@ describe("fee-rate-manager", () => {
           0,
           0 - LEFT_SHIFT,
           0,
-      );
-      // tick(-32) <-- 1024
-      test(
+        );
+        // tick(-32) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-32),
@@ -1614,9 +1776,9 @@ describe("fee-rate-manager", () => {
           -32,
           -1 - LEFT_SHIFT,
           VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(-64) <-- 1024
-      test(
+        );
+        // tick(-64) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-64),
@@ -1624,9 +1786,9 @@ describe("fee-rate-manager", () => {
           -64,
           -1 - LEFT_SHIFT,
           VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(-65) <-- 1024
-      test(
+        );
+        // tick(-65) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-65),
@@ -1634,9 +1796,9 @@ describe("fee-rate-manager", () => {
           -65,
           -2 - LEFT_SHIFT,
           2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(-127) <-- 1024
-      test(
+        );
+        // tick(-127) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-127),
@@ -1644,9 +1806,9 @@ describe("fee-rate-manager", () => {
           -127,
           -2 - LEFT_SHIFT,
           2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(-128) <-- 1024
-      test(
+        );
+        // tick(-128) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-128),
@@ -1654,9 +1816,9 @@ describe("fee-rate-manager", () => {
           -128,
           -2 - LEFT_SHIFT,
           2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // MIN_SQRT_PRICE <-- 1024
-      test(
+        );
+        // MIN_SQRT_PRICE <-- 1024
+        test(
           aToB,
           1024,
           MIN_SQRT_PRICE_BN,
@@ -1664,11 +1826,11 @@ describe("fee-rate-manager", () => {
           MIN_TICK_INDEX,
           Math.floor(MIN_TICK_INDEX / tickGroupSize) - LEFT_SHIFT,
           maxVolatilityAccumulator,
-      );
+        );
 
-      // NOT hit next tick
-      // tick(1023) <-- 1024
-      test(
+        // NOT hit next tick
+        // tick(1023) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(1023).addn(1),
@@ -1676,9 +1838,9 @@ describe("fee-rate-manager", () => {
           1023,
           15 - LEFT_SHIFT,
           15 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(65) <-- 1024
-      test(
+        );
+        // tick(65) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(65 + 1),
@@ -1686,9 +1848,9 @@ describe("fee-rate-manager", () => {
           65,
           1 - LEFT_SHIFT,
           VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(64) <-- 1024
-      test(
+        );
+        // tick(64) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(64 + 1),
@@ -1696,9 +1858,9 @@ describe("fee-rate-manager", () => {
           64,
           1 - LEFT_SHIFT,
           VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(32) <-- 1024
-      test(
+        );
+        // tick(32) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(32 + 1),
@@ -1706,9 +1868,9 @@ describe("fee-rate-manager", () => {
           32,
           0 - LEFT_SHIFT,
           0,
-      );
-      // tick(0) <-- 1024
-      test(
+        );
+        // tick(0) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(1),
@@ -1716,9 +1878,9 @@ describe("fee-rate-manager", () => {
           0,
           0 - LEFT_SHIFT,
           0,
-      );
-      // tick(-32) <-- 1024
-      test(
+        );
+        // tick(-32) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-32 + 1),
@@ -1726,9 +1888,9 @@ describe("fee-rate-manager", () => {
           -32,
           -1 - LEFT_SHIFT,
           VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(-64) <-- 1024
-      test(
+        );
+        // tick(-64) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-64 + 1),
@@ -1736,9 +1898,9 @@ describe("fee-rate-manager", () => {
           -64,
           -1 - LEFT_SHIFT,
           VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(-65) <-- 1024
-      test(
+        );
+        // tick(-65) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-65 + 1),
@@ -1746,9 +1908,9 @@ describe("fee-rate-manager", () => {
           -65,
           -1 - LEFT_SHIFT,
           VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(-127) <-- 1024
-      test(
+        );
+        // tick(-127) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-127 + 1),
@@ -1756,9 +1918,9 @@ describe("fee-rate-manager", () => {
           -127,
           -2 - LEFT_SHIFT,
           2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(-128) <-- 1024
-      test(
+        );
+        // tick(-128) <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-128 + 1),
@@ -1766,9 +1928,9 @@ describe("fee-rate-manager", () => {
           -128,
           -2 - LEFT_SHIFT,
           2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // MIN_SQRT_PRICE <-- 1024
-      test(
+        );
+        // MIN_SQRT_PRICE <-- 1024
+        test(
           aToB,
           1024,
           PriceMath.tickIndexToSqrtPriceX64(-64 * 44),
@@ -1776,9 +1938,9 @@ describe("fee-rate-manager", () => {
           MIN_TICK_INDEX,
           Math.floor((-64 * 44) / tickGroupSize) - LEFT_SHIFT,
           44 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
-      );
-      // tick(8448) <-- 11264 (out of core range)
-      test(
+        );
+        // tick(8448) <-- 11264 (out of core range)
+        test(
           aToB,
           11264,
           PriceMath.tickIndexToSqrtPriceX64(8448),
@@ -1786,9 +1948,9 @@ describe("fee-rate-manager", () => {
           8448,
           132 - LEFT_SHIFT,
           maxVolatilityAccumulator,
-      );
-      // tick(11264) <-- 11264 (out of core range, amount is collected as fee, no price change)
-      test(
+        );
+        // tick(11264) <-- 11264 (out of core range, amount is collected as fee, no price change)
+        test(
           aToB,
           11264,
           PriceMath.tickIndexToSqrtPriceX64(11264),
@@ -1796,14 +1958,15 @@ describe("fee-rate-manager", () => {
           8448,
           176 - LEFT_SHIFT,
           maxVolatilityAccumulator,
-      );
-  });
+        );
+      });
 
-    it("b to a", async () => {
+      it("b to a", async () => {
         // left to right
         const aToB = false;
         const tickGroupSize = 64;
-        const maxVolatilityAccumulator = 88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR;
+        const maxVolatilityAccumulator =
+          88 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR;
 
         // In advance_tick_group_after_skip, tick_group_index will be shifted to right by 1 for the next loop.
         // If it is not a tick_group_size boundary, shifting will advance too much,
@@ -1813,247 +1976,247 @@ describe("fee-rate-manager", () => {
         // hit next tick
         // -1024 --> tick(-1023)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(-1023),
-            PriceMath.tickIndexToSqrtPriceX64(-1023),
-            -1023,
-            -16 + RIGHT_SHIFT,
-            16 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(-1023),
+          PriceMath.tickIndexToSqrtPriceX64(-1023),
+          -1023,
+          -16 + RIGHT_SHIFT,
+          16 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(-65)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(-65),
-            PriceMath.tickIndexToSqrtPriceX64(-65),
-            -65,
-            -2 + RIGHT_SHIFT,
-            2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(-65),
+          PriceMath.tickIndexToSqrtPriceX64(-65),
+          -65,
+          -2 + RIGHT_SHIFT,
+          2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(-64)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(-64),
-            PriceMath.tickIndexToSqrtPriceX64(-64),
-            -64,
-            -2 + RIGHT_SHIFT,
-            2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(-64),
+          PriceMath.tickIndexToSqrtPriceX64(-64),
+          -64,
+          -2 + RIGHT_SHIFT,
+          2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(-32)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(-32),
-            PriceMath.tickIndexToSqrtPriceX64(-32),
-            -32,
-            -1 + RIGHT_SHIFT,
-            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(-32),
+          PriceMath.tickIndexToSqrtPriceX64(-32),
+          -32,
+          -1 + RIGHT_SHIFT,
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(0)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(0),
-            PriceMath.tickIndexToSqrtPriceX64(0),
-            0,
-            -1 + RIGHT_SHIFT,
-            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(0),
+          PriceMath.tickIndexToSqrtPriceX64(0),
+          0,
+          -1 + RIGHT_SHIFT,
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(32)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(32),
-            PriceMath.tickIndexToSqrtPriceX64(32),
-            32,
-            0 + RIGHT_SHIFT,
-            0,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(32),
+          PriceMath.tickIndexToSqrtPriceX64(32),
+          32,
+          0 + RIGHT_SHIFT,
+          0,
         );
         // -1024 --> tick(64)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(64),
-            PriceMath.tickIndexToSqrtPriceX64(64),
-            64,
-            0 + RIGHT_SHIFT,
-            0,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(64),
+          PriceMath.tickIndexToSqrtPriceX64(64),
+          64,
+          0 + RIGHT_SHIFT,
+          0,
         );
         // -1024 --> tick(65)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(65),
-            PriceMath.tickIndexToSqrtPriceX64(65),
-            65,
-            1 + RIGHT_SHIFT,
-            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(65),
+          PriceMath.tickIndexToSqrtPriceX64(65),
+          65,
+          1 + RIGHT_SHIFT,
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(127)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(127),
-            PriceMath.tickIndexToSqrtPriceX64(127),
-            127,
-            1 + RIGHT_SHIFT,
-            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(127),
+          PriceMath.tickIndexToSqrtPriceX64(127),
+          127,
+          1 + RIGHT_SHIFT,
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(128)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(128),
-            PriceMath.tickIndexToSqrtPriceX64(128),
-            128,
-            1 + RIGHT_SHIFT,
-            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(128),
+          PriceMath.tickIndexToSqrtPriceX64(128),
+          128,
+          1 + RIGHT_SHIFT,
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> MAX_SQRT_PRICE
         test(
-            aToB,
-            -1024,
-            MAX_SQRT_PRICE_BN,
-            MAX_SQRT_PRICE_BN,
-            MAX_TICK_INDEX,
-            Math.floor(MAX_TICK_INDEX / tickGroupSize) + RIGHT_SHIFT,
-            maxVolatilityAccumulator,
+          aToB,
+          -1024,
+          MAX_SQRT_PRICE_BN,
+          MAX_SQRT_PRICE_BN,
+          MAX_TICK_INDEX,
+          Math.floor(MAX_TICK_INDEX / tickGroupSize) + RIGHT_SHIFT,
+          maxVolatilityAccumulator,
         );
 
         // NOT hit next tick
         // -1024 --> tick(-1023)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(-1023).subn(1),
-            PriceMath.tickIndexToSqrtPriceX64(-1023),
-            -1023,
-            -16 + RIGHT_SHIFT,
-            16 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(-1023).subn(1),
+          PriceMath.tickIndexToSqrtPriceX64(-1023),
+          -1023,
+          -16 + RIGHT_SHIFT,
+          16 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(-65)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(-65 - 1),
-            PriceMath.tickIndexToSqrtPriceX64(-65),
-            -65,
-            -2 + RIGHT_SHIFT,
-            2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(-65 - 1),
+          PriceMath.tickIndexToSqrtPriceX64(-65),
+          -65,
+          -2 + RIGHT_SHIFT,
+          2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(-64)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(-64 - 1),
-            PriceMath.tickIndexToSqrtPriceX64(-64),
-            -64,
-            -2 + RIGHT_SHIFT,
-            2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(-64 - 1),
+          PriceMath.tickIndexToSqrtPriceX64(-64),
+          -64,
+          -2 + RIGHT_SHIFT,
+          2 * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(-32)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(-32 - 1),
-            PriceMath.tickIndexToSqrtPriceX64(-32),
-            -32,
-            -1 + RIGHT_SHIFT,
-            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(-32 - 1),
+          PriceMath.tickIndexToSqrtPriceX64(-32),
+          -32,
+          -1 + RIGHT_SHIFT,
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(0)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(0 - 1),
-            PriceMath.tickIndexToSqrtPriceX64(0),
-            0,
-            -1 + RIGHT_SHIFT,
-            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(0 - 1),
+          PriceMath.tickIndexToSqrtPriceX64(0),
+          0,
+          -1 + RIGHT_SHIFT,
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(32)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(32 - 1),
-            PriceMath.tickIndexToSqrtPriceX64(32),
-            32,
-            0 + RIGHT_SHIFT,
-            0,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(32 - 1),
+          PriceMath.tickIndexToSqrtPriceX64(32),
+          32,
+          0 + RIGHT_SHIFT,
+          0,
         );
         // -1024 --> tick(64)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(64 - 1),
-            PriceMath.tickIndexToSqrtPriceX64(64),
-            64,
-            0 + RIGHT_SHIFT,
-            0,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(64 - 1),
+          PriceMath.tickIndexToSqrtPriceX64(64),
+          64,
+          0 + RIGHT_SHIFT,
+          0,
         );
         // -1024 --> tick(65)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(65 - 1),
-            PriceMath.tickIndexToSqrtPriceX64(65),
-            65,
-            0 + RIGHT_SHIFT,
-            0,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(65 - 1),
+          PriceMath.tickIndexToSqrtPriceX64(65),
+          65,
+          0 + RIGHT_SHIFT,
+          0,
         );
         // -1024 --> tick(127)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(127 - 1),
-            PriceMath.tickIndexToSqrtPriceX64(127),
-            127,
-            1 + RIGHT_SHIFT,
-            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(127 - 1),
+          PriceMath.tickIndexToSqrtPriceX64(127),
+          127,
+          1 + RIGHT_SHIFT,
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> tick(128)
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(128 - 1),
-            PriceMath.tickIndexToSqrtPriceX64(128),
-            128,
-            1 + RIGHT_SHIFT,
-            VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(128 - 1),
+          PriceMath.tickIndexToSqrtPriceX64(128),
+          128,
+          1 + RIGHT_SHIFT,
+          VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -1024 --> MAX_SQRT_PRICE
         test(
-            aToB,
-            -1024,
-            PriceMath.tickIndexToSqrtPriceX64(64 * 44),
-            MAX_SQRT_PRICE_BN,
-            MAX_TICK_INDEX,
-            Math.floor((64 * (44 - 1)) / tickGroupSize) + RIGHT_SHIFT,
-            (44 - 1) * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
+          aToB,
+          -1024,
+          PriceMath.tickIndexToSqrtPriceX64(64 * 44),
+          MAX_SQRT_PRICE_BN,
+          MAX_TICK_INDEX,
+          Math.floor((64 * (44 - 1)) / tickGroupSize) + RIGHT_SHIFT,
+          (44 - 1) * VOLATILITY_ACCUMULATOR_SCALE_FACTOR,
         );
         // -11264 --> tick(-8448) (out of core range)
         test(
-            aToB,
-            -11264,
-            PriceMath.tickIndexToSqrtPriceX64(-8448),
-            PriceMath.tickIndexToSqrtPriceX64(-8448),
-            -8448,
-            -133 + RIGHT_SHIFT,
-            maxVolatilityAccumulator,
+          aToB,
+          -11264,
+          PriceMath.tickIndexToSqrtPriceX64(-8448),
+          PriceMath.tickIndexToSqrtPriceX64(-8448),
+          -8448,
+          -133 + RIGHT_SHIFT,
+          maxVolatilityAccumulator,
         );
         // -11264 --> tick(-11264) (out of core range, amount is collected as fee, no price change)
         test(
-            aToB,
-            -11264,
-            PriceMath.tickIndexToSqrtPriceX64(-11264),
-            PriceMath.tickIndexToSqrtPriceX64(-8448),
-            -8448,
-            -176 + RIGHT_SHIFT,
-            maxVolatilityAccumulator,
+          aToB,
+          -11264,
+          PriceMath.tickIndexToSqrtPriceX64(-11264),
+          PriceMath.tickIndexToSqrtPriceX64(-8448),
+          -8448,
+          -176 + RIGHT_SHIFT,
+          maxVolatilityAccumulator,
         );
-    });
+      });
     });
 
     describe("updateMajorSwapTimestamp", () => {
@@ -2070,21 +2233,49 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo,
         );
 
-        const majorSwapThresholdTicks = adaptiveFeeInfo.adaptiveFeeConstants.majorSwapThresholdTicks;
+        const majorSwapThresholdTicks =
+          adaptiveFeeInfo.adaptiveFeeConstants.majorSwapThresholdTicks;
 
-        const preSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(currentTickIndex);
-        const postSqrtPriceMinor = PriceMath.tickIndexToSqrtPriceX64(currentTickIndex - majorSwapThresholdTicks + 1);
-        const postSqrtPriceMajor = PriceMath.tickIndexToSqrtPriceX64(currentTickIndex - majorSwapThresholdTicks - 1);
+        const preSqrtPrice =
+          PriceMath.tickIndexToSqrtPriceX64(currentTickIndex);
+        const postSqrtPriceMinor = PriceMath.tickIndexToSqrtPriceX64(
+          currentTickIndex - majorSwapThresholdTicks + 1,
+        );
+        const postSqrtPriceMajor = PriceMath.tickIndexToSqrtPriceX64(
+          currentTickIndex - majorSwapThresholdTicks - 1,
+        );
 
         // minor: no update
-        assert.ok(feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp));
-        feeRateManager.updateMajorSwapTimestamp(preSqrtPrice, postSqrtPriceMinor);
-        assert.ok(feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp));
+        assert.ok(
+          feeRateManager
+            .getNextAdaptiveFeeInfo()
+            ?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp),
+        );
+        feeRateManager.updateMajorSwapTimestamp(
+          preSqrtPrice,
+          postSqrtPriceMinor,
+        );
+        assert.ok(
+          feeRateManager
+            .getNextAdaptiveFeeInfo()
+            ?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp),
+        );
 
         // major: update
-        assert.ok(feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp));
-        feeRateManager.updateMajorSwapTimestamp(preSqrtPrice, postSqrtPriceMajor);
-        assert.ok(feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables.lastMajorSwapTimestamp.eq(timestamp));
+        assert.ok(
+          feeRateManager
+            .getNextAdaptiveFeeInfo()
+            ?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp),
+        );
+        feeRateManager.updateMajorSwapTimestamp(
+          preSqrtPrice,
+          postSqrtPriceMajor,
+        );
+        assert.ok(
+          feeRateManager
+            .getNextAdaptiveFeeInfo()
+            ?.adaptiveFeeVariables.lastMajorSwapTimestamp.eq(timestamp),
+        );
       });
 
       it("b to a", async () => {
@@ -2100,23 +2291,50 @@ describe("fee-rate-manager", () => {
           adaptiveFeeInfo,
         );
 
-        const majorSwapThresholdTicks = adaptiveFeeInfo.adaptiveFeeConstants.majorSwapThresholdTicks;
+        const majorSwapThresholdTicks =
+          adaptiveFeeInfo.adaptiveFeeConstants.majorSwapThresholdTicks;
 
-        const preSqrtPrice = PriceMath.tickIndexToSqrtPriceX64(currentTickIndex);
-        const postSqrtPriceMinor = PriceMath.tickIndexToSqrtPriceX64(currentTickIndex + majorSwapThresholdTicks - 1);
-        const postSqrtPriceMajor = PriceMath.tickIndexToSqrtPriceX64(currentTickIndex + majorSwapThresholdTicks + 1);
+        const preSqrtPrice =
+          PriceMath.tickIndexToSqrtPriceX64(currentTickIndex);
+        const postSqrtPriceMinor = PriceMath.tickIndexToSqrtPriceX64(
+          currentTickIndex + majorSwapThresholdTicks - 1,
+        );
+        const postSqrtPriceMajor = PriceMath.tickIndexToSqrtPriceX64(
+          currentTickIndex + majorSwapThresholdTicks + 1,
+        );
 
         // minor: no update
-        assert.ok(feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp));
-        feeRateManager.updateMajorSwapTimestamp(preSqrtPrice, postSqrtPriceMinor);
-        assert.ok(feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp));
+        assert.ok(
+          feeRateManager
+            .getNextAdaptiveFeeInfo()
+            ?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp),
+        );
+        feeRateManager.updateMajorSwapTimestamp(
+          preSqrtPrice,
+          postSqrtPriceMinor,
+        );
+        assert.ok(
+          feeRateManager
+            .getNextAdaptiveFeeInfo()
+            ?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp),
+        );
 
         // major: update
-        assert.ok(feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp));
-        feeRateManager.updateMajorSwapTimestamp(preSqrtPrice, postSqrtPriceMajor);
-        assert.ok(feeRateManager.getNextAdaptiveFeeInfo()?.adaptiveFeeVariables.lastMajorSwapTimestamp.eq(timestamp));
+        assert.ok(
+          feeRateManager
+            .getNextAdaptiveFeeInfo()
+            ?.adaptiveFeeVariables.lastMajorSwapTimestamp.lt(timestamp),
+        );
+        feeRateManager.updateMajorSwapTimestamp(
+          preSqrtPrice,
+          postSqrtPriceMajor,
+        );
+        assert.ok(
+          feeRateManager
+            .getNextAdaptiveFeeInfo()
+            ?.adaptiveFeeVariables.lastMajorSwapTimestamp.eq(timestamp),
+        );
       });
     });
-
   });
 });

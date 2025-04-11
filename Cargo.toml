@@ -1,7 +1,11 @@
 [workspace]
 resolver = "2"
-members = ["programs/*"]
-exclude = ["rust-sdk", "ts-sdk", "docs", "examples"]
-
-[profile.release]
-overflow-checks = true
+members = [
+    "programs/*"
+]
+exclude = [
+    "rust-sdk",
+    "ts-sdk",
+    "docs",
+    "examples"
+]

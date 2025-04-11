@@ -130,7 +130,7 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
     const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
     const param = { tokenA: 10n };
     
-    const { quote: increaseQuote, instructions: increaseInstructions, callback: increaseLiquidity } = await increaseLiquidityInstructions(
+    const { quote: increaseQuote, instructions: increaseInstructions, callback: sendTxIncrease } = await increaseLiquidity(
         devnetRpc,
         positionMint,
         param,
@@ -138,7 +138,7 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
         wallet
     );
 
-    const { quote: decreaseQuote, instructions: decreaseInstructions, callback: decreaseLiquidity } = await decreaseLiquidityInstructions(
+    const { quote: decreaseQuote, instructions: decreaseInstructions, callback: sendTxDecrease } = await decreaseLiquidity(
         devnetRpc,
         positionMint,
         param,
@@ -150,10 +150,10 @@ By using the SDK to adjust liquidity, you gain flexibility in managing your posi
     console.log(`Decrease quote token max B: ${decreaseQuote.tokenEstB}`);
 
     // Use the callback to submit the transaction
-    const txIdIncrease = await increaseLiquidity();
+    const txIdIncrease = await sendTxIncrease();
     console.log(`Transaction ID: ${txIdIncrease}`);
 
-    const txIdDecrease = await decreaseLiquidity();
+    const txIdDecrease = await sendTxDecrease();
     console.log(`Transaction ID: ${txIdDecrease}`);
     ```
 

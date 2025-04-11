@@ -163,7 +163,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     const tokenMintTwo = address("BRjpCHtyQLNCo8gqRUr8jtdAj5AjPYQaoqbvcZiHok1k"); // devUSDC
     const initialPrice = 0.01;
 
-    const { poolAddress, instructions, initializationCost, callback: createSplashPool } = await createSplashPoolInstructions(
+    const { poolAddress, instructions, initializationCost, callback: sendTx } = await createSplashPool(
         devnetRpc,
         tokenMintOne,
         tokenMintTwo,
@@ -172,7 +172,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     );
 
     // Use the callback to submit the transaction
-    const txId = await createSplashPool();
+    const txId = await sendTx();
 
     console.log(`Pool Address: ${poolAddress}`);
     console.log(`Initialization Cost: ${initializationCost} lamports`);
@@ -194,7 +194,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     const tickSpacing = 64;
     const initialPrice = 0.01;
 
-    const { poolAddress, instructions, initializationCost, callback: createConcentratedLiquidityPool } = await createConcentratedLiquidityPoolInstructions(
+    const { poolAddress, instructions, initializationCost, callback: sendTx } = await createConcentratedLiquidityPool(
         devnetRpc,
         tokenMintOne,
         tokenMintTwo,
@@ -204,7 +204,7 @@ Liquidity pools are a foundational concept in DeFi, enabling users to trade toke
     );
 
     // Use the callback to submit the transaction
-    const txId = await createConcentratedLiquidityPool();
+    const txId = await sendTx();
 
 
     console.log(`Pool Address: ${poolAddress}`);

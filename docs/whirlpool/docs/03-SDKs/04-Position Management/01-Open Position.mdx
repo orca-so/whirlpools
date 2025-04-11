@@ -190,7 +190,7 @@ After opening a position, you can:
 
     const param = { tokenA: 10n };
 
-    const { quote, instructions, initializationCost, positionMint, callback: openFullRangePosition } = await openFullRangePositionInstructions(
+    const { quote, instructions, initializationCost, positionMint, callback: sendTx } = await openFullRangePosition(
       devnetRpc,
       whirlpoolAddress,
       param,
@@ -199,7 +199,7 @@ After opening a position, you can:
     );
 
     // Use the callback to submit the transaction
-    const txId = await openFullRangePosition();
+    const txId = await sendTx();
 
     console.log(`Quote token max B: ${quote.tokenMaxB}`);
     console.log(`Initialization cost: ${initializationCost}`);
@@ -222,7 +222,7 @@ After opening a position, you can:
 
     const param = { tokenA: 10n };
 
-    const { quote, instructions, initializationCost, positionMint, callback: openPosition } = await openPositionInstructions(
+    const { quote, instructions, initializationCost, positionMint, callback: sendTx } = await openPosition(
       devnetRpc,
       whirlpoolAddress,
       param,
@@ -233,7 +233,7 @@ After opening a position, you can:
       );
 
     // Use the callback to submit the transaction
-    const txId = await openPosition();
+    const txId = await sendTx();
 
     console.log(`Quote token max B: ${quote.tokenEstB}`);
     console.log(`Initialization cost: ${initializationCost}`);

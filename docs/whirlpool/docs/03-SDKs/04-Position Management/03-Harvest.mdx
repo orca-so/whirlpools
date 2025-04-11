@@ -108,14 +108,14 @@ By using the SDK, you can maximize the benefits of providing liquidity while kee
     const wallet = await loadWallet();
     const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
 
-    const { feesQuote, rewardsQuote, instructions, callback: harvestPosition } = await harvestPositionInstructions(
+    const { feesQuote, rewardsQuote, instructions, callback: sendTx } = await harvestPosition(
       devnetRpc,
       positionMint,
       wallet
     );
 
     // Use the callback to submit the transaction
-    const txId = await harvestPosition();
+    const txId = await sendTx();
 
     console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
     console.log(`Rewards '1' owed: ${rewardsQuote.rewards[0].rewardsOwed}`);

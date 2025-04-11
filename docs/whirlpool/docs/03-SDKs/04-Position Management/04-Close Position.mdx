@@ -117,7 +117,7 @@ After closing a position, you can:
     const wallet = await loadWallet();
     const positionMint = address("HqoV7Qv27REUtmd9UKSJGGmCRNx3531t33bDG1BUfo9K");
 
-    const { instructions, quote, feesQuote, rewardsQuote, callback: closePosition } = await closePositionInstructions(
+    const { instructions, quote, feesQuote, rewardsQuote, callback: sendTx } = await closePosition(
       devnetRpc,
       positionMint,
       100,
@@ -125,7 +125,7 @@ After closing a position, you can:
     );
 
     // Use the callback to submit the transaction 
-    const txId = await closePosition();
+    const txId = await sendTx();
 
     console.log(`Quote token max B: ${quote.tokenEstB}`);
     console.log(`Fees owed token A: ${feesQuote.feeOwedA}`);
